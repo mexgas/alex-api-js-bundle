@@ -1,0 +1,89 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Text;
+using System.Collections.Specialized;
+using System.Reflection;
+
+namespace MiddleWareReports
+{
+    #region PdfReport
+    /// <summary>
+    /// Class that transforms the information of a DataTable into a pdf and returns its output as bytes
+    /// </summary>
+    public class PdfReport : ReportFormat
+    {
+        private string reportName;
+       
+        /// <summary>
+        /// Transforms the data of a DataTable into a pdf that has the passed report name paramater as a header
+        /// </summary>
+        /// <param name="data">The DataTable with the information</param>
+        /// <param name="reportName">The value that will be placed at the header of each page</param>
+        /// <returns>An array of bytes of the pdf file generated</returns>
+        /// <exception>Throws an EmptyResultException if the DataTable is empty</exception>
+        public byte[] getOutPut(DataTable data, String reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true)
+        {
+            EmptyResultException.dataTableIsEmpty(data);
+            int nRows = 0;
+            this.reportName = reportName;
+            if(translate)
+                TranslatorHelper.removeUntranslatedTableColumns(data);
+
+            
+            DataTable dataClone = data.Clone();
+            for (int i = 0; i < data.Columns.Count; i++)
+            {
+                dataClone.Columns[i].DataType = System.Type.GetType("System.String");
+            }
+
+            if (filterSummaryData != "")
+            {
+                string[] filters = filterSummaryData.Split('|');
+                foreach (string filter in filters)
+                {
+                    if (filter != "")
+                    {
+                        nRows++;
+                        string header = filter.Split('>')[0];
+                        DataRow headerRow = dataClone.NewRow();
+                        headerRow[0] = header;
+                        dataClone.Rows.Add(headerRow);
+
+                        foreach (string elem in filter.Split('>')[1].Split(','))
+                        {
+                            DataRow elemRow = dataClone.NewRow();
+                            elemRow[1] = elem;
+                            dataClone.Rows.Add(elemRow);
+                            nRows++;
+                        }
+                    }
+                }
+
+            }
+
+            foreach (DataRow row in data.Rows)
+                dataClone.ImportRow(row);           
+            /**/
+
+            return generatePDF(dataClone, reportName, logoFileName, nRows);
+        }
+
+        /// <summary>
+        /// Creates a PDF file that is first streamed into a buffer and then the contents of this 
+        /// buffer are retrieved into an array of bytes.
+        /// </summary>
+        /// <param name="data">The DataTable that provides the information</param>
+        /// <param name="reportName">It will be placed on the header of each page</param>
+        /// <returns>A byte array containing the bytes of the generated Pdf file</returns>
+        private byte[] generatePDF(DataTable data, string reportName, string logoFileName, int nRows)
+        {
+            Migradoc renderer = new Migradoc();
+            return renderer.getPdfRenderBytes(data, reportName, logoFileName, nRows);
+        }
+
+    #endregion
+    }
+}

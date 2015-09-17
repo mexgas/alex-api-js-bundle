@@ -1,0 +1,2145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="callKey" xml:space="preserve">
+    <value>CallKey</value>
+  </data>
+  <data name="campaign" xml:space="preserve">
+    <value>Campaigns</value>
+  </data>
+  <data name="date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="dialResult" xml:space="preserve">
+    <value>Dialing Result</value>
+  </data>
+  <data name="telephone" xml:space="preserve">
+    <value>telephone</value>
+  </data>
+  <data name="timeMessage" xml:space="preserve">
+    <value>message play time</value>
+  </data>
+  <data name="day" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="hour" xml:space="preserve">
+    <value>Hour</value>
+  </data>
+  <data name="minutes" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="month" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="year" xml:space="preserve">
+    <value>Year</value>
+  </data>
+  <data name="Abandoned" xml:space="preserve">
+    <value>Abandoned</value>
+  </data>
+  <data name="ACDGroups" xml:space="preserve">
+    <value>ACD Groups</value>
+  </data>
+  <data name="Agents" xml:space="preserve">
+    <value>Agents</value>
+  </data>
+  <data name="Answered" xml:space="preserve">
+    <value>Answered</value>
+  </data>
+  <data name="AnsweredCalls" xml:space="preserve">
+    <value>Answered Calls</value>
+  </data>
+  <data name="AnsweredCallsbyCampaign" xml:space="preserve">
+    <value>Answered Calls by Campaign</value>
+  </data>
+  <data name="AnsweredCallsbyStatus" xml:space="preserve">
+    <value>Answered Calls by Status</value>
+  </data>
+  <data name="AnsweredCallsDetail" xml:space="preserve">
+    <value>Answered Calls Detail</value>
+  </data>
+  <data name="AnsweredCallsperArea" xml:space="preserve">
+    <value>Answered Calls per Area</value>
+  </data>
+  <data name="AnsweredCallsperWorkGroup" xml:space="preserve">
+    <value>Answered Calls per WorkGroup</value>
+  </data>
+  <data name="Billing01900" xml:space="preserve">
+    <value>01 900 Billing</value>
+  </data>
+  <data name="ByAgent" xml:space="preserve">
+    <value>By Agent</value>
+  </data>
+  <data name="ByCampaign" xml:space="preserve">
+    <value>By Campaign</value>
+  </data>
+  <data name="ByCarrier" xml:space="preserve">
+    <value>By Carrier</value>
+  </data>
+  <data name="ByOptions" xml:space="preserve">
+    <value>By Options</value>
+  </data>
+  <data name="CallBacks" xml:space="preserve">
+    <value>Callbacks</value>
+  </data>
+  <data name="CallBilling" xml:space="preserve">
+    <value>Call Billing</value>
+  </data>
+  <data name="CallDetail" xml:space="preserve">
+    <value>Call Detail</value>
+  </data>
+  <data name="CallDisposition" xml:space="preserve">
+    <value>Call Disposition</value>
+  </data>
+  <data name="CallDispositionbyArea" xml:space="preserve">
+    <value>Call Disposition by Area</value>
+  </data>
+  <data name="CallDispositionbyWorkGroup" xml:space="preserve">
+    <value>Call Disposition by WorkGroup</value>
+  </data>
+  <data name="Calls" xml:space="preserve">
+    <value>Calls</value>
+  </data>
+  <data name="CallsbyACDGroup" xml:space="preserve">
+    <value>Calls by ACD Group</value>
+  </data>
+  <data name="CallsbyDID" xml:space="preserve">
+    <value>Calls by DNIS</value>
+  </data>
+  <data name="CallsbyDispositionStatusTelmex" xml:space="preserve">
+    <value>Calls by Disposition / Status (Telmex)</value>
+  </data>
+  <data name="CallsperArea" xml:space="preserve">
+    <value>Calls per Area</value>
+  </data>
+  <data name="CallsperWorkGroup" xml:space="preserve">
+    <value>Calls per WorkGroup</value>
+  </data>
+  <data name="CallSubDisposition" xml:space="preserve">
+    <value>Call SubDisposition</value>
+  </data>
+  <data name="CallswithTransference" xml:space="preserve">
+    <value>Calls with Transference</value>
+  </data>
+  <data name="CampaignM" xml:space="preserve">
+    <value>Campaigns</value>
+  </data>
+  <data name="Changeflow" xml:space="preserve">
+    <value>Change Flow</value>
+  </data>
+  <data name="DialedTelephoneNumbers" xml:space="preserve">
+    <value>Dialed Telephone Numbers</value>
+  </data>
+  <data name="DialingbyCampaign" xml:space="preserve">
+    <value>Dialing by Campaign</value>
+  </data>
+  <data name="DialingDetail" xml:space="preserve">
+    <value>Dialing Detail</value>
+  </data>
+  <data name="Effectiveness" xml:space="preserve">
+    <value>Effectiveness</value>
+  </data>
+  <data name="Firstoptionselected" xml:space="preserve">
+    <value>First option selected</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="InboundTrunksbusy" xml:space="preserve">
+    <value>Inbound Trunks busy</value>
+  </data>
+  <data name="IVR" xml:space="preserve">
+    <value>IVR</value>
+  </data>
+  <data name="IVRDetail" xml:space="preserve">
+    <value>IVR Detail</value>
+  </data>
+  <data name="IVRGeneral" xml:space="preserve">
+    <value>IVR General</value>
+  </data>
+  <data name="KeyIndicatorsofImplementation" xml:space="preserve">
+    <value>Key performance indicators</value>
+  </data>
+  <data name="KPIAgentsReport" xml:space="preserve">
+    <value>KPI</value>
+  </data>
+  <data name="KPIOutboundReport" xml:space="preserve">
+    <value>Outbound KPI</value>
+  </data>
+  <data name="NotTransferredbyACDGroup" xml:space="preserve">
+    <value>Not Transferred by ACD Group</value>
+  </data>
+  <data name="NotTransferredcalls" xml:space="preserve">
+    <value>Not Transferred calls</value>
+  </data>
+  <data name="NottransferredcallsbyArea" xml:space="preserve">
+    <value>Not transferredcalls by Area</value>
+  </data>
+  <data name="NottransferredcallsbyWorkGroup" xml:space="preserve">
+    <value>Not transferred calls by WorkGroup</value>
+  </data>
+  <data name="OutboundTrunksbusy" xml:space="preserve">
+    <value>Outbound Trunks busy</value>
+  </data>
+  <data name="Productivity" xml:space="preserve">
+    <value>Productivity</value>
+  </data>
+  <data name="RejectedCalls" xml:space="preserve">
+    <value>Rejected Calls</value>
+  </data>
+  <data name="ResultsbyAgent" xml:space="preserve">
+    <value>Results by Agent</value>
+  </data>
+  <data name="ResumeperDID" xml:space="preserve">
+    <value>DNIS summary</value>
+  </data>
+  <data name="Sessions" xml:space="preserve">
+    <value>Sessions</value>
+  </data>
+  <data name="Symposium" xml:space="preserve">
+    <value>Symposium</value>
+  </data>
+  <data name="Times" xml:space="preserve">
+    <value>Rates</value>
+  </data>
+  <data name="Trunksbusy" xml:space="preserve">
+    <value>Trunks busy</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="UnavailableDetail" xml:space="preserve">
+    <value>Unavailable Detail</value>
+  </data>
+  <data name="Acds" xml:space="preserve">
+    <value>ACDs</value>
+  </data>
+  <data name="Areas" xml:space="preserve">
+    <value>Areas</value>
+  </data>
+  <data name="CallTypes" xml:space="preserve">
+    <value>Call types</value>
+  </data>
+  <data name="Campaigns" xml:space="preserve">
+    <value>Campaigns</value>
+  </data>
+  <data name="Carriers" xml:space="preserve">
+    <value>Carriers</value>
+  </data>
+  <data name="DialResults" xml:space="preserve">
+    <value>Dialing results</value>
+  </data>
+  <data name="Dids" xml:space="preserve">
+    <value>DNIS</value>
+  </data>
+  <data name="Dispositions" xml:space="preserve">
+    <value>Dispositions</value>
+  </data>
+  <data name="Unavailables" xml:space="preserve">
+    <value>Unavailable options</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="WorkGroups" xml:space="preserve">
+    <value>Workgroups</value>
+  </data>
+  <data name="Fields" xml:space="preserve">
+    <value>Fields</value>
+  </data>
+  <data name="AnsweredCallsbyCampaigngeneralwgarea" xml:space="preserve">
+    <value>Answered Calls by Campaign/General/Wg/Area</value>
+  </data>
+  <data name="AnsweredCallspertelephonenumber" xml:space="preserve">
+    <value>Answered Calls per telephone number</value>
+  </data>
+  <data name="CallDispositionbyACDGroupgeneralWGArea" xml:space="preserve">
+    <value>Call Disposition by ACD Group/General/Wg/Area</value>
+  </data>
+  <data name="CallDispositioncampaignwgarea" xml:space="preserve">
+    <value>Call Disposition campaign/wg/area</value>
+  </data>
+  <data name="CallsbyACDGroupDIDgeneralWGArea" xml:space="preserve">
+    <value>Calls by ACD Group/DNIS/General/Wg/Area</value>
+  </data>
+  <data name="DialingbyCampaignwgarea" xml:space="preserve">
+    <value>Dialing by Campaign/wg/area</value>
+  </data>
+  <data name="GeneralInformation" xml:space="preserve">
+    <value>General Information</value>
+  </data>
+  <data name="NotTransferredbyACDGroupgeneralWGArea" xml:space="preserve">
+    <value>Not Transferred by ACD Group/General/Wg/Area</value>
+  </data>
+  <data name="Trunks" xml:space="preserve">
+    <value>Trunks</value>
+  </data>
+  <data name="area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="nabnddialog" xml:space="preserve">
+    <value>Hung Started Talking</value>
+  </data>
+  <data name="nabndring" xml:space="preserve">
+    <value>Hung After Ringing</value>
+  </data>
+  <data name="nabndxfer" xml:space="preserve">
+    <value>Hung Before Ringing</value>
+  </data>
+  <data name="nanswer" xml:space="preserve">
+    <value>Answered transfer</value>
+  </data>
+  <data name="nhangup" xml:space="preserve">
+    <value>Who Hangup</value>
+  </data>
+  <data name="nlost" xml:space="preserve">
+    <value>Missed transfers</value>
+  </data>
+  <data name="nnoagent" xml:space="preserve">
+    <value>agents unavailable</value>
+  </data>
+  <data name="nnoanswer" xml:space="preserve">
+    <value>Not answered transfer</value>
+  </data>
+  <data name="ntotal" xml:space="preserve">
+    <value>Answered</value>
+  </data>
+  <data name="nxfer" xml:space="preserve">
+    <value>transferred calls</value>
+  </data>
+  <data name="postime" xml:space="preserve">
+    <value>Available Workstations</value>
+  </data>
+  <data name="postot" xml:space="preserve">
+    <value>Registered Workstations</value>
+  </data>
+  <data name="tatencion" xml:space="preserve">
+    <value>Average Handle Time</value>
+  </data>
+  <data name="user" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="workgroup" xml:space="preserve">
+    <value>Workgroup</value>
+  </data>
+  <data name="hh" xml:space="preserve">
+    <value>Half hour</value>
+  </data>
+  <data name="qh" xml:space="preserve">
+    <value>Quarter hour</value>
+  </data>
+  <data name="se" xml:space="preserve">
+    <value>Semester</value>
+  </data>
+  <data name="tr" xml:space="preserve">
+    <value>Trimester</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="h" xml:space="preserve">
+    <value>Hour</value>
+  </data>
+  <data name="m" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="y" xml:space="preserve">
+    <value>Year</value>
+  </data>
+  <data name="extension" xml:space="preserve">
+    <value>Extension</value>
+  </data>
+  <data name="login" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="loginTime" xml:space="preserve">
+    <value>Login Time</value>
+  </data>
+  <data name="logoutTime" xml:space="preserve">
+    <value>Logout Time</value>
+  </data>
+  <data name="sessionTime" xml:space="preserve">
+    <value>Session Time</value>
+  </data>
+  <data name="nabnddlgout" xml:space="preserve">
+    <value>Hung Started Talking Out</value>
+  </data>
+  <data name="nabndringin" xml:space="preserve">
+    <value>Hung After Ringing In</value>
+  </data>
+  <data name="nabndringout" xml:space="preserve">
+    <value>Hung After Ringing Out</value>
+  </data>
+  <data name="nabndxferin" xml:space="preserve">
+    <value>Hung Before Ringing In</value>
+  </data>
+  <data name="nabndxferout" xml:space="preserve">
+    <value>Hung Before Ringing Out</value>
+  </data>
+  <data name="nanswerin" xml:space="preserve">
+    <value>Answered Inbound</value>
+  </data>
+  <data name="nanswerout" xml:space="preserve">
+    <value>Answered Outbound</value>
+  </data>
+  <data name="nlostin" xml:space="preserve">
+    <value>Missed inbound</value>
+  </data>
+  <data name="nlostout" xml:space="preserve">
+    <value>Missed outbound</value>
+  </data>
+  <data name="nmohin" xml:space="preserve">
+    <value>Hold Inbound</value>
+  </data>
+  <data name="nmohout" xml:space="preserve">
+    <value>Hold Outbound</value>
+  </data>
+  <data name="nnoanswerin" xml:space="preserve">
+    <value>Not Answered Inbound</value>
+  </data>
+  <data name="nnoanswerout" xml:space="preserve">
+    <value>Not Answered Outbound</value>
+  </data>
+  <data name="nother" xml:space="preserve">
+    <value>Other Calls</value>
+  </data>
+  <data name="nsbnddlgin" xml:space="preserve">
+    <value>Hung Started Talking In</value>
+  </data>
+  <data name="nwhagin" xml:space="preserve">
+    <value>Agent Hung Up In</value>
+  </data>
+  <data name="nwhagout" xml:space="preserve">
+    <value>Agent Hung Up Out</value>
+  </data>
+  <data name="nwhcliin" xml:space="preserve">
+    <value>Hung Client Inbound</value>
+  </data>
+  <data name="nwhcliout" xml:space="preserve">
+    <value>Hung Client Outbound</value>
+  </data>
+  <data name="nxferin" xml:space="preserve">
+    <value>Transferred Inbound</value>
+  </data>
+  <data name="nxferout" xml:space="preserve">
+    <value>Transferred Outbound</value>
+  </data>
+  <data name="tav" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="tdialogin" xml:space="preserve">
+    <value>Talking time inbound</value>
+  </data>
+  <data name="tdialogout" xml:space="preserve">
+    <value>Talking time outbound</value>
+  </data>
+  <data name="tlog" xml:space="preserve">
+    <value>Session</value>
+  </data>
+  <data name="tnotav" xml:space="preserve">
+    <value>Service Time</value>
+  </data>
+  <data name="tnotesin" xml:space="preserve">
+    <value>Wrapup Inbound</value>
+  </data>
+  <data name="tnotesout" xml:space="preserve">
+    <value>Wrapup Outbound</value>
+  </data>
+  <data name="tother" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="tprob" xml:space="preserve">
+    <value>Problem</value>
+  </data>
+  <data name="treq" xml:space="preserve">
+    <value>Unavaible</value>
+  </data>
+  <data name="tringin" xml:space="preserve">
+    <value>Ringing time in</value>
+  </data>
+  <data name="tringout" xml:space="preserve">
+    <value>Ringing time out</value>
+  </data>
+  <data name="tunknown" xml:space="preserve">
+    <value>Undefined</value>
+  </data>
+  <data name="txferin" xml:space="preserve">
+    <value>Transfer inbound</value>
+  </data>
+  <data name="txferout" xml:space="preserve">
+    <value>Transfer outbound</value>
+  </data>
+  <data name="endDate" xml:space="preserve">
+    <value>End Date</value>
+  </data>
+  <data name="startDate" xml:space="preserve">
+    <value>Start Date</value>
+  </data>
+  <data name="status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="statusTime" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="callsAvgTime" xml:space="preserve">
+    <value>Average Time between Calls (sec)</value>
+  </data>
+  <data name="callsIn" xml:space="preserve">
+    <value>Inbound Calls</value>
+  </data>
+  <data name="callsOut" xml:space="preserve">
+    <value>Outbound Calls</value>
+  </data>
+  <data name="finishedCalls10" xml:space="preserve">
+    <value>Cancelled calls (10 sec)</value>
+  </data>
+  <data name="finishedCalls20" xml:space="preserve">
+    <value>Cancelled calls (20 sec)</value>
+  </data>
+  <data name="finishedCalls30" xml:space="preserve">
+    <value>Cancelled calls (30 sec)</value>
+  </data>
+  <data name="totalCalls" xml:space="preserve">
+    <value>Total Calls</value>
+  </data>
+  <data name="ACDGroup" xml:space="preserve">
+    <value>ACD Group</value>
+  </data>
+  <data name="agentName" xml:space="preserve">
+    <value>Agent Name</value>
+  </data>
+  <data name="ANI" xml:space="preserve">
+    <value>ANI</value>
+  </data>
+  <data name="callStatus" xml:space="preserve">
+    <value>Call Status</value>
+  </data>
+  <data name="dialogTime" xml:space="preserve">
+    <value>Call Time</value>
+  </data>
+  <data name="disposition" xml:space="preserve">
+    <value>Disposition</value>
+  </data>
+  <data name="dnis" xml:space="preserve">
+    <value>DNIS</value>
+  </data>
+  <data name="mohTime" xml:space="preserve">
+    <value>Hold Time</value>
+  </data>
+  <data name="queueTime" xml:space="preserve">
+    <value>In queue Time</value>
+  </data>
+  <data name="ringingTime" xml:space="preserve">
+    <value>Ringing Time</value>
+  </data>
+  <data name="subDisposition" xml:space="preserve">
+    <value>Sub Disposition</value>
+  </data>
+  <data name="username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="whoHangUp" xml:space="preserve">
+    <value>Who Hung Up</value>
+  </data>
+  <data name="xferTime" xml:space="preserve">
+    <value>Transfer Time</value>
+  </data>
+  <data name="wg" xml:space="preserve">
+    <value>WorkGroup</value>
+  </data>
+  <data name="inbound" xml:space="preserve">
+    <value>ACD Group</value>
+  </data>
+  <data name="nabnd_tres" xml:space="preserve">
+    <value>Abandoned before service level threshold</value>
+  </data>
+  <data name="nansw_tres" xml:space="preserve">
+    <value>Answered before service level threshold</value>
+  </data>
+  <data name="ninitial" xml:space="preserve">
+    <value>Initiated</value>
+  </data>
+  <data name="nmsg" xml:space="preserve">
+    <value>With message</value>
+  </data>
+  <data name="nout_hour" xml:space="preserve">
+    <value>Out of schedule</value>
+  </data>
+  <data name="nout_service" xml:space="preserve">
+    <value>Out of service</value>
+  </data>
+  <data name="noverflow" xml:space="preserve">
+    <value>Queue overflow</value>
+  </data>
+  <data name="ntimeout" xml:space="preserve">
+    <value>Time out</value>
+  </data>
+  <data name="nWHcl" xml:space="preserve">
+    <value>Client hung up</value>
+  </data>
+  <data name="nxfer_que" xml:space="preserve">
+    <value>Transferred from queue</value>
+  </data>
+  <data name="tque_max" xml:space="preserve">
+    <value>Maximum queue time</value>
+  </data>
+  <data name="nabnd" xml:space="preserve">
+    <value>Abandoned Calls</value>
+  </data>
+  <data name="nabnddialogincall" xml:space="preserve">
+    <value>Hung Started Talking</value>
+  </data>
+  <data name="nabndque" xml:space="preserve">
+    <value>Abandoned</value>
+  </data>
+  <data name="nabndringincall" xml:space="preserve">
+    <value>Hung After Ringing</value>
+  </data>
+  <data name="nabndxferincall" xml:space="preserve">
+    <value>Hung Before Ringing</value>
+  </data>
+  <data name="nnoxfer" xml:space="preserve">
+    <value>Not transferred</value>
+  </data>
+  <data name="nque" xml:space="preserve">
+    <value>On Queue</value>
+  </data>
+  <data name="ntotalin" xml:space="preserve">
+    <value>Received calls</value>
+  </data>
+  <data name="nWHag" xml:space="preserve">
+    <value>Agent Hung Up</value>
+  </data>
+  <data name="nxferque" xml:space="preserve">
+    <value>Transferred from queue</value>
+  </data>
+  <data name="Porcentaje" xml:space="preserve">
+    <value>Service Level</value>
+  </data>
+  <data name="poscount" xml:space="preserve">
+    <value>Agents</value>
+  </data>
+  <data name="SL" xml:space="preserve">
+    <value>Service Level</value>
+  </data>
+  <data name="tabndtot" xml:space="preserve">
+    <value>Total abandoned calls time</value>
+  </data>
+  <data name="tatention" xml:space="preserve">
+    <value>Service Time</value>
+  </data>
+  <data name="tque" xml:space="preserve">
+    <value>Total wait time</value>
+  </data>
+  <data name="tqueavg" xml:space="preserve">
+    <value>Avg Wait Time</value>
+  </data>
+  <data name="tquemax" xml:space="preserve">
+    <value>Max Wait Time</value>
+  </data>
+  <data name="tresp" xml:space="preserve">
+    <value>ASA</value>
+  </data>
+  <data name="ncost" xml:space="preserve">
+    <value>Cost</value>
+  </data>
+  <data name="nminutes" xml:space="preserve">
+    <value>Minutes Billed</value>
+  </data>
+  <data name="tdialog" xml:space="preserve">
+    <value>Talking</value>
+  </data>
+  <data name="tque2" xml:space="preserve">
+    <value>Wait Time</value>
+  </data>
+  <data name="tring" xml:space="preserve">
+    <value>Ringing Time</value>
+  </data>
+  <data name="txfer" xml:space="preserve">
+    <value>On Transfer</value>
+  </data>
+  <data name="dnisDescription" xml:space="preserve">
+    <value>DNIS Description</value>
+  </data>
+  <data name="dnisNumber" xml:space="preserve">
+    <value>DNIS Number</value>
+  </data>
+  <data name="Subdispositions" xml:space="preserve">
+    <value>Sub Dispositions</value>
+  </data>
+  <data name="calId" xml:space="preserve">
+    <value>Call Number</value>
+  </data>
+  <data name="dialog" xml:space="preserve">
+    <value>Talking time</value>
+  </data>
+  <data name="dialType" xml:space="preserve">
+    <value>Dialing Type</value>
+  </data>
+  <data name="duration" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="iva" xml:space="preserve">
+    <value>Tax</value>
+  </data>
+  <data name="total" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="transfer" xml:space="preserve">
+    <value>Transfer</value>
+  </data>
+  <data name="wrapup" xml:space="preserve">
+    <value>Wrap Up</value>
+  </data>
+  <data name="abandonedCalls" xml:space="preserve">
+    <value>Abandoned Calls</value>
+  </data>
+  <data name="abandonedCallsPctg" xml:space="preserve">
+    <value>Abandoned Calls (%)</value>
+  </data>
+  <data name="answeredCallsPctg" xml:space="preserve">
+    <value>Answered Calls (%)</value>
+  </data>
+  <data name="avgCallTime" xml:space="preserve">
+    <value>Average call time</value>
+  </data>
+  <data name="avgTimeBetweenCalls" xml:space="preserve">
+    <value>Average time between calls</value>
+  </data>
+  <data name="avgXfer" xml:space="preserve">
+    <value>Average transfer time</value>
+  </data>
+  <data name="c10Secs" xml:space="preserve">
+    <value>&lt; 10 sec calls</value>
+  </data>
+  <data name="c20Secs" xml:space="preserve">
+    <value>&lt; 20 sec calls</value>
+  </data>
+  <data name="c30Secs" xml:space="preserve">
+    <value>&lt; 30 sec calls</value>
+  </data>
+  <data name="cMaxSecs" xml:space="preserve">
+    <value>&gt; 30 sec calls</value>
+  </data>
+  <data name="remainingCalls" xml:space="preserve">
+    <value>Remaining Calls</value>
+  </data>
+  <data name="remainingCallsPctg" xml:space="preserve">
+    <value>Remaining Calls (%)</value>
+  </data>
+  <data name="quantity" xml:space="preserve">
+    <value>Number Of Calls</value>
+  </data>
+  <data name="day1_Count" xml:space="preserve">
+    <value>Monday</value>
+  </data>
+  <data name="day2_Count" xml:space="preserve">
+    <value>Tuesday</value>
+  </data>
+  <data name="day3_Count" xml:space="preserve">
+    <value>Wednesday</value>
+  </data>
+  <data name="day4_Count" xml:space="preserve">
+    <value>Thursday</value>
+  </data>
+  <data name="day5_Count" xml:space="preserve">
+    <value>Friday</value>
+  </data>
+  <data name="day6_Count" xml:space="preserve">
+    <value>Saturday</value>
+  </data>
+  <data name="day7_Count" xml:space="preserve">
+    <value>Sunday</value>
+  </data>
+  <data name="time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="dialDate" xml:space="preserve">
+    <value>Dial Date</value>
+  </data>
+  <data name="originalDate" xml:space="preserve">
+    <value>Original Date</value>
+  </data>
+  <data name="originalTel" xml:space="preserve">
+    <value>Original Telephone</value>
+  </data>
+  <data name="scheduledDate" xml:space="preserve">
+    <value>Scheduled Date</value>
+  </data>
+  <data name="scheduledTel" xml:space="preserve">
+    <value>Scheduled Telephone</value>
+  </data>
+  <data name="noTransferred" xml:space="preserve">
+    <value>Not Transferred</value>
+  </data>
+  <data name="transferred" xml:space="preserve">
+    <value>Transferred</value>
+  </data>
+  <data name="descriptionOption" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="levelOption" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="quantityOption" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="provider" xml:space="preserve">
+    <value>Carrier</value>
+  </data>
+  <data name="Providers" xml:space="preserve">
+    <value>Carrier</value>
+  </data>
+  <data name="tipoLlamada" xml:space="preserve">
+    <value>Call Type</value>
+  </data>
+  <data name="callid" xml:space="preserve">
+    <value>CallId</value>
+  </data>
+  <data name="options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="ACDChats" xml:space="preserve">
+    <value>ACD Chats</value>
+  </data>
+  <data name="Chats" xml:space="preserve">
+    <value>Chats</value>
+  </data>
+  <data name="contacted" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="domain" xml:space="preserve">
+    <value>Domain</value>
+  </data>
+  <data name="finishedByAdmin" xml:space="preserve">
+    <value>Cancelled by administrator</value>
+  </data>
+  <data name="finishedByAgent" xml:space="preserve">
+    <value>Cancelled by agent</value>
+  </data>
+  <data name="finishedByCostumer" xml:space="preserve">
+    <value>Cancelled by client</value>
+  </data>
+  <data name="finishedBySystem" xml:space="preserve">
+    <value>Cancelled by system</value>
+  </data>
+  <data name="totalChats" xml:space="preserve">
+    <value>Total connected chats</value>
+  </data>
+  <data name="uncontacted" xml:space="preserve">
+    <value>No connected</value>
+  </data>
+  <data name="wAbandoned" xml:space="preserve">
+    <value>Abandoned</value>
+  </data>
+  <data name="wConnected" xml:space="preserve">
+    <value>Connected from queue</value>
+  </data>
+  <data name="ChatsNotContacted" xml:space="preserve">
+    <value>Not Connected Chats</value>
+  </data>
+  <data name="ChatsDetail" xml:space="preserve">
+    <value>Chats detail</value>
+  </data>
+  <data name="clientName" xml:space="preserve">
+    <value>Client Name</value>
+  </data>
+  <data name="tChatting" xml:space="preserve">
+    <value>Chat time</value>
+  </data>
+  <data name="AverageAnswerTime" xml:space="preserve">
+    <value>Average Answer Time</value>
+  </data>
+  <data name="avgAnswerTime" xml:space="preserve">
+    <value>Average Answer Time</value>
+  </data>
+  <data name="avgAbandonTime" xml:space="preserve">
+    <value>Average Abandoned Call Time</value>
+  </data>
+  <data name="avgQueueTime" xml:space="preserve">
+    <value>Average Queue Time</value>
+  </data>
+  <data name="ChatsEffectiveness" xml:space="preserve">
+    <value>Chats Effectiveness</value>
+  </data>
+  <data name="nabndChat" xml:space="preserve">
+    <value>Abandoned chats</value>
+  </data>
+  <data name="nanswerChat" xml:space="preserve">
+    <value>Answered chats</value>
+  </data>
+  <data name="ntotalChat" xml:space="preserve">
+    <value>Total connected chats</value>
+  </data>
+  <data name="avgBusy" xml:space="preserve">
+    <value>Busy Rate</value>
+  </data>
+  <data name="tBusy" xml:space="preserve">
+    <value>Busy time</value>
+  </data>
+  <data name="trunk" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="campACDDescription" xml:space="preserve">
+    <value>Campigns - ACD Groups</value>
+  </data>
+  <data name="notReadyTime" xml:space="preserve">
+    <value>Unavailable Time</value>
+  </data>
+  <data name="other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="readyTime" xml:space="preserve">
+    <value>Ready Time</value>
+  </data>
+  <data name="SpecialTimes" xml:space="preserve">
+    <value>Special Times</value>
+  </data>
+  <data name="abndQueueCalls" xml:space="preserve">
+    <value>Abandoned queued calls</value>
+  </data>
+  <data name="abndQueueChats" xml:space="preserve">
+    <value>Abandoned queued chats</value>
+  </data>
+  <data name="answerCalls" xml:space="preserve">
+    <value>Answered Calls</value>
+  </data>
+  <data name="answerChats" xml:space="preserve">
+    <value>Connected Chats</value>
+  </data>
+  <data name="avgTQueueCalls" xml:space="preserve">
+    <value>Calls Queue Average Time </value>
+  </data>
+  <data name="avgTQueueChats" xml:space="preserve">
+    <value>Chats Queue Average Time</value>
+  </data>
+  <data name="GeneralCallsandChats" xml:space="preserve">
+    <value>General Calls and Chats</value>
+  </data>
+  <data name="maxTQueueCalls" xml:space="preserve">
+    <value>Calls queue max time</value>
+  </data>
+  <data name="maxTQueueChats" xml:space="preserve">
+    <value>Chats queue max time</value>
+  </data>
+  <data name="noAnswerCalls" xml:space="preserve">
+    <value>No Answered Calls</value>
+  </data>
+  <data name="noAnswerChats" xml:space="preserve">
+    <value>No Connected Chats</value>
+  </data>
+  <data name="serviceLevelCalls" xml:space="preserve">
+    <value>Calls service level</value>
+  </data>
+  <data name="serviceLevelChats" xml:space="preserve">
+    <value>Chats service level</value>
+  </data>
+  <data name="ACDGroupactivityperhour" xml:space="preserve">
+    <value>ACD Group activity per hour</value>
+  </data>
+  <data name="ACDGroupactivityperhourbyweekday" xml:space="preserve">
+    <value>ACD Group activity per hour by weekday</value>
+  </data>
+  <data name="AnswercallsperCampaign" xml:space="preserve">
+    <value>Answered calls per Campaign</value>
+  </data>
+  <data name="AnswercallsperCampaignbyday" xml:space="preserve">
+    <value>Answered calls per Campaign by day</value>
+  </data>
+  <data name="AnsweredcallsdetailperCampaign" xml:space="preserve">
+    <value>Answered calls detail per Campaign</value>
+  </data>
+  <data name="AnsweredcallsdetailperCampaignbyday" xml:space="preserve">
+    <value>Answered calls detail per Campaign by day</value>
+  </data>
+  <data name="AnsweredcallsperCampaign" xml:space="preserve">
+    <value>Answered calls per Campaign</value>
+  </data>
+  <data name="AnsweredcallsperCampaignbyday" xml:space="preserve">
+    <value>Answered calls per Campaign by day</value>
+  </data>
+  <data name="Billing01900perACDGroup" xml:space="preserve">
+    <value>Billing 01 900 per ACD Group</value>
+  </data>
+  <data name="Billing01900perACDGroupbyday" xml:space="preserve">
+    <value>Billing 01 900 per ACD Group by day</value>
+  </data>
+  <data name="Busytimepertrunk" xml:space="preserve">
+    <value>Busy Time per Trunk</value>
+  </data>
+  <data name="Busytimepertrunkbyday" xml:space="preserve">
+    <value>Busy time per trunk by day</value>
+  </data>
+  <data name="CallbacksperCampaign" xml:space="preserve">
+    <value>Callbacks per Campaign</value>
+  </data>
+  <data name="CallbacksperCampaignbyday" xml:space="preserve">
+    <value>Callbacks per Campaign by day</value>
+  </data>
+  <data name="CallbillingperCampaign" xml:space="preserve">
+    <value>Call billing per Campaign</value>
+  </data>
+  <data name="CallbillingperCampaignbyhour" xml:space="preserve">
+    <value>Call billing per Campaign by hour</value>
+  </data>
+  <data name="CallDispositionperACDGroup" xml:space="preserve">
+    <value>Call Disposition per ACD Group</value>
+  </data>
+  <data name="CallDispositionperACDGroupbyday" xml:space="preserve">
+    <value>Call Disposition per ACD Group by day</value>
+  </data>
+  <data name="CalldispositionsperCampaign" xml:space="preserve">
+    <value>Call dispositions per Campaign</value>
+  </data>
+  <data name="CalldispositionsperCampaignbyday" xml:space="preserve">
+    <value>Call dispositions per Campaign by day</value>
+  </data>
+  <data name="CallsandchatsperACDGroup" xml:space="preserve">
+    <value>Calls and chats per ACD Group</value>
+  </data>
+  <data name="CallsandchatsperACDGroupbyday" xml:space="preserve">
+    <value>Calls and chats per ACD Group by day</value>
+  </data>
+  <data name="CallsdetailperACDGroup" xml:space="preserve">
+    <value>Calls detail per ACD Group</value>
+  </data>
+  <data name="CallsdetailperACDGroupbyday" xml:space="preserve">
+    <value>Calls detail per ACD Group by day</value>
+  </data>
+  <data name="CallsperACDGroup" xml:space="preserve">
+    <value>Calls per ACD Group</value>
+  </data>
+  <data name="CallsperACDGroupbyday" xml:space="preserve">
+    <value>Calls per ACD Group by day</value>
+  </data>
+  <data name="CallsperACDGroupbyhour" xml:space="preserve">
+    <value>Calls per ACD Group by hour</value>
+  </data>
+  <data name="CallsperCampaign" xml:space="preserve">
+    <value>Calls per Campaign</value>
+  </data>
+  <data name="CallsperCampaignbyday" xml:space="preserve">
+    <value>Calls per Campaign by day</value>
+  </data>
+  <data name="CallSubdispositionperACDGroup" xml:space="preserve">
+    <value>Call Subdisposition per ACD Group</value>
+  </data>
+  <data name="CallSubdispositionperACDGroupbyday" xml:space="preserve">
+    <value>Call Subdisposition per ACD Group by day</value>
+  </data>
+  <data name="CallsubdispositionsperCampaign" xml:space="preserve">
+    <value>Call subdispositions per Campaign</value>
+  </data>
+  <data name="CallsubdispositionsperCampaignbyday" xml:space="preserve">
+    <value>Call subdispositions per Campaign by day</value>
+  </data>
+  <data name="CampaignandACDactivity" xml:space="preserve">
+    <value>Campaign and ACD activity</value>
+  </data>
+  <data name="CampaignandACDGroupactivitybyday" xml:space="preserve">
+    <value>Campaign and ACD Group activity by day</value>
+  </data>
+  <data name="ChatsaverageanswertimeperACDGroup" xml:space="preserve">
+    <value>Chats average answer time per ACD Group</value>
+  </data>
+  <data name="ChatsaverageanswertimeperACDGroupbyhour" xml:space="preserve">
+    <value>Chats average answer time per ACD Group by hour</value>
+  </data>
+  <data name="ChatsdetailperACDGroup" xml:space="preserve">
+    <value>Chats detail per ACD Group</value>
+  </data>
+  <data name="ChatsdetailperACDGroupbyday" xml:space="preserve">
+    <value>Chats detail per ACD Group by day</value>
+  </data>
+  <data name="ChatsperACDGroup" xml:space="preserve">
+    <value>Chats per ACD Group</value>
+  </data>
+  <data name="ChatsperACDGroupbyday" xml:space="preserve">
+    <value>Chats per ACD Group by day</value>
+  </data>
+  <data name="DialResultsperCampaign" xml:space="preserve">
+    <value>Dialing Results per Campaign</value>
+  </data>
+  <data name="DialResultsperCampaignbyday" xml:space="preserve">
+    <value>Dialing Results per Campaign by day</value>
+  </data>
+  <data name="DIDuse" xml:space="preserve">
+    <value>DNIS use</value>
+  </data>
+  <data name="DIDusebyhour" xml:space="preserve">
+    <value>DNIS use by hour</value>
+  </data>
+  <data name="Firstoptionselected1" xml:space="preserve">
+    <value>First option selected</value>
+  </data>
+  <data name="Firstoptionselectedbyday" xml:space="preserve">
+    <value>First option selected by day</value>
+  </data>
+  <data name="NotcontactedchatsperACDGroup" xml:space="preserve">
+    <value>Not contacted chats per ACD Group</value>
+  </data>
+  <data name="NotcontactedchatsperACDGroupbyday" xml:space="preserve">
+    <value>Not contacted chats per ACD Group by day</value>
+  </data>
+  <data name="Notreadyuseamountperuser" xml:space="preserve">
+    <value>Unavailable use amount per user</value>
+  </data>
+  <data name="Notreadyuseamountperuserbyday" xml:space="preserve">
+    <value>Unavailable use amount per user by day</value>
+  </data>
+  <data name="Notreadyusedetailperuser" xml:space="preserve">
+    <value>Unavailable use detail per user</value>
+  </data>
+  <data name="Notreadyusedetailperuserbyday" xml:space="preserve">
+    <value>Unavailable use detail per user by day</value>
+  </data>
+  <data name="NotTransferredcallstatus" xml:space="preserve">
+    <value>Not Transferred call status</value>
+  </data>
+  <data name="NotTransferredcallstatusbyday" xml:space="preserve">
+    <value>Not Transferred call status by day</value>
+  </data>
+  <data name="Optionsselected" xml:space="preserve">
+    <value>Selected options</value>
+  </data>
+  <data name="Optionsselectedbyday" xml:space="preserve">
+    <value>Options selected by day</value>
+  </data>
+  <data name="Optionsusedetail" xml:space="preserve">
+    <value>Options use detail</value>
+  </data>
+  <data name="Optionsusedetailbyday" xml:space="preserve">
+    <value>Options use detail by day</value>
+  </data>
+  <data name="Optionuse" xml:space="preserve">
+    <value>Option use</value>
+  </data>
+  <data name="Optionusebyday" xml:space="preserve">
+    <value>Option use by day</value>
+  </data>
+  <data name="Readytimeperuser" xml:space="preserve">
+    <value>Ready time per user</value>
+  </data>
+  <data name="Readytimeperuserbyhour" xml:space="preserve">
+    <value>Ready time per user by hour</value>
+  </data>
+  <data name="Rejectedcallsperdnisnumber" xml:space="preserve">
+    <value>Rejected calls per dnis number</value>
+  </data>
+  <data name="Rejectedcallsperdnisnumberbyday" xml:space="preserve">
+    <value>Rejected calls per dnis number by day</value>
+  </data>
+  <data name="Sessiontimeperuser" xml:space="preserve">
+    <value>Session time per user</value>
+  </data>
+  <data name="Sessiontimeperuserbyday" xml:space="preserve">
+    <value>Session time per user by day</value>
+  </data>
+  <data name="Totalcallsperuser" xml:space="preserve">
+    <value>Total calls per user</value>
+  </data>
+  <data name="Totalcallsperuserbyday" xml:space="preserve">
+    <value>Total calls per user by day</value>
+  </data>
+  <data name="avg" xml:space="preserve">
+    <value>Avg Wait Time</value>
+  </data>
+  <data name="grabId" xml:space="preserve">
+    <value>Recording Id</value>
+  </data>
+  <data name="Template" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="asnwer" xml:space="preserve">
+    <value>Answer</value>
+  </data>
+  <data name="avgDisposition" xml:space="preserve">
+    <value>Average</value>
+  </data>
+  <data name="Detail" xml:space="preserve">
+    <value>Detail</value>
+  </data>
+  <data name="Quality" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="question" xml:space="preserve">
+    <value>Question</value>
+  </data>
+  <data name="QuestionDetail" xml:space="preserve">
+    <value>Question</value>
+  </data>
+  <data name="RateDetail" xml:space="preserve">
+    <value>Disposition Detail</value>
+  </data>
+  <data name="recordDate" xml:space="preserve">
+    <value>Recording date</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>Section</value>
+  </data>
+  <data name="SupervisorAgent" xml:space="preserve">
+    <value>Supervisor/Agent</value>
+  </data>
+  <data name="Supervisor" xml:space="preserve">
+    <value>Supervisor Name</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="Supervisors" xml:space="preserve">
+    <value>Supervisors</value>
+  </data>
+  <data name="TemplateSection" xml:space="preserve">
+    <value>Template-Section</value>
+  </data>
+  <data name="score" xml:space="preserve">
+    <value>Score</value>
+  </data>
+  <data name="AVRS" xml:space="preserve">
+    <value>AVRS</value>
+  </data>
+  <data name="Averagedispositions" xml:space="preserve">
+    <value>Average dispositions</value>
+  </data>
+  <data name="TotaldispositionsperAgentbydaterange" xml:space="preserve">
+    <value>Total dispositions per Agent by date range</value>
+  </data>
+  <data name="TotaldispositionsperSupervisorbydaterange" xml:space="preserve">
+    <value>Total dispositions per Supervisor by date range</value>
+  </data>
+  <data name="systemTranslated_Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="systemTranslated_Auto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="systemTranslated_Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="systemTranslated_Indefinite" xml:space="preserve">
+    <value>Undefined</value>
+  </data>
+  <data name="systemTranslated_Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="systemTranslated_NoCampaign" xml:space="preserve">
+    <value>No Campaign</value>
+  </data>
+  <data name="systemTranslated_NoCarrier" xml:space="preserve">
+    <value>No Carrier</value>
+  </data>
+  <data name="systemTranslated_NoSubDisposition" xml:space="preserve">
+    <value>No Disposition</value>
+  </data>
+  <data name="systemTranslated_NoUserName" xml:space="preserve">
+    <value>No Username</value>
+  </data>
+  <data name="systemTranslated_01800Calls_Count" xml:space="preserve">
+    <value>01 800 Calls</value>
+  </data>
+  <data name="systemTranslated_01800Cost_Count" xml:space="preserve">
+    <value>01 800 Cost</value>
+  </data>
+  <data name="systemTranslated_01800MinBilled_Count" xml:space="preserve">
+    <value>Billed 01 800 minutes</value>
+  </data>
+  <data name="systemTranslated_01800Tax_Count" xml:space="preserve">
+    <value>01 800 Tax</value>
+  </data>
+  <data name="systemTranslated_Answer" xml:space="preserve">
+    <value>Answer</value>
+  </data>
+  <data name="systemTranslated_CelCalls_Count" xml:space="preserve">
+    <value>Mobile Calls</value>
+  </data>
+  <data name="systemTranslated_CelCost_Count" xml:space="preserve">
+    <value>Mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_CellargadistanciaCallsMinBilled_Count" xml:space="preserve">
+    <value>Billed mobile minutes</value>
+  </data>
+  <data name="systemTranslated_CellargadistanciaCalls_Count" xml:space="preserve">
+    <value>Mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_CellargadistanciaCost_Count" xml:space="preserve">
+    <value>Mobile calls bill</value>
+  </data>
+  <data name="systemTranslated_CellargadistanciaTax_Count" xml:space="preserve">
+    <value>Mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_CelLDCalls_Count" xml:space="preserve">
+    <value>Mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_CelLDCost_Count" xml:space="preserve">
+    <value>Mobile calls bill</value>
+  </data>
+  <data name="systemTranslated_CelLDMinBilled_Count" xml:space="preserve">
+    <value>Billed mobile minutes</value>
+  </data>
+  <data name="systemTranslated_CelLDTax_Count" xml:space="preserve">
+    <value>Mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_Cellocallada2digitosCalls_Count" xml:space="preserve">
+    <value>2 digits local area mobile calls</value>
+  </data>
+  <data name="systemTranslated_Cellocallada2digitosCost_Count" xml:space="preserve">
+    <value>2 digits local area mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_Cellocallada2digitosMinBilled_Count" xml:space="preserve">
+    <value>Billed 2 digits local area mobile minutes</value>
+  </data>
+  <data name="systemTranslated_Cellocallada2digitosTax_Count" xml:space="preserve">
+    <value>2 digits local area mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_Cellocallada3digitosCalls_Count" xml:space="preserve">
+    <value>3 digits local area mobile calls</value>
+  </data>
+  <data name="systemTranslated_Cellocallada3digitosCost_Count" xml:space="preserve">
+    <value>3 digits local area mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_Cellocallada3digitosMinBilled_Count" xml:space="preserve">
+    <value>Billed 3 digits local area mobile minutes</value>
+  </data>
+  <data name="systemTranslated_Cellocallada3digitosTax_Count" xml:space="preserve">
+    <value>3 digits local area mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_Cellocallada4digitosCalls_Count" xml:space="preserve">
+    <value>4 digits local area mobile calls</value>
+  </data>
+  <data name="systemTranslated_Cellocallada4digitosCost_Count" xml:space="preserve">
+    <value>4 digits local area mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_Cellocallada4digitosMinBilled_Count" xml:space="preserve">
+    <value>Billed 4 digits local area mobile minutes</value>
+  </data>
+  <data name="systemTranslated_Cellocallada4digitosTax_Count" xml:space="preserve">
+    <value>4 digits local area mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_CelMinBilled_Count" xml:space="preserve">
+    <value>Billed mobile minutes</value>
+  </data>
+  <data name="systemTranslated_CelTax_Count" xml:space="preserve">
+    <value>Mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_CelularCalls_Count" xml:space="preserve">
+    <value>Mobile Calls</value>
+  </data>
+  <data name="systemTranslated_CelularCost_Count" xml:space="preserve">
+    <value>Mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_CelularMinBilled_Count" xml:space="preserve">
+    <value>Billed mobile minutes</value>
+  </data>
+  <data name="systemTranslated_CelularTax_Count" xml:space="preserve">
+    <value>Mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_Dispositionless" xml:space="preserve">
+    <value>No disposition</value>
+  </data>
+  <data name="systemTranslated_Dispositionless_Count" xml:space="preserve">
+    <value>No disposition Count</value>
+  </data>
+  <data name="systemTranslated_Expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="systemTranslated_LargadistanciaCalls_Count" xml:space="preserve">
+    <value>Long distance calls</value>
+  </data>
+  <data name="systemTranslated_LargadistanciaCost_Count" xml:space="preserve">
+    <value>Long distance calls cost</value>
+  </data>
+  <data name="systemTranslated_LargadistanciaMinBilled_Count" xml:space="preserve">
+    <value>Billed long distance minutes</value>
+  </data>
+  <data name="systemTranslated_LargadistanciaTax_Count" xml:space="preserve">
+    <value>Long distance calls tax</value>
+  </data>
+  <data name="systemTranslated_LDCalls_Count" xml:space="preserve">
+    <value>Long distance calls</value>
+  </data>
+  <data name="systemTranslated_LDCost_Count" xml:space="preserve">
+    <value>Long distance calls cost</value>
+  </data>
+  <data name="systemTranslated_LDInterCalls_Count" xml:space="preserve">
+    <value>International calls</value>
+  </data>
+  <data name="systemTranslated_LDInterCost_Count" xml:space="preserve">
+    <value>International calls cost</value>
+  </data>
+  <data name="systemTranslated_LDInterMinBilled_Count" xml:space="preserve">
+    <value>Billed international minutes</value>
+  </data>
+  <data name="systemTranslated_LDInternacionalCalls_Count" xml:space="preserve">
+    <value>International calls</value>
+  </data>
+  <data name="systemTranslated_LDInternacionalCost_Count" xml:space="preserve">
+    <value>International calls cost</value>
+  </data>
+  <data name="systemTranslated_LDInternacionalMinBilled_Count" xml:space="preserve">
+    <value>Billed international minutes</value>
+  </data>
+  <data name="systemTranslated_LDInternacionalTax_Count" xml:space="preserve">
+    <value>International calls tax</value>
+  </data>
+  <data name="systemTranslated_LDInterTax_Count" xml:space="preserve">
+    <value>International calls tax</value>
+  </data>
+  <data name="systemTranslated_LDMinBilled_Count" xml:space="preserve">
+    <value>Billed long distance minutes</value>
+  </data>
+  <data name="systemTranslated_LDnacionalCalls_Count" xml:space="preserve">
+    <value>National calls</value>
+  </data>
+  <data name="systemTranslated_LDnacionalCost_Count" xml:space="preserve">
+    <value>National calls cost</value>
+  </data>
+  <data name="systemTranslated_LDnacionalMinBilled_Count" xml:space="preserve">
+    <value>Billed national minutes</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovil9DigitosCalls_Count" xml:space="preserve">
+    <value>10 digits national calls</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovil9DigitosCost_Count" xml:space="preserve">
+    <value>10 digits national calls cost</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovil9DigitosMinBilled_Count" xml:space="preserve">
+    <value>Billed 10 digits national minutes</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovil9DigitosTax_Count" xml:space="preserve">
+    <value>10 digits national calls tax</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovilCalls_Count" xml:space="preserve">
+    <value>National mobile calls</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovilCost_Count" xml:space="preserve">
+    <value>National mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovilMinBilled_Count" xml:space="preserve">
+    <value>Billed national mobile minutes</value>
+  </data>
+  <data name="systemTranslated_LDNacionalMovilTax_Count" xml:space="preserve">
+    <value>National mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_LDnacionalTax_Count" xml:space="preserve">
+    <value>National calls tax</value>
+  </data>
+  <data name="systemTranslated_LDNewCalls_Count" xml:space="preserve">
+    <value>New long distance calls</value>
+  </data>
+  <data name="systemTranslated_LDNewCost_Count" xml:space="preserve">
+    <value>New long distance calls cost</value>
+  </data>
+  <data name="systemTranslated_LDNewMinBilled_Count" xml:space="preserve">
+    <value>Billed new long distance minutes</value>
+  </data>
+  <data name="systemTranslated_LDNewTax_Count" xml:space="preserve">
+    <value>New long distance calls tax</value>
+  </data>
+  <data name="systemTranslated_LDOldCalls_Count" xml:space="preserve">
+    <value>Old long distance calls</value>
+  </data>
+  <data name="systemTranslated_LDOldCost_Count" xml:space="preserve">
+    <value>Old long distance calls cost</value>
+  </data>
+  <data name="systemTranslated_LDOldMinBilled_Count" xml:space="preserve">
+    <value>Billed old long distance minutes</value>
+  </data>
+  <data name="systemTranslated_LDOldTax_Count" xml:space="preserve">
+    <value>Old long distance calls tax</value>
+  </data>
+  <data name="systemTranslated_LDTax_Count" xml:space="preserve">
+    <value>Long distance calls tax</value>
+  </data>
+  <data name="systemTranslated_LDusaCalls_Count" xml:space="preserve">
+    <value>USA calls</value>
+  </data>
+  <data name="systemTranslated_LDusaCost_Count" xml:space="preserve">
+    <value>USA calls cost</value>
+  </data>
+  <data name="systemTranslated_LDusaMinBilled_Count" xml:space="preserve">
+    <value>Billed USA minutes</value>
+  </data>
+  <data name="systemTranslated_LDusaTax_Count" xml:space="preserve">
+    <value>USA calls tax</value>
+  </data>
+  <data name="systemTranslated_LoadRecord" xml:space="preserve">
+    <value>Record load</value>
+  </data>
+  <data name="systemTranslated_LocalCalls_Count" xml:space="preserve">
+    <value>Local calls</value>
+  </data>
+  <data name="systemTranslated_LocalCost_Count" xml:space="preserve">
+    <value>Local calls cost</value>
+  </data>
+  <data name="systemTranslated_Locallada2digitosCalls_Count" xml:space="preserve">
+    <value>Local Area Code 2 Digits Calls</value>
+  </data>
+  <data name="systemTranslated_Locallada2digitosCost_Count" xml:space="preserve">
+    <value>Local Area Code 2 Digits Cost</value>
+  </data>
+  <data name="systemTranslated_Locallada2digitosMinBilled_Count" xml:space="preserve">
+    <value>Local Area Code 2 Digits Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_Locallada2digitosTax_Count" xml:space="preserve">
+    <value>Local Area Code 2 Digits Tax</value>
+  </data>
+  <data name="systemTranslated_Locallada3digitosCalls_Count" xml:space="preserve">
+    <value>Local Area Code 3 Digits Calls</value>
+  </data>
+  <data name="systemTranslated_Locallada3digitosCost_Count" xml:space="preserve">
+    <value>Local Area Code 3 Digits Cost</value>
+  </data>
+  <data name="systemTranslated_Locallada3digitosMinBilled_Count" xml:space="preserve">
+    <value>Local Area Code 3 Digits Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_Locallada3digitosTax_Count" xml:space="preserve">
+    <value>Local Area Code 3 Digits Tax</value>
+  </data>
+  <data name="systemTranslated_Locallada4digitosCalls_Count" xml:space="preserve">
+    <value>Local Area Code 4 Digits Calls</value>
+  </data>
+  <data name="systemTranslated_Locallada4digitosCost_Count" xml:space="preserve">
+    <value>Local Area Code 4 Digits Cost</value>
+  </data>
+  <data name="systemTranslated_Locallada4digitosMinBilled_Count" xml:space="preserve">
+    <value>Local Area Code 4 Digits Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_Locallada4digitosTax_Count" xml:space="preserve">
+    <value>Local Area Code 4 Digits Tax</value>
+  </data>
+  <data name="systemTranslated_LocalMinBilled_Count" xml:space="preserve">
+    <value>Billed local minutes</value>
+  </data>
+  <data name="systemTranslated_LocalTax_Count" xml:space="preserve">
+    <value>Local calls tax</value>
+  </data>
+  <data name="systemTranslated_Movil9DigitosCalls_Count" xml:space="preserve">
+    <value>Mobile 9 Digits Calls</value>
+  </data>
+  <data name="systemTranslated_Movil9DigitosCost_Count" xml:space="preserve">
+    <value>Mobile 9 Digits Cost</value>
+  </data>
+  <data name="systemTranslated_Movil9DigitosMinBilled_Count" xml:space="preserve">
+    <value>Mobile 9 Digits Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_Movil9DigitosTax_Count" xml:space="preserve">
+    <value>Mobile 9 Digits Tax</value>
+  </data>
+  <data name="systemTranslated_MovilCalls_Count" xml:space="preserve">
+    <value>Mobile Calls</value>
+  </data>
+  <data name="systemTranslated_MovilCost_Count" xml:space="preserve">
+    <value>Mobile calls cost</value>
+  </data>
+  <data name="systemTranslated_MovilMinBilled_Count" xml:space="preserve">
+    <value>Billed mobile minutes</value>
+  </data>
+  <data name="systemTranslated_MovilTax_Count" xml:space="preserve">
+    <value>Mobile calls tax</value>
+  </data>
+  <data name="systemTranslated_NoACDGroup" xml:space="preserve">
+    <value>No Acd Group</value>
+  </data>
+  <data name="systemTranslated_NoAnswer" xml:space="preserve">
+    <value>No Answer</value>
+  </data>
+  <data name="systemTranslated_NoName" xml:space="preserve">
+    <value>No Name</value>
+  </data>
+  <data name="systemTranslated_NoStatus" xml:space="preserve">
+    <value>No Status</value>
+  </data>
+  <data name="systemTranslated_OffNetCalls_Count" xml:space="preserve">
+    <value>Off Net Calls</value>
+  </data>
+  <data name="systemTranslated_OffNetCost_Count" xml:space="preserve">
+    <value>Off Net Cost</value>
+  </data>
+  <data name="systemTranslated_OffNetMinBilled_Count" xml:space="preserve">
+    <value>Off Net Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_OffNetTax_Count" xml:space="preserve">
+    <value>Off Net Tax</value>
+  </data>
+  <data name="systemTranslated_OldRecord" xml:space="preserve">
+    <value>Old Record</value>
+  </data>
+  <data name="systemTranslated_OnNetCalls_Count" xml:space="preserve">
+    <value>On Net Calls</value>
+  </data>
+  <data name="systemTranslated_OnNetCost_Count" xml:space="preserve">
+    <value>On Net Cost</value>
+  </data>
+  <data name="systemTranslated_OnNetMinBilled_Count" xml:space="preserve">
+    <value>On Net Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_OnNetTax_Count" xml:space="preserve">
+    <value>On Net Tax</value>
+  </data>
+  <data name="systemTranslated_OnRingCalls_Count" xml:space="preserve">
+    <value>On Ring Calls</value>
+  </data>
+  <data name="systemTranslated_OnRingCost_Count" xml:space="preserve">
+    <value>On Ring Cost</value>
+  </data>
+  <data name="systemTranslated_OnRingMinBilled_Count" xml:space="preserve">
+    <value>On Ring Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_OnRingTax_Count" xml:space="preserve">
+    <value>On Ring Tax</value>
+  </data>
+  <data name="systemTranslated_Pending" xml:space="preserve">
+    <value>Remaining</value>
+  </data>
+  <data name="systemTranslated_Recicled" xml:space="preserve">
+    <value>Recycled</value>
+  </data>
+  <data name="systemTranslated_TriangleCalls_Count" xml:space="preserve">
+    <value>Triangle Calls</value>
+  </data>
+  <data name="systemTranslated_TriangleCost_Count" xml:space="preserve">
+    <value>Triangle Cost</value>
+  </data>
+  <data name="systemTranslated_TriangleMinBilled_Count" xml:space="preserve">
+    <value>Triangle Minutes Billed</value>
+  </data>
+  <data name="systemTranslated_TriangleTax_Count" xml:space="preserve">
+    <value>Triangle Tax</value>
+  </data>
+  <data name="systemTranslated_WorkGroup" xml:space="preserve">
+    <value>Workgroup 1</value>
+  </data>
+  <data name="_Avg" xml:space="preserve">
+    <value>_Average</value>
+  </data>
+  <data name="_Count" xml:space="preserve">
+    <value>_Count</value>
+  </data>
+  <data name="_Time" xml:space="preserve">
+    <value>_Time</value>
+  </data>
+  <data name="nanswer2" xml:space="preserve">
+    <value>Answered Calls</value>
+  </data>
+  <data name="amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="destination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="GT300" xml:space="preserve">
+    <value>+300</value>
+  </data>
+  <data name="LT10" xml:space="preserve">
+    <value>&lt;10</value>
+  </data>
+  <data name="LT120" xml:space="preserve">
+    <value>&lt;120</value>
+  </data>
+  <data name="LT180" xml:space="preserve">
+    <value>&lt;180</value>
+  </data>
+  <data name="LT20" xml:space="preserve">
+    <value>&lt;20</value>
+  </data>
+  <data name="LT240" xml:space="preserve">
+    <value>&lt;240</value>
+  </data>
+  <data name="LT30" xml:space="preserve">
+    <value>&lt;30</value>
+  </data>
+  <data name="LT300" xml:space="preserve">
+    <value>&lt;300</value>
+  </data>
+  <data name="LT40" xml:space="preserve">
+    <value>&lt;40</value>
+  </data>
+  <data name="LT50" xml:space="preserve">
+    <value>&lt;50</value>
+  </data>
+  <data name="LT60" xml:space="preserve">
+    <value>&lt;60</value>
+  </data>
+  <data name="timeafterxfer" xml:space="preserve">
+    <value>Time after transfer</value>
+  </data>
+  <data name="timebeforexfer" xml:space="preserve">
+    <value>Time before transfer</value>
+  </data>
+  <data name="timeMax" xml:space="preserve">
+    <value>Max Time</value>
+  </data>
+  <data name="timeTot" xml:space="preserve">
+    <value>Total Time</value>
+  </data>
+  <data name="xfertype" xml:space="preserve">
+    <value>Transfer Type</value>
+  </data>
+  <data name="abdnSis" xml:space="preserve">
+    <value>Abandoned system</value>
+  </data>
+  <data name="asigNc" xml:space="preserve">
+    <value>Assigned and Not Answered</value>
+  </data>
+  <data name="asigTl" xml:space="preserve">
+    <value>Assigned and busy line</value>
+  </data>
+  <data name="assigned" xml:space="preserve">
+    <value>Assigned</value>
+  </data>
+  <data name="ndTime" xml:space="preserve">
+    <value>Unavailable time</value>
+  </data>
+  <data name="unrated" xml:space="preserve">
+    <value>Unrated</value>
+  </data>
+  <data name="action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="ncallback" xml:space="preserve">
+    <value>Call Back</value>
+  </data>
+  <data name="nnew" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="percentage" xml:space="preserve">
+    <value>Percentage</value>
+  </data>
+  <data name="promises" xml:space="preserve">
+    <value>Promises</value>
+  </data>
+  <data name="type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="avgWrapupTime" xml:space="preserve">
+    <value>Average Wrapup Time</value>
+  </data>
+  <data name="promisesPctg" xml:space="preserve">
+    <value>(%) Promises</value>
+  </data>
+  <data name="avgAbandon" xml:space="preserve">
+    <value>Abandoned (% )</value>
+  </data>
+  <data name="Abandonreports" xml:space="preserve">
+    <value>Abandoned calls reports</value>
+  </data>
+  <data name="Agentsummary" xml:space="preserve">
+    <value>Agent detail</value>
+  </data>
+  <data name="Movementspercampaign" xml:space="preserve">
+    <value>Operations per campaign</value>
+  </data>
+  <data name="Performanceperagent" xml:space="preserve">
+    <value>Performance per agent</value>
+  </data>
+  <data name="Promisespercampaign" xml:space="preserve">
+    <value>Promises per campaign</value>
+  </data>
+  <data name="Special" xml:space="preserve">
+    <value>Special</value>
+  </data>
+  <data name="systemTranslated_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="systemTranslated_jobBoth" xml:space="preserve">
+    <value>Job type Both</value>
+  </data>
+  <data name="systemTranslated_jobCB" xml:space="preserve">
+    <value>Job type Callback</value>
+  </data>
+  <data name="systemTranslated_jobNew" xml:space="preserve">
+    <value>Job type New</value>
+  </data>
+  <data name="systemTranslated_newRecords" xml:space="preserve">
+    <value>New Records</value>
+  </data>
+  <data name="systemTranslated_noType" xml:space="preserve">
+    <value>No Type</value>
+  </data>
+  <data name="systemTranslated_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="systemTranslated_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="systemTranslated_acd" xml:space="preserve">
+    <value>ACD Group</value>
+  </data>
+  <data name="systemTranslated_blindXfer" xml:space="preserve">
+    <value>Blind transfer</value>
+  </data>
+  <data name="systemTranslated_conference" xml:space="preserve">
+    <value>Conference</value>
+  </data>
+  <data name="systemTranslated_inbound" xml:space="preserve">
+    <value>Inbound</value>
+  </data>
+  <data name="systemTranslated_outbound" xml:space="preserve">
+    <value>Outbound</value>
+  </data>
+  <data name="systemTranslated_overflow" xml:space="preserve">
+    <value>Overflow</value>
+  </data>
+  <data name="systemTranslated_supXfer" xml:space="preserve">
+    <value>Superised transfer</value>
+  </data>
+  <data name="Accounthistory" xml:space="preserve">
+    <value>Account history</value>
+  </data>
+  <data name="systemTranslated_NoCallback" xml:space="preserve">
+    <value>No Callback</value>
+  </data>
+  <data name="tnotavg" xml:space="preserve">
+    <value>Average Handle Time</value>
+  </data>
+  <data name="avgAbandonTimeChat" xml:space="preserve">
+    <value>Average Abandoned Chat Time</value>
+  </data>
+  <data name="AnsweredCallsOnChatDetail" xml:space="preserve">
+    <value>Answered Calls On Chat Detail</value>
+  </data>
+  <data name="AnsweredcallsonchatdetailperCampaign" xml:space="preserve">
+    <value>Answered calls on chat detail per Campaign</value>
+  </data>
+  <data name="AnsweredcallsonchatdetailperCampaignbyday" xml:space="preserve">
+    <value>Answered calls on chat detail per Campaign by day</value>
+  </data>
+  <data name="ivrName" xml:space="preserve">
+    <value>IVR Name</value>
+  </data>
+  <data name="AgentCustomerSatisfactionService" xml:space="preserve">
+    <value>Agent(Customer Satisfaction Service)</value>
+  </data>
+  <data name="AgentScoringTemplates" xml:space="preserve">
+    <value>Agent(Scoring Templates)</value>
+  </data>
+  <data name="campaignAcd" xml:space="preserve">
+    <value>Campaing/ACD Group</value>
+  </data>
+  <data name="cam_id" xml:space="preserve">
+    <value>Campaing/ACD Group Id</value>
+  </data>
+  <data name="CustomerSatisfactionService" xml:space="preserve">
+    <value>Customer Satisfaction Survey</value>
+  </data>
+  <data name="DetailCustomerSatisfactionService" xml:space="preserve">
+    <value>Detail(Customer Satisfaction Service)</value>
+  </data>
+  <data name="DetailScoringTemplates" xml:space="preserve">
+    <value>Detail(Scoring Templates)</value>
+  </data>
+  <data name="Disposition2" xml:space="preserve">
+    <value>Disposition</value>
+  </data>
+  <data name="DispositionsCustomerSatisfactionService" xml:space="preserve">
+    <value>Dispositions(Customer Satisfaction Service)</value>
+  </data>
+  <data name="DispositionsScoringTemplates" xml:space="preserve">
+    <value>Dispositions(Scoring Templates)</value>
+  </data>
+  <data name="inboundId" xml:space="preserve">
+    <value>ACD Group Id</value>
+  </data>
+  <data name="media" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="Questions" xml:space="preserve">
+    <value>Questions</value>
+  </data>
+  <data name="QuestionsChat" xml:space="preserve">
+    <value>Questions</value>
+  </data>
+  <data name="QuestionsCustomerSatisfactionService" xml:space="preserve">
+    <value>Questions(Customer Satisfaction Service)</value>
+  </data>
+  <data name="QuestionsScoringTemplates" xml:space="preserve">
+    <value>Questions(Scoring Templates)</value>
+  </data>
+  <data name="ScoringTemplates" xml:space="preserve">
+    <value>Scoring Template</value>
+  </data>
+  <data name="Sections" xml:space="preserve">
+    <value>Sections</value>
+  </data>
+  <data name="SectionsScoringTemplates" xml:space="preserve">
+    <value>Sections(Scoring Templates)</value>
+  </data>
+  <data name="supervisorId" xml:space="preserve">
+    <value>Supervisor Id</value>
+  </data>
+  <data name="SupervisorScoringTemplates" xml:space="preserve">
+    <value>Supervisor(Scoring Templates)</value>
+  </data>
+  <data name="supervisorUser" xml:space="preserve">
+    <value>Supervisor User</value>
+  </data>
+  <data name="templateId" xml:space="preserve">
+    <value>Template Id</value>
+  </data>
+  <data name="TotaldispositionsperQuestionbydaterange" xml:space="preserve">
+    <value>Total dispositions per Question by date range</value>
+  </data>
+  <data name="TotaldispositionsperSectionbydaterange" xml:space="preserve">
+    <value>Total dispositions per Section by date range</value>
+  </data>
+  <data name="userId" xml:space="preserve">
+    <value>Agent Id</value>
+  </data>
+  <data name="Templates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="CRM" xml:space="preserve">
+    <value>CRM</value>
+  </data>
+  <data name="Nombre" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="CRMTemplates" xml:space="preserve">
+    <value>CRM Templates</value>
+  </data>
+  <data name="crmx_Date" xml:space="preserve">
+    <value> Date </value>
+  </data>
+  <data name="crmxSource" xml:space="preserve">
+    <value> Campaign/ACD(DNIS) </value>
+  </data>
+  <data name="Ayuda" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="oHour" xml:space="preserve">
+    <value>Other hour</value>
+  </data>
+  <data name="tACD" xml:space="preserve">
+    <value>ACD Time</value>
+  </data>
+  <data name="tAgent" xml:space="preserve">
+    <value>Call Time Agent</value>
+  </data>
+  <data name="tAux" xml:space="preserve">
+    <value>Aux Time</value>
+  </data>
+  <data name="tPer" xml:space="preserve">
+    <value>Personal Time</value>
+  </data>
+  <data name="MKTAgents" xml:space="preserve">
+    <value>MKT Agents</value>
+  </data>
+  <data name="MKTDiario" xml:space="preserve">
+    <value>MKT daily</value>
+  </data>
+  <data name="nacw" xml:space="preserve">
+    <value>Number ACW</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>Time ACW</value>
+  </data>
+  <data name="tPromACD" xml:space="preserve">
+    <value>Tiempo promedio ACD</value>
+  </data>
+  <data name="tPromACW" xml:space="preserve">
+    <value>Tiempo promedio ACW</value>
+  </data>
+  <data name="Timeacdperuser" xml:space="preserve">
+    <value>Time acd per user</value>
+  </data>
+  <data name="Abandonreportpercentage" xml:space="preserve">
+    <value>Abandoned calls per percentage</value>
+  </data>
+  <data name="Abandonreportprofiles" xml:space="preserve">
+    <value>Abandoned calls profiles</value>
+  </data>
+  <data name="Abandonreporttimes" xml:space="preserve">
+    <value>Abandoned calls per time</value>
+  </data>
+  <data name="gt60" xml:space="preserve">
+    <value>+60</value>
+  </data>
+  <data name="AgentEmail" xml:space="preserve">
+    <value>Agent Email</value>
+  </data>
+  <data name="EmailGeneral" xml:space="preserve">
+    <value>Email General</value>
+  </data>
+  <data name="abandonedbyagent" xml:space="preserve">
+    <value>abandoned by agent</value>
+  </data>
+  <data name="abandonedsystem" xml:space="preserve">
+    <value>abandoned by system</value>
+  </data>
+  <data name="closedbyagent" xml:space="preserve">
+    <value>finished by agent</value>
+  </data>
+  <data name="closedsystem" xml:space="preserve">
+    <value>not replied</value>
+  </data>
+  <data name="download" xml:space="preserve">
+    <value>downloaded</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="finishedconversation" xml:space="preserve">
+    <value>replied</value>
+  </data>
+  <data name="mailclient" xml:space="preserve">
+    <value>email address</value>
+  </data>
+  <data name="ontrack" xml:space="preserve">
+    <value>tracked</value>
+  </data>
+  <data name="rejected" xml:space="preserve">
+    <value>rejected</value>
+  </data>
+  <data name="sentvsdownloaded" xml:space="preserve">
+    <value>emails service level</value>
+  </data>
+  <data name="systemTranslated_Assign_message_to_agent" xml:space="preserve">
+    <value />
+  </data>
+  <data name="tavg" xml:space="preserve">
+    <value>avg service time</value>
+  </data>
+  <data name="totalassets" xml:space="preserve">
+    <value>currently serviced</value>
+  </data>
+  <data name="totalwait" xml:space="preserve">
+    <value>assignment time</value>
+  </data>
+  <data name="tQueue" xml:space="preserve">
+    <value>time queued</value>
+  </data>
+  <data name="tResponse" xml:space="preserve">
+    <value>service time</value>
+  </data>
+  <data name="tsend" xml:space="preserve">
+    <value>sent</value>
+  </data>
+  <data name="twait" xml:space="preserve">
+    <value>time inboxed</value>
+  </data>
+  <data name="UnassignMessageAgent" xml:space="preserve">
+    <value>deassigned by agent</value>
+  </data>
+  <data name="unsent" xml:space="preserve">
+    <value>unsent</value>
+  </data>
+  <data name="listName" xml:space="preserve">
+    <value>List Name</value>
+  </data>
+</root>

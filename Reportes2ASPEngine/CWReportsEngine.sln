@@ -1,0 +1,67 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReportsEngine\", "{AD3507F8-AFC4-4416-A182-BF239340FF14}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv3.5"
+		ProjectReferences = "{3417E82C-3907-4110-BE0F-278F97CF51D8}|MiddleWareReports.dll;"
+		Debug.AspNetCompiler.VirtualPath = "/CWReportsEngine"
+		Debug.AspNetCompiler.PhysicalPath = "CWReportsEngine\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\CWReportsEngine\"
+		Debug.AspNetCompiler.Updateable = "false"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "true"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/CWReportsEngine"
+		Release.AspNetCompiler.PhysicalPath = "CWReportsEngine\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\CWReportsEngine\"
+		Release.AspNetCompiler.Updateable = "false"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "true"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "1184"
+		StartServerOnDebug = "true"
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiddleWareReports", "MiddleWareReports\MiddleWareReports.csproj", "{3417E82C-3907-4110-BE0F-278F97CF51D8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|.NET = Debug|.NET
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|x86 = Debug|x86
+		Release|.NET = Release|.NET
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|.NET.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|.NET.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AD3507F8-AFC4-4416-A182-BF239340FF14}.Release|x86.ActiveCfg = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|.NET.ActiveCfg = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|.NET.ActiveCfg = Release|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|x86.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -2142,4 +2142,7 @@
   <data name="listName" xml:space="preserve">
     <value>List Name</value>
   </data>
+  <data name="systemTranslated_AgentSurvey" xml:space="preserve">
+    <value>Agent/Survey</value>
+  </data>
 </root>

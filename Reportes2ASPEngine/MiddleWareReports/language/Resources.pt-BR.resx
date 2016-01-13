@@ -2010,4 +2010,7 @@
   <data name="systemTranslated_AgentSurvey" xml:space="preserve">
     <value>Agent/Survey</value>
   </data>
+  <data name="DniNumber" xml:space="preserve">
+    <value>DniNumber</value>
+  </data>
 </root>

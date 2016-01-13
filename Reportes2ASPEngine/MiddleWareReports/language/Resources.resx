@@ -376,7 +376,7 @@
     <value>Calificaciones por campaña/wg/area</value>
   </data>
   <data name="CallsbyACDGroupDIDgeneralWGArea" xml:space="preserve">
-    <value>Llamadas por  Grupo ACD/DID/general/WG/Area</value>
+    <value>Llamadas por  Grupo ACD/DNIS/general/WG/Area</value>
   </data>
   <data name="DialingbyCampaignwgarea" xml:space="preserve">
     <value>Marcación por Campaña/wg/area</value>
@@ -2252,5 +2252,8 @@
   </data>
   <data name="systemTranslated_AgentSurvey" xml:space="preserve">
     <value>Agente/Encuesta</value>
+  </data>
+  <data name="DniNumber" xml:space="preserve">
+    <value>Numero Dni</value>
   </data>
 </root>

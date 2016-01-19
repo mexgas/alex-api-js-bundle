@@ -799,6 +799,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Facturación.
+        /// </summary>
+        public static string billed {
+            get {
+                return ResourceManager.GetString("billed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Costo 01 900.
         /// </summary>
         public static string Billing01900 {
@@ -4453,6 +4462,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Cobrada.
+        /// </summary>
+        public static string systemTranslated_Charged {
+            get {
+                return ResourceManager.GetString("systemTranslated_Charged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Cliente.
         /// </summary>
         public static string systemTranslated_Client {
@@ -5286,6 +5304,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_NoSubDisposition {
             get {
                 return ResourceManager.GetString("systemTranslated_NoSubDisposition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a No cobrada.
+        /// </summary>
+        public static string systemTranslated_NotCharged {
+            get {
+                return ResourceManager.GetString("systemTranslated_NotCharged", resourceCulture);
             }
         }
         

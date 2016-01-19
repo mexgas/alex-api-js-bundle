@@ -2013,4 +2013,13 @@
   <data name="DniNumber" xml:space="preserve">
     <value>DniNumber</value>
   </data>
+  <data name="billed" xml:space="preserve">
+    <value>Bill</value>
+  </data>
+  <data name="systemTranslated_Charged" xml:space="preserve">
+    <value>Charged</value>
+  </data>
+  <data name="systemTranslated_NotCharged" xml:space="preserve">
+    <value>Not charged</value>
+  </data>
 </root>

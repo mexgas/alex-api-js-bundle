@@ -2256,4 +2256,13 @@
   <data name="DniNumber" xml:space="preserve">
     <value>Numero Dni</value>
   </data>
+  <data name="billed" xml:space="preserve">
+    <value>Facturación</value>
+  </data>
+  <data name="systemTranslated_Charged" xml:space="preserve">
+    <value>Cobrada</value>
+  </data>
+  <data name="systemTranslated_NotCharged" xml:space="preserve">
+    <value>No cobrada</value>
+  </data>
 </root>

@@ -2265,4 +2265,13 @@
   <data name="systemTranslated_NotCharged" xml:space="preserve">
     <value>No cobrada</value>
   </data>
+  <data name="descripcion" xml:space="preserve">
+    <value>Descripcion</value>
+  </data>
+  <data name="screenNameClient" xml:space="preserve">
+    <value>Nombre de Usuario</value>
+  </data>
+  <data name="statusTwitter" xml:space="preserve">
+    <value>Estado</value>
+  </data>
 </root>

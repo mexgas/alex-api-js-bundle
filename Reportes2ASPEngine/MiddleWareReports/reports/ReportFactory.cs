@@ -182,6 +182,19 @@ namespace MiddleWareReports
                     return new RepEmailDetail();
                 case 10040://reporte email general
                     return new RepEmailGeneral();
+
+                case 11010://reporte twitter ACD
+                    return new RepTwitterACD();
+                case 11020://reporte twitter detalle ACD
+                    return new RepTwitterAgente();
+                case 11030://reporte twitter detail
+                    return new RepTwitterDetail();
+                case 11040://reporte twitter general
+                    return new RepTwitterGeneral();
+
+
+
+
                 default:
                     throw new ReportNotFoundException("Report Not Found"); //"";
             }

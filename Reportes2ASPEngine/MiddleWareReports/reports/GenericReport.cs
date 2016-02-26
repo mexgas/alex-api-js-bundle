@@ -1531,7 +1531,7 @@ namespace MiddleWareReports
         /// <param name="activeCRM">Indicates if the CRM reports are visible</param>
         /// <param name="activeEmail">Indicates if the EMAIL reports are visible</param>
         /// <returns>A xml containing the menus that the user can access</returns>
-        public XmlDocument getMenu(int sourceUserId, int activeChat, int activeAVRS, int activeCRM, int activeEmail)
+        public XmlDocument getMenu(int sourceUserId, int activeChat, int activeAVRS, int activeCRM, int activeEmail, int activeTwitter)
         {
             changeCulture();
             NameValueCollection reportParams = new NameValueCollection();
@@ -1540,6 +1540,7 @@ namespace MiddleWareReports
             reportParams.Add("activeAVRS", activeAVRS.ToString());
             reportParams.Add("activeCRM", activeCRM.ToString());
             reportParams.Add("activeEmail", activeEmail.ToString());
+            reportParams.Add("activeTwitter", activeTwitter.ToString());
             DataTable menus = db.executeSP("dbo.GetReportMenus", reportParams);
 
             XmlDocument xml = new XmlDocument();

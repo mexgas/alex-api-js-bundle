@@ -2157,4 +2157,13 @@
   <data name="systemTranslated_NotCharged" xml:space="preserve">
     <value>Not charged</value>
   </data>
+  <data name="descripcion" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="screenNameClient" xml:space="preserve">
+    <value>User Name</value>
+  </data>
+  <data name="statusTwitter" xml:space="preserve">
+    <value>Status Twitter</value>
+  </data>
 </root>

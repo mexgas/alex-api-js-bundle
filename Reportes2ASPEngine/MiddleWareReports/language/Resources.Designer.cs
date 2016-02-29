@@ -358,6 +358,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Twitter por agente.
+        /// </summary>
+        public static string AgentTwitter {
+            get {
+                return ResourceManager.GetString("AgentTwitter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Cantidad.
         /// </summary>
         public static string amount {
@@ -1722,6 +1731,15 @@ namespace MiddleWareReports {
         public static string descargados {
             get {
                 return ResourceManager.GetString("descargados", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Descripcion.
+        /// </summary>
+        public static string descripcion {
+            get {
+                return ResourceManager.GetString("descripcion", resourceCulture);
             }
         }
         
@@ -3859,6 +3877,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Nombre de Usuario.
+        /// </summary>
+        public static string screenNameClient {
+            get {
+                return ResourceManager.GetString("screenNameClient", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Semestre.
         /// </summary>
         public static string se {
@@ -4026,6 +4053,15 @@ namespace MiddleWareReports {
         public static string statusTime {
             get {
                 return ResourceManager.GetString("statusTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Estado.
+        /// </summary>
+        public static string statusTwitter {
+            get {
+                return ResourceManager.GetString("statusTwitter", resourceCulture);
             }
         }
         
@@ -6276,6 +6312,42 @@ namespace MiddleWareReports {
         public static string tWait {
             get {
                 return ResourceManager.GetString("tWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Twitter.
+        /// </summary>
+        public static string Twitter {
+            get {
+                return ResourceManager.GetString("Twitter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Twitter ACD.
+        /// </summary>
+        public static string TwitterACD {
+            get {
+                return ResourceManager.GetString("TwitterACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Detalle de Twitter.
+        /// </summary>
+        public static string TwitterDetail {
+            get {
+                return ResourceManager.GetString("TwitterDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Twitter General.
+        /// </summary>
+        public static string TwitterGeneral {
+            get {
+                return ResourceManager.GetString("TwitterGeneral", resourceCulture);
             }
         }
         

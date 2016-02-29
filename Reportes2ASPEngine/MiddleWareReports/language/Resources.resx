@@ -2274,4 +2274,19 @@
   <data name="statusTwitter" xml:space="preserve">
     <value>Estado</value>
   </data>
+  <data name="Twitter" xml:space="preserve">
+    <value>Twitter</value>
+  </data>
+  <data name="TwitterACD" xml:space="preserve">
+    <value>Twitter ACD</value>
+  </data>
+  <data name="TwitterDetail" xml:space="preserve">
+    <value>Detalle de Twitter</value>
+  </data>
+  <data name="TwitterGeneral" xml:space="preserve">
+    <value>Twitter General</value>
+  </data>
+  <data name="AgentTwitter" xml:space="preserve">
+    <value>Twitter por agente</value>
+  </data>
 </root>

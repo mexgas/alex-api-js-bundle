@@ -41,13 +41,13 @@ public partial class CWReportsEngine : System.Web.UI.Page
     {
         short process;
 
-        if (Request.QueryString["process"] == null)
+        if (Request["process"] == null)
         {
             process = 0;
         }
         else
         {
-            short.TryParse(Request.QueryString["process"], out process);
+            short.TryParse(Request["process"], out process);
         }
 
         #region CacheControl

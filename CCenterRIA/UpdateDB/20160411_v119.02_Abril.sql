@@ -52,8 +52,162 @@ if @actualVersion = @version and actualVersionFix = versionfix-1
 				   end'
 		EXEC(@sql)
 
-		set @process = ''
-		set @sql=''
+		set @process = 'CREATE TABLE -------- mcaTipoLlamada'
+		set @sql='if not exists (select * from sys.tables where name = N''mcaTipoLlamada'') begin
+					CREATE TABLE [dbo].[mcaTipoLlamada](
+					[tipoLlamada_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+					[descrip] [varchar](30) NOT NULL,
+					CONSTRAINT [PK_mcaTipoLlamada] PRIMARY KEY CLUSTERED 
+					(
+					[tipoLlamada_id] ASC
+					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+					) ON [PRIMARY]
+				 end'
+		EXEC(@sql)
+
+		set @process = 'CREATE TABLE -------- mcaProtocolos'
+		set @sql='if not exists (select * from sys.tables where name = N''mcaProtocolos'') begin
+					CREATE TABLE [dbo].[mcaProtocolos](
+					[protocolo_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+					[descrip] [varchar](30) NOT NULL,
+					[nota] [varchar] (max)
+					CONSTRAINT [PK_mcaProtocolos] PRIMARY KEY CLUSTERED 
+					(
+					[protocolo_id] ASC
+					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+					) ON [PRIMARY]
+				 end'
+		EXEC(@sql)
+
+		set @process = 'CREATE TABLE -------- mcaProveedores'
+		set @sql='if not exists (select * from sys.tables where name = N''mcaProveedores'') begin
+					CREATE TABLE [dbo].[mcaProveedores](
+					[provedor_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+					[descrip] [varchar](30) NOT NULL,
+	
+					CONSTRAINT [PK_mcaProveedores] PRIMARY KEY CLUSTERED 
+					(
+					[provedor_id] ASC
+					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON,  FILLFACTOR = 100) ON [PRIMARY]
+					) ON [PRIMARY]
+				 end'
+		EXEC(@sql)
+
+		set @process = 'CREATE TABLE --------mcaPlanMarcacion'
+		set @sql='if not exists (select * from sys.tables where name = N''mcaPlanMarcacion'') begin
+					CREATE TABLE [dbo].[mcaPlanMarcacion](
+					[country_id] [smallint] NOT NULL,
+					[provedor_id] [smallint] NOT NULL,
+					[protocolo_id] [smallint] NOT NULL,
+					[tipoLlamada_id] [smallint] NOT NULL,
+					[prefijo] [varchar](15) NOT NULL,
+					[longitud] [varchar](15) NULL
+					CONSTRAINT [PK_mcaPlanMarcacion] PRIMARY KEY CLUSTERED 
+					(
+						[country_id], [provedor_id], [protocolo_id], [tipoLlamada_id] ASC
+					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+					) ON [PRIMARY]
+				  end'
+		EXEC(@sql)
+
+		set @process = 'INSERT -------- mcaTipoLlamada'
+		set @sql='if not exists(select * from mcaTipoLlamada where tipoLlamada_id in(1, 2, 3, 4)) begin
+					insert into mcaTipoLlamada (descrip) values (''Local'')
+					insert into mcaTipoLlamada (descrip) values (''LD Nacional'')
+					insert into mcaTipoLlamada (descrip) values (''Cel'')
+					insert into mcaTipoLlamada (descrip) values (''Cel LD'')
+				 end'
+		EXEC(@sql)
+
+		set @process = 'INSERT -------- mcaProveedores'
+		set @sql='USE [CCenterRia]
+					GO
+					SET IDENTITY_INSERT [dbo].[mcaProveedores] ON 
+					if not exists(select * from mcaProveedores where provedor_id in(1, 2, 3)) begin
+					INSERT [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (1, N''Maxcom'')
+					INSERT [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (2, N''Marcatel'')
+					INSERT [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (3, N''Telmex'')
+				 end'
+		EXEC(@sql)
+
+		set @process = 'INSERT -------- mcaProtocolos'
+		set @sql='USE [CCenterRia]
+					GO
+					SET IDENTITY_INSERT [dbo].[mcaProtocolos] ON 
+					if not exists(select * from mcaProtocolos where protocolo_id in(1, 2, 3, 4, 5)) begin
+					INSERT [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (1, N''ISDN sin ANI Rotatorio'')
+					INSERT [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (2, N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+					INSERT [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (3, N''SIP sin Ani Rotatorio'')
+					INSERT [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (4, N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+					INSERT [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (5, N''R2'')
+					SET IDENTITY_INSERT [dbo].[mcaProtocolos] OFF
+				 end'
+		EXEC(@sql)
+
+		set @process = 'INSERT -------- mcaPlanMarcacion'
+		set @sql='if not exists(select * from mcaPlanMarcacion where protocolo_id in(1, 2, 3, 4, 5) and tipoLlamada_id in (1, 2, 3, 4, 5)) begin
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 1, 1, ''%'', ''7'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 2, 1, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 3, 1, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 4, 1, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 5, 1, ''%'', ''7'')
+
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 1, 2, ''01%'', ''12'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 2, 2, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 3, 2, ''01%'', ''12'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 4, 2, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 5, 2, ''01%'', ''12'')
+
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 1, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 2, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 3, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 4, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 5, 3, ''044%'', ''13'')
+
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 1, 4, ''045%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 2, 4, ''045%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 3, 4, ''045%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 4, 4, ''045%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 1, 5, 4, ''045%'', ''13'')
+
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 2, 3, 1, ''%'', ''10'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 2, 3, 2, ''01%'', ''12'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 2, 3, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 2, 3, 4, ''045%'', ''13'')
+
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 3, 5, 1, ''%'', ''7'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 3, 5, 2, ''01%'', ''12'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 3, 5, 3, ''044%'', ''13'')
+					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud) 
+					values (1, 3, 5, 4, ''045%'', ''13'')
+				 end'
 		EXEC(@sql)
 
 

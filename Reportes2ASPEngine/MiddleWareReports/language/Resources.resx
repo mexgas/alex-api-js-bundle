@@ -2122,10 +2122,10 @@
     <value>Descargas</value>
   </data>
   <data name="Email" xml:space="preserve">
-    <value>Email</value>
+    <value>Correo</value>
   </data>
   <data name="EmailACD" xml:space="preserve">
-    <value>Email ACD</value>
+    <value>Correo por ACD</value>
   </data>
   <data name="finishedConversation" xml:space="preserve">
     <value>Conversaciones terminadas</value>
@@ -2164,7 +2164,7 @@
     <value>Cerrado por sistema</value>
   </data>
   <data name="EmailDetail" xml:space="preserve">
-    <value>Detalle de email</value>
+    <value>Detalle de correo</value>
   </data>
   <data name="totalaTencion" xml:space="preserve">
     <value>Total atencion </value>
@@ -2230,10 +2230,10 @@
     <value>Tiempo de espera</value>
   </data>
   <data name="AgentEmail" xml:space="preserve">
-    <value>Email por Agente</value>
+    <value>Correo por agente</value>
   </data>
   <data name="EmailGeneral" xml:space="preserve">
-    <value>General Email</value>
+    <value>Correo general</value>
   </data>
   <data name="interactions" xml:space="preserve">
     <value>Interacciones</value>

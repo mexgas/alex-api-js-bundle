@@ -39,7 +39,7 @@ exec @actualVersion = ccsp_getVersion 'BD'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if @actualVersion = @version and actualVersionFix = versionfix-1
+if @actualVersion = @version and @actualVersionFix = @versionfix-1
 	begin
 		begin tran
 		begin try
@@ -563,8 +563,8 @@ END'
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		exec ccsp_getVersion 'BD', @version
-		exec ccsp_getVersion 'BDF', @versionFix
+		--exec ccsp_getVersion 'BD', @version
+		--exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran
 		end try

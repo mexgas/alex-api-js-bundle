@@ -2037,4 +2037,55 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Agent Twitter</value>
   </data>
+  <data name="messageId" xml:space="preserve">
+    <value>Message Id</value>
+  </data>
+  <data name="pendingSend" xml:space="preserve">
+    <value>Send pending</value>
+  </data>
+  <data name="tAtentionMultimedia" xml:space="preserve">
+    <value>Service time</value>
+  </data>
+  <data name="tAvgAtentionMultimedia" xml:space="preserve">
+    <value>Average call time</value>
+  </data>
+  <data name="tQueueMultimedia" xml:space="preserve">
+    <value>Queue Time</value>
+  </data>
+  <data name="tsend" xml:space="preserve">
+    <value>Sending time</value>
+  </data>
+  <data name="twaitMultimedia" xml:space="preserve">
+    <value>Wait time</value>
+  </data>
+  <data name="unassignedMultimedia" xml:space="preserve">
+    <value>Assign pending</value>
+  </data>
+  <data name="systemTranslated_Assign_message_to_agent" xml:space="preserve">
+    <value>Assigned to agent</value>
+  </data>
+  <data name="systemTranslated_Close_conversation_for_agent" xml:space="preserve">
+    <value>Completed by the agent</value>
+  </data>
+  <data name="systemTranslated_conversation_closed_for_system" xml:space="preserve">
+    <value>Terminated by System</value>
+  </data>
+  <data name="systemTranslated_Download_emails_from_server" xml:space="preserve">
+    <value>Downloaded from the server</value>
+  </data>
+  <data name="systemTranslated_Message_answered_by_agent" xml:space="preserve">
+    <value>Answered by agent</value>
+  </data>
+  <data name="systemTranslated_Message_rejected_for_server" xml:space="preserve">
+    <value>Undelivered per server</value>
+  </data>
+  <data name="systemTranslated_Message_sent_to_the_client" xml:space="preserve">
+    <value>Delivered to the customer</value>
+  </data>
+  <data name="systemTranslated_Read_the_message_agent" xml:space="preserve">
+    <value>Read by agent</value>
+  </data>
+  <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
+    <value>Appointed agent</value>
+  </data>
 </root>

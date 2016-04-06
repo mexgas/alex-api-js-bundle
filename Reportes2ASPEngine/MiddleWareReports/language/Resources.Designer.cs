@@ -115,7 +115,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Abandonado por agente.
+        ///   Busca una cadena traducida similar a Finalizados por agente.
         /// </summary>
         public static string abandonedAgent {
             get {
@@ -151,7 +151,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Abandonado por sistema.
+        ///   Busca una cadena traducida similar a Finalizados por sistema.
         /// </summary>
         public static string abandonedSystem {
             get {
@@ -313,7 +313,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Email por Agente.
+        ///   Busca una cadena traducida similar a Correo por agente.
         /// </summary>
         public static string AgentEmail {
             get {
@@ -628,7 +628,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Asignada.
+        ///   Busca una cadena traducida similar a Asignados.
         /// </summary>
         public static string assigned {
             get {
@@ -736,7 +736,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Promedio de envio.
+        ///   Busca una cadena traducida similar a Porcentaje de atención.
         /// </summary>
         public static string avgSend {
             get {
@@ -1564,7 +1564,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Id Conversacion.
+        ///   Busca una cadena traducida similar a ID conversacion.
         /// </summary>
         public static string conversationid {
             get {
@@ -2077,7 +2077,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Descargas.
+        ///   Busca una cadena traducida similar a Descargados.
         /// </summary>
         public static string download {
             get {
@@ -2104,7 +2104,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Email.
+        ///   Busca una cadena traducida similar a Correo.
         /// </summary>
         public static string Email {
             get {
@@ -2113,7 +2113,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Email ACD.
+        ///   Busca una cadena traducida similar a Correo por ACD.
         /// </summary>
         public static string EmailACD {
             get {
@@ -2122,7 +2122,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Detalle de email.
+        ///   Busca una cadena traducida similar a Detalle de correo.
         /// </summary>
         public static string EmailDetail {
             get {
@@ -2131,7 +2131,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a General Email.
+        ///   Busca una cadena traducida similar a Correo general.
         /// </summary>
         public static string EmailGeneral {
             get {
@@ -2248,7 +2248,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Conversaciones terminadas.
+        ///   Busca una cadena traducida similar a Conversaciones finalizadas.
         /// </summary>
         public static string finishedConversation {
             get {
@@ -2365,7 +2365,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Especialidad.
+        ///   Busca una cadena traducida similar a Grupo ACD.
         /// </summary>
         public static string inbound {
             get {
@@ -2667,6 +2667,15 @@ namespace MiddleWareReports {
         public static string media {
             get {
                 return ResourceManager.GetString("media", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a ID mensaje.
+        /// </summary>
+        public static string messageId {
+            get {
+                return ResourceManager.GetString("messageId", resourceCulture);
             }
         }
         
@@ -3571,6 +3580,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a No enviados.
+        /// </summary>
+        public static string pendingSend {
+            get {
+                return ResourceManager.GetString("pendingSend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Porcentaje.
         /// </summary>
         public static string percentage {
@@ -3895,7 +3913,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Rechazados.
+        ///   Busca una cadena traducida similar a No entregados.
         /// </summary>
         public static string rejected {
             get {
@@ -4417,7 +4435,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Asignados.
+        ///   Busca una cadena traducida similar a Asignado al agente.
         /// </summary>
         public static string systemTranslated_Assign_message_to_agent {
             get {
@@ -4714,7 +4732,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Cerrado por agente.
+        ///   Busca una cadena traducida similar a Finalizado por el agente.
         /// </summary>
         public static string systemTranslated_Close_conversation_for_agent {
             get {
@@ -4732,7 +4750,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Cerrado por sistema.
+        ///   Busca una cadena traducida similar a Finalizado por sistema.
         /// </summary>
         public static string systemTranslated_conversation_closed_for_system {
             get {
@@ -4768,7 +4786,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Descargados del servidor.
+        ///   Busca una cadena traducida similar a Descargado del servidor.
         /// </summary>
         public static string systemTranslated_Download_emails_from_server {
             get {
@@ -5362,7 +5380,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Contestados por agente.
+        ///   Busca una cadena traducida similar a Respondido por agente.
         /// </summary>
         public static string systemTranslated_Message_answered_by_agent {
             get {
@@ -5371,7 +5389,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Rechazado .
+        ///   Busca una cadena traducida similar a No entregado por servidor.
         /// </summary>
         public static string systemTranslated_Message_rejected_for_server {
             get {
@@ -5380,7 +5398,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Enviados al cliente.
+        ///   Busca una cadena traducida similar a Entregado al cliente.
         /// </summary>
         public static string systemTranslated_Message_sent_to_the_client {
             get {
@@ -5713,7 +5731,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Leidos.
+        ///   Busca una cadena traducida similar a Leído por agente.
         /// </summary>
         public static string systemTranslated_Read_the_message_agent {
             get {
@@ -5803,7 +5821,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Desasignados.
+        ///   Busca una cadena traducida similar a Desasignado por agente.
         /// </summary>
         public static string systemTranslated_Unassign_message_to_agent {
             get {
@@ -5866,6 +5884,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de atención.
+        /// </summary>
+        public static string tAtentionMultimedia {
+            get {
+                return ResourceManager.GetString("tAtentionMultimedia", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo Auxiliar.
         /// </summary>
         public static string tAux {
@@ -5889,6 +5916,15 @@ namespace MiddleWareReports {
         public static string tAvg {
             get {
                 return ResourceManager.GetString("tAvg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo promedio de atención.
+        /// </summary>
+        public static string tAvgAtentionMultimedia {
+            get {
+                return ResourceManager.GetString("tAvgAtentionMultimedia", resourceCulture);
             }
         }
         
@@ -6199,7 +6235,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Total activos.
+        ///   Busca una cadena traducida similar a Activos.
         /// </summary>
         public static string totalAssets {
             get {
@@ -6397,6 +6433,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en cola.
+        /// </summary>
+        public static string tQueueMultimedia {
+            get {
+                return ResourceManager.GetString("tQueueMultimedia", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Trimestre.
         /// </summary>
         public static string tr {
@@ -6514,6 +6559,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de envío.
+        /// </summary>
+        public static string tsend {
+            get {
+                return ResourceManager.GetString("tsend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Indefinido.
         /// </summary>
         public static string tunknown {
@@ -6528,6 +6582,15 @@ namespace MiddleWareReports {
         public static string tWait {
             get {
                 return ResourceManager.GetString("tWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de asignación.
+        /// </summary>
+        public static string twaitMultimedia {
+            get {
+                return ResourceManager.GetString("twaitMultimedia", resourceCulture);
             }
         }
         
@@ -6568,7 +6631,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo Notas.
+        ///   Busca una cadena traducida similar a Tiempo de notas.
         /// </summary>
         public static string twrapup {
             get {
@@ -6609,6 +6672,15 @@ namespace MiddleWareReports {
         public static string type {
             get {
                 return ResourceManager.GetString("type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a No asignados.
+        /// </summary>
+        public static string unassignedMultimedia {
+            get {
+                return ResourceManager.GetString("unassignedMultimedia", resourceCulture);
             }
         }
         

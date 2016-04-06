@@ -433,7 +433,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             code = "4";
             type = "1";
             errorNumber = sqlEx.ErrorCode.ToString();
-            errorMessage = sqlEx.Message;
+            errorMessage = sqlEx.StackTrace;
             errorType = "SqlException";
         }
         catch (SecurityException secEx) 
@@ -463,7 +463,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             code = "5";
             type = "1";
             errorNumber = ((int)e.GetType().GetProperty("HResult", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(e, null)).ToString();
-            errorMessage = e.Message;
+            errorMessage = e.StackTrace;
             errorType = "GeneralException";
         }
         finally

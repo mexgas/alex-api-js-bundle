@@ -664,7 +664,7 @@
     <value>Grupo de trabajo</value>
   </data>
   <data name="inbound" xml:space="preserve">
-    <value>Especialidad</value>
+    <value>Grupo ACD</value>
   </data>
   <data name="nabnd_tres" xml:space="preserve">
     <value>Abandonadas antes de tolerancia para nivel de servicio</value>
@@ -1801,7 +1801,7 @@
     <value>Asignada y Toma Linea</value>
   </data>
   <data name="assigned" xml:space="preserve">
-    <value>Asignada</value>
+    <value>Asignados</value>
   </data>
   <data name="ndTime" xml:space="preserve">
     <value>Tiempo NoDisponible</value>
@@ -2110,31 +2110,31 @@
     <value>Tiempo de respuesta</value>
   </data>
   <data name="abandonedAgent" xml:space="preserve">
-    <value>Abandonado por agente</value>
+    <value>Finalizados por agente</value>
   </data>
   <data name="abandonedSystem" xml:space="preserve">
-    <value>Abandonado por sistema</value>
+    <value>Finalizados por sistema</value>
   </data>
   <data name="avgSend" xml:space="preserve">
-    <value>Promedio de envio</value>
+    <value>Porcentaje de atención</value>
   </data>
   <data name="download" xml:space="preserve">
-    <value>Descargas</value>
+    <value>Descargados</value>
   </data>
   <data name="Email" xml:space="preserve">
-    <value>Email</value>
+    <value>Correo</value>
   </data>
   <data name="EmailACD" xml:space="preserve">
-    <value>Email ACD</value>
+    <value>Correo por ACD</value>
   </data>
   <data name="finishedConversation" xml:space="preserve">
-    <value>Conversaciones terminadas</value>
+    <value>Conversaciones finalizadas</value>
   </data>
   <data name="ontrack" xml:space="preserve">
     <value>En seguimiento</value>
   </data>
   <data name="rejected" xml:space="preserve">
-    <value>Rechazados</value>
+    <value>No entregados</value>
   </data>
   <data name="send" xml:space="preserve">
     <value>Enviados</value>
@@ -2143,7 +2143,7 @@
     <value>Tiempo atencion</value>
   </data>
   <data name="totalAssets" xml:space="preserve">
-    <value>Total activos</value>
+    <value>Activos</value>
   </data>
   <data name="totalWait" xml:space="preserve">
     <value>Total espera</value>
@@ -2164,7 +2164,7 @@
     <value>Cerrado por sistema</value>
   </data>
   <data name="EmailDetail" xml:space="preserve">
-    <value>Detalle de email</value>
+    <value>Detalle de correo</value>
   </data>
   <data name="totalaTencion" xml:space="preserve">
     <value>Total atencion </value>
@@ -2176,7 +2176,7 @@
     <value>Desasignado por agente</value>
   </data>
   <data name="conversationid" xml:space="preserve">
-    <value>Id Conversacion</value>
+    <value>ID conversacion</value>
   </data>
   <data name="estadoMail" xml:space="preserve">
     <value>estado email</value>
@@ -2187,38 +2187,20 @@
   <data name="nameACD" xml:space="preserve">
     <value>Nombre ACD</value>
   </data>
-  <data name="systemTranslated_Assign_message_to_agent" xml:space="preserve">
-    <value>Asignados</value>
-  </data>
   <data name="systemTranslated_Close_conversation_for_agent" xml:space="preserve">
-    <value>Cerrado por agente</value>
+    <value>Finalizado por el agente</value>
   </data>
   <data name="systemTranslated_conversation_closed_for_system" xml:space="preserve">
-    <value>Cerrado por sistema</value>
-  </data>
-  <data name="systemTranslated_Download_emails_from_server" xml:space="preserve">
-    <value>Descargados del servidor</value>
+    <value>Finalizado por sistema</value>
   </data>
   <data name="systemTranslated_It_forwards_the_message" xml:space="preserve">
     <value>En seguimiento</value>
   </data>
-  <data name="systemTranslated_Message_answered_by_agent" xml:space="preserve">
-    <value>Contestados por agente</value>
-  </data>
-  <data name="systemTranslated_Message_rejected_for_server" xml:space="preserve">
-    <value>Rechazado </value>
-  </data>
   <data name="systemTranslated_Message_sent_to_the_client" xml:space="preserve">
-    <value>Enviados al cliente</value>
-  </data>
-  <data name="systemTranslated_Read_the_message_agent" xml:space="preserve">
-    <value>Leidos</value>
+    <value>Entregado al cliente</value>
   </data>
   <data name="systemTranslated_Sending_the_message_is_rescheduled" xml:space="preserve">
     <value>Reprogramados</value>
-  </data>
-  <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
-    <value>Desasignados</value>
   </data>
   <data name="timeansware" xml:space="preserve">
     <value>Tiempo de respuesta</value>
@@ -2230,10 +2212,10 @@
     <value>Tiempo de espera</value>
   </data>
   <data name="AgentEmail" xml:space="preserve">
-    <value>Email por Agente</value>
+    <value>Correo por agente</value>
   </data>
   <data name="EmailGeneral" xml:space="preserve">
-    <value>General Email</value>
+    <value>Correo general</value>
   </data>
   <data name="interactions" xml:space="preserve">
     <value>Interacciones</value>
@@ -2245,7 +2227,7 @@
     <value>Estado</value>
   </data>
   <data name="twrapup" xml:space="preserve">
-    <value>Tiempo Notas</value>
+    <value>Tiempo de notas</value>
   </data>
   <data name="listName" xml:space="preserve">
     <value>Nombre de Lista</value>
@@ -2289,6 +2271,7 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Twitter por agente</value>
   </data>
+<<<<<<< HEAD
   <data name="cPhoneNumbers" xml:space="preserve">
     <value>Teléfono 1</value>
   </data>
@@ -2360,5 +2343,48 @@
   </data>
   <data name="StatusCalls" xml:space="preserve">
     <value>Estado de las llamadas</value>
+=======
+  <data name="messageId" xml:space="preserve">
+    <value>ID mensaje</value>
+  </data>
+  <data name="pendingSend" xml:space="preserve">
+    <value>No enviados</value>
+  </data>
+  <data name="tAtentionMultimedia" xml:space="preserve">
+    <value>Tiempo de atención</value>
+  </data>
+  <data name="tAvgAtentionMultimedia" xml:space="preserve">
+    <value>Tiempo promedio de atención</value>
+  </data>
+  <data name="tQueueMultimedia" xml:space="preserve">
+    <value>Tiempo en cola</value>
+  </data>
+  <data name="tsend" xml:space="preserve">
+    <value>Tiempo de envío</value>
+  </data>
+  <data name="twaitMultimedia" xml:space="preserve">
+    <value>Tiempo de asignación</value>
+  </data>
+  <data name="unassignedMultimedia" xml:space="preserve">
+    <value>No asignados</value>
+  </data>
+  <data name="systemTranslated_Assign_message_to_agent" xml:space="preserve">
+    <value>Asignado al agente</value>
+  </data>
+  <data name="systemTranslated_Download_emails_from_server" xml:space="preserve">
+    <value>Descargado del servidor</value>
+  </data>
+  <data name="systemTranslated_Message_answered_by_agent" xml:space="preserve">
+    <value>Respondido por agente</value>
+  </data>
+  <data name="systemTranslated_Message_rejected_for_server" xml:space="preserve">
+    <value>No entregado por servidor</value>
+  </data>
+  <data name="systemTranslated_Read_the_message_agent" xml:space="preserve">
+    <value>Leído por agente</value>
+  </data>
+  <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
+    <value>Desasignado por agente</value>
+>>>>>>> b033a9f09bdb9acbee9c8d06e76c79043409a658
   </data>
 </root>

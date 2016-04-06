@@ -351,4 +351,16 @@
   <data name="twrapup" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="tAtentionMultimedia" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tAvgAtentionMultimedia" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tQueueMultimedia" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="twaitMultimedia" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

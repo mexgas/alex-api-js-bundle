@@ -2181,7 +2181,6 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Agent Twitter</value>
   </data>
-<<<<<<< HEAD
   <data name="cPhoneNumbers" xml:space="preserve">
     <value>Telephone 1</value>
   </data>
@@ -2253,7 +2252,7 @@
   </data>
   <data name="StatusCalls" xml:space="preserve">
     <value>Status Calls</value>
-=======
+  </data>
   <data name="messageId" xml:space="preserve">
     <value>Message Id</value>
   </data>
@@ -2301,6 +2300,5 @@
   </data>
   <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
     <value>Appointed agent</value>
->>>>>>> b033a9f09bdb9acbee9c8d06e76c79043409a658
   </data>
 </root>

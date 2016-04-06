@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using MiddleWareReports.reports.specialreports;
 
 namespace MiddleWareReports
 {
@@ -104,6 +105,12 @@ namespace MiddleWareReports
                     return new RepOutAnswCalls();
                 case 4140: //Answered Calls On Chat Detail
                     return new RepOutCallsOnChatDetail();
+                case 4220: //Telephone Numbers by State Report
+                    return new RepSpecialTelephoneNumbersByState();
+                case 4230://Telephone Numbers by Record/List Report
+                    return new RepSpecialTelephoneNumbersByRegistry();
+                case 4240://Dialing Results Report
+                    return new RepSpecialDialingResults();
                 case 6000: //IVR
                     return null; //"IVR"
                 case 6010:

@@ -2181,4 +2181,76 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Agent Twitter</value>
   </data>
+  <data name="cPhoneNumbers" xml:space="preserve">
+    <value>Telephone 1</value>
+  </data>
+  <data name="cPhoneNumbers2" xml:space="preserve">
+    <value>Telephone 2</value>
+  </data>
+  <data name="cPhoneNumbers3" xml:space="preserve">
+    <value>Telephone 3</value>
+  </data>
+  <data name="cPhoneNumbers4" xml:space="preserve">
+    <value>Telephone 4</value>
+  </data>
+  <data name="cPhoneNumbers5" xml:space="preserve">
+    <value>Telephone 5</value>
+  </data>
+  <data name="dialingResult" xml:space="preserve">
+    <value>Total Calls</value>
+  </data>
+  <data name="listId" xml:space="preserve">
+    <value>List ID</value>
+  </data>
+  <data name="percentage2" xml:space="preserve">
+    <value>Percentage 2</value>
+  </data>
+  <data name="percentage3" xml:space="preserve">
+    <value>Percentage 3</value>
+  </data>
+  <data name="percentage4" xml:space="preserve">
+    <value>Percentage 4</value>
+  </data>
+  <data name="percentage5" xml:space="preserve">
+    <value>Percentage 5</value>
+  </data>
+  <data name="phoneNumbers" xml:space="preserve">
+    <value>Phone Numbers</value>
+  </data>
+  <data name="state" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="statusCall_id" xml:space="preserve">
+    <value>Dialing Result</value>
+  </data>
+  <data name="DialingResultsReport" xml:space="preserve">
+    <value>Dialing Results Report</value>
+  </data>
+  <data name="TelephoneNumbersbyRecordListReport" xml:space="preserve">
+    <value>Telephone Numbers by Record/List Report</value>
+  </data>
+  <data name="TelephoneNumbersbyStateReport" xml:space="preserve">
+    <value>Telephone Numbers by State Report</value>
+  </data>
+  <data name="List" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="Lists" xml:space="preserve">
+    <value>Lists</value>
+  </data>
+  <data name="States" xml:space="preserve">
+    <value>States</value>
+  </data>
+  <data name="state_Count" xml:space="preserve">
+    <value>Total States</value>
+  </data>
+  <data name="statusCall" xml:space="preserve">
+    <value>Status Call</value>
+  </data>
+  <data name="statusCallId" xml:space="preserve">
+    <value>Status Call ID</value>
+  </data>
+  <data name="StatusCalls" xml:space="preserve">
+    <value>Status Calls</value>
+  </data>
 </root>

@@ -107,6 +107,9 @@
     <Compile Include="reports\specialreports\RepSpececialCamMovs.cs" />
     <Compile Include="reports\specialreports\RepSpececialPromises.cs" />
     <Compile Include="reports\specialreports\RepSpecialCallKeyHistory.cs" />
+    <Compile Include="reports\specialreports\RepSpecialDialingResults.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByRegistry.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByState.cs" />
     <Compile Include="reports\twitter\RepTwitterACD.cs" />
     <Compile Include="reports\twitter\RepTwitterAgente.cs" />
     <Compile Include="reports\twitter\RepTwitterDetail.cs" />

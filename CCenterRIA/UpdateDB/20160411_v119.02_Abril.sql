@@ -206,6 +206,11 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 					values (1, 3, 5, 4, ''045%'', ''13'')
 				 end'
 		EXEC(@sql)
+		
+		set @process = 'ALTER TABLE--------xxClienteCarga'
+		set @sql='if not exists (select * from sys.columns where name = N''proveedor'' and Object_ID = Object_ID(N''xxClienteCarga'')) alter table xxClienteCarga add proveedor int null
+				  if not exists (select * from sys.columns where name = N''protocolo'' and Object_ID = Object_ID(N''xxClienteCarga'')) alter table xxClienteCarga add protocolo int null'
+		EXEC(@sql)
 
 		set @process = 'Alter SP -- ccsp_NetworkSocialAdminAccount'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_NetworkSocialAdminAccount]

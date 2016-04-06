@@ -287,12 +287,14 @@ end
 
 	select * from ccUsers
 
-	--List Camp
+	--Status Call
 	if @type = 25
 	begin
-		select list_id as id, name as description, ''listId'' as dbColumn
-		from ccRIARegistryLists
-		order by id
+		begin
+		select statusCall_id as id, [descripcion] as description, ''statusCallId'' as dbcolumn
+		from ccstatusllamada
+		order by [descripcion]
+	end
 	end
 end
 -----------------------------------------------------------
@@ -324,15 +326,329 @@ begin
 end'
 	EXEC(@sql)
 
-	set @process = ''
-	set @sql=''
+	set @process = 'CREATE TABLE -------- RepSpecialTelephoneNumbersByState'
+	set @sql='if not exists (select * from sys.tables where name = N''RepSpecialTelephoneNumbersByState'') begin
+				create table RepSpecialTelephoneNumbersByState
+				(
+					[date] datetime NOT NULL,
+					listId int not null,
+					listName varchar(max), 
+					[state_Count] varchar(max) not null,
+					[Count] int not null,
+					[state_avg] varchar(10) not null,
+					[avg] decimal(10,2) not null,     
+					[year] int NOT NULL,
+					[month] int NOT NULL,
+					[day] int NOT NULL,
+					[hour] int NOT NULL,
+					[minutes] int NOT NULL
+				)
+			 end'
+	EXEC(@sql)
+
+	set @process = 'CREATE TABLE -------- RepSpecialTelephoneNumbersByRegistry'
+	set @sql='if not exists (select * from sys.tables where name = N''RepSpecialTelephoneNumbersByRegistry'') begin
+				create table RepSpecialTelephoneNumbersByRegistry
+				(
+					[date] datetime NOT NULL,
+					listId int not null,
+					listName varchar(max), 
+					cPhoneNumbers int not null,
+					cPhoneNumbers2 int not null,
+					cPhoneNumbers3 int not null,
+					cPhoneNumbers4 int not null,
+					cPhoneNumbers5 int not null,
+					percentage varchar(10) not null,
+					percentage2 varchar(10) not null,
+					percentage3 varchar(10) not null,
+					percentage4 varchar(10) not null,
+					percentage5 varchar(10) not null,
+					[year] int NOT NULL,
+					[month] int NOT NULL,
+					[day] int NOT NULL,
+					[hour] int NOT NULL,
+					[minutes] int NOT NULL
+				)
+			end'
+	EXEC(@sql)
+
+	set @process = 'CREATE TABLE -------- RepSpecialDialingResults'
+	set @sql='if not exists (select * from sys.tables where name = N''RepSpecialDialingResults'') begin
+				create table RepSpecialDialingResults
+				(
+					[date] datetime NOT NULL,
+					statusCallId int not null,
+					statusCall varchar(max) not null,
+					statusCall_Count varchar(max) not null,
+					[Count] int not null,
+					statusCall_avg varchar(max) not null,
+					[avg] decimal(10,2),
+					[year] int NOT NULL,
+					[month] int NOT NULL,
+					[day] int NOT NULL,
+					[hour] int NOT NULL,
+					[minutes] int NOT NULL
+				)
+			end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- ReportsFiltersText'
+	set @sql='if not exists(select * from ReportsFiltersText where id in (4220,4230)) begin
+						insert into ReportsFiltersText values (''Telephone Numbers by State Report'', ''A-Z a-z0-9 _\-'', ''listName'', 4220)
+						insert into ReportsFiltersText values (''Telephone Numbers by RecordList Report'', ''A-Z a-z0-9 _\-'', ''listName'', 4230)
+			  end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- ReportsFiltersMenus'
+	set @sql='if not exists(select * from ReportsFiltersMenus where idReport in (4220, 4230, 4240)) begin
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4220, ''date'')
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4220, ''filterby'')
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4220, ''text'')
+
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4230, ''date'')
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4230, ''filterby'')
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4230, ''text'')
+
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4240, ''date'')
+				insert into [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName]) values (4240, ''filterby'')
+			end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- ReportsFilters'
+	set @sql='if not exists(select * from ReportsFilters where id in (4220, 4230, 4240)) begin
+				insert into ReportsFilters values (''Telephone Numbers by State Report'', ''campaigns'', 4220)
+				insert into ReportsFilters values (''Telephone Numbers by State Report'', ''users'', 4220)
+				insert into ReportsFilters values (''Telephone Numbers by State Report'', ''statusCall'', 4220)
+
+				insert into ReportsFilters values (''Telephone Numbers by RecordList Report'', ''campaigns'', 4230)
+				insert into ReportsFilters values (''Telephone Numbers by RecordList Report'', ''users'', 4230)
+
+				insert into ReportsFilters values (''Dialing Results Report'', ''campaigns'', 4240)
+				insert into ReportsFilters values (''Dialing Results Report'', ''users'', 4240)
+			end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- PivotReports'
+	set @sql='if not exists(select * from PivotReports where id in (4220, 4240)) begin
+				insert into PivotReports values(4220, ''state_Count|state_avg'', ''date|listName'', ''sum'')
+				insert into PivotReports values(4240, ''statusCall_Count|statusCall_avg'', ''date'', ''sum'')
+			 end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- Filters'
+	set @sql='if not exists(select * from Filters where id  = 27) begin
+				insert into Filters values (27, ''statusCall'', 25, ''StatusCalls'', ''StatusCall'')
+			  end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- ReportsTotals'
+	set @sql='if not exists(select * from ReportsTotals where id  in (4220, 4230, 4240)) begin
+				insert into ReportsTotals values (4220, '')
+				insert into ReportsTotals values (4230, '')
+				insert into ReportsTotals values (4240, '')
+			end'
+	EXEC(@sql)
+
+
+	set @process = 'CREATE FUNCTION -------- fPercentage'
+	set @sql='USE [ccReportsRia]
+				GO
+				/****** Object:  UserDefinedFunction [dbo].[fPercentage]    Script Date: 06/04/2016 04:00:03 p. m. ******/
+				SET ANSI_NULLS ON
+				GO
+				SET QUOTED_IDENTIFIER ON
+				GO
+				CREATE  FUNCTION [dbo].[fPercentage] (@num1 int, @num2 int) 
+				RETURNS decimal(10,2)
+				AS  
+				BEGIN 
+
+					declare @porcentaje decimal(10,2)
+
+					set @porcentaje = isnull(((@num1*1.00)/nullif((@num2*1.00),0))*100.00,0)
+
+					RETURN (@porcentaje)
+				END'
+	EXEC(@sql)
+
+	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByRegistry'
+	set @sql='if not exists (select * from sys.procedures where name = N''ccspRepSpecialTelephoneNumbersByRegistry'')
+				begin
+						create PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
+							@action as tinyint,
+							@from as datetime = null,
+							@to as datetime = null
+							AS
+
+							declare @temp table(
+							tel1 int,
+							tel2 int,
+							tel3 int,
+							tel4 int,
+							tel5 int,
+							listid int 
+							) 
+
+							declare @tel1 int, @tel2 int,@tel3 int,@tel4 int,@tel5 int
+
+							if @from is null
+								select @from = convert(datetime,convert(varchar(11),getdate()))
+							if @to is null
+								select @to = getdate()
+
+							if @action = 1
+							begin
+										delete from RepSpecialTelephoneNumbersByRegistry with(rowlock) where date >= @from and date < @to
+					
+					
+							insert into @temp
+											select case when cal_telefono <> '''' then isnull( COUNT(cal_telefono), 0) else 0 end,
+											case when cal_telefono2 <> '''' then isnull( COUNT(cal_telefono2), 0) else 0 end ,
+											case when cal_telefono3 <> '''' then isnull( COUNT(cal_telefono3), 0) else 0 end,
+											case when cal_telefono4 <> '''' then isnull( COUNT(cal_telefono4), 0) else 0 end,
+											case when cal_telefono5 <> '''' then isnull( COUNT(cal_telefono5), 0) else 0 end,
+											list_id
+										from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
+										--where cal_status in (11,13,15,16)
+										where cal_fechaDial >= @from
+										and cal_fechaDial < @to
+						
+										group by cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,list_id
+
+							select @tel1 = SUM(tel1), @tel2 = SUM(tel2),@tel3 = SUM(tel3), @tel4 =SUM(tel4), @tel5 = SUM(tel5) 
+							from @temp 
+
+
+										insert into RepSpecialTelephoneNumbersByRegistry
+
+											select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
+													isnull(cosout.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',	
+													tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
+													dbo.fPercentage(isnull(tem.tel1, 0),@tel1 ) as ''avg'',
+													dbo.fPercentage(isnull(tem.tel2, 0),@tel2 ) as ''avg2'',
+													dbo.fPercentage(isnull(tem.tel3, 0),@tel3) as ''avg3'',
+													dbo.fPercentage(isnull( tem.tel4 , 0),@tel4) as ''avg4'',
+													dbo.fPercentage(isnull(tem.tel5, 0), @tel5) as ''avg5'',					  					   				  
+													datepart(yy,convert(datetime, convert(varchar(11),cal_fechaDial))) as [year],
+													datepart(mm,convert(datetime, convert(varchar(11),cal_fechaDial))) as [month],
+													datepart(dd,convert(datetime, convert(varchar(11),cal_fechaDial))) as [day],
+													datepart(hh,convert(datetime, convert(varchar(11),cal_fechaDial))) as [hour],
+													datepart(mi,convert(datetime, convert(varchar(11),cal_fechaDial))) as [minutes]
+													from ccoCallsOutSource cosout with(index(IX_ccoCallsOutSource_19),nolock)
+													inner join ccRIARegistryLists rl on cosout.list_id =  rl.list_id
+													left join @temp tem on cosout.list_id = tem.listid
+											--where cal_status in (11,13,15,16)
+											where cal_fechaDial >= @from
+											and cal_fechaDial < @to
+							
+											group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5
+
+							
+							end
+					end'
+	EXEC(@sql)
+
+	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByState'
+	set @sql='if not exists (select * from sys.procedures where name = N''ccspRepSpecialTelephoneNumbersByRegistry'')
+			 BEGIN
+					CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
+					@action as tinyint,
+					@from as datetime = null,
+					@to as datetime = null
+					AS
+
+					declare @totales int
+
+					if @from is null
+						select @from = convert(datetime,convert(varchar(11),getdate()))
+					if @to is null
+						select @to = getdate()
+
+					if @action = 1
+					begin
+								delete from RepSpecialTelephoneNumbersByState with(rowlock) where date >= @from and date < @to
+
+								select @totales = isnull( COUNT(callout_id), 0)
+								from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
+								where cal_fechaDial >= @from
+								and cal_fechaDial < @to
+								and Region is not null
+
+								insert into RepSpecialTelephoneNumbersByState
+									select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
+										   isnull([cos].list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
+										   Region + ''_Count'' as [state_Count],
+										   isnull( COUNT(callout_id), 0) as ''Count'',
+										   Region + ''_Avg'' as ''state_avg'',
+										   dbo.fPercentage(isnull( COUNT(callout_id), 0), @totales) as ''avg'',
+										   datepart(yy,convert(datetime, convert(varchar(11),cal_fechaDial))) as [year],
+										   datepart(mm,convert(datetime, convert(varchar(11),cal_fechaDial))) as [month],
+										   datepart(dd,convert(datetime, convert(varchar(11),cal_fechaDial))) as [day],
+										   datepart(hh,convert(datetime, convert(varchar(11),cal_fechaDial))) as [hour],
+										   datepart(mi,convert(datetime, convert(varchar(11),cal_fechaDial))) as [minutes]
+										   from ccoCallsOutSource [cos] with(index(IX_ccoCallsOutSource_19),nolock)
+										   left join ccRIARegistryLists rl on [cos].list_id =  rl.list_id
+									where cal_fechaDial >= @from
+									and cal_fechaDial < @to
+									and Region is not null
+									group by cal_fechaDial, [cos].list_id, rl.name, Region						
+					end
+			 END'
+	EXEC(@sql)
+
+	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialDialingResults'
+	set @sql='if not exists (select * from sys.procedures where name = N''ccspRepSpecialDialingResults'')
+			begin
+					CREATE PROCEDURE [dbo].[ccspRepSpecialDialingResults]
+					@action as tinyint,
+					@from as datetime = null,
+					@to as datetime = null
+					AS
+
+					declare @totales int
+
+					if @from is null
+						select @from = convert(datetime,convert(varchar(11),getdate()))
+					if @to is null
+						select @to = getdate()
+
+					if @action = 1
+					begin
+								delete from RepSpecialDialingResults with(rowlock) where date >= @from and date < @to
+
+								select @totales = isnull( COUNT(callout_id), 0)
+								from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
+								where cal_fechaDial >= @from
+								and cal_fechaDial < @to
+								and cal_status <> 0
+			
+								insert into RepSpecialDialingResults
+									select	convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'') as [date],
+											isnull([cos].cal_status,0) as ''statusCallId'',
+											isnull(sl.descripcion,'''') as ''statusCall'',
+											sl.descripcion + ''_Count'' as [statusCall_Count],
+											isnull( COUNT(callout_id), 0) as ''Count'',
+											sl.descripcion + ''_Avg'' as ''statusCall_avg'',
+											dbo.fPercentage(isnull( COUNT(callout_id), 0), @totales) as ''avg'',
+											datepart(yy,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [year],
+											datepart(mm,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [month],
+											datepart(dd,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [day],
+											datepart(hh,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [hour],
+											datepart(mi,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [minutes]
+									from ccoCallsOutSource  [cos]
+									left join ccstatusllamada sl on [cos].cal_status = sl.statusCall_id
+									where cal_fechaDial >= @from
+									and cal_fechaDial < @to
+									and [cos].cal_status <> 0
+									group by cal_fechaDial, [cos].cal_status, sl.descripcion
+			
+					end
+			end'
 	EXEC(@sql)
 
 	set @process = ''
 	set @sql=''
 	EXEC(@sql)
-
-
 
 		/* End script release */
 

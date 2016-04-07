@@ -552,7 +552,7 @@ END'
 		EXEC(@sql)
 
 		set @process = 'ALTER TABLE--------ccRIACat_Areas'
-		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinytyint null'
+		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinyint null'
 		EXEC(@sql)
 		
 		set @process = 'Alter SP -- ccsp_RIA_ABCAreas'

@@ -332,7 +332,8 @@ end'
 				(
 					[date] datetime NOT NULL,
 					listId int not null,
-					listName varchar(max), 
+					listName varchar(max),
+					[state] varchar(max), 
 					[state_Count] varchar(max) not null,
 					[Count] int not null,
 					[state_avg] varchar(10) not null,
@@ -577,6 +578,7 @@ end'
 								insert into RepSpecialTelephoneNumbersByState
 									select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
 										   isnull([cos].list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
+										   Region as [state],
 										   Region + ''_Count'' as [state_Count],
 										   isnull( COUNT(callout_id), 0) as ''Count'',
 										   Region + ''_Avg'' as ''state_avg'',
@@ -644,6 +646,23 @@ end'
 			
 					end
 			end'
+	EXEC(@sql)
+
+	set @process = 'INSERT -------- ReportsCharts'
+	set @sql='if not exists(select * from ReportsCharts where id in (4220, 4230, 4240)) begin
+			insert into ReportsCharts values (4220, ''Telephone Numbers by State Report'', 1, ''state'', '''', '''', '''', ''sum([Count])'', ''Telephone Numbers by State'', 0)
+			insert into ReportsCharts values (4220, ''Telephone Numbers by State Report'', 2, ''year|month|day'', ''state'', '''', '''', ''sum([Count])'', ''Telephone Numbers by State per Day'', 0)
+
+			insert into ReportsCharts values (4230, ''Telephone Numbers by RecordList Report'', 1, ''listName'', '''', '''', '''', ''sum([cPhoneNumbers]+[cPhoneNumbers2]+[cPhoneNumbers3]+[cPhoneNumbers4]+[cPhoneNumbers5])'', ''Telephone Numbers by Record'', 0)
+			insert into ReportsCharts values (4230, ''Telephone Numbers by RecordList Report'', 2, ''year|month|day'', ''listName'', '''', '''', ''sum([cPhoneNumbers]+[cPhoneNumbers2]+[cPhoneNumbers3]+[cPhoneNumbers4]+[cPhoneNumbers5])'', ''Telephone Numbers by Record per Day'', 0)
+
+			insert into ReportsCharts values (4240, ''Dialing Results Report'', 1, ''statusCall'', '''', '''', '''', ''sum([Count])'', ''Dialing Results'', 0)
+			insert into ReportsCharts values (4240, ''Dialing Results Report'', 2, ''year|month|day|hour'', ''statusCall'', '''', '''', ''sum([Count])'', ''Dialing Results per Hour'', 0)
+			end'
+	EXEC(@sql)
+
+	set @process = ''
+	set @sql=''
 	EXEC(@sql)
 
 	set @process = ''

@@ -2289,9 +2289,6 @@
   <data name="dialingResult" xml:space="preserve">
     <value>Total de llamadas</value>
   </data>
-  <data name="listId" xml:space="preserve">
-    <value>ID de lista</value>
-  </data>
   <data name="percentage2" xml:space="preserve">
     <value>Porcentaje 2</value>
   </data>
@@ -2342,7 +2339,7 @@
   </data>
   <data name="StatusCalls" xml:space="preserve">
     <value>Estado de las llamadas</value>
-   </data>
+  </data>
   <data name="messageId" xml:space="preserve">
     <value>ID mensaje</value>
   </data>
@@ -2384,5 +2381,23 @@
   </data>
   <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
     <value>Desasignado por agente</value>
+  </data>
+  <data name="DialingResults" xml:space="preserve">
+    <value>Resultados de marcación</value>
+  </data>
+  <data name="DialingResultsperHour" xml:space="preserve">
+    <value>Resultados de marcación por hora</value>
+  </data>
+  <data name="TelephoneNumbersbyRecord" xml:space="preserve">
+    <value>Números teléfonicos por registro/lista</value>
+  </data>
+  <data name="TelephoneNumbersbyRecordperDay" xml:space="preserve">
+    <value>Números teléfonicos por registro/lista por día</value>
+  </data>
+  <data name="TelephoneNumbersbyState" xml:space="preserve">
+    <value>Números telefónicos por estado</value>
+  </data>
+  <data name="TelephoneNumbersbyStateperDay" xml:space="preserve">
+    <value>Números telefónicos por estado por día</value>
   </data>
 </root>

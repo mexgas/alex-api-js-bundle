@@ -1888,6 +1888,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Resultados de marcación.
+        /// </summary>
+        public static string DialingResults {
+            get {
+                return ResourceManager.GetString("DialingResults", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Resultados de marcación por hora.
+        /// </summary>
+        public static string DialingResultsperHour {
+            get {
+                return ResourceManager.GetString("DialingResultsperHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Reporte de resultados de marcación.
         /// </summary>
         public static string DialingResultsReport {
@@ -2478,15 +2496,6 @@ namespace MiddleWareReports {
         public static string List {
             get {
                 return ResourceManager.GetString("List", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a ID de lista.
-        /// </summary>
-        public static string listId {
-            get {
-                return ResourceManager.GetString("listId", resourceCulture);
             }
         }
         
@@ -5983,11 +5992,47 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Números teléfonicos por registro/lista.
+        /// </summary>
+        public static string TelephoneNumbersbyRecord {
+            get {
+                return ResourceManager.GetString("TelephoneNumbersbyRecord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Reporte de números telefónicos por registro/lista.
         /// </summary>
         public static string TelephoneNumbersbyRecordListReport {
             get {
                 return ResourceManager.GetString("TelephoneNumbersbyRecordListReport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Números teléfonicos por registro/lista por día.
+        /// </summary>
+        public static string TelephoneNumbersbyRecordperDay {
+            get {
+                return ResourceManager.GetString("TelephoneNumbersbyRecordperDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Números telefónicos por estado.
+        /// </summary>
+        public static string TelephoneNumbersbyState {
+            get {
+                return ResourceManager.GetString("TelephoneNumbersbyState", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Números telefónicos por estado por día.
+        /// </summary>
+        public static string TelephoneNumbersbyStateperDay {
+            get {
+                return ResourceManager.GetString("TelephoneNumbersbyStateperDay", resourceCulture);
             }
         }
         

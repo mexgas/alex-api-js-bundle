@@ -2199,9 +2199,6 @@
   <data name="dialingResult" xml:space="preserve">
     <value>Total Calls</value>
   </data>
-  <data name="listId" xml:space="preserve">
-    <value>List ID</value>
-  </data>
   <data name="percentage2" xml:space="preserve">
     <value>Percentage 2</value>
   </data>
@@ -2300,5 +2297,23 @@
   </data>
   <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
     <value>Appointed agent</value>
+  </data>
+  <data name="DialingResults" xml:space="preserve">
+    <value>DIaling Results</value>
+  </data>
+  <data name="DialingResultsperHour" xml:space="preserve">
+    <value>Dialing Results per Hour</value>
+  </data>
+  <data name="TelephoneNumbersbyRecord" xml:space="preserve">
+    <value>Telephone Numbers by Record/List</value>
+  </data>
+  <data name="TelephoneNumbersbyRecordperDay" xml:space="preserve">
+    <value>Telephone Numbers by Record/List per Day</value>
+  </data>
+  <data name="TelephoneNumbersbyState" xml:space="preserve">
+    <value>Telephone Numbers by State</value>
+  </data>
+  <data name="TelephoneNumbersbyStateperDay" xml:space="preserve">
+    <value>Telephone Numbers by State per Day</value>
   </data>
 </root>

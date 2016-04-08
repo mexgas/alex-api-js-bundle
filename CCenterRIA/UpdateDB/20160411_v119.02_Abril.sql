@@ -672,11 +672,71 @@ end
   '
 		EXEC(@sql)
 
+		set @process = 'CREATE Function -- [VerificaRegionLocalidad]'
+		set @sql='CREATE FUNCTION [dbo].[VerificaRegionLocalidad](@tel varchar(32))        
+			RETURNS @retVRL TABLE      
+			(      
+			    tel varchar(32) PRIMARY KEY NOT NULL,       
+			    region varchar(32) NULL,       
+			    localidad varchar(32) NULL      
+			)        
+			 BEGIN        
+			 declare @ld varchar(7)        
+			 declare @lon tinyint        
+			 declare @result tinyint        
+			 declare @mod varchar(10)        
+			 declare @Cadena varchar(32)        
+			 declare @region varchar(20)       
+			 declare @localidad varchar(20)      
+			 declare @cldLocal varchar(7)      
+			 declare @pais tinyint       
+			     
+			 select @cldLocal = valor from ccsettings with(nolock) where setting_id = 17      
+			 select @pais = valor from ccSettings with(nolock) where setting_id = 104      
+			        
+			 select @tel = dbo.limpia(@tel)        
+			        
+			 if @pais = 1 begin --Empieza Mexico        
+			  select @lon = len(@tel)        
+			  if @lon between 7 and 8 begin        
+			   set @tel = @cldLocal + @tel        
+			  end        
+			  select @tel = right(@tel, 10)        
+			  select @lon = len(@tel)        
+			        
+			  if @lon = 10 begin        
+			        
+			   if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))begin      
+			    select @ld = left(@tel,2)      
+			    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,2)  
+			    end      
+			   else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))  begin      
+			    select @ld = left(@tel,3)        
+			    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,3)    
+			    end      
+			   else  begin      
+			   if (@region is null) begin      
+			 select @region = estado from series nolock where cld=@cldLocal         
+			 end      
+			   INSERT @retVRL      
+			        SELECT @tel, @region, @localidad      
+			 RETURN      
+			   end      
+			  end        
+			end --Termina Mexico      
+			       
+			  INSERT @retVRL      
+			        SELECT @tel, @region, @localidad      
+			  RETURN      
+			        
+			end'
+		EXEC(@sql)
+
 		set @process = ''
 		set @sql=''
 		EXEC(@sql)
 
-
+		
 
 		/* End script release */
 

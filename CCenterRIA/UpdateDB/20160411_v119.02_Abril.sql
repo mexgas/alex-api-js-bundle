@@ -46,7 +46,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 
 		set @process = 'Update Labels from menus'
 		set @sql='update ccMenus set menu_descrip = ''Cuentas de salida|From Email Addresses'', release = ''dbc8236e42a707b69957a1961fb04ab814ab0f803509bd8ee1cb1ce4ce53b90921ca2afa2fdd6d4b379b739e34b9d570'' where menu_id = 81
-update ccMenus set menu_descrip = ''Asociación de cuentas de salida|From Email Addresses Association'', release = ''560ed80e1b20ea34c6507d730c5bf457f1fed7bc7dd97e37ebfd050781c6ec5086d0b6eec2aa79bf1194ad3818fa19d8ebb4c5def239352b188702be9f9ae82c08edd5ac6e4bafaea20ebaa5125dbf1b'' where menu_id = 82
+update ccMenus set menu_descrip = ''AsociaciÃ³n de cuentas de salida|From Email Addresses Association'', release = ''560ed80e1b20ea34c6507d730c5bf457f1fed7bc7dd97e37ebfd050781c6ec5086d0b6eec2aa79bf1194ad3818fa19d8ebb4c5def239352b188702be9f9ae82c08edd5ac6e4bafaea20ebaa5125dbf1b'' where menu_id = 82
 update ccMenus set menu_descrip = ''Firmas de correo|Email Signatures'', release = ''4ac1b8688d4d698a233e8ed87fdb403731fc1fa748d926ce076376f74dc782023846549ea7f469eb9eb2816c3ca594e9'' where menu_id = 84
 
 update ccMenus set menu_descrip = ''Correo|Email'', release = ''7484a0302660b91b91039cc3893f7f41'' where menu_id = 10000
@@ -58,14 +58,14 @@ update ccMenus set menu_descrip = ''Correo general|Email General'', release = ''
 update ccMenus set menu_descrip = ''Guion de agentes|Scripting'', release = ''4ffed6b59a7b91b78b12c98b4d855663865935dd4a7cd7f0ef276d059d5d1919'' where menu_id = 72
 update ccMenus set menu_descrip = ''Direcciones CC y CCO|CC & BCC Email Addresses'', release = ''09cbbffafe26e97542fa49002c1ec5e68ba515f9cbd9bbc03c547910ac6d73ec802e03cbfc7bceaa52cbfdbbf0396e04'' where menu_id = 85
 update ccMenus set menu_descrip = ''Plantillas de multimedios|Multichannel Templates'', release = ''fec74cbaf0b2d7132ee780dabe49895080099c393ebceefb3f21a3efb74960106857e5d4c2ffacf5aced54935e6ee3c55dfbfe9bce82bde21378d3a3b081a702'' where menu_id = 79
-update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed67d147a622d6b758c572aaf3debd315ea'' where menu_id = 19
+update ccMenus set menu_descrip = ''Mensajes automÃ¡ticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed67d147a622d6b758c572aaf3debd315ea'' where menu_id = 19
 '
 		EXEC(@sql)
 
-	set @process = 'Alter [dbo].[configuraIdiomaCatalogosEspañol]-----'
-		set @sql='ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
+	set @process = 'Alter [dbo].[configuraIdiomaCatalogosEspaÃ±ol]-----'
+		set @sql='ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspaÃ±ol]
 AS
-Print ''Iniciando proceso de configuracion en Español''
+Print ''Iniciando proceso de configuracion en EspaÃ±ol''
 
 Print ''Estableciendo Horarios''
 Delete [dbo].[ccHorarios]
@@ -77,7 +77,7 @@ INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFi
 
 Print ''Estableciendo Not Ready y graficas''
 Delete [ccRIANotReadyGraph]
-Delete [dbo].[ccTipoNotReady] 
+Delete [dbo].[ccTipoNotReady]
 Delete [ccRIAGraphics]
 
 DBCC CHECKIDENT (''[ccTipoNotReady]'', RESEED, 0)
@@ -245,13 +245,13 @@ SET IDENTITY_INSERT [ccTipoMovsListaNegra] OFF
 
 Print ''Estableciendo los tipos de calificacion''
 Delete [dbo].[ccTipoCalif]
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, convert(text, N''Solicita información general'' collate SQL_Latin1_General_CP1_CI_AS), 0)
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, convert(text, N''Se cortó la llamada'' collate SQL_Latin1_General_CP1_CI_AS), 0)
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, convert(text, N''Número equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, convert(text, N''Solicita informaciÃ³n general'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, convert(text, N''Se cortÃ³ la llamada'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, convert(text, N''NÃºmero equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0)
 
 Print ''Estableciendo los tipos de calificacion de salida''
 Delete [dbo].[ccTipoCalifOUT]
-INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, convert(text, N''Gestión Efectiva'' collate SQL_Latin1_General_CP1_CI_AS), 0, 0, 1)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, convert(text, N''GestiÃ³n Efectiva'' collate SQL_Latin1_General_CP1_CI_AS), 0, 0, 1)
 INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, convert(text, N''Se deja recado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 2)
 INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, convert(text, N''Numero Equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 3)
 
@@ -270,12 +270,12 @@ Print ''Mensajes default chat''
 DELETE [dbo].[ccRIAChatInboundMsgs]
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default5'', ''!Bienvenido!'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default3'', ''El servicio no se encuentra disponible'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default2'', ''Nuestro horario de atención ha terminado'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default2'', ''Nuestro horario de atenciÃ³n ha terminado'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default1'', ''Por favor espere mientras uno de nuestros agentes se encuentra disponible'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default7'', ''No hay agentes disponibles'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default10'', ''No podemos tomar su solicitud'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesión de chat ha estado inactiva mucho tiempo'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesión de chat ha concluido'')'
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesiÃ³n de chat ha estado inactiva mucho tiempo'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesiÃ³n de chat ha concluido'')'
 		EXEC(@sql)
 
 		set @process = 'DROP TABLE [dbo].[ccTwitterNode]-----'
@@ -361,10 +361,10 @@ end'
 		set @process = 'ALTER TABLE--------ccRIACat_Areas'
 		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinyint null'
 		EXEC(@sql)
-		
-		
+
+
 		set @process = 'ALTER TABLE--------ccoCallsOutSource'
-		set @sql='if not exists (select * from sys.columns where name in (N''Region'',''Localidad'') and Object_ID = Object_ID(N''ccoCallsOutSource'')) 
+		set @sql='if not exists (select * from sys.columns where name in (N''Region'',''Localidad'') and Object_ID = Object_ID(N''ccoCallsOutSource''))
 ALTER TABLE ccoCallsOutSource add Region varchar(20) null,Localidad varchar(20) null'
 		EXEC(@sql)
 
@@ -391,9 +391,9 @@ end
 
 		set @process = 'INSERT -------- ccMenus'
 		set @sql ='if not exists(select * from ccmenus where type=3 and menu_id in(4220, 4230, 4240)) begin
-	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de teléfonos por estado de la república|Telephone report ordered by republic states'', 4000, ''B'', 4, 3, '''', ''60b188045ce43b6a1d77f7a81f67767fc90fbef71d57e4498d362c5c67a3c097d076f2f127f0f7af01beda4ac36008993c52871865dfbcc8d37183f0a429089f59ae97a60b9d269449063e6d38f93222a414d69d2a3fb7b721155619d8e6b4e2'')
-	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4230, ''Reporte de números telefónicos por registro/lista|Telephone Numbers by RecordList Report'',  4000, ''B'', 4, 3, '''',''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c40eaade12674a111dbfba34cfd4a3efd7c09b538de3ae9891c2ed4b98f2e08acd083c26b7666470d365e856c76e59c751b381635cf60a71915886932047e9227c'')
-	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcación|Dialing Result Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d446f04bcc6ff01e8247b5531a00ded6b'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de telÃ©fonos por estado de la repÃºblica|Telephone report ordered by republic states'', 4000, ''B'', 4, 3, '''', ''60b188045ce43b6a1d77f7a81f67767fc90fbef71d57e4498d362c5c67a3c097d076f2f127f0f7af01beda4ac36008993c52871865dfbcc8d37183f0a429089f59ae97a60b9d269449063e6d38f93222a414d69d2a3fb7b721155619d8e6b4e2'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4230, ''Reporte de nÃºmeros telefÃ³nicos por registro/lista|Telephone Numbers by RecordList Report'',  4000, ''B'', 4, 3, '''',''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c40eaade12674a111dbfba34cfd4a3efd7c09b538de3ae9891c2ed4b98f2e08acd083c26b7666470d365e856c76e59c751b381635cf60a71915886932047e9227c'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcaciÃ³n|Dialing Result Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d446f04bcc6ff01e8247b5531a00ded6b'')
 end'
 		EXEC(@sql)
 
@@ -423,9 +423,9 @@ end'
 		set @process = 'INSERT -------- mcaProtocolos'
 		set @sql='if not exists(select * from mcaProtocolos where protocolo_id in(1, 2, 3, 4, 5)) begin
 	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''ISDN sin ANI Rotatorio'')
-	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeraciÃ³n los nÃºmeros celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dÃ­gitos de la lada'')
 	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''SIP sin Ani Rotatorio'')
-	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeraciÃ³n los nÃºmeros celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dÃ­gitos de la lada'')
 	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''R2'')
  end'
 		EXEC(@sql)
@@ -1837,7 +1837,7 @@ declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max)
 declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
 declare @status tinyint
 set @sql = ''''
---nota: las acciones 3 y 4 hacerlas para casos dinamicos, (i.e.) si se va controlor por tamaño y asignar un xml nuevo, conusltar Daniel de CW :)
+--nota: las acciones 3 y 4 hacerlas para casos dinamicos, (i.e.) si se va controlor por tamaÃ±o y asignar un xml nuevo, conusltar Daniel de CW :)
 
 if @action in (1,6) begin --obtiene los nodos a insertar en BX
 	if @action = 1 set @status =0
@@ -2127,7 +2127,7 @@ else if @action = 5 begin --Ultimo mensaje en por ACD
 	where B.inboundId=@inboundId
 	return 0
 end
-else if @action = 6 begin --Obtiene conversación dependiendo del replayId
+else if @action = 6 begin --Obtiene conversaciÃ³n dependiendo del replayId
 	select @conversationId=conversationTwitterId  from messageOutTwitter where twitId=@replayId
 	if @conversationId is not null begin
 		select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId
@@ -2207,10 +2207,10 @@ select @typeACD =chat from ccInbound  where Inbound_id = @inbound_id
 
 -- Seleccion de idioma --
 declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
-select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end
+select @nIdioma = case valor when 0 then ''Sin calificaciÃ³n Otros'' else ''No disposition Others'' end
 from ccsettings where setting_id = 27 -- 0 esp
 
-select @nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+select @nIdiomaSub = case valor when 0 then ''Sin SubcalificaciÃ³n'' else ''No Subdisposition'' end
 from ccsettings where setting_id = 27 -- 0 esp
 
 if @type=0
@@ -2236,7 +2236,7 @@ if @type=0
 select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1)
 then calificacion
 else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma))
-end as Calificacion,case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total-- , iTotal4Campaign -- para ver total por campaña
+end as Calificacion,case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total-- , iTotal4Campaign -- para ver total por campaÃ±a
 from #CalifTemp
 group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1)
 then calificacion
@@ -2291,7 +2291,7 @@ select tipo, cam_id, calificacion,subCalificacion,calif_id ,sum( total ) as tota
 	end as Calificacion
 	,case when count(subCalificacion)>0 then 1 else 0 end subCalificacion,
 	isnull(calif_id,'''') as calif_id
-	 ,sum(Total) as Total, count(*) count , iTotal4Campaign -- para ver total por campaña
+	 ,sum(Total) as Total, count(*) count , iTotal4Campaign -- para ver total por campaÃ±a
 	from #CalifTemp
 	group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1)
 	then calificacion
@@ -2364,7 +2364,7 @@ if @type = 3 begin -----entrada acd''s subcalif
 	group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
 end
 
-if @type = 4 begin --salida campañas
+if @type = 4 begin --salida campaÃ±as
 		select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13
 			then case when description is not null
 						then description

@@ -430,7 +430,7 @@
     <value>Registered Workstations</value>
   </data>
   <data name="tatencion" xml:space="preserve">
-    <value>Average Handle Time</value>
+    <value>Service Time</value>
   </data>
   <data name="user" xml:space="preserve">
     <value>User</value>
@@ -2077,10 +2077,10 @@
     <value>Email General</value>
   </data>
   <data name="abandonedbyagent" xml:space="preserve">
-    <value>abandoned by agent</value>
+    <value>Finished by Agent</value>
   </data>
-  <data name="abandonedsystem" xml:space="preserve">
-    <value>abandoned by system</value>
+  <data name="abandonedSystem" xml:space="preserve">
+    <value>Finished by System</value>
   </data>
   <data name="closedbyagent" xml:space="preserve">
     <value>finished by agent</value>
@@ -2089,49 +2089,49 @@
     <value>not replied</value>
   </data>
   <data name="download" xml:space="preserve">
-    <value>downloaded</value>
+    <value>Downloaded</value>
   </data>
   <data name="Email" xml:space="preserve">
     <value>Email</value>
   </data>
   <data name="finishedconversation" xml:space="preserve">
-    <value>replied</value>
+    <value>Finished Conversations</value>
   </data>
   <data name="mailclient" xml:space="preserve">
     <value>email address</value>
   </data>
   <data name="ontrack" xml:space="preserve">
-    <value>tracked</value>
+    <value>Pending</value>
   </data>
   <data name="rejected" xml:space="preserve">
-    <value>rejected</value>
+    <value>Undelivered</value>
   </data>
   <data name="sentvsdownloaded" xml:space="preserve">
     <value>emails service level</value>
   </data>
   <data name="systemTranslated_Assign_message_to_agent" xml:space="preserve">
-    <value />
+    <value>Assigned to agent</value>
   </data>
   <data name="tavg" xml:space="preserve">
     <value>avg service time</value>
   </data>
   <data name="totalassets" xml:space="preserve">
-    <value>currently serviced</value>
+    <value>Open</value>
   </data>
   <data name="totalwait" xml:space="preserve">
     <value>assignment time</value>
   </data>
   <data name="tQueue" xml:space="preserve">
-    <value>time queued</value>
+    <value>Queue Time</value>
   </data>
   <data name="tResponse" xml:space="preserve">
     <value>service time</value>
   </data>
   <data name="tsend" xml:space="preserve">
-    <value>Sending time</value>
+    <value>Send Time</value>
   </data>
   <data name="twait" xml:space="preserve">
-    <value>time inboxed</value>
+    <value>Assignment Time</value>
   </data>
   <data name="UnassignMessageAgent" xml:space="preserve">
     <value>deassigned by agent</value>
@@ -2251,10 +2251,10 @@
     <value>Status Calls</value>
   </data>
   <data name="messageId" xml:space="preserve">
-    <value>Message Id</value>
+    <value>Message ID</value>
   </data>
   <data name="pendingSend" xml:space="preserve">
-    <value>Send pending</value>
+    <value>Not sent</value>
   </data>
   <data name="tAtentionMultimedia" xml:space="preserve">
     <value>Service time</value>
@@ -2266,37 +2266,37 @@
     <value>Queue Time</value>
   </data>
   <data name="twaitMultimedia" xml:space="preserve">
-    <value>Wait time</value>
+    <value>Assignment Time</value>
   </data>
   <data name="unassignedMultimedia" xml:space="preserve">
-    <value>Assign pending</value>
+    <value>Unassigned</value>
   </data>
   <data name="systemTranslated_Assign_message_to_agent1" xml:space="preserve">
     <value>Assigned to agent</value>
   </data>
   <data name="systemTranslated_Close_conversation_for_agent" xml:space="preserve">
-    <value>Completed by the agent</value>
+    <value>Finished by agent</value>
   </data>
   <data name="systemTranslated_conversation_closed_for_system" xml:space="preserve">
-    <value>Terminated by System</value>
+    <value>Finished by system</value>
   </data>
   <data name="systemTranslated_Download_emails_from_server" xml:space="preserve">
-    <value>Downloaded from the server</value>
+    <value>Downloaded from server</value>
   </data>
   <data name="systemTranslated_Message_answered_by_agent" xml:space="preserve">
-    <value>Answered by agent</value>
+    <value>Replied by agent</value>
   </data>
   <data name="systemTranslated_Message_rejected_for_server" xml:space="preserve">
-    <value>Undelivered per server</value>
+    <value>Not sent by server</value>
   </data>
   <data name="systemTranslated_Message_sent_to_the_client" xml:space="preserve">
-    <value>Delivered to the customer</value>
+    <value>Sent to client</value>
   </data>
   <data name="systemTranslated_Read_the_message_agent" xml:space="preserve">
     <value>Read by agent</value>
   </data>
   <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
-    <value>Appointed agent</value>
+    <value>Deassigned by agent</value>
   </data>
   <data name="DialingResults" xml:space="preserve">
     <value>DIaling Results</value>
@@ -2315,5 +2315,20 @@
   </data>
   <data name="TelephoneNumbersbyStateperDay" xml:space="preserve">
     <value>Telephone Numbers by State per Day</value>
+  </data>
+  <data name="abandonedAgent" xml:space="preserve">
+    <value>Finalizados por agente</value>
+  </data>
+  <data name="avgSend" xml:space="preserve">
+    <value>Average Service Time</value>
+  </data>
+  <data name="conversationid" xml:space="preserve">
+    <value>Conversation ID</value>
+  </data>
+  <data name="messageUnAssigned" xml:space="preserve">
+    <value>Unassigned</value>
+  </data>
+  <data name="twrapup" xml:space="preserve">
+    <value>Wrap-up Time</value>
   </data>
 </root>

@@ -268,7 +268,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Especialidades.
+        ///   Busca una cadena traducida similar a Grupos ACD.
         /// </summary>
         public static string ACDGroups {
             get {
@@ -322,7 +322,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Nombre de Agente.
+        ///   Busca una cadena traducida similar a Nombre de agente.
         /// </summary>
         public static string agentName {
             get {
@@ -736,7 +736,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje de atención.
+        ///   Busca una cadena traducida similar a Tiempo promedio de atención.
         /// </summary>
         public static string avgSend {
             get {
@@ -1699,7 +1699,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Dia.
+        ///   Busca una cadena traducida similar a Día.
         /// </summary>
         public static string day {
             get {
@@ -2689,7 +2689,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Desasignados.
+        ///   Busca una cadena traducida similar a No asignados.
         /// </summary>
         public static string messageUnAssigned {
             get {
@@ -4741,7 +4741,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Finalizado por el agente.
+        ///   Busca una cadena traducida similar a Finalizado por agente.
         /// </summary>
         public static string systemTranslated_Close_conversation_for_agent {
             get {
@@ -5398,7 +5398,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a No entregado por servidor.
+        ///   Busca una cadena traducida similar a No enviado por servidor.
         /// </summary>
         public static string systemTranslated_Message_rejected_for_server {
             get {
@@ -5407,7 +5407,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Entregado al cliente.
+        ///   Busca una cadena traducida similar a Enviado al cliente.
         /// </summary>
         public static string systemTranslated_Message_sent_to_the_client {
             get {
@@ -5875,7 +5875,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo promedio de atencion.
+        ///   Busca una cadena traducida similar a Tiempo de atención.
         /// </summary>
         public static string tatencion {
             get {
@@ -6469,7 +6469,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo en fila.
+        ///   Busca una cadena traducida similar a Tiempo en cola.
         /// </summary>
         public static string tQueue {
             get {
@@ -6622,7 +6622,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo de espera.
+        ///   Busca una cadena traducida similar a Tiempo de asignación.
         /// </summary>
         public static string tWait {
             get {

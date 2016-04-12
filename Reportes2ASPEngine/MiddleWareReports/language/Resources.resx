@@ -136,7 +136,7 @@
     <value>tiempo de rep mensaje</value>
   </data>
   <data name="day" xml:space="preserve">
-    <value>Dia</value>
+    <value>Día</value>
   </data>
   <data name="hour" xml:space="preserve">
     <value>Hora</value>
@@ -154,7 +154,7 @@
     <value>Abandonadas</value>
   </data>
   <data name="ACDGroups" xml:space="preserve">
-    <value>Especialidades</value>
+    <value>Grupos ACD</value>
   </data>
   <data name="Agents" xml:space="preserve">
     <value>Agentes</value>
@@ -430,7 +430,7 @@
     <value>Posiciones registradas</value>
   </data>
   <data name="tatencion" xml:space="preserve">
-    <value>Tiempo promedio de atencion</value>
+    <value>Tiempo de atención</value>
   </data>
   <data name="user" xml:space="preserve">
     <value>Usuario de Agente</value>
@@ -622,7 +622,7 @@
     <value>Grupo ACD</value>
   </data>
   <data name="agentName" xml:space="preserve">
-    <value>Nombre de Agente</value>
+    <value>Nombre de agente</value>
   </data>
   <data name="ANI" xml:space="preserve">
     <value>ANI</value>
@@ -2116,7 +2116,7 @@
     <value>Finalizados por sistema</value>
   </data>
   <data name="avgSend" xml:space="preserve">
-    <value>Porcentaje de atención</value>
+    <value>Tiempo promedio de atención</value>
   </data>
   <data name="download" xml:space="preserve">
     <value>Descargados</value>
@@ -2149,13 +2149,13 @@
     <value>Total espera</value>
   </data>
   <data name="tQueue" xml:space="preserve">
-    <value>Tiempo en fila</value>
+    <value>Tiempo en cola</value>
   </data>
   <data name="tResponse" xml:space="preserve">
     <value>Tiempo de respuesta</value>
   </data>
   <data name="tWait" xml:space="preserve">
-    <value>Tiempo de espera</value>
+    <value>Tiempo de asignación</value>
   </data>
   <data name="abandonedbyagent" xml:space="preserve">
     <value>Abandonado por agente</value>
@@ -2188,7 +2188,7 @@
     <value>Nombre ACD</value>
   </data>
   <data name="systemTranslated_Close_conversation_for_agent" xml:space="preserve">
-    <value>Finalizado por el agente</value>
+    <value>Finalizado por agente</value>
   </data>
   <data name="systemTranslated_conversation_closed_for_system" xml:space="preserve">
     <value>Finalizado por sistema</value>
@@ -2197,7 +2197,7 @@
     <value>En seguimiento</value>
   </data>
   <data name="systemTranslated_Message_sent_to_the_client" xml:space="preserve">
-    <value>Entregado al cliente</value>
+    <value>Enviado al cliente</value>
   </data>
   <data name="systemTranslated_Sending_the_message_is_rescheduled" xml:space="preserve">
     <value>Reprogramados</value>
@@ -2221,7 +2221,7 @@
     <value>Interacciones</value>
   </data>
   <data name="messageUnAssigned" xml:space="preserve">
-    <value>Desasignados</value>
+    <value>No asignados</value>
   </data>
   <data name="statusMail" xml:space="preserve">
     <value>Estado</value>
@@ -2374,7 +2374,7 @@
     <value>Respondido por agente</value>
   </data>
   <data name="systemTranslated_Message_rejected_for_server" xml:space="preserve">
-    <value>No entregado por servidor</value>
+    <value>No enviado por servidor</value>
   </data>
   <data name="systemTranslated_Read_the_message_agent" xml:space="preserve">
     <value>Leído por agente</value>

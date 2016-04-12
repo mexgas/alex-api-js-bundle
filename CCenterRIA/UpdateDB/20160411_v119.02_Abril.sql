@@ -153,6 +153,19 @@ end'
 ALTER TABLE ccTwitterNode ADD FOREIGN KEY (conversationTwitterId) REFERENCES conversationTwitter(conversationTwitterId)'
 		EXEC(@sql)
 
+		set @process = 'CREATE NONCLUSTERED INDEX [IX_ccoCallsOutSource_19]-------'
+		set @sql=' if not exists (select * from sys.indexes where name = N''IX_ccoCallsOutSource_19'' and object_id = OBJECT_ID(N''ccoCallsOutSource''))
+	begin
+		CREATE NONCLUSTERED INDEX [IX_ccoCallsOutSource_19] ON [dbo].[ccoCallsOutSource] 
+(
+	[cal_fechaDial] ASC,
+	[cal_status] DESC	
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 100) ON [PRIMARY]
+
+end
+'
+		EXEC(@sql)
+
 
 		set @process = 'INSERT -------- ccMenus'
 		set @sql ='if not exists(select * from ccmenus where type=3 and menu_id in(4220, 4230, 4240)) begin

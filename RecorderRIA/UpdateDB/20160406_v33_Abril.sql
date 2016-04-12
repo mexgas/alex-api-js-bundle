@@ -607,8 +607,7 @@ BEGIN
 		WHERE x.grab_id >=''+ CONVERT(VARCHAR(10), @grabId) +''AND x.finicio < GETDATE()
 		ORDER BY x.grab_id''
 
-	ED
-
+	END
 	EXEC SP_EXECUTESQL @SQL
 
 END'

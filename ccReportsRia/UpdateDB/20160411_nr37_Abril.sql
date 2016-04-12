@@ -226,6 +226,8 @@ end    '
 	create table RepSpecialTelephoneNumbersByRegistry
 	(
 		[date] datetime NOT NULL,
+		campaignId smallint not null,
+		campaign varchar(40),
 		listId int not null,
 		listName varchar(max),
 		cPhoneNumbers int not null,
@@ -252,6 +254,8 @@ end'
 	create table RepSpecialDialingResults
 	(
 		[date] datetime NOT NULL,
+		campaignId smallint not null,
+		campaign varchar(40),
 		statusCallId int not null,
 		statusCall varchar(max) not null,
 		statusCall_Count varchar(max) not null,
@@ -291,15 +295,11 @@ end'
 
 	set @process = 'INSERT -------- ReportsFilters'
 	set @sql='if not exists(select * from ReportsFilters where id in (4220, 4230, 4240)) begin
-	insert into ReportsFilters values (''Telephone Numbers by State Report'', ''campaigns'', 4220)
-	insert into ReportsFilters values (''Telephone Numbers by State Report'', ''users'', 4220)
 	insert into ReportsFilters values (''Telephone Numbers by State Report'', ''statusCall'', 4220)
 
 	insert into ReportsFilters values (''Telephone Numbers by RecordList Report'', ''campaigns'', 4230)
-	insert into ReportsFilters values (''Telephone Numbers by RecordList Report'', ''users'', 4230)
 
 	insert into ReportsFilters values (''Dialing Results Report'', ''campaigns'', 4240)
-	insert into ReportsFilters values (''Dialing Results Report'', ''users'', 4240)
 end'
 	EXEC(@sql)
 
@@ -319,7 +319,7 @@ end'
 	set @process = 'INSERT -------- ReportsTotals'
 	set @sql='if not exists(select * from ReportsTotals where id  in (4220, 4230, 4240)) begin
 	insert into ReportsTotals values (4220, '')
-	insert into ReportsTotals values (4230, '')
+	insert into ReportsTotals values (4230, ''sum:cPhoneNumbers|sum:cPhoneNumbers2|sum:cPhoneNumbers3|sum:cPhoneNumbers4|sum:cPhoneNumbers5|sum:percentage|sum:percentage2|sum:percentage3|sum:percentage4|sum:percentage5'')
 	insert into ReportsTotals values (4240, '')
 end'
 	EXEC(@sql)
@@ -396,6 +396,7 @@ from @temp
 	insert into RepSpecialTelephoneNumbersByRegistry
 
 	select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
+		camp.cam_id as ''campaignId'', camp.cam_descripcion as ''campaign'',
 		isnull(cosout.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
 		tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
 		dbo.fPercentage(isnull(tem.tel1, 0),@tel1 ) as ''avg'',
@@ -493,6 +494,7 @@ begin
 
 	insert into RepSpecialDialingResults
 	select	convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'') as [date],
+		camp.cam_id as ''campaignId'', camp.cam_descripcion as ''campaign'',
 		isnull([cos].cal_status,0) as ''statusCallId'',
 		isnull(sl.descripcion,'''') as ''statusCall'',
 		sl.descripcion + ''_Count'' as [statusCall_Count],
@@ -1059,85 +1061,6 @@ select
 	)x
 	group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion,inboundid,conversationId
 
-
-
-end'
-	EXEC(@sql)
-
-
-
-	set @process = 'create PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry ---------'
-	set @sql='create PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-declare @temp table(
-tel1 int,
-tel2 int,
-tel3 int,
-tel4 int,
-tel5 int,
-listid int
-)
-
-declare @tel1 int, @tel2 int,@tel3 int,@tel4 int,@tel5 int
-
-if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-if @to is null
-select @to = getdate()
-
-if @action = 1
-begin
-delete from RepSpecialTelephoneNumbersByRegistry with(rowlock) where date >= @from and date < @to
-
-
-insert into @temp
-	select case when cal_telefono <> '''' then isnull( COUNT(cal_telefono), 0) else 0 end,
-	case when cal_telefono2 <> '''' then isnull( COUNT(cal_telefono2), 0) else 0 end ,
-	case when cal_telefono3 <> '''' then isnull( COUNT(cal_telefono3), 0) else 0 end,
-	case when cal_telefono4 <> '''' then isnull( COUNT(cal_telefono4), 0) else 0 end,
-	case when cal_telefono5 <> '''' then isnull( COUNT(cal_telefono5), 0) else 0 end,
-	list_id
-from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
---where cal_status in (11,13,15,16)
-where cal_fechaDial >= @from
-and cal_fechaDial < @to
-
-group by cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,list_id
-
-select @tel1 = SUM(tel1), @tel2 = SUM(tel2),@tel3 = SUM(tel3), @tel4 =SUM(tel4), @tel5 = SUM(tel5)
-from @temp
-
-
-insert into RepSpecialTelephoneNumbersByRegistry
-
-	select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
-			camp.cam_id, camp.cam_descripcion,
-			isnull(cosout.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
-			tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
-			dbo.fPercentage(isnull(tem.tel1, 0),@tel1 ) as ''avg'',
-			dbo.fPercentage(isnull(tem.tel2, 0),@tel2 ) as ''avg2'',
-			dbo.fPercentage(isnull(tem.tel3, 0),@tel3) as ''avg3'',
-			dbo.fPercentage(isnull( tem.tel4 , 0),@tel4) as ''avg4'',
-			dbo.fPercentage(isnull(tem.tel5, 0), @tel5) as ''avg5'',
-			datepart(yy,convert(datetime, convert(varchar(11),cal_fechaDial))) as [year],
-			datepart(mm,convert(datetime, convert(varchar(11),cal_fechaDial))) as [month],
-			datepart(dd,convert(datetime, convert(varchar(11),cal_fechaDial))) as [day],
-			datepart(hh,convert(datetime, convert(varchar(11),cal_fechaDial))) as [hour],
-			datepart(mi,convert(datetime, convert(varchar(11),cal_fechaDial))) as [minutes]
-			from ccoCallsOutSource cosout with(index(IX_ccoCallsOutSource_19),nolock)
-			inner join ccRIARegistryLists rl on cosout.list_id =  rl.list_id
-			left join @temp tem on cosout.list_id = tem.listid
-			left join cccamps camp on cosout.cam_id  = camp.cam_id
-	--where cal_status in (11,13,15,16)
-	where cal_fechaDial >= @from
-	and cal_fechaDial < @to
-
-	group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
-	camp.cam_id, camp.cam_descripcion
 
 
 end'

@@ -293,6 +293,11 @@ end'
 end'
 	EXEC(@sql)
 
+	set @process = 'INSERT -------- Filters'
+	set @sql='if not exists(select * from Filters where id  = 27)
+	insert into Filters values (27, ''statusCall'', 25, ''StatusCalls'', ''StatusCall'')'
+	EXEC(@sql)
+
 	set @process = 'INSERT -------- ReportsFilters'
 	set @sql='if not exists(select * from ReportsFilters where id in (4220, 4230, 4240)) begin
 	insert into ReportsFilters values (''Telephone Numbers by State Report'', ''statusCall'', 4220)
@@ -310,17 +315,13 @@ end'
  end'
 	EXEC(@sql)
 
-	set @process = 'INSERT -------- Filters'
-	set @sql='if not exists(select * from Filters where id  = 27) begin
-	insert into Filters values (27, ''statusCall'', 25, ''StatusCalls'', ''StatusCall'')
-  end'
-	EXEC(@sql)
+
 
 	set @process = 'INSERT -------- ReportsTotals'
 	set @sql='if not exists(select * from ReportsTotals where id  in (4220, 4230, 4240)) begin
-	insert into ReportsTotals values (4220, '')
+	insert into ReportsTotals values (4220, '''')
 	insert into ReportsTotals values (4230, ''sum:cPhoneNumbers|sum:cPhoneNumbers2|sum:cPhoneNumbers3|sum:cPhoneNumbers4|sum:cPhoneNumbers5|sum:percentage|sum:percentage2|sum:percentage3|sum:percentage4|sum:percentage5'')
-	insert into ReportsTotals values (4240, '')
+	insert into ReportsTotals values (4240, '''')
 end'
 	EXEC(@sql)
 
@@ -412,12 +413,12 @@ from @temp
 		from ccoCallsOutSource cosout with(index(IX_ccoCallsOutSource_19),nolock)
 		inner join ccRIARegistryLists rl on cosout.list_id =  rl.list_id
 		left join @temp tem on cosout.list_id = tem.listid
+		left join cccamps camp on cosout.cam_id  = camp.cam_id
 	--where cal_status in (11,13,15,16)
 	where cal_fechaDial >= @from
 	and cal_fechaDial < @to
 
-		group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5
-
+		group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,camp.cam_id, camp.cam_descripcion
 
 end'
 	EXEC(@sql)
@@ -494,7 +495,8 @@ begin
 
 	insert into RepSpecialDialingResults
 	select	convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'') as [date],
-		camp.cam_id as ''campaignId'', camp.cam_descripcion as ''campaign'',
+		[cos].cam_id as ''campaignId'',
+		cms.cam_descripcion as ''campaign'',
 		isnull([cos].cal_status,0) as ''statusCallId'',
 		isnull(sl.descripcion,'''') as ''statusCall'',
 		sl.descripcion + ''_Count'' as [statusCall_Count],
@@ -508,10 +510,11 @@ begin
 		datepart(mi,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [minutes]
 	from ccoCallsOutSource  [cos]
 	left join ccstatusllamada sl on [cos].cal_status = sl.statusCall_id
+	left join cccamps cms on [cos].cam_id = cms.cam_id
 	where cal_fechaDial >= @from
 	and cal_fechaDial < @to
 	and [cos].cal_status <> 0
-	group by cal_fechaDial, [cos].cal_status, sl.descripcion
+	group by cal_fechaDial, [cos].cam_id, cms.cam_descripcion, [cos].cal_status, sl.descripcion
 
 end'
 	EXEC(@sql)

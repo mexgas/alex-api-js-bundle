@@ -87,7 +87,7 @@ CONSTRAINT [PK_mcaTipoLlamada] PRIMARY KEY CLUSTERED
 		set @process = 'CREATE TABLE -------- mcaProtocolos'
 		set @sql='if not exists (select * from sys.tables where name = N''mcaProtocolos'') begin
 	CREATE TABLE [dbo].[mcaProtocolos](
-	[protocolo_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[protocolo_id] [smallint] IDENTITY(1,1) NOT NULL,
 	[descrip] [varchar](30) NOT NULL,
 	[nota] [varchar] (max)
 	CONSTRAINT [PK_mcaProtocolos] PRIMARY KEY CLUSTERED
@@ -156,10 +156,10 @@ ALTER TABLE ccTwitterNode ADD FOREIGN KEY (conversationTwitterId) REFERENCES con
 		set @process = 'CREATE NONCLUSTERED INDEX [IX_ccoCallsOutSource_19]-------'
 		set @sql=' if not exists (select * from sys.indexes where name = N''IX_ccoCallsOutSource_19'' and object_id = OBJECT_ID(N''ccoCallsOutSource''))
 	begin
-		CREATE NONCLUSTERED INDEX [IX_ccoCallsOutSource_19] ON [dbo].[ccoCallsOutSource] 
+		CREATE NONCLUSTERED INDEX [IX_ccoCallsOutSource_19] ON [dbo].[ccoCallsOutSource]
 (
 	[cal_fechaDial] ASC,
-	[cal_status] DESC	
+	[cal_status] DESC
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 100) ON [PRIMARY]
 
 end
@@ -177,8 +177,7 @@ end'
 
 		set @process = 'INSERT -------- ccRIACat_AdminPermissions'
 		set @sql =' if not exists ( select per_id from ccRIACat_AdminPermissions where per_id = 9 )
-	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')
- 		end '
+	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')'
 		EXEC(@sql)
 
 
@@ -193,19 +192,19 @@ end'
 
 		set @process = 'INSERT -------- mcaProveedores'
 		set @sql='if not exists(select * from mcaProveedores where provedor_id in(1, 2, 3)) begin
-	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (1, N''Maxcom'')
-	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (2, N''Marcatel'')
-	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (3, N''Telmex'')
+	INSERT INTO [dbo].[mcaProveedores] ([descrip]) VALUES (N''Maxcom'')
+	INSERT INTO [dbo].[mcaProveedores] ([descrip]) VALUES (N''Marcatel'')
+	INSERT INTO [dbo].[mcaProveedores] ([descrip]) VALUES (N''Telmex'')
  end'
 		EXEC(@sql)
 
 		set @process = 'INSERT -------- mcaProtocolos'
 		set @sql='if not exists(select * from mcaProtocolos where protocolo_id in(1, 2, 3, 4, 5)) begin
-	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (1, N''ISDN sin ANI Rotatorio'')
-	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (2, N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
-	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (3, N''SIP sin Ani Rotatorio'')
-	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (4, N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
-	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (5, N''R2'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''ISDN sin ANI Rotatorio'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''SIP sin Ani Rotatorio'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip], [nota]) VALUES (N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([descrip]) VALUES (N''R2'')
  end'
 		EXEC(@sql)
 
@@ -729,7 +728,7 @@ begin
  Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
  Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
 
- select @DWorkGroups = coalesce(@DWorkGroups + '','', '') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
+ select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
  Delete from ccRIAAreaWorkGroup where IDArea=@IDArea
 
  if (select valor from ccSettings where setting_id=95)=1
@@ -744,8 +743,7 @@ begin
  select @DWorkGroups
 
  return(0)
-end
-  '
+end'
 		EXEC(@sql)
 
 		set @process = 'CREATE Function -- [VerificaRegionLocalidad]'
@@ -2208,35 +2206,35 @@ end
 drop table #CalifTemp
 set nocount off'
 		EXEC(@sql)
-		
-		
+
+
 		set @process = 'ALTER Procedure [dbo].[xx_Inserta]--------'
-		set @sql='alter procedure [dbo].[xx_Inserta]   
-					@cal_key varchar(20),  
-					@cal_telefono varchar(19),  
-					@cal_telefono2 varchar(19),  
-					@cal_telefono3 varchar(19),  
-					@cal_telefono4 varchar(19),  
-					@cal_telefono5 varchar(19),  
-					@dato1 varchar(255),  
-					@dato2 varchar(255),  
-					@dato3 varchar(255),  
-					@dato4 varchar(255),  
-					@dato5 varchar(255),  
-					@cam_id integer,  
-					@FCallBack smalldatetime = '',  
-					@cal_status tinyint=0,  
-					@User_id integer=0,
-					@region varchar(10),
-					@localidad varchar(10)  
-					as  
-					declare @calloutid int  
-					if (@cal_status=0) set @FCallBack=getdate()  
-					Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id,Region,Localidad)  
-					values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id,@region,@localidad)  
-					select @calloutid=scope_identity()  
-					Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )  
-					select @calloutid'
+		set @sql='alter procedure [dbo].[xx_Inserta]
+@cal_key varchar(20),
+@cal_telefono varchar(19),
+@cal_telefono2 varchar(19),
+@cal_telefono3 varchar(19),
+@cal_telefono4 varchar(19),
+@cal_telefono5 varchar(19),
+@dato1 varchar(255),
+@dato2 varchar(255),
+@dato3 varchar(255),
+@dato4 varchar(255),
+@dato5 varchar(255),
+@cam_id integer,
+@FCallBack smalldatetime = '''',
+@cal_status tinyint=0,
+@User_id integer=0,
+@region varchar(10),
+@localidad varchar(10)
+as
+declare @calloutid int
+if (@cal_status=0) set @FCallBack=getdate()
+Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id,Region,Localidad)
+values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id,@region,@localidad)
+select @calloutid=scope_identity()
+Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )
+select @calloutid'
 		EXEC(@sql)
 
 		/* End script release */

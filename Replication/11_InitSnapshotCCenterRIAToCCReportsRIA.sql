@@ -14,7 +14,7 @@ use [CCenterRia]
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '118'
+Set @Version = '119'
 
 create table #temp([version] int)
 insert into #temp
@@ -56,11 +56,13 @@ if @Version_Actual >= @Version
 		insert into migration values (112 , ''SpecialAVRS'', 0, '''', '''', '''')
 		insert into migration values (113 , ''MenuReportsRia'', 0, '''', '''', '''')
 		insert into migration values (114 , ''IVR'', 0, '''', '''', '''')
+		insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')
+		insert into migration values (114 , ''Conversationtweet'', 0, '''', '''', '''')
 
-		insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')		
 	END
 	ELSE BEGIN
-			insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')		    
+			insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')
+			insert into migration values (116 , ''Conversationtweet'', 0, '''', '''', '''')
 	END'
 
 		EXEC(@Sql)

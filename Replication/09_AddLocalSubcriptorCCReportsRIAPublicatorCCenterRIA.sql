@@ -12,7 +12,7 @@ set nocount on
 use [ccReportsRia]
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '26'
+Set @Version = '35'
 use ccReportsRia
 
 create table #temp([version] int)
@@ -47,20 +47,20 @@ if @Version_Actual >= @Version
 
 	declare @publDistLogin nvarchar(max)
 	declare @publDistPassword nvarchar(max)
-	
+
 	declare @settingBD nvarchar(100)
-		
+
 	declare @temp table	(id int, value nvarchar(100));
 	select @settingBD = valor from ccSettings where setting_id = 35
 
-	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|') 
-	
+	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+
 	select @userNameWin = value  from @temp where id = 1
 	select @passwordWin = value  from @temp where id = 2
 	select @userNameSQL = value  from @temp where id = 3
 	select @passwordSQL = value  from @temp where id = 4
 	select @hostName = value  from @temp where id = 5
-	
+
 	-----agregado de credenciales WINDOWS-----
 	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
 	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
@@ -134,7 +134,7 @@ if @Version_Actual >= @Version
 		--Suscripcion para Email
 
 		exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'ConversationMail', @publisher_db = N'CCenterRia', @subscriber_type = N'Local', @subscription_priority = 0, @description = N'', @sync_type = N'Automatic'
-		exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'ConversationMail', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0		
+		exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'ConversationMail', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 
 	end
 	else
@@ -257,6 +257,13 @@ if @Version_Actual >= @Version
 		begin
 			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'ConversationMail', @publisher_db = N'CCenterRia', @subscriber_type = N'Local', @subscription_priority = 0, @description = N'', @sync_type = N'Automatic'
 			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'ConversationMail', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
+		end
+
+		use [ccReportsRia]
+		if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'ccReportsRia' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = 'Conversationtweet'))
+		begin
+			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'Conversationtweet', @publisher_db = N'CCenterRia', @subscriber_type = N'Local', @subscription_priority = 0, @description = N'', @sync_type = N'Automatic'
+			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'Conversationtweet', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 		end
 	end
 

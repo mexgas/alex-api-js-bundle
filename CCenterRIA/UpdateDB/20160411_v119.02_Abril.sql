@@ -62,6 +62,10 @@ update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', r
 '
 		EXEC(@sql)
 
+		set @process = 'DROP TABLE [dbo].[ccTwitterNode]-----'
+		set @sql='if exists(select * from sys.tables where name=''ccTwitterNode'')  DROP TABLE [dbo].[ccTwitterNode]'
+		EXEC(@sql)
+
 		set @process = 'DROP PROCEDURE ccsp_CreateNodeMultimedia'
 		set @sql='if exists (select * from sys.procedures where name=''ccsp_CreateNodeMultimedia'') DROP PROCEDURE ccsp_CreateNodeMultimedia'
 		EXEC(@sql)
@@ -69,75 +73,77 @@ update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', r
 
 		set @process = 'CREATE TABLE -------- mcaTipoLlamada'
 		set @sql='if not exists (select * from sys.tables where name = N''mcaTipoLlamada'') begin
-					CREATE TABLE [dbo].[mcaTipoLlamada](
-					[tipoLlamada_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-					[descrip] [varchar](30) NOT NULL,
-					CONSTRAINT [PK_mcaTipoLlamada] PRIMARY KEY CLUSTERED
-					(
-					[tipoLlamada_id] ASC
-					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
-					) ON [PRIMARY]
+CREATE TABLE [dbo].[mcaTipoLlamada](
+[tipoLlamada_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+[descrip] [varchar](30) NOT NULL,
+CONSTRAINT [PK_mcaTipoLlamada] PRIMARY KEY CLUSTERED
+(
+[tipoLlamada_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+) ON [PRIMARY]
 				 end'
 		EXEC(@sql)
 
 		set @process = 'CREATE TABLE -------- mcaProtocolos'
 		set @sql='if not exists (select * from sys.tables where name = N''mcaProtocolos'') begin
-					CREATE TABLE [dbo].[mcaProtocolos](
-					[protocolo_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-					[descrip] [varchar](30) NOT NULL,
-					[nota] [varchar] (max)
-					CONSTRAINT [PK_mcaProtocolos] PRIMARY KEY CLUSTERED
-					(
-					[protocolo_id] ASC
-					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
-					) ON [PRIMARY]
-				 end'
+	CREATE TABLE [dbo].[mcaProtocolos](
+	[protocolo_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[descrip] [varchar](30) NOT NULL,
+	[nota] [varchar] (max)
+	CONSTRAINT [PK_mcaProtocolos] PRIMARY KEY CLUSTERED
+	(
+	[protocolo_id] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	) ON [PRIMARY]
+ end'
 		EXEC(@sql)
 
 		set @process = 'CREATE TABLE -------- mcaProveedores'
 		set @sql='if not exists (select * from sys.tables where name = N''mcaProveedores'') begin
-					CREATE TABLE [dbo].[mcaProveedores](
-					[provedor_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-					[descrip] [varchar](30) NOT NULL,
+	CREATE TABLE [dbo].[mcaProveedores](
+	[provedor_id] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[descrip] [varchar](30) NOT NULL,
 
-					CONSTRAINT [PK_mcaProveedores] PRIMARY KEY CLUSTERED
-					(
-					[provedor_id] ASC
-					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON,  FILLFACTOR = 100) ON [PRIMARY]
-					) ON [PRIMARY]
-				 end'
+	CONSTRAINT [PK_mcaProveedores] PRIMARY KEY CLUSTERED
+	(
+	[provedor_id] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON,  FILLFACTOR = 100) ON [PRIMARY]
+	) ON [PRIMARY]
+ end'
 		EXEC(@sql)
 
 		set @process = 'CREATE TABLE --------mcaPlanMarcacion'
 		set @sql='if not exists (select * from sys.tables where name = N''mcaPlanMarcacion'') begin
-					CREATE TABLE [dbo].[mcaPlanMarcacion](
-					[country_id] [smallint] NOT NULL,
-					[provedor_id] [smallint] NOT NULL,
-					[protocolo_id] [smallint] NOT NULL,
-					[tipoLlamada_id] [smallint] NOT NULL,
-					[prefijo] [varchar](15) NOT NULL,
-					[longitud] [varchar](15) NULL
-					CONSTRAINT [PK_mcaPlanMarcacion] PRIMARY KEY CLUSTERED
-					(
-						[country_id], [provedor_id], [protocolo_id], [tipoLlamada_id] ASC
-					)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
-					) ON [PRIMARY]
-				  end'
+	CREATE TABLE [dbo].[mcaPlanMarcacion](
+	[country_id] [smallint] NOT NULL,
+	[provedor_id] [smallint] NOT NULL,
+	[protocolo_id] [smallint] NOT NULL,
+	[tipoLlamada_id] [smallint] NOT NULL,
+	[prefijo] [varchar](15) NOT NULL,
+	[longitud] [varchar](15) NULL
+	CONSTRAINT [PK_mcaPlanMarcacion] PRIMARY KEY CLUSTERED
+	(
+		[country_id], [provedor_id], [protocolo_id], [tipoLlamada_id] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	) ON [PRIMARY]
+  end'
 		EXEC(@sql)
 
 
 			set @process = 'CREATE TABLE [dbo].[ccTwitterNode]-----------'
-		set @sql='
-			if not exists (select * from sys.tables where name = N''ccTwitterNode'')
-			begin
-					CREATE TABLE [dbo].[ccTwitterNode](
-				[conversationTwitterId] [bigint] NOT NULL,
-				[node] [xml] NOT NULL,
-				[dateIn] [datetime] NOT NULL,
-				[dateOut] [datetime] NULL,
-				[status] [int] NOT NULL DEFAULT ((0))
-				)
-			end'
+		set @sql='if not exists (select * from sys.tables where name = N''ccTwitterNode'')	begin
+	CREATE TABLE [dbo].[ccTwitterNode](
+	[conversationTwitterId] [bigint] NOT NULL,
+	[node] [xml] NOT NULL,
+	[dateIn] [datetime] NOT NULL,
+	[dateOut] [datetime] NULL,
+	[status] [int] NOT NULL DEFAULT ((0))
+	)
+end'
+		EXEC(@sql)
+
+		set @process = 'ALTER TABLE--------ccRIACat_Areas'
+		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinyint null'
 		EXEC(@sql)
 
 
@@ -150,45 +156,44 @@ ALTER TABLE ccTwitterNode ADD FOREIGN KEY (conversationTwitterId) REFERENCES con
 
 		set @process = 'INSERT -------- ccMenus'
 		set @sql ='if not exists(select * from ccmenus where type=3 and menu_id in(4220, 4230, 4240)) begin
-						insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de teléfonos por estado de la república|Telephone report ordered by republic states'', 4000, ''B'', 4, 3, '''', ''60b188045ce43b6a1d77f7a81f67767fc90fbef71d57e4498d362c5c67a3c097d076f2f127f0f7af01beda4ac36008993c52871865dfbcc8d37183f0a429089f59ae97a60b9d269449063e6d38f93222a414d69d2a3fb7b721155619d8e6b4e2'')
-						insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4230, ''Reporte de números telefónicos por registro/lista|Telephone Numbers by RecordList Report'',  4000, ''B'', 4, 3, '''',''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c40eaade12674a111dbfba34cfd4a3efd7c09b538de3ae9891c2ed4b98f2e08acd083c26b7666470d365e856c76e59c751b381635cf60a71915886932047e9227c'')
-						insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcación|Dialing Result Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d446f04bcc6ff01e8247b5531a00ded6b'')
-				   end'
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de teléfonos por estado de la república|Telephone report ordered by republic states'', 4000, ''B'', 4, 3, '''', ''60b188045ce43b6a1d77f7a81f67767fc90fbef71d57e4498d362c5c67a3c097d076f2f127f0f7af01beda4ac36008993c52871865dfbcc8d37183f0a429089f59ae97a60b9d269449063e6d38f93222a414d69d2a3fb7b721155619d8e6b4e2'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4230, ''Reporte de números telefónicos por registro/lista|Telephone Numbers by RecordList Report'',  4000, ''B'', 4, 3, '''',''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c40eaade12674a111dbfba34cfd4a3efd7c09b538de3ae9891c2ed4b98f2e08acd083c26b7666470d365e856c76e59c751b381635cf60a71915886932047e9227c'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcación|Dialing Result Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d446f04bcc6ff01e8247b5531a00ded6b'')
+end'
 		EXEC(@sql)
 
 		set @process = 'INSERT -------- ccRIACat_AdminPermissions'
 		set @sql =' if not exists ( select per_id from ccRIACat_AdminPermissions where per_id = 9 )
-	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)
-		values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')
+	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')
  		end '
 		EXEC(@sql)
 
 
 		set @process = 'INSERT -------- mcaTipoLlamada'
 		set @sql='if not exists(select * from mcaTipoLlamada where tipoLlamada_id in(1, 2, 3, 4)) begin
-					insert into mcaTipoLlamada (descrip) values (''Local'')
-					insert into mcaTipoLlamada (descrip) values (''LD Nacional'')
-					insert into mcaTipoLlamada (descrip) values (''Cel'')
-					insert into mcaTipoLlamada (descrip) values (''Cel LD'')
-				 end'
+	insert into mcaTipoLlamada (descrip) values (''Local'')
+	insert into mcaTipoLlamada (descrip) values (''LD Nacional'')
+	insert into mcaTipoLlamada (descrip) values (''Cel'')
+	insert into mcaTipoLlamada (descrip) values (''Cel LD'')
+ end'
 		EXEC(@sql)
 
 		set @process = 'INSERT -------- mcaProveedores'
 		set @sql='if not exists(select * from mcaProveedores where provedor_id in(1, 2, 3)) begin
-					INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (1, N''Maxcom'')
-					INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (2, N''Marcatel'')
-					INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (3, N''Telmex'')
-				 end'
+	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (1, N''Maxcom'')
+	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (2, N''Marcatel'')
+	INSERT INTO [dbo].[mcaProveedores] ([provedor_id], [descrip]) VALUES (3, N''Telmex'')
+ end'
 		EXEC(@sql)
 
 		set @process = 'INSERT -------- mcaProtocolos'
 		set @sql='if not exists(select * from mcaProtocolos where protocolo_id in(1, 2, 3, 4, 5)) begin
-					INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (1, N''ISDN sin ANI Rotatorio'')
-					INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (2, N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
-					INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (3, N''SIP sin Ani Rotatorio'')
-					INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (4, N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
-					INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (5, N''R2'')
-				 end'
+	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (1, N''ISDN sin ANI Rotatorio'')
+	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (2, N''ISDN con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (3, N''SIP sin Ani Rotatorio'')
+	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip], [nota]) VALUES (4, N''SIP con Ani Rotatorio'', ''En las ciudades con LADA donde Maxcom tiene numeración los números celulares van como locales, para las ciudades Monterrey, GDl y DF solo se toman 2 dígitos de la lada'')
+	INSERT INTO [dbo].[mcaProtocolos] ([protocolo_id], [descrip]) VALUES (5, N''R2'')
+ end'
 		EXEC(@sql)
 
 		set @process = 'insert into ccFinderServices------------'
@@ -199,68 +204,68 @@ end'
 
 		set @process = 'INSERT -------- mcaPlanMarcacion'
 		set @sql='if not exists(select * from mcaPlanMarcacion where protocolo_id in(1, 2, 3, 4, 5) and tipoLlamada_id in (1, 2, 3, 4, 5)) begin
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 1, 1, ''%'', ''7'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 2, 1, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 3, 1, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 4, 1, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 5, 1, ''%'', ''7'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 1, 1, ''%'', ''7'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 2, 1, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 3, 1, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 4, 1, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 5, 1, ''%'', ''7'')
 
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 1, 2, ''01%'', ''12'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 2, 2, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 3, 2, ''01%'', ''12'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 4, 2, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 5, 2, ''01%'', ''12'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 1, 2, ''01%'', ''12'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 2, 2, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 3, 2, ''01%'', ''12'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 4, 2, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 5, 2, ''01%'', ''12'')
 
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 1, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 2, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 3, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 4, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 5, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 1, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 2, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 3, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 4, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 5, 3, ''044%'', ''13'')
 
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 1, 4, ''045%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 2, 4, ''045%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 3, 4, ''045%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 4, 4, ''045%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 1, 5, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 1, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 2, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 3, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 4, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 1, 5, 4, ''045%'', ''13'')
 
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 2, 3, 1, ''%'', ''10'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 2, 3, 2, ''01%'', ''12'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 2, 3, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 2, 3, 4, ''045%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 2, 3, 1, ''%'', ''10'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 2, 3, 2, ''01%'', ''12'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 2, 3, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 2, 3, 4, ''045%'', ''13'')
 
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 3, 5, 1, ''%'', ''7'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 3, 5, 2, ''01%'', ''12'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 3, 5, 3, ''044%'', ''13'')
-					insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
-					values (1, 3, 5, 4, ''045%'', ''13'')
-				 end'
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 3, 5, 1, ''%'', ''7'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 3, 5, 2, ''01%'', ''12'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 3, 5, 3, ''044%'', ''13'')
+	insert into mcaPlanMarcacion (country_id, provedor_id, protocolo_id, tipoLlamada_id, prefijo, longitud)
+	values (1, 3, 5, 4, ''045%'', ''13'')
+ end'
 		EXEC(@sql)
 
 		set @process = 'ALTER TABLE--------xxClienteCarga'
@@ -268,11 +273,7 @@ end'
 				  if not exists (select * from sys.columns where name = N''protocolo'' and Object_ID = Object_ID(N''xxClienteCarga'')) alter table xxClienteCarga add protocolo int null'
 		EXEC(@sql)
 
-		set @process = 'DROP TABLE [dbo].[ccTwitterNode]-----'
-		set @sql='if exists(select * from sys.tables where name=''ccTwitterNode'')  begin
-	DROP TABLE [dbo].[ccTwitterNode]
-end'
-		EXEC(@sql)
+
 
 		set @process = 'Alter SP -- ccsp_NetworkSocialAdminAccount'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_NetworkSocialAdminAccount]
@@ -617,10 +618,6 @@ END
 END'
 		EXEC(@sql)
 
-		set @process = 'ALTER TABLE--------ccRIACat_Areas'
-		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinyint null'
-		EXEC(@sql)
-
 		set @process = 'Alter SP -- ccsp_RIA_ABCAreas'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
 @option smallint,
@@ -740,143 +737,64 @@ end
 
 		set @process = 'CREATE Function -- [VerificaRegionLocalidad]'
 		set @sql='CREATE FUNCTION [dbo].[VerificaRegionLocalidad](@tel varchar(32))
-			RETURNS @retVRL TABLE
-			(
-			    tel varchar(32) PRIMARY KEY NOT NULL,
-			    region varchar(32) NULL,
-			    localidad varchar(32) NULL
-			)
-			 BEGIN
-			 declare @ld varchar(7)
-			 declare @lon tinyint
-			 declare @result tinyint
-			 declare @mod varchar(10)
-			 declare @Cadena varchar(32)
-			 declare @region varchar(20)
-			 declare @localidad varchar(20)
-			 declare @cldLocal varchar(7)
-			 declare @pais tinyint
+RETURNS @retVRL TABLE
+(
+    tel varchar(32) PRIMARY KEY NOT NULL,
+    region varchar(32) NULL,
+    localidad varchar(32) NULL
+)
+ BEGIN
+ declare @ld varchar(7)
+ declare @lon tinyint
+ declare @result tinyint
+ declare @mod varchar(10)
+ declare @Cadena varchar(32)
+ declare @region varchar(20)
+ declare @localidad varchar(20)
+ declare @cldLocal varchar(7)
+ declare @pais tinyint
 
-			 select @cldLocal = valor from ccsettings with(nolock) where setting_id = 17
-			 select @pais = valor from ccSettings with(nolock) where setting_id = 104
+ select @cldLocal = valor from ccsettings with(nolock) where setting_id = 17
+ select @pais = valor from ccSettings with(nolock) where setting_id = 104
 
-			 select @tel = dbo.limpia(@tel)
+ select @tel = dbo.limpia(@tel)
 
-			 if @pais = 1 begin --Empieza Mexico
-			  select @lon = len(@tel)
-			  if @lon between 7 and 8 begin
-			   set @tel = @cldLocal + @tel
-			  end
-			  select @tel = right(@tel, 10)
-			  select @lon = len(@tel)
+ if @pais = 1 begin --Empieza Mexico
+  select @lon = len(@tel)
+  if @lon between 7 and 8 begin
+   set @tel = @cldLocal + @tel
+  end
+  select @tel = right(@tel, 10)
+  select @lon = len(@tel)
 
-			  if @lon = 10 begin
+  if @lon = 10 begin
 
-			   if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))begin
-			    select @ld = left(@tel,2)
-			    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,2)
-			    end
-			   else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))  begin
-			    select @ld = left(@tel,3)
-			    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,3)
-			    end
-			   else  begin
-			   if (@region is null) begin
-			 select @region = estado from series nolock where cld=@cldLocal
-			 end
-			   INSERT @retVRL
-			        SELECT @tel, @region, @localidad
-			 RETURN
-			   end
-			  end
-			end --Termina Mexico
+   if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))begin
+    select @ld = left(@tel,2)
+    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,2)
+    end
+   else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))  begin
+    select @ld = left(@tel,3)
+    select @region = estado, @localidad = municipio from series nolock where cld=left(@tel,3)
+    end
+   else  begin
+   if (@region is null) begin
+ select @region = estado from series nolock where cld=@cldLocal
+ end
+   INSERT @retVRL
+        SELECT @tel, @region, @localidad
+ RETURN
+   end
+  end
+end --Termina Mexico
 
-			  INSERT @retVRL
-			        SELECT @tel, @region, @localidad
-			  RETURN
+  INSERT @retVRL
+        SELECT @tel, @region, @localidad
+  RETURN
 
-			end'
+end'
 		EXEC(@sql)
 
-		set @process = 'ccspRepSpecialTelephoneNumbersByRegistry --------------'
-		set @sql='if not exists (select * from sys.objects where object_id = OBJECT_ID(N''ccspRepSpecialTelephoneNumbersByRegistry'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-	begin
-		create PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
-							@action as tinyint,
-							@from as datetime = null,
-							@to as datetime = null
-							AS
-
-							declare @temp table(
-							tel1 int,
-							tel2 int,
-							tel3 int,
-							tel4 int,
-							tel5 int,
-							listid int
-							)
-
-							declare @tel1 int, @tel2 int,@tel3 int,@tel4 int,@tel5 int
-
-							if @from is null
-								select @from = convert(datetime,convert(varchar(11),getdate()))
-							if @to is null
-								select @to = getdate()
-
-							if @action = 1
-							begin
-										delete from RepSpecialTelephoneNumbersByRegistry with(rowlock) where date >= @from and date < @to
-
-
-							insert into @temp
-											select case when cal_telefono <> '''' then isnull( COUNT(cal_telefono), 0) else 0 end,
-											case when cal_telefono2 <> '''' then isnull( COUNT(cal_telefono2), 0) else 0 end ,
-											case when cal_telefono3 <> '''' then isnull( COUNT(cal_telefono3), 0) else 0 end,
-											case when cal_telefono4 <> '''' then isnull( COUNT(cal_telefono4), 0) else 0 end,
-											case when cal_telefono5 <> '''' then isnull( COUNT(cal_telefono5), 0) else 0 end,
-											list_id
-								      from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
-										--where cal_status in (11,13,15,16)
-										where cal_fechaDial >= @from
-										and cal_fechaDial < @to
-
-										group by cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,list_id
-
-							select @tel1 = SUM(tel1), @tel2 = SUM(tel2),@tel3 = SUM(tel3), @tel4 =SUM(tel4), @tel5 = SUM(tel5)
-							from @temp
-
-
-										insert into RepSpecialTelephoneNumbersByRegistry
-
-											select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
-													camp.cam_id, camp.cam_descripcion,
-													isnull(cosout.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
-													tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
-													dbo.fPercentage(isnull(tem.tel1, 0),@tel1 ) as ''avg'',
-													dbo.fPercentage(isnull(tem.tel2, 0),@tel2 ) as ''avg2'',
-													dbo.fPercentage(isnull(tem.tel3, 0),@tel3) as ''avg3'',
-													dbo.fPercentage(isnull( tem.tel4 , 0),@tel4) as ''avg4'',
-													dbo.fPercentage(isnull(tem.tel5, 0), @tel5) as ''avg5'',
-													datepart(yy,convert(datetime, convert(varchar(11),cal_fechaDial))) as [year],
-													datepart(mm,convert(datetime, convert(varchar(11),cal_fechaDial))) as [month],
-													datepart(dd,convert(datetime, convert(varchar(11),cal_fechaDial))) as [day],
-													datepart(hh,convert(datetime, convert(varchar(11),cal_fechaDial))) as [hour],
-													datepart(mi,convert(datetime, convert(varchar(11),cal_fechaDial))) as [minutes]
-													from ccoCallsOutSource cosout with(index(IX_ccoCallsOutSource_19),nolock)
-													inner join ccRIARegistryLists rl on cosout.list_id =  rl.list_id
-													left join @temp tem on cosout.list_id = tem.listid
-													left join cccamps camp on cosout.cam_id  = camp.cam_id
-											--where cal_status in (11,13,15,16)
-											where cal_fechaDial >= @from
-											and cal_fechaDial < @to
-
-											group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
-											camp.cam_id, camp.cam_descripcion
-
-
-							end
-	end'
-		EXEC(@sql)
 
 		set @process = 'CREATE SP -- ccsp_CreateNodeMultimedia'
 		set @sql='CREATE PROCEDURE [dbo].[ccsp_CreateNodeMultimedia]
@@ -2281,8 +2199,8 @@ set nocount off'
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		--exec ccsp_getVersion 'BDF', @versionFix
+		exec ccsp_getVersion 'BD', @version
+		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran
 		end try

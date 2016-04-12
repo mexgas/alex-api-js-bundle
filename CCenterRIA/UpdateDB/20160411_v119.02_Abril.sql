@@ -361,6 +361,12 @@ end'
 		set @process = 'ALTER TABLE--------ccRIACat_Areas'
 		set @sql='if not exists (select * from sys.columns where name = N''maxTweets'' and Object_ID = Object_ID(N''ccRIACat_Areas'')) ALTER TABLE ccRIACat_Areas ADD maxTweets tinyint null'
 		EXEC(@sql)
+		
+		
+		set @process = 'ALTER TABLE--------ccoCallsOutSource'
+		set @sql='if not exists (select * from sys.columns where name in (N''Region'',''Localidad'') and Object_ID = Object_ID(N''ccoCallsOutSource'')) 
+ALTER TABLE ccoCallsOutSource add Region varchar(20) null,Localidad varchar(20) null'
+		EXEC(@sql)
 
 
 

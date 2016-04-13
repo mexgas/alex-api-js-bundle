@@ -35,6 +35,25 @@ if @actualVersion = @version - 1
 	begin
 		begin tran
 		begin try
+		
+		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable ---------'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+		BEGIN
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END '
+		EXEC(@Sql)
+
+		 set @process = 'alter table ccoCallsOutSource ---------'
+		 set @Sql= 'ALTER TABLE ccoCallsOutSource add Region varchar(20) null,Localidad varchar(20) null  '
+		 EXEC(@Sql)
+
+		 set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		  set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+		BEGIN 
+		 ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END'
+
+		EXEC(@Sql)
 
 	set @process = 'Drop table -- RepEmailACD,RepEmailAgente,RepEmailDetail'
 	set @sql='if exists(select * from sys.tables where name=''RepEmailACD'') DROP TABLE [dbo].[RepEmailACD]

@@ -248,17 +248,17 @@ end    '
 		campaignId smallint not null,
 		campaign varchar(40),
 		listId int not null,
-		listName varchar(max),
+		listName varchar(max) not null,
 		cPhoneNumbers int not null,
 		cPhoneNumbers2 int not null,
 		cPhoneNumbers3 int not null,
 		cPhoneNumbers4 int not null,
 		cPhoneNumbers5 int not null,
-		percentage varchar(10) not null,
-		percentage2 varchar(10) not null,
-		percentage3 varchar(10) not null,
-		percentage4 varchar(10) not null,
-		percentage5 varchar(10) not null,
+		percentage decimal(10, 2) not null,
+		percentage2 decimal(10, 2) not null,
+		percentage3 decimal(10, 2) not null,
+		percentage4 decimal(10, 2) not null,
+		percentage5 decimal(10, 2) not null,
 		[year] int NOT NULL,
 		[month] int NOT NULL,
 		[day] int NOT NULL,
@@ -319,7 +319,6 @@ end'
 
 	set @process = 'INSERT -------- ReportsFilters'
 	set @sql='if not exists(select * from ReportsFilters where id in (4220, 4230, 4240)) begin
-	insert into ReportsFilters values (''Telephone Numbers by State Report'', ''statusCall'', 4220)
 
 	insert into ReportsFilters values (''Telephone Numbers by RecordList Report'', ''campaigns'', 4230)
 
@@ -330,7 +329,7 @@ end'
 	set @process = 'INSERT -------- PivotReports'
 	set @sql='if not exists(select * from PivotReports where id in (4220, 4240)) begin
 	insert into PivotReports values(4220, ''state_Count|state_avg'', ''date|listName'', ''sum'')
-	insert into PivotReports values(4240, ''statusCall_Count|statusCall_avg'', ''date'', ''sum'')
+	insert into PivotReports values(4240, ''statusCall_Count|statusCall_avg'', ''date|campaign'', ''sum'')
  end'
 	EXEC(@sql)
 

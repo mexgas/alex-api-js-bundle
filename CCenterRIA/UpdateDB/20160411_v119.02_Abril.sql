@@ -58,11 +58,12 @@ update ccMenus set menu_descrip = ''Correo general|Email General'', release = ''
 update ccMenus set menu_descrip = ''Guion de agentes|Scripting'', release = ''4ffed6b59a7b91b78b12c98b4d855663865935dd4a7cd7f0ef276d059d5d1919'' where menu_id = 72
 update ccMenus set menu_descrip = ''Direcciones CC y CCO|CC & BCC Email Addresses'', release = ''09cbbffafe26e97542fa49002c1ec5e68ba515f9cbd9bbc03c547910ac6d73ec802e03cbfc7bceaa52cbfdbbf0396e04'' where menu_id = 85
 update ccMenus set menu_descrip = ''Plantillas de multimedios|Multichannel Templates'', release = ''fec74cbaf0b2d7132ee780dabe49895080099c393ebceefb3f21a3efb74960106857e5d4c2ffacf5aced54935e6ee3c55dfbfe9bce82bde21378d3a3b081a702'' where menu_id = 79
-update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed619809b45d00e0111d5b6871bd2b894b3de8adfd202942ad8e6026e12c0488685'' where menu_id = 19'
+update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed67d147a622d6b758c572aaf3debd315ea'' where menu_id = 19
+'
 		EXEC(@sql)
 
 	set @process = 'Alter [dbo].[configuraIdiomaCatalogosEspañol]-----'
-	set @sql='ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
+		set @sql='ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
 AS
 Print ''Iniciando proceso de configuracion en Español''
 
@@ -292,7 +293,7 @@ INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], 
 
 Print ''Estableciendo Not Ready y graficas''
 Delete [ccRIANotReadyGraph]
-Delete [dbo].[ccTipoNotReady]
+Delete [dbo].[ccTipoNotReady] 
 Delete [ccRIAGraphics]
 
 DBCC CHECKIDENT (''[ccTipoNotReady]'', RESEED, 0)
@@ -616,15 +617,15 @@ end
 
 		set @process = 'INSERT -------- ccMenus'
 		set @sql ='if not exists(select * from ccmenus where type=3 and menu_id in(4220, 4230, 4240)) begin
-	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de teléfonos por estado de la república|Telephone report ordered by republic states'', 4000, ''B'', 4, 3, '''', ''60b188045ce43b6a1d77f7a81f67767fc90fbef71d57e4498d362c5c67a3c097d076f2f127f0f7af01beda4ac36008993c52871865dfbcc8d37183f0a429089f59ae97a60b9d269449063e6d38f93222a414d69d2a3fb7b721155619d8e6b4e2'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4220, ''Reporte de números telefónicos por Estado de la República|Telephone Numbers by State Report'', 4000, ''B'', 4, 3, '''', ''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c43ef3618c0e07fd295db613949d5c5b198d0864ea7bffa8db6a6df48e752c93c431b281f4d899c7f057dc963930309126a51089e74aa6d71d9e468f2ef4bbafb2'')
 	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4230, ''Reporte de números telefónicos por registro/lista|Telephone Numbers by RecordList Report'',  4000, ''B'', 4, 3, '''',''94876e9b8b232270fece46d9fc0233a7f810ac1c5ac6c2a03d59c4404e28a0c40eaade12674a111dbfba34cfd4a3efd7c09b538de3ae9891c2ed4b98f2e08acd083c26b7666470d365e856c76e59c751b381635cf60a71915886932047e9227c'')
-	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcación|Dialing Result Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d446f04bcc6ff01e8247b5531a00ded6b'')
+	insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release ) values (4240, ''Reporte de resultados de marcación|Dialing Results Report'', 4000, ''B'', 4, 3, '''', ''9cf7679f1b10838b63e4eae2368159813ae5d3eecaf4bccecfb21a247080897dc3e3d80988c85c0931f5a2fe77da619d8a13c799d05c5bd6bf7f846e2659d6f3'')
 end'
 		EXEC(@sql)
 
 		set @process = 'INSERT -------- ccRIACat_AdminPermissions'
 		set @sql =' if not exists ( select per_id from ccRIACat_AdminPermissions where per_id = 9 )
-		insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver reportes por grupo|Access reports by workgroup'',''1'',''4fa74acb1f6a68e4c30f0b01ff93a04445c80efab455828ae88f15b70332f27f3280b2a147b0891eee145e736b46afcec1e9a93d16f405f9e7076fbc55dd05db'')'
+	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')'
 		EXEC(@sql)
 
 

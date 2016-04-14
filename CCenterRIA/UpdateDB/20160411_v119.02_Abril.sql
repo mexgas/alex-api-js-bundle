@@ -624,7 +624,7 @@ end'
 
 		set @process = 'INSERT -------- ccRIACat_AdminPermissions'
 		set @sql =' if not exists ( select per_id from ccRIACat_AdminPermissions where per_id = 9 )
-	 insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver solo WG|See only WG'',''1'',''d499e0aefe07c3b7a3ce3a6dd33c8ae96a586acf1b3632b8c87b832c2f129048'')'
+		insert into ccRIACat_AdminPermissions (per_desc,bstatus,release)	values (''Ver reportes por grupo|Access reports by workgroup'',''1'',''4fa74acb1f6a68e4c30f0b01ff93a04445c80efab455828ae88f15b70332f27f3280b2a147b0891eee145e736b46afcec1e9a93d16f405f9e7076fbc55dd05db'')'
 		EXEC(@sql)
 
 

@@ -26,7 +26,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version = 37
+set @version = 36
 
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
@@ -1100,8 +1100,6 @@ select
 	where msg.date >= @from AND msg.date < @to
 	)x
 	group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion,inboundid,conversationId
-
-
 
 end'
 	EXEC(@sql)

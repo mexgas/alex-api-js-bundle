@@ -26,7 +26,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version = 36
+set @version = 37
 
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
@@ -35,7 +35,7 @@ if @actualVersion = @version - 1
 	begin
 		begin tran
 		begin try
-		
+
 		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable ---------'
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
 		BEGIN
@@ -47,9 +47,17 @@ if @actualVersion = @version - 1
 		 set @Sql= 'if not exists (select * from sys.columns where name in(N''StatusWorkGroup'',''Region'') and Object_ID = Object_ID(N''ccoCallsOutSource''))
     begin
 		ALTER TABLE ccoCallsOutSource add Region varchar(20) null
-        ALTER TABLE ccoCallsOutSource add Localidad varchar(20) null		
+        ALTER TABLE ccoCallsOutSource add Localidad varchar(20) null
     end'
 		 EXEC(@Sql)
+
+		  set @process = 'alter table ccUsers ---------'
+		 set @Sql= 'if not exists (select * from sys.columns where name in(N''IDArea'',''Region'') and Object_ID = Object_ID(N''ccUsers''))
+    begin
+		ALTER TABLE ccUsers add IDArea smallint null
+    end'
+		 EXEC(@Sql)
+
 
 		 set @process = 'alter table ccRIACat_WorkGroup ---------'
 		 set @Sql= 'if not exists (select * from sys.columns where name = N''StatusWorkGroup'' and Object_ID = Object_ID(N''ccRIACat_WorkGroup''))
@@ -60,7 +68,7 @@ if @actualVersion = @version - 1
 
 		 set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
 		  set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
-		BEGIN 
+		BEGIN
 		 ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
 		END'
 

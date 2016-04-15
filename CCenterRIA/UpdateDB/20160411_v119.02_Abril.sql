@@ -58,7 +58,7 @@ update ccMenus set menu_descrip = ''Correo general|Email General'', release = ''
 update ccMenus set menu_descrip = ''Guion de agentes|Scripting'', release = ''4ffed6b59a7b91b78b12c98b4d855663865935dd4a7cd7f0ef276d059d5d1919'' where menu_id = 72
 update ccMenus set menu_descrip = ''Direcciones CC y CCO|CC & BCC Email Addresses'', release = ''09cbbffafe26e97542fa49002c1ec5e68ba515f9cbd9bbc03c547910ac6d73ec802e03cbfc7bceaa52cbfdbbf0396e04'' where menu_id = 85
 update ccMenus set menu_descrip = ''Plantillas de multimedios|Multichannel Templates'', release = ''fec74cbaf0b2d7132ee780dabe49895080099c393ebceefb3f21a3efb74960106857e5d4c2ffacf5aced54935e6ee3c55dfbfe9bce82bde21378d3a3b081a702'' where menu_id = 79
-update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed67d147a622d6b758c572aaf3debd315ea'' where menu_id = 19
+update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed619809b45d00e0111d5b6871bd2b894b3de8adfd202942ad8e6026e12c0488685'' where menu_id = 19
 '
 		EXEC(@sql)
 
@@ -293,7 +293,7 @@ INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], 
 
 Print ''Estableciendo Not Ready y graficas''
 Delete [ccRIANotReadyGraph]
-Delete [dbo].[ccTipoNotReady] 
+Delete [dbo].[ccTipoNotReady]
 Delete [ccRIAGraphics]
 
 DBCC CHECKIDENT (''[ccTipoNotReady]'', RESEED, 0)

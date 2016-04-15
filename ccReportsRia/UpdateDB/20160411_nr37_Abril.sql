@@ -44,7 +44,18 @@ if @actualVersion = @version - 1
 		EXEC(@Sql)
 
 		 set @process = 'alter table ccoCallsOutSource ---------'
-		 set @Sql= 'ALTER TABLE ccoCallsOutSource add Region varchar(20) null,Localidad varchar(20) null  '
+		 set @Sql= 'if not exists (select * from sys.columns where name in(N''StatusWorkGroup'',''Region'') and Object_ID = Object_ID(N''ccoCallsOutSource''))
+    begin
+		ALTER TABLE ccoCallsOutSource add Region varchar(20) null
+        ALTER TABLE ccoCallsOutSource add Localidad varchar(20) null		
+    end'
+		 EXEC(@Sql)
+
+		 set @process = 'alter table ccRIACat_WorkGroup ---------'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''StatusWorkGroup'' and Object_ID = Object_ID(N''ccRIACat_WorkGroup''))
+    begin
+        alter table ccRIACat_WorkGroup add StatusWorkGroup bit not null
+    end'
 		 EXEC(@Sql)
 
 		 set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'

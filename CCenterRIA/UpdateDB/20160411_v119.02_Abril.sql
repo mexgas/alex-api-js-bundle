@@ -1265,6 +1265,11 @@ end'
 @type int =1--1 EMAIL , 2 Twitter
 AS
 BEGIN
+declare @info varchar(255)
+declare @infoEscape varchar(max)
+declare @charEscape varchar(255),@charReplace varchar(max)
+set @charEscape=''"|''''''''|<|>|&''
+set @charReplace=''&quot;|&apos;|&lt;|&gt;|&amp;''
 
 --SET @conversationId=16
 declare @existAttached bit,@numInteracion smallint
@@ -1295,20 +1300,25 @@ else if @type=1 begin--EMAIL
 	SELECT @existAttached = case when count(*)>0 then 1 else 0 end
 	from attached where messageId in (select messageId from message where conversationId=@conversationId)
 	select @numInteracion = count(*) from message where conversationId=@conversationId
+	--Replaza los caracteres por los comunes
+	select @info=info from conversation where conversationId=@conversationId
+	select @info=replace(@info,A.Value,B.Value) from dbo.fn_RIASplitDelimited(@charEscape,''|'') A
+	inner join dbo.fn_RIASplitDelimited(@charReplace,''|'') B on A.Id=B.Id
 
 
 	select @xml = convert(xml,''<R03 C01="''+ convert(varchar(max),a.conversationId) +
-	''" C02="''+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
-	''" C03="''+convert(varchar(max),max(c.descripcion)) +
+	''" C02="''+ rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
+	''" C03="''+ convert(varchar(max),max(c.descripcion)) +
 	''" C04="''+ convert(varchar,max(isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno,''''))) +
-	''" C05="''+convert(varchar,max(isnull(cctipocalif.[Description],''N/A''))) +
+	''" C05="''+ convert(varchar,max(isnull(cctipocalif.[Description],''N/A''))) +
 	''" C06="''+ convert(varchar,max(replace(replace(a.mailClient,''<'','' ''),''>'','' ''))) +
-	''" C07="''+convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +''" C08="''+ max(a.info) +
-	''" C09="''+convert(varchar(max),max(b.messageStatusid) ) +''" C10="''+  convert(varchar(max), isnull(@numInteracion,0)) +
-	''" C11="''+convert(varchar(max),@existAttached) +''" C12="''+ convert(varchar(max),isnull(@supervisor,'''') ) +
-	''" C13="''+convert(varchar(max),isnull(@template,'''') )  +''" C14="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +
+	''" C07="''+ convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +
+	''" C08="''+ min(@info) +
+	''" C09="''+ convert(varchar(max),max(b.messageStatusid) ) +''" C10="''+  convert(varchar(max), isnull(@numInteracion,0)) +
+	''" C11="''+ convert(varchar(max),@existAttached) +''" C12="''+ convert(varchar(max),isnull(@supervisor,'''') ) +
+	''" C13="''+ convert(varchar(max),isnull(@template,'''') )  +''" C14="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +
 	''" C15="''+ convert(varchar,max(isnull(cctipocalifsub.califSubdesc,''N/A''))) +
-	''" C16="''+convert(varchar(max),isnull(max(d.[Login]),'''')) + ''"/>'')
+	''" C16="''+ convert(varchar(max),isnull(max(d.[Login]),'''')) + ''"/>'')
 	from conversation a
 	inner join message b on a.conversationid=b.conversationid
 	left outer join ccinbound c on c.inbound_id = a.inboundid
@@ -1318,6 +1328,7 @@ else if @type=1 begin--EMAIL
 	left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
 	where a.conversationId=@conversationId
 	group by a.conversationId,a.inboundid
+
 end
 else if @type=2 begin--Twitter
 	select @numInteracion = sum(ninteration) from messageOutTwitter where conversationTwitterId=@conversationId

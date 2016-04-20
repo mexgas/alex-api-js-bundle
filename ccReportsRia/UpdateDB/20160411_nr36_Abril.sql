@@ -357,7 +357,7 @@ end'
 	set @process = 'INSERT -------- ReportsTotals'
 	set @sql='if not exists(select * from ReportsTotals where id  in (4220, 4230, 4240)) begin
 	insert into ReportsTotals values (4220, '''')
-	insert into ReportsTotals values (4230, ''sum:cPhoneNumbers|sum:cPhoneNumbers2|sum:cPhoneNumbers3|sum:cPhoneNumbers4|sum:cPhoneNumbers5|sum:percentage|sum:percentage2|sum:percentage3|sum:percentage4|sum:percentage5'')
+	insert into ReportsTotals values (4230, ''sum:cPhoneNumbers|sum:cPhoneNumbers2|sum:cPhoneNumbers3|sum:cPhoneNumbers4|sum:cPhoneNumbers5|avg:percentage|avg:percentage2|avg:percentage3|avg:percentage4|avg:percentage5'')
 	insert into ReportsTotals values (4240, '''')
 end'
 	EXEC(@sql)
@@ -387,13 +387,13 @@ END'
 	EXEC(@sql)
 
 	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByRegistry'
-	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
+	set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
 AS
-
-declare @temp table(
+create table #tempPhone(
+[date] datetime,
 tel1 int,
 tel2 int,
 tel3 int,
@@ -401,6 +401,9 @@ tel4 int,
 tel5 int,
 listid int
 )
+
+create index IX_TEMPPHONE  on #tempPhone(listid)
+
 
 declare @tel1 int, @tel2 int,@tel3 int,@tel4 int,@tel5 int
 
@@ -413,55 +416,46 @@ if @action = 1
 begin
 	delete from RepSpecialTelephoneNumbersByRegistry with(rowlock) where date >= @from and date < @to
 
-	insert into @temp
-		select case when cal_telefono <> '''' then isnull( COUNT(cal_telefono), 0) else 0 end,
-		case when cal_telefono2 <> '''' then isnull( COUNT(cal_telefono2), 0) else 0 end ,
-		case when cal_telefono3 <> '''' then isnull( COUNT(cal_telefono3), 0) else 0 end,
-		case when cal_telefono4 <> '''' then isnull( COUNT(cal_telefono4), 0) else 0 end,
-		case when cal_telefono5 <> '''' then isnull( COUNT(cal_telefono5), 0) else 0 end,
+	insert into #tempPhone		
+		select 
+		convert(datetime,convert(varchar(11),min(cal_fechaDial))) as [date],
+		case when cal_telefono <> '''' then isnull( COUNT(cal_telefono), 0) else 0 end,
+		case when cal_telefono2 <> '''' then  COUNT(cal_telefono2) else 0 end ,
+		case when cal_telefono3 <> '''' then COUNT(cal_telefono3) else 0 end,
+		case when cal_telefono4 <> '''' then COUNT(cal_telefono4) else 0 end,
+		case when cal_telefono5 <> '''' then COUNT(cal_telefono5) else 0 end,
 		list_id
-	from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
-	--where cal_status in (11,13,15,16)
-	where cal_fechaDial >= @from
-	and cal_fechaDial < @to
-
+	from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)	
+	where cal_fechaDial >= @from and cal_fechaDial < @to
 	group by cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,list_id
 
-select @tel1 = SUM(tel1), @tel2 = SUM(tel2),@tel3 = SUM(tel3), @tel4 =SUM(tel4), @tel5 = SUM(tel5)
-from @temp
-
+	
+select @tel1 = SUM(tel1), @tel2 = SUM(tel2),@tel3 = SUM(tel3), @tel4 =SUM(tel4), @tel5 = SUM(tel5) from #tempPhone
 
 	insert into RepSpecialTelephoneNumbersByRegistry
-
-	select convert(datetime,convert(varchar(11),cal_fechaDial)) as [date],
-		camp.cam_id as ''campaignId'', camp.cam_descripcion as ''campaign'',
-		isnull(cosout.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
-		tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,
+	select [date],
+	0 as ''campaignId'', '''' as ''campaign'',
+		isnull(rl.list_id,0) as ''listId'', isnull(rl.name, '''') as ''listName'',
+		tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,		
 		dbo.fPercentage(isnull(tem.tel1, 0),@tel1 ) as ''avg'',
 		dbo.fPercentage(isnull(tem.tel2, 0),@tel2 ) as ''avg2'',
 		dbo.fPercentage(isnull(tem.tel3, 0),@tel3) as ''avg3'',
 		dbo.fPercentage(isnull( tem.tel4 , 0),@tel4) as ''avg4'',
 		dbo.fPercentage(isnull(tem.tel5, 0), @tel5) as ''avg5'',
-		datepart(yy,convert(datetime, convert(varchar(11),cal_fechaDial))) as [year],
-		datepart(mm,convert(datetime, convert(varchar(11),cal_fechaDial))) as [month],
-		datepart(dd,convert(datetime, convert(varchar(11),cal_fechaDial))) as [day],
-		datepart(hh,convert(datetime, convert(varchar(11),cal_fechaDial))) as [hour],
-		datepart(mi,convert(datetime, convert(varchar(11),cal_fechaDial))) as [minutes]
-		from ccoCallsOutSource cosout with(index(IX_ccoCallsOutSource_19),nolock)
-		inner join ccRIARegistryLists rl on cosout.list_id =  rl.list_id
-		left join @temp tem on cosout.list_id = tem.listid
-		left join cccamps camp on cosout.cam_id  = camp.cam_id
-	--where cal_status in (11,13,15,16)
-	where cal_fechaDial >= @from
-	and cal_fechaDial < @to
+		datepart(yy,convert(datetime, convert(varchar(11),[date]))) as [year],
+		datepart(mm,convert(datetime, convert(varchar(11),[date]))) as [month],
+		datepart(dd,convert(datetime, convert(varchar(11),[date]))) as [day],
+		datepart(hh,convert(datetime, convert(varchar(11),[date]))) as [hour],
+		datepart(mi,convert(datetime, convert(varchar(11),[date]))) as [minutes]
+	 from #tempPhone tem
+	 inner join ccRIARegistryLists rl on tem.listid =  rl.list_id
 
-		group by cal_fechaDial, cosout.list_id, rl.name, tem.tel1,tem.tel2,tem.tel3,tem.tel4,tem.tel5,camp.cam_id, camp.cam_descripcion
-
+	drop table #tempPhone 
 end'
 	EXEC(@sql)
 
 	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByState'
-	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
+	set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -502,12 +496,13 @@ begin
 	where cal_fechaDial >= @from
 	and cal_fechaDial < @to
 	and Region is not null
-	group by cal_fechaDial, [cos].list_id, rl.name, Region
-end'
+	group by convert(datetime,convert(varchar(11),cal_fechaDial)) , [cos].list_id, rl.name, Region
+end
+'
 	EXEC(@sql)
 
 	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialDialingResults'
-	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialDialingResults]
+	set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialDialingResults]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -525,34 +520,33 @@ begin
 	delete from RepSpecialDialingResults with(rowlock) where date >= @from and date < @to
 
 	select @totales = isnull( COUNT(callout_id), 0)
-	from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
-	where cal_fechaDial >= @from
-	and cal_fechaDial < @to
-	and cal_status <> 0
+	from ccoLogDials --with(index(IX_ccoCallsOutSource_19),nolock)
+	where fecha >= @from
+	and fecha < @to
+	and tipoResDial_id  <> 0
 
 	insert into RepSpecialDialingResults
-	select	convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'') as [date],
-		[cos].cam_id as ''campaignId'',
+	select	convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121) as [date],
+		[cld].cam_id as ''campaignId'',
 		cms.cam_descripcion as ''campaign'',
-		isnull([cos].cal_status,0) as ''statusCallId'',
-		isnull(sl.descripcion,'''') as ''statusCall'',
-		sl.descripcion + ''_Count'' as [statusCall_Count],
+		isnull([cld].tipoResDial_id ,0) as ''statusCallId'',
+		isnull(ctr.descripcion,'''') as ''statusCall'',
+		ctr.descripcion + ''_Count'' as [statusCall_Count],
 		isnull( COUNT(callout_id), 0) as ''Count'',
-		sl.descripcion + ''_Avg'' as ''statusCall_avg'',
+		ctr.descripcion + ''_Avg'' as ''statusCall_avg'',
 		dbo.fPercentage(isnull( COUNT(callout_id), 0), @totales) as ''avg'',
-		datepart(yy,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [year],
-		datepart(mm,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [month],
-		datepart(dd,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [day],
-		datepart(hh,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [hour],
-		datepart(mi,convert(datetime, convert(varchar(14),cal_fechaDial,121)+ ''00'')) as [minutes]
-	from ccoCallsOutSource  [cos]
-	left join ccstatusllamada sl on [cos].cal_status = sl.statusCall_id
-	left join cccamps cms on [cos].cam_id = cms.cam_id
-	where cal_fechaDial >= @from
-	and cal_fechaDial < @to
-	and [cos].cal_status <> 0
-	group by cal_fechaDial, [cos].cam_id, cms.cam_descripcion, [cos].cal_status, sl.descripcion
-
+		datepart(yy,convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121)) as [year],
+		datepart(mm,convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121)) as [month],
+		datepart(dd,convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121)) as [day],
+		datepart(hh,convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121)) as [hour],
+		datepart(mi,convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121)) as [minutes]
+	from ccoLogDials  [cld]
+	left join ccTipoResultadoDial ctr on [cld].tipoResDial_id = ctr.tipoResDial_id 
+	left join cccamps cms on [cld].cam_id = cms.cam_id
+	where fecha >= @from
+	and fecha < @to
+	and [cld].tipoResDial_id  <> 0
+	group by convert(datetime, convert(varchar(14),[fecha],121)+ ''00'',121), [cld].cam_id, cms.cam_descripcion, [cld].tipoResDial_id, ctr.descripcion
 end'
 	EXEC(@sql)
 

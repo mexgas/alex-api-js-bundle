@@ -784,7 +784,7 @@
     <value>Sub Dispositions</value>
   </data>
   <data name="calId" xml:space="preserve">
-    <value>Call Number</value>
+    <value>ID Call</value>
   </data>
   <data name="dialog" xml:space="preserve">
     <value>Talking time</value>
@@ -1920,7 +1920,7 @@
   <data name="AnsweredcallsonchatdetailperCampaignbyday" xml:space="preserve">
     <value>Answered calls on chat detail per Campaign by day</value>
   </data>
-  <data name="ivrName" xml:space="preserve">
+  <data name="IVRName" xml:space="preserve">
     <value>IVR Name</value>
   </data>
   <data name="AgentCustomerSatisfactionService" xml:space="preserve">
@@ -2330,5 +2330,14 @@
   </data>
   <data name="twrapup" xml:space="preserve">
     <value>Wrap-up Time</value>
+  </data>
+  <data name="answer" xml:space="preserve">
+    <value>Answer</value>
+  </data>
+  <data name="calKey" xml:space="preserve">
+    <value>Phone Number</value>
+  </data>
+  <data name="IVRSurveys" xml:space="preserve">
+    <value>IVR Surveys</value>
   </data>
 </root>

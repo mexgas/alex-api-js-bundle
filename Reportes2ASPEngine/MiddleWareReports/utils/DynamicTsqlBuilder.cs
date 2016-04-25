@@ -43,18 +43,18 @@ namespace MiddleWareReports
         /// <param name="addCountColumn">Indicates if a count column must be added for charts</param>
         /// <param name="dynamicQuery">The created dynamic query to be used</param>
         /// <returns></returns>
-        public static StringBuilder selectFromStatement(LinkedList<string> parameters, string tableName, bool addRowNum, bool addCountColumn, string countColumn, string pivotColumns, string complementColumns, string where, string pivotFunction, bool isTimePeriod, string groupByColumns, DynamicQuery dynamicQuery, string dateColumnName)
+        public static StringBuilder selectFromStatement(LinkedList<string> parameters, string tableName, bool addRowNum, bool addCountColumn, string countColumn, string pivotColumns, string complementColumns, string where, string pivotFunction, bool isTimePeriod, string groupByColumns, DynamicQuery dynamicQuery, string dateColumnName, bool isGroupPivot)
         {
             if (pivotColumns != "" && complementColumns != "" && !addCountColumn)
             {
                 string[] pivotColumnsArray = pivotColumns.Split('|');
                 string[] complementColumnsArray = getFilterColumnsPivot(parameters, complementColumns.Split('|'));
 
-                return getPivotColumns(pivotColumnsArray, tableName, complementColumnsArray, addRowNum, where, pivotFunction, isTimePeriod, parameters, groupByColumns, dynamicQuery);
+                return getPivotColumns(pivotColumnsArray, tableName, complementColumnsArray, addRowNum, where, pivotFunction, isTimePeriod, parameters, groupByColumns, dynamicQuery, isGroupPivot);
             }
             else
             {
-                return selectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery,dateColumnName);
+                return selectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery, dateColumnName);
             }
         }
 
@@ -181,7 +181,7 @@ namespace MiddleWareReports
             StringBuilder stament = new StringBuilder();
             stament.Append(string.Format("{0} {1} {2}", parameter, translateOperator(op), value));
 
-            return conjunctionStatement(AND,stament);
+            return conjunctionStatement(AND, stament);
         }
 
         /// <summary>
@@ -426,7 +426,7 @@ namespace MiddleWareReports
         }
 
 
-        private static StringBuilder getPivotColumns(string[] pivotColumns, string reportName, string[] complementColumns, bool addRowNum, string where, string pivotFunction, bool isTimePeriod, LinkedList<string> parameters, string groupByColumns, DynamicQuery dynamicQuery)
+        private static StringBuilder getPivotColumns(string[] pivotColumns, string reportName, string[] complementColumns, bool addRowNum, string where, string pivotFunction, bool isTimePeriod, LinkedList<string> parameters, string groupByColumns, DynamicQuery dynamicQuery, bool isGroupPivot)
         {
             StringBuilder pivot = new StringBuilder();
             string tempC = "";
@@ -436,117 +436,131 @@ namespace MiddleWareReports
             string pivotFunctionTotal = "";
             string columnstoGroup = "";
 
-            pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
-
-            if (addRowNum)
+            if (pivotFunction != "")
             {
-                string orderBy = complementColumns[0];
-                for (int i = 0; i < complementColumns.Length; i++)
+                pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
+
+                if (addRowNum)
                 {
-                    if (complementColumns[i] != "date") continue;
-                    orderBy = complementColumns[i];
-                    break;
+                    string orderBy = complementColumns[0];
+                    for (int i = 0; i < complementColumns.Length; i++)
+                    {
+                        if (complementColumns[i] != "date") continue;
+                        orderBy = complementColumns[i];
+                        break;
+                    }
+                    rowNumExpression = string.Format(" ROW_NUMBER() OVER(ORDER BY {0}) AS {1} ,", "[" + orderBy + "]", ROWNUM);
                 }
-                rowNumExpression = string.Format(" ROW_NUMBER() OVER(ORDER BY {0}) AS {1} ,", "[" + orderBy + "]", ROWNUM);
-            }
 
-            foreach (string pivotColumn in pivotColumns)
-            {
-                pivot.Append(string.Format(" declare @pivot1_{0} nvarchar(max)", pivotColumn));
-                pivot.Append(string.Format(" declare @pivot2_{0} nvarchar(max)", pivotColumn));
+                foreach (string pivotColumn in pivotColumns)
+                {
+                    pivot.Append(string.Format(" declare @pivot1_{0} nvarchar(max)", pivotColumn));
+                    pivot.Append(string.Format(" declare @pivot2_{0} nvarchar(max)", pivotColumn));
+                    if (dynamicQuery.IsTotals)
+                    {
+                        pivot.Append(string.Format(" declare @pivot3_{0} nvarchar(max)", pivotColumn));
+                    }
+                    pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
+                    pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
+                    if (isGroupPivot)
+                        pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
+                    else
+                        pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
+                    pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
+                    if (dynamicQuery.IsTotals)
+                    {
+                        pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
+                        if (isGroupPivot)
+                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                        else
+                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
+                        pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
+                    }
+                }
+                pivot.Append(" declare @query nvarchar(max)");
+
+                foreach (string complementColumn in complementColumns)
+                {
+                    tempC += string.Format(" [{0}],", complementColumn);
+                }
+
+                foreach (string pivotV in pivotColumns)
+                {
+                    tempP += string.Format(" '' + @pivot2_{0} + '',", pivotV);
+                    tempT += string.Format(" '' + @pivot3_{0} + '',", pivotV);
+                }
+
+                tempP = tempP.Substring(0, tempP.Length - 1);
+                tempT = tempT.Substring(0, tempT.Length - 1);
+
+                string mainColumns = "*";
                 if (dynamicQuery.IsTotals)
                 {
-                    pivot.Append(string.Format(" declare @pivot3_{0} nvarchar(max)", pivotColumn));
+                    mainColumns = tempT;
+                    if (dynamicQuery.TotalColumns.Length > 0)
+                    {
+                        mainColumns += "," + dynamicQuery.TotalColumns;
+                    }
                 }
-                pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
-                pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
-                pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
-                pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
-                if (dynamicQuery.IsTotals)
+
+                pivot.Append(string.Format(" set @query = '' SELECT {0} FROM (SELECT {1} * FROM (", mainColumns, rowNumExpression));
+                pivot.Append(" select ");
+
+                pivot.Append(tempC + tempP);
+
+                pivot.Append(string.Format(" from (select "));
+
+                tempP = "";
+                foreach (string pivotColumn in pivotColumns)
                 {
-                    pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
-                    pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
-                    pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
+                    tempP += string.Format("[{0}], [{1}],", pivotColumn, pivotColumn.Split('_')[1]);
                 }
-            }
-            pivot.Append(" declare @query nvarchar(max)");
+                tempP = tempP.Substring(0, tempP.Length - 1);
 
-            foreach (string complementColumn in complementColumns)
-            {
-                tempC += string.Format(" [{0}],", complementColumn);
-            }
-
-            foreach (string pivotV in pivotColumns)
-            {
-                tempP += string.Format(" '' + @pivot2_{0} + '',", pivotV);
-                tempT += string.Format(" '' + @pivot3_{0} + '',", pivotV);
-            }
-
-            tempP = tempP.Substring(0, tempP.Length - 1);
-            tempT = tempT.Substring(0, tempT.Length - 1);
-
-            string mainColumns = "*";
-            if (dynamicQuery.IsTotals)
-            {
-                mainColumns = tempT;
-                if (dynamicQuery.TotalColumns.Length > 0)
+                if (isTimePeriod && !dynamicQuery.IsTotals)
                 {
-                    mainColumns += "," + dynamicQuery.TotalColumns;
-                }
-            }
-
-            pivot.Append(string.Format(" set @query = '' SELECT {0} FROM (SELECT {1} * FROM (", mainColumns, rowNumExpression));
-            pivot.Append(" select ");
-
-            pivot.Append(tempC + tempP);
-
-            pivot.Append(string.Format(" from (select "));
-
-            tempP = "";
-            foreach (string pivotColumn in pivotColumns)
-            {
-                tempP += string.Format("[{0}], [{1}],", pivotColumn, pivotColumn.Split('_')[1]);
-            }
-            tempP = tempP.Substring(0, tempP.Length - 1);
-
-            if (isTimePeriod && !dynamicQuery.IsTotals)
-            {
-                foreach (string column in parameters)
-                {
-                    columnstoGroup += column + ",";
-                }
-                columnstoGroup = columnstoGroup.Substring(0, columnstoGroup.Length - 1);
-                pivot.Append(string.Format(" {0} from {1} {2} {3}) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns));
-            }
-            else
-            {
-                pivot.Append(string.Format(" {0} from {1} {2}) AS E_GROUP", tempC + tempP, reportName, where));
-            }
-
-            foreach (string pivotColumn in pivotColumns)
-            {
-                pivot.Append(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
-            }
-
-            tempC = tempC.Substring(0, tempC.Length - 1);
-
-            pivot.Append(string.Format(" group by {0}) AS F_GROUP ", tempC));
-
-
-            if (!dynamicQuery.IsTotals)
-            {
-                if (isTimePeriod)
-                {
-                    columnstoGroup = columnstoGroup.Replace(@"'' + ''", "");
-                    dynamicQuery.SqlPaginate = String.Format("select {0} from {1} WITH(NOLOCK) {2} {3}", columnstoGroup, reportName, where, groupByColumns);
+                    foreach (string column in parameters)
+                    {
+                        columnstoGroup += column + ",";
+                    }
+                    columnstoGroup = columnstoGroup.Substring(0, columnstoGroup.Length - 1);
+                    pivot.Append(string.Format(" {0} from {1} {2} {3}) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns));
                 }
                 else
                 {
-                    dynamicQuery.SqlPaginate = String.Format("select {0} from {1} WITH(NOLOCK) {2} group by {0}", tempC, reportName, where);
+                    pivot.Append(string.Format(" {0} from {1} {2}) AS E_GROUP", tempC + tempP, reportName, where));
                 }
-                dynamicQuery.SqlPaginate = String.Format("select * from ({0}) AS G_GROUP", dynamicQuery.SqlPaginate);
+
+                foreach (string pivotColumn in pivotColumns)
+                {
+                    pivot.Append(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
+                }
+
+                tempC = tempC.Substring(0, tempC.Length - 1);
+                if (isGroupPivot)
+                    pivot.Append(string.Format(" group by {0}) AS F_GROUP ", tempC));
+                else
+                    pivot.Append(" ) AS F_GROUP ");
+
+                if (!dynamicQuery.IsTotals)
+                {
+                    if (isTimePeriod)
+                    {
+                        columnstoGroup = columnstoGroup.Replace(@"'' + ''", "");
+                        dynamicQuery.SqlPaginate = String.Format("select {0} from {1} WITH(NOLOCK) {2} {3}", columnstoGroup, reportName, where, groupByColumns);
+                    }
+                    else
+                    {
+                        dynamicQuery.SqlPaginate = String.Format("select {0} from {1} WITH(NOLOCK) {2} group by {0}", tempC, reportName, where);
+                    }
+                    dynamicQuery.SqlPaginate = String.Format("select * from ({0}) AS G_GROUP", dynamicQuery.SqlPaginate);
+                }
             }
 
+            else
+            {
+                pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
+            }
             return pivot;
         }
 

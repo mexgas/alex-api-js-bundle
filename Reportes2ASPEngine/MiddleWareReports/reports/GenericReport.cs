@@ -639,10 +639,12 @@ namespace MiddleWareReports
                 string columns = pivotRow["columns"].ToString();
                 complementColumns = pivotRow["complementColumns"].ToString();
                 string pivotFunction = pivotRow["pivotFunction"].ToString();
+                string isGroup = pivotRow["isGroup"].ToString();
                 XmlElement element = xml.CreateElement("", "PivotColumn", "");
                 element.SetAttribute("columns", columns);
                 element.SetAttribute("complementColumns", complementColumns);
                 element.SetAttribute("pivotFunction", pivotFunction);
+                element.SetAttribute("isGroup", isGroup); 
                 pivotColumns.AppendChild(element);
             }
             complementColumns = complementColumns.Trim();
@@ -1111,7 +1113,7 @@ namespace MiddleWareReports
             StringBuilder whereStatement = new StringBuilder();
             StringBuilder parameters = new StringBuilder();
             NameValueCollection values = new NameValueCollection();
-
+            
             if (paramValueList["dateStart"] != null && paramValueList["dateStart"].Length > 0
                 && paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
             {
@@ -1190,6 +1192,14 @@ namespace MiddleWareReports
                 pivotFunction = paramValueList["pivotFunction"];
             }
             paramValueList.Remove("pivotFunction");
+
+            //Read isGroupPivot
+            bool isGroupPivot = true;
+            if (paramValueList["isGroup"] != "true")
+            {
+                isGroupPivot = Convert.ToBoolean(paramValueList["isGroup"]);
+            }
+            paramValueList.Remove("isGroup");
 
             bool isPivotReport = (pivotColumns != "" && complementColumns != "" && pivotFunction != "");
 
@@ -1397,7 +1407,9 @@ namespace MiddleWareReports
                 }
             }
             dateColumnName= "[" + dateColumnName + "]";
-            tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName));
+
+
+            tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName, isGroupPivot));
 
             if (!(isPivotReport && !addCountColumn))
             {

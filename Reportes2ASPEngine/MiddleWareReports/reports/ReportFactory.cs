@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MiddleWareReports.reports.specialreports;
+using MiddleWareReports.reports.ivrreports;
 
 namespace MiddleWareReports
 {
@@ -121,6 +122,8 @@ namespace MiddleWareReports
                     return new RepIVRFirstOption();
                 case 6040:
                     return new RepIVRByOptions();
+                case 6050: //IVR Surveys Report
+                    return new RepIVRSurveys();
                 case 7000: //ESP
                     return null; //"ESP" 
                 case 7010: //Abandon reports

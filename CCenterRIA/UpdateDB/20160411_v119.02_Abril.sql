@@ -49,6 +49,10 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 update ccMenus set menu_descrip = ''Asociación de cuentas de salida|From Email Addresses Association'', release = ''560ed80e1b20ea34c6507d730c5bf457f1fed7bc7dd97e37ebfd050781c6ec5086d0b6eec2aa79bf1194ad3818fa19d8ebb4c5def239352b188702be9f9ae82c08edd5ac6e4bafaea20ebaa5125dbf1b'' where menu_id = 82
 update ccMenus set menu_descrip = ''Firmas de correo|Email Signatures'', release = ''4ac1b8688d4d698a233e8ed87fdb403731fc1fa748d926ce076376f74dc782023846549ea7f469eb9eb2816c3ca594e9'' where menu_id = 84
 
+update ccMenus set menu_descrip = ''Cuentas de salida|From Email Addresses'', release = ''dbc8236e42a707b69957a1961fb04ab814ab0f803509bd8ee1cb1ce4ce53b90921ca2afa2fdd6d4b379b739e34b9d570'' where menu_id = 81
+update ccMenus set menu_descrip = ''Asociación de cuentas de salida|From Email Addresses Association'', release = ''560ed80e1b20ea34c6507d730c5bf457f1fed7bc7dd97e37ebfd050781c6ec5086d0b6eec2aa79bf1194ad3818fa19d8ebb4c5def239352b188702be9f9ae82c08edd5ac6e4bafaea20ebaa5125dbf1b'' where menu_id = 82
+update ccMenus set menu_descrip = ''Firmas de correo|Email Signatures'', release = ''4ac1b8688d4d698a233e8ed87fdb403731fc1fa748d926ce076376f74dc782023846549ea7f469eb9eb2816c3ca594e9'' where menu_id = 84
+
 update ccMenus set menu_descrip = ''Correo|Email'', release = ''7484a0302660b91b91039cc3893f7f41'' where menu_id = 10000
 update ccMenus set menu_descrip = ''Correo por ACD|Email by ACD'', release = ''9c6c602297410825b497961460515577b97c3ffaf4fb11ede685651e9e766ed6'' where menu_id = 10010
 update ccMenus set menu_descrip = ''Correo por agente|Email by Agent'', release = ''47e34a74d238060569df56743ee7a37b70af8b3463c50698d6d105f76caf167a50fc15bfa36658b439e5649bab19a15d'' where menu_id = 10020
@@ -59,6 +63,7 @@ update ccMenus set menu_descrip = ''Guion de agentes|Scripting'', release = ''4f
 update ccMenus set menu_descrip = ''Direcciones CC y CCO|CC & BCC Email Addresses'', release = ''09cbbffafe26e97542fa49002c1ec5e68ba515f9cbd9bbc03c547910ac6d73ec802e03cbfc7bceaa52cbfdbbf0396e04'' where menu_id = 85
 update ccMenus set menu_descrip = ''Plantillas de multimedios|Multichannel Templates'', release = ''fec74cbaf0b2d7132ee780dabe49895080099c393ebceefb3f21a3efb74960106857e5d4c2ffacf5aced54935e6ee3c55dfbfe9bce82bde21378d3a3b081a702'' where menu_id = 79
 update ccMenus set menu_descrip = ''Mensajes automáticos|Automatic Messages'', release = ''6d88ac1ff1c050478fb6151462e81ed619809b45d00e0111d5b6871bd2b894b3de8adfd202942ad8e6026e12c0488685'' where menu_id = 19
+
 '
 		EXEC(@sql)
 

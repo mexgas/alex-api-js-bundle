@@ -1818,7 +1818,7 @@
   <data name="nnew" xml:space="preserve">
     <value>New</value>
   </data>
-  <data name="percentage" xml:space="preserve">
+  <data name="systemTranslated_percentage1_Avg" xml:space="preserve">
     <value>Percentage</value>
   </data>
   <data name="promises" xml:space="preserve">
@@ -2181,34 +2181,34 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Agent Twitter</value>
   </data>
-  <data name="cPhoneNumbers" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers1_Count" xml:space="preserve">
     <value>Telephone 1</value>
   </data>
-  <data name="cPhoneNumbers2" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers2_Count" xml:space="preserve">
     <value>Telephone 2</value>
   </data>
-  <data name="cPhoneNumbers3" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers3_Count" xml:space="preserve">
     <value>Telephone 3</value>
   </data>
-  <data name="cPhoneNumbers4" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers4_Count" xml:space="preserve">
     <value>Telephone 4</value>
   </data>
-  <data name="cPhoneNumbers5" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers5_Count" xml:space="preserve">
     <value>Telephone 5</value>
   </data>
   <data name="dialingResult" xml:space="preserve">
     <value>Total Calls</value>
   </data>
-  <data name="percentage2" xml:space="preserve">
+  <data name="systemTranslated_percentage2_Avg" xml:space="preserve">
     <value>Percentage 2</value>
   </data>
-  <data name="percentage3" xml:space="preserve">
+  <data name="systemTranslated_percentage3_Avg" xml:space="preserve">
     <value>Percentage 3</value>
   </data>
-  <data name="percentage4" xml:space="preserve">
+  <data name="systemTranslated_percentage4_Avg" xml:space="preserve">
     <value>Percentage 4</value>
   </data>
-  <data name="percentage5" xml:space="preserve">
+  <data name="systemTranslated_percentage5_Avg" xml:space="preserve">
     <value>Percentage 5</value>
   </data>
   <data name="phoneNumbers" xml:space="preserve">

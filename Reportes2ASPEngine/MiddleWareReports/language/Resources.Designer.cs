@@ -1591,47 +1591,11 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Teléfono 1.
+        ///   Busca una cadena traducida similar a Teléfonos.
         /// </summary>
-        public static string cPhoneNumbers {
+        public static string cPhoneNumber_Count {
             get {
-                return ResourceManager.GetString("cPhoneNumbers", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Teléfono 2.
-        /// </summary>
-        public static string cPhoneNumbers2 {
-            get {
-                return ResourceManager.GetString("cPhoneNumbers2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Teléfono 3.
-        /// </summary>
-        public static string cPhoneNumbers3 {
-            get {
-                return ResourceManager.GetString("cPhoneNumbers3", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Teléfono 4.
-        /// </summary>
-        public static string cPhoneNumbers4 {
-            get {
-                return ResourceManager.GetString("cPhoneNumbers4", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Teléfono 5.
-        /// </summary>
-        public static string cPhoneNumbers5 {
-            get {
-                return ResourceManager.GetString("cPhoneNumbers5", resourceCulture);
+                return ResourceManager.GetString("cPhoneNumber_Count", resourceCulture);
             }
         }
         
@@ -3616,51 +3580,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje.
-        /// </summary>
-        public static string percentage {
-            get {
-                return ResourceManager.GetString("percentage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje 2.
-        /// </summary>
-        public static string percentage2 {
-            get {
-                return ResourceManager.GetString("percentage2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje 3.
-        /// </summary>
-        public static string percentage3 {
-            get {
-                return ResourceManager.GetString("percentage3", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje 4.
-        /// </summary>
-        public static string percentage4 {
-            get {
-                return ResourceManager.GetString("percentage4", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Porcentaje 5.
-        /// </summary>
-        public static string percentage5 {
-            get {
-                return ResourceManager.GetString("percentage5", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a Rend. por asesor.
         /// </summary>
         public static string Performanceperagent {
@@ -4786,6 +4705,51 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Teléfono 1.
+        /// </summary>
+        public static string systemTranslated_cPhoneNumbers1_Count {
+            get {
+                return ResourceManager.GetString("systemTranslated_cPhoneNumbers1_Count", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Teléfono 2.
+        /// </summary>
+        public static string systemTranslated_cPhoneNumbers2_Count {
+            get {
+                return ResourceManager.GetString("systemTranslated_cPhoneNumbers2_Count", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Teléfono 3.
+        /// </summary>
+        public static string systemTranslated_cPhoneNumbers3_Count {
+            get {
+                return ResourceManager.GetString("systemTranslated_cPhoneNumbers3_Count", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Teléfono 4.
+        /// </summary>
+        public static string systemTranslated_cPhoneNumbers4_Count {
+            get {
+                return ResourceManager.GetString("systemTranslated_cPhoneNumbers4_Count", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Teléfono 5.
+        /// </summary>
+        public static string systemTranslated_cPhoneNumbers5_Count {
+            get {
+                return ResourceManager.GetString("systemTranslated_cPhoneNumbers5_Count", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Eliminar.
         /// </summary>
         public static string systemTranslated_Delete {
@@ -5754,6 +5718,51 @@ namespace MiddleWareReports {
         public static string systemTranslated_Pending {
             get {
                 return ResourceManager.GetString("systemTranslated_Pending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Porcentaje 1.
+        /// </summary>
+        public static string systemTranslated_percentage1_Avg {
+            get {
+                return ResourceManager.GetString("systemTranslated_percentage1_Avg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Porcentaje 2.
+        /// </summary>
+        public static string systemTranslated_percentage2_Avg {
+            get {
+                return ResourceManager.GetString("systemTranslated_percentage2_Avg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Porcentaje 3.
+        /// </summary>
+        public static string systemTranslated_percentage3_Avg {
+            get {
+                return ResourceManager.GetString("systemTranslated_percentage3_Avg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Porcentaje 4.
+        /// </summary>
+        public static string systemTranslated_percentage4_Avg {
+            get {
+                return ResourceManager.GetString("systemTranslated_percentage4_Avg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Porcentaje 5.
+        /// </summary>
+        public static string systemTranslated_percentage5_Avg {
+            get {
+                return ResourceManager.GetString("systemTranslated_percentage5_Avg", resourceCulture);
             }
         }
         

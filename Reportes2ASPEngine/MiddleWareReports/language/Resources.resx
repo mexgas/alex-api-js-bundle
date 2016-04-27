@@ -784,7 +784,7 @@
     <value>Sub Calificaciones</value>
   </data>
   <data name="calId" xml:space="preserve">
-    <value>ID de llamada</value>
+    <value>Número de llamada</value>
   </data>
   <data name="dialog" xml:space="preserve">
     <value>En diálogo</value>
@@ -1818,8 +1818,8 @@
   <data name="nnew" xml:space="preserve">
     <value>Nuevos</value>
   </data>
-  <data name="percentage" xml:space="preserve">
-    <value>Porcentaje</value>
+  <data name="systemTranslated_percentage1_Avg" xml:space="preserve">
+    <value>Porcentaje 1</value>
   </data>
   <data name="promises" xml:space="preserve">
     <value>Promesas</value>
@@ -2271,34 +2271,34 @@
   <data name="AgentTwitter" xml:space="preserve">
     <value>Twitter por agente</value>
   </data>
-  <data name="cPhoneNumbers" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers1_Count" xml:space="preserve">
     <value>Teléfono 1</value>
   </data>
-  <data name="cPhoneNumbers2" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers2_Count" xml:space="preserve">
     <value>Teléfono 2</value>
   </data>
-  <data name="cPhoneNumbers3" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers3_Count" xml:space="preserve">
     <value>Teléfono 3</value>
   </data>
-  <data name="cPhoneNumbers4" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers4_Count" xml:space="preserve">
     <value>Teléfono 4</value>
   </data>
-  <data name="cPhoneNumbers5" xml:space="preserve">
+  <data name="systemTranslated_cPhoneNumbers5_Count" xml:space="preserve">
     <value>Teléfono 5</value>
   </data>
   <data name="dialingResult" xml:space="preserve">
     <value>Total de llamadas</value>
   </data>
-  <data name="percentage2" xml:space="preserve">
+  <data name="systemTranslated_percentage2_Avg" xml:space="preserve">
     <value>Porcentaje 2</value>
   </data>
-  <data name="percentage3" xml:space="preserve">
+  <data name="systemTranslated_percentage3_Avg" xml:space="preserve">
     <value>Porcentaje 3</value>
   </data>
-  <data name="percentage4" xml:space="preserve">
+  <data name="systemTranslated_percentage4_Avg" xml:space="preserve">
     <value>Porcentaje 4</value>
   </data>
-  <data name="percentage5" xml:space="preserve">
+  <data name="systemTranslated_percentage5_Avg" xml:space="preserve">
     <value>Porcentaje 5</value>
   </data>
   <data name="phoneNumbers" xml:space="preserve">
@@ -2400,10 +2400,7 @@
   <data name="TelephoneNumbersbyStateperDay" xml:space="preserve">
     <value>Números telefónicos por estado por día</value>
   </data>
-  <data name="calKey" xml:space="preserve">
-    <value>Número telefónico</value>
-  </data>
-  <data name="IVRSurveys" xml:space="preserve">
-    <value>Encuestas de IVR</value>
+  <data name="cPhoneNumber_Count" xml:space="preserve">
+    <value>Teléfonos</value>
   </data>
 </root>

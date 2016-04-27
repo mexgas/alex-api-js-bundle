@@ -843,7 +843,11 @@ namespace MiddleWareReports
             if (paramValueList["columns"] != null && paramValueList["columns"].Length > 0)
             {
                 int columnCount = 0;
-                string[] cols = paramValueList["columns"].Split('|');
+                string paramColumns = paramValueList["columns"].ToString();
+                int charTYpe = Int32.Parse(paramColumns.Substring(0, paramColumns.IndexOf('|')));
+                paramColumns = paramColumns.Substring(paramColumns.IndexOf('|') + 1);
+                paramValueList["columns"] = paramColumns;
+                string[] cols = paramColumns.Split('|');
                 columnCount = cols.Length;
 
                 string havingOp = "";
@@ -962,13 +966,13 @@ namespace MiddleWareReports
                 //Check that table is not empty
                 EmptyResultException.dataTableIsEmpty(table);
 
-                if (columnCount == 1)
+                if (charTYpe == 1 && columnCount == 1)
                 {
                     return Chart.transformToOneSerieXml(table);
                 }
                 else
                 {
-                    return Chart.transformToMultipleSeriesXml(table);
+                    return Chart.transformToMultipleSeriesXml(table, charTYpe);
                 }
             }
             else
@@ -1113,7 +1117,7 @@ namespace MiddleWareReports
             StringBuilder whereStatement = new StringBuilder();
             StringBuilder parameters = new StringBuilder();
             NameValueCollection values = new NameValueCollection();
-            
+
             if (paramValueList["dateStart"] != null && paramValueList["dateStart"].Length > 0
                 && paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
             {

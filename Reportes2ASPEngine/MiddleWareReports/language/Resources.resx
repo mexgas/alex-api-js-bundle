@@ -2403,4 +2403,10 @@
   <data name="cPhoneNumber_Count" xml:space="preserve">
     <value>Teléfonos</value>
   </data>
+  <data name="Abandonedcallsbycampaign" xml:space="preserve">
+    <value>Abandono por campaña</value>
+  </data>
+  <data name="AbandonedcallsbyHour" xml:space="preserve">
+    <value>Abandono por campaña por hora</value>
+  </data>
 </root>

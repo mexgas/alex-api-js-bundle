@@ -142,6 +142,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Abandono por campaña.
+        /// </summary>
+        public static string Abandonedcallsbycampaign {
+            get {
+                return ResourceManager.GetString("Abandonedcallsbycampaign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Abandono por campaña por hora.
+        /// </summary>
+        public static string AbandonedcallsbyHour {
+            get {
+                return ResourceManager.GetString("AbandonedcallsbyHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Llamadas Abandonadas (%).
         /// </summary>
         public static string abandonedCallsPctg {
@@ -925,20 +943,11 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a ID de llamada.
+        ///   Busca una cadena traducida similar a Número de llamada.
         /// </summary>
         public static string calId {
             get {
                 return ResourceManager.GetString("calId", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Número telefónico.
-        /// </summary>
-        public static string calKey {
-            get {
-                return ResourceManager.GetString("calKey", resourceCulture);
             }
         }
         
@@ -2424,15 +2433,6 @@ namespace MiddleWareReports {
         public static string IVRName {
             get {
                 return ResourceManager.GetString("IVRName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Encuestas de IVR.
-        /// </summary>
-        public static string IVRSurveys {
-            get {
-                return ResourceManager.GetString("IVRSurveys", resourceCulture);
             }
         }
         

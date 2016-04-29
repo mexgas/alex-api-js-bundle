@@ -2088,4 +2088,7 @@
   <data name="systemTranslated_Unassign_message_to_agent" xml:space="preserve">
     <value>Appointed agent</value>
   </data>
+  <data name="Abandonedcallsbycampaign" xml:space="preserve">
+    <value>Abandoned calls by campaign</value>
+  </data>
 </root>

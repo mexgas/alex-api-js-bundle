@@ -2340,4 +2340,10 @@
   <data name="IVRSurveys" xml:space="preserve">
     <value>IVR Surveys</value>
   </data>
+  <data name="Abandonedcallsbycampaign" xml:space="preserve">
+    <value>Abandoned calls by campaign</value>
+  </data>
+  <data name="AbandonedcallsbyHour" xml:space="preserve">
+    <value>Abandoned calls by campaign per Hour</value>
+  </data>
 </root>

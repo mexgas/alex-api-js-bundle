@@ -844,7 +844,7 @@ namespace MiddleWareReports
             {
                 int columnCount = 0;
                 string paramColumns = paramValueList["columns"].ToString();
-                int charTYpe = Int32.Parse(paramColumns.Substring(0, paramColumns.IndexOf('|')));
+                int charType = Int32.Parse(paramColumns.Substring(0, paramColumns.IndexOf('|')));
                 paramColumns = paramColumns.Substring(paramColumns.IndexOf('|') + 1);
                 paramValueList["columns"] = paramColumns;
                 string[] cols = paramColumns.Split('|');
@@ -966,13 +966,13 @@ namespace MiddleWareReports
                 //Check that table is not empty
                 EmptyResultException.dataTableIsEmpty(table);
 
-                if (charTYpe == 1 && columnCount == 1)
+                if (charType == 1 && columnCount == 1)
                 {
                     return Chart.transformToOneSerieXml(table);
                 }
                 else
                 {
-                    return Chart.transformToMultipleSeriesXml(table, charTYpe);
+                    return Chart.transformToMultipleSeriesXml(table, charType);
                 }
             }
             else

@@ -43,7 +43,6 @@ namespace MiddleWareReports
 
             //Translate columns, only translated columns will appear in the collection
             NameValueCollection translatedColumns = TranslatorHelper.translateColumns(tableData.Columns);
-
             //Get the columns names of the table
             if (chartype == 3)
             {
@@ -65,7 +64,10 @@ namespace MiddleWareReports
                 string xAxis = columns.First.Value; //First column is the first part of the x-axis
                 string countColumn = columns.Last.Value;
                 string lastXValue = ""; //Value used to determine if we had moved further into the x-axis
-                LinkedList<string> groupByDates = checkIfDateGroupBy(columns); //Determines if the table is ordered on a certain date group
+
+                LinkedList<string> groupByDates = new LinkedList<string>();
+                if (chartype != 3)
+                    checkIfDateGroupBy(columns); //Determines if the table is ordered on a certain date group
                 string xAxisGroupByValue = transformToGroupByColumn(xAxis, groupByDates); // x-axis value 
                 XmlElement xfieldXml = null;
 

@@ -106,6 +106,8 @@ namespace MiddleWareReports
                     return new RepOutAnswCalls();
                 case 4140: //Answered Calls On Chat Detail
                     return new RepOutCallsOnChatDetail();
+                case 4150:
+                    return new RepSpecialAbndCamp();
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
                 case 4230://Telephone Numbers by Record/List Report

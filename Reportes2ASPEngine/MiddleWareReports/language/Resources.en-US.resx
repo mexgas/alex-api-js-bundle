@@ -2070,8 +2070,8 @@
   <data name="gt60" xml:space="preserve">
     <value>+60</value>
   </data>
-  <data name="AgentEmail" xml:space="preserve">
-    <value>Agent Email</value>
+  <data name="EmailbyAgent" xml:space="preserve">
+    <value>Email by Agent</value>
   </data>
   <data name="EmailGeneral" xml:space="preserve">
     <value>Email General</value>
@@ -2345,5 +2345,8 @@
   </data>
   <data name="AbandonedcallsbyHour" xml:space="preserve">
     <value>Abandoned calls by campaign per Hour</value>
+  </data>
+  <data name="EmailByACD" xml:space="preserve">
+    <value>Email By ACD</value>
   </data>
 </root>

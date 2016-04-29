@@ -2211,7 +2211,7 @@
   <data name="timewait" xml:space="preserve">
     <value>Tiempo de espera</value>
   </data>
-  <data name="AgentEmail" xml:space="preserve">
+  <data name="EmailbyAgent" xml:space="preserve">
     <value>Correo por agente</value>
   </data>
   <data name="EmailGeneral" xml:space="preserve">
@@ -2408,5 +2408,8 @@
   </data>
   <data name="AbandonedcallsbyHour" xml:space="preserve">
     <value>Abandono por campaña por hora</value>
+   </data>
+  <data name="EmailByACD" xml:space="preserve">
+    <value>Correo por ACD</value>
   </data>
 </root>

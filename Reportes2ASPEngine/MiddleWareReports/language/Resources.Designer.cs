@@ -331,15 +331,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Correo por agente.
-        /// </summary>
-        public static string AgentEmail {
-            get {
-                return ResourceManager.GetString("AgentEmail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a Nombre de agente.
         /// </summary>
         public static string agentName {
@@ -2118,6 +2109,24 @@ namespace MiddleWareReports {
         public static string EmailACD {
             get {
                 return ResourceManager.GetString("EmailACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Correo por ACD.
+        /// </summary>
+        public static string EmailByACD {
+            get {
+                return ResourceManager.GetString("EmailByACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Correo por agente.
+        /// </summary>
+        public static string EmailbyAgent {
+            get {
+                return ResourceManager.GetString("EmailbyAgent", resourceCulture);
             }
         }
         

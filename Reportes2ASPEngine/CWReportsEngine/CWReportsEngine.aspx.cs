@@ -37,6 +37,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
     private string templateId;
     private string chartFields;
 
+
     protected void Page_Load(object sender, EventArgs e)
     {
         short process;
@@ -539,7 +540,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
         filtersSummaryData = ParametersReader.getParameters("filtersSummaryData", true);
         templateId = ParametersReader.getParameters("templateId", true);
         chartFields = ParametersReader.getParameters("chartFields", true);
-        crmTemplateId = ParametersReader.getParameters("crmTemplateId", true); 
+        crmTemplateId = ParametersReader.getParameters("crmTemplateId", true);
     }
 
     #endregion

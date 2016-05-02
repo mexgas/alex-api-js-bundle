@@ -639,12 +639,12 @@ namespace MiddleWareReports
                 string columns = pivotRow["columns"].ToString();
                 complementColumns = pivotRow["complementColumns"].ToString();
                 string pivotFunction = pivotRow["pivotFunction"].ToString();
-                string isGroup = pivotRow["isGroup"].ToString();
+                string isGroupPivot = pivotRow["isGroupPivot"].ToString();
                 XmlElement element = xml.CreateElement("", "PivotColumn", "");
                 element.SetAttribute("columns", columns);
                 element.SetAttribute("complementColumns", complementColumns);
                 element.SetAttribute("pivotFunction", pivotFunction);
-                element.SetAttribute("isGroup", isGroup); 
+                element.SetAttribute("isGroupPivot", isGroupPivot);
                 pivotColumns.AppendChild(element);
             }
             complementColumns = complementColumns.Trim();
@@ -1199,11 +1199,11 @@ namespace MiddleWareReports
 
             //Read isGroupPivot
             bool isGroupPivot = true;
-            if (paramValueList["isGroup"] != "true")
+            if (paramValueList["isGroupPivot"] != null && paramValueList["isGroup"].Length > 0)
             {
-                isGroupPivot = Convert.ToBoolean(paramValueList["isGroup"]);
+                isGroupPivot = Convert.ToBoolean(paramValueList["isGroupPivot"]);
             }
-            paramValueList.Remove("isGroup");
+            paramValueList.Remove("isGroupPivot");
 
             bool isPivotReport = (pivotColumns != "" && complementColumns != "" && pivotFunction != "");
 

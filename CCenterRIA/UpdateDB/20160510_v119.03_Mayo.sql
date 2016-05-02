@@ -10,7 +10,7 @@ Description:
 
 
 Database: CCenterRia
-Required version: 119.01
+Required version: 119.03
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -152,9 +152,77 @@ return(0)
 set nocount off'
 		EXEC(@sql)
 
-		set @process = ''
-		set @sql=''
+		set @process = 'INSERT -------- ccMenus'
+		set @sql='if not exists(select * from ccMenus where menu_id = 6050) begin
+insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release) values (6050, ''Encuestas de IVR|IVR Surveys'', 6000, ''B'', 6, 3, '''', ''4624fb0c3f01a4f7ffa2f345efb45a3b85a52092a63a80618efbff0e040db499'')
+end'
 		EXEC(@sql)
+
+		set @process = 'ADD COLUMN -------- ivroptions'
+		set @sql='if not exists (select * from sys.columns where name = N''questionId'' and Object_ID = Object_ID(N''ivroptions''))
+begin
+    --Use DDL or DML as you need
+	alter table ivroptions add questionId int
+end'
+		EXEC(@sql)
+
+		set @process = 'ADD COLUMN -------- IVROptions'
+		set @sql='-- When column does not exists
+if not exists (select * from sys.columns where name = N''surveyId'' and Object_ID = Object_ID(N''ivroptions''))
+begin
+--Use DDL or DML as you need
+alter table ivroptions add surveyId int
+end'
+		EXEC(@sql)
+
+		set @process = 'ALTER COLUMN -------- IVRCallsIn'
+		set @sql='if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''IVRCallsIn''))
+begin
+--Use DDL or DML as you need
+alter table IVRCallsIn add cal_id int
+end'
+		EXEC(@sql)
+
+				set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_IVRInCalls'')
+begin
+    drop procedure ccsp_IVRInCalls
+end'
+		EXEC(@Sql)
+
+		set @process = 'CREATE PROCEDURE -------- ccsp_IVRInCalls'
+		set @Sql= 'CREATE Procedure [dbo].[ccsp_IVRInCalls]
+@action tinyint = 0 ,
+@ani varchar(30) = null ,
+@idIvr int = 0 , 
+@option varchar(5)= null ,
+@saveType tinyInt = null,
+@dnis varchar(50) = null,
+@name varchar(50) = null,
+@questionId int = 0,
+@surveyId int = 0,
+@calId int = 0
+-- saveType 1 es menu 2 es dato
+-- accion 1 siempre @ani  -> @idIvr
+-- accion 2 siempre @idIvr @opcionDigitada -> nada
+AS
+IF @action = 1 
+BEGIN
+IF @ani IS NOT NULL 
+BEGIN
+INSERT  INTO IVRCallsIn(cal_ani,date,dnis,cal_id) values(@ani,getDate(),isnull(@dnis,''''), isnull(@calId,0));
+Select ''ID''=scope_identity()
+END
+END
+ELSE IF @action = 2 
+BEGIN
+IF @option IS NOT NULL AND @idIvr IS NOT NULL
+BEGIN
+INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0))
+select 0
+END
+END'
+		EXEC(@Sql)
 
 		set @process = ''
 		set @sql=''
@@ -163,7 +231,6 @@ set nocount off'
 		set @process = ''
 		set @sql=''
 		EXEC(@sql)
-
 		
 
 		/* End script release */

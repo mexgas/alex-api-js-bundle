@@ -462,18 +462,20 @@ namespace MiddleWareReports
                     }
                     pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
-                    if (isGroupPivot)
+                    if (dynamicQuery.IsTotals||isGroupPivot)
                         pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
                     else
                         pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
                     if (dynamicQuery.IsTotals)
                     {
-                        pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
+                        if (isGroupPivot) pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
+                        else pivotFunctionTotal = "max";
+                       
                         if (isGroupPivot)
                             pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
                         else
-                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
+                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + '' {1}('''''''') AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
                         pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
                     }
                 }
@@ -537,7 +539,7 @@ namespace MiddleWareReports
             }
 
                 tempC = tempC.Substring(0, tempC.Length - 1);
-                if (isGroupPivot)
+                if (dynamicQuery.IsTotals || isGroupPivot)
                     pivot.Append(string.Format(" group by {0}) AS F_GROUP ", tempC));
                 else
                     pivot.Append(" ) AS F_GROUP ");

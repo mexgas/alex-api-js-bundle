@@ -784,7 +784,7 @@
     <value>Sub Calificaciones</value>
   </data>
   <data name="calId" xml:space="preserve">
-    <value>Número de llamada</value>
+    <value>ID de llamada</value>
   </data>
   <data name="dialog" xml:space="preserve">
     <value>En diálogo</value>
@@ -2402,6 +2402,12 @@
   </data>
   <data name="cPhoneNumber_Count" xml:space="preserve">
     <value>Teléfonos</value>
+  </data>
+  <data name="calKey" xml:space="preserve">
+    <value>Número telefónico</value>
+  </data>
+  <data name="IVRSurveys" xml:space="preserve">
+    <value>Encuestas de IVR</value>
   </data>
   <data name="Abandonedcallsbycampaign" xml:space="preserve">
     <value>Abandono por campaña</value>

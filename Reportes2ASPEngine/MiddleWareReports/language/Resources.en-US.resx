@@ -2349,4 +2349,13 @@
   <data name="EmailByACD" xml:space="preserve">
     <value>Email By ACD</value>
   </data>
+  <data name="dispositionContactOwner" xml:space="preserve">
+    <value>Contact owner</value>
+  </data>
+  <data name="dispositionContactOwnerPctg" xml:space="preserve">
+    <value>Contact owner (%)</value>
+  </data>
+  <data name="Reportcontactpersontheowner" xml:space="preserve">
+    <value>Report contact person the owner</value>
+  </data>
 </root>

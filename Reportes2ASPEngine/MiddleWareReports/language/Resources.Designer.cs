@@ -1996,6 +1996,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Contacto con titular.
+        /// </summary>
+        public static string dispositionContactOwner {
+            get {
+                return ResourceManager.GetString("dispositionContactOwner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Contacto con titular (%).
+        /// </summary>
+        public static string dispositionContactOwnerPctg {
+            get {
+                return ResourceManager.GetString("dispositionContactOwnerPctg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Calificaciones.
         /// </summary>
         public static string Dispositions {
@@ -2115,9 +2133,9 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a Correo por ACD.
         /// </summary>
-        public static string EmailByACD {
+        public static string EmailbyACD {
             get {
-                return ResourceManager.GetString("EmailByACD", resourceCulture);
+                return ResourceManager.GetString("EmailbyACD", resourceCulture);
             }
         }
         
@@ -3918,6 +3936,15 @@ namespace MiddleWareReports {
         public static string remainingCallsPctg {
             get {
                 return ResourceManager.GetString("remainingCallsPctg", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Reporte de contacto con la persona titular.
+        /// </summary>
+        public static string Reportcontactpersontheowner {
+            get {
+                return ResourceManager.GetString("Reportcontactpersontheowner", resourceCulture);
             }
         }
         
@@ -6271,7 +6298,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo de atención.
+        ///   Busca una cadena traducida similar a Tiempo no disponible.
         /// </summary>
         public static string tnotav {
             get {

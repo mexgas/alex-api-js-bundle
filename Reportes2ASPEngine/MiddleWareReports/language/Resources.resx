@@ -556,7 +556,7 @@
     <value>Sesión</value>
   </data>
   <data name="tnotav" xml:space="preserve">
-    <value>Tiempo de atención</value>
+    <value>Tiempo no disponible</value>
   </data>
   <data name="tnotesin" xml:space="preserve">
     <value>Tiempo de notas (Entrada)</value>
@@ -2408,8 +2408,17 @@
   </data>
   <data name="AbandonedcallsbyHour" xml:space="preserve">
     <value>Abandono por campaña por hora</value>
-   </data>
-  <data name="EmailByACD" xml:space="preserve">
+  </data>
+  <data name="EmailbyACD" xml:space="preserve">
     <value>Correo por ACD</value>
+  </data>
+  <data name="dispositionContactOwner" xml:space="preserve">
+    <value>Contacto con titular</value>
+  </data>
+  <data name="dispositionContactOwnerPctg" xml:space="preserve">
+    <value>Contacto con titular (%)</value>
+  </data>
+  <data name="Reportcontactpersontheowner" xml:space="preserve">
+    <value>Reporte de contacto con la persona titular</value>
   </data>
 </root>

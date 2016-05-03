@@ -1198,7 +1198,7 @@ namespace MiddleWareReports
 
             //Read isGroupPivot
             bool isGroupPivot = true;
-            if (paramValueList["isGroupPivot"] != null && paramValueList["isGroup"].Length > 0)
+            if (paramValueList["isGroupPivot"] != null && paramValueList["isGroupPivot"].Length > 0)
             {
                 isGroupPivot = Convert.ToBoolean(paramValueList["isGroupPivot"]);
             }

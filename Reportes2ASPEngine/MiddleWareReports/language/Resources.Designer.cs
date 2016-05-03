@@ -934,11 +934,20 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Número de llamada.
+        ///   Busca una cadena traducida similar a ID de llamada.
         /// </summary>
         public static string calId {
             get {
                 return ResourceManager.GetString("calId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Número telefónico.
+        /// </summary>
+        public static string calKey {
+            get {
+                return ResourceManager.GetString("calKey", resourceCulture);
             }
         }
         
@@ -2460,6 +2469,15 @@ namespace MiddleWareReports {
         public static string IVRName {
             get {
                 return ResourceManager.GetString("IVRName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Encuestas de IVR.
+        /// </summary>
+        public static string IVRSurveys {
+            get {
+                return ResourceManager.GetString("IVRSurveys", resourceCulture);
             }
         }
         
@@ -4332,6 +4350,15 @@ namespace MiddleWareReports {
         public static string supervisorUser {
             get {
                 return ResourceManager.GetString("supervisorUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Encuesta.
+        /// </summary>
+        public static string survey {
+            get {
+                return ResourceManager.GetString("survey", resourceCulture);
             }
         }
         

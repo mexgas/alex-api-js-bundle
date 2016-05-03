@@ -2358,4 +2358,7 @@
   <data name="Reportcontactpersontheowner" xml:space="preserve">
     <value>Report contact person the owner</value>
   </data>
+  <data name="survey" xml:space="preserve">
+    <value>Survey</value>
+  </data>
 </root>

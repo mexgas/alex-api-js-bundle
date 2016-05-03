@@ -2427,4 +2427,7 @@
   <data name="Reportcontactpersontheowner" xml:space="preserve">
     <value>Reporte de contacto con la persona titular</value>
   </data>
+  <data name="survey" xml:space="preserve">
+    <value>Encuesta</value>
+  </data>
 </root>

@@ -183,7 +183,7 @@ alter table IVRCallsIn add cal_id int
 end'
 		EXEC(@sql)
 
-				set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
+		set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_IVRInCalls'')
 begin
     drop procedure ccsp_IVRInCalls

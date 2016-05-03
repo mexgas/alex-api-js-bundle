@@ -2358,4 +2358,7 @@
   <data name="Dispositionsbyhour" xml:space="preserve">
     <value>Dispositions by hour</value>
   </data>
+  <data name="survey" xml:space="preserve">
+    <value>Survey</value>
+  </data>
 </root>

@@ -2427,4 +2427,7 @@
   <data name="Dispositionsbyhour" xml:space="preserve">
     <value>Calificaciones por hora</value>
   </data>
+  <data name="survey" xml:space="preserve">
+    <value>Encuesta</value>
+  </data>
 </root>

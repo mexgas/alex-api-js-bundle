@@ -4354,6 +4354,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Encuesta.
+        /// </summary>
+        public static string survey {
+            get {
+                return ResourceManager.GetString("survey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Simposio.
         /// </summary>
         public static string Symposium {

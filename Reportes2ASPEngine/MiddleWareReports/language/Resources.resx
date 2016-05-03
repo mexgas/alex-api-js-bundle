@@ -2424,7 +2424,7 @@
   <data name="dispositionContactOwnerPctg" xml:space="preserve">
     <value>Contacto con titular (%)</value>
   </data>
-  <data name="Reportcontactpersontheowner" xml:space="preserve">
-    <value>Reporte de contacto con la persona titular</value>
+  <data name="Dispositionsbyhour" xml:space="preserve">
+    <value>Calificaciones por hora</value>
   </data>
 </root>

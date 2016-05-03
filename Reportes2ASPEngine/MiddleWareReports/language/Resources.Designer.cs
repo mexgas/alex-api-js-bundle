@@ -934,11 +934,20 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Número de llamada.
+        ///   Busca una cadena traducida similar a ID de llamada.
         /// </summary>
         public static string calId {
             get {
                 return ResourceManager.GetString("calId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Número telefónico.
+        /// </summary>
+        public static string calKey {
+            get {
+                return ResourceManager.GetString("calKey", resourceCulture);
             }
         }
         
@@ -2023,6 +2032,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Calificaciones por hora.
+        /// </summary>
+        public static string Dispositionsbyhour {
+            get {
+                return ResourceManager.GetString("Dispositionsbyhour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Calificaciones(Encuestas de Satisfacción).
         /// </summary>
         public static string DispositionsCustomerSatisfactionService {
@@ -2460,6 +2478,15 @@ namespace MiddleWareReports {
         public static string IVRName {
             get {
                 return ResourceManager.GetString("IVRName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Encuestas de IVR.
+        /// </summary>
+        public static string IVRSurveys {
+            get {
+                return ResourceManager.GetString("IVRSurveys", resourceCulture);
             }
         }
         
@@ -3936,15 +3963,6 @@ namespace MiddleWareReports {
         public static string remainingCallsPctg {
             get {
                 return ResourceManager.GetString("remainingCallsPctg", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Reporte de contacto con la persona titular.
-        /// </summary>
-        public static string Reportcontactpersontheowner {
-            get {
-                return ResourceManager.GetString("Reportcontactpersontheowner", resourceCulture);
             }
         }
         

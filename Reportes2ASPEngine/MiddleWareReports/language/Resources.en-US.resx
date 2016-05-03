@@ -2355,7 +2355,7 @@
   <data name="dispositionContactOwnerPctg" xml:space="preserve">
     <value>Contact owner (%)</value>
   </data>
-  <data name="Reportcontactpersontheowner" xml:space="preserve">
-    <value>Report contact person the owner</value>
+  <data name="Dispositionsbyhour" xml:space="preserve">
+    <value>Dispositions by hour</value>
   </data>
 </root>

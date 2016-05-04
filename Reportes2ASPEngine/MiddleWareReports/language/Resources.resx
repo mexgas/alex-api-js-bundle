@@ -2430,4 +2430,7 @@
   <data name="survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
+  <data name="Surveys" xml:space="preserve">
+    <value>Encuestas</value>
+  </data>
 </root>

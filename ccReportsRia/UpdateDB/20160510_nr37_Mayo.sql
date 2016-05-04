@@ -114,20 +114,6 @@ WHERE id = @id
 END'
 		EXEC(@Sql)
 
-		set @process = 'INSERT -------- Filters'
-		set @Sql= 'if not exists(select * from Filters where id=28) begin
-insert into Filters values(28, ''agent'', 26, ''Agents'', ''Agent'')
-end'
-		EXEC(@Sql)
-
-		set @process = 'INSERT -------- ReportsFilters'
-		set @Sql= 'if not exists(select * from ReportsFilters where id = 6050) begin
-insert into ReportsFilters values(''IVR Surveys'', ''acds'', ''6050'')
-insert into ReportsFilters values(''IVR Surveys'', ''campaigns'', ''6050'')
-insert into ReportsFilters values(''IVR Surveys'', ''agent'', ''6050'')
-end'
-		EXEC(@Sql)
-
 		set @process = 'VALIDATE PROCEDURE -------- ccspRepCatalogos'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepCatalogos'')
 begin
@@ -386,12 +372,18 @@ end
 --Status Call
 if @type = 26
 begin
-begin
 select User_id as id, [Login] as description, ''userId'' as dbcolumn
 from ccUsers
 where TipoUser_id = 1
 order by [Login]
 end
+
+--Survey
+if @type = 27
+begin
+select surveyId as id, [description] as description, ''surveyId'' as dbcolumn
+from Survey
+order by [description]
 end
 end
 -----------------------------------------------------------
@@ -420,6 +412,22 @@ if @type = 20
 begin
 SELECT 0 as [min], 100 as [max],''score'' as dbColumn
 end
+end'
+		EXEC(@Sql)
+
+		set @process = 'INSERT -------- Filters'
+		set @Sql= 'if not exists(select * from Filters where id in (28,29)) begin
+insert into Filters values(28, ''agent'', 26, ''Agents'', ''Agent'')
+insert into Filters values(29, ''survey'', 27, ''Surveys'', ''Survey'')
+end'
+		EXEC(@Sql)
+
+		set @process = 'INSERT -------- ReportsFilters'
+		set @Sql= 'if not exists(select * from ReportsFilters where id = 6050) begin
+insert into ReportsFilters values(''IVR Surveys'', ''acds'', ''6050'')
+insert into ReportsFilters values(''IVR Surveys'', ''campaigns'', ''6050'')
+insert into ReportsFilters values(''IVR Surveys'', ''agent'', ''6050'')
+insert into ReportsFilters values (''IVR Surveys'', ''survey'', 6050)
 end'
 		EXEC(@Sql)
 

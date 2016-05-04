@@ -173,14 +173,15 @@ begin
 --Use DDL or DML as you need
 alter table ivroptions add surveyId int
 end'
-		EXEC(@sql)
 
-		set @process = 'ALTER COLUMN -------- IVRCallsIn'
-		set @sql='if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''IVRCallsIn''))
+		set @process = 'ADD COLUMN -------- IVROptions'
+		set @sql='-- When column does not exists
+if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''ivroptions''))
 begin
 --Use DDL or DML as you need
-alter table IVRCallsIn add cal_id int
+alter table ivroptions add cal_id int
 end'
+
 		EXEC(@sql)
 
 		set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
@@ -190,8 +191,7 @@ begin
 end'
 		EXEC(@Sql)
 
-		set @process = 'CREATE PROCEDURE -------- ccsp_IVRInCalls'
-		set @Sql= 'CREATE Procedure [dbo].[ccsp_IVRInCalls]
+		set @process = 'CREATE Procedure [dbo].[ccsp_IVRInCalls]
 @action tinyint = 0 ,
 @ani varchar(30) = null ,
 @idIvr int = 0 , 
@@ -208,19 +208,19 @@ end'
 AS
 IF @action = 1 
 BEGIN
-IF @ani IS NOT NULL 
-BEGIN
-INSERT  INTO IVRCallsIn(cal_ani,date,dnis,cal_id) values(@ani,getDate(),isnull(@dnis,''''), isnull(@calId,0));
-Select ''ID''=scope_identity()
-END
+    IF @ani IS NOT NULL 
+    BEGIN
+        INSERT  INTO IVRCallsIn(cal_ani,date,dnis) values(@ani,getDate(),isnull(@dnis,''''));
+        Select ''ID''=scope_identity()
+    END
 END
 ELSE IF @action = 2 
 BEGIN
-IF @option IS NOT NULL AND @idIvr IS NOT NULL
-BEGIN
-INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0))
-select 0
-END
+    IF @option IS NOT NULL AND @idIvr IS NOT NULL
+    BEGIN
+        INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0))
+        select 0
+    END
 END'
 		EXEC(@Sql)
 

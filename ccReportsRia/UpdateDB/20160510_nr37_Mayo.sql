@@ -438,97 +438,90 @@ AS
 
 if @action = 1
 begin
-if @from is null
-select @from = convert(datetime,convert(varchar(14),getdate(),121)+ ''00'',121)
-if @to is null	
-select @to = getdate()
+  if @from is null
+    select @from = convert(datetime,convert(varchar(14),getdate(),121)+ ''00'',121)
+  if @to is null  
+    select @to = getdate()
 
 
 delete RepIVRSurveys with(rowlock)
-where [date] between @from and @to
+  where [date] between @from and @to
 
 
 insert RepIVRSurveys select [date],userId,[login],scriptId,surveyId,survey,calId,calKey,campaignId,inboundId,campACDDescription,
 questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes]
 from
 (
-select
-convert(datetime,convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121) as [date],
-isnull(ccu.[User_id],0) as ''userId'',
-isnull(ccu.[Login],''No agent'') as ''login'',
-isnull(cci.IVR_id,'''') as ''scriptId'',
-isnull(s.surveyId,0) as ''surveyId'',
-isnull(s.[description],'''') as ''survey'',
-isnull(cci.cal_id,0) as ''calId'',
-isnull(cci.cal_Key,'''') as ''calKey'',
-0 as ''campaignId'',
-cci.Inbound_id as ''inboundId'',
-''ACD - '' + ccin.descripcion as ''campACDDescription'',
-isnull(sq.questionId,0) as ''questionId'',
-isnull(sq.[description],'''') as ''questionDescription'',
-isnull(sq.[description],'''') + ''_Count'' as ''question_Count'',
-case when ivro.selectedOption = ''#'' then ''Digito inválido''  
-		when ivro.selectedOption = ''*'' then ''Digito inválido''
-		when ivro.selectedOption >=0 then isnull(sa.[description],''Sin respuesta'')
-		when sa.[description] is null then isnull(sa.[description], ''Sin respuesta'')
-end	 as ''Count'',
-datepart(yy,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [year],
-datepart(MM,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [month],
-datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
-datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
-datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
-from ccCallsIn cci with(nolock)
-left join ccUsers ccu on cci.[User_id] = ccu.[User_id]
-left join IVROptions ivro on  cci.IVR_id = ivro.[IVR_id]
-left join ccInbound ccin on cci.Inbound_id = ccin.Inbound_id
-left Join Survey s on ivro.IVR_id =s.[scriptId]
-left join relationQuestionAnswer sqa on ivro.questionId = sqa.surveyId
-left join SurveyAnswer sa on ivro.selectedOption = convert(varchar(5), sa.digit)
-left join SurveyQuestion sq on ivro.questionId = sq.questionId
-where cal_inicio between @from and @to
-group by convert(datetime,convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121), ccu.[User_id], ccu.[Login], cci.IVR_id, s.surveyId, s.[description], cci.cal_id,
-cci.cal_Key, cci.Inbound_id, ccin.descripcion, sq.questionId, sq.[description], ivro.selectedOption, sa.[description]
+  select 
+  convert(datetime,convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121) as [date],
+  isnull(cci.User_id, 0) as ''userId'',
+  isnull(ccu.Login, ''No agent'') as ''login'',
+  isnull(ivro.IVR_id, 0) as ''scriptId'',
+  isnull(s.surveyId, 0) as ''surveyId'',
+  isnull(s.description, '''') as ''survey'',
+  isnull(cci.cal_id, 0) as ''calId'',
+  isnull(cci.cal_Key, '''') as ''calKey'',
+  0 as ''campaignId'',
+  isnull(cci.Inbound_id, '''') as ''inboundId'',
+  ''ACD - '' + isnull(ccin.descripcion,'''') as ''campACDDescription'',
+  isnull(ivro.questionId, 0) as ''questionId'',
+  isnull(sq.description,'''') as ''questionDescription'',
+  isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
+  case when sa.answerId is null and isnull(ivro.selectedOption,'''') ='''' then ''Invalid''
+    when sa.answerId is null then ivro.selectedOption 
+    when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
+    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''No option''
+  else ''Invalid'' end as ''Count'',
+  datepart(yy,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [year],
+  datepart(MM,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [month],
+  datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
+  datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
+  datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
+  from ccCallsIn cci with(nolock)
+  inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id
+  inner join ccUsers ccu on cci.User_id = ccu.User_id
+  inner join ccInbound ccin on cci.Inbound_id = ccin.Inbound_id
+  left join Survey s on ivro.IVR_id = s.scriptId
+  left join relationQuestionAnswer rqa on s.surveyId = rqa.surveyId
+  left join SurveyQuestion sq on ivro.questionId = sq.questionId
+  left join SurveyAnswer sa on rqa.answerId = sa.answerId
+  where cal_inicio between @from and @to
 
-union all
+  union all
 
-select
-convert(datetime,convert(varchar(14),cco.fecha,121)+ ''00'',121) as [date],
-isnull(cc.[user_id],0) as ''userId'',
-isnull(ccu.[Login],''No agent'') as ''login'',
-isnull(ivrci.IVR_id, '''') as ''scriptId'',
-isnull(s.[surveyId], '''') as ''surveyId'',
-isnull(s.[description], '''') as ''survey'',
-isnull(cco.cal_id,0) as ''calId'',
-cco.cal_Key as ''calKey'',
-isnull(ccc.[cam_id], '''') as ''campaignId'',
-0 as ''inboundId'',
-''Camp - '' + isnull(ccc.[cam_descripcion],'''') as ''campACDDescription'',
-isnull(sq.questionId,0) as ''questionId'',
-isnull(sq.[description],'''') as ''questionDescription'',
-isnull(sq.[description],'''') + ''_Count'' as ''question_Count'',
-case when ivro.selectedOption = ''#'' then ''Digito inválido''  
-		when ivro.selectedOption = ''*'' then ''Digito inválido''
-		when ivro.selectedOption >=0 then isnull(sa.[description],''Sin respuesta'')
-		when sa.[description] is null then isnull(sa.[description] ,''Sin respuesta'')
-end	 as ''Count'',
-datepart(yy,convert(datetime, convert(varchar(14),cco.fecha,121)+ ''00'',121)) as [year],
-datepart(MM,convert(datetime, convert(varchar(14),cco.fecha,121)+ ''00'',121)) as [month],
-datepart(DD,convert(datetime, convert(varchar(14),cco.fecha,121)+ ''00'',121)) as [day],
-datepart(HH,convert(datetime, convert(varchar(14),cco.fecha,121)+ ''00'',121)) as [hour],
-datepart(MI,convert(datetime, convert(varchar(14),cco.fecha,121)+ ''00'',121)) as [minutes]
-from ccoLogDials cco with(nolock)
-left join IVRCallsIn ivrci on cco.Telefono= ivrci.cal_ani
-left join ccoCallsOut cc on cco.callout_id = cc.callout_id
-left join ccCamps ccc on cco.cam_id = ccc.cam_id
-left join ccUsers ccu on cc.[user_id] = ccu.[User_id]
-left join IVROptions ivro on ivrci.IVR_id = ivro.IVR_id
-left join Survey s on ivrci.IVR_id = s.scriptId
-left join relationQuestionAnswer sqa on s.surveyId = sqa.surveyId
-left join SurveyAnswer sa on ivro.selectedOption = convert(varchar(5), sa.digit)
-left join SurveyQuestion sq on ivro.questionId = sq.questionId
-where cco.fecha between @from and @to
-group by convert(datetime,convert(varchar(14),cco.fecha,121)+ ''00'',121), cc.[user_id], ccu.[Login], ivrci.IVR_id, s.[surveyId], s.[description],
-cco.cal_id, cco.cal_Key, ccc.[cam_id], ccc.[cam_descripcion], sq.questionId, sq.[description], ivro.selectedOption, sa.[description] 
+  select
+  convert(datetime,convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121) as [date],
+  isnull(cco.User_id, 0) as ''userId'',
+  isnull(ccu.Login, ''No agent'') as ''login'',
+  isnull(ivro.IVR_id, 0) as ''scriptId'',
+  isnull(s.surveyId, 0) as ''surveyId'',
+  isnull(s.description, '''') as ''survey'',
+  isnull(cco.cal_id, 0) as ''calId'',
+  isnull(cco.cal_Key, '''') as ''calKey'',
+  isnull(ccc.[cam_id], '''') as ''campaignId'',
+  0 as ''inboundId'',
+  ''Camp - '' + isnull(ccc.[cam_descripcion],'''') as ''campACDDescription'',
+  isnull(ivro.questionId, 0) as ''questionId'',
+  isnull(sq.description,'''') as ''questionDescription'',
+  isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
+  case when sa.answerId is null then ivro.selectedOption 
+    when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
+    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''No option''
+  else ''Invalid'' end as ''Count'',
+  datepart(yy,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [year],
+  datepart(MM,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [month],
+  datepart(DD,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [day],
+  datepart(HH,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [hour],
+  datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [minutes]
+  from ccoCallsOut cco with(nolock)
+  inner join IVROptions ivro on cco.cal_id = ivro.cal_id
+  inner join ccUsers ccu on cco.User_id = ccu.User_id
+  inner join ccCamps ccc on cco.cam_id = ccc.cam_id
+  left join Survey s on ivro.IVR_id = s.scriptId
+  left join relationQuestionAnswer rqa on s.surveyId = rqa.surveyId
+  left join SurveyQuestion sq on ivro.questionId = sq.questionId
+  left join SurveyAnswer sa on rqa.answerId = sa.answerId
+  where cal_inicio between @from and @to
 )surveys 
 
 end'

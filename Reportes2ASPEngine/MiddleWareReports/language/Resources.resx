@@ -2433,4 +2433,28 @@
   <data name="tfocus" xml:space="preserve">
     <value>Tiempo de foco</value>
   </data>
+  <data name="DownloadEmailsbyACDGroup" xml:space="preserve">
+    <value>Emails descargados por grupo ACD</value>
+  </data>
+  <data name="DownloadEmailsbyAgent" xml:space="preserve">
+    <value>Emails descargados por agente</value>
+  </data>
+  <data name="DownloadTweetsbyACDGroup" xml:space="preserve">
+    <value>Tuits descargados por grupo ACD</value>
+  </data>
+  <data name="DownloadTweetsbyAgent" xml:space="preserve">
+    <value>Tuits descargados por agente</value>
+  </data>
+  <data name="TotalEmailConversationsbyACDGroup" xml:space="preserve">
+    <value>Total de conversaciones por grupo ACD</value>
+  </data>
+  <data name="TotalEmailMessagesbyACDGroup" xml:space="preserve">
+    <value>Total de emails por grupo ACD</value>
+  </data>
+  <data name="TotalTweetMessagesbyACDGroup" xml:space="preserve">
+    <value>Total de tuits por grupo ACD</value>
+  </data>
+  <data name="TotalTwitterConversationsbyACDGroup" xml:space="preserve">
+    <value>Total de conversaciones de Twitter por grupo ACD</value>
+  </data>
 </root>

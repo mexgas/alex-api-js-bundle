@@ -2104,6 +2104,42 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Emails descargados por grupo ACD.
+        /// </summary>
+        public static string DownloadEmailsbyACDGroup {
+            get {
+                return ResourceManager.GetString("DownloadEmailsbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Emails descargados por agente.
+        /// </summary>
+        public static string DownloadEmailsbyAgent {
+            get {
+                return ResourceManager.GetString("DownloadEmailsbyAgent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tuits descargados por grupo ACD.
+        /// </summary>
+        public static string DownloadTweetsbyACDGroup {
+            get {
+                return ResourceManager.GetString("DownloadTweetsbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tuits descargados por agente.
+        /// </summary>
+        public static string DownloadTweetsbyAgent {
+            get {
+                return ResourceManager.GetString("DownloadTweetsbyAgent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Duración.
         /// </summary>
         public static string duration {
@@ -6465,6 +6501,42 @@ namespace MiddleWareReports {
         public static string TotaldispositionsperSupervisorbydaterange {
             get {
                 return ResourceManager.GetString("TotaldispositionsperSupervisorbydaterange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de conversaciones por grupo ACD.
+        /// </summary>
+        public static string TotalEmailConversationsbyACDGroup {
+            get {
+                return ResourceManager.GetString("TotalEmailConversationsbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de emails por grupo ACD.
+        /// </summary>
+        public static string TotalEmailMessagesbyACDGroup {
+            get {
+                return ResourceManager.GetString("TotalEmailMessagesbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de tuits por grupo ACD.
+        /// </summary>
+        public static string TotalTweetMessagesbyACDGroup {
+            get {
+                return ResourceManager.GetString("TotalTweetMessagesbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de conversaciones de Twitter por grupo ACD.
+        /// </summary>
+        public static string TotalTwitterConversationsbyACDGroup {
+            get {
+                return ResourceManager.GetString("TotalTwitterConversationsbyACDGroup", resourceCulture);
             }
         }
         

@@ -6181,6 +6181,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de foco.
+        /// </summary>
+        public static string tfocus {
+            get {
+                return ResourceManager.GetString("tfocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo en cola.
         /// </summary>
         public static string tiempoCola {

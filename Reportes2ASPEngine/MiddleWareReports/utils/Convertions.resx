@@ -363,4 +363,7 @@
   <data name="twaitMultimedia" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="tfocus" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

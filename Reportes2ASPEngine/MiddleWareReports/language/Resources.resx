@@ -2430,4 +2430,7 @@
   <data name="Surveys" xml:space="preserve">
     <value>Encuestas</value>
   </data>
+  <data name="tfocus" xml:space="preserve">
+    <value>Tiempo de foco</value>
+  </data>
 </root>

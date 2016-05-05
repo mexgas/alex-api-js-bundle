@@ -432,6 +432,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string tfocus {
+            get {
+                return ResourceManager.GetString("tfocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string timeafterxfer {
             get {
                 return ResourceManager.GetString("timeafterxfer", resourceCulture);

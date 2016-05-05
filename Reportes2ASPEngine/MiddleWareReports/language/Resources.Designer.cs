@@ -367,7 +367,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Twitter por agente.
+        ///   Busca una cadena traducida similar a Tuits por agente.
         /// </summary>
         public static string AgentTwitter {
             get {
@@ -745,7 +745,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo promedio de atención.
+        ///   Busca una cadena traducida similar a Porcentaje de atención.
         /// </summary>
         public static string avgSend {
             get {
@@ -1573,7 +1573,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a ID conversacion.
+        ///   Busca una cadena traducida similar a ID conversación.
         /// </summary>
         public static string conversationid {
             get {
@@ -6820,7 +6820,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Twitter ACD.
+        ///   Busca una cadena traducida similar a Tuits por ACD.
         /// </summary>
         public static string TwitterACD {
             get {
@@ -6829,7 +6829,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Detalle de Twitter.
+        ///   Busca una cadena traducida similar a Detalle de tuits.
         /// </summary>
         public static string TwitterDetail {
             get {
@@ -6838,7 +6838,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Twitter General.
+        ///   Busca una cadena traducida similar a Twitter general.
         /// </summary>
         public static string TwitterGeneral {
             get {

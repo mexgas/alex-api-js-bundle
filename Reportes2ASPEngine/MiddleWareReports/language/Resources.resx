@@ -997,7 +997,7 @@
     <value>Puerto</value>
   </data>
   <data name="campACDDescription" xml:space="preserve">
-    <value>Campañas - Grupos ACD</value>
+    <value>Nombre de campaña/grupo ACD</value>
   </data>
   <data name="notReadyTime" xml:space="preserve">
     <value>Tiempo No Disponible</value>
@@ -1929,9 +1929,6 @@
   <data name="AgentScoringTemplates" xml:space="preserve">
     <value>Agente(Formatos de Calificación)</value>
   </data>
-  <data name="campaignAcd" xml:space="preserve">
-    <value>Campaña/Grupo ACD</value>
-  </data>
   <data name="cam_id" xml:space="preserve">
     <value>Id Campañana/Grupo ACD</value>
   </data>
@@ -2311,13 +2308,13 @@
     <value>Resultado de marcación</value>
   </data>
   <data name="DialingResultsReport" xml:space="preserve">
-    <value>Reporte de resultados de marcación</value>
+    <value>Resultados de marcación</value>
   </data>
   <data name="TelephoneNumbersbyRecordListReport" xml:space="preserve">
-    <value>Reporte de números telefónicos por registro/lista</value>
+    <value>Números telefónicos por registro/lista</value>
   </data>
   <data name="TelephoneNumbersbyStateReport" xml:space="preserve">
-    <value>Reporte de números telefónicos por Estado de la República</value>
+    <value>Números telefónicos por Estado de la República</value>
   </data>
   <data name="List" xml:space="preserve">
     <value>Lista</value>

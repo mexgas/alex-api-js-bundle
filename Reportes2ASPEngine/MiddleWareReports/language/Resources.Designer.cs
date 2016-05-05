@@ -1366,7 +1366,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Campañas - Grupos ACD.
+        ///   Busca una cadena traducida similar a Nombre de campaña/grupo ACD.
         /// </summary>
         public static string campACDDescription {
             get {
@@ -1380,15 +1380,6 @@ namespace MiddleWareReports {
         public static string campaign {
             get {
                 return ResourceManager.GetString("campaign", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Campaña/Grupo ACD.
-        /// </summary>
-        public static string campaignAcd {
-            get {
-                return ResourceManager.GetString("campaignAcd", resourceCulture);
             }
         }
         
@@ -1888,7 +1879,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Reporte de resultados de marcación.
+        ///   Busca una cadena traducida similar a Resultados de marcación.
         /// </summary>
         public static string DialingResultsReport {
             get {
@@ -6100,7 +6091,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Reporte de números telefónicos por registro/lista.
+        ///   Busca una cadena traducida similar a Números telefónicos por registro/lista.
         /// </summary>
         public static string TelephoneNumbersbyRecordListReport {
             get {
@@ -6136,7 +6127,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Reporte de números telefónicos por Estado de la República.
+        ///   Busca una cadena traducida similar a Números telefónicos por Estado de la República.
         /// </summary>
         public static string TelephoneNumbersbyStateReport {
             get {

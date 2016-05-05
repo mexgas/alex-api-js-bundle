@@ -466,7 +466,7 @@
     <value>Extension</value>
   </data>
   <data name="login" xml:space="preserve">
-    <value>Account</value>
+    <value>Agent</value>
   </data>
   <data name="loginTime" xml:space="preserve">
     <value>Login Time</value>
@@ -997,7 +997,7 @@
     <value>Port</value>
   </data>
   <data name="campACDDescription" xml:space="preserve">
-    <value>Campaign/ACD Group Name</value>
+    <value>Campaign-ACD group</value>
   </data>
   <data name="notReadyTime" xml:space="preserve">
     <value>Unavailable Time</value>
@@ -2338,7 +2338,7 @@
     <value>Phone Number</value>
   </data>
   <data name="IVRSurveys" xml:space="preserve">
-    <value>IVR Surveys</value>
+    <value>Surveys</value>
   </data>
   <data name="Abandonedcallsbycampaign" xml:space="preserve">
     <value>Abandoned calls by campaign</value>

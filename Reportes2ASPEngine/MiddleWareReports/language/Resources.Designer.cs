@@ -1366,7 +1366,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Nombre de campaña/grupo ACD.
+        ///   Busca una cadena traducida similar a Campaña-Grupo ACD.
         /// </summary>
         public static string campACDDescription {
             get {
@@ -2473,7 +2473,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Encuestas de IVR.
+        ///   Busca una cadena traducida similar a Encuestas.
         /// </summary>
         public static string IVRSurveys {
             get {
@@ -2545,7 +2545,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Cuenta.
+        ///   Busca una cadena traducida similar a Agent.
         /// </summary>
         public static string login {
             get {

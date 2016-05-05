@@ -466,7 +466,7 @@
     <value>Extensión</value>
   </data>
   <data name="login" xml:space="preserve">
-    <value>Cuenta</value>
+    <value>Agent</value>
   </data>
   <data name="loginTime" xml:space="preserve">
     <value>Inicio de sesión</value>
@@ -997,7 +997,7 @@
     <value>Puerto</value>
   </data>
   <data name="campACDDescription" xml:space="preserve">
-    <value>Nombre de campaña/grupo ACD</value>
+    <value>Campaña-Grupo ACD</value>
   </data>
   <data name="notReadyTime" xml:space="preserve">
     <value>Tiempo No Disponible</value>
@@ -2404,7 +2404,7 @@
     <value>Número telefónico</value>
   </data>
   <data name="IVRSurveys" xml:space="preserve">
-    <value>Encuestas de IVR</value>
+    <value>Encuestas</value>
   </data>
   <data name="Abandonedcallsbycampaign" xml:space="preserve">
     <value>Abandono por campaña</value>

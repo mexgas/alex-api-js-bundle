@@ -475,7 +475,7 @@ from
   isnull(ivro.questionId, 0) as ''questionId'',
   isnull(sq.description,'''') as ''questionDescription'',
   isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
-  case when sa.answerId is null and isnull(ivro.selectedOption,'''') ='''' then ''Invalid''
+  case when sa.answerId is null and isnull(ivro.selectedOption,'') ='' then ''No option''
     when sa.answerId is null then ivro.selectedOption 
     when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
     when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''No option''

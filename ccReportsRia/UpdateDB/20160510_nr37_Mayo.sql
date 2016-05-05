@@ -36,6 +36,34 @@ if @actualVersion = @version - 1
 		begin tran
 		begin try
 
+		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable ---------'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+		BEGIN
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END '
+		EXEC(@Sql)
+
+		set @process = 'alter table  ccTipoCalifSub---------'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub''))
+    begin
+        alter table ccTipoCalifSub add contactOwner bit not null
+    end'
+		 EXEC(@Sql)
+		 set @process = 'alter table  ccTipoCalifSubOUT---------'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT''))
+    begin
+        alter table ccTipoCalifSubOUT add contactOwner bit not null
+    end'
+		 EXEC(@Sql)
+
+		 set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		  set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+		BEGIN
+		 ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END'
+
+		EXEC(@Sql)
+
 		set @process = 'INSERT -------- ReportsFiltersMenus'
 		set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport = 6050) begin
 insert into ReportsFiltersMenus values (6050, ''date'')
@@ -77,7 +105,71 @@ create table RepIVRSurveys
 )
 end'
 		EXEC(@Sql)
+		set @process = 'DROP PROCEDURE ccspRepSpecialAbndCamp'
+		set @sql='if exists(select * from sys.procedures where name=''ccspRepSpecialAbndCamp'') DROP PROCEDURE ccspRepSpecialAbndCamp'
+		EXEC(@sql)
 
+		set @process = 'Drop table exists RepSpecialAbndCamp'
+		set @sql='if exists(select * from sys.tables where name=''RepSpecialAbndCamp'') Drop table RepSpecialAbndCamp'
+		EXEC(@sql)
+
+		set @process = 'CREATE table -- RepSpecialAbndCamp'
+		set @sql='CREATE TABLE [dbo].[RepSpecialAbndCamp](
+		[date] [datetime] NOT NULL,
+		[campaignId] [int] NOT NULL,
+		[campaign] [varchar](255) NOT NULL,
+		[total] [smallint] NOT NULL,
+		[abandonedCalls] [smallint] NOT NULL,
+		[abandonedCallsPctg] [decimal](5, 2) NOT NULL,
+		[year] [int] NOT NULL,
+		[month] [int] NOT NULL,
+		[day] [int] NOT NULL,
+		[hour] [int] NOT NULL,
+		[minutes] [int] NOT NULL
+		) ON [PRIMARY]'
+
+		EXEC(@Sql)
+		set @process = 'DROP PROCEDURE ccspRepOutDispositionsContacOwner'
+		set @sql='if exists(select * from sys.procedures where name=''ccspRepOutDispositionsContacOwner'') DROP PROCEDURE ccspRepOutDispositionsContacOwner'
+		EXEC(@sql)
+
+		set @process = 'Drop table exists RepOutDispositionsContacOwner'
+		set @sql='if exists(select * from sys.tables where name=''RepOutDispositionsContacOwner'') Drop table RepOutDispositionsContacOwner'
+		EXEC(@sql)
+
+		set @process = 'Delete exists RepOutDispositionsContacOwner'
+		set @sql='delete from ReportsCharts where id=4160
+		delete from ReportsFiltersMenus where idReport=4160
+		delete from ReportsFilters where id=4160
+		delete from ReportsCharts where id=4160
+		'
+		EXEC(@sql)
+
+		set @process = 'CREATE table -- RepOutDispositionsContacOwner'
+		set @sql='CREATE TABLE [dbo].[RepOutDispositionsContacOwner](
+			[date] [datetime] NOT NULL,
+			[campaignId] [int] NOT NULL,
+			[campaign] [varchar](255) NOT NULL,
+			[total] [smallint] NOT NULL,
+			[dispositionContactOwner] [smallint] NOT NULL,
+			[dispositionContactOwnerPctg] [decimal](6, 3) NOT NULL,
+			[year] [int] NOT NULL,
+			[month] [int] NOT NULL,
+			[day] [int] NOT NULL,
+			[hour] [int] NOT NULL,
+			[minutes] [int] NOT NULL
+		) ON [PRIMARY]'
+		EXEC(@sql)
+
+		set @process = ''
+		set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDispositionsContacOwner'' and object_id = OBJECT_ID(N''RepOutDispositionsContacOwner''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepOutDispositionsContacOwner] ON [dbo].[RepOutDispositionsContacOwner]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
 		set @process = 'ADD COLUMN -------- PivotReports'
 		set @Sql= 'if not exists (select * from sys.columns where name = N''isGroupPivot'' and Object_ID = Object_ID(N''PivotReports''))
 begin
@@ -91,10 +183,85 @@ end'
 
 		set @process = 'INSERT -------- PivotReports'
 		set @Sql= 'if not exists(select * from PivotReports where id = 6050)
-begin
-insert into PivotReports values (6050, ''question_Count'', ''date|userId|login|scriptId|surveyId|survey|calId|calKey|campaignId|inboundId|campACDDescription|year|month|day|hour|minutes'', ''max'', 0)
-end'
+		begin
+			insert into PivotReports values (6050, ''question_Count'', ''date|userId|login|scriptId|surveyId|survey|calId|calKey|campaignId|inboundId|campACDDescription|year|month|day|hour|minutes'', ''max'', 0)
+		end'
+
+		EXEC(@sql)
+
+
+		set @process = 'Add Filter date,FilterBy'
+		set @sql='if not exists(select * from ReportsFiltersMenus where idReport=4150) 
+		begin
+			INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4150, ''date'')
+			INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4150, ''filterby'')
+		end'
+		
+		EXEC(@sql)
+		set @process = 'Add Filter by campaigns'
+		set @sql='if not exists(select * from ReportsFilters where id=4150) 
+		begin
+			INSERT INTO ReportsFilters (id,reportName, filterName) values (4150,''Abandoned calls'', ''campaigns'')
+		end'
+
+		EXEC(@sql)
+
+		set @process = 'Add ReportsTotals -- 4150'
+		set @sql='if not exists(select * from ReportsTotals where id=4150) 
+		begin
+			INSERT INTO ReportsTotals (id, totalColumns) VALUES (4150,''special:abandonedCallsPctg:convert(decimal(10_2)_ISNULL((sum(AbandonedCalls) * 100.00)/NULLIF(sum(total)_0)_0))|sum:abandonedCalls|sum:total'');
+		end'
+
+		EXEC(@sql)
+
+		set @process = 'insert ReportsCharts -- 4150'
+		set @sql='if not exists(select * from ReportsCharts where id=4150) 
+		begin
+			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+			values(4150,''Abandoned calls by campaign'',1,''hour'','''','''','''',''sum([abandonedCalls])'',''Abandoned calls by Hour'',0)
+			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+			values(4150,''Abandoned calls by campaign'',3,'''',''hour'','''','''',''isnull(sum([abandonedCalls]),0)'',''Abandoned calls by Hour'',0)
+		end'
+		EXEC(@sql)
+
+			set @process = ''
+			set @sql='if exists (select * from sys.indexes where name = N''IX_RepSpececialAbndCamp'' and object_id = OBJECT_ID(N''RepSpececialAbndCamp''))
+		    begin
+		        CREATE NONCLUSTERED INDEX [IX_RepSpececialAbndCamp] ON [dbo].[RepSpececialAbndCamp]
+		(
+			[date] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+		    end'
+		
+		EXEC(@sql)
+
+		set @process = 'Add Filter date,FilterBy'
+		set @sql='if not exists(select * from ReportsFiltersMenus where idReport=4160) begin
+	INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''date'')
+	INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''filterby'')
+	end'
+		EXEC(@sql)
+
+		set @process = 'Add Filter by campaigns'
+		set @sql='if not exists(select * from ReportsFilters where id=4160) begin
+	INSERT INTO ReportsFilters (id,reportName, filterName) values (4160,''Abandoned calls'', ''campaigns'')
+	end'
+		EXEC(@sql)
+
+		set @process = 'Add ReportsTotals -- 4160'
+		set @sql='if not exists(select * from ReportsTotals where id=4160) begin
+	INSERT INTO ReportsTotals (id, totalColumns) VALUES (4160,''special:abandonedCallsPctg:convert(decimal(10_2)_ISNULL((sum(AbandonedCalls) * 100.00)/NULLIF(sum(total)_0)_0))|sum:abandonedCalls|sum:total'');
+	end'
 		EXEC(@Sql)
+		set @process = 'insert ReportsCharts -- 4160'
+		set @sql='if not exists(select * from ReportsCharts where id=4160) begin
+			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+			values(4160,''Report Dispositions by hour'',1,''hour'','''','''','''',''sum([dispositionContactOwner])'',''Dispositions by hour'',0)
+
+			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+			values(4160,''Report Dispositions by hour'',3,'''',''hour'','''','''',''isnull(sum([dispositionContactOwner]),0)'',''Dispositions by hour'',0)
+		end'
+		EXEC(@sql)
 
 		set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''GetPivotColumns'')
@@ -535,27 +702,97 @@ from
 end'
 		EXEC(@Sql)
 
+
+	set @process = 'CREATE SP --ccspRepSpecialAbndCamp'
+	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialAbndCamp]
+	@action as tinyint,
+	@from AS datetime = null,
+	@to AS datetime = null
+	AS
+
+	if @action = 1
+	begin
+		if @from is null
+			select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+			select @to = getdate()
+
+		delete RepSpecialAbndCamp with(rowlock)	where [date] between @from and @to
+
+		insert RepSpecialAbndCamp
+		select [date], campaignId, cam_descripcion, total, abandonedCalls,
+		cast(isnull(((abandonedCalls*100.0)/nullif(total,0)),0) as decimal(5,2)) abandonedCallsPctg,
+		[year],[month],[day],[hour],[minutes]
+		from(
+			select convert(datetime,convert(varchar(13),cal_inicio,121)+'':00'') as [date], co.cam_id campaignId,
+			cam_descripcion , count(*) total,
+			COUNT(CASE WHEN(statuscall_id in(11,15,16))THEN cal_id ELSE NULL END) abandonedCalls,
+			datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) AS [year],
+			datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [month],
+			datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [day],
+			datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [hour],
+			datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [minutes]
+			from ccocallsout co with(index(IX_ccoCallsOut_2),nolock) left join cccamps ca on ca.cam_id=co.cam_id
+			where cal_inicio between @from and @to and
+			cal_manual in (0,2)
+			group by convert(varchar(13),cal_inicio,121), co.cam_id,  cam_descripcion)X
+
+	end'
+
+		EXEC(@sql)
+
+		set @process = 'CREATE SP --ccspRepOutDispositionsContacOwner'
+		set @sql='CREATE PROCEDURE [dbo].[ccspRepOutDispositionsContacOwner]
+		@action as tinyint,
+		@from as datetime = null,
+		@to as datetime = null
+		AS
+
+		if @from is null
+			select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+			select @to = getdate()
+
+		if @action = 1
+		begin
+
+			--Borrar lo que esta para no repetir
+			delete from RepOutDispositionsContacOwner with(rowlock)	where date >= @from AND date < @to
+
+			insert into RepOutDispositionsContacOwner
+			select [date],cam_id,Campaign, total,sumContactOwner as totalContactOwner,
+			dbo.fPercentage(sumContactOwner,Total) as percentageContactOwner,
+			datepart(yyyy,[date]) as [year], datepart(mm,[date]) [mounth],  datepart(dd,[date]) [day],
+			datepart(hh,[date]) [hour], datepart(mi,[date]) [minute]
+			 from (
+			select CONVERT(smalldatetime,CONVERT(varchar(13),a.cal_inicio,121)+ '':00'',121) as [date],a.cam_id,b.cam_descripcion as Campaign,
+			count(*) total,
+			sum(
+				case when isnull(calOut.contactOwner,0) = 1 then 1
+				when isnull(calSubOut.contactOwner,0) = 1  then 1 else 0 end
+			 ) as sumContactOwner
+			from ccocallsout a
+			left join cccamps b on	b.cam_id = a.cam_id
+			left join cctipocalifout calOut on calOut.calif_id=a.calif_id
+			left join ccTipoCalifSubOUT calSubOut on calSubOut.califSub_id=a.califSub_id
+			where a.cal_Inicio>=@from and a.cal_Inicio<@to
+			group by CONVERT(smalldatetime,CONVERT(varchar(13),a.cal_inicio,121)+ '':00'',121),a.cam_id,b.cam_descripcion
+			)X
+		end'
+
+		EXEC(@Sql)
+
 		set @process = 'INSERT -------- ReportsCharts'
 		set @Sql= 'if not exists(select * from ReportsCharts where id in (10010, 10020, 10030, 10040, 11010, 11020, 11030, 11040)) begin
-insert into ReportsCharts values (10010, ''Email by ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Emails by ACD Group'', 0)
-insert into ReportsCharts values (10020, ''Email by Agent'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Emails by Agent'', 0)
-insert into ReportsCharts values (10030, ''Email Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Email Messages by ACD Group'', 0)
-insert into ReportsCharts values (10040, ''Email General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Email Conversations by ACD Group'', 0)
-insert into ReportsCharts values (11010, ''Twitter ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Tweets by ACD Group'', 0)
-insert into ReportsCharts values (11020, ''Agent Twitter'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Tweets by Agent'', 0)
-insert into ReportsCharts values (11030, ''Twitter Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Tweet Messages by ACD Group'', 0)
-insert into ReportsCharts values (11040, ''Twitter General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Twitter Conversations by ACD Group'', 0)
-end'
-		EXEC(@Sql)
-
-		set @process = ''
-		set @Sql= ''
-		EXEC(@Sql)
-
-		set @process = ''
-		set @Sql= ''
-		EXEC(@Sql)
-
+		insert into ReportsCharts values (10010, ''Email by ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Emails by ACD Group'', 0)
+		insert into ReportsCharts values (10020, ''Email by Agent'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Emails by Agent'', 0)
+		insert into ReportsCharts values (10030, ''Email Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Email Messages by ACD Group'', 0)
+		insert into ReportsCharts values (10040, ''Email General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Email Conversations by ACD Group'', 0)
+		insert into ReportsCharts values (11010, ''Twitter ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Tweets by ACD Group'', 0)
+		insert into ReportsCharts values (11020, ''Agent Twitter'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Tweets by Agent'', 0)
+		insert into ReportsCharts values (11030, ''Twitter Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Tweet Messages by ACD Group'', 0)
+		insert into ReportsCharts values (11040, ''Twitter General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Twitter Conversations by ACD Group'', 0)
+		end'
 		set @process = ''
 		set @Sql= ''
 		EXEC(@Sql)

@@ -535,6 +535,27 @@ from
 end'
 		EXEC(@Sql)
 
+		set @process = 'INSERT -------- ReportsCharts'
+		set @Sql= 'if not exists(select * from ReportsCharts where id in (10010, 10020, 10030, 10040, 11010, 11020, 11030, 11040)) begin
+insert into ReportsCharts values (10010, ''Email by ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Emails by ACD Group'', 0)
+insert into ReportsCharts values (10020, ''Email by Agent'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Emails by Agent'', 0)
+insert into ReportsCharts values (10030, ''Email Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Email Messages by ACD Group'', 0)
+insert into ReportsCharts values (10040, ''Email General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Email Conversations by ACD Group'', 0)
+insert into ReportsCharts values (11010, ''Twitter ACD'', 1, ''inbound'', '''', '''', '''', ''sum([download])'', ''Download Tweets by ACD Group'', 0)
+insert into ReportsCharts values (11020, ''Agent Twitter'', 1, ''agentName'', '''', '''', '''', ''sum([download])'', ''Download Tweets by Agent'', 0)
+insert into ReportsCharts values (11030, ''Twitter Detail'', 1, ''inbound'', '''', '''', '''', ''count(messageId)'', ''Total Tweet Messages by ACD Group'', 0)
+insert into ReportsCharts values (11040, ''Twitter General'', 1, ''inbound'', '''', '''', '''', ''count(conversationid)'', ''Total Twitter Conversations by ACD Group'', 0)
+end'
+		EXEC(@Sql)
+
+		set @process = ''
+		set @Sql= ''
+		EXEC(@Sql)
+
+		set @process = ''
+		set @Sql= ''
+		EXEC(@Sql)
+
 		set @process = ''
 		set @Sql= ''
 		EXEC(@Sql)

@@ -2752,7 +2752,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a No asignados.
+        ///   Busca una cadena traducida similar a Desasignados.
         /// </summary>
         public static string messageUnAssigned {
             get {

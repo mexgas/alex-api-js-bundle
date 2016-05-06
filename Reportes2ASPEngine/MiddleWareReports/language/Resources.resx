@@ -2218,7 +2218,7 @@
     <value>Interacciones</value>
   </data>
   <data name="messageUnAssigned" xml:space="preserve">
-    <value>No asignados</value>
+    <value>Desasignados</value>
   </data>
   <data name="statusMail" xml:space="preserve">
     <value>Estado</value>

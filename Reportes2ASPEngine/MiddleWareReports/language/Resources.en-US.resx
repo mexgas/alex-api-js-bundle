@@ -2326,7 +2326,7 @@
     <value>Conversation ID</value>
   </data>
   <data name="messageUnAssigned" xml:space="preserve">
-    <value>Unassigned</value>
+    <value>Deassigned</value>
   </data>
   <data name="twrapup" xml:space="preserve">
     <value>Wrap-up Time</value>

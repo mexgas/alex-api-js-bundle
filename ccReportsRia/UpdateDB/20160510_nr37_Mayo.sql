@@ -70,12 +70,12 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		EXEC(@Sql)
 
 
-		set @process = 'Delete Filter Mail'
+		set @process = 'Delete Filter Mail (10010,10020,10030,10040)'
 		set @sql='delete from ReportsFilters where id in(10010,10020,10030,10040)'
 		EXEC(@sql)
 
 
-		set @process = 'Delete Filter date,FilterBy and ReportsTotals Twitter'
+		set @process = 'Delete Filter date,FilterBy and ReportsTotals Twitter(11010,11020,11030,11040)'
 		set @sql='delete from ReportsFiltersMenus where idReport in(11010,11020,11030,11040)
 		delete from ReportsTotals where id in(11010,11020,11030,11040)'
 		EXEC(@sql)
@@ -382,34 +382,36 @@ if exists (select * from sys.columns where name = N''userid'' COLLATE Latin1_Gen
 
 
 
-		set @process = 'Add Filter date,FilterBy'
-		set @sql='if not exists(select * from ReportsFiltersMenus where idReport=4160) begin
-	INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''date'')
-	INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''filterby'')
-	end'
-		EXEC(@sql)
+	set @process = 'Add Filter date,FilterBy'
+	set @sql='if not exists(select * from ReportsFiltersMenus where idReport=4160) begin
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''date'')
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (4160, ''filterby'')
+end'
+	EXEC(@sql)
 
-		set @process = 'Add Filter by campaigns'
-		set @sql='if not exists(select * from ReportsFilters where id=4160) begin
-	INSERT INTO ReportsFilters (id,reportName, filterName) values (4160,''Abandoned calls'', ''campaigns'')
-	end'
-		EXEC(@sql)
+	set @process = 'Add Filter by campaigns'
+	set @sql='if not exists(select * from ReportsFilters where id=4160) begin
+INSERT INTO ReportsFilters (id,reportName, filterName) values (4160,''Abandoned calls'', ''campaigns'')
+end'
+	EXEC(@sql)
 
-		set @process = 'Add ReportsTotals -- 4160'
-		set @sql='if not exists(select * from ReportsTotals where id=4160) begin
-	INSERT INTO ReportsTotals (id, totalColumns) VALUES (4160,''special:abandonedCallsPctg:convert(decimal(10_2)_ISNULL((sum(AbandonedCalls) * 100.00)/NULLIF(sum(total)_0)_0))|sum:abandonedCalls|sum:total'');
-	end'
-		EXEC(@Sql)
-		set @process = 'insert ReportsCharts -- 4160'
-		set @sql='if not exists(select * from ReportsCharts where id=4160) begin
-			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
-			values(4160,''Report Dispositions by hour'',1,''hour'','''','''','''',''sum([dispositionContactOwner])'',''Dispositions by hour'',0)
+	set @process = 'Add ReportsTotals -- 4160'
+	set @sql='if not exists(select * from ReportsTotals where id=4160) begin
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (4160,''special:abandonedCallsPctg:convert(decimal(10_2)_ISNULL((sum(AbandonedCalls) * 100.00)/NULLIF(sum(total)_0)_0))|sum:abandonedCalls|sum:total'');
+end'
+	EXEC(@Sql)
 
-			insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
-			values(4160,''Report Dispositions by hour'',3,'''',''hour'','''','''',''isnull(sum([dispositionContactOwner]),0)'',''Dispositions by hour'',0)
-		end'
-		EXEC(@sql)
-set @process = 'insert into TranslatedReports------'
+	set @process = 'insert ReportsCharts -- 4160'
+	set @sql='if not exists(select * from ReportsCharts where id=4160) begin
+		insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+		values(4160,''Report Dispositions by hour'',1,''hour'','''','''','''',''sum([dispositionContactOwner])'',''Dispositions by hour'',0)
+
+		insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+		values(4160,''Report Dispositions by hour'',3,'''',''hour'','''','''',''isnull(sum([dispositionContactOwner]),0)'',''Dispositions by hour'',0)
+	end'
+	EXEC(@sql)
+
+	set @process = 'insert into --TranslatedReports  Mail Twitter Status Message(11030,11040, 10030, 10040)'
 	set @sql='if not exists(select * from TranslatedReports where id  in (11030,11040, 10030, 10040)) begin
 	insert into TranslatedReports values(11040,''statusTwetter'')
 	insert into TranslatedReports values(11030,''statusTwetter'')
@@ -418,8 +420,8 @@ set @process = 'insert into TranslatedReports------'
 end'
 	EXEC(@sql)
 
-		set @process = 'Add Filter date,FilterBy'
-		set @sql='if not exists(select * from ReportsFiltersMenus where idReport  in(11010,11020,11030,11040)) begin
+	set @process = 'Add Filter date,FilterBy Twitter (11010,11020,11030,11040)'
+	set @sql='if not exists(select * from ReportsFiltersMenus where idReport  in(11010,11020,11030,11040)) begin
 INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11010, ''date'')
 INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11010, ''filterby'')
 
@@ -432,9 +434,9 @@ INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11030, ''filt
 INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11040, ''date'')
 INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11040, ''filterby'')
 end'
-		EXEC(@sql)
+	EXEC(@sql)
 
-		set @process = 'Change ReportsTotals Mail'
+		set @process = 'Change ReportsTotals Twitter'
 		set @sql='if not exists(select * from ReportsTotals where id in(11010,11020,11030,11040)) begin
 INSERT INTO ReportsTotals (id, totalColumns) VALUES (11010,''sum:download|sum:unassignedMultimedia|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|sum:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
 INSERT INTO ReportsTotals (id, totalColumns) VALUES (11020,''sum:download|sum:messageUnAssigned|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|avg:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
@@ -479,7 +481,7 @@ insert into Filters values(29, ''survey'', 27, ''Surveys'', ''Survey'')
 end'
 		EXEC(@Sql)
 
-		set @process = 'INSERT -------- ReportsFilters'
+		set @process = 'INSERT -------- ReportsFilters---Revisar Raul'
 		set @Sql= 'if not exists(select * from ReportsFilters where id = 6050) begin
 insert into ReportsFilters values(''IVR Surveys'', ''acds'', ''6050'')
 insert into ReportsFilters values(''IVR Surveys'', ''campaigns'', ''6050'')
@@ -983,6 +985,439 @@ if @type = 20
 begin
 SELECT 0 as [min], 100 as [max],''score'' as dbColumn
 end
+end'
+		EXEC(@Sql)
+
+		set @process = 'Alter SP --ccspRepTwitterGeneral'
+		set @sql='ALTER procedure [dbo].[ccspRepTwitterGeneral]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepTwitterGeneral with(rowlock) where date >= @from AND date < @to
+
+	insert into RepTwitterGeneral
+	select CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),isnull(descripcion,'''') descripcion ,inboundid,
+	case max(messagestatusid) when 1 then ''systemTranslated_Download_emails_from_server''
+	when 2 then ''systemTranslated_Assign_message_to_agent''
+	when 3 then ''systemTranslated_Read_the_message_agent''
+	when 4 then ''systemTranslated_Unassign_message_to_agent''
+	when 5 then ''systemTranslated_Message_answered_by_agent''
+	when 6 then ''systemTranslated_Message_sent_to_the_client''
+	when 7 then ''systemTranslated_Message_rejected_for_server''
+	when 8 then ''systemTranslated_Message_rejected_for_server''
+	when 9 then ''systemTranslated_Message_rejected_for_server''
+	when 10 then ''systemTranslated_conversation_closed_for_system''
+	when 11 then ''systemTranslated_Close_conversation_for_agent'' else '''' end statusMail,
+	isnull(max(messagestatusid),0) messagestatusid,
+	isnull(min(screenNameClient),'''') as screenNameClient,
+	conversationId, isnull(sum(tQueue),0) as [tQueueMultimedia],
+	isnull(sum(twait),0) as  [twaitMultimedia], isnull(sum(tAtentionMultimedia),0) tAtentionMultimedia, isnull(sum(twrapup),0) twrapup,
+	isnull(sum(tsent),0) tsent,
+	sum(tfocus) as tfocus,
+	datepart(yyyy,min(date)) [year],
+	datepart(mm,min(date)) [mounth],
+	datepart(dd,min(date)) [day],
+	datepart(hh,min(date)) [hour],
+	datepart(mi,min(date)) [minute]
+from(
+
+select
+	msg.date date,
+	conv.screenNameClient screenNameClient, isnull(inbo.descripcion,'''') descripcion,
+	isnull(inbo.inbound_id,0) inboundid, msg.conversationTwitterId conversationid,
+	msg.messagestatusid messagestatusid,
+	case when msg.tqueue is null then 0 else datediff(second,msg.[date],msg.tqueue) end as tQueue,
+	msg.twait,
+	isnull((msg.twait + msg.tretention + msg.tresponse),0) tAtentionMultimedia, msg.twrapup,
+	case when msg.tsend is null then 0 else datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) end as tsent,
+	msg.tresponse as tfocus
+	from [messageOutTwitter] msg
+	inner join [conversationTwitter] conv on msg.conversationTwitterId = conv.conversationTwitterId
+	left join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+	left join ccusers usuario on usuario.User_id = msg.userid
+	where msg.date >= @from AND msg.date < @to
+	)x
+	group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion,inboundid,conversationId
+end'
+		EXEC(@sql)
+
+		set @process = 'Alter SP --ccspRepTwitterDetail'
+		set @sql='ALTER procedure [dbo].[ccspRepTwitterDetail]
+
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepTwitterDetail with(rowlock)	where date >= @from AND date < @to
+
+	insert into RepTwitterDetail
+	select msg.date date,
+	case when msg.messagestatusid = 1 then ''systemTranslated_Download_emails_from_server''
+	when msg.messagestatusid = 2 then ''systemTranslated_Assign_message_to_agent''
+	when msg.messagestatusid = 3 then ''systemTranslated_Read_the_message_agent''
+	when msg.messagestatusid = 4 then ''systemTranslated_Unassign_message_to_agent''
+	when msg.messagestatusid = 5 then ''systemTranslated_Message_answered_by_agent''
+	when msg.messagestatusid = 6 then ''systemTranslated_Message_sent_to_the_client''
+	when msg.messagestatusid in (7,8,9) then ''systemTranslated_Message_rejected_for_server''
+	when msg.messagestatusid = 10 then ''systemTranslated_conversation_closed_for_system''
+	when msg.messagestatusid = 11 then ''systemTranslated_Close_conversation_for_agent'' else '''' end statusMail,
+	conv.screenNameClient screenNameClient, isnull(inbo.descripcion,'''') descripcion,
+	isnull(inbo.inbound_id,0) inboundid, msg.conversationTwitterId conversationid,msg.messageOutTwitterId,
+	msg.messagestatusid messagestatusid,
+	case when msg.tqueue is null then 0 else datediff(second,msg.[date],msg.tqueue) end as tQueue,
+	msg.twait,
+	isnull((msg.twait + msg.tretention + msg.tresponse),0) tAtentionMultimedia, msg.twrapup,
+	case when msg.tsend is null then 0 else datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) end as tsent,
+	msg.tresponse as tfocus,
+	datepart(yyyy,date) [year],
+	datepart(mm,date) [mounth],
+	datepart(dd,date) [day],
+	datepart(hh,date) [hour],
+	datepart(mi,date) [minute]
+	from [messageOutTwitter] msg
+	inner join [conversationTwitter] conv on msg.conversationTwitterId = conv.conversationTwitterId
+	left join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+	left join ccusers usuario on usuario.User_id = msg.userid
+	left join messageUnAssingedTwit msgun on msg.messageOutTwitterId = msgun.messageOutTwitterId
+	where msg.date >= @from AND msg.date < @to
+	order by date,msg.conversationTwitterId,msg.messageOutTwitterId
+
+end'
+		EXEC(@sql)
+
+		set @process = 'Alter SP --ccspRepTwitterAgente'
+		set @sql='ALTER PROCEDURE [dbo].[ccspRepTwitterAgente]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepTwitterAgente with(rowlock)	where date >= @from AND date < @to
+
+	insert into RepTwitterAgente
+	select CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121) date,
+		isnull(name,'''') as name, isnull(userid,0) as userId,
+		isnull(descripcion,'''') as inboundName, isnull(inboundid,0) as inboundid,
+		isnull(count(*),0) Downloads,isnull(sum(messageUnAssigned),0) messageUnAssigned, isnull(sum(onTrack),0) onTrack,
+		isnull(sum(rejected),0) rejected,isnull(sum(assigned),0) assigned,isnull(sum(actives),0) actives,
+		isnull(sum(pendingSend),0) as pendingSend,
+		isnull(sum(abandonedsystem),0) abandonedsystem, isnull(sum(abandonedbyagent),0) abandonedbyagent,
+		isnull(sum(abandonedsystem+abandonedbyagent),0) finishedconversation,
+		isnull(isnull(sum(sendMail),0)/nullif(cast(count(*) as float) ,0),0) * 100 as  sentvsdownloaded,
+
+		isnull(sum(tQueue),0) tQueue, isnull(sum(tsent),0) tsent, isnull(sum(twait),0) twait,
+		isnull(sum(tatention)/nullif(sum(pendingSend+onTrack+rejected+abandonedsystem+abandonedbyagent),0),0) tAvgAtentionMultimedia,
+		isnull(sum(twrapup),0) twrapup,
+		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [year],
+		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [mounth],
+		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [day],
+		datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [hour],
+		datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [minute]
+	 from (
+		select msg.date date,msg.messageOutTwitterId,
+			 inbo.descripcion descripcion ,inbo.inbound_id inboundid,
+			 usuario.nombres as name,usuario.[User_Id] as userid,
+			 case when msg.messagestatusid in (1,4) then 1 else 0 end unassigned,
+			 case when msg.messagestatusid = 2 then 1 else 0 end assigned,
+			 case when msg.messagestatusid = 3 then 1 else 0 end actives,
+			 case when msg.messagestatusid = 5 then 1 else 0 end pendingSend,
+			 case when msg.messagestatusid = 6 then 1 else 0 end onTrack,
+			 case when msg.messagestatusid in (7,8,9) then 1 else 0 end rejected,
+			 case when msg.messagestatusid = 10 then 1 else 0 end abandonedsystem,
+			 case when msg.messagestatusid = 11 then 1 else 0 end abandonedbyagent,
+			 case when msg.messagestatusid in(6,10,11) then 1 else 0 end sendMail,
+			 sum(case when msgun.messageOutTwitterId is null then 0 else 1 end) messageUnAssigned,
+			 datediff(second,msg.date,isnull(msg.tqueue,getdate())) tQueue,
+			 datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) tsent,
+			 msg.twait twait,
+			 msg.twait + msg.tretention + msg.tresponse tatention,
+			 msg.twrapup twrapup
+			 from [messageOutTwitter] msg
+			 inner join [conversationTwitter] conv on msg.conversationTwitterId = conv.conversationTwitterId
+			 left join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+			 left join ccusers usuario on usuario.User_id = msg.userid
+			 left join messageUnAssingedTwit msgun on msg.UserId=msgun.UserId and msgun.messageOutTwitterId = msg.messageOutTwitterId
+			 where msg.userId>0 and msg.date >= @from AND msg.date < @to
+			 group by msg.messageOutTwitterId,msg.date,inbo.descripcion,inbo.inbound_id,usuario.nombres,usuario.[User_Id],msg.messagestatusid,msg.tqueue,
+			 msg.twait, msg.tretention, msg.tresponse, msg.twrapup, msg.tSend
+
+			)x
+			group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion ,inboundid,name,userId
+
+end'
+		EXEC(@sql)
+
+		set @process = 'Alter SP --ccspRepTwitterACD'
+		set @sql='ALTER PROCEDURE [dbo].[ccspRepTwitterACD]
+
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepTwitterACD with(rowlock) where date >= @from AND date < @to
+
+	insert into RepTwitterACD
+	select CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121) date,
+		isnull(descripcion,'''') as inboundName, isnull(inboundid,0) as inboundid,
+		isnull(count(*),0) Downloads,isnull(sum(unassigned),0) as unassigned, isnull(sum(onTrack),0) onTrack,
+		isnull(sum(rejected),0) rejected,isnull(sum(assigned),0) assigned,isnull(sum(actives),0) actives,
+		isnull(sum(pendingSend),0) as pendingSend,
+		isnull(sum(abandonedsystem),0) abandonedsystem, isnull(sum(abandonedbyagent),0) abandonedbyagent,
+		isnull(sum(abandonedsystem+abandonedbyagent),0) finishedconversation,
+		isnull(isnull(sum(sendMail),0)/nullif(cast(count(*) as float) ,0),0) * 100 as  sentvsdownloaded,
+		isnull(sum(tQueue),0) tQueue, isnull(sum(tsent),0) tsent, isnull(sum(twait),0) twait,
+		isnull(sum(tatention)/nullif(sum(pendingSend+onTrack+rejected+abandonedsystem+abandonedbyagent),0),0) tAvgAtentionMultimedia,
+		isnull(sum(twrapup),0) twrapup,
+		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [year],
+		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [mounth],
+		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [day],
+		datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [hour],
+		datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [minute]
+	 from (
+		select msg.date date,
+				 inbo.descripcion descripcion ,inbo.inbound_id inboundid,
+				 case when msg.messagestatusid in (1,4) then 1 else 0 end unassigned,
+				 case when msg.messagestatusid = 2 then 1 else 0 end assigned,
+				 case when msg.messagestatusid = 3 then 1 else 0 end actives,
+				 case when msg.messagestatusid = 5 then 1 else 0 end pendingSend,
+				 case when msg.messagestatusid = 6 then 1 else 0 end onTrack,
+				 case when msg.messagestatusid in (7,8,9) then 1 else 0 end rejected,
+				 case when msg.messagestatusid = 10 then 1 else 0 end abandonedsystem,
+				 case when msg.messagestatusid = 11 then 1 else 0 end abandonedbyagent,
+				 case when msg.messagestatusid in(6,10,11) then 1 else 0 end sendMail,
+				 datediff(second,msg.date,isnull(msg.tqueue,getdate())) tQueue,
+				 datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) tsent,
+				 msg.twait twait,
+				 msg.twait + msg.tretention + msg.tresponse tatention,
+				 msg.twrapup twrapup
+				 from [messageOutTwitter] msg
+				 inner join [conversationTwitter] conv
+				on msg.conversationTwitterId = conv.conversationTwitterId
+				left join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+				left join ccusers usuario on usuario.User_id = msg.userid
+				--where msg.date >= @from AND msg.date < @to
+				)x
+				group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion ,inboundid
+
+end'
+		EXEC(@sql)
+
+		set @process = 'Alter SP ccspRepEmailDetail-- Add tFocus'
+		set @sql='ALTER procedure [dbo].[ccspRepEmailDetail]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepEmailDetail with(rowlock)
+	where date >= @from AND date < @to
+
+	insert into RepEmailDetail
+	select msg.date date,
+	case when msg.messagestatusid = 1 then ''systemTranslated_Download_emails_from_server''
+	when msg.messagestatusid = 2 then ''systemTranslated_Assign_message_to_agent''
+	when msg.messagestatusid = 3 then ''systemTranslated_Read_the_message_agent''
+	when msg.messagestatusid = 4 then ''systemTranslated_Unassign_message_to_agent''
+	when msg.messagestatusid = 5 then ''systemTranslated_Message_answered_by_agent''
+	when msg.messagestatusid = 6 then ''systemTranslated_Message_sent_to_the_client''
+	when msg.messagestatusid in (7,8,9) then ''systemTranslated_Message_rejected_for_server''
+	when msg.messagestatusid = 10 then ''systemTranslated_conversation_closed_for_system''
+	when msg.messagestatusid = 11 then ''systemTranslated_Close_conversation_for_agent'' else '''' end statusMail,
+	conv.mailClient mailClient, isnull(inbo.descripcion,'''') descripcion,
+	isnull(inbo.inbound_id,0) inboundid, msg.conversationId conversationid,msg.messageId,
+	msg.messagestatusid messagestatusid,
+	isnull(datediff(second,msg.[date],isnull(msg.tqueue,getdate())),0) tQueue, msg.twait,
+	isnull((msg.twait + msg.tretention + msg.tresponse),0) tAtentionMultimedia, msg.twrapup,
+	isnull(datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend),0) tsent,
+	datepart(yyyy,date) [year],
+	datepart(mm,date) [mounth],
+	datepart(dd,date) [day],
+	datepart(hh,date) [hour],
+	datepart(mi,date) [minute],
+	msg.tresponse as tfocus
+	from [message] msg inner join [conversation] conv
+	on msg.conversationId = conv.conversationId left join [ccInbound] inbo
+	on inbo.inbound_Id = conv.inboundId
+	left join ccusers usuario on usuario.User_id = msg.userid  left join messageUnAssigned msgun on msg.messageid = msgun.messageid
+	where msg.date >= @from AND msg.date < @to
+	order by date,msg.conversationId,msg.messageId
+
+end'
+		EXEC(@sql)
+
+
+		set @process = 'ALTER SP ccspRepEmailGeneral -- Add Column tFocus'
+		set @sql='ALTER procedure [dbo].[ccspRepEmailGeneral]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepEmailGeneral with(rowlock) where date >= @from AND date < @to
+
+	insert into RepEmailGeneral
+	select CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),isnull(descripcion,'''') descripcion ,inboundid,
+	case max(messagestatusid) when 1 then ''systemTranslated_Download_emails_from_server''
+	when 2 then ''systemTranslated_Assign_message_to_agent''
+	when 3 then ''systemTranslated_Read_the_message_agent''
+	when 4 then ''systemTranslated_Unassign_message_to_agent''
+	when 5 then ''systemTranslated_Message_answered_by_agent''
+	when 6 then ''systemTranslated_Message_sent_to_the_client''
+	when 7 then ''systemTranslated_Message_rejected_for_server''
+	when 8 then ''systemTranslated_Message_rejected_for_server''
+	when 9 then ''systemTranslated_Message_rejected_for_server''
+	when 10 then ''systemTranslated_conversation_closed_for_system''
+	when 11 then ''systemTranslated_Close_conversation_for_agent'' else '''' end statusMail,
+	isnull(max(messagestatusid),0) messagestatusid,
+	isnull(min(mailClient),'''') mailClient,
+	conversationId, isnull(sum(tQueue),0) as [tQueueMultimedia],
+	isnull(sum(twait),0) as  [twaitMultimedia], isnull(sum(tAtentionMultimedia),0) tAtentionMultimedia, isnull(sum(twrapup),0) twrapup,
+	isnull(sum(tsent),0) tsent,
+	datepart(yyyy,min(date)) [year],
+	datepart(mm,min(date)) [mounth],
+	datepart(dd,min(date)) [day],
+	datepart(hh,min(date)) [hour],
+	datepart(mi,min(date)) [minute],
+	sum(tFocus) as tFocus
+from(
+
+select
+	msg.date date,
+	conv.mailClient mailClient, isnull(inbo.descripcion,'''') descripcion,
+	isnull(inbo.inbound_id,0) inboundid, msg.conversationId conversationid,
+	msg.messagestatusid messagestatusid,
+	case when msg.tqueue is null then 0 else datediff(second,msg.[date],msg.tqueue)  end tQueue,
+	msg.twait,
+	isnull((msg.twait + msg.tretention + msg.tresponse),0) tAtentionMultimedia, msg.twrapup,
+	case when msg.tsend is null then 0 else
+		datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) end as tsent
+	,msg.tresponse as tFocus
+	from [message] msg inner join [conversation] conv
+	on msg.conversationId = conv.conversationId
+	inner join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+	inner join ccusers usuario on usuario.User_id = msg.userid
+	where msg.date >= @from AND msg.date < @to
+	)x
+	group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion,inboundid,conversationId
+
+end'
+		EXEC(@sql)
+
+
+		set @process = 'ALTER SP--ccspRepEmailAgente'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepEmailAgente]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1	begin
+
+	delete from RepEmailAgente with(rowlock)	where date >= @from AND date < @to
+
+	insert into RepEmailAgente
+	select CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121) date,
+		isnull(name,'''') as name, isnull(userid,0) as userId,
+		isnull(descripcion,'''') as inboundName, isnull(inboundid,0) as inboundid,
+		isnull(count(*),0) Downloads,isnull(sum(messageUnAssigned),0) messageUnAssigned, isnull(sum(onTrack),0) onTrack,
+		isnull(sum(rejected),0) rejected,isnull(sum(assigned),0) assigned,isnull(sum(actives),0) actives,
+		isnull(sum(pendingSend),0) as pendingSend,
+		isnull(sum(abandonedsystem),0) abandonedsystem, isnull(sum(abandonedbyagent),0) abandonedbyagent,
+		isnull(sum(abandonedsystem+abandonedbyagent),0) finishedconversation,
+		isnull(isnull(sum(sendMail),0)/nullif(cast(count(*) as float) ,0),0) * 100 as  sentvsdownloaded,
+
+		isnull(sum(tQueue),0) tQueue, isnull(sum(tsent),0) tsent, isnull(sum(twait),0) twait,
+		isnull(sum(tatention)/nullif(sum(pendingSend+onTrack+rejected+abandonedsystem+abandonedbyagent),0),0) tAvgAtentionMultimedia,
+		isnull(sum(twrapup),0) twrapup,
+		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [year],
+		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [mounth],
+		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [day],
+		datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [hour],
+		datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121)) [minute]
+	 from (
+		select msg.date date,msg.messageid,
+			 inbo.descripcion descripcion ,inbo.inbound_id inboundid,
+			 usuario.nombres as name,usuario.[User_Id] as userid,
+			 case when msg.messagestatusid in (1,4) then 1 else 0 end unassigned,
+			 case when msg.messagestatusid = 2 then 1 else 0 end assigned,
+			 case when msg.messagestatusid = 3 then 1 else 0 end actives,
+			 case when msg.messagestatusid = 5 then 1 else 0 end pendingSend,
+			 case when msg.messagestatusid = 6 then 1 else 0 end onTrack,
+			 case when msg.messagestatusid in (7,8,9) then 1 else 0 end rejected,
+			 case when msg.messagestatusid = 10 then 1 else 0 end abandonedsystem,
+			 case when msg.messagestatusid = 11 then 1 else 0 end abandonedbyagent,
+			 case when msg.messagestatusid in(6,10,11) then 1 else 0 end sendMail,
+			 sum(case when msgun.messageid is null then 0 else 1 end) messageUnAssigned,
+			 datediff(second,msg.date,isnull(msg.tqueue,getdate())) tQueue,
+			 datediff(ss,dateadd(ss, msg.twait + msg.tretention + msg.tresponse + msg.twrapup,msg.tqueue),msg.tsend) tsent,
+			 msg.twait twait,
+			 msg.twait + msg.tretention + msg.tresponse tatention,
+			 msg.twrapup twrapup
+			 from [message] msg
+			 inner join [conversation] conv on msg.conversationId = conv.conversationId
+			 left join [ccInbound] inbo on inbo.inbound_Id = conv.inboundId
+			 left join ccusers usuario on usuario.User_id = msg.userid
+			 left join messageUnAssigned msgun on msg.UserId=msgun.UserId and msgun.messageId = msg.messageId
+			 where  msg.userId>0 and msg.date >= @from AND msg.date < @to
+			 group by msg.messageid,msg.date,inbo.descripcion,inbo.inbound_id,usuario.nombres,usuario.[User_Id],msg.messagestatusid,msg.tqueue,
+			 msg.twait, msg.tretention, msg.tresponse, msg.twrapup, msg.tSend
+
+			)x
+			group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion ,inboundid,name,userId
+
 end'
 		EXEC(@Sql)
 

@@ -4912,6 +4912,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Opción inválida.
+        /// </summary>
+        public static string systemTranslated_Invalid {
+            get {
+                return ResourceManager.GetString("systemTranslated_Invalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a En seguimiento.
         /// </summary>
         public static string systemTranslated_It_forwards_the_message {
@@ -5574,6 +5583,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_newRecords {
             get {
                 return ResourceManager.GetString("systemTranslated_newRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Sin opción.
+        /// </summary>
+        public static string systemTranslated_No_Option {
+            get {
+                return ResourceManager.GetString("systemTranslated_No_Option", resourceCulture);
             }
         }
         

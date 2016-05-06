@@ -515,7 +515,7 @@ if @action = 1
 begin
   if @from is null
     select @from = convert(datetime,convert(varchar(14),getdate(),121)+ ''00'',121)
-  if @to is null
+  if @to is null  
     select @to = getdate()
 
 
@@ -527,7 +527,7 @@ insert RepIVRSurveys select [date],userId,[login],scriptId,surveyId,survey,calId
 questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes]
 from
 (
-  select
+  select 
   convert(datetime,convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121) as [date],
   isnull(cci.User_id, 0) as ''userId'',
   isnull(ccu.Login, ''No agent'') as ''login'',
@@ -542,11 +542,11 @@ from
   isnull(ivro.questionId, 0) as ''questionId'',
   isnull(sq.description,'''') as ''questionDescription'',
   isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
-  case when sa.answerId is null and isnull(ivro.selectedOption,'') ='' then ''No option''
-    when sa.answerId is null then ivro.selectedOption
+  case when sa.answerId is null and isnull(ivro.selectedOption,'''') ='''' then ''systemTranslated_No_Option''
+    when sa.answerId is null then ivro.selectedOption 
     when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
-    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''No option''
-  else ''Invalid'' end as ''Count'',
+    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''systemTranslated_No_Option''
+  else ''systemTranslated_Invalid'' end as ''Count'',
   datepart(yy,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [year],
   datepart(MM,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [month],
   datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
@@ -579,10 +579,10 @@ from
   isnull(ivro.questionId, 0) as ''questionId'',
   isnull(sq.description,'''') as ''questionDescription'',
   isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
-  case when sa.answerId is null then ivro.selectedOption
+  case when sa.answerId is null then ivro.selectedOption 
     when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
-    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''No option''
-  else ''Invalid'' end as ''Count'',
+    when sa.answerId is not null and isnull(ivro.selectedOption,'''') ='''' then ''systemTranslated_No_Option''
+  else ''systemTranslated_Invalid'' end as ''Count'',
   datepart(yy,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [year],
   datepart(MM,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [month],
   datepart(DD,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [day],
@@ -597,7 +597,7 @@ from
   left join SurveyQuestion sq on ivro.questionId = sq.questionId
   left join SurveyAnswer sa on rqa.answerId = sa.answerId
   where cal_inicio between @from and @to
-)surveys
+)surveys 
 
 end'
 	EXEC(@Sql)

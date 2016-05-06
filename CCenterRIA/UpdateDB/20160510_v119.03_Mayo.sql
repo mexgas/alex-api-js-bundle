@@ -811,10 +811,497 @@ set nocount off'
 
 		EXEC(@sql)
 
+		set @process = 'ALTER SP --ccsp_RIAADMGetCalifDay'
+		set @sql='ALTER Procedure [dbo].[ccsp_RIAADMGetCalifDay]
+@type smallint = null,
+@inbound_id smallint = null,
+@calif_id smallint = null,
+@cam_id smallint = null
+AS
+set nocount on
+create table #CalifTemp (
+id int identity,
+tipo integer,
+Cam_id varchar(50),
+Calificacion varchar(50),
+subCalificacion varchar(50) null,
+calif_id smallint null,
+Total int,
+iTotal4Campaign int null)
+
+declare @typeACD smallint --= 0
+declare @today datetime
+declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+
+set @today = convert(datetime, convert (varchar(11), getdate(), 101))
+select @typeACD = chat from ccInbound  where Inbound_id = @inbound_id
+
+
+select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end,
+@nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+from ccsettings where setting_id = 27 -- 0 esp
+
+
+if @type=0 begin
+	insert into #CalifTemp
+	select 0 as tipo,co.cam_id as cam_id,
+	case when co.statuscall_id = 13
+			then case when description is not null
+			then description else @nIdioma end
+	else case when sll.descripcion is not null then ''cw:'' + sll.descripcion
+		else ''cw:'' + @nIdioma
+		end end as Calificacion
+	,0 as subCalificaion,
+	co.calif_id,count(*) cantidad,0 as iTotal4Campaign
+	from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+	left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+	left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+	left join ccCamps ci on ci.cam_id = co.cam_id
+	where co.cal_inicio > @today
+	group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id
+
+	select tipo,Cam_id, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end as Calificacion,
+	case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total
+	from #CalifTemp
+	group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end, Cam_id, iTotal4Campaign,calif_id
+
+end
+---------------IN ----------------------------
+else if @type = 1 begin
+
+	if @typeACD = 0 begin  --Calls
+		insert into #CalifTemp
+
+		select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description
+		else @nIdioma end as Calificacion
+		,count(isnull(ctcs.califSubDesc,'''')) as subCalificacion,ci.calif_id
+		,count(*) as total
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id
+		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+		where ci.cal_inicio > @today and statuscall_id = 13
+		group by description, cci.inbound_id,ci.calif_id
+
+
+		if (select valor from ccSettings where setting_id = 78) = 0 begin
+			update #CalifTemp set iTotal4Campaign = 0
+		end
+
+		else begin
+		update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign
+			from (
+				select cam_id, sum(A.Total) iTotal4Campaign from #CalifTemp A group by cam_id) t
+			inner join #CalifTemp c	on t.cam_id = c.cam_id
+		end
+	end
+	else if @typeACD = 1 begin--Chats
+		select tipo, cam_id, calificacion,subCalificacion,calif_id ,sum( total ) as totales from (
+			select 1 as tipo, inboundId as Cam_id, case when description is not null then description
+			else @nIdioma  end as Calificacion, 0 as subCalificacion,0 as calif_id,
+			count(disposition) as Total,0 count,0 iTotal4Campaign
+				from ccriachats a
+				left join ccTipoCalif b on a.disposition=b.calif_id
+			where a.chatDate > @today
+			group by inboundId, Description
+			union all
+			select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma
+			then calificacion else @nIdioma	end as Calificacion
+			,case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, isnull(calif_id,'''') as calif_id
+			,sum(Total) as Total, count(*) count , iTotal4Campaign -- para ver total por campaña
+			from #CalifTemp
+			group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1)
+			then calificacion else @nIdioma end,calif_id,Cam_id, iTotal4Campaign
+		) as a
+		group by tipo, cam_id, calificacion,subCalificacion,calif_id order by tipo,cam_id,calif_id
+	end
+	else if @typeACD = 3 begin ---Mail
+		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		select 2 as tipo,conmean.inboundId as camid, ''''as calificacion,
+		case when relmesdis.subDispositionId > 0 then 1 else 0 end as subcalificacion,
+		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
+		from contactMeanIn conmean
+		inner join conversation conver on conmean.inboundId = conver.inboundId
+		inner join message mess on mess.conversationId = conver.conversationId
+		inner join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
+		where conmean.meanContactTypeId = 1 and mess.date > @today
+		group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
+
+		select camtemp.tipo,camtemp.cam_id,tipcal.Description,camtemp.subcalificacion,camtemp.calif_id,camtemp.total from #CalifTemp camtemp
+		inner join
+		ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
+	end
+
+
+	else if @typeACD = 4 begin --calif twetter
+		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		select 3 as tipo,conmean.inboundId as camid, ''''as calificacion,
+		case when relmesdis.subDispositionId > 0 then 1 else 0 end as subcalificacion,
+		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
+		 from contactMeanIn conmean
+		inner join conversationTwitter conver on conmean.inboundId = conver.inboundId
+		inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+		inner join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+		where conmean.meanContactTypeId = 2 and mess.date > @today
+		group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
+
+		select camtemp.tipo,camtemp.cam_id,tipcal.Description,camtemp.subcalificacion,camtemp.calif_id,camtemp.total from #CalifTemp camtemp
+		inner join
+		ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
+	end
+
+end
+-------------------SUBCALIFICACIONES IN-------------------
+else if @type = 3 begin
+	if @typeACD = 0 begin --Calls
+		select 1 as tipo,cci.inbound_id as cam_id,
+		case when description is not null then description
+			else @nIdioma end as Calificacion,
+		isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(*) as totales
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id
+		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+		where ci.cal_inicio > @today
+		and ci.inbound_id = @inbound_id
+		and statuscall_id = 13 	and ci.calif_id = @calif_id
+		group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
+	end
+	else if @typeACD = 3 begin --Mail
+		select 4 as tipo,cci.inbound_id as cam_id, case when description is not null then description
+		else @nIdioma end as Calificacion,
+		isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion
+		, count(*) as totales
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id
+		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+		left join relationMessageDisposition relmedis on relmedis.subDispositionId = ctcs.califsub_id
+		where ci.cal_inicio > @today
+		and ci.inbound_id = @inbound_id and cci.chat = @typeACD and ci.calif_id = @calif_id
+		group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
+	end
+	else if @typeACD = 4 begin --Twitter
+		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		select 3 as tipo,conmean.inboundId as camid, ''''as calificacion,
+		 relmesdis.subDispositionId as subcalificacion,
+		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
+		 from contactMeanIn conmean
+		inner join conversationTwitter conver on conmean.inboundId = conver.inboundId
+		inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+		inner join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+	where conmean.meanContactTypeId = 2 and mess.date > @today
+	group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
+
+
+	select camtemp.tipo,camtemp.cam_id,subcali.califSubDesc,camtemp.subcalificacion,camtemp.calif_id,camtemp.total
+	 from #CalifTemp camtemp
+		inner join ccTipoCalifSub subcali on camtemp.subCalificacion = subcali.califSub_id
+		where camtemp.cam_id = @inbound_id
+	end
+end
+-------------------SUBCALIFICACIONES OUT-------------------
+else if @type = 4 begin
+	select 0 as tipo,co.cam_id as cam_id,
+	case when co.statuscall_id = 13
+		then case when description is not null
+		then description else @nIdioma end
+	else
+		case when sll.descripcion is not null
+		then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma
+		end
+	end as Calificacion,
+	isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad
+	from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+	left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+	left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+	left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+	left join ccCamps ci on ci.cam_id = co.cam_id
+	where co.cal_inicio > @today
+	and co.cam_id = @inbound_id
+	and co.calif_id = @calif_id
+	group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+end
+
+
+drop table #CalifTemp
+set nocount off'
+		EXEC(@sql)
+
+		set @process = 'ALTER SP -- ccsp_ExtAppsCallHistory Montepio'
+		set @sql='ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory]
+@action smallint,
+@call_id int = 0,
+@startDate varchar(30) = null,@endDate varchar(30) = null,
+@state int = 0,
+@multipleCall_id as varchar(500) = null,@multipleUser_id as varchar(500) = null,
+@agentId int = 0,@camId int=0,@PageNumber int=1,@isCount bit=false
+
+AS
+declare @RowsPerPage int
+set @RowsPerPage=500
+
+
+-- INBOUND x cal_id
+if @action = 1	begin
+	select top 500
+		cal_id as call_id,
+		c.inbound_id,
+		isnull(a.descripcion,'''') as acdGroup,
+		cal_ani as phoneNumber,
+		isnull(b.user_id,0) as [user_id],
+		isnull(login,'''') as login,
+		isnull(e.description,'''') as disposition,
+		d.descripcion as call_status,
+		cal_tDialog as call_tDialog,
+		cal_inicio as call_date,
+		cal_tNotas as WrapUp,
+		cal_tXfer as Xfer,
+		cal_tRing as Ringing,
+		cal_key as callKey,
+		isnull(e.calif_id,'''') as dispositionId,
+		isnull(f.califSubDesc,'''') as subDisposition,
+		isnull(f.califSub_id,'''') as subDispositionId
+	from cccallsin c with(nolock)
+	left join ccInbound a on ( c.Inbound_id = a.Inbound_id )
+	left join ccusers b on (c.user_id = b.user_id)
+	left join ccStatusLLamada d on ( c.statusCall_id = d.statusCall_id )
+	left join ccTipoCalif e on ( c.calif_id = e.calif_id )
+	left join ccTipoCalifSub f on ( c.califSub_id = f.califSub_id )
+	where cal_id >= @call_id
+	end
+
+-- OUTBOUND x cal_id
+else if @action = 2 	begin
+	select top 500
+		cal_id as call_id,
+		c.cam_id,
+		isnull(a.cam_descripcion,'''') as Campaign,
+		c.cal_telefono as phoneNumber,
+		isnull(b.user_id,0) as user_id,
+		isnull(login,''''),
+		isnull(e.description,'''') as disposition,
+		d.descripcion as call_status,
+		cal_tDialog as call_tDialog,
+		cal_inicio as call_date,
+		cal_tNotas as WrapUp,
+		cal_tXfer as Xfer,
+		cal_tRing as Ringing,
+		cal_manual as CallManual,
+		c.cal_key as callKey,
+		list_id,
+		isnull(e.calif_id,'''') as dispositionId,
+		isnull(f.califSubDesc,'''') as subDisposition,
+		isnull(f.califSub_id,'''') as subDispositionId
+	from ccocallsout c with(nolock)
+	left join ccocallsoutsource cs on (cs.callout_id = c.callout_id)
+	left join ccusers b on (c.user_id = b.user_id)
+	left join cccamps a on (c.cam_id = a.cam_id)
+	left join ccStatusLLamada d on ( c.statusCall_id = d.statusCall_id )
+	left join ccTipoCalifOUT e on ( c.calif_id = e.calif_id )
+	left join ccTipoCalifSubOUT f on ( c.califSub_id = f.califSub_id )
+	where cal_id >= @call_id
+end
+
+else if @action = 3 begin --Session time
+
+	declare @fecha_ini datetime
+	declare @fecha_fin datetime
+
+	if (@startDate is null or @endDate is null) or (@startDate = '''' or @endDate = '''') begin
+		select @fecha_ini = convert(datetime,convert(varchar(30),getdate()))
+		select @fecha_fin = dateadd(ss,-1,dateadd(dd,1,convert(datetime,convert(varchar(11),getdate()))))
+	end
+	else begin
+		select @fecha_ini = convert(datetime,convert(varchar(30),@startDate))
+		select @fecha_fin = convert(datetime,convert(varchar(30),@endDate))
+	end
+
+	select user_id, login, logout, datediff(ss,login,logout) as logintime
+	from(select a.user_id, a.fecha as ''login'',
+			(select isnull(max(Fecha),getdate())
+				from ccLogLogin b with(nolock)
+				where b.user_id = a.user_id and
+				b.tipomov = 0 and
+				b.fecha >= a.fecha and
+				b.fecha <= (select isnull(min(fecha),''99991231 23:59:59.998'')
+							from ccLogLogin with(nolock)
+							where user_id = b.user_id and
+							tipomov = 1 and
+							fecha > a.fecha)) as ''logout''
+			from ccLogLogin a
+			where a.tipomov=1
+			and fecha >= @fecha_ini
+			and fecha <= @fecha_fin) as sessiontime
+	order by user_id, login
+end
+
+else if @action = 4 begin -- Estados de los agentes
+	select User_id, tStatus, fecha from cclogagentesdia with(nolock) where TipoStatusAge_id = @state and fecha >= @startDate and fecha < @endDate order by User_id,fecha
+end
+
+else if @action = 5 begin-- Sinlge Call id Inbound
+
+	select top 500
+		cal_id as call_id,
+		c.inbound_id,
+		isnull(a.descripcion,'''') as acdGroup,
+		cal_ani as phoneNumber,
+		isnull(b.user_id,0) as user_id,
+		isnull(login,'''') as login,
+		isnull(e.description,'''') as disposition,
+		d.descripcion as call_status,
+		cal_tDialog as call_tDialog,
+		cal_inicio as call_date,
+		cal_tNotas as WrapUp,
+		cal_tXfer as Xfer,
+		cal_tRing as Ringing,
+		cal_key as callKey,
+		isnull(e.calif_id,'''') as dispositionId,
+		isnull(f.califSubDesc,'''') as subDisposition,
+		isnull(f.califSub_id,'''') as subDispositionId
+	from cccallsin c with(nolock)
+	left join ccInbound a on ( c.Inbound_id = a.Inbound_id )
+	left join ccusers b on (c.user_id = b.user_id)
+	left join ccStatusLLamada d on ( c.statusCall_id = d.statusCall_id )
+	left join ccTipoCalif e on ( c.calif_id = e.calif_id )
+	left join ccTipoCalifSub f on ( c.califSub_id = f.califSub_id )
+	where cal_id in ( select value from fn_RIASplitDelimited(@multipleCall_id,'','') )
+end
+
+else if @action = 6 begin-- Single call_id Outbound
+
+select top 500
+	cal_id as call_id,
+	c.cam_id,
+	isnull(a.cam_descripcion,'''') as Campaign,
+	c.cal_telefono as phoneNumber,
+	isnull(b.user_id,0) as user_id,isnull(login,''''),
+	isnull(e.description,'''') as disposition,
+	d.descripcion as call_status,
+	cal_tDialog as call_tDialog,
+	cal_inicio as call_date,
+	cal_tNotas as WrapUp,
+	cal_tXfer as Xfer,
+	cal_tRing as Ringing,
+	cal_manual as CallManual,
+	c.cal_key as callKey,
+	cs.list_id,
+	isnull(e.calif_id,'''') as dispositionId,
+	isnull(f.califSubDesc,'''') as subDisposition,
+	isnull(f.califSub_id,'''') as subDispositionId
+from ccocallsout c with(nolock)
+left join ccocallsoutsource cs (nolock) on (cs.callout_id = c.callout_id)
+left join ccusers b on (c.user_id = b.user_id)
+left join cccamps a on (c.cam_id = a.cam_id)
+left join ccStatusLLamada d on ( c.statusCall_id = d.statusCall_id )
+left join ccTipoCalifOUT e on ( c.calif_id = e.calif_id )
+left join ccTipoCalifSubOUT f on ( c.califSub_id = f.califSub_id )
+where cal_id in ( select value from fn_RIASplitDelimited(@multipleCall_id,'','') )
+end
+
+else if @action = 7 begin--Status Agente
+	select tipostatusAge_id, tstatus, dateadd(ss,(-1*tstatus),fecha), IdCampEsp, Tipo
+	from cclogagentesdia with(nolock)
+	where user_id = @agentId
+	and fecha >= @startDate
+	and fecha < @endDate
+	order by fecha
+end
+
+else if @action = 8 begin
+	select tipostatusAge_id, tstatus, dateadd(ss,(-1*tstatus),fecha) fecha, IdCampEsp, Tipo, user_id
+	from cclogagentesdia with(index(IX_ccLogAgentesDia_4),nolock)
+	where user_id in (select value from fn_RIASplitDelimited(@multipleUser_id,'',''))
+	and fecha between @startDate
+	and @endDate
+	order by user_id,fecha
+end
+else if @action = 9 begin --Call History by CamId and day
+
+	declare @date dateTime,@countRegistry bigint
+	if @PageNumber<=0 set @PageNumber=1
+
+	set @date=convert(datetime,convert(nvarchar(11),GETDATE(),121))
+
+	if @isCount = 0 begin ---Datos para la informacion
+
+		select cal_id as call_id,
+			c.cam_id,isnull(a.cam_descripcion,'''') as Campaign,
+			c.cal_telefono as phoneNumber,
+			isnull(b.user_id,0) as user_id,	isnull(login,''''),
+			isnull(e.description,'''') as disposition,
+			d.descripcion as call_status,
+			cal_tDialog as call_tDialog,cal_inicio as call_date,
+			cal_tNotas as WrapUp,cal_tXfer as Xfer,
+			cal_tRing as Ringing,cal_manual as CallManual,
+			c.cal_key as callKey,list_id,
+			isnull(e.calif_id,'''') as dispositionId,
+			isnull(f.califSubDesc,'''') as subDisposition,
+			isnull(f.califSub_id,'''') as subDispositionId,
+			rowNum
+		from (
+		select ROW_NUMBER() OVER ( ORDER BY cal_id ) AS rowNum,
+			c.callout_id,cal_id,c.cam_id,c.cal_telefono,cal_tDialog ,cal_inicio,cal_tNotas,
+			cal_tXfer,cal_tRing ,cal_manual,c.cal_key,c.statusCall_id,c.calif_id,c.califSub_id,c.user_id
+		 from ccocallsout c with(nolock,index(IX_ccoCallsOut_3)) where cam_id=@camId and cal_Inicio >= @date and cal_Inicio<GETDATE()
+		) as c
+		left join ccocallsoutsource cs on (cs.callout_id = c.callout_id)
+		left join ccusers b on (c.user_id = b.user_id)
+		left join cccamps a on (c.cam_id = a.cam_id)
+		left join ccStatusLLamada d on  (c.statusCall_id = d.statusCall_id )
+		left join ccTipoCalifOUT e on  (c.calif_id = e.calif_id )
+		left join ccTipoCalifSubOUT f on  (c.califSub_id = f.califSub_id)
+		where  rowNum BETWEEN ((@PageNumber-1)*@RowsPerPage)+1 AND @RowsPerPage*(@PageNumber)
+	end
+	else begin--Numero de paginas y registros actuales
+		select @countRegistry = count(*)	 from ccocallsout c with(nolock,index(IX_ccoCallsOut_3)) where cam_id=@camId and cal_Inicio >= @date and cal_Inicio<GETDATE()
+		select @RowsPerPage as pagesize, @PageNumber as  currentpage, @countRegistry/cast(@RowsPerPage as float) as totalpages
+	end
+end'
+		EXEC(@sql)
+
+		set @process = 'ALTER SP -- ccsp_ExtAppsCamList'
+		set @sql='ALTER PROCEDURE [dbo].[ccsp_ExtAppsCamList]
+@action smallint,
+@area int =0
+AS
+set nocount on
+if @action = 1
+ begin
+	if @area = 0
+		select a1.inbound_id, descripcion
+		from ccinbound a1 join ccRIAinboundGraph a2 on (a1.inbound_id = a2.inbound_id)
+		join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1
+		order by descripcion
+	else
+		select distinct a1.inbound_id, descripcion
+		from ccinbound a1 join ccRIAinboundGraph a2 on a1.inbound_id = a2.inbound_id
+		join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+		where a3.type_id = 1 and isnull(IDArea, 0) = isnull(@area, 0)
+		order by descripcion
+	return(0)
+ end
+if @action = 2
+ begin
+	if @area = 0
+	    select a1.cam_id, cam_descripcion,cam_activo
+		from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+		join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+		where a3.type_id = 1
+		order by cam_descripcion
+	else
+		select distinct a1.cam_id, cam_descripcion,cam_activo
+        from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+        join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+        where a3.type_id = 1 and isnull(IDArea, 0) = isnull(@area, 0)
+        order by cam_descripcion
+	return(0)
+ end
+set nocount off'
+		EXEC(@sql)
+
 		set @process = ''
 		set @sql=''
 		EXEC(@sql)
-
 
 		/* End script release */
 

@@ -485,8 +485,15 @@ end'
 		set @Sql= 'if not exists(select * from ReportsFilters where id = 6050) begin
 insert into ReportsFilters values(''IVR Surveys'', ''acds'', ''6050'')
 insert into ReportsFilters values(''IVR Surveys'', ''campaigns'', ''6050'')
-insert into ReportsFilters values(''IVR Surveys'', ''agent'', ''6050'')
+insert into ReportsFilters values(''IVR Surveys'', ''users'', 6050)
 insert into ReportsFilters values (''IVR Surveys'', ''survey'', 6050)
+end'
+		EXEC(@Sql)
+
+		set @process = 'INSERT -------- TranslatedReports---Revisar Raul'
+		set @Sql= 'if not exists(select * from TranslatedReports where id = 6050)
+begin
+insert into TranslatedReports values (6050, ''Count'')
 end'
 		EXEC(@Sql)
 

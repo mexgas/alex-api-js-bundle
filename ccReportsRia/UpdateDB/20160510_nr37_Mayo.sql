@@ -63,6 +63,36 @@ if @actualVersion = @version - 1
 		END'
 
 		EXEC(@Sql)
+set @process = 'Add column  tfocus -- RepEmailDetail and RepEmailGeneral'
+		set @sql='if not exists (select * from sys.columns where name = N''tfocus'' and Object_ID = Object_ID(N''RepEmailDetail'')) alter table RepEmailDetail add tfocus int
+if not exists (select * from sys.columns where name = N''tfocus'' and Object_ID = Object_ID(N''RepEmailGeneral'')) alter table RepEmailGeneral add tfocus int'
+		EXEC(@sql)
+
+		set @process = 'Update tfocus valueo (0)'
+		set @sql='update RepEmailDetail set tfocus=0
+update RepEmailGeneral set tfocus=0'
+		EXEC(@sql)
+
+		set @process = 'Delete Filter Mail'
+		set @sql='delete from ReportsFilters where id in(10010,10020,10030,10040)'
+		EXEC(@sql)
+
+
+		set @process = 'Drop table Twitter'
+		set @sql='if exists(select * from sys.tables where name=''RepTwitterACD'') DROP TABLE RepTwitterACD
+if exists(select * from sys.tables where name=''RepTwitterAgente'') DROP TABLE RepTwitterAgente
+if exists(select * from sys.tables where name=''RepTwitterDetail'') DROP TABLE RepTwitterDetail
+if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE RepTwitterGeneral'
+		EXEC(@sql)
+
+		set @process = 'Delete Filter date,FilterBy and ReportsTotals Twitter'
+		set @sql='delete from ReportsFiltersMenus where idReport in(11010,11020,11030,11040)
+		delete from ReportsTotals where id in(11010,11020,11030,11040)'
+		EXEC(@sql)
+
+		set @process = 'delete TranslatedReports Twitter-- (11030,11040, 10030, 10040)'
+	set @sql='delete from TranslatedReports where id  in (11030,11040, 10030, 10040)'
+	EXEC(@sql)
 
 		set @process = 'INSERT -------- ReportsFiltersMenus'
 		set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport = 6050) begin
@@ -160,7 +190,123 @@ end'
 			[minutes] [int] NOT NULL
 		) ON [PRIMARY]'
 		EXEC(@sql)
+set @process = 'Rename Columnas InboundId because filters Mail'
+		set @sql='if exists (select * from sys.columns where name = N''inboundid'' COLLATE Latin1_General_CS_AS  and Object_ID = Object_ID(N''RepEmailACD''))
+    exec sp_RENAME ''RepEmailACD.[inboundid]'' , ''inboundId'', ''COLUMN''
+if exists (select * from sys.columns where name = N''inboundid'' COLLATE Latin1_General_CS_AS  and Object_ID = Object_ID(N''RepEmailDetail''))
+    exec sp_RENAME ''RepEmailDetail.[inbounid]'' , ''inboundId'', ''COLUMN''
+if exists (select * from sys.columns where name = N''inboundid'' COLLATE Latin1_General_CS_AS  and Object_ID = Object_ID(N''RepEmailGeneral''))
+    exec sp_RENAME ''RepEmailGeneral.[inbounid]'' , ''inboundId'', ''COLUMN''
+if exists (select * from sys.columns where name = N''inboundid'' COLLATE Latin1_General_CS_AS  and Object_ID = Object_ID(N''RepEmailAgente''))
+    exec sp_RENAME ''RepEmailAgente.[inbounid]'' , ''inboundId'', ''COLUMN''
+if exists (select * from sys.columns where name = N''userid'' COLLATE Latin1_General_CS_AS  and Object_ID = Object_ID(N''RepEmailAgente''))
+    exec sp_RENAME ''RepEmailAgente.[userid]'' , ''userId'', ''COLUMN'''
+		EXEC(@sql)
+		set @process = 'CREATE TABLE -- RepTwitterACD'
+		set @sql='CREATE TABLE [dbo].[RepTwitterACD](
+	[date] [datetime] NOT NULL,
+	[inbound] [varchar](50) NOT NULL,
+	[inbounId] [smallint] NOT NULL,
+	[download] [int] NOT NULL,
+	[unassignedMultimedia] [int] NOT NULL,
+	[ontrack] [int] NOT NULL,
+	[rejected] [int] NOT NULL,
+	[assigned] [int] NOT NULL,
+	[totalAssets] [int] NOT NULL,
+	[pendingSend] [int] NOT NULL,
+	[abandonedSystem] [int] NOT NULL,
+	[abandonedAgent] [int] NOT NULL,
+	[finishedConversation] [int] NOT NULL,
+	[avgSend] [int] NOT NULL,
+	[tQueueMultimedia] [int] NOT NULL,
+	[tsend] [int] NOT NULL,
+	[twaitMultimedia] [int] NOT NULL,
+	[tAvgAtentionMultimedia] [int] NOT NULL,
+	[twrapup] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]'
+		EXEC(@sql)
+set @process = 'CREATE TABLE --RepTwitterAgente'
+		set @sql='CREATE TABLE [dbo].[RepTwitterAgente](
+	[date] [datetime] NOT NULL,
+	[agentName] [varchar](45) NOT NULL,
+	[userid] [int] NOT NULL,
+	[inbound] [varchar](50) NOT NULL,
+	[inbounId] [smallint] NOT NULL,
+	[download] [int] NOT NULL,
+	[messageUnAssigned] [int] NOT NULL,
+	[ontrack] [int] NOT NULL,
+	[rejected] [int] NOT NULL,
+	[assigned] [int] NOT NULL,
+	[totalAssets] [int] NOT NULL,
+	[pendingSend] [int] NOT NULL,
+	[abandonedSystem] [int] NOT NULL,
+	[abandonedAgent] [int] NOT NULL,
+	[finishedConversation] [int] NOT NULL,
+	[avgSend] [int] NOT NULL,
+	[tQueueMultimedia] [int] NOT NULL,
+	[tsend] [int] NOT NULL,
+	[twaitMultimedia] [int] NOT NULL,
+	[tAvgAtentionMultimedia] [int] NOT NULL,
+	[twrapup] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]'
+		EXEC(@sql)
 
+		set @process = 'CREATE TABLE --RepTwitterDetail'
+		set @sql='CREATE TABLE [dbo].[RepTwitterDetail](
+	[date] [datetime] NOT NULL,
+	[statusTwetter] [varchar](255) NOT NULL,
+	[mailClient] [varchar](60) NOT NULL,
+	[inbound] [varchar](50) NOT NULL,
+	[inbounId] [smallint] NOT NULL,
+	[conversationid] [int] NOT NULL,
+	[messageId] [int] NOT NULL,
+	[messagestatusid] [int] NOT NULL,
+	[tQueueMultimedia] [int] NOT NULL,
+	[twaitMultimedia] [int] NOT NULL,
+	[tAtentionMultimedia] [int] NOT NULL,
+	[twrapup] [int] NOT NULL,
+	[tsend] [int] NOT NULL,
+	[tfocus] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]'
+		EXEC(@sql)
+
+		set @process = 'CREATE TABLE --RepTwitterGeneral'
+		set @sql='CREATE TABLE [dbo].[RepTwitterGeneral](
+	[date] [datetime] NOT NULL,
+	[inbound] [varchar](50) NOT NULL,
+	[inbounId] [smallint] NOT NULL,
+	[statusTwetter] [varchar](255) NOT NULL,
+	[messagestatusid] [int] NOT NULL,
+	[mailClient] [varchar](60) NOT NULL,
+	[conversationid] [int] NOT NULL,
+	[tQueueMultimedia] [int] NOT NULL,
+	[twaitMultimedia] [int] NOT NULL,
+	[tAtentionMultimedia] [int] NOT NULL,
+	[twrapup] [int] NOT NULL,
+	[tsend] [int] NOT NULL,
+	[tfocus] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]'
+		EXEC(@sql)
 		set @process = ''
 		set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDispositionsContacOwner'' and object_id = OBJECT_ID(N''RepOutDispositionsContacOwner''))
 	    begin
@@ -262,6 +408,68 @@ end'
 			values(4160,''Report Dispositions by hour'',3,'''',''hour'','''','''',''isnull(sum([dispositionContactOwner]),0)'',''Dispositions by hour'',0)
 		end'
 		EXEC(@sql)
+set @process = 'insert into TranslatedReports------'
+	set @sql='if not exists(select * from TranslatedReports where id  in (11030,11040, 10030, 10040)) begin
+	insert into TranslatedReports values(11040,''statusTwetter'')
+	insert into TranslatedReports values(11030,''statusTwetter'')
+	insert into TranslatedReports values(10030,''statusMail'')
+	insert into TranslatedReports values(10040,''statusMail'')
+end'
+	EXEC(@sql)
+
+		set @process = 'Add Filter date,FilterBy'
+		set @sql='if not exists(select * from ReportsFiltersMenus where idReport  in(11010,11020,11030,11040)) begin
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11010, ''date'')
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11010, ''filterby'')
+
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11020, ''date'')
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11020, ''filterby'')
+
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11030, ''date'')
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11030, ''filterby'')
+
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11040, ''date'')
+INSERT INTO ReportsFiltersMenus (idReport, filterMenuName) values (11040, ''filterby'')
+end'
+		EXEC(@sql)
+
+		set @process = 'Change ReportsTotals Mail'
+		set @sql='if not exists(select * from ReportsTotals where id in(11010,11020,11030,11040)) begin
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (11010,''sum:download|sum:unassignedMultimedia|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|sum:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (11020,''sum:download|sum:messageUnAssigned|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|avg:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (11030,''sum:tQueueMultimedia|sum:twaitMultimedia|sum:tAtentionMultimedia|sum:twrapup|sum:twrapup|sum:tsend|sum:tfocus'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (11040,''sum:tQueueMultimedia|sum:twaitMultimedia|sum:tAtentionMultimedia|sum:twrapup|sum:tsend|sum:tfocus'')
+end'
+		EXEC(@sql)
+
+		set @process = 'Change ReportsTotals Mail'
+		set @sql='if not exists(select * from ReportsTotals where id in(10010,10020,10030,10040)) begin
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (10010,''sum:download|sum:unassignedMultimedia|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|avg:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (10020,''sum:download|sum:messageUnAssigned|sum:ontrack|sum:rejected|sum:assigned|sum:totalAssets|sum:pendingSend|sum:abandonedSystem|sum:abandonedAgent|sum:finishedConversation|avg:avgSend|sum:tQueueMultimedia|sum:tsend|sum:twaitMultimedia|sum:tAvgAtentionMultimedia|sum:twrapup'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (10030,''sum:tQueueMultimedia|sum:twaitMultimedia|sum:tAtentionMultimedia|sum:twrapup|sum:tsend|sum:tfocus'')
+INSERT INTO ReportsTotals (id, totalColumns) VALUES (10040,''sum:tQueueMultimedia|sum:twaitMultimedia|sum:tAtentionMultimedia|sum:twrapup|sum:tsend|sum:tfocus'')
+end '
+		EXEC(@sql)
+
+			set @process = 'Add Filter ACD and Agents Mail'
+		set @sql='if not exists(select * from ReportsFilters where  id in(10010,10020,10030,10040)) begin
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(10010,''RepEmailACD'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(10020,''RepEmailAgente'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(10020,''RepEmailAgente'',''users'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(10030,''RepEmailDetail'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(10040,''RepEmailGeneral'',''acds'')
+end'
+	EXEC(@sql)
+
+		set @process = 'Add Filter ACD and Agents Twitter'
+		set @sql='if not exists(select * from ReportsFilters where  id in(11010,11020,11020,11040)) begin
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(11010,''RepEmailACD'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(11020,''RepEmailAgente'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(11020,''RepEmailAgente'',''users'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(11030,''RepEmailDetail'',''acds'')
+ INSERT INTO ReportsFilters (id,reportName, filterName)  values(11040,''RepEmailGeneral'',''acds'')
+end'
+	EXEC(@sql)
 
 		set @process = 'VALIDATE PROCEDURE -------- ccsp_IVRInCalls'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''GetPivotColumns'')

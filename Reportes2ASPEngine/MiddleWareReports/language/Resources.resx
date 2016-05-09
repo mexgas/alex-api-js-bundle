@@ -570,9 +570,6 @@
   <data name="tprob" xml:space="preserve">
     <value>Problema</value>
   </data>
-  <data name="treq" xml:space="preserve">
-    <value>No disponible</value>
-  </data>
   <data name="tringin" xml:space="preserve">
     <value>Timbrando (Entrada)</value>
   </data>
@@ -1000,7 +997,7 @@
     <value>Campaña-Grupo ACD</value>
   </data>
   <data name="notReadyTime" xml:space="preserve">
-    <value>Tiempo No Disponible</value>
+    <value>Tiempo no disponible</value>
   </data>
   <data name="other" xml:space="preserve">
     <value>Otro</value>
@@ -1804,7 +1801,7 @@
     <value>Asignados</value>
   </data>
   <data name="ndTime" xml:space="preserve">
-    <value>Tiempo NoDisponible</value>
+    <value>Tiempo no disponible</value>
   </data>
   <data name="unrated" xml:space="preserve">
     <value>Sin Calificar</value>

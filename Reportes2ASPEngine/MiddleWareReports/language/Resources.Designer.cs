@@ -3031,7 +3031,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo NoDisponible.
+        ///   Busca una cadena traducida similar a Tiempo no disponible.
         /// </summary>
         public static string ndTime {
             get {
@@ -3247,7 +3247,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo No Disponible.
+        ///   Busca una cadena traducida similar a Tiempo no disponible.
         /// </summary>
         public static string notReadyTime {
             get {
@@ -6681,15 +6681,6 @@ namespace MiddleWareReports {
         public static string transferred {
             get {
                 return ResourceManager.GetString("transferred", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a No disponible.
-        /// </summary>
-        public static string treq {
-            get {
-                return ResourceManager.GetString("treq", resourceCulture);
             }
         }
         

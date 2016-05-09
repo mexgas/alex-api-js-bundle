@@ -567,9 +567,6 @@
   <data name="tprob" xml:space="preserve">
     <value>Problem</value>
   </data>
-  <data name="treq" xml:space="preserve">
-    <value>Unavaible</value>
-  </data>
   <data name="tringin" xml:space="preserve">
     <value>Ringing time in</value>
   </data>

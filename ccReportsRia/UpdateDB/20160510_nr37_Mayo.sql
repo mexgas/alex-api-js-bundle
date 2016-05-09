@@ -487,9 +487,8 @@ end'
 	EXEC(@sql)
 
 	set @process = 'INSERT -------- Filters --Revisar Raul'
-		set @Sql= 'if not exists(select * from Filters where id in (28,29)) begin
-insert into Filters values(28, ''agent'', 26, ''Agents'', ''Agent'')
-insert into Filters values(29, ''survey'', 27, ''Surveys'', ''Survey'')
+		set @Sql= 'if not exists(select * from Filters where id = 28) begin
+insert into Filters values(28, ''survey'', 26, ''Surveys'', ''Survey'')
 end'
 		EXEC(@Sql)
 
@@ -499,13 +498,6 @@ insert into ReportsFilters values(''IVR Surveys'', ''acds'', ''6050'')
 insert into ReportsFilters values(''IVR Surveys'', ''campaigns'', ''6050'')
 insert into ReportsFilters values(''IVR Surveys'', ''users'', 6050)
 insert into ReportsFilters values (''IVR Surveys'', ''survey'', 6050)
-end'
-		EXEC(@Sql)
-
-		set @process = 'INSERT -------- TranslatedReports---Revisar Raul'
-		set @Sql= 'if not exists(select * from TranslatedReports where id = 6050)
-begin
-insert into TranslatedReports values (6050, ''Count'')
 end'
 		EXEC(@Sql)
 
@@ -964,11 +956,17 @@ end
 	--Status Call
 	if @type = 25
 	begin
-		begin
 		select statusCall_id as id, [descripcion] as description, ''statusCallId'' as dbcolumn
 		from ccstatusllamada
 		order by [descripcion]
 	end
+
+	--Survey
+	if @type = 26
+	begin
+	select surveyId as id, [description] as description, ''surveyId'' as dbcolumn
+	from Survey
+	order by [description]
 	end
 end
 -----------------------------------------------------------

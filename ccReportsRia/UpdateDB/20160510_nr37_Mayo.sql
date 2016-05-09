@@ -143,9 +143,7 @@ end'
 		EXEC(@Sql)
 
 		set @process = 'INSERT -------- ReportsTotals'
-		set @Sql= 'if not exists(select * from ReportsTotals where id = 6050) begin
-insert into ReportsTotals values (6050, '')
-end'
+		set @Sql= 'if not exists(select * from ReportsTotals where id = 6050) insert into ReportsTotals values (6050, '''')'
 		EXEC(@Sql)
 
 		set @process = 'Rename Columnas InboundId because filters Mail'

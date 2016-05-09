@@ -137,13 +137,13 @@ namespace MiddleWareReports
             report.AppendChild(name);
             report.AppendChild(getXmlDetailReports(xmlReport, process));
             report.AppendChild(getXmlRows(xmlReport, detailTable, "Rows"));
-            
+
             if (calculateTotals)
             {
                 report.AppendChild(getXmlRows(xmlReport, totalsTable, "TotalsRows"));
             }
 
-           
+
             //Get DB table paging
             XmlElement pageNode = innerPaginate(xmlReport, dynamicQuery);
             if (pageNode != null)
@@ -427,7 +427,7 @@ namespace MiddleWareReports
 
                         row.AppendChild(el);
 
-                        value = translatedColumns[column.ColumnName];                       
+                        value = translatedColumns[column.ColumnName];
                         //findDuplicateds.Add(value, value);
                     }
                 }
@@ -448,12 +448,15 @@ namespace MiddleWareReports
 
             bool isTranslated;
             string valueTranslated;
-
-            if (translatedSpecialColumns.ContainsKey(column) && value.Contains("systemTranslated_"))
+            ///SOlo cuando se utiliza pivote no agrupado esta solo para la opcion Count homologar nuevo _SubFijo
+            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count"))
             {
-                valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
-                if (isTranslated)
-                    value = valueTranslated;
+                if (value.Contains("systemTranslated_"))
+                {
+                    valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
+                    if (isTranslated)
+                        value = valueTranslated;
+                }
             }
 
             return value;
@@ -1409,7 +1412,7 @@ namespace MiddleWareReports
                     }
                 }
             }
-            dateColumnName= "[" + dateColumnName + "]";
+            dateColumnName = "[" + dateColumnName + "]";
 
 
             tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName, isGroupPivot));

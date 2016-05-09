@@ -2388,4 +2388,10 @@
   <data name="TotalTwitterConversationsbyACDGroup" xml:space="preserve">
     <value>Total Twitter Conversations by ACD Group</value>
   </data>
+  <data name="systemTranslated_Invalid" xml:space="preserve">
+    <value>Invalid option</value>
+  </data>
+  <data name="systemTranslated_No_Option" xml:space="preserve">
+    <value>No option</value>
+  </data>
 </root>

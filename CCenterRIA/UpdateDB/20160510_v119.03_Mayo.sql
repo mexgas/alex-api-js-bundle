@@ -129,19 +129,19 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
     	EXEC(@sql)
 
     	set @process = 'INSERT -------- ccMenus (6050)'
-		set @sql='if not exists(select * from ccMenus where menu_id = 6050) begin
+		set @sql='if not exists(select * from ccMenus where menu_id = 6050  and type=3) begin
 		insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, [type], HelpSWF, release) values (6050, ''Encuestas de IVR|IVR Surveys'', 6000, ''B'', 6, 3, '''', ''4624fb0c3f01a4f7ffa2f345efb45a3b85a52092a63a80618efbff0e040db499'')
 		end'
 		EXEC(@sql)
 
 		set @process = 'insert into -- ccMenus 4150'
-		set @sql='if not exists(select * from ccMenus where menu_id=4150)
+		set @sql='if not exists(select * from ccMenus where menu_id=4150 and type=3)
 		INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
 		values (4150,''Abandono por campaña|Abandoned calls by campaign'', 4000, ''B'', 4, 3, '''', ''229820a611c3b1d998336cda7aacb07d5a3ca43ae05ace1fddbc6841331cd7ed47dec3af93ff486ce7a5a71bff8c2a56990d13c117549e9f28741a29affec142'')'
 		EXEC(@sql)
 
 		set @process = 'insert into -- ccMenus 4160'
-		set @sql='if not exists(select * from ccMenus where menu_id=4160)
+		set @sql='if not exists(select * from ccMenus where menu_id=4160  and type=3)
 			INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
 		values (4160,''Calificaciones por hora|Dispositions by hour'', 4000, ''B'', 4, 3, '''', ''54d108e6439d9428e2b8fd3e9f91fdee5f952d3162915efc1d9a9ceeb67ab3264e6299676240becbca206e8e78bdf663'')'
 		EXEC(@sql)

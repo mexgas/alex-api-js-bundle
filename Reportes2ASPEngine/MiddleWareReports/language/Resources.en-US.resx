@@ -2332,7 +2332,7 @@
     <value>Answer</value>
   </data>
   <data name="calKey" xml:space="preserve">
-    <value>Phone Number</value>
+    <value>Call Key</value>
   </data>
   <data name="IVRSurveys" xml:space="preserve">
     <value>Surveys</value>

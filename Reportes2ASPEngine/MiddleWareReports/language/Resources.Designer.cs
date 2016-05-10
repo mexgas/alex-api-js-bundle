@@ -943,7 +943,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Número telefónico.
+        ///   Busca una cadena traducida similar a Call Key.
         /// </summary>
         public static string calKey {
             get {

@@ -2398,7 +2398,7 @@
     <value>Teléfonos</value>
   </data>
   <data name="calKey" xml:space="preserve">
-    <value>Número telefónico</value>
+    <value>Call Key</value>
   </data>
   <data name="IVRSurveys" xml:space="preserve">
     <value>Encuestas</value>

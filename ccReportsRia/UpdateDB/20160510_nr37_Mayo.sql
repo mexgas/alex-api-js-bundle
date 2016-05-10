@@ -637,7 +637,7 @@ begin
 	from(
 		select convert(datetime,convert(varchar(13),cal_inicio,121)+'':00'') as [date], co.cam_id campaignId,
 		cam_descripcion , count(*) total,
-		COUNT(CASE WHEN(statuscall_id in(11,15,16))THEN cal_id ELSE NULL END) abandonedCalls,
+		COUNT(CASE WHEN(statuscall_id in(5,6,7,8,9,10,11,15,16))THEN cal_id ELSE NULL END) abandonedCalls,
 		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) AS [year],
 		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [month],
 		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),cal_inicio,121)+ '':00'',121)) as [day],
@@ -2094,132 +2094,132 @@ if @action=1 begin
 
 end'
 		EXEC(@Sql)
-		
+
 		set @process = 'insert TranslatedReports'
 		set @Sql= 'if not exists(select * from TranslatedReports where id = 4060)
 insert into TranslatedReports values (4060,''agentName|username'')'
 		EXEC(@Sql)
-		
+
 
 		set @process = 'Alter SP -- ccspRepOutCallBilling'
-		set @Sql= 'alter PROCEDURE [dbo].[ccspRepOutCallBilling]        
- @action as tinyint,        
- @from as datetime = null,        
- @to as datetime = null        
-  
- AS        
-        
-declare @country as tinyint        
-declare @iva as decimal(3,2)        
-declare @aux as varchar(3)        
-        
-select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104        
-select @aux = isnull(valor,0) from ccsettings where setting_id = 25        
-set @iva=convert(decimal(3,2),''1.''+@aux)        
-        
-if @country is null set @country = 1        
-        
-if @from is null        
- select @from = convert(datetime,convert(varchar(11),getdate()))        
-if @to is null        
-select @to = getdate()        
-        
-if @action = 1        
-begin        
-         
- --delete from RepOutCallBilling with(rowlock)     where date >= @from AND date < @to        
-       
- ---creamos tabla temporal con longitud      
-if exists(select longitud from cstoTipoLlamada where CHARINDEX(''|'',longitud)<>0 and country_id =@country) begin      
-  declare @longitud varchar(10)      
-  declare @tipollamada int      
-  declare @prefijo varchar(50)  
-  declare @descrip varchar(50)  
-  select @longitud = CONVERT(varchar(10),longitud),@descrip=descrip,@prefijo=prefijo, @tipollamada= tipoLlamada_id from cstoTipoLlamada where CHARINDEX(''|'',longitud)<>0 and country_id =@country      
- end      
-   
- create table #cstoTipoLlamadaTemp(   
-tipoLlamada_id smallint not null,  
-descrip varchar(50) collate SQL_Latin1_General_CP1_CI_AS not null ,  
-prefijo varchar(50) collate SQL_Latin1_General_CP1_CI_AS not null,  
-longitud int not null  
-)  
-  
-create index IX_CstoTipoLlamadaTemp on #cstoTipoLlamadaTemp (longitud,tipoLlamada_id)  
-  
-insert into #cstoTipoLlamadaTemp  
- SELECT tipoLlamada_id,descrip,prefijo,longitud    
- from (      
- select tipoLlamada_id,descrip,prefijo,longitud from cstoTipoLlamada      
-  where CHARINDEX(''|'',longitud)=0    and country_id = @country      
- union all      
- select @tipollamada as tipoLlamada_id,@descrip as descrip,@prefijo as prefijo, Value as longitud       
-  from dbo.fn_RIASplitDelimited(@longitud,''|'') where @tipollamada is not null  
-)x   
-         
-  SELECT CONVERT(smalldatetime, CONVERT(varchar(13), cal_inicio, 121) + '':00'', 121) AS date        
-   , cam_id, [user_id],        
-   provedor_id, tipoLlamada_id , min(tipoLlamada) as tipoLlamada        
-   , COUNT(*) as amount        
-   , SUM( mins) as mins        
-   , SUM( costo ) as costo        
-   , SUM( costo ) * @iva as costoIva        
-   into #TempOutCallBilling         
-  FROM        
-  (        
-   SELECT cal_inicio, cco.cam_id as cam_id, cco.user_id as user_id, cco.provedor_id,        
-     cco.tipoLlamada_id, t.descrip as tipoLlamada, CEILING((cal_tXfer + cal_tRing + cal_tDialog +1 ) / 60.0 ) as mins, costo  
-    FROM ccoCallsOut cco         
-     inner join cstoTipoLlamada t with(index(IX_cstoTipoLlamada),nolock) on cco.tipoLlamada_id = t.tipoLlamada_id         
-    WHERE cal_inicio >= @from AND  cal_inicio < @to and cco.provedor_id is not null and cal_manual in (0,2) and country_id = @country                  
- UNION ALL         
- ---- Tambien las llamdas que fueron fax        
- select cco.fecha as fecha, cco.cam_id,0 as userId, p.provedor_id, l.tipoLlamada_id,l.descrip as tipoLlamada,1 as mins, t.MinutoUno as costo  
- FROM ccoLogDials  cco with(index(IX_ccoLogDials),nolock)  
- inner join ccoDialers cd with(index(IX_ccoDialers),nolock)  on cco.puerto = cd.puerto  
- inner join cstoProvedor p on cd.provedor_id = p.provedor_id  
- inner join cstoTarifa t on  p.provedor_id = t.provedor_id  
- inner join #cstoTipoLlamadaTemp l on  l.longitud = len(cco.telefono) and t.tipoLlamada_id = l.tipoLlamada_id           
- WHERE cco.fecha >=  @from AND cco.fecha < @to  and cco.answerbit = 1 and cco.tiporesdial_id <> 1   
- and cco.telefono like l.prefijo             
-  ) costo        
-  GROUP BY CONVERT(smalldatetime, CONVERT(varchar(13), cal_inicio, 121) + '':00'', 121), cam_id, [user_id], provedor_id, tipoLlamada_id         
-        
-  
- insert RepOutCallBilling        
-  select [date], [cam_id], [campaign], [user_id], [agentName], [username], [provedor_id],[provedor], [tipoLlamada_id],         
-   (case when tipo = ''amount'' then ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Calls_Count''        
-      when tipo = ''mins'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''MinBilled_Count''        
-      when tipo = ''costo'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Cost_Count''        
-      when tipo = ''costoIva'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Tax_Count''        
-      else tipo end ) as tipoLLamada_Count        
-   ,convert(varchar,[tipollamada_Count])  as [count]        
-   , [tipoLLamada] as tipoLlamadaDesp, case when tipo = ''costo'' then convert(int,convert(decimal(10,2),[tipollamada_Count]) ) else 0 end            
-   , datepart(yyyy,[date]) as [year]        
-   , datepart(mm,[date]) as [month]        
-   , datepart(dd,[date]) as [day]        
-   , datepart(hh,[date]) as [hour]        
-   , datepart(mi,[date]) as [min]        
-  from         
-     (        
-    select [date], temp.cam_id as cam_id, camps.cam_descripcion as campaign,         
-     isnull(ccuse.user_id ,0) as user_id, case when ccuse.user_id Is null then ''systemTranslated_NoName''  else  ccuse.Nombres+'' ''+ ccuse.ApellidoPaterno+'' ''+ccuse.ApellidoMaterno end as agentName, 
-     case when ccuse.Login Is null then ''systemTranslated_NoUserName'' else ccuse.Login end as username,        
-     temp.provedor_id as provedor_id, prov.descrip as provedor,        
-     [tipoLlamada_id], [tipoLLamada],[tipoLLamada] as tipoLlamadaDesp,convert(varchar,[amount]) as [amount], convert(varchar,[mins]) as [mins], convert(varchar,[costo]) as [costo], convert(varchar,[costoIva]) as [costoIva]        
-      from #TempOutCallBilling temp        
-    inner join ccCamps camps on camps.cam_id = temp.cam_id        
-    left join ccUsers ccuse on ccuse.User_id = temp.user_id        
-    inner join cstoprovedor prov on prov.provedor_id = temp.provedor_id        
-   ) p        
-  UNPIVOT        
-     ([tipollamada_Count] for tipo IN         
-     ([amount], [mins], [costo], [costoIva])        
-  )AS unpvt        
-        
- drop table #TempOutCallBilling        
- drop table #cstoTipoLlamadaTemp      
-         
+		set @Sql= 'alter PROCEDURE [dbo].[ccspRepOutCallBilling]
+ @action as tinyint,
+ @from as datetime = null,
+ @to as datetime = null
+
+ AS
+
+declare @country as tinyint
+declare @iva as decimal(3,2)
+declare @aux as varchar(3)
+
+select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104
+select @aux = isnull(valor,0) from ccsettings where setting_id = 25
+set @iva=convert(decimal(3,2),''1.''+@aux)
+
+if @country is null set @country = 1
+
+if @from is null
+ select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+select @to = getdate()
+
+if @action = 1
+begin
+
+ --delete from RepOutCallBilling with(rowlock)     where date >= @from AND date < @to
+
+ ---creamos tabla temporal con longitud
+if exists(select longitud from cstoTipoLlamada where CHARINDEX(''|'',longitud)<>0 and country_id =@country) begin
+  declare @longitud varchar(10)
+  declare @tipollamada int
+  declare @prefijo varchar(50)
+  declare @descrip varchar(50)
+  select @longitud = CONVERT(varchar(10),longitud),@descrip=descrip,@prefijo=prefijo, @tipollamada= tipoLlamada_id from cstoTipoLlamada where CHARINDEX(''|'',longitud)<>0 and country_id =@country
+ end
+
+ create table #cstoTipoLlamadaTemp(
+tipoLlamada_id smallint not null,
+descrip varchar(50) collate SQL_Latin1_General_CP1_CI_AS not null ,
+prefijo varchar(50) collate SQL_Latin1_General_CP1_CI_AS not null,
+longitud int not null
+)
+
+create index IX_CstoTipoLlamadaTemp on #cstoTipoLlamadaTemp (longitud,tipoLlamada_id)
+
+insert into #cstoTipoLlamadaTemp
+ SELECT tipoLlamada_id,descrip,prefijo,longitud
+ from (
+ select tipoLlamada_id,descrip,prefijo,longitud from cstoTipoLlamada
+  where CHARINDEX(''|'',longitud)=0    and country_id = @country
+ union all
+ select @tipollamada as tipoLlamada_id,@descrip as descrip,@prefijo as prefijo, Value as longitud
+  from dbo.fn_RIASplitDelimited(@longitud,''|'') where @tipollamada is not null
+)x
+
+  SELECT CONVERT(smalldatetime, CONVERT(varchar(13), cal_inicio, 121) + '':00'', 121) AS date
+   , cam_id, [user_id],
+   provedor_id, tipoLlamada_id , min(tipoLlamada) as tipoLlamada
+   , COUNT(*) as amount
+   , SUM( mins) as mins
+   , SUM( costo ) as costo
+   , SUM( costo ) * @iva as costoIva
+   into #TempOutCallBilling
+  FROM
+  (
+   SELECT cal_inicio, cco.cam_id as cam_id, cco.user_id as user_id, cco.provedor_id,
+     cco.tipoLlamada_id, t.descrip as tipoLlamada, CEILING((cal_tXfer + cal_tRing + cal_tDialog +1 ) / 60.0 ) as mins, costo
+    FROM ccoCallsOut cco
+     inner join cstoTipoLlamada t with(index(IX_cstoTipoLlamada),nolock) on cco.tipoLlamada_id = t.tipoLlamada_id
+    WHERE cal_inicio >= @from AND  cal_inicio < @to and cco.provedor_id is not null and cal_manual in (0,2) and country_id = @country
+ UNION ALL
+ ---- Tambien las llamdas que fueron fax
+ select cco.fecha as fecha, cco.cam_id,0 as userId, p.provedor_id, l.tipoLlamada_id,l.descrip as tipoLlamada,1 as mins, t.MinutoUno as costo
+ FROM ccoLogDials  cco with(index(IX_ccoLogDials),nolock)
+ inner join ccoDialers cd with(index(IX_ccoDialers),nolock)  on cco.puerto = cd.puerto
+ inner join cstoProvedor p on cd.provedor_id = p.provedor_id
+ inner join cstoTarifa t on  p.provedor_id = t.provedor_id
+ inner join #cstoTipoLlamadaTemp l on  l.longitud = len(cco.telefono) and t.tipoLlamada_id = l.tipoLlamada_id
+ WHERE cco.fecha >=  @from AND cco.fecha < @to  and cco.answerbit = 1 and cco.tiporesdial_id <> 1
+ and cco.telefono like l.prefijo
+  ) costo
+  GROUP BY CONVERT(smalldatetime, CONVERT(varchar(13), cal_inicio, 121) + '':00'', 121), cam_id, [user_id], provedor_id, tipoLlamada_id
+
+
+ insert RepOutCallBilling
+  select [date], [cam_id], [campaign], [user_id], [agentName], [username], [provedor_id],[provedor], [tipoLlamada_id],
+   (case when tipo = ''amount'' then ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Calls_Count''
+      when tipo = ''mins'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''MinBilled_Count''
+      when tipo = ''costo'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Cost_Count''
+      when tipo = ''costoIva'' then + ''systemTranslated_'' + replace([tipoLLamada],'' '','''') + ''Tax_Count''
+      else tipo end ) as tipoLLamada_Count
+   ,convert(varchar,[tipollamada_Count])  as [count]
+   , [tipoLLamada] as tipoLlamadaDesp, case when tipo = ''costo'' then convert(int,convert(decimal(10,2),[tipollamada_Count]) ) else 0 end
+   , datepart(yyyy,[date]) as [year]
+   , datepart(mm,[date]) as [month]
+   , datepart(dd,[date]) as [day]
+   , datepart(hh,[date]) as [hour]
+   , datepart(mi,[date]) as [min]
+  from
+     (
+    select [date], temp.cam_id as cam_id, camps.cam_descripcion as campaign,
+     isnull(ccuse.user_id ,0) as user_id, case when ccuse.user_id Is null then ''systemTranslated_NoName''  else  ccuse.Nombres+'' ''+ ccuse.ApellidoPaterno+'' ''+ccuse.ApellidoMaterno end as agentName,
+     case when ccuse.Login Is null then ''systemTranslated_NoUserName'' else ccuse.Login end as username,
+     temp.provedor_id as provedor_id, prov.descrip as provedor,
+     [tipoLlamada_id], [tipoLLamada],[tipoLLamada] as tipoLlamadaDesp,convert(varchar,[amount]) as [amount], convert(varchar,[mins]) as [mins], convert(varchar,[costo]) as [costo], convert(varchar,[costoIva]) as [costoIva]
+      from #TempOutCallBilling temp
+    inner join ccCamps camps on camps.cam_id = temp.cam_id
+    left join ccUsers ccuse on ccuse.User_id = temp.user_id
+    inner join cstoprovedor prov on prov.provedor_id = temp.provedor_id
+   ) p
+  UNPIVOT
+     ([tipollamada_Count] for tipo IN
+     ([amount], [mins], [costo], [costoIva])
+  )AS unpvt
+
+ drop table #TempOutCallBilling
+ drop table #cstoTipoLlamadaTemp
+
 end'
 		EXEC(@Sql)
 

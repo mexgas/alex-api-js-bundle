@@ -853,187 +853,179 @@ set @today = convert(datetime, convert (varchar(11), getdate(), 101))
 select @typeACD = chat from ccInbound  where Inbound_id = @inbound_id
 
 
+
 select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end,
 @nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
 from ccsettings where setting_id = 27 -- 0 esp
 
 
 if @type=0 begin
-	insert into #CalifTemp
-	select 0 as tipo,co.cam_id as cam_id,
-	case when co.statuscall_id = 13
-			then case when description is not null
-			then description else @nIdioma end
-	else case when sll.descripcion is not null then ''cw:'' + sll.descripcion
-		else ''cw:'' + @nIdioma
-		end end as Calificacion
-	,0 as subCalificaion,
-	co.calif_id,count(*) cantidad,0 as iTotal4Campaign
-	from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
-	left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
-	left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
-	left join ccCamps ci on ci.cam_id = co.cam_id
-	where co.cal_inicio > @today
-	group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id
+  insert into #CalifTemp
+  select 0 as tipo,co.cam_id as cam_id,
+  case when co.statuscall_id = 13
+      then case when description is not null
+      then description else @nIdioma end
+  else case when sll.descripcion is not null then ''cw:'' + sll.descripcion
+    else ''cw:'' + @nIdioma
+    end end as Calificacion
+  ,0 as subCalificaion,
+  co.calif_id,count(*) cantidad,0 as iTotal4Campaign
+  from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+  left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+  left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+  left join ccCamps ci on ci.cam_id = co.cam_id
+  where co.cal_inicio > @today
+  group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id
 
-	select tipo,Cam_id, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end as Calificacion,
-	case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total
-	from #CalifTemp
-	group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end, Cam_id, iTotal4Campaign,calif_id
+  select tipo,Cam_id, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end as Calificacion,
+  case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total
+  from #CalifTemp
+  group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end, Cam_id, iTotal4Campaign,calif_id
 
 end
 ---------------IN ----------------------------
 else if @type = 1 begin
 
-	if @typeACD = 0 begin  --Calls
-		insert into #CalifTemp
-
-		select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description
-		else @nIdioma end as Calificacion
-		,count(isnull(ctcs.califSubDesc,'''')) as subCalificacion,ci.calif_id
-		,count(*) as total
-		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+  if @typeACD = 0 begin  --Calls
+  insert into #CalifTemp
+   select 1 as tipo,cci.inbound_id as cam_id, description as Calificacion
+		,case when count(ci.califSub_id) >0 then 1 else 0 end as subCalificacion,ci.calif_id
+		,count(*) as total,0 as iTotal4Campaign
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn))
+		left join ccTipoCalif ca on ci.calif_id = ca.calif_id
 		left join ccInbound cci on cci.inbound_id = ci.inbound_id
 		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
-		where ci.cal_inicio > @today and statuscall_id = 13
+		where ci.cal_inicio > @today and statuscall_id = 13	and cci.Inbound_id=@inbound_id
 		group by description, cci.inbound_id,ci.calif_id
 
+    if (select valor from ccSettings where setting_id = 78) = 0 begin
+      update #CalifTemp set iTotal4Campaign = 0
+    end
+    else begin
+	update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign
+      from (
+        select cam_id, sum(A.Total) iTotal4Campaign from #CalifTemp A group by cam_id) t
+      inner join #CalifTemp c on t.cam_id = c.cam_id
+    end
+  end
+  else if @typeACD = 1 begin--Chats
+	insert into #CalifTemp(tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+	select 1 as tipo, inboundId as Cam_id, [description] as Calificacion,
+		case when count(ctcs.califSub_id)>0 then 1 else 0 end as subCalificacion,
+		ISNULL(a.disposition,0) as calif_id, count(disposition) as Total
+        from ccriachats a
+        left join ccTipoCalif b on a.disposition=b.calif_id
+		left join ccTipoCalifSub ctcs on a.subDisposition= ctcs.califSub_id
+      where a.chatDate > @today and
+	  a.chatStatus=4 and a.inboundId=@inbound_id
+    group by inboundId, [description],disposition
 
-		if (select valor from ccSettings where setting_id = 78) = 0 begin
-			update #CalifTemp set iTotal4Campaign = 0
-		end
+  end
+  else if @typeACD = 3 begin ---Mail
+    insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+	select 2 as tipo,conver.inboundId as camid,disp.califSubDesc as calificacion,
+	case when count(relmesdis.subDispositionId)>0  then 1 else  0 end as subcalificacion,
+	case when relmesdis.dispositionId is null then 0 else relmesdis.dispositionId end as calif_id,
+	COUNT(relmesdis.dispositionId) as total
+	from conversation conver
+	inner join message mess on mess.conversationId = conver.conversationId
+	left join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
+	left join ccTipoCalifSub disp on disp.califSub_id=relmesdis.dispositionId
+	where mess.date > @today and
+	mess.messageStatusId >= 5 and conver.inboundId=@inbound_id
+	group by conver.inboundId,relmesdis.dispositionId,disp.califSubDesc
+  end
+  else if @typeACD = 4 begin --calif twetter
+    insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+	select 3 as tipo,conver.inboundId as camid,disp.Description as calificacion,
+	case when relmesdis.subDispositionId is null then 0 else  relmesdis.subDispositionId end as subcalificacion,
+	case when count(relmesdis.dispositionId)>0 then 1 else 1 end as calif_id,
+	COUNT(relmesdis.dispositionId) as total
+	from conversationTwitter conver
+	inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+	left join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+	left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+	where mess.date > @today and mess.messageStatusId >= 5  and conver.inboundId=@inbound_id
+	group by conver.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,disp.Description
 
-		else begin
-		update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign
-			from (
-				select cam_id, sum(A.Total) iTotal4Campaign from #CalifTemp A group by cam_id) t
-			inner join #CalifTemp c	on t.cam_id = c.cam_id
-		end
-	end
-	else if @typeACD = 1 begin--Chats
-		select tipo, cam_id, calificacion,subCalificacion,calif_id ,sum( total ) as totales from (
-			select 1 as tipo, inboundId as Cam_id, case when description is not null then description
-			else @nIdioma  end as Calificacion, 0 as subCalificacion,0 as calif_id,
-			count(disposition) as Total,0 count,0 iTotal4Campaign
-				from ccriachats a
-				left join ccTipoCalif b on a.disposition=b.calif_id
-			where a.chatDate > @today
-			group by inboundId, Description
-			union all
-			select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma
-			then calificacion else @nIdioma	end as Calificacion
-			,case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, isnull(calif_id,'''') as calif_id
-			,sum(Total) as Total, count(*) count , iTotal4Campaign -- para ver total por campaña
-			from #CalifTemp
-			group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1)
-			then calificacion else @nIdioma end,calif_id,Cam_id, iTotal4Campaign
-		) as a
-		group by tipo, cam_id, calificacion,subCalificacion,calif_id order by tipo,cam_id,calif_id
-	end
-	else if @typeACD = 3 begin ---Mail
-		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
-		select 2 as tipo,conmean.inboundId as camid, ''''as calificacion,
-		case when relmesdis.subDispositionId > 0 then 1 else 0 end as subcalificacion,
-		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
-		from contactMeanIn conmean
-		inner join conversation conver on conmean.inboundId = conver.inboundId
-		inner join message mess on mess.conversationId = conver.conversationId
-		inner join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
-		where conmean.meanContactTypeId = 1 and mess.date > @today
-		group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
-
-		select camtemp.tipo,camtemp.cam_id,tipcal.Description,camtemp.subcalificacion,camtemp.calif_id,camtemp.total from #CalifTemp camtemp
-		inner join
-		ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
-	end
-
-
-	else if @typeACD = 4 begin --calif twetter
-		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
-		select 3 as tipo,conmean.inboundId as camid, ''''as calificacion,
-		case when relmesdis.subDispositionId > 0 then 1 else 0 end as subcalificacion,
-		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
-		 from contactMeanIn conmean
-		inner join conversationTwitter conver on conmean.inboundId = conver.inboundId
-		inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
-		inner join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
-		where conmean.meanContactTypeId = 2 and mess.date > @today
-		group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
-
-		select camtemp.tipo,camtemp.cam_id,tipcal.Description,camtemp.subcalificacion,camtemp.calif_id,camtemp.total from #CalifTemp camtemp
-		inner join
-		ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
-	end
-
+  end
+  select camtemp.tipo,camtemp.cam_id,
+	case when tipcal.Description is not null then tipcal.Description else @nIdioma end as Calificacion,
+	camtemp.subcalificacion,camtemp.calif_id,camtemp.total
+	from #CalifTemp camtemp
+    left join ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
 end
 -------------------SUBCALIFICACIONES IN-------------------
-else if @type = 3 begin
-	if @typeACD = 0 begin --Calls
-		select 1 as tipo,cci.inbound_id as cam_id,
-		case when description is not null then description
-			else @nIdioma end as Calificacion,
-		isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(*) as totales
-		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
-		left join ccInbound cci on cci.inbound_id = ci.inbound_id
-		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
-		where ci.cal_inicio > @today
-		and ci.inbound_id = @inbound_id
-		and statuscall_id = 13 	and ci.calif_id = @calif_id
-		group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
-	end
-	else if @typeACD = 3 begin --Mail
-		select 4 as tipo,cci.inbound_id as cam_id, case when description is not null then description
-		else @nIdioma end as Calificacion,
-		isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion
-		, count(*) as totales
-		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id
-		left join ccInbound cci on cci.inbound_id = ci.inbound_id
-		left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
-		left join relationMessageDisposition relmedis on relmedis.subDispositionId = ctcs.califsub_id
-		where ci.cal_inicio > @today
-		and ci.inbound_id = @inbound_id and cci.chat = @typeACD and ci.calif_id = @calif_id
-		group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
-	end
-	else if @typeACD = 4 begin --Twitter
-		insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
-		select 3 as tipo,conmean.inboundId as camid, ''''as calificacion,
-		 relmesdis.subDispositionId as subcalificacion,
-		relmesdis.dispositionId as calif_id, COUNT(relmesdis.dispositionId) as total
-		 from contactMeanIn conmean
-		inner join conversationTwitter conver on conmean.inboundId = conver.inboundId
-		inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
-		inner join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
-	where conmean.meanContactTypeId = 2 and mess.date > @today
-	group by conmean.inboundId,relmesdis.subDispositionId,relmesdis.dispositionId,conmean.inboundId
+else if @type = 2 begin
+  if @typeACD = 0 begin --Calls
+    select 1 as tipo,cci.inbound_id as cam_id,  [description] as Calificacion,
+	isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(ctcs.califSubDesc) as totales
+    from ccCallsIn ci with(nolock, index(IX_ccCallsIn))
+	left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+    left join ccInbound cci on cci.inbound_id = ci.inbound_id
+    left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+    where ci.cal_inicio > @today
+	and ci.inbound_id = @inbound_id  and statuscall_id = 13  and ci.calif_id = @calif_id
+    group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
+  end
+  else if @typeACD = 1 begin --Chat
+    select 1 as tipo, inboundId as Cam_id, [description] as Calificacion,
+		isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(ctcs.califSubDesc) as totales
+        from ccriachats a
+        left join ccTipoCalif b on a.disposition=b.calif_id
+		left join ccTipoCalifSub ctcs on a.subDisposition= ctcs.califSub_id
+      where a.chatDate > @today and  a.chatStatus=4 and a.inboundId=@inbound_id and b.calif_id=@calif_id
+    group by inboundId, [description],ctcs.califSubDesc
+  end
+  else if @typeACD = 3 begin --Mail
+	select 2 as tipo,conver.inboundId as camid, disp.Description as calificacion,
+	isnull(subDisp.califSubDesc,@nIdiomaSub) as subCalificacion, count(subDisp.califSubDesc) as totales
+	from conversation conver
+	inner join message mess on mess.conversationId = conver.conversationId
+	left join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
+	left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+	left join ccTipoCalifSub subDisp on subDisp.califSub_id=relmesdis.subDispositionId
+	where mess.date > @today and
+	mess.messageStatusId >= 5 and conver.inboundId=@inbound_id and disp.calif_id=@calif_id
+	group by conver.inboundId,disp.Description,subDisp.califSubDesc
 
 
-	select camtemp.tipo,camtemp.cam_id,subcali.califSubDesc,camtemp.subcalificacion,camtemp.calif_id,camtemp.total
-	 from #CalifTemp camtemp
-		inner join ccTipoCalifSub subcali on camtemp.subCalificacion = subcali.califSub_id
-		where camtemp.cam_id = @inbound_id
-	end
+  end
+  else if @typeACD = 4 begin --Twitter
+    select 3 as tipo,conver.inboundId as camid, disp.Description as calificacion,
+	isnull(subDisp.califSubDesc,@nIdiomaSub) as subCalificacion, count(subDisp.califSubDesc) as totales
+	from conversationTwitter conver
+	inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+	left join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+	left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+	left join ccTipoCalifSub subDisp on subDisp.califSub_id=relmesdis.subDispositionId
+	where mess.date > @today and
+	mess.messageStatusId >= 5 and conver.inboundId=@inbound_id and disp.calif_id=@calif_id
+	group by conver.inboundId,disp.Description,subDisp.califSubDesc
+  end
+
 end
 -------------------SUBCALIFICACIONES OUT-------------------
 else if @type = 4 begin
-	select 0 as tipo,co.cam_id as cam_id,
-	case when co.statuscall_id = 13
-		then case when description is not null
-		then description else @nIdioma end
-	else
-		case when sll.descripcion is not null
-		then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma
-		end
-	end as Calificacion,
-	isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad
-	from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
-	left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
-	left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
-	left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
-	left join ccCamps ci on ci.cam_id = co.cam_id
-	where co.cal_inicio > @today
-	and co.cam_id = @inbound_id
-	and co.calif_id = @calif_id
-	group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+  select 0 as tipo,co.cam_id as cam_id,
+  case when co.statuscall_id = 13
+    then case when description is not null
+    then description else @nIdioma end
+  else
+    case when sll.descripcion is not null
+    then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma
+    end
+  end as Calificacion,
+  isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad
+  from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+  left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+  left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+  left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+  left join ccCamps ci on ci.cam_id = co.cam_id
+  where co.cal_inicio > @today
+  and co.cam_id = @inbound_id
+  and co.calif_id = @calif_id
+  group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
 end
 
 

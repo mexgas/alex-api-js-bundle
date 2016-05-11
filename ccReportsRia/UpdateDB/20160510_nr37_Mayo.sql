@@ -324,8 +324,28 @@ if exists (select * from sys.columns where name = N''userid'' COLLATE Latin1_Gen
 ) ON [PRIMARY]'
 		EXEC(@sql)
 
-		set @process = 'CREATE Index -- RepOutDispositionsContacOwner.IX_RepOutDispositionsContacOwner'
-		set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDispositionsContacOwner'' and object_id = OBJECT_ID(N''RepOutDispositionsContacOwner''))
+			set @process = 'CREATE Index -- RepIVRSurveys.IX_RepIVRSurveys'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepIVRSurveys'' and object_id = OBJECT_ID(N''RepIVRSurveys''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepIVRSurveys] ON [dbo].[RepIVRSurveys]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
+
+	set @process = 'CREATE Index -- RepSpecialAbndCamp.IX_RepSpecialAbndCamp'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepSpecialAbndCamp'' and object_id = OBJECT_ID(N''RepSpecialAbndCamp''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepSpecialAbndCamp] ON [dbo].[RepSpecialAbndCamp]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
+
+	set @process = 'CREATE Index -- RepOutDispositionsContacOwner.IX_RepOutDispositionsContacOwner'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDispositionsContacOwner'' and object_id = OBJECT_ID(N''RepOutDispositionsContacOwner''))
 	    begin
 	        CREATE NONCLUSTERED INDEX [IX_RepOutDispositionsContacOwner] ON [dbo].[RepOutDispositionsContacOwner]
 			(
@@ -334,16 +354,46 @@ if exists (select * from sys.columns where name = N''userid'' COLLATE Latin1_Gen
 	    end'
     EXEC(@sql)
 
-    	set @process = 'CREATE Index -- RepSpececialAbndCamp.IX_RepOutDispositionsContacOwner'
-		set @sql='if exists (select * from sys.indexes where name = N''IX_RepSpececialAbndCamp'' and object_id = OBJECT_ID(N''RepSpececialAbndCamp''))
-		    begin
-		        CREATE NONCLUSTERED INDEX [IX_RepSpececialAbndCamp] ON [dbo].[RepSpececialAbndCamp]
-		(
-			[date] ASC
-		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
-		    end'
+	set @process = 'CREATE Index -- RepTwitterACD.IX_RepTwitterACD'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepTwitterACD'' and object_id = OBJECT_ID(N''RepTwitterACD''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepTwitterACD] ON [dbo].[RepTwitterACD]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
 
-		EXEC(@sql)
+	set @process = 'CREATE Index -- RepTwitterAgente.IX_RepTwitterAgente'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepTwitterAgente'' and object_id = OBJECT_ID(N''RepTwitterAgente''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepTwitterAgente] ON [dbo].[RepTwitterAgente]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
+
+	set @process = 'CREATE Index -- RepTwitterDetail.IX_RepTwitterDetail'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepTwitterDetail'' and object_id = OBJECT_ID(N''RepTwitterDetail''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepTwitterDetail] ON [dbo].[RepTwitterDetail]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
+
+	set @process = 'CREATE Index -- RepTwitterGeneral.IX_RepTwitterGeneral'
+	set @sql='if exists (select * from sys.indexes where name = N''IX_RepTwitterGeneral'' and object_id = OBJECT_ID(N''RepTwitterGeneral''))
+	    begin
+	        CREATE NONCLUSTERED INDEX [IX_RepTwitterGeneral] ON [dbo].[RepTwitterGeneral]
+			(
+				[date] ASC
+			)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	    end'
+    EXEC(@sql)
+
 
 
 		set @process = 'UPDATE -------- PivotReports'
@@ -351,10 +401,8 @@ if exists (select * from sys.columns where name = N''userid'' COLLATE Latin1_Gen
 		EXEC(@Sql)
 
 		set @process = 'INSERT -------- PivotReports'
-		set @Sql= 'if not exists(select * from PivotReports where id = 6050)
-		begin
-			insert into PivotReports values (6050, ''question_Count'', ''date|userId|login|scriptId|surveyId|survey|calId|calKey|campaignId|inboundId|campACDDescription|year|month|day|hour|minutes'', ''max'', 0)
-		end'
+		set @Sql= 'if not exists(select * from PivotReports where id = 6050) insert into PivotReports values (6050, ''question_Count'', ''date|userId|login|scriptId|surveyId|survey|calId|calKey|campaignId|inboundId|campACDDescription'', ''max'', 0)
+		else update PivotReports set isGroupPivot = 0 where id=6050'
 		EXEC(@sql)
 
 

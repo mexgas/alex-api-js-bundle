@@ -103,9 +103,18 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		set @process = 'alter table  ccTipoCalifSub---------'
 		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub'')) alter table ccTipoCalifSub add contactOwner bit not null'
 		 EXEC(@Sql)
+
 		 set @process = 'alter table  ccTipoCalifSubOUT---------'
 		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit not null'
 		 EXEC(@Sql)
+	
+		set @process = 'Add Column ccTipoCalifOUT.contactOwner'
+		set @sql='if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifOUT'')) ALTER TABLE ccTipoCalifOUT ADD [contactOwner] [bit] NULL'
+		 EXEC(@sql)
+
+		set @process = 'Add Column ccTipoCalifSubOUT.contactOwner'
+		set @sql='if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) ALTER TABLE ccTipoCalifSubOUT ADD [contactOwner] [bit] NULL'
+		EXEC(@sql)
 
 		 set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
 		 set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1) ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE'

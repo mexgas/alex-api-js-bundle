@@ -53,7 +53,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		create table Survey (
 			surveyId int IDENTITY(1,1) NOT FOR REPLICATION NOT NULL PRIMARY KEY,
 			description varchar(80) NOT NULL,
-			IVR_id	int NOT NULL default (0),
+      		scriptId int NOT NULL default (0),
 			active int NOT NULL default (1)
 			)
 		end'
@@ -150,116 +150,6 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		set @sql='if not exists(select * from ccMenus where menu_id=86)
 			insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, release)
 values (86, ''Encuestas|Surveys'', 80, ''B'', 85, 1, ''51d79747960460b9359fc88c227e8e0b14736dd3ca50c7b9604fd08b110deae7'')'
-		EXEC(@sql)
-
-
-		set @process = 'CREATE PROCEDURE -- ccspSurveyIVR'
-		set @sql='CREATE procedure [dbo].[ccspSurveyIVR]
-@action as tinyint,@surveyId int =0,@description varchar(80) = null,@scriptId int=null,@isActive bit=null,
-@questionId int =0,@answerId int=0,@digit tinyint=null,@ids varchar(400)=null,@orden varchar(400)=null
-AS
-
-declare @sql nvarchar(max)
-declare @coma varchar(10)='',''
-declare @id int=0
-if @action = 1 begin --INSERT and Update Survey
- select @id=surveyId from Survey where description=@description
- if @id > 0 and @id<>@surveyId begin
-  select -1 as surveyId
-  return (0)
- end
- if @surveyId=0 begin
-  insert into Survey(description,scriptId,active) values(@description,@scriptId,1)
-  select @surveyId=IDENT_CURRENT(''Survey'')
- end
- else begin
-  update Survey set description=isnull(@description,description),scriptId=isnull(@scriptId,scriptId),active=isnull(@isActive,active) where surveyId=@surveyId
- end
- select @surveyId
- return 0
-end
-else if @action = 2 begin --INSERT and Update SurveyQuestion
- select @id=questionId from SurveyQuestion where description=@description
- if @id > 0 and @id<>@questionId begin
-  select -1 as questionId
-  return (0)
- end
- if @questionId=0 begin
-  insert into SurveyQuestion(description,active) values(@description,1)
-  select @questionId=IDENT_CURRENT(''SurveyQuestion'')
- end
- else begin
-  update SurveyQuestion set description=isnull(@description,description),active=isnull(@isActive,active) where questionId=@questionId
- end
- select @questionId
- return 0
-end
-else if @action = 3 begin --INSERT and Update SurveyAnswer
- select @id=answerId from SurveyAnswer where description=@description
- if @id > 0 and @id<>@answerId begin
-  select -1 as questionId
-  return (0)
- end
- if @answerId=0 begin
-  insert into SurveyAnswer(description,active,digit) values(@description,1,@digit)
-  select @answerId=IDENT_CURRENT(''SurveyAnswer'')
- end
- else begin
-  update SurveyAnswer set description=isnull(@description,description),active=isnull(@isActive,active),digit=isnull(@digit,digit) where answerId=@answerId
- end
- select @answerId
- return 0
-end
-else if @action = 4 begin --insert relationSurveyQuestion
- set @sql =''insert into relationSurveyQuestion(surveyId,questionId,orden)
- select ''+convert(nvarchar(max),@surveyId)+'',A.Value,C.Value from dbo.fn_RIASplitDelimited(''''''+@ids+'''''',''''''+@coma+'''''') A
-left join relationSurveyQuestion B on A.Value=B.questionId and B.surveyId=''+convert(nvarchar(max),@surveyId)+''
-left join dbo.fn_RIASplitDelimited(''''''+@orden+'''''',''''''+@coma+'''''') C on C.Id=A.Id
-where B.questionId is null''
-exec (@sql)
-end
-else if @action = 5 begin --insert relationQuestionAnswer
- set @sql =''insert into relationQuestionAnswer(surveyId,questionId,answerId)
- select ''+convert(nvarchar(max),@surveyId)+'',''+convert(nvarchar(max),@questionId)+'',A.Value from dbo.fn_RIASplitDelimited(''''''+@ids+'''''',''''''+@coma+'''''') A
-left join relationQuestionAnswer B on A.Value=B.answerId and B.questionId=''+convert(nvarchar(max),@questionId)+''
-where B.answerId is null''
- exec(@sql)
-end
-else if @action = 6 begin --delete relationSurveyQuestion
- set @sql =''delete from relationSurveyQuestion where questionId in(''+@ids+'') and surveyId=''+convert(nvarchar(max),@surveyId)
- exec(@sql)
-end
-else if @action = 7 begin --delete relationQuestionAnswer
- set @sql =''delete from relationQuestionAnswer where surveyId=''
- +convert(nvarchar(max),@surveyId)+'' and questionId=''+convert(nvarchar(max),@questionId) +
- '' and answerId in(''+@ids+'') ''
- exec(@sql)
-end
-else if @action = 8 begin
- select surveyId,description,scriptId from Survey where active=1
-end
-else if @action = 9 begin
- select questionId,description from SurveyQuestion where active=1
-end
-else if @action = 10 begin
- select answerId,description,digit from SurveyAnswer where active=1
-end
-else if @action = 11 begin
- select a.questionId,b.description,A.orden from relationSurveyQuestion A left join SurveyQuestion B on a.questionId = b.questionId where a.surveyId=@surveyId and B.active=1  order by A.orden
-end
-else if @action = 12 begin
- select A.answerId,B.description,B.digit from relationQuestionAnswer A left join SurveyAnswer B on A.answerId=B.answerId  where a.surveyId=@surveyId  and a.questionId=@questionId
-end
-else if @action = 13 begin
- select S.scriptId,S.description,a.questionId,b.description,isnull(rQA.answerId,0),isnull(SA.description,''),isnull(SA.digit,-1)
-	from relationSurveyQuestion A
-	inner join SurveyQuestion B on a.questionId = b.questionId
-	inner join Survey S on S.surveyId=A.surveyId
-	left join relationQuestionAnswer rQA on rQA.questionId=A.questionId
-	left join SurveyAnswer SA on SA.answerId=rQA.answerId
-	where a.surveyId=@surveyId and B.active=1
-	order by A.orden
-end'
 		EXEC(@sql)
 
 		set @process = 'ALTER PROCEDURE -- ccsp_RIAUpdateEspecConfig'
@@ -410,77 +300,77 @@ declare @sql nvarchar(1000)
 
 if @Type=0
 begin
-	if @CamEspId=0
-	 	begin
-	  	SELECT calif_id, description FROM ccTipoCalif WITH(NOLOCK) WHERE Calif_Status=1 and description=@qualif_id
-	  	return(0)
-	end
-	SELECT calif_id, description FROM ccTipoCalifOUT  WHERE CalifOut_Status=1 and description=@qualif_id
-	return(0)
+  if @CamEspId=0
+    begin
+      SELECT calif_id, description FROM ccTipoCalif WITH(NOLOCK) WHERE Calif_Status=1 and description=@qualif_id
+      return(0)
+  end
+  SELECT calif_id, description FROM ccTipoCalifOUT  WHERE CalifOut_Status=1 and description=@qualif_id
+  return(0)
 end
 
 if @Type=1 -- Load cctipoCalif
 begin
- 	Select C.calif_id, C.Description, C.orden, cast(C.canReprogram as int) as canReprogram, cast(C.contactOwner as int) as contactOwner, cast(count(R.califRel_id)as tinyint) hasSub
- 	,isnull(C.EndConversation,0) conversationEnd
- 	from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
- 	where C.Calif_Status=1
- 	group by C.calif_id, C.Description, C.orden, cast(C.canReprogram as int)  ,C.EndConversation, cast(C.contactOwner as int)
- 	order by 2
- 	return(0)
+  Select C.calif_id, C.Description, C.orden, cast(C.canReprogram as int) as canReprogram, 0 as contactOwner, cast(count(R.califRel_id)as tinyint) hasSub
+  ,isnull(C.EndConversation,0) conversationEnd
+  from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
+  where C.Calif_Status=1
+  group by C.calif_id, C.Description, C.orden, cast(C.canReprogram as int)  ,C.EndConversation--, cast(C.contactOwner as int)
+  order by 2
+  return(0)
 end
 
 If @Type=2 -- Load cctipoCalifOUT
 begin
- 	Select C.calif_id, C.Description, cast(C.canReprogram as int) as canReprogram, C.orden,
- 	cast(C.keepDial as int) as keepDial, cast(C.autocallback as int) autocallback,  cast(count(R.califRel_id)as tinyint) hasSub,cast(isnull(C.contactOwner,0) as int) as contacOwner
- 	from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
- 	where C.CalifOut_Status=1
- 	group by C.calif_id, C.Description, cast(C.canReprogram as int), C.orden, cast(C.keepDial as int), cast(C.autocallback as int), cast(isnull(C.contactOwner,0) as int)
- 	order by 2
- 	return(0)
+  Select C.calif_id, C.Description, cast(C.canReprogram as int) as canReprogram, C.orden,
+  cast(C.keepDial as int) as keepDial, cast(C.autocallback as int) autocallback,  cast(count(R.califRel_id)as tinyint) hasSub,cast(isnull(C.contactOwner,0) as int) as contacOwner
+  from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
+  where C.CalifOut_Status=1
+  group by C.calif_id, C.Description, cast(C.canReprogram as int), C.orden, cast(C.keepDial as int), cast(C.autocallback as int), cast(isnull(C.contactOwner,0) as int)
+  order by 2
+  return(0)
 end
 
 If @Type=3 -- New cctipoCalif
 begin
- 	If exists(select description from ccTipoCalif where Calif_Status=1 and description=@Description)
-  	begin
-  		select 2
-  		return(0)
-  	end
-	If exists(select description from ccTipoCalif where Calif_Status=0 and description=@Description)
- 	begin
-  		update ccTipoCalif set orden=@order, CanReprogram=isnull(@canReprogram,0),EndConversation=isnull(@endConversation,0), Calif_Status=1, contactOwner= isnull(@contactOwner,0)
-  		where description=@Description
-  		return(0)
- 	end
- 	insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation, contactOwner)
- 	select isnull(max(calif_id), 0) + 1,@Description, @order, isnull(@canReprogram,0), isnull(@endConversation,0), isnull(@contactOwner,0) from ccTipoCalif
- 	return(0)
+  If exists(select description from ccTipoCalif where Calif_Status=1 and description=@Description)
+    begin
+      select 2
+      return(0)
+    end
+  If exists(select description from ccTipoCalif where Calif_Status=0 and description=@Description)
+  begin
+      update ccTipoCalif set orden=@order, CanReprogram=isnull(@canReprogram,0),EndConversation=isnull(@endConversation,0), Calif_Status=1--, contactOwner= isnull(@contactOwner,0)
+      where description=@Description
+      return(0)
+  end
+  insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation)--, contactOwner
+  select isnull(max(calif_id), 0) + 1,@Description, @order, isnull(@canReprogram,0), isnull(@endConversation,0) from ccTipoCalif --, isnull(@contactOwner,0)
+  return(0)
  end
 
 If @Type=4 -- Update cctipoCalif
- 	begin
-	 	If exists(select description from ccTipoCalif where Calif_Status=1 and description=@Description)
-	  	set @Description=null
+  begin
+    If exists(select description from ccTipoCalif where Calif_Status=1 and description=@Description)
+      set @Description=null
 
- 		UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
- 		canReprogram=isnull(@canReprogram, canReprogram), EndConversation=isnull(@endConversation,EndConversation), contactOwner=isnull(@contactOwner,contactOwner)
- 		where calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
+    UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
+    canReprogram=isnull(@canReprogram, canReprogram), EndConversation=isnull(@endConversation,EndConversation)--, contactOwner=isnull(@contactOwner,contactOwner)
+    where calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
 
- 		delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
- 		tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+    delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
+    tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
 
- 		return(0)
- 	end
+    return(0)
+  end
 
 If @Type=5 -- elimina calif
- 	begin
- 		delete from ccCalifCamp where tipo=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
- 		delete from cctipoSubCalifRel where tipoSubRel=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
- 		update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
- 		return(0)
- 	end
+  begin
+    delete from ccCalifCamp where tipo=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
+    delete from cctipoSubCalifRel where tipoSubRel=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
+    update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@qualif_id, '',''))
+    return(0)
+  end
 
 If @Type=6 -- New cctipoCalifOUT
  begin
@@ -588,7 +478,7 @@ begin try
   select @sxML = cast((select * from (select 1 as tag, null as parent,
   calif_id as "qualification!1!qualif_id", Description as "qualification!1!qualification",
   CanReprogram as "qualification!1!canReprogram", orden as "qualification!1!sort", isnull(endConversation,0) as "qualification!1!endConversation",
-  isnull(contactOwner,0) as "qualification!1!contactOwner"
+  isnull(0,0) as "qualification!1!contactOwner"
   from cctipocalif where Calif_Status=1) as x order by tag, "qualification!1!sort",
   "qualification!1!qualification" for xml explicit, type) as varchar(max))
   select @xml=dbo.xmlAppend(@xml, @sxML, ''<qualifications/>'')
@@ -705,8 +595,8 @@ begin try
    select @succesValue=0, @succesType=3 -- La subCalificacion ya existe
    goto Success
    end
-  insert cctipocalifSub (califSubDesc,orden,canReprogram,califSub_Status,EndConversation,contactOwner)
-        select @califSubDesc, @orden, @canReprogramSub, 1,isnull(@endConversation, 0),isnull(@contactOwner,0)
+  insert cctipocalifSub (califSubDesc,orden,canReprogram,califSub_Status,EndConversation)--,contactOwner
+        select @califSubDesc, @orden, @canReprogramSub, 1,isnull(@endConversation, 0)--,isnull(@contactOwner,0)
   select @succesType=scope_identity(), @succesValue=1
   goto Success
   end
@@ -792,34 +682,34 @@ begin try
   and C.value is not null and S.value is not null
 
 if @tipo=0
-   	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
-  	select @succesValue=1
-  	goto Success
+    update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+    select @succesValue=1
+    goto Success
 end
  if @action=8 -- Desasignacion de Calfs / SubCalfs
-  	begin
-  	delete cctipoSubCalifRel
-  	where cast(calif_id as varchar(10))+''|''+cast(califSub_id as varchar(10))+''|''+cast(tipoSubRel as varchar(10)) in
-  	(select cast(C.value as varchar(10))+''|''+cast(S.value as varchar(10))+''|''+cast(@tipo as varchar(10))
+    begin
+    delete cctipoSubCalifRel
+    where cast(calif_id as varchar(10))+''|''+cast(califSub_id as varchar(10))+''|''+cast(tipoSubRel as varchar(10)) in
+    (select cast(C.value as varchar(10))+''|''+cast(S.value as varchar(10))+''|''+cast(@tipo as varchar(10))
    from dbo.fn_RIASplitDelimited (@califSub_id, '','') S cross join dbo.fn_RIASplitDelimited (@calif_id, '','') C)
-  	if @tipo=0
-   		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
-  		select @succesValue=1
-  		goto Success
-	end
+    if @tipo=0
+      update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+      select @succesValue=1
+      goto Success
+  end
 
- 	return(0)
+  return(0)
 end try
 begin catch
-	select @succesValue=0, @succesType=0 -- error no controlado
-	goto Success
+  select @succesValue=0, @succesType=0 -- error no controlado
+  goto Success
 end catch
 Success: -- <success value=''n'' type=''n''/>
 set @xml.modify(''insert element success {""} as last into (/MainSubQualificationLoad)[1]'')
 set @xml.modify(''insert attribute value {sql:variable("@succesValue")} as last into (/MainSubQualificationLoad/success)[1]'')
 if isnull(@succesType, 0) <> 0
 begin
-	set @xml.modify(''insert attribute type {sql:variable("@succesType")} as last into (/MainSubQualificationLoad/success)[1]'')
+  set @xml.modify(''insert attribute type {sql:variable("@succesType")} as last into (/MainSubQualificationLoad/success)[1]'')
 end
 select @xml
 return(0)
@@ -1304,10 +1194,6 @@ if @action = 2
 	return(0)
  end
 set nocount off'
-		EXEC(@sql)
-
-		set @process = ''
-		set @sql=''
 		EXEC(@sql)
 
 		/* End script release */

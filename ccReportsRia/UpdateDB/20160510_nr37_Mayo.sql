@@ -599,7 +599,7 @@ from
   cci.cal_Inicio as [date],
   isnull(cci.User_id, 0) as ''userId'',
   isnull(ccu.Login, ''No agent'') as ''login'',
-  isnull(s.scriptId, 0) as ''scriptId'',
+  isnull(ivro.IVR_id, 0) as ''scriptId'',
   isnull(s.surveyId, 0) as ''surveyId'',
   isnull(s.description, '''') as ''survey'',
   isnull(cci.cal_id, 0) as ''calId'',
@@ -624,8 +624,8 @@ from
   inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id
   inner join ccUsers ccu on cci.User_id = ccu.User_id
   inner join ccInbound ccin on cci.Inbound_id = ccin.Inbound_id
-  left join relationQuestionAnswer rqa on ivro.surveyId = rqa.surveyId
-  left join Survey s on rqa.surveyId = s.surveyId
+  left join Survey s on ivro.IVR_id = s.scriptId
+  left join relationQuestionAnswer rqa on s.surveyId = rqa.surveyId
   left join SurveyQuestion sq on ivro.questionId = sq.questionId
   left join SurveyAnswer sa on rqa.answerId = sa.answerId
   where cal_inicio between @from and @to

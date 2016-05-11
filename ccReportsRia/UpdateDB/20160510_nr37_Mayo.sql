@@ -70,7 +70,7 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		EXEC(@sql)
 
 
-		set @process = 'VALIDATE PROCEDURE -------- ccspRepIVRSurveys'
+		set @process = 'Drop PROCEDURE -------- ccspRepIVRSurveys'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepIVRSurveys'') drop procedure ccspRepIVRSurveys'
 		EXEC(@Sql)
 
@@ -120,6 +120,10 @@ if not exists (select * from sys.columns where name = N''tfocus'' and Object_ID 
 		set @Sql= 'if not exists (select * from sys.columns where name = N''isGroupPivot'' and Object_ID = Object_ID(N''PivotReports'')) alter table PivotReports add isGroupPivot bit'
 		EXEC(@Sql)
 
+		set @process = 'Alter column -- RepOutCallBilling.costo'
+		set @sql='alter table RepOutCallBilling alter column costo decimal(10,2)'
+		EXEC(@sql)
+
 		set @process = 'Update ReportsTotals and  GroupByReports delete column treq'
 		set @sql='update ReportsTotals set totalColumns=
 ''sum:nxferin|sum:nanswerin|sum:nabndxferin|sum:nabndringin|sum:nabnddlgin|sum:abndaxferin|sum:nnoanswerin|sum:nlostin|sum:tdialogin|sum:tnotesin|sum:tringin|sum:txferin|sum:nxferout|sum:nanswerout|sum:nabndxferout|sum:nabndringout|sum:nabnddlgout|sum:abndaxferout|sum:nnoanswerout|sum:nlostout|sum:tdialogout|sum:tnotesout|sum:tringout|sum:txferout|sum:nother|sum:tunknown|sum:tnotav|sum:tlog|sum:tav|sum:tother|sum:tprob|sum:nmohin|sum:nmohout|sum:nwhagin|sum:nwhagout|sum:nwhcliin|sum:nwhcliout|special:tnotavg:isnull(sum([tdialogin]+[tdialogout])/nullif(sum([nanswerin]+[nanswerout]),0),0)''
@@ -129,7 +133,12 @@ update GroupByReports  set [columns]=
 	WHERE id = 2010		'
 		EXEC(@sql)
 
-		set @process = 'Update tfocus valueo (0)'
+		set @process = 'Update PivotReports(4060) Costo'
+		set @sql='update PivotReports set pivotFunction=''sum'',complementColumns=''date|campaignId|campaign|userId|agentName|username|providerId|provider''  where id=4060'
+		EXEC(@sql)
+
+
+		set @process = 'Update RepEmailDetail and RepEmailDetail column tfocus valueo (0)'
 		set @sql='update RepEmailDetail set tfocus=0
 update RepEmailGeneral set tfocus=0'
 		EXEC(@sql)
@@ -2173,7 +2182,7 @@ select @to = getdate()
 if @action = 1
 begin
 
- --delete from RepOutCallBilling with(rowlock)     where date >= @from AND date < @to
+ delete from RepOutCallBilling with(rowlock)     where date >= @from AND date < @to
 
  ---creamos tabla temporal con longitud
 if exists(select longitud from cstoTipoLlamada where CHARINDEX(''|'',longitud)<>0 and country_id =@country) begin

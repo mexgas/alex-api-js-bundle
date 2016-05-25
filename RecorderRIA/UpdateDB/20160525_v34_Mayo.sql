@@ -1,13 +1,9 @@
 /*
-Date: 2016/03/04
+Date: 2016/05/25
 Description:
 
 
- Drop PROCEDURE trsp_SaveAVRSExportParameters
- Create PROCEDURE trsp_SaveAVRSExportParameters
-
- Alter SP trsp_AdmRecSearchNodeWgCampACDCalif
- Alter SP trsp_GetRecordigsExportService
+ --Fix Correcion del finder
 
 Database: CCRecorderRia
 Required version: 32

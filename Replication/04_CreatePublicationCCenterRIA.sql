@@ -1,4 +1,3 @@
-----04  ccenterria
 
 /*
 Autor: Raymundo Gonzalez
@@ -6,14 +5,14 @@ Fecha: 2013/11/30
 Descripcion:
 	Merge Replication (Publications)
 
-Version minima requerida: 102
+Version minima requerida: 118
 */
 set nocount on
 use [ccenterria]
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '118'
+Set @Version = '119'
 
 create table #temp([version] int)
 insert into #temp
@@ -42,15 +41,38 @@ if @Version_Actual >= @Version
 
 	declare @jobLogin nvarchar(max)
 	declare @jobPassword nvarchar(max)
-	set @jobLogin = @hostName + '\SnapshotReplication'
-	set @jobPassword = 'Nuxiba2010'
+	declare @userNameSQL nvarchar(50)
+	declare @passwordSQL nvarchar(50)
+	declare @userNameWin nvarchar(50)
+	declare @passwordWin nvarchar(50)
 
 	declare @publisherLogin nvarchar(max)
 	declare @publisherPassword nvarchar(max)
-	set @publisherLogin = 'replication'
-	set @publisherPassword = 'replication'
-
 	declare @snapshotFolder nvarchar(max)
+
+
+	declare @settingBD nvarchar(100)
+
+	declare @temp table	(id int, value nvarchar(100));
+	select @settingBD = valor from ccSettings where setting_id = 176
+	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+
+	select @userNameWin = value  from @temp where id = 1
+	select @passwordWin = value  from @temp where id = 2
+	select @userNameSQL = value  from @temp where id = 3
+	select @passwordSQL = value  from @temp where id = 4
+	select @hostName = value  from @temp where id = 5
+
+
+	-----Agregado de credenciales WINDOWS-----
+	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
+	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
+
+	-----Agregado de credenciales SQL SERVER-----
+	set @publisherLogin = isnull(@userNameSQL,'replication')
+	set @publisherPassword =  isnull(@passwordSQL,'replication')
+
+	-----Folder compartido para las replicas-----
 	set @snapshotFolder = '\\' + @hostName + '\ReplData'
 
 	/****************************************************/
@@ -267,7 +289,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'LogDials', @article = N'ccoLogDials', @source_owner = N'dbo', @source_object = N'ccoLogDials', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'LogDials',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'LogDials',  @login = @publisherLogin
 	END
 
 	/*********************/
@@ -286,7 +308,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'LogAgentesDia', @article = N'ccLogAgentesDia', @source_owner = N'dbo', @source_object = N'ccLogAgentesDia', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'LogAgentesDia',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'LogAgentesDia',  @login = @publisherLogin
 	END
 
 	/**********************/
@@ -305,7 +327,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'CallsOutSource', @article = N'ccoCallsOutSource', @source_owner = N'dbo', @source_object = N'ccoCallsOutSource', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'CallsOutSource',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'CallsOutSource',  @login = @publisherLogin
 	END
 
 	/****************/
@@ -324,7 +346,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'CallsOut', @article = N'ccoCallsOut', @source_owner = N'dbo', @source_object = N'ccoCallsOut', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'CallsOut',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'CallsOut',  @login = @publisherLogin
 	END
 
 	/***************/
@@ -343,7 +365,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'CallsIn', @article = N'ccCallsIn', @source_owner = N'dbo', @source_object = N'ccCallsIn', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'CallsIn',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'CallsIn',  @login = @publisherLogin
 	END
 
 	/****************/
@@ -365,14 +387,10 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'OutIn', @article = N'ccCampsMovs', @source_owner = N'dbo', @source_object = N'ccCampsMovs', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'OutIn', @article = N'telefonosConferencia', @source_owner = N'dbo', @source_object = N'telefonosConferencia', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'OutIn', @article = N'telefonosTransferencia', @source_owner = N'dbo', @source_object = N'telefonosTransferencia', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
-		--add nuevos
-		exec sp_addmergearticle @publication = N'OutIn', @article = N'ccTipoCalif', @source_owner = N'dbo', @source_object = N'ccTipoCalif', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'OutIn', @article = N'messageStatus', @source_owner = N'dbo', @source_object = N'messageStatus', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
-
-
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'OutIn',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'OutIn',  @login = @publisherLogin
 	END
 	BEGIN
 		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'telefonosConferencia')
@@ -386,6 +404,12 @@ if @Version_Actual >= @Version
 			-- Adding articles
 			use [CCenterRia]
 			exec sp_addmergearticle @publication = N'OutIn', @article = N'telefonosTransferencia', @source_owner = N'dbo', @source_object = N'telefonosTransferencia', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'messageStatus')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'OutIn', @article = N'messageStatus', @source_owner = N'dbo', @source_object = N'messageStatus', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
 
@@ -409,7 +433,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Users', @article = N'ccCampsAgente', @source_owner = N'dbo', @source_object = N'ccCampsAgente', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'Users',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'Users',  @login = @publisherlogin
 	END
 	ELSE
 	BEGIN
@@ -440,7 +464,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Activity', @article = N'ccLogtransfers', @source_owner = N'dbo', @source_object = N'ccLogtransfers', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'Activity',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'Activity',  @login = @publisherlogin
 	END
 
 	/***********/
@@ -459,11 +483,49 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'IVR', @article = N'ivrstructure', @source_owner = N'dbo', @source_object = N'ivrstructure', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'IVR', @article = N'ivrcallsin', @source_owner = N'dbo', @source_object = N'ivrcallsin', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'IVR', @article = N'ivroptions', @source_owner = N'dbo', @source_object = N'ivroptions', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
-
+		 
+		exec sp_addmergearticle @publication = N'IVR', @article = N'Survey', @source_owner = N'dbo', @source_object = N'Survey', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'IVR', @article = N'SurveyQuestion', @source_owner = N'dbo', @source_object = N'SurveyQuestion', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+        exec sp_addmergearticle @publication = N'IVR', @article = N'SurveyAnswer', @source_owner = N'dbo', @source_object = N'SurveyAnswer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0	
+	    exec sp_addmergearticle @publication = N'IVR', @article = N'relationSurveyQuestion', @source_owner = N'dbo', @source_object = N'relationSurveyQuestion', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0	
+        exec sp_addmergearticle @publication = N'IVR', @article = N'relationQuestionAnswer', @source_owner = N'dbo', @source_object = N'relationQuestionAnswer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+	
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'IVR',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'IVR',  @login = @publisherlogin
 	END
-
+	ELSE
+	BEGIN
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'Survey')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'IVR', @article = N'Survey', @source_owner = N'dbo', @source_object = N'Survey', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'SurveyQuestion')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'IVR', @article = N'SurveyQuestion', @source_owner = N'dbo', @source_object = N'SurveyQuestion', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'SurveyAnswer')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'IVR', @article = N'SurveyAnswer', @source_owner = N'dbo', @source_object = N'SurveyAnswer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'relationSurveyQuestion')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'IVR', @article = N'relationSurveyQuestion', @source_owner = N'dbo', @source_object = N'relationSurveyQuestion', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'relationQuestionAnswer')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'IVR', @article = N'relationQuestionAnswer', @source_owner = N'dbo', @source_object = N'relationQuestionAnswer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+	END
 	/****************/
 	/*** Catalogs ***/
 	/****************/
@@ -488,7 +550,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccRIARegistryLists', @source_owner = N'dbo', @source_object = N'ccRIARegistryLists', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'Catalogs',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'Catalogs',  @login = @publisherlogin
 	END
 	ELSE
 	BEGIN
@@ -516,7 +578,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'LogAgentesDia_Dialog', @article = N'ccLogAgentesDia_Dialog', @source_owner = N'dbo', @source_object = N'ccLogAgentesDia_Dialog', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'LogAgentesDia_Dialog',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'LogAgentesDia_Dialog',  @login = @publisherlogin
 	END
 
 	/*****************/
@@ -535,7 +597,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Callbacks', @article = N'ccoCallbacks', @source_owner = N'dbo', @source_object = N'ccoCallbacks', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'Callbacks',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'Callbacks',  @login = @publisherlogin
 	END
 
 	/*************/
@@ -554,7 +616,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Chats', @article = N'ccriachatstatus', @source_owner = N'dbo', @source_object = N'ccriachatstatus', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'Chats',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'Chats',  @login = @publisherlogin
 	END
 
 	/*******************/
@@ -580,7 +642,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'cctipocalifout', @source_owner = N'dbo', @source_object = N'cctipocalifout', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'SpecialAVRS',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'SpecialAVRS',  @login = @publisherlogin
 	END
 	ELSE
 	BEGIN
@@ -610,7 +672,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'AVRSCampEsp', @article = N'ccPosicion', @source_owner = N'dbo', @source_object = N'ccPosicion', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'AVRSCampEsp',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'AVRSCampEsp',  @login = @publisherlogin
 	END
 
 	/******************/
@@ -633,7 +695,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'AVRSGraphs', @article = N'ccRIAWorkGroupUsersConsulta', @source_owner = N'dbo', @source_object = N'ccRIAWorkGroupUsersConsulta', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'AVRSGraphs',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'AVRSGraphs',  @login = @publisherlogin
 	END
 	ELSE
 	BEGIN
@@ -667,7 +729,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'AVRSSettings', @article = N'ccSettings', @source_owner = N'dbo', @source_object = N'ccSettings', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'AVRSSettings',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'AVRSSettings',  @login = @publisherlogin
 	END
 	-- paso 4
 	/**********************/
@@ -686,10 +748,10 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'MenuReportsRia', @article = N'ccMenuUser', @source_owner = N'dbo', @source_object = N'ccMenuUser', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'MenuReportsRia',  @login = N'replication'
+		exec sp_grant_publication_access @publication = N'MenuReportsRia',  @login = @publisherlogin
 	END
 
-	
+
 	/********************/
 	/*** Conversation MAIL***/
 	/********************/
@@ -705,13 +767,44 @@ if @Version_Actual >= @Version
 		use [CCenterRia]
 		exec sp_addmergearticle @publication = N'ConversationMail', @article = N'conversation', @source_owner = N'dbo', @source_object = N'conversation', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'ConversationMail', @article = N'message', @source_owner = N'dbo', @source_object = N'message', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
-		exec sp_addmergearticle @publication = N'ConversationMail', @article = N'messageUnAssigned', @source_owner = N'dbo', @source_object = N'messageUnAssigned', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0	
+		exec sp_addmergearticle @publication = N'ConversationMail', @article = N'messageUnAssigned', @source_owner = N'dbo', @source_object = N'messageUnAssigned', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
-		exec sp_grant_publication_access @publication = N'ConversationMail',  @login = N'replication'
-	END -----	
+		exec sp_grant_publication_access @publication = N'ConversationMail',  @login = @publisherlogin
+	END -----
+
+
+	/********************/
+	/*** TWETTER***/
+	/********************/
+
+	IF NOT EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Conversationtweet')
+	BEGIN
+
+		-- Adding the merge publication
+		use [CCenterRia]
+		exec sp_addmergepublication @publication = N'Conversationtweet', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addpublication_snapshot @publication = N'Conversationtweet', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
+
+		-- Adding articles
+		use [CCenterRia]
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'relationMessageDispositionTwit', @source_owner = N'dbo', @source_object = N'relationMessageDispositionTwit', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'messageUnAssingedTwit', @source_owner = N'dbo', @source_object = N'messageUnAssingedTwit', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'messageOutTwitter', @source_owner = N'dbo', @source_object = N'messageOutTwitter', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'conversationTwitter', @source_owner = N'dbo', @source_object = N'conversationTwitter', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'searchConversationTwitter', @source_owner = N'dbo', @source_object = N'searchConversationTwitter', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'Conversationtweet', @article = N'messageInTwitter', @source_owner = N'dbo', @source_object = N'messageInTwitter', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+
+
+		-- Add login to the PAL
+		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
+	END
+
 
 	------------------ FIN SCRIPT ------------------
+
+
 
 	select 'Merge Publications Finished'
  end

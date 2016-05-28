@@ -36,6 +36,36 @@ if @actualVersion = @version - 1
 		begin tran
 		begin try
 
+		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable ---------'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+		BEGIN
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END '
+		EXEC(@Sql)
+
+		set @process = 'Drop PROCEDURE -------- ccspRepIVRSurveys'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepIVRSurveys'') drop procedure ccspRepIVRSurveys'
+		EXEC(@Sql)
+
+		set @process = 'ADD COLUMN -------- ivroptions'
+       set @sql='if not exists (select * from sys.columns where name = N''questionId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add questionId int'
+       EXEC(@sql)
+
+       set @process = 'ADD COLUMN -------- IVROptions'
+       set @sql='if not exists (select * from sys.columns where name = N''surveyId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add surveyId int'
+        EXEC(@sql)
+
+       set @process = 'ADD COLUMN -------- IVROptions'
+       set @sql='if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add cal_id int'
+       EXEC(@sql)
+
+        set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	 	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+		BEGIN
+		 ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END'
+		EXEC(@Sql)
+
 		set @process = 'Drop table Twitter'
 		set @sql='if exists(select * from sys.tables where name=''RepTwitterACD'') DROP TABLE RepTwitterACD
 if exists(select * from sys.tables where name=''RepTwitterAgente'') DROP TABLE RepTwitterAgente
@@ -68,24 +98,6 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		set @process = 'DROP PROCEDURE ccspRepOutDispositionsContacOwner'
 		set @sql='if exists(select * from sys.procedures where name=''ccspRepOutDispositionsContacOwner'') DROP PROCEDURE ccspRepOutDispositionsContacOwner'
 		EXEC(@sql)
-
-
-		set @process = 'Drop PROCEDURE -------- ccspRepIVRSurveys'
-		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepIVRSurveys'') drop procedure ccspRepIVRSurveys'
-		EXEC(@Sql)
-
-		set @process = 'ADD COLUMN -------- ivroptions'
-       set @sql='if not exists (select * from sys.columns where name = N''questionId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add questionId int'
-       EXEC(@sql)
-
-       set @process = 'ADD COLUMN -------- IVROptions'
-       set @sql='if not exists (select * from sys.columns where name = N''surveyId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add surveyId int'
-        EXEC(@sql)
-
-       set @process = 'ADD COLUMN -------- IVROptions'
-       set @sql='if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add cal_id int'
-       EXEC(@sql)
-
 
 		set @process = 'Delete Filter Mail (10010,10020,10030,10040)'
 		set @sql='delete from ReportsFilters where id in(10010,10020,10030,10040)'

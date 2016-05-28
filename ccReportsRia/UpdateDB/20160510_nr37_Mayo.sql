@@ -36,6 +36,36 @@ if @actualVersion = @version - 1
 		begin tran
 		begin try
 
+		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable ---------'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+		BEGIN
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END '
+		EXEC(@Sql)
+
+		set @process = 'Drop PROCEDURE -------- ccspRepIVRSurveys'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepIVRSurveys'') drop procedure ccspRepIVRSurveys'
+		EXEC(@Sql)
+
+		set @process = 'ADD COLUMN -------- ivroptions'
+       set @sql='if not exists (select * from sys.columns where name = N''questionId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add questionId int'
+       EXEC(@sql)
+
+       set @process = 'ADD COLUMN -------- IVROptions'
+       set @sql='if not exists (select * from sys.columns where name = N''surveyId'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add surveyId int'
+        EXEC(@sql)
+
+       set @process = 'ADD COLUMN -------- IVROptions'
+       set @sql='if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''ivroptions'')) alter table ivroptions add cal_id int'
+       EXEC(@sql)
+
+        set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	 	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+		BEGIN
+		 ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		END'
+		EXEC(@Sql)
+
 		set @process = 'Drop table Twitter'
 		set @sql='if exists(select * from sys.tables where name=''RepTwitterACD'') DROP TABLE RepTwitterACD
 if exists(select * from sys.tables where name=''RepTwitterAgente'') DROP TABLE RepTwitterAgente
@@ -69,12 +99,6 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		set @sql='if exists(select * from sys.procedures where name=''ccspRepOutDispositionsContacOwner'') DROP PROCEDURE ccspRepOutDispositionsContacOwner'
 		EXEC(@sql)
 
-
-		set @process = 'Drop PROCEDURE -------- ccspRepIVRSurveys'
-		set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepIVRSurveys'') drop procedure ccspRepIVRSurveys'
-		EXEC(@Sql)
-
-
 		set @process = 'Delete Filter Mail (10010,10020,10030,10040)'
 		set @sql='delete from ReportsFilters where id in(10010,10020,10030,10040)'
 		EXEC(@sql)
@@ -107,7 +131,7 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		 set @process = 'alter table  ccTipoCalifSubOUT---------'
 		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit not null'
 		 EXEC(@Sql)
-	
+
 		set @process = 'Add Column ccTipoCalifOUT.contactOwner'
 		set @sql='if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifOUT'')) ALTER TABLE ccTipoCalifOUT ADD [contactOwner] [bit] NULL'
 		 EXEC(@sql)
@@ -621,14 +645,14 @@ from
 	isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
 	case when ivro.selectedOption = '''' then ''systemTranslated_No_Option''
 	when rqa.questionId is null then ivro.selectedOption
-	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description    
+	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
 	else ''systemTranslated_Invalid'' end as ''Count'',
 	datepart(yy,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [year],
 	datepart(MM,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [month],
 	datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
 	datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
-	,rsq.orden  
+	,rsq.orden
 	from ccCallsIn cci with(nolock)
 	inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id and ivro.cal_id = cci.cal_id
 	inner join ccUsers ccu on cci.User_id = ccu.User_id
@@ -642,7 +666,7 @@ from
 
   union all
 
-  select distinct 
+  select distinct
 	cco.cal_Inicio as [date],cco.User_id as ''userId'',
 	isnull(ccu.Login, ''No agent'') as ''login'',
 	isnull(ivro.IVR_id, 0) as ''scriptId'',
@@ -655,10 +679,10 @@ from
 	''Camp - '' + isnull(ccc.[cam_descripcion],'''') as ''campACDDescription'',
 	isnull(ivro.questionId, 0) as ''questionId'',
 	isnull(sq.description,'''') as ''questionDescription'',
-	isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',	
+	isnull(sq.description,'''')+ ''_Count'' as ''question_Count'',
 	case when ivro.selectedOption = '''' then ''systemTranslated_No_Option''
 	when rqa.questionId is null then ivro.selectedOption
-	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description    
+	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
 	else ''systemTranslated_Invalid'' end as ''Count'',
 		datepart(yy,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [year],
 	datepart(MM,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [month],
@@ -666,19 +690,19 @@ from
 	datepart(HH,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [minutes]
 	,rsq.orden
-	from ccoCallsOut cco with(nolock)
+	from ccoCallsOut cco
 	inner join IVROptions ivro on cco.cal_id = ivro.cal_id
 	inner join ccUsers ccu on cco.User_id = ccu.User_id
 	inner join Survey s on ivro.surveyId = s.surveyId
 	inner join ccCamps ccc on cco.cam_id = ccc.cam_id
-	inner join SurveyQuestion sq on ivro.questionId = sq.questionId		
-	inner join relationSurveyQuestion rsq on rsq.surveyId = ivro.surveyId and rsq.questionId=sq.questionId     
+	inner join SurveyQuestion sq on ivro.questionId = sq.questionId
+	inner join relationSurveyQuestion rsq on rsq.surveyId = ivro.surveyId and rsq.questionId=sq.questionId
 	left join SurveyAnswer sa on convert(varchar(5),sa.digit) = ivro.selectedOption
 	left join relationQuestionAnswer rqa on rsq.surveyId = rqa.surveyId and rqa.questionId = rsq.questionId --and rqa.answerId = sa.answerId
 	where cal_inicio between @from and @to
-	
+
 )surveys
-order by calId,orden 
+order by calId,orden
 end'
 	EXEC(@Sql)
 

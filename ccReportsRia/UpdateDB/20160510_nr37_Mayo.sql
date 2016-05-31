@@ -8,6 +8,7 @@ Date: 2016/04/11
 Description:
 
 	Se agrega fix para ejeccuion por tiempo report master process
+	Fix Correcion por falta de columnas en el reporte de encuestas
 Database: ccReportsRiaPara
 Required version: 36
 

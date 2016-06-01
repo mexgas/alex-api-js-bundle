@@ -390,13 +390,12 @@ namespace MiddleWareReports
                         }
                         XmlElement el = xmlReport.CreateElement("", "Cell", "");
 
-
-                        el.SetAttribute("value", getAcdCampaignRelation(value, campaigns, acds));
+                        string campName = getAcdCampaignRelation(value, campaigns, acds);
+                        el.SetAttribute("value", campName);
                         el.SetAttribute("name", getPivotTranslatedColumns(translatedColumns[column.ColumnName]));
 
-
-                        row.AppendChild(el);
-
+                        if(!string.IsNullOrEmpty(campName))
+                            row.AppendChild(el);
                         value = translatedColumns[column.ColumnName];
 
                     }
@@ -410,15 +409,18 @@ namespace MiddleWareReports
         private string getAcdCampaignRelation(string value, Dictionary<string, string> campaigns, Dictionary<string, string> acds)
         {
             string[] split = value.Split(':');
+            String campName = string.Empty;
             if (value.StartsWith("call:i:"))//Acd
             {
-                value = acds[split[2]] + "(" + split[3] + ")";
+                if(acds.ContainsKey(split[2]))
+                    campName = acds[split[2]] + "(" + split[3] + ")";
             }
             else if (value.StartsWith("call:o:"))//Campaign
             {
-                value = campaigns[split[2]];
+                if(campaigns.ContainsKey(split[2]))
+                    campName = campaigns[split[2]];
             }
-            return value;
+            return campName;
         }
 
 

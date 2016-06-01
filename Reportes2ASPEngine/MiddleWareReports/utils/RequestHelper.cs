@@ -17,11 +17,12 @@ namespace MiddleWareReports
         public static NameValueCollection copyRequestQueryParameters(HttpRequest request)
         {
             NameValueCollection newCollection = new NameValueCollection();
-            if (request != null && request.QueryString != null)
-            {                
-                foreach (string key in request.QueryString)
+            NameValueCollection paramsCollection = request.RequestType == "POST" ? request.Form : request.QueryString;
+            if (request != null && paramsCollection != null)
+            {
+                foreach (string key in paramsCollection)
                 {
-                    newCollection.Add(key, request.QueryString[key]);
+                    newCollection.Add(key, paramsCollection[key]);
                 }              
             }
             return newCollection;

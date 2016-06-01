@@ -137,13 +137,13 @@ namespace MiddleWareReports
             report.AppendChild(name);
             report.AppendChild(getXmlDetailReports(xmlReport, process));
             report.AppendChild(getXmlRows(xmlReport, detailTable, "Rows"));
-            
+
             if (calculateTotals)
             {
                 report.AppendChild(getXmlRows(xmlReport, totalsTable, "TotalsRows"));
             }
 
-           
+
             //Get DB table paging
             XmlElement pageNode = innerPaginate(xmlReport, dynamicQuery);
             if (pageNode != null)
@@ -406,7 +406,7 @@ namespace MiddleWareReports
 
             foreach (DataRow dataRow in table.Rows) //Add rows to the XML
             {
-                Dictionary<string, string> findDuplicateds = new Dictionary<string, string>();
+                //Dictionary<string, string> findDuplicateds = new Dictionary<string, string>();
 
                 XmlElement row = xmlReport.CreateElement("", "Row", "");
                 foreach (DataColumn column in table.Columns)
@@ -428,8 +428,7 @@ namespace MiddleWareReports
                         row.AppendChild(el);
 
                         value = translatedColumns[column.ColumnName];
-                       
-                            findDuplicateds.Add(value, value);
+                        //findDuplicateds.Add(value, value);
                     }
                 }
                 rows.AppendChild(row);
@@ -449,12 +448,15 @@ namespace MiddleWareReports
 
             bool isTranslated;
             string valueTranslated;
-
-            if (translatedSpecialColumns.ContainsKey(column) && value.Contains("systemTranslated_"))
+            ///SOlo cuando se utiliza pivote no agrupado esta solo para la opcion Count homologar nuevo _SubFijo
+            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count"))
             {
-                valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
-                if (isTranslated)
-                    value = valueTranslated;
+                if (value.Contains("systemTranslated_"))
+                {
+                    valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
+                    if (isTranslated)
+                        value = valueTranslated;
+                }
             }
 
             return value;
@@ -639,10 +641,12 @@ namespace MiddleWareReports
                 string columns = pivotRow["columns"].ToString();
                 complementColumns = pivotRow["complementColumns"].ToString();
                 string pivotFunction = pivotRow["pivotFunction"].ToString();
+                string isGroupPivot = pivotRow["isGroupPivot"].ToString();
                 XmlElement element = xml.CreateElement("", "PivotColumn", "");
                 element.SetAttribute("columns", columns);
                 element.SetAttribute("complementColumns", complementColumns);
                 element.SetAttribute("pivotFunction", pivotFunction);
+                element.SetAttribute("isGroupPivot", isGroupPivot);
                 pivotColumns.AppendChild(element);
             }
             complementColumns = complementColumns.Trim();
@@ -841,7 +845,11 @@ namespace MiddleWareReports
             if (paramValueList["columns"] != null && paramValueList["columns"].Length > 0)
             {
                 int columnCount = 0;
-                string[] cols = paramValueList["columns"].Split('|');
+                string paramColumns = paramValueList["columns"].ToString();
+                int charType = Int32.Parse(paramColumns.Substring(0, paramColumns.IndexOf('|')));
+                paramColumns = paramColumns.Substring(paramColumns.IndexOf('|') + 1);
+                paramValueList["columns"] = paramColumns;
+                string[] cols = paramColumns.Split('|');
                 columnCount = cols.Length;
 
                 string havingOp = "";
@@ -960,13 +968,13 @@ namespace MiddleWareReports
                 //Check that table is not empty
                 EmptyResultException.dataTableIsEmpty(table);
 
-                if (columnCount == 1)
+                if (charType == 1 && columnCount == 1)
                 {
                     return Chart.transformToOneSerieXml(table);
                 }
                 else
                 {
-                    return Chart.transformToMultipleSeriesXml(table);
+                    return Chart.transformToMultipleSeriesXml(table, charType);
                 }
             }
             else
@@ -1191,6 +1199,14 @@ namespace MiddleWareReports
             }
             paramValueList.Remove("pivotFunction");
 
+            //Read isGroupPivot
+            bool isGroupPivot = true;
+            if (paramValueList["isGroupPivot"] != null && paramValueList["isGroupPivot"].Length > 0)
+            {
+                isGroupPivot = Convert.ToBoolean(paramValueList["isGroupPivot"]);
+            }
+            paramValueList.Remove("isGroupPivot");
+
             bool isPivotReport = (pivotColumns != "" && complementColumns != "" && pivotFunction != "");
 
             //Add time period column            
@@ -1396,8 +1412,10 @@ namespace MiddleWareReports
                     }
                 }
             }
-            dateColumnName= "[" + dateColumnName + "]";
-            tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName));
+            dateColumnName = "[" + dateColumnName + "]";
+
+
+            tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName, isGroupPivot));
 
             if (!(isPivotReport && !addCountColumn))
             {
@@ -1531,7 +1549,7 @@ namespace MiddleWareReports
         /// <param name="activeCRM">Indicates if the CRM reports are visible</param>
         /// <param name="activeEmail">Indicates if the EMAIL reports are visible</param>
         /// <returns>A xml containing the menus that the user can access</returns>
-        public XmlDocument getMenu(int sourceUserId, int activeChat, int activeAVRS, int activeCRM, int activeEmail)
+        public XmlDocument getMenu(int sourceUserId, int activeChat, int activeAVRS, int activeCRM, int activeEmail, int activeTwitter)
         {
             changeCulture();
             NameValueCollection reportParams = new NameValueCollection();
@@ -1540,6 +1558,7 @@ namespace MiddleWareReports
             reportParams.Add("activeAVRS", activeAVRS.ToString());
             reportParams.Add("activeCRM", activeCRM.ToString());
             reportParams.Add("activeEmail", activeEmail.ToString());
+            reportParams.Add("activeTwitter", activeTwitter.ToString());
             DataTable menus = db.executeSP("dbo.GetReportMenus", reportParams);
 
             XmlDocument xml = new XmlDocument();

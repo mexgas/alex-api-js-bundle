@@ -93,6 +93,9 @@
     <Compile Include="reports\email\RepEmailGeneral.cs" />
     <Compile Include="reports\inboundreports\RepInAbnd.cs" />
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
+    <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
+    <Compile Include="reports\outboundreports\RepOutDispositionsContacOwner.cs" />
+    <Compile Include="reports\outboundreports\RepSpecialAbndCamp.cs" />
     <Compile Include="reports\outboundreports\RepCallXfer.cs" />
     <Compile Include="reports\outboundreports\RepOutAnswCalls.cs" />
     <Compile Include="reports\outboundreports\RepOutCallsOnChatDetail.cs" />
@@ -107,6 +110,13 @@
     <Compile Include="reports\specialreports\RepSpececialCamMovs.cs" />
     <Compile Include="reports\specialreports\RepSpececialPromises.cs" />
     <Compile Include="reports\specialreports\RepSpecialCallKeyHistory.cs" />
+    <Compile Include="reports\specialreports\RepSpecialDialingResults.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByRegistry.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByState.cs" />
+    <Compile Include="reports\twitter\RepTwitterACD.cs" />
+    <Compile Include="reports\twitter\RepTwitterAgente.cs" />
+    <Compile Include="reports\twitter\RepTwitterDetail.cs" />
+    <Compile Include="reports\twitter\RepTwitterGeneral.cs" />
     <Compile Include="Resources\cwreportsengine.aspx.cs">
       <DependentUpon>cwreportsengine.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

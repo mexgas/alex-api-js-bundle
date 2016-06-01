@@ -69,6 +69,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
         int activeAVRS = 0;
         int activeCRM = 0;
         int activeEmail = 0;
+        int activeTwitter = 0;
         StringBuilder html = new StringBuilder();
         bool hadException = false;
         string strCulture = "";
@@ -227,6 +228,30 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
         }
 
+        //Set active twitter session
+        if (ParametersReader.getParameters("activeTwitter", false) != "")
+        {
+            int.TryParse(ParametersReader.getParameters("activeTwitter", true), out activeTwitter);
+            if (Session["activeTwitter"] == null)
+            {
+                Session["activeTwitter"] = activeTwitter;
+            }
+            else
+            {
+                if (!activeCRM.Equals(Session["activeTwitter"].ToString()))
+                {
+                    Session["activeTwitter"] = activeTwitter;
+                }
+            }
+        }
+        else
+        {
+            if (Session["activeTwitter"] != null)
+            {
+                int.TryParse(ParametersReader.getParameters("activeTwitter", true), out activeTwitter);
+            }
+        }
+
         try
         {
             //Validate user id
@@ -303,7 +328,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
             else if (menus.Length > 0) //Get menus of the app
             {
-                Response.Write(report.getMenu(sourceUserId, activeChat, activeAVRS, activeCRM, activeEmail).OuterXml);
+                Response.Write(report.getMenu(sourceUserId, activeChat, activeAVRS, activeCRM, activeEmail, activeTwitter).OuterXml);
             }
             else if (chart.Length > 0) //Get chart by report
             {

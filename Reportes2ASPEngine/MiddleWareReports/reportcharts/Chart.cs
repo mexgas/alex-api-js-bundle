@@ -12,7 +12,7 @@ namespace MiddleWareReports
     /// Class that helps to transform a DataTable into XMLs 
     /// that can be consumed to create charts.
     /// </summary>
-    public static class Chart 
+    public static class Chart
     {
 
         const string YEAR = "year";
@@ -25,14 +25,14 @@ namespace MiddleWareReports
         const string GROUPBYDAY = "year,month,day";
         const string GROUPBYHOUR = "year,month,day,hour";
         const string GROUPBYMINUTES = "year,month,day,hour,minutes";
-    
+
         /// <summary>
         /// Transforms a DataTable into a chartXml that has multiple series. The first column is considered 
         /// the x-axis while the last column is intended to be the y-axis value of the inner columns that act as a group.
         /// </summary>
         /// <param name="tableData">The DataTable to be transformed into a chart xml with multiple series.</param>
         /// <returns>A chart xml that specifies a x-axis and also various series with different y values.</returns>
-        public static XmlDocument transformToMultipleSeriesXml(DataTable tableData)
+        public static XmlDocument transformToMultipleSeriesXml(DataTable tableData, int chartype)
         {
             LinkedList<string> columns = new LinkedList<string>();
             XmlDocument xml = new XmlDocument();
@@ -43,28 +43,40 @@ namespace MiddleWareReports
 
             //Translate columns, only translated columns will appear in the collection
             NameValueCollection translatedColumns = TranslatorHelper.translateColumns(tableData.Columns);
-                        
             //Get the columns names of the table
+            if (chartype == 3)
+            {
+                DataColumn colTotal = tableData.Columns.Add("total", typeof(string));
+                colTotal.SetOrdinal(0);
+                colTotal.DefaultValue = "Total";
+                foreach (DataRow row in tableData.Rows)
+                {
+                    row["total"] = "Total";
+                }
+            }
             foreach (DataColumn col in tableData.Columns)
             {
-                columns.AddLast(col.ColumnName);              
+                columns.AddLast(col.ColumnName);
             }
-            
+
             if (columns.Count > 0)
             {
                 string xAxis = columns.First.Value; //First column is the first part of the x-axis
                 string countColumn = columns.Last.Value;
-                string lastXValue = "" ; //Value used to determine if we had moved further into the x-axis
-                LinkedList<string> groupByDates = checkIfDateGroupBy(columns); //Determines if the table is ordered on a certain date group
+                string lastXValue = ""; //Value used to determine if we had moved further into the x-axis
+
+                LinkedList<string> groupByDates = new LinkedList<string>();
+                if (chartype != 3)
+                    checkIfDateGroupBy(columns); //Determines if the table is ordered on a certain date group
                 string xAxisGroupByValue = transformToGroupByColumn(xAxis, groupByDates); // x-axis value 
                 XmlElement xfieldXml = null;
 
                 StringBuilder yFieldBuilder = new StringBuilder();
-                foreach(string col in columns)
+                foreach (string col in columns)
                 {
                     if (!col.Equals(xAxis) && !col.Equals(countColumn) && !groupByDates.Contains(col)
                             && translatedColumns[col] != null && translatedColumns[col].Length > 0)
-                    {                       
+                    {
                         //Serie label
                         if (yFieldBuilder.Length == 0)
                         {
@@ -74,7 +86,7 @@ namespace MiddleWareReports
                         {
                             yFieldBuilder.Append("-" + translatedColumns[col]);
                         }
-                    }                 
+                    }
                 }
 
                 //Create Series
@@ -89,17 +101,17 @@ namespace MiddleWareReports
 
                 foreach (DataRow row in tableData.Rows)
                 {
-                   
+
                     StringBuilder yValueBuilder = new StringBuilder();
                     int countSum = -1;
 
                     foreach (string col in columns)
                     {
 
-                        string tempColumn = valueOfGroupByColumn(xAxis,groupByDates,row);
+                        string tempColumn = valueOfGroupByColumn(xAxis, groupByDates, row);
 
                         //We have move into the x-axis to another point
-                        if (col.Equals(xAxis)  && !lastXValue.Equals(tempColumn))
+                        if (col.Equals(xAxis) && !lastXValue.Equals(tempColumn))
                         {
                             lastXValue = "";
                         }
@@ -109,21 +121,21 @@ namespace MiddleWareReports
                         {
                             if (xfieldXml != null)
                             {
-                                axisNode.AppendChild(xfieldXml);                         
+                                axisNode.AppendChild(xfieldXml);
                             }
 
                             //New XmlNode with current x-axis value
-                            xfieldXml = xml.CreateElement("", "Xfield", "");                         
+                            xfieldXml = xml.CreateElement("", "Xfield", "");
                             xfieldXml.SetAttribute("xvalue", tempColumn);
                             lastXValue = tempColumn;
                         }
 
                         //If current row´s column is not part of the x-axis add it series value
-                        if (!col.Equals(xAxis) && !col.Equals(countColumn) && !groupByDates.Contains(col) 
+                        if (!col.Equals(xAxis) && !col.Equals(countColumn) && !groupByDates.Contains(col)
                             && translatedColumns[col] != null && translatedColumns[col].Length > 0)
                         {
                             if (xfieldXml != null)
-                            {                                                            
+                            {
                                 //Serie value
                                 if (yValueBuilder.Length == 0)
                                 {
@@ -154,7 +166,7 @@ namespace MiddleWareReports
 
                     //Create serie node
                     XmlElement yField2 = xml.CreateElement("", "Yfield", "");
-                    yField2.SetAttribute("yvalue", chartItem.yValue);                    
+                    yField2.SetAttribute("yvalue", chartItem.yValue);
                     if (countSum == -1) // Column was not found into translated columns
                     {
                         countSum = 0;
@@ -162,7 +174,7 @@ namespace MiddleWareReports
                     yField2.SetAttribute("ycount", countSum.ToString());
 
                     //Reset serie values to be used in the next row
-                    xfieldXml.AppendChild(yField2);                  
+                    xfieldXml.AppendChild(yField2);
                     yValueBuilder = new StringBuilder();
                     countSum = -1;
                 }
@@ -176,11 +188,11 @@ namespace MiddleWareReports
                 }
 
                 if (xfieldXml != null)
-                {                    
-                    axisNode.AppendChild(xfieldXml);                    
+                {
+                    axisNode.AppendChild(xfieldXml);
                 }
 
-                if(axisNode != null)
+                if (axisNode != null)
                 {
                     xml.ChildNodes.Item(1).AppendChild(axisNode);
                 }
@@ -189,7 +201,7 @@ namespace MiddleWareReports
                 {
                     xml.ChildNodes.Item(1).AppendChild(seriesNode);
                 }
-                
+
             }
             return xml;
         }
@@ -221,7 +233,7 @@ namespace MiddleWareReports
             {
                 columns.AddLast(col.ColumnName);
             }
-                                               
+
             if (columns.Count > 0)
             {
                 StringBuilder xLabel = new StringBuilder();
@@ -243,22 +255,31 @@ namespace MiddleWareReports
                 //Node that represents the x-axis
                 XmlElement axisNode = xml.CreateElement("", "Axis", "");
                 axisNode.SetAttribute("xname", xLabel.ToString());
-                
+
                 string countColumn = columns.Last.Value;
-               
+
                 List<ChartItem> sortedSeries = new List<ChartItem>();
 
                 foreach (DataRow row in tableData.Rows)
                 {
-                   
+
                     StringBuilder xValue = new StringBuilder();
 
                     //All the columns except the last one are combined into the x-axis
                     foreach (string col in columns)
                     {
                         if (translatedColumns[col] != null && translatedColumns[col].Length > 0)
-                        {                        
-                            xValue.Append(string.Format("{0}-", row[col]));
+                        {
+                            string value = row[col].ToString();
+                            if (value.Contains("systemTranslated_"))
+                            {
+                                bool isTranslated;
+                                string valueTranslated;
+                                valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
+                                if (isTranslated)
+                                    value = valueTranslated;
+                            }
+                            xValue.Append(string.Format("{0}-", value));
                         }
                     }
 
@@ -299,9 +320,9 @@ namespace MiddleWareReports
         /// <param name="xAxis">Column considered the x-axis</param>
         /// <param name="dateColumns">Group of columns forming a date</param>        
         /// <returns>The value of appending all the columns with a '-'</returns>
-        private static string transformToGroupByColumn(string xAxis,LinkedList<string> dateColumns)
+        private static string transformToGroupByColumn(string xAxis, LinkedList<string> dateColumns)
         {
-            string result = TranslatorHelper.getResource(xAxis) ;
+            string result = TranslatorHelper.getResource(xAxis);
             bool ignoreXaxis = false;
 
             if (dateColumns.Contains(xAxis))
@@ -332,7 +353,7 @@ namespace MiddleWareReports
         /// <param name="dateColumns">A group time period ex: {Month,day,hour,minutes}</param>
         /// <param name="row">Row from wich the value will be retrieved</param>
         /// <returns>The appended values of the columns in the group by clause for the current row</returns>
-        private static string valueOfGroupByColumn(string xAxis, LinkedList<string> dateColumns,DataRow row)
+        private static string valueOfGroupByColumn(string xAxis, LinkedList<string> dateColumns, DataRow row)
         {
             string result = "";
             bool ignoreXaxis = false;
@@ -350,7 +371,7 @@ namespace MiddleWareReports
             foreach (string col in dateColumns)
             {
                 if (ignoreXaxis)
-                {                   
+                {
                     result += row[col].ToString();
                     ignoreXaxis = false;
                 }
@@ -360,7 +381,7 @@ namespace MiddleWareReports
                 }
             }
 
-            return result;           
+            return result;
         }
 
         /// <summary>
@@ -372,15 +393,15 @@ namespace MiddleWareReports
         /// </remarks>
         /// <param name="columns">The collection of columns that will be checked</param>
         /// <returns>A collection of the time measures that where found in the initial column list</returns>
-        private static LinkedList<string> checkIfDateGroupBy(LinkedList<string> columns)        
+        private static LinkedList<string> checkIfDateGroupBy(LinkedList<string> columns)
         {
-            LinkedList<string> result = new LinkedList<string>();            
+            LinkedList<string> result = new LinkedList<string>();
             string[] dateGroups = { YEAR, MONTH, DAY, HOUR, MINUTES };
             foreach (string group in dateGroups)
             {
-                if(columns.Contains(group))
+                if (columns.Contains(group))
                 {
-                   result.AddLast(group);
+                    result.AddLast(group);
                 }
             }
 

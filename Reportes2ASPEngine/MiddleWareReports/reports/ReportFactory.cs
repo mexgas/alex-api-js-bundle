@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using MiddleWareReports.reports.specialreports;
+using MiddleWareReports.reports.ivrreports;
 
 namespace MiddleWareReports
 {
@@ -104,6 +106,16 @@ namespace MiddleWareReports
                     return new RepOutAnswCalls();
                 case 4140: //Answered Calls On Chat Detail
                     return new RepOutCallsOnChatDetail();
+                case 4150:
+                    return new RepSpecialAbndCamp();
+                case 4160:
+                    return new RepOutDispositionsContacOwner();
+                case 4220: //Telephone Numbers by State Report
+                    return new RepSpecialTelephoneNumbersByState();
+                case 4230://Telephone Numbers by Record/List Report
+                    return new RepSpecialTelephoneNumbersByRegistry();
+                case 4240://Dialing Results Report
+                    return new RepSpecialDialingResults();
                 case 6000: //IVR
                     return null; //"IVR"
                 case 6010:
@@ -114,6 +126,8 @@ namespace MiddleWareReports
                     return new RepIVRFirstOption();
                 case 6040:
                     return new RepIVRByOptions();
+                case 6050: //IVR Surveys Report
+                    return new RepIVRSurveys();
                 case 7000: //ESP
                     return null; //"ESP" 
                 case 7010: //Abandon reports
@@ -182,6 +196,14 @@ namespace MiddleWareReports
                     return new RepEmailDetail();
                 case 10040://reporte email general
                     return new RepEmailGeneral();
+                case 11010://reporte twitter ACD
+                    return new RepTwitterACD();
+                case 11020://reporte twitter agent
+                    return new RepTwitterAgente();
+                case 11030://reporte twitter detail
+                    return new RepTwitterDetail();
+                case 11040://reporte twitter general
+                    return new RepTwitterGeneral();
                 default:
                     throw new ReportNotFoundException("Report Not Found"); //"";
             }

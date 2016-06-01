@@ -161,9 +161,7 @@ namespace MiddleWareReports
         /// <param name="isTranslated">Indicates if the property was found into the current culture resources file</param>
         /// <returns>The value of the property or an INVALID_PROPERTY_propertyName message if not found</returns>
         public static string getResourceProperty(string propertyName, out bool isTranslated, bool isDetail = false)
-        {
-            //Thread.CurrentThread.CurrentCulture = new CultureInfo("pt-BR");
-            //Thread.CurrentThread.CurrentUICulture = new CultureInfo("pt-BR");
+        {            
             string original = propertyName;
             propertyName = propertyName.Replace(" ", "");
             string value = "INVALID_PROPERTY_" + propertyName;

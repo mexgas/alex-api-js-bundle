@@ -8,6 +8,7 @@ Date: 2016/06/08
 Description:
 
 Se agrega permiso ccuser de sysadmin para utilizar el garbage collector
+se agrega sp  PROCEDURE [dbo].[ccsp_ResetGarbageCollector]
 
 
 Database: CCenterRia
@@ -49,8 +50,27 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		set @Sql= 'EXEC master..sp_addsrvrolemember @loginame = N''ccUser'', @rolename = N''sysadmin'''
 		EXEC(@Sql)
 
-		set @process = ''
-		set @sql=''
+		set @process = 'create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]'
+		set @sql='if not exists (select * from sys.procedures where name = N''ccsp_ResetGarbageCollector'')
+	begin
+create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]
+	
+AS
+BEGIN
+	
+	
+CHECKPOINT
+
+DBCC DROPCLEANBUFFERS
+
+DBCC FREEPROCCACHE
+
+DBCC FREESYSTEMCACHE (''ALL'') WITH MARK_IN_USE_FOR_REMOVAL
+
+DBCC FREESESSIONCACHE
+
+END
+end'
 		EXEC(@sql)
 
 		EXEC(@sql)

@@ -50,30 +50,24 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		set @Sql= 'EXEC master..sp_addsrvrolemember @loginame = N''ccUser'', @rolename = N''sysadmin'''
 		EXEC(@Sql)
 
+		set @process = 'drop PROCEDURE -------- ccsp_ResetGarbageCollector'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_ResetGarbageCollector'') drop procedure ccsp_ResetGarbageCollector'
+		EXEC(@Sql)
+
 		set @process = 'create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]'
-		set @sql='if not exists (select * from sys.procedures where name = N''ccsp_ResetGarbageCollector'')
-	begin
-create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]
-	
+		set @sql='create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]
 AS
 BEGIN
-	
-	
+
 CHECKPOINT
-
 DBCC DROPCLEANBUFFERS
-
 DBCC FREEPROCCACHE
-
 DBCC FREESYSTEMCACHE (''ALL'') WITH MARK_IN_USE_FOR_REMOVAL
-
 DBCC FREESESSIONCACHE
-
-END
-end'
+END'
 		EXEC(@sql)
 
-		EXEC(@sql)
+
 
 		/* End script release */
 

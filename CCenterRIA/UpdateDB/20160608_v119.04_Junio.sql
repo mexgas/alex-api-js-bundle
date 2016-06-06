@@ -50,6 +50,10 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		set @Sql= 'EXEC master..sp_addsrvrolemember @loginame = N''ccUser'', @rolename = N''sysadmin'''
 		EXEC(@Sql)
 
+		set @process = 'Insert messageStatus file not exists'
+		set @sql='if not exists(select * from messageStatus where name=''Other'') insert into messageStatus(name,description,isFinished) values(''Other'',''File not exists'',0)'
+		EXEC(@sql)
+
 		set @process = 'drop PROCEDURE -------- ccsp_ResetGarbageCollector'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_ResetGarbageCollector'') drop procedure ccsp_ResetGarbageCollector'
 		EXEC(@Sql)

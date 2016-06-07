@@ -41,14 +41,12 @@ exec @actualVersion = ccsp_getVersion 'BD'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
+EXEC master..sp_addsrvrolemember @loginame = N'ccUser', @rolename = N'sysadmin'
+
 if @actualVersion = @version and @actualVersionFix = @versionfix-1
 	begin
 		begin tran
 		begin try
-
-		set @process = 'Add Role sysadmin -- ccUser'
-		set @Sql= 'EXEC master..sp_addsrvrolemember @loginame = N''ccUser'', @rolename = N''sysadmin'''
-		EXEC(@Sql)
 
 		set @process = 'Insert messageStatus file not exists'
 		set @sql='if not exists(select * from messageStatus where name=''Other'') insert into messageStatus(name,description,isFinished) values(''Other'',''File not exists'',0)'
@@ -91,7 +89,7 @@ END'
 		rollback tran
 		end catch
 	end
-else if if @actualVersion = @version and @actualVersionFix = @versionfix begin
+else if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin tran
 	begin try
 

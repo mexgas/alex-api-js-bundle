@@ -307,8 +307,151 @@ else if @action = 9 begin --Call History by CamId and day
     select @RowsPerPage as pagesize, @PageNumber as  currentpage, @countRegistry/cast(@RowsPerPage as float) as totalpages  
   end  
 end'
-		EXEC(@sql)
 
+EXEC(@sql)
+
+    set @process = 'ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics] -----------'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics] 
+@inboundId int=0,
+@Option AS SMALLINT=0,
+@User_id AS SMALLINT=0
+AS
+BEGIN
+
+SET NOCOUNT ON;
+
+if(@Option=0)
+begin
+  select
+  count(*) received,
+  count(case when messageStatusId = 1 then 1 else null end) pending,
+  count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+  count(case when messageStatusId = 4 then 1 else null end) unassigned,
+  count(case when messageStatusId in (5,6,10,11) then 1 else null end) sent,
+  count(case when messageStatusId = 7 then 1 else null end) rejected,
+  count(case when messageStatusId = 8 then 1 else null end) programFwd,
+  count(case when messageStatusId = 9 then 1 else null end) forwarding,
+  count(case when messageStatusId in (10,11) then 1 else null end) closed,
+  count(case when messageStatusId = 3 then 1 else null end) active,
+  isnull(AVG(B.twait + B.tretention + B.tresponse),0) avgtAtention,
+  isnull(AVG(B.twait),0) avgtWait,
+  isnull(MAX(B.twait),0) maxtWait
+  from conversation A
+  inner join message B on A.conversationId=b.conversationId
+  where inboundId= @inboundId
+  and (
+    (
+     messageStatusId in (1,4) or 
+    (tQueue is not null and [date] <> convert(varchar(10), tQueue,121) and convert(varchar(10), tQueue,121) = convert(varchar(10),getdate(),121)) or
+    (tSend is not null and [date] <> convert(varchar(10), tsend,121) and convert(varchar(10), tsend,121) = convert(varchar(10), getdate(),121))
+    )
+   or [date] between convert(varchar(10),getdate(),121) and convert(varchar(10),getdate()+1,121) 
+   )
+end
+if @Option = 1
+BEGIN
+
+  select
+  count(*) received,
+  count(case when messageStatusId = 1 then 1 else null end) pending,
+  count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+  count(case when messageStatusId = 4 then 1 else null end) unassigned,
+  count(case when messageStatusId in (5,6,10,11) then 1 else null end) sent,
+  count(case when messageStatusId = 7 then 1 else null end) rejected,
+  count(case when messageStatusId = 8 then 1 else null end) programFwd,
+  count(case when messageStatusId = 9 then 1 else null end) forwarding,
+  count(case when messageStatusId in (10,11) then 1 else null end) closed,
+  count(case when messageStatusId = 3 then 1 else null end) active ,
+  isnull(AVG(msg.twait + msg.tretention + msg.tresponse),0) avgtAtention,
+  isnull(AVG(msg.twait),0) avgtWait,
+  isnull(MAX(msg.twait),0) maxtWait,
+  InboundId inboundId
+  from message msg (nolock) join conversation con (nolock) on con.conversationId=msg.conversationId
+  where inboundId in (select inbound_id from ccInbound where inbound_id in (SELECT cam_id FROM ccSupervisorCam WHERE user_id = @User_id AND tipo = 0) and chat = 3)
+  and (
+    (
+     messageStatusId in (1,4) or 
+    (tQueue is not null and [date] <> convert(varchar(10), tQueue,121) and convert(varchar(10), tQueue,121) = convert(varchar(10),getdate(),121)) or
+    (tSend is not null and [date] <> convert(varchar(10), tsend,121) and convert(varchar(10), tsend,121) = convert(varchar(10), getdate(),121))
+    )
+   or [date] between convert(varchar(10),getdate(),121) and convert(varchar(10),getdate()+1,121) 
+   )
+  GROUP BY InboundId
+  END
+END
+'
+EXEC(@sql)
+
+    set @process = 'ALTER PROCEDURE [dbo].[ccsp_TwitterInitialStatistics] -----------'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_TwitterInitialStatistics] 
+@inboundId int=0,
+@Option AS SMALLINT=0,
+@User_id AS SMALLINT=0
+AS
+BEGIN
+
+  SET NOCOUNT ON;
+
+  if(@Option=0)
+  begin
+    select
+    count(*) received,
+    count(case when messageStatusId = 1 then 1 else null end) pending,
+    count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+    count(case when messageStatusId = 4 then 1 else null end) unassigned,
+    count(case when messageStatusId in (5,6,10,11) then 1 else null end) sent,
+    count(case when messageStatusId = 7 then 1 else null end) rejected,
+    count(case when messageStatusId = 8 then 1 else null end) programFwd,
+    count(case when messageStatusId = 9 then 1 else null end) forwarding,
+    count(case when messageStatusId in (10,11) then 1 else null end) closed,
+    count(case when messageStatusId = 3 then 1 else null end) active ,
+    isnull(AVG(msg.twait + msg.tretention + msg.tresponse),0) avgtAtention,
+    isnull(AVG(msg.twait),0) avgtWait,
+    isnull(MAX(msg.twait),0) maxtWait
+    from messageOutTwitter msg(nolock) join conversationTwitter con (nolock) on con.conversationTwitterId=msg.conversationTwitterId
+    where inboundId=@inboundId 
+    and (
+      (
+       messageStatusId in (1,4) or 
+      (tQueue is not null and [date] <> convert(varchar(10), tQueue,121) and convert(varchar(10), tQueue,121) = convert(varchar(10),getdate(),121)) or
+      (tSend is not null and [date] <> convert(varchar(10), tsend,121) and convert(varchar(10), tsend,121) = convert(varchar(10), getdate(),121))
+      )
+      or [date] between convert(varchar(10),getdate(),121) and convert(varchar(10),getdate()+1,121) 
+    )
+  end
+  if @Option = 1
+  BEGIN
+    select
+    count(*) received,
+    count(case when messageStatusId = 1 then 1 else null end) pending,
+    count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+    count(case when messageStatusId = 4 then 1 else null end) unassigned,
+    count(case when messageStatusId in (5,6,10,11) then 1 else null end) sent,
+    count(case when messageStatusId = 7 then 1 else null end) rejected,
+    count(case when messageStatusId = 8 then 1 else null end) programFwd,
+    count(case when messageStatusId = 9 then 1 else null end) forwarding,
+    count(case when messageStatusId in (10,11) then 1 else null end) closed,
+    count(case when messageStatusId = 3 then 1 else null end) active ,
+    isnull(AVG(msg.twait + msg.tretention + msg.tresponse),0) avgtAtention,
+    isnull(AVG(msg.twait),0) avgtWait,
+    isnull(MAX(msg.twait),0) maxtWait,
+    InboundId inboundId
+    from messageOutTwitter msg (nolock) join conversationTwitter con (nolock) on con.conversationTwitterId=msg.conversationTwitterId
+    where inboundId in (select inbound_id from ccInbound where inbound_id in (SELECT cam_id FROM ccSupervisorCam WHERE user_id = @User_id AND tipo = 0) and chat = 4)
+
+    and (
+      (
+       messageStatusId in (1,4) or 
+      (tQueue is not null and [date] <> convert(varchar(10), tQueue,121) and convert(varchar(10), tQueue,121) = convert(varchar(10),getdate(),121)) or
+      (tSend is not null and [date] <> convert(varchar(10), tsend,121) and convert(varchar(10), tsend,121) = convert(varchar(10), getdate(),121))
+      )
+      or [date] between convert(varchar(10),getdate(),121) and convert(varchar(10),getdate()+1,121) 
+    )
+    GROUP BY InboundId
+  END
+END
+'
+		EXEC(@sql)
 
 		/* End script release */
 

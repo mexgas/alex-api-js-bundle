@@ -4,13 +4,13 @@ Fecha: 2014/10/06
 Descripcion:
 
 	SP ReportsMasterProcessAVRS: Se cambia para que se ejecuten la replicas de manera paulatina
-Version requerida: 19
+Version requerida: 34
 */
 set nocount on
 declare @Version int
 declare @Version_Actual int
 ---------------- VERSION ----------------
-	Set @Version = 20
+	Set @Version = 35
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 	if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version

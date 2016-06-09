@@ -56,6 +56,10 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_ResetGarbageCollector'') drop procedure ccsp_ResetGarbageCollector'
 		EXEC(@Sql)
 
+    set @process = 'update menu -- Admin Encuestas'
+    set @Sql= 'update ccMenus set menu_descrip = ''Encuestas|Surveys'', release = ''51d79747960460b9359fc88c227e8e0b14736dd3ca50c7b9604fd08b110deae7'' where menu_id = 86'
+    EXEC(@Sql)
+
 		set @process = 'create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]'
 		set @sql='create PROCEDURE [dbo].[ccsp_ResetGarbageCollector]
 AS

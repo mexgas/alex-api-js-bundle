@@ -38,25 +38,25 @@ if @Version_Actual >= @Version
 	declare @passwordSQL nvarchar(50)
 	declare @userNameWin nvarchar(50)
 	declare @passwordWin nvarchar(50)
-	
+
 	declare @publisherLogin nvarchar(max)
 	declare @publisherPassword nvarchar(max)
 
 	declare @snapshotFolder nvarchar(max)
 
 	declare @settingBD nvarchar(100)
-		
+
 	declare @temp table	(id int, value nvarchar(100));
 	select @settingBD = par_valor from TREC_PARAMETROS where par_id = 73
 
-	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|') 
-	
+	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+
 	select @userNameWin = value  from @temp where id = 1
 	select @passwordWin = value  from @temp where id = 2
 	select @userNameSQL = value  from @temp where id = 3
 	select @passwordSQL = value  from @temp where id = 4
-	select @hostName = value  from @temp where id = 5	
-	
+	select @hostName = value  from @temp where id = 5
+
 	-----agregado de credenciales WINDOWS-----
 	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
 	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
@@ -65,7 +65,7 @@ if @Version_Actual >= @Version
 	set @publisherLogin = isnull(@userNameSQL,'replication')
 	set @publisherPassword = isnull(@passwordSQL,'replication')
 
-	-----Folder compartido para las replicas-----	
+	-----Folder compartido para las replicas-----
 	set @snapshotFolder = '\\' + @hostName + '\ReplData'
 
 	/****************************************************/
@@ -282,6 +282,16 @@ if @Version_Actual >= @Version
 
 	EXEC sp_change_agent_parameter @profile_id = @profileidDA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
 	EXEC sp_change_agent_parameter @profile_id = @profileidMA, @parameter_name = N'-QueryTimeout', @parameter_value = 3600
+
+	/******************************/
+	/*** Change user dboowner *****/
+	/******************************/
+
+	if exists (select * from sys.databases where name='CCRecorderRIA')
+	begin
+		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='CCRecorderRIA')
+			ALTER AUTHORIZATION ON DATABASE::CCRecorderRIA TO sa
+	end
 
 
 	/*************************/

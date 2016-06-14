@@ -68,6 +68,22 @@ namespace TestCommons.Tests
             }
         }
 
+        [TestMethod()]
+        public void existsColumfuncEspDtmf()
+        {
+            string error = string.Empty;
+            string query = "select count(*) from syscolumns where name='funcEspDtmf' and OBJECT_NAME(syscolumns.id)='cccamps'";
+            try
+            {
+                bool res = (int)db.executeScalar(query, out error) > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
+            }
+        }
+
 
 
 

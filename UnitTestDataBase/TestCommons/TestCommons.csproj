@@ -36,6 +36,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -48,6 +49,7 @@
     <Compile Include="util\Aes.cs" />
     <Compile Include="util\ILogger.cs" />
     <Compile Include="util\Logger.cs" />
+    <Compile Include="ValidateResponseASPX.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="util\Ionic.Zip.dll" />

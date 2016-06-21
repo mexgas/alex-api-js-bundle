@@ -68,6 +68,36 @@ namespace TestCommons.Tests
             }
         }
 
+        [TestMethod()]
+        public void existsColumfuncEspDtmf()
+        {            
+            string query = "select count(*) from syscolumns where name='funcEspDtmf' and OBJECT_NAME(syscolumns.id)='cccamps'";
+            try
+            {
+                bool res = (int)db.executeScalar(query) > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1}", query, ex.Message));
+            }
+        }
+
+        [TestMethod()]
+        public void existsTableOptionIVR()
+        {
+            string query = "select count(*) from sys.tables where name='optionIVR'";
+            try
+            {
+                bool res = (int)db.executeScalar(query) > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1}", query, ex.Message));
+            }
+        }
+
 
 
 

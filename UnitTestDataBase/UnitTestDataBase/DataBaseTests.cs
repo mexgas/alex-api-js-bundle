@@ -151,22 +151,22 @@ namespace TestCommons.Tests
         }
 
         [TestMethod()]
-        public void executeCCSP_GetCampsNvosCBAndccsp_OUTGetNewJobs()
+        public void executeCCSP_OUTGetNewJobs()
         {
-            string query1 = "exec ccsp_RIAGetCampsNvosCB @cam_id=1,@Tipo=2,@user_id=1";
-            string query2 = "exec ccsp_OUTGetNewJobs @cam_id=1";
+            
+            string query = "exec ccsp_OUTGetNewJobs @cam_id=1";
             string error = string.Empty;
             try
             {
-                List<Object[]> list = db.executeListObject(query1, out error);
+                List<Object[]> list = db.executeListObject(query, out error);
                 bool res = list.Count > 0;
                 Assert.IsTrue(res);
             }
             catch (Exception ex)
             {
-                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query1, error, ex.Message));
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
             }
-        }
+        }        
 
     }
 }

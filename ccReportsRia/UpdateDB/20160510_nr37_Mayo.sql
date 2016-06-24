@@ -126,11 +126,11 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		EXEC(@Sql)
 
 		set @process = 'alter table  ccTipoCalifSub---------'
-		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub'')) alter table ccTipoCalifSub add contactOwner bit not null'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub'')) alter table ccTipoCalifSub add contactOwner bit null'
 		 EXEC(@Sql)
 
 		 set @process = 'alter table  ccTipoCalifSubOUT---------'
-		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit not null'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit null'
 		 EXEC(@Sql)
 
 		set @process = 'Add Column ccTipoCalifOUT.contactOwner'

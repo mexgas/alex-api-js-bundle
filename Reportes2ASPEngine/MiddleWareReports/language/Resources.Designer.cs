@@ -88,6 +88,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a _.
+        /// </summary>
+        public static string _UnCount {
+            get {
+                return ResourceManager.GetString("_UnCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Abandonado por agente.
         /// </summary>
         public static string abandonadoAgente {

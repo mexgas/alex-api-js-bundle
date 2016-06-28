@@ -449,7 +449,7 @@ namespace MiddleWareReports
             bool isTranslated;
             string valueTranslated;
             ///SOlo cuando se utiliza pivote no agrupado esta solo para la opcion Count homologar nuevo _SubFijo
-            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count"))
+            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count") || column.EndsWith("_UnCount"))
             {
                 if (value.Contains("systemTranslated_"))
                 {
@@ -474,7 +474,7 @@ namespace MiddleWareReports
             string partToTranslate;
             string partTraslated;
 
-            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg"))
+            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
             {
                 partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
                 partToTranslate = columnName.Substring(columnName.LastIndexOf("_"));

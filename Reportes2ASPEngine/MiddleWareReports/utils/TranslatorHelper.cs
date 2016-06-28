@@ -261,7 +261,7 @@ namespace MiddleWareReports
         /// <returns>The value that indicates if the column is a pivot column</returns>
         private static bool isPivotColumn(string column)
         {
-            return (column.EndsWith("_Count") || column.EndsWith("_Time") || column.EndsWith("_Avg"));
+            return (column.EndsWith("_Count") || column.EndsWith("_Time") || column.EndsWith("_Avg") || column.EndsWith("_UnCount"));
         }
 
         private static bool isNumeric(string number)

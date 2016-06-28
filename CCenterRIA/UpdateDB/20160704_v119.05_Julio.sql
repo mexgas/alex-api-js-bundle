@@ -536,52 +536,39 @@ set nocount off'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW Reports Migration Chat'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Reports Migration Chat'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Reports Migration Chat'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Reports Migration Chat'')	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Reports Migration Chat'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- NuxibaNewReportsMaintenancePlan'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''NuxibaNewReportsMaintenancePlan'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''NuxibaNewReportsMaintenancePlan'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''NuxibaNewReportsMaintenancePlan'') EXEC msdb.dbo.sp_delete_job @job_name=N''NuxibaNewReportsMaintenancePlan'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW AutoStart'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW AutoStart'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW AutoStart'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW AutoStart'')	EXEC msdb.dbo.sp_delete_job @job_name=N''CW AutoStart'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW Campaign summary'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Campaign summary'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Campaign summary'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Campaign summary'')	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Campaign summary'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW Reports Migration Chat'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW (AutoStart),(allback/abandoned update),(Campaign summary)'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(allback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW (AutoStart),(allback/abandoned update),(Campaign summary)'')	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(allback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW (AutoStart),(Callback/abandoned update),(Campaign summary)'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'') 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW Callback/abandoned update'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Callback/abandoned update'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Callback/abandoned update'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Callback/abandoned update'') EXEC msdb.dbo.sp_delete_job @job_name=N''CW Callback/abandoned update'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- AVRS Merge Replication'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''AVRS Merge Replication'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''AVRS Merge Replication'', @delete_unused_schedule=1'
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''AVRS Merge Replication'') EXEC msdb.dbo.sp_delete_job @job_name=N''AVRS Merge Replication'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'DROP JOB -- CW Merge Replication'
-		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Merge Replication'')
-	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Merge Replication'', @delete_unused_schedule=1'
-		EXEC(@sql)
-
-		set @process = ''
-		set @sql=''
+		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Merge Replication'')	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Merge Replication'', @delete_unused_schedule=1'
 		EXEC(@sql)
 
 		set @process = 'CREATE JOB --- AVRS Merge Replication'
@@ -1023,12 +1010,11 @@ QuitWithRollback:
 EndSave:'
 		EXEC(@sql)
 
-		set @process = ''
-		set @sql=''
-		EXEC(@sql)
+		/* End script release */
 
-
-
+		/* Upgrade database version (use your own script to do it) */
+		-- exec ccsp_getVersion 'BD', @version
+		-- exec ccsp_getVersion 'BDF', @versionFix
 
 	commit tran
 	end try

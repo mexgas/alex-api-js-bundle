@@ -10,6 +10,7 @@ Description:
 	ADD COlumna ccCampsNvosCB.dateUpdate actualizar las cubetas por campaña en lugar de global ya no se usa el Setting 21
 	ALter SP ccsp_RIAGetCampsNvosCB -- Se modifica para actualizar por camapaña se valida que si pasa el valor solo actualiza
 	ALTER SP ccsp_OUTGetNewJobs se manda ejecutar el SP ccsp_RIAGetCampsNvosCB para actualizar cubetas cada vez que el outbound pida datos
+	ALTER SP -- ccsp_RIAOUTInsertNewJOBS_WT_Camp Se cambia para actualizar un top 2500 registros
 
 Database: CCenterRia
 Required version: 119.04
@@ -393,6 +394,147 @@ exec(@sql)
 return(0)'
 		EXEC(@sql)
 
+		set @process = 'ALTER SP -- ccsp_RIAOUTInsertNewJOBS_WT_Camp'
+		set @sql='ALTER procedure [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp]
+@camp_id as int,
+@reciclar as int = 1
+as
+set nocount on
+
+--declare @camp_id int,@reciclar int
+--set @camp_id=5
+--set @reciclar=1
+
+declare @top int
+declare @prioridad varchar(8)
+
+set @top=2000
+
+select @prioridad = isnull(Prioridad,''12345NNN'') from ccCampsPrioridadTel with(nolock) where cam_id = @camp_id
+
+Delete top (@top) ccUploadTemporal with(rowlock) where cam_id = @camp_id
+
+create table #calloutIdSource(callout_id int not null primary key)
+
+create table #calloutIdSource2(callout_id int not null primary key)
+
+create table #calloutIdSource3(callout_id int not null primary key)
+
+insert into #calloutIdSource
+select top (@top) cs.callout_id
+from ccoCallsOutSource cs with(index(IX_ccoCallsOutSource_15),nolock),
+ccoWorkingTable wt with(index(IX_ccoWorkingTable_15),nolock)
+where cs.cal_key = wt.cal_keyw
+and cs.cam_id = wt.cam_id
+and cs.cam_id = @camp_id
+and cs.cal_status in(0,7)
+and wt.cal_status <= 2
+
+insert into #calloutIdSource2
+select top (@top) Cout.callout_id
+from ccoCallsOutSource Cout with(index(IX_ccoCallsOutSource_16),nolock),
+ccoworkingtable Wtab (nolock)
+WHERE Cout.callout_id = Wtab.callout_id
+and Cout.cam_id = @camp_id
+and (COUT.cal_status < 2 or COUT.cal_status = 7)
+
+insert into #calloutIdSource3
+select top (@top) callout_id
+from ccoCallsOutSource with(index(IX_ccoCallsOutSource_11),nolock)
+WHERE cal_status in (0, 1, 7)
+and cam_id = @camp_id
+
+if (select count(*) from #calloutIdSource) > 0 begin
+	update ccoCallBacks
+	set [status] = 6, schedulerStatus = 1
+	from ccoCallBacks cb with(index(IX_ccoCallBacks6),nolock), #calloutIdSource cis with(nolock)
+	where cb.callout_id = cis.callout_id
+
+	update ccoCallsOutSource
+	set cal_Status = 4
+	from ccoCallsOutSource cs with(nolock), #calloutIdSource cis with(nolock)
+	where cs.callout_id = cis.callout_id
+end
+
+if (select count(*) from #calloutIdSource2) > 0 begin
+	update ccoCallBacks
+	set [status] = 6, schedulerStatus = 1
+	from ccoCallBacks cb with(index(IX_ccoCallBacks6),nolock), #calloutIdSource2 csi2 with(nolock)
+	where cb.callout_id = csi2.callout_id
+
+	update ccoCallsOutSource
+	set cal_Status = 4
+	from ccoCallsOutSource Cout with(nolock), #calloutIdSource2 csi2 with(nolock)
+	WHERE Cout.callout_id = csi2.callout_id
+end
+
+begin transaction insertccoWorkingTable
+
+	Insert ccoWorkingTable with(TABLOCKX)
+	--Insert ccoWorkingTable with(PAGLOCK)
+	(callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2,
+	iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
+	SELECT top (@top) A.callout_id, A.cam_id,
+	rtrim(left(ltrim(A.cal_telefono + ''        ''
+			+ A.cal_telefono2 + ''         ''
+			+ A.cal_telefono3 + ''         ''
+			+ A.cal_telefono4 + ''         ''
+			+ A.cal_telefono5 + ''         ''),13)) as cal_telefono,
+	case A.cal_status when 7 then 1 else A.cal_status end cal_status, A.cal_fechaDial, A.cal_key,
+	case when len( A.cal_telefono ) > 0 then A.iZonaHoraria else null end iZonaHoraria, case when len( A.cal_telefono ) > 0 then A.iZonaHoraria_verano else null end iZonaHoraria_verano,
+	case when len( A.cal_telefono2 ) > 0 then A.iZonaHoraria2 else null end iZonaHoraria2, case when len( A.cal_telefono2 ) > 0 then A.iZonaHoraria_verano2 else null end iZonaHoraria_verano2,
+	case when len( A.cal_telefono3 ) > 0 then A.iZonaHoraria3 else null end iZonaHoraria3, case when len( A.cal_telefono3 ) > 0 then A.iZonaHoraria_verano3 else null end iZonaHoraria_verano3,
+	case when len( A.cal_telefono4 ) > 0 then A.iZonaHoraria4 else null end iZonaHoraria4, case when len( A.cal_telefono4 ) > 0 then A.iZonaHoraria_verano4 else null end iZonaHoraria_verano4,
+	case when len( A.cal_telefono5 ) > 0 then A.iZonaHoraria5 else null end iZonaHoraria5, case when len( A.cal_telefono5 ) > 0 then A.iZonaHoraria_verano5 else null end iZonaHoraria_verano5,
+	A.list_id
+	FROM ccoCallsOutSource A with(index(IX_ccoCallsOutSource_17),nolock)
+	left join ccoWorkingTable  B on A.callout_id=B.callout_id and A.cam_id=b.cam_id
+	WHERE A.cam_id = @camp_id
+	and (A.cal_status < 2 or A.cal_status = 7) -- Nuevos Jobs
+	and B.callout_id is null
+
+commit transaction insertccoWorkingTable
+
+begin transaction insertccoCallBacks
+
+	Insert into ccoCallBacks with(TABLOCKX)
+	--Insert into ccoCallBacks with(PAGLOCK)
+	(callout_id, user_id, cam_id, cal_key, cal_telefono, cal_telCB, cal_fecha, cal_fusercallback, cal_fcallback, status, schedulerStatus)
+	SELECT top (@top) A.callout_id, A.user_id, A.cam_id, A.cal_key,
+	rtrim(left(ltrim(A.cal_telefono + ''        ''
+			+ A.cal_telefono2 + ''         ''
+			+ A.cal_telefono3 + ''         ''
+			+ A.cal_telefono4 + ''         ''
+			+ A.cal_telefono5 + ''         ''),13)) as cal_telefono1,
+	rtrim(left(ltrim(A.cal_telefono + ''        ''
+			+ A.cal_telefono2 + ''         ''
+			+ A.cal_telefono3 + ''         ''
+			+ A.cal_telefono4 + ''         ''
+			+ A.cal_telefono5 + ''         ''),13)) as cal_telefono2,A.cal_fechaDial,A.cal_fechaDial cal_fusercallback,NULL cal_fcallback,0 status,1 schedulerStatus
+	FROM ccoCallsOutSource A with(index(IX_ccoCallsOutSource_18),nolock)
+	left join ccoWorkingTable  B on A.callout_id=B.callout_id and A.cam_id=b.cam_id
+	WHERE A.cam_id = @camp_id
+	and (A.cal_status < 2 or A.cal_status = 7) -- Nuevos Jobs
+	and B.callout_id is null
+
+commit transaction insertccoCallBacks
+
+begin transaction updateccoCallsOutSource
+
+	UPDATE ccoCallsOutSource
+	SET cal_status = 2, dial_tels = @prioridad, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+	from ccoCallsOutSource co with(nolock), #calloutIdSource3 cis3 with(nolock)
+	where co.callout_id = cis3.callout_id
+
+commit transaction updateccoCallsOutSource
+
+drop table #calloutIdSource
+drop table #calloutIdSource2
+drop table #calloutIdSource3
+
+set nocount off'
+		EXEC(@sql)
+
 		set @process = 'DROP JOB -- CW Reports Migration Chat'
 		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Reports Migration Chat'')
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Reports Migration Chat'', @delete_unused_schedule=1'
@@ -436,10 +578,6 @@ return(0)'
 		set @process = 'DROP JOB -- CW Merge Replication'
 		set @sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''CW Merge Replication'')
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Merge Replication'', @delete_unused_schedule=1'
-		EXEC(@sql)
-
-		set @process = ''
-		set @sql=''
 		EXEC(@sql)
 
 		set @process = ''

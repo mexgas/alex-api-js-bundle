@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReportsEngine\", "{AD3507F8-AFC4-4416-A182-BF239340FF14}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReportsEngine", "{AD3507F8-AFC4-4416-A182-BF239340FF14}"
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv3.5"
 		ProjectReferences = "{3417E82C-3907-4110-BE0F-278F97CF51D8}|MiddleWareReports.dll;"
@@ -24,7 +24,19 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReport
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiddleWareReports", "MiddleWareReports\MiddleWareReports.csproj", "{3417E82C-3907-4110-BE0F-278F97CF51D8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{54880F99-417E-4C58-97A2-A35262B64517}"
+	ProjectSection(SolutionItems) = preProject
+		CWReportsEngine1.vsmdi = CWReportsEngine1.vsmdi
+		Local.testsettings = Local.testsettings
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestReport", "TestReport\TestReport.csproj", "{FC139DB6-E725-4A2A-B943-BB732A42E91C}"
+EndProject
 Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = CWReportsEngine1.vsmdi
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|.NET = Debug|.NET
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +72,18 @@ Global
 		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{3417E82C-3907-4110-BE0F-278F97CF51D8}.Release|x86.ActiveCfg = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|.NET.ActiveCfg = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|.NET.ActiveCfg = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

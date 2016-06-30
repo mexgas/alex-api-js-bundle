@@ -13,10 +13,12 @@ declare @Version_Actual int
 	Set @Version = 35
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
-	if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
-	 begin
+if @Version_Actual = @Version -1 begin-- Aqui poner numero de nueva version
+	
+	 
 	begin tran
 	begin try
+	
 	declare @Sql varchar(max)
 	declare @errorGenerated varchar(max)
 	declare @process varchar(max)
@@ -237,7 +239,7 @@ EndSave:'
 
 	-- Updating DB Version
 
- 	update trec_parametros set par_valor = @Version where par_id = 30
+ 	--update trec_parametros set par_valor = @Version where par_id = 30
 
 	commit tran
 

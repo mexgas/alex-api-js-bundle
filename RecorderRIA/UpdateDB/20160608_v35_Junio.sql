@@ -9,17 +9,19 @@ Version requerida: 34
 set nocount on
 declare @Version int
 declare @Version_Actual int
+
+declare @Sql varchar(max)
+declare @errorGenerated varchar(max)
+declare @process varchar(max)
 ---------------- VERSION ----------------
 	Set @Version = 35
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
-	if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
+if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	 begin
 	begin tran
 	begin try
-	declare @Sql varchar(max)
-	declare @errorGenerated varchar(max)
-	declare @process varchar(max)
+
 ---------------- inicio SCRIPT @Sql ----------------
 
 	set @process = 'ALTER SP --ReportsMasterProcessAVRS'
@@ -138,11 +140,6 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 drop table #reinitmergepullsubscription'
 	EXEC(@Sql)
 
-	-- set @process = ''
-	-- set @Sql=''
-	-- EXEC(@Sql)
-
-
 ------------------ fin SCRIPT @Sql ------------------
 
 	-- Updating DB Version
@@ -158,13 +155,9 @@ drop table #reinitmergepullsubscription'
 	rollback tran
 	end catch
  end
-if @Version_Actual = @Version
+if @Version_Actual = @Version begin
 begin tran
 	begin try
-
-	declare @Sql varchar(max)
-	declare @errorGenerated varchar(max)
-	declare @process varchar(max)
 ---------------- inicio SCRIPT @Sql ----------------
 	set @process = 'DROP JOB -- Shrink-IndexOptimizationRIA'
 	set @Sql='if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''Shrink-IndexOptimizationRIA'')

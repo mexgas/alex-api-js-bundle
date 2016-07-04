@@ -207,6 +207,50 @@ namespace TestCommons
             }
         }
 
+        /// <summary>
+        /// Ejecuta una consulta Lista de arrays
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        public List<Object[]> executeListObject(string query, out string error)
+        {
+            error = string.Empty;
+            List<Object[]> list = new List<object[]>();
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = query;
+                    cmd.CommandType = CommandType.Text;
+                    SqlDataReader dr = cmd.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        Object[] objs = new object[dr.FieldCount];
+                        for(int col = 0; col < dr.FieldCount; col++)
+                        {
+                            objs[col] = dr[col];
+                        }
+                        list.Add(objs);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    log(getQuery(cmd) + " " + ex.Message, true);
+                    
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return list;
+            }
+        }
+
 
         #region Async
         private void insertNameBX(string name, int serviceId)

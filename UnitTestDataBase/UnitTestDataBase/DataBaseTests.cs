@@ -70,7 +70,7 @@ namespace TestCommons.Tests
 
         [TestMethod()]
         public void existsColumfuncEspDtmf()
-        {            
+        {
             string query = "select count(*) from syscolumns where name='funcEspDtmf' and OBJECT_NAME(syscolumns.id)='cccamps'";
             try
             {
@@ -98,8 +98,75 @@ namespace TestCommons.Tests
             }
         }
 
+        [TestMethod()]
+        public void executeCCSP_GetCampsNvosCBOneCampType1()
+        {
+            string query = "exec ccsp_RIAGetCampsNvosCB @cam_id=1,@Tipo=1,@user_id=1";
+            string error = string.Empty;
+            try
+            {
+                List<Object[]> list = db.executeListObject(query, out error);
+                bool res = list.Count == 1;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
+            }
+        }
+
+        [TestMethod()]
+        public void executeCCSP_GetCampsNvosCBOneCampType2()
+        {
+            string query = "exec ccsp_RIAGetCampsNvosCB @cam_id=1,@Tipo=2,@user_id=1";
+            string error = string.Empty;
+            try
+            {
+                List<Object[]> list = db.executeListObject(query, out error);
+                bool res = list.Count > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
+            }
+        }
 
 
+        [TestMethod()]
+        public void executeCCSP_GetCampsNvosCBAllCamp()
+        {
+            string query = "exec ccsp_RIAGetCampsNvosCB @cam_id=0,@Tipo=2,@user_id=0";
+            string error = string.Empty;
+            try
+            {
+                List<Object[]> list = db.executeListObject(query, out error);
+                bool res = list.Count > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
+            }
+        }
+
+        [TestMethod()]
+        public void executeCCSP_OUTGetNewJobs()
+        {
+            
+            string query = "exec ccsp_OUTGetNewJobs @cam_id=1";
+            string error = string.Empty;
+            try
+            {
+                List<Object[]> list = db.executeListObject(query, out error);
+                bool res = list.Count > 0;
+                Assert.IsTrue(res);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail(string.Format("Error DB: {0} ,{1} {2}", query, error, ex.Message));
+            }
+        }        
 
     }
 }

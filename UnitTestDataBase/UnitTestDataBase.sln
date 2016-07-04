@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestDataBase", "UnitTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestCommons", "TestCommons\TestCommons.csproj", "{E836CF91-CA9B-4909-9DF0-770B28560C11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResponseAgentTest", "ResponseAgentTest\ResponseAgentTest.csproj", "{AA459C78-8695-4914-B337-E3873E0FCC42}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResponseAdminAgentTest", "ResponseAgentTest\ResponseAdminAgentTest.csproj", "{AA459C78-8695-4914-B337-E3873E0FCC42}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

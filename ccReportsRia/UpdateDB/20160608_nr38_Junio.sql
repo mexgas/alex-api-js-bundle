@@ -321,10 +321,6 @@ if @actualVersion = @version begin
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW Reports Migration'', @delete_unused_schedule=1'
 		EXEC(@Sql)
 
-		set @process = ''
-		set @Sql= ''
-		EXEC(@Sql)
-
 		set @process = 'CREATE JOB -- CW Reports Migration'
 		set @Sql= 'USE [msdb]
 /****** Object:  Job [CW Reports Migration]    Script Date: 14/06/2016 12:35:39 p.m. ******/
@@ -814,17 +810,18 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
 		EXEC(@Sql)
-
+	commit tran
+	end try
 
 	begin catch
 
 	/* Error generated based on sintax */
-	select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + '''.''' + cast(@versionfix as nvarchar) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() as nvarchar) + ''' Number: ''' + cast(@@error as nvarchar) + ''' Message: '''+ error_message()
+	select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + ' Error process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
 	RAISERROR(@errorGenerated, 11, 1)
 
 	rollback tran
 	end catch
-
+end
 else
 	begin
 		/* Error generated based on database version */

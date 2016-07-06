@@ -810,6 +810,109 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
 		EXEC(@Sql)
+
+
+		set @process = 'ALTER SP -- ccspRepIVRSurveys'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+if @action = 1
+begin
+  if @from is null
+    select @from = convert(datetime,convert(varchar(14),getdate(),121)+ ''00'',121)
+  if @to is null
+    select @to = getdate()
+
+
+delete RepIVRSurveys with(rowlock)
+  where [date] between @from and @to
+
+
+insert RepIVRSurveys select [date],userId,[login],scriptId,surveyId,survey,calId,calKey,campaignId,inboundId,campACDDescription,
+questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes]
+from
+(
+	select distinct
+	cci.cal_Inicio as [date],
+	isnull(cci.User_id, 0) as ''userId'',
+	isnull(ccu.Login, ''No agent'') as ''login'',
+	isnull(ivro.IVR_id, 0) as ''scriptId'',
+	isnull(s.surveyId, 0) as ''surveyId'',
+	isnull(s.description, '') as ''survey'',
+	isnull(cci.cal_id, 0) as ''calId'',
+	isnull(cci.cal_Key, '') as ''calKey'',
+	0 as ''campaignId'',
+	isnull(cci.Inbound_id, '') as ''inboundId'',
+	''ACD - '' + isnull(ccin.descripcion,'') as ''campACDDescription'',
+	isnull(ivro.questionId, 0) as ''questionId'',
+	isnull(sq.description,'') as ''questionDescription'',
+	isnull(sq.description,'')+ ''_UnCount'' as ''question_Count'',
+	case when ivro.selectedOption = '' then ''systemTranslated_No_Option''
+	when rqa.questionId is null then ivro.selectedOption
+	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
+	else ''systemTranslated_Invalid'' end as ''Count'',
+	datepart(yy,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [year],
+	datepart(MM,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [month],
+	datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
+	datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
+	datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
+	,rsq.orden
+	from ccCallsIn cci with(nolock)
+	inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id and ivro.cal_id = cci.cal_id
+	inner join ccUsers ccu on cci.User_id = ccu.User_id
+	inner join Survey s on ivro.surveyId = s.surveyId
+	inner join ccInbound ccin on cci.Inbound_id = ccin.Inbound_id
+	inner join SurveyQuestion sq on ivro.questionId = sq.questionId
+	inner join relationSurveyQuestion rsq on rsq.surveyId = ivro.surveyId and rsq.questionId=sq.questionId
+	left join SurveyAnswer sa on convert(varchar(5),sa.digit) = ivro.selectedOption
+	left join relationQuestionAnswer rqa on rsq.surveyId = rqa.surveyId and rqa.questionId = rsq.questionId
+	where cal_inicio between @from and @to
+
+  union all
+
+  select distinct
+	cco.cal_Inicio as [date],cco.User_id as ''userId'',
+	isnull(ccu.Login, ''No agent'') as ''login'',
+	isnull(ivro.IVR_id, 0) as ''scriptId'',
+	isnull(s.surveyId, 0) as ''surveyId'',
+	isnull(s.description, '') as ''survey'',
+	isnull(cco.cal_id, 0) as ''calId'',
+	isnull(cco.cal_Key, '') as ''calKey'',
+	isnull(ccc.[cam_id], '') as ''campaignId'',
+	0 as ''inboundId'',
+	''Camp - '' + isnull(ccc.[cam_descripcion],'') as ''campACDDescription'',
+	isnull(ivro.questionId, 0) as ''questionId'',
+	isnull(sq.description,'') as ''questionDescription'',
+	isnull(sq.description,'')+ ''_UnCount' as 'question_Count'',
+	case when ivro.selectedOption = '''' then ''systemTranslated_No_Option''
+	when rqa.questionId is null then ivro.selectedOption
+	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
+	else ''systemTranslated_Invalid'' end as ''Count'',
+		datepart(yy,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [year],
+	datepart(MM,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [month],
+	datepart(DD,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [day],
+	datepart(HH,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [hour],
+	datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [minutes]
+	,rsq.orden
+	from ccoCallsOut cco
+	inner join IVROptions ivro on cco.cal_id = ivro.cal_id
+	inner join ccUsers ccu on cco.User_id = ccu.User_id
+	inner join Survey s on ivro.surveyId = s.surveyId
+	inner join ccCamps ccc on cco.cam_id = ccc.cam_id
+	inner join SurveyQuestion sq on ivro.questionId = sq.questionId
+	inner join relationSurveyQuestion rsq on rsq.surveyId = ivro.surveyId and rsq.questionId=sq.questionId
+	left join SurveyAnswer sa on convert(varchar(5),sa.digit) = ivro.selectedOption
+	left join relationQuestionAnswer rqa on rsq.surveyId = rqa.surveyId and rqa.questionId = rsq.questionId --and rqa.answerId = sa.answerId
+	where cal_inicio between @from and @to
+
+)surveys
+order by calId,orden
+end'
+
+		EXEC(@Sql)
 	commit tran
 	end try
 

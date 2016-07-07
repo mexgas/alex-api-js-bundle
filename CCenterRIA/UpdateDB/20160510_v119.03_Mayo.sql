@@ -1375,7 +1375,7 @@ set nocount on
   , stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, cam_maxqueue as queSize,
   DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
      ,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
-  ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey, a1.funcEspDtmf
+  ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey, isnull(a1.funcEspDtmf,0)
   from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
   inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
   where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))

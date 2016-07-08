@@ -1354,8 +1354,6 @@ ON optionIVR (dtmf, tag, camID)
     begin
     alter table ccCamps
 add funcEspDtmf int default(0)
-
-update cccamps set funcEspDtmf = 0
     end
 	'
 		EXEC(@sql)

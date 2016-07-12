@@ -36,6 +36,7 @@ namespace MiddleWareReports
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
+                LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
 
                 //Retrieve column schema into a DataTable.                
                 foreach (DataColumn column in data.Columns)
@@ -51,8 +52,18 @@ namespace MiddleWareReports
                     }
                 }
 
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+                }
+
+                foreach (string col in columnsNames)
+                {
+                    columnsNamesTransalet.AddLast(TranslatorHelper.getPivotTranslatedColumns(col));
+                }
+
                 //Generate html table
-                output = generateCsv(columnsNames, data, filterSummaryData, translate);
+                output = generateCsv(columnsNamesTransalet, data, filterSummaryData, translate);
             }
             catch (Exception e)
             {
@@ -113,16 +124,27 @@ namespace MiddleWareReports
             //Place headers                     
             foreach (string header in headers)
             {
-                if (!translate && i == headers.Count - 1)
-                    csv.Append(string.Format("{0}", header));
-                else if(!translate)
-                    csv.Append(string.Format("{0},", header));
-                else if (i == headers.Count - 1)
-                    csv.Append(string.Format("{0}", translatedColumns[header]));
-                else
-                    csv.Append(string.Format("{0},", translatedColumns[header]));
+                //if (!translate && i == headers.Count - 1)
+                //    csv.Append(string.Format("{0}", header));
+                //else if (!translate)
+                //    csv.Append(string.Format("{0},", header));
+                //else if (i == headers.Count - 1)
+                //    csv.Append(string.Format("{0}", translatedColumns[header]));
+                //else if(translate && !string.IsNullOrEmpty(translatedColumns[header]))
+                //    csv.Append(string.Format("{0},", translatedColumns[header]));
+                //else
+                //    csv.Append(string.Format("{0},", header));
 
-                i++;
+                if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
+                {
+                    csv.Append(string.Format("{0},", translatedColumns[header]));
+                }
+                else
+                {
+                    //i = headers.Count - 1;
+                    csv.Append(string.Format("{0},", header));
+                }
+                //i++;
             }
 
             //Place Rows

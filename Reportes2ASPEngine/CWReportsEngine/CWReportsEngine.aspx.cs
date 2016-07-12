@@ -370,7 +370,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
 
                 if (format.Equals("csv"))
                 {
-                    Response.ContentType = "text/plain";
+                    Response.ContentType = "text/csv";
                 }
                 else if (format.Equals("pdf"))
                 {

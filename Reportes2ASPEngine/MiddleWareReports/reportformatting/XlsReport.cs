@@ -36,18 +36,19 @@ namespace MiddleWareReports
             {
                 translatedColumns = TranslatorHelper.translateColumns(data.Columns);
             }
-            
+
             this.reportName = reportName;
             StringBuilder output = new StringBuilder();
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
+                LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
+                LinkedList<string> dataTranslate = new LinkedList<string>();
 
                 //Retrieve column schema into a DataTable.                
                 foreach (DataColumn column in data.Columns)
                 {
-                    //Save column name if its viewable
-                    
+                    //Save column name if its viewable                    
                     if (!translate)
                     {
                         columnsNames.AddLast(column.ColumnName);
@@ -58,12 +59,23 @@ namespace MiddleWareReports
                     }
                 }
 
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+                }
+
+                foreach (string col in columnsNames)
+                {
+                    columnsNamesTransalet.AddLast(TranslatorHelper.getPivotTranslatedColumns(col));
+                }
+
+                
                 //Generate html table
-                output = generateHtml(columnsNames, data, filterSummaryData, translate);
+                output = generateHtml(columnsNamesTransalet, data, filterSummaryData, translate);
             }
             catch (Exception e)
             {
-                String temp = e.Message;            
+                String temp = e.Message;
             }
 
             //Add BOM byte to display correctly foreign characters in UTF-8 
@@ -123,8 +135,10 @@ namespace MiddleWareReports
             //Place headers
             foreach (string header in headers)
             {
-                if(translate)
+                if (translate && !string.IsNullOrEmpty(translatedColumns[header])){          
                     html.AppendLine(string.Format("<td style=\"background:#FF0000;color:#FFFFFF;border: 1px solid black ; \" >{0}</td>", translatedColumns[header]));
+                }
+                    
                 else
                     html.AppendLine(string.Format("<td style=\"background:#FF0000;color:#FFFFFF;border: 1px solid black ; \" >{0}</td>", header));
 
@@ -149,7 +163,7 @@ namespace MiddleWareReports
                 html.AppendLine("</tr>");
             }
 
-            
+
 
             html.AppendLine("</table>");
             return html;

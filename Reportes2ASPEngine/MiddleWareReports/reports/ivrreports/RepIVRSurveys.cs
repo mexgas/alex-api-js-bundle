@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MiddleWareReports.reports.ivrreports
+namespace MiddleWareReports
 {
-    class RepIVRSurveys : GenericReport
+   public class RepIVRSurveys : GenericReport
     {
     }
 }

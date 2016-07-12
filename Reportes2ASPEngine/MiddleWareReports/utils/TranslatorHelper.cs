@@ -58,7 +58,7 @@ namespace MiddleWareReports
                 string property = getResourceProperty(column.ColumnName, out isTranslated, isDetail);
                 //Only add columns that can be viewable in the interface 
                 if (((!property.Contains("_")) || (isPivotColumn(property) && !property.StartsWith("systemTranslated_"))) && !(process < 10000 && process >= 9000)) //Don't show not translated columns
-                {
+                {                    
                     translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
                 }
                 else if (process < 10000 && process >= 9000)
@@ -252,6 +252,32 @@ namespace MiddleWareReports
             {
                 table.Columns.Remove(column);
             }
+
+        }
+
+        /// <summary>
+        /// Gets the translation of column in case pivot
+        /// </summary>
+        /// <param name="column">The column name to evaluate</param>  
+        /// <returns>The value translated in case necessary or the original one</returns> 
+        public static string getPivotTranslatedColumns(string columnName)
+        {
+            bool isTranslated;
+            string partNotToTranslate;
+            string partToTranslate;
+            string partTraslated;
+
+            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
+            {
+                partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
+                partToTranslate = columnName.Substring(columnName.LastIndexOf("_"));
+
+                partTraslated = TranslatorHelper.getResourceProperty(partToTranslate, out isTranslated, false);
+                if (isTranslated)
+                    columnName = partNotToTranslate + partTraslated.Replace('_', ' ');
+            }
+
+            return columnName;
         }
 
         /// <summary>
@@ -261,7 +287,7 @@ namespace MiddleWareReports
         /// <returns>The value that indicates if the column is a pivot column</returns>
         private static bool isPivotColumn(string column)
         {
-            return (column.EndsWith("_Count") || column.EndsWith("_Time") || column.EndsWith("_Avg"));
+            return (column.EndsWith("_Count") || column.EndsWith("_Time") || column.EndsWith("_Avg") || column.EndsWith("_UnCount"));
         }
 
         private static bool isNumeric(string number)

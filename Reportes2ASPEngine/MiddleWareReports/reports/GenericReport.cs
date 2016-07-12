@@ -219,7 +219,7 @@ namespace MiddleWareReports
         public virtual DataTable getDataReport(NameValueCollection parameters, short process)
         {
             changeCulture();
-
+            string partToTranslate;
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
 
             bool isTimePeriod = false;
@@ -245,6 +245,11 @@ namespace MiddleWareReports
 
             for (int i = 0; i < totalsTable.Columns.Count; i++)
             {
+                //if (totalsTable.Columns[i].ColumnName.EndsWith("_UnCount"))
+                //{
+                //    partToTranslate = totalsTable.Columns[i].ColumnName.Substring(0, totalsTable.Columns[i].ColumnName.LastIndexOf("_"));
+                //    totalsTable.Columns[i].ColumnName = partToTranslate;
+                //}
                 newcolumns[i] = new DataColumn(
                 totalsTable.Columns[i].ColumnName, totalsTable.Columns[i].DataType);
             }
@@ -449,7 +454,7 @@ namespace MiddleWareReports
             bool isTranslated;
             string valueTranslated;
             ///SOlo cuando se utiliza pivote no agrupado esta solo para la opcion Count homologar nuevo _SubFijo
-            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count"))
+            if (translatedSpecialColumns.ContainsKey(column) || column.EndsWith("_Count") || column.EndsWith("_UnCount"))
             {
                 if (value.Contains("systemTranslated_"))
                 {
@@ -474,7 +479,7 @@ namespace MiddleWareReports
             string partToTranslate;
             string partTraslated;
 
-            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg"))
+            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
             {
                 partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
                 partToTranslate = columnName.Substring(columnName.LastIndexOf("_"));
@@ -1789,7 +1794,8 @@ namespace MiddleWareReports
                 if (totalsTable == null) continue;
                 if (totalsTable.Columns.Contains(col.ColumnName))
                 {
-                    newTable.Rows[0][newCol] = totalsTable.Rows[0][col.ColumnName];
+   
+                       newTable.Rows[0][newCol] = totalsTable.Rows[0][col.ColumnName];
                 }
             }
             return newTable;

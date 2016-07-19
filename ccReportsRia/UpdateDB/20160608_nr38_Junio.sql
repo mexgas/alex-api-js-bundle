@@ -841,16 +841,16 @@ from
 	isnull(ccu.Login, ''No agent'') as ''login'',
 	isnull(ivro.IVR_id, 0) as ''scriptId'',
 	isnull(s.surveyId, 0) as ''surveyId'',
-	isnull(s.description, '') as ''survey'',
+	isnull(s.description, '''') as ''survey'',
 	isnull(cci.cal_id, 0) as ''calId'',
-	isnull(cci.cal_Key, '') as ''calKey'',
+	isnull(cci.cal_Key, '''') as ''calKey'',
 	0 as ''campaignId'',
-	isnull(cci.Inbound_id, '') as ''inboundId'',
-	''ACD - '' + isnull(ccin.descripcion,'') as ''campACDDescription'',
+	isnull(cci.Inbound_id, '''') as ''inboundId'',
+	''ACD - '' + isnull(ccin.descripcion,'''') as ''campACDDescription'',
 	isnull(ivro.questionId, 0) as ''questionId'',
-	isnull(sq.description,'') as ''questionDescription'',
-	isnull(sq.description,'')+ ''_UnCount'' as ''question_Count'',
-	case when ivro.selectedOption = '' then ''systemTranslated_No_Option''
+	isnull(sq.description,'''') as ''questionDescription'',
+	isnull(sq.description,'''')+ ''_UnCount'' as ''question_Count'',
+	case when ivro.selectedOption = '''' then ''systemTranslated_No_Option''
 	when rqa.questionId is null then ivro.selectedOption
 	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description
 	else ''systemTranslated_Invalid'' end as ''Count'',
@@ -878,15 +878,15 @@ from
 	isnull(ccu.Login, ''No agent'') as ''login'',
 	isnull(ivro.IVR_id, 0) as ''scriptId'',
 	isnull(s.surveyId, 0) as ''surveyId'',
-	isnull(s.description, '') as ''survey'',
+	isnull(s.description, '''') as ''survey'',
 	isnull(cco.cal_id, 0) as ''calId'',
-	isnull(cco.cal_Key, '') as ''calKey'',
-	isnull(ccc.[cam_id], '') as ''campaignId'',
+	isnull(cco.cal_Key, '''') as ''calKey'',
+	isnull(ccc.[cam_id], '''') as ''campaignId'',
 	0 as ''inboundId'',
-	''Camp - '' + isnull(ccc.[cam_descripcion],'') as ''campACDDescription'',
+	''Camp - '' + isnull(ccc.[cam_descripcion],'''') as ''campACDDescription'',
 	isnull(ivro.questionId, 0) as ''questionId'',
-	isnull(sq.description,'') as ''questionDescription'',
-	isnull(sq.description,'')+ ''_UnCount' as 'question_Count'',
+	isnull(sq.description,'''') as ''questionDescription'',
+	isnull(sq.description,'''')+ ''_UnCount'' as ''question_Count'',
 	case when ivro.selectedOption = '''' then ''systemTranslated_No_Option''
 	when rqa.questionId is null then ivro.selectedOption
 	when sa.answerId is not null and ivro.selectedOption = convert(varchar(5),sa.digit) then sa.description

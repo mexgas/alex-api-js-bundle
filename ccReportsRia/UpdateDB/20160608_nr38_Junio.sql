@@ -294,7 +294,7 @@ drop table #reinitmergepullsubscription'
 
 		/* Upgrade database version (use your own script to do it) */
 		exec ccsp_getVersion 'BD', @version
-
+		set @actualVersion = @version
 		commit tran
 		end try
 
@@ -310,6 +310,18 @@ drop table #reinitmergepullsubscription'
 if @actualVersion = @version begin
 	begin tran
 	begin try
+
+
+	set @process = '-----alter table RepIVRSurveys'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''clientPhoneNumber'' and Object_ID = Object_ID(N''RepIVRSurveys''))
+    begin
+        alter table RepIVRSurveys add clientPhoneNumber varchar(30)
+    end'
+		EXEC(@Sql)
+
+		set @process = '-----update PivotReports'
+		set @Sql= 'update PivotReports set complementColumns=''date|userId|login|scriptId|surveyId|survey|calId|calKey|campaignId|inboundId|clientPhoneNumber|campACDDescription'' where id=6050'
+		EXEC(@Sql)
 
 			set @process = 'DROP JOB -- ShrinkLogCCReportsRia'
 		set @Sql= 'if exists(SELECT * FROM msdb.dbo.sysjobs WHERE name = N''ShrinkLogCCReportsRia'')
@@ -832,7 +844,7 @@ delete RepIVRSurveys with(rowlock)
 
 
 insert RepIVRSurveys select [date],userId,[login],scriptId,surveyId,survey,calId,calKey,campaignId,inboundId,campACDDescription,
-questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes]
+questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes],clientPhoneNumber
 from
 (
 	select distinct
@@ -859,7 +871,7 @@ from
 	datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
 	datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
-	,rsq.orden
+	,rsq.orden, cal_ani clientPhoneNumber
 	from ccCallsIn cci with(nolock)
 	inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id and ivro.cal_id = cci.cal_id
 	inner join ccUsers ccu on cci.User_id = ccu.User_id
@@ -896,7 +908,7 @@ from
 	datepart(DD,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [day],
 	datepart(HH,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [minutes]
-	,rsq.orden
+	,rsq.orden, cal_telefono clientPhoneNumber
 	from ccoCallsOut cco
 	inner join IVROptions ivro on cco.cal_id = ivro.cal_id
 	inner join ccUsers ccu on cco.User_id = ccu.User_id

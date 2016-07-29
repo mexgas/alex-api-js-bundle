@@ -1312,7 +1312,8 @@ set nocount off'
 		/* Upgrade database version (use your own script to do it) */
 		exec ccsp_getVersion 'BD', @version
 		exec ccsp_getVersion 'BDF', @versionFix
-
+		set  @actualVersionFix = @versionfix
+		
 		commit tran
 		end try
 

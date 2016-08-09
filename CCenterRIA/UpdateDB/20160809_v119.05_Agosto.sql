@@ -116,6 +116,44 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5bfd689ad924ed23e909
 update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef128fcc0185b2c04007b2b4b868070061a84e9d349d61d7ac2617c56b3138cd334bd6cc617f7eb78'' where menu_id=8030 and type=2
 '
 
+
+		set @process = 'drop sp -- [dbo].[ccsp_isFinished]'
+		set @Sql= '-- When stored procedure exists
+					if exists (select * from sys.procedures where name = "ccsp_isFinished")
+    				begin
+        				DROP PROCEDURE [dbo].[ccsp_isFinished];  
+						GO
+    				end'
+		EXEC(@Sql)
+
+		set @process = 'Create SP -- [dbo].[ccsp_isFinished]'
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_isFinished]
+@tabla int,
+@id int,
+@result int output
+AS
+begin
+	declare @time int
+	if @tabla=0
+	begin
+		set @time=(select cal_tDialog from ccoCallsOut where cal_id=@id)
+	end
+	else
+	begin
+		set @time=(select cal_tDialog from ccCallsIn where cal_id=@id)
+	end
+
+	if @time>0
+	begin
+		set @result=0
+	end
+	else
+	begin
+		set @result=1
+	end
+end'
+		EXEC(@Sql)
+
 		set @process = 'Alter SP -- ccsp_AgentSetCallStatus'
 		set @sql='ALTER procedure [dbo].[ccsp_AgentSetCallStatus]
 @callout_id int,

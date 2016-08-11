@@ -42,13 +42,12 @@ namespace MiddleWareReports
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
-                LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
-                LinkedList<string> dataTranslate = new LinkedList<string>();
 
                 //Retrieve column schema into a DataTable.                
                 foreach (DataColumn column in data.Columns)
                 {
-                    //Save column name if its viewable                    
+                    //Save column name if its viewable
+
                     if (!translate)
                     {
                         columnsNames.AddLast(column.ColumnName);
@@ -59,19 +58,8 @@ namespace MiddleWareReports
                     }
                 }
 
-                for (int i = 0; i < data.Columns.Count; i++)
-                {
-                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
-                }
-
-                foreach (string col in columnsNames)
-                {
-                    columnsNamesTransalet.AddLast(TranslatorHelper.getPivotTranslatedColumns(col));
-                }
-
-                
                 //Generate html table
-                output = generateHtml(columnsNamesTransalet, data, filterSummaryData, translate);
+                output = generateHtml(columnsNames, data, filterSummaryData, translate);
             }
             catch (Exception e)
             {
@@ -98,6 +86,7 @@ namespace MiddleWareReports
         private StringBuilder generateHtml(LinkedList<string> headers, DataTable data, string filterSummaryData, bool translate)
         {
             StringBuilder html = new StringBuilder();
+            html.AppendLine("<html><head><style>.b{border: 1px solid black; mso-number-format:\\@; }.a{background:#FF0000;color:#FFFFFF;border: 1px solid black ;}</style></head><body>");
             html.AppendLine("<table style=\"border: 1px solid black ; text-align:center; font-family:sans-serif;\">");
             //Place report name
             html.AppendLine("<tr>");
@@ -135,12 +124,10 @@ namespace MiddleWareReports
             //Place headers
             foreach (string header in headers)
             {
-                if (translate && !string.IsNullOrEmpty(translatedColumns[header])){          
-                    html.AppendLine(string.Format("<td style=\"background:#FF0000;color:#FFFFFF;border: 1px solid black ; \" >{0}</td>", translatedColumns[header]));
-                }
-                    
+                if (translate)
+                    html.AppendLine(string.Format("<td class=\"a\">{0}</td>", translatedColumns[header]));
                 else
-                    html.AppendLine(string.Format("<td style=\"background:#FF0000;color:#FFFFFF;border: 1px solid black ; \" >{0}</td>", header));
+                    html.AppendLine(string.Format("<td class=\"a\">{0}</td>", header));
 
             }
             html.AppendLine("</tr>");
@@ -158,14 +145,14 @@ namespace MiddleWareReports
                         value = TranslatorHelper.formatTime(Convert.ToInt32(value));
                     }
 
-                    html.AppendLine(string.Format("<td style=\"border: 1px solid black; mso-number-format:\\@; \">{0}</td>", value));
+                    html.AppendLine(string.Format("<td class=\"b\">{0}</td>", value));
                 }
                 html.AppendLine("</tr>");
             }
 
 
 
-            html.AppendLine("</table>");
+            html.AppendLine("</table></body></html>");
             return html;
         }
     }

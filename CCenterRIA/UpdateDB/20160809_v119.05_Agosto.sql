@@ -126,6 +126,22 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
     				end'
 		EXEC(@Sql)
 
+		set @process = 'Adding currentStatus column to ccLogAgentesDia '
+		set @Sql= '-- When column does not exists
+					if not exists (select * from sys.columns where name = N"currentStatus" and Object_ID = Object_ID(N"ccLogAgentesDia"))
+    				begin
+        				ALTER TABLE ccLogAgentesDia ADD currentStatus int
+    				end'
+		EXEC(@Sql)
+
+		set @process = 'Adding callID column to ccLogAgentesDia '
+		set @Sql= '-- When column does not exists
+					if not exists (select * from sys.columns where name = N"callID" and Object_ID = Object_ID(N"ccLogAgentesDia"))
+    				begin
+        				ALTER TABLE ccLogAgentesDia ADD callID int
+    				end'
+		EXEC(@Sql)
+
 		set @process = 'Create SP -- [dbo].[ccsp_isFinished]'
 		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_isFinished]
 @tabla int,

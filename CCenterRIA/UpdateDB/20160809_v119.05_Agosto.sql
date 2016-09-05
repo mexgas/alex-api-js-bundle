@@ -121,8 +121,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 		set @Sql= '-- When stored procedure exists
 					if exists (select * from sys.procedures where name = "ccsp_isFinished")
     				begin
-        				DROP PROCEDURE [dbo].[ccsp_isFinished];  
-						GO
+        				DROP PROCEDURE [dbo].[ccsp_isFinished]
     				end'
 		EXEC(@Sql)
 

@@ -343,14 +343,20 @@ set nocount off'
 @callout_id int=0,
 @call_id int=0,
 @isLogout smallint=0, --Agrega el tiempo cuando esta dialogo y se desloguea
-@tDialog int =0 
+@tDialog int =0 ,
+@currentStatus int =-2,--NUEVO PARÁMETRO PARA LA NUEVA COLUMNA
+@Fecha4 datetime=null
 AS
-declare @Fecha4 datetime
-set @Fecha4 = getdate()
+
+
+if @Fecha4 is null set @Fecha4 = getdate()
 
 if @TipoCall > 0 set @TipoCall = @TipoCall - 1
 
 if (@User_id > 0 ) begin
+
+
+	-- SE INSERTA EL NUEVO PARÁMETRO
 
 	declare @cam_id int,@surveycamId int
 	declare @cal_telefono varchar(30)
@@ -360,34 +366,37 @@ if (@User_id > 0 ) begin
 	declare @cal_whoHung tinyint
 	declare @cal_tDialog int
 	declare @cal_tNotas int
+	declare @cal_tNotaOri int
 	set @cal_tNotas =0
-
-	if @TipoStatusAge_id in (4,6) and @call_id>0 begin
+	set @cal_tNotaOri=0
+	--4 Dialog,6 Notas, 27 Notas Fallida 
+	if @TipoStatusAge_id in (4,6,27) and @call_id>0 begin
 		if @TipoStatusAge_id=4  set @tDialog=@tStatus --Dialogo		
 		if @TipoStatusAge_id=6  set @cal_tNotas=@tStatus --Notas		
 		
 
 		if @TipoCall = 0 begin --IN			
-			select @Camp=Inbound_id, @cal_tDialog=cal_tDialog, @cal_key = cal_Key, @inbound_id = inbound_id, @cal_telefono = cal_ani ,@cal_whoHung=cal_whoHung
+			select @Camp=Inbound_id, @cal_tDialog=cal_tDialog,@cal_tNotaOri=cal_tNotas, @cal_key = cal_Key, @inbound_id = inbound_id, @cal_telefono = cal_ani ,@cal_whoHung=cal_whoHung
 						from ccCallsIN with(index(IX_ccCallsIn_6),nolock) where cal_id = @call_id and statusCall_id = 13						
 	
 			if @tDialog >0  and @isLogout=1  begin
-				update ccCallsIN set cal_tDialog=@tDialog,@cal_tNotas=cal_tNotas where cal_id = @call_id and statusCall_id = 13
+				update ccCallsIN set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas where cal_id = @call_id and statusCall_id = 13
 			end
 		end
 		else begin --OUT
-			select  @cam_id = cam_id,@cal_tDialog=cal_tDialog from ccoCallsOut where cal_id = @call_id
+			select  @cam_id = cam_id,@cal_tDialog=cal_tDialog,@cal_tNotaOri=cal_tNotas from ccoCallsOut where cal_id = @call_id
 			set @Camp=@cam_id
 			
 			if @tDialog >0  and @isLogout=1  begin
-				update ccoCallsOut set cal_tDialog=@tDialog,@cal_tNotas=cal_tNotas  where cal_id = @call_id and statusCall_id = 13
+				update ccoCallsOut set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas where cal_id = @call_id and statusCall_id = 13
 			end
 		end
 
 
-		if @TipoStatusAge_id= 6  and @isLogout=1  begin
-			INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo ) 
-			VALUES( @User_id, 4, @tDialog, DATEADD(ss,-@tStatus, @Fecha4), @Camp, @TipoCall )
+		if @TipoStatusAge_id in(6,27)  and @isLogout=1  begin
+			--Valida que el agente no pudo guardar el status antes de desloguear			
+			if not exists(select  * from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=4 and fecha between dateadd(ss,-@tDialog-@tStatus-@cal_tNotaOri-2,@Fecha4) and @Fecha4 )										
+				INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo ) VALUES( @User_id, 4, @tDialog, DATEADD(ss,-@tStatus, @Fecha4), @Camp, @TipoCall )
 		end
 		
 
@@ -414,7 +423,7 @@ if (@User_id > 0 ) begin
 								if (select surveyPctg from ccCamps where cam_id = @surveycamid) >= rand() *100 
 								begin
 									insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial) 
-									values(right((cast(@call_id as varchar) + '','' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()) )
+									values(right((cast(@call_id as varchar) + ',' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()) )
 								end
 							end
 					end
@@ -432,7 +441,7 @@ if (@User_id > 0 ) begin
 					if (select surveyPctg from ccCamps where cam_id = @surveycamId) >= rand() *100 
 					begin
 						insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial) 
-						values(right((cast(@call_id as varchar) + '','' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()))
+						values(right((cast(@call_id as varchar) + ',' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()))
 					end
 				end
 			end
@@ -440,10 +449,24 @@ if (@User_id > 0 ) begin
 
 
 	 end
+	 
+	 --Valida que el agente no pudo guardar el status antes de desloguear
+	 if @isLogout=1 begin
+		if @TipoStatusAge_id= 27 and @tStatus>@cal_tNotaOri begin 
+			set @tStatus=@tStatus-@cal_tNotaOri
 
-	INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo )
-	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall )
-
+			INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus ) 
+			VALUES( @User_id, @TipoStatusAge_id, @tStatus,dateadd(ss,@cal_tNotaOri, @Fecha4), @Camp, @TipoCall, -1 )
+		end
+		else begin
+			if not exists(select DATEDIFF(ms,fecha,@Fecha4),@Fecha4,* from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=@TipoStatusAge_id and fecha between dateadd(ss,-@tStatus-2,@Fecha4) and @Fecha4  and  DATEDIFF(ms,fecha,@Fecha4)<1500  )
+				INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus )	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall, -1 )
+		end
+	 end
+	 else begin
+		INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus, callID)	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall, @currentStatus, @call_id )
+	 end
+	 
 	if ( @TipoStatusAge_id = 2 )   -- 2 = No Disponible
 	begin
 		INSERT ccLogAgentesNotReady  ( User_id, TipoNotReady_id, tStatus, fecha, IdCampEsp, Tipo )

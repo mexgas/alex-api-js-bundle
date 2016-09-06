@@ -45,6 +45,49 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 		begin tran
 		begin try
 
+		set @process = 'create table optionIVR----------'
+		set @Sql= ' if not exists (select * from sys.tables where name = N''optionIVR'')
+    begin
+  create table [optionIVR] 
+      ([dtmf] varchar(20),
+      [tag] varchar(20),
+      [camID] int ,
+      [type] int);
+    end
+  '
+  EXEC(@Sql)
+
+		set @process = 'select * from sys.columns where name = N''editableDtmf''-----------'
+		set @Sql= '
+if exists (select * from sys.columns where name = N''editableDtmf'' and Object_ID = Object_ID(N''ccinbound''))
+    begin
+        alter table ccinbound add editableDtmf int default(0)
+    end'
+		EXEC(@Sql)
+
+		set @process = 'select * from sys.columns where name = N''funcEspDtmf''----------'
+		set @Sql= 'if exists (select * from sys.columns where name = N''funcEspDtmf'' and Object_ID = Object_ID(N''ccCamps''))
+    begin
+        alter table ccCamps add funcEspDtmf int 
+    end'
+		EXEC(@Sql)
+
+
+		set @process = 'select * from sys.columns where name = N''dtmf''---------'
+		set @Sql= 'if exists (select * from sys.columns where name = N''dtmf'' and Object_ID = Object_ID(N''optionivr''))
+    begin
+        alter table optionivr alter column dtmf varchar(20)
+    end'
+		EXEC(@Sql)
+		
+		set @process = 'select * from sys.columns where name = N''dtmf''---------'
+		set @Sql= 'if exists (select * from sys.columns where name = N''tag'' and Object_ID = Object_ID(N''optionivr''))
+    begin
+        alter table optionivr alter column tag varchar(20)
+    end'
+		EXEC(@Sql)
+		
+
 		set @process = 'Update ccmenus -- Reports Old Column Release'
 		set @Sql= 'update ccmenus set release=''96d529790ccfca0b873be2921b21fc8e'' where menu_id=2000 and type=2
 update ccmenus set release=''863c1b4be7789b285c2999b501311d7e'' where menu_id=2010 and type=2
@@ -125,6 +168,24 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
     				end'
 		EXEC(@Sql)
 
+		set @process = 'drop sp -- [dbo].[ccsp_RIAConfEspec]'
+		set @Sql= '-- When stored procedure exists
+					if exists (select * from sys.procedures where name = "ccsp_RIAConfEspec")
+    				begin
+        				DROP PROCEDURE [dbo].[ccsp_RIAConfEspec]
+    				end'
+		EXEC(@Sql)
+
+		set @process = 'create INDEX if not exists-- [dbo].[ccsp_isFinished]'
+		set @Sql= '-- When index does not exists
+					If not exists(SELECT * FROM sys.indexes WHERE name="IX_ccRIAWorkGroupUsersConsulta" AND object_id = OBJECT_ID("ccRIAWorkGroupUsersConsulta"))
+					begin
+						CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta] ON [dbo].[ccRIAWorkGroupUsersConsulta]([IDWG] ASC,[User_id] ASC)
+						WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 80) 
+						ON [PRIMARY]
+					end'
+		EXEC(@Sql)
+
 		set @process = 'Adding currentStatus column to ccLogAgentesDia '
 		set @Sql= '-- When column does not exists
 					if not exists (select * from sys.columns where name = N"currentStatus" and Object_ID = Object_ID(N"ccLogAgentesDia"))
@@ -167,6 +228,51 @@ begin
 		set @result=1
 	end
 end'
+		EXEC(@Sql)
+
+set @process = 'Create SP -- [dbo].[ccsp_RIAConfEspec]'
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_RIAConfEspec]
+@User_id int
+AS
+set nocount on
+/****
+Conexion Info Email In
+	protocol|server|ssl|port|cleanMail|revisionTime
+Conexion Info Email Out
+	serverOut|portOut|tls|sslOut
+Conexion Info Twitter
+	usuarioID|token|tokenSecret|time|daysTwitterRecord
+***/
+select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
+A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
+A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
+A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,"""") chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
+isnull(A.startStopRecording,0) startStopRecording
+,isnull(B.name,"""") as nameMail,isnull(B.conexionInfo,"""") as conexionInfo,isnull(B.connUser,"""") as connUser,
+isnull(B.ConnPass,"""") as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
+isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,
+case when A.cam_id > 0  /* and C.callsBySurvey=1*/ then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
+case when A.cam_id > 0  /*and C.callsBySurvey=1*/then A.callBackSurveyClient else 0 end callBackSurveyClient,
+case when A.cam_id > 0  /*and C.callsBySurvey=1*/ then 1 else 0 end isRelationSurvey,
+isnull(nameTwitter,"""") nameTwitter,isnull(userTwitter,"""") userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
+isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
+--usuarioID|token|tokenSecret|time|daysTwitterRecord
+isnull(conexionInfoTwitter,""usuarioID|token|tokenSecret|1|0"") conexionInfoTwitter
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail
+from ccInbound A
+left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
+left join ccCamps C on C.cam_id=A.cam_id
+left join (
+select D.inboundId,
+D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+D.timeAlertMessage as timeAlertMessageTwitter,
+D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+closeConversationTime as  closeConversationTimeTwitter
+from ContactMeanIn D
+where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+where inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+return(0)
+set nocount off'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP -- ccsp_AgentSetCallStatus'
@@ -762,17 +868,298 @@ END
 '
 		EXEC(@Sql)
 
-		set @process = ''
-		set @Sql= ''
+set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]----------'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
+@User_id int
+AS
+set nocount on
+/****
+Conexion Info Email In
+	protocol|server|ssl|port|cleanMail|revisionTime
+Conexion Info Email Out
+	serverOut|portOut|tls|sslOut
+Conexion Info Twitter
+	usuarioID|token|tokenSecret|time|daysTwitterRecord
+***/
+select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
+A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
+A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
+A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,'''') chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
+isnull(A.startStopRecording,0) startStopRecording
+,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
+isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
+isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,A.callBackSurveyAgent,A.callBackSurveyClient,
+case when C.CallsBySurvey is null or C.CallsBySurvey = 0 then 0 else 1 end isRelationSurvey,
+isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
+isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
+--usuarioID|token|tokenSecret|time|daysTwitterRecord
+isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail,ISNULL(A.editableDtmf,0)editableDtmf
+from ccInbound A
+left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
+left join ccCamps C on C.cam_id=A.cam_id
+left join (
+		select D.inboundId,
+		D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+		D.timeAlertMessage as timeAlertMessageTwitter,
+		D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+		closeConversationTime as  closeConversationTimeTwitter
+		from ContactMeanIn D
+		where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+		where inbound_id in 
+			(select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+return(0)
+set nocount off'
 		EXEC(@Sql)
 
-		set @process = ''
-		set @Sql= ''
+		set @process = 'ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]------------'
+		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]
+@inbound_id smallint,
+@descripcion varchar(50) = null,
+@Status tinyint = null,
+@tNotas int = null,
+@tMaxWaitCall int = null,
+@nMaxQue int = null,
+@tel_maxwait varchar(15) = null,
+@tel_MaxQueue varchar(15) = null,
+@tel_outservice varchar(15) = null,
+@tel_noct varchar(15) = null,
+@ShowCalifWnd bit = null,
+@StartTimerOnHangUp bit = null,
+@editableCallKey bit = null,
+@queuePosition bit = null,
+@tMaxQueueCallBack smallint = null,
+@stopRecording bit = null,
+@dialPrefixOverflow varchar(10) = null,
+@OpriorityT smallint= null,
+@callerIdDesc varchar(15) = null,
+@chat tinyint = null,
+@inactiveChatTime smallint = null,
+@maxChats tinyint = null,
+@chatDomain varchar(max) = null,
+@chatQueue smallint = null,
+@chatTime smallint = null,
+@dRestrictPlay bit = null,
+@callBackSurveyAgent bit = null,
+@callBackSurveyClient bit = null,
+@agts_notavailable varchar(15) = null,
+@editableDtmf bit = null
+as
+set nocount on
+UPDATE ccInbound SET
+descripcion = isnull(@descripcion,descripcion),
+Status = isnull(@status,status),
+tNotas = isnull(@tNotas,tNotas),
+tMaxWaitCall = isnull(@tMaxWaitCall,tMaxWaitCall),
+nMaxQue = isnull(@nMaxQue,nMaxQue),
+tel_maxwait = isnull(@tel_maxwait,tel_maxwait),
+tel_MaxQueue = isnull(@tel_MaxQueue,tel_MaxQueue),
+tel_outservice = isnull(@tel_outservice,tel_outservice),
+tel_noct = isnull(@tel_noct,tel_noct),
+bnocturno = case when isnull(@tel_noct,''0'')=''0'' or @tel_noct='''' then ''0'' else ''1'' end,
+StartTimerOnHangUp = isnull(@StartTimerOnHangUp,StartTimerOnHangUp),
+editableCallKey = isnull(@editableCallKey,editableCallKey),
+queuePosition = isnull(@queuePosition,queuePosition),
+tMaxQueueCallBack = isnull(@tMaxQueueCallBack,tMaxQueueCallBack),
+stopRecording = isnull(@stopRecording, stopRecording),
+dialPrefixOverflow = isnull(@dialPrefixOverflow, dialPrefixOverflow),
+OpriorityT = isnull(@OpriorityT, OpriorityT),
+callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+chat = isnull(@chat,chat),
+inactiveChatTime = isnull(@inactiveChatTime,inactiveChatTime),
+maxChats = isnull(@maxChats,maxChats),
+chatQueueOverflow = isnull(@chatQueue,isnull(chatQueueOverflow,15)),
+chatTimeOverflow = isnull(@chatTime,isnull(chatTimeOverflow,300)),
+startStopRecording = isnull(@dRestrictPlay,startStopRecording),
+callBackSurveyAgent = isnull(@callBackSurveyAgent,callBackSurveyAgent),
+callBackSurveyClient = isnull(@callBackSurveyClient,callBackSurveyClient),
+agts_notavailable = isnull(@agts_notavailable,agts_notavailable),
+editableDtmf = isnull(@editableDtmf,editableDtmf)
+where inbound_id = @inbound_id
+
+
+if not exists( select inbound_id from ccinbound where inbound_id <> @inbound_id and chatDomain = @chatDomain ) begin
+if isnull(@chatDomain,'''') <> '''' begin
+	update ccinbound set chatDomain = @chatDomain where inbound_id = @inbound_id
+end
+end
+else begin
+raiserror(''Domain already in another ACD Group'',15,4)
+end
+
+
+if @ShowCalifWnd = 1
+begin
+If exists(select cam_id from ccCalifCamp where cam_id = @inbound_id and tipo = 0)
+	begin
+	UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+	where inbound_id = @inbound_id
+	select 1
+	return(0)
+	end
+
+select 0
+return(0)
+end
+
+else
+UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+where inbound_id = @inbound_id
+return(0)
+set nocount off'
 		EXEC(@Sql)
 
-		set @process = ''
-		set @Sql= ''
+		set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]--------'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
+@User_id smallint
+AS
+set nocount on
+ select a1.cam_id, cam_Descripcion
+  , cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+  , cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+  , cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+  , detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+  , cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+  , stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, cam_maxqueue as queSize,
+  DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+     ,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+  ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+  from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+  inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+  where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+  order by cam_descripcion
+ return(0)
+ set nocount off'
 		EXEC(@Sql)
+		
+set @process = 'ccsp_RIAUpdateCamConfig----------'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+@cam_id smallint,
+@cam_descripcion varchar(40) = null,
+@cam_tnotas smallint = null,
+@cam_ocupado tinyint = null,
+@cam_NoInt_ocupado tinyint = null,
+@cam_inter_ocupado smallint = null,
+@cam_nocontesto tinyint = null,
+@cam_NoInt_nocontesto tinyint = null,
+@cam_inter_nocontesto smallint = null,
+@cam_fax tinyint = null,
+@cam_NoInt_fax tinyint = null,
+@cam_inter_fax smallint = null,
+@cam_ModoManual tinyint= null,
+@ANI varchar(15) = null,
+@cam_ShowCalifWnd bit = null,
+@cam_StartTimerOnHangUp bit = null,
+@editableCallKey bit = null,
+@cam_tNoContesta tinyint = null,
+@cam_intensive_dialing tinyint = null,
+@detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+@detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+@compliance TinyInt = null,
+@cam_inter_graba smallint = null,
+@cam_NoInt_graba tinyint = null,
+@progDial smallint = null,
+@excCallBack Tinyint = null,
+@dialOrder Tinyint = null,
+@dialPrefix varchar(10) = null,
+@dialPrefixMan varchar(10) = null,
+@dialPrefixXfe varchar(10) = null,
+@listenManualCall bit = null,
+@stopRecording bit = null,
+@abandonCallback bit = null,
+@autoCB smallint = null,
+@id_listAni int = null,
+@tDialonWrapUp smallint = null,
+@quesize smallint=null,
+@DNCScrub int=null,
+@callerIdDesc varchar(15)=null,
+@timeZoneRule int=null,
+@callsBySurvey int=null,
+@ivrScript int=null,
+@surveyPctg int=null,
+@call_record tinyint=null,
+@dRestrictPlay bit = null,
+@leaveRecMessage bit = null,
+@manualCallOnChat bit = null,
+@callBackSurveyClient bit = null,
+@callBackSurveyAgent bit = null,
+@funcEspDtmf int =null
+as
+set nocount on
+UPDATE ccCamps SET
+ cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+ cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+ cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+ cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+ cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+ cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+ cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+ cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+ cam_fax = isnull(@cam_fax,cam_fax),
+ cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+ cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+ cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+ ANI = isnull(@ANI,ANI),
+ cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+ editableCallKey = isnull(@editableCallKey, editableCallKey),
+ cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+ iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+ detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+ detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+ compliance = isnull(@compliance, compliance),
+ cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+ cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+ cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+ progDial = isnull(@progDial, progDial),
+ excCallBack = isnull(@excCallBack,excCallBack),
+ dialOrder = isnull(@dialOrder, dialOrder),
+ dialPrefix = isnull(@dialPrefix, dialPrefix),
+ dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+ dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+ listenManualCall = isnull(@listenManualCall, listenManualCall),
+ stopRecording = isnull(@stopRecording, stopRecording),
+ abandonCallback = isnull(@abandonCallback, abandonCallback),
+ t_autoCB = isnull(@autoCB,t_autoCB),
+ id_anilist = isnull(@id_listAni,id_anilist),
+ tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+ cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+ cam_maxqueue = isnull(@quesize,cam_maxqueue),
+ DNCScrub = isnull(@DNCScrub,DNCScrub),
+ callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+ timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+ callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+ ivrScript = isnull(@ivrScript,ivrScript),
+ surveyPctg = isnull(@surveyPctg,surveyPctg),
+ call_record = isnull(@call_record,call_record),
+ startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+ leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+ manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+ callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+ callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+ funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf )
+Where cam_id = @cam_id
+
+if @cam_ShowCalifWnd = 1
+ begin
+ If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+  begin
+  select 0
+  return(0)
+  end
+
+ UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+ where cam_id = @cam_id
+ select 1
+ return(0)
+  end
+
+--else
+UPDATE ccCamps SET
+cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+where cam_id = @cam_id
+return(0)
+set nocount off'
+  EXEC(@Sql)
 
 
 

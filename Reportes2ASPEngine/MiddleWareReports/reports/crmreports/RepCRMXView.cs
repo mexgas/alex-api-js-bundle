@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using System.Globalization;
 
 namespace MiddleWareReports
 {
@@ -246,11 +247,21 @@ namespace MiddleWareReports
         public override XmlDocument getXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals)
         {
             changeCulture();
+            DateTime dateEndParam = DateTime.Now;
+            DateTime dateNow=DateTime.Now;
+            if(parameters[""]!=null&&parameters[""].Length>0)
+                dateEndParam = DateTime.Parse(parameters["dateEnd"].ToString(), CultureInfo.CurrentCulture);
+            string isDay = "0";
+            if (dateEndParam.Year == dateEndParam.Year && dateEndParam.Month == dateEndParam.Month && dateEndParam.Day == dateEndParam.Day)
+            {
+                isDay = "1";
+            }
+
             NameValueCollection parametersToSave = new NameValueCollection(parameters);
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
             NameValueCollection parametersAddFilter = new NameValueCollection();
             XmlDocument xmlAddFilters = new XmlDocument();
-            bool calculateTotals = true; // if (totals == "1")            
+            bool calculateTotals = true;
 
             
             //Add Filrters used by report selected (Note: Fill DBSchema)
@@ -304,6 +315,7 @@ namespace MiddleWareReports
             xmlReport.AppendChild(report);
             XmlElement name = xmlReport.CreateElement("", "ReportName", "");
             name.SetAttribute("name", this.reportName);
+            name.SetAttribute("isDay", isDay);
             name.InnerText = this.reportName;
             report.AppendChild(name);
             report.AppendChild(getXmlDetailReports(xmlReport, process));

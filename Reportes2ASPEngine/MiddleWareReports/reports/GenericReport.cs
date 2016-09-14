@@ -87,11 +87,22 @@ namespace MiddleWareReports
         public virtual XmlDocument getXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals)
         {
             changeCulture();
+
+            DateTime dateEndParam = DateTime.Now;
+            DateTime dateNow = DateTime.Now;
+            if (parameters["dateEnd"] != null && parameters["dateEnd"].Length > 0)
+                dateEndParam = DateTime.Parse(parameters["dateEnd"].ToString(), CultureInfo.CurrentCulture);
+            string isDay = "0";
+            if (dateEndParam.Year == dateNow.Year && dateEndParam.Month == dateNow.Month && dateEndParam.Day == dateNow.Day)
+            {
+                isDay = "1";
+            }
+
             NameValueCollection parametersToSave = new NameValueCollection(parameters);
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
             NameValueCollection parametersAddFilter = new NameValueCollection();
             XmlDocument xmlAddFilters = new XmlDocument();
-            bool calculateTotals = true; // if (totals == "1")            
+            bool calculateTotals = true;
 
             //Add Filrters used by report selected (Note: Fill DBSchema)
             if (addFilters.Length > 0)
@@ -133,6 +144,7 @@ namespace MiddleWareReports
             xmlReport.AppendChild(report);
             XmlElement name = xmlReport.CreateElement("", "ReportName", "");
             name.SetAttribute("name", this.reportName);
+            name.SetAttribute("isDay", isDay);
             name.InnerText = this.reportName;
             report.AppendChild(name);
             report.AppendChild(getXmlDetailReports(xmlReport, process));
@@ -201,6 +213,7 @@ namespace MiddleWareReports
             xmlReport.AppendChild(report);
             XmlElement name = xmlReport.CreateElement("", "ReportName", "");
             name.SetAttribute("name", this.reportName);
+            name.SetAttribute("isDay", "0");
             name.InnerText = this.reportName;
             report.AppendChild(name);
             report.AppendChild(getXmlRows(xmlReport, detailTable, "Rows"));
@@ -245,11 +258,6 @@ namespace MiddleWareReports
 
             for (int i = 0; i < totalsTable.Columns.Count; i++)
             {
-                //if (totalsTable.Columns[i].ColumnName.EndsWith("_UnCount"))
-                //{
-                //    partToTranslate = totalsTable.Columns[i].ColumnName.Substring(0, totalsTable.Columns[i].ColumnName.LastIndexOf("_"));
-                //    totalsTable.Columns[i].ColumnName = partToTranslate;
-                //}
                 newcolumns[i] = new DataColumn(
                 totalsTable.Columns[i].ColumnName, totalsTable.Columns[i].DataType);
             }
@@ -277,9 +285,6 @@ namespace MiddleWareReports
             }
 
             union.EndLoadData();
-
-            //table.Rows.Add(totalTable.Rows);
-            //table.Merge(totalTable);
             return union;
         }
 
@@ -308,12 +313,10 @@ namespace MiddleWareReports
             XmlElement groupby = getGroupByColumns(xml, parameters, process);
             XmlElement detailReports = getDetailReports(xml, process);
             XmlElement translates = getTranslatedColumns(xml, process);
-            //XmlElement CRMTemplates = getCRMFields(xml, parameters, process);
-            //DetailReports
+
             xml.ChildNodes.Item(1).AppendChild(detailReports);
             xml.ChildNodes.Item(1).AppendChild(filters);
             xml.ChildNodes.Item(1).AppendChild(menus);
-            // xml.ChildNodes.Item(1).AppendChild(CRMTemplates);
             xml.ChildNodes.Item(1).AppendChild(ranges);
             xml.ChildNodes.Item(1).AppendChild(texts);
             xml.ChildNodes.Item(1).AppendChild(pivots);
@@ -905,13 +908,6 @@ namespace MiddleWareReports
 
                 StringBuilder query = dynamicQuery.Stmt;
 
-                ////Group by time period
-                //if (timePeriodVal.Length > 0)
-                //{
-                //    columns = TimePeriodGroup.insertTimePeriodColumns(columns, timePeriodVal);
-                //    paramValueList.Remove("timePeriod");
-                //}
-
                 query.Append((DynamicTsqlBuilder.groupByStatement(columns)));
                 query.Append(havingStatement);
                 query.Append(DynamicTsqlBuilder.orderByDescStatement(columns));
@@ -922,7 +918,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [agentName], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSAgent WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [agentName] ) AS H_GROUP ) AS B_GROUP ");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [agentName], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSAgent WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [agentName] ) AS H_GROUP ) AS B_GROUP ");
                         }
                         break;
 
@@ -930,7 +926,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [Supervisor], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSSupervisor WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [Supervisor] ) AS H_GROUP ) AS B_GROUP ");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [Supervisor], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSSupervisor WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [Supervisor] ) AS H_GROUP ) AS B_GROUP ");
                         }
                         break;
 
@@ -938,7 +934,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [Section], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSSection WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [Section] ) AS H_GROUP ) AS B_GROUP");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [Section], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSSection WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [Section] ) AS H_GROUP ) AS B_GROUP");
                         }
                         break;
 
@@ -946,7 +942,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [question], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSQuestion WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [question] ) AS H_GROUP ) AS B_GROUP");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [question], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSQuestion WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [question] ) AS H_GROUP ) AS B_GROUP");
                         }
                         break;
 
@@ -954,7 +950,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [agentName], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSAgent WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [agentName] ) AS H_GROUP ) AS B_GROUP ");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [agentName], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSAgent WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [agentName] ) AS H_GROUP ) AS B_GROUP ");
                         }
                         break;
 
@@ -962,7 +958,7 @@ namespace MiddleWareReports
                         if (query.ToString().Contains("[avgDisposition]"))
                         {
                             query.Remove(0, query.Length);
-                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [question], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSQuestion WITH(NOLOCK)  WHERE date >= @dateStart AND date <= @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [question] ) AS H_GROUP ) AS B_GROUP");
+                            query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [question], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSQuestion WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [question] ) AS H_GROUP ) AS B_GROUP");
                         }
                         break;
 
@@ -1092,7 +1088,6 @@ namespace MiddleWareReports
                 column = String.Format("[{0}]", column);
                 if (columnPair.Length == 3)
                 {
-                    //function = columnPair[2].Replace('_', ',');                                        
                     function = Regex.Replace(columnPair[2], @"_([^(count|avg|time)]|[\d|TIMEGROUP|\s]+)", ",$1");
                     totalColumns += String.Format("({0}) as {1},", function, column);
                 }
@@ -1124,17 +1119,76 @@ namespace MiddleWareReports
             StringBuilder whereStatement = new StringBuilder();
             StringBuilder parameters = new StringBuilder();
             NameValueCollection values = new NameValueCollection();
+            TimePeriod t = TimePeriod.H;
+            DateTime dateStart, dateEnd = DateTime.Now;
+            //Add time period column            
+            string originalTimePeriodCol = "";
+            bool isTimePeriod = false;
+            int timeMinutes;
+            if (paramValueList["timePeriod"] != null && paramValueList["timePeriod"].Length > 0)
+            {
+                isTimePeriod = TimePeriodGroup.isTimePeriod(paramValueList["timePeriod"]);
+                if (isTimePeriod)
+                {
+                    originalTimePeriodCol = paramValueList["timePeriod"];
+                }
+            }
+            paramValueList.Remove("timePeriod");
+
+
+
+
+            if (paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
+            {
+                String dateEndString = paramValueList["dateEnd"].ToString();
+                dateEnd = DateTime.Parse(dateEndString, CultureInfo.CurrentCulture);
+
+                if (isTimePeriod) t = (TimePeriod)Enum.Parse(typeof(TimePeriod), originalTimePeriodCol, true);
+                timeMinutes = dateEnd.Minute;
+
+                dateEnd = new DateTime(dateEnd.Year, dateEnd.Month, dateEnd.Day, dateEnd.Hour, 0, 0);
+                switch (t)
+                {
+                    case TimePeriod.H:
+                    case TimePeriod.D:
+                    case TimePeriod.PE:
+                        if (timeMinutes >= 1) timeMinutes = 59;                       
+                        else timeMinutes = 0;
+                        dateEnd = dateEnd.AddMinutes(timeMinutes);
+                        break;
+                    case TimePeriod.HH:
+                        if (timeMinutes > 30) timeMinutes = 59;                        
+                        else if (timeMinutes >= 1) timeMinutes = 29;
+                        else timeMinutes = 0;
+                        dateEnd = dateEnd.AddMinutes(timeMinutes);
+                        break;
+                    case TimePeriod.QH:
+                        if (timeMinutes > 45) timeMinutes = 59;
+                        else if (timeMinutes > 30) timeMinutes = 44;
+                        else if (timeMinutes > 15) timeMinutes = 29;
+                        else if (timeMinutes >= 1) timeMinutes = 14;
+                        else timeMinutes = 0;
+                        dateEnd = dateEnd.AddMinutes(timeMinutes);
+                        break;                    
+                }
+            }
+
 
             if (paramValueList["dateStart"] != null && paramValueList["dateStart"].Length > 0
                 && paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
             {
-                whereStatement.Append(string.Format(" WHERE {0} >= {1} AND {0} <= {2}  ", dateColumnName, "@dateStart", "@dateEnd"));
+                whereStatement.Append(string.Format(" WHERE {0} >= {1} AND {0} < {2}  ", dateColumnName, "@dateStart", "@dateEnd"));
 
                 parameters.Append(string.Format("@dateStart " + DBSchema.getDataType("dateStart").ToString()));
                 values.Add("@dateStart", paramValueList["dateStart"].ToString());
 
+                if (!isTimePeriod)
+                {
+                    dateEnd = DateTime.Parse(paramValueList["dateEnd"].ToString(), CultureInfo.CurrentCulture);
+                }
                 parameters.Append(string.Format(", @dateEnd " + DBSchema.getDataType("dateEnd").ToString()));
-                values.Add("@dateEnd", paramValueList["dateEnd"].ToString());
+
+                values.Add("@dateEnd", dateEnd.ToString("yyy-MM-dd HH:mm:ss"));
             }
             paramValueList.Remove("dateStart");
             paramValueList.Remove("dateEnd");
@@ -1159,16 +1213,6 @@ namespace MiddleWareReports
                     columns.AddLast("[" + col + "]");
                 }
             }
-            //else if ((paramValueList["columns"] == null | paramValueList["columns"] == string.Empty) && process >= 9000 && process < 10000)
-            //{
-            //    columns.AddLast("[date]");
-            //    for (int i = 1; i <= CRMxView.numColums; i++)
-            //    {
-            //        columns.AddLast("[data" + i + "]");
-            //    }
-
-
-            //}
 
             paramValueList.Remove("columns");
 
@@ -1214,18 +1258,7 @@ namespace MiddleWareReports
 
             bool isPivotReport = (pivotColumns != "" && complementColumns != "" && pivotFunction != "");
 
-            //Add time period column            
-            string originalTimePeriodCol = "";
-            bool isTimePeriod = false;
-            if (paramValueList["timePeriod"] != null && paramValueList["timePeriod"].Length > 0)
-            {
-                isTimePeriod = TimePeriodGroup.isTimePeriod(paramValueList["timePeriod"]);
-                if (isTimePeriod)
-                {
-                    originalTimePeriodCol = paramValueList["timePeriod"];
-                }
-            }
-            paramValueList.Remove("timePeriod");
+
 
             string groupByColumns = "";
             if (paramValueList["groupByColumns"] != null && paramValueList["groupByColumns"].Length > 0)
@@ -1267,11 +1300,11 @@ namespace MiddleWareReports
             {
                 if (complementGroupBy.Contains("_TIMEGROUP"))
                 {
-                    TimePeriod t = (TimePeriod)Enum.Parse(typeof(TimePeriod), originalTimePeriodCol, true);
+                    t = (TimePeriod)Enum.Parse(typeof(TimePeriod), originalTimePeriodCol, true);
                     if (t == TimePeriod.PE)
                     {
-                        DateTime dateStart = DateTime.Parse(values["@dateStart"].ToString());
-                        DateTime dateEnd = DateTime.Parse(values["@dateEnd"].ToString());
+                        dateStart = DateTime.Parse(values["@dateStart"].ToString());
+                        dateEnd = DateTime.Parse(values["@dateEnd"].ToString());
                         complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", "," + dateEnd.Subtract(dateStart).TotalSeconds.ToString());
                     }
                     else if (t == TimePeriod.D) complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",86400");
@@ -1315,21 +1348,27 @@ namespace MiddleWareReports
                 }
 
                 paramValueList.Remove("groupBy");
-                int timeMinutes;
-                TimePeriod t = (TimePeriod)Enum.Parse(typeof(TimePeriod), timePeriodDetail, true);
-                if (t == TimePeriod.D)
-                    timeMinutes = 1440;
-                else if (t == TimePeriod.H)
-                    timeMinutes = 60;
-                else if (t == TimePeriod.HH)
-                    timeMinutes = 30;
-                else// if (t == TimePeriod.QH)
-                    timeMinutes = 15;
+
+                t = (TimePeriod)Enum.Parse(typeof(TimePeriod), timePeriodDetail, true);
+                switch (t)
+                {
+                    case TimePeriod.D:
+                        timeMinutes = 1440;
+                        break;
+                    case TimePeriod.H:
+                        timeMinutes = 60;
+                        break;
+                    case TimePeriod.HH:
+                        timeMinutes = 30;
+                        break;
+                    default:
+                        timeMinutes = 15;
+                        break;
+                }
 
                 if (paramValueList["date"] != null && paramValueList["date"].Length > 0)
                 {
                     String dateDetail = paramValueList["date"].ToString();
-                    DateTime dateStart, dateEnd;
                     if (t == TimePeriod.PE)
                     {
                         string[] dateDetailPE = dateDetail.Split('-');
@@ -1794,8 +1833,8 @@ namespace MiddleWareReports
                 if (totalsTable == null) continue;
                 if (totalsTable.Columns.Contains(col.ColumnName))
                 {
-   
-                       newTable.Rows[0][newCol] = totalsTable.Rows[0][col.ColumnName];
+
+                    newTable.Rows[0][newCol] = totalsTable.Rows[0][col.ColumnName];
                 }
             }
             return newTable;

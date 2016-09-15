@@ -4,7 +4,7 @@
 
 /*
 Author: Jesus Gallardo
-Date: 20160608
+Date: 20160608   *********************************	CAMBIOADO  ***************************************
 Description:
 
 	SP ReportsMasterProcess: Se cambia para que se ejecuten la replicas de manera paulatina
@@ -19,7 +19,7 @@ IMPORTANT: In order to write the scripts to release in database go to the las pa
 
 set nocount on
 
-declare @version int
+declare @version int,@versionFix int,@actualVersionFix int
 declare @actualVersion int
 declare @sql varchar(max)
 declare @errorGenerated varchar(max)
@@ -288,31 +288,7 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 
 drop table #reinitmergepullsubscription'
 		EXEC(@Sql)
-
-
-		/* End script release */
-
-		/* Upgrade database version (use your own script to do it) */
-		exec ccsp_getVersion 'BD', @version
-		set @actualVersion = @version
-		commit tran
-		end try
-
-		begin catch
-
-			/* Error generated based on sintax */
-			select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + ' Error process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
-			RAISERROR(@errorGenerated, 11, 1)
-
-		rollback tran
-		end catch
-	end
-if @actualVersion = @version begin
-	begin tran
-	begin try
-
-
-	set @process = '-----alter table RepIVRSurveys'
+set @process = '-----alter table RepIVRSurveys'
 		set @Sql= 'if not exists (select * from sys.columns where name = N''clientPhoneNumber'' and Object_ID = Object_ID(N''RepIVRSurveys''))
     begin
         alter table RepIVRSurveys add clientPhoneNumber varchar(30)
@@ -844,7 +820,7 @@ delete RepIVRSurveys with(rowlock)
 
 
 insert RepIVRSurveys select [date],userId,[login],scriptId,surveyId,survey,calId,calKey,campaignId,inboundId,campACDDescription,
-questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes],clientPhoneNumber
+questionId,questionDescription,question_Count,[Count],[year],[month],[day],[hour],[minutes]
 from
 (
 	select distinct
@@ -871,7 +847,7 @@ from
 	datepart(DD,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [day],
 	datepart(HH,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ ''00'',121)) as [minutes]
-	,rsq.orden, cal_ani clientPhoneNumber
+	,rsq.orden
 	from ccCallsIn cci with(nolock)
 	inner join IVROptions ivro on cci.IVR_id = ivro.IVR_id and ivro.cal_id = cci.cal_id
 	inner join ccUsers ccu on cci.User_id = ccu.User_id
@@ -908,7 +884,7 @@ from
 	datepart(DD,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [day],
 	datepart(HH,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [hour],
 	datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ ''00'',121)) as [minutes]
-	,rsq.orden, cal_telefono clientPhoneNumber
+	,rsq.orden
 	from ccoCallsOut cco
 	inner join IVROptions ivro on cco.cal_id = ivro.cal_id
 	inner join ccUsers ccu on cco.User_id = ccu.User_id
@@ -925,6 +901,30 @@ order by calId,orden
 end'
 
 		EXEC(@Sql)
+
+		/* End script release */
+
+		/* Upgrade database version (use your own script to do it) */
+		exec ccsp_getVersion 'BD', @version
+		set @actualVersionFix=@versionFix
+		commit tran
+		end try
+
+		begin catch
+
+			/* Error generated based on sintax */
+			select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + ' Error process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
+			RAISERROR(@errorGenerated, 11, 1)
+
+		rollback tran
+		end catch
+	end
+if @actualVersion = @version begin
+	begin tran
+	begin try
+
+
+	
 	commit tran
 	end try
 

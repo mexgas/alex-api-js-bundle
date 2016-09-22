@@ -59,14 +59,14 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 
 		set @process = 'select * from sys.columns where name = N''editableDtmf''-----------'
 		set @Sql= '
-if exists (select * from sys.columns where name = N''editableDtmf'' and Object_ID = Object_ID(N''ccinbound''))
+if not exists (select * from sys.columns where name = N''editableDtmf'' and Object_ID = Object_ID(N''ccinbound''))
     begin
         alter table ccinbound add editableDtmf int default(0)
     end'
 		EXEC(@Sql)
 
 		set @process = 'select * from sys.columns where name = N''funcEspDtmf''----------'
-		set @Sql= 'if exists (select * from sys.columns where name = N''funcEspDtmf'' and Object_ID = Object_ID(N''ccCamps''))
+		set @Sql= 'if not exists (select * from sys.columns where name = N''funcEspDtmf'' and Object_ID = Object_ID(N''ccCamps''))
     begin
         alter table ccCamps add funcEspDtmf int 
     end'
@@ -74,14 +74,14 @@ if exists (select * from sys.columns where name = N''editableDtmf'' and Object_I
 
 
 		set @process = 'select * from sys.columns where name = N''dtmf''---------'
-		set @Sql= 'if exists (select * from sys.columns where name = N''dtmf'' and Object_ID = Object_ID(N''optionivr''))
+		set @Sql= 'if not exists (select * from sys.columns where name = N''dtmf'' and Object_ID = Object_ID(N''optionivr''))
     begin
         alter table optionivr alter column dtmf varchar(20)
     end'
 		EXEC(@Sql)
 		
 		set @process = 'select * from sys.columns where name = N''dtmf''---------'
-		set @Sql= 'if exists (select * from sys.columns where name = N''tag'' and Object_ID = Object_ID(N''optionivr''))
+		set @Sql= 'if not exists (select * from sys.columns where name = N''tag'' and Object_ID = Object_ID(N''optionivr''))
     begin
         alter table optionivr alter column tag varchar(20)
     end'
@@ -162,7 +162,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 
 		set @process = 'drop sp -- [dbo].[ccsp_isFinished]'
 		set @Sql= '-- When stored procedure exists
-					if exists (select * from sys.procedures where name = "ccsp_isFinished")
+					if exists (select * from sys.procedures where name = ''ccsp_isFinished'')
     				begin
         				DROP PROCEDURE [dbo].[ccsp_isFinished]
     				end'
@@ -170,7 +170,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 
 		set @process = 'drop sp -- [dbo].[ccsp_RIAConfEspec]'
 		set @Sql= '-- When stored procedure exists
-					if exists (select * from sys.procedures where name = "ccsp_RIAConfEspec")
+					if exists (select * from sys.procedures where name = ''ccsp_RIAConfEspec'')
     				begin
         				DROP PROCEDURE [dbo].[ccsp_RIAConfEspec]
     				end'
@@ -178,7 +178,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 
 		set @process = 'create INDEX if not exists-- [dbo].[ccsp_isFinished]'
 		set @Sql= '-- When index does not exists
-					If not exists(SELECT * FROM sys.indexes WHERE name="IX_ccRIAWorkGroupUsersConsulta" AND object_id = OBJECT_ID("ccRIAWorkGroupUsersConsulta"))
+					If not exists(SELECT * FROM sys.indexes WHERE name=''IX_ccRIAWorkGroupUsersConsulta'' AND object_id = OBJECT_ID(''ccRIAWorkGroupUsersConsulta''))
 					begin
 						CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta] ON [dbo].[ccRIAWorkGroupUsersConsulta]([IDWG] ASC,[User_id] ASC)
 						WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 80) 
@@ -188,7 +188,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 
 		set @process = 'Adding currentStatus column to ccLogAgentesDia '
 		set @Sql= '-- When column does not exists
-					if not exists (select * from sys.columns where name = N"currentStatus" and Object_ID = Object_ID(N"ccLogAgentesDia"))
+					if not exists (select * from sys.columns where name = N''currentStatus'' and Object_ID = Object_ID(N''ccLogAgentesDia''))
     				begin
         				ALTER TABLE ccLogAgentesDia ADD currentStatus int
     				end'
@@ -196,7 +196,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 
 		set @process = 'Adding callID column to ccLogAgentesDia '
 		set @Sql= '-- When column does not exists
-					if not exists (select * from sys.columns where name = N"callID" and Object_ID = Object_ID(N"ccLogAgentesDia"))
+					if not exists (select * from sys.columns where name = N''callID'' and Object_ID = Object_ID(N''ccLogAgentesDia''))
     				begin
         				ALTER TABLE ccLogAgentesDia ADD callID int
     				end'
@@ -246,31 +246,32 @@ Conexion Info Twitter
 select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
 A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
 A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
-A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,"""") chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
+A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,'''') chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
 isnull(A.startStopRecording,0) startStopRecording
-,isnull(B.name,"""") as nameMail,isnull(B.conexionInfo,"""") as conexionInfo,isnull(B.connUser,"""") as connUser,
-isnull(B.ConnPass,"""") as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
+,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
+isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
 isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,
 case when A.cam_id > 0  /* and C.callsBySurvey=1*/ then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
 case when A.cam_id > 0  /*and C.callsBySurvey=1*/then A.callBackSurveyClient else 0 end callBackSurveyClient,
 case when A.cam_id > 0  /*and C.callsBySurvey=1*/ then 1 else 0 end isRelationSurvey,
-isnull(nameTwitter,"""") nameTwitter,isnull(userTwitter,"""") userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
+isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
 isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
 --usuarioID|token|tokenSecret|time|daysTwitterRecord
-isnull(conexionInfoTwitter,""usuarioID|token|tokenSecret|1|0"") conexionInfoTwitter
-,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail
+isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail,ISNULL(A.editableDtmf,0)editableDtmf
 from ccInbound A
 left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
 left join ccCamps C on C.cam_id=A.cam_id
 left join (
-select D.inboundId,
-D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
-D.timeAlertMessage as timeAlertMessageTwitter,
-D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
-closeConversationTime as  closeConversationTimeTwitter
-from ContactMeanIn D
-where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
-where inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+		select D.inboundId,
+		D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+		D.timeAlertMessage as timeAlertMessageTwitter,
+		D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+		closeConversationTime as  closeConversationTimeTwitter
+		from ContactMeanIn D
+		where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+		where inbound_id in 
+			(select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
 return(0)
 set nocount off'
 		EXEC(@Sql)
@@ -544,7 +545,7 @@ if (@User_id > 0 ) begin
 								if (select surveyPctg from ccCamps where cam_id = @surveycamid) >= rand() *100 
 								begin
 									insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial) 
-									values(right((cast(@call_id as varchar) + ',' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()) )
+									values(right((cast(@call_id as varchar) + '','' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()) )
 								end
 							end
 					end
@@ -562,7 +563,7 @@ if (@User_id > 0 ) begin
 					if (select surveyPctg from ccCamps where cam_id = @surveycamId) >= rand() *100 
 					begin
 						insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial) 
-						values(right((cast(@call_id as varchar) + ',' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()))
+						values(right((cast(@call_id as varchar) + '','' + @cal_Key),20),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()))
 					end
 				end
 			end
@@ -868,49 +869,7 @@ END
 '
 		EXEC(@Sql)
 
-set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]----------'
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
-@User_id int
-AS
-set nocount on
-/****
-Conexion Info Email In
-	protocol|server|ssl|port|cleanMail|revisionTime
-Conexion Info Email Out
-	serverOut|portOut|tls|sslOut
-Conexion Info Twitter
-	usuarioID|token|tokenSecret|time|daysTwitterRecord
-***/
-select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
-A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
-A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
-A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,'''') chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
-isnull(A.startStopRecording,0) startStopRecording
-,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
-isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
-isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,A.callBackSurveyAgent,A.callBackSurveyClient,
-case when C.CallsBySurvey is null or C.CallsBySurvey = 0 then 0 else 1 end isRelationSurvey,
-isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
-isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
---usuarioID|token|tokenSecret|time|daysTwitterRecord
-isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
-,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail,ISNULL(A.editableDtmf,0)editableDtmf
-from ccInbound A
-left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
-left join ccCamps C on C.cam_id=A.cam_id
-left join (
-		select D.inboundId,
-		D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
-		D.timeAlertMessage as timeAlertMessageTwitter,
-		D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
-		closeConversationTime as  closeConversationTimeTwitter
-		from ContactMeanIn D
-		where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
-		where inbound_id in 
-			(select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
-return(0)
-set nocount off'
-		EXEC(@Sql)
+
 
 		set @process = 'ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]------------'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]

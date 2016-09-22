@@ -6,7 +6,7 @@
 Author: Jesus Gallardo
 Date: 20160608
 Description:
-**********************************************************************************************
+
 	SP ReportsMasterProcess: Se cambia para que se ejecuten la replicas de manera paulatina
 Database: ccReportsRiaPara
 Required version: 37
@@ -31,9 +31,9 @@ set @version = 39
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
-if @actualVersion = @version - 1 begin
-	begin tran
-	begin try
+if @actualVersion = @version - 1
+	begin
+		
 	  set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
 	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
 	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE'
@@ -227,7 +227,7 @@ drop table #times'
 		EXEC(@Sql)
 
 		set @process = 'ALTER SP -- ccspRepAgentGI'
-		set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepAgentGI]
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAgentGI]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -315,8 +315,8 @@ if @action=1 begin
 
 
 	--inserto tiempo de llamada de entrada	
-	--insert into #tempFechasI 
-	select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where convert(varchar(11),fecha,121)=convert(varchar(11),@dateNow,121) AND Tipo=0  	group by User_id
+	insert into #tempFechasI 
+	select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where CONVERT(date,fecha)=CONVERT(date, @dateNow) AND Tipo=0  group by User_id
 
 
 	insert into #inboundData(dateStartDetail,dateEndDetail,timegroup,timegroup_next,time_endque,time_ring,time_dialog,time_notes,time_end_call,phone_in,cal_id,dni_id,Inbound_id,User_id,ntotal,ninitial,nout_hour,nout_service
@@ -503,8 +503,7 @@ if @action=1 begin
 				   AND txfer=0 AND tring=0 AND tdialog=0 AND tnotes=0 AND tresp=0 )
 		
 --inserto tiempo de llamada de salida
-	insert into #tempFechasO select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where convert(varchar(11),fecha,121)=convert(varchar(11),@dateNow,121) AND Tipo=1 
-	group by User_id
+	insert into #tempFechasO select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where CONVERT(date,fecha)=CONVERT(date, @dateNow) AND Tipo=1 group by User_id
 
 	update C
 	set C.dateEndDetail=@dateNow
@@ -621,7 +620,7 @@ if @action=1 begin
 
 	
 --inserto tiempo READY y NOT READY
-	insert into #tempFechasR select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where convert(varchar(11),fecha,121)=convert(varchar(11),@dateNow,121) group by User_id
+	insert into #tempFechasR select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia where CONVERT(date,fecha)=CONVERT(date, @dateNow) group by User_id
 
 	insert into #timeDetailAgent(User_id,dateStartDetail,dateEndDetail,timegroup,timegroup_next,tunknown,tnot_av,tav,tprob,tother,nother,tmanualcall,tunknown2)
 	select 

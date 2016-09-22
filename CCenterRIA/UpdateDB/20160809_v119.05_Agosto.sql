@@ -52,10 +52,15 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
       ([dtmf] varchar(20),
       [tag] varchar(20),
       [camID] int ,
-      [type] int);
+      [type] int)
     end
   '
   EXEC(@Sql)
+
+  	set @process = 'Alter column optionIVR.tag length'
+	set @Sql= 'ALTER TABLE optionIVR ALTER COLUMN tag varchar(20)'
+	EXEC(@Sql)
+
 
 		set @process = 'select * from sys.columns where name = N''editableDtmf''-----------'
 		set @Sql= '

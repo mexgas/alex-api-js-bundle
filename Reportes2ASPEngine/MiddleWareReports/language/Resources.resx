@@ -577,7 +577,7 @@
     <value>Timbrando (Salida)</value>
   </data>
   <data name="tunknown" xml:space="preserve">
-    <value>Indefinido</value>
+    <value>Tiempo para validar telefonía</value>
   </data>
   <data name="txferin" xml:space="preserve">
     <value>Transferencia (Entrada)</value>
@@ -2462,5 +2462,8 @@
   </data>
   <data name="_UnCount" xml:space="preserve">
     <value>_</value>
+  </data>
+  <data name="tundefined" xml:space="preserve">
+    <value>Tiempo indefinido</value>
   </data>
 </root>

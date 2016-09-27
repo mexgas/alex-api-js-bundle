@@ -6802,7 +6802,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Indefinido.
+        ///   Busca una cadena traducida similar a Tiempo indefinido.
+        /// </summary>
+        public static string tundefined {
+            get {
+                return ResourceManager.GetString("tundefined", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo para validar telefonía.
         /// </summary>
         public static string tunknown {
             get {

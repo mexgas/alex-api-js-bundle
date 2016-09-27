@@ -574,7 +574,7 @@
     <value>Ringing time out</value>
   </data>
   <data name="tunknown" xml:space="preserve">
-    <value>Undefined</value>
+    <value>Telephone validation time</value>
   </data>
   <data name="txferin" xml:space="preserve">
     <value>Transfer inbound</value>
@@ -2396,5 +2396,8 @@
   </data>
   <data name="_UnCount" xml:space="preserve">
     <value>_</value>
+  </data>
+  <data name="tundefined" xml:space="preserve">
+    <value>Undefined time</value>
   </data>
 </root>

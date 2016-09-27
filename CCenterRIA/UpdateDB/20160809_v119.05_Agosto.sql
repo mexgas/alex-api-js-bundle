@@ -52,15 +52,10 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
       ([dtmf] varchar(20),
       [tag] varchar(20),
       [camID] int ,
-      [type] int)
+      [type] int);
     end
   '
   EXEC(@Sql)
-
-  	set @process = 'Alter column optionIVR.tag length'
-	set @Sql= 'ALTER TABLE optionIVR ALTER COLUMN tag varchar(20)'
-	EXEC(@Sql)
-
 
 		set @process = 'select * from sys.columns where name = N''editableDtmf''-----------'
 		set @Sql= '
@@ -256,27 +251,28 @@ isnull(A.startStopRecording,0) startStopRecording
 ,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
 isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
 isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,
-case when A.cam_id > 0  /* and C.callsBySurvey=1*/ then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
-case when A.cam_id > 0  /*and C.callsBySurvey=1*/then A.callBackSurveyClient else 0 end callBackSurveyClient,
-case when A.cam_id > 0  /*and C.callsBySurvey=1*/ then 1 else 0 end isRelationSurvey,
+case when A.cam_id > 0   and C.callsBySurvey=3 then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
+case when A.cam_id > 0  and C.callsBySurvey=3 then A.callBackSurveyClient else 0 end callBackSurveyClient,
+case when A.cam_id > 0  and C.callsBySurvey=3 then 1 else 0 end isRelationSurvey,
+isnull(A.agts_notavailable,'''') as agts_notavailable,
 isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
 isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
 --usuarioID|token|tokenSecret|time|daysTwitterRecord
 isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
-,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail,ISNULL(A.editableDtmf,0)editableDtmf
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail
+,isnull(A.editableDtmf,0) as editableDtmf
 from ccInbound A
 left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
 left join ccCamps C on C.cam_id=A.cam_id
 left join (
-		select D.inboundId,
-		D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
-		D.timeAlertMessage as timeAlertMessageTwitter,
-		D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
-		closeConversationTime as  closeConversationTimeTwitter
-		from ContactMeanIn D
-		where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
-		where inbound_id in 
-			(select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+select D.inboundId,
+D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+D.timeAlertMessage as timeAlertMessageTwitter,
+D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+closeConversationTime as  closeConversationTimeTwitter
+from ContactMeanIn D
+where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+where inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
 return(0)
 set nocount off'
 		EXEC(@Sql)
@@ -722,7 +718,7 @@ end
 set nocount off'
 		EXEC(@Sql)
 		
-		EXEC(@Sql)
+		
 
 		set @process = 'Alter SP -- ccsp_MailInitialStatistics'
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics] 
@@ -1127,7 +1123,106 @@ set nocount off'
 
 
 
+set @process = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentIndividualCounters]  --------'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_GetAgentIndividualCounters] 
+@type as int, @sup_id as int = 0 as
+set nocount on
 
+declare @fecha_ini datetime
+select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+
+if @type = 1 --Session time
+	begin
+		SELECT User_id, case
+			WHEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) > 0
+				THEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov))
+			ELSE sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) +
+				convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14)))
+			END as logintime
+		FROM ccLogLogin a with(index(IX_ccLogLogin_4)), ccGenViewRelsSupsAgent b
+		where fecha >= @fecha_ini
+		and a.User_id = b.agt
+		and b.sup = @sup_id
+		GROUP BY User_id
+	end
+
+if @type = 2 begin--Status agent	
+	select User_id,TipoStatusAge_id,sum(segundos) as segundos from (
+	SELECT User_id, TipoStatusAge_id, sum(tStatus) As segundos
+	FROM ccLogAgentesDia a with(index(IX_ccLogAgentesDia_4)), ccGenViewRelsSupsAgent b
+	WHERE fecha >= @fecha_ini AND a.User_id = b.agt
+	and b.sup = @sup_id
+	GROUP BY User_id, TipoStatusAge_id
+	union all
+	select A.User_id,
+	case when A.TipoStatusAge_id= 1 then 3 
+	when A.currentStatus in (21,4,5,9) then 4
+	else A.currentStatus end as TipoStatusAge_id,
+	DATEDIFF(ss,A.fecha,getdate())  from ccLogAgentesDia A 
+	inner join 
+	(select max(fecha) fecha,USER_ID from ccLogAgentesDia D
+	inner join ccGenViewRelsSupsAgent C on D.User_id=C.agt 
+	where C.sup=8 and fecha >= @fecha_ini and currentStatus not in (0,-2)  group by User_id) B
+	on A.User_id=B.User_id and A.fecha=B.fecha
+	)x
+	group by User_id,TipoStatusAge_id
+	ORDER BY User_id
+end
+
+if @type = 3 begin
+
+		select calls.user_id, calls.total_calls, calls.type_calls, users.login, calls.nCalls, calls.tDialog, calls.tWrapup, calls.tHold
+		from ccusers As users ,
+		(
+			SELECT User_id AS ''user_id'' , count(*) AS ''total_calls'',
+			CASE
+			  WHEN statuscall_id = 15 THEN 5  --OutBound Asignada pero no contestada
+			  WHEN cal_manual = 2 THEN 3      --OutBound llamada manual
+			  ELSE 2                          --Llamada de OutBound
+			END AS ''type_calls'',
+			count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end) tDialog,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end) tWrapup,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+			FROM ccoCallsOut a WITH (NOLOCK index(IX_ccoCallsOut_10)) , ccGenViewRelsSupsAgent b
+			WHERE a.User_id = b.agt
+			and b.sup = @sup_id
+			AND statuscall_id <> 11  --OutBound sin estado definitivo
+			AND cal_inicio >= @fecha_ini
+			GROUP BY User_id, statuscall_id, cal_manual
+
+			UNION
+
+			SELECT User_id AS ''user_id'' , count(*) AS ''total_calls'',
+			CASE
+			  WHEN statuscall_id = 15 THEN 4  --InBound Asignada pero no contestada
+			  ELSE 1                          --Llamada de InBound
+			END AS ''type_calls'',
+			count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end) tDialog,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end) tWrapup,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+			FROM ccCallsIn a WITH (NOLOCK index(IX_ccCallsIn_5)), ccGenViewRelsSupsAgent b
+			WHERE a.User_id = b.agt
+			and b.sup = @sup_id
+			AND statuscall_id <> 11  --InBound sin estado definitivo
+			AND cal_inicio >= @fecha_ini
+			GROUP BY User_id, statuscall_id
+		) AS calls
+		where users.user_id = calls.user_id
+
+	end
+
+if @type = 4
+	begin
+		select a.user_id, a.login
+		from ccusers a, ccGenViewRelsSupsAgent b
+		where user_id = b.agt
+		and b.sup = @sup_id
+	end
+
+set nocount on'
+		EXEC(@Sql)
 
 
 		/* End script release */

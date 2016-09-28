@@ -33,6 +33,15 @@ exec @actualVersion = ccsp_getVersion 'BD'
 if @actualVersion = @version - 1 begin
 	begin tran
 	begin try
+
+	 set @process = 'CREATE TABLE RepAgentSessionByInterval'
+	set @sql='if not exists (select * from sys.tables where name = N''RepAgentSessionByInterval'')
+    begin
+        CREATE TABLE RepAgentSessionByInterval([date] [datetime] ,[login]  [varchar](15),[userId] int NOT NULL,[user] [varchar](255) NULL,[extension] [varchar](15) NOT NULL, [sessionTime] [INT] NULL, [year] [INT] NULL, [month] [INT] NULL, [day] [INT] NULL, [hour] [INT] NULL, [minutes] [INT] NULL) 
+
+    end'
+	EXEC(@sql)
+
 	  set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
 	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
 	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE'
@@ -55,12 +64,110 @@ if @actualVersion = @version - 1 begin
 
 
 
+
+		set @process = 'drop SP --[dbo].[ccspRepAgentSessionByInterval]'
+		set @sql='if exists (select * from sys.procedures where name = ''ccspRepAgentSessionByInterval'')
+    				begin
+        				DROP PROCEDURE [dbo].[ccspRepAgentSessionByInterval]
+    				end'
+		EXEC(@sql)
+
+
+		set @process = 'create SP -- [dbo].[ccspRepAgentSessionByInterval]'
+		set @sql='CREATE PROCEDURE [dbo].[ccspRepAgentSessionByInterval]
+		@action as tinyint,
+		@from as datetime=null,
+		@to as datetime=null
+		AS
+
+
+		if @from is null
+		select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+		select @to = getdate()
+
+		if @action = 1
+		begin
+
+		CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
+		CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL) 
+		CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
+		CREATE TABLE #sessionTimeMayores(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL)
+
+		create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
+		create nonclustered index ix_times2 on #times([Start] DESC)
+
+		insert into #times
+		exec ccspTimesReports @from=@from,@to=@to,@interval=15
+
+
+		INSERT INTO #sessionTime
+		exec ccspGenSession @from=@from,@to=@to
+
+		INSERT INTO #sessionTimeGroup
+		select user_id,login,logout,extension 
+		,convert(datetime,case when datepart(mi,A.login) between 0 and 14 then convert(varchar(13),A.logout,121) + '':00:00.000''
+					when datepart(mi,A.login) between 15 and 29 then convert(varchar(13),A.login,121) + '':15:00.000''
+					when datepart(mi,A.login) between 30 and 44 then convert(varchar(13),A.login,121) + '':30:00.000''
+					when datepart(mi,A.login) between 45 and 59 then convert(varchar(13),A.login,121) + '':45:00.000'' end) AS timegroup
+		,convert(datetime,case when datepart(mi,A.logout) between 0 and 14 then convert(varchar(13),A.logout,121) + '':15:00.000''
+					when datepart(mi,A.logout) between 15 and 29 then convert(varchar(13),A.logout,121) + '':30:00.000''
+					when datepart(mi,A.logout) between 30 and 44 then convert(varchar(13),A.logout,121) + '':45:00.000''
+					when datepart(mi,A.logout) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.logout),121) + '':00:00.000'' end) as timegroup_next
+	
+		 ,datediff(ss,login,logout) 
+		 from #sessionTime as A
+
+
+		INSERT into #sessionTimeMayores SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+		delete #sessionTimeGroup where  datediff(mi,timegroup,timegroup_next)>15
+  
+		insert into #sessionTimeGroup
+		 select [User_id],login,logout,extension, convert(varchar,th.start,121) as timegroup, convert(varchar, th.stop,121) as timegroup_next,
+		 isnull((case when th.start <= login and  th.stop > login and th.start <= dateadd(ss,[tlog seg],login) and  th.stop > dateadd(ss,[tlog seg],login) then datediff(ss,login,dateadd(ss,[tlog seg],login))
+						when th.start <= login and  th.stop > login and th.stop < dateadd(ss,[tlog seg],login) then datediff(ss,login,th.stop)
+						when th.start > login and th.start <= dateadd(ss,[tlog seg],login) and  th.stop > dateadd(ss,[tlog seg],login) then datediff(ss,th.start,dateadd(ss,[tlog seg],login))
+						when th.start > login and th.stop < dateadd(ss,[tlog seg],login) then datediff(ss,th.start,th.stop) else  0 end),0) as [tlog seg]
+	
+		from #sessionTimeMayores t
+		inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+		where  datediff(ss,th.start,timegroup_next)>0;
+
+
+		delete from  RepAgentSessionByInterval where [date] between @from and @to;
+
+		insert into RepAgentSessionByInterval(date,login,userId,[user],extension,sessionTime,year,month,day,hour,minutes)
+		select  A.timegroup,
+		u.Login,A.user_id,
+		u.apellidopaterno + '' '' + u.apellidomaterno + '' '' + u.nombres as [user], extension,
+		A.[tlog seg],
+		datepart(yyyy,A.timegroup), datepart(mm,A.timegroup), datepart(dd,A.timegroup),
+		datepart(hh,A.timegroup), datepart(mi,A.timegroup)
+		 from #sessionTimeGroup A
+		inner join ccUsers u on A.user_id=u.User_id
+
+
+		--SELECT * FROM RepAgentSessionByInterval
+		--SELECT * FROM #sessionTimeMayores where user_id = 2  order by user_id 
+	
+		drop table #sessionTimeGroup;
+		drop table #sessionTimeMayores;
+		drop table #times;
+		drop table #sessionTime;
+
+		end	'
+	
+		EXEC(@sql)
+
+
+
 		set @process = 'drop SP --ccspGenSession'
 		set @sql='if exists (select * from sys.procedures where name = ''ccspGenSession'')
     				begin
         				DROP PROCEDURE [dbo].[ccspGenSession]
     				end'
 		EXEC(@sql)
+		
 
 		set @process = 'create SP -- ccspGenSession'
 		set @sql='CREATE PROCEDURE [dbo].[ccspGenSession]
@@ -215,7 +322,23 @@ end
 
 select * from #times
 drop table #times'
+	
+		
 		EXEC(@sql)
+
+
+		set @process =' CREATE NONCLUSTERED INDEX [IX_RepAgentSessionByInterval] ON [dbo].[RepAgentSessionByInterval]'
+		set @sql='ALTER PROCEDURE [dbo].[ccspGenSession]
+		if not exists (select * from sys.indexes where name = N''yourIndexName'' and object_id = OBJECT_ID(N''yourTableName''))
+		begin
+       CREATE NONCLUSTERED INDEX [IX_RepAgentSessionByInterval] ON [dbo].[RepAgentSessionByInterval]
+		(
+		[date] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+	 end'
+
+	 EXEC(@sql)
+
 
 
 		set @process ='ALTER PROCEDURE [dbo].[ccspGenSession]-----------------'
@@ -1553,6 +1676,36 @@ drop table #tempccLogAgentesDia
 --drop table #timeDetailAgent
 --drop table #timeDetailAgent2
     				'
+		EXEC(@sql)
+
+
+		set @process ='INSERTAR FILTROS PARA REPORTE SESSIONESPOR INTERVALO'
+		set @sql='
+		INSERT INTO ReportsFilters (reportName,filterName,id) values (''Sessions by Interval'',''users'',2060);
+		INSERT INTO ReportsFiltersMenus (idReport,filterMenuName) values(2060,''date'');
+		INSERT INTO ReportsFiltersMenus (idReport,filterMenuName) values(2060,''groupBy'');
+		INSERT INTO ReportsFiltersMenus (idReport,filterMenuName) values(2060,''filterby'');
+
+
+
+
+		INSERT INTO ReportsCharts (id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+		values(2060	,''Sessions by Interval'',1,''user'','''','''','''',''sum([sessionTimeSeconds])'',''Session time per user'',1)
+
+		INSERT INTO ReportsCharts (id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
+		values(2060	,''Sessions by Interval'',2,''year|month|day'','''','''','''',''sum([sessionTimeSeconds])'',''Session time per user by day'',1)
+
+
+
+
+
+
+		INSERT INTO GroupByReports([id],[columns],[groupByColumns]) values 
+		(2060, ''max([login]):login|userId|max([user]):user|max([extension]):extension|sum([sessionTime]):sessionTime'' ,''userId'')
+
+
+		INSERT INTO ReportsTotals (id,totalColumns) values(2060,''sum:sessionTime'')
+				'
 		EXEC(@sql)
 
 

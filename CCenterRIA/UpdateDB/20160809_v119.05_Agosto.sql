@@ -160,6 +160,36 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 '
 
 
+		set @process = 'INSERTAR EN LA TABLA DE ccMenus EL REPORTE DE SESSIONES POR INTERVALO'
+		set @Sql= '
+		if not exists (select * from ccMenus where menu_id = 2060)
+    begin
+    INSERT INTO [dbo].[ccMenus]
+           ([menu_id]
+           ,[menu_descrip]
+           ,[parent]
+           ,[Nivel]
+           ,[ordengral]
+           ,[type]
+           ,[HelpSWF]
+           ,[release]
+           )
+     VALUES
+           (2060
+		   ,''Sesiones por intervalo|Sessions by Interval'' 
+           ,2000 
+           ,''B''
+           ,2
+           ,3
+           ,''''
+           ,''9032ee7929290765e01291a25dca0a7052d8521c779ad007529a9f3a460640798af7a60c5a2b63c4dd46b7aefa9aab77'')
+
+    end'
+		EXEC(@Sql)
+
+
+
+
 		set @process = 'drop sp -- [dbo].[ccsp_isFinished]'
 		set @Sql= '-- When stored procedure exists
 					if exists (select * from sys.procedures where name = ''ccsp_isFinished'')

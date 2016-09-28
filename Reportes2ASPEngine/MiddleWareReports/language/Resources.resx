@@ -2466,4 +2466,7 @@
   <data name="tundefined" xml:space="preserve">
     <value>Tiempo indefinido</value>
   </data>
+  <data name="clientPhoneNumber" xml:space="preserve">
+    <value>Número del Cliente</value>
+  </data>
 </root>

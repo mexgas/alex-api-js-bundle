@@ -2091,4 +2091,7 @@
   <data name="Abandonedcallsbycampaign" xml:space="preserve">
     <value>Abandoned calls by campaign</value>
   </data>
+  <data name="clientPhoneNumber" xml:space="preserve">
+    <value>Client phone number</value>
+  </data>
 </root>

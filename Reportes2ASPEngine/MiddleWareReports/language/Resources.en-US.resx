@@ -2400,4 +2400,7 @@
   <data name="tundefined" xml:space="preserve">
     <value>Undefined time</value>
   </data>
+  <data name="clientPhoneNumber" xml:space="preserve">
+    <value>Client phone number</value>
+  </data>
 </root>

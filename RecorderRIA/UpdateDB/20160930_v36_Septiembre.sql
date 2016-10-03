@@ -3,7 +3,7 @@ Autor: Jose Velasco
 Fecha: 2016/09/30
 Descripcion:
 
-	SP trsp_GetParametersMailById se agrega 
+	SP trsp_GetParametersMailByType se agrega 
 Version requerida: 35
 */
 set nocount on
@@ -32,8 +32,8 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 
   	--SP
 
-  	set @process = 'trsp_GetParametersMailById - Drop if exists'
-  	set @sql='if exists (select * from sys.procedures where name = N''trsp_GetParametersMailById'') DROP PROCEDURE trsp_GetParametersMailById'
+  	set @process = 'trsp_GetParametersMailByType - Drop if exists'
+  	set @sql='if exists (select * from sys.procedures where name = N''trsp_GetParametersMailByType'') DROP PROCEDURE trsp_GetParametersMailByType'
   	EXEC(@sql)
 
 

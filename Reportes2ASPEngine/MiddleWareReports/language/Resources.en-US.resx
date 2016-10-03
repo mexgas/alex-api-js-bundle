@@ -2400,4 +2400,7 @@
   <data name="tundefined" xml:space="preserve">
     <value>Undefined time</value>
   </data>
+  <data name="SessionsbyInterval" xml:space="preserve">
+    <value>Sessions by Interval</value>
+  </data>
 </root>

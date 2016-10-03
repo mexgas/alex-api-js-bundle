@@ -36,6 +36,8 @@ namespace MiddleWareReports
                     return new RepAgentNotReadyDet();
                 case 2050:
                     return new RepAgentKPI();               
+                case 2060:
+                    return new RepAgentSessionByInterval();                
                 case 3000: //IN
                     return null; //"Inbound"
                 case 3010:

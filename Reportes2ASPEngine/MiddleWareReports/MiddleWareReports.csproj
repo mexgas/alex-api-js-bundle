@@ -74,6 +74,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="programmingstyle\CRMFieldsNotFoundException.cs" />
+    <Compile Include="reports\agentreports\RepAgentSessionByInterval.cs" />
     <Compile Include="reports\avrs\RepAVRSAgent.cs" />
     <Compile Include="reports\avrs\RepAVRSAgentChat.cs" />
     <Compile Include="reports\avrs\RepAVRSDetailChat.cs" />

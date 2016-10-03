@@ -2091,4 +2091,7 @@
   <data name="Abandonedcallsbycampaign" xml:space="preserve">
     <value>Abandoned calls by campaign</value>
   </data>
+  <data name="SessionsbyInterval" xml:space="preserve">
+    <value>Sessions by Interval</value>
+  </data>
 </root>

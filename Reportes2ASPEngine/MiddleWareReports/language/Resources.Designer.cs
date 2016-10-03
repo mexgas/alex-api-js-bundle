@@ -4156,6 +4156,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Sesiones por intervalo.
+        /// </summary>
+        public static string SessionsbyInterval {
+            get {
+                return ResourceManager.GetString("SessionsbyInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo de sesión.
         /// </summary>
         public static string sessionTime {

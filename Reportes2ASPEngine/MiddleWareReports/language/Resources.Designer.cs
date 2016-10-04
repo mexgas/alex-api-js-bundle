@@ -1546,6 +1546,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Número del Cliente.
+        /// </summary>
+        public static string clientPhoneNumber {
+            get {
+                return ResourceManager.GetString("clientPhoneNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Cerrado por sistema.
         /// </summary>
         public static string closedSystem {

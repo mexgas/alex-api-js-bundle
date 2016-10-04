@@ -2469,4 +2469,7 @@
   <data name="SessionsbyInterval" xml:space="preserve">
     <value>Sesiones por intervalo</value>
   </data>
+ <data name="clientPhoneNumber" xml:space="preserve">
+    <value>Número del Cliente</value>
+  </data>
 </root>

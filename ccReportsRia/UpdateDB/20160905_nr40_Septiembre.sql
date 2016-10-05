@@ -256,7 +256,7 @@ return(0)
 set nocount off'
 	EXEC(@sql)
 
-	set @process ='create PROCEDURE [dbo].[ccsprepLogAgentriaseparate]----------'
+	set @process ='create PROCEDURE --- ccsprepLogAgentriaseparate'
 	set @sql='create PROCEDURE [dbo].[ccsprepLogAgentriaseparate]
 @from as datetime = null,
 @to as datetime = null
@@ -513,7 +513,7 @@ end'
 
 	EXEC(@sql)
 
-		set @process ='ALTER PROCEDURE [dbo].[ccspRepAgentNotReady]-----------'
+		set @process ='ALTER PROCEDURE --- ccspRepAgentNotReady'
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentNotReady]
 @action as tinyint,
 @from as datetime = null,
@@ -918,7 +918,7 @@ end'
 		EXEC(@sql)
 
 
-		set @process ='ALTER PROCEDURE [dbo].[ccspRepAgentSession]---------------'
+		set @process ='ALTER PROCEDURE --- ccspRepAgentSession'
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSession]
 @action as tinyint,
 @from as datetime = null,
@@ -957,7 +957,7 @@ drop table #sessionTime
 end'
 		EXEC(@sql)
 
-		set @process ='ALTER PROCEDURE [dbo].[ccspRepOutCalls]---------------'
+		set @process ='ALTER PROCEDURE --- ccspRepOutCalls'
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCalls]
 @action as tinyint,
 @from as datetime = null,
@@ -1482,7 +1482,7 @@ begin
 end'
 		EXEC(@sql)
 
-		set @process ='ALTER PROCEDURE [dbo].[ccspRepSpececialAgent]------------------------'
+		set @process ='ALTER PROCEDURE --- ccspRepSpececialAgent'
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAgent]
 @action as tinyint,
 @from AS datetime = null,

@@ -81,11 +81,11 @@ end'
 
 
 		set @process = 'Alter Column --- optionivr.dtmf'
-		set @Sql= 'if not exists (select * from sys.columns where name = N''dtmf'' and Object_ID = Object_ID(N''optionivr'')) alter table optionivr alter column dtmf varchar(20)'
+		set @Sql= 'if exists (select * from sys.columns where name = N''dtmf'' and Object_ID = Object_ID(N''optionivr'')) alter table optionivr alter column dtmf varchar(20)'
 		EXEC(@Sql)
 
 		set @process = 'Alter Column --- optionivr.tag'
-		set @Sql= 'if not exists (select * from sys.columns where name = N''tag'' and Object_ID = Object_ID(N''optionivr'')) alter table optionivr alter column tag varchar(20)'
+		set @Sql= 'if exists (select * from sys.columns where name = N''tag'' and Object_ID = Object_ID(N''optionivr'')) alter table optionivr alter column tag varchar(20)'
 		EXEC(@Sql)
 
 				set @process = 'Adding currentStatus column to ccLogAgentesDia '
@@ -97,7 +97,7 @@ end'
 		EXEC(@Sql)
 
 		set @process = 'INSERTAR EN LA TABLA DE ccMenus EL REPORTE DE SESSIONES POR INTERVALO'
-		set @Sql= 'if not exists (select * from ccMenus where menu_id = 2060)
+		set @Sql= 'if not exists (select * from ccMenus where menu_id = 2060 and type=3)
 INSERT INTO [dbo].[ccMenus]([menu_id],[menu_descrip],[parent],[Nivel],[ordengral],[type],[HelpSWF],[release])
 VALUES(2060,''Sesiones por intervalo|Sessions by Interval'',2000 ,''B'',2,3,'''',''9032ee7929290765e01291a25dca0a7052d8521c779ad007529a9f3a460640798af7a60c5a2b63c4dd46b7aefa9aab77'')'
 		EXEC(@Sql)
@@ -1412,8 +1412,7 @@ if @OperationType=2
 if @OperationType=3
  begin
 	set @Fecha_Chat_fin=getdate()
-	--select @Fecha_Chat_ini=isnull(min(Fecha_Chat),dateadd(yy,-1,@Fecha_Chat_fin)), @Fecha_Chat_fin=getdate()-- max(Fecha_Chat)
-	select @Fecha_Chat_ini=dateadd(year,-3,@Fecha_Chat_fin)
+	select @Fecha_Chat_ini=dateadd(year,-1,@Fecha_Chat_fin)
 	from ccRIAChat_Log
 	select  convert(varchar(11),@Fecha_Chat_ini ,103) Fecha_Chat_MIN, convert(varchar(11),@Fecha_Chat_fin,103)Fecha_Chat_MAX
 	return(0)

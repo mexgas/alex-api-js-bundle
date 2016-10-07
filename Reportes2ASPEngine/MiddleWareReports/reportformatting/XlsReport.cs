@@ -42,12 +42,13 @@ namespace MiddleWareReports
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
+                LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
+                LinkedList<string> dataTranslate = new LinkedList<string>();
 
                 //Retrieve column schema into a DataTable.                
                 foreach (DataColumn column in data.Columns)
                 {
-                    //Save column name if its viewable
-
+                    //Save column name if its viewable                    
                     if (!translate)
                     {
                         columnsNames.AddLast(column.ColumnName);
@@ -58,8 +59,19 @@ namespace MiddleWareReports
                     }
                 }
 
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+                }
+
+                foreach (string col in columnsNames)
+                {
+                    columnsNamesTransalet.AddLast(TranslatorHelper.getPivotTranslatedColumns(col));
+                }
+
+
                 //Generate html table
-                output = generateHtml(columnsNames, data, filterSummaryData, translate);
+                output = generateHtml(columnsNamesTransalet, data, filterSummaryData, translate);
             }
             catch (Exception e)
             {
@@ -124,7 +136,7 @@ namespace MiddleWareReports
             //Place headers
             foreach (string header in headers)
             {
-                if (translate)
+                if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
                     html.AppendLine(string.Format("<td class=\"a\">{0}</td>", translatedColumns[header]));
                 else
                     html.AppendLine(string.Format("<td class=\"a\">{0}</td>", header));

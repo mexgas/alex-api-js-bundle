@@ -2276,16 +2276,12 @@ end
 END'
 		EXEC(@sql)
 
-		set @process = ''
-    	set @sql=''
-		EXEC(@sql)
-
 
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version
-		--exec ccsp_getVersion 'BDF', @versionFix
+		exec ccsp_getVersion 'BDF', @versionFix
 		set  @actualVersionFix = @versionfix
 
 		commit tran
@@ -2310,14 +2306,14 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 					alter table ccTimeZoneArea add locality varchar(255) null
 				end'
 		EXEC(@sql)
-		
+
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
     	set @sql='if exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
 					alter table ccTimeZoneArea drop PK_ccTimeZoneArea_1
 				end'
 		EXEC(@sql)
-		
+
 		set @process = 'Creare Nonclustered index --- PK_ccTimeZoneArea_1'
     	set @sql='if not exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
@@ -2370,7 +2366,7 @@ AS
 
 	select @lada = valor from ccsettings with(nolock) where setting_id = 17
 	select @country = valor, @pais = valor from ccSettings with(nolock) where setting_id = 104
-	
+
 	select @ld = ''''
 	select @location = ''''
 
@@ -2590,7 +2586,7 @@ AS
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
 	end
-	
+
 	if @country = 14 begin
 		select @phone = dbo.Completa(@phone, @pais, @lada)
 		if (substring(@phone, 1, 1) <> ''E'') begin
@@ -2603,6 +2599,56 @@ AS
 
 	return isNull(@timeZone,0)
  END'
+		EXEC(@sql)
+
+
+		set @process = 'Alter SP ccsp_RIAConfEspec -- Add Frame'
+    	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
+@User_id int
+AS
+set nocount on
+/****
+Conexion Info Email In
+	protocol|server|ssl|port|cleanMail|revisionTime
+Conexion Info Email Out
+	serverOut|portOut|tls|sslOut
+Conexion Info Twitter
+	usuarioID|token|tokenSecret|time|daysTwitterRecord
+***/
+select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
+A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
+A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
+A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,'''') chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
+isnull(A.startStopRecording,0) startStopRecording
+,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
+isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
+isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,
+case when A.cam_id > 0   and C.callsBySurvey=3 then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
+case when A.cam_id > 0  and C.callsBySurvey=3 then A.callBackSurveyClient else 0 end callBackSurveyClient,
+case when A.cam_id > 0  and C.callsBySurvey=3 then 1 else 0 end isRelationSurvey,
+isnull(A.agts_notavailable,'''') as agts_notavailable,
+isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
+isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
+--usuarioID|token|tokenSecret|time|daysTwitterRecord
+isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail
+,isnull(A.editableDtmf,0) as editableDtmf
+,isnull(gra.graphic_id,1) as frame
+from ccInbound A
+left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
+left join ccCamps C on C.cam_id=A.cam_id
+left join (
+select D.inboundId,
+D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+D.timeAlertMessage as timeAlertMessageTwitter,
+D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+closeConversationTime as  closeConversationTimeTwitter
+from ContactMeanIn D
+where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+return(0)
+set nocount off'
 		EXEC(@sql)
 
 	commit tran

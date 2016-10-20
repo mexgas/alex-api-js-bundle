@@ -2300,6 +2300,8 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin tran
 	begin try
 
+
+
 		set @process = 'Alter table ccTimeZoneArea --- add locality'
     	set @sql='if not exists (select * from sys.columns where name = N''locality'' and Object_ID = Object_ID(N''ccTimeZoneArea''))
 				begin
@@ -2325,6 +2327,11 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 					)
 					INCLUDE ([tz_standard],[tz_daylight],[locality])
 				end'
+		EXEC(@sql)
+
+		set @process = 'Insert ccSettings -- Conf Monitor Port'
+    	set @sql='if not exists(select * from ccsettings where setting_id=186)
+		insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(186,''0'',''Envió de paquetes para monitoreo de puertos (Outbound)'',1,''X'',''Al cargar el Outbound envio los estados del puertos al Admin'',''Parcel for monitoring ports'',0,''^[0-1]$'')'
 		EXEC(@sql)
 
 		set @process = 'Update ccTimeZoneArea -- QROO'
@@ -2650,6 +2657,432 @@ where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
 return(0)
 set nocount off'
 		EXEC(@sql)
+
+
+
+			set @process = 'Alter SP - Load Accountable'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
+@Tipo as tinyint=0
+AS
+
+declare @mToday as smalldatetime
+
+select @mToday = convert(smalldatetime, convert(varchar(11), getdate() ), 101)
+if @Tipo = 0
+begin
+	SELECT cam_id, cam_descripcion,
+		0 as pContesta,
+		0 as pOcupado,
+		0 as pNoContesta,
+		0 as pFaxModem,
+		0 as pNoService,
+		0 as Marcaciones, 0 as Contestan,  0 as Ocupado, 0 as NoContesta, 0 as FaxModem, 0 as NoService
+	FROM ccCamps
+	order by cam_id
+end
+
+if @Tipo = 1
+begin
+	select cam_id, L.Campana,
+		((L.Contestan*100)/ L.Marcaciones) as pContesta,
+		((L.Ocupado*100)/ L.Marcaciones) as pOcupado,
+		((L.NoContesta*100)/ L.Marcaciones) as pNoContesta,
+		((L.FaxModem*100)/ L.Marcaciones) as pFaxModem,
+		((L.NoService*100)/ L.Marcaciones) as pNoService,
+		L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
+		,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion
+	from (
+	select cam_id, '''' as Campana,
+		count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
+		count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
+		count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
+		count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		count(case tipoResDial_id when 10 then 1 else null end) as NoService,
+		count(*) as Marcaciones
+		,count(case tipoResDial_id when 8 then 1 else null end) as Otro
+		,count(case tipoResDial_id when 13 then 1 else null end) as Cancelado
+		,count(case tipoResDial_id when 11 then 1 else null end) as buzon
+		,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
+		,count(case tipoResDial_id when 12 then 1 else null end) as congestion
+
+	from ccoLogDials
+	Where fecha >  @mToday
+	group by cam_id
+	) L order by Campana
+
+end
+
+if @Tipo = 2
+begin
+	select cam_id, L.Campana,
+		((L.Contestan*100)/ L.Marcaciones) as pContesta,
+		((L.Ocupado*100)/ L.Marcaciones) as pOcupado,
+		((L.NoContesta*100)/ L.Marcaciones) as pNoContesta,
+		((L.FaxModem*100)/ L.Marcaciones) as pFaxModem,
+		((L.NoService*100)/ L.Marcaciones) as pNoService,
+		L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
+	from (
+	select C.cam_id as cam_id, cam_descripcion as Campana,
+		count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
+		count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
+		count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
+		count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		count(case tipoResDial_id when 10 then 1 else null end) as NoService,
+		count(*) as Marcaciones
+	from ccoLogDials L join ccCamps C on L.cam_id=C.cam_id
+	Where fecha >  @mToday
+	group by C.cam_id, cam_descripcion
+	) L order by Campana
+end
+'
+	EXEC(@sql)
+
+	set @process = ''
+    set @sql='ALTER procedure [dbo].[ccsp_RIAMenuRoles]
+@Type tinyint,
+@User_id smallint = null,
+@Role_id smallint = null,
+@InsertMenu_id smallint = null,
+@DeleteMenu_id smallint = null,
+
+@firstSup smallint = null,
+@reportRol tinyint = 1,
+@AVRS tinyint = null,
+@CM tinyint = 0,
+@AE tinyint = 0
+as
+set nocount on
+
+select @reportRol = case @reportRol when 0 then 1 else @reportRol end, @role_id = case @role_id when 0 then 1 else @role_id end
+
+Declare @NRS tinyint
+declare @MenusChat tinyint
+declare @RelationCampInbNotReady tinyint
+Declare @IVRScripting tinyint
+Declare @MenuMail tinyint
+Declare @MenuCRM tinyint
+Declare @monitorPortMenu tinyint
+
+set @MenuMail = 0
+set @MenuCRM = 0
+
+select @AE = valor from ccsettings where setting_id = 71
+select @NRS = case valor when 4 then 1 else 0 end from ccsettings where setting_id = 87
+
+---Checar si esta se aplica
+select @AVRS = valor from ccSettings where setting_id = 124
+select @IVRScripting = valor from ccsettings where setting_id = 125
+
+select @RelationCampInbNotReady = valor from ccsettings where setting_id = 135
+--Activa menus relacionados con campañas
+select @MenusChat = valor from ccsettings where setting_id = 145
+select @MenuMail = valor from ccsettings where setting_id = 155
+select @MenuCRM = valor from ccsettings where setting_id = 168
+select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 184
+
+If @Type = 1 -- Carga todos los roles
+	begin
+		select Role_id, Description from ccRIACat_AdminRole where type = @reportRol order by priority
+		return(0)
+	end
+
+If @Type = 2 -- Carga los menus de un supervisor
+	begin
+	Select a.id_User, a.id_Menu, b.menu_descrip, Nivel, ordengral
+	from ccMenuUser a inner join ccMenus b with(index(IX_ccMenus)) on a.id_Menu = b.menu_id and a.type = b.type
+	where id_User = @User_id and a.Type = @reportRol and ((a.id_Menu not in (41,42, 53)) or
+	(a.id_Menu = 41 and @CM = 1) or (a.id_Menu = 42 and @AE > 0) or (a.id_Menu = 53 and @NRS = 1))
+	order by ordengral asc
+	return(0)
+	end
+
+If @Type = 3 -- Return the menus of a rol
+	begin
+	select a.Role_id, b.menu_id, b.menu_descrip, b.Nivel, b.ordengral
+	from ccRIARoleMenu a inner join ccMenus b with(index(IX_ccMenus)) on b.menu_id = a.id_Menu and a.type = b.type
+	where a.Role_id = @Role_id and
+	a.type = @reportRol and
+	((b.menu_id not in (41,42,53)) or (b.menu_id = 41 and @CM = 1) or (b.menu_id = 42 and @ae > 0) or (b.menu_id = 53 and @NRS = 1))
+	order by a.Role_id, b.ordengral asc
+	return(0)
+	end
+
+If @Type = 4 -- Insert
+	begin
+	if (@InsertMenu_id <> 0) or not exists(select id_User from ccMenuUser where id_User = @User_id and id_Menu = @InsertMenu_id and type = @reportRol)
+	begin
+		if @Role_id in (1, 10, 14) begin
+			if @InsertMenu_id <> 0 and not exists(select * from ccMenuUser where id_User = @User_id and id_Menu = @InsertMenu_id and type = @reportRol)
+				insert into ccMenuUser (id_User, id_Menu, type) values(@User_id, @InsertMenu_id, @reportRol)
+			if @reportRol = 1 and not exists(select id_User from ccMenuUser where id_User = @User_id and id_Menu = 40)begin
+				Insert into ccMenuUser (id_User, id_Menu, type)values(@User_id,40,@reportRol)
+			end
+			else If @reportRol = 2 and not exists(select id_User from ccMenuUser where id_User = @User_id and (id_Menu between 1000 and 1999)) begin
+					Insert into ccMenuUser (id_User, id_Menu, type) select @User_id, menu_id, @reportRol from ccMenus with(index(IX_ccMenus)) where menu_id between 1000 and 1999
+				end
+			else if @reportRol = 3 begin
+				insert into ccMenuUser (id_User, id_Menu, type) select @User_id, id_Menu, @reportRol from ccRIARoleMenu  where Role_id = @Role_id
+			end
+		end
+		else if ((@InsertMenu_id = 53 and @NRS = 1) or (@InsertMenu_id <> 53) )
+		begin
+			if @InsertMenu_id <> 40	delete ccMenuUser where id_User = @User_id and type = @reportRol
+				insert into ccMenuUser (id_User, id_Menu, type)	select @User_id, id_Menu, @reportRol from ccRIARoleMenu where Role_id = @Role_id and type = @reportRol
+			if @reportRol = 1 and not exists(select id_User from ccMenuUser where id_User = @User_id and id_Menu = 40 and type = @reportRol)
+				insert into ccMenuUser (id_User, id_Menu, type) values(@User_id,40,@reportRol)
+		end
+	end
+	--Asigna un rol por default o lo actuliza
+	if exists(select user_id from ccRIAUserRole where user_id = @user_id and type = @reportRol)
+		Update ccRIAUserRole set Role_id = @Role_id where user_id = @user_id and type = @reportRol
+	else
+		insert into ccRIAUserRole (User_id, Role_id, type) values (@user_id, @Role_id, @reportRol)
+
+	--Solo es necesario en caso admin y reports
+	if @reportRol in(1,2) begin
+		--    inserta parent en caso de no haberlo hecho en rol personalizado
+		insert into ccMenuUser (id_User, id_Menu, type) select @User_id, parent, @reportRol from
+		(select m.parent from ccMenuUser u join ccMenus m with(index(IX_ccMenus)) on u.id_Menu = m.menu_id and u.type = m.type
+		where u.id_User = @User_id and u.type = @reportRol group by m.parent) parent
+		where parent not in (select id_Menu from ccMenuUser where id_User =  @User_id) and parent<>0
+
+		select @User_id, parent, @reportRol from
+		(select m.parent from ccMenuUser u join ccMenus m with(index(IX_ccMenus)) on u.id_Menu = m.menu_id and u.type = m.type
+		where u.id_User = @User_id and u.type = @reportRol group by m.parent) parent
+		where parent not in (select id_Menu from ccMenuUser where id_User =  @User_id) and parent<>0
+
+	end
+	return (0)
+	end
+
+If @Type = 5 -- delete
+	begin
+		delete ccMenuUser where id_User = @User_id and id_Menu = @DeleteMenu_id and type = @reportRol
+		if exists(select user_id from ccRIAUserRole where user_id = @user_id and type = @reportRol)
+		Update ccRIAUserRole set Role_id = @Role_id where user_id = @user_id and type = @reportRol
+		else
+		insert into ccRIAUserRole (User_id, Role_id, type) values (@user_id, @Role_id, @reportRol)
+		return(0)
+	end
+
+If @Type = 6 -- Get userMenus
+	begin
+	if @reportRol = 2 begin --Reports version vieja
+		select distinct a.Role_id, b.id_Menu, c.menu_descrip, c.Nivel, c.parent, c.ordengral, dbo.fn_viewMode (@user_id, (case b.id_Menu when 46 then 4 when 50 then 4 else b.id_Menu end)) viewMode,
+		c.release
+		from ccRIAUserRole a inner join ccMenuUser b on a.user_id = b.id_user
+		inner join ccMenus c with(index(IX_ccMenus)) on b.id_Menu = c.menu_id and b.type = c.type
+		where a.user_id = @user_id and a.Type = @reportRol and b.Type = @reportRol and
+		((b.id_Menu not in (41,42,53)) or (b.id_Menu = 41 and @CM = 1) or (b.id_Menu = 42 and @ae > 0) or (b.id_Menu = 53 and @NRS = 1))
+		and ( b.id_Menu not in(77,78) or (@RelationCampInbNotReady = 1 and b.id_Menu in(77,78)))
+		and ( b.id_Menu not in(79) or (@MenusChat > 0 and b.id_Menu in(79)))
+		and ( b.id_Menu not in(83) or (@MenuCRM > 0 and b.id_Menu in(83)))
+		order by ordengral asc
+		return(0)
+	end
+	else begin ---Sitio del administrador
+		if not exists( select * from ccRIAUsr_AdminPermissions where User_id=@user_id and per_id=6)
+		set @AVRS =0
+
+		select distinct a.Role_id, b.id_Menu, c.menu_descrip, c.Nivel, c.parent, c.ordengral, dbo.fn_viewMode (@user_id, (case b.id_Menu when 46 then 4 when 50 then 4 else b.id_Menu end)) viewMode,
+		c.release
+		from ccRIAUserRole a
+		inner join ccMenuUser b on a.user_id = b.id_user
+		inner join ccMenus c with(index(IX_ccMenus)) on b.id_Menu = c.menu_id and b.type = c.type
+		where a.user_id = @user_id and a.Type = @reportRol and b.Type = @reportRol
+		and (
+			(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,84,85,69))
+			or (b.id_Menu = 41 and @CM = 1) or (b.id_Menu = 42 and @ae > 0) or (b.id_Menu = 53 and @NRS = 1)
+			or (menu_id in (71,72) and @IVRScripting = 1)
+			or (menu_id in (73,74,75,76) and @AVRS = 1)
+			or (menu_id in (77,78) and @RelationCampInbNotReady = 1)
+			or (menu_id = 79 and @MenusChat > 0)
+			or (menu_id in (81,82,84,85) and @MenuMail = 1)--Mail
+			or (menu_id = 83 and @MenuCRM > 0)
+			and ( b.id_Menu not in(69) or (@monitorPortMenu > 0 and b.id_Menu in(69)))
+			)
+		order by ordengral asc
+		return(0)
+	end
+	end
+
+If @Type = 7 -- Get language
+	begin
+		select valor from ccSettings where setting_id = 27
+		return(0)
+	end
+
+If @Type = 8 -- Insert the personalized menus of a supervisor
+	begin
+		insert into ccMenuUser (id_User, id_Menu, type)
+		select @User_id, id_Menu, @reportRol from ccMenuUser where id_User = @firstSup and type = @reportRol
+
+		If exists(select user_id from ccRIAUserRole where user_id = @user_id and type = @reportRol)
+		begin
+			Update ccRIAUserRole set Role_id = @Role_id where user_id = @user_id and type = @reportRol
+			return(0)
+		end
+
+		insert into ccRIAUserRole (User_id, Role_id, type) values (@user_id, @Role_id, @reportRol)
+		return(0)
+	end
+
+If @Type = 9 -- Delete all supervisor menus
+	begin
+		delete ccMenuUser where id_User = @User_id and type = @reportRol
+		return(0)
+	end
+
+If @Type = 10 -- update all supervisor menus
+	begin
+
+		if @AVRS = 1
+		begin
+			update ccUsers set tipoUser_id = 6 where user_id = @User_id
+			return(0)
+		end
+	end
+
+If @Type = 11 -- Verify level A menus
+	begin
+	--   inserta parent en caso de no haberlo hecho en rol personalizado
+		Insert into ccMenuUser (id_User, id_Menu, type) select @User_id, parent, @reportRol from
+		(select m.parent from ccMenuUser u join ccMenus m with(index(IX_ccMenus)) on u.id_Menu = m.menu_id and u.type = m.type
+		where m.menu_id in (1000,2000,3000,4000) and u.id_User = @User_id and u.type = @reportRol
+		group by m.parent) parent where parent not in (select id_Menu from ccMenuUser where id_User =  @User_id)
+
+		return(0)
+	end
+
+If @Type = 12
+	begin
+		declare @lan as tinyint
+		select @lan = valor from ccSettings where setting_id = 27
+		select menu_descrip from ccMenus with(index(IX_ccMenus)) where menu_id = @Role_id
+		return(0)
+	end
+
+	if @Type = 13 --Agrega Menus por default a Admin en ReportsRia Agentes,ACD y Campañas
+	begin
+	insert into ccMenuUser([id_user],[id_Menu],[type])
+	select a.User_id, b.menu_id, b.type
+		from ccUsers a cross join ccMenus b
+		left join ccMenuUser d on d.id_User = a.User_id and d.id_Menu = b.menu_id
+		where a.TipoUser_id = 2 and b.type = 3 and d.id_User IS null and
+		b.menu_id >= 2000 and b.menu_id < 5000 and a.User_id = @User_id
+
+	insert into ccRIAUserRole([User_id],[Role_id],[type])
+		select a.[User_id], 14 as role_id, 3 as type from ccUsers a
+			left join ccRIAUserRole d on d.User_id = a.User_id and d.type = 3
+			where d.User_id IS null and a.TipoUser_id = 2 and a.User_id = @User_id
+
+	return (0)
+
+	end
+
+return(0)
+set nocount off'
+	EXEC(@sql)
+
+	set @process = ''
+    set @sql='ALTER procedure [dbo].[ccsp_RIACATMenu]
+@id_User varchar(2000),
+@id_Menu int,
+@Type tinyint,
+@ReportRol tinyint = 1,
+@CM tinyint = 1,
+@AE tinyint = 1
+as
+set nocount on
+Declare @NRS tinyint
+Declare @AVRS tinyint
+Declare @RelationCampInbNotReady tinyint
+Declare @IVRScripting tinyint
+Declare @MenusChat tinyint
+Declare @MenuMail tinyint
+Declare @MenuCRM tinyint
+Declare @monitorPortMenu tinyint
+
+set @MenuMail=0
+set @MenuCRM = 0
+set @monitorPortMenu =0
+
+select @AE = valor from ccsettings where setting_id = 71
+select @NRS = case valor when 4 then 1 else 0 end from ccsettings where setting_id = 87
+select @AVRS = valor from ccSettings where setting_id = 124
+select @RelationCampInbNotReady = valor from ccsettings where setting_id = 135
+select @IVRScripting = valor from ccsettings where setting_id = 125
+select @MenusChat = valor from ccsettings where setting_id = 145
+select @MenuMail = valor from ccsettings where setting_id = 155
+select @MenuCRM = valor from ccsettings where setting_id = 168
+select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 184
+
+---Mail MenuId (81)
+if @Type=1
+begin
+	if @ReportRol = 1
+	begin
+		Select distinct Nivel, menu_descrip, menu_id,ordengral,release from ccmenus with(index(IX_ccMenus)) where type = 1
+		and (
+		(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,84,85,69))
+		or (menu_id = 41 and @CM = 1)
+		or (menu_id = 42 and @AE > 0)
+		or (menu_id = 53 and @NRS = 1)
+		or (menu_id in (71,72) and @IVRScripting = 1)
+		or (menu_id in (73,74,75,76) and @AVRS = 1)
+		or (menu_id in (77,78) and @RelationCampInbNotReady = 1)
+		or (menu_id = 79 and @MenusChat > 0)
+		or (menu_id in (81,82,84,85) and @MenuMail = 1)--Mail
+		or (menu_id = 83 and @MenuCRM > 0)
+		or (menu_id = 69 and @monitorPortMenu > 0)--Monitoreo de puertos
+		)
+		order by ordengral asc
+		return(0)
+
+	end
+	else if @ReportRol = 3 begin
+		select distinct Nivel, menu_descrip, menu_id,ordengral,release from ccmenus with(index(IX_ccMenus))
+		where type = @ReportRol and (menu_id >= 2000) and menu_id not in (select distinct Parent from ccMenus where menu_id >= 2000 and type = 3)
+		and (menu_id not in (3131,3132,3133,3134,3135,3136,8061,8062,8063,8071,8072,8080,10000,10010,10020,10030,10040))
+		or  (menu_id     in (3131,3132,3133,3134,3135,3136) and @MenusChat > 0 )
+		or  (menu_id     in (8061,8062,8063,8071,8072,8080) and @AVRS > 0)
+		or  (menu_id     in (9000,9010) and @MenuCRM > 0 )
+		or  (menu_id     in (10000,10010,10020,10030,10040) and @MenuMail > 0 )
+		order by ordengral asc
+		return(0)
+	end
+	else begin
+		select distinct Nivel, menu_descrip, menu_id,ordengral,release from ccmenus with(index(IX_ccMenus))
+		where type = @ReportRol and (menu_id >= 2000) order by ordengral asc
+		return(0)
+	end
+
+end
+
+if @Type=2
+begin
+	delete from ccMenuUser where id_User = @id_User and id_Menu = @id_Menu and type = @ReportRol
+	return(0)
+end
+
+if @Type=3
+begin
+	insert into ccMenuUser(id_User,id_Menu,type) values (@id_User, @id_Menu,@ReportRol)
+	return(0)
+end
+
+if @Type=4
+begin
+	declare @lan varchar(3), @page varchar(200)
+	select @page = ''http://''+valor+''/'' from ccSettings where setting_id = 58
+	select @lan = case valor when 0 then ''ES'' else ''EN'' end from ccSettings where setting_id = 27
+
+	select ''Help/''+@lan+''/''+ cast(@id_Menu as varchar)+''.swf'' HelpSWF, @page page, @lan lang
+	return(0)
+end
+
+set nocount off'
+	EXEC(@sql)
 
 	commit tran
 	end try

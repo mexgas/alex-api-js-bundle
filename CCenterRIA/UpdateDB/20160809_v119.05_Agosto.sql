@@ -2310,7 +2310,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
     	set @sql='if exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
-					DROP INDEX PK_ccTimeZoneArea_1 ON ccTimeZoneArea
+					alter table ccTimeZoneArea drop PK_ccTimeZoneArea_1
 				end'
 		EXEC(@sql)
 

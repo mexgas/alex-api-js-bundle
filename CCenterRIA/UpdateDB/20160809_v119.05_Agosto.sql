@@ -2331,7 +2331,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 
 		set @process = 'Insert ccSettings -- Conf Monitor Port'
     	set @sql='if not exists(select * from ccsettings where setting_id=186)
-		insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(186,''0'',''Envió de paquetes para monitoreo de puertos (Outbound)'',1,''X'',''Al cargar el Outbound envio los estados del puertos al Admin'',''Parcel for monitoring ports'',0,''^[0-1]$'')'
+		insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(186,''0'',''Enviar paquetes para monitoreo de puertos de salida'',1,''X'',''Al cargar el Outbound envio los estados del puertos al Admin'',''Send packets to monitor outbound ports'',0,''^[0-1]$'')'
 		EXEC(@sql)
 
 		set @process = 'Update ccTimeZoneArea -- QROO'

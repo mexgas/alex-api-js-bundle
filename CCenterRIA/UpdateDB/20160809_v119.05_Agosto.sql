@@ -2310,11 +2310,11 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
     	set @sql='if exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
-					alter table ccTimeZoneArea drop PK_ccTimeZoneArea_1
+					DROP INDEX PK_ccTimeZoneArea_1 ON ccTimeZoneArea
 				end'
 		EXEC(@sql)
 
-		set @process = 'Creare Nonclustered index --- PK_ccTimeZoneArea_1'
+		set @process = 'Create Nonclustered index --- PK_ccTimeZoneArea_1'
     	set @sql='if not exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
 					CREATE NONCLUSTERED INDEX [PK_ccTimeZoneArea_1] ON [dbo].[ccTimeZoneArea]
@@ -2334,7 +2334,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 				end'
 		EXEC(@sql)
 
-		set @process = 'Delte ccTimeZoneArea --- id_country = 1, area = 329, tz_standard = 128'
+		set @process = 'Delete ccTimeZoneArea --- id_country = 1, area = 329, tz_standard = 128'
     	set @sql='if exists (select * from sys.tables where name = N''ccTimeZoneArea'')
 				begin
 					delete from ccTimeZoneArea where id_country = 1 and area = 329 and tz_standard = 128
@@ -2366,11 +2366,13 @@ AS
 
 	select @lada = valor from ccsettings with(nolock) where setting_id = 17
 	select @country = valor, @pais = valor from ccSettings with(nolock) where setting_id = 104
-
+	
 	select @ld = ''''
 	select @location = ''''
 
 		if @country = 1 begin
+		
+			select @phone=case when len(@phone) > 10 then RIGHT(@phone,10) when LEN(@phone)=10-LEN(@lada) then @lada+@phone else @phone  end
 
 			if (len(@phone) = 10)
 				begin
@@ -2390,7 +2392,7 @@ AS
 					and serie = substring(@phone, len(@ld) + 1, 6 - len(@ld))
 					and right(@phone, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
 
-					if not exists(select locality from ccTimeZoneArea (nolock) where area=311 and locality=@locality)
+					if not exists(select locality from ccTimeZoneArea (nolock) where area=@ld and locality=@locality)
 						set @locality = null
 
 					select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
@@ -2586,7 +2588,7 @@ AS
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
 	end
-
+	
 	if @country = 14 begin
 		select @phone = dbo.Completa(@phone, @pais, @lada)
 		if (substring(@phone, 1, 1) <> ''E'') begin

@@ -2371,6 +2371,8 @@ AS
 	select @location = ''''
 
 		if @country = 1 begin
+		
+			select @phone=case when len(@phone) > 10 then RIGHT(@phone,10) when LEN(@phone)=10-LEN(@lada) then @lada+@phone else @phone  end
 
 			if (len(@phone) = 10)
 				begin
@@ -2390,7 +2392,7 @@ AS
 					and serie = substring(@phone, len(@ld) + 1, 6 - len(@ld))
 					and right(@phone, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
 
-					if not exists(select locality from ccTimeZoneArea (nolock) where area=311 and locality=@locality)
+					if not exists(select locality from ccTimeZoneArea (nolock) where area=@ld and locality=@locality)
 						set @locality = null
 
 					select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea

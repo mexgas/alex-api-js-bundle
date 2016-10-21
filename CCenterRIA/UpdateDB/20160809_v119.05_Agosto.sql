@@ -2726,11 +2726,17 @@ set nocount off'
 			insert ccRIACat_Country (CtyID,CtyName,CtyCode,minPhoneLength,maxPhoneLength) values (15,''Peru'',51,7,9)
 			SET IDENTITY_INSERT ccRIACat_Country OFF;
 
-			insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,1,''Local'',''%'',''6|7'')
-			insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,2,''LD nacional'',''0%'',''9'')
-			insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,3,''Cel'',''9%'',''9'')
-			insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,4,''LD inter'',''00%'',''0'')
-
+			if not exists(select * from cstoTipoLlamada where country_id=15 and tipoLlamada_id=1 and descrip=''Local'' and prefijo=''%'' and longitud=''6|7'')
+				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,1,''Local'',''%'',''6|7'')
+			if not exists(select * from cstoTipoLlamada where country_id=15 and tipoLlamada_id=2 and descrip=''LD nacional'' and prefijo=''0%'' and longitud=''9'')
+				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,2,''LD nacional'',''0%'',''9'')
+			if not exists(select * from cstoTipoLlamada where country_id=15 and tipoLlamada_id=3 and descrip=''Cel'' and prefijo=''9%'' and longitud=''9'')
+				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,3,''Cel'',''9%'',''9'')
+			if not exists(select * from cstoTipoLlamada where country_id=15 and tipoLlamada_id=4 and descrip=''LD inter'' and prefijo=''00%'' and longitud=''0'')
+				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,4,''LD inter'',''00%'',''0'')
+			
+			if not exists (select * from sys.tables where name = N''seriesPE'')
+			BEGIN
 			create table seriesPE (zonaGeografica varchar(50), zonaNumeracion varchar(2), areaNumeracion varchar(2), rangoInicio varchar(8), rangoFinal varchar(8))
 			insert seriesPE values (''Lima,Callao'',''1'',''1'',''0000000'',''9999999'')
 			insert seriesPE values (''La Libertad'',''4'',''44'',''0000000'',''9999999'')
@@ -2755,7 +2761,8 @@ set nocount off'
 			insert seriesPE values (''Tumbes'',''7'',''72'',''0000000'',''9999999'')
 			insert seriesPE values (''Cuzco'',''8'',''84'',''0000000'',''9999999'')
 			insert seriesPE values (''Apurimac'',''8'',''83'',''0000000'',''9999999'')
-			insert seriesPE values (''Madre de Dios'',''8'',''82'',''0000000'',''9999999'')';
+			insert seriesPE values (''Madre de Dios'',''8'',''82'',''0000000'',''9999999'')
+			END';
 		EXEC(@sql)
 		
 		set @process = 'ALTER function Completa -- Add country'

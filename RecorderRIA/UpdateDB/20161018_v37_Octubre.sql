@@ -94,6 +94,7 @@ begin
 		,@manual = case when rec.cal_manual = 0 then ''N/A'' else ''Manual'' end
 		,@shoutlevel =sho.nombre_nivel
 		,@rating= total_forma
+		,@callID=cal_id
 	from ria_grabacion rec
 	left join ria_tipo_gritos sho on rec.id_nivel_grito = sho.id_nivel_grito
 	left join (select top 1 total_forma,id_grabacion from ria_formacalif where id_grabacion = @grabId order by fecha_calif desc)  formCalif on formCalif.id_grabacion=rec.grab_id
@@ -115,7 +116,7 @@ begin
 		select rec.grab_id as ''@C01'', ''Inbound'' as ''@C02'', inb.descripcion as ''@C03'', isnull(@shoutLevel,0) as ''@C04'', usr.Login as ''@C05'',
 		convert(varchar(23), rec.finicio, 126) as ''@C06'',pos.Computer as ''@C07'', convert(nvarchar(10),rec.duracion) as ''@C08'',rec.ani as ''@C09'', rec.dni as ''@C10'',
 		rec.cal_key as ''@C11'', @manual AS ''@C12'',usr.[User_id] AS ''@C13'',rec.cal_id AS ''@C14'',rec.cam_id as ''@C15'',
-		CONVERT(time(0), DATEADD(SECOND, rec.duracion, 0)) AS ''@C16'',
+		CONVERT(CHAR(8),DATEADD(second,rec.duracion,0),108) AS ''@C16'',
 		isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END,-1) as ''@C17'',isnull(@rating,0) as ''@C18'', rec.id_repositorio  as ''@C19'',
 		isnull(e.description,'''') AS ''@C20'',rec.calif_id AS ''@C21'',rec.video as ''@C22'',
 		usr.Nombres + '' '' + usr.ApellidoPaterno + '' '' + usr.ApellidoMaterno as ''@C23'', isnull(@supervisor,'''') as ''@C24'', isnull(@Template,'''') as ''@C25''
@@ -132,7 +133,7 @@ begin
 		select rec.grab_id as ''@C01'', ''Outbound'' as ''@C02'',inb.cam_descripcion as ''@C03'', isnull(@shoutLevel,0) as ''@C04'', usr.Login as ''@C05'',
 		convert(varchar(23), rec.finicio, 126) as ''@C06'',pos.Computer as ''@C07'',convert(nvarchar(10),rec.duracion) as ''@C08'',rec.ani as ''@C09'', rec.dni as ''@C10'',
 		rec.cal_key as ''@C11'', @manual AS ''@C12'',usr.[User_id] AS ''@C13'',rec.cal_id AS ''@C14'',rec.cam_id as ''@C15'',
-		CONVERT(time(0), DATEADD(SECOND, rec.duracion, 0)) AS ''@C16'',
+		CONVERT(CHAR(8),DATEADD(second,rec.duracion,0),108) AS ''@C16'',
 		isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END,-1) as ''@C17'',isnull(@rating,0) as ''@C18'', rec.id_repositorio  as ''@C19'',
 		isnull(e.Description,'''') AS ''@C20'',rec.calif_id AS ''@C21'',rec.video as ''@C22'',
 		usr.Nombres + '' '' + usr.ApellidoPaterno + '' '' + usr.ApellidoMaterno as ''@C23'', isnull(@supervisor,'''') as ''@C24'', isnull(@Template,'''') as ''@C25''
@@ -151,16 +152,17 @@ begin
 	)
 
 	if @xml is not null begin
+	select @callType,@callID
 		select @crmNode = node from ccCRMNodes where [type]= @callType and cal_id=@callID
 		if @crmNode is not null begin
-			update ccCRMNodes set grab_id=@grabId where [type]=2 and cal_id=@callID
+			update ccCRMNodes set grab_id=@grabId where [type]=@callType and cal_id=@callID
 			set @sqlCRM = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R02)[1]'''') ''
 			execute sp_executesql @sqlCRM,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
 		end
 
 		if not exists(select * from ria_RecNode where grab_id=@grabId) 	insert into ria_RecNode (grab_id,node,dateIn,[status]) values (@grabId,@xml, getdate(),0)
 		else update ria_RecNode set node =@xml,[status]=2 where grab_id = @grabId
-		--select @xml
+		select @xml
 	end
 
 end'

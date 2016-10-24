@@ -2608,11 +2608,9 @@ AS
 	
 	if @country = 15 begin --Peru
 		select @phone = dbo.Completa(@phone, @pais, @lada)
-		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
-		where id_country = @country and (
-		(len(@phone) = 6 and @lada = area and len(@lada) = 2) or --Local
-		(len(@phone) = 7 and @lada = area and @lada = 1) or --Local Lima
-		(len(@phone) = 9 and left(@phone, 1) <> ''9'' and ((substring(@phone, 2, 1) = ''1'' and area=''1'') or (substring(@phone, 2, 1) <> ''1'' and substring(@phone, 2, 2) = area)))) --LD
+		if (substring(@phone, 1, 1) <> ''E'') begin
+			select @timeZone = 32
+		end
 	end
 
 	return isNull(@timeZone,0)

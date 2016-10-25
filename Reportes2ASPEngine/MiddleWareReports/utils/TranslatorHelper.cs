@@ -63,9 +63,14 @@ namespace MiddleWareReports
                 }
                 else if (process < 10000 && process >= 9000)
                 {
-                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource")
-                        translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
-                    else if(column.ColumnName != "rownum")
+                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource" || column.ColumnName.StartsWith("crmx_"))
+                    {
+                        string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
+                        property = getResourceProperty(column_name, out isTranslated, isDetail);
+                        if (!property.Contains("_")) //Don't show not translated columns
+                            translatedColumns.Add(column.ColumnName, property);
+                    }
+                    else if (column.ColumnName != "rownum")
                         translatedColumns.Add(column.ColumnName, column.ColumnName);
                 }
             }

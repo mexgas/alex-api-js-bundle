@@ -144,6 +144,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string crmx_duration {
+            get {
+                return ResourceManager.GetString("crmx_duration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string dialog {
             get {
                 return ResourceManager.GetString("dialog", resourceCulture);

@@ -2308,11 +2308,19 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 					alter table ccTimeZoneArea add locality varchar(255) null
 				end'
 		EXEC(@sql)
+		
 
+		set @process = 'Alter table ccTimeZoneArea --- drop primary key PK_ccTimeZoneArea_1'
+    	set @sql='if exists (SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + ''.'' + CONSTRAINT_NAME), ''IsPrimaryKey'') = 1 AND TABLE_NAME = ''ccTimeZoneArea'')
+					begin
+						ALTER TABLE [dbo].[ccTimeZoneArea] DROP CONSTRAINT [PK_ccTimeZoneArea_1]
+					end'
+		EXEC(@sql)
+		
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
     	set @sql='if exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
-					alter table ccTimeZoneArea drop PK_ccTimeZoneArea_1
+					DROP INDEX PK_ccTimeZoneArea_1 ON ccTimeZoneArea
 				end'
 		EXEC(@sql)
 

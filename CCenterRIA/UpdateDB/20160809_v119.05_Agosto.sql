@@ -179,6 +179,11 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5ac3d0385f57d6836f90
 update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5bfd689ad924ed23e909750b5470193a28dd1176db39e7c7bee9583f01f19ba559bd688a3ac5c3ef90d4aaaa180ad5476'' where menu_id=8020 and type=2
 update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef128fcc0185b2c04007b2b4b868070061a84e9d349d61d7ac2617c56b3138cd334bd6cc617f7eb78'' where menu_id=8030 and type=2'
 
+	set @process = 'validate if exists procedure ccsp_isFinished'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_isFinished'')
+					DROP PROCEDURE ccsp_isFinished'
+		EXEC(@sql)
+	
 	set @process = 'Create SP -- [dbo].[ccsp_isFinished]'
 	set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_isFinished]
 @tabla int,
@@ -282,6 +287,11 @@ IF @TipoMov=3
  END'
 		EXEC(@Sql)
 
+		set @process = 'validate if exists procedure ccsp_SaveLogoutLastState'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_SaveLogoutLastState'')
+					DROP PROCEDURE ccsp_SaveLogoutLastState'
+		EXEC(@sql)
+		
 		set @process = 'CREATE SP -- ccsp_SaveLogoutLastState'
 		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_SaveLogoutLastState]
 @UserID smallint,
@@ -304,6 +314,10 @@ exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@
 '
 		EXEC(@Sql)
 
+set @process = 'validate if exists procedure ccsp_RIAConfEspec'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_RIAConfEspec'')
+					DROP PROCEDURE ccsp_RIAConfEspec'
+		EXEC(@sql)
 
 
 set @process = 'Create SP -- [dbo].[ccsp_RIAConfEspec]'
@@ -4110,6 +4124,11 @@ set nocount off'
 
 				return @tel
 			end';
+		EXEC(@sql)
+		
+		set @process = 'validate if exists procedure crmxGetRecordData'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''crmxGetRecordData'')
+					DROP PROCEDURE crmxGetRecordData'
 		EXEC(@sql)
 
 		set @process = 'Create SP -- [dbo].[crmxGetRecordData]'

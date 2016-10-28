@@ -846,7 +846,7 @@ END'
 						pivot (max(dataValue) for componentId in ('''' + @pivot1_descriptionT + ''''))  as PV_descriptionT, CRMxData'' + @crmTemplateId + '' a
 						where a.crmxRecordId = RowID
 						group by [RowID], a.serviceSource, a.dateValue, a.crmxRecordId)x
-					join CRMxData1 d on d.crmxRecordId=x.crmxRecordId''''
+					join CRMxData'' + @crmTemplateId + '' d on d.crmxRecordId=x.crmxRecordId''''
 
 						EXEC( @query )''
 

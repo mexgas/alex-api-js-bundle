@@ -464,7 +464,7 @@ exec ccspGenSession @from=@from,@to=@to
 
 INSERT INTO #sessionTimeGroup
 select user_id,login,logout,extension
-,convert(datetime,case when datepart(mi,A.login) between 0 and 14 then convert(varchar(13),A.logout,121) + '':00:00.000''
+,convert(datetime,case when datepart(mi,A.login) between 0 and 14 then convert(varchar(13),A.login,121) + '':00:00.000''
 			when datepart(mi,A.login) between 15 and 29 then convert(varchar(13),A.login,121) + '':15:00.000''
 			when datepart(mi,A.login) between 30 and 44 then convert(varchar(13),A.login,121) + '':30:00.000''
 			when datepart(mi,A.login) between 45 and 59 then convert(varchar(13),A.login,121) + '':45:00.000'' end) AS timegroup

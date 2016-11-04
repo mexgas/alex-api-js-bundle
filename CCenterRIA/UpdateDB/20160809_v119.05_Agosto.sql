@@ -4614,6 +4614,110 @@ end
 
 set nocount off'
 	EXEC(@sql)
+		
+	set @process = 'Add Column ---- ccMsgfiles.length'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''length'' and Object_ID = Object_ID(N''ccMsgfiles'')) alter table ccMsgfiles add [length] smallint not null default 0'
+	EXEC(@Sql)
+	
+	set @process = 'Insert ccSettings -- Sample Rate'
+    set @sql='if not exists(select * from ccsettings where setting_id=187)
+		insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (187,6,''Frecuencia de Mensajes de Audio'',1,''GRL'',''Sample rate. 6-8 kHz'',''Sample rate. 6-8 kHz'',0,''^[68]$'')'
+	EXEC(@sql)
+		
+	set @process = 'Alter procedure ccsp_IVRGetVoxFiles'
+    set @sql='ALTER  PROCEDURE [dbo].[ccsp_IVRGetVoxFiles]
+		@Inbound_ID as smallint,
+		@Tipo tinyint
+		AS
+		/*
+		SP para traer los Archivox Vox que va utilizan dentro del IVR x
+		*/
+		select orden, V.msgfile, queue,[length]
+		from ccInboundMsgs VE join ccMsgfiles V
+		on VE.Msg_id = V.Msg_id
+		where Inbound_id = @Inbound_ID
+		-- and tipomsg_id =@Tipo -- modificado para CW -V
+		and type =@Tipo
+		order by orden'
+	EXEC(@sql)
+	
+	set @process = 'Alter procedure ccsp_RIACATMessages'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_RIACATMessages]
+		@command tinyint,
+		@msg_id int=0,
+		@msgFile varchar(40)='''',
+		@Description varchar(40)='''',
+		@length smallint=0
+		AS
+		set nocount on
+		If @command=0
+		 begin
+			SELECT Descripcion FROM ccMsgFiles WHERE msg_id=@msg_id
+			return(0)
+		end 
+		 
+		If @command=1
+		 begin
+			SELECT msg_id, msgFile, Descripcion, 1 as FileExists from ccMsgFiles where msgFile not like ''%TTS|%'' order by msg_id
+			return(0)
+		 end 
+
+		if @command=2
+		 begin
+			if EXISTS(select msgFile from ccMsgFiles where msgFile=@msgFile)
+			 begin
+				select 1, ''Nombre en Uso''
+				return(0)
+			 end
+
+			Insert ccMsgFiles (msgFile, descripcion) select @msgFile, @Description
+			return(0)
+		 end 
+
+		if @command=3
+		 begin
+			if exists(select msg_id from ccInboundMsgs where msg_id=@msg_id)
+			 begin 
+				select 1 --''Este Mensaje tiene alguna Especialidad asignada''
+				return(0)
+			 end
+
+			if exists(select msg_id from ccCampsMsgs where msg_id=@msg_id)
+			 begin 
+				select 1 --''Este Mensaje tiene alguna campaña asignada''
+				return(0)
+			 end
+
+			Delete ccMsgFiles Where msg_id=@msg_id
+			return(0)
+		 end 
+
+		if @command=4 
+		 begin
+			Update ccMsgFiles set msgFile=@msgFile, descripcion=@Description Where msg_id=@msg_id
+			return(0)
+		 end
+		 
+		 if @command=5
+		 begin
+			if EXISTS(select msgFile from ccMsgFiles where descripcion= @Description)
+			 begin
+				select 1, ''Nombre en Uso''
+				return(0)
+			 end
+
+			Insert ccMsgFiles (msgFile, descripcion) select @msgFile, @Description
+			return scope_identity()
+		 end
+
+		 if @command=6
+		 begin
+			Update ccMsgFiles set [length]=@length Where msg_id=@msg_id
+			return(0)
+		 end
+
+		set nocount off'
+	EXEC(@sql)
 
 	commit tran
 	end try

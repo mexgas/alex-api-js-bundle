@@ -235,7 +235,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="table">The table to be altered</param>
         /// <returns></returns>
-        public static void removeUntranslatedTableColumns(DataTable table)
+        public static void removeUntranslatedTableColumns(DataTable table, short process = 0)
         {
             LinkedList<string> columnsToRemove = new LinkedList<string>();
             foreach (DataColumn column in table.Columns)
@@ -246,6 +246,18 @@ namespace MiddleWareReports
                 if ((!property.Contains("_")) || isPivotColumn(property))
                 {
                     continue;
+                }
+                else if (process < 10000 && process >= 9000)
+                {
+                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource" || column.ColumnName.StartsWith("crmx_"))
+                    {
+                        string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
+                        property = getResourceProperty(column_name, out isTranslated);
+                        if (!property.Contains("_")) //Don't show not translated columns
+                            continue;
+                    }
+                    else if (column.ColumnName != "rownum")
+                        continue;
                 }
                 else
                 {

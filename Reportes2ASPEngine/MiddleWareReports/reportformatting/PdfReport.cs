@@ -24,13 +24,13 @@ namespace MiddleWareReports
         /// <param name="reportName">The value that will be placed at the header of each page</param>
         /// <returns>An array of bytes of the pdf file generated</returns>
         /// <exception>Throws an EmptyResultException if the DataTable is empty</exception>
-        public byte[] getOutPut(DataTable data, String reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true)
+        public byte[] getOutPut(DataTable data, String reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true, short process = 0)
         {
             EmptyResultException.dataTableIsEmpty(data);
             int nRows = 0;
             this.reportName = reportName;
             if(translate)
-                TranslatorHelper.removeUntranslatedTableColumns(data);
+                TranslatorHelper.removeUntranslatedTableColumns(data, process);
             for (int i = 0; i < data.Columns.Count; i++)
             {
                 data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
@@ -71,7 +71,7 @@ namespace MiddleWareReports
                 dataClone.ImportRow(row);           
             /**/
 
-            return generatePDF(dataClone, reportName, logoFileName, nRows);
+            return generatePDF(dataClone, reportName, logoFileName, nRows, process);
         }
 
         /// <summary>
@@ -81,10 +81,10 @@ namespace MiddleWareReports
         /// <param name="data">The DataTable that provides the information</param>
         /// <param name="reportName">It will be placed on the header of each page</param>
         /// <returns>A byte array containing the bytes of the generated Pdf file</returns>
-        private byte[] generatePDF(DataTable data, string reportName, string logoFileName, int nRows)
+        private byte[] generatePDF(DataTable data, string reportName, string logoFileName, int nRows, short process = 0)
         {
             Migradoc renderer = new Migradoc();
-            return renderer.getPdfRenderBytes(data, reportName, logoFileName, nRows);
+            return renderer.getPdfRenderBytes(data, reportName, logoFileName, nRows, process);
         }
 
     #endregion

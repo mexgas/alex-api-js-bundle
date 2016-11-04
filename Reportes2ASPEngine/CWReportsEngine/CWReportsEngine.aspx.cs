@@ -388,9 +388,11 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 MiddleWareReports.ReportFormat exportFormat = MiddleWareReports.ExportReportFactory.GenerateReport(format);
                byte[] output;
                 if(process >= 9000 && process < 10000)
-                    output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, false);
+                {
+                    output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true, process);
+                }
                 else
-                    output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true);
+                    output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true, 0);
 
                 Response.Clear();
                 Response.Charset = "UTF-8";

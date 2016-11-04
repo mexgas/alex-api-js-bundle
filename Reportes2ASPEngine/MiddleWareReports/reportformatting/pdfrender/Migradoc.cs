@@ -44,9 +44,9 @@ namespace MiddleWareReports
             totalsColor = Color.Parse(totalsArgbColor);
         }
       
-        public byte[] getPdfRenderBytes(DataTable table, string reportName, string logoFilePath = "", int nRows = 0)
+        public byte[] getPdfRenderBytes(DataTable table, string reportName, string logoFilePath = "", int nRows = 0, short process = 0)
         {
-            Dictionary<int, LinkedList<Table>> tables = tablesToPdfTables(table, nRows);
+            Dictionary<int, LinkedList<Table>> tables = tablesToPdfTables(table, nRows, process);
             PdfDocument pdfDocument = new PdfDocument();
             XImage xImage = XImage.FromFile(logoFilePath);
 
@@ -163,7 +163,23 @@ namespace MiddleWareReports
             return Unit.FromCentimeter(value);
         }
 
-        public Dictionary<int, LinkedList<Table>> tablesToPdfTables(DataTable data, int nRows)
+        private string getTranslation(string data, short process)
+        {
+            if (process < 10000 && process >= 9000)
+            {
+                if (data == "crmx_Date" || data == "crmxSource" || data.StartsWith("crmx_"))
+                {
+                    string column_name = data != "crmx_Date" && data.StartsWith("crmx_") ? data.Replace("crmx_", "") : data;
+                    return TranslatorHelper.getResource(column_name, true);
+                }
+                else
+                    return data;
+            }
+            else
+                return TranslatorHelper.getResource(data, true);
+        }
+
+        public Dictionary<int, LinkedList<Table>> tablesToPdfTables(DataTable data, int nRows, short process = 0)
         {
             NameValueCollection convertedColumns = TranslatorHelper.convertColumns(data.Columns);
 
@@ -176,7 +192,7 @@ namespace MiddleWareReports
 
             for (int i = 0; i < maximunLengthForColumns.Count; i++) // compara el texto mas largo contra los headers de la tabla
             {
-                string str = TranslatorHelper.getResource(data.Columns[i].ColumnName, true);
+                string str = getTranslation(data.Columns[i].ColumnName, process);
                 
                 if (str.Length > maximunLengthForColumns[i])
                 {
@@ -249,7 +265,7 @@ namespace MiddleWareReports
                                 for (int nColumn = 0; nColumn <= end - start; nColumn++)
                                 {
                                     cell = row.Cells[nColumn];
-                                    cell.AddParagraph(TranslatorHelper.getResource(data.Columns[nColumn + start].ColumnName, true));
+                                    cell.AddParagraph(getTranslation(data.Columns[nColumn + start].ColumnName, process));
                                 }
                                 /**/
                             

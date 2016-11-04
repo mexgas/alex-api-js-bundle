@@ -533,8 +533,7 @@ namespace MiddleWareReports
             {
                 if (!string.IsNullOrEmpty(totalsTable.Columns[i].ColumnName) && !string.IsNullOrEmpty(translatedColumns[totalsTable.Columns[i].ColumnName]))
                 {
-
-
+                    /*
                     if (!repeatedColumns.Contains(translatedColumns[totalsTable.Columns[i].ColumnName]))
                     {
                         repeatedColumns.Add(translatedColumns[totalsTable.Columns[i].ColumnName]);
@@ -546,7 +545,18 @@ namespace MiddleWareReports
                     }
                     newcolumns[i] = new DataColumn(
                     translatedColumns[totalsTable.Columns[i].ColumnName], totalsTable.Columns[i].DataType);
-
+                    */
+                    if (!repeatedColumns.Contains(totalsTable.Columns[i].ColumnName))
+                    {
+                        repeatedColumns.Add(totalsTable.Columns[i].ColumnName);
+                    }
+                    else
+                    {
+                        translatedColumns[totalsTable.Columns[i].ColumnName] += " ";
+                        repeatedColumns.Add(totalsTable.Columns[i].ColumnName);
+                    }
+                    newcolumns[i] = new DataColumn(
+                    totalsTable.Columns[i].ColumnName, totalsTable.Columns[i].DataType);
                 }
             }
 

@@ -183,7 +183,7 @@ update ccmenus set release=''af27c3de5996ed54fc284889ae4c64c5765fa9608a5a6d7ef12
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_isFinished'')
 					DROP PROCEDURE ccsp_isFinished'
 		EXEC(@sql)
-	
+
 	set @process = 'Create SP -- [dbo].[ccsp_isFinished]'
 	set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_isFinished]
 @tabla int,
@@ -291,7 +291,7 @@ IF @TipoMov=3
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_SaveLogoutLastState'')
 					DROP PROCEDURE ccsp_SaveLogoutLastState'
 		EXEC(@sql)
-		
+
 		set @process = 'CREATE SP -- ccsp_SaveLogoutLastState'
 		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_SaveLogoutLastState]
 @UserID smallint,
@@ -2322,7 +2322,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 					alter table ccTimeZoneArea add locality varchar(255) null
 				end'
 		EXEC(@sql)
-		
+
 
 		set @process = 'Alter table ccTimeZoneArea --- drop primary key PK_ccTimeZoneArea_1'
     	set @sql='if exists (SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + ''.'' + CONSTRAINT_NAME), ''IsPrimaryKey'') = 1 AND TABLE_NAME = ''ccTimeZoneArea'')
@@ -2330,7 +2330,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 						ALTER TABLE [dbo].[ccTimeZoneArea] DROP CONSTRAINT [PK_ccTimeZoneArea_1]
 					end'
 		EXEC(@sql)
-		
+
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
     	set @sql='if exists (select * from sys.indexes where name = N''PK_ccTimeZoneArea_1'' and object_id = OBJECT_ID(N''ccTimeZoneArea''))
 				begin
@@ -2395,12 +2395,12 @@ AS
 
 	select @lada = valor from ccsettings with(nolock) where setting_id = 17
 	select @country = valor, @pais = valor from ccSettings with(nolock) where setting_id = 104
-	
+
 	select @ld = ''''
 	select @location = ''''
 
 		if @country = 1 begin
-		
+
 			select @phone=case when len(@phone) > 10 then RIGHT(@phone,10) when LEN(@phone)=10-LEN(@lada) then @lada+@phone else @phone  end
 
 			if (len(@phone) = 10)
@@ -2617,7 +2617,7 @@ AS
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
 	end
-	
+
 	if @country = 14 begin
 		select @phone = dbo.Completa(@phone, @pais, @lada)
 		if (substring(@phone, 1, 1) <> ''E'') begin
@@ -2627,7 +2627,7 @@ AS
 			end
 		end
 	end
-	
+
 	if @country = 15 begin --Peru
 		select @phone = dbo.Completa(@phone, @pais, @lada)
 		if (substring(@phone, 1, 1) <> ''E'') begin
@@ -2688,7 +2688,7 @@ where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
 return(0)
 set nocount off'
 		EXEC(@sql)
-		
+
 
 		set @process = 'Alter SP ccsp_RIAccSettingsConfig -- Add country'
     	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAccSettingsConfig]
@@ -2736,7 +2736,7 @@ set nocount off'
 
 			set nocount off';
 		EXEC(@sql)
-		
+
 		set @process = 'Add Peru''s dialing plan -- Add country'
     	set @sql='update ccsettings set detalle=''1:Mexico, 2:Argentina, 3:Colombia, 4:USA, 5:Chile, 6: Venezuela, 7: Reino Unido, 8: Arabia saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España, 15:Peru'' where setting_id=104
 
@@ -2754,7 +2754,7 @@ set nocount off'
 				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,3,''Cel'',''9%'',''9'')
 			if not exists(select * from cstoTipoLlamada where country_id=15 and tipoLlamada_id=4 and descrip=''LD inter'' and prefijo=''00%'' and longitud=''0'')
 				insert cstoTipoLlamada (country_id,tipoLlamada_id,descrip,prefijo,longitud) values (15,4,''LD inter'',''00%'',''0'')
-			
+
 			if not exists (select * from sys.tables where name = N''seriesPE'')
 			BEGIN
 			create table seriesPE (zonaGeografica varchar(50), zonaNumeracion varchar(2), areaNumeracion varchar(2), rangoInicio varchar(8), rangoFinal varchar(8))
@@ -2784,7 +2784,7 @@ set nocount off'
 			insert seriesPE values (''Madre de Dios'',''8'',''82'',''0000000'',''9999999'')
 			END';
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER function Completa -- Add country'
     	set @sql='ALTER function [dbo].[Completa](@Cadena varchar(32), @pais varchar(2) = '''', @ld varchar(5) = '''')
 			RETURNS varchar(32)
@@ -3144,7 +3144,7 @@ set nocount off'
 
 			end';
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER function Completa_ListaNegra -- Add country'
     	set @sql='ALTER FUNCTION [dbo].[Completa_ListaNegra] (@Cadena varchar(30))
 			RETURNS varchar(30) AS
@@ -3279,7 +3279,7 @@ set nocount off'
 			return @resultado
 			end';
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER function TelAni -- Add country'
     	set @sql='ALTER function [dbo].[TelAni](@tel varchar(32), @lista smallint)
 			RETURNS varchar(32)
@@ -3564,7 +3564,7 @@ set nocount off'
 				return @ret
 			END';
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER function Verifica -- Add country'
     	set @sql='ALTER FUNCTION [dbo].[Verifica](@tel varchar(32))
 			RETURNS varchar(32) AS
@@ -4110,7 +4110,7 @@ set nocount off'
 					select @lon = len(@tel)
 					if left(@tel,1) <> ''E'' begin
 						if @lon = 9 begin
-							if exists(select zonaGeografica from seriesPE (nolock) where 
+							if exists(select zonaGeografica from seriesPE (nolock) where
 								left(@tel,1) = 9 or
 								substring(@tel,2,1) = 1 and areaNumeracion = 1 and right(@tel, 7) between rangoInicio and rangoFinal or
 								substring(@tel,2,1) <> 1 and left(@tel,2) = areaNumeracion and right(@tel, 7) between rangoInicio and rangoFinal
@@ -4119,13 +4119,13 @@ set nocount off'
 							else
 								return ''E_'' + @tel
 						end
-					end	
+					end
 				end --Termina Peru
 
 				return @tel
 			end';
 		EXEC(@sql)
-		
+
 		set @process = 'validate if exists procedure crmxGetRecordData'
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''crmxGetRecordData'')
 					DROP PROCEDURE crmxGetRecordData'
@@ -4142,7 +4142,7 @@ set nocount off'
 
 				if @callType = 2
 				begin
-					SET @xmlCallData =  
+					SET @xmlCallData =
 					(	select
 							cal_id "call/@id",
 							cal_key "call/@key",
@@ -4164,7 +4164,7 @@ set nocount off'
 				end
 				else
 				begin
-					SET @xmlCallData =  
+					SET @xmlCallData =
 					(	select
 							cal_id "call/@id",
 							cal_key "call/@key",
@@ -4268,7 +4268,7 @@ end
 '
 	EXEC(@sql)
 
-	set @process = ''
+	set @process = 'Alter SP -- ccsp_RIAMenuRoles'
     set @sql='ALTER procedure [dbo].[ccsp_RIAMenuRoles]
 @Type tinyint,
 @User_id smallint = null,
@@ -4309,7 +4309,7 @@ select @RelationCampInbNotReady = valor from ccsettings where setting_id = 135
 select @MenusChat = valor from ccsettings where setting_id = 145
 select @MenuMail = valor from ccsettings where setting_id = 155
 select @MenuCRM = valor from ccsettings where setting_id = 168
-select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 184
+select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 186
 
 If @Type = 1 -- Carga todos los roles
 	begin
@@ -4407,7 +4407,6 @@ If @Type = 6 -- Get userMenus
 		((b.id_Menu not in (41,42,53)) or (b.id_Menu = 41 and @CM = 1) or (b.id_Menu = 42 and @ae > 0) or (b.id_Menu = 53 and @NRS = 1))
 		and ( b.id_Menu not in(77,78) or (@RelationCampInbNotReady = 1 and b.id_Menu in(77,78)))
 		and ( b.id_Menu not in(79) or (@MenusChat > 0 and b.id_Menu in(79)))
-		and ( b.id_Menu not in(83) or (@MenuCRM > 0 and b.id_Menu in(83)))
 		order by ordengral asc
 		return(0)
 	end
@@ -4422,7 +4421,7 @@ If @Type = 6 -- Get userMenus
 		inner join ccMenus c with(index(IX_ccMenus)) on b.id_Menu = c.menu_id and b.type = c.type
 		where a.user_id = @user_id and a.Type = @reportRol and b.Type = @reportRol
 		and (
-			(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,84,85,69))
+			(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,83,84,85,69))
 			or (b.id_Menu = 41 and @CM = 1) or (b.id_Menu = 42 and @ae > 0) or (b.id_Menu = 53 and @NRS = 1)
 			or (menu_id in (71,72) and @IVRScripting = 1)
 			or (menu_id in (73,74,75,76) and @AVRS = 1)
@@ -4430,7 +4429,7 @@ If @Type = 6 -- Get userMenus
 			or (menu_id = 79 and @MenusChat > 0)
 			or (menu_id in (81,82,84,85) and @MenuMail = 1)--Mail
 			or (menu_id = 83 and @MenuCRM > 0)
-			and ( b.id_Menu not in(69) or (@monitorPortMenu > 0 and b.id_Menu in(69)))
+			or (@monitorPortMenu > 0 and b.id_Menu in(69))
 			)
 		order by ordengral asc
 		return(0)
@@ -4515,7 +4514,7 @@ return(0)
 set nocount off'
 	EXEC(@sql)
 
-	set @process = ''
+	set @process = 'Alter SP -- ccsp_RIACATMenu'
     set @sql='ALTER procedure [dbo].[ccsp_RIACATMenu]
 @id_User varchar(2000),
 @id_Menu int,
@@ -4546,7 +4545,7 @@ select @IVRScripting = valor from ccsettings where setting_id = 125
 select @MenusChat = valor from ccsettings where setting_id = 145
 select @MenuMail = valor from ccsettings where setting_id = 155
 select @MenuCRM = valor from ccsettings where setting_id = 168
-select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 184
+select @monitorPortMenu = case when valor=''1'' then 1 else 0 end from ccsettings where setting_id = 186
 
 ---Mail MenuId (81)
 if @Type=1
@@ -4555,7 +4554,7 @@ begin
 	begin
 		Select distinct Nivel, menu_descrip, menu_id,ordengral,release from ccmenus with(index(IX_ccMenus)) where type = 1
 		and (
-		(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,84,85,69))
+		(menu_id not in (41,42,53,71,72,73,74,75,76,77,78,79,81,82,83,84,85,69))
 		or (menu_id = 41 and @CM = 1)
 		or (menu_id = 42 and @AE > 0)
 		or (menu_id = 53 and @NRS = 1)
@@ -4614,16 +4613,16 @@ end
 
 set nocount off'
 	EXEC(@sql)
-		
+
 	set @process = 'Add Column ---- ccMsgfiles.length'
 	set @Sql= 'if not exists (select * from sys.columns where name = N''length'' and Object_ID = Object_ID(N''ccMsgfiles'')) alter table ccMsgfiles add [length] smallint not null default 0'
 	EXEC(@Sql)
-	
+
 	set @process = 'Insert ccSettings -- Sample Rate'
     set @sql='if not exists(select * from ccsettings where setting_id=187)
 		insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (187,6,''Frecuencia de Mensajes de Audio'',1,''GRL'',''Sample rate. 6-8 kHz'',''Sample rate. 6-8 kHz'',0,''^[68]$'')'
 	EXEC(@sql)
-		
+
 	set @process = 'Alter procedure ccsp_IVRGetVoxFiles'
     set @sql='ALTER  PROCEDURE [dbo].[ccsp_IVRGetVoxFiles]
 		@Inbound_ID as smallint,
@@ -4640,7 +4639,7 @@ set nocount off'
 		and type =@Tipo
 		order by orden'
 	EXEC(@sql)
-	
+
 	set @process = 'Alter procedure ccsp_RIACATMessages'
     set @sql='ALTER PROCEDURE [dbo].[ccsp_RIACATMessages]
 		@command tinyint,
@@ -4654,13 +4653,13 @@ set nocount off'
 		 begin
 			SELECT Descripcion FROM ccMsgFiles WHERE msg_id=@msg_id
 			return(0)
-		end 
-		 
+		end
+
 		If @command=1
 		 begin
 			SELECT msg_id, msgFile, Descripcion, 1 as FileExists from ccMsgFiles where msgFile not like ''%TTS|%'' order by msg_id
 			return(0)
-		 end 
+		 end
 
 		if @command=2
 		 begin
@@ -4672,32 +4671,32 @@ set nocount off'
 
 			Insert ccMsgFiles (msgFile, descripcion) select @msgFile, @Description
 			return(0)
-		 end 
+		 end
 
 		if @command=3
 		 begin
 			if exists(select msg_id from ccInboundMsgs where msg_id=@msg_id)
-			 begin 
+			 begin
 				select 1 --''Este Mensaje tiene alguna Especialidad asignada''
 				return(0)
 			 end
 
 			if exists(select msg_id from ccCampsMsgs where msg_id=@msg_id)
-			 begin 
+			 begin
 				select 1 --''Este Mensaje tiene alguna campaña asignada''
 				return(0)
 			 end
 
 			Delete ccMsgFiles Where msg_id=@msg_id
 			return(0)
-		 end 
+		 end
 
-		if @command=4 
+		if @command=4
 		 begin
 			Update ccMsgFiles set msgFile=@msgFile, descripcion=@Description Where msg_id=@msg_id
 			return(0)
 		 end
-		 
+
 		 if @command=5
 		 begin
 			if EXISTS(select msgFile from ccMsgFiles where descripcion= @Description)
@@ -4718,6 +4717,154 @@ set nocount off'
 
 		set nocount off'
 	EXEC(@sql)
+
+	set @process = ''
+set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0
+as
+set nocount on
+
+declare @TipoJobs as int,@isExecOutbound bit
+
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+  declare @id AS INTEGER
+
+  CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+  CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+
+  create table #temccocallsoutsource (cam_id int,Pend  int)
+
+  create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+  if @cam_id = 0 begin
+    if @user_id > 0 begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where user_id = @user_id and tipo = 1
+    end
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+    end
+
+  end
+  else begin
+    if @Tipo = 2
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+      from ccCamps cam
+      where cam_procesando=1--where cam.cam_id = @cam_id
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+        select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+        from ccCamps where cam_id = @cam_id
+      end
+  end
+
+
+
+  insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+  select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
+  select A.* from #Tcamps A
+  left join ccCampsNvosCB B on A.cam_id=B.id
+  where datediff(ss,B.dateUpdate,getdate())>5 or B.dateUpdate is null)X
+
+  group by cam_id
+
+  --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+  if (select count(*) from #Tcamps2)>0 begin
+
+    insert into #temccocallsoutsource(cam_id,Pend)
+    SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+    FROM ccocallsoutsource ccos --with(nolock index(IX_ccoCallsOutSource))
+    left join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    WHERE cal_status in(0, 7)
+    GROUP BY ccos.cam_id
+
+    insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+    SELECT A.cam_id,
+    count(case cal_status when 0 then 1 else null end) as New,
+    count(case cal_status when 1 then 1 else null end) as Cb,
+    count(case cal_status when 2 then 1 else null end) as Pro,
+    count(case cal_status when 3 then 1 else null end) as Fin
+    FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+    inner join #Tcamps2 B on A.cam_id = B.cam_id
+    GROUP BY A.cam_id
+
+    --select * from #Tcamps2
+
+    --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+    if @regval = 0 and @cam_id >0 and @Tipo =2 begin
+      update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
+    end
+    else begin
+      While (select count(*) from #Tcamps2 where status = 0) > 0 Begin
+        set rowcount 1
+        select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+        set rowcount 0
+        EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+        update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+      end
+    end
+
+    begin Tran updateccCampsNvosCB
+
+	  delete A from ccCampsNvosCB A
+	  inner join #Tcamps2 B on A.id=B.cam_id
+
+      INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+      SELECT cams.cam_id, cams.cam_descripcion,
+      isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+      isNull(cs.Pend,0) as pend,
+      isNull(wt.Pro,0) as pro,
+      isNull(cams.procesando,0) cam_procesando,
+      isNull(cams.cam_tipojobs,0) cam_tipojobs,
+      isNull(wt.Fin,0) Fin,
+      isNull(tc.cantidad,0) cantidad,
+      getdate()
+      FROM #Tcamps cams with(nolock)
+      LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+      LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+      left join #Tcamps2 tc on (tc.cam_id = cams.cam_id)
+
+    COMMIT TRAN updateccCampsNvosCB
+  end
+
+  if @isExecOutbound = 0 begin
+
+    if @Tipo = 2
+      -- devuelve resultado de la taba, solo las camps del usuario
+      SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+      FROM #Tcamps tcam
+      left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+    else
+      SELECT id, campaña, max(new) as new, max(cb) cb, max(pro) pro, max(pen) pen,max(st)st, max(job)job, max(Fin)Fin, isnull(prioridad,''12345NNN'')  as Prioridad, max(NextDial) NextDial
+      FROM ccCampsNvosCB res
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+      WHERE res.id = @cam_id
+      group by id,campaña,prioridad
+  end
+
+  drop table #Tcamps
+  drop table #Tcamps2
+  drop table #temccocallsoutsource
+  drop table #temWorkinTable
+
+  --return(0)
+
+end
+
+set nocount off'
+	EXEC(@Sql)
 
 	commit tran
 	end try

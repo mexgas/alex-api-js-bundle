@@ -4717,6 +4717,14 @@ set nocount off'
 
 		set nocount off'
 	EXEC(@sql)
+	
+	    set @process = 'Update ccmenus -- QROO'
+    set @sql='if exists (select * from sys.tables where name = N''ccmenus'')
+                begin
+                    update ccmenus set release=''a26d005201984b33e3469edeba7ac5a980da724d473dfdf3485c46f75cc45103'' where menu_id = 72
+                end'
+    EXEC(@sql)
+
 
 	set @process = ''
 set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]

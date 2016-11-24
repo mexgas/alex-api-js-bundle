@@ -2314,6 +2314,24 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin tran
 	begin try
 
+		set @process = 'DROP SP -- ccsp_CleanNodeBaseX'
+		set @sql='if exists (select * from sys.procedures where name = ''ccsp_CleanNodeBaseX'') DROP PROCEDURE [dbo].[ccsp_CleanNodeBaseX]'
+		EXEC(@sql)
+
+		set @process = 'Create TABLE -- ccTwitterNodeHistory'
+    	set @sql='if not exists (select * from sys.tables where name = N''ccTwitterNodeHistory'')
+CREATE TABLE [dbo].[ccTwitterNodeHistory]([conversationTwitterId] [bigint] NULL,[node] [xml] NULL,[dateIn] [datetime] NULL,[dateOut] [datetime] NULL,[status] [int] NULL) ON [PRIMARY]'
+		EXEC(@sql)
+
+		set @process = 'Create TABLE -- ccEmailNodeHistory'
+    	set @sql='if not exists (select * from sys.tables where name = N''ccEmailNodeHistory'')
+CREATE TABLE [dbo].[ccEmailNodeHistory]([emailId] [int] NULL,[node] [xml] NULL,[dateIn] [datetime] NULL,[dateOut] [datetime] NULL,[status] [int] NULL) ON [PRIMARY]'
+		EXEC(@sql)
+
+		set @process = 'Create TABLE -- ccChatsNodeHistory'
+    	set @sql='if not exists (select * from sys.tables where name = N''ccChatsNodeHistory'')
+CREATE TABLE [dbo].[ccChatsNodeHistory]([chatId] [int] NULL,[node] [xml] NULL,[dateIn] [datetime] NULL,[dateOut] [datetime] NULL,	[status] [tinyint] NULL) ON [PRIMARY]'
+		EXEC(@sql)
 
 
 		set @process = 'Alter table ccTimeZoneArea --- add locality'
@@ -2354,6 +2372,13 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 		set @process = 'Insert ccSettings -- Conf Monitor Port'
     	set @sql='if not exists(select * from ccsettings where setting_id=186)
 		insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(186,''0'',''Enviar paquetes para monitoreo de puertos de salida'',1,''X'',''Al cargar el Outbound envio los estados del puertos al Admin'',''Send packets to monitor outbound ports'',0,''^[0-1]$'')'
+		EXEC(@sql)
+
+		set @process = 'Insert ccSettings -- Conf Monitor Port'
+		set @sql='if not exists(select * from ccsettings where setting_id in (188,189)) begin
+insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (188,''400000'',''rango de registros a para crear una nueba baseX'',1,''X'',''ingrese datos enteros'',''Enter integer data'',1,''.*'')
+insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (189,''15'',''Segundos para recarga contadores'',1,''X'',''Al recibir paquetes se recarga la coleccion no da tiempo procesar estos contadores'',''Second for load account Agent'',1,''.*'')
+		end'
 		EXEC(@sql)
 
 		set @process = 'Update ccTimeZoneArea -- QROO'
@@ -4717,16 +4742,16 @@ set nocount off'
 
 		set nocount off'
 	EXEC(@sql)
-	
-	    set @process = 'Update ccmenus -- QROO'
+
+	set @process = 'Update ccmenus -- QROO'
     set @sql='if exists (select * from sys.tables where name = N''ccmenus'')
-                begin
-                    update ccmenus set release=''a26d005201984b33e3469edeba7ac5a980da724d473dfdf3485c46f75cc45103'' where menu_id = 72
-                end'
+begin
+    update ccmenus set release=''a26d005201984b33e3469edeba7ac5a980da724d473dfdf3485c46f75cc45103'' where menu_id = 72
+end'
     EXEC(@sql)
 
 
-	set @process = ''
+	set @process = 'ALTER SP -- ccsp_RIAGetCampsNvosCB'
 set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
 @cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
 @regval int =0
@@ -4873,6 +4898,174 @@ end
 
 set nocount off'
 	EXEC(@Sql)
+
+
+	set @process = 'CREATE SP -- ccsp_CleanNodeBaseX'
+set @sql='CREATE PROCEDURE [dbo].[ccsp_CleanNodeBaseX]
+@option int
+AS
+BEGIN
+
+declare @count int , @setting int
+declare @nodos table (fecha varchar(100))
+declare @dateStart datetime, @dateEnd datetime
+declare @res int
+set @res = 1
+
+	select  @setting  = valor from ccSettings where setting_id = 189
+	if @setting is null set @setting = 40000
+
+	if @option = 1  select @count = COUNT (chatId) from ccChatsNode with(nolock)
+	else if @option = 3  select @count = COUNT (emailId) from ccEmailNode with(nolock)
+	else if @option = 4  select @count = COUNT (conversationTwitterId) from ccTwitterNode with(nolock)
+
+	if @count >=  @setting begin
+
+	begin try
+			begin tran elimina
+
+			if @option = 1 begin
+
+				insert into ccChatsNodeHistory
+				select chatId,node,dateIn,dateOut,status from ccChatsNode where status in(1,3)
+
+				insert into @nodos
+				SELECT node.value(''(/R01/@CDATE)[1]'',''varchar(100)'') as node
+					FROM ccChatsNodeHistory where status in(1,3) order by chatId
+
+				select @dateStart = convert(datetime,MIN(fecha)) ,@dateEnd = convert(datetime, MAX(fecha)) from @nodos
+
+				update ccBaseXDB set isfull = 1, dateStart=@dateStart,dateEnd=@dateEnd where serviceId = @option and isfull = 0 and dateEnd is null
+
+				delete from ccChatsNode where status in(1,3)
+			end
+			else if @option = 3  begin
+				insert into ccEmailNodeHistory
+				select emailId,node,dateIn,dateOut,status from ccEmailNode where status in(1,3)
+
+				insert into @nodos
+				SELECT node.value(''(/R03/@CDATE)[1]'',''varchar(100)'') as node FROM ccEmailNodeHistory where status in(1,3) order by emailId
+
+				select @dateStart = convert(datetime,MIN(fecha)) ,@dateEnd = convert(datetime, MAX(fecha)) from @nodos
+
+				update ccBaseXDB set isfull = 1,dateStart=@dateStart,dateEnd=@dateEnd  where serviceId = @option and isfull = 0 and dateEnd is null
+
+				delete from ccEmailNode where status in(1,3)
+			end
+			else if @option = 4  begin
+				insert into ccTwitterNodeHistory
+				select conversationTwitterId,node,dateIn,dateOut,status from ccTwitterNode where status in(1,3)
+
+				insert into @nodos
+				SELECT node.value(''(/R04/@CDATE)[1]'',''varchar(100)'') FROM ccTwitterNodeHistory where status in(1,3) order by conversationTwitterId
+
+				select @dateStart = convert(datetime,MIN(fecha)) ,@dateEnd = convert(datetime, MAX(fecha)) from @nodos
+
+				update ccBaseXDB set isfull = 1, dateStart=@dateStart,dateEnd=@dateEnd  where serviceId = @option and isfull = 0 and dateEnd is null
+
+				delete from ccTwitterNode where status in(1,3)
+			end
+
+			commit tran elimina
+		end try
+		begin catch
+			rollback  transaction elimina
+			set @res = 0
+		end catch
+	end
+	select @res
+END'
+EXEC(@sql)
+
+
+set @process = 'ALter SP -- ccsp_BaseXmngr para busquedas'
+set @sql='Alter PROCEDURE [dbo].[ccsp_BaseXmngr]
+@action int,
+@option tinyint = 0,
+@idF bigint = 0,
+@idL bigint = 0,
+@name varchar(25) = NULL,
+@top varchar(max) = NULL,
+@dateIni datetime =null,
+@dateEnd datetime =null
+AS
+declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max)
+declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
+declare @status tinyint
+set @sql = ''''
+--nota: las acciones 3 y 4 hacerlas para casos dinamicos, (i.e.) si se va controlor por tamaño y asignar un xml nuevo, conusltar Daniel de CW :)
+
+if @action in (1,6) begin --obtiene los nodos a insertar en BX
+	if @action = 1 set @status =0
+	else if @action = 6 set @status = 2
+
+	if @option = 1 begin
+		set @tableName=''ccChatsNode''
+		set @columnId=''chatId''
+	end
+	else if @option = 3 begin
+		set @tableName=''ccEmailNode''
+		set @columnId=''emailId''
+	end
+	else if @option = 4 begin
+		set @tableName=''ccTwitterNode''
+		set @columnId=''conversationTwitterId''
+	end
+	if @option in (1,3,4) begin
+		set @sql = ''select top '' + @top + '' ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') from ''
+		+ @tableName + '' with(rowlock) where status = ''+ cast(@status as nvarchar(max))
+		--print(@sql)
+		exec(@sql)
+	end
+end
+else if @action in (2,7) begin--actualiza los nodos insertados en BX
+	if @action = 2 set @status =0
+	else if @action = 7 set @status = 2
+	if @option = 1
+		update ccChatsNode with(rowlock) set [status] = @status+1, dateOut = getDate() where chatId between @idF and @idL and [status] =@status
+	else if @option = 3
+		update ccEmailNode with(rowlock) set [status] = @status+1, dateOut = getDate() where emailId between @idF and @idL and [status] = @status
+	else if @option = 4
+		update ccTwitterNode with(rowlock) set [status] = @status+1, dateOut = getDate() where conversationTwitterId between @idF and @idL and [status] =@status
+
+end
+else if @action = 3 --trae el nombre de la base de datos en BX
+begin
+	select Xname from ccBaseXDB where serviceId = @option and isFull=0
+end
+else if @action = 4 --inserta el nombre del xml en BX
+begin
+	insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option, getDate(), @name,0)
+end
+else if @action = 5 begin --obtener servicios disponibles
+	select @chat= 0,@rec= 2,@email= 0,@twitter=0
+	select @chat = case when valor > 1 then 1 else 0 end from ccSettings where setting_id = 145
+	select @email = case when valor = 1 then 3 else 0 end from ccSettings where setting_id = 155
+	select @twitter = case when valor = 1 then 4 else 0 end from ccSettings where setting_id = 173
+	select id, ref 	from ccFinderServices where id in (@chat, @rec, @email,@twitter)
+
+end
+else if @action = 8 begin--trae la lista de las bases para la busqueda
+
+
+select Xname from ccBaseXDB where serviceId = @option
+ and (
+
+	@dateIni between dateStart and dateEnd
+	or @dateEnd between dateStart and dateEnd
+	or dateStart between @dateIni and @dateEnd
+)
+union
+select Xname from ccBaseXDB where serviceId = @option and isFull=0
+ and (
+	 dateStart between @dateIni and @dateEnd
+	 or @dateIni>=dateStart
+
+)
+end'
+	EXEC(@sql)
+
+
 
 	commit tran
 	end try

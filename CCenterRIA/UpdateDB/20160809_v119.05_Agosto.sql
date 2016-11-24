@@ -5064,8 +5064,306 @@ select Xname from ccBaseXDB where serviceId = @option and isFull=0
 )
 end'
 	EXEC(@sql)
+	
+	set @process = 'ALter SP -- ccsp_GetAgentNotReadyDetail'
+set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentNotReadyDetail] @user_id as int = 0, @sup_id as int = 0, @action as int = 0 as
+set nocount on
+
+declare @fecha_ini datetime
+select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+
+create table #cctiponotready(
+user_id int not null,
+tiponotready_id int not null,
+tstatus int not null,
+Descripcion varchar(255) not null,
+time_acum int not null,
+Time_xEv int not null
+)
+
+if @action = 1
+   begin
+
+        SELECT a.user_id,a.TipoNotReady_id,isnull(sum(tStatus),0) as ''time'',a.descripcion,a.Time_Acum,a.Time_xEV
+		FROM
+		(SELECT user_id,b.login,TipoNotReady_id,descripcion,Time_Acum,Time_xEV
+		FROM cctiponotready a (nolock),ccusers b (nolock), ccGenViewRelsSupsAgent c
+        WHERE  b.user_id = c.agt
+		and c.sup = @sup_id) a
+		LEFT JOIN 
+		(SELECT user_id,TipoNotReady_id,tStatus FROM ccLogAgentesNotReady with(nolock,index(IX_ccLogAgentesNotReady_2))
+        WHERE fecha >= @fecha_ini)  b 
+		ON a.user_id = b.user_id AND a.TipoNotReady_id = b.TipoNotReady_id        
+		GROUP BY a.user_id,a.TipoNotReady_id,a.descripcion,a.Time_Acum,a.Time_xEV
+	
+   end
+
+else if @user_id = 0 and @sup_id > 0
+	begin
+		        
+        SELECT DISTINCT a.user_id, 1 AS ''type'', c.login
+        from ccLogAgentesNotReady a (nolock),cctiponotready b (nolock), ccusers c (nolock), ccGenViewRelsSupsAgent d
+        WHERE  a.user_id = d.agt
+		and d.sup = @sup_id 
+		AND a.TipoNotReady_id = b.TipoNotReady_id 
+		AND b.Time_xEv <> 0 AND a.tStatus > b.Time_xEv
+		and a.fecha >= @fecha_ini
+		and a.user_id = c.user_id
+
+        UNION
+       
+        SELECT DISTINCT a.user_id, 2 AS ''type'', c.login
+        from ccLogAgentesNotReady a (nolock),cctiponotready b (nolock), ccusers c (nolock), ccGenViewRelsSupsAgent d
+        WHERE a.user_id = d.agt
+		and d.sup = @sup_id 
+		AND a.TipoNotReady_id = b.TipoNotReady_id 
+		AND b.Time_Acum <> 0 
+		and a.fecha >= @fecha_ini
+		and a.user_id = c.user_id
+        GROUP BY a.user_id, a.TipoNotReady_id,b.Time_Acum, c.login
+        HAVING sum(a.tStatus) > b.Time_Acum
+
+		UNION
+		
+		SELECT a.agt, 0 AS ''type'', b.login
+		FROM ccGenViewRelsSupsAgent a, ccusers b
+		where a.agt = b.user_id
+		and a.sup = @sup_id
+
+	end
+
+else if @user_id > 0 and @sup_id = 0
+	begin
+		insert into #cctiponotready
+		select a.user_id, a.tiponotready_id, a.tstatus, b.descripcion, b.time_acum, b.time_xev
+		from ccLogAgentesNotReady a (nolocK), cctiponotready b (nolock)
+		where user_id = @user_id
+		and fecha >= @fecha_ini
+		and a.tiponotready_id = b.tiponotready_id
+
+		insert into #cctiponotready
+		select @user_id, tiponotready_id, 0, descripcion, time_acum, time_xev
+		from ccTipoNotReady nolock
+		where tiponotready_id not in (select tiponotready_id from #cctiponotready)
+		and issup = 0
+
+		select *
+		from #cctiponotready
+end
+
+drop table #cctiponotready
+
+set nocount on'
+	EXEC(@sql)
+	
+	set @process = 'ALter SP -- ccsp_ADMCalifInformation'
+set @sql='ALTER Procedure [dbo].[ccsp_ADMCalifInformation]
+@user_id as int,
+@type as int
+as
+if @type = 1
+begin
+	declare @fecha_ini datetime
+
+	--0 in, 1 out
+	select @fecha_ini = convert(datetime,convert(varchar(11),getdate()+'' 00:00''))	
+    
+    --Obtener calificaciones de salida
+	(select calif.calif_id AS ''calificationId'' , 
+    description, 	
+	agt [agentId],
+	case when llamadas is null then 0 else llamadas end [calls], 
+    1 as ''type''
+	  from 
+     (select calif_id, description,agt from cctipocalifout (nolock),ccGenViewRelsSupsAgent where califout_status = 1 AND sup = @user_id) calif
+     left join
+    (SELECT [user_id], calif_id, COUNT(*) llamadas
+	FROM ccoCallsOut with (nolock, index(IX_ccoCallsOut_13)), dbo.ccGenViewRelsSupsAgent b 
+     WHERE cal_inicio >= @fecha_ini
+     AND b.sup = @user_id AND statuscall_id = 13 AND calif_id > 0 and user_id = b.agt
+	 GROUP BY [user_id], calif_id 
+	) data      	
+	on (calif.calif_id = data.calif_id AND data.[user_id] = calif.agt))
+
+	union all
+    
+    --Obtener calificaciones de entrada
+	(select calif.calif_id AS ''calificationId'', 
+    description, 	
+	agt [agentId],
+	case when llamadas is null then 0 else llamadas end [calls],     
+    0 as ''type''
+	  from 
+     (select calif_id, description, agt from cctipocalif (nolock),ccGenViewRelsSupsAgent where calif_status = 1 AND sup = @user_id) calif 
+     left join 
+    (SELECT [user_id], calif_id, COUNT(*) llamadas
+	FROM cccallsin with (nolock, index(IX_ccCallsIn)), dbo.ccGenViewRelsSupsAgent b WHERE 
+      cal_inicio >=  @fecha_ini 
+      and b.sup = @user_id and calif_id > 0 AND user_id = b.agt
+	 GROUP BY [user_id], calif_id 
+	) data      	
+	on (calif.calif_id = data.calif_id AND data.[user_id] = calif.agt))
+
+end
+
+if @type = 2
+begin
+	select calif_id, description, 0 type from cctipocalif nolock where calif_status = 1
+	union all
+	select calif_id, description,1 type from cctipocalifout nolock where califout_status = 1
+end'
+
+	EXEC(@sql)
+	
+	set @process = 'ALter View -- ccGenViewRelsSupsAgent'
+set @sql='ALTER view [dbo].[ccGenViewRelsSupsAgent] as
+
+--Relaciones Sup-Agt de acuerdo a WorkGroups  
+select distinct a1.user_id as agt, a5.user_id as sup, a5.login from ccusers a1 (nolock)  
+inner join ccriaworkgroupusers a2 on (a1.user_id=a2.user_id and tipouser_id=1)  
+inner join   
+(select a3.user_id, a4.IDWG, a3.login  from ccusers a3 (nolock)
+inner join ccriaworkgroupusers a4 on (a3.user_id=a4.user_id and (tipouser_id=2 or tipouser_id=6))) a5 on (a2.IDWG=a5.IDWG)
+GO'
+
+	EXEC(@sql)
+	
+	set @process = 'ALter SP -- ccsp_GetAgentIndividualCounters'
+set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentIndividualCounters]
+@type as int, @sup_id as int = 0 as
+set nocount on
+
+declare @fecha_ini datetime
+select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+
+if @type = 1 --Session time
+	begin
+		SELECT User_id, case
+			WHEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) > 0
+				THEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov))
+			ELSE sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) +
+				convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14)))
+			END as logintime
+		FROM ccLogLogin a with(nolock,index(IX_ccLogLogin_4)), ccGenViewRelsSupsAgent b
+		where fecha >= @fecha_ini
+		and a.User_id = b.agt
+		and b.sup = @sup_id
+		GROUP BY User_id
+	end
+
+if @type = 2 begin--Status agent
+	select User_id,TipoStatusAge_id,sum(segundos) as segundos from (
+	SELECT User_id, TipoStatusAge_id, sum(tStatus) As segundos
+	FROM ccLogAgentesDia a with(nolock,index(IX_ccLogAgentesDia_4)), ccGenViewRelsSupsAgent b
+	WHERE fecha >= @fecha_ini AND a.User_id = b.agt
+	and b.sup = @sup_id
+	GROUP BY User_id, TipoStatusAge_id
+	union all
+	select A.User_id,
+	case when A.TipoStatusAge_id= 1 then 3
+	when A.currentStatus in (21,4,5,9) then 4
+	else A.currentStatus end as TipoStatusAge_id,
+	DATEDIFF(ss,A.fecha,getdate())  from ccLogAgentesDia A with(nolock,index(IX_ccLogAgentesDia_4))
+	inner join
+	(select max(fecha) fecha,USER_ID from ccLogAgentesDia D with(nolock,index(IX_ccLogAgentesDia_4))
+	inner join ccGenViewRelsSupsAgent C on D.User_id=C.agt
+	where C.sup=8 and fecha >= @fecha_ini and currentStatus not in (0,-2)  group by User_id) B
+	on A.User_id=B.User_id and A.fecha=B.fecha
+	)x
+	group by User_id,TipoStatusAge_id
+	ORDER BY User_id
+end
+
+if @type = 3 begin
+
+		select calls.user_id, calls.total_calls, calls.type_calls, users.login, calls.nCalls, calls.tDialog, calls.tWrapup, calls.tHold
+		from ccusers As users ,
+		(
+			SELECT User_id AS ''user_id'' , count(*) AS ''total_calls'',
+			CASE
+			  WHEN statuscall_id = 15 THEN 5  --OutBound Asignada pero no contestada
+			  WHEN cal_manual = 2 THEN 3      --OutBound llamada manual
+			  ELSE 2                          --Llamada de OutBound
+			END AS ''type_calls'',
+			count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end) tDialog,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end) tWrapup,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+			FROM ccoCallsOut a WITH (NOLOCK index(IX_ccoCallsOut_10)) , ccGenViewRelsSupsAgent b
+			WHERE a.User_id = b.agt
+			and b.sup = @sup_id
+			AND statuscall_id <> 11  --OutBound sin estado definitivo
+			AND cal_inicio >= @fecha_ini
+			GROUP BY User_id, statuscall_id, cal_manual
+
+			UNION
+
+			SELECT User_id AS ''user_id'' , count(*) AS ''total_calls'',
+			CASE
+			  WHEN statuscall_id = 15 THEN 4  --InBound Asignada pero no contestada
+			  ELSE 1                          --Llamada de InBound
+			END AS ''type_calls'',
+			count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end) tDialog,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end) tWrapup,
+			sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+			FROM ccCallsIn a WITH (NOLOCK index(IX_ccCallsIn_5)), ccGenViewRelsSupsAgent b
+			WHERE a.User_id = b.agt
+			and b.sup = @sup_id
+			AND statuscall_id <> 11  --InBound sin estado definitivo
+			AND cal_inicio >= @fecha_ini
+			GROUP BY User_id, statuscall_id
+		) AS calls
+		where users.user_id = calls.user_id
+
+	end
+
+if @type = 4
+	begin
+		select a.user_id, a.login
+		from ccusers a (nolock), ccGenViewRelsSupsAgent b
+		where user_id = b.agt
+		and b.sup = @sup_id
+	end
+
+set nocount on'
+
+	EXEC(@sql)
+	
+	set @process = 'ALter SP -- ccsp_GetAllAgentsECRelations'
+set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAllAgentsECRelations]
+@User_id varchar(max)
+AS
+set nocount on
+
+DECLARE @userTable TABLE (Id int,userId int)
+DECLARE @userIn TABLE (userId int)
+
+insert into @userTable select * from dbo.fn_RIASplitDelimited(@User_id,''|'')
+
+insert into @userIn
+select distinct A.user_id
+	from ccInboundAgentes G join ccInbound E on G.inbound_id = E.inbound_id
+	inner join ccUsers A  on A.user_id = G.user_id and A.TipoUser_id =1
+	inner join @userTable B on A.User_id = B.userId
+	Where A.status > 0
 
 
+select
+	case when CA.user_id is null and uIn.userId is null then 0
+	when CA.user_id is null and uIn.userId is not null then 1
+	when CA.user_id is not null and uIn.userId is null then 2
+	else 3 end tipo,
+	isnull(C.cam_id,0) as cam_id, B.user_id, isnull(prioridad,0) prioridad, isnull(skill,0) skill, isnull(C.cli_id,0) cli_id
+	from @userTable A
+	inner join ccUsers B  on A.userId = B.user_id and B.TipoUser_id =1
+	left join ccCampsAgente CA on A.userId = CA.user_id
+	left join ccCamps C  on C.cam_id = CA.cam_id
+	left join @userIn uIn on uIn.userId = B.user_id
+	Where B.status > 0
+	order by B.user_id'
+
+	EXEC(@sql)
 
 	commit tran
 	end try

@@ -231,8 +231,7 @@ namespace MiddleWareReports
         /// <returns>A DataTable with the data satisfying the query parameters</returns>
         public virtual DataTable getDataReport(NameValueCollection parameters, short process)
         {
-            changeCulture();
-            string partToTranslate;
+            changeCulture();            
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
 
             bool isTimePeriod = false;

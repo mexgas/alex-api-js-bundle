@@ -15,22 +15,22 @@ using System.Linq;
 namespace MiddleWareReports
 {
     public class Migradoc
-    {  
+    {
         const int COLSPERPAGE = 8;
         const int ROWSPERPAGE = 40;
 
-        const double PAGE_LEFT_MARGIN   = 2.0;
-        const double PAGE_TOP_MARGIN    = 1.5;
+        const double PAGE_LEFT_MARGIN = 1.0;
+        const double PAGE_TOP_MARGIN = 1.5;
         const double PAGE_BOTTOM_MARGIN = 0.7;
         const double HEADER_LEFT_MARGIN = 8.5;
-        const double HEADER_MAX_WIDTH   = 10.5;
+        const double HEADER_MAX_WIDTH = 10.5;
         const double FOOTER_LEFT_MARGIN = 10.0;
-        const double TABLE_TOP_MARGIN   = 6.0;
-        const double TABLE_MAX_WIDTH    = 27.0;
+        const double TABLE_TOP_MARGIN = 6.0;
+        const double TABLE_MAX_WIDTH = 26.0;
 
         const string HEADER_STYLE = "headerStyle";
         const string FOOTER_STYLE = "footerStyle";
-        const string TABLE_STYLE  = "tableStyle";
+        const string TABLE_STYLE = "tableStyle";
 
         const string headerArgbColor = "0xFF4E4E4E";
         const string totalsArgbColor = "0xFF808080";
@@ -38,12 +38,15 @@ namespace MiddleWareReports
         Color headerColor;
         Color totalsColor;
 
+
+        private int nTables = 0;
+        private int start = 0;
         public Migradoc()
         {
             headerColor = Color.Parse(headerArgbColor);
             totalsColor = Color.Parse(totalsArgbColor);
         }
-      
+
         public byte[] getPdfRenderBytes(DataTable table, string reportName, string logoFilePath = "", int nRows = 0, short process = 0)
         {
             Dictionary<int, LinkedList<Table>> tables = tablesToPdfTables(table, nRows, process);
@@ -65,14 +68,6 @@ namespace MiddleWareReports
                     PdfPage pdfPage = pdfDocument.AddPage();
                     pdfPage.Orientation = PageOrientation.Landscape;
                     renderPdfPage(pdfPage, xImage, newTable, reportName, pageNumber++, totalPages);
-                    /*
-                    using System.Threading;
-                    Thread thread = new Thread(() => renderPdfPage(pdfPage, xImage, newTable, reportName, pageNumber++, totalPages));
-                    thread.Start();
-                    while (!thread.IsAlive) ;
-                    Thread.Sleep(1);
-                    thread.Join();
-                    */
                 }
             }
 
@@ -109,8 +104,6 @@ namespace MiddleWareReports
             Paragraph footerParagraph = new Paragraph();
             footerParagraph.Style = FOOTER_STYLE;
             footerParagraph.AddText(String.Format("{0} / {1}", pageNumber + 1, totalPages));
-            // footerParagraph.AddPageField();
-            // footerParagraph.AddNumPagesField();
 
             section.Add(headerParagraph);
             section.Add(footerParagraph);
@@ -125,31 +118,23 @@ namespace MiddleWareReports
 
         private Document getDocument()
         {
-            // Style breakStyle = new Style("Break", "Normal");
-            // breakStyle.ParagraphFormat.PageBreakBefore = true;
-            
             Style tableStyle = new Style(TABLE_STYLE, "Normal");
             tableStyle.Font.Color = Colors.Black;
             tableStyle.Font.Size = "8.5";
             tableStyle.Font.Name = "Arial";
-            
+
             Style headerStyle = new Style(HEADER_STYLE, "Normal");
-            //headerStyle.ParagraphFormat.Alignment = ParagraphAlignment.Left;
             headerStyle.Font.Color = headerColor;
             headerStyle.Font.Size = "10";
-            // headerStyle.Font.Bold = false;
 
             Style footerStyle = new Style(FOOTER_STYLE, "Normal");
             headerStyle.Font.Bold = true;
             footerStyle.Font.Size = "8";
-            // footerStyle.Font.Underline = Underline.Single;
-            // footerStyle.ParagraphFormat.Alignment = ParagraphAlignment.Center;
-            
+
             Document document = new Document();
             document.Styles.Add(tableStyle);
             document.Styles.Add(headerStyle);
             document.Styles.Add(footerStyle);
-            // document.Styles.Add(breakStyle);
             return document;
         }
 
@@ -183,8 +168,6 @@ namespace MiddleWareReports
         {
             NameValueCollection convertedColumns = TranslatorHelper.convertColumns(data.Columns);
 
-            //TranslatorHelper.removeUntranslatedTableColumns(data);
-
             List<int> maximunLengthForColumns = Enumerable.Range(0, data.Columns.Count)
                                                 .Select(col => data.AsEnumerable()
                                                 .Select(row => row[col]).OfType<string>()
@@ -193,7 +176,7 @@ namespace MiddleWareReports
             for (int i = 0; i < maximunLengthForColumns.Count; i++) // compara el texto mas largo contra los headers de la tabla
             {
                 string str = getTranslation(data.Columns[i].ColumnName, process);
-                
+
                 if (str.Length > maximunLengthForColumns[i])
                 {
                     maximunLengthForColumns[i] = str.Length;
@@ -203,219 +186,143 @@ namespace MiddleWareReports
                 {
                     maximunLengthForColumns[i] = 10;
                 }
-                
+
             }
 
             Dictionary<int, LinkedList<Table>> tables = new Dictionary<int, LinkedList<Table>>();
 
             double tempWidth = 0;
-            int start = 0;
-            int end = 0;
-            int nTables = 0;
-           
+            double tempWidth2 = 0;
+            start = 0;
+            nTables = 0;
             for (int i = 0; i < maximunLengthForColumns.Count; i++)
             {
-                tempWidth += maximunLengthForColumns[i] * 0.1666;
-                if (tempWidth > TABLE_MAX_WIDTH || i == maximunLengthForColumns.Count - 1 ) // determina la cantidad de columnas por hoja
+                tempWidth2 = maximunLengthForColumns[i] * 0.1666;
+
+                if ((tempWidth2 > TABLE_MAX_WIDTH || tempWidth + tempWidth2 > TABLE_MAX_WIDTH) && tempWidth > 0) // determina la cantidad de columnas por hoja
                 {
-                        int currentRow = 0;
-                        int fRow = 0; // filas que se ultilizaran para los filtros
-                        bool flag = true;
-                        end = i - 1;
-                        if (i == maximunLengthForColumns.Count - 1) // En caso de ser las ultimas columnas del reporte
-                        {
-                            end = maximunLengthForColumns.Count - 1;
-                            i = maximunLengthForColumns.Count;
-                        }
-                        //DataRow last = data.Rows[data.Rows.Count - (1 + nRows)];
-                        DataRow last = data.Rows[data.Rows.Count - 1]; // tupla de los totales
-                        foreach (DataRow dRow in data.Rows)
-                        {
-                            if (currentRow == 0 && flag) //se inicia la tabla con las dimensiones de las columnas, una por pagina
-                            {
-                                nTables++;
-
-                                Table temp = new Table();
-                                temp.Style = TABLE_STYLE;
-
-                                for (int nColumns = start; nColumns <= end; nColumns++)
-                                {
-                                    Column col = temp.AddColumn((maximunLengthForColumns[nColumns] * 0.1666).ToString() + "cm");
-                                    col.Format.Alignment = ParagraphAlignment.Center;
-                                }
-                                                                
-                                tables.Add(nTables, new LinkedList<Table>());
-                                tables[nTables].AddLast(temp);
-                                flag = false;
-                            }
-
-                            if (fRow == nRows) // coloca encabezados despues de colocar los filtros aplicados
-                            {
-                                //Colocar encabezados
-                                /**/
-
-                                currentRow++;
-                                Row row = tables[nTables].Last.Value.AddRow();
-                                row.Shading.Color = Colors.Red;
-                                row.Format.Font.Color = Colors.White;
-
-
-                                Cell cell = null;
-
-                                for (int nColumn = 0; nColumn <= end - start; nColumn++)
-                                {
-                                    cell = row.Cells[nColumn];
-                                    cell.AddParagraph(getTranslation(data.Columns[nColumn + start].ColumnName, process));
-                                }
-                                /**/
-                            
-                            }
-
-                            fRow++;
-
-                            if (start == 0 || fRow > nRows) //Controla espacios en blanco de los filtros
-                            {
-                                //Colocar tuplas
-                                /**/
-                                string value = "";
-                                currentRow++;
-                                Row rowx = tables[nTables].Last.Value.AddRow();
-                                if (dRow.Equals(last)) // marcar tupla si y solo si es el total
-                                {
-                                    rowx.Shading.Color = totalsColor;
-                                    rowx.Format.Font.Bold = true;
-                                }
-                                else
-                                {
-                                    rowx.Shading.Color = Colors.White;
-                                }
-
-
-                                for (int nColumn = 0; nColumn <= end - start; nColumn++) // inserta el valor de la fila delimitada por el inicio y el fin de las columnas
-                                {
-
-                                    value = dRow[nColumn + start].ToString();
-                                    value = TranslatorHelper.parseDbValue(value);
-
-                                    if (convertedColumns[data.Columns[nColumn + start].ColumnName] != null && value != "") // si y solo si la columna tiene transformacion de seg a hh:mm:ss
-                                    {
-                                        value = TranslatorHelper.formatTime(Convert.ToInt32(value));
-                                    }
-
-                                    rowx.Cells[nColumn].AddParagraph(value);
-                                }
-                                /**/
-                            }
-
-                            if (currentRow == ROWSPERPAGE) // limite de tuplas por pagina
-                            {
-                                currentRow = 0;
-                                flag = true;
-                                fRow = nRows;
-                            }
-                            
-                        }                 
-
-                        start = i;
-                        i--;
-                        tempWidth = 0;
-                    
+                    generaPagesPDF(data, tables, convertedColumns, maximunLengthForColumns, nRows, i - 1, process);
+                    tempWidth = 0;
                 }
+
+                if (tempWidth2 > TABLE_MAX_WIDTH || i == maximunLengthForColumns.Count - 1)
+                {
+                    generaPagesPDF(data, tables, convertedColumns, maximunLengthForColumns, nRows, i, process);
+                    tempWidth = 0;
+                    tempWidth2 = 0;
+                }
+
+                tempWidth += tempWidth2;
+
             }
-                //int columnGroups = data.Columns.Count / COLSPERPAGE;
-                //int currentRow = ROWSPERPAGE;
-                //Dictionary<int, LinkedList<Table>> tables = new Dictionary<int, LinkedList<Table>>();
-                //Dictionary<int, LinkedList<string>> colgs = new Dictionary<int, LinkedList<string>>();
-                //int currentColGroup = 0;
-                //int groupCounter = 0;
-                //string value = "";
-                //if (data.Columns.Count % COLSPERPAGE != 0)
-                //{
-                //    columnGroups++;
-                //}          
-                //for (int i = 0; i < columnGroups; i++)
-                //{
-                //    tables.Add(i, new LinkedList<Table>());
-                //    colgs.Add(i, new LinkedList<string>());
-                //}
-                //for (int i = 0; i < data.Columns.Count; i++)
-                //{
-                //    if (groupCounter == COLSPERPAGE)
-                //    {
-                //        currentColGroup++;
-                //        groupCounter = 0;
-                //    }
-                //    colgs[currentColGroup].AddLast(data.Columns[i].ColumnName);
-                //    groupCounter++;
-                //}
-                //DataRow last = data.Rows[data.Rows.Count - (1 + nRows)];
-                //foreach (DataRow raw in data.Rows)
-                //{
-                //    if (currentRow == ROWSPERPAGE)
-                //    {
-                //        currentRow = 0;
+            generaPagesPDF(data, tables, convertedColumns, maximunLengthForColumns, nRows, maximunLengthForColumns.Count, process);
+            return tables;
+        }
 
-                //        for (int i = 0; i < tables.Count; i++)
-                //        {
-                //            Table temp = new Table();
-                //            temp.Style = TABLE_STYLE;
-                //            // temp.Borders.Visible = true;                      
-                //            // temp.Borders.Width = 1.25;
-                //            for (int n = 0; n < colgs[i].Count; n++)
-                //            {
-                //                Column col = temp.AddColumn(getUnit(TABLE_MAX_WIDTH / ((double)colgs[i].Count)));
-                //                col.Format.Alignment = ParagraphAlignment.Center;
-                //            }
+        private void generaPagesPDF(DataTable data, Dictionary<int, LinkedList<Table>> tables, NameValueCollection convertedColumns,
+            List<int> maximunLengthForColumns, int nRows, int numColum, short process)
+        {
 
-                //            Row rawz = temp.AddRow();
-                //            rawz.Shading.Color = Colors.Red;
-                //            rawz.Format.Font.Color = Colors.White;                       
-                //            Cell cell = null;
-                //            int rowNum = 0;
-                //            foreach (string column in colgs[i])
-                //            {
-                //                cell = rawz.Cells[rowNum];
-                //                cell.AddParagraph(TranslatorHelper.getResource(column, true));
-                //                rowNum++;
-                //            }                        
-                //            tables[i].AddLast(temp);
-                //        }
-                //    }
+            int end = 0;
 
-                //    for (int i = 0; i < tables.Count; i++)
-                //    {
-                //        Row rawz = tables[i].Last.Value.AddRow();
-                //        if (raw.Equals(last))
-                //        {
-                //            rawz.Shading.Color = totalsColor;
-                //            rawz.Format.Font.Bold = true;
-                //        }
-                //        else
-                //        {
-                //            rawz.Shading.Color = Colors.White;
-                //        }
-                //        Cell cell = null;
-                //        int rowNum = 0;
-                //        foreach (string column in colgs[i])
-                //        {
-                //            cell = rawz.Cells[rowNum];
+            int currentRow = 0;
+            int fRow = 0; // filas que se ultilizaran para los filtros
+            bool flag = true;
+            end = numColum - 1;
+            double widthColumAll = 0;
+            DataRow last = data.Rows[data.Rows.Count - 1]; // tupla de los totales
+            foreach (DataRow dRow in data.Rows)
+            {
+                if (currentRow == 0 && flag) //se inicia la tabla con las dimensiones de las columnas, una por pagina
+                {
+                    nTables++;
 
-                //            value = raw[column].ToString();
-                //            value = TranslatorHelper.parseDbValue(value);
-                //            if (convertedColumns[column] != null && value != "")
-                //            {
-                //                value = TranslatorHelper.formatTime(Convert.ToInt32(value));
-                //            }
+                    Table temp = new Table();
+                    temp.Style = TABLE_STYLE;
 
-                //            cell.AddParagraph(value);
-                //            rowNum++;
-                //        }                    
-                //    }
+                    for (int nColumns = start; nColumns <= end; nColumns++)
+                    {
+                        double widthColum = (maximunLengthForColumns[nColumns] * 0.1666);
+                        if (widthColum > TABLE_MAX_WIDTH) widthColum = TABLE_MAX_WIDTH;
+                        widthColumAll += widthColum;
+                        Column col = temp.AddColumn(widthColum.ToString() + "cm");
+                        if (widthColum <= TABLE_MAX_WIDTH && widthColumAll < TABLE_MAX_WIDTH)
+                            col.Format.Alignment = ParagraphAlignment.Center;
+                        else
+                        {
+                            col.Format.Alignment = ParagraphAlignment.Justify;
+                        }
+                    }
 
-                //    currentRow++;
-                //}
+                    tables.Add(nTables, new LinkedList<Table>());
+                    tables[nTables].AddLast(temp);
+                    flag = false;
+                }
 
-                return tables;
+                if (fRow == nRows) // coloca encabezados despues de colocar los filtros aplicados
+                {
+                    currentRow++;
+                    Table t = tables[nTables].Last.Value;
+                    Row row = t.AddRow();
+                    row.Shading.Color = Colors.Red;
+                    row.Format.Font.Color = Colors.White;
+
+
+                    Cell cell = null;
+
+                    for (int nColumn = 0; nColumn <= end - start; nColumn++)
+                    {
+                        cell = row.Cells[nColumn];
+                        cell.AddParagraph(getTranslation(data.Columns[nColumn + start].ColumnName, process));
+                    }
+
+                }
+
+                fRow++;
+
+                if (start == 0 || fRow > nRows) //Controla espacios en blanco de los filtros
+                {
+                    string value = "";
+                    currentRow++;
+                    Row rowx = tables[nTables].Last.Value.AddRow();
+                    if (dRow.Equals(last)) // marcar tupla si y solo si es el total
+                    {
+                        rowx.Shading.Color = totalsColor;
+                        rowx.Format.Font.Bold = true;
+                    }
+                    else
+                    {
+                        rowx.Shading.Color = Colors.White;
+                    }
+
+
+                    for (int nColumn = 0; nColumn <= end - start; nColumn++) // inserta el valor de la fila delimitada por el inicio y el fin de las columnas
+                    {
+
+                        value = dRow[nColumn + start].ToString();
+                        value = TranslatorHelper.parseDbValue(value);
+
+                        if (convertedColumns[data.Columns[nColumn + start].ColumnName] != null && value != "") // si y solo si la columna tiene transformacion de seg a hh:mm:ss
+                        {
+                            value = TranslatorHelper.formatTime(Convert.ToInt32(value));
+                        }
+
+                        rowx.Cells[nColumn].AddParagraph(value);
+                    }
+                }
+
+                if (currentRow == ROWSPERPAGE) // limite de tuplas por pagina
+                {
+                    currentRow = 0;
+                    flag = true;
+                    fRow = nRows;
+                }
+
+            }
+
+            start = numColum;
         }
     }
+
+
 }

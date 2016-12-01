@@ -2318,6 +2318,10 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 		set @sql='if exists (select * from sys.procedures where name = ''ccsp_CleanNodeBaseX'') DROP PROCEDURE [dbo].[ccsp_CleanNodeBaseX]'
 		EXEC(@sql)
 
+		set @process = 'DROP Function  -- Verifica2'
+		set @sql='if exists (select * from sys.objects where object_id = OBJECT_ID(N''Verifica2'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT'')) DROP FUNCTION Verifica2'
+		EXEC(@sql)
+
 		set @process = 'Create TABLE -- ccTwitterNodeHistory'
     	set @sql='if not exists (select * from sys.tables where name = N''ccTwitterNodeHistory'')
 CREATE TABLE [dbo].[ccTwitterNodeHistory]([conversationTwitterId] [bigint] NULL,[node] [xml] NULL,[dateIn] [datetime] NULL,[dateOut] [datetime] NULL,[status] [int] NULL) ON [PRIMARY]'
@@ -2343,10 +2347,7 @@ CREATE TABLE [dbo].[ccChatsNodeHistory]([chatId] [int] NULL,[node] [xml] NULL,[d
 
 
 		set @process = 'Alter table ccTimeZoneArea --- drop primary key PK_ccTimeZoneArea_1'
-    	set @sql='if exists (SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + ''.'' + CONSTRAINT_NAME), ''IsPrimaryKey'') = 1 AND TABLE_NAME = ''ccTimeZoneArea'')
-					begin
-						ALTER TABLE [dbo].[ccTimeZoneArea] DROP CONSTRAINT [PK_ccTimeZoneArea_1]
-					end'
+    	set @sql='if exists (SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE OBJECTPROPERTY(OBJECT_ID(CONSTRAINT_SCHEMA + ''.'' + CONSTRAINT_NAME), ''IsPrimaryKey'') = 1 AND TABLE_NAME = ''ccTimeZoneArea'') ALTER TABLE [dbo].[ccTimeZoneArea] DROP CONSTRAINT [PK_ccTimeZoneArea_1]'
 		EXEC(@sql)
 
 		set @process = 'Alter table ccTimeZoneArea --- drop PK_ccTimeZoneArea_1'
@@ -2404,6 +2405,568 @@ insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,descrip
 					insert ccTimeZoneArea (id_country,area,location,tz_standard,tz_daylight,locality) values (1,329,''NAY'',64,32,''BAHIA DE BANDERAS'')
 				end'
 		EXEC(@sql)
+
+		set @process = 'CREATE FUNCTION -- [dbo].[Verifica2]'
+    	set @sql='CREATE FUNCTION [dbo].[Verifica2](@tel varchar(32),@pais tinyint = 0, @ld varchar(7) = '''')
+RETURNS varchar(32) AS
+BEGIN
+declare @lon tinyint
+declare @result tinyint
+declare @mod varchar(10)
+declare @Cadena varchar(32)
+
+if (@pais = 0 and @ld = '''')
+begin
+	select @pais = valor from ccSettings with(nolock) where setting_id = 104
+	select @ld = valor from ccSettings with(nolock) where setting_id = 17
+end
+select @tel = dbo.limpia(@tel)
+
+if @pais = 1 begin --Empieza Mexico
+	select @lon = len(@tel)
+	if @lon between 7 and 8 begin
+		set @tel = @ld + @tel
+	end
+	select @tel = right(@tel, 10)
+	select @lon = len(@tel)
+
+	if @lon = 10 begin
+
+		if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))
+			select @ld = left(@tel,2)
+		else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))
+			select @ld = left(@tel,3)
+		else
+			return ''E_'' + @tel
+
+		select @mod = modalidad from series nolock where cld = @ld and serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+		select @tel = case
+			when @mod in (''FIJO'', ''MPP'') then case when @ld = @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end
+			when @mod = ''CPP'' then case when @ld = @ld then ''044'' + @tel else ''045'' + @tel end
+			else ''E_'' + @tel
+		end
+	end else begin
+		if @lon > 0 begin
+			select @tel = ''E_'' + @tel
+		end
+	end
+	return @tel
+end --Termina Mexico
+
+-- Empieza Argentina
+if @pais = 2 begin
+	select @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel,1) = ''E'' begin return @tel end
+	select @lon = len(@tel)
+	if @lon in(6,7,8) and left(@tel,2) <> ''15'' begin
+		set @tel = @ld + @tel
+	end
+
+	if @lon in (8,9,10) and left(@tel,2) = ''15'' begin
+		set @tel = @ld + substring(@tel,3,@lon - 2)
+	end
+
+	--Buscamos el 15
+	if @lon = 13 begin
+		declare @index as int
+		select @index = charindex(''15'',@tel)
+		--El unico caso en el que la lada tiene un 15 es con lada 3715
+		if @index < 2 begin
+			select @tel = ''E_'' + @tel
+			return @tel
+		end
+		else begin
+			if substring(@tel,@index-2,4) = ''3715''
+				begin
+					select @ld = ''3715''
+					set @tel = @ld + right(@tel,6)
+				end
+			else
+				begin
+					select @ld = substring(@tel,2,@index-2)
+					set @tel = @ld + right(@tel,13 - (@index + 1))
+				end
+		end
+	end
+
+	select @tel = right(@tel, 10)
+
+	if len(@tel) = 10 begin
+		declare @serie as varchar(5)
+		begin
+			-- Buscamos la lada, empezando por 4 digitos hasta 2, si la lada no existe se regresa error
+			declare @contLD as int
+			declare @cont as int
+			set @contLD=4
+				BuscaLada:
+				if isnull(@ld,'''') = '''' and @contLD >= 2
+					begin
+						select @ld = cld from seriesArg where cld=left(@tel,@contLD)
+						if isnull(@ld,'''') = '''' begin
+							set @contLD = @contLD - 1
+							goto BuscaLada
+						end
+					end
+				else begin
+						if isnull(@ld,'''') = '''' begin
+							select @tel = ''E_'' + @tel
+						end
+				end
+		end
+
+		-- Buscamos la serie, dependiendo de la longitud de la lada, se busca la serie hasta que encuentra una que existe
+		begin
+		if len(@ld) = 2 begin
+				set @cont = 5
+				buscaSerie2:
+				if isnull(@serie,'''') = '''' and @cont >= 4 begin
+					select @serie = serie from seriesArg where cld = @ld and serie = substring(@tel,3,@cont)
+					if isnull(@serie,'''') = '''' begin set @cont = @cont - 1 goto buscaSerie2 end
+				end
+		end
+		else begin
+			if len(@ld) = 3 begin
+				set @cont = 4
+				buscaSerie3:
+				if isnull(@serie,'''') = '''' and @cont >= 3 begin
+					select @serie = serie from seriesArg where cld = @ld and serie = substring(@tel,4,@cont)
+					if isnull(@serie,'''') = '''' begin set @cont = @cont - 1 goto buscaSerie3 end
+				end
+			end
+			else begin
+				if len(@ld) = 4 begin
+					set @cont = 3
+					buscaSerie4:
+					if isnull(@serie,'''') = '''' and @cont >= 2 begin
+						select @serie = serie from seriesArg where cld = @ld and serie = substring(@tel,5,@cont)
+						if isnull(@serie,'''') = '''' begin set @cont = @cont - 1 goto buscaSerie4 end
+					end
+				end
+			end
+		end
+
+		end
+
+		select @mod = modalidad from seriesArg where cld = @ld and serie = @serie and right(@tel, 10 - len(@ld) - len(@serie)) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+		-- Si la serie es nula, existe una posibilidad de que la lada este mal, asi que se quita un numero de la lada y se vuelve a buscar la serie
+		--select @ld,@serie,@mod,@contLD
+		if isNull(@serie,'''') = '''' and @contLD>1 begin
+		set @contLD = len(@ld) - 1
+		set @ld = null
+		goto BuscaLada
+		end
+
+		select @tel = case
+			when @mod in (''BASICA'', ''MPP'') then case when @ld = @ld then right(@tel, 10 - len(@ld)) else ''0'' + @tel end
+			when @mod = ''CPP'' then case when @ld = @ld then ''15'' + right(@tel,10-len(@ld)) else ''0'' + @ld + ''15'' + right(@tel,10-len(@ld)) end
+			else ''E_'' + @tel
+		end
+	end else begin
+		if len(@tel) > 0 begin
+			select @tel = ''E_'' + @tel
+		end
+	end
+	return @tel
+end  --Termina Argentina
+
+if @pais = 3 begin  --Empieza Colombia
+	select @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel,1) = ''E'' begin
+		return @tel
+	end
+
+	if len(@tel) not in (7,8,10,11) begin
+		return ''E_'' + @tel
+	end
+
+	if len(@tel) = 7 begin
+		if exists(select serie from seriesCol where serie = left(@tel,4) and @ld = region and (right(@tel,3) between numeracionInicial and numeracionFinal)) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+
+	if len(@tel) = 8 begin
+		if exists(select serie from seriesCol where serie = substring(@tel,2,4) and left(@tel,1) = region and (right(@tel,3) between numeracionInicial and numeracionFinal)) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+
+	if len(@tel) = 10 begin
+		if exists(select serie from seriesCol where serie = substring(@tel,5,3) and (left(@tel,3) + ''-'' + substring(@tel,4,1)) = region and (right(@tel,3) between numeracionInicial and numeracionFinal)) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+
+	if len(@tel) = 11 begin
+		if exists(select serie from seriesCol where serie = substring(@tel,6,3) and (substring(@tel,2,3) + ''-'' + substring(@tel,5,1)) = region and (right(@tel,3) between numeracionInicial and numeracionFinal)) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+end  --Termina Colombia
+
+-- Empieza Chile
+if @pais = 5 begin
+	select @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel,1) = ''E'' begin
+		return @tel
+	end
+
+	if len(@tel) = 6 and len(@ld) = 2 begin
+		if exists(select serie from seriesChi where cld = @ld and left(@tel,3) = serie and right(@tel,3) between numeracioninicial and numeracionFinal) begin
+			return @tel
+		end
+		else begin return ''E_'' + @tel end
+	end
+
+	if len(@tel) = 7 begin
+		if @ld in (2,41,44,32) begin
+			if exists(select serie from serieschi where serie = left(@tel,4)) begin return @tel end
+			else begin
+				if left(@tel,3) = ''200'' and exists(select serie from serieschi where serie = left(@tel,3) ) begin return @tel end
+			end
+		end
+	end
+
+	if len(@tel) = 8 begin
+		if left(@tel,1) = ''2'' begin
+				if exists(select serie from serieschi where serie = substring(@tel,2,4)) begin return @tel end
+				else begin
+					if exists(select serie from serieschi where serie = substring(@tel,2,5)) begin return @tel end
+					else begin return ''E_'' + @tel end
+				end
+		end
+		else begin
+			return @tel
+		end
+	end
+
+	if len(@tel) = 10 begin
+		if left(@tel,2) = ''09'' begin
+			if exists(select serie from serieschi where cld=substring(@tel,3,1) and serie = substring(@tel,5,3)) begin
+				return @tel
+			end
+			else begin
+				return ''E_'' + @tel
+			end
+		end
+
+	end
+end
+--Termina Chile
+
+if @pais = 6 begin --Empieza Venezuela
+	select @lon = len(@tel)
+	if @lon = 7  begin
+		set @tel = @ld + @tel
+	end
+
+	select @tel = right(@tel, 10)
+
+	if len(@tel) = 10 begin
+		select @ld = left(@tel,3)
+		select @mod = tipo from seriesVen where left(@tel,3) = LD
+
+		if @mod = ''CPP'' begin
+			if exists( select * from seriesVen where LD = @ld ) begin
+				if @ld = @ld begin
+					select @tel = right(@tel,7)
+				end
+				else begin
+					select @tel = ''0'' + @tel
+				end
+			end
+			else begin
+				select @tel = ''E_'' + @tel
+			end
+		end
+		else begin
+			if @mod = ''FIJO'' begin
+				if exists( select serie from seriesVen where serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) and right(@tel, 4) between [Inicio] and [Fin]) begin
+					if @ld = @ld begin
+						select @tel = right(@tel,7)
+					end
+					else begin
+						select @tel = ''0'' + @tel
+					end
+				end
+				else begin
+					select @tel = ''E_'' + @tel
+				end
+			end
+			else begin
+				select @tel = ''E_'' + @tel
+			end
+		end
+	end
+	else begin
+		if len(@tel) > 0 begin
+			select @tel = ''E_'' + @tel
+		end
+	end
+	return @tel
+end --Termina Venezuela
+
+if @pais = 7 begin -- Empieza UK
+	select @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel, 1) = ''E'' begin -- regresa error por longitud
+		return @tel
+	end
+	select @lon = len(@tel)
+
+	--numeros no geograficos
+	if (left(@tel, 2) in(''03'', ''07'', ''09'') and @lon <> 11) or (left(@tel, 3) in(''055'', ''056'', ''070'') and @lon <> 11) begin
+		return ''E_'' + @tel --error por longitud con lada correcta
+	end
+	else begin
+		if left(@tel, 7) in(''0845464'') or left(@tel, 5) = ''07624'' or left(@tel, 4) in(''0500'', ''0800'') or left(@tel, 3) in(''055'', ''056'', ''070'', ''76'') or left(@tel, 2) in(''03'', ''07'', ''08'', ''09'') begin
+			return @tel; --longitud correcta y numero no geografico
+		end
+	end
+
+	--numeros geograficos (revisar a mano porque son pocas claves LD). *El cero no es parte de la clave LD
+	if (left(@tel, 7) in(''0159575'', ''0159576'')) or
+		(left(@tel, 5) in(''02820'',''02821'',''02825'',''02827'',''02828'',''02829'',''02830'',''02837'',''02838'',''02840'',''02841'',''02842'',''02843'',''02844'',''02866'',''02867'',''02868'',''02870'',''02871'',''02877'',''02879'',''02880'',''02881'',''02882'',''02885'',''02886'',''02887'',''02889'',''02890'',''02891'',''02892'',''02893'',''02894'',''02895'',''02897'') and @lon = 11) or --claves 2xxx tienen formato 4-6
+		(left(@tel, 4) in(''0113'', ''0114'',''0115'',''0116'',''0117'',''0118'',''0121'',''0131'',''0141'',''0151'',''0161'',''0238'',''0239'') and @lon = 11) or --3-digit area codes have 7-digit subscribers.
+		(left(@tel, 3) in(''020'',''024'',''029'') and @lon = 11) begin --2-digit area codes have 8-digit subscribers.
+		return @tel;
+	end
+
+	--numeros geograficos con 01 (los que faltan por verificar tienen longitud variable)
+	if left(@tel, 2) = ''01'' begin
+		select @ld = count(cld) from seriesuk where cld = substring(@tel, 2,4) --mayor numero de ladas (va primero por ser mas probable)
+		if @ld > 0 begin
+			return @tel;
+		end
+		else begin
+			select @ld = count(cld) from seriesuk where cld = substring(@tel, 2,5) --ladas restantes
+			if @ld > 0 begin
+				return @tel;
+			end
+		end
+	end --si no encontro ni error ni coincidencia entonces esta mal
+	return ''E_'' + @tel
+end --Termina UK
+
+if @pais = 8 begin --Empieza Arabia Saudita
+	select @tel = dbo.completa(@tel, @pais, @ld)
+	select @lon = len(@tel)
+	if @lon = 7 begin
+		set @tel = ''0'' + @ld + @tel
+	end
+	select @lon = len(@tel)
+
+	if @lon = 9 begin
+		if exists(select regiones from seriesSA where right(@tel,4) between [numeracion inicial] and [numeracion final] and substring(@tel,3,3) between [serie inicio] and [serie fin] and len([numeracion inicial]) = 4 and left(@tel,2) = cld) begin
+			if (substring(@tel,2,1) = @ld)
+			begin
+				return right(@tel,7)
+			end else begin
+				return @tel
+			end
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+	if @lon = 10 begin
+		if exists(select regiones from seriesSA where right(@tel,4) between [numeracion inicial] and [numeracion final] and substring(@tel,4,3) between [serie inicio] and [serie fin] and len([numeracion inicial]) = 4 and left(@tel,3) = cld) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+	if @lon = 11 begin
+		if exists(select regiones,* from seriesSA where right(@tel,6) between [numeracion inicial] and [numeracion final] and substring(@tel,3,3) between [serie inicio] and [serie fin] and len([numeracion inicial]) = 6 and left(@tel,2) = cld) begin
+			return @tel
+		end
+		else begin
+			return ''E_'' + @tel
+		end
+	end
+end --Termina Arabia Saudita
+
+if @pais = 9
+	begin --Empieza Australia
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		select @lon = len(@tel)
+
+		if left(@tel,1) <> ''E''
+			begin
+				if exists(select Regiones
+							from SeriesAU
+							where convert(int,LD) = convert(int,substring(@tel, 1, 2))
+							and convert(int,AreaCode) = convert(int,substring(@tel, 3, 2))
+							and convert(int,substring(@tel, 5, 6)) between convert(int,SerieInicio) and convert(int,SerieFin))
+					begin
+						return @tel
+					end
+				else
+					begin
+						return ''E_'' + @tel
+					end
+			end
+		else
+			begin
+				return @tel
+			end
+	end --Termina Australia
+
+if @pais= 10
+	begin -- Inicia Brasil
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		select @lon = len(@tel)
+		if left(@tel,1) <> ''E''
+			begin
+				if @lon in (8,9) begin --numero local
+					if exists(
+					select Regiones
+						from seriesBR where
+							convert(int,AreaCode) = convert(int,@ld) and
+							convert(int,@tel) between convert(int,SerieInicio) and convert(int,SerieFin)
+					)
+					begin
+						return @tel
+					end
+					else begin
+						return ''E_'' + @tel
+					end
+				end
+				if @lon in (10,11) begin --numero nacional
+					if exists(
+					select Regiones
+						from seriesBR where
+							convert(int,AreaCode) = convert(int,left(@tel,2)) and
+							convert(int,right(@tel, @lon-2)) between convert(int,SerieInicio) and convert(int,SerieFin)
+					)
+					begin
+						return @tel
+					end
+					else begin
+						return ''E_'' + @tel
+					end
+				end
+			end
+
+		else begin
+			return @tel
+		end
+	end -- Termina Brasil
+
+if @pais= 11
+	begin -- Inicia Guatemala
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		if left(@tel,1) <> ''E''
+			begin
+				if exists(select zonaGeografica from seriesGT (nolock) where indicativoDestino = substring(@tel,1,1) and right(@tel, 7) between rangoInicio and rangoFinal)
+					return @tel
+				else
+					return ''E_'' + @tel
+			end
+		else
+			return @tel
+	end -- Termina Guatemala
+
+	if @pais= 12
+	begin -- Inicia Costa Rica
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		if left(@tel,1) <> ''E''
+			begin
+				if len(@tel)=8
+					if exists(select zonaGeografica from seriesCR (nolock) where indicativoDestino = substring(@tel,1,1) and right(@tel, 7) between rangoInicio and rangoFinal)
+						return @tel
+					else
+						return ''E_'' + @tel
+				else if len(@tel)=10 begin
+					if exists(select zonaGeografica from seriesCR (nolock) where indicativoDestino = substring(@tel,1,3) and right(@tel, 7) between rangoInicio and rangoFinal)
+						return @tel
+					else
+						return ''E_'' + @tel
+				end
+				else
+					if charindex(substring(@tel,1,2),''00,08'') <= 0
+						return ''E_'' + @tel
+					else
+						return @tel
+			end
+	end -- Termina Costa Rica
+
+if @pais= 13
+	begin -- Inicia Salvador
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		if left(@tel,1) <> ''E''
+			begin
+				if len(@tel)=8
+					if exists(select zonaGeografica from seriesSV (nolock) where indicativoDestino = substring(@tel,1,1) and right(@tel, 7) between rangoInicio and rangoFinal)
+						return @tel
+					else
+						return ''E_'' + @tel
+				else
+					if charindex(substring(@tel,1,2),''00'') <= 0
+						return ''E_'' + @tel
+					else
+						return @tel
+			end
+	end -- Termina Salvador
+
+if @pais= 14
+	begin -- Inicia Spain
+		select @tel = dbo.completa(@tel, @pais, @ld)
+		if left(@tel,1) <> ''E''
+			begin
+				if len(@tel)=9
+					if exists(select provincia from seriesEsp (nolock) where indicativo = substring(@tel,1,1) and right(@tel, 8) between numInicial and numFinal)
+						return @tel
+					else
+						return ''E_'' + @tel
+				else
+					if charindex(substring(@tel,1,2),''00'') <= 0
+						return ''E_'' + @tel
+					else
+						return @tel
+			end
+	end -- Termina España
+
+if @pais= 15 begin --Inicia Peru
+	select @tel = dbo.Completa(@tel, @pais, @ld)
+	select @lon = len(@tel)
+	if @lon between 6 and 7 begin
+		set @tel = @ld + @tel
+	end
+	select @tel = right(@tel, 9)
+	select @lon = len(@tel)
+	if left(@tel,1) <> ''E'' begin
+		if @lon = 9 begin
+			if exists(select zonaGeografica from seriesPE (nolock) where
+				left(@tel,1) = 9 or
+				substring(@tel,2,1) = 1 and areaNumeracion = 1 and right(@tel, 7) between rangoInicio and rangoFinal or
+				substring(@tel,2,1) <> 1 and left(@tel,2) = areaNumeracion and right(@tel, 7) between rangoInicio and rangoFinal
+			)
+				return @tel
+			else
+				return ''E_'' + @tel
+		end
+	end
+end --Termina Peru
+
+return @tel
+end'
+		EXEC(@sql)
+
 
 		set @process = 'Function fnGetTimeZone --- actualización de la función para el uso locality'
     	set @sql='ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
@@ -4794,12 +5357,20 @@ if @Tipo in (1,2) begin
       insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
       select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
       from ccCamps cam
-      where cam_procesando=1--where cam.cam_id = @cam_id
-    else begin
-      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-        select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
-        from ccCamps where cam_id = @cam_id
-      end
+      --left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where cam.cam_id = @cam_id
+    else
+		if @user_id > 0 begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+			select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+			from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+			where user_id = @user_id and tipo = 1
+		end
+	  else begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+			select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+			from ccCamps where cam_activo=1
+		end
   end
 
 
@@ -4808,17 +5379,18 @@ if @Tipo in (1,2) begin
   select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
   select A.* from #Tcamps A
   left join ccCampsNvosCB B on A.cam_id=B.id
-  where datediff(ss,B.dateUpdate,getdate())>5 or B.dateUpdate is null)X
-
+  where datediff(ss,B.dateUpdate,getdate())>3 or B.dateUpdate is null)X
   group by cam_id
+
 
   --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
   if (select count(*) from #Tcamps2)>0 begin
 
+
     insert into #temccocallsoutsource(cam_id,Pend)
     SELECT ccos.cam_id, count(ccos.cam_id) as Pend
-    FROM ccocallsoutsource ccos --with(nolock index(IX_ccoCallsOutSource))
-    left join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    FROM ccocallsoutsource ccos
+    inner join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
     WHERE cal_status in(0, 7)
     GROUP BY ccos.cam_id
 
@@ -4832,7 +5404,6 @@ if @Tipo in (1,2) begin
     inner join #Tcamps2 B on A.cam_id = B.cam_id
     GROUP BY A.cam_id
 
-    --select * from #Tcamps2
 
     --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
     if @regval = 0 and @cam_id >0 and @Tipo =2 begin
@@ -4850,8 +5421,7 @@ if @Tipo in (1,2) begin
 
     begin Tran updateccCampsNvosCB
 
-	  delete A from ccCampsNvosCB A
-	  inner join #Tcamps2 B on A.id=B.cam_id
+      delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp where CampNvosCB.id = tcamp.cam_id
 
       INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
       SELECT cams.cam_id, cams.cam_descripcion,
@@ -4861,12 +5431,11 @@ if @Tipo in (1,2) begin
       isNull(cams.procesando,0) cam_procesando,
       isNull(cams.cam_tipojobs,0) cam_tipojobs,
       isNull(wt.Fin,0) Fin,
-      isNull(tc.cantidad,0) cantidad,
+      isNull(cams.cantidad,0) cantidad,
       getdate()
-      FROM #Tcamps cams with(nolock)
+      FROM #Tcamps2 cams with(nolock)
       LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
       LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
-      left join #Tcamps2 tc on (tc.cam_id = cams.cam_id)
 
     COMMIT TRAN updateccCampsNvosCB
   end
@@ -4876,23 +5445,29 @@ if @Tipo in (1,2) begin
     if @Tipo = 2
       -- devuelve resultado de la taba, solo las camps del usuario
       SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
-      FROM #Tcamps tcam
+      FROM #Tcamps2 tcam
       left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
       LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
-    else
-      SELECT id, campaña, max(new) as new, max(cb) cb, max(pro) pro, max(pen) pen,max(st)st, max(job)job, max(Fin)Fin, isnull(prioridad,''12345NNN'')  as Prioridad, max(NextDial) NextDial
-      FROM ccCampsNvosCB res
-      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
-      WHERE res.id = @cam_id
-      group by id,campaña,prioridad
+    else begin
+			if @user_id = 0 begin
+			  SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial
+			  FROM ccCampsNvosCB res
+			  LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+			  WHERE res.id = @cam_id
+			end
+			else begin
+			 SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+			  FROM #Tcamps2 tcam
+			  left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+			  LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+			end
+		end
   end
 
   drop table #Tcamps
   drop table #Tcamps2
   drop table #temccocallsoutsource
   drop table #temWorkinTable
-
-  --return(0)
 
 end
 
@@ -5064,7 +5639,7 @@ select Xname from ccBaseXDB where serviceId = @option and isFull=0
 )
 end'
 	EXEC(@sql)
-	
+
 	set @process = 'ALter SP -- ccsp_GetAgentNotReadyDetail'
 set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentNotReadyDetail] @user_id as int = 0, @sup_id as int = 0, @action as int = 0 as
 set nocount on
@@ -5090,41 +5665,41 @@ if @action = 1
 		FROM cctiponotready a (nolock),ccusers b (nolock), ccGenViewRelsSupsAgent c
         WHERE  b.user_id = c.agt
 		and c.sup = @sup_id) a
-		LEFT JOIN 
+		LEFT JOIN
 		(SELECT user_id,TipoNotReady_id,tStatus FROM ccLogAgentesNotReady with(nolock,index(IX_ccLogAgentesNotReady_2))
-        WHERE fecha >= @fecha_ini)  b 
-		ON a.user_id = b.user_id AND a.TipoNotReady_id = b.TipoNotReady_id        
+        WHERE fecha >= @fecha_ini)  b
+		ON a.user_id = b.user_id AND a.TipoNotReady_id = b.TipoNotReady_id
 		GROUP BY a.user_id,a.TipoNotReady_id,a.descripcion,a.Time_Acum,a.Time_xEV
-	
+
    end
 
 else if @user_id = 0 and @sup_id > 0
 	begin
-		        
+
         SELECT DISTINCT a.user_id, 1 AS ''type'', c.login
         from ccLogAgentesNotReady a (nolock),cctiponotready b (nolock), ccusers c (nolock), ccGenViewRelsSupsAgent d
         WHERE  a.user_id = d.agt
-		and d.sup = @sup_id 
-		AND a.TipoNotReady_id = b.TipoNotReady_id 
+		and d.sup = @sup_id
+		AND a.TipoNotReady_id = b.TipoNotReady_id
 		AND b.Time_xEv <> 0 AND a.tStatus > b.Time_xEv
 		and a.fecha >= @fecha_ini
 		and a.user_id = c.user_id
 
         UNION
-       
+
         SELECT DISTINCT a.user_id, 2 AS ''type'', c.login
         from ccLogAgentesNotReady a (nolock),cctiponotready b (nolock), ccusers c (nolock), ccGenViewRelsSupsAgent d
         WHERE a.user_id = d.agt
-		and d.sup = @sup_id 
-		AND a.TipoNotReady_id = b.TipoNotReady_id 
-		AND b.Time_Acum <> 0 
+		and d.sup = @sup_id
+		AND a.TipoNotReady_id = b.TipoNotReady_id
+		AND b.Time_Acum <> 0
 		and a.fecha >= @fecha_ini
 		and a.user_id = c.user_id
         GROUP BY a.user_id, a.TipoNotReady_id,b.Time_Acum, c.login
         HAVING sum(a.tStatus) > b.Time_Acum
 
 		UNION
-		
+
 		SELECT a.agt, 0 AS ''type'', b.login
 		FROM ccGenViewRelsSupsAgent a, ccusers b
 		where a.agt = b.user_id
@@ -5155,7 +5730,7 @@ drop table #cctiponotready
 
 set nocount on'
 	EXEC(@sql)
-	
+
 	set @process = 'ALter SP -- ccsp_ADMCalifInformation'
 set @sql='ALTER Procedure [dbo].[ccsp_ADMCalifInformation]
 @user_id as int,
@@ -5166,42 +5741,42 @@ begin
 	declare @fecha_ini datetime
 
 	--0 in, 1 out
-	select @fecha_ini = convert(datetime,convert(varchar(11),getdate()+'' 00:00''))	
-    
+	select @fecha_ini = convert(datetime,convert(varchar(11),getdate()+'' 00:00''))
+
     --Obtener calificaciones de salida
-	(select calif.calif_id AS ''calificationId'' , 
-    description, 	
+	(select calif.calif_id AS ''calificationId'' ,
+    description,
 	agt [agentId],
-	case when llamadas is null then 0 else llamadas end [calls], 
+	case when llamadas is null then 0 else llamadas end [calls],
     1 as ''type''
-	  from 
+	  from
      (select calif_id, description,agt from cctipocalifout (nolock),ccGenViewRelsSupsAgent where califout_status = 1 AND sup = @user_id) calif
      left join
     (SELECT [user_id], calif_id, COUNT(*) llamadas
-	FROM ccoCallsOut with (nolock, index(IX_ccoCallsOut_13)), dbo.ccGenViewRelsSupsAgent b 
+	FROM ccoCallsOut with (nolock, index(IX_ccoCallsOut_13)), dbo.ccGenViewRelsSupsAgent b
      WHERE cal_inicio >= @fecha_ini
      AND b.sup = @user_id AND statuscall_id = 13 AND calif_id > 0 and user_id = b.agt
-	 GROUP BY [user_id], calif_id 
-	) data      	
+	 GROUP BY [user_id], calif_id
+	) data
 	on (calif.calif_id = data.calif_id AND data.[user_id] = calif.agt))
 
 	union all
-    
+
     --Obtener calificaciones de entrada
-	(select calif.calif_id AS ''calificationId'', 
-    description, 	
+	(select calif.calif_id AS ''calificationId'',
+    description,
 	agt [agentId],
-	case when llamadas is null then 0 else llamadas end [calls],     
+	case when llamadas is null then 0 else llamadas end [calls],
     0 as ''type''
-	  from 
-     (select calif_id, description, agt from cctipocalif (nolock),ccGenViewRelsSupsAgent where calif_status = 1 AND sup = @user_id) calif 
-     left join 
+	  from
+     (select calif_id, description, agt from cctipocalif (nolock),ccGenViewRelsSupsAgent where calif_status = 1 AND sup = @user_id) calif
+     left join
     (SELECT [user_id], calif_id, COUNT(*) llamadas
-	FROM cccallsin with (nolock, index(IX_ccCallsIn)), dbo.ccGenViewRelsSupsAgent b WHERE 
-      cal_inicio >=  @fecha_ini 
+	FROM cccallsin with (nolock, index(IX_ccCallsIn)), dbo.ccGenViewRelsSupsAgent b WHERE
+      cal_inicio >=  @fecha_ini
       and b.sup = @user_id and calif_id > 0 AND user_id = b.agt
-	 GROUP BY [user_id], calif_id 
-	) data      	
+	 GROUP BY [user_id], calif_id
+	) data
 	on (calif.calif_id = data.calif_id AND data.[user_id] = calif.agt))
 
 end
@@ -5214,19 +5789,19 @@ begin
 end'
 
 	EXEC(@sql)
-	
+
 	set @process = 'ALter View -- ccGenViewRelsSupsAgent'
 set @sql='ALTER view [dbo].[ccGenViewRelsSupsAgent] as
 
---Relaciones Sup-Agt de acuerdo a WorkGroups  
-select distinct a1.user_id as agt, a5.user_id as sup, a5.login from ccusers a1 (nolock)  
-inner join ccriaworkgroupusers a2 on (a1.user_id=a2.user_id and tipouser_id=1)  
-inner join   
+--Relaciones Sup-Agt de acuerdo a WorkGroups
+select distinct a1.user_id as agt, a5.user_id as sup, a5.login from ccusers a1 (nolock)
+inner join ccriaworkgroupusers a2 on (a1.user_id=a2.user_id and tipouser_id=1)
+inner join
 (select a3.user_id, a4.IDWG, a3.login  from ccusers a3 (nolock)
 inner join ccriaworkgroupusers a4 on (a3.user_id=a4.user_id and (tipouser_id=2 or tipouser_id=6))) a5 on (a2.IDWG=a5.IDWG)'
 
 	EXEC(@sql)
-	
+
 	set @process = 'ALter SP -- ccsp_GetAgentIndividualCounters'
 set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentIndividualCounters]
 @type as int, @sup_id as int = 0 as
@@ -5328,7 +5903,7 @@ if @type = 4
 set nocount on'
 
 	EXEC(@sql)
-	
+
 	set @process = 'ALter SP -- ccsp_GetAllAgentsECRelations'
 set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAllAgentsECRelations]
 @User_id varchar(max)

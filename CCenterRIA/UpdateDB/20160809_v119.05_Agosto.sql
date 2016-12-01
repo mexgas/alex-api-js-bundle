@@ -2376,7 +2376,7 @@ CREATE TABLE [dbo].[ccChatsNodeHistory]([chatId] [int] NULL,[node] [xml] NULL,[d
 
 		set @process = 'Insert ccSettings -- Conf Monitor Port'
 		set @sql='if not exists(select * from ccsettings where setting_id in (188,189)) begin
-insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (188,''400000'',''rango de registros a para crear una nueba baseX'',1,''X'',''ingrese datos enteros'',''Enter integer data'',1,''.*'')
+insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (188,''400000'',''rango de registros a para crear una nueva baseX'',1,''X'',''ingrese datos enteros'',''Enter integer data'',1,''.*'')
 insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (189,''15'',''Segundos para recarga contadores'',1,''X'',''Al recibir paquetes se recarga la coleccion no da tiempo procesar estos contadores'',''Second for load account Agent'',1,''.*'')
 		end'
 		EXEC(@sql)
@@ -5223,8 +5223,7 @@ select distinct a1.user_id as agt, a5.user_id as sup, a5.login from ccusers a1 (
 inner join ccriaworkgroupusers a2 on (a1.user_id=a2.user_id and tipouser_id=1)  
 inner join   
 (select a3.user_id, a4.IDWG, a3.login  from ccusers a3 (nolock)
-inner join ccriaworkgroupusers a4 on (a3.user_id=a4.user_id and (tipouser_id=2 or tipouser_id=6))) a5 on (a2.IDWG=a5.IDWG)
-GO'
+inner join ccriaworkgroupusers a4 on (a3.user_id=a4.user_id and (tipouser_id=2 or tipouser_id=6))) a5 on (a2.IDWG=a5.IDWG)'
 
 	EXEC(@sql)
 	

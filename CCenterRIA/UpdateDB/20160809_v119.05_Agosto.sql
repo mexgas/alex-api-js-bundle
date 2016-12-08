@@ -2407,7 +2407,8 @@ insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,descrip
 		EXEC(@sql)
 
 		set @process = 'CREATE FUNCTION -- [dbo].[Verifica2]'
-    	set @sql='CREATE FUNCTION [dbo].[Verifica2](@tel varchar(32),@pais tinyint = 0, @ld varchar(7) = '''')
+    	set @sql='CREATE FUNCTION [dbo].[Verifica2]
+(@tel varchar(32),@pais tinyint = 0, @ld varchar(7) = '''')
 RETURNS varchar(32) AS
 BEGIN
 declare @lon tinyint
@@ -5938,6 +5939,173 @@ select
 	order by B.user_id'
 
 	EXEC(@sql)
+	
+	set @process = 'validate if exists procedure ccsp_RIAGetCampsNvosCB'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_RIAGetCampsNvosCB'')
+					DROP PROCEDURE ccsp_RIAGetCampsNvosCB'
+		EXEC(@sql)
+
+		set @process = 'CREATE SP -- ccsp_RIAGetCampsNvosCB'
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0
+as
+set nocount on
+
+declare @TipoJobs as int,@isExecOutbound bit
+
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+  declare @id AS INTEGER
+
+  CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+  CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+
+  create table #temccocallsoutsource (cam_id int,Pend  int)
+
+  create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+  if @cam_id = 0 begin
+    if @user_id > 0 begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where user_id = @user_id and tipo = 1
+    end
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+    end
+
+  end
+  else begin
+    if @Tipo = 2
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+      from ccCamps cam
+      --left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where cam.cam_id = @cam_id
+    else
+		if @user_id > 0 begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+			select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+			from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+			where user_id = @user_id and tipo = 1
+		end
+	  else begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+			select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+			from ccCamps where cam_activo=1
+		end
+  end
+
+
+
+  insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+  select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
+  select A.* from #Tcamps A
+  left join ccCampsNvosCB B on A.cam_id=B.id
+  where datediff(ss,B.dateUpdate,getdate())>3 or B.dateUpdate is null)X
+  group by cam_id
+
+
+  --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+  if (select count(*) from #Tcamps2)>0 begin
+
+
+    insert into #temccocallsoutsource(cam_id,Pend)
+    SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+    FROM ccocallsoutsource ccos
+    inner join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    WHERE cal_status in(0, 7)
+    GROUP BY ccos.cam_id
+
+    insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+    SELECT A.cam_id,
+    count(case cal_status when 0 then 1 else null end) as New,
+    count(case cal_status when 1 then 1 else null end) as Cb,
+    count(case cal_status when 2 then 1 else null end) as Pro,
+    count(case cal_status when 3 then 1 else null end) as Fin
+    FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+    inner join #Tcamps2 B on A.cam_id = B.cam_id
+    GROUP BY A.cam_id
+
+
+    --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+    if @regval = 0 and @cam_id >0 and @Tipo =2 begin
+      update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
+    end
+    else begin
+      While (select count(*) from #Tcamps2 where status = 0) > 0 Begin
+        set rowcount 1
+        select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+        set rowcount 0
+        EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+        update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+      end
+    end
+
+    begin Tran updateccCampsNvosCB
+
+      delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp where CampNvosCB.id = tcamp.cam_id
+
+      INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+      SELECT cams.cam_id, cams.cam_descripcion,
+      isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+      isNull(cs.Pend,0) as pend,
+      isNull(wt.Pro,0) as pro,
+      isNull(cams.procesando,0) cam_procesando,
+      isNull(cams.cam_tipojobs,0) cam_tipojobs,
+      isNull(wt.Fin,0) Fin,
+      isNull(cams.cantidad,0) cantidad,
+      getdate()
+      FROM #Tcamps2 cams with(nolock)
+      LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+      LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+
+    COMMIT TRAN updateccCampsNvosCB
+  end
+
+  if @isExecOutbound = 0 begin
+
+    if @Tipo = 2
+      -- devuelve resultado de la taba, solo las camps del usuario
+      SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+      FROM #Tcamps2 tcam
+      left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+    else begin
+			if @user_id = 0 begin
+			  SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial
+			  FROM ccCampsNvosCB res
+			  LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+			  WHERE res.id = @cam_id
+			end
+			else begin
+			 SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+			  FROM #Tcamps2 tcam
+			  left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+			  LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+			end
+		end
+  end
+
+  drop table #Tcamps
+  drop table #Tcamps2
+  drop table #temccocallsoutsource
+  drop table #temWorkinTable
+
+  --return(0)
+
+end
+
+set nocount off'
+		EXEC(@Sql)
 
 	commit tran
 	end try

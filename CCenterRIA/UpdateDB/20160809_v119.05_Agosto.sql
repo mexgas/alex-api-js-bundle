@@ -6107,6 +6107,13 @@ end
 set nocount off'
 		EXEC(@Sql)
 
+		set @process = 'Insert ccSettings -- Limit of calls per seconds'
+set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+    begin
+  INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''40'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''Ingrese de 0 a 100'',''Percent of limit of calls per seconds'',1,''^\d{1,99}$'')
+    end'
+EXEC(@sql)
+
 	commit tran
 	end try
 

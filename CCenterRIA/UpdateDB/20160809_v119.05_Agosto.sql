@@ -6114,6 +6114,14 @@ set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
     end'
 EXEC(@sql)
 
+set @process = 'UPDATE ccSettings --Setting 190 -- Limit of calls per seconds'
+set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+		UPDATE ccSettings SET validate = ''^(100|\d{1,2})$'' WHERE setting_id = 190
+		else
+        INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''40'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''Ingrese de 0 a 100'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')
+		'
+EXEC(@sql)
+
 	commit tran
 	end try
 

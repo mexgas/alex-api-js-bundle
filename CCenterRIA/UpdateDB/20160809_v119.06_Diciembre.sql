@@ -9,6 +9,7 @@ Description:
 	Se agrega estados del agente en caso de no exisir por idioma
 	se modfiica el SP ccsp_BaseXmngr para agregar el primer registro y ultimo para buscar en baseX
 	se modifica el SP ccsp_CleanNodeBaseX para pasar la informacion a la base de historico
+	Se elimina el SP ccsp_CreateNodeMail se sustituye por ccsp_CreateNodeMultimedia
 
 Database: CCenterRia
 Required version: 119.05
@@ -45,6 +46,13 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 
+		set @process = 'Drop SP -- ccsp_CreateNodeMail'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'')
+    begin
+        DROP PROCEDURE ccsp_CreateNodeMail
+    end'
+		EXEC(@Sql)
+
 		set @process = ''
 		set @Sql= 'if exists(select valor from ccSettings where setting_id=27 and valor=''1'') begin
 	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Transferencia Fallida'')
@@ -54,10 +62,6 @@ else begin
 	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
 	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
 end'
-		EXEC(@Sql)
-
-		set @process = ''
-		set @Sql= ''
 		EXEC(@Sql)
 
 		set @process = ''

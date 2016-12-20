@@ -10,6 +10,7 @@ Description:
 	se modfiica el SP ccsp_BaseXmngr para agregar el primer registro y ultimo para buscar en baseX
 	se modifica el SP ccsp_CleanNodeBaseX para pasar la informacion a la base de historico
 	Se elimina el SP ccsp_CreateNodeMail se sustituye por ccsp_CreateNodeMultimedia
+	Se quitan los conflictos de replicas
 
 Database: CCenterRia
 Required version: 119.05
@@ -64,12 +65,33 @@ else begin
 end'
 		EXEC(@Sql)
 
-		set @process = ''
-		set @Sql= ''
-		EXEC(@Sql)
+		set @process = 'Delete conflict Replication'
+		set @Sql= 'if exists(select * from sys.tables where name=''MSmerge_conflicts_info'') begin
 
-		set @process = ''
-		set @Sql= ''
+	SELECT  ROW_NUMBER() OVER(ORDER BY c.rowguid) as row,s.conflict_table, c.rowguid, c.origin_datasource
+	INTO #temp_conflicts
+	FROM dbo.MSmerge_conflicts_info c
+	JOIN sysmergearticles s ON c.tablenick = s.nickname
+
+	--Setup local variables
+	DECLARE @conflict_table nvarchar(255)
+	DECLARE @row uniqueidentifier
+	DECLARE @origin_datasource nvarchar(255)
+	declare @count int,@i int
+
+	select @count=count(*),@i=1 from #temp_conflicts
+
+	while @i<=@count begin
+		select @conflict_table=conflict_table, @row=rowguid, @origin_datasource=origin_datasource from #temp_conflicts where row=@i
+		EXEC sp_deletemergeconflictrow
+		@conflict_table = @conflict_table,        -- conflict table name from sysmergearticles
+		@rowguid = @row,                                      -- row identifier from msmerge_conflicts_info
+		@origin_datasource = @origin_datasource   -- origin of the conflict from msmerge_conflicts_info
+		set @i=@i+1
+	end
+
+	DROP table #temp_conflicts
+end'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_BaseXmngr'

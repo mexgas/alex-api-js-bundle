@@ -15,7 +15,8 @@ namespace ServicesAlertReport
     partial class ServicesAlertReport : ServiceBase
     {
         private static Logger mylog;
-        private DataBase db;
+        private DataBaseServices db;
+        private Core core;
         private System.Timers.Timer mainTimer;
 
         public ServicesAlertReport()
@@ -24,14 +25,14 @@ namespace ServicesAlertReport
 
             mylog = new Logger("ServicesAlertReport");
             mylog.open();
-            db = new DataBase(mylog);
+            db = new DataBaseServices(mylog);
             Version vDownloadManager = Assembly.GetEntryAssembly().GetName().Version;
-            mylog.log("SERVICE INFO: DownloadManager Version: " + vDownloadManager.ToString());
-
+            mylog.log("SERVICE INFO: ServicesAlertReport Version: " + vDownloadManager.ToString());
+            core = new Core(mylog, db);
 
             mainTimer = new System.Timers.Timer();
             mainTimer.Elapsed += new ElapsedEventHandler(onElapsedTime);
-            mainTimer.Interval = 1000 * 60;
+            mainTimer.Interval = 1000 * 10;
             mainTimer.Enabled = false;
         }
 
@@ -93,7 +94,9 @@ namespace ServicesAlertReport
         /// </summary>
         private void startCore()
         {
-            mainTimer.Stop();            
+            mainTimer.Stop();
+            core.startCore();
+          
 
         }
         /// <summary>
@@ -102,6 +105,7 @@ namespace ServicesAlertReport
         private void stopCore()
         {
             mainTimer.Stop();
+            core.stopCore();
         }
 
         /// <summary>
@@ -110,7 +114,7 @@ namespace ServicesAlertReport
         private void init()
         {
             mainTimer.Start();
-            log("SERVICE: DownloadManager Service Started");
+            log("SERVICE: ServicesAlertReport Service Started");
 
         }
         /// <summary>
@@ -121,7 +125,7 @@ namespace ServicesAlertReport
             stopCore();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-            log("SERVICE: DownloadManager Service is stopped");
+            log("SERVICE: ServicesAlertReport Service is stopped");
         }
 
         /// <summary>

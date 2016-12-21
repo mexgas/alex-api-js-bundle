@@ -9,7 +9,7 @@ using ServicesAlertReport.Security;
 
 namespace ServicesAlertReport.DB
 {
-    public class DataBase
+    public class DataBaseServices
     {
         /**************************************
          * 1) Si se van a hacer updates sin esperar resultado, usar la funcion executeQueryAsync, solamente hay que poner los parametros en el SqlCommand
@@ -23,7 +23,7 @@ namespace ServicesAlertReport.DB
         private Random randy;
         protected string ApplicationName;
 
-        public DataBase(Logger logger, string applicationName = "ServicesAlertReport")
+        public DataBaseServices(Logger logger, string applicationName = "ServicesAlertReport")
         {
             this.logger = logger;
             try
@@ -44,7 +44,7 @@ namespace ServicesAlertReport.DB
         /// Conexion a las diferentes base de datos CW y AVRS
         /// </summary>
         /// <param name="db">Si es igual a AVRS busca el registro pertinente</param>
-        public void buildCnString(string db = "")
+        public void buildCnString()
         {
             try
             {
@@ -54,7 +54,7 @@ namespace ServicesAlertReport.DB
                 String server = "f517a65163f31b824b09ce768a859e02"; //127.0.0.1                
                 String user = "183f5bf17c2d2409157ead96ecfc25a7";
                 RegistryKey rKey;
-                rKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Nuxiba\Centerware_V\", RegistryKeyPermissionCheck.ReadSubTree);
+                rKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Nuxiba\ReportsRia\", RegistryKeyPermissionCheck.ReadSubTree);
 
                 object key = null;
 
@@ -90,7 +90,7 @@ namespace ServicesAlertReport.DB
                 csbTemp.MinPoolSize = 0;
                 csbTemp.MaxPoolSize = 5;
                 csbTemp.ApplicationName = ApplicationName;
-                
+
                 csb = csbTemp;
 
                 log("Connection string built to server: " + csbTemp.DataSource);
@@ -101,8 +101,80 @@ namespace ServicesAlertReport.DB
             }
         }
 
-        #region CW
+        /// <summary>
+        /// Obtiene la ultima ejecuccion del Job Master Process
+        /// </summary>
+        /// <returns></returns>
+        public DataReport getDataLastRunJob()
+        {
+
+            DataReport dataRes = null;
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = "DataReport";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@action", 1);
+                    SqlDataReader dr = cmd.ExecuteReader();
+                    if (dr.Read())
+                    {
+                        dataRes = new DataReport(Convert.ToDateTime(dr[0]), Convert.ToDateTime(dr[1]), Convert.ToInt32(dr[2].ToString()));
+                    }
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return dataRes;
+            }
+
+        }
+
         
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public DataTable getValidateReportAgentGI()
+        {
+
+            DataTable table = new DataTable();
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = "DataReport";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@action", 2);
+                    table.Load(cmd.ExecuteReader());
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return table;
+            }
+
+        }
+
+        #region CW
+
 
 
         /// <summary>
@@ -117,13 +189,13 @@ namespace ServicesAlertReport.DB
             executeQueryAsync(cmd);
         }
 
-       
 
-       
+
+
 
         #endregion
 
-   
+
 
         #region QueryAsync
 
@@ -168,7 +240,7 @@ namespace ServicesAlertReport.DB
             {
                 log(e.StackTrace + " " + e.Message, true);
             }
-        }      
+        }
         #endregion
 
         #region Method Protected

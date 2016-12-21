@@ -412,9 +412,7 @@ namespace MiddleWareReports
             XmlElement rows = xmlReport.CreateElement("", nodeName, "");
 
             foreach (DataRow dataRow in table.Rows) //Add rows to the XML
-            {
-                //Dictionary<string, string> findDuplicateds = new Dictionary<string, string>();
-
+            {                
                 XmlElement row = xmlReport.CreateElement("", "Row", "");
                 foreach (DataColumn column in table.Columns)
                 {
@@ -434,8 +432,7 @@ namespace MiddleWareReports
 
                         row.AppendChild(el);
 
-                        value = translatedColumns[column.ColumnName];
-                        //findDuplicateds.Add(value, value);
+                        value = translatedColumns[column.ColumnName];                        
                     }
                 }
                 rows.AppendChild(row);

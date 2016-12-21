@@ -46,7 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Database\DataBase.cs" />
+    <Compile Include="Core.cs" />
+    <Compile Include="Database\DataBaseServices.cs" />
+    <Compile Include="DataReport.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\Logger.cs" />
     <Compile Include="Log\LoggerLevel.cs" />

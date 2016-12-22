@@ -296,6 +296,7 @@ namespace MiddleWareReports
 
             return columnName;
         }
+        
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

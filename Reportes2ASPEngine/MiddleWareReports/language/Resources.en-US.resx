@@ -2421,4 +2421,10 @@
   <data name="data5" xml:space="preserve">
     <value>Data5</value>
   </data>
+  <data name="messageBodyMailAlert" xml:space="preserve">
+    <value>Attachment is sent</value>
+  </data>
+  <data name="messageSubjectMailAlert" xml:space="preserve">
+    <value>Alert message error report general information</value>
+  </data>
 </root>

@@ -6,6 +6,7 @@ using System.Globalization;
 using Microsoft.Win32;
 using ServicesAlertReport.Log;
 using ServicesAlertReport.Security;
+using System.Collections;
 
 namespace ServicesAlertReport.DB
 {
@@ -101,6 +102,43 @@ namespace ServicesAlertReport.DB
             }
         }
 
+
+        /// <summary>
+        /// Obtiene los action para ejecutarse de maneara dinamica
+        /// </summary>        
+        /// <returns></returns>
+        public List<int> getListAction()
+        {
+
+            List<int> list = new List<int>();
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = "ccspAlertMailReport";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@action", 0);
+                    SqlDataReader dr = cmd.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        list.Add(Convert.ToInt32(dr[0]));
+                    }
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return list;
+            }
+
+        }
         /// <summary>
         /// Obtiene la ultima ejecuccion del Job Master Process
         /// </summary>
@@ -116,7 +154,7 @@ namespace ServicesAlertReport.DB
                 {
                     laConnection.Open();
                     cmd.Connection = laConnection;
-                    cmd.CommandText = "DataReport";
+                    cmd.CommandText = "ccspAlertMailReport";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@action", 1);
                     SqlDataReader dr = cmd.ExecuteReader();
@@ -138,10 +176,48 @@ namespace ServicesAlertReport.DB
 
         }
 
+        /// <summary>
+        /// Lista Mail by Report 
+        /// </summary>
+        /// <param name="type">0 Validate Report, 1 Info Report</param>
+        /// <returns></returns>
+        public ArrayList getListMail(int type = 0)
+        {
+
+            ArrayList list = new ArrayList();
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = "ccspAlertMailReport";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@action", 2);
+                    SqlDataReader dr = cmd.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        list.Add(dr[0]);
+                    }
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return list;
+            }
+
+        }
+
         
 
         /// <summary>
-        /// 
+        /// Revisa si el Reporter AgentGI tiene errores
         /// </summary>
         /// <returns></returns>
         public DataTable getValidateReportAgentGI()
@@ -155,9 +231,9 @@ namespace ServicesAlertReport.DB
                 {
                     laConnection.Open();
                     cmd.Connection = laConnection;
-                    cmd.CommandText = "DataReport";
+                    cmd.CommandText = "ccspAlertMailReport";
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@action", 2);
+                    cmd.Parameters.AddWithValue("@action", 3);
                     table.Load(cmd.ExecuteReader());
                 }
                 catch (Exception e)
@@ -171,6 +247,93 @@ namespace ServicesAlertReport.DB
                 return table;
             }
 
+        }
+
+
+        /// <summary>
+        /// Revisa si el Reporter AgentGI tiene errores
+        /// </summary>
+        /// <returns></returns>
+        public DataTable getReportGeneric(int action)
+        {
+
+            DataTable table = new DataTable();
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = "ccspAlertMailReport";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@action", action);
+                    table.Load(cmd.ExecuteReader());
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+                finally
+                {
+                    laConnection.Close();
+                }
+                return table;
+            }
+
+        }
+
+        /// <summary>
+        /// Obtener el valor de un setting
+        /// </summary>
+        /// <returns></returns>
+        public String getValueSetting(int settingId)
+        {
+            String valor = "";
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = string.Format("Select valor from ccSettings where setting_id = {0}", settingId);
+                    valor = cmd.ExecuteScalar().ToString();
+                }
+                catch (Exception e)
+                {
+                    log(getQuery(cmd) + " " + e.Message, true);
+                }
+            }
+            return valor;
+        }
+
+        /// <summary>
+        /// Obtiene las credenciales del correo
+        /// </summary>
+        /// <returns></returns>
+        public SMTPData getSmtpProperties()
+        {
+            SMTPData smtpData = new SMTPData();
+            string value = getValueSetting(36);
+
+            try
+            {
+                string[] paramValues = value.Split('|');
+                if (paramValues.Length >= 5)
+                {
+                    smtpData.server = paramValues[0];
+                    smtpData.user = paramValues[1];
+                    smtpData.pwd = paramValues[2];
+                    smtpData.port = Convert.ToInt32(paramValues[3]);
+                    smtpData.useSSL = paramValues[4] == "1";
+                }
+            }
+            catch (Exception e)
+            {
+                log(string.Format("Error Parser Account SMPT {0}, error:{1}", value, e.Message), true);
+            }
+            return smtpData;
         }
 
         #region CW

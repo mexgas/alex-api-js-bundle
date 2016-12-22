@@ -18,7 +18,7 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReport
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "true"
 		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "1184"
+		VWDPort = "51941"
 		StartServerOnDebug = "true"
 	EndProjectSection
 EndProject

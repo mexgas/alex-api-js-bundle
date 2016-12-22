@@ -38,6 +38,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Resources\Ionic.Zip.dll</HintPath>
     </Reference>
+    <Reference Include="Mail, Version=3.0.16061.1530, Culture=neutral, PublicKeyToken=6dc438ab78a525b3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Resources\Mail.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Data" />
@@ -70,11 +74,17 @@
     <Compile Include="ServicesAlertReport.Designer.cs">
       <DependentUpon>ServicesAlertReport.cs</DependentUpon>
     </Compile>
+    <Compile Include="SMTPData.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Ionic.Zip.dll" />
     <Content Include="Resources\License.txt" />
     <Content Include="Resources\License.zlib.txt" />
+    <Content Include="Resources\Mail.dll" />
+    <Content Include="Resources\Mail.xml" />
+    <Content Include="MailLicense.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ProjectInstaller.resx">

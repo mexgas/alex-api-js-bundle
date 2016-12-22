@@ -9,6 +9,7 @@ using ServicesAlertReport.Log;
 using ServicesAlertReport.DB;
 using System.Reflection;
 using System.Timers;
+using Limilabs.Mail.Licensing;
 
 namespace ServicesAlertReport
 {
@@ -28,7 +29,12 @@ namespace ServicesAlertReport
             db = new DataBaseServices(mylog);
             Version vDownloadManager = Assembly.GetEntryAssembly().GetName().Version;
             mylog.log("SERVICE INFO: ServicesAlertReport Version: " + vDownloadManager.ToString());
-            core = new Core(mylog, db);
+            core = new Core(this, mylog, db);
+
+            string fileName = Limilabs.Mail.Licensing.LicenseHelper.GetLicensePath();
+            LicenseStatus status = Limilabs.Mail.Licensing.LicenseHelper.GetLicenseStatus();
+
+            mylog.log("Mail.dll LicenseStatus  " + status);
 
             mainTimer = new System.Timers.Timer();
             mainTimer.Elapsed += new ElapsedEventHandler(onElapsedTime);
@@ -41,7 +47,7 @@ namespace ServicesAlertReport
         protected override void OnStart(string[] args)
         {
             lock (this)
-            {              
+            {
                 init();
             }
         }
@@ -96,7 +102,7 @@ namespace ServicesAlertReport
         {
             mainTimer.Stop();
             core.startCore();
-          
+
 
         }
         /// <summary>
@@ -121,7 +127,7 @@ namespace ServicesAlertReport
         /// Detiene el socket y timmer para detener el servicio
         /// </summary>
         private void stop()
-        {         
+        {
             stopCore();
             GC.WaitForPendingFinalizers();
             GC.Collect();

@@ -239,7 +239,9 @@ namespace ServicesAlertReport.Log
             completeName = string.Format("{0}{1}_{2}.log", theFilename, DateTime.Now.ToString("yyyyMMdd"), maxCharacter);
             return completeName;
         }
-        //crea zip para la compresion de archivos
+        /// <summary>
+        /// crea zip para la compresion de archivos
+        /// </summary>
         private void zipFilesAsync()
         {
             DateTime ayer = DateTime.Now.AddDays(-1);

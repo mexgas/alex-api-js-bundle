@@ -6114,6 +6114,183 @@ set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
     end'
 EXEC(@sql)
 
+set @process = 'Insert ccSettings -- Telephone transfer list'
+
+set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+    begin
+    INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')
+    end'
+EXEC(@sql)
+
+	set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
+	set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+@userID INT,
+@current INTEGER = 0
+AS
+set nocount on
+
+BEGIN
+declare @value int
+
+select @value = valor from ccSettings where setting_id = 191
+
+	IF @value = 0
+		begin
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+			(
+				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+			)
+			x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+			Order by nomb
+		end
+
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID 
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					Order by nomb
+				end
+			else
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+					and IDArea in (select IDArea from ccUsers where User_id = @userID)
+					Order by nomb
+				end
+		end
+END
+set nocount off'
+	EXEC(@sql)
+
+	set @process = 'Alter procedure -- [dbo].[ccsp_AgentGetEspecialidadesActivas]'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
+@userID INT,
+@current integer = 0
+as
+declare @fecha datetime
+declare @dia smallint
+declare @hora smallint
+declare @minuto smallint
+declare @value int
+
+	SET DATEFIRST 1
+
+	select @fecha =  getdate()
+	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
+
+	--set @value = 0
+	select @value = valor from ccSettings where setting_id = 191
+
+	if @value = 0
+		begin
+			select -1, ''IVR''
+			union
+			select inbound_id, descripcion from ccInbound where inbound_id in 
+			(
+				select inbound_id from ccInboundHorarios where horario_id in
+				(
+					select horario_id  from ccHorarios
+					where
+					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+					AND (  
+						Lunes  = @dia or
+						Martes *2 = @dia or
+						Miercoles*3 = @dia or
+						Jueves*4 = @dia or
+						Viernes*5 = @dia or
+						Sabado*6 = @dia or
+						domingo*7 = @dia
+					)
+				)
+			)
+			and inbound_id <> @current
+			-- las activas
+			and status <> 0 
+			-- las que tienen agentes firmados
+			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+			order by 2
+		end
+
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select -1, ''IVR''
+					union
+					select inbound_id, descripcion from ccInbound where inbound_id in 
+					(
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (  
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
+						)
+					)
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0 
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					order by 2
+				end
+			else
+				begin
+					select -1, ''IVR''
+					union
+					select inbound_id, descripcion from ccInbound where inbound_id in 
+					(
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (  
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
+						)
+					)
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0 
+					and IDArea in (
+					select IDArea from ccUsers where User_id = @userID
+					)
+					-- las que tienen agentes firmados
+					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+					order by 2 
+				end 
+		end'
+	EXEC(@sql)
+
 	commit tran
 	end try
 

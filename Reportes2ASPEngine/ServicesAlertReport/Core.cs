@@ -1,22 +1,19 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ServicesAlertReport.Log;
-using ServicesAlertReport.DB;
-using System.Timers;
 using System.Data;
-using MiddleWareReports;
-using System.Collections.Specialized;
+using System.Globalization;
 using System.IO;
-using Limilabs.Client.SMTP;
-using Limilabs.Client;
 using System.Net.Security;
+using System.Timers;
+using Ionic.Zip;
+using Limilabs.Client;
+using Limilabs.Client.SMTP;
 using Limilabs.Mail;
 using Limilabs.Mail.Headers;
-using System.Collections;
-using System.Globalization;
-using Ionic.Zip;
+using MiddleWareReports;
+using ServicesAlertReport.DB;
+using ServicesAlertReport.Log;
 
 namespace ServicesAlertReport
 {
@@ -57,6 +54,8 @@ namespace ServicesAlertReport
             {
                 eachTimeAlert = Convert.ToInt32(db.getValueSetting(37));
                 eachTimeStatistics = Convert.ToInt32(db.getValueSetting(38));
+                if (eachTimeAlert < 9) eachTimeAlert = 9;
+                if (eachTimeStatistics < 21) eachTimeAlert = 21;
 
                 lang = db.getValueSetting(23) == "0" ? "es" : "en";
                 switch (lang)
@@ -73,7 +72,7 @@ namespace ServicesAlertReport
             }
             catch (Exception e)
             {
-                eachTimeAlert = 60;
+                eachTimeAlert = 30;
                 eachTimeStatistics = 60;
                 mylog.log("Error parser eachTime default 60, error: " + e.Message, true);
 
@@ -118,7 +117,7 @@ namespace ServicesAlertReport
             {
                 DataReport dataReport = db.getDataLastRunJob();
                 mylog.log(dataReport.ToString());
-                DataTable detailTable = db.getValidateReportAgentGI();
+                DataTable detailTable = db.getValidateReportAgentGI(dataReport.DATE_START, dataReport.DATE_END);
                 string title = "ValidateReportAgentGI";
                 XlsReport report = new XlsReport();
                 byte[] dataReport2 = report.getOutPut(detailTable, title, "", "", true, 2010);

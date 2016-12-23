@@ -19,12 +19,16 @@ namespace ServicesAlertReport
             this._duration = _duration;
         }
 
+        public DateTime DATE_START { get { return _dateStart; } }
+        public DateTime DATE_END { get { return _dateEnd; } }
 
         public override string ToString()
         {
             return string.Format("DateStart {0},DateEnd {1}, duration {2}", _dateStart.ToString("yyyy-MM-dd HH:mm:ss"), _dateEnd.ToString("yyyy-MM-dd HH:mm:ss"), _duration);
         }
+
+
     }
 
-    
+
 }

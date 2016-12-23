@@ -43,8 +43,7 @@ namespace ServicesAlertReport.DB
 
         /// <summary>
         /// Conexion a las diferentes base de datos CW y AVRS
-        /// </summary>
-        /// <param name="db">Si es igual a AVRS busca el registro pertinente</param>
+        /// </summary>        
         public void buildCnString()
         {
             try
@@ -214,13 +213,13 @@ namespace ServicesAlertReport.DB
 
         }
 
-        
+
 
         /// <summary>
         /// Revisa si el Reporter AgentGI tiene errores
         /// </summary>
         /// <returns></returns>
-        public DataTable getValidateReportAgentGI()
+        public DataTable getValidateReportAgentGI(DateTime dateStart, DateTime dateEnd)
         {
 
             DataTable table = new DataTable();
@@ -234,6 +233,8 @@ namespace ServicesAlertReport.DB
                     cmd.CommandText = "ccspAlertMailReport";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@action", 3);
+                    cmd.Parameters.AddWithValue("@dateStart", dateStart);
+                    cmd.Parameters.AddWithValue("@dateEnd", dateEnd);
                     table.Load(cmd.ExecuteReader());
                 }
                 catch (Exception e)

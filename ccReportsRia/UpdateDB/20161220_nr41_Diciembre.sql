@@ -103,7 +103,7 @@ BEGIN
 		declare @schedule_id int,@nameSchudule sysname,@job_id uniqueidentifier
 		declare @runDate int,@runDateTime datetime,@run_duration int
 		set @runDate= cast (CONVERT(varchar(11),getdate(),112) as int)
-		set @dateStart=CONVERT(date,getdate(),112)
+		set @dateStart=CONVERT(datetime,getdate(),112)
 
 		select  @job_id=A.job_id FROM msdb.dbo.sysjobs A where A.name=''ReportsMasterProcess''
 
@@ -173,16 +173,14 @@ BEGIN
 		isnull(cast(SUM(case when tipoResDial_id=90  then 1 end)*100.0/COUNT(*)as Decimal(8,2)),0) [%_Otro_]
 
 		from ccoLogDials nolock
-		where  fecha between CONVERT(date,GETDATE(),121) and GETDATE()
+		where  fecha between CONVERT(datetime,GETDATE(),121) and GETDATE()
 		group by convert(datetime,CONVERT(varchar(13),fecha,121)+'':00:00'')
 		order by fecha asc
 	end
 END'
 	EXEC(@sql)
 
-	set @process = ''
-	set @sql=''
-	EXEC(@sql)
+	
 
 
 	set @process = 'Alter SP -- ReportsMasterProcess'
@@ -1216,8 +1214,8 @@ if @action=1 begin
 	)x
 	inner join #tempRepAgentGI A on A.id=x.id
 	where x.rank>1
-	declare @userId int=15
-
+	declare @userId int
+	set @userId =15
 
 	delete from RepAgentGI with(rowlock) where date >= @from AND date < @to
 

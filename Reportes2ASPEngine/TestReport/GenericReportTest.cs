@@ -17,8 +17,7 @@ namespace TestReport
     {
 
 
-        private TestContext testContextInstance;
-        private GenericReport testContext;
+        private TestContext testContextInstance;        
 
         /// <summary>
         ///Obtiene o establece el contexto de la prueba que proporciona

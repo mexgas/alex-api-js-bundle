@@ -118,10 +118,6 @@
     <Compile Include="reports\twitter\RepTwitterAgente.cs" />
     <Compile Include="reports\twitter\RepTwitterDetail.cs" />
     <Compile Include="reports\twitter\RepTwitterGeneral.cs" />
-    <Compile Include="Resources\cwreportsengine.aspx.cs">
-      <DependentUpon>cwreportsengine.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
     <Compile Include="utils\Convertions.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -255,12 +251,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="reports\filereports\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\cwreportsengine.aspx" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

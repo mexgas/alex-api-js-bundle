@@ -2094,7 +2094,13 @@
   <data name="SessionsbyInterval" xml:space="preserve">
     <value>Sessions by Interval</value>
   </data>
- <data name="clientPhoneNumber" xml:space="preserve">
+  <data name="clientPhoneNumber" xml:space="preserve">
     <value>Client phone number</value>
+  </data>
+  <data name="messageBodyMailAlert" xml:space="preserve">
+    <value>Se envia Archivo Adjunto</value>
+  </data>
+  <data name="messageSubjectMailAlert" xml:space="preserve">
+    <value>Mensaje de alerta errror reporte informacion general</value>
   </data>
 </root>

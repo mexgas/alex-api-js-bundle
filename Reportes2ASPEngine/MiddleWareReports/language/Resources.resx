@@ -130,7 +130,7 @@
     <value>resultado de marcacion</value>
   </data>
   <data name="telephone" xml:space="preserve">
-    <value>telefono</value>
+    <value>Telefono</value>
   </data>
   <data name="timeMessage" xml:space="preserve">
     <value>tiempo de rep mensaje</value>
@@ -2486,5 +2486,11 @@
   </data>
   <data name="data5" xml:space="preserve">
     <value>Data5</value>
+  </data>
+  <data name="messageBodyMailAlert" xml:space="preserve">
+    <value>Se envía archivo adjunto</value>
+  </data>
+  <data name="messageSubjectMailAlert" xml:space="preserve">
+    <value>Mensaje de alerta error reporte información general</value>
   </data>
 </root>

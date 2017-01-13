@@ -77,7 +77,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
 
         //Build HashTable for Parameters Reader
         ParametersReader.setParameters(RequestHelper.copyRequestQueryParameters(Page.Request));
-
+        #region ReadParametrs
         //Set user id session
         if (ParametersReader.getParameters("sourceUserId", false) != "")
         {
@@ -252,7 +252,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 int.TryParse(ParametersReader.getParameters("activeTwitter", true), out activeTwitter);
             }
         }
-       
+        #endregion
 
         try
         {

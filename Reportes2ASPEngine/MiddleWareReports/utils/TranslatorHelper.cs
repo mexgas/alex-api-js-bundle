@@ -15,7 +15,7 @@ namespace MiddleWareReports
     /// <summary>
     /// Class that searches for an asset and returns its value according to the currently selected culture
     /// </summary>
-    static class TranslatorHelper
+    public static class TranslatorHelper
     {
         /// <summary>
         /// Resource that wants to be translated
@@ -58,7 +58,7 @@ namespace MiddleWareReports
                 string property = getResourceProperty(column.ColumnName, out isTranslated, isDetail);
                 //Only add columns that can be viewable in the interface 
                 if (((!property.Contains("_")) || (isPivotColumn(property) && !property.StartsWith("systemTranslated_"))) && !(process < 10000 && process >= 9000)) //Don't show not translated columns
-                {                    
+                {
                     translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
                 }
                 else if (process < 10000 && process >= 9000)
@@ -166,7 +166,7 @@ namespace MiddleWareReports
         /// <param name="isTranslated">Indicates if the property was found into the current culture resources file</param>
         /// <returns>The value of the property or an INVALID_PROPERTY_propertyName message if not found</returns>
         public static string getResourceProperty(string propertyName, out bool isTranslated, bool isDetail = false)
-        {            
+        {
             string original = propertyName;
             propertyName = propertyName.Replace(" ", "");
             string value = "INVALID_PROPERTY_" + propertyName;
@@ -296,6 +296,7 @@ namespace MiddleWareReports
 
             return columnName;
         }
+        
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

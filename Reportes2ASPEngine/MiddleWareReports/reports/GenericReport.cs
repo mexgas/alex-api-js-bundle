@@ -63,7 +63,7 @@ namespace MiddleWareReports
         /// <summary>
         /// Changes the current culture of the report
         /// </summary>
-        protected void changeCulture()
+        public void changeCulture()
         {
             if (currentCulture != null)
             {
@@ -231,7 +231,7 @@ namespace MiddleWareReports
         /// <returns>A DataTable with the data satisfying the query parameters</returns>
         public virtual DataTable getDataReport(NameValueCollection parameters, short process)
         {
-            changeCulture();            
+            changeCulture();
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
 
             bool isTimePeriod = false;
@@ -413,8 +413,6 @@ namespace MiddleWareReports
 
             foreach (DataRow dataRow in table.Rows) //Add rows to the XML
             {
-                //Dictionary<string, string> findDuplicateds = new Dictionary<string, string>();
-
                 XmlElement row = xmlReport.CreateElement("", "Row", "");
                 foreach (DataColumn column in table.Columns)
                 {
@@ -435,7 +433,6 @@ namespace MiddleWareReports
                         row.AppendChild(el);
 
                         value = translatedColumns[column.ColumnName];
-                        //findDuplicateds.Add(value, value);
                     }
                 }
                 rows.AppendChild(row);
@@ -1151,12 +1148,12 @@ namespace MiddleWareReports
                     case TimePeriod.H:
                     case TimePeriod.D:
                     case TimePeriod.PE:
-                        if (timeMinutes >= 1) timeMinutes = 59;                       
+                        if (timeMinutes >= 1) timeMinutes = 59;
                         else timeMinutes = 0;
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
                         break;
                     case TimePeriod.HH:
-                        if (timeMinutes > 30) timeMinutes = 59;                        
+                        if (timeMinutes > 30) timeMinutes = 59;
                         else if (timeMinutes >= 1) timeMinutes = 29;
                         else timeMinutes = 0;
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
@@ -1168,7 +1165,7 @@ namespace MiddleWareReports
                         else if (timeMinutes >= 1) timeMinutes = 14;
                         else timeMinutes = 0;
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
-                        break;                    
+                        break;
                 }
             }
 

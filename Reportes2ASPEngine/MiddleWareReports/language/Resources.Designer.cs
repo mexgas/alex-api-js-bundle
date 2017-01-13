@@ -1969,7 +1969,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a resultado de marcacion.
+        ///   Busca una cadena traducida similar a Resultado de marcacion.
         /// </summary>
         public static string dialResult {
             get {
@@ -6217,7 +6217,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a telefono.
+        ///   Busca una cadena traducida similar a Telefono.
         /// </summary>
         public static string telephone {
             get {

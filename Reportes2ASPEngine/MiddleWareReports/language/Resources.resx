@@ -130,7 +130,7 @@
     <value>resultado de marcacion</value>
   </data>
   <data name="telephone" xml:space="preserve">
-    <value>telefono</value>
+    <value>Telefono</value>
   </data>
   <data name="timeMessage" xml:space="preserve">
     <value>tiempo de rep mensaje</value>

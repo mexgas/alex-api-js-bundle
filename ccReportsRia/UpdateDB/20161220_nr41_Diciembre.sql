@@ -180,7 +180,7 @@ BEGIN
 END'
 	EXEC(@sql)
 
-	
+
 
 
 	set @process = 'Alter SP -- ReportsMasterProcess'
@@ -271,6 +271,12 @@ end
 
 set @minReplication = @minReplication * 60
 
+-------------------- Revision que no existe conflictos  -----------------------------------------
+
+if exists (select * from sys.triggers where name = N''trigPosicionEspecialidad'' and parent_id = OBJECT_ID(N''ccloglogin''))
+	DROP TRIGGER trigPosicionEspecialidad
+
+
 -------------------- ejecuccion de las replicas -----------------------------------------
 
 create table #replications ([name] nvarchar(100), flag bit)
@@ -318,12 +324,6 @@ begin
 end
 
 drop table #replications
--------------------- Revision que no existe conflictos  -----------------------------------------
-
-if exists (select * from sys.triggers where name = N''trigPosicionEspecialidad'' and parent_id = OBJECT_ID(N''ccloglogin''))
-	DROP TRIGGER trigPosicionEspecialidad
-
-
 
 -------------------- ejecuccion de las construnccion de los reportes -----------------------------------------
 

@@ -30,7 +30,7 @@ set @version =42
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
-if @actualVersion = @version - 1 begin
+if @actualVersion = @version - 1 or @actualVersion = @version begin
 	begin tran
 	begin try
 

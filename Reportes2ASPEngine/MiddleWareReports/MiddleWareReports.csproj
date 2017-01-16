@@ -92,6 +92,7 @@
     <Compile Include="reports\email\RepEmailACD.cs" />
     <Compile Include="reports\email\RepEmailDetail.cs" />
     <Compile Include="reports\email\RepEmailGeneral.cs" />
+    <Compile Include="reports\Errescuer\RepBreakdownByCodes.cs" />
     <Compile Include="reports\inboundreports\RepInAbnd.cs" />
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
     <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />

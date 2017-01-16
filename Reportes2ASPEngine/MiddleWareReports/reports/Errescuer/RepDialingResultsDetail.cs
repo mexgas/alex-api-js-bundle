@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MiddleWareReports
 {
-    class RepBreakdownByCodes : GenericReport
+    class RepDialingResultsDetail : GenericReport
     {
     }
 }

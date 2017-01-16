@@ -154,8 +154,8 @@ namespace MiddleWareReports
                     return new RepSpececialAbndProfiles();
                 case 7110:
                     return new RepSpececialAbndTimes();
-                case 7120:
-                    return new RepBreakdownByCodes();
+                case 4180:
+                    return new RepDialingResultsDetail();
                 case 8010:
                     return new RepTrunkBusy();
                 case 8020:
@@ -193,7 +193,7 @@ namespace MiddleWareReports
                 case 9011:
                     return new CRMxView();
                 case 10010://reporte emailACD
-                    return new RepBreakdownByCodes();
+                    return new RepDialingResultsDetail();
                 case 10020://reporte email detalle ACD
                     return new RepEmailAgente();
                 case 10030://reporte email detail

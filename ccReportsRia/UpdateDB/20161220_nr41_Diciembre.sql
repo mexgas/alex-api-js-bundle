@@ -1248,6 +1248,7 @@ if @action=1 begin
 end'
 	EXEC(@sql)
 
+	exec ccsp_getVersion 'BD', @version
 
 	commit tran
 	end try

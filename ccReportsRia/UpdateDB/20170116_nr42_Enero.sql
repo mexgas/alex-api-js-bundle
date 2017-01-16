@@ -33,7 +33,7 @@ exec @actualVersion = ccsp_getVersion 'BD'
 if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
-	
+
 	set @process = 'Drop SP -- ccspRepDialingResultsDetail 4180'
 	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepDialingResultsDetail'') DROP PROCEDURE [dbo].[ccspRepDialingResultsDetail]'
 	EXEC(@sql)
@@ -51,7 +51,7 @@ create table RepDialingResultsDetail(
 	[dialResultId] int NOT NULL,
 	[dialResult] varchar(30) NOT NULL,
 	[userId] [int] NOT NULL,
-	[login] [varchar](20) NOT NULL,
+	[login] [varchar](50) NOT NULL,
 	[campaignId] int NOT NULL,
 	[campaign] [varchar](40) NOT NULL,
 	[year] [int] NOT NULL,
@@ -86,7 +86,7 @@ delete from  RepDialingResultsDetail where [date] between @from and @to
 
 insert into RepDialingResultsDetail(date,telephone,dialResultId,dialResult,userId,login,campaignId,campaign,year,month,day,hour,minutes)
 select dial.fecha as [date],dial.Telefono as [telephone],dial.tipoResDial_id as dialResultId,isnull(tr.descripcion,dial.disconnectCause) as dialResult,
-isnull(co.User_id,0) as userId,isnull(u.Login,''systemTranslated_NoUserName'') as [Login],
+isnull(co.User_id,0) as userId,isnull(cast(u.Login  as varchar(50)),''systemTranslated_NoUserName'') as [Login],
 dial.cam_id as campaignId,camp.cam_descripcion as campaign
 ,datepart(yyyy,dial.fecha) as [year]
 ,datepart(mm,dial.fecha) as [month]

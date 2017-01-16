@@ -62,10 +62,10 @@ else begin
 end'
 		EXEC(@Sql)
 
-		set @process = ''
+		set @process = 'Inser new Reports -- 4180'
 		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4180)
 insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''535e0d7fe32430d42fe2e1b0a0a98188d232c9922ef9b64dac7af589adc690e6a459ae74e1361c74edacf200d9d7ad217c194d20e7cfca5d6d256491ecace789'')
+values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''db47a2867c7795a221f61d9e0dccebfb32d8fb3e0026848cfc108c677051317d6f93de038e1f16b80f67b6139265c86e669c7602ede198536f899842d56c5d37'')
 '
 		EXEC(@Sql)
 

@@ -2103,4 +2103,7 @@
   <data name="messageSubjectMailAlert" xml:space="preserve">
     <value>Mensaje de alerta errror reporte informacion general</value>
   </data>
+  <data name="DialingResultsDetail" xml:space="preserve">
+    <value>Dialing Results Detail</value>
+  </data>
 </root>

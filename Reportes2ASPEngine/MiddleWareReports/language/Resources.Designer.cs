@@ -1933,6 +1933,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Detalle de resultados de marcación.
+        /// </summary>
+        public static string DialingResultsDetail {
+            get {
+                return ResourceManager.GetString("DialingResultsDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Resultados de marcación por hora.
         /// </summary>
         public static string DialingResultsperHour {

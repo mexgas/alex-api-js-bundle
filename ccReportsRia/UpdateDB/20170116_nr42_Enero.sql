@@ -30,10 +30,10 @@ set @version =42
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
-if @actualVersion = @version - 1 or @actualVersion = @version begin
+if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
-
+	
 	set @process = 'Drop SP -- ccspRepDialingResultsDetail 4180'
 	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepDialingResultsDetail'') DROP PROCEDURE [dbo].[ccspRepDialingResultsDetail]'
 	EXEC(@sql)
@@ -154,7 +154,8 @@ end'
 	set @Sql= ''
 	EXEC(@sql)
 
-	exec ccsp_getVersion 'BD', @version
+	if @actualVersion  = @version - 1
+		exec ccsp_getVersion 'BD', @version
 
 
 	commit tran

@@ -34,8 +34,8 @@ if @actualVersion = @version - 1 or @actualVersion = @version begin
 	begin tran
 	begin try
 
-	set @process = 'Drop SP -- ccspRepBreakdownByCodes 7120'
-	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepBreakdownByCodes'') DROP PROCEDURE [dbo].[ccspRepBreakdownByCodes]'
+	set @process = 'Drop SP -- ccspRepDialingResultsDetail 4180'
+	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepDialingResultsDetail'') DROP PROCEDURE [dbo].[ccspRepDialingResultsDetail]'
 	EXEC(@sql)
 
 
@@ -43,9 +43,9 @@ if @actualVersion = @version - 1 or @actualVersion = @version begin
 	set @Sql= ''
 	EXEC(@sql)
 
-	set @process = 'Create Table -- RepBreakdownByCodes 7120'
-	set @Sql= 'if not exists(select * from sys.tables where name=''RepBreakdownByCodes'')
-create table RepBreakdownByCodes(
+	set @process = 'Create Table -- RepDialingResultsDetail 4180'
+	set @Sql= 'if not exists(select * from sys.tables where name=''RepDialingResultsDetail'')
+create table RepDialingResultsDetail(
 	[date] [datetime] NOT NULL,
 	[telephone] [varchar](30) NOT NULL,
 	[dialResultId] int NOT NULL,
@@ -66,8 +66,8 @@ create table RepBreakdownByCodes(
 	set @Sql= ''
 	EXEC(@sql)
 
-	set @process = 'Create SP -- ccspRepBreakdownByCodes 7120'
-	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepBreakdownByCodes]
+	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
+	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepDialingResultsDetail]
 @action as tinyint,
 @from as datetime=null,
 @to as datetime=null
@@ -82,9 +82,9 @@ if @action = 1
 begin
 
 
-delete from  RepBreakdownByCodes where [date] between @from and @to
+delete from  RepDialingResultsDetail where [date] between @from and @to
 
-insert into RepBreakdownByCodes(date,telephone,dialResultId,dialResult,userId,login,campaignId,campaign,year,month,day,hour,minutes)
+insert into RepDialingResultsDetail(date,telephone,dialResultId,dialResult,userId,login,campaignId,campaign,year,month,day,hour,minutes)
 select dial.fecha as [date],dial.Telefono as [telephone],dial.tipoResDial_id as dialResultId,isnull(tr.descripcion,dial.disconnectCause) as dialResult,
 isnull(co.User_id,0) as userId,isnull(u.Login,''systemTranslated_NoUserName'') as [Login],
 dial.cam_id as campaignId,camp.cam_descripcion as campaign
@@ -104,45 +104,45 @@ where dial.fecha>=@from and dial.fecha<@to
 end'
 	EXEC(@sql)
 
-	set @process = 'Create Index -- RepBreakdownByCodes.IX_RepBreakdownByCodes 7120'
-	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepBreakdownByCodes'' and object_id = OBJECT_ID(N''RepBreakdownByCodes''))
+	set @process = 'Create Index -- RepDialingResultsDetail.IX_RepDialingResultsDetail 4180'
+	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepDialingResultsDetail'' and object_id = OBJECT_ID(N''RepDialingResultsDetail''))
     begin
-        CREATE NONCLUSTERED INDEX [IX_RepBreakdownByCodes] ON [dbo].[RepBreakdownByCodes]
+        CREATE NONCLUSTERED INDEX [IX_RepDialingResultsDetail] ON [dbo].[RepDialingResultsDetail]
 (
 	[date] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
     end'
 	EXEC(@sql)
 
-	set @process = 'Create ReportsFiltersMenus -- 7120'
-	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=7120) begin
-	insert into ReportsFiltersMenus(idReport,filterMenuName) values(7120,N''date'')
-	insert into ReportsFiltersMenus(idReport,filterMenuName) values(7120,N''filterby'')
+	set @process = 'Create ReportsFiltersMenus -- 4180'
+	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=4180) begin
+	insert into ReportsFiltersMenus(idReport,filterMenuName) values(4180,N''date'')
+	insert into ReportsFiltersMenus(idReport,filterMenuName) values(4180,N''filterby'')
 end'
 	EXEC(@sql)
 
-	set @process = 'Create ReportsFilters -- 7120'
-	set @Sql= 'if not exists(select * from ReportsFilters where id=7120) begin
-	insert into ReportsFilters(reportName,filterName,id) values(''Report detail Calling Dialing Errescuer'',''campaigns'',7120)
-	insert into ReportsFilters(reportName,filterName,id) values(''Report detail Calling Dialing Errescuer'',''users'',7120)
+	set @process = 'Create ReportsFilters -- 4180'
+	set @Sql= 'if not exists(select * from ReportsFilters where id=4180) begin
+	insert into ReportsFilters(reportName,filterName,id) values(''Report detail Calling Dialing Errescuer'',''campaigns'',4180)
+	insert into ReportsFilters(reportName,filterName,id) values(''Report detail Calling Dialing Errescuer'',''users'',4180)
 end'
 	EXEC(@sql)
 
-	set @process = 'Create ReportsCharts -- 7120'
-	set @Sql= 'if not exists(select * from ReportsCharts where id=7120) begin
+	set @process = 'Create ReportsCharts -- 4180'
+	set @Sql= 'if not exists(select * from ReportsCharts where id=4180) begin
 	insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
-	values(7120,''Report detail Calling Dialing Errescuer'',1,''campaign'','''','''','''',''sum([dialResultId])'',''Answered calls detail per Campaign'',0)
+	values(4180,''Report detail Calling Dialing Errescuer'',1,''campaign'','''','''','''',''sum([dialResultId])'',''Answered calls detail per Campaign'',0)
 	insert into ReportsCharts(id,reportName,chartType,x1,subX1,x2,subX2,countColumn,chartDescription,isTime)
-	values(7120,''Report detail Calling Dialing Errescuer'',2,''campaign'',''dialResult'','''','''','''',''Dial Results per Campaign'',0)
+	values(4180,''Report detail Calling Dialing Errescuer'',2,''campaign'',''dialResult'','''','''','''',''Dial Results per Campaign'',0)
 end'
 	EXEC(@sql)
 
-	set @process = 'Create TranslatedReports -- 7120'
-	set @Sql= 'if not exists(select * from TranslatedReports where id=7120) insert into TranslatedReports (id,columns) values(7120,''login'')'
+	set @process = 'Create TranslatedReports -- 4180'
+	set @Sql= 'if not exists(select * from TranslatedReports where id=4180) insert into TranslatedReports (id,columns) values(4180,''login'')'
 	EXEC(@sql)
 
-	set @process = 'Create ReportsTotals -- 7120'
-	set @Sql= 'if not exists(select * from ReportsTotals where id=7120) insert into ReportsTotals(id,totalColumns) values(7120,'''')'
+	set @process = 'Create ReportsTotals -- 4180'
+	set @Sql= 'if not exists(select * from ReportsTotals where id=4180) insert into ReportsTotals(id,totalColumns) values(4180,'''')'
 	EXEC(@sql)
 
 

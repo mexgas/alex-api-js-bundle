@@ -48,10 +48,7 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin try
 
 		set @process = 'Drop SP -- ccsp_CreateNodeMail'
-		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'')
-    begin
-        DROP PROCEDURE ccsp_CreateNodeMail
-    end'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'') DROP PROCEDURE ccsp_CreateNodeMail'
 		EXEC(@Sql)
 
 		set @process = 'Insert ccTipoStatusAgente 26,27'
@@ -63,6 +60,13 @@ else begin
 	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
 	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
 end'
+		EXEC(@Sql)
+
+		set @process = ''
+		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4180)
+insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''535e0d7fe32430d42fe2e1b0a0a98188d232c9922ef9b64dac7af589adc690e6a459ae74e1361c74edacf200d9d7ad217c194d20e7cfca5d6d256491ecace789'')
+'
 		EXEC(@Sql)
 
 		set @process = 'Delete conflict Replication'
@@ -255,12 +259,12 @@ set @res = -1
 	select @res
 END'
 		EXEC(@Sql)
-		
+
 		set @process = 'Insert ccSettings -- Limit of calls per seconds'
 set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
     begin
 	UPDATE ccSettings SET valor = ''0'', descripcion = ''Porcentaje de limite de llamadas por segundo'', Status = 1, Tipo = ''ADM'', detalle = ''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'', description = ''Percent of limit of calls per seconds'', bLoadSettings = 1, validate = ''^(100|\d{1,2})$'' WHERE setting_id = 190
-	end	
+	end
 		else
 	begin
 	INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')
@@ -271,7 +275,7 @@ set @process = 'Insert ccSettings -- Telephone transfer list'
 set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
     begin
     UPDATE ccSettings SET valor = ''0'', descripcion = ''Restringir transferencia de llamadas por área'', Status = 1, Tipo = ''GRL'', detalle = ''1:Activar 0:Desactivar'', description = ''Restrict transfer directory by area'', bLoadSettings = 1, validate = ''^[0-1]$'' WHERE setting_id = 191
-	end	
+	end
 		else
 	begin
     INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')
@@ -297,7 +301,7 @@ select @value = valor from ccSettings where setting_id = 191
 
 	IF @value = 0
 		begin
-			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
 			(
 				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
@@ -315,13 +319,13 @@ select @value = valor from ccSettings where setting_id = 191
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
 					)
-					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID 
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
 					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
 					Order by nomb
 				end
 			else
 				begin
-					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
 					(
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
@@ -358,7 +362,7 @@ declare @value int
 		begin
 			select -1, ''IVR''
 			union
-			select inbound_id, descripcion from ccInbound where inbound_id in 
+			select inbound_id, descripcion from ccInbound where inbound_id in
 			(
 				select inbound_id from ccInboundHorarios where horario_id in
 				(
@@ -366,7 +370,7 @@ declare @value int
 					where
 					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-					AND (  
+					AND (
 						Lunes  = @dia or
 						Martes *2 = @dia or
 						Miercoles*3 = @dia or
@@ -379,7 +383,7 @@ declare @value int
 			)
 			and inbound_id <> @current
 			-- las activas
-			and status <> 0 
+			and status <> 0
 			-- las que tienen agentes firmados
 			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
 			order by 2
@@ -391,7 +395,7 @@ declare @value int
 				begin
 					select -1, ''IVR''
 					union
-					select inbound_id, descripcion from ccInbound where inbound_id in 
+					select inbound_id, descripcion from ccInbound where inbound_id in
 					(
 						select inbound_id from ccInboundHorarios where horario_id in
 						(
@@ -399,7 +403,7 @@ declare @value int
 							where
 							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (  
+							AND (
 								Lunes  = @dia or
 								Martes *2 = @dia or
 								Miercoles*3 = @dia or
@@ -412,7 +416,7 @@ declare @value int
 					)
 					and inbound_id <> @current
 					-- las activas
-					and status <> 0 
+					and status <> 0
 					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
 					order by 2
 				end
@@ -420,7 +424,7 @@ declare @value int
 				begin
 					select -1, ''IVR''
 					union
-					select inbound_id, descripcion from ccInbound where inbound_id in 
+					select inbound_id, descripcion from ccInbound where inbound_id in
 					(
 						select inbound_id from ccInboundHorarios where horario_id in
 						(
@@ -428,7 +432,7 @@ declare @value int
 							where
 							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (  
+							AND (
 								Lunes  = @dia or
 								Martes *2 = @dia or
 								Miercoles*3 = @dia or
@@ -441,14 +445,14 @@ declare @value int
 					)
 					and inbound_id <> @current
 					-- las activas
-					and status <> 0 
+					and status <> 0
 					and IDArea in (
 					select IDArea from ccUsers where User_id = @userID
 					)
 					-- las que tienen agentes firmados
 					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-					order by 2 
-				end 
+					order by 2
+				end
 		end'
 	EXEC(@sql)
 

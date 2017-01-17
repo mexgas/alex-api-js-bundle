@@ -112,6 +112,8 @@ namespace MiddleWareReports
                     return new RepSpecialAbndCamp();
                 case 4160:
                     return new RepOutDispositionsContacOwner();
+                case 4170:
+                    return new RepOutManagementBase(); //reporte de errescuer gestion de base 
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
                 case 4230://Telephone Numbers by Record/List Report
@@ -154,8 +156,8 @@ namespace MiddleWareReports
                     return new RepSpececialAbndProfiles();
                 case 7110:
                     return new RepSpececialAbndTimes();
-                case 4180:
-                    return new RepDialingResultsDetail();
+                case 7120:
+                    return new RepBreakdownByCodes();
                 case 8010:
                     return new RepTrunkBusy();
                 case 8020:
@@ -193,7 +195,7 @@ namespace MiddleWareReports
                 case 9011:
                     return new CRMxView();
                 case 10010://reporte emailACD
-                    return new RepDialingResultsDetail();
+                    return new RepBreakdownByCodes();
                 case 10020://reporte email detalle ACD
                     return new RepEmailAgente();
                 case 10030://reporte email detail

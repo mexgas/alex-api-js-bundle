@@ -39,8 +39,8 @@ if @actualVersion  in(@version,@version - 1) begin
 	EXEC(@sql)
 
 
-	set @process = ''
-	set @Sql= ''
+	set @process = 'Drop SP -- RepOutManagementBase 4170'
+	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepOutManagementBase'') DROP PROCEDURE [dbo].[ccspRepOutManagementBase]'
 	EXEC(@sql)
 
 	set @process = 'Create Table -- RepDialingResultsDetail 4180'
@@ -62,8 +62,22 @@ create table RepDialingResultsDetail(
 ) ON [PRIMARY]'
 	EXEC(@sql)
 
-	set @process = ''
-	set @Sql= ''
+	set @process = 'create table RepOutManagementBase----'
+	set @Sql= 'if not exists(select * from sys.tables where name=''RepOutManagementBase'')
+	create table RepOutManagementBase
+(
+[date] datetime,
+cCodigo int not null,
+ResultadoMarcacion varchar(20),
+Calificacion varchar(30),
+SubCalificacion varchar(30),
+total int,
+año int, 
+mes int, 
+dia int, 
+hora int, 
+minutos int 
+);'
 	EXEC(@sql)
 
 	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
@@ -103,6 +117,46 @@ where dial.fecha>=@from and dial.fecha<@to
 
 end'
 	EXEC(@sql)
+
+
+	set @process = 'Create SP -- ccspRepOutManagementBase 4170'
+	set @Sql= 'CREATE PROCEDURE[dbo].[ccspRepOutManagementBase]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
+
+if @action = 1
+begin
+	delete from RepOutManagementBase with(rowlock)
+	where [date] >= @from AND [date] < @to
+	
+insert into RepOutManagementBase 
+select  CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121) as fecha,
+	cout.callout_id,resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada , 
+	ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,SUM(cout.cal_manual) as total,
+		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
+		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
+		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
+		datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [hour],
+		datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [minutes]
+from ccoCallsOut cout 
+	left join ccoLogDials logdial on cout.callout_id = logdial.callout_id
+	left join cctipoResultadodial resdial on logdial.tipoResDial_id = logdial.tipoResDial_id
+	left join cctipocalif tipocal on cout.calif_id = tipocal.calif_id
+	left join cctipocalifsub tiposubcal on cout.califSub_id = tiposubcal.califSub_id
+where fecha >= @from and fecha < @to
+group by cout.callout_id,resdial.tipoResDial_id,resdial.descripcion,
+tipocal.Description,tiposubcal.califSubDesc,cout.cal_manual,fecha
+
+end'
+	EXEC(@sql)
+
 
 	set @process = 'Create Index -- RepDialingResultsDetail.IX_RepDialingResultsDetail 4180'
 	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepDialingResultsDetail'' and object_id = OBJECT_ID(N''RepDialingResultsDetail''))
@@ -146,14 +200,65 @@ end'
 	EXEC(@sql)
 
 
-	set @process = ''
-	set @Sql= ''
+	
+
+	set @process = 'Create Index -- RepDialingResultsDetail.IX_RepDialingResultsDetail 4180'
+	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepDialingResultsDetail'' and object_id = OBJECT_ID(N''RepDialingResultsDetail''))
+    begin
+        CREATE NONCLUSTERED INDEX [IX_RepDialingResultsDetail] ON [dbo].[RepDialingResultsDetail]
+(
+	[date] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+    end'
+	EXEC(@sql)
+
+	set @process = 'Create Index -- RepOutManagementBase.IX_RepOutManagementBase 4170'
+	set @Sql= ' if not exists (select * from sys.indexes where name = N''IX_RepOutManagementBase'' and object_id = OBJECT_ID(N''RepOutManagementBase''))
+	begin 
+	CREATE NONCLUSTERED INDEX [IX_RepOutManagementBase] ON [dbo].RepOutManagementBase
+(
+	[date] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+    end '
+	EXEC(@sql)
+
+	set @process = 'sert into ReportsFiltersMenus ----'
+	set @Sql= 'if not exists(select * from ReportsFiltersMenus where id=4170) 
+	begin 
+		insert into ReportsFiltersMenus 
+		values (4170,''date'')
+	end'
+	EXEC(@sql)
+
+	set @process = 'insert into ReportsFilters----'
+	set @Sql= 'if not exists(select * from ReportsFilters where id=4170)
+	begin 
+		insert into ReportsFilters
+		values(''Report Out Management Base'',''campaigns'',4170)
+	end'
+	EXEC(@sql)
+
+	set @process = 'insert into ReportsCharts ---------'
+	set @Sql= 'if not exists(select * from ReportsFilters where id=4170) 
+	begin
+	insert into ReportsCharts 
+	values(4170,''Report Out Management Base'',1,''campaign'','''','''','''','''',''Management Base'',0)
+	end'
+	EXEC(@sql)
+
+	set @process = 'insert into ReportsTotals--------'
+	set @Sql= 'if not exists(select * from ReportsFilters where id=4170) 
+	begin
+		insert into ReportsTotals
+		values(4170,''sum:total'')
+	end'
 	EXEC(@sql)
 
 	set @process = ''
 	set @Sql= ''
 	EXEC(@sql)
 
+	
 	if @actualVersion  = @version - 1
 		exec ccsp_getVersion 'BD', @version
 

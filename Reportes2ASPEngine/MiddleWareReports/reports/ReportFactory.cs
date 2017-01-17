@@ -115,7 +115,7 @@ namespace MiddleWareReports
                 case 4160:
                     return new RepOutDispositionsContacOwner();
                 case 4190:
-                    return new RepDialDetailOnAnswered();
+                    return new RepAnsweredCallsDetail();
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
                 case 4230://Telephone Numbers by Record/List Report

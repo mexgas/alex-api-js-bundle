@@ -2,7 +2,7 @@
 
 namespace MiddleWareReports
 {
-    public class RepDialDetailOnAnswered : GenericReport
+    public class RepAnsweredCallsDetail : GenericReport
     {
     }
 }

@@ -1969,7 +1969,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Resultado de marcacion.
+        ///   Busca una cadena traducida similar a resultado de marcacion.
         /// </summary>
         public static string dialResult {
             get {
@@ -2523,15 +2523,6 @@ namespace MiddleWareReports {
         public static string InboundTrunksbusy {
             get {
                 return ResourceManager.GetString("InboundTrunksbusy", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Hora de inicio.
-        /// </summary>
-        public static string initHour {
-            get {
-                return ResourceManager.GetString("initHour", resourceCulture);
             }
         }
         
@@ -4314,6 +4305,15 @@ namespace MiddleWareReports {
         public static string startDate {
             get {
                 return ResourceManager.GetString("startDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Hora de inicio.
+        /// </summary>
+        public static string startHour {
+            get {
+                return ResourceManager.GetString("startHour", resourceCulture);
             }
         }
         

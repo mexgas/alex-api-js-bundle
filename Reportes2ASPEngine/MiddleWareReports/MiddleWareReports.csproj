@@ -96,7 +96,7 @@
     <Compile Include="reports\inboundreports\RepInAbnd.cs" />
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
     <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
-    <Compile Include="reports\outboundreports\RepDialDetailOnAnswered.cs" />
+    <Compile Include="reports\outboundreports\RepAnsweredCallsDetail.cs" />
     <Compile Include="reports\outboundreports\RepOutDispositionsContacOwner.cs" />
     <Compile Include="reports\outboundreports\RepSpecialAbndCamp.cs" />
     <Compile Include="reports\outboundreports\RepCallXfer.cs" />

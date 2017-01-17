@@ -2496,7 +2496,7 @@
   <data name="endHour" xml:space="preserve">
     <value>Hora de fin</value>
   </data>
-  <data name="initHour" xml:space="preserve">
+  <data name="startHour" xml:space="preserve">
     <value>Hora de inicio</value>
   </data>
   <data name="tries" xml:space="preserve">

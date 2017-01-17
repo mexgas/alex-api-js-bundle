@@ -2430,8 +2430,8 @@
   <data name="endHour" xml:space="preserve">
     <value>End Hour</value>
   </data>
-  <data name="initHour" xml:space="preserve">
-    <value>Initial Hour</value>
+  <data name="startHour" xml:space="preserve">
+    <value>Start Hour</value>
   </data>
   <data name="tries" xml:space="preserve">
     <value>Tries</value>

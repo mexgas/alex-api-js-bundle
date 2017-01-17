@@ -2284,6 +2284,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Hora de fin.
+        /// </summary>
+        public static string endHour {
+            get {
+                return ResourceManager.GetString("endHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a emails enviados.
         /// </summary>
         public static string enviados {
@@ -2514,6 +2523,15 @@ namespace MiddleWareReports {
         public static string InboundTrunksbusy {
             get {
                 return ResourceManager.GetString("InboundTrunksbusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Hora de inicio.
+        /// </summary>
+        public static string initHour {
+            get {
+                return ResourceManager.GetString("initHour", resourceCulture);
             }
         }
         
@@ -6816,6 +6834,15 @@ namespace MiddleWareReports {
         public static string tResponseMail {
             get {
                 return ResourceManager.GetString("tResponseMail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Intentos.
+        /// </summary>
+        public static string tries {
+            get {
+                return ResourceManager.GetString("tries", resourceCulture);
             }
         }
         

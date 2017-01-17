@@ -2427,4 +2427,13 @@
   <data name="messageSubjectMailAlert" xml:space="preserve">
     <value>Alert message error report general information</value>
   </data>
+  <data name="endHour" xml:space="preserve">
+    <value>End Hour</value>
+  </data>
+  <data name="initHour" xml:space="preserve">
+    <value>Initial Hour</value>
+  </data>
+  <data name="tries" xml:space="preserve">
+    <value>Tries</value>
+  </data>
 </root>

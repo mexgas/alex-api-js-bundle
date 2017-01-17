@@ -2493,4 +2493,13 @@
   <data name="messageSubjectMailAlert" xml:space="preserve">
     <value>Mensaje de alerta error reporte información general</value>
   </data>
+  <data name="endHour" xml:space="preserve">
+    <value>Hora de fin</value>
+  </data>
+  <data name="initHour" xml:space="preserve">
+    <value>Hora de inicio</value>
+  </data>
+  <data name="tries" xml:space="preserve">
+    <value>Intentos</value>
+  </data>
 </root>

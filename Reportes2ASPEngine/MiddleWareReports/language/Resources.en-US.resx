@@ -2436,4 +2436,46 @@
   <data name="tries" xml:space="preserve">
     <value>Tries</value>
   </data>
+  <data name="AnsweredCallsbyDialingRetries" xml:space="preserve">
+    <value>Answered Calls by Dialing Retries</value>
+  </data>    
+  <data name="activeTime" xml:space="preserve">
+    <value>Active Time</value>
+  </data>
+  <data name="adherencia" xml:space="preserve">
+    <value>Schedule Adherence</value>
+  </data>
+  <data name="callsByHour" xml:space="preserve">
+    <value>Calls by Hour</value>
+  </data>
+  <data name="complete" xml:space="preserve">
+    <value>Total Effective Calls</value>
+  </data>
+  <data name="completeByHour" xml:space="preserve">
+    <value>Effective Calls by Hour</value>
+  </data>
+  <data name="holdTime" xml:space="preserve">
+    <value>On Hold Time</value>
+  </data>
+  <data name="percentComplete" xml:space="preserve">
+    <value>Efective Calls Percent</value>
+  </data>
+  <data name="readyPercent" xml:space="preserve">
+    <value>Ready Percent</value>
+  </data>
+  <data name="talkingPercent" xml:space="preserve">
+    <value>Talking Percent</value>
+  </data>
+  <data name="talkingtTime" xml:space="preserve">
+    <value>Talking Time</value>
+  </data>
+  <data name="unavaibleTime" xml:space="preserve">
+    <value>Unavailable Time</value>
+  </data>
+  <data name="waitpercent" xml:space="preserve">
+    <value>Wait Percent</value>
+  </data>
+  <data name="AgentDetailByDay" xml:space="preserve">
+    <value>Agent Detail by Day</value>
+  </data>
 </root>

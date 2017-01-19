@@ -2502,4 +2502,46 @@
   <data name="tries" xml:space="preserve">
     <value>Intentos</value>
   </data>
+  <data name="AnsweredCallsbyDialingRetries" xml:space="preserve">
+    <value>Llamadas contestadas por reintentos</value>
+  </data>
+  <data name="activeTime" xml:space="preserve">
+    <value>Tiempo de operación</value>
+  </data>
+  <data name="holdTime" xml:space="preserve">
+    <value>Tiempo en espera</value>
+  </data>
+  <data name="talkingtTime" xml:space="preserve">
+    <value>Tiempo en diálogo</value>
+  </data>
+  <data name="adherencia" xml:space="preserve">
+    <value>Adherencia</value>
+  </data>
+  <data name="callsByHour" xml:space="preserve">
+    <value>Llamadas por hora</value>
+  </data>
+  <data name="complete" xml:space="preserve">
+    <value>Total de llamadas efectivas</value>
+  </data>
+  <data name="completeByHour" xml:space="preserve">
+    <value>Llamadas efectivas por hora</value>
+  </data>
+  <data name="percentComplete" xml:space="preserve">
+    <value>Promedio de llamadas efectivas</value>
+  </data>
+  <data name="readyPercent" xml:space="preserve">
+    <value>% en disponible</value>
+  </data>
+  <data name="talkingPercent" xml:space="preserve">
+    <value>% en diálogo</value>
+  </data>
+  <data name="unavaibleTime" xml:space="preserve">
+    <value>Tiempo en no disponible</value>
+  </data>
+  <data name="waitpercent" xml:space="preserve">
+    <value>% en espera</value>
+</data>
+  <data name="AgentDetailByDay" xml:space="preserve">
+    <value>Detalle de Agente por Día</value>
+  </data>
 </root>

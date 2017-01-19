@@ -1058,6 +1058,19 @@ end'
 		'
 		EXEC(@Sql)
 
+		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
+		set @Sql='
+		IF !EXIST (SELECT * FROM [CCenterRia].[dbo].[ccmenus] 
+		WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 4190)
+		BEGIN
+			INSERT INTO [CCenterRia].[dbo].[ccmenus] 
+			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+			VALUES 
+			(4190, ''llamadas contestadas por reintentos|Answered Calls by Dialing Retries'', 4000, ''B'', 4, 3, '''', ''dd4f15bdc99dcbe18c2f87e5dbf5a3ab0d0ec347e1f09eb459b84f9f269d0aba2431e7c47b1f0aebecd52a4072051fa2ca046e1b9484209ea635519a84023c9af24296fc119fc2416895e889e71bc211'')
+		END
+		'
+		EXEC(@Sql)
+
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

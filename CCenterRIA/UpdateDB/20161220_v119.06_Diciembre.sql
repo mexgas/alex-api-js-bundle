@@ -987,7 +987,9 @@ set nocount off'
 					END
 
 
-				SELECT ''LoginOK''=@LoginOK, ''PswdOK''=@PswdOK, ''C''ompuOK''= @CompuOK, ''ExtenOK''=@ExtenOK, ''Extension''=@Extension, ''UserID''=@UserID, ''Nombre''=@Nombre, ''CCServer''=@CCServer, ''TeclaOK''=@TeclaOK, ''TipoConexion'' = @tipoConexion, ''ipExtension'' = @ipExtension, ''XferAgents'' = @XferAgents, ''CRMx'' = @crmxActive
+				SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
+@UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
+@XferAgents as XferAgents, @crmxActive as [CRMx]
 		'
 		EXEC(@Sql)
 
@@ -1048,7 +1050,7 @@ set nocount off'
 
 			Select 1 ''LoginOK'', 1 ''PswdOK'', User_id ''UserID'',
 			 Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''') ''Nombre'',
-			 (SELECT valor FROM ccSettings WHERE setting_id=8) 'ADMServer',
+			 (SELECT valor FROM ccSettings WHERE setting_id=8) [ADMServer],
 			  isnull(IDArea,0) ''AreaId'',
 			 @ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition''
 			From ccUsers Where User_id=@UserID

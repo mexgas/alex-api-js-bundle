@@ -64,7 +64,7 @@ create table RepDialingResultsDetail(
 
 	set @process = 'create table RepOutManagementBase----'
 	set @Sql= 'if not exists(select * from sys.tables where name=''RepOutManagementBase'')
-	ccreate table RepOutManagementBase
+	create table RepOutManagementBase
 (
 [date] datetime,
 cCodigo int not null,
@@ -81,6 +81,7 @@ total int,
 [hour] int,
 [minutes] int
 );
+
 	EXEC(@sql)
 
 	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
@@ -141,8 +142,8 @@ begin
 	
 insert into RepOutManagementBase 
 select  CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121) as fecha,
-	cout.callout_id,isnull(resdial.tipoResDial_id,0),resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada , 
-	isnull(tipocal.calif_id,0),ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSub_id,0),
+	cout.callout_id,isnull(resdial.tipoResDial_id,0) as dialResultId,resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada , 
+	isnull(tipocal.calif_id,0)as dispositionId,ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSub_id,0) as dispositionId,
 	isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,SUM(cout.cal_manual) as total,
 		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
 		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
@@ -158,7 +159,7 @@ where fecha >= @from and fecha < @to
 group by cout.callout_id,resdial.tipoResDial_id,resdial.descripcion,
 tipocal.Description,tiposubcal.califSubDesc,cout.cal_manual,fecha,tipocal.calif_id,tiposubcal.califSub_id
 
-end'
+end '
 	EXEC(@sql)
 
 

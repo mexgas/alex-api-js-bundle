@@ -64,20 +64,23 @@ create table RepDialingResultsDetail(
 
 	set @process = 'create table RepOutManagementBase----'
 	set @Sql= 'if not exists(select * from sys.tables where name=''RepOutManagementBase'')
-	create table RepOutManagementBase
+	ccreate table RepOutManagementBase
 (
 [date] datetime,
 cCodigo int not null,
+tipoResDial_id int not null,
 ResultadoMarcacion varchar(20),
+calif_id int not null,
 Calificacion varchar(30),
+califSub_id int not null, 
 SubCalificacion varchar(30),
 total int,
-año int, 
-mes int, 
-dia int, 
-hora int, 
-minutos int 
-);'
+[year] int,
+[month] int,
+[day] int,
+[hour] int,
+[minutes] int
+);
 	EXEC(@sql)
 
 	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
@@ -138,8 +141,9 @@ begin
 	
 insert into RepOutManagementBase 
 select  CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121) as fecha,
-	cout.callout_id,resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada , 
-	ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,SUM(cout.cal_manual) as total,
+	cout.callout_id,isnull(resdial.tipoResDial_id,0),resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada , 
+	isnull(tipocal.calif_id,0),ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSub_id,0),
+	isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,SUM(cout.cal_manual) as total,
 		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
 		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
 		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
@@ -152,7 +156,7 @@ from ccoCallsOut cout
 	left join cctipocalifsub tiposubcal on cout.califSub_id = tiposubcal.califSub_id
 where fecha >= @from and fecha < @to
 group by cout.callout_id,resdial.tipoResDial_id,resdial.descripcion,
-tipocal.Description,tiposubcal.califSubDesc,cout.cal_manual,fecha
+tipocal.Description,tiposubcal.califSubDesc,cout.cal_manual,fecha,tipocal.calif_id,tiposubcal.califSub_id
 
 end'
 	EXEC(@sql)

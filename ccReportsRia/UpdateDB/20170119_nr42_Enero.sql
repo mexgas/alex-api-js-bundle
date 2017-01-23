@@ -42,9 +42,9 @@ if @actualVersion = @version - 1 begin
 			[date] [datetime] NOT NULL,
 			[calId] [int] NOT NULL,
 			[telephone] [varchar](30) NOT NULL,
-			[dialResultId] [tinyint] NOT NULL,
+			[dialResultId] [int] NOT NULL,
 			[dialResult] [varchar](20) NOT NULL,
-			[tries] [tinyint] NOT NULL,
+			[tries] [int] NOT NULL,
 			[campaignId] [smallint] NOT NULL,
 			[campaing] [varchar](40) NOT NULL,
 			[userId] [smallint] NOT NULL,
@@ -110,8 +110,8 @@ if @actualVersion = @version - 1 begin
 		@to as datetime = null 
 		AS
 		declare
-		@califout as varchar = '1',
-		@califin as varchar = '1'
+		@califout as varchar = ''1'',
+		@califin as varchar = ''1''
 
 		BEGIN
 		SET ANSI_WARNINGS off
@@ -192,14 +192,14 @@ if @actualVersion = @version - 1 begin
 
 			INSERT INTO #sessionTimeGroup
 			select user_id,login,logout,extension
-			,convert(datetime,case when datepart(mi,A.login) between 0 and 14 then convert(varchar(13),A.login,121) + ':00:00.000' --end) AS timegroup
-						when datepart(mi,A.login) between 15 and 29 then convert(varchar(13),A.login,121) + ':15:00.000'
-						when datepart(mi,A.login) between 30 and 44 then convert(varchar(13),A.login,121) + ':30:00.000'
-						when datepart(mi,A.login) between 45 and 59 then convert(varchar(13),A.login,121) + ':45:00.000' end) AS timegroup
-			,convert(datetime,case when datepart(mi,A.logout) between 0 and 14 then convert(varchar(13),A.logout,121) + ':15:00.000' --end) as timegroup_next
-						when datepart(mi,A.logout) between 15 and 29 then convert(varchar(13),A.logout,121) + ':30:00.000'
-						when datepart(mi,A.logout) between 30 and 44 then convert(varchar(13),A.logout,121) + ':45:00.000'
-						when datepart(mi,A.logout) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.logout),121) + ':00:00.000' end) as timegroup_next
+			,convert(datetime,case when datepart(mi,A.login) between 0 and 14 then convert(varchar(13),A.login,121) + '':00:00.000'' --end) AS timegroup
+						when datepart(mi,A.login) between 15 and 29 then convert(varchar(13),A.login,121) + '':15:00.000''
+						when datepart(mi,A.login) between 30 and 44 then convert(varchar(13),A.login,121) + '':30:00.000''
+						when datepart(mi,A.login) between 45 and 59 then convert(varchar(13),A.login,121) + '':45:00.000'' end) AS timegroup
+			,convert(datetime,case when datepart(mi,A.logout) between 0 and 14 then convert(varchar(13),A.logout,121) + '':15:00.000'' --end) as timegroup_next
+						when datepart(mi,A.logout) between 15 and 29 then convert(varchar(13),A.logout,121) + '':30:00.000''
+						when datepart(mi,A.logout) between 30 and 44 then convert(varchar(13),A.logout,121) + '':45:00.000''
+						when datepart(mi,A.logout) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.logout),121) + '':00:00.000'' end) as timegroup_next
 			 ,datediff(ss,login,logout)
 			 from #sessionTime as A
 
@@ -225,47 +225,47 @@ if @actualVersion = @version - 1 begin
 			,nabnd,nno_agent,nque,ntimeout,noverflow,nxfer,nxfer_que,nabnd_xfer,nabnd_ring,nno_answer,nabnd_dialog,nanswer,nlost,nmsg,nabnd_tres,nansw_tres,tque_max,tque,txfer,tdialog,tnotes,tring,tresp,nMoh,nWHag,nWHcl, calif_id, califSub_id
 			)
 			select * from (
-			SELECT case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end as dateStartDetail,
+			SELECT case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end as dateStartDetail,
 				   dateadd(ss,0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas,
-					case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end )
+					case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end )
 					dateEndDetail,
-				   case when datepart(mi,case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) between 0 and 14 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':00:00.000'
-					when datepart(mi,case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) between 15 and 29 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':15:00.000'
-				   when datepart(mi,case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) between 30 and 44 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':30:00.000'
-				   when datepart(mi,case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) between 45 and 59 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':45:00.000' end as timegroup
-				   ,case when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ))
-				   between 0 and 14 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ),121) + ':15:00.000'
-				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ))
-				   between 15 and 29 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ),121) + ':30:00.000'
-				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ))
-				   between 30 and 44 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ),121) + ':45:00.000'
-				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ))
-				   between 45 and 59 then  convert(varchar(13), dateadd(hh,1,case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ),121) + ':00:00.000' end as timegroup_next
-				   ,DATEADD(ss,isnull((0),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) as time_endque
-				   ,DATEADD(ss,isnull((0 + cal_txfer),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) as time_ring
-				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) as time_dialog
-				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) as time_notes
-				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ) as time_end_call
+				   case when datepart(mi,case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) between 0 and 14 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':00:00.000'
+					when datepart(mi,case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) between 15 and 29 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':15:00.000'
+				   when datepart(mi,case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) between 30 and 44 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':30:00.000'
+				   when datepart(mi,case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) between 45 and 59 then convert(varchar(13),case when cal_Xfer is null or cal_Xfer ='1900-01-01 00:00:00' then cal_inicio else cal_Xfer end ,121) + ':45:00.000' end as timegroup
+				   ,case when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ))
+				   between 0 and 14 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ),121) + ':15:00.000'
+				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ))
+				   between 15 and 29 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ),121) + ':30:00.000'
+				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ))
+				   between 30 and 44 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ),121) + ':45:00.000'
+				   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ))
+				   between 45 and 59 then  convert(varchar(13), dateadd(hh,1,case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ),121) + '':00:00.000'' end as timegroup_next
+				   ,DATEADD(ss,isnull((0),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) as time_endque
+				   ,DATEADD(ss,isnull((0 + cal_txfer),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) as time_ring
+				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) as time_dialog
+				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) as time_notes
+				   ,DATEADD(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),case when cal_Xfer is null or cal_Xfer =''1900-01-01 00:00:00'' then cal_inicio else cal_Xfer end ) as time_end_call
 				   ,cal_Ani as phone_in,cal_id,dni_id,Inbound_id,[User_id]
 				   ,1 AS ntotal
 				   ,ISNULL((CASE WHEN statuscall_id=1 THEN 1 ELSE 0 END),0) AS ninitial
 				   ,ISNULL((CASE WHEN statuscall_id=2 THEN 1 ELSE 0 END),0) AS nout_hour
 				   ,ISNULL((CASE WHEN statuscall_id=3 THEN 1 ELSE 0 END),0) AS nout_service
-				   ,ISNULL((CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer = '1900-01-01 00:00:00'))THEN 1 ELSE 0 END),0) AS nabnd
+				   ,ISNULL((CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer = ''1900-01-01 00:00:00''))THEN 1 ELSE 0 END),0) AS nabnd
 				   ,ISNULL((CASE WHEN(statuscall_id=4)THEN 1 ELSE 0 END),0) AS nno_agent
 				   ,ISNULL((CASE WHEN(cal_que>0)THEN 1 ELSE 0 END),0) AS nque
 				   ,ISNULL((CASE WHEN(statuscall_id=7)THEN 1 ELSE 0 END),0) AS ntimeout
 				   ,ISNULL((CASE WHEN(statuscall_id=8)THEN 1 ELSE 0 END),0) AS noverflow
-				   ,ISNULL((CASE WHEN((statuscall_id in(11,15,13,16))OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE 0 END),0) AS nxfer
-				   ,ISNULL((CASE WHEN((cal_que>0)and(statuscall_id in(11,15,13,16)OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00')))THEN 1 ELSE 0 END),0) AS nxfer_que
-				   ,ISNULL((CASE WHEN((statuscall_id=11)OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE 0 END),0) AS nabnd_xfer
+				   ,ISNULL((CASE WHEN((statuscall_id in(11,15,13,16))OR(statuscall_id=6 AND cal_xfer <> ''1900-01-01 00:00:00''))THEN 1 ELSE 0 END),0) AS nxfer
+				   ,ISNULL((CASE WHEN((cal_que>0)and(statuscall_id in(11,15,13,16)OR(statuscall_id=6 AND cal_xfer <> ''1900-01-01 00:00:00'')))THEN 1 ELSE 0 END),0) AS nxfer_que
+				   ,ISNULL((CASE WHEN((statuscall_id=11)OR(statuscall_id=6 AND cal_xfer <> ''1900-01-01 00:00:00''))THEN 1 ELSE 0 END),0) AS nabnd_xfer
 				   ,ISNULL((CASE WHEN((statuscall_id=15)AND(cal_tring<=@tresRing))THEN 1 ELSE 0 END),0) AS nabnd_ring
 				   ,ISNULL((CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE 0 END),0) AS nno_answer
 				   ,ISNULL((CASE WHEN((statuscall_id=13)AND(cal_tdialog<=@tresDialog))THEN 1 ELSE 0 END),0) AS nabnd_dialog
 				   ,ISNULL((CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE 0 END),0) AS nanswer
 				   ,ISNULL((CASE WHEN(statuscall_id=16)THEN 1 ELSE 0 END),0) AS nlost
 				   ,ISNULL((CASE WHEN(statuscall_id IN(9,10,12,14))THEN 1 ELSE 0 END),0) AS nmsg
-				   ,ISNULL((CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer = '1900-01-01 00:00:00')AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE 0 END),0) AS nabnd_tres
+				   ,ISNULL((CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer = ''1900-01-01 00:00:00'')AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE 0 END),0) AS nabnd_tres
 				   ,ISNULL((CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE 0 END),0) AS nansw_tres
 				   ,cal_twait AS tque_max, cal_twait as tque, cal_txfer AS txfer
 				   ,ISNULL((cal_tdialog),0)AS tdialog,ISNULL((cal_tnotas),0)AS tnotes,ISNULL((cal_tring),0)AS tring
@@ -284,10 +284,10 @@ if @actualVersion = @version - 1 begin
 			update C
 			set C.dateEndDetail=@dateNow
 			,C.timegroup_next=
-			case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':15:00.000' --end
-				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':30:00.000'
-				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':45:00.000'
-				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then convert(varchar(13),dateadd(hh,1,B.fecha),121) + ':00:00.000' end
+			case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':15:00.000'' --end
+				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':30:00.000''
+				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':45:00.000''
+				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end
 			,C.time_dialog= case when A.currentStatus in (4,5,9) then @dateNow when A.TipoStatusAge_id=4 then B.fecha else C.dateStartDetail end
 			,C.time_notes=@dateNow
 			,C.time_end_call=@dateNow
@@ -360,10 +360,10 @@ if @actualVersion = @version - 1 begin
 			insert into #outboundData(dateStartDetail,dateEndDetail,timegroup,timegroup_next,cam_id,User_id,ntotal,nno_agent,nxfer,nabnd_xfer,nabnd_ring,nno_answer,nabnd_dialog,nanswer,nlost,tque,txfer,tring,tdialog,tnotes,tresp,nhangup,nMoh,nWHag,nWHcl,time_endque,time_ring,time_dialog,time_notes,time_end_call,phone_out,cal_id,cal_puerto,calif_id,califSub_id)
 			select * from (
 			SELECT cal_Inicio AS dateStartDetail,DATEADD(ss,isnull(sum(0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio) AS dateEndDetail
-				   ,case when datepart(mi,cal_inicio) between 0 and 14 then convert(varchar(13),cal_Inicio,121) + ':00:00.000' --end as timegroup
-						 when datepart(mi,cal_inicio) between 15 and 29 then convert(varchar(13),cal_Inicio,121) + ':15:00.000'
-						 when datepart(mi,cal_inicio) between 30 and 44 then convert(varchar(13),cal_Inicio,121) + ':30:00.000'
-						 when datepart(mi,cal_inicio) between 45 and 59 then convert(varchar(13),cal_Inicio,121) + ':45:00.000' end as timegroup
+				   ,case when datepart(mi,cal_inicio) between 0 and 14 then convert(varchar(13),cal_Inicio,121) + '':00:00.000'' --end as timegroup
+						 when datepart(mi,cal_inicio) between 15 and 29 then convert(varchar(13),cal_Inicio,121) + '':15:00.000''
+						 when datepart(mi,cal_inicio) between 30 and 44 then convert(varchar(13),cal_Inicio,121) + '':30:00.000''
+						 when datepart(mi,cal_inicio) between 45 and 59 then convert(varchar(13),cal_Inicio,121) + '':45:00.000'' end as timegroup
 				   ,case when datepart(mi,dateadd(ss,isnull(sum(0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio))
 					   between 0 and 14 then convert(varchar(13),dateadd(ss,isnull(sum(0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio),121) + ':15:00.000' --end as timegroup_next
 					   when datepart(mi,dateadd(ss,isnull(sum(0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio))
@@ -410,10 +410,10 @@ if @actualVersion = @version - 1 begin
 			 update C
 			 set C.dateEndDetail=@dateNow
 			 ,C.timegroup_next=
-			 case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 15 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':15:00.000' --end
-	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':30:00.000'
-	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + ':45:00.000'
-	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then convert(varchar(13),dateadd(hh,1,B.fecha),121) + ':00:00.000' end
+			 case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 15 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':15:00.000'' --end
+	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':30:00.000''
+	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':45:00.000''
+	 			when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end
 			 ,C.time_dialog= case when A.currentStatus in (4,5,9) then @dateNow when A.TipoStatusAge_id=4 then B.fecha else C.dateStartDetail end
 			 ,C.time_notes=@dateNow
 			 ,C.time_end_call=@dateNow
@@ -494,14 +494,14 @@ if @actualVersion = @version - 1 begin
 
 			insert into #timeDetailAgent
 			select A.user_id,A.dateIni,A.dateEnd
-			,convert(datetime,case when datepart(mi,A.dateIni) between 0 and 14 then convert(varchar(13),A.dateIni,121) + ':00:00.000' --end) AS timegroup
-					when datepart(mi,A.dateIni) between 15 and 29 then convert(varchar(13),A.dateIni,121) + ':15:00.000'
-					when datepart(mi,A.dateIni) between 30 and 44 then convert(varchar(13),A.dateIni,121) + ':30:00.000'
-					when datepart(mi,A.dateIni) between 45 and 59 then convert(varchar(13),A.dateIni,121) + ':45:00.000' end) AS timegroup
-			,convert(datetime,case when datepart(mi,A.dateEnd) between 0 and 14 then convert(varchar(13),A.dateEnd,121) + ':15:00.000' --end) as timegroup_next,
-					when datepart(mi,A.dateEnd) between 15 and 29 then convert(varchar(13),A.dateEnd,121) + ':30:00.000'
-					when datepart(mi,A.dateEnd) between 30 and 44 then convert(varchar(13),A.dateEnd,121) + ':45:00.000'
-					when datepart(mi,A.dateEnd) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEnd),121) + ':00:00.000' end) as timegroup_next,
+			,convert(datetime,case when datepart(mi,A.dateIni) between 0 and 14 then convert(varchar(13),A.dateIni,121) + '':00:00.000'' --end) AS timegroup
+					when datepart(mi,A.dateIni) between 15 and 29 then convert(varchar(13),A.dateIni,121) + '':15:00.000''
+					when datepart(mi,A.dateIni) between 30 and 44 then convert(varchar(13),A.dateIni,121) + '':30:00.000''
+					when datepart(mi,A.dateIni) between 45 and 59 then convert(varchar(13),A.dateIni,121) + '':45:00.000'' end) AS timegroup
+			,convert(datetime,case when datepart(mi,A.dateEnd) between 0 and 14 then convert(varchar(13),A.dateEnd,121) + '':15:00.000'' --end) as timegroup_next,
+					when datepart(mi,A.dateEnd) between 15 and 29 then convert(varchar(13),A.dateEnd,121) + '':30:00.000''
+					when datepart(mi,A.dateEnd) between 30 and 44 then convert(varchar(13),A.dateEnd,121) + '':45:00.000''
+					when datepart(mi,A.dateEnd) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEnd),121) + '':00:00.000'' end) as timegroup_next,
 			case when A.tipostatusage_id=1 then A.tStatus else 0 end tunknown,
 			case when A.tipostatusage_id=2 then A.tStatus else 0 end tnot_av,
 			case when A.tipostatusage_id=3 then A.tStatus else 0 end tav,
@@ -525,14 +525,14 @@ if @actualVersion = @version - 1 begin
 	 			User_id,
 	 			B.fecha as dateStartDetail,
 	 			@dateNow as dateEndDetail,
-	 			case when datepart(mi,B.fecha) between 0 and 14 then convert(varchar(13),B.fecha,121) + ':00:00.000' --end as timegroup
-	 				when datepart(mi,B.fecha) between 15 and 29 then convert(varchar(13),B.fecha,121) + ':15:00.000'
-	 				when datepart(mi,B.fecha) between 30 and 44 then convert(varchar(13),B.fecha,121) + ':30:00.000'
-	 				when datepart(mi,B.fecha) between 45 and 59 then convert(varchar(13),B.fecha,121) + ':45:00.000' end as timegroup
-	 			,case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + ':15:00.000' --end as timegroup_next
-	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + ':30:00.000'
-	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + ':45:00.000'
-	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then  convert(varchar(13),dateadd(hh,1,B.fecha),121) + ':00:00.000' end as timegroup_next
+	 			case when datepart(mi,B.fecha) between 0 and 14 then convert(varchar(13),B.fecha,121) + '':00:00.000'' --end as timegroup
+	 				when datepart(mi,B.fecha) between 15 and 29 then convert(varchar(13),B.fecha,121) + '':15:00.000''
+	 				when datepart(mi,B.fecha) between 30 and 44 then convert(varchar(13),B.fecha,121) + '':30:00.000''
+	 				when datepart(mi,B.fecha) between 45 and 59 then convert(varchar(13),B.fecha,121) + '':45:00.000'' end as timegroup
+	 			,case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':15:00.000'' --end as timegroup_next
+	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':30:00.000''
+	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':45:00.000''
+	 				when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then  convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end as timegroup_next
 	 			,case when currentStatus = 1 then tiempo else 0 end as tunknown,
 	 			case when currentStatus = 2 then tiempo else 0 end as tnot_av,
 	 			case when tipostatusage_id=1 then tiempo when currentStatus = 3 then tiempo else 0 end as tav,
@@ -679,10 +679,10 @@ if @actualVersion = @version - 1 begin
 				insert into RepDetailAgent
 				select 
 				A.User_id, 
-				min(B.Login) as 'usuario',
-				min((B.Nombres + space(1) + b.ApellidoPaterno + space(1) + b.ApellidoMaterno)) 'NombreAgente',
-				convert(varchar(14),A.timegroup,120)+'00:00' as [fecha],
-				sum(A.tlog) 'Tiempo de sesion',
+				min(B.Login) as ''usuario'',
+				min((B.Nombres + space(1) + b.ApellidoPaterno + space(1) + b.ApellidoMaterno)) ''NombreAgente'',
+				convert(varchar(14),A.timegroup,120)+''00:00'' as [fecha],
+				sum(A.tlog) ''Tiempo de sesion'',
 				sum(a.tlog - tnotes) as [Tiempo de operacion] -- tlog - tiempoAuxiliares
 				,sum(txfer+tring+tdialog+tnotes) as [Tiempo en dialogo]
 				--,sum(tav) [Tiempo en disponible]
@@ -704,7 +704,7 @@ if @actualVersion = @version - 1 begin
 				,datepart(mm,min(A.timegroup)) [minutes]
 				from #agentInformation A
 				inner join ccUsers B on A.User_id=B.User_id
-				group by convert(varchar(14),A.timegroup,120)+'00:00', A.User_id
+				group by convert(varchar(14),A.timegroup,120)+''00:00'', A.User_id
 
 			---DROP TABLES TEMP
 			drop table #sessionTime
@@ -725,6 +725,72 @@ if @actualVersion = @version - 1 begin
 			drop table #sessionTimeMayores;
 		END
 		END'
+	EXEC(@sql)
+
+
+	set @process = 'AnsweredCallsbyDialingRetries - Procedimiento Almacenado'
+	set @Sql= '
+	IF NOT EXIST (SELECT * FROM sys.procedures where name = N''RepAnsweredCallsByDialingRetries'')
+	BEGIN
+		CREATE PROCEDURE [ccspRepAnsweredCallsByDialingRetries]
+		@action as tinyint,
+		@from AS datetime = null,
+		@to AS datetime = null
+		AS
+		if @from is null
+			select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null	
+			select @to = getdate()
+
+		if @action = 1
+		begin
+
+			--Borrar lo que esta para no repetir
+			delete from RepAnsweredCallsByDialingRetries with(rowlock)
+			where date >= @from and date < @to
+
+			INSERT INTO RepAnsweredCallsByDialingRetries
+			select 
+			A.cal_Inicio as [date],
+			A.cal_id as [calId],
+			A.cal_telefono as [telephone],
+			B.tipoResDial_id as [dialResultId],
+			resDial.descripcion as [dialResult],
+			C.cal_intentos as [tries], -- añadir a aspx
+			A.cam_id as [campaignId],
+			E.cam_descripcion as [campaign],
+			A.User_id as [userId],
+			D.Nombres + '' '' + D.ApellidoPaterno + '' '' + D.ApellidoMaterno as [agentName],
+			(select top 1 Extension from ccLogLogin where user_id=A.User_id and tipoMov=1 and fecha<A.cal_inicio order by fecha desc) as [extension],
+			convert(varchar(12),A.cal_Inicio,108) as [startHour], -- añadir a aspx
+			convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour], -- añadir a aspx
+			cal_tDialog as [dialogTime],
+			isnull(A.calif_id,0) as [dispositionId],
+			isnull(A.califSub_id,0) as [subDispositionId],
+			isnull(disp.Description,''systemTranslated_Dispositionless'') as [disposition],
+			isnull(subDisp.califSubDesc,''systemTranslated_NoSubDisposition'') as [subDisposition],
+			A.cal_tNotas as [wrapup],
+			datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
+			datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
+			datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
+			datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [hour],
+			datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [minutes]
+			
+			from ccoCallsOut A 
+			left join ccoLogDials B on A.cal_id=B.cal_id
+			left join ccoCallsOutSource C on C.callout_id=A.callout_id
+			left join ccUsers D on A.User_id=D.User_id
+			left join ccCamps E on A.cam_id=E.cam_id
+			left join ccTipoCalifOUT disp On disp.calif_id=A.calif_id
+			left join ccTipoCalifSubOUT subDisp On subDisp.califSub_id=A.califSub_id
+			left join ccTipoResultadoDial resDial on resDial.tipoResDial_id=B.tipoResDial_id
+
+			where A.cal_Inicio >= @from 
+			and A.cal_Inicio < @to
+			and A.cal_manual in(0,2)
+			order by date
+		END
+	END'
 	EXEC(@sql)
 
 	set @process = 'AnsweredCallsbyDialingRetries - filtros fecha y seleccion'
@@ -796,12 +862,6 @@ if @actualVersion = @version - 1 begin
 	BEGIN
 		INSERT INTO TranslatedReports VALUES(4190, ''disposition|subDisposition'')
 	END
-	'
-	EXEC(@sql)
-
-	set @process = ''
-	set @Sql= '
-
 	'
 	EXEC(@sql)
 

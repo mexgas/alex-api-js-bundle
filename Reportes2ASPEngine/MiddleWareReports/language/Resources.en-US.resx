@@ -2475,7 +2475,7 @@
   <data name="waitpercent" xml:space="preserve">
     <value>Wait Percent</value>
   </data>
-  <data name="AgentDetailByDay" xml:space="preserve">
+  <data name="AgentDetailbyDay" xml:space="preserve">
     <value>Agent Detail by Day</value>
   </data>
 </root>

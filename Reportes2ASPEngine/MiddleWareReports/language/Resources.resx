@@ -436,7 +436,7 @@
     <value>Usuario de Agente</value>
   </data>
   <data name="workgroup" xml:space="preserve">
-    <value>grupo de trabajo</value>
+    <value>Grupo de trabajo</value>
   </data>
   <data name="hh" xml:space="preserve">
     <value>Media hora</value>
@@ -2495,5 +2495,8 @@
   </data>
   <data name="systemTranslated_Remoto" xml:space="preserve">
     <value>Remoto</value>
+  </data>
+  <data name="fileMoved" xml:space="preserve">
+    <value>Repositorio de grabación</value>
   </data>
 </root>

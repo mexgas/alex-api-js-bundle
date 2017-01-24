@@ -257,30 +257,17 @@ END'
 		EXEC(@Sql)
 
 		set @process = 'Insert ccSettings -- Limit of calls per seconds'
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
-    begin
-	UPDATE ccSettings SET valor = ''0'', descripcion = ''Porcentaje de limite de llamadas por segundo'', Status = 1, Tipo = ''ADM'', detalle = ''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'', description = ''Percent of limit of calls per seconds'', bLoadSettings = 1, validate = ''^(100|\d{1,2})$'' WHERE setting_id = 190
-	end
-		else
-	begin
-	INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')
-    end'
+	set @sql='if not exists (select * from ccSettings where setting_id=190)
+	INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')'
 EXEC(@sql)
 
 set @process = 'Insert ccSettings -- Telephone transfer list'
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
-    begin
-    UPDATE ccSettings SET valor = ''0'', descripcion = ''Restringir transferencia de llamadas por área'', Status = 1, Tipo = ''GRL'', detalle = ''1:Activar 0:Desactivar'', description = ''Restrict transfer directory by area'', bLoadSettings = 1, validate = ''^[0-1]$'' WHERE setting_id = 191
-	end
-		else
-	begin
-    INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')
-    end'
+set @sql='if not exists (select * from ccSettings where setting_id=191)
+INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
 EXEC(@sql)
 
 set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
-set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')
-		DROP PROCEDURE ccsp_AgentTransfLstArea'
+set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
 EXEC(@sql)
 
 	set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
@@ -351,7 +338,7 @@ declare @value int
 	select @fecha =  getdate()
 	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
 
-	--set @value = 0
+	set @value = 0
 	select @value = valor from ccSettings where setting_id = 191
 
 	if @value = 0

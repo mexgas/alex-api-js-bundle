@@ -49,18 +49,18 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin try
 
 		set @process = 'Alter tabla ccoCallsOut'
-		set @Sql= 'if exists (select * from sys.tables where name = N''ccoCallsOut'')
-    begin 
+		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccoCallsOut'') )
+		begin 
 		alter table ccoCallsOut add file_moved bit null
-    end'
+		end'
 		EXEC(@Sql)
 		
 		
 		set @process = 'Alter tabla ccCallsIn'
-		set @Sql= 'if exists (select * from sys.tables where name = N''ccCallsIn'')
-    begin 
+		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') )
+		begin 
 		alter table ccCallsIn add file_moved bit null
-    end'
+		end'
 		EXEC(@Sql)
 
 

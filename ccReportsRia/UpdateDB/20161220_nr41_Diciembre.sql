@@ -44,29 +44,42 @@ if @actualVersion = @version - 1 begin
 	set @process = 'Drop SP-- ccspAlertMailReport'
 	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspAlertMailReport'') DROP PROCEDURE ccspAlertMailReport'
 	EXEC(@sql)
+	
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+	begin 
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	end'
+	EXEC(@sql)
 
-
-	set @process = 'Alter tabla ccoCallsOut'
-		set @Sql= 'if exists (select * from sys.tables where name = N''ccoCallsOut'')
-    begin 
-		alter table ccoCallsOut add file_moved bit null
-    end'
-		EXEC(@Sql)
+	set @process = 'Alter tabla ccoCallsOut'	
+	set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccoCallsOut'') )
+	begin 
+	alter table ccoCallsOut add file_moved bit null
+	end'
+	EXEC(@Sql)
 				
-		set @process = 'Alter tabla ccCallsIn'
-		set @Sql= 'if exists (select * from sys.tables where name = N''ccCallsIn'')
-		begin 	
-		alter table ccCallsIn add file_moved bit null
+	set @process = 'Alter tabla ccCallsIn'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') )
+	begin 	
+	alter table ccCallsIn add file_moved bit null
+	end'
+	EXEC(@Sql)
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin 
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
 		end'
-		EXEC(@Sql)
+	EXEC(@sql)
 
 	set @process = 'Alter table RepOutDialDetail'
-	set @Sql= 'if exists (select * from sys.tables where name = N''RepOutDialDetail'')	
+	set @Sql= 'if not exists (select * from sys.columns where name = N''fileMoved'' AND Object_ID = Object_ID(N''RepOutDialDetail'') )
 	alter table RepOutDialDetail add fileMoved nvarchar(100) null'
 	EXEC(@sql)
 
 	set @process = 'Alter table RepInDialDetail'
-	set @Sql= 'if exists (select * from sys.tables where name = N''RepInCallsDetail'') 
+	set @Sql= 'if not exists (select * from sys.columns where name = N''fileMoved'' AND Object_ID = Object_ID(N''RepInCallsDetail'') )
 	alter table RepInCallsDetail add fileMoved nvarchar(100) null'
 	EXEC(@sql)
 

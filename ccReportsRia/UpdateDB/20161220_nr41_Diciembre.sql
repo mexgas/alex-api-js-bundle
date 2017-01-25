@@ -10,6 +10,10 @@ Description:
 	Se modifica ccspGenSession eror al obtener session del dia siguiente por error clave primaria temporal
 	Se modifica ccspRepAgentGI por error al tomar cal_twait y tiempo real la informacion ya que cal_twait no es parte tiempo del agente
 	Se modifica ReportsMasterProcess para quitar trigger de replicas casusa conflicto en base datos
+	Se agregan la columna file_moved a ccoCallsOut y ccCallsIn 
+	Se agrega la columna fileMoved en  RepOutDialDetail y RepInCallsDetail 
+	Se modifican los sp y ccspRepInCallsDetail y ccspRepOutCallsDetail para desplegar en donde esta fisicamente la grabacion (remoto/local)
+	Se actualiza en TranslatedReports con id 4010 y 3010 para nuevas traducciones en la columna repositorio de grabacion.
 Database: ccReportsRia
 Required version: 40
 
@@ -36,9 +40,42 @@ if @actualVersion = @version - 1 begin
 	begin tran
 	begin try
 
+	
 	set @process = 'Drop SP-- ccspAlertMailReport'
 	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspAlertMailReport'') DROP PROCEDURE ccspAlertMailReport'
 	EXEC(@sql)
+
+
+	set @process = 'Alter tabla ccoCallsOut'
+		set @Sql= 'if exists (select * from sys.tables where name = N''ccoCallsOut'')
+    begin 
+		alter table ccoCallsOut add file_moved bit null
+    end'
+		EXEC(@Sql)
+				
+		set @process = 'Alter tabla ccCallsIn'
+		set @Sql= 'if exists (select * from sys.tables where name = N''ccCallsIn'')
+		begin 	
+		alter table ccCallsIn add file_moved bit null
+		end'
+		EXEC(@Sql)
+
+	set @process = 'Alter table RepOutDialDetail'
+	set @Sql= 'if exists (select * from sys.tables where name = N''RepOutDialDetail'')	
+	alter table RepOutDialDetail add fileMoved nvarchar(100) null'
+	EXEC(@sql)
+
+	set @process = 'Alter table RepInDialDetail'
+	set @Sql= 'if exists (select * from sys.tables where name = N''RepInCallsDetail'') 
+	alter table RepInCallsDetail add fileMoved nvarchar(100) null'
+	EXEC(@sql)
+
+	set @process = 'Update table TranslatedReports'
+	set @Sql= 'if exists (select * from sys.tables where name = N''TranslatedReports'') 	
+	UPDATE TranslatedReports set columns = ''campaign|billed|fileMoved'' where id= 4010
+	UPDATE TranslatedReports set columns = ''whoHangUp|fileMoved'' where id= 3010'
+	EXEC(@sql)
+
 
 	set @process = 'insert ccSettings -- 36,37,38 -SMTP,Time ALert,Time Send Report'
 	set @sql='if not exists(select * from ccSettings where setting_id =36 )
@@ -179,6 +216,178 @@ BEGIN
 	end
 END'
 	EXEC(@sql)
+
+
+
+	
+	set @process = 'Alter SP table ccspRepOutCallsDetail'
+	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepOutCallsDetail'') 	
+]
+ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
+					@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
+
+DECLARE @IVA INT
+SELECT @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
+
+if @action = 1
+	begin		
+		--Borrar lo que esta para no repetir
+		delete from RepOutCallsDetail with(rowlock)
+		where date >= @from AND date < @to
+
+		INSERT INTO RepOutCallsDetail
+		SELECT Call.cal_inicio as [date],
+		Call.cal_key as [callKey],
+		Call.cal_telefono AS [telephone], 
+		Call.cal_txfer + call.cal_tring AS [transfer], 
+		Call.cal_tdialog AS [dialog], 
+		ISNULL(Call.cal_tMoh,0) as [nque],
+		Call.cal_tnotas AS [wrapup], 
+		ISNULL( Tipo.[description], '''') AS [CallDisposition], 
+		Call.cal_extension AS [extension],
+		Usr.user_id as [userId],
+		ISNULL(Usr.login,''systemTranslated_NoUserName'') [login], 
+		ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username], 
+		camps.cam_id as [campaignId],
+		ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign], 
+		(CEILING((cal_tXfer + cal_tRing + cal_tDialog +1) / 60.0 )* 60) AS [duration], 
+		ISNULL(Call.costo,0.00) as [ncost], 
+		@IVA as iva, 
+		convert(decimal(10,2),ISNULL(Call.costo,0.00) * (1 + (@IVA / 100.00))) as total,
+		case when prov.descrip is not null then prov.descrip when cstoProvedor.descrip is not null then cstoProvedor.descrip else ''systemTranslated_NoCarrier'' end as [ByCarrier],		
+		ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [Calltypes], 
+		case when Call.cal_manual = 0 then ''systemTranslated_Auto'' else ''systemTranslated_Manual'' end as [dialType], 
+		case when cal_whoHung = 0 then ''systemTranslated_Client''
+		when cal_whoHung = 1 then ''systemTranslated_Agent''
+		else ''systemTranslated_AgentSurvey'' end [whoHangUp], 
+		case when call.califsub_id = 0 then ''systemTranslated_NoSubDisposition'' else isnull(sub.califSubDesc, '''') end as [subDisposition],
+		sta.descripcion as [dialResult],
+		Call.cal_id as [calId]
+		, datepart(yyyy,Call.cal_inicio) AS [year]
+		, datepart(mm,Call.cal_inicio) as [month]
+		, datepart(dd,Call.cal_inicio) as [day]
+		, datepart(hh,Call.cal_inicio) as [hour]
+		, datepart(mi,Call.cal_inicio) as [minutes]
+		,Call.cal_puerto
+		, ISNULL(cs.Dato1,'''') as [data1]
+		, ISNULL(cs.Dato2,'''') as [data2]
+		, ISNULL(cs.Dato3,'''') as [data3]
+		, ISNULL(cs.Dato4,'''') as [data4]
+		, ISNULL(cs.Dato5,'''') as [data5]
+		FROM ccoCallsOut Call  
+		LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id  
+		INNER JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+		LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]  
+		LEFT JOIN ccStatusLlamada sta on call.statuscall_id = sta.statuscall_id  
+		LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]  
+		LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] and tl.Country_id = 1)  
+		LEFT JOIN ccTipoCalifSubOut sub on call.califsub_id = sub.califsub_id 
+		LEFT JOIN ccoDialers di on di.dialer_id = Call.cal_puerto
+		LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
+		LEFT JOIN cstoProvedor on di.provedor_id = cstoProvedor.provedor_id
+		WHERE Call.cal_inicio >= @from
+		AND Call.cal_inicio < @to
+		and cal_manual in (0, 2) 
+		order by date
+	end	
+	'
+	EXEC(@sql)
+
+	
+	set @process = 'Update table ccspRepInCallsDetail'
+	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepInCallsDetail'') 	
+		ALTER PROCEDURE [dbo].[ccspRepInCallsDetail]  
+	@action as tinyint,  
+	@from as datetime = null,  
+	@to as datetime = null  
+	AS  
+  
+	if @from is null  
+		select @from = convert(datetime,convert(varchar(11),getdate()))  
+	select @to = getdate()  
+  
+	if @action = 1  
+	begin  
+  
+		--Borrar lo que esta para no repetir  
+		delete from RepInCallsDetail with(rowlock) where date >= @from AND date < @to  
+  
+		insert into RepInCallsDetail  
+		select cal_inicio, Inbound_id, '''' as Inbound, statusCall_id, '''' as statusCall, calif_id, '''' as calif, isnull(califSub_id,0), '''' as califSub,  
+		dni_id, '''' as dni, user_id, '''' as agentName,  
+		isnull(cal_key,''''), cal_ANI, cal_tWait, cal_tXfer, cal_tRing, cal_tDialog, cal_extension, '''',  
+		case when a.cal_whoHung = 0 then ''systemTranslated_Client''  
+		when a.cal_whoHung = 1 then ''systemTranslated_Agent''  
+		else ''systemTranslated_AgentSurvey'' end [whoHangUp]  
+		, cal_tMoh, datepart(yyyy,cal_inicio), datepart(mm,cal_inicio), datepart(dd,cal_inicio)  
+		, datepart(hh,cal_inicio), datepart(mi,cal_inicio)  
+		,di.provedor_id,prov.descrip [Proveedor],a.cal_puerto 
+		,case when a.file_moved = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved  
+		from cccallsin a  
+		left join ccoDialers di on di.dialer_id = a.cal_puerto  
+		left join cstoProvedor prov on di.provedor_id = prov.provedor_id  
+		where cal_inicio >= @from AND cal_inicio < @to  
+  
+		update a set acdGroup = isnull(descripcion,'''')  
+		from RepInCallsDetail a  
+		left join ccInbound b  
+		on a.inboundId = b.Inbound_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set callStatus = isnull(descripcion,'''')  
+		from RepInCallsDetail a  
+		left join ccstatusllamada b  
+		on a.callStatusId = b.statusCall_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set disposition = isnull(description,'''')  
+		from RepInCallsDetail a  
+		left join cctipocalif b  
+		on a.dispositionId = b.calif_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set subDisposition = isnull(califSubDesc,'''')  
+		from RepInCallsDetail a  
+		left join cctipocalifsub b  
+		on a.subDispositionId = b.califSub_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set username = isnull(login,'''')  
+		from RepInCallsDetail a  
+		left join ccusers b  
+		on a.userId = b.user_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set dnis = isnull(dni_numero,'''')  
+		from RepInCallsDetail a  
+		left join ccdnis b  
+		on a.dnisId = b.dni_id  
+		where [date] >= @from AND [date] < @to  
+  
+		update a set agentName = isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno,'''')  
+		from RepInCallsDetail a  
+		left join ccusers b  
+		on a.userId = b.user_id  
+		where [date] >= @from AND [date] < @to  
+	end
+	
+	
+	
+	'
+	EXEC(@sql)
+
+
+
+
+
+
 
 
 

@@ -10,7 +10,8 @@ Description:
 	se modfiica el SP ccsp_BaseXmngr para agregar el primer registro y ultimo para buscar en baseX
 	se modifica el SP ccsp_CleanNodeBaseX para pasar la informacion a la base de historico
 	Se elimina el SP ccsp_CreateNodeMail se sustituye por ccsp_CreateNodeMultimedia
-	Se quitan los conflictos de replicas
+	Se quitan los conflictos de replicas	
+	Se agrega columna file_moved en ccoCallsOut y ccCallsIn
 
 Database: CCenterRia
 Required version: 119.05
@@ -47,12 +48,29 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 
+		set @process = 'Alter tabla ccoCallsOut'
+		set @Sql= 'if exists (select * from sys.tables where name = N''ccoCallsOut'')
+    begin 
+		alter table ccoCallsOut add file_moved bit null
+    end'
+		EXEC(@Sql)
+		
+		
+		set @process = 'Alter tabla ccCallsIn'
+		set @Sql= 'if exists (select * from sys.tables where name = N''ccCallsIn'')
+    begin 
+		alter table ccCallsIn add file_moved bit null
+    end'
+		EXEC(@Sql)
+
+
 		set @process = 'Drop SP -- ccsp_CreateNodeMail'
 		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'')
     begin
         DROP PROCEDURE ccsp_CreateNodeMail
     end'
 		EXEC(@Sql)
+
 
 		set @process = 'Insert ccTipoStatusAgente 26,27'
 		set @Sql= 'if exists(select valor from ccSettings where setting_id=27 and valor=''1'') begin
@@ -838,7 +856,7 @@ end'
 
 				else if isnull(@UserId, 0) = 0 and CHARINDEX('','', @multipleUsers)>0
 					select @UserId = cast(substring(@multipleUsers, 1, 
-					CHARINDEX(',', @multipleUsers)-1) as int)
+					CHARINDEX('','', @multipleUsers)-1) as int)
 
 					select @Type=case when @UserType <> 0 then @UserType else TipoUser_id end,
 					@multipleUsers=isnull(@multipleUsers,cast(@Userid as varchar(10)))
@@ -883,7 +901,7 @@ end'
 				begin
 				select @NinOut=case when @inOut <> 1 then ''0'' else ''1'' end
 
-				set @sql=''delete ccSupervisorCam where tipo='' + @NinOut + '' and user_id in('' + isnull(@multipleUsers, '0') + ') and cam_id=' 
+				set @sql=''delete ccSupervisorCam where tipo='' + @NinOut + '' and user_id in('' + isnull(@multipleUsers, ''0'') + '') and cam_id=''
 					+ cast(@IDCampEsp as varchar(10)) + '' and IDWG='' +cast(@IDWG as varchar(10)) + ''
 					delete ccRIACampEspWG where tipo='' + @NinOut + '' and IDWG='' + cast(@IDWG as varchar(10)) + '' and IdCampEsp='' + cast(@IDCampEsp as varchar(10))
 				exec(@sql)
@@ -1049,7 +1067,7 @@ end'
 
 			Select 1 ''LoginOK'', 1 ''PswdOK'', User_id ''UserID'', 
 			 Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''') ''Nombre'', 
-			 (SELECT valor FROM ccSettings WHERE setting_id=8) 'ADMServer', 
+			 (SELECT valor FROM ccSettings WHERE setting_id=8) ''ADMServer'', 
 			  isnull(IDArea,0) ''AreaId'',
 			 @ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition''
 			From ccUsers Where User_id=@UserID

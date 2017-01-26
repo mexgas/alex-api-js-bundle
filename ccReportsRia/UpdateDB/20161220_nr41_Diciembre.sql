@@ -1511,8 +1511,18 @@ end'
 		EXEC(@sql)
 
 
-	commit tran
-	end try
+	set @process =''
+		set @sql=''
+		EXEC(@sql)
+
+
+		/* End script release */
+
+		/* Upgrade database version (use your own script to do it) */
+		exec ccsp_getVersion 'BD', @version
+		set @actualVersion = @version
+		commit tran
+		end try
 
 	begin catch
 

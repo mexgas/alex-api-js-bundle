@@ -401,7 +401,7 @@ drop table #tempFechasR
 drop table #timeDetailAgent
 drop table #times
 drop table #tempccLogAgentesDia
-drop table #timeDetailAgent
+--drop table #timeDetailAgent
 drop table #timeDetailAgent2'
 	EXEC(@sql)
 

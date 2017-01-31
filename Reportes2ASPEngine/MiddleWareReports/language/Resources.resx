@@ -2496,4 +2496,16 @@
   <data name="DialingResultsDetail" xml:space="preserve">
     <value>Detalle de resultados de marcación</value>
   </data>
+  <data name="AgentandCallStatusesByInterval" xml:space="preserve">
+    <value>Estados de agente y llamadas por intervalo</value>
+  </data>
+  <data name="tCallTransf" xml:space="preserve">
+    <value>Duración de llamadas transferidas</value>
+  </data>
+  <data name="tnav" xml:space="preserve">
+    <value>No disponible 1</value>
+  </data>
+  <data name="twbCall" xml:space="preserve">
+    <value>No disponible 2</value>
+  </data>
 </root>

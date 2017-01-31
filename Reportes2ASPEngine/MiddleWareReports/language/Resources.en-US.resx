@@ -2430,4 +2430,16 @@
   <data name="DialingResultsDetail" xml:space="preserve">
     <value>Dialing Results Detail</value>
   </data>
+  <data name="AgentandCallStatusesByInterval" xml:space="preserve">
+    <value>Agent and Call Statuses by Interval</value>
+  </data>
+  <data name="tCallTransf" xml:space="preserve">
+    <value>Transferred Calls Length</value>
+  </data>
+  <data name="tnav" xml:space="preserve">
+    <value>Unvailable 1</value>
+  </data>
+  <data name="twbCall" xml:space="preserve">
+    <value>Unvailable 2</value>
+  </data>
 </root>

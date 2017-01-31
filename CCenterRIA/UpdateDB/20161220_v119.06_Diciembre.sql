@@ -69,6 +69,13 @@ values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,
 '
 		EXEC(@Sql)
 
+		set @process = 'Inser new Reports -- 2070'
+		set @Sql= 'if not exists(select * from ccMenus where menu_id=2070 and type=3)begin
+insert into ccMenus (menu_id, menu_descrip,parent, Nivel,ordengral,type,HelpSWF,release)
+values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses By Interval'',2000,''B'',2,3,'''',''9845b8194326d000bbf125cc69f93b76c97e97d0bdd431f0e04d5b455413f8fa1c2f669901ecb5f36e912e128c22c6773da345481c0c9c50286221101986c4c4b2f637f3e469b15dd8dca1fca72b0b33'')
+end'
+		EXEC(@sql)
+
 		set @process = 'Delete conflict Replication'
 		set @Sql= 'if exists(select * from sys.tables where name=''MSmerge_conflicts_info'') begin
 

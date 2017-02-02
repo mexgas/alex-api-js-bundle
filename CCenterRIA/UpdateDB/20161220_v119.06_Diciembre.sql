@@ -76,6 +76,13 @@ values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses
 end'
 		EXEC(@sql)
 
+		set @process = 'Inser new Reports -- 4170'
+		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4170)
+insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e103870d96b6765f2ee439d2af114fb6f5574587bad77cc997e68802daa13912b5a4be80d1256d25e18e75aaeeb3f'')
+'
+		EXEC(@Sql)
+
 		set @process = 'Delete conflict Replication'
 		set @Sql= 'if exists(select * from sys.tables where name=''MSmerge_conflicts_info'') begin
 

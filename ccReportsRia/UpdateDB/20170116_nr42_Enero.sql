@@ -68,23 +68,22 @@ create table RepDialingResultsDetail(
 
 	set @process = 'create table RepOutManagementBase----'
 	set @Sql= 'if not exists(select * from sys.tables where name=''RepOutManagementBase'')
-	create table RepOutManagementBase
-(
-[date] datetime,
-cCodigo int not null,
-tipoResDial_id int not null,
-ResultadoMarcacion varchar(20),
-calif_id int not null,
-Calificacion varchar(30),
-califSub_id int not null, 
-SubCalificacion varchar(30),
-total int,
-[year] int,
-[month] int,
-[day] int,
-[hour] int,
-[minutes] int
-);'
+	create table RepOutManagementBase(
+	[date] [datetime] NOT NULL,
+	[dialResultCode] [int] not null,
+	[dialResultId] [int] NOT NULL,
+	[dialResult] [varchar](20) NOT NULL,
+	[dispositionId] [int] NOT NULL,
+	[disposition] [varchar](30)NOT NULL,
+	[subDispositionId] [int] NOT NULL,
+	[subDisposition] [varchar](30) NOT NULL,
+	[total] [int] NOT NULL, 
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+)ON [PRIMARY]'
 
 	EXEC(@sql)
 

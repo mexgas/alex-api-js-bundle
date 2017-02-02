@@ -2508,4 +2508,10 @@
   <data name="twbCall" xml:space="preserve">
     <value>No disponible 2</value>
   </data>
+  <data name="dialResultCode" xml:space="preserve">
+    <value>Código de resultado de marcación</value>
+  </data>
+  <data name="ManagementBase" xml:space="preserve">
+    <value>Gestión de base</value>
+  </data>
 </root>

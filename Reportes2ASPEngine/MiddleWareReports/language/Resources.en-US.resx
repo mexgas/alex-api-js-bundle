@@ -2442,4 +2442,10 @@
   <data name="twbCall" xml:space="preserve">
     <value>Unvailable 2</value>
   </data>
+  <data name="dialResultCode" xml:space="preserve">
+    <value>Dialing Result Code</value>
+  </data>
+  <data name="ManagementBase" xml:space="preserve">
+    <value>Management Base</value>
+  </data>
 </root>

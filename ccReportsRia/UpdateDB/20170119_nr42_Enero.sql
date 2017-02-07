@@ -36,7 +36,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'AnsweredCallsbyDialingRetries - Tabla'
 	set @Sql= '
-	IF NOT EXIST (SELECT * FROM sys.tables where name = N''RepAnsweredCallsByDialingRetries'')
+	IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepAnsweredCallsByDialingRetries'')
 	BEGIN
 		create table [dbo].[RepAnsweredCallsByDialingRetries](
 			[date] [datetime] NOT NULL,
@@ -70,7 +70,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'RepDetailAgent - Tabla'
 	set @Sql= '
-	IF NOT EXIST (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
+	IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
 	BEGIN
 		create table RepDetailAgent(
 		[user_id] int not null,
@@ -103,7 +103,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = '[ccspRepDetailAgent] - Procedimiento Almacenado'
 	set @Sql= '
-	IF NOT EXIST (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'')
+	IF NOT EXISTS (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'')
 	CREATE PROCEDURE [ccspRepDetailAgent]
 		@action as tinyint,
 		@from as datetime = null,
@@ -730,7 +730,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'AnsweredCallsbyDialingRetries - Procedimiento Almacenado'
 	set @Sql= '
-	IF NOT EXIST (SELECT * FROM sys.procedures where name = N''RepAnsweredCallsByDialingRetries'')
+	IF NOT EXISTS (SELECT * FROM sys.procedures where name = N''RepAnsweredCallsByDialingRetries'')
 	BEGIN
 		CREATE PROCEDURE [ccspRepAnsweredCallsByDialingRetries]
 		@action as tinyint,
@@ -795,7 +795,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'AnsweredCallsbyDialingRetries - filtros fecha y seleccion'
 	set @Sql= '
-	IF !EXIST (SELECT * FROM [ReportsFiltersMenus]
+	IF !EXISTS (SELECT * FROM [ReportsFiltersMenus]
 	WHERE [ReportsFiltersMenus].[idReport] = 4190)
 	BEGIN
 		INSERT INTO [ReportsFiltersMenus] (idReport, filterMenuName) VALUES (4190, N''date'')
@@ -824,7 +824,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'AnsweredCallsbyDialingRetries - filtros usuario campaña y resultado de marcación'
 	set @Sql= '
-	IF !EXIST (SELECT * FROM [ReportsFilters]
+	IF !EXISTS (SELECT * FROM [ReportsFilters]
 	WHERE [ReportsFilters].[id] = 4190)
 	BEGIN
 		INSERT INTO ReportsFilters VALUES(''Answered Calls by Dialing Retries'', ''campaigns'', 4190)
@@ -836,7 +836,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'Agent Detail By Day - Totales'
 	set @Sql= '
-	IF !EXIST (SELECT * FROM [ReportsTotals]
+	IF !EXISTS (SELECT * FROM [ReportsTotals]
 	WHERE [ReportsTotals].[id] = 2080)
 	BEGIN
 		INSERT INTO ReportsTotals values (2080, '''')
@@ -846,7 +846,7 @@ if @actualVersion = @version - 1 begin
   
 	set @process = 'Answered Calls by Dialing Retries - Totales'
 	set @Sql= '
-	IF !EXIST (SELECT * FROM [ReportsTotals]
+	IF !EXISTS (SELECT * FROM [ReportsTotals]
 	WHERE [ReportsTotals].[id] = 4190)
 	BEGIN
 		INSERT INTO ReportsTotals values (4190, '''')
@@ -857,7 +857,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'AnsweredCallsbyDialingRetries - Traducciones'
 	set @Sql= '
-	IF !EXIST (SELECT * FROM [TranslatedReports]
+	IF !EXISTS (SELECT * FROM [TranslatedReports]
 	WHERE [TranslatedReports].[id] = 4190)
 	BEGIN
 		INSERT INTO TranslatedReports VALUES(4190, ''disposition|subDisposition'')

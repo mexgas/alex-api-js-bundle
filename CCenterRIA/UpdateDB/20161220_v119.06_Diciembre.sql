@@ -257,7 +257,7 @@ END'
 		EXEC(@Sql)
 		
 		set @process = 'Insert ccSettings -- Limit of calls per seconds'
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+set @sql='if exists (select * from sys.tables where setting_id = 190)
     begin
 	UPDATE ccSettings SET valor = ''0'', descripcion = ''Porcentaje de limite de llamadas por segundo'', Status = 1, Tipo = ''ADM'', detalle = ''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'', description = ''Percent of limit of calls per seconds'', bLoadSettings = 1, validate = ''^(100|\d{1,2})$'' WHERE setting_id = 190
 	end	
@@ -268,7 +268,7 @@ set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
 EXEC(@sql)
 
 set @process = 'Insert ccSettings -- Telephone transfer list'
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+set @sql='if exists (select * from sys.tables where setting_id = 191)
     begin
     UPDATE ccSettings SET valor = ''0'', descripcion = ''Restringir transferencia de llamadas por área'', Status = 1, Tipo = ''GRL'', detalle = ''1:Activar 0:Desactivar'', description = ''Restrict transfer directory by area'', bLoadSettings = 1, validate = ''^[0-1]$'' WHERE setting_id = 191
 	end	
@@ -1049,7 +1049,7 @@ end'
 
 			Select 1 ''LoginOK'', 1 ''PswdOK'', User_id ''UserID'', 
 			 Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''') ''Nombre'', 
-			 (SELECT valor FROM ccSettings WHERE setting_id=8) 'ADMServer', 
+			 (SELECT valor FROM ccSettings WHERE setting_id=8) ''ADMServer'', 
 			  isnull(IDArea,0) ''AreaId'',
 			 @ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition''
 			From ccUsers Where User_id=@UserID
@@ -1070,6 +1070,21 @@ end'
 		END
 		'
 		EXEC(@Sql)
+
+		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
+		set @Sql='
+		IF !EXIST (SELECT * FROM [CCenterRia].[dbo].[ccmenus] 
+		WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 2080)
+		BEGIN
+			INSERT INTO [CCenterRia].[dbo].[ccmenus] 
+			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+			VALUES 
+			(2080, ''Detalle de agente por día|Agent Detail by Day'', 2000, ''B'', 2, 3, '''',''eefae185aa125f584d532e0f80546a1fef657d9b4f60d1d23e66b78ef93ded3a0c9d78f2b1ec9493136e6cdae061236c'')
+		END
+		'
+		EXEC(@Sql)
+
+		
 
 		/* End script release */
 

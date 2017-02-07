@@ -75,6 +75,7 @@
     </Compile>
     <Compile Include="programmingstyle\CRMFieldsNotFoundException.cs" />
     <Compile Include="reports\agentreports\RepAgentDetail.cs" />
+    <Compile Include="reports\agentreports\RepAgentCallStatusesByInterval.cs" />
     <Compile Include="reports\agentreports\RepAgentSessionByInterval.cs" />
     <Compile Include="reports\agentreports\RepDetailAgent.cs" />
     <Compile Include="reports\avrs\RepAVRSAgent.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="reports\email\RepEmailACD.cs" />
     <Compile Include="reports\email\RepEmailDetail.cs" />
     <Compile Include="reports\email\RepEmailGeneral.cs" />
+    <Compile Include="reports\Errescuer\RepDialingResultsDetail.cs" />
     <Compile Include="reports\inboundreports\RepInAbnd.cs" />
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
     <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
@@ -103,6 +105,7 @@
     <Compile Include="reports\outboundreports\RepCallXfer.cs" />
     <Compile Include="reports\outboundreports\RepOutAnswCalls.cs" />
     <Compile Include="reports\outboundreports\RepOutCallsOnChatDetail.cs" />
+    <Compile Include="reports\outboundreports\RepOutManagementBase.cs" />
     <Compile Include="reports\specialreports\RepMKTAgentes.cs" />
     <Compile Include="reports\specialreports\RepMKTDiario.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbnd.cs" />

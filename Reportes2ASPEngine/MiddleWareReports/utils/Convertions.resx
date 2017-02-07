@@ -384,4 +384,13 @@
   <data name="unavaibleTime" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+<data name="tCallTransf" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tnav" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="twbCall" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

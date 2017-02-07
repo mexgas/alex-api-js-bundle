@@ -372,4 +372,16 @@
   <data name="tundefined" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="activeTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="holdTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="talkingtTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="unavaibleTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

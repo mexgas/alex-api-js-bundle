@@ -38,6 +38,8 @@ namespace MiddleWareReports
                     return new RepAgentKPI();               
                 case 2060:
                     return new RepAgentSessionByInterval();                
+                case 2080:
+                    return new RepDetailAgent();
                 case 3000: //IN
                     return null; //"Inbound"
                 case 3010:
@@ -112,6 +114,8 @@ namespace MiddleWareReports
                     return new RepSpecialAbndCamp();
                 case 4160:
                     return new RepOutDispositionsContacOwner();
+                case 4190:
+                    return new RepAnsweredCallsByDialingRetries();
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
                 case 4230://Telephone Numbers by Record/List Report

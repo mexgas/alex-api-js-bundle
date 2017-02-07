@@ -322,7 +322,25 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Agente.
+        ///   Busca una cadena traducida similar a Tiempo de operación.
+        /// </summary>
+        public static string activeTime {
+            get {
+                return ResourceManager.GetString("activeTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Adherencia.
+        /// </summary>
+        public static string adherencia {
+            get {
+                return ResourceManager.GetString("adherencia", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Agente.
         /// </summary>
         public static string Agent {
             get {
@@ -340,7 +358,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Nombre de agente.
+        ///   Busca una cadena traducida similar a Detalle de Agente por Día.
+        /// </summary>
+        public static string AgentDetailByDay {
+            get {
+                return ResourceManager.GetString("AgentDetailByDay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Nombre de agente.
         /// </summary>
         public static string agentName {
             get {
@@ -484,7 +511,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Llamadas contestadas por status.
+        ///   Busca una cadena traducida similar a Llamadas contestadas por reintentos.
+        /// </summary>
+        public static string AnsweredCallsbyDialingRetries {
+            get {
+                return ResourceManager.GetString("AnsweredCallsbyDialingRetries", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas contestadas por status.
         /// </summary>
         public static string AnsweredCallsbyStatus {
             get {
@@ -1195,7 +1231,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Detalle de llamadas por Especialidad.
+        ///   Busca una cadena traducida similar a Llamadas por hora.
+        /// </summary>
+        public static string callsByHour {
+            get {
+                return ResourceManager.GetString("callsByHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Detalle de llamadas por Especialidad.
         /// </summary>
         public static string CallsdetailperACDGroup {
             get {
@@ -1573,7 +1618,25 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Contactados.
+        ///   Busca una cadena traducida similar a Total de llamadas efectivas.
+        /// </summary>
+        public static string complete {
+            get {
+                return ResourceManager.GetString("complete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas efectivas por hora.
+        /// </summary>
+        public static string completeByHour {
+            get {
+                return ResourceManager.GetString("completeByHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Contactados.
         /// </summary>
         public static string contacted {
             get {
@@ -2284,7 +2347,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to emails enviados.
+        ///   Busca una cadena traducida similar a Hora de fin.
+        /// </summary>
+        public static string endHour {
+            get {
+                return ResourceManager.GetString("endHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a emails enviados.
         /// </summary>
         public static string enviados {
             get {
@@ -2500,7 +2572,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hora.
+        ///   Busca una cadena traducida similar a Tiempo en espera.
+        /// </summary>
+        public static string holdTime {
+            get {
+                return ResourceManager.GetString("holdTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Hora.
         /// </summary>
         public static string hour {
             get {
@@ -3751,7 +3832,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Rend. por asesor.
+        ///   Busca una cadena traducida similar a Promedio de llamadas efectivas.
+        /// </summary>
+        public static string percentComplete {
+            get {
+                return ResourceManager.GetString("percentComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Rend. por asesor.
         /// </summary>
         public static string Performanceperagent {
             get {
@@ -3985,7 +4075,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo Disponible.
+        ///   Busca una cadena traducida similar a % en disponible.
+        /// </summary>
+        public static string readyPercent {
+            get {
+                return ResourceManager.GetString("readyPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Disponible.
         /// </summary>
         public static string readyTime {
             get {
@@ -4309,7 +4408,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Estado.
+        ///   Busca una cadena traducida similar a Hora de inicio.
+        /// </summary>
+        public static string startHour {
+            get {
+                return ResourceManager.GetString("startHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Estado.
         /// </summary>
         public static string state {
             get {
@@ -6127,7 +6235,25 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo de atención.
+        ///   Busca una cadena traducida similar a % en diálogo.
+        /// </summary>
+        public static string talkingPercent {
+            get {
+                return ResourceManager.GetString("talkingPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en diálogo.
+        /// </summary>
+        public static string talkingtTime {
+            get {
+                return ResourceManager.GetString("talkingtTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de atención.
         /// </summary>
         public static string tatencion {
             get {
@@ -6838,7 +6964,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Timbrando.
+        ///   Busca una cadena traducida similar a Intentos.
+        /// </summary>
+        public static string tries {
+            get {
+                return ResourceManager.GetString("tries", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Timbrando.
         /// </summary>
         public static string tring {
             get {
@@ -7036,7 +7171,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No Disponible.
+        ///   Busca una cadena traducida similar a Tiempo en no disponible.
+        /// </summary>
+        public static string unavaibleTime {
+            get {
+                return ResourceManager.GetString("unavaibleTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a No Disponible.
         /// </summary>
         public static string Unavailable {
             get {
@@ -7117,7 +7261,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to En espera Contactados.
+        ///   Busca una cadena traducida similar a % en espera.
+        /// </summary>
+        public static string waitpercent {
+            get {
+                return ResourceManager.GetString("waitpercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a En espera Contactados.
         /// </summary>
         public static string wConnected {
             get {

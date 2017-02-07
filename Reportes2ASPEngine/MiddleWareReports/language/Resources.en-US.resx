@@ -2448,10 +2448,16 @@
   <data name="ManagementBase" xml:space="preserve">
     <value>Management Base</value>
   </data>
-    <data name="systemTranslated_Remoto" xml:space="preserve">
+  <data name="systemTranslated_Remoto" xml:space="preserve">
     <value>Remote</value>
   </data>
   <data name="fileMoved" xml:space="preserve">
     <value>Recording storage</value>
+  </data>
+<data name="endInterval" xml:space="preserve">
+    <value>End Interval</value>
+  </data>
+  <data name="startInterval" xml:space="preserve">
+    <value>Start Interval</value>
   </data>
 </root>

@@ -1468,17 +1468,15 @@ end'
 	EXEC(@sql)
 
 	set @process ='Store Procedure ccspRepOutDialDetail -- add field for moved recordings'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]  
-	@action as tinyint,  
-	@from as datetime = null,  
-	@to as datetime = null  
-	AS  
-	if @from is null  
-	select @from = convert(datetime,convert(varchar(11),getdate()))  
-	select @to = getdate()  
-
-	if @action = 1  
-	begin  
+	set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]  
+@action as tinyint,  
+@from as datetime = null,  
+@to as datetime = null  
+AS  
+if @from is null  
+select @from = convert(datetime,convert(varchar(11),getdate()))  
+select @to = getdate()  
+if @action = 1  begin  
 	--Borrar lo que esta para no repetir  
 	delete from RepOutDialDetail with(rowlock)  
 	where date >= @from AND date < @to  

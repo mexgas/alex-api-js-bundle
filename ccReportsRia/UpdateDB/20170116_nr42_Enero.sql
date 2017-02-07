@@ -92,7 +92,7 @@ END
 	set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
 BEGIN
 	create table RepDetailAgent(
-	[user_id] int not null,
+	[userId] int not null,
 	[user] varchar(50) not null,
 	[userName] varchar(100) not null,
 	[date] datetime not null,
@@ -1462,6 +1462,26 @@ end'
 	[date] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
     end'
+	EXEC(@sql)
+
+	set @process = 'Create Index -- RepDetailAgent.IX_RepDetailAgent 2080'
+	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepDetailAgent'' and object_id = OBJECT_ID(N''RepDetailAgent''))
+    begin
+        CREATE NONCLUSTERED INDEX [IX_RepDetailAgent] ON [dbo].[RepDetailAgent]
+		(
+			[date] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+			end'
+	EXEC(@sql)
+
+	set @process = 'Create Index -- RepAnsweredCallsByDialingRetries.IX_RepAnsweredCallsByDialingRetries 4190'
+	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepAnsweredCallsByDialingRetries'' and object_id = OBJECT_ID(N''RepAnsweredCallsByDialingRetries''))
+    begin
+        CREATE NONCLUSTERED INDEX [IX_RepAnsweredCallsByDialingRetries] ON [dbo].[RepAnsweredCallsByDialingRetriest]
+		(
+			[date] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]
+			end'
 	EXEC(@sql)
 
 	set @process = 'Create Index -- RepOutManagementBase.IX_RepOutManagementBase 4170'

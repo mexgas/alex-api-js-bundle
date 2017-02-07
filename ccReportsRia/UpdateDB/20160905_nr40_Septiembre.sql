@@ -2942,50 +2942,50 @@ if @actualVersion = @version begin
 		EXEC(@sql)
 
 		set @process ='Store Procedure ccspRepOutDialDetail -- add from data1 to data5'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]  
-@action as tinyint,  
-@from as datetime = null,  
-@to as datetime = null  
-AS  
-if @from is null  
- select @from = convert(datetime,convert(varchar(11),getdate()))  
-select @to = getdate()  
+		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+if @from is null
+ select @from = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
-if @action = 1  
- begin  
-  --Borrar lo que esta para no repetir  
-  delete from RepOutDialDetail with(rowlock)  
-  where date >= @from AND date < @to  
+if @action = 1
+ begin
+  --Borrar lo que esta para no repetir
+  delete from RepOutDialDetail with(rowlock)
+  where date >= @from AND date < @to
 
-  --Inserta información de reporte  
-  insert into RepOutDialDetail  
-  SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado,  
-  dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
-  datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
-  ,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
+  --Inserta información de reporte
+  insert into RepOutDialDetail
+  SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado,
+  dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,
+  datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')
+  ,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed,
   isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
-  FROM 
-  (select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
-	 dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key  
-	 FROM ccoLogDials dial  
-	 left join ccocallsout co on  
-	(dial.callout_id = co.callout_id and dial.Telefono=co.cal_telefono  
-	 and tiporesdial_id = 1  
-	 and convert(datetime,convert(varchar(19),co.cal_inicio,121),121) >= convert(datetime,convert(varchar(19),dial.fecha),121)  
-	 and convert(datetime,convert(varchar(19),co.cal_inicio,121),121) <=  convert(datetime,convert(varchar(19),dial.fecha),121))  
-	 WHERE fecha >= @from AND fecha < @to) dials  
-  LEFT JOIN ccoCallsOutSource cs ON dials.callout_id = cs.callout_id  
-  LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
-  LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
-  LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id  
-  WHERE fecha >= @from AND fecha < @to  
-  order by fecha  
+  FROM
+  (select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,
+	 dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key
+	 FROM ccoLogDials dial
+	 left join ccocallsout co on
+	(dial.callout_id = co.callout_id and dial.Telefono=co.cal_telefono
+	 and tiporesdial_id = 1
+	 and convert(datetime,convert(varchar(19),co.cal_inicio,121),121) >= convert(datetime,convert(varchar(19),dial.fecha),121)
+	 and convert(datetime,convert(varchar(19),co.cal_inicio,121),121) <=  convert(datetime,convert(varchar(19),dial.fecha),121))
+	 WHERE fecha >= @from AND fecha < @to) dials
+  LEFT JOIN ccoCallsOutSource cs ON dials.callout_id = cs.callout_id
+  LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id
+  LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]
+  LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id
+  WHERE fecha >= @from AND fecha < @to
+  order by fecha
  end'
 		EXEC(@sql)
 
 		set @process ='Store Procedure ccspRepOutCallsDetail -- add from data1 to data5, add join ccoCallsOutSource'
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
-					@action as tinyint,
+@action as tinyint,
 @from as datetime = null,
 @to as datetime = null
 AS
@@ -2997,67 +2997,66 @@ select @to = getdate()
 DECLARE @IVA INT
 SELECT @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
 
-if @action = 1
-	begin
-		--Borrar lo que esta para no repetir
-		delete from RepOutCallsDetail with(rowlock)
-		where date >= @from AND date < @to
+if @action = 1	begin
+	--Borrar lo que esta para no repetir
+	delete from RepOutCallsDetail with(rowlock)
+	where date >= @from AND date < @to
 
-		INSERT INTO RepOutCallsDetail
-		SELECT Call.cal_inicio as [date],
-		Call.cal_key as [callKey],
-		Call.cal_telefono AS [telephone],
-		Call.cal_txfer + call.cal_tring AS [transfer],
-		Call.cal_tdialog AS [dialog],
-		ISNULL(Call.cal_tMoh,0) as [nque],
-		Call.cal_tnotas AS [wrapup],
-		ISNULL( Tipo.[description], '''') AS [CallDisposition],
-		Call.cal_extension AS [extension],
-		Usr.user_id as [userId],
-		ISNULL(Usr.login,''systemTranslated_NoUserName'') [login],
-		ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
-		camps.cam_id as [campaignId],
-		ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
-		(CEILING((cal_tXfer + cal_tRing + cal_tDialog +1) / 60.0 )* 60) AS [duration],
-		ISNULL(Call.costo,0.00) as [ncost],
-		@IVA as iva,
-		convert(decimal(10,2),ISNULL(Call.costo,0.00) * (1 + (@IVA / 100.00))) as total,
-		case when prov.descrip is not null then prov.descrip when cstoProvedor.descrip is not null then cstoProvedor.descrip else ''systemTranslated_NoCarrier'' end as [ByCarrier],
-		ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [Calltypes],
-		case when Call.cal_manual = 0 then ''systemTranslated_Auto'' else ''systemTranslated_Manual'' end as [dialType],
-		case when cal_whoHung = 0 then ''systemTranslated_Client''
-		when cal_whoHung = 1 then ''systemTranslated_Agent''
-		else ''systemTranslated_AgentSurvey'' end [whoHangUp],
-		case when call.califsub_id = 0 then ''systemTranslated_NoSubDisposition'' else isnull(sub.califSubDesc, '''') end as [subDisposition],
-		sta.descripcion as [dialResult],
-		Call.cal_id as [calId]
-		, datepart(yyyy,Call.cal_inicio) AS [year]
-		, datepart(mm,Call.cal_inicio) as [month]
-		, datepart(dd,Call.cal_inicio) as [day]
-		, datepart(hh,Call.cal_inicio) as [hour]
-		, datepart(mi,Call.cal_inicio) as [minutes]
-		,Call.cal_puerto
-		, ISNULL(cs.Dato1,'''') as [data1]
-		, ISNULL(cs.Dato2,'''') as [data2]
-		, ISNULL(cs.Dato3,'''') as [data3]
-		, ISNULL(cs.Dato4,'''') as [data4]
-		, ISNULL(cs.Dato5,'''') as [data5]
-		FROM ccoCallsOut Call
-		LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id
-		INNER JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
-		LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
-		LEFT JOIN ccStatusLlamada sta on call.statuscall_id = sta.statuscall_id
-		LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
-		LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] and tl.Country_id = 1)
-		LEFT JOIN ccTipoCalifSubOut sub on call.califsub_id = sub.califsub_id
-		LEFT JOIN ccoDialers di on di.dialer_id = Call.cal_puerto
-		LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
-		LEFT JOIN cstoProvedor on di.provedor_id = cstoProvedor.provedor_id
-		WHERE Call.cal_inicio >= @from
-		AND Call.cal_inicio < @to
-		and cal_manual in (0, 2)
-		order by date
-	end'
+	INSERT INTO RepOutCallsDetail
+	SELECT Call.cal_inicio as [date],
+	Call.cal_key as [callKey],
+	Call.cal_telefono AS [telephone],
+	Call.cal_txfer + call.cal_tring AS [transfer],
+	Call.cal_tdialog AS [dialog],
+	ISNULL(Call.cal_tMoh,0) as [nque],
+	Call.cal_tnotas AS [wrapup],
+	ISNULL( Tipo.[description], '''') AS [CallDisposition],
+	Call.cal_extension AS [extension],
+	Usr.user_id as [userId],
+	ISNULL(Usr.login,''systemTranslated_NoUserName'') [login],
+	ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
+	camps.cam_id as [campaignId],
+	ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
+	(CEILING((cal_tXfer + cal_tRing + cal_tDialog +1) / 60.0 )* 60) AS [duration],
+	ISNULL(Call.costo,0.00) as [ncost],
+	@IVA as iva,
+	convert(decimal(10,2),ISNULL(Call.costo,0.00) * (1 + (@IVA / 100.00))) as total,
+	case when prov.descrip is not null then prov.descrip when cstoProvedor.descrip is not null then cstoProvedor.descrip else ''systemTranslated_NoCarrier'' end as [ByCarrier],
+	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [Calltypes],
+	case when Call.cal_manual = 0 then ''systemTranslated_Auto'' else ''systemTranslated_Manual'' end as [dialType],
+	case when cal_whoHung = 0 then ''systemTranslated_Client''
+	when cal_whoHung = 1 then ''systemTranslated_Agent''
+	else ''systemTranslated_AgentSurvey'' end [whoHangUp],
+	case when call.califsub_id = 0 then ''systemTranslated_NoSubDisposition'' else isnull(sub.califSubDesc, '''') end as [subDisposition],
+	sta.descripcion as [dialResult],
+	Call.cal_id as [calId]
+	, datepart(yyyy,Call.cal_inicio) AS [year]
+	, datepart(mm,Call.cal_inicio) as [month]
+	, datepart(dd,Call.cal_inicio) as [day]
+	, datepart(hh,Call.cal_inicio) as [hour]
+	, datepart(mi,Call.cal_inicio) as [minutes]
+	,Call.cal_puerto
+	, ISNULL(cs.Dato1,'''') as [data1]
+	, ISNULL(cs.Dato2,'''') as [data2]
+	, ISNULL(cs.Dato3,'''') as [data3]
+	, ISNULL(cs.Dato4,'''') as [data4]
+	, ISNULL(cs.Dato5,'''') as [data5]
+	FROM ccoCallsOut Call
+	LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id
+	INNER JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+	LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
+	LEFT JOIN ccStatusLlamada sta on call.statuscall_id = sta.statuscall_id
+	LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
+	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] and tl.Country_id = 1)
+	LEFT JOIN ccTipoCalifSubOut sub on call.califsub_id = sub.califsub_id
+	LEFT JOIN ccoDialers di on di.dialer_id = Call.cal_puerto
+	LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
+	LEFT JOIN cstoProvedor on di.provedor_id = cstoProvedor.provedor_id
+	WHERE Call.cal_inicio >= @from
+	AND Call.cal_inicio < @to
+	and cal_manual in (0, 2)
+	order by date
+end'
 		EXEC(@sql)
 	commit tran
 	end try

@@ -2448,4 +2448,10 @@
   <data name="ManagementBase" xml:space="preserve">
     <value>Management Base</value>
   </data>
+  <data name="endInterval" xml:space="preserve">
+    <value>End Interval</value>
+  </data>
+  <data name="startInterval" xml:space="preserve">
+    <value>Start Interval</value>
+  </data>
 </root>

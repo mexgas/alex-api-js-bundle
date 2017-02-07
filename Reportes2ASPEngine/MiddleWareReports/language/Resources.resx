@@ -2514,4 +2514,10 @@
   <data name="ManagementBase" xml:space="preserve">
     <value>Gestión de base</value>
   </data>
+  <data name="endInterval" xml:space="preserve">
+    <value>Intervalo final</value>
+  </data>
+  <data name="startInterval" xml:space="preserve">
+    <value>Intervalo inicial</value>
+  </data>
 </root>

@@ -226,7 +226,8 @@ end'
 	EXEC(@sql)
 
 	set @process = 'Create ReportsFiltersMenus -- 4180'
-	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=4180) begin
+	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=4180)
+begin
 	insert into ReportsFiltersMenus(idReport,filterMenuName) values(4180,N''date'')
 	insert into ReportsFiltersMenus(idReport,filterMenuName) values(4180,N''filterby'')
 end'
@@ -256,19 +257,17 @@ end'
 	set @Sql= 'if not exists(select * from ReportsTotals where id=4180) insert into ReportsTotals(id,totalColumns) values(4180,'''')'
 	EXEC(@sql)
 
-	set @process = 'Insert into ReportsFiltersMenus ----'
-	set @Sql= 'if not exists(select * from ReportsFiltersMenus where id=4170)
+	set @process = 'Insert into ReportsFiltersMenus ---- 4170'
+	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=4170)
 	begin
-		insert into ReportsFiltersMenus
-		values (4170,''date'')
+		insert into ReportsFiltersMenus	values (4170,''date'')
 	end'
 	EXEC(@sql)
 
-	set @process = 'insert into ReportsFilters----'
+	set @process = 'insert into ReportsFilters---- 4170'
 	set @Sql= 'if not exists(select * from ReportsFilters where id=4170)
 	begin
-		insert into ReportsFilters
-		values(''Report Out Management Base'',''campaigns'',4170)
+		insert into ReportsFilters values(''Report Out Management Base'',''campaigns'',4170)
 	end'
 	EXEC(@sql)
 

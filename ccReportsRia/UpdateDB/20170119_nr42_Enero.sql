@@ -70,7 +70,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'RepDetailAgent - Tabla'
 	set @Sql= '
-	IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
+	IF NOT EXIST (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
 	BEGIN
 		create table RepDetailAgent(
 		[user_id] int not null,
@@ -103,7 +103,7 @@ if @actualVersion = @version - 1 begin
 
 	set @process = '[ccspRepDetailAgent] - Procedimiento Almacenado'
 	set @Sql= '
-	IF NOT EXISTS (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'')
+	IF NOT EXIST (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'')
 	CREATE PROCEDURE [ccspRepDetailAgent]
 		@action as tinyint,
 		@from as datetime = null,
@@ -836,15 +836,15 @@ if @actualVersion = @version - 1 begin
 
 	set @process = 'Agent Detail By Day - Totales'
 	set @Sql= '
-	IF !EXISTS (SELECT * FROM [ReportsTotals]
+	IF !EXIST (SELECT * FROM [ReportsTotals]
 	WHERE [ReportsTotals].[id] = 2080)
 	BEGIN
 		INSERT INTO ReportsTotals values (2080, '''')
 	end
 	'
 	EXEC(@sql)
-  
-	set @process = 'Answered Calls by Dialing Retries - Totales'
+
+	set @process = 'AnsweredCallsbyDialingRetries - Totales'
 	set @Sql= '
 	IF !EXISTS (SELECT * FROM [ReportsTotals]
 	WHERE [ReportsTotals].[id] = 4190)
@@ -854,7 +854,6 @@ if @actualVersion = @version - 1 begin
 	'
 	EXEC(@sql)
 
-
 	set @process = 'AnsweredCallsbyDialingRetries - Traducciones'
 	set @Sql= '
 	IF !EXISTS (SELECT * FROM [TranslatedReports]
@@ -862,6 +861,12 @@ if @actualVersion = @version - 1 begin
 	BEGIN
 		INSERT INTO TranslatedReports VALUES(4190, ''disposition|subDisposition'')
 	END
+	'
+	EXEC(@sql)
+
+	set @process = ''
+	set @Sql= '
+
 	'
 	EXEC(@sql)
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MiddleWareReports.reports.specialreports;
+using MiddleWareReports.reports.agentreports;
 
 
 namespace MiddleWareReports
@@ -37,7 +38,9 @@ namespace MiddleWareReports
                 case 2050:
                     return new RepAgentKPI();               
                 case 2060:
-                    return new RepAgentSessionByInterval();                
+                    return new RepAgentSessionByInterval();
+                case 2070: //Reporte Estados de agente y llamadas por intervalo Errescuer
+                    return new RepAgentCallStatusesByInterval();
                 case 3000: //IN
                     return null; //"Inbound"
                 case 3010:
@@ -112,6 +115,10 @@ namespace MiddleWareReports
                     return new RepSpecialAbndCamp();
                 case 4160:
                     return new RepOutDispositionsContacOwner();
+                case 4170:
+                    return new RepOutManagementBase(); //reporte de errescuer gestion de base 
+                case 4180: //Reporte de errescuer RepDialingResultsDetail
+                    return new RepDialingResultsDetail();
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
                 case 4230://Telephone Numbers by Record/List Report
@@ -190,8 +197,6 @@ namespace MiddleWareReports
                     return new RepCRMXTemplates();
                 case 9011:
                     return new CRMxView();
-                case 10010://reporte emailACD
-                    return new RepEmailACD();
                 case 10020://reporte email detalle ACD
                     return new RepEmailAgente();
                 case 10030://reporte email detail

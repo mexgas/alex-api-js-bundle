@@ -309,6 +309,22 @@ INSERT INTO ReportsTotals values (2070,''sum:readyTime|sum:tring|sum:twrapup|sum
 end'
 	EXEC(@sql)
 
+set @process = 'Insert ReportsFiltersMenus -- 2070'
+	set @Sql= 'if not exists (select * from ReportsFiltersMenus where idReport=2070)
+begin
+insert into ReportsFiltersMenus values(2070, ''groupby'')
+end'
+	EXEC(@sql)
+
+	set @process = 'Insert GroupByReports -- 2070'
+	set @Sql= 'if not exists(select * from GroupByReports where id=2070)
+begin
+insert into GroupByReports values (
+2070,
+''userId|agentName|min:(startInterval)|max:(endInterval)|sum,readyTime|sum,twrapup|sum,tring|sum,tother|sum,tnav|sum,tCallTransf|sum,twbCall'',''userId|agentName'')
+end'
+	EXEC(@sql)
+
 	set @process = 'Insert ccSettings -- 40'
 	set @Sql= 'if not exists (select * from ccSettings where setting_id = 40)
 begin
@@ -1324,7 +1340,7 @@ if @action = 1 begin
 	select ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY DATEADD(ss,-tStatus,fecha)) AS Row,User_id,
 	TipoNotReady_id,tStatus,DATEADD(ss,-tStatus,fecha)as dateStart, fecha as dateEnd
 	from cclogagentesnotready
-	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to and TipoNotReady_id in(1,2)
+	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to and TipoNotReady_id in (@tnav,@twbCall)
 
 	insert into #tempNotReady (user_id,dateStartDetail,dateEndDetail, timegroup, timegroup_next, tnav, twbcall)
 	select user_id,dateStart,dateEnd

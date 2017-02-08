@@ -1477,7 +1477,7 @@ end'
 	set @process = 'Create Index -- RepAnsweredCallsByDialingRetries.IX_RepAnsweredCallsByDialingRetries 4190'
 	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_RepAnsweredCallsByDialingRetries'' and object_id = OBJECT_ID(N''RepAnsweredCallsByDialingRetries''))
     begin
-        CREATE NONCLUSTERED INDEX [IX_RepAnsweredCallsByDialingRetries] ON [dbo].[RepAnsweredCallsByDialingRetriest]
+        CREATE NONCLUSTERED INDEX [IX_RepAnsweredCallsByDialingRetries] ON [dbo].[RepAnsweredCallsByDialingRetries]
 		(
 			[date] ASC
 		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 100) ON [PRIMARY]

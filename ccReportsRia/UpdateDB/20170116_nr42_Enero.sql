@@ -292,6 +292,7 @@ end'
 begin
 INSERT ReportsFiltersMenus (idReport, filterMenuName) VALUES (2070, N''date'')
 INSERT ReportsFiltersMenus (idReport, filterMenuName) VALUES (2070, N''filterby'')
+INSERT ReportsFiltersMenus (idReport, filterMenuName) values(2070, ''groupby'')
 end'
 	EXEC(@sql)
 
@@ -309,19 +310,12 @@ INSERT INTO ReportsTotals values (2070,''sum:readyTime|sum:tring|sum:twrapup|sum
 end'
 	EXEC(@sql)
 
-set @process = 'Insert ReportsFiltersMenus -- 2070'
-	set @Sql= 'if not exists (select * from ReportsFiltersMenus where idReport=2070)
-begin
-insert into ReportsFiltersMenus values(2070, ''groupby'')
-end'
-	EXEC(@sql)
-
 	set @process = 'Insert GroupByReports -- 2070'
 	set @Sql= 'if not exists(select * from GroupByReports where id=2070)
 begin
 insert into GroupByReports values (
 2070,
-''userId|agentName|min:(startInterval)|max:(endInterval)|sum,readyTime|sum,twrapup|sum,tring|sum,tother|sum,tnav|sum,tCallTransf|sum,twbCall'',''userId|agentName'')
+''userId|agentName|min([startInterval]):startInterval|max([endInterval]):endInterval|sum([readyTime]):readyTime|sum([twrapup]):twrapup|sum([tring]):tring|sum([tother]):tother|sum([tnav]):tnav|sum([tCallTransf]):tCallTransf|sum([twbCall]):twbCall'',''userId|agentName'')
 end'
 	EXEC(@sql)
 

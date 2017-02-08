@@ -107,7 +107,7 @@ values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e10387
 			INSERT INTO [CCenterRia].[dbo].[ccmenus]
 			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
 			VALUES
-			(4190, ''Llamadas contestadas por reintentos|Answered Calls by Dialing Retries'', 4000, ''B'', 4, 3, '''', ''8d0ea83dd060a493d05d75d4b170b9388f582b1f76b7354c6788cacc486b141410b2a8cba89aa875a9a8a66f898d03021a40b0db1d5c87f5f87dbc9e5c039968687a2d149ca68fa1c4c6cea78aee1cbe'')
+			(4190, ''Llamadas contestadas por reintentos|Answered Calls by Dialing Retries'', 4000, ''B'', 4, 3, '''', ''7f9603c7b03b294b1e3bf597edce2c5231780fd215b73ce2a47392e356505240828532309bfa5e501bdc0ca946b446e3d47e09947906ed2b769889561b55592a3df3d2390391a69a1fdc8527f37dfc3a'')
 		END
 		'
 		EXEC(@Sql)

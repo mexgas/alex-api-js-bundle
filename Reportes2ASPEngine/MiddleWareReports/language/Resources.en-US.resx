@@ -2496,4 +2496,16 @@
   <data name="adherencia" xml:space="preserve">
     <value>Schedule Adherence</value>
   </data>
+  <data name="AnsweredCallsbyDialingRetries" xml:space="preserve">
+    <value>Answered Calls by Dialing Retries</value>
+  </data>
+  <data name="endHour" xml:space="preserve">
+    <value>End Hour</value>
+  </data>
+  <data name="startHour" xml:space="preserve">
+    <value>Start Hour</value>
+  </data>
+  <data name="tries" xml:space="preserve">
+    <value>Tries</value>
+  </data>
 </root>

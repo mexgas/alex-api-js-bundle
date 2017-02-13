@@ -66,7 +66,7 @@ BEGIN
 		[dialResult] [varchar](20) NOT NULL,
 		[tries] [int] NOT NULL,
 		[campaignId] [smallint] NOT NULL,
-		[campaing] [varchar](40) NOT NULL,
+		[campaign] [varchar](40) NOT NULL,
 		[userId] [smallint] NOT NULL,
 		[agentName] [varchar](115) NOT NULL,
 		[extension] [varchar](7) NOT NULL,
@@ -925,7 +925,7 @@ if @to is null
 			,datepart(MM,min(A.timegroup)) [month]
 			,datepart(DD,min(A.timegroup)) [day]
 			,datepart(HH,min(A.timegroup)) [hour]
-			,datepart(mm,min(A.timegroup)) [minutes]
+			,datepart(mi,min(A.timegroup)) [minutes]
 			from #agentInformation A
 			inner join ccUsers B on A.User_id=B.User_id
 			group by convert(varchar(14),A.timegroup,120)+''00:00'', A.User_id
@@ -977,25 +977,25 @@ begin
 	A.cal_telefono as [telephone],
 	B.tipoResDial_id as [dialResultId],
 	resDial.descripcion as [dialResult],
-	C.cal_intentos as [tries], -- añadir a aspx
+	C.cal_intentos as [tries],
 	A.cam_id as [campaignId],
 	E.cam_descripcion as [campaign],
 	A.User_id as [userId],
 	D.Nombres + '' '' + D.ApellidoPaterno + '' '' + D.ApellidoMaterno as [agentName],
 	(select top 1 Extension from ccLogLogin where user_id=A.User_id and tipoMov=1 and fecha<A.cal_inicio order by fecha desc) as [extension],
-	convert(varchar(12),A.cal_Inicio,108) as [startHour], -- añadir a aspx
-	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour], -- añadir a aspx
+	convert(varchar(12),A.cal_Inicio,108) as [startHour],
+	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour],
 	cal_tDialog as [dialogTime],
 	isnull(A.calif_id,0) as [dispositionId],
 	isnull(A.califSub_id,0) as [subDispositionId],
 	isnull(disp.Description,''systemTranslated_Dispositionless'') as [disposition],
 	isnull(subDisp.califSubDesc,''systemTranslated_NoSubDisposition'') as [subDisposition],
 	A.cal_tNotas as [wrapup],
-	datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
-	datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
-	datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
-	datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [hour],
-	datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [minutes]
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
 
 	from ccoCallsOut A
 	left join ccoLogDials B on A.cal_id=B.cal_id

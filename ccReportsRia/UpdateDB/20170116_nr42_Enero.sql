@@ -55,6 +55,10 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @Sql= 'IF EXISTS (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'') Drop PROCEDURE ccspRepDetailAgent'
 	EXEC(@sql)
 
+	
+
+	
+
 	set @process = 'RepAnsweredCallsByDialingRetries - Tabla'
 	set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepAnsweredCallsByDialingRetries'')
 BEGIN
@@ -90,7 +94,6 @@ END
 
 	set @process = 'RepDetailAgent - Tabla'
 	set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepDetailAgent'')
-BEGIN
 	create table RepDetailAgent(
 	[userId] int not null,
 	[user] varchar(50) not null,
@@ -116,7 +119,6 @@ BEGIN
 	[hour] int not null,
 	[minutes] int not null
 	) ON [PRIMARY]
-END
 	'
 	EXEC(@sql)
 
@@ -997,6 +999,7 @@ begin
 	[hour] [int] NOT NULL,
 	[minutes] [int] NOT NULL
 
+
 	from ccoCallsOut A
 	left join ccoLogDials B on A.cal_id=B.cal_id
 	left join ccoCallsOutSource C on C.callout_id=A.callout_id
@@ -1011,7 +1014,7 @@ begin
 	and A.cal_manual in(0,2)
 	order by date
 END	'
-	EXEC(@sql)
+	--EXEC(@sql)
 
 	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
 	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepDialingResultsDetail]

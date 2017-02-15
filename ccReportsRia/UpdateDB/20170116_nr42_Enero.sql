@@ -922,7 +922,7 @@ if @to is null
 			,sum(cast(convert(float,ntotal)/7 as decimal(18,4)))  as [Número de llamadas por hora]
 			,sum(isnull(completeOut + completeIn, 0)) as [Completo]
 			,sum(isnull(completeOut + completeIn, 0)) as [Completo por hora]
-			,isnull(sum(isnull(completeOut + completeIn, 0)/nullif(ntotal,0)),0) as [Completo / llamadas.]
+			,isnull(cast(sum(isnull(completeOut + completeIn, 0)/nullif(ntotal,0)) as decimal(18,4)),0) as [Completo / llamadas.]
 			,datepart(YYYY,min(A.timegroup)) [year]
 			,datepart(MM,min(A.timegroup)) [month]
 			,datepart(DD,min(A.timegroup)) [day]
@@ -1014,7 +1014,7 @@ begin
 	and A.cal_manual in(0,2)
 	order by date
 END	'
-	--EXEC(@sql)
+	EXEC(@sql)
 
 	set @process = 'Create SP -- ccspRepDialingResultsDetail 4180'
 	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepDialingResultsDetail]

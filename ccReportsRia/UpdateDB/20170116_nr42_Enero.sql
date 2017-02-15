@@ -993,11 +993,11 @@ begin
 	isnull(disp.Description,''systemTranslated_Dispositionless'') as [disposition],
 	isnull(subDisp.califSubDesc,''systemTranslated_NoSubDisposition'') as [subDisposition],
 	A.cal_tNotas as [wrapup],
-	[year] [int] NOT NULL,
-	[month] [int] NOT NULL,
-	[day] [int] NOT NULL,
-	[hour] [int] NOT NULL,
-	[minutes] [int] NOT NULL
+	datepart(yyyy,cal_Inicio) AS [year],
+	datepart(mm,cal_Inicio) as [month],
+	datepart(dd,cal_Inicio) as [day],
+	datepart(hh,cal_Inicio) as [hour],
+	datepart(mi,cal_Inicio) as [minutes]
 
 
 	from ccoCallsOut A

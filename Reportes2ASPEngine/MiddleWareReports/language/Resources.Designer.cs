@@ -6757,7 +6757,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Llamadas Totales.
+        ///   Looks up a localized string similar to Total de Llamadas.
         /// </summary>
         public static string totalCalls {
             get {
@@ -7317,9 +7317,9 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Looks up a localized string similar to Usuario.
         /// </summary>
-        public static string username {
+        public static string userName {
             get {
-                return ResourceManager.GetString("username", resourceCulture);
+                return ResourceManager.GetString("userName", resourceCulture);
             }
         }
         

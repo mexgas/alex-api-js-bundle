@@ -648,7 +648,7 @@
   <data name="subDisposition" xml:space="preserve">
     <value>Sub Disposition</value>
   </data>
-  <data name="username" xml:space="preserve">
+  <data name="userName" xml:space="preserve">
     <value>Username</value>
   </data>
   <data name="whoHangUp" xml:space="preserve">
@@ -2464,13 +2464,13 @@
     <value>On Hold Time</value>
   </data>
   <data name="percentComplete" xml:space="preserve">
-    <value>Efective Calls Percent</value>
+    <value>% Efective Calls</value>
   </data>
   <data name="readyPercent" xml:space="preserve">
-    <value>Ready Percent</value>
+    <value>% Ready</value>
   </data>
   <data name="talkingPercent" xml:space="preserve">
-    <value>Talking Percent</value>
+    <value>% Talking</value>
   </data>
   <data name="talkingtTime" xml:space="preserve">
     <value>Talking Time</value>
@@ -2479,7 +2479,7 @@
     <value>Unavailable Time</value>
   </data>
   <data name="waitpercent" xml:space="preserve">
-    <value>Wait Percent</value>
+    <value>% On Hold</value>
   </data>
   <data name="AgentDetailbyDay" xml:space="preserve">
     <value>Agent Detail by Day</value>

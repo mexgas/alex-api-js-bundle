@@ -7315,7 +7315,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Usuario.
+        ///   Looks up a localized string similar to Nombre de Usuario.
         /// </summary>
         public static string userName {
             get {

@@ -649,7 +649,7 @@
     <value>Sub Calificación</value>
   </data>
   <data name="userName" xml:space="preserve">
-    <value>Usuario</value>
+    <value>Nombre de Usuario</value>
   </data>
   <data name="whoHangUp" xml:space="preserve">
     <value>Colgó</value>

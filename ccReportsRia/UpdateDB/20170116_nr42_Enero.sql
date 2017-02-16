@@ -39,6 +39,8 @@ if @actualVersion  in(@version,@version - 1) begin
 	EXEC(@sql)
 
 
+
+
 	set @process = 'Drop SP -- RepOutManagementBase 4170'
 	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepOutManagementBase'') DROP PROCEDURE [dbo].[ccspRepOutManagementBase]'
 	EXEC(@sql)
@@ -105,8 +107,8 @@ BEGIN
 	waitpercent float not null,--[% en wait]
 	readyPercent float not null, --[% en disponible]
 	adherencia float not null,--[Adherencia]
-	totalCalls int not null,--[Número de llamadas]
-	callsByHour int not null,--[Número de llamadas por hora]
+	totalCalls int not null,--[NÃºmero de llamadas]
+	callsByHour int not null,--[NÃºmero de llamadas por hora]
 	complete float not null,--[completo]
 	completeByHour float not null,--[Completo por hora]
 	percentComplete float not null,-- [Completo / llamadas.]
@@ -199,11 +201,20 @@ insert ReportsFiltersMenus (idReport, filterMenuName) values(2080, N''filterby''
 end'
 	EXEC(@sql)
 
+
+	set @process = 'RepDialingAgent - filtros fecha y seleccion 4170'
+	set @Sql= 'if not exists(select * from ReportsTotals where id = 4170) begin
+	insert into ReportsTotals 
+	values(4170,'''')
+end'
+	EXEC(@sql)
+	
+
 	set @process = 'RepDialingAgent - filtro usuario -- 2080'
 	set @Sql= 'if not exists(select * from ReportsFilters where id=2080) insert ReportsFilters values(''Agent Detail by Day'', ''users'', 2080)'
 	EXEC(@sql)
 
-	set @process = 'AnsweredCallsbyDialingRetries - filtros usuario campaña y resultado de marcación 4190'
+	set @process = 'AnsweredCallsbyDialingRetries - filtros usuario campaÃ±a y resultado de marcaciÃ³n 4190'
 	set @Sql= '	IF not EXISTS (SELECT * FROM [ReportsFilters]	WHERE [ReportsFilters].[id] = 4190)
 	BEGIN
 		INSERT INTO ReportsFilters VALUES(''Answered Calls by Dialing Retries'', ''campaigns'', 4190)
@@ -916,8 +927,8 @@ if @to is null
 			,sum(cast((convert(float,txfer+tring)/36) as decimal(18,4))) as [% en espera]
 			,sum(cast((convert(float,tav)/36) as decimal(18,4))) as [% en disponible]
 			,sum(cast(convert(float,(a.tlog - tnotes))/convert(float,A.tlog) as decimal(18,4))) as [Adherencia]
-			,sum(ntotal) as [Número de llamadas]
-			,sum(cast(convert(float,ntotal)/7 as decimal(18,4)))  as [Número de llamadas por hora]
+			,sum(ntotal) as [NÃºmero de llamadas]
+			,sum(cast(convert(float,ntotal)/7 as decimal(18,4)))  as [NÃºmero de llamadas por hora]
 			,sum(isnull(completeOut + completeIn, 0)) as [Completo]
 			,sum(isnull(completeOut + completeIn, 0)) as [Completo por hora]
 			,isnull(sum(isnull(completeOut + completeIn, 0)/nullif(ntotal,0)),0) as [Completo / llamadas.]
@@ -977,14 +988,14 @@ begin
 	A.cal_telefono as [telephone],
 	B.tipoResDial_id as [dialResultId],
 	resDial.descripcion as [dialResult],
-	C.cal_intentos as [tries], -- añadir a aspx
+	C.cal_intentos as [tries], -- aÃ±adir a aspx
 	A.cam_id as [campaignId],
 	E.cam_descripcion as [campaign],
 	A.User_id as [userId],
 	D.Nombres + '' '' + D.ApellidoPaterno + '' '' + D.ApellidoMaterno as [agentName],
 	(select top 1 Extension from ccLogLogin where user_id=A.User_id and tipoMov=1 and fecha<A.cal_inicio order by fecha desc) as [extension],
-	convert(varchar(12),A.cal_Inicio,108) as [startHour], -- añadir a aspx
-	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour], -- añadir a aspx
+	convert(varchar(12),A.cal_Inicio,108) as [startHour], -- aÃ±adir a aspx
+	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour], -- aÃ±adir a aspx
 	cal_tDialog as [dialogTime],
 	isnull(A.calif_id,0) as [dispositionId],
 	isnull(A.califSub_id,0) as [subDispositionId],
@@ -1329,7 +1340,7 @@ if @action = 1 begin
 
 	-----------------------------------------------------------------------------------
 
-	--Columnas Tiempo en capacitación (ND) = tnav, Tiempo en “trabajo previo a llamada” = twbcall
+	--Columnas Tiempo en capacitaciÃ³n (ND) = tnav, Tiempo en â€œtrabajo previo a llamadaâ€ = twbcall
 	insert into #tempccLogAgentesNotReadyDay(row,[User_id],TipoNotReady_id,tStatus,dateStart,dateEnd)
 	select ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY DATEADD(ss,-tStatus,fecha)) AS Row,User_id,
 	TipoNotReady_id,tStatus,DATEADD(ss,-tStatus,fecha)as dateStart, fecha as dateEnd
@@ -1370,7 +1381,7 @@ if @action = 1 begin
 
 	--------------------------------------------------------------------------------------------
 
-	--Columnas Tiempo en “Transferencia estando en llamada” = tcallTransf
+	--Columnas Tiempo en â€œTransferencia estando en llamadaâ€ = tcallTransf
 	insert into #tempccLogtransfers (user_id, cal_id, dateStartTransf, dateEndTransf, timegroup, timegroup_next, tcallTransf)
 	select A.[User_id],A.cal_id, A.dateStartDetail, A.dateEndDetail
 	,convert(datetime,case when datepart(mi,A.dateStartDetail) between 0 and 14 then convert(varchar(13),A.dateStartDetail,121) + '':00:00.000''

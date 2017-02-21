@@ -71,34 +71,34 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 
 		set @process = 'Insert ccTipoStatusAgente 26,27'
 		set @Sql= 'if exists(select valor from ccSettings where setting_id=27 and valor=''1'') begin
-	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Transferencia Fallida'')
-	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fallida'')
-end
-else begin
-	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
-	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
-end'
+					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Transferencia Fallida'')
+					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fallida'')
+					end
+					else begin
+					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
+					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
+					end'
 		EXEC(@Sql)
 
 		set @process = 'Inser new Reports -- 4180'
 		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4180)
-insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''db47a2867c7795a221f61d9e0dccebfb32d8fb3e0026848cfc108c677051317d6f93de038e1f16b80f67b6139265c86e669c7602ede198536f899842d56c5d37'')
-'
+					insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+					values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''db47a2867c7795a221f61d9e0dccebfb32d8fb3e0026848cfc108c677051317d6f93de038e1f16b80f67b6139265c86e669c7602ede198536f899842d56c5d37'')
+					'
 		EXEC(@Sql)
 
 		set @process = 'Inser new Reports -- 2070'
 		set @Sql= 'if not exists(select * from ccMenus where menu_id=2070 and type=3)begin
-insert into ccMenus (menu_id, menu_descrip,parent, Nivel,ordengral,type,HelpSWF,release)
-values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses By Interval'',2000,''B'',2,3,'''',''9845b8194326d000bbf125cc69f93b76c97e97d0bdd431f0e04d5b455413f8fa1c2f669901ecb5f36e912e128c22c6773da345481c0c9c50286221101986c4c4b2f637f3e469b15dd8dca1fca72b0b33'')
-end'
+					insert into ccMenus (menu_id, menu_descrip,parent, Nivel,ordengral,type,HelpSWF,release)
+					values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses By Interval'',2000,''B'',2,3,'''',''9845b8194326d000bbf125cc69f93b76c97e97d0bdd431f0e04d5b455413f8fa1c2f669901ecb5f36e912e128c22c6773da345481c0c9c50286221101986c4c4b2f637f3e469b15dd8dca1fca72b0b33'')
+					end'
 		EXEC(@sql)
 
 		set @process = 'Inser new Reports -- 4170'
 		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4170)
-insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e103870d96b6765f2ee439d2af114fb6f5574587bad77cc997e68802daa13912b5a4be80d1256d25e18e75aaeeb3f'')
-'
+					insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+					values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e103870d96b6765f2ee439d2af114fb6f5574587bad77cc997e68802daa13912b5a4be80d1256d25e18e75aaeeb3f'')
+					'
 		EXEC(@Sql)
 
 		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
@@ -584,21 +584,40 @@ END'
 		EXEC(@Sql)
 
 		set @process = 'Insert ccSettings -- Limit of calls per seconds'
-	set @sql='if not exists (select * from ccSettings where setting_id=190)
-	INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')'
-EXEC(@sql)
+		set @sql='if not exists (select * from ccSettings where setting_id=190)
+					INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')'
+		EXEC(@sql)
 
-set @process = 'Insert ccSettings -- Telephone transfer list'
-set @sql='if not exists (select * from ccSettings where setting_id=191)
-INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
+		set @process = 'Insert ccSettings -- Telephone transfer list'
+		set @sql='if not exists (select * from ccSettings where setting_id=191)
+					INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
+		EXEC(@sql)
+
+<<<<<<< HEAD
+set @process = 'Insert ccSettings -- Hold Timer'
+	set @sql='if not exists (select * from ccSettings where setting_id=193)
+	insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bLoadSettings,validate)
+	values (193,''0|30'',''Configuración para mostrar el tiempo en Hold'',1,''AGT'',''[0:Desactivado/1:Activo/2:ActivoReset]|[Segundos Alerta]'',''Hold Timer Configuration'',1,''^[012]\|[\d]+$'')'
 EXEC(@sql)
 
 set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
 set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
 EXEC(@sql)
+=======
+		set @process = 'Insert ccSettings -- Id calificación contacto efectivo'
+		set @sql='if not exists (select * from ccSettings where setting_id = 192)
+				 begin 
+					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Mostrar Cola de ACD en Agente'', 1, ''GRL'', ''0 Muestra la Lista 1 Lista Oculta'', '''', 1, ''^[0-1]$'')
+				 end '
+		EXEC(@sql)
+>>>>>>> feature/Fixes_Reportes_Errescuer
 
-	set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
-	set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+		set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
+		EXEC(@sql)
+
+		set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
+		set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
 @userID INT,
 @current INTEGER = 0
 AS
@@ -647,10 +666,10 @@ select @value = valor from ccSettings where setting_id = 191
 		end
 END
 set nocount off'
-	EXEC(@sql)
+		EXEC(@sql)
 
-	set @process = 'Alter procedure -- [dbo].[ccsp_AgentGetEspecialidadesActivas]'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
+		set @process = 'Alter procedure -- [dbo].[ccsp_AgentGetEspecialidadesActivas]'
+		set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
 @userID INT,
 @current integer = 0
 as
@@ -764,7 +783,7 @@ declare @value int
 					order by 2
 				end
 		end'
-	EXEC(@sql)
+		EXEC(@sql)
 
 		set @process = 'Alter SP -- ccsp_SaveStatusAgent'
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
@@ -1870,6 +1889,29 @@ set nocount off'
 					end
 			end  '
 		EXEC(@Sql)
+
+		set @process = 'validate if exists procedure [dbo].[ccspOtherDetails]'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccspOtherDetails'')	DROP PROCEDURE ccspOtherDetails'
+		EXEC(@sql)
+
+		set @process = 'Create procedure -- [dbo].[ccspOtherDetails]'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccspOtherDetails]
+					@action as tinyint,
+					@cam_id as tinyint,
+					@to as datetime = null
+					AS
+					BEGIN
+					SET ANSI_WARNINGS off
+					SET NOCOUNT ON
+					SELECT count(tipoResDial_id) as num, cam_id, tipoResDial_id, 
+						 disconnectCause, convert(varchar(10),fecha,120) as [fecha]
+					 FROM ccoLogDials
+					 WHERE tipoResDial_id = 8
+					 AND cam_id = @cam_id
+					 AND convert(varchar(10),fecha,120) = convert(varchar(10),GETDATE(),120)
+					 group by cam_id, tipoResDial_id, disconnectCause, convert(varchar(10),fecha,120)
+					END'
+		Exec(@sql)
 
 		set @process = 'DROP Function  -- Verifica2'
 		set @sql='if exists (select * from sys.objects where object_id = OBJECT_ID(N''Verifica2'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT'')) DROP FUNCTION Verifica2'

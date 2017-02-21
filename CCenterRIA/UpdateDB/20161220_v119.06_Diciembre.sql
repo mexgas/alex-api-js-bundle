@@ -593,6 +593,12 @@ set @sql='if not exists (select * from ccSettings where setting_id=191)
 INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
 EXEC(@sql)
 
+set @process = 'Insert ccSettings -- Hold Timer'
+	set @sql='if not exists (select * from ccSettings where setting_id=193)
+	insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bLoadSettings,validate)
+	values (193,''0|30'',''Configuración para mostrar el tiempo en Hold'',1,''AGT'',''[0:Desactivado/1:Activo/2:ActivoReset]|[Segundos Alerta]'',''Hold Timer Configuration'',1,''^[012]\|[\d]+$'')'
+EXEC(@sql)
+
 set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
 set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
 EXEC(@sql)

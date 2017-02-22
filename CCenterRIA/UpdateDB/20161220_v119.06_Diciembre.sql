@@ -593,7 +593,7 @@ END'
 					INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
 		EXEC(@sql)
 
-<<<<<<< HEAD
+
 set @process = 'Insert ccSettings -- Hold Timer'
 	set @sql='if not exists (select * from ccSettings where setting_id=193)
 	insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bLoadSettings,validate)
@@ -603,14 +603,14 @@ EXEC(@sql)
 set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
 set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
 EXEC(@sql)
-=======
+
 		set @process = 'Insert ccSettings -- Id calificación contacto efectivo'
 		set @sql='if not exists (select * from ccSettings where setting_id = 192)
 				 begin 
 					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Mostrar Cola de ACD en Agente'', 1, ''GRL'', ''0 Muestra la Lista 1 Lista Oculta'', '''', 1, ''^[0-1]$'')
 				 end '
 		EXEC(@sql)
->>>>>>> feature/Fixes_Reportes_Errescuer
+
 
 		set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'

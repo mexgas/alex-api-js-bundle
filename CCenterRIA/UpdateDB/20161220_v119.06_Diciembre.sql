@@ -48,25 +48,58 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 
+		set @process = 'Drop SP -- ccsp_CreateNodeMail'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'') DROP PROCEDURE ccsp_CreateNodeMail'
+		EXEC(@Sql)
+
+		set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
+		EXEC(@sql)
+
+		set @process = 'Drop SP -- ccsp_recordingStatus'
+		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_recordingStatus'') DROP PROCEDURE ccsp_recordingStatus'
+		EXEC(@sql)
+
+
 		set @process = 'Alter tabla ccoCallsOut'
-		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccoCallsOut'') )
-		begin
-		alter table ccoCallsOut add file_moved bit null
-		end'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccoCallsOut'') ) alter table ccoCallsOut add file_moved bit null'
 		EXEC(@Sql)
 
 
 		set @process = 'Alter tabla ccCallsIn'
-		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') )
-		begin
-		alter table ccCallsIn add file_moved bit null
-		end'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') ) alter table ccCallsIn add file_moved bit null'
+		EXEC(@Sql)
+
+		set @process = 'CREATE SP -- ccsp_recordingStatus'
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_recordingStatus]
+@callType int,
+@id int,
+@action int ,
+@recordLocalization int
+AS
+begin
+	if @action=0 begin
+		declare @time int
+		if @callType=0 begin
+			select @time=cal_tDialog from ccoCallsOut where cal_id=@id
+		end
+		else begin
+			select @time=cal_tDialog from ccCallsIn where cal_id=@id
+		end
+		select case when @time>0 then 1 else 0 end as result
+	end
+	else if @action=1 begin
+		if @callType=0 begin
+			update ccoCallsOut set file_moved=@recordLocalization where cal_id=@id
+		end
+		else begin
+			update ccCallsIn set file_moved=@recordLocalization where cal_id=@id
+		end
+	end
+end'
 		EXEC(@Sql)
 
 
-		set @process = 'Drop SP -- ccsp_CreateNodeMail'
-		set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_CreateNodeMail'') DROP PROCEDURE ccsp_CreateNodeMail'
-		EXEC(@Sql)
 
 
 		set @process = 'Insert ccTipoStatusAgente 26,27'
@@ -600,9 +633,6 @@ set @process = 'Insert ccSettings -- Hold Timer'
 	values (193,''0|30'',''Configuración para mostrar el tiempo en Hold'',1,''AGT'',''[0:Desactivado/1:Activo/2:ActivoReset]|[Segundos Alerta]'',''Hold Timer Configuration'',1,''^[012]\|[\d]+$'')'
 EXEC(@sql)
 
-set @process = 'validate if exists procedure [dbo].[ccsp_AgentTransfLstArea]'
-set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
-EXEC(@sql)
 
 		set @process = 'Insert ccSettings -- Id calificación contacto efectivo'
 		set @sql='if not exists (select * from ccSettings where setting_id = 192)
@@ -2481,7 +2511,7 @@ end --Termina Mexico
    end'
 		EXEC(@sql)
 
-		
+
 
 
 

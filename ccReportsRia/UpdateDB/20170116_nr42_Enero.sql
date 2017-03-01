@@ -1003,15 +1003,12 @@ begin
 	A.cal_telefono as [telephone],
 	B.tipoResDial_id as [dialResultId],
 	resDial.descripcion as [dialResult],
-	C.cal_intentos as [tries], -- añadir a aspx
 	C.cal_intentos as [tries],
 	A.cam_id as [campaignId],
 	E.cam_descripcion as [campaign],
 	A.User_id as [userId],
 	D.Nombres + '' '' + D.ApellidoPaterno + '' '' + D.ApellidoMaterno as [agentName],
 	(select top 1 Extension from ccLogLogin where user_id=A.User_id and tipoMov=1 and fecha<A.cal_inicio order by fecha desc) as [extension],
-	convert(varchar(12),A.cal_Inicio,108) as [startHour], -- añadir a aspx
-	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour], -- añadir a aspx
 	convert(varchar(12),A.cal_Inicio,108) as [startHour],
 	convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour],
 	cal_tDialog as [dialogTime],

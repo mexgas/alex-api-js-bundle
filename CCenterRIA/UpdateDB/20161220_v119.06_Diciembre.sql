@@ -70,6 +70,13 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') ) alter table ccCallsIn add file_moved bit null'
 		EXEC(@Sql)
 
+		set @process = 'Alter tabla telefonosTransferencia'
+		set @sql='if not exists (select * from sys.columns where name = N''IDArea'' AND object_id =object_id (N''telefonosTransferencia''))
+		begin
+		ALTER TABLE telefonosTransferencia ADD IDArea smallint
+		end'
+		EXEC(@sql)
+
 		set @process = 'CREATE SP -- ccsp_recordingStatus'
 		set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_recordingStatus]
 @callType int,
@@ -155,6 +162,20 @@ end'
 		END
 		'
 		EXEC(@Sql)
+
+		set @process = 'UPDATE ccsetting 190'
+		set @sql='if  exists(select * from ccsettings where setting_id=190)
+		begin
+		UPDATE ccSettings set description = ''Calls percentage by second'' where setting_id = 190
+		end'
+		EXEC(@sql)
+
+		set @process = 'UPDATE ccsetting 191'
+		set @sql='if  exists(select * from ccsettings where setting_id=191)
+		begin
+		UPDATE ccSettings set description = ''Display transfer directory by area'' where setting_id = 191
+		end'
+		EXEC(@sql)
 
 		set @process = 'Delete conflict Replication'
 		set @Sql= 'if exists(select * from sys.tables where name=''MSmerge_conflicts_info'') begin
@@ -646,6 +667,40 @@ EXEC(@sql)
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_AgentTransfLstArea'')	DROP PROCEDURE ccsp_AgentTransfLstArea'
 		EXEC(@sql)
 
+		set @process = 'Drop sp ccsptelefonosTransferencia'
+		set @sql='if exists (select * from sys.procedures where name = N''ccsptelefonosTransferencia'') 
+		DROP PROCEDURE [dbo].[ccsptelefonosTransferencia]'
+		EXEC(@sql)
+
+		set @process = 'Create SP -- ccsptelefonosTransferencia'
+		set @sql='CREATE PROCEDURE [dbo].[ccsptelefonosTransferencia]
+		@userID INT
+		as
+		set nocount on
+
+		BEGIN
+		declare @value bit
+		declare @IDArea int
+		set @value = 0
+		set @IDArea =1
+		select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+		select @IDArea =IDArea from ccUsers where User_id = @userID
+
+		if @value = 1
+			begin	
+			if @value = 1 begin	
+				select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre	
+			end
+			else
+				begin
+					select numtra_id id, nombre +'' ''+cast(numtra_id as varchar(20) )  name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
+				end
+			end
+		END'
+		EXEC(@sql)
+
+
 		set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
 		set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
 @userID INT,
@@ -697,6 +752,301 @@ select @value = valor from ccSettings where setting_id = 191
 END
 set nocount off'
 		EXEC(@sql)
+
+set @process = 'Alter SP ccsp_RIACAT_PhoneConfig'
+set @sql='ALTER proc [dbo].[ccsp_RIACAT_PhoneConfig]
+@Type tinyint, -- 1:Show #conf | 2:Add #conf | 3:Upd #conf | 4:Del #conf | 5:Add #tran | 6:Upd #tran | 7:Del #tran | 8: Show #tran
+@CT_id SmallInt=0, 
+@Nombre varchar(50)='''',
+@Telefono varchar(50)='''',
+@IDArea smallint = 0 --parametro IDarea
+as
+set nocount on
+
+BEGIN
+declare @value bit
+
+select @value = case when valor =''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+if @Type=1
+ begin
+	select numcon_id id, nombre name, tel number from telefonosConferencia order by nombre
+	return(0)
+ end
+
+if @Type=2
+ begin
+	IF exists (select numcon_id from telefonosConferencia where nombre=@Nombre)
+	 begin
+		select -3 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+	IF exists (select numcon_id from telefonosConferencia where tel=@Telefono)
+	 begin
+		select -4 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	insert into telefonosConferencia (nombre, tel) select @Nombre, @Telefono
+	select SCOPE_IDENTITY() numcon_id
+	return(0)
+ end
+
+if @Type=3
+ begin
+ 	IF exists (select numcon_id from telefonosConferencia where nombre=@Nombre and numcon_id<>@CT_id)
+	 begin
+		select -5 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+ 	IF exists (select numcon_id from telefonosConferencia where tel=@Telefono and numcon_id<>@CT_id)
+	 begin
+		select -6 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	update telefonosConferencia set nombre=@Nombre, tel=@Telefono where numcon_id=@CT_id
+	return(0)
+ end
+
+if @Type=4
+ begin
+	delete telefonosConferencia where numcon_id=@CT_id
+	return(0)
+ end
+
+if @Type=5
+ begin
+	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and IDArea=@IDArea)
+	 begin
+		select -3 -- El nombre ya esta asignado
+		return(0)
+	 end
+	 
+	 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and IDArea=@IDArea)
+	 begin
+		select -4 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	insert into telefonosTransferencia (nombre, tel, IDArea) select @Nombre, @Telefono,@IDArea --se agrega IDArea 
+	select SCOPE_IDENTITY() numtra_id
+	return(0)
+ end
+
+if @Type=6
+ begin
+ 	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and numtra_id<>@CT_id )
+	 begin
+		select -5 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+ 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and numtra_id<>@CT_id )
+	 begin
+		select -6 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	update telefonosTransferencia set nombre=@Nombre, tel=@Telefono where numtra_id=@CT_id
+	return(0)
+ end
+
+if @Type=7
+ begin
+	delete telefonosTransferencia where numtra_id=@CT_id
+	return(0)
+ end
+
+if @Type=8
+ begin	
+	if @value = 1 
+	begin	
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre	
+	end
+	else
+	begin
+		select numtra_id id, cast(IDArea as varchar(20) )+'' - ''+  nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre	
+	end
+	return(0)
+ end
+
+return(0)
+set nocount off
+end'
+EXEC(@sql)
+
+set @process = 'ALTER SP ccsp_AgentTransfLstArea'
+set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+@userID INT,
+@current INTEGER = 0
+AS
+set nocount on
+
+BEGIN
+declare @value int
+
+set @value = 0
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191 
+
+	IF @value = 0
+		begin
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+			(
+				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+			)
+			x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+			Order by nomb
+		end
+
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID 
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					Order by nomb
+				end
+			else
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+					and IDArea in (select IDArea from ccUsers where User_id = @userID)
+					Order by nomb
+				end
+		end
+END
+set nocount off'
+EXEC(@sql)
+
+set @process = 'SP Alter ccsp_AgentGetEspecialidadesActivas'
+set @sql='ALTER procedure [dbo].[ccsp_AgentGetEspecialidadesActivas]
+@userID INT,
+@current integer = 0
+as
+declare @fecha datetime
+declare @dia smallint
+declare @hora smallint
+declare @minuto smallint
+declare @value int
+
+	SET DATEFIRST 1
+
+	select @fecha =  getdate()
+	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
+
+	set @value = 0 
+	select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+	if @value = 0
+		begin
+			select -1, ''IVR''
+			union
+			select inbound_id, descripcion from ccInbound where inbound_id in 
+			(
+				select inbound_id from ccInboundHorarios where horario_id in
+				(
+					select horario_id  from ccHorarios
+					where
+					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+					AND (  
+						Lunes  = @dia or
+						Martes *2 = @dia or
+						Miercoles*3 = @dia or
+						Jueves*4 = @dia or
+						Viernes*5 = @dia or
+						Sabado*6 = @dia or
+						domingo*7 = @dia
+					)
+				)
+			)
+			and inbound_id <> @current
+			-- las activas
+			and status <> 0 
+			-- las que tienen agentes firmados
+			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+			order by 2
+		end
+
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select -1, ''IVR''
+					union
+					select inbound_id, descripcion from ccInbound where inbound_id in 
+					(
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (  
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
+						)
+					)
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0 
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					order by 2
+				end
+			else
+				begin
+					select -1, ''IVR''
+					union
+					select inbound_id, descripcion from ccInbound where inbound_id in 
+					(
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (  
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
+						)
+					)
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0 
+					and IDArea in (
+					select IDArea from ccUsers where User_id = @userID
+					)
+					-- las que tienen agentes firmados
+					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+					order by 2 
+				end 
+		end'
+EXEC(@sql)
 
 		set @process = 'Alter procedure -- [dbo].[ccsp_AgentGetEspecialidadesActivas]'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]

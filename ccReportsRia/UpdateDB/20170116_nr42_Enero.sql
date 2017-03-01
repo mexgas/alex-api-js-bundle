@@ -929,7 +929,7 @@ end'
 			
 							insert into RepDetailAgent
 							select
-							A.UserId,
+							A.User_Id,
 							min(B.Login) as ''usuario'',
 							min((B.Nombres + space(1) + b.ApellidoPaterno + space(1) + b.ApellidoMaterno)) ''NombreAgente'',
 							convert(varchar(14),A.timegroup,120)+''00:00'' as [fecha],

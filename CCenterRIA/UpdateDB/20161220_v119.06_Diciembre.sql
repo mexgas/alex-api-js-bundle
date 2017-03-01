@@ -634,10 +634,10 @@ set @process = 'Insert ccSettings -- Hold Timer'
 EXEC(@sql)
 
 
-		set @process = 'Insert ccSettings -- Id calificación contacto efectivo'
+		set @process = 'Insert ccSettings -- hide the call queue in agent'
 		set @sql='if not exists (select * from ccSettings where setting_id = 192)
 				 begin 
-					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Mostrar Cola de ACD en Agente'', 1, ''GRL'', ''0 Muestra la Lista 1 Lista Oculta'', '''', 1, ''^[0-1]$'')
+					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Hide the queue call in agent|Mostrar cola ACD en agente'', 1, ''GRL'', ''1 Muestra la Lista 0 Lista Oculta'', ''Hide the queue call in agent'', 1, ''^[0-1]$'')
 				 end '
 		EXEC(@sql)
 

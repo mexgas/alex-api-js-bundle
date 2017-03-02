@@ -637,7 +637,7 @@ EXEC(@sql)
 		set @process = 'Insert ccSettings -- hide the call queue in agent'
 		set @sql='if not exists (select * from ccSettings where setting_id = 192)
 				 begin 
-					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Hide the queue call in agent|Mostrar cola ACD en agente'', 1, ''GRL'', ''1 Muestra la Lista 0 Lista Oculta'', ''Hide the queue call in agent'', 1, ''^[0-1]$'')
+					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 0, ''Restringir la visibilidad de la cola de llamadas en el agente'', 1, ''GRL'', ''1 Muestra la Lista 0 Lista Oculta'', ''Restrict visibility the call queue in agent'', 1, ''^[0-1]$'')
 				 end '
 		EXEC(@sql)
 

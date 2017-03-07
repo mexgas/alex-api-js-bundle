@@ -887,17 +887,19 @@ end'
 						on xTimeDetail.User_id=timeSession.user_id and xTimeDetail.timegroup=timeSession.timegroup
 						left join
 						(
-							select user_id,timegroup,sum(txfer) as txfer,sum(tring) tring,sum(tdialog) as tdialog,sum(tnotes) as tnotes,sum(nMoh) nMoh,sum(nWHag) nWHag,sum(nWHcl) nWHcl,sum(ntotal) as ntotal 
-							,count(B.calif_id) as completeIn
+							select user_id,timegroup,sum(txfer) as txfer,sum(tring) tring,sum(tdialog) as tdialog,sum(tnotes) as tnotes,sum(nMoh) nMoh,sum(nWHag) nWHag,sum(nWHcl) nWHcl,
+							case when sum(ntotal)<count(A.calif_id) then count(A.calif_id) else sum(ntotal) end as ntotal
+							,count(A.calif_id) as completeIn
 							from #inboundData A
-							inner join cctipocalif B on A.calif_id=B.calif_id and A.calif_id = @califin				
+							inner join cctipocalif B on A.calif_id=B.calif_id and A.calif_id = @califin			
 							group by user_id,timegroup
 						) B
 						on xTimeDetail.timegroup=B.timegroup and xTimeDetail.User_id=B.User_id
 						left join	
 						(
-							select user_id,timegroup,sum(txfer) as txfer,sum(tring) tring,sum(tdialog) as tdialog,sum(tnotes) as tnotes,sum(nMoh) nMoh,sum(nWHag) nWHag,sum(nWHcl) nWHcl,sum(ntotal) as ntotal
-							,count(B.calif_id) as completeOut
+							select user_id,timegroup,sum(txfer) as txfer,sum(tring) tring,sum(tdialog) as tdialog,sum(tnotes) as tnotes,sum(nMoh) nMoh,sum(nWHag) nWHag,sum(nWHcl) nWHcl,
+							case when sum(ntotal)<count(A.calif_id) then count(A.calif_id) else sum(ntotal) end as ntotal
+							,count(A.calif_id) as completeOut
 							from #outboundData A
 							inner join cctipocalifout B on A.calif_id=B.calif_id and A.calif_id = @califout
 							group by user_id,timegroup
@@ -951,7 +953,7 @@ end'
 							,datepart(MM,min(A.timegroup)) [month]
 							,datepart(DD,min(A.timegroup)) [day]
 							,datepart(HH,min(A.timegroup)) [hour]
-							,datepart(mi,min(A.timegroup)) [minutes]
+							,''0'' [minutes]
 							from #agentInformation A
 							inner join ccUsers B on A.User_id=B.User_id
 							group by convert(varchar(14),A.timegroup,120)+''00:00'', A.User_id

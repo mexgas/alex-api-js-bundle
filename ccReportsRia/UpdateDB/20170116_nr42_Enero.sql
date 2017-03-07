@@ -1100,22 +1100,23 @@ begin
 
 insert into RepOutManagementBase
 select  CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121) as fecha,
-	cout.callout_id,isnull(resdial.tipoResDial_id,0) as dialResultId,resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada ,
-	isnull(tipocal.calif_id,0)as dispositionId,ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSub_id,0) as dispositionId,
-	isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,SUM(cout.cal_manual) as total,
-		datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
-		datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
-		datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
-		datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [hour],
-		datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [minutes]
+       cout.callout_id,isnull(resdial.tipoResDial_id,0) as dialResultId,resdial.descripcion as ResultadoMarcacion, --,cout.callout_id as llamada ,
+       isnull(tipocal.calif_id,0)as dispositionId,ISNULL( tipocal.Description,'''') as Calificacion,isnull(tiposubcal.califSub_id,0) as dispositionId,
+       isnull(tiposubcal.califSubDesc,'''') as SubCalificacion,isnull( SUM(cout.cal_manual),0) as total,
+             datepart(yyyy,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) AS [year],
+             datepart(mm,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [month],
+             datepart(dd,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [day],
+             datepart(hh,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [hour],
+             datepart(mi,CONVERT(smalldatetime,CONVERT(varchar(13),fecha,121)+ '':00'',121)) as [minutes]
 from ccoCallsOut cout
-	left join ccoLogDials logdial on cout.callout_id = logdial.callout_id
-	left join cctipoResultadodial resdial on logdial.tipoResDial_id = logdial.tipoResDial_id
-	left join cctipocalif tipocal on cout.calif_id = tipocal.calif_id
-	left join cctipocalifsub tiposubcal on cout.califSub_id = tiposubcal.califSub_id
+       left join ccoLogDials logdial on cout.callout_id = logdial.callout_id
+       left join cctipoResultadodial resdial on logdial.tipoResDial_id = resdial.tipoResDial_id
+       left join cctipocalifout tipocal on cout.calif_id = tipocal.calif_id
+       left join cctipocalifsubout tiposubcal on cout.califSub_id = tiposubcal.califSub_id
 where fecha >= @from and fecha < @to
 group by cout.callout_id,resdial.tipoResDial_id,resdial.descripcion,
 tipocal.Description,tiposubcal.califSubDesc,cout.cal_manual,fecha,tipocal.calif_id,tiposubcal.califSub_id
+
 
 end '
 	EXEC(@sql)

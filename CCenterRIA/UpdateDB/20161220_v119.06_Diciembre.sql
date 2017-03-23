@@ -3441,9 +3441,39 @@ end --Termina Mexico
 			end  '
 		EXEC(@sql)
 		
+		set @process = 'Insert ccSettings -- Default campaign on manual call'
+		set @sql='if not exists (select * from ccSettings where setting_id=196)
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values 
+					(196,6,''Campaña default para marcación manual'',1,''AGT'',''Campaña default para marcación manual'',''Default campaign for manual call'',1,''^\d*$'')'
+		EXEC(@sql)
 		
+		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_RIACampsManualCall]'
+    	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
+			@UserID int,
+			@onChat int = 0
+			AS
+			set nocount on
 
+			if (@onChat = 0)
+			begin
+				declare @mod smallint
+				select @mod = valor from ccsettings where setting_id = 196
 
+				select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
+				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
+				where (ca.user_id = @UserID and cam_modoManual = 1) or ca.cam_id=@mod
+				order by cam_descripcion
+			end
+			else
+				select distinct c.cam_id, c.cam_descripcion 
+				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
+				where ca.user_id = @UserID and manualCallOnChat = 1 
+				order by cam_descripcion
+
+			set nocount off'
+		EXEC(@sql)
+		
+		
 		
 		/* End script release */
 

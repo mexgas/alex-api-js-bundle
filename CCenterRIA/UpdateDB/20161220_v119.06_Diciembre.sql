@@ -2937,6 +2937,12 @@ end --Termina Mexico
 					set nocount off'
 		EXEC(@sql)
 		
+		set @process = 'Insert ccSettings -- Teléfonos locales a 10 dígitos para marcación manual'
+		set @sql='if not exists (select * from ccSettings where setting_id=195)
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values 
+					(195,0,''Teléfonos locales a 10 dígitos para marcación manual (México)'',1,''AGT'',''Teléfonos locales a 10 dígitos para marcación manual (México)'',''Phone length for manual call (Mexico)'',1,''^[01]$'')'
+		EXEC(@sql)
+		
 		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_Limpia]'
     	set @sql='ALTER procedure [dbo].[ccsp_Limpia]
 			@tel varchar(30),
@@ -3438,9 +3444,7 @@ end --Termina Mexico
 		
 
 
-
-
-
+		
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

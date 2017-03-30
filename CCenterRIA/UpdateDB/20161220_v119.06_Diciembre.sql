@@ -838,19 +838,19 @@ if @Type=5
 
 if @Type=6
  begin
- 	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and numtra_id<>@CT_id )
+ 	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and numtra_id<>@CT_id and IDArea=@IDArea )
 	 begin
 		select -5 -- El nombre ya esta asignado
 		return(0)
 	 end
 
- 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and numtra_id<>@CT_id )
+ 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and numtra_id<>@CT_id and IDArea=@IDArea )
 	 begin
 		select -6 -- El telefono ya esta asignado
 		return(0)
 	 end
 
-	update telefonosTransferencia set nombre=@Nombre, tel=@Telefono where numtra_id=@CT_id
+	update telefonosTransferencia set nombre=@Nombre, tel=@Telefono where numtra_id=@CT_id and IDArea=@IDArea
 	return(0)
  end
 

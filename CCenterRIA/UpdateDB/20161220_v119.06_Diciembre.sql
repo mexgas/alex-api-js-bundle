@@ -3507,7 +3507,7 @@ if @existCallOut=0
 	begin
 		if (@cal_Key='''' or @cal_Key is null)
 		begin
-			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(date,getdate()) and cal_manual=0 order by cal_id desc
+			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime, convert(varchar(10),getdate(),121)) and cal_manual=0 order by cal_id desc
 			set @cal_Key= @LasCallKey
 		end
 	end

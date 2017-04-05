@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 40
+	Set @Version = 39
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
@@ -220,60 +220,49 @@ END'
 
 	set @process = 'ALTER PROCEDURE trsp_GetParametersExportService'
   set @sql ='ALTER PROCEDURE [dbo].[trsp_GetParametersExportService]
-				AS
-				BEGIN
+AS
+BEGIN
 
-				DECLARE  @avrs_enviroment AS INT
-				DECLARE @SQL AS NVARCHAR(MAX)
+DECLARE  @avrs_enviroment AS INT
 
-				SET @avrs_enviroment = (SELECT par_valor FROM TREC_PARAMETROS WHERE par_id=29)
+SET @avrs_enviroment = (SELECT par_valor FROM TREC_PARAMETROS WHERE par_id=29)
 
-				IF @avrs_enviroment = 2
-					BEGIN
-						SET @SQL = SELECT * FROM												
-						(																		
-						SELECT par_valor,par_id,par_descripcion FROM TREC_PARAMETROS
-						WHERE par_id in (2,15,29,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,57,60,62,63,65,67)						
-						Union
-						SELECT CONVERT(VARCHAR(MAX),MAX(grab_id)),66,'''' FROM RIA_GRABACION
-						union						
-						select @@Servername+''|''+valor as par_valor,66 as par_id,descripcion as par_descripcion from ccsettings where setting_id=8
-						)x
-						ORDER BY x.par_id
-					END
-				ELSE
-					BEGIN
-						SET @SQL = SELECT * FROM
-						(SELECT par_valor,par_id FROM TREC_PARAMETROS
-						WHERE par_id in (2,15,29,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,57,60,62,63,65,66,67)
-						UNION
-						SELECT CONVERT(VARCHAR(MAX),MAX(grab_id)),66
-						FROM TREC_GRABACION)x
-						ORDER BY x.par_id
-					END
-					
-					EXEC sp_executesql @SQL
-			END'
-			EXEC(@sql)
-
-
-	set @process = 'alter function md5'
-	set @Sql= 'ALTER FUNCTION [dbo].[md5] (@data varchar(255)) 
-	RETURNS CHAR(32) AS
+IF @avrs_enviroment = 2
 	BEGIN
-	return UPPER(SUBSTRING(master.dbo.fn_varbintohexstr(HashBytes(''MD5'', lower(@data))), 3, 32))  
-	END'
+		SELECT * FROM
+		(
+			SELECT par_valor,par_id,par_descripcion FROM TREC_PARAMETROS
+			WHERE par_id in (2,15,29,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,57,60,62,63,65,67)
+			Union
+			SELECT CONVERT(VARCHAR(MAX),MAX(grab_id)),66,'''' FROM RIA_GRABACION
+			union
+			select @@Servername+''|''+valor as par_valor,66 as par_id,descripcion as par_descripcion from ccsettings where setting_id=8
+		)x
+		ORDER BY x.par_id
+	END
+ELSE
+	BEGIN
+		SELECT * FROM
+		(
+			SELECT par_valor,par_id FROM TREC_PARAMETROS
+			WHERE par_id in (2,15,29,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,57,60,62,63,65,66,67)
+			UNION
+			SELECT CONVERT(VARCHAR(MAX),MAX(grab_id)),66
+			FROM TREC_GRABACION)x
+			ORDER BY x.par_id
+	END	
+END'
 	EXEC(@sql)
 
 
-
-
-
-  	set @process = ''
-  	set @sql=''
-  	EXEC(@sql)
-
-
+	set @process = 'alter function md5'
+	set @Sql= 'ALTER FUNCTION [dbo].[md5] (@data varchar(255))
+RETURNS CHAR(32) AS
+BEGIN
+return UPPER(SUBSTRING(master.dbo.fn_varbintohexstr(HashBytes(''MD5'', lower(@data))), 3, 32))
+END'
+	EXEC(@sql)
+	
 
 ------------------ fin SCRIPT @Sql ------------------
 
@@ -281,6 +270,8 @@ END'
 
  	update trec_parametros set par_valor = @Version where par_id = 30
  	set @Version_Actual=@Version_Actual+1
+
+	select par_valor from trec_parametros where par_id = 30
 
 	commit tran
 
@@ -290,5 +281,8 @@ END'
 		RAISERROR(@errorGenerated, 11, 1)
 	rollback tran
 	end catch
+ end
+ else begin
+	select par_valor,'This version is incorrect, need version '+ convert(varchar(max),@Version-1) from trec_parametros where par_id = 30
  end
 

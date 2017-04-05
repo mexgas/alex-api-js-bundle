@@ -31,12 +31,9 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 
   	--SP
 
-  	  	
-	set @process = 'create Index IX_ccRIAWorkGroupUsersConsulta2'
- 	set @sql ='
-	if exists (select * from sys.procedures where name = N''ReportsMasterProcessAVRS'')
-    begin
- 	ALTER procedure [dbo].[ReportsMasterProcessAVRS] as
+
+	set @process = 'ALTER sp -- ReportsMasterProcessAVRS --Create index IX_ccRIAWorkGroupUsersConsulta2'
+ 	set @sql ='ALTER procedure [dbo].[ReportsMasterProcessAVRS] as
 
 declare @dateStart datetime
 declare @replicationName nvarchar(100)
@@ -61,10 +58,6 @@ select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%CCRecorderRI
 
 select @numOfReplications = count(*)
 from #replications with(nolock)
-
---set @repDelay = floor(cast(@minReplication as decimal) / cast(@numOfReplications as decimal))
-
---set @repStrDelay =CONVERT(char(8), DATEADD(second, @repDelay, ''0:00:00''), 108)
 
 while(select count(*) from #replications with(nolock) where flag = 0) > 0
 begin
@@ -91,14 +84,12 @@ begin
 	begin
 		WAITFOR DELAY ''00:00:01''
 	end
-
-	--waitfor delay @repStrDelay
 end
 
 drop table #replications
--------------------------Para busquedas en finder 
+-------------------------Para busquedas en finder
 
-if not exists (select * from sys.indexes where name = N''IX_ccRIAWorkGroupUsersConsulta2'' and object_id = OBJECT_ID(N''ccRIAWorkGroupUsersConsulta))
+if not exists (select * from sys.indexes where name = N''IX_ccRIAWorkGroupUsersConsulta2'' and object_id = OBJECT_ID(N''ccRIAWorkGroupUsersConsulta''))
 begin
 	CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta2] ON [dbo].[ccRIAWorkGroupUsersConsulta]
 		(
@@ -160,11 +151,8 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 		where id = @id
 	end
 
-drop table #reinitmergepullsubscription
-end'  	
+drop table #reinitmergepullsubscription'
 EXEC(@sql)
-
-
 
 ------------------ fin SCRIPT @Sql ------------------
 
@@ -172,6 +160,8 @@ EXEC(@sql)
 
  	update trec_parametros set par_valor = @Version where par_id = 30
  	set @Version_Actual=@Version_Actual+1
+
+	select par_valor from trec_parametros where par_id = 30
 
 	commit tran
 
@@ -182,4 +172,6 @@ EXEC(@sql)
 	rollback tran
 	end catch
  end
-
+ else begin
+	select par_valor,'This version is incorrect, need version '+ convert(varchar(max),@Version-1) from trec_parametros where par_id = 30
+ end

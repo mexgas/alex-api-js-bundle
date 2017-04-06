@@ -650,6 +650,11 @@ END'
 					INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
 		EXEC(@sql)
 
+		set @process = 'Insert ccSettings -- Recuperar call_key de la ultima llamada predictiva'
+		set @sql='if not exists (select * from ccSettings where setting_id=194)
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values
+					(194,1,''Recuperar call_key de la ultima llamada predictiva'',1,''GRL'',''0:Funcionamiento Normal;1:Recuperar Call_key'',''Retrieve call_key from the last predictive call'',1,''^[0-1]$'')'
+		EXEC(@sql)
 
 set @process = 'Insert ccSettings -- Hold Timer'
 	set @sql='if not exists (select * from ccSettings where setting_id=193)

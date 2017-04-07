@@ -2508,4 +2508,7 @@
   <data name="tries" xml:space="preserve">
     <value>Tries</value>
   </data>
+  <data name="fileMoved" xml:space="preserve">
+    <value>Recording storage</value>
+  </data>
 </root>

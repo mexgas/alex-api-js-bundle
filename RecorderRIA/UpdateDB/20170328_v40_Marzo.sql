@@ -27,6 +27,11 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 
 	--Tables
 
+	set @process = 'Insert TREC_PARAMETROS -- Exportacion con AVRS Recordings Manager 74'
+set @sql ='if not exists (select * from TREC_PARAMETROS where par_id=74)
+insert into TREC_PARAMETROS(par_id,par_descripcion,par_valor,par_detail) values(74,''Exportacion con AVRS Recordings Manager'',''\\127.0.0.1\ExcelFilesCallId\'',
+''En esta carpeta se guarda el archivo que contiene los cal_id para la exportacion de grabaciones, esta la crea el IIS y se le da permisos a mano'')'
+EXEC(@sql)
 	--Functions
 
   	--SP

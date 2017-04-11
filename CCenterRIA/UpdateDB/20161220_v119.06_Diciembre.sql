@@ -3470,7 +3470,7 @@ else
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_RIACampsManualCall]'
+		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_AGENTInsertCallOut]'
     	set @sql='ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
 @cam_id smallint,
 @cal_Key varchar(20),
@@ -3504,17 +3504,14 @@ end
 if @existCallOut=0
  begin
 	declare @LasCallKey varchar(20)
-	set @LasCallKey = @cal_Key
 	declare @settingCallKey as int
-	select @settingCallKey = valor from ccSettings where setting_id = 194
 
-	if(@settingCallKey = 1)
-	begin
-		if (@cal_Key='''' or @cal_Key is null)
-		begin
-			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime, convert(varchar(10),getdate(),121)) and cal_manual=0 order by cal_id desc
-			set @cal_Key= @LasCallKey
-		end
+	set @LasCallKey = isnull(@cal_Key,'''')	--Asigna un valor default
+	select @settingCallKey = valor from ccSettings where setting_id = 194 --Revisa si debe poner el ultimo estado del cal_key
+
+	if @settingCallKey = 1 and (@cal_Key='''' or @cal_Key is null) begin
+		select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime, convert(varchar(10),getdate(),121)) and cal_manual=0 order by cal_id desc
+		set @cal_Key= @LasCallKey
 	end
 
 	INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)

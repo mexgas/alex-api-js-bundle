@@ -70,11 +70,71 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		set @Sql= 'if not exists (select * from sys.columns where name = N''file_moved'' AND Object_ID = Object_ID(N''ccCallsIn'') ) alter table ccCallsIn add file_moved bit null'
 		EXEC(@Sql)
 
+		set @process = 'Insert ccSettings -- Default campaign on manual call'
+		set @sql='if not exists (select * from ccSettings where setting_id=196)
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values
+					(196,6,''Campaña default para marcación manual'',1,''AGT'',''Campaña default para marcación manual'',''Default campaign for manual call'',1,''^\d*$'')'
+		EXEC(@sql)
+
+		set @process = 'Insert ccTipoStatusAgente 26,27'
+		set @Sql= 'if exists(select valor from ccSettings where setting_id=27 and valor=''1'') begin
+if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Transferencia Fallida'')
+if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fallida'')
+end
+else begin
+if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
+if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
+end'
+		EXEC(@Sql)
+
+		set @process = 'Inser new Reports -- 4180'
+		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4180)
+insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''db47a2867c7795a221f61d9e0dccebfb32d8fb3e0026848cfc108c677051317d6f93de038e1f16b80f67b6139265c86e669c7602ede198536f899842d56c5d37'')
+'
+		EXEC(@Sql)
+
+		set @process = 'Inser new Reports -- 2070'
+		set @Sql= 'if not exists(select * from ccMenus where menu_id=2070 and type=3)begin
+insert into ccMenus (menu_id, menu_descrip,parent, Nivel,ordengral,type,HelpSWF,release)
+values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses By Interval'',2000,''B'',2,3,'''',''9845b8194326d000bbf125cc69f93b76c97e97d0bdd431f0e04d5b455413f8fa1c2f669901ecb5f36e912e128c22c6773da345481c0c9c50286221101986c4c4b2f637f3e469b15dd8dca1fca72b0b33'')
+end'
+		EXEC(@sql)
+
+		set @process = 'Inser new Reports -- 4170'
+		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4170)
+insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e103870d96b6765f2ee439d2af114fb6f5574587bad77cc997e68802daa13912b5a4be80d1256d25e18e75aaeeb3f'')
+'
+		EXEC(@Sql)
+
+		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
+		set @Sql='IF NOT EXISTS (SELECT * FROM [CCenterRia].[dbo].[ccmenus] WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 4190 AND [CCenterRia].[dbo].[ccmenus].[type]=3)
+		BEGIN
+			INSERT INTO [CCenterRia].[dbo].[ccmenus]
+			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+			VALUES
+			(4190, ''Llamadas contestadas por reintentos|Answered Calls by Dialing Retries'', 4000, ''B'', 4, 3, '''', ''7f9603c7b03b294b1e3bf597edce2c5231780fd215b73ce2a47392e356505240828532309bfa5e501bdc0ca946b446e3d47e09947906ed2b769889561b55592a3df3d2390391a69a1fdc8527f37dfc3a'')
+		END
+		'
+		EXEC(@Sql)
+
+		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
+		set @Sql='IF NOT EXISTS (SELECT * FROM [CCenterRia].[dbo].[ccmenus] WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 2080 AND [CCenterRia].[dbo].[ccmenus].[type]=3)
+		BEGIN
+			INSERT INTO [CCenterRia].[dbo].[ccmenus]
+			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+			VALUES
+			(2080, ''Detalle de agente por día|Agent Detail by Day'', 2000, ''B'', 2, 3, '''',''eefae185aa125f584d532e0f80546a1fef657d9b4f60d1d23e66b78ef93ded3a0c9d78f2b1ec9493136e6cdae061236c'')
+		END
+		'
+		EXEC(@Sql)
+
 		set @process = 'Alter tabla telefonosTransferencia'
 		set @sql='if not exists (select * from sys.columns where name = N''IDArea'' AND object_id =object_id (N''telefonosTransferencia''))
-		begin
-		ALTER TABLE telefonosTransferencia ADD IDArea smallint
-		end'
+begin
+ALTER TABLE telefonosTransferencia ADD IDArea smallint
+end'
 		EXEC(@sql)
 
 		set @process = 'CREATE SP -- ccsp_recordingStatus'
@@ -104,63 +164,6 @@ begin
 		end
 	end
 end'
-		EXEC(@Sql)
-
-
-
-
-		set @process = 'Insert ccTipoStatusAgente 26,27'
-		set @Sql= 'if exists(select valor from ccSettings where setting_id=27 and valor=''1'') begin
-					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Transferencia Fallida'')
-					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fallida'')
-					end
-					else begin
-					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=25) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(25,''Xfer Fail'')
-					if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=26) insert into ccTipoStatusAgente(TipoStatusAge_id,descripcion) values(26,''Ringing Fail'')
-					end'
-		EXEC(@Sql)
-
-		set @process = 'Inser new Reports -- 4180'
-		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4180)
-					insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-					values(4180,''Detalle de resultados de marcación|Dialing Results Detail'',4000,''B'',2,3,'''',''db47a2867c7795a221f61d9e0dccebfb32d8fb3e0026848cfc108c677051317d6f93de038e1f16b80f67b6139265c86e669c7602ede198536f899842d56c5d37'')
-					'
-		EXEC(@Sql)
-
-		set @process = 'Inser new Reports -- 2070'
-		set @Sql= 'if not exists(select * from ccMenus where menu_id=2070 and type=3)begin
-					insert into ccMenus (menu_id, menu_descrip,parent, Nivel,ordengral,type,HelpSWF,release)
-					values(2070,''Estados de agente y llamadas por intervalo|Agent and Call Statuses By Interval'',2000,''B'',2,3,'''',''9845b8194326d000bbf125cc69f93b76c97e97d0bdd431f0e04d5b455413f8fa1c2f669901ecb5f36e912e128c22c6773da345481c0c9c50286221101986c4c4b2f637f3e469b15dd8dca1fca72b0b33'')
-					end'
-		EXEC(@sql)
-
-		set @process = 'Inser new Reports -- 4170'
-		set @Sql= 'if not exists(select * from ccmenus where type=3 and menu_id=4170)
-					insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-					values(4170,''Gestión de base|Management Base'',4000,''B'',2,3,'''',''d71e103870d96b6765f2ee439d2af114fb6f5574587bad77cc997e68802daa13912b5a4be80d1256d25e18e75aaeeb3f'')
-					'
-		EXEC(@Sql)
-
-		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
-		set @Sql='IF NOT EXISTS (SELECT * FROM [CCenterRia].[dbo].[ccmenus] WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 4190 AND [CCenterRia].[dbo].[ccmenus].[type]=3)
-		BEGIN
-			INSERT INTO [CCenterRia].[dbo].[ccmenus]
-			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
-			VALUES
-			(4190, ''Llamadas contestadas por reintentos|Answered Calls by Dialing Retries'', 4000, ''B'', 4, 3, '''', ''7f9603c7b03b294b1e3bf597edce2c5231780fd215b73ce2a47392e356505240828532309bfa5e501bdc0ca946b446e3d47e09947906ed2b769889561b55592a3df3d2390391a69a1fdc8527f37dfc3a'')
-		END
-		'
-		EXEC(@Sql)
-
-		set @process = 'INSERT REPORT - Answered Calls by Dialing Retries '
-		set @Sql='IF NOT EXISTS (SELECT * FROM [CCenterRia].[dbo].[ccmenus] WHERE [CCenterRia].[dbo].[ccmenus].[menu_id] = 2080 AND [CCenterRia].[dbo].[ccmenus].[type]=3)
-		BEGIN
-			INSERT INTO [CCenterRia].[dbo].[ccmenus]
-			(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
-			VALUES
-			(2080, ''Detalle de agente por día|Agent Detail by Day'', 2000, ''B'', 2, 3, '''',''eefae185aa125f584d532e0f80546a1fef657d9b4f60d1d23e66b78ef93ded3a0c9d78f2b1ec9493136e6cdae061236c'')
-		END
-		'
 		EXEC(@Sql)
 
 		set @process = 'UPDATE ccsetting 190'
@@ -647,6 +650,11 @@ END'
 					INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')'
 		EXEC(@sql)
 
+		set @process = 'Insert ccSettings -- Recuperar call_key de la ultima llamada predictiva'
+		set @sql='if not exists (select * from ccSettings where setting_id=194)
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values
+					(194,1,''Recuperar call_key de la ultima llamada predictiva'',1,''GRL'',''0:Funcionamiento Normal;1:Recuperar Call_key'',''Retrieve call_key from the last predictive call'',1,''^[0-1]$'')'
+		EXEC(@sql)
 
 set @process = 'Insert ccSettings -- Hold Timer'
 	set @sql='if not exists (select * from ccSettings where setting_id=193)
@@ -657,7 +665,7 @@ EXEC(@sql)
 
 		set @process = 'Insert ccSettings -- hide the call queue in agent'
 		set @sql='if not exists (select * from ccSettings where setting_id = 192)
-				 begin 
+				 begin
 					insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(192, 1, ''Hide the queue call in agent|Mostrar cola ACD en agente'', 1, ''GRL'', ''1 Muestra la Lista 0 Lista Oculta'', ''Hide the queue call in agent'', 1, ''^[0-1]$'')
 				 end '
 		EXEC(@sql)
@@ -668,7 +676,7 @@ EXEC(@sql)
 		EXEC(@sql)
 
 		set @process = 'Drop sp ccsptelefonosTransferencia'
-		set @sql='if exists (select * from sys.procedures where name = N''ccsptelefonosTransferencia'') 
+		set @sql='if exists (select * from sys.procedures where name = N''ccsptelefonosTransferencia'')
 		DROP PROCEDURE [dbo].[ccsptelefonosTransferencia]'
 		EXEC(@sql)
 
@@ -688,8 +696,8 @@ select @value = case when valor=''1'' then 1 else 0 end from ccSettings where se
 select @IDArea =IDArea from ccUsers where User_id = @userID
 
 if @value = 1
-	begin	
-		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre	
+	begin
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre
 	end
 	else
 	begin
@@ -754,7 +762,7 @@ set nocount off'
 set @process = 'Alter SP ccsp_RIACAT_PhoneConfig'
 set @sql='ALTER proc [dbo].[ccsp_RIACAT_PhoneConfig]
 @Type tinyint, -- 1:Show #conf | 2:Add #conf | 3:Upd #conf | 4:Del #conf | 5:Add #tran | 6:Upd #tran | 7:Del #tran | 8: Show #tran
-@CT_id SmallInt=0, 
+@CT_id SmallInt=0,
 @Nombre varchar(50)='''',
 @Telefono varchar(50)='''',
 @IDArea smallint = 0 --parametro IDarea
@@ -822,14 +830,14 @@ if @Type=5
 		select -3 -- El nombre ya esta asignado
 		return(0)
 	 end
-	 
+
 	 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and IDArea=@IDArea)
 	 begin
 		select -4 -- El telefono ya esta asignado
 		return(0)
 	 end
 
-	insert into telefonosTransferencia (nombre, tel, IDArea) select @Nombre, @Telefono,@IDArea --se agrega IDArea 
+	insert into telefonosTransferencia (nombre, tel, IDArea) select @Nombre, @Telefono,@IDArea --se agrega IDArea
 	select SCOPE_IDENTITY() numtra_id
 	return(0)
  end
@@ -859,14 +867,14 @@ if @Type=7
  end
 
 if @Type=8
- begin	
-	if @value = 1 
-	begin	
-		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre	
+ begin
+	if @value = 1
+	begin
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre
 	end
 	else
 	begin
-		select numtra_id id, cast(IDArea as varchar(20) )+'' - ''+  nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre	
+		select numtra_id id, cast(IDArea as varchar(20) )+'' - ''+  nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
 	end
 	return(0)
  end
@@ -887,11 +895,11 @@ BEGIN
 declare @value int
 
 set @value = 0
-select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191 
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
 
 	IF @value = 0
 		begin
-			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
 			(
 				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
@@ -909,13 +917,13 @@ select @value = case when valor=''1'' then 1 else 0 end from ccSettings where se
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
 					)
-					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID 
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
 					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
 					Order by nomb
 				end
 			else
 				begin
-					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join 
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
 					(
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
@@ -945,14 +953,14 @@ declare @value int
 	select @fecha =  getdate()
 	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
 
-	set @value = 0 
+	set @value = 0
 	select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
 
 	if @value = 0
 		begin
 			select -1, ''IVR''
 			union
-			select inbound_id, descripcion from ccInbound where inbound_id in 
+			select inbound_id, descripcion from ccInbound where inbound_id in
 			(
 				select inbound_id from ccInboundHorarios where horario_id in
 				(
@@ -960,7 +968,7 @@ declare @value int
 					where
 					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-					AND (  
+					AND (
 						Lunes  = @dia or
 						Martes *2 = @dia or
 						Miercoles*3 = @dia or
@@ -973,7 +981,7 @@ declare @value int
 			)
 			and inbound_id <> @current
 			-- las activas
-			and status <> 0 
+			and status <> 0
 			-- las que tienen agentes firmados
 			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
 			order by 2
@@ -985,7 +993,7 @@ declare @value int
 				begin
 					select -1, ''IVR''
 					union
-					select inbound_id, descripcion from ccInbound where inbound_id in 
+					select inbound_id, descripcion from ccInbound where inbound_id in
 					(
 						select inbound_id from ccInboundHorarios where horario_id in
 						(
@@ -993,7 +1001,7 @@ declare @value int
 							where
 							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (  
+							AND (
 								Lunes  = @dia or
 								Martes *2 = @dia or
 								Miercoles*3 = @dia or
@@ -1006,7 +1014,7 @@ declare @value int
 					)
 					and inbound_id <> @current
 					-- las activas
-					and status <> 0 
+					and status <> 0
 					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
 					order by 2
 				end
@@ -1014,7 +1022,7 @@ declare @value int
 				begin
 					select -1, ''IVR''
 					union
-					select inbound_id, descripcion from ccInbound where inbound_id in 
+					select inbound_id, descripcion from ccInbound where inbound_id in
 					(
 						select inbound_id from ccInboundHorarios where horario_id in
 						(
@@ -1022,7 +1030,7 @@ declare @value int
 							where
 							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
 							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (  
+							AND (
 								Lunes  = @dia or
 								Martes *2 = @dia or
 								Miercoles*3 = @dia or
@@ -1035,14 +1043,14 @@ declare @value int
 					)
 					and inbound_id <> @current
 					-- las activas
-					and status <> 0 
+					and status <> 0
 					and IDArea in (
 					select IDArea from ccUsers where User_id = @userID
 					)
 					-- las que tienen agentes firmados
 					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-					order by 2 
-				end 
+					order by 2
+				end
 		end'
 EXEC(@sql)
 
@@ -1613,659 +1621,656 @@ set nocount off'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_RIAChecaLogin'
-		set @Sql= '
-		ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
-				@Login varchar(20),
-				@Password varchar(40),
-				@Computer varchar(20),
-				@PasswordLwC varchar(40) = null
-				AS
-				declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
-				declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
+@Login varchar(20),
+@Password varchar(40),
+@Computer varchar(20),
+@PasswordLwC varchar(40) = null
+AS
+declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
+declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
 
-				--Para posiciones ip, by ODC
-				declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
+--Para posiciones ip, by ODC
+declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
 
-				-- Para live connected
-				-- Tipo de conexion: 0 normal, 1 liveconnected
-				declare @tipoConexion smallint
+-- Para live connected
+-- Tipo de conexion: 0 normal, 1 liveconnected
+declare @tipoConexion smallint
 
-				SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
-				 @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
-				SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
+SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
+ @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
+SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
 
-				IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
-					GOTO Mostrar
-				else
-					set @LoginOK=1
+IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
+	GOTO Mostrar
+else
+	set @LoginOK=1
 
-				IF not exists(select Login from ccUsers Where Login = @Login
-				 AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
-				 or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
-				 and status > 0 and tipoUser_id = 1)
-					GOTO Mostrar
-				else
-					set @PswdOK=1
+IF not exists(select Login from ccUsers Where Login = @Login
+ AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
+ or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
+ and status > 0 and tipoUser_id = 1)
+	GOTO Mostrar
+else
+	set @PswdOK=1
 
-				-- Se actualiza a Lower Case
-				update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
+-- Se actualiza a Lower Case
+update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
 
-				if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
-					insert ccposicion (computer, ext_id) select @Computer, 0
+if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
+	insert ccposicion (computer, ext_id) select @Computer, 0
 
-				set @CompuOK = 1
+set @CompuOK = 1
 
-				if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
-				 Where p.Status=1 and M.Status=1 and Computer=@Computer)
-					GOTO Mostrar
-				else
-					set @ExtenOK=1
+if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
+ Where p.Status=1 and M.Status=1 and Computer=@Computer)
+	GOTO Mostrar
+else
+	set @ExtenOK=1
 
-				select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
-				from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
-				Where Computer = @Computer
+select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
+from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
+Where Computer = @Computer
 
-				select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
+select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
 
-				select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents
-				from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
+select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents
+from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
 
-				Mostrar:
-				--Para posiciones ip, by ODC
-				-- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
-				-- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
-				IF @ext_id=0
-				 BEGIN
-					select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
-				 END
+Mostrar:
+--Para posiciones ip, by ODC
+-- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+-- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+IF @ext_id=0
+ BEGIN
+	select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
+ END
 
-				---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
-				IF(@ext_id > 0  and @isIP=1)
-				 BEGIN
-					select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
-				 END
-				-----------
+---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+IF(@ext_id > 0  and @isIP=1)
+ BEGIN
+	select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
+ END
+-----------
 
-				IF @tipoConexion = 1
-					select @TeclaOK =1
+IF @tipoConexion = 1
+	select @TeclaOK =1
 
-				--	CRMx
-				DECLARE @crmxActive TINYINT
-				SET @crmxActive = 0
-				IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
-					BEGIN
-						SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
-					END
+--	CRMx
+DECLARE @crmxActive TINYINT
+SET @crmxActive = 0
+IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
+	BEGIN
+		SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
+	END
 
 
-				SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
+SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
 @UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
 @XferAgents as XferAgents, @crmxActive as [CRMx]
 		'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_RIAADMChecaLogin'
-		set @Sql= '
-		ALTER PROCEDURE [dbo].[ccsp_RIAADMChecaLogin]
-			@Login varchar(20) = '''',
-			@Password varchar(40) = '''',
-			@PasswordLwC varchar(40) = null,
-			@adminId int = 0
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAADMChecaLogin]
+@Login varchar(20) = '''',
+@Password varchar(40) = '''',
+@PasswordLwC varchar(40) = null,
+@adminId int = 0
 
-			as
-			set nocount on
+as
+set nocount on
 
-			declare @x int
-			set @x=1
+declare @x int
+set @x=1
 
-			if @adminId <> 0
-				begin
-					update ccUsers set onLine = 0 where User_id = @adminId
-					return(0)
-				end
+if @adminId <> 0
+begin
+update ccUsers set onLine = 0 where User_id = @adminId
+return(0)
+end
 
-			declare @UserID smallint
-			--****
-			declare @TipoUser_idx int
-			declare @ver int
-			declare @changeRecDisposition int
-			set @ver = 0
-			set @changeRecDisposition = 0
+declare @UserID smallint
+--****
+declare @TipoUser_idx int
+declare @ver int
+declare @changeRecDisposition int
+set @ver = 0
+set @changeRecDisposition = 0
 
-			--****
-			select @UserID=User_id,@TipoUser_idx=TipoUser_id from ccUsers Where Login=@Login AND TipoUser_id in(2,6) and status>0
+--****
+select @UserID=User_id,@TipoUser_idx=TipoUser_id from ccUsers Where Login=@Login AND TipoUser_id in(2,6) and status>0
 
-			if(@TipoUser_idx=2 or @TipoUser_idx=6)
-			begin
-			 if exists (SELECT * FROM ccRIAUsr_AdminPermissions WHERE User_id=@UserID and per_id in (2,6))
-			 begin
-				set @ver = 1
-			 end
-			 if exists (SELECT * FROM ccRIAUsr_AdminPermissions WHERE User_id=@UserID and per_id=7)
-			 begin
-				set @changeRecDisposition = 1
-			 end
-			end
+if(@TipoUser_idx=2 or @TipoUser_idx=6)
+begin
+if exists (SELECT * FROM ccRIAUsr_AdminPermissions WHERE User_id=@UserID and per_id in (2,6))
+begin
+set @ver = 1
+end
+if exists (SELECT * FROM ccRIAUsr_AdminPermissions WHERE User_id=@UserID and per_id=7)
+begin
+set @changeRecDisposition = 1
+end
+end
 
-			if not exists (select Login from ccUsers Where User_id=@UserID
-			AND(Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
-			OR Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC))
-			 begin
-				SELECT case when @UserID is null then 0 else 1 end ''LoginOK'', 0 ''PswdOK'', 0 ''UserID'', 0 ''Nombre'', 0 ''ADMServer'', 0 ''AreaId'', 0 ''viewavrs'',0 ''changeRecDisposition''
-				return(0)
-			 end
+if not exists (select Login from ccUsers Where User_id=@UserID
+AND(Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
+OR Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC))
+begin
+SELECT case when @UserID is null then 0 else 1 end ''LoginOK'', 0 ''PswdOK'', 0 ''UserID'', 0 ''Nombre'', 0 ''ADMServer'', 0 ''AreaId'', 0 ''viewavrs'',0 ''changeRecDisposition''
+return(0)
+end
 
-			update ccUsers set Password=isnull(@PasswordLwC, Password) Where User_id=@UserID and Password<>@PasswordLwC
+update ccUsers set Password=isnull(@PasswordLwC, Password) Where User_id=@UserID and Password<>@PasswordLwC
 
-			update ccUsers set onLine = 1 where User_id = @UserID
+update ccUsers set onLine = 1 where User_id = @UserID
 
-			Select 1 ''LoginOK'', 1 ''PswdOK'', User_id ''UserID'',
-			 Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''') ''Nombre'',
-			 (SELECT valor FROM ccSettings WHERE setting_id=8) [ADMServer],
-			  isnull(IDArea,0) ''AreaId'',
-			 @ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition''
-			From ccUsers Where User_id=@UserID
+Select 1 ''LoginOK'', 1 ''PswdOK'', User_id ''UserID'',
+Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''') ''Nombre'',
+(SELECT valor FROM ccSettings WHERE setting_id=8) [ADMServer],
+isnull(IDArea,0) ''AreaId'',
+@ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition''
+From ccUsers Where User_id=@UserID
+return(0)
+set nocount off'
+EXEC(@Sql)
+
+set @process = 'Alter SP  -- ccsp_Limpia'
+set @Sql= 'ALTER procedure [dbo].[ccsp_Limpia]
+@tel varchar(30),
+@Camp int = 0
+as
+set nocount on
+declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint
+select @tel = dbo.limpia(@tel)
+select @lon = len(@tel)
+select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @ld = valor from ccSettings with(nolock) where setting_id = 17
+select @extLen = valor from ccsettings with(nolock) where setting_id = 108
+declare @telTemp as varchar(15)
+
+if @extLen=@lon and @lon>1
+begin
+select 0 as res, @tel as tel -- Extension
+return(0)
+end
+
+if @pais = 1
+begin
+if @lon = 3 and @tel = ''911''
+begin
+select 4 as res, @tel as tel
+return(0)
+end
+
+if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13
+begin
+select 1 as res, @tel as tel --Longitud invalida
+return(0)
+end
+
+if @lon = 12 and left(@tel, 2) <> ''01'' or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001''
+begin
+select 2 as res, @tel as tel--Digitos incorrectos
+return(0)
+end
+
+if left(@tel, 3) = ''001''
+begin
+select 0 as res, @tel as tel
+return(0)
+end
+
+declare @mod varchar(5)
+select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
+select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
+on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+begin
+select 4 as res, @tel as tel
+return(0)
+end
+
+if @mod = ''CPP''
+begin
+select 0 as res, case left(@tel, len(@ld)) when @ld then ''044'' else ''045'' end + @tel as tel
+return(0)
+end
+
+if @mod in (''FIJO'', ''MPP'')
+begin
+		select 0 as res, case left(@tel, len(@ld)) when @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end as tel
+		return(0)
+	 end
+
+	--if @mod is null
+	select 3 as res, @tel as tel--No encontrado
+	return(0)
+ end
+
+if @pais = 2
+ begin
+	select @telTemp = @tel
+	set @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel,1)=''E'' begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return
+	end
+
+	select @tel = dbo.fnClearPhoneArg(@tel)
+
+	if (len(@tel) = 10 or len(@ld + @tel) = 10) and left(@tel,1) <> ''E'' begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and (telefono = @tel or telefono= @ld + @tel) and status=1)
+	   begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
 			return(0)
-			set nocount off'
-		EXEC(@Sql)
+		end else begin
+			select 4 as res, @tel
+			return(0)
+		end
+	end else begin select 2 as res, @telTemp as tel end --Digitos incorrectos
+ end
 
-		set @process = 'Alter SP  -- ccsp_Limpia'
-		set @Sql= '
-		ALTER procedure [dbo].[ccsp_Limpia]
-			@tel varchar(30),
-			@Camp int = 0
-			as
-			set nocount on
-			declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint
-			select @tel = dbo.limpia(@tel)
-			select @lon = len(@tel)
-			select @pais = valor from ccSettings with(nolock) where setting_id = 104
-			select @ld = valor from ccSettings with(nolock) where setting_id = 17
-			select @extLen = valor from ccsettings with(nolock) where setting_id = 108
-			declare @telTemp as varchar(15)
+if @pais = 3
+ begin
+	select @telTemp = @tel
+	if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	end
+	select @tel = dbo.Completa_ListaNegra(@tel)
 
-			if @extLen=@lon and @lon>1
-			 begin
-				select 0 as res, @tel as tel -- Extension
-				return(0)
-			 end
+	if (len(@tel) = 8 or len(@tel) = 10) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
 
-			if @pais = 1
-			 begin
-				if @lon = 3 and @tel = ''911''
+if @pais = 4
+ begin
+	exec ccsp_LimpiaUsa @tel, @Camp
+	return(0)
+ end
+
+if @pais = 5
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if len(@tel) in(8,9) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+if @pais = 6
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+
+	if len(@tel) = 10 and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+if @pais = 7
+
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if (len(@tel) = 9 or len(@tel) = 10) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+
+			select @tel = dbo.verifica(@tel)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp -- No existe el telefono
+			end
+			else begin
+				select 0 as res, @telTemp  -- Todo Bien
+			end
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel --lista negra
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+
+if @pais = 8
+ begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if left(@tel,1)=''E'' begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return (0)
+	end
+
+	if (len(@tel) = 9 or len(@tel) = 10 or len(@tel) = 11 )
+	begin
+		if not exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra)) on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		end
+		else
+		begin
+			select 4 as res, @tel
+			return(0)
+		end
+	end
+ end
+
+if @pais = 9 --Australia
+ begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
 				begin
-					select 4 as res, @tel as tel
-					return(0)
-				end
-
-				if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13
-				 begin
-					select 1 as res, @tel as tel --Longitud invalida
-					return(0)
-				 end
-
-				if @lon = 12 and left(@tel, 2) <> ''01'' or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001''
-				 begin
-					select 2 as res, @tel as tel--Digitos incorrectos
-					return(0)
-				 end
-
-				if left(@tel, 3) = ''001''
-				 begin
-					select 0 as res, @tel as tel
-					return(0)
-				 end
-
-				declare @mod varchar(5)
-				select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
-				select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
-
-				if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
-				on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-				 begin
-					select 4 as res, @tel as tel
-					return(0)
-				 end
-
-				if @mod = ''CPP''
-				 begin
-					select 0 as res, case left(@tel, len(@ld)) when @ld then ''044'' else ''045'' end + @tel as tel
-					return(0)
-				 end
-
-				if @mod in (''FIJO'', ''MPP'')
-				 begin
-					select 0 as res, case left(@tel, len(@ld)) when @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end as tel
-					return(0)
-				 end
-
-				--if @mod is null
-				select 3 as res, @tel as tel--No encontrado
-				return(0)
-			 end
-
-			if @pais = 2
-			 begin
-				select @telTemp = @tel
-				set @tel = dbo.completa(@tel, @pais, @ld)
-				if left(@tel,1)=''E'' begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return
-				end
-
-				select @tel = dbo.fnClearPhoneArg(@tel)
-
-				if (len(@tel) = 10 or len(@ld + @tel) = 10) and left(@tel,1) <> ''E'' begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and (telefono = @tel or telefono= @ld + @tel) and status=1)
-				   begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					end else begin
-						select 4 as res, @tel
-						return(0)
-					end
-				end else begin select 2 as res, @telTemp as tel end --Digitos incorrectos
-			 end
-
-			if @pais = 3
-			 begin
-				select @telTemp = @tel
-				if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				end
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if (len(@tel) = 8 or len(@tel) = 10) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 4
-			 begin
-				exec ccsp_LimpiaUsa @tel, @Camp
-				return(0)
-			 end
-
-			if @pais = 5
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if len(@tel) in(8,9) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 6
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-
-				if len(@tel) = 10 and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 7
-
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if (len(@tel) = 9 or len(@tel) = 10) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-
-						select @tel = dbo.verifica(@tel)
-						if left(@tel,1)=''E'' begin
-							select 3 as res, @telTemp -- No existe el telefono
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
 						end
-						else begin
-							select 0 as res, @telTemp  -- Todo Bien
-						end
-						return(0)
-					 end
 					else
-					 begin
-						select 4 as res, @tel --lista negra
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-
-			if @pais = 8
-			 begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if left(@tel,1)=''E'' begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return (0)
+						begin
+							select 2 as res, @telTemp as tel
+							return(0)
+						end
 				end
-
-				if (len(@tel) = 9 or len(@tel) = 10 or len(@tel) = 11 )
+			else
 				begin
-					if not exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra)) on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					end
-					else
-					begin
-						select 4 as res, @tel
-						return(0)
-					end
+					select 4 as res, @tel
+					return(0)
 				end
-			 end
+		end
+ end
 
-			if @pais = 9 --Australia
-			 begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
+if @pais = 10 -- Brasil
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	set @lon = len(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			 end
+if @pais = 11 -- Guatemala
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 10 -- Brasil
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				set @lon = len(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
+if @pais = 12 -- Costa Rica
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 11 -- Guatemala
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
+if @pais = 13 -- Salvador
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 12 -- Costa Rica
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
-
-			if @pais = 13 -- Salvador
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
-
-			if @pais = 14 -- Spain
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end  '
+if @pais = 14 -- Spain
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end'
 		EXEC(@Sql)
 
 		set @process = 'validate if exists procedure [dbo].[ccspOtherDetails]'
@@ -2274,21 +2279,21 @@ set nocount off'
 
 		set @process = 'Create procedure -- [dbo].[ccspOtherDetails]'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccspOtherDetails]
-					@action as tinyint,
-					@cam_id as tinyint,
-					@to as datetime = null
-					AS
-					BEGIN
-					SET ANSI_WARNINGS off
-					SET NOCOUNT ON
-					SELECT count(tipoResDial_id) as num, cam_id, tipoResDial_id, 
-						 disconnectCause, convert(varchar(10),fecha,120) as [fecha]
-					 FROM ccoLogDials
-					 WHERE tipoResDial_id = 8
-					 AND cam_id = @cam_id
-					 AND convert(varchar(10),fecha,120) = convert(varchar(10),GETDATE(),120)
-					 group by cam_id, tipoResDial_id, disconnectCause, convert(varchar(10),fecha,120)
-					END'
+@action as tinyint,
+@cam_id as tinyint,
+@to as datetime = null
+AS
+BEGIN
+SET ANSI_WARNINGS off
+SET NOCOUNT ON
+SELECT count(tipoResDial_id) as num, cam_id, tipoResDial_id,
+	 disconnectCause, convert(varchar(10),fecha,120) as [fecha]
+ FROM ccoLogDials
+ WHERE tipoResDial_id = 8
+ AND cam_id = @cam_id
+ AND convert(varchar(10),fecha,120) = convert(varchar(10),GETDATE(),120)
+ group by cam_id, tipoResDial_id, disconnectCause, convert(varchar(10),fecha,120)
+END'
 		Exec(@sql)
 
 		set @process = 'DROP Function  -- Verifica2'
@@ -2858,621 +2863,692 @@ end --Termina Mexico
     return @tel
    end'
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_RIAADMGetPermisos]'
-    	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAADMGetPermisos] 
-					@user_id varchar(255), 
-					@Type int, 
-					@mask int = 0, 
-					@xferMask int = 0,
-					@xstartStopRecording int = 0,
-					@CanChangeStatus bit = null,
-					@XferAgents int = null
-					AS 
-					set nocount on
+    	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAADMGetPermisos]
+@user_id varchar(255),
+@Type int,
+@mask int = 0,
+@xferMask int = 0,
+@xstartStopRecording int = 0,
+@CanChangeStatus bit = null,
+@XferAgents int = null
+AS
+set nocount on
 
-					If @Type = 1
-					 begin
-						Select distinct A.User_id as ID, Login, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' +
-						isNull(ApellidoMaterno, '''') as ''Nombre'', cast(dialMask & 1 as int) as ''Restringe celular'',
-						cast( (dialMask & 2) /2 as int) as ''Restringe ld'', cast((dialMask & 4) / 4 as int) as ''Restringe local'',
-						cast( xfermask as int) as ''Recibe transferencia'', cast(CanChangeStatus as tinyint) CanChangeStatus, 
-						cast(XferAgents as tinyint) XferAgents,
-						cast(startStopRecording as tinyint) startStopRecording
-						from ccUsers A
-						join ccRIAWorkGroupUsers B on A.user_id = B.user_id
-						where tipoUser_id = 1 and IDWG in (select IDWG from ccRIAWorkGroupUsers where user_id = @user_id)
-						return(0)
-					 end
+If @Type = 1
+ begin
+	Select distinct A.User_id as ID, Login, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' +
+	isNull(ApellidoMaterno, '''') as ''Nombre'', cast(dialMask & 1 as int) as ''Restringe celular'',
+	cast( (dialMask & 2) /2 as int) as ''Restringe ld'', cast((dialMask & 4) / 4 as int) as ''Restringe local'',
+	cast( xfermask as int) as ''Recibe transferencia'', cast(CanChangeStatus as tinyint) CanChangeStatus,
+	cast(XferAgents as tinyint) XferAgents,
+	cast(startStopRecording as tinyint) startStopRecording
+	from ccUsers A
+	join ccRIAWorkGroupUsers B on A.user_id = B.user_id
+	where tipoUser_id = 1 and IDWG in (select IDWG from ccRIAWorkGroupUsers where user_id = @user_id)
+	return(0)
+ end
 
-					 if @Type = 3
-					begin
-						if(@xstartStopRecording <> -1)
-							UPDATE ccUsers SET startStopRecording = @xstartStopRecording where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
-						if(@xferMask <> -1)
-							UPDATE ccUsers SET xfermask = @xferMask where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
-						if(@mask <> 0)
-							UPDATE ccUsers SET dialMask = case 
-								when @mask > 0 and dialmask & @mask = 0 then dialmask + @mask
-								when @mask < 0 and dialmask & abs(@mask) > 0 then dialmask - abs(@mask)
-								else dialmask end
-								where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
-						if(@XferAgents <> 0)
-							UPDATE ccUsers SET XferAgents = case 
-								when @XferAgents > 0 and XferAgents & @XferAgents = 0 then XferAgents + @XferAgents
-								when @XferAgents < 0 and XferAgents & abs(@XferAgents) > 0 then XferAgents - abs(@XferAgents)
-								else XferAgents end
-								where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
-						return(0)
-					end
+ if @Type = 3
+begin
+	if(@xstartStopRecording <> -1)
+		UPDATE ccUsers SET startStopRecording = @xstartStopRecording where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
+	if(@xferMask <> -1)
+		UPDATE ccUsers SET xfermask = @xferMask where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
+	if(@mask <> 0)
+		UPDATE ccUsers SET dialMask = case
+			when @mask > 0 and dialmask & @mask = 0 then dialmask + @mask
+			when @mask < 0 and dialmask & abs(@mask) > 0 then dialmask - abs(@mask)
+			else dialmask end
+			where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
+	if(@XferAgents <> 0)
+		UPDATE ccUsers SET XferAgents = case
+			when @XferAgents > 0 and XferAgents & @XferAgents = 0 then XferAgents + @XferAgents
+			when @XferAgents < 0 and XferAgents & abs(@XferAgents) > 0 then XferAgents - abs(@XferAgents)
+			else XferAgents end
+			where tipoUser_id=1 and user_id in (select user_id from ccRIAWorkGroupUsers where idwg in (select IDWG from ccRIAWorkGroupUsers where user_id=@user_id))
+	return(0)
+end
 
-					--if @Type = 2
-					If @xferMask=-1 and @mask=-1 and @xstartStopRecording=-1
-					 begin
-						update ccUsers set NotReadyRestricted = ISNULL(@CanChangeStatus, NotReadyRestricted) , XferAgents = ISNULL(@XferAgents, XferAgents) 
-						where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
-						return(0)
-					 end
+--if @Type = 2
+If @xferMask=-1 and @mask=-1 and @xstartStopRecording=-1
+ begin
+	update ccUsers set NotReadyRestricted = ISNULL(@CanChangeStatus, NotReadyRestricted) , XferAgents = ISNULL(@XferAgents, XferAgents)
+	where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
+	return(0)
+ end
 
-					If @xferMask=-1 and @xstartStopRecording=-1
-					 begin
-						UPDATE ccUsers SET dialMask = @mask where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
-					 end
+If @xferMask=-1 and @xstartStopRecording=-1
+ begin
+	UPDATE ccUsers SET dialMask = @mask where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
+ end
 
 
-					if @mask=-1 and @xstartStopRecording=-1
-					 begin
-						UPDATE ccUsers SET xfermask = @xferMask where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
-					 end
+if @mask=-1 and @xstartStopRecording=-1
+ begin
+	UPDATE ccUsers SET xfermask = @xferMask where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
+ end
 
-					if @mask=-1 and @xferMask=-1
-					begin
-						UPDATE ccUsers SET startStopRecording = @xstartStopRecording where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
-					 
-					end
+if @mask=-1 and @xferMask=-1
+begin
+	UPDATE ccUsers SET startStopRecording = @xstartStopRecording where user_id in (select value from dbo.fn_RIASplitDelimited(@user_id, '',''))
 
-					return(0)
-					set nocount off'
+end
+
+return(0)
+set nocount off'
 		EXEC(@sql)
-		
+
 		set @process = 'Insert ccSettings -- Teléfonos locales a 10 dígitos para marcación manual'
 		set @sql='if not exists (select * from ccSettings where setting_id=195)
-					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values 
+					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values
 					(195,0,''Teléfonos locales a 10 dígitos para marcación manual (México)'',1,''AGT'',''Teléfonos locales a 10 dígitos para marcación manual (México)'',''Phone length for manual call (Mexico)'',1,''^[01]$'')'
 		EXEC(@sql)
-		
+
 		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_Limpia]'
     	set @sql='ALTER procedure [dbo].[ccsp_Limpia]
-			@tel varchar(30),
-			@Camp int = 0
-			as
-			set nocount on
-			declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint
-			select @tel = dbo.limpia(@tel)
-			select @lon = len(@tel)
-			select @pais = valor from ccSettings with(nolock) where setting_id = 104
-			select @ld = valor from ccSettings with(nolock) where setting_id = 17
-			select @extLen = valor from ccsettings with(nolock) where setting_id = 108
-			declare @telTemp as varchar(15)
+@tel varchar(30),
+@Camp int = 0
+as
+set nocount on
+declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint
+select @tel = dbo.limpia(@tel)
+select @lon = len(@tel)
+select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @ld = valor from ccSettings with(nolock) where setting_id = 17
+select @extLen = valor from ccsettings with(nolock) where setting_id = 108
+declare @telTemp as varchar(15)
 
-			if @extLen=@lon and @lon>1
-			 begin
-				select 0 as res, @tel as tel -- Extension
-				return(0)
-			 end
+if @extLen=@lon and @lon>1
+ begin
+	select 0 as res, @tel as tel -- Extension
+	return(0)
+ end
 
-			if @pais = 1
-			 begin
-				if @lon = 3 and @tel = ''911''
+if @pais = 1
+ begin
+	if @lon = 3 and @tel = ''911''
+	begin
+		select 4 as res, @tel as tel
+		return(0)
+	end
+
+	if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13
+	 begin
+		select 1 as res, @tel as tel --Longitud invalida
+		return(0)
+	 end
+
+	if @lon = 12 and left(@tel, 2) <> ''01'' or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001''
+	 begin
+		select 2 as res, @tel as tel--Digitos incorrectos
+		return(0)
+	 end
+
+	if left(@tel, 3) = ''001''
+	 begin
+		select 0 as res, @tel as tel
+		return(0)
+	 end
+
+	declare @mod varchar(5)
+	select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
+	select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+	if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
+	on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+	 begin
+		select 4 as res, @tel as tel
+		return(0)
+	 end
+
+	if @mod = ''CPP''
+	 begin
+		select 0 as res, case left(@tel, len(@ld)) when @ld then ''044'' else ''045'' end + @tel as tel
+		return(0)
+	 end
+
+	if @mod in (''FIJO'', ''MPP'')
+	 begin
+		select 0 as res, case left(@tel, len(@ld)) when @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end as tel
+		return(0)
+	 end
+
+	--if @mod is null
+	select 3 as res, @tel as tel--No encontrado
+	return(0)
+ end
+
+if @pais = 2
+ begin
+	select @telTemp = @tel
+	set @tel = dbo.completa(@tel, @pais, @ld)
+	if left(@tel,1)=''E'' begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return
+	end
+
+	select @tel = dbo.fnClearPhoneArg(@tel)
+
+	if (len(@tel) = 10 or len(@ld + @tel) = 10) and left(@tel,1) <> ''E'' begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and (telefono = @tel or telefono= @ld + @tel) and status=1)
+	   begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		end else begin
+			select 4 as res, @tel
+			return(0)
+		end
+	end else begin select 2 as res, @telTemp as tel end --Digitos incorrectos
+ end
+
+if @pais = 3
+ begin
+	select @telTemp = @tel
+	if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	end
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if (len(@tel) = 8 or len(@tel) = 10) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+if @pais = 4
+ begin
+	exec ccsp_LimpiaUsa @tel, @Camp
+	return(0)
+ end
+
+if @pais = 5
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if len(@tel) in(8,9) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+if @pais = 6
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+
+	if len(@tel) = 10 and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+			select @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+if @pais = 7
+
+ begin
+	select @telTemp = @tel
+	if left(@tel,1)=''E''
+	 begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return(0)
+	 end
+
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if (len(@tel) = 9 or len(@tel) = 10) and left(@tel,1) <> ''E''
+	 begin
+		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		 begin
+
+			select @tel = dbo.verifica(@tel)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp -- No existe el telefono
+			end
+			else begin
+				select 0 as res, @telTemp  -- Todo Bien
+			end
+			return(0)
+		 end
+		else
+		 begin
+			select 4 as res, @tel --lista negra
+			return(0)
+		 end
+	 end
+	else
+	 begin
+		select 2 as res, @telTemp as tel
+	 end --Digitos incorrectos
+ end
+
+
+if @pais = 8
+ begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if left(@tel,1)=''E'' begin
+		select 1 as res, @telTemp --Longitud Invalida
+		return (0)
+	end
+
+	if (len(@tel) = 9 or len(@tel) = 10 or len(@tel) = 11 )
+	begin
+		if not exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra)) on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
+		begin
+			select  @tel = dbo.verifica(@tel)
+			select 0 as res, @tel
+			return(0)
+		end
+		else
+		begin
+			select 4 as res, @tel
+			return(0)
+		end
+	end
+ end
+
+if @pais = 9 --Australia
+ begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
 				begin
-					select 4 as res, @tel as tel
-					return(0)
-				end
-
-				if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13
-				 begin
-					select 1 as res, @tel as tel --Longitud invalida
-					return(0)
-				 end
-
-				if @lon = 12 and left(@tel, 2) <> ''01'' or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001''
-				 begin
-					select 2 as res, @tel as tel--Digitos incorrectos
-					return(0)
-				 end
-
-				if left(@tel, 3) = ''001''
-				 begin
-					select 0 as res, @tel as tel
-					return(0)
-				 end
-
-				declare @mod varchar(5)
-				select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
-				select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
-
-				if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
-				on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-				 begin
-					select 4 as res, @tel as tel
-					return(0)
-				 end
-
-				if @mod = ''CPP''
-				 begin
-					select 0 as res, case left(@tel, len(@ld)) when @ld then ''044'' else ''045'' end + @tel as tel
-					return(0)
-				 end
-
-				if @mod in (''FIJO'', ''MPP'')
-				 begin
-					select 0 as res, case left(@tel, len(@ld)) when @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end as tel
-					return(0)
-				 end
-
-				--if @mod is null
-				select 3 as res, @tel as tel--No encontrado
-				return(0)
-			 end
-
-			if @pais = 2
-			 begin
-				select @telTemp = @tel
-				set @tel = dbo.completa(@tel, @pais, @ld)
-				if left(@tel,1)=''E'' begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return
-				end
-
-				select @tel = dbo.fnClearPhoneArg(@tel)
-
-				if (len(@tel) = 10 or len(@ld + @tel) = 10) and left(@tel,1) <> ''E'' begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and (telefono = @tel or telefono= @ld + @tel) and status=1)
-				   begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					end else begin
-						select 4 as res, @tel
-						return(0)
-					end
-				end else begin select 2 as res, @telTemp as tel end --Digitos incorrectos
-			 end
-
-			if @pais = 3
-			 begin
-				select @telTemp = @tel
-				if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				end
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if (len(@tel) = 8 or len(@tel) = 10) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 4
-			 begin
-				exec ccsp_LimpiaUsa @tel, @Camp
-				return(0)
-			 end
-
-			if @pais = 5
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if len(@tel) in(8,9) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 6
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-
-				if len(@tel) = 10 and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-						select @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					 end
-					else
-					 begin
-						select 4 as res, @tel
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-			if @pais = 7
-
-			 begin
-				select @telTemp = @tel
-				if left(@tel,1)=''E''
-				 begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return(0)
-				 end
-
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if (len(@tel) = 9 or len(@tel) = 10) and left(@tel,1) <> ''E''
-				 begin
-					if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					 begin
-
-						select @tel = dbo.verifica(@tel)
-						if left(@tel,1)=''E'' begin
-							select 3 as res, @telTemp -- No existe el telefono
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
 						end
-						else begin
-							select 0 as res, @telTemp  -- Todo Bien
-						end
-						return(0)
-					 end
 					else
-					 begin
-						select 4 as res, @tel --lista negra
-						return(0)
-					 end
-				 end
-				else
-				 begin
-					select 2 as res, @telTemp as tel
-				 end --Digitos incorrectos
-			 end
-
-
-			if @pais = 8
-			 begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-
-				if left(@tel,1)=''E'' begin
-					select 1 as res, @telTemp --Longitud Invalida
-					return (0)
+						begin
+							select 2 as res, @telTemp as tel
+							return(0)
+						end
 				end
-
-				if (len(@tel) = 9 or len(@tel) = 10 or len(@tel) = 11 )
+			else
 				begin
-					if not exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra)) on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and telefono = @tel and status=1)
-					begin
-						select  @tel = dbo.verifica(@tel)
-						select 0 as res, @tel
-						return(0)
-					end
-					else
-					begin
-						select 4 as res, @tel
-						return(0)
-					end
+					select 4 as res, @tel
+					return(0)
 				end
-			 end
+		end
+ end
 
-			if @pais = 9 --Australia
-			 begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
+if @pais = 10 -- Brasil
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	set @lon = len(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			 end
+if @pais = 11 -- Guatemala
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 10 -- Brasil
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				set @lon = len(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
+if @pais = 12 -- Costa Rica
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 11 -- Guatemala
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
+if @pais = 13 -- Salvador
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end
 
-			if @pais = 12 -- Costa Rica
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
-
-			if @pais = 13 -- Salvador
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end
-
-			if @pais = 14 -- Spain
-			begin
-				select @telTemp = @tel
-				select @tel = dbo.Completa_ListaNegra(@tel)
-				if left(@tel,1)=''E''
-					begin
-						select 1 as res, @telTemp --Longitud Invalida
-						return (0)
-					end
-				else
-					begin
-						if not exists(select a2.idtipolista
-									  from cclistanegra a1
-									  inner join camplistanegra a2 with(index(IX_Camplistanegra))
-									  on (a1.idtipolista=a2.idtipolista)
-									  where cam_id=@Camp
-									  and telefono = @tel
-									  and status=1)
-							begin
-								select  @tel = dbo.verifica(@tel)
-								if left(@tel,1) <> ''E''
-									begin
-										select 0 as res, @tel
-										return(0)
-									end
-								else
-									begin
-										select 2 as res, @telTemp as tel --digitos incorrectos
-										return(0)
-									end
-							end
-						else
-							begin
-								select 4 as res, @tel
-								return(0)
-							end
-					end
-			end  '
+if @pais = 14 -- Spain
+begin
+	select @telTemp = @tel
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if left(@tel,1)=''E''
+		begin
+			select 1 as res, @telTemp --Longitud Invalida
+			return (0)
+		end
+	else
+		begin
+			if not exists(select a2.idtipolista
+						  from cclistanegra a1
+						  inner join camplistanegra a2 with(index(IX_Camplistanegra))
+						  on (a1.idtipolista=a2.idtipolista)
+						  where cam_id=@Camp
+						  and telefono = @tel
+						  and status=1)
+				begin
+					select  @tel = dbo.verifica(@tel)
+					if left(@tel,1) <> ''E''
+						begin
+							select 0 as res, @tel
+							return(0)
+						end
+					else
+						begin
+							select 2 as res, @telTemp as tel --digitos incorrectos
+							return(0)
+						end
+				end
+			else
+				begin
+					select 4 as res, @tel
+					return(0)
+				end
+		end
+end'
 		EXEC(@sql)
-		
-		set @process = 'Insert ccSettings -- Default campaign on manual call'
-		set @sql='if not exists (select * from ccSettings where setting_id=196)
-					insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values 
-					(196,6,''Campaña default para marcación manual'',1,''AGT'',''Campaña default para marcación manual'',''Default campaign for manual call'',1,''^\d*$'')'
-		EXEC(@sql)
-		
+
 		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_RIACampsManualCall]'
     	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
-			@UserID int,
-			@onChat int = 0
-			AS
-			set nocount on
+@UserID int,
+@onChat int = 0
+AS
+set nocount on
 
-			if (@onChat = 0)
-			begin
-				declare @mod smallint
-				select @mod = valor from ccsettings where setting_id = 196
+if (@onChat = 0)
+begin
+	declare @mod smallint
+	select @mod = valor from ccsettings where setting_id = 196
 
-				select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
-				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
-				where (ca.user_id = @UserID and cam_modoManual = 1) or ca.cam_id=@mod
-				order by cam_descripcion
-			end
-			else
-				select distinct c.cam_id, c.cam_descripcion 
-				from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
-				where ca.user_id = @UserID and manualCallOnChat = 1 
-				order by cam_descripcion
+	select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
+	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+	where (ca.user_id = @UserID and cam_modoManual = 1) or ca.cam_id=@mod
+	order by cam_descripcion
+end
+else
+	select distinct c.cam_id, c.cam_descripcion
+	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+	where ca.user_id = @UserID and manualCallOnChat = 1
+	order by cam_descripcion
 
-			set nocount off'
+set nocount off'
 		EXEC(@sql)
-		
-		
-		
+
+		set @process = 'ALTER PROCEDURE -- [dbo].[ccsp_AGENTInsertCallOut]'
+    	set @sql='ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
+@cam_id smallint,
+@cal_Key varchar(20),
+@cal_Telefono varchar(30),
+@user_id int,
+@cal_extension varchar(7),
+@sData varchar(255) = '''', --HLAS para guardar notas de la llamada
+@existCallOut as int = 0,
+@callmode as smallint = 0
+AS
+set
+nocount on
+declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
+select @fecha=getdate()
+
+if @callmode = 1
+begin
+	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+	 select @existCallOut, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 0, @cal_extension
+	select @cal_id = scope_identity()
+
+	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
+	where wg.tipo = 1 and cal_id = @cal_id
+
+	select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
+	select @existCallOut as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
+	return(0)
+end
+
+if @existCallOut=0
+ begin
+	declare @LasCallKey varchar(20)
+	declare @settingCallKey as int
+
+	set @LasCallKey = isnull(@cal_Key,'''')	--Asigna un valor default
+	select @settingCallKey = valor from ccSettings where setting_id = 194 --Revisa si debe poner el ultimo estado del cal_key
+
+	if @settingCallKey = 1 and (@cal_Key='''' or @cal_Key is null) begin
+		select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime, convert(varchar(10),getdate(),121)) and cal_manual=0 order by cal_id desc
+		set @cal_Key= @LasCallKey
+	end
+
+	INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
+	select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
+	select @callout_id = scope_identity()
+
+	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+	 select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
+	select @cal_id = scope_identity()
+
+	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
+	where wg.tipo = 1 and cal_id = @cal_id
+ end
+
+else
+ begin
+	Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
+		where callout_id = @existCallOut
+	Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
+		where callout_id = @existCallOut
+	set @callout_id = @existCallOut
+	select @cal_id=cal_id from ccocallsout where callout_id = @existCallOut
+
+	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
+	where wg.tipo = 1 and cal_id = @cal_id
+ end
+
+select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
+select @callout_id as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
+return(0)
+set nocount off'
+		EXEC(@sql)
+
+
+
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

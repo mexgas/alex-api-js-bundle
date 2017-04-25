@@ -2446,7 +2446,7 @@
     <value>Dialing Result Code</value>
   </data>
   <data name="ManagementBase" xml:space="preserve">
-    <value>Management Base</value>
+    <value>Base Management</value>
   </data>
   <data name="systemTranslated_Remoto" xml:space="preserve">
     <value>Remote</value>
@@ -2507,5 +2507,8 @@
   </data>
   <data name="tries" xml:space="preserve">
     <value>Tries</value>
+  </data>
+  <data name="fileMoved" xml:space="preserve">
+    <value>Recording storage</value>
   </data>
 </root>

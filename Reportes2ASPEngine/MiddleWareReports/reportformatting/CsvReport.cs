@@ -23,14 +23,14 @@ namespace MiddleWareReports
         /// <param name="reportName">The name of the report</param>
         /// <returns>A byte array of the transformed csv file</returns>
         /// <exception>Throws an EmptyResultException if the DataTable is empty</exception>
-        public byte[] getOutPut(DataTable data, string reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true)
+        public byte[] getOutPut(DataTable data, string reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true, short process = 0)
         {
             EmptyResultException.dataTableIsEmpty(data);
 
             StringBuilder output = new StringBuilder();
             if (translate)
             {
-                translatedColumns = TranslatorHelper.translateColumns(data.Columns);
+                translatedColumns = TranslatorHelper.translateColumns(data.Columns, process);
                 convertedColumns = TranslatorHelper.convertColumns(data.Columns);
             }
             try

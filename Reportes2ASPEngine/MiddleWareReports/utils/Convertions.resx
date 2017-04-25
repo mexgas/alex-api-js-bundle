@@ -366,4 +366,31 @@
   <data name="tfocus" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="crmx_duration" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tundefined" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="activeTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="holdTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="talkingtTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="unavaibleTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+<data name="tCallTransf" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tnav" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="twbCall" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

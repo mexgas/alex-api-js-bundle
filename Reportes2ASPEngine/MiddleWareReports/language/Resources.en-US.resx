@@ -574,7 +574,7 @@
     <value>Ringing time out</value>
   </data>
   <data name="tunknown" xml:space="preserve">
-    <value>Undefined</value>
+    <value>Telephone validation time</value>
   </data>
   <data name="txferin" xml:space="preserve">
     <value>Transfer inbound</value>
@@ -648,8 +648,8 @@
   <data name="subDisposition" xml:space="preserve">
     <value>Sub Disposition</value>
   </data>
-  <data name="username" xml:space="preserve">
-    <value>Username</value>
+  <data name="userName" xml:space="preserve">
+    <value>Agent Name</value>
   </data>
   <data name="whoHangUp" xml:space="preserve">
     <value>Who Hung Up</value>
@@ -2396,5 +2396,119 @@
   </data>
   <data name="_UnCount" xml:space="preserve">
     <value>_</value>
+  </data>
+  <data name="tundefined" xml:space="preserve">
+    <value>Undefined time</value>
+  </data>
+  <data name="SessionsbyInterval" xml:space="preserve">
+    <value>Sessions by Interval</value>
+  </data>
+  <data name="clientPhoneNumber" xml:space="preserve">
+    <value>Client phone number</value>
+  </data>
+  <data name="data1" xml:space="preserve">
+    <value>Data1</value>
+  </data>
+  <data name="data2" xml:space="preserve">
+    <value>Data2</value>
+  </data>
+  <data name="data3" xml:space="preserve">
+    <value>Data3</value>
+  </data>
+  <data name="data4" xml:space="preserve">
+    <value>Data4</value>
+  </data>
+  <data name="data5" xml:space="preserve">
+    <value>Data5</value>
+  </data>
+  <data name="messageBodyMailAlert" xml:space="preserve">
+    <value>Attachment is sent</value>
+  </data>
+  <data name="messageSubjectMailAlert" xml:space="preserve">
+    <value>Alert message error report general information</value>
+  </data>
+  <data name="DialingResultsDetail" xml:space="preserve">
+    <value>Dialing Results Detail</value>
+  </data>
+  <data name="AgentandCallStatusesByInterval" xml:space="preserve">
+    <value>Agent and Call Statuses by Interval</value>
+  </data>
+  <data name="tCallTransf" xml:space="preserve">
+    <value>Transferred Calls Length</value>
+  </data>
+  <data name="tnav" xml:space="preserve">
+    <value>Unvailable 1</value>
+  </data>
+  <data name="twbCall" xml:space="preserve">
+    <value>Unvailable 2</value>
+  </data>
+  <data name="dialResultCode" xml:space="preserve">
+    <value>Dialing Result Code</value>
+  </data>
+  <data name="ManagementBase" xml:space="preserve">
+    <value>Base Management</value>
+  </data>
+  <data name="systemTranslated_Remoto" xml:space="preserve">
+    <value>Remote</value>
+  </data>
+  <data name="callsByHour" xml:space="preserve">
+    <value>Calls by Hour</value>
+  </data>
+  <data name="complete" xml:space="preserve">
+    <value>Total Effective Calls</value>
+  </data>
+  <data name="completeByHour" xml:space="preserve">
+    <value>Effective Calls by Hour</value>
+  </data>
+  <data name="holdTime" xml:space="preserve">
+    <value>On Hold Time</value>
+  </data>
+  <data name="percentComplete" xml:space="preserve">
+    <value>% Efective Calls</value>
+  </data>
+  <data name="readyPercent" xml:space="preserve">
+    <value>% Ready</value>
+  </data>
+  <data name="talkingPercent" xml:space="preserve">
+    <value>% Talking</value>
+  </data>
+  <data name="talkingtTime" xml:space="preserve">
+    <value>Talking Time</value>
+  </data>
+  <data name="unavaibleTime" xml:space="preserve">
+    <value>Unavailable Time</value>
+  </data>
+  <data name="waitpercent" xml:space="preserve">
+    <value>% On Hold</value>
+  </data>
+  <data name="AgentDetailbyDay" xml:space="preserve">
+    <value>Agent Detail by Day</value>
+  </data>
+  <data name="endInterval" xml:space="preserve">
+    <value>End Interval</value>
+  </data>
+  <data name="startInterval" xml:space="preserve">
+    <value>Start Interval</value>
+  </data>
+  <data name="activeTime" xml:space="preserve">
+    <value>Active Time</value>
+  </data>
+  <data name="adherencia" xml:space="preserve">
+    <value>Schedule Adherence</value>
+  </data>
+  <data name="AnsweredCallsbyDialingRetries" xml:space="preserve">
+    <value>Answered Calls by Dialing Retries</value>
+  </data>
+  <data name="endHour" xml:space="preserve">
+    <value>End Hour</value>
+  </data>
+  <data name="startHour" xml:space="preserve">
+    <value>Start Hour</value>
+  </data>
+  <data name="tries" xml:space="preserve">
+    <value>Tries</value>
+  </data>
+  <data name="fileMoved" xml:space="preserve">
+    <value>Recording storage</value>
   </data>
 </root>

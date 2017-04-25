@@ -15,7 +15,7 @@ namespace MiddleWareReports
     /// <summary>
     /// Class that searches for an asset and returns its value according to the currently selected culture
     /// </summary>
-    static class TranslatorHelper
+    public static class TranslatorHelper
     {
         /// <summary>
         /// Resource that wants to be translated
@@ -58,14 +58,19 @@ namespace MiddleWareReports
                 string property = getResourceProperty(column.ColumnName, out isTranslated, isDetail);
                 //Only add columns that can be viewable in the interface 
                 if (((!property.Contains("_")) || (isPivotColumn(property) && !property.StartsWith("systemTranslated_"))) && !(process < 10000 && process >= 9000)) //Don't show not translated columns
-                {                    
+                {
                     translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
                 }
                 else if (process < 10000 && process >= 9000)
                 {
-                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource")
-                        translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
-                    else if(column.ColumnName != "rownum")
+                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource" || column.ColumnName.StartsWith("crmx_"))
+                    {
+                        string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
+                        property = getResourceProperty(column_name, out isTranslated, isDetail);
+                        if (!property.Contains("_")) //Don't show not translated columns
+                            translatedColumns.Add(column.ColumnName, property);
+                    }
+                    else if (column.ColumnName != "rownum")
                         translatedColumns.Add(column.ColumnName, column.ColumnName);
                 }
             }
@@ -161,7 +166,7 @@ namespace MiddleWareReports
         /// <param name="isTranslated">Indicates if the property was found into the current culture resources file</param>
         /// <returns>The value of the property or an INVALID_PROPERTY_propertyName message if not found</returns>
         public static string getResourceProperty(string propertyName, out bool isTranslated, bool isDetail = false)
-        {            
+        {
             string original = propertyName;
             propertyName = propertyName.Replace(" ", "");
             string value = "INVALID_PROPERTY_" + propertyName;
@@ -230,7 +235,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="table">The table to be altered</param>
         /// <returns></returns>
-        public static void removeUntranslatedTableColumns(DataTable table)
+        public static void removeUntranslatedTableColumns(DataTable table, short process = 0)
         {
             LinkedList<string> columnsToRemove = new LinkedList<string>();
             foreach (DataColumn column in table.Columns)
@@ -241,6 +246,18 @@ namespace MiddleWareReports
                 if ((!property.Contains("_")) || isPivotColumn(property))
                 {
                     continue;
+                }
+                else if (process < 10000 && process >= 9000)
+                {
+                    if (column.ColumnName == "crmx_Date" || column.ColumnName == "crmxSource" || column.ColumnName.StartsWith("crmx_"))
+                    {
+                        string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
+                        property = getResourceProperty(column_name, out isTranslated);
+                        if (!property.Contains("_")) //Don't show not translated columns
+                            continue;
+                    }
+                    else if (column.ColumnName != "rownum")
+                        continue;
                 }
                 else
                 {
@@ -279,6 +296,7 @@ namespace MiddleWareReports
 
             return columnName;
         }
+        
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

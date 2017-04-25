@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Collections.Specialized;
 
 namespace MiddleWareReports
 {
@@ -14,7 +15,7 @@ namespace MiddleWareReports
         /// <param name="data">The data to be transformed</param>
         /// <param name="reportName">The name of the report</param>
         /// <returns>The report in a certain format as an array of bytes</returns>
-        byte[] getOutPut(DataTable data, string reportName, string logoFileName = "", string filterSummaryData = "",bool translate = true) ;
+        byte[] getOutPut(DataTable data, string reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true, short process = 0);
     }
 
 }

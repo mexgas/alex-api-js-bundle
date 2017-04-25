@@ -64,7 +64,7 @@ namespace MiddleWareReports
         /// <param name="dateStart">Records must be greater or equal to this date</param>
         /// <param name="dateEnd">Records must be lesser or equal to this date</param>
         /// <returns>A where statement that searches for rows between a start date and an end date</returns>
-        /// <remarks>Example: WHERE date >= @dateStart AND date &gt;= @dateEnd </remarks>
+        /// <remarks>Example: WHERE date >= @dateStart AND date &gt; @dateEnd </remarks>
         public static StringBuilder whereDateStatement(DateTime dateStart, DateTime dateEnd)
         {
             StringBuilder statement = new StringBuilder();

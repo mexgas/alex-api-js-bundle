@@ -8,6 +8,7 @@ Date: 2016/04/11
 Description:
 
 	Se agrega fix para ejeccuion por tiempo report master process
+	Fix Correcion por falta de columnas en el reporte de encuestas
 Database: ccReportsRiaPara
 Required version: 36
 
@@ -125,11 +126,11 @@ if exists(select * from sys.tables where name=''RepTwitterGeneral'') DROP TABLE 
 		EXEC(@Sql)
 
 		set @process = 'alter table  ccTipoCalifSub---------'
-		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub'')) alter table ccTipoCalifSub add contactOwner bit not null'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSub'')) alter table ccTipoCalifSub add contactOwner bit null'
 		 EXEC(@Sql)
 
 		 set @process = 'alter table  ccTipoCalifSubOUT---------'
-		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit not null'
+		 set @Sql= 'if not exists (select * from sys.columns where name = N''contactOwner'' and Object_ID = Object_ID(N''ccTipoCalifSubOUT'')) alter table ccTipoCalifSubOUT add contactOwner bit null'
 		 EXEC(@Sql)
 
 		set @process = 'Add Column ccTipoCalifOUT.contactOwner'

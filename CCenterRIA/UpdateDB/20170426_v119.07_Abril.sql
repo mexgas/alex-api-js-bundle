@@ -35,7 +35,6 @@ set @versionfix = 7
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
-
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 

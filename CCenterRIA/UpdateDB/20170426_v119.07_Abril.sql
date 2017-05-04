@@ -8,6 +8,7 @@ Date: 2017/04/26
 Description:
 	se modfiica el SP ccsp_RIACATQualifications para poder guardar y actualizar parametro finishPreview
 	se modifica el SP ccsp_RIAsubCalif para obtener la columna finishPreview al cargar la lista de calificaciones
+	se modifico el SP ccsptelefonosTransferencia para que no regresara ninguna columna con nulos si no con vacios 
 
 Database: CCenterRia
 Required version: 119.06
@@ -1849,7 +1850,33 @@ else
 
 set nocount off'
 		EXEC(@Sql)
+		
+		
+		set @process = 'Alter SP  -- ccsptelefonosTransferencia'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsptelefonosTransferencia]
+@userID INT
+as
+set nocount on
 
+BEGIN
+declare @value bit
+declare @IDArea int
+set @value = 0
+set @IDArea =1
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+select @IDArea =IDArea from ccUsers where User_id =@userID
+if @value = 1
+	begin
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre
+	end
+	else
+	begin
+		select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' - ''+  nombre , nombre ), tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
+	end
+END'
+		EXEC(@Sql)
+		
 
 		/* End script release */
 

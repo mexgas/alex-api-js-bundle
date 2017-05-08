@@ -44,12 +44,19 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 		
-		set @process = 'Alter Tables  -- Preview Dialer'
-		set @Sql= 'alter table cccamps drop DF_ccCamps_progDial
+		set @process = 'Alter cccamps  -- Preview Dialer cccamps'
+		set @Sql= 'if exists (SELECT * FROM sys.objects WHERE type_desc LIKE ''%CONSTRAINT'' AND OBJECT_NAME(OBJECT_ID)=''DF_ccCamps_progDial'' ) begin alter table cccamps drop DF_ccCamps_progDial
 					alter table cccamps alter column progdial smallint not null
-					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial
-					alter table cctipocalifout add finishPreview bit
-					alter table ccologdials alter column TipoDialingMode varchar(8)'
+					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end else begin alter table cccamps alter column progdial smallint not null
+					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end'
+		EXEC(@Sql)
+		
+		set @process = 'Alter cctipocalifout  -- Preview Dialer cctipocalifout'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''finishPreview'' AND Object_ID = Object_ID(N''cctipocalifout'') ) alter table cctipocalifout add finishPreview bit'
+		EXEC(@Sql)
+		
+		set @process = 'Alter ccologdials  -- Preview Dialer ccologdials'
+		set @Sql= 'if not exists (Select  * from information_schema.columns WHERE TABLE_NAME=''ccologdials'' AND COLUMN_NAME=''TipoDialingMode'' and DATA_TYPE = ''varchar'' and CHARACTER_MAXIMUM_LENGTH = 8 ) alter table ccologdials alter column TipoDialingMode varchar(8)'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_RIACATQualifications'

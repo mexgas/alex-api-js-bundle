@@ -1889,8 +1889,8 @@ END'
 		set @Sql= 'ALTER proc [dbo].[ccsp_RIACAT_PhoneConfig]
 @Type tinyint, -- 1:Show #conf | 2:Add #conf | 3:Upd #conf | 4:Del #conf | 5:Add #tran | 6:Upd #tran | 7:Del #tran | 8: Show #tran
 @CT_id SmallInt=0,
-@Nombre varchar(50)='',
-@Telefono varchar(50)='',
+@Nombre varchar(50)='''',
+@Telefono varchar(50)='''',
 @IDArea smallint = 0 --parametro IDarea
 as
 set nocount on
@@ -1898,7 +1898,7 @@ set nocount on
 BEGIN
 declare @value bit
 
-select @value = case when valor ='1' then 1 else 0 end from ccSettings where setting_id = 191
+select @value = case when valor =''1'' then 1 else 0 end from ccSettings where setting_id = 191
 
 if @Type=1
  begin
@@ -2000,7 +2000,7 @@ if @Type=8
 	end
 	else
 	begin
-		select numtra_id id, isnull(cast(IDArea as varchar(20) )+' - '+  nombre, nombre) name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
+		select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' - ''+  nombre, nombre) name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
 	end
 	return(0)
  end

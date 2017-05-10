@@ -817,7 +817,7 @@ set nocount off'
 AS
 set nocount on
 declare @tNow as datetime, @RecicleSIC tinyint
-declare @logDial_id int
+declare @logDial_id int, @preview smallint
 declare @tAnswerBitFinal as datetime
 
 SELECT @RecicleSIC=IsNull(valor, 0) FROM ccSettings WHERE setting_id = 60
@@ -847,7 +847,15 @@ select @logDial_id
 -- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 if @call_id > 0 and @tipoResDial_id = 1
 begin
-	update ccoCallsOut with(rowlock) set cal_manual = 2, cal_puerto = @Puerto	where cal_manual =1 and cal_id = @call_id and cal_puerto = 0
+	select @preview = case when progdial=2 then 1 else 0 end from cccamps nolock where cam_id=@cam_id
+	if @preview = 1
+	begin
+		update ccoCallsOut with(rowlock) set cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
+	end
+	else
+	begin
+		update ccoCallsOut with(rowlock) set cal_manual = 2, cal_puerto = @Puerto where cal_manual =1 and cal_id = @call_id and cal_puerto = 0
+	end
 	exec ccsp_CstoCalculaCosto @call_id
 
 	if @cal_key ='''' begin
@@ -879,7 +887,7 @@ declare @total int
 declare @topCount smallint, @bIsDaylight bit, @revHorario bit
 declare @country_id int, @TipoJobs int
 --declare @iZonas int --Zonas que se van a incluir en la marcacion 2 ^ zona
-declare @sql varchar(4000), @Order_Asc_Desc char(4)
+declare @sql varchar(MAX), @Order_Asc_Desc char(4)
 declare @camSurvey int
 select @camSurvey = 0
 DECLARE @iZonasTable TABLE (value int)
@@ -968,7 +976,7 @@ begin
             FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 			left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
             WHERE W.cal_status=1 -- CallBacks
-            and cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+            and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
             and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
             and (
                   ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
@@ -983,7 +991,7 @@ begin
             or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
             )
             and isnull(R.status,2) = 2
-            order by prioridad_cb desc, cal_fechaDial '' -- + @Order_Asc_Desc -- Solo se aplica el order en registros Nuevos (cal_status=0)
+            order by prioridad_cb desc, W.cal_fechaDial '' -- + @Order_Asc_Desc -- Solo se aplica el order en registros Nuevos (cal_status=0)
 
             --select @sql
 end -- TOMA EN CUENTA LOS CALLBACKS
@@ -1018,7 +1026,7 @@ begin
             or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
             )
             and isnull(R.status,2) = 2
-            order by R.sequence, cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id''
+            order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id''
 
 end -- TOMA EN CUENTA LAS NUEVAS
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------

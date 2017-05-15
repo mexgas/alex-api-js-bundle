@@ -8,6 +8,7 @@ Date: 2017/04/26
 Description:
 	se modfiica el SP ccsp_RIACATQualifications para poder guardar y actualizar parametro finishPreview
 	se modifica el SP ccsp_RIAsubCalif para obtener la columna finishPreview al cargar la lista de calificaciones
+	se modifico el SP ccsptelefonosTransferencia para que no regresara ninguna columna con nulos si no con vacios 
 
 Database: CCenterRia
 Required version: 119.06
@@ -35,7 +36,6 @@ set @versionfix = 7
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
-
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
@@ -44,12 +44,23 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 		
-		set @process = 'Alter Tables  -- Preview Dialer'
-		set @Sql= 'alter table cccamps drop DF_ccCamps_progDial
+		set @process = 'Alter cccamps  -- Preview Dialer cccamps'
+		set @Sql= 'if exists (SELECT * FROM sys.objects WHERE type_desc LIKE ''%CONSTRAINT'' AND OBJECT_NAME(OBJECT_ID)=''DF_ccCamps_progDial'' ) begin alter table cccamps drop DF_ccCamps_progDial
 					alter table cccamps alter column progdial smallint not null
-					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial
-					alter table cctipocalifout add finishPreview bit
-					alter table ccologdials alter column TipoDialingMode varchar(8)'
+					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end else begin alter table cccamps alter column progdial smallint not null
+					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end'
+		EXEC(@Sql)
+		
+		set @process = 'Alter cctipocalifout  -- Preview Dialer cctipocalifout'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''finishPreview'' AND Object_ID = Object_ID(N''cctipocalifout'') ) alter table cctipocalifout add finishPreview bit'
+		EXEC(@Sql)
+		
+		set @process = 'Alter ccologdials  -- Preview Dialer ccologdials'
+		set @Sql= 'if not exists (Select  * from information_schema.columns WHERE TABLE_NAME=''ccologdials'' AND COLUMN_NAME=''TipoDialingMode'' and DATA_TYPE = ''varchar'' and CHARACTER_MAXIMUM_LENGTH = 8 ) alter table ccologdials alter column TipoDialingMode varchar(8)'
+		EXEC(@Sql)
+		
+		set @process = 'Update ccsettings  -- disable default campaing'
+		set @Sql= 'update ccsettings set valor = 0 where setting_id = 196'
 		EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_RIACATQualifications'
@@ -97,7 +108,7 @@ begin
   cast(C.keepDial as int) as keepDial, cast(C.autocallback as int) autocallback,  cast(count(R.califRel_id)as tinyint) hasSub,cast(isnull(C.contactOwner,0) as int) as contacOwner,cast(C.finishPreview as int) finishPreview
   from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
   where C.CalifOut_Status=1
-  group by C.calif_id, C.Description, cast(C.canReprogram as int), C.orden, cast(C.keepDial as int), cast(C.autocallback as int), cast(isnull(C.contactOwner,0) as int)
+  group by C.calif_id, C.Description, cast(C.canReprogram as int), C.orden, cast(C.keepDial as int), cast(C.autocallback as int), cast(isnull(C.contactOwner,0) as int), cast(C.finishPreview as int)
   order by 2
   return(0)
 end
@@ -1858,7 +1869,160 @@ else
 
 set nocount off'
 		EXEC(@Sql)
+		
+		
+		set @process = 'Alter SP  -- ccsptelefonosTransferencia'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsptelefonosTransferencia]
+@userID INT
+as
+set nocount on
 
+BEGIN
+declare @value bit
+declare @IDArea int
+set @value = 0
+set @IDArea =1
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+select @IDArea =IDArea from ccUsers where User_id =@userID
+if @value = 1
+	begin
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre
+	end
+	else
+	begin
+		select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' - ''+  nombre , nombre ), tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
+	end
+END'
+		EXEC(@Sql)
+
+
+		set @process = 'Alter SP  -- ccsp_RIACAT_PhoneConfig'
+		set @Sql= 'ALTER proc [dbo].[ccsp_RIACAT_PhoneConfig]
+@Type tinyint, -- 1:Show #conf | 2:Add #conf | 3:Upd #conf | 4:Del #conf | 5:Add #tran | 6:Upd #tran | 7:Del #tran | 8: Show #tran
+@CT_id SmallInt=0,
+@Nombre varchar(50)='''',
+@Telefono varchar(50)='''',
+@IDArea smallint = 0 --parametro IDarea
+as
+set nocount on
+
+BEGIN
+declare @value bit
+
+select @value = case when valor =''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+if @Type=1
+ begin
+	select numcon_id id, nombre name, tel number from telefonosConferencia order by nombre
+	return(0)
+ end
+
+if @Type=2
+ begin
+	IF exists (select numcon_id from telefonosConferencia where nombre=@Nombre)
+	 begin
+		select -3 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+	IF exists (select numcon_id from telefonosConferencia where tel=@Telefono)
+	 begin
+		select -4 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	insert into telefonosConferencia (nombre, tel) select @Nombre, @Telefono
+	select SCOPE_IDENTITY() numcon_id
+	return(0)
+ end
+
+if @Type=3
+ begin
+ 	IF exists (select numcon_id from telefonosConferencia where nombre=@Nombre and numcon_id<>@CT_id)
+	 begin
+		select -5 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+ 	IF exists (select numcon_id from telefonosConferencia where tel=@Telefono and numcon_id<>@CT_id)
+	 begin
+		select -6 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	update telefonosConferencia set nombre=@Nombre, tel=@Telefono where numcon_id=@CT_id
+	return(0)
+ end
+
+if @Type=4
+ begin
+	delete telefonosConferencia where numcon_id=@CT_id
+	return(0)
+ end
+
+if @Type=5
+ begin
+	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and IDArea=@IDArea)
+	 begin
+		select -3 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+	 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and IDArea=@IDArea)
+	 begin
+		select -4 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	insert into telefonosTransferencia (nombre, tel, IDArea) select @Nombre, @Telefono,@IDArea --se agrega IDArea
+	select SCOPE_IDENTITY() numtra_id
+	return(0)
+ end
+
+if @Type=6
+ begin
+ 	IF exists (select numtra_id from telefonosTransferencia where nombre=@Nombre and numtra_id<>@CT_id and IDArea=@IDArea )
+	 begin
+		select -5 -- El nombre ya esta asignado
+		return(0)
+	 end
+
+ 	IF exists (select numtra_id from telefonosTransferencia where tel=@Telefono and numtra_id<>@CT_id and IDArea=@IDArea )
+	 begin
+		select -6 -- El telefono ya esta asignado
+		return(0)
+	 end
+
+	update telefonosTransferencia set nombre=@Nombre, tel=@Telefono where numtra_id=@CT_id and IDArea=@IDArea
+	return(0)
+ end
+
+if @Type=7
+ begin
+	delete telefonosTransferencia where numtra_id=@CT_id
+	return(0)
+ end
+
+if @Type=8
+ begin
+	if @value = 1
+	begin
+		select numtra_id id, nombre name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre
+	end
+	else
+	begin
+		select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' - ''+  nombre, nombre) name, tel number, isnull(IDArea,@IDArea) from telefonosTransferencia  order by nombre
+	end
+	return(0)
+ end
+
+return(0)
+set nocount off
+end'
+
+		EXEC(@Sql)
+		
 
 		/* End script release */
 

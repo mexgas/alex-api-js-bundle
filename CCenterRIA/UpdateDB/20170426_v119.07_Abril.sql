@@ -33,7 +33,8 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 set @version = 119--**********actualizar a 129 sin fix
 set @versionfix = 7
 --select * from ccsettings where setting_id=77
-/* Actual version (use your own script to do it) */
+--
+/* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'
 
 select @versionALL = valor from ccsettings where setting_id=77;
@@ -44,7 +45,7 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 		
-		set @process = 'Alter cccamps  -- Preview Dialer cccamps'
+		set @process = 'Alter cccamps -- Preview Dialer cccamps'
 		set @Sql= 'if exists (SELECT * FROM sys.objects WHERE type_desc LIKE ''%CONSTRAINT'' AND OBJECT_NAME(OBJECT_ID)=''DF_ccCamps_progDial'' ) begin alter table cccamps drop DF_ccCamps_progDial
 					alter table cccamps alter column progdial smallint not null
 					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end else begin alter table cccamps alter column progdial smallint not null

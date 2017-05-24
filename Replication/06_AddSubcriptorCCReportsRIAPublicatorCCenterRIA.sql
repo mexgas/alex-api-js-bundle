@@ -25,10 +25,7 @@ drop table #temp
 if @Version_Actual >= @Version
  begin
 	declare @Sql nvarchar(max)
-
-	declare @publicationServer nvarchar(max)
-	set @publicationServer = convert(nvarchar(max),@@servername)
-
+	
 	declare @subscriptionServerReportsRia nvarchar(max)
 	select @subscriptionServerReportsRia = convert(nvarchar(max),valor) from ccsettings where setting_id = 137
 
@@ -45,51 +42,10 @@ if @Version_Actual >= @Version
 		select @ip = substring(@subscriptionServerReportsRia, charindex('|',@subscriptionServerReportsRia) + 1, len(@subscriptionServerReportsRia))
 		select @registryValue = 'DBMSSOCN,'+@ip+',1433'
 
-		-- if @publicationServer <> @name
-		-- begin
-		-- 	set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		-- 	@rootkey = N''HKEY_LOCAL_MACHINE''
-		-- 	,@key = N''Software\Microsoft\MSSQLServer\Client\ConnectTo''
-		-- 	,@value_name = ''' + @name + '''
-		-- 	,@type = N''REG_SZ''
-		-- 	,@value = ''' + @registryValue + ''''
-		-- 	EXEC(@Sql)
-
-		-- 	set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		-- 	@rootkey = N''HKEY_LOCAL_MACHINE''
-		-- 	,@key = N''SOFTWARE\Wow6432Node\Microsoft\MSSQLServer\Client\ConnectTo''
-		-- 	,@value_name = ''' + @name + '''
-		-- 	,@type = N''REG_SZ''
-		-- 	,@value = ''' + @registryValue + ''''
-		-- 	EXEC(@Sql)
-		-- end
+		
 		select @subscriptionServerReportsRia = @name
 	end
-
-	/******************************************************************
-	/*** Inicia los servicios necesarios para las replicas remotas ***/
-	******************************************************************/
-	-- if @subscriptionServerReportsRia <> '' and @publicationServer <> @subscriptionServerReportsRia
-	-- begin
-	-- 	exec sp_configure 'show advanced options', 1
-	-- 	reconfigure
-	-- 	exec sp_configure 'xp_cmdshell',1
-	-- 	reconfigure
-	-- 	exec xp_cmdshell 'sc config "RasMan" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RasAuto" start= auto'
-	-- 	exec xp_cmdshell 'sc config "Netman" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RemoteAccess" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RpcSs" start= auto'
-	-- 	exec xp_cmdshell 'sc config "SQLBrowser" start= auto'
-
-	-- 	exec xp_cmdshell 'net start RasMan'
-	-- 	exec xp_cmdshell 'net start RasAuto'
-	-- 	exec xp_cmdshell 'net start Netman'
-	-- 	exec xp_cmdshell 'net start RemoteAccess'
-	-- 	exec xp_cmdshell 'net start RpcSs'
-	-- 	exec xp_cmdshell 'net start SQLBrowser'
-	-- end
-
+	
 	------------------ INICIO SCRIPT ------------------
 
 

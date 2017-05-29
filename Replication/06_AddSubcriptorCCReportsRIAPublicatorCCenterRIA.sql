@@ -25,27 +25,18 @@ drop table #temp
 if @Version_Actual >= @Version
  begin
 	declare @Sql nvarchar(max)
-	
+
 	declare @subscriptionServerReportsRia nvarchar(max)
 	select @subscriptionServerReportsRia = convert(nvarchar(max),valor) from ccsettings where setting_id = 137
 
 	/****************************************************/
 	/*** Crea registro de Alias para replicas remotas ***/
 	/****************************************************/
-	declare @name nvarchar(max)
-	declare @ip nvarchar(max)
-	declare @registryValue nvarchar(max)
 
 	if @subscriptionServerReportsRia <> '' begin
-
-		select @name = substring(@subscriptionServerReportsRia, 0, charindex('|',@subscriptionServerReportsRia))
-		select @ip = substring(@subscriptionServerReportsRia, charindex('|',@subscriptionServerReportsRia) + 1, len(@subscriptionServerReportsRia))
-		select @registryValue = 'DBMSSOCN,'+@ip+',1433'
-
-		
-		select @subscriptionServerReportsRia = @name
+		select @subscriptionServerReportsRia = substring(@subscriptionServerReportsRia, 0, charindex('|',@subscriptionServerReportsRia))
 	end
-	
+
 	------------------ INICIO SCRIPT ------------------
 
 

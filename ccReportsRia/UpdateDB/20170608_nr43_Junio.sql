@@ -8,6 +8,7 @@ Date: 2017/01/06
 Description:
 **********************************************************************************************
 Cw-877 Correcion reporte de encuesta
+CW-838 RepOutCalls de int a bigint
 **********************************************************************************************
 Database: ccReportsRia
 Required version: 42
@@ -35,11 +36,11 @@ if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
 
-	set @process = ''
-	set @Sql= ''
+	set @process = 'Alter SP -- RepOutCalls.postime CW-838'
+	set @Sql= 'ALTER TABLE RepOutCalls alter column postime bigint'
 	EXEC(@sql)
 
-	set @process = 'ALTER PROCEDURE ccspRepIVRSurveys'
+	set @process = 'ALTER PROCEDURE ccspRepIVRSurveys -- Cw-877 '
 	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
 @action as tinyint,
 @from AS datetime = null,
@@ -143,6 +144,15 @@ from
 order by calId,orden
 end'
 	EXEC(@sql)
+
+	set @process = ''
+	set @Sql= ''
+	EXEC(@sql)
+
+	set @process = ''
+	set @Sql= ''
+	EXEC(@sql)
+
 
 	if @actualVersion  = @version - 1
 		exec ccsp_getVersion 'BD', @version

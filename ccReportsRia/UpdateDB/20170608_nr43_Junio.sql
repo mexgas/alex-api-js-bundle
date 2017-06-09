@@ -9,6 +9,7 @@ Description:
 **********************************************************************************************
 Cw-877 Correcion reporte de encuesta
 CW-838 RepOutCalls de int a bigint
+Modifica  la tabla RepOutManagementBase  en la columna subDisposition para aumentar su tamaño.
 **********************************************************************************************
 Database: ccReportsRia
 Required version: 42
@@ -39,6 +40,14 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @process = 'Alter SP -- RepOutCalls.postime CW-838'
 	set @Sql= 'ALTER TABLE RepOutCalls alter column postime bigint'
 	EXEC(@sql)
+
+
+    set @process = 'Alter RepOutManagementBase column subDisposition '
+    set @Sql= '
+    ALTER TABLE RepOutManagementBase ALTER COLUMN  subDisposition nvarchar(60);'
+    EXEC(@sql)
+
+
 
 	set @process = 'ALTER PROCEDURE ccspRepIVRSurveys -- Cw-877 '
 	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]

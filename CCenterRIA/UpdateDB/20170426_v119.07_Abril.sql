@@ -61,6 +61,13 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		set @Sql= 'if not exists (Select  * from information_schema.columns WHERE TABLE_NAME=''ccologdials'' AND COLUMN_NAME=''TipoDialingMode'' and DATA_TYPE = ''varchar'' and CHARACTER_MAXIMUM_LENGTH = 8 ) alter table ccologdials alter column TipoDialingMode varchar(8)'
 		EXEC(@Sql)
 
+     
+
+    set @process = 'Update ccsettings  -- disable default campaing'
+    set @Sql= 'update ccsettings set valor = 0 where setting_id = 196'
+    EXEC(@Sql)
+
+
   
     set @process = 'alter ccsp_OUTGetNewJobs -- '
     set @Sql= '

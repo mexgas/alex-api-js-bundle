@@ -93,8 +93,8 @@ select @camSurvey = cam_id from cccamps  where cam_id = @CAMPID  and isnull(call
 SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
 select @revHorario=valor from ccsettings where setting_id = 112
 -- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
-SELECT @Order_Asc_Desc=case dialOrder when 1 then ''''desc'''' else ''''asc'''' end FROM ccCamps WHERE cam_id=@CAMPID
-SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''''asc'''')
+SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@CAMPID
+SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
 
 SET DATEFIRST 1
 --Checamos si es horario de verano
@@ -108,20 +108,20 @@ if @iZonas is null begin
       if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
       begin
                   if @iZonas = 0 begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''''''' as cal_telefono, 0 as cal_status, '''''''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
                         return
                   end
       end
       else begin
             if @camSurvey > 0
                   begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''''''' as cal_telefono, 0 as cal_status, '''''''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
                         return
                   end
       end
 end
 
-set @sql=''''CREATE TABLE #NEW_JOBS
+set @sql=''CREATE TABLE #NEW_JOBS
 (callout_id int,
       cam_id int,
       cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
@@ -136,7 +136,7 @@ tz5 int,
 list_id int,
 sequence smallint,
 calkey varchar(max)
-)''''
+)''
 
 
 -- 0=Ambas, 1=CallBacks, 2=Nuevas
@@ -152,24 +152,24 @@ select @topCount=case when @nAgentsLogin<3 then 30
 select @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
 
 declare @isVerano varchar(max)
-set @isVerano = ''''W.izonahoraria'''' + case @bIsDaylight when 1 then ''''_verano'''' else '''''''' end
+set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' end
 
 if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
 begin
 
-            select @sql=@sql+nchar(13)+ ''''SET ROWCOUNT '''' + cast( @topCount/2 as varchar )
+            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
 
-            select @sql=@sql+nchar(13)+ ''''INSERT #NEW_JOBS
-            SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''''
-            +@isVerano+'''',''
+            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
+            SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
+            +@isVerano+'',''
             +@isVerano+''2,''
             +@isVerano+''3,''
             +@isVerano+''4,''
             +@isVerano+''5,
             W.list_id, isNull(R.sequence,0) as sequence,
-      cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
+			cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
             FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-      left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+			left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
             WHERE W.cal_status=1 -- CallBacks
             and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
             and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
@@ -203,9 +203,9 @@ begin
             +@isVerano+''4,''
             +@isVerano+''5,
             W.list_id, isNull(R.sequence,0) as sequence,
-      cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
+			cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
             FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-      left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+			left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
             WHERE W.cal_status=0 -- Nuevas sin Tiempo
             and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
             and (

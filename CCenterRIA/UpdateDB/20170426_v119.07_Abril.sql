@@ -46,6 +46,14 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 		begin tran
 		begin try
 
+    set @process = 'Alter Column cctipocalifout.Description -- CW-876'
+    set @Sql= 'ALTER TABLE cctipocalifout ALTER COLUMN  Description varchar(60)'
+    EXEC(@Sql)
+
+    set @process = 'Alter Column cctipocalifsubout.califSubDesc --CW-876'
+    set @Sql= 'ALTER TABLE cctipocalifsubout ALTER COLUMN  califSubDesc varchar(60)'
+    EXEC(@Sql)
+
 		set @process = 'Alter cccamps -- Preview Dialer cccamps'
 		set @Sql= 'if exists (SELECT * FROM sys.objects WHERE type_desc LIKE ''%CONSTRAINT'' AND OBJECT_NAME(OBJECT_ID)=''DF_ccCamps_progDial'' ) begin alter table cccamps drop DF_ccCamps_progDial
 					alter table cccamps alter column progdial smallint not null
@@ -65,11 +73,8 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
     set @Sql= 'update ccsettings set valor = 0 where setting_id = 196'
     EXEC(@Sql)
 
-
-
     set @process = 'alter ccsp_OUTGetNewJobs -- '
-    set @Sql= '
-ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
+    set @Sql= 'ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
 @CAMPID int,
 @test int=0,
 @nAgentsLogin int=1,
@@ -267,10 +272,10 @@ EXEC(@Sql)
 
 
 
-    set @process = 'Alter SP  -- ccsp_RIACATQualifications'
+    set @process = 'Alter SP  -- ccsp_RIACATQualifications --CW-876'
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIACATQualifications]
 @qualif_id varchar(max),
-@Description varchar(40)=null,
+@Description varchar(60)=null,
 @order varchar(3)=null,
 @canReprogram varchar(1)=null,
 @Type smallint,
@@ -427,13 +432,13 @@ set nocount off
 '
 		EXEC(@Sql)
 
-		set @process = 'Alter SP  -- ccsp_RIAsubCalif'
+		set @process = 'Alter SP  -- ccsp_RIAsubCalif --CW-876'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAsubCalif]
 @action tinyint = 0,
 @tipo tinyint = null, -- 0:Outbound / 1:Inbound
 @calif_id varchar(max) = nulesol,
 @califSub_id varchar(max) = null,
-@califSubDesc varchar(40) = null,
+@califSubDesc varchar(60) = null,
 @canReprogramSub tinyint = null,
 @orden varchar(3) = null,
 @idTipoLista int = null,

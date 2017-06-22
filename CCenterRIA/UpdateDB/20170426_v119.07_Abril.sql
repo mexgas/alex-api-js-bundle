@@ -8,7 +8,7 @@ Date: 2017/04/26
 Description:
 	se modfiica el SP ccsp_RIACATQualifications para poder guardar y actualizar parametro finishPreview
 	se modifica el SP ccsp_RIAsubCalif para obtener la columna finishPreview al cargar la lista de calificaciones
-	se modifico el SP ccsptelefonosTransferencia para que no regresara ninguna columna con nulos si no con vacios 
+	se modifico el SP ccsptelefonosTransferencia para que no regresara ninguna columna con nulos si no con vacios
 
 
 Database: CCenterRia
@@ -45,30 +45,33 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix - 1 or @actual
 	begin
 		begin tran
 		begin try
-		
+
+    set @process = 'Create index series.IX_CLD -- CW-958'
+    set @Sql= 'if not  exists (select * from sys.indexes where name = N''IX_CLD'' and object_id = OBJECT_ID(N''series''))
+    begin
+        CREATE INDEX IX_CLD ON series (cld)
+    end'
+    EXEC(@Sql)
+
 		set @process = 'Alter cccamps -- Preview Dialer cccamps'
 		set @Sql= 'if exists (SELECT * FROM sys.objects WHERE type_desc LIKE ''%CONSTRAINT'' AND OBJECT_NAME(OBJECT_ID)=''DF_ccCamps_progDial'' ) begin alter table cccamps drop DF_ccCamps_progDial
 					alter table cccamps alter column progdial smallint not null
 					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end else begin alter table cccamps alter column progdial smallint not null
 					alter table cccamps add constraint DF_ccCamps_progDial default((0)) for progDial end'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter cctipocalifout  -- Preview Dialer cctipocalifout'
 		set @Sql= 'if not exists (select * from sys.columns where name = N''finishPreview'' AND Object_ID = Object_ID(N''cctipocalifout'') ) alter table cctipocalifout add finishPreview bit'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter ccologdials  -- Preview Dialer ccologdials'
 		set @Sql= 'if not exists (Select  * from information_schema.columns WHERE TABLE_NAME=''ccologdials'' AND COLUMN_NAME=''TipoDialingMode'' and DATA_TYPE = ''varchar'' and CHARACTER_MAXIMUM_LENGTH = 8 ) alter table ccologdials alter column TipoDialingMode varchar(8)'
 		EXEC(@Sql)
-
-     
 
     set @process = 'Update ccsettings  -- disable default campaing'
     set @Sql= 'update ccsettings set valor = 0 where setting_id = 196'
     EXEC(@Sql)
 
-
-  
     set @process = 'alter ccsp_OUTGetNewJobs -- '
     set @Sql= '
 ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
@@ -263,7 +266,7 @@ print (@sql)
 exec(@sql)
 
 return(0)
-'    
+'
 
 EXEC(@Sql)
 
@@ -719,31 +722,31 @@ if exists(
 	left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
 	where cam_id = @cam_id and tipo = @InOut)
   begin
-	 declare @relationCamId int 
+	 declare @relationCamId int
 	select @relationCamId =cam_id from ccInbound where Inbound_id=@cam_id
 	if @relationCamId is null set @relationCamId=0
 
 
-	select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.orden "selection!1!califorden", 
+	select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.orden "selection!1!califorden",
 		isnull(calif.EndConversation,0) "selection!1!endConversation",
 		null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!orden",  null "subSelection!2!endConversation"
 		from ccTipoCalif calif
 	 inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id=@cam_id and  camp.tipo = @InOut
 	 left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
-	 left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id 
+	 left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
 	 where calif.CanReprogram=0 or (
 		calif.CanReprogram=1 and @relationCamId>0
 	 )
 	 union
 	 select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", calif.orden "selection!1!califorden", isnull(calif.EndConversation,0) "selection!1!endConversation",
 		sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", cast(sb.orden as int) "subSelection!2!orden" ,isnull(sb.EndConversation,0) "subSelection!2!endConversation"
-		from ccTipoCalif calif 
+		from ccTipoCalif calif
 		inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id=@cam_id and  camp.tipo = @InOut
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
 		left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-		where sb.califsub_id is not null 
+		where sb.califsub_id is not null
 		and (
-			sb.CanReprogram=0 or 
+			sb.CanReprogram=0 or
 			(sb.CanReprogram=1 and @relationCamId>0)
 		)
 		order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden"
@@ -768,7 +771,7 @@ IF @InOut = 1 BEGIN
 		where cam_id = @cam_id and tipo = @InOut
 		union
 		  select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", null "selection!1!keepOnDial",
-		  calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", 
+		  calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string",
 		  sb.keepDial "subSelection!2!keepOnDial",
 		  cast(sb.orden as int) "subSelection!2!orden"
 		  from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
@@ -813,7 +816,7 @@ set nocount off'
 @existCallOut as int = 0,
 @callmode as smallint = 0
 AS
-set 
+set
 nocount on
 declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
 select @fecha=getdate()
@@ -839,11 +842,11 @@ if @existCallOut=0
 	set @LasCallKey = @cal_Key
 	declare @settingCallKey as int
 	select @settingCallKey = valor from ccSettings where setting_id = 194
-	
+
 	if(@settingCallKey = 1)
 	begin
-		if (@cal_Key='''' or @cal_Key is null) 
-		begin		
+		if (@cal_Key='''' or @cal_Key is null)
+		begin
 			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime,getdate()) and cal_manual=0 order by cal_id desc
 			set @cal_Key= @LasCallKey
 		end
@@ -864,7 +867,7 @@ if @existCallOut=0
 
 else
  begin
-	Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData 
+	Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
 		where callout_id = @existCallOut
 	Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
 		where callout_id = @existCallOut
@@ -1084,7 +1087,7 @@ end
 
 -- inserta informacion para reportes de workgroup
 insert ccRIAWorkGroup_logDial_id (IDWG, logDial_id, cam_id, timestamp)
-select IDWG, @logDial_id, IdCampEsp, getdate() 
+select IDWG, @logDial_id, IdCampEsp, getdate()
 from ccRIACampEspWG where tipo = 1 and IdCampEsp = @cam_id
 
 -- Guarda configuracion de TipoDialingMode
@@ -1286,7 +1289,7 @@ exec(@sql)
 
 return(0)'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter SP  -- ccsp_OUTGetNewProviderJobs'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_OUTGetNewProviderJobs]
 @CAMPID as int,
@@ -1475,7 +1478,7 @@ select @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''
 exec(@sql)
 return(0)'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter Function  -- fn_getDialingMode'
 		set @Sql= 'ALTER function [dbo].[fn_getDialingMode](@call_id int, @TipoDialingMode tinyint, @logDial_id int, @cam_id int)
 returns nvarchar(8)
@@ -1489,7 +1492,7 @@ begin
 	 begin
 		select top 1 @call_id=o.cal_id from ccoLogDials l with(nolock,index(PK_ccoLogDials)) join ccocallsout o with(nolock,index(IX_ccoCallsOut_2))
 			on l.callout_id = o.callout_id and l.Puerto = o.cal_puerto
-		where l.logDial_id = @logDial_id and l.fecha between convert(varchar(19), dateadd(minute, -5, o.cal_inicio), 121) 
+		where l.logDial_id = @logDial_id and l.fecha between convert(varchar(19), dateadd(minute, -5, o.cal_inicio), 121)
 		and convert(varchar(19), dateadd(minute, 5, o.cal_inicio), 121)
 		order by datediff(ss, l.fecha, o.cal_inicio) asc -- en caso de tener mas de uno, toma el que tenga menor diferencia en tiempo
 	 end
@@ -1510,36 +1513,36 @@ begin
 	select @valor=isnull((select case when progDial=2 then ''10'' when progDial=1 then ''01'' else ''00'' end + cast(iTipoDial as char(1)) + cast(abandonCallback as char(1))
 	 + cast(excCallback as char(1)) from cccamps where cam_id=@cam_id), ''00000'')
 
-	if ((select keepDial from ccTipoCalifOUT where calif_id = @calif_id)=1 
+	if ((select keepDial from ccTipoCalifOUT where calif_id = @calif_id)=1
 	or (select keepDial from ccTipoCalifSubOUT where califSub_id = @califSub_id)=1)
 		set @keepDial=''1''
 
 	select @valor = @valor + @keepDial + case @cal_manual when 1 then ''10'' when 2 then ''01'' else ''00'' end
 
-	 select @valor=substring(@valor, 1, 2) + 
-	  case @TipoDialingMode when 6 then ''1'' else substring(@valor, 3, 1) end + substring(@valor, 4, 2) + 
+	 select @valor=substring(@valor, 1, 2) +
+	  case @TipoDialingMode when 6 then ''1'' else substring(@valor, 3, 1) end + substring(@valor, 4, 2) +
 	  case @TipoDialingMode when 3 then ''1'' else substring(@valor, 6, 1) end + substring(@valor, 7, 2)
 
  return @valor
 end'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter Setting 195'
 		set @Sql= 'if not exists(select setting_id from ccsettings where setting_id=195)
 					begin
-						insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values 
+						insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
 							(195,0,''Teléfonos locales a 10 dígitos para marcación manual (México)'',1,''AGT'',''Teléfonos locales a 10 dígitos para marcación manual (México)'',''Phone length for manual call (Mexico)'',1,''^[01]$'')
 					end'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter Setting 196'
 		set @Sql= 'if not exists(select setting_id from ccsettings where setting_id=196)
 					begin
-						insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values 
+						insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
 							(196,0,''Campaña default para marcación manual'',1,''AGT'',''Campaña default para marcación manual'',''Default campaign for manual call'',1,''^\d*$'')
 					end'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter Function -- ccsp_Limpia'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_Limpia]
 			@tel varchar(30),
@@ -2049,7 +2052,7 @@ end'
 					end
 			end'
 		EXEC(@Sql)
-		
+
 		set @process = 'Alter SP  -- ccsp_RIACampsManualCall'
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
 @UserID int,
@@ -2063,20 +2066,20 @@ begin
 	select @mod = valor from ccsettings where setting_id = 196
 
 	select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
-	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
+	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
 	where (ca.user_id = @UserID and cam_modoManual = 1) or ca.cam_id=@mod
 	order by cam_descripcion
 end
 else
-	select distinct c.cam_id, c.cam_descripcion 
-	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id 
-	where ca.user_id = @UserID and manualCallOnChat = 1 
+	select distinct c.cam_id, c.cam_descripcion
+	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+	where ca.user_id = @UserID and manualCallOnChat = 1
 	order by cam_descripcion
 
 set nocount off'
 		EXEC(@Sql)
-		
-		
+
+
 		set @process = 'Alter SP  -- ccsptelefonosTransferencia'
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsptelefonosTransferencia]
 @userID INT
@@ -2250,7 +2253,7 @@ set @sql = ''''
 if @action in (1,6) begin --obtiene los nodos a insertar en BX
 	if @action = 1 set @status =0
 	else if @action = 6 set @status = 2
-		
+
 	if @option = 1 begin
 		set @tableName=''ccChatsNode''
 		set @columnId=''chatId''
@@ -2276,13 +2279,13 @@ if @action in (1,6) begin --obtiene los nodos a insertar en BX
 		set @sql=''with node ( ''+@columnId+ '',xmlString,dateNode)
 		AS(
 			select top ('' + @top + '') ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
-			,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode			
-			from ''+ @tableName + '' A with(rowlock)  
+			,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+			from ''+ @tableName + '' A with(rowlock)
 			where A.status ='''''' + cast(@status as nvarchar(3)) +''''''
 			union
 			select top ('' + @top + '') ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
-			,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode			
-			from ''+ @tableNameHistory + '' A with(rowlock)  
+			,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+			from ''+ @tableNameHistory + '' A with(rowlock)
 			where A.status ='''''' + cast(@status as nvarchar(3)) +''''''		)
 
 		select node.''+@columnId+ '',node.xmlString,baseX.Xname from node
@@ -2338,16 +2341,16 @@ end
 else if @action = 9 begin--Cierra la base datos
 	update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()) where serviceId= @option and  isfull = 0 and dateEnd is null
 end
-else if @action = 11 begin--trae el nombre de la base de datos en BX	
+else if @action = 11 begin--trae el nombre de la base de datos en BX
 
-	if @option =1 begin 
-	SELECT isnull(ISNULL(min(node.value(''(/R01/@CDATE)[1]'',''datetime'')),min(node.value(''(/R01/@C09)[1]'',''datetime''))),GETDATE()) as node FROM ccChatsNode where status = 0 
+	if @option =1 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R01/@CDATE)[1]'',''datetime'')),min(node.value(''(/R01/@C09)[1]'',''datetime''))),GETDATE()) as node FROM ccChatsNode where status = 0
 	end
-	if @option =3 begin 
-	SELECT isnull(ISNULL(min(node.value(''(/R03/@CDATE)[1]'',''datetime'')),min(node.value(''(/R03/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccEmailNode where status = 0 
+	if @option =3 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R03/@CDATE)[1]'',''datetime'')),min(node.value(''(/R03/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccEmailNode where status = 0
 	end
-	if @option =4  begin 
-	SELECT isnull(ISNULL(min(node.value(''(/R04/@CDATE)[1]'',''datetime'')),min(node.value(''(/R04/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccTwitterNode where status = 0 
+	if @option =4  begin
+	SELECT isnull(ISNULL(min(node.value(''(/R04/@CDATE)[1]'',''datetime'')),min(node.value(''(/R04/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccTwitterNode where status = 0
 	end
 
 end'
@@ -2360,7 +2363,7 @@ end'
 AS
 BEGIN
 
-declare @dateStart datetime ,@dateEnd datetime 
+declare @dateStart datetime ,@dateEnd datetime
 
 declare @count int , @setting int
 declare @nodos table (fecha varchar(100))
@@ -2387,7 +2390,7 @@ set @res = -1
 				SELECT node.value(''(/R01/@CDATE)[1]'',''varchar(100)'') as node FROM ccChatsNode where status in(1,3) order by node
 
 
-				if(select count(*) from @nodos where fecha is null) > 0 
+				if(select count(*) from @nodos where fecha is null) > 0
 				begin
 					delete @nodos
 					insert into @nodos
@@ -2411,7 +2414,7 @@ set @res = -1
 				SELECT node.value(''(/R03/@CDATE)[1]'',''varchar(100)'') as node FROM ccEmailNode where status in(1,3) order by node
 
 
-				if(select count(*) from @nodos where fecha is null) > 0 
+				if(select count(*) from @nodos where fecha is null) > 0
 				begin
 					delete @nodos
 					insert into @nodos
@@ -2434,7 +2437,7 @@ set @res = -1
 				SELECT node.value(''(/R04/@CDATE)[1]'',''varchar(100)'') as node FROM ccTwitterNode where status in(1,3) order by node
 
 
-				if(select count(*) from @nodos where fecha is null) > 0 
+				if(select count(*) from @nodos where fecha is null) > 0
 				begin
 					delete @nodos
 					insert into @nodos
@@ -2572,9 +2575,614 @@ end
 --print convert(nvarchar(1000),@xml)
 --select @xml
 END'
-		
-		
+
+
 		EXEC(@Sql)
+
+
+    set @process = 'Alter Function fnGetTimeZone -- CW-958'
+    set @Sql= 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
+RETURNS int
+AS
+ BEGIN
+  declare @lada as varchar(5)
+  declare @timeZone as int
+  declare @ld as varchar(5)
+  declare @location as varchar(500)
+  declare @locality as varchar(255)
+  declare @country as tinyInt
+  declare @pais varchar(2)
+
+  select @lada = valor from ccsettings with(nolock) where setting_id = 17
+  select @country = valor, @pais = valor from ccSettings with(nolock) where setting_id = 104
+
+  select @ld = ''''
+  select @location = ''''
+
+    if @country = 1 begin
+
+      select @phone=case when len(@phone) > 10 then RIGHT(@phone,10) when LEN(@phone)=10-LEN(@lada) then @lada+@phone else @phone  end
+
+      if (len(@phone) = 10)
+        begin
+          if(exists(select top 1 cld from series with(index(IX_CLD),nolock) where cld=left(@phone,2)))
+            select @ld = case when left(@phone,2) = @lada then 0 else left(@phone,2) end
+          else if(exists(select top 1 cld from series nolock where cld=left(@phone,3)))
+            select @ld = case when left(@phone,3) = @lada then 0 else left(@phone,3) end
+        end
+      else
+        select @ld = 0
+
+      if @ld <> 0
+        begin
+          select @location = estado, @locality = MUNICIPIO
+          from series
+          where cld = @ld
+          and serie = substring(@phone, len(@ld) + 1, 6 - len(@ld))
+          and right(@phone, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+          if not exists(select locality from ccTimeZoneArea (nolock) where area=@ld and locality=@locality)
+            set @locality = null
+
+          select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+          where id_country = @country and (
+          ( len(@phone) = 8 and @lada = area and len(area) = 2 )
+          or
+          ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+          or
+          ( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 )
+          or
+          ( len(@phone) >= 10 and left(right(@phone, 10), 2) = area and len(area) = 2 ))
+          and location = @location and case when locality is null then 1 else 2 end=(case when @locality is null then 1 when locality=@locality then 2 else 0 end)
+        end
+      else
+        begin
+          select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+          where id_country = @country and (
+          ( len(@phone) = 8 and @lada = area and len(area) = 2 )
+          or
+          ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+          or
+          ( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 )
+          or
+          ( len(@phone) >= 10 and left(right(@phone, 10), 2) = area and len(area) = 2 ))
+        end
+    end
+
+    if @country = 2 begin
+      declare @telTemp varchar(15)
+      set @telTemp = @phone
+      select @phone = dbo.Completa(@phone, @pais, @lada)
+      if left(@phone,1) = ''E'' begin set @phone = @telTemp end
+      select @timeZone =  case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneAreaArgDetail where
+        ( len(@phone) = 6 and @lada = area and len(area) = 4 )
+        or
+        ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+        or
+        ( len(@phone) = 8 and @lada = area and len(area) = 2 )
+        or
+        ( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
+        or
+        ( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
+        or
+        ( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
+        or
+        ( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
+        or
+        ( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
+        or
+        ( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 )
+        if @timeZone is null
+          begin
+            select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+            where id_country = @country and (
+              ( len(@phone) = 6 and @lada = area and len(area) = 4 )
+              or
+              ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+              or
+              ( len(@phone) = 8 and @lada = area and len(area) = 2 )
+              or
+              ( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
+              or
+              ( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
+              or
+              ( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
+              or
+              ( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
+              or
+              ( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
+              or
+              ( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 ))
+          end
+    end
+
+  if @country = 3 begin
+    select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end  from ccTimeZoneArea
+    where id_country = @country and (
+    ( len(@phone) = 7 and @lada = area )
+    or
+    ( len(@phone) = 8 and left(@phone,1) = area )
+    or
+    ( len(@phone) in(10,11) and (left(@phone,1) = ''3'' or substring(@phone,2,1) = ''3'')))
+  end
+
+  if @country = 4
+
+    begin
+      select @timeZone =  case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneAreaUsaDetail where
+      ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+      or
+      ( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 and left(right(@phone, 7), 3) = prefix)
+      if @timeZone is null
+        begin
+          select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+          where id_country = @country and (
+          ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+          or
+          ( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 ))
+        end
+    end
+
+  if @country = 5 begin
+    select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end  from ccTimeZoneArea
+    where id_country = @country and (
+    ( len(@phone) = 6 and @lada = area )
+    or
+    ( len(@phone) = 7 and @lada = area )
+    or
+    ( len(@phone) = 8 and left(@phone,1) = area )
+    or
+    ( len(@phone) = 8 and left(@phone,2) = area )
+    or
+    ( len(@phone) = 9 and left(@phone,2) = area )
+    or
+    ( len(@phone) = 10 and substring(@phone,3,1) = area and left(@phone,2) = ''09'' ))
+  end
+
+  if @country = 6 begin
+    select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end  from ccTimeZoneArea
+    where id_country = @country and (
+    ( len(@phone) = 7 and @lada = area and len(area) = 3 )
+    or
+    ( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 ))
+  end
+
+  if @country = 7 begin
+    declare @phoneTemp as varchar(10)
+    select @phoneTemp = right ( @phone, 10 )
+    select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+    where id_country = @country and (
+    (len(@phoneTemp) = 9 and left(@phoneTemp,5) = area ) or
+    (len(@phoneTemp) = 10 and left(@phoneTemp,5) = area ) or
+    (len(@phoneTemp) = 9 and left(@phoneTemp,5) = area ) or
+    (len(@phoneTemp) = 10 and left(@phoneTemp,4) = area ) or
+    (len(@phoneTemp) = 9 and left(@phoneTemp,4) = area ) or
+    (len(@phoneTemp) = 10 and left(@phoneTemp,3) = area ) or
+    (len(@phoneTemp) = 10 and left(@phoneTemp,2) = area )
+    )
+  end
+
+  if @country = 8 begin
+    select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+    where id_country = @country and (
+    (len(@phone) = 7 and @lada = area) or
+    (len(@phone) = 9 and substring(@phone, 2, 1) = area) or
+    (len(@phone) = 10 and substring(@phone, 2, 1) = area) or
+    (len(@phone) = 11 and substring(@phone, 2, 1) = area))
+  end
+
+  if @country = 9 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    -- len(@phone) = 10
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+      where id_country = @country and (
+      (convert (int, substring(@phone, 1, 4)) = convert (int, area) and len(area) = 4) or
+      (convert (int, substring(@phone, 1, 2)) = convert (int, area) and len(area) = 2))
+    end
+  end
+
+  if @country = 10 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    -- 8 <= len(@phone) <= 19
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+      where id_country = @country and (
+      ((len(@phone) between  8 and  9)                                      and                   @lada = area) or
+      ((len(@phone) between 10 and 11)                                      and substring(@phone, 1, 2) = area) or
+      ((len(@phone) between 12 and 13) and substring(@phone, 1, 4) = ''9090'' and                   @lada = area) or
+      ((len(@phone)       = 13       )                                      and substring(@phone, 4, 2) = area) or
+      ((len(@phone) between 14 and 15) and substring(@phone, 1, 2) = ''90''   and substring(@phone, 5, 2) = area) or
+      ((len(@phone)       = 14       ) and substring(@phone, 1, 1) = ''0''    and substring(@phone, 4, 2) = area))
+    end
+  end
+
+  if @country = 11 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
+    end
+  end
+
+  if @country = 12 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
+    end
+  end
+
+  if @country = 13 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
+    end
+  end
+
+  if @country = 14 begin
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      if len(@phone) = 9 begin
+        select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+        where id_country = @country and ((substring(@phone, 1, 2) = area) or (substring(@phone, 1, 3) = area))
+      end
+    end
+  end
+
+  if @country = 15 begin --Peru
+    select @phone = dbo.Completa(@phone, @pais, @lada)
+    if (substring(@phone, 1, 1) <> ''E'') begin
+      select @timeZone = 32
+    end
+  end
+
+  return isNull(@timeZone,0)
+ END'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_RIAGetCampsNvosCB -- CW-958'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0
+as
+set nocount on
+
+declare @TipoJobs as int,@isExecOutbound bit
+
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+  declare @id AS INTEGER
+
+  CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+  CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+
+  create table #temccocallsoutsource (cam_id int,Pend  int)
+
+  create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+  if @cam_id = 0 begin
+    if @user_id > 0 begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam with(nolock) left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where user_id = @user_id and tipo = 1
+    end
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+    end
+
+  end
+  else begin
+    if @Tipo = 2
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+      from ccCamps cam with(nolock)
+      left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where cam.cam_id = @cam_id
+    else
+      if @user_id > 0 begin
+        insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+        select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+        from ccCamps cam with(nolock) left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+        where user_id = @user_id and tipo = 1
+       end
+      else begin
+        insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+          select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+          from ccCamps where cam_activo=1
+      end
+  end
+
+
+
+  insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+  select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
+  select A.* from #Tcamps A
+  left join ccCampsNvosCB B  on A.cam_id=B.id
+  where datediff(ss,B.dateUpdate,getdate())>5 or B.dateUpdate is null)X
+
+  group by cam_id
+
+
+  --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+  if (select count(*) from #Tcamps2)>0 begin
+
+    insert into #temccocallsoutsource(cam_id,Pend)
+    SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+    FROM ccocallsoutsource ccos with(nolock)
+    left join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    WHERE cal_status in(0, 7)
+    GROUP BY ccos.cam_id
+
+    insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+    SELECT A.cam_id,
+    count(case cal_status when 0 then 1 else null end) as New,
+    count(case cal_status when 1 then 1 else null end) as Cb,
+    count(case cal_status when 2 then 1 else null end) as Pro,
+    count(case cal_status when 3 then 1 else null end) as Fin
+    FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+    inner join #Tcamps2 B on A.cam_id = B.cam_id
+    GROUP BY A.cam_id
+
+    --select * from #Tcamps2
+
+    --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+    if @regval = 0 and @cam_id >0 and @Tipo =2 begin
+      update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
+    end
+    else begin
+      While (select count(*) from #Tcamps2 where status = 0) > 0 Begin
+        set rowcount 1
+        select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+        set rowcount 0
+        EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+        update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+      end
+    end
+
+    begin Tran updateccCampsNvosCB
+
+      delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+      where CampNvosCB.id = tcamp.cam_id
+
+      INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+      SELECT cams.cam_id, cams.cam_descripcion,
+      isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+      isNull(cs.Pend,0) as pend,
+      isNull(wt.Pro,0) as pro,
+      isNull(cams.procesando,0) cam_procesando,
+      isNull(cams.cam_tipojobs,0) cam_tipojobs,
+      isNull(wt.Fin,0) Fin,
+      isNull(tc.cantidad,0) cantidad,
+      getdate()
+      FROM #Tcamps cams with(nolock)
+      LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+      LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+      left join #Tcamps2 tc on (tc.cam_id = cams.cam_id)
+
+    COMMIT TRAN updateccCampsNvosCB
+  end
+
+  if @isExecOutbound = 0 begin
+
+    if @Tipo = 2
+      -- devuelve resultado de la taba, solo las camps del usuario
+      SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+      FROM #Tcamps tcam
+      left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+    else
+      SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial
+      FROM ccCampsNvosCB res
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+      WHERE res.id = @cam_id
+  end
+
+  drop table #Tcamps
+  drop table #Tcamps2
+  drop table #temccocallsoutsource
+  drop table #temWorkinTable
+
+  return(0)
+
+end
+
+set nocount off'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_OUTResetJobs -- CW-958'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_OUTResetJobs]
+@camid as int=0
+AS
+
+create table #TempccoLogDials(callout_id  int, cam_id smallint,fecha  datetime)
+
+if (@camid=0)
+begin
+  insert into #TempccoLogDials
+  select callout_id,cam_id,max(fecha) fecha from ccoLogDials ld with (nolock) group by callout_id,cam_id
+
+  -- CALLBACKS Se han marcado recientemente
+  update ccoWorkingTable with(rowlock)
+  set cal_status=1
+  from ccoWorkingTable wt inner join #TempccoLogDials ld
+  on wt.callout_id=ld.callout_id
+  where wt.cal_status = 2
+  and ld.fecha > dateadd(d, -1, getdate())
+
+  -- NUEVAS - Nunca se han marcado
+  update ccoWorkingTable with(rowlock)
+  set cal_status=0
+  where cal_status = 2
+end
+
+if (@camid>0)
+begin
+
+  insert into #TempccoLogDials
+  select callout_id,cam_id,max(fecha) fecha from ccoLogDials ld with (nolock)
+  where cam_id=@camid
+  group by callout_id,cam_id
+
+  -- CALLBACKS Se han marcado recientemente
+  update ccoWorkingTable with(rowlock)
+  set cal_status=1
+  --from ccoWorkingTable wt inner join ccoLogDials ld with (index (IX_ccoLogDials_2))
+  from ccoWorkingTable wt inner join #TempccoLogDials ld
+  on wt.callout_id=ld.callout_id
+  where wt.cal_status = 2
+  and wt.cam_id=@camid
+  and ld.fecha > dateadd(d, -1, getdate())
+
+  -- NUEVAS - Nunca se han marcado
+  update ccoWorkingTable with(rowlock)
+  set cal_status=0
+  where cal_status = 2
+  and cam_id=@camid
+end
+
+
+drop table #TempccoLogDials'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_AGENTInsertCallOut -- CW-958'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
+@cam_id smallint,
+@cal_Key varchar(20),
+@cal_Telefono varchar(30),
+@user_id int,
+@cal_extension varchar(7),
+@sData varchar(255) = '''', --HLAS para guardar notas de la llamada
+@existCallOut as int = 0
+AS
+set
+nocount on
+declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
+
+select @fecha=getdate()
+
+if @existCallOut=0
+ begin
+  INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
+  select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
+  select @callout_id = scope_identity()
+
+  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+   select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
+  select @cal_id = scope_identity()
+
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg,  @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from dbo.ccRIACampEspWG wg
+  where wg.tipo = 1 and wg.idcampesp = @cam_id
+ end
+
+else
+ begin
+  Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
+    where callout_id = @existCallOut
+  Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
+    where callout_id = @existCallOut
+  set @callout_id = @existCallOut
+  select @cal_id=cal_id from ccocallsout with(nolock) where callout_id = @existCallOut
+
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as [user_id], getdate() timestamp, 1 as tipo from ccRIACampEspWG wg
+  where wg.tipo = 1 and wg.IdCampEsp=@cam_id
+ end
+
+select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
+select ''callout_id''=@callout_id, ''cal_id''=@cal_id, ''calloutMaxTime'' = @calloutMaxTime
+return(0)
+set nocount off
+'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_DLRInsertCall -- CW-958'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
+@callout_id int,
+@cam_id smallint,
+@cal_Key varchar(20),
+@cal_Telefono varchar(14),
+@Puerto smallint,
+@logDial_id int=0
+AS
+declare @fecha as datetime
+declare @cal_id as int
+
+  select @fecha=getdate()
+  INSERT ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id ) --''Status 6=Pide Agente
+    VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto,  @fecha, 6 )
+
+  select @cal_id = scope_identity()
+
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
+  where wg.Tipo=1 and wg.idcampesp=@cam_id
+
+
+  -- calcula el costo de la llamada
+  exec ccsp_CstoCalculaCosto @cal_id
+
+  select @cal_id as cal_id
+'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_RIAAdmPrioridadTelefonos --CW-958'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAAdmPrioridadTelefonos]
+  @cam_id int,
+  @prioridad varchar(8),
+  @callbacks bit = 0,
+  @Type tinyint
+AS
+
+--Actualiza la prioridad en la tabla
+If @Type = 3
+begin
+  insert into ccCampsPrioridadTel values (@cam_id,''12345NNN'')
+end
+
+If @Type = 2
+begin
+  IF (select count(*) from ccCampsPrioridadTel where cam_id=@cam_id)=0
+  begin
+    insert into ccCampsPrioridadTel values (@cam_id,''12345NNN'')
+  end
+
+  update ccCampsPrioridadTel set prioridad = @prioridad where cam_id=@cam_id
+
+  If @callbacks = 1
+  begin
+  --Ahora cambia todos los registros en ccoCallsoutsource.  Solo nuevos
+    Update ccoCallsoutsource set dial_tels = @prioridad
+    where cam_id = @cam_id
+    and callout_id in (select callout_id from ccoWorkingTable where cam_id=@cam_id and cal_status = 0)
+  end
+  else
+  begin
+    Update ccoCallsoutsource set dial_tels = @prioridad
+    where cam_id = @cam_id
+  end
+end
+If @Type = 1
+begin
+  select ccCamps.cam_id,Prioridad from ccCamps,ccCampsPrioridadTel where ccCamps.cam_id = @cam_id and ccCampsPrioridadTel.cam_id  = @cam_id
+end
+'
+    EXEC(@Sql)
+
+    set @process = ''
+    set @Sql= ''
+    EXEC(@Sql)
+
+    set @process = ''
+    set @Sql= ''
+    EXEC(@Sql)
+
 
 
 		/* End script release */

@@ -29,7 +29,7 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	set @sql ='update R
 set node.modify(''insert attribute CDATE {sql:column("finicio") } into (/R02)[1]''),[status]=case [status] when 1 then 2 when 3 then 2 else [status] end
 from ria_recnode R
-inner join RIA_Grabacion G on R.grab_id=G.grab_id
+inner join (select grab_id,convert(varchar(max),finicio,126) as finicio RIA_GRABACION) G on R.grab_id=G.grab_id
 where node.exist(''(/R02[1])[empty(@CDATE)]'' )=1'
 	EXEC(@sql)
 
@@ -37,7 +37,7 @@ where node.exist(''(/R02[1])[empty(@CDATE)]'' )=1'
 	set @sql ='update R
 set node.modify(''insert attribute CDATE {sql:column("finicio") } into (/R02)[1]''),[status]=case [status] when 1 then 2 when 3 then 2 else [status] end
 from ria_recnode R
-inner join RIA_GRABACIONCONSULTA G on R.grab_id=G.grab_id
+inner join (select grab_id,convert(varchar(max),finicio,126) as finicio RIA_GRABACIONCONSULTA) G on R.grab_id=G.grab_id
 where node.exist(''(/R02[1])[empty(@CDATE)]'' )=1'
 	EXEC(@sql)
 

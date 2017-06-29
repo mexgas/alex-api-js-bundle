@@ -2360,7 +2360,7 @@ end'
 
 		EXEC(@Sql)
 
-		set @process = 'Alter SP  -- ccsp_CleanNodeBaseX'
+		set @process = 'Alter SP  -- ccsp_CleanNodeBaseX  CW-880'    
 		set @Sql='ALTER PROCEDURE [dbo].[ccsp_CleanNodeBaseX]
 @option int
 AS
@@ -2372,7 +2372,7 @@ declare @count int , @setting int
 declare @nodos table (fecha varchar(100))
 declare @res int
 set @res = -1
-	select  @setting  = valor from ccSettings where setting_id = 189
+	select  @setting  = valor from ccSettings where setting_id = 188
 	if @setting is null set @setting = 40000
 
 	if @option = 1  select @count = COUNT (chatId) from ccChatsNode with(nolock)

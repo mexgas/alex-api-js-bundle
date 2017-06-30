@@ -57,9 +57,9 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @Sql= 'IF EXISTS (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'') Drop PROCEDURE ccspRepDetailAgent'
 	EXEC(@sql)
 
-	
 
-	
+
+
 
 	set @process = 'RepAnsweredCallsByDialingRetries - Tabla'
 	set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepAnsweredCallsByDialingRetries'')
@@ -199,7 +199,7 @@ CREATE TABLE [dbo].[RepAgentCallStatusesByInterval](
 	EXEC(@sql)
 
 	set @process = 'RepDialingAgent - filtros fecha y seleccion 2080'
-	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport = 2080) 
+	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport = 2080)
 				begin
 					insert ReportsFiltersMenus (idReport, filterMenuName) values(2080, N''date'')
 					insert ReportsFiltersMenus (idReport, filterMenuName) values(2080, N''filterby'')
@@ -209,14 +209,14 @@ CREATE TABLE [dbo].[RepAgentCallStatusesByInterval](
 
 	set @process = 'RepDialingAgent - filtros fecha y seleccion 4170'
 	set @Sql= 'if not exists(select * from ReportsTotals where id = 4170) begin
-	insert into ReportsTotals 
+	insert into ReportsTotals
 	values(4170,'''')
 end'
 	EXEC(@sql)
-	
+
 
 	set @process = 'RepDialingAgent - filtro usuario -- 2080'
-	set @Sql= 'if not exists(select * from ReportsFilters where id=2080) 
+	set @Sql= 'if not exists(select * from ReportsFilters where id=2080)
 				insert ReportsFilters values(''Agent Detail by Day'', ''users'', 2080)'
 	EXEC(@sql)
 
@@ -231,12 +231,12 @@ end'
 	EXEC(@sql)
 
 	set @process = 'Agent Detail By Day - Totales 2080'
-	set @Sql= 'IF not EXISTS (SELECT * FROM [ReportsTotals] WHERE [id] = 2080) 
+	set @Sql= 'IF not EXISTS (SELECT * FROM [ReportsTotals] WHERE [id] = 2080)
 				INSERT INTO ReportsTotals values (2080, '''')'
 	EXEC(@sql)
 
 	set @process = 'AnsweredCallsbyDialingRetries - Totales'
-	set @Sql= 'IF NOT EXISTS (SELECT * FROM [ReportsTotals] WHERE [ReportsTotals].[id] = 4190) 
+	set @Sql= 'IF NOT EXISTS (SELECT * FROM [ReportsTotals] WHERE [ReportsTotals].[id] = 4190)
 				INSERT INTO ReportsTotals values (4190, '''')'
 	EXEC(@sql)
 
@@ -309,11 +309,11 @@ end'
 	set @process = 'Insert ReportsFiltersMenus -- 2070'
 	set @Sql= 'if not exists(select * from ReportsFiltersMenus where idReport=2070)
 				begin
-					INSERT ReportsFiltersMenus (idReport, filterMenuName) 
+					INSERT ReportsFiltersMenus (idReport, filterMenuName)
 					VALUES (2070, N''date'')
-					INSERT ReportsFiltersMenus (idReport, filterMenuName) 
+					INSERT ReportsFiltersMenus (idReport, filterMenuName)
 					VALUES (2070, N''filterby'')
-					INSERT ReportsFiltersMenus (idReport, filterMenuName) 
+					INSERT ReportsFiltersMenus (idReport, filterMenuName)
 					VALUES(2070, ''groupby'')
 				end'
 	EXEC(@sql)
@@ -321,7 +321,7 @@ end'
 	set @process = 'Insert ReportsFilters -- 2070'
 	set @Sql= 'if not exists(select * from ReportsFilters where id=2070)
 				begin
-					INSERT ReportsFilters 
+					INSERT ReportsFilters
 					VALUES (''Agent and Call Statuses by Interval'',''users'',2070)
 				end'
 	EXEC(@sql)
@@ -329,7 +329,7 @@ end'
 	set @process = 'Insert ReportsTotals -- 2070'
 	set @Sql= 'if not exists (select * from ReportsTotals where id = 2070)
 				begin
-					INSERT INTO ReportsTotals 
+					INSERT INTO ReportsTotals
 					VALUES (2070,''sum:readyTime|sum:tring|sum:twrapup|sum:tother|sum:tnav|sum:tCallTransf|sum:twbCall'')
 				end'
 	EXEC(@sql)
@@ -337,7 +337,7 @@ end'
 	set @process = 'Insert GroupByReports -- 2070'
 	set @Sql= 'if not exists(select * from GroupByReports where id=2070)
 				begin
-					insert into GroupByReports 
+					insert into GroupByReports
 					values (2070,''userId|agentName|min([startInterval]):startInterval|max([endInterval]):endInterval|sum([readyTime]):readyTime|sum([twrapup]):twrapup|sum([tring]):tring|sum([tother]):tother|sum([tnav]):tnav|sum([tCallTransf]):tCallTransf|sum([twbCall]):twbCall'',''userId|agentName'')
 				end'
 	EXEC(@sql)
@@ -345,7 +345,7 @@ end'
 	set @process = 'Insert ccSettings -- 40'
 	set @Sql= 'if not exists (select * from ccSettings where setting_id = 40)
 				BEGIN
-					INSERT ccSettings (setting_id,valor,descripcion,Status,Tipo) 
+					INSERT ccSettings (setting_id,valor,descripcion,Status,Tipo)
 					VALUES (40,''1|2'',''Id No disponible 1|Id No disponible 2 especificados por el cliente'',1,''RPT'')
 				END'
 	EXEC(@sql)
@@ -438,7 +438,7 @@ end'
 
 						insert into #times
 						exec ccspTimesReports @from=@from,@to=@to,@interval=@interval
-		 
+
 						--Sessiones del agente
 						insert into #sessionTime exec ccspGenSession @from=@from,@to=@to
 						--select * from #sessionTime
@@ -773,7 +773,7 @@ end'
 						from #tempccLogAgentesDia2 A
 						left join #tempccLogAgentesDia2 S on A.Row=S.Row-1 and A.user_id=S.user_id
 						WHERE  A.dateIni>=@from AND A.dateIni<@to and A.TipoStatusAge_id<>0
-		
+
 						update #timeDetailAgent set tunknown2=0  where abs(tunknown2)>2.7
 
 						 insert into #timeDetailAgent(User_id,dateStartDetail,dateEndDetail,timegroup,timegroup_next,tunknown,tnot_av,tav,tprob,tother,nother,tmanualcall,tunknown2,tchatting)
@@ -891,11 +891,11 @@ end'
 							case when sum(ntotal)<count(A.calif_id) then count(A.calif_id) else sum(ntotal) end as ntotal
 							,count(A.calif_id) as completeIn
 							from #inboundData A
-							inner join cctipocalif B on A.calif_id=B.calif_id and A.calif_id = @califin			
+							inner join cctipocalif B on A.calif_id=B.calif_id and A.calif_id = @califin
 							group by user_id,timegroup
 						) B
 						on xTimeDetail.timegroup=B.timegroup and xTimeDetail.User_id=B.User_id
-						left join	
+						left join
 						(
 							select user_id,timegroup,sum(txfer) as txfer,sum(tring) tring,sum(tdialog) as tdialog,sum(tnotes) as tnotes,sum(nMoh) nMoh,sum(nWHag) nWHag,sum(nWHcl) nWHcl,
 							case when sum(ntotal)<count(A.calif_id) then count(A.calif_id) else sum(ntotal) end as ntotal
@@ -905,7 +905,7 @@ end'
 							group by user_id,timegroup
 						) C
 						on xTimeDetail.timegroup=C.timegroup and xTimeDetail.User_id=C.User_id
-		
+
 						update B
 							set  B.tav=case when A.tav>0 and A.tav+A.tundefinded>=0 then A.tav+A.tundefinded else A.tav end
 							from (
@@ -923,12 +923,12 @@ end'
 							)A
 						inner join #agentInformation B on A.User_id=B.User_id and A.timegroup=B.timegroup
 						where A.tundefinded<0 and A.tunknown+A.tundefinded>=0
-		
+
 						--select * from #agentInformation
 						--where User_id = 14
 
 							delete from RepDetailAgent where date>=@from and date<@to
-			
+
 							insert into RepDetailAgent
 							select
 							A.User_Id,
@@ -1534,11 +1534,6 @@ end'
     end '
 	EXEC(@sql)
 
-
-
-	set @process = ''
-	set @Sql= ''
-	EXEC(@sql)
 
 	if @actualVersion  = @version - 1
 		exec ccsp_getVersion 'BD', @version

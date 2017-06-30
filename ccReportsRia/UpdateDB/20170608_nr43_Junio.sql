@@ -42,12 +42,16 @@ if @actualVersion  in(@version,@version - 1) begin
 	EXEC(@sql)
 
 
-    set @process = 'Alter RepOutManagementBase column subDisposition '
-    set @Sql= '
-    ALTER TABLE RepOutManagementBase ALTER COLUMN  subDisposition nvarchar(60);'
+    set @process = 'Alter RepOutManagementBase column Disposition and subDisposition -- CW-876'
+    set @Sql= 'ALTER TABLE RepOutManagementBase ALTER COLUMN  disposition varchar(60)
+ALTER TABLE RepOutManagementBase ALTER COLUMN  subDisposition varchar(60)'
     EXEC(@sql)
 
 
+    set @process = 'Alter RepOutManagementBase column disposition and subDisposition -- CW-876'
+    set @Sql= 'ALTER TABLE RepAnsweredCallsByDialingRetries ALTER COLUMN  disposition varchar(60)
+ALTER TABLE RepAnsweredCallsByDialingRetries ALTER COLUMN  subDisposition varchar(60)'
+    EXEC(@sql)
 
 	set @process = 'ALTER PROCEDURE ccspRepIVRSurveys -- Cw-877 '
 	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]

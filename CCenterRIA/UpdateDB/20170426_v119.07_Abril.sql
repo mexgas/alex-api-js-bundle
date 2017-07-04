@@ -9,7 +9,10 @@ Description:
 	se modfiica el SP ccsp_RIACATQualifications para poder guardar y actualizar parametro finishPreview
 	se modifica el SP ccsp_RIAsubCalif para obtener la columna finishPreview al cargar la lista de calificaciones
 	se modifico el SP ccsptelefonosTransferencia para que no regresara ninguna columna con nulos si no con vacios
-
+	Se modifica el SP ccsp_RIAUpdateEspecConfig para desvincular el dominio del chat del ACD CW-871
+	Se modifica el SP ccsp_RIAManageAreas para desasociar cuentas de twitter,email y twitter CW-871
+	Se modifica el SP ccsp_TwitterSave donde se buscan los registros los tweets por contestar CW-902
+	Se modifica el SP ccspADMaddConversationTweet la parte donde recuperamos el campo close conversation del ACD CW-902
 
 Database: CCenterRia
 Required version: 119.06
@@ -2581,7 +2584,651 @@ END'
 
 
 		EXEC(@Sql)
+		
+		set @process = 'Alter SP  -- ccsp_RIAUpdateEspecConfig CW-871'
+		set @Sql='ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]
+@inbound_id smallint,
+@descripcion varchar(50) = null,
+@Status tinyint = null,
+@tNotas int = null,
+@tMaxWaitCall int = null,
+@nMaxQue int = null,
+@tel_maxwait varchar(15) = null,
+@tel_MaxQueue varchar(15) = null,
+@tel_outservice varchar(15) = null,
+@tel_noct varchar(15) = null,
+@ShowCalifWnd bit = null,
+@StartTimerOnHangUp bit = null,
+@editableCallKey bit = null,
+@queuePosition bit = null,
+@tMaxQueueCallBack smallint = null,
+@stopRecording bit = null,
+@dialPrefixOverflow varchar(10) = null,
+@OpriorityT smallint= null,
+@callerIdDesc varchar(15) = null,
+@chat tinyint = null,
+@inactiveChatTime smallint = null,
+@maxChats tinyint = null,
+@chatDomain varchar(max) = null,
+@chatQueue smallint = null,
+@chatTime smallint = null,
+@dRestrictPlay bit = null,
+@callBackSurveyAgent bit = null,
+@callBackSurveyClient bit = null,
+@agts_notavailable varchar(15) = null,
+@editableDtmf bit = null
+as
+set nocount on
+UPDATE ccInbound SET
+descripcion = isnull(@descripcion,descripcion),
+Status = isnull(@status,status),
+tNotas = isnull(@tNotas,tNotas),
+tMaxWaitCall = isnull(@tMaxWaitCall,tMaxWaitCall),
+nMaxQue = isnull(@nMaxQue,nMaxQue),
+tel_maxwait = isnull(@tel_maxwait,tel_maxwait),
+tel_MaxQueue = isnull(@tel_MaxQueue,tel_MaxQueue),
+tel_outservice = isnull(@tel_outservice,tel_outservice),
+tel_noct = isnull(@tel_noct,tel_noct),
+bnocturno = case when isnull(@tel_noct,''0'')=''0'' or @tel_noct='''' then ''0'' else ''1'' end,
+StartTimerOnHangUp = isnull(@StartTimerOnHangUp,StartTimerOnHangUp),
+editableCallKey = isnull(@editableCallKey,editableCallKey),
+queuePosition = isnull(@queuePosition,queuePosition),
+tMaxQueueCallBack = isnull(@tMaxQueueCallBack,tMaxQueueCallBack),
+stopRecording = isnull(@stopRecording, stopRecording),
+dialPrefixOverflow = isnull(@dialPrefixOverflow, dialPrefixOverflow),
+OpriorityT = isnull(@OpriorityT, OpriorityT),
+callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+chat = isnull(@chat,chat),
+inactiveChatTime = isnull(@inactiveChatTime,inactiveChatTime),
+maxChats = isnull(@maxChats,maxChats),
+chatQueueOverflow = isnull(@chatQueue,isnull(chatQueueOverflow,15)),
+chatTimeOverflow = isnull(@chatTime,isnull(chatTimeOverflow,300)),
+startStopRecording = isnull(@dRestrictPlay,startStopRecording),
+callBackSurveyAgent = isnull(@callBackSurveyAgent,callBackSurveyAgent),
+callBackSurveyClient = isnull(@callBackSurveyClient,callBackSurveyClient),
+agts_notavailable = isnull(@agts_notavailable,agts_notavailable),
+editableDtmf = isnull(@editableDtmf,editableDtmf)
+where inbound_id = @inbound_id
 
+
+if not exists( select inbound_id from ccinbound where inbound_id <> @inbound_id and chatDomain = @chatDomain and chatDomain <> '''') begin
+	if @chatDomain is not null begin
+		update ccinbound set chatDomain = @chatDomain where inbound_id = @inbound_id
+	end
+end
+else begin
+	update ccinbound set chatDomain = '''' where inbound_id = @inbound_id
+	raiserror(''Domain already in another ACD Group'',15,4)
+end
+
+
+if @ShowCalifWnd = 1
+begin
+If exists(select cam_id from ccCalifCamp where cam_id = @inbound_id and tipo = 0)
+	begin
+	UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+	where inbound_id = @inbound_id
+	select 1
+	return(0)
+	end
+
+select 0
+return(0)
+end
+
+else
+UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+where inbound_id = @inbound_id
+return(0)
+set nocount off'
+
+
+		EXEC(@Sql)
+		
+		set @process = 'Alter SP  -- ccsp_RIAManageAreas CW-871'
+		set @Sql='ALTER PROCEDURE [dbo].[ccsp_RIAManageAreas]
+@option tinyint,
+@IDArea smallint = 0,
+@InsertUserId smallint =null,
+@DeleteUserId varchar(255)=null,
+@InsertCamId smallint=null,
+@DeleteCamId smallint=null,
+@InsertACDGroupId smallint=null,
+@DeleteACDGroupId smallint=null
+as
+set nocount on
+
+if @option = 1 -- Insert User Area
+	begin
+	if not exists(select IDArea from ccUsers where IDArea = @IDArea AND User_id = @InsertUserId)
+		begin
+		Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @InsertUserId
+		return(0)
+		end	
+					 
+	select 1
+	return(0)
+	end
+
+if @option = 3 -- Insert camp area
+	begin
+	if not exists(select IDArea from ccCamps where IDArea = @IDArea and cam_id = @InsertCamId)
+		begin
+		Update ccCamps set IDArea = case @IDArea when 0 then null else @IDArea end
+		where cam_id = @InsertCamId
+		return(0)
+		end
+
+	select 1
+	return(0)
+	end
+
+if @option = 4 begin-- Delete camp area
+	
+
+	--Si existe una campaña relacionada con el grupo
+	if exists(select cam_id from ccInbound where cam_id=@DeleteCamId) begin
+		select -4
+		return(0)	 
+	end
+
+	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId
+				 
+	delete from ccCampsAgente where cam_id = @DeleteCamId
+	--delete from ccoDialerCamp where cam_id = @DeleteCamId
+	delete from ccoWorkingTable where cam_id = @DeleteCamId
+
+	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId and A.tipo = 1	
+
+	delete from ccSupervisorCam where cam_id = @DeleteCamId and tipo = 1
+	delete from ccRIACampEspWG where IdCampEsp = @DeleteCamId and tipo = 1	
+	delete from ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource where cam_id = @DeleteCamId)
+	
+
+	Update ccCamps set IDArea= null where cam_id=@DeleteCamId--, cam_activo = 0 
+	return(0)
+	end
+
+if @option = 5 -- Insert ACDGroup area
+	begin
+	if not exists(select IDArea from ccInbound where IDArea = @IDArea and Inbound_Id = @InsertACDGroupId)
+		begin
+		Update ccInbound set IDArea = @IDArea, status = 1 where Inbound_id = @InsertACDGroupId
+		return(0)
+		end
+
+	select 1
+	return(0)
+	end
+
+if @option = 6 -- Delete ACDGroup area
+	begin
+		insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.Inbound_id = @DeleteACDGroupId
+
+	delete ccInboundHorarios Where Inbound_id = @DeleteACDGroupId
+	delete ccInboundMsgs Where Inbound_id = @DeleteACDGroupId
+
+	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteACDGroupId and A.tipo = 0
+
+	delete ccSupervisorCam where cam_id = @DeleteACDGroupId and tipo = 0
+	delete ccInboundAgentes where Inbound_id = @DeleteACDGroupId
+	delete ccRIACampEspWG where IdCampEsp = @DeleteACDGroupId and tipo = 0
+
+	Update ccInbound set IDArea = null, status = 0 where Inbound_id = @DeleteACDGroupId
+	select 1
+	return(0)
+	end
+
+if @option in (2, 9, 10, 11)
+	begin
+		declare @Type tinyint
+	select @Type = TipoUser_id from ccUsers where User_id = @DeleteUserId
+					
+	if @option in (2, 10, 11) -- Delete User area
+		begin
+		if @Type = 1 -- Agente
+			begin
+
+			insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id = @DeleteUserId
+			insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.user_id = @DeleteUserId
+
+			delete from ccCampsAgente where user_id = @DeleteUserId
+			delete from ccInboundAgentes where user_id = @DeleteUserId
+
+			if @option = 11
+				begin
+					select IDWG, User_id into #WorkGroupUsers from ccRIAWorkGroupUsers where user_id = @DeleteUserId
+
+					delete from ccRIAWorkGroupUsers where user_id = @DeleteUserId
+									
+					select * from #WorkGroupUsers
+					drop table #WorkGroupUsers
+									
+					return(0)
+				end
+			end
+
+		else if @Type in (2, 6) -- Supervisor
+		begin
+			insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id = @DeleteUserId
+			delete from ccSupervisorCam where user_id = @DeleteUserId
+		end
+
+		delete from ccRIAWorkGroupUsers where user_id = @DeleteUserId
+						
+		if @option=2
+			begin
+			update ccPosicion set user_id = 0 where user_id = @DeleteUserId
+			update ccUsers set IDArea = null where user_id = @DeleteUserId	
+			end
+		return(0)
+	end
+
+	declare @UserWG varchar(100)
+	-- @option = 9 -- Delete User area and get his workgroups
+
+	select @UserWG = IDWG from ccRIAWorkGroupUsers where user_id = @DeleteUserId
+
+	if @Type = 1 -- Agente
+		begin
+		insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG 	from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id = @DeleteUserId
+		insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.user_id = @DeleteUserId
+
+		delete from ccCampsAgente where user_id = @DeleteUserId
+		delete from ccInboundAgentes where user_id = @DeleteUserId
+		end
+
+	if @Type in (2, 6) -- Supervisor
+		begin
+		insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id = @DeleteUserId
+
+		delete from ccSupervisorCam where user_id = @DeleteUserId
+		delete from ccMenuUser where id_User = @DeleteUserId
+		end
+
+	delete from ccRIAWorkGroupUsers where user_id = @DeleteUserId
+	update ccPosicion set user_id = 0 where user_id = @DeleteUserId
+					
+	if @option <> 11
+		update ccUsers set IDArea = null where user_id = @DeleteUserId
+					
+	select @UserWG, @Type
+	return(0)
+	end
+
+declare @AllWG varchar(400), @CurrentWG varchar(400), @AreaDescripcion varchar(40)
+
+if @option = 7 begin-- Delete camp area
+	
+	if exists(select cam_id from ccInbound where cam_id=@DeleteCamId) begin
+	
+		---Borra las calificacion con reprogramacion
+		delete ccCalifCamp from ccInbound A 
+		inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+		inner join ccTipoCalif C on B.calif_id=C.calif_id and C.CanReprogram=1
+		where A.cam_id=@DeleteCamId
+		---Borra las subcalificacion con reprogramacion
+		delete rel from ccInbound A 
+		inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+		inner join ccTipoCalif C on B.calif_id=C.calif_id 
+		inner join cctipoSubCalifRel rel on rel.calif_id=C.calif_id and rel.tipoSubRel=1
+		inner join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
+		where A.cam_id=@DeleteCamId and sb.canReprogram=1
+	
+		update ccInbound set cam_id = null where cam_id=@DeleteCamId				
+		 
+	end
+
+	select @AllWG = coalesce(@AllWG + '''','''', '''') + CAST(IDWG as varchar(400)) 
+	from ccRIACampEspWG where IDCampEsp = @DeleteCamId and tipo = 1
+
+	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId
+
+	delete from ccCampsAgente where cam_id = @DeleteCamId
+	delete from ccoWorkingTable where cam_id = @DeleteCamId or callout_id 
+		in (select callout_id from ccoCallsOutSource where cam_id = @DeleteCamId)
+
+	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId and A.tipo = 1
+
+	delete from ccSupervisorCam where cam_id = @DeleteCamId and tipo = 1
+	delete from ccRIACampEspWG where IdCampEsp = @DeleteCamId and tipo = 1	
+
+	select @CurrentWG = coalesce(@CurrentWG + '''','''', '''') + CAST(IDWG as varchar(400)) 
+	from ccRIACampEspWG where IDCampEsp = @DeleteCamId and tipo = 1
+
+	select @AreaDescripcion = area.AreaName
+	from ccCamps as camp with(nolock)inner join ccRIACat_Areas as area 
+		with(nolock) on camp.IDArea = area.IDArea
+	where camp.cam_id = @DeleteCamId
+	Update ccCamps set IDArea = null where cam_id = @DeleteCamId
+
+	If @CurrentWG is null
+		set @CurrentWG = 0
+
+	If @AllWG is null
+		set @AllWG = 0
+
+	select @AllWG as beforeDelete, @CurrentWG as afterDelete, coalesce(@AreaDescripcion,'''') as areaName
+	return(0)
+	end
+
+if @option = 8 --Delete ACDGroup area
+	begin
+	if (select cam_id from ccInbound where Inbound_id = @DeleteACDGroupId) is not null
+	begin
+		update ccInbound set cam_id = null where Inbound_id = @DeleteACDGroupId
+	end
+
+	select @AllWG = coalesce(@AllWG + '''','''', '''') + CAST(IDWG as varchar(400)) 
+	from ccRIACampEspWG where IDCampEsp = @DeleteACDGroupId and tipo = 0
+
+	insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.Inbound_id = @DeleteACDGroupId
+
+	delete ccInboundHorarios Where Inbound_id = @DeleteACDGroupId
+	delete ccInboundMsgs Where Inbound_id = @DeleteACDGroupId
+
+	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteACDGroupId 
+
+	delete ccSupervisorCam where cam_id = @DeleteACDGroupId and tipo = 0
+	delete ccInboundAgentes where Inbound_id = @DeleteACDGroupId
+	delete ccRIACampEspWG where IdCampEsp = @DeleteACDGroupId and tipo = 0
+
+	select @CurrentWG = coalesce(@CurrentWG + '''','''', '''') + CAST(IDWG as varchar(400)) 
+	from ccRIACampEspWG where IDCampEsp = @DeleteACDGroupId and tipo = 0
+
+	select @AreaDescripcion = area.AreaName
+	from ccInbound as ACD with(nolock) inner join ccRIACat_Areas as area 
+		with(nolock) on ACD.IDArea = area.IDArea
+	where ACD.Inbound_id = @DeleteACDGroupId
+	Update ccInbound set IDArea = null, status = 0 where Inbound_id = @DeleteACDGroupId
+
+	If @CurrentWG is null
+		set @CurrentWG = 0
+
+	If @AllWG is null
+		set @AllWG = 0
+
+	select @AllWG as beforeDelete, @CurrentWG as afterDelete, coalesce(@AreaDescripcion,'''') as areaName
+	
+	if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId=@DeleteACDGroupId)--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+	begin
+		DECLARE @TwitterResult table(--Se declaro por que el SP ccsp_MailAdminAccount regresa una consulta.  
+		result int,  
+		operation varchar(30));
+		insert @TwitterResult
+		EXEC [dbo].[ccsp_MailAdminAccount] @action = 22,@meanContactTypeId = 2, @inboundId = @DeleteACDGroupId--se ejecutara el SP para desasociar la cuenta de mail
+	end
+	if exists(select * from ContactMeanIn where meanContactTypeId=1 and inboundId=@DeleteACDGroupId)--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+	begin
+		update ContactMeanIn set name = '''', conexionInfo = '''', connUser = '''', connpass='''', isActive = 0 where inboundId = @DeleteACDGroupId and meanContactTypeId=1
+	end
+	update ccinbound set chatDomain = '''' where inbound_id = @DeleteACDGroupId--para desasociar el dominio del chat
+	return(0)
+	end
+
+return(0)
+set nocount off'
+		
+		EXEC(@Sql)
+		
+		set @process = 'Alter SP  -- ccsp_TwitterSave CW-902'
+		set @Sql='ALTER PROCEDURE [dbo].[ccsp_TwitterSave]
+ @action int,
+ @conversationId int=0,
+ @messageOutTwitterId bigint=null,
+ @userId int=0,
+ @isLogout bit=0,
+ @messageId int =null,
+ @messageStatusId int=null,
+ @inboundId smallint=null,
+ @twitId varchar(255)=null,
+ @dispositionId smallint=0,
+ @subDispositionId smallint=0,
+ @timeAtt int = 0,
+ @tWrapUp int =0,
+ @tRetention int = 0,
+
+ ---Finder
+@supervisor varchar(100)='''' ,@template varchar (100)='''',@ScoreTemplate int =0
+AS
+BEGIN
+
+declare @meanContactTypeId smallint
+declare @isEndConversation bit
+declare @xmlnode xml
+
+set @meanContactTypeId = 2 --Twitter
+
+
+ if @action = 1 BEGIN  -- desasignar
+	if @messageOutTwitterId = 0 begin
+		insert into [messageUnAssingedTwit](messageOutTwitterId,userId,[time],isLogout)
+		select messageOutTwitterId,userId,datediff(ss,tQueue,getdate()) as [time],1 from [messageOutTwitter]  where userId=@userId and messageStatusId in (2,3)
+
+		update [messageOutTwitter] set twitId='''',tQueue=null,userId=0,messageStatusId=4,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0 where userId=@userId and messageStatusId in (2,3)
+	end
+	else begin
+		insert into [messageUnAssingedTwit](messageOutTwitterId,userId,[time],isLogout)
+		select messageOutTwitterId,userId,datediff(ss,tQueue,getdate()) as [time],0 as isLogout from [messageOutTwitter] where userId=@userId and messageOutTwitterId=@messageOutTwitterId and messageStatusId in (2,3)
+
+		update [messageOutTwitter] set twitId='''',tQueue=null,userId=0,messageStatusId=4,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0 where userId=@userId and messageOutTwitterId=@messageOutTwitterId and messageStatusId in (2,3)
+	end
+END
+else if @action = 2 begin --Coloca el valor del TwitId
+	update [messageOutTwitter] set twitId=@twitId where messageOutTwitterId=@messageOutTwitterId
+end
+else if @action = 5 BEGIN --Twitter por contestar
+	--Status DOWNLOAD,Assigned,READ,UnaSSIGNED
+	select A.conversationTwitterId,B.userId,A.screenNameClient,A.screenNameInbound,B.messageStatusId,B.messageOutTwitterId as messageId
+		from conversationTwitter A
+		inner join [messageoutTwitter] B on A.conversationTwitterId = B.conversationTwitterId
+		where A.inboundId = @inboundId and B.messageStatusId in(1,2,3,4) and meanContactTypeId = @meanContactTypeId
+		and b.messageOutTwitterId=(select max(bb.messageOutTwitterId)--esta subconsulta permite conocer el maximo messageOutTwitterId de la conversacion de la consulta principal 
+				from messageOutTwitter bb
+				inner join conversationTwitter aa on aa.conversationTwitterId = bb.conversationTwitterId
+				where bb.conversationTwitterId=aa.conversationTwitterId
+				and bb.conversationTwitterId=b.conversationTwitterid 
+				and aa.inboundId=@inboundId
+				GROUP BY bb.conversationTwitterId)
+		GROUP BY A.conversationTwitterId,A.inboundId,A.screenNameClient,A.screenNameInbound,B.messageStatusId,B.userId,b.messageOutTwitterId
+END
+else if @action = 6 BEGIN --update Time Attention, Retencion
+	select @messageId=max(messageOutTwitterId) from messageOutTwitter with(nolock) where conversationTwitterId=@conversationId
+	update messageOutTwitter set tResponse=@timeAtt,tRetention=@tRetention,isSender=1,messageStatusId=@messageStatusId where messageOutTwitterId=@messageId
+END
+else if @action = 7 BEGIN --Cambia el status del mensaje
+	select @messageId=max(messageOutTwitterId) from [messageOutTwitter] with(nolock) where conversationTwitterId=@conversationId
+
+	--Status Read
+	if @messageStatusId=3  update [messageOutTwitter] set tWait=DATEDIFF(ss,tQueue, getdate()) where messageOutTwitterId=@messageId
+	--Status Send
+	if @messageStatusId=6  begin
+		select @isEndConversation=isFinished from conversationTwitter where conversationTwitterId=@conversationId
+
+		if @isEndConversation = 1 set @messageStatusId=11--Close conversation by Agent
+		update [messageOutTwitter] set tSend=getdate() where messageOutTwitterId=@messageId
+
+	end
+	update [messageOutTwitter] set messageStatusId=@messageStatusId where messageOutTwitterId=@messageId
+
+	--Answered,Send,CLose Conversation system or agent
+	if @messageStatusId in (5,6,10,11)  begin
+		exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
+		if not exists(select * from [ccTwitterNode] where [conversationTwitterId]=@conversationId) begin
+			insert into [ccTwitterNode]([conversationTwitterId],[node],dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
+		end
+		else begin
+			update [ccTwitterNode] set node=@xmlnode,status=2 where [conversationTwitterId]=@conversationId
+		end
+	end
+
+END
+else if @action = 10 begin --Carga las conversaciones pendientes
+	if @conversationId = 0 begin
+		select A.conversationTwitterId,max(B.messageOutTwitterId) as messageId,B.userId,A.inboundId,max(C.twitId) as twitId
+			from conversationTwitter A
+			inner join messageOutTwitter B on A.conversationTwitterId = B.conversationTwitterId
+			inner join messageInTwitter C on C.conversationTwitterId=B.conversationTwitterId
+			where A.meanContactTypeId = @meanContactTypeId
+			and B.messageStatusId in(5,7,8,9) and isSender=1 and A.inboundId=@inboundId
+			GROUP BY A.conversationTwitterId,A.inboundId,B.userId
+	end
+	else begin
+	select A.conversationTwitterId,max(B.messageOutTwitterId) as messageId,B.userId,A.inboundId,max(C.twitId) as twitId
+			from conversationTwitter A
+			inner join messageOutTwitter B on A.conversationTwitterId = B.conversationTwitterId
+			inner join messageInTwitter C on C.conversationTwitterId=B.conversationTwitterId
+			where A.meanContactTypeId = @meanContactTypeId
+			and A.conversationTwitterId = @conversationId
+			GROUP BY A.conversationTwitterId,A.inboundId,B.userId
+	end
+end
+else if @action = 11 BEGIN --Califica el mensaje y pone el tiempo Notas
+	if @subDispositionId <> 0 begin
+		select @isEndConversation=isnull(EndConversation,0) from ccTipoCalifSub where califSub_id=@subDispositionId
+	end
+	else begin
+		select @isEndConversation=isnull(EndConversation,0) from cctipoCalif where calif_id=@dispositionId
+	end
+	if not exists(select * from relationMessageDispositionTwit where messageOutTwitterId=@messageId) begin
+		insert into relationMessageDispositionTwit(messageOutTwitterId,dispositionId,subDispositionId) values(@messageId,@dispositionId,@subDispositionId)
+	end
+	else begin
+		update relationMessageDispositionTwit set dispositionId=@dispositionId,subDispositionId=@subDispositionId where messageOutTwitterId=@messageId
+	end
+	update [messageOutTwitter] set tWrapUp=@tWrapUp where messageOutTwitterId=@messageId
+	if @isEndConversation = 1 begin
+		select @conversationId=conversationTwitterId from [messageOutTwitter]where messageOutTwitterId=@messageId
+		update conversationTwitter set isFinished=@isEndConversation where conversationTwitterId=@conversationId
+	end
+END
+else if @action = 12 BEGIN  --Tiempo de cola
+	select @messageId=max(messageOutTwitterId) from [messageOutTwitter] with(nolock) where conversationTwitterId=@conversationId
+	update [messageOutTwitter] set tQueue=getdate(),userId=@userId where messageOutTwitterId=@messageId
+END
+else if @action = 13 BEGIN  --Limpia las conversaciones quedaron abiertas por cerrar la aplicacion
+	update [messageoutTwitter] set @messageStatusId=1,twitId='''',tQueue=null,userId=0,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0  where messageStatusId in(2,3)
+END
+else if @action = 14 begin --Asignar una evluacion
+	exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate
+	if not exists(select * from ccEmailNode where emailId=@conversationId) begin
+		insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
+	end
+	else begin
+		update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
+	end
+end
+
+END'
+		
+		EXEC(@Sql)
+		
+		set @process = 'Alter SP  -- ccspADMaddConversationTweet CW-902'
+		set @Sql='ALTER PROCEDURE [dbo].[ccspADMaddConversationTweet]
+@action int,
+@inboundId int = null,
+@clientId varchar(255)= null,
+@isFinished bit = 0,
+@screenNameClient varchar(100) = null,
+@screenNameInbound varchar(100) = null,
+@meanContactTypeId smallint = null,
+@twitId varchar(255) = null,
+@conversationId bigint = null,
+@date datetime=null,
+@replayId varchar(255)=null,
+@tipoTwitId tinyint=1,
+@messageId bigint = null,
+@dispositionId smallint=0,
+@subDispositionId smallint=0,
+@tWrapUp int =0
+
+as
+set nocount on
+
+declare @ninteration int ,@messageOutTwitterId bigint
+declare @userId int
+declare @isEndConversation bit
+
+
+if @action = 1 begin --Revisa que exista la conversacion
+	select @conversationId =  isnull(max(conversationTwitterId),0) from conversationTwitter where isFinished = 0 and meanContactTypeId = 2 and ClientId = @clientId and inboundId=@inboundId
+	if @conversationId = 0
+		select 0,''New Conversation''
+	else begin
+		declare @closeConversation tinyint
+		declare @tRsponse datetime
+		select @tRsponse = isnull(max(tSend),getdate()) from messageOutTwitter where conversationTwitterId = @conversationId
+		select @closeConversation = closeConversationTime from contactMeanIn where inboundId=@inboundId
+		 if datediff(dd,getdate(),@tRsponse ) > @closeConversation
+			select 0,''New Conversation Close System''
+		else
+			select @conversationId
+	end
+    return 0
+end
+else if @action = 2 begin --Nueva conversacion y mensaje entrada y salida
+    --agregar tabla de messagetwit fecha de descarga
+	if @replayId is null or @replayId=''''
+		set @replayId= ''0''
+    insert into conversationTwitter (inboundId,ClientId,isFinished,screenNameClient,screenNameInbound,meanContactTypeId,replayId)
+    values(@inboundId,@clientId,@isFinished,@screenNameClient,@screenNameInbound,@meanContactTypeId,@replayId)
+    set  @conversationId  = SCOPE_IDENTITY()
+	insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+	set @messageId=SCOPE_IDENTITY()
+	insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+	values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+    select 0 as userId,@conversationId as conversationId, @messageId as messageId
+    return 0
+end
+else if @action = 3 begin --Nuevo mensaje Entrada
+	---Revisa que no se contesto el twitt
+	select @messageOutTwitterId=max(A.messageOutTwitterId),@ninteration= count(B.messageInTwitterId)
+	from messageOutTwitter A inner join messageInTwitter B on A.conversationTwitterId=B.conversationTwitterId
+	where A.conversationTwitterId=@conversationId and A.messageStatusId not in (5,6,7,8,9,10,11)
+
+	insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+	set @messageId=SCOPE_IDENTITY()
+
+	if  @messageOutTwitterId is null begin
+		insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+		values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+		set @messageOutTwitterId=SCOPE_IDENTITY()
+	end
+	else begin
+		update messageOutTwitter set messageInTwitterIdEnd=@messageId,[date]=@date,ninteration=@ninteration
+		where messageOutTwitterId=@messageOutTwitterId
+	end
+	select @userId = userId  from messageOutTwitter with(nolock) where messageOutTwitterId=@messageOutTwitterId
+	select @userId as userId,@conversationId as conversationId, @messageId as messageId
+	return 0
+end
+else if @action = 4 begin --Obtiene el maximo messageOutTwitterId por conversacion
+    select @messageOutTwitterId=max(messageOutTwitterId) from [messageOutTwitter] with(nolock) where conversationTwitterId=@conversationId
+	select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId
+	select @messageOutTwitterId as messageOutTwitterId,@replayId as replayId
+	return 0
+end
+else if @action = 5 begin --Ultimo mensaje en por ACD
+    select isnull(max(twitId),0),max(date) from messageInTwitter as A
+	inner join conversationTwitter as B on A.conversationTwitterId=B.conversationTwitterId
+	where B.inboundId=@inboundId
+	return 0
+end
+else if @action = 6 begin --Obtiene conversación dependiendo del replayId
+	select @conversationId=conversationTwitterId  from messageOutTwitter where twitId=@replayId
+	if @conversationId is not null begin
+		select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId
+	end
+	else begin
+		select 0 as conversationId,''0'' as replayId
+	end
+	select @conversationId as conversationId,@replayId as replayId
+	return 0
+end
+
+set nocount off'
+		
+		EXEC(@Sql)
 
 		/* End script release */
 

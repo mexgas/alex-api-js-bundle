@@ -2118,9 +2118,6 @@
   <data name="Email" xml:space="preserve">
     <value>Correo</value>
   </data>
-  <data name="EmailACD" xml:space="preserve">
-    <value>Correo por ACD</value>
-  </data>
   <data name="finishedConversation" xml:space="preserve">
     <value>Conversaciones finalizadas</value>
   </data>

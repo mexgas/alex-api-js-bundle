@@ -1082,7 +1082,7 @@ begin
 	select @preview = case when progdial=2 then 1 else 0 end from cccamps nolock where cam_id=@cam_id
 	if @preview = 1
 	begin
-		update ccoCallsOut with(rowlock) set cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
+		update ccoCallsOut with(rowlock) set cal_manual=case when cal_manual=1 then 2 else 0 end, cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
 	end
 	else
 	begin
@@ -1099,7 +1099,7 @@ end
 
 -- inserta informacion para reportes de workgroup
 insert ccRIAWorkGroup_logDial_id (IDWG, logDial_id, cam_id, timestamp)
-select IDWG, @logDial_id, IdCampEsp, getdate()
+select IDWG, @logDial_id, IdCampEsp, getdate() 
 from ccRIACampEspWG where tipo = 1 and IdCampEsp = @cam_id
 
 -- Guarda configuracion de TipoDialingMode

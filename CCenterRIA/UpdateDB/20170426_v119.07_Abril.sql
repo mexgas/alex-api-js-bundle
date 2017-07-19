@@ -817,8 +817,8 @@ IF @InOut = 11
 set nocount off'
 		EXEC(@Sql)
 
-		set @process = 'Alter SP  -- ccsp_AGENTInsertCallOut'
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
+	set @process = 'Alter SP  -- ccsp_AGENTInsertCallOut --CW-1010,CW-958'
+  set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
 @cam_id smallint,
 @cal_Key varchar(20),
 @cal_Telefono varchar(30),
@@ -828,74 +828,77 @@ set nocount off'
 @existCallOut as int = 0,
 @callmode as smallint = 0
 AS
-set
+set 
 nocount on
 declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
 select @fecha=getdate()
 
 if @callmode = 1
 begin
-	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-	 select @existCallOut, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 0, @cal_extension
-	select @cal_id = scope_identity()
+  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+   select @existCallOut, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 0, @cal_extension
+  select @cal_id = scope_identity()
 
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from ccRIACampEspWG wg 
+  where wg.tipo = 1 and wg.idcampesp =@cam_id
 
-	select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
-	select @existCallOut as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
-	return(0)
+  select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
+  select @existCallOut as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
+  return(0)
 end
 
 if @existCallOut=0
  begin
-	declare @LasCallKey varchar(20)
-	set @LasCallKey = @cal_Key
-	declare @settingCallKey as int
-	select @settingCallKey = valor from ccSettings where setting_id = 194
+  declare @LasCallKey varchar(20)
+  set @LasCallKey = @cal_Key
+  declare @settingCallKey as int
+  select @settingCallKey = valor from ccSettings where setting_id = 194
+  
+  if(@settingCallKey = 1)
+  begin
+    if (@cal_Key='''' or @cal_Key is null) 
+    begin   
+      select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime,getdate()) and cal_manual=0 order by cal_id desc
+      set @cal_Key= @LasCallKey
+    end
+  end
 
-	if(@settingCallKey = 1)
-	begin
-		if (@cal_Key='''' or @cal_Key is null)
-		begin
-			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime,getdate()) and cal_manual=0 order by cal_id desc
-			set @cal_Key= @LasCallKey
-		end
-	end
+  INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
+  select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
+  select @callout_id = scope_identity()
 
-	INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
-	select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
-	select @callout_id = scope_identity()
+  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+   select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
+  select @cal_id = scope_identity()
 
-	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-	 select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
-	select @cal_id = scope_identity()
-
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from dbo.ccRIACampEspWG wg 
+  where wg.tipo = 1 and wg.idcampesp =@cam_id
  end
 
 else
  begin
-	Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
-		where callout_id = @existCallOut
-	Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
-		where callout_id = @existCallOut
-	set @callout_id = @existCallOut
-	select @cal_id=cal_id from ccocallsout where callout_id = @existCallOut
+  Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData 
+    where callout_id = @existCallOut
+  Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
+    where callout_id = @existCallOut
+  set @callout_id = @existCallOut
+  select @cal_id=cal_id from ccocallsout where callout_id = @existCallOut
 
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from ccRIACampEspWG wg
+  where wg.tipo = 1  and wg.idcampesp =@cam_id
  end
 
 select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
 select @callout_id as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
 return(0)
 set nocount off'
-		EXEC(@Sql)
+    EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_AgentUpdateCallCALIF'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_AgentUpdateCallCALIF]
@@ -3781,57 +3784,7 @@ end
 drop table #TempccoLogDials'
     EXEC(@Sql)
 
-    set @process = 'Alter SP ccsp_AGENTInsertCallOut -- CW-958'
-    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
-@cam_id smallint,
-@cal_Key varchar(20),
-@cal_Telefono varchar(30),
-@user_id int,
-@cal_extension varchar(7),
-@sData varchar(255) = '''', --HLAS para guardar notas de la llamada
-@existCallOut as int = 0
-AS
-set
-nocount on
-declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
-
-select @fecha=getdate()
-
-if @existCallOut=0
- begin
-  INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
-  select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
-  select @callout_id = scope_identity()
-
-  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-   select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
-  select @cal_id = scope_identity()
-
-  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-  select idwg,  @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from dbo.ccRIACampEspWG wg
-  where wg.tipo = 1 and wg.idcampesp = @cam_id
- end
-
-else
- begin
-  Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
-    where callout_id = @existCallOut
-  Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
-    where callout_id = @existCallOut
-  set @callout_id = @existCallOut
-  select @cal_id=cal_id from ccocallsout with(nolock) where callout_id = @existCallOut
-
-  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-  select idwg, @cal_id, 0 as [user_id], getdate() timestamp, 1 as tipo from ccRIACampEspWG wg
-  where wg.tipo = 1 and wg.IdCampEsp=@cam_id
- end
-
-select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
-select ''callout_id''=@callout_id, ''cal_id''=@cal_id, ''calloutMaxTime'' = @calloutMaxTime
-return(0)
-set nocount off
-'
-    EXEC(@Sql)
+   
 
     set @process = 'Alter SP ccsp_DLRInsertCall -- CW-958'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]

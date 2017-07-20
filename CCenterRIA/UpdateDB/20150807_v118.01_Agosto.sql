@@ -137,9 +137,7 @@ update ccmenus set release=''153e6811eec81553748db0c3d4e2f22dcb71ee48e699af23268
 update ccmenus set release=''02547c912615a1e4d6552bab57984ee3702a1fb1e963680cfa7044653de25db417da62f779d55da177e98335f1f4b77af879b89a8db6070fcbd689586dde4d7fdd62780a20e98e467f09486e1e59d0c9'' where menu_id=8084 and type=3
 
 update ccMenus set release=''09cbbffafe26e97542fa49002c1ec5e68f2311d4e350aee98eac29f8fe77b538731750fedffaa62e936863a755d0df28'' where type=1 and menu_id=85
-update ccMenus set release=''9f54271c454bdc582cee3c666e3f98e12009688903015cfbe334af813fc6c7cecd1268e1c3c95a6aab047205aa93c286'' where menu_id=76
-
-	'
+update ccMenus set release=''9f54271c454bdc582cee3c666e3f98e12009688903015cfbe334af813fc6c7cecd1268e1c3c95a6aab047205aa93c286'' where menu_id=76'
 		EXEC(@sql)
 
 
@@ -169,18 +167,11 @@ update ccMenus set release=''9f54271c454bdc582cee3c666e3f98e12009688903015cfbe33
 		EXEC(@sql)
 
 
-		set @process = 'insert into ccRIACat_Country ------------'
-		set @sql='if not exists(select * from ccRIACat_Country where CtyName =''España'')
-			insert into ccRIACat_Country (CtyName, CtyCode, minPhoneLength, maxPhoneLength) values (''España'', ''34'', 9, 9)'
-		EXEC(@sql)
 
 		
 		
-		set @process = 'update ccsettings----------'
-		set @sql='update ccsettings
-					set detalle = ''1:Mexico, 2:Argentina, 3:Colombia, 4:USA, 5:Chile, 6: Venezuela, 7: Reino Unido, 8: Arabia saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España''
-					where setting_id = 104'
-		EXEC(@sql)
+		
+		
 
 		set @process = 'update ccSettings------------'
 		set @sql='update ccSettings set validate=''.*''
@@ -327,10 +318,642 @@ update ccMenus set release=''9f54271c454bdc582cee3c666e3f98e12009688903015cfbe33
 					update cstoTipoLlamada set prefijo=''06%|07%|08%|09%'' where country_id=10 and tipollamada_id=5'
 		EXEC(@sql)
 
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_ExtAppsGetDialInfo] ----------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_ExtAppsGetDialInfo]
+@action tinyint = 0,
+@logDial_id int = null
+As
+Begin
+
+	If @action = 1 begin
+		select count(*) from ccologdials with(nolock) where logDial_id >= @logDial_id
+	end
+
+	if @action = 2 begin
+		select top 500 logDial_id, callout_id, isnull(a.cam_id,0) as camId, isnull(c.cam_descripcion,'''') as camDescription,
+		isnull(b.descripcion,''Unknown'') as DialResult, Telefono, fecha, tDialing, tBusy, isnull(cal_id,0) as cal_id, cal_key
+		from ccologdials a with(nolock)
+		inner join ccTipoResultadoDial b
+		on a.tiporesdial_id = b.tiporesdial_id
+		inner join ccCamps c
+		on a.cam_id = c.cam_id
+		where logDial_id >= @logDial_id
+		order by logDial_id
+	end
+
+End'
+	EXEC(@sql)
+	
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas] ---------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
+@option smallint,
+@IDArea smallint,
+@Descripcion varchar(40),
+@maxMails smallint = 3,
+@maxChats smallint = 3
+AS
+
+set nocount on
+
+if @option=1 --Selected Area
+ begin
+	Select a.IDArea, AreaName, isnull(a.maxChats,0) as maxChats, isnull(maxMails,3) maxMails,
+	isnull(users,0) users, isnull(admins,0) admins,
+	isnull(camps,0) camps, isnull(acds,0) acds
+	from ccRIACat_Areas a (nolock)
+	left join (select IDArea , MAX(isnull(maxChats,0)) as maxChats from ccInbound GROUP BY IDArea) b on a.IDArea = b.IDArea
+	left join (select IDArea,count(case when TipoUser_id = 1 then 1 else null end) users, count(case when TipoUser_id > 1 then 1 else null end) admins from ccusers (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) userswg on userswg.IDArea=a.IDArea
+	left join (select IDArea,count(*) acds from ccinbound (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) acdswg on acdswg.IDArea=a.IDArea
+	left join (select IDArea,count(*) camps from cccamps (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) campswg on campswg.IDArea=a.IDArea
+	where StatusArea=1 and isnull(a.IDArea,0)=case isnull(@IDArea,0)
+	when 0 then isnull(a.IDArea,0) else @IDArea end
+	order by AreaName
+
+	return(0)
+ end
+
+if @option=2 --Insert Area
+ begin
+	if exists(select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
+	begin
+		select -1--, Nombre en Uso
+		return(0)
+	   end
+
+	Insert into ccRIACat_Areas (AreaName,maxMails,maxChats) values (@Descripcion,@maxMails,@maxChats)
+
+	select 1, scope_identity()--, Area Insertada
+	return(0)
+ end
+
+if @option=3 --Update Area
+ begin
+	if not exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
+		Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats where IDArea=@IDArea
+		else
+		Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats where IDArea=@IDArea
+
+	if (select max(maxChats) as maxChats from ccinbound where IDArea=@IDArea) <> @maxChats
+		Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
+
+	return(0)
+ end
+
+if @option=4 --Delete Area
+ begin
+	if (exists(select IDArea from ccUsers where IDArea=@IDArea) or exists(select IDArea from ccCamps where IDArea = @IDArea)
+		or exists(select IDArea from ccInbound where IDArea=@IDArea)) and (select valor from ccSettings where setting_id=95)<>1
+	begin
+		select -1
+		return(0)
+ end
+
+	declare @DWorkGroups as varchar(500)
+
+	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+	select user_id,cam_id,prioridad,skill,rel_id,IDWG
+	from ccCampsAgente
+	where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+
+	insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+	select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
+	from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+
+	Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+	Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+
+	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+	select user_id,cam_id,tipo,IDWG,monitored
+	from ccSupervisorCam
+	where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+
+	Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+
+	delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
+	delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
+	delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
+	where cam_id in (select cam_id from ccCamps where IDArea=@IDArea))
+
+	Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
+	Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
+
+	Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+	Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+	Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+
+	select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
+	Delete from ccRIAAreaWorkGroup where IDArea=@IDArea
+
+	if (select valor from ccSettings where setting_id=95)=1
+begin
+		Update ccInbound set IDArea=NULL, status=0 where IDArea=@IDArea
+		Update ccCamps set IDArea=NULL where IDArea=@IDArea
+		Update ccUsers set IDArea=NULL where IDArea=@IDArea
+end
+
+	Update ccRIACat_Areas set StatusArea=0 where IDArea=@IDArea
+
+	select @DWorkGroups
+
+	return(0)
+end'
+		EXEC(@sql)
+
+
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIADialerAssignment] --------------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIADialerAssignment]
+@User_Id smallint,
+@cam_id smallint,
+@dialer_id varchar(4000),
+@Type2 tinyint,
+@Type tinyint
+AS
+set nocount on
+declare @SQL as nvarchar(4000), @nUser_id as nvarchar(10), @params as nvarchar(1000)
+
+If @Type=0--get ports
+		begin
+	select a.dialer_id, a.puerto, a.Descripcion, b.descrip from ccoDialers a
+	inner join cstoProvedor b on a.provedor_id=b.provedor_id
+	order by a.dialer_id
+	return(0)
+end
+
+If @Type=1--get cams
+		begin
+	SELECT a1.cam_id, cam_descripcion FROM ccCamps a1 inner join ccRIACampsGraph a2 on(a1.cam_id=a2.cam_id)
+	inner join ccRIAGraphics a3 on(a2.graphic_id=a3.graphic_id)
+	where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+	order by 2
+	return(0)
+		end
+
+If @Type=2--get port/cam relation
+		begin
+	select c.cam_id, cd.dialer_id, d.descripcion,
+	d.puerto, e.descrip from ccCamps c
+	left join ccoDialerCamp cd on cd.cam_id=c.cam_id
+	left join ccoDialers d on cd.dialer_id=d.dialer_id
+	inner join cstoProvedor e on d.provedor_id=e.provedor_id
+	where c.cam_id=@cam_id
+	ORDER BY c.cam_id, cd.dialer_id
+	return(0)
+end
+
+If @Type=3--delete port/dialer relation
+begin
+	If @Type2=1--Sistema
+		begin
+		set @nUser_id=@User_Id
+		set @sql=''delete ccoDialerCamp where dialer_id in('' + @dialer_id + '')''
+		execute sp_executesql @sql
+		return(0)
+		end
+
+	If @Type2=2--Camp
+		begin
+		delete ccoDialerCamp where cam_id=@cam_id and dialer_id=@dialer_id
+		return(0)
+		end
+end
+
+If @Type=4--insert new relation
+begin
+	If @Type2=1--Sistema
+		begin
+		set @nUser_id=@User_Id
+		set @sql=''insert ccoDialerCamp(cam_id, dialer_id)
+		select a.cam_id, b.dialer_id from ccCamps a, ccoDialers b where
+		b.dialer_id in('' + @dialer_id + '') and not exists(
+		select c.cam_id, c.dialer_id from ccoDialerCamp c
+		where b.dialer_id=c.dialer_id and a.cam_id=c.cam_id)''
+		execute sp_executesql @sql
+		return(0)
+		end
+
+	If @Type2=2--Camp
+		begin
+		set @params=''@Ncam_id int''
+ 		set @sql=''insert ccoDialerCamp(cam_id, dialer_id) select distinct @Ncam_id,
+ 		dialer_id from ccCamps, ccoDialers where dialer_id not in(select dialer_id
+ 		from ccoDialerCamp where dialer_id in('' + @dialer_id + '')and cam_id=@Ncam_id)
+		and dialer_id in('' + @dialer_id + '')''
+		execute sp_executesql @sql, @params, @Ncam_id=@cam_id
+		return(0)
+		end
+end
+
+If @Type=5--Get existance of dialers
+ begin
+	if exists (select c.cam_id, cd.dialer_id, d.descripcion,
+			   d.puerto, e.descrip from ccCamps c
+			   left join ccoDialerCamp cd on cd.cam_id=c.cam_id
+			   left join ccoDialers d on cd.dialer_id=d.dialer_id
+			   inner join cstoProvedor e on d.provedor_id=e.provedor_id
+			   where c.cam_id = @cam_id)
+		select 0
+	else
+		select 13
+	return(0)
+end'
+		EXEC(@sql)
+
+
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateChatConfig] ----------------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAUpdateChatConfig]
+@action smallint = 0,
+@idArea smallint = 0,
+@maxChats smallint = 0
+AS
+
+if @action = 1 begin
+	select @maxChats = maxChats from ccRIACat_Areas where IDArea = @idArea
+	return @maxChats
+end
+
+if @action = 2 begin
+	select @maxChats = maxChats from ccRIACat_Areas where IDArea = @idArea
+	update ccInbound set maxChats = @maxChats where IDArea = @idArea
+end'
+		EXEC(@sql)
+
+
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_AgentLogINOUT]-------------------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentLogINOUT]
+@UserID smallint,
+@Extension varchar(7)=null,
+@Computer varchar(20)=null,
+@TipoMov tinyint	-- 0= LogOut,  1=LogIN,	3=Consulta
+AS
+set nocount on
+
+declare @hourlogin   varchar(8)
+declare @sessionsecs int
+declare @sessiontime varchar(8)
+declare @fecha_ini datetime
+
+IF  @TipoMov=1
+ BEGIN
+	Insert ccLogLogIn ( User_id, Extension, TipoMov ) Values( @UserID, @Extension, 1)
+	Update c Set User_id=@UserID from ccPosicion c WITH (INDEX (IX_ccPosicion)) Where Computer =@Computer
+	update c set user_id = 0 from ccPosicion c WITH (INDEX (IX_ccPosicion_2)) where Computer <> @Computer and user_id = @UserId
+	update ccUsers set TipoStatusAge_id=3 where User_id=@UserID
+
+	if exists(select valor from ccSettings where tipo=''AGT'' and Status=''1'' and setting_id=''53'' and valor=2)
+	 begin
+	 	if not exists (select axLic_Desc from axLicG729_Data where axLic_Status=1 and pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid))
+	begin
+	 		raiserror(''Error. Without License'', 18, 1)
+			return(0)
+	end
+
+		update axLicG729_Data set axLic_Status=2 where axLic_Status=1 and pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid)
+		select ''0'' CPLic
+		return(0)
+	end
+
+	return(0)
+ END
+
+IF @TipoMov=0
+ BEGIN
+	Insert ccLogLogIn ( User_id, Extension, TipoMov ) Values( @UserID, @Extension, 0 )
+	Update c Set User_id= 0 from ccPosicion c WITH (INDEX (IX_ccPosicion_2)) Where Computer =@Computer or user_id = @Userid
+	update ccUsers set TipoStatusAge_id=0 where User_id=@UserID
+
+	if exists(select valor from ccSettings where tipo=''AGT'' and Status=''1'' and setting_id=''53'' and valor=2)
+	begin
+		update axLicG729_Data set axLic_Status=0, pos_id=null, fecha_log=null where pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid)
+	end
+
+	return(0)
+ END
+
+IF @TipoMov=3
+ BEGIN
+    select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+
+	select @hourlogin = convert(varchar(8), isnull(min(fecha), getdate()), 114)
+	       from ccLogLogin where TipoMov=1 and user_id=@UserID and fecha >= @fecha_ini
+
+    SELECT @sessionsecs = isnull (case
+			WHEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) > 0
+			THEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov))
+			ELSE sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) +
+			         convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14)))
+			END, 0)
+		FROM ccLogLogin where user_id=@UserID and fecha > dateadd(hh, -10, getdate())
+
+    SELECT @sessiontime = RIGHT(''0'' + CONVERT(varchar(6),  @sessionsecs / 3600),       2) + '':'' +
+                          RIGHT(''0'' + CONVERT(varchar(2), (@sessionsecs % 3600) / 60), 2) + '':'' +
+                          RIGHT(''0'' + CONVERT(varchar(2),  @sessionsecs % 60),         2)
+
+    select ''HourLogin'' = @hourlogin, ''SessionTime'' = @sessiontime, ''SessionSecs'' = @sessionsecs
+	return(0)
+ END'
+		EXEC(@sql)
+
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentECRelations]-----------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentECRelations]
+@User_id smallint,@action int =0
+AS
+set nocount on
+
+declare @idioma as bit, @tipo as varchar(6)
+
+if @action=0 begin
+	select distinct ''Tipo''=1, E.Inbound_id, E.descripcion, A.Login, A.user_id, prioridad, skill, E.cli_id
+		from ccInboundAgentes G join ccInbound E on G.inbound_id = E.inbound_id
+		join ccUsers A  on A.user_id = G.user_id and A.TipoUser_id =1
+		Where A.user_id = @User_id and A.status > 0
+	union
+	select distinct ''Tipo''=2, C.cam_id, C.cam_descripcion, A.Login, A.user_id, prioridad, skill, C.cli_id
+		from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
+		join ccUsers A  on A.user_id = CA.user_id and A.TipoUser_id =1
+		Where A.user_id = @User_id and A.status > 0
+		order by ''Tipo''
+end
+else begin
+	select distinct 1 tipo, E.Inbound_id, E.descripcion, A.Login, A.user_id, prioridad, skill, isnull(E.cli_id,0) cli_id
+	,right(''0''+cast(1 as varchar(1)),1) + right(''00000''+cast(E.Inbound_id as varchar(5)),5)
+	+ right(''00''+cast(prioridad as varchar(2)),2) + right(''00''+cast(skill as varchar(2)),2) sPertenencias
+		from ccInboundAgentes G join ccInbound E on G.inbound_id = E.inbound_id
+		join ccUsers A  on A.user_id = G.user_id and A.TipoUser_id =1
+		Where A.user_id = @User_id and A.status > 0
+		union
+	select distinct 2 tipo, C.cam_id, C.cam_descripcion, A.Login, A.user_id, prioridad, skill, C.cli_id
+	,right(''0''+cast(2 as varchar(1)),1) + right(''00000''+cast(C.cam_id as varchar(5)),5)
+	+ right(''00''+cast(prioridad as varchar(2)),2) + right(''00''+cast(skill as varchar(2)),2) sPertenencias
+		from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
+		join ccUsers A  on A.user_id = CA.user_id and A.TipoUser_id =1
+		Where A.user_id = @User_id and A.status > 0
+		order by ''Tipo''
+
+end'
+		EXEC(@sql)
+
+	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]--------------'
+	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
+@action int,
+@inboundId smallint = 0,
+@domain varchar(50) = '''',
+@session varchar(50) = '''',
+@tTimeout smallint = 0,
+@chatId int = 0,
+@status tinyInt = 0,
+@userId smallint = 0,
+@finished tinyInt = 0,
+@chattingTime int = 0,
+@startTime datetime = null,
+@clientName varchar(50) = '''',
+@firstMessage int = 0,
+@firstMessageTime datetime = null,
+@crmNode xml = null,
+@supervisor varchar(100) =null,
+@template varchar (100)= null,
+@ScoreTemplate int = null
+AS
+
+declare @xml xml
+declare @sql nvarchar(2000)
+
+if @action = 1 begin -- Inserta nuevo chat request /*comentario: se recomienda hacer la busqueda del userid del CRM en esta action*/
+       insert into ccRIAChats (domain,session,chatStatus,requestDate,inboundId,clientName)
+       values(@domain,@session,@status,getDate(),0,@clientName)
+       set @chatId = scope_identity()
+       select @chatId
+end
+
+else if @action = 2 begin -- Save Initial Info
+update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = @userId, tTimeout = @tTimeout where chatId = @chatId
+end
+
+else if @action = 3 begin -- Update Status
+update ccRIAChats set chatStatus = @status where chatId = @chatId
+end
+
+else if @action = 4 begin -- Save Final Status
+if @firstMessage = 0
+				begin
+             update ccRIAChats set finishedBy = @finished where chatId = @chatId
+				end
+			else
+				begin
+             update ccRIAChats set finishedBy = @finished, firstMessageTime  = @firstMessageTime where chatId = @chatId
+				end
+		end
+
+else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion del nodo (registro final para el finder) se recomiendo en esta action, no olvidar validar status = 4, finishedby != null y validar los tiempos para garantizar el dato final */
+       if @action = 5 begin
+             update ccRIAChats set tChatting = @chattingTime, chatDate = @startTime where chatId = @chatId
+       end
 
 
 
-		set @process = 'ALTER function [dbo].[Completa] -------------'
+       select @xml = convert(xml,''<R01 C01="''+convert(varchar(max),chatId)+''" C02="''+convert(varchar(max),isnull(ccinbound.descripcion,''''))+''" C03="''+convert(varchar(max),domain)+''" C04="''+convert(varchar(max), Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno )+
+       ''" C05="''+convert(varchar(max),tchatting)+''" C06="''+convert(varchar(max),isnull(cctipocalif.[Description],''''))+''" C07="''+convert(varchar(max),isnull(cctipocalifsub.califSubdesc,''''))+''" C08="''+convert(varchar(max),clientname)+''" C09="''+rtrim(ltrim(convert(varchar(23), chatDate, 126)))+
+       ''" C10="''+convert(varchar(max),isnull(@supervisor,'''') ) + ''" C11="''+convert(varchar(max),isnull(@template,'''') )  + ''" C12="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +  ''"/>'')
+       from ccRIAChats
+       left outer join ccinbound on ccinbound.inbound_id = ccRIAChats.inboundid
+       left outer join ccusers on ccusers.user_id = ccRIAChats.userid
+       left outer join cctipocalif on cctipocalif.calif_id = ccRIAChats.disposition
+       left outer join cctipocalifsub on cctipocalifsub.califsub_id = ccRIAChats.subdisposition and ccRIAChats.subdisposition <> 0
+       where chatId = @chatId and chatStatus = 4 and requestDate is not null and chatDate is not null
+
+       set @crmNode = null
+
+       if @xml is not null
+       begin
+             select @crmNode = node from ccCRMNodes where chatId = @chatId
+             if @crmNode is not null
+             begin
+                    set @sql = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R01)[1]'''') ''
+                    execute sp_executesql @sql,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
+             end
+
+             if not exists(select * from ccChatsNode where chatId=@chatId) begin ---insert finder
+                    insert into ccChatsNode (chatId,node, dateIn,[status]) values (@chatId,@xml, getdate(),0)
+             end
+             else begin ---update finder<
+                    update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId
+                    select @chatId
+             end
+       end
+end'
+	EXEC(@sql)
+
+----------------------------------------------PLAN DE SPAIN----------------------------------------------
+set @process = 'Create table -- seriesEsp'
+	set @Sql='if not exists (select * from sys.tables where name = N''seriesEsp'')
+	begin
+		CREATE TABLE [dbo].[seriesEsp](
+	[IdSeriesEsp] [int] NOT NULL,
+	[Provincia] [varchar](50) NOT NULL,
+	[Indicativo] [varchar](2) NOT NULL,
+	[NumInicial] [varchar](8) NOT NULL,
+	[NumFinal] [varchar](8) NOT NULL,
+	[indicativoProvincia] [varchar](3) NOT NULL)
+	end'	
+
+	EXEC(@Sql)
+
+	
+	set @process = 'insert -- seriesEsp'
+	set @Sql='if not exists(select * from seriesEsp) begin
+	insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(373,''A Coruña-La Coruña'',''8'',''81000000'',''81999999'',''881'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(374,''Madrid'',''8'',''10000000'',''19999999'',''81'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(375,''Barcelona'',''8'',''30000000'',''39999999'',''83'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(376,''Bizkaia-Vizcaya'',''8'',''40000000'',''49999999'',''840'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(377,''Avila'',''8'',''20000000'',''20999999'',''820'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(378,''Segovia'',''8'',''21000000'',''21999999'',''821'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(379,''Santa Cruz de Tenerife'',''8'',''22000000'',''22999999'',''822'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(380,''Salamanca'',''8'',''23000000'',''23999999'',''823'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(381,''Badajoz'',''8'',''24000000'',''24999999'',''824'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(382,''Toledo'',''8'',''25000000'',''25999999'',''825'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(383,''Ciudad Real'',''8'',''26000000'',''26999999'',''826'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(384,''Cáceres'',''8'',''27000000'',''27999999'',''827'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(385,''Las palmas (Islas Canarias)'',''8'',''28000000'',''28999999'',''828'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(386,''La Rioja'',''8'',''41000000'',''41999999'',''841'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(387,''Cantabria'',''8'',''42000000'',''42999999'',''842'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(388,''Gipuzkoa-Guipúzcoa'',''8'',''43000000'',''43999999'',''843'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(389,''Álava-Araba'',''8'',''45000000'',''45999999'',''845'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(390,''Burgos'',''8'',''47000000'',''47999999'',''847'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(391,''Navarra-Nafarroa'',''8'',''48000000'',''48999999'',''848'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(392,''Guadalajara'',''8'',''49000000'',''49999999'',''849'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(393,''Almería'',''8'',''50000000'',''50999999'',''850'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(394,''Málaga'',''8'',''51000000'',''51999999'',''851'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(395,''Málaga'',''8'',''52000000'',''52999999'',''852'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(396,''Jaen'',''8'',''53000000'',''53999999'',''853'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(397,''Sevilla'',''8'',''54000000'',''54999999'',''854'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(398,''Sevilla'',''8'',''55000000'',''55999999'',''855'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(399,''Cádiz'',''8'',''56000000'',''56999999'',''856'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(400,''Ceuta'',''8'',''56000000'',''56999999'',''856'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(401,''Córdoba'',''8'',''57000000'',''57999999'',''857'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(402,''Granada'',''8'',''58000000'',''58999999'',''858'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(403,''Huelva'',''8'',''59000000'',''59999999'',''859'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(404,''Valencia-Valéncia'',''8'',''60000000'',''60999999'',''860'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(405,''Valencia-Valéncia'',''8'',''61000000'',''61999999'',''861'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(406,''Valencia-Valéncia'',''8'',''62000000'',''62999999'',''862'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(407,''Valencia-Valéncia'',''8'',''63000000'',''63999999'',''863'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(408,''Castellón-Castelló'',''8'',''64000000'',''64999999'',''864'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(409,''Alicante-Alacant'',''8'',''65000000'',''65999999'',''865'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(410,''Alicante-Alacant'',''8'',''66000000'',''66999999'',''866'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(411,''Albacete'',''8'',''67000000'',''67999999'',''867'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(412,''Murcia'',''8'',''68000000'',''68999999'',''868'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(413,''Cuenca'',''8'',''69000000'',''69999999'',''869'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(414,''Baleares-Balears'',''8'',''71000000'',''71999999'',''871'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(415,''Girona-Gerona'',''8'',''72000000'',''72999999'',''872'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(416,''Lleida-Lérida'',''8'',''73000000'',''73999999'',''873'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(417,''Huesca'',''8'',''74000000'',''74999999'',''874'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(418,''Soria'',''8'',''75000000'',''75999999'',''875'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(419,''Zaragoza'',''8'',''76000000'',''76999999'',''876'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(420,''Tarragona'',''8'',''77000000'',''77999999'',''877'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(421,''Teruel'',''8'',''78000000'',''78999999'',''878'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(422,''Palencia'',''8'',''79000000'',''79999999'',''879'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(423,''Zamora'',''8'',''80000000'',''80999999'',''880'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(424,''Lugo'',''8'',''82000000'',''82999999'',''882'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(425,''Valladolid'',''8'',''83000000'',''83999999'',''883'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(426,''Asturias'',''8'',''84000000'',''84999999'',''884'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(427,''Asturias'',''8'',''85000000'',''85999999'',''885'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(428,''Pontevedra'',''8'',''86000000'',''86999999'',''886'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(429,''Leon'',''8'',''87000000'',''87999999'',''887'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(430,''Ourense-Orense'',''8'',''88000000'',''88999999'',''888'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(431,''A Coruña-La Coruña'',''9'',''81000000'',''81999999'',''981'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(432,''Madrid'',''9'',''10000000'',''19999999'',''91'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(433,''Barcelona'',''9'',''30000000'',''39999999'',''93'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(434,''Bizkaia-Vizcaya'',''9'',''40000000'',''49999999'',''940'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(435,''Avila'',''9'',''20000000'',''20999999'',''920'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(436,''Segovia'',''9'',''21000000'',''21999999'',''921'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(437,''Santa Cruz de Tenerife'',''9'',''22000000'',''22999999'',''922'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(438,''Salamanca'',''9'',''23000000'',''23999999'',''923'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(439,''Badajoz'',''9'',''24000000'',''24999999'',''924'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(440,''Toledo'',''9'',''25000000'',''25999999'',''925'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(441,''Ciudad Real'',''9'',''26000000'',''26999999'',''926'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(442,''Cáceres'',''9'',''27000000'',''27999999'',''927'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(443,''Las palmas (Islas Canarias)'',''9'',''28000000'',''28999999'',''928'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(444,''La Rioja'',''9'',''41000000'',''41999999'',''941'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(445,''Cantabria'',''9'',''42000000'',''42999999'',''942'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(446,''Gipuzkoa-Guipúzcoa'',''9'',''43000000'',''43999999'',''943'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(447,''Álava-Araba'',''9'',''45000000'',''45999999'',''945'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(448,''Burgos'',''9'',''47000000'',''47999999'',''947'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(449,''Navarra-Nafarroa'',''9'',''48000000'',''48999999'',''948'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(450,''Guadalajara'',''9'',''49000000'',''49999999'',''949'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(451,''Almería'',''9'',''50000000'',''50999999'',''950'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(452,''Málaga'',''9'',''51000000'',''51999999'',''951'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(453,''Málaga'',''9'',''52000000'',''52999999'',''952'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(454,''Jaen'',''9'',''53000000'',''53999999'',''953'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(455,''Sevilla'',''9'',''54000000'',''54999999'',''954'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(456,''Sevilla'',''9'',''55000000'',''55999999'',''955'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(457,''Cádiz'',''9'',''56000000'',''56999999'',''956'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(458,''Ceuta'',''9'',''56000000'',''56999999'',''956'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(459,''Córdoba'',''9'',''57000000'',''57999999'',''957'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(460,''Granada'',''9'',''58000000'',''58999999'',''958'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(461,''Huelva'',''9'',''59000000'',''59999999'',''959'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(462,''Valencia-Valéncia'',''9'',''60000000'',''60999999'',''960'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(463,''Valencia-Valéncia'',''9'',''61000000'',''61999999'',''961'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(464,''Valencia-Valéncia'',''9'',''62000000'',''62999999'',''962'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(465,''Valencia-Valéncia'',''9'',''63000000'',''63999999'',''963'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(466,''Castellón-Castelló'',''9'',''64000000'',''64999999'',''964'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(467,''Alicante-Alacant'',''9'',''65000000'',''65999999'',''965'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(468,''Alicante-Alacant'',''9'',''66000000'',''66999999'',''966'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(469,''Albacete'',''9'',''67000000'',''67999999'',''967'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(470,''Murcia'',''9'',''68000000'',''68999999'',''968'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(471,''Cuenca'',''9'',''69000000'',''69999999'',''969'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(472,''Baleares-Balears'',''9'',''71000000'',''71999999'',''971'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(473,''Girona-Gerona'',''9'',''72000000'',''72999999'',''972'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(474,''Lleida-Lérida'',''9'',''73000000'',''73999999'',''973'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(475,''Huesca'',''9'',''74000000'',''74999999'',''974'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(476,''Soria'',''9'',''75000000'',''75999999'',''975'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(477,''Zaragoza'',''9'',''76000000'',''76999999'',''976'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(478,''Tarragona'',''9'',''77000000'',''77999999'',''977'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(479,''Teruel'',''9'',''78000000'',''78999999'',''978'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(480,''Palencia'',''9'',''79000000'',''79999999'',''979'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(481,''Zamora'',''9'',''80000000'',''80999999'',''980'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(482,''Lugo'',''9'',''82000000'',''82999999'',''982'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(483,''Valladolid'',''9'',''83000000'',''83999999'',''983'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(484,''Asturias'',''9'',''84000000'',''84999999'',''984'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(485,''Asturias'',''9'',''85000000'',''85999999'',''985'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(486,''Pontevedra'',''9'',''86000000'',''86999999'',''986'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(487,''Leon'',''9'',''87000000'',''87999999'',''987'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(488,''Ourense-Orense'',''9'',''88000000'',''88999999'',''988'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(489,''Móvil'',''6'',''00000000'',''99999999'',''6'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(490,''Móvil'',''7'',''00000000'',''99999999'',''7'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(491,''Tarifas especiales'',''9'',''00000000'',''00999999'',''900'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(492,''Llamadas masivas'',''9'',''05100000'',''05299999'',''905'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(493,''Llamadas masivas'',''9'',''05400000'',''05599999'',''905'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(494,''Llamadas masivas'',''9'',''05700000'',''05899999'',''905'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(495,''Tarificación sobre sistemas de datos'',''9'',''07000000'',''07999999'',''907'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(496,''Acceso conmutado a red'',''9'',''08200000'',''08499999'',''908'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(497,''Acceso conmutado a red'',''9'',''09200000'',''09499999'',''909'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(498,''Red privada virtual'',''5'',''00000000'',''09999999'',''50'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(499,''Voz en internet (vocal nómada)'',''5'',''10000000'',''19999999'',''51'')
+insert into seriesEsp(IdSeriesEsp,Provincia,Indicativo,NumInicial,NumFinal,indicativoProvincia) values(500,''Máquina a máquina (M2M)'',''5'',''90000000'',''99999999'',''59'')
+	end'	
+		
+	EXEC(@Sql)
+
+
+	set @process = 'insert -- cstoTipoLlamada'
+	set @Sql='if not exists(select * from cstoTipoLlamada where country_id=14) begin
+	insert into cstoTipoLlamada(country_id,tipoLlamada_id,descrip,prefijo,longitud) values(14,1,''Local'',''8%|9%'',''9'')
+	insert into cstoTipoLlamada(country_id,tipoLlamada_id,descrip,prefijo,longitud) values(14,2,''Celular'',''6%|7%'',''9'')
+	insert into cstoTipoLlamada(country_id,tipoLlamada_id,descrip,prefijo,longitud) values(14,3,''LD internacional'',''00%'',''0'')
+	insert into cstoTipoLlamada(country_id,tipoLlamada_id,descrip,prefijo,longitud) values(14,4,''Servicios web'',''5%'',''9'')
+end'		
+	EXEC(@Sql)	
+
+	set @process = 'insert into ccRIACat_Country ------------'
+	set @sql='if not exists(select * from ccRIACat_Country where CtyName =''España'')
+		insert into ccRIACat_Country (CtyName, CtyCode, minPhoneLength, maxPhoneLength) values (''Spain'', ''34'', 9, 9)'
+	EXEC(@sql)
+
+	set @process = 'update ccsettings----------'
+	set @sql='update ccsettings
+		set detalle = ''1:Mexico, 2:Argentina, 3:Colombia, 4:USA, 5:Chile, 6: Venezuela, 7: Reino Unido, 8: Arabia saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:Spain''
+		where setting_id = 104'
+	EXEC(@sql)
+
+	set @process = 'ALTER function [dbo].[Completa] -------------'
 		set @sql='ALTER function [dbo].[Completa](@Cadena varchar(32))
 RETURNS varchar(32)
 AS
@@ -553,7 +1176,7 @@ if @pais = 8 begin -- arabia saudita
 end -- arabia saudita
 
 if @pais = 9 --Australia
-begin
+							begin
 	select @resultado = case len(@resultado)
 	when 8 then
 		/*case when exists (select AreaCode
@@ -574,7 +1197,7 @@ begin
 	when 10 then
 		case substring(@resultado, 3, 4) when ''5550'' then ''E_NV_LD'' else @resultado end
 	else ''E_NV_Longitud'' end
-end
+							end
 
 
 if @pais = 10 --Brasil
@@ -610,7 +1233,7 @@ begin
 
 	else ''E_NV_Longitud'' end
 
-end
+		end
 
 if @pais = 11 --Guatemala
 begin
@@ -621,7 +1244,7 @@ begin
 		end
 	else
 		select @resultado = ''E_NV_Longitud''
-end
+	end
 
 if @pais = 12 --Costa Rica
 begin
@@ -643,9 +1266,9 @@ begin
 end
 
 if @pais = 13 --Salvador
-begin
-	if len(@resultado)=8
 		begin
+	if len(@resultado)=8
+				begin
 			if charindex(substring(@resultado,1,1),''2,6,7'') <= 0
 				select @resultado = ''E_'' + @resultado
 		end
@@ -653,8 +1276,8 @@ begin
 		begin
 			if charindex(substring(@resultado,1,2),''00'') <= 0
 				select @resultado = ''E_'' + @resultado
+				end
 		end
-end
 
 if @pais = 14 --España
 begin
@@ -668,17 +1291,16 @@ begin
 			if charindex(substring(@resultado,1,2),''00'') <= 0
 				select @resultado = ''E_'' + @resultado
 		end
-end
+	end
 
 -- Termina
 return @resultado
 
 end'
-		EXEC(@sql)
+	EXEC(@sql)
 
-
-		set @process = 'ALTER FUNCTION [dbo].[Completa_ListaNegra]  ----------------'
-		set @sql='ALTER FUNCTION [dbo].[Completa_ListaNegra] (@Cadena varchar(30))
+	set @process = 'ALTER FUNCTION [dbo].[Completa_ListaNegra]  ----------------'
+	set @sql='ALTER FUNCTION [dbo].[Completa_ListaNegra] (@Cadena varchar(30))
 RETURNS varchar(30) AS
 begin
 declare @resultado varchar(30), @ld varchar(6), @pais tinyint, @BLActivo tinyint
@@ -699,16 +1321,16 @@ if @BLActivo = 1 begin
 		 when @resultado=''911'' OR len(@resultado)=10 then @resultado
 		 when len(@resultado) in (11,12,13) then right(@resultado,10)
 		 else ''E_NV_Longitud''
-		 end
+	end
 
 		 return @resultado
-	 end
+	end
 
 	if @pais = 2
 	 begin
 		select @resultado = dbo.fnClearPhoneArg(@cadena)
 		return @resultado
-	 end
+	end
 
 	if @pais = 3 and left(@resultado,1) <> ''E''
 	 begin
@@ -738,7 +1360,7 @@ if @BLActivo = 1 begin
 			when len(@resultado) = 11 then right(@resultado,10)
 			else ''E_NV_Longitud'' end
 		return @resultado
-	end
+		end
 
 	if @pais = 7 and left(@resultado,1) <> ''E''
 	begin
@@ -771,7 +1393,7 @@ if @BLActivo = 1 begin
 	if @pais = 10 and left(@resultado,1) <> ''E''
 	begin
 		return @resultado
-	end
+		end
 
 	--Guatemala
 	if @pais = 11 and left(@resultado,1) <> ''E''
@@ -783,34 +1405,103 @@ if @BLActivo = 1 begin
 	if @pais = 12 and left(@resultado,1) <> ''E''
 	begin
 		return @resultado
-	end
+		end
 
 	--Salvador
 	if @pais = 13 and left(@resultado,1) <> ''E''
 	begin
 		return @resultado
 	end
-
+	
 	--Spain
 	if @pais = 14 and left(@resultado,1) <> ''E''
 	begin
 		return @resultado
-	end
-end
+			end
+		end
 else begin
  select @resultado = dbo.Limpia(@cadena)
-end
+	end
 
 return @resultado
 end'
 		EXEC(@sql)
 
 
-		set @process = 'ALTER FUNCTION [dbo].[fnGetTimeZone] --------------'
-		set @sql='ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
+		set @process = 'alter function [dbo].[fnGetTipoLlamada] ---------'
+		set @sql='ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
+					returns int
+					as
+					 begin
+						declare @len integer, @tipo integer, @country varchar(5)
+						declare @tipoLlamada_id smallint
+	declare @prefijo varchar(15), @longitud varchar(15)
+
+						declare @table table(
+						id int not null,
+						prefijo nvarchar(100) not null
+						)
+
+						select @country = valor from ccsettings where setting_id = 104
+						set @len = len( @tel )
+						set @tipo = 0
+
+	declare @prefixTable table(
+			tipoLlamada_id smallint not null,
+	longitud varchar(15) not null,
+			prefijo varchar(15) not null,
+			[status] bit not null
+			)
+
+	insert into @prefixTable
+			select tipoLlamada_id, longitud, prefijo, 0
+	from cstoTipoLlamada with(index(IX_cstoTipoLlamada),nolock) 
+	where country_id = @country 
+	and (country_id <> 1 or (country_id = 1 and tipoLlamada_id not in (8,9,10,11))) --no incluir tarifas por region (Mexico)
+	order by len(prefijo) desc -- para tomar el mas especifico si se devuelven varios patrones
+
+	while (select count(*) from @prefixTable where [status] = 0) > 0
+			begin
+				select top 1 @tipoLlamada_id = tipoLlamada_id, @longitud = longitud, @prefijo = prefijo
+		from @prefixTable 
+				where [status] = 0
+
+				insert into @table
+		select * from fn_RIASplitDelimited(@prefijo,''|'') order by len(value) desc
+
+		if (select count(*) from fn_RIASplitDelimited(@longitud,''|'') where value=@len) = 1
+					begin
+						if (select count(*)	from @table	where @tel like prefijo) = 1
+							set @tipo = @tipoLlamada_id
+					end
+		else if @longitud = ''0''
+					begin
+						if (select count(*)	from @table	where @tel like prefijo) = 1
+							set @tipo = @tipoLlamada_id
+					end
+
+				if @tipo <> 0
+			update @prefixTable
+					set [status] = 1
+				else
+					begin
+				update @prefixTable
+						set [status] = 1
+						where tipoLlamada_id = @tipoLlamada_id
+
+						delete @table
+					end
+			end
+
+	return @tipo
+ end'
+		EXEC(@sql)
+
+	set @process = 'ALTER FUNCTION [dbo].[fnGetTimeZone] --------------'
+	set @sql='ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
 AS
- BEGIN
+BEGIN
 	declare @lada as varchar(5)
 	declare @timeZone as int
 	declare @ld as varchar(5)
@@ -843,11 +1534,11 @@ AS
 					select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
 					where id_country = @country and (
 					( len(@phone) = 8 and @lada = area and len(area) = 2 )
-					or
+				or
 					( len(@phone) = 7 and @lada = area and len(area) = 3 )
-					or
+				or
 					( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 )
-					or
+				or
 					( len(@phone) >= 10 and left(right(@phone, 10), 2) = area and len(area) = 2 ))
 					and location = @location
 				end
@@ -856,13 +1547,13 @@ AS
 					select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
 					where id_country = @country and (
 					( len(@phone) = 8 and @lada = area and len(area) = 2 )
-					or
+				or
 					( len(@phone) = 7 and @lada = area and len(area) = 3 )
-					or
+				or
 					( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 )
-					or
+				or
 					( len(@phone) >= 10 and left(right(@phone, 10), 2) = area and len(area) = 2 ))
-				end
+		end
 		end
 
 		if @country = 2 begin
@@ -871,45 +1562,45 @@ AS
 			select @phone = dbo.Completa(@phone)
 			if left(@phone,1) = ''E'' begin set @phone = @telTemp end
 			select @timeZone =  case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneAreaArgDetail where
-						( len(@phone) = 6 and @lada = area and len(area) = 4 )
-						or
-						( len(@phone) = 7 and @lada = area and len(area) = 3 )
-						or
-						( len(@phone) = 8 and @lada = area and len(area) = 2 )
-						or
-						( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
-						or
-						( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
-						or
-						( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
-						or
-						( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
-						or
-						( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
-						or
-						( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 )
-						if @timeZone is null
-							begin
-								select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
-								where id_country = @country and (
-									( len(@phone) = 6 and @lada = area and len(area) = 4 )
-									or
-									( len(@phone) = 7 and @lada = area and len(area) = 3 )
-									or
-									( len(@phone) = 8 and @lada = area and len(area) = 2 )
-									or
-									( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
-									or
-									( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
-									or
-									( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
-									or
-									( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
-									or
-									( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
-									or
-									( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 ))
-							end
+				( len(@phone) = 6 and @lada = area and len(area) = 4 )
+				or
+				( len(@phone) = 7 and @lada = area and len(area) = 3 )
+				or
+				( len(@phone) = 8 and @lada = area and len(area) = 2 )
+				or
+				( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
+				or
+				( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
+				or
+				( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
+			or
+				( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
+			or
+				( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
+			or
+				( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 )
+				if @timeZone is null
+					begin
+						select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
+						where id_country = @country and (
+							( len(@phone) = 6 and @lada = area and len(area) = 4 )
+			or
+							( len(@phone) = 7 and @lada = area and len(area) = 3 )
+			or
+							( len(@phone) = 8 and @lada = area and len(area) = 2 )
+							or
+							( len(@phone) = 11 and substring(@phone, 2, 2) = area and len(area) = 2 )
+							or
+							( len(@phone) = 11 and substring(@phone, 2, 3) = area and len(area) = 3 )
+							or
+							( len(@phone) = 11 and substring(@phone, 2, 4) = area and len(area) = 4 )
+							or
+							( len(@phone) = 13 and substring(@phone, 2, 2) = area and len(area) = 2 )
+							or
+							( len(@phone) = 13 and substring(@phone, 2, 3) = area and len(area) = 3 )
+							or
+							( len(@phone) = 13 and substring(@phone, 2, 4) = area and len(area) = 4 ))
+		end
 		end
 
 	if @country = 3 begin
@@ -920,7 +1611,7 @@ AS
 		( len(@phone) = 8 and left(@phone,1) = area )
 		or
 		( len(@phone) in(10,11) and (left(@phone,1) = ''3'' or substring(@phone,2,1) = ''3'')))
-	end
+		end
 
 	if @country = 4
 
@@ -943,17 +1634,17 @@ AS
 		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end  from ccTimeZoneArea
 		where id_country = @country and (
 		( len(@phone) = 6 and @lada = area )
-		or
+			or
 		( len(@phone) = 7 and @lada = area )
-		or
+			or
 		( len(@phone) = 8 and left(@phone,1) = area )
-		or
+			or
 		( len(@phone) = 8 and left(@phone,2) = area )
-		or
+			or
 		( len(@phone) = 9 and left(@phone,2) = area )
-		or
+			or
 		( len(@phone) = 10 and substring(@phone,3,1) = area and left(@phone,2) = ''09'' ))
-	end
+		end
 
 	if @country = 6 begin
 		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end  from ccTimeZoneArea
@@ -961,7 +1652,7 @@ AS
 		( len(@phone) = 7 and @lada = area and len(area) = 3 )
 		or
 		( len(@phone) >= 10 and left(right(@phone, 10), 3) = area and len(area) = 3 ))
-	end
+		end
 
 	if @country = 7 begin
 		declare @phoneTemp as varchar(10)
@@ -976,7 +1667,7 @@ AS
 		(len(@phoneTemp) = 10 and left(@phoneTemp,3) = area ) or
 		(len(@phoneTemp) = 10 and left(@phoneTemp,2) = area )
 		)
-	end
+		end
 
 	if @country = 8 begin
 		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
@@ -995,8 +1686,8 @@ AS
 			where id_country = @country and (
 			(convert (int, substring(@phone, 1, 4)) = convert (int, area) and len(area) = 4) or
 			(convert (int, substring(@phone, 1, 2)) = convert (int, area) and len(area) = 2))
-		end
-	end
+				end
+				end
 
 	if @country = 10 begin
 		select @phone = dbo.Completa(@phone)
@@ -1011,29 +1702,29 @@ AS
 			((len(@phone) between 14 and 15) and substring(@phone, 1, 2) = ''90''   and substring(@phone, 5, 2) = area) or
 			((len(@phone)       = 14       ) and substring(@phone, 1, 1) = ''0''    and substring(@phone, 4, 2) = area))
 		end
-	end
+		end
 
 	if @country = 11 begin
 		select @phone = dbo.Completa(@phone)
 		if (substring(@phone, 1, 1) <> ''E'') begin
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
-	end
+		end
 
 	if @country = 12 begin
 		select @phone = dbo.Completa(@phone)
 		if (substring(@phone, 1, 1) <> ''E'') begin
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
-	end
+		end
 
 	if @country = 13 begin
 		select @phone = dbo.Completa(@phone)
 		if (substring(@phone, 1, 1) <> ''E'') begin
 			select @timeZone = case @bIsDaylight when 1 then 32 else 64 end
 		end
-	end
-	
+		end
+
 	if @country = 14 begin
 		select @phone = dbo.Completa(@phone)
 		if (substring(@phone, 1, 1) <> ''E'') begin
@@ -1042,400 +1733,9 @@ AS
 				where id_country = @country and ((substring(@phone, 1, 2) = area) or (substring(@phone, 1, 3) = area))
 			end
 		end
-	end
+		end
 
 	return isNull(@timeZone,0)
- END'
-		EXEC(@sql)
-
-
-		set @process = 'alter function [dbo].[fnGetTipoLlamada] ---------'
-		set @sql='ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
-					returns int
-					as
-					 begin
-						declare @len integer, @tipo integer, @country varchar(5)
-						declare @tipoLlamada_id smallint
-						declare @longitud tinyint
-						declare @prefijo varchar(15)
-
-						declare @table table(
-						id int not null,
-						prefijo nvarchar(100) not null
-						)
-
-						select @country = valor from ccsettings where setting_id = 104
-						set @len = len( @tel )
-						set @tipo = 0
-
-						if @country <> 11 and @country <> 12
-							begin
-								select @tipo= tipoLlamada_id from cstoTipoLlamada with(index(IX_cstoTipoLlamada)) 
-								where country_id = @country and (@len = longitud or longitud =0 )and @tel like prefijo 
-								order by len(prefijo) asc -- para agarrar el ultimo ( el mas especifico), si se devuelven varias lineas
-							end
-						else if @country = 11
-							begin
-								declare @prefijosGT table(
-								tipoLlamada_id smallint not null,
-								longitud tinyint not null,
-								prefijo varchar(15) not null,
-								[status] bit not null
-								)
-
-								insert into @prefijosGT
-								select tipoLlamada_id, longitud, prefijo, 0
-								from cstoTipoLlamada 
-								where country_id = 11
-
-								while (select count(*) from @prefijosGT where [status] = 0) > 0
-								begin
-									select top 1 @tipoLlamada_id = tipoLlamada_id, @longitud = longitud, @prefijo = prefijo
-									from @prefijosGT 
-									where [status] = 0
-
-									insert into @table
-									select * from fn_RIASplitDelimited(@prefijo,''|'')
-
-									if @len = @longitud
-										begin
-											if (select count(*)	from @table	where @tel like prefijo) = 1
-												set @tipo = @tipoLlamada_id
-										end
-
-									if @tipo <> 0
-										update @prefijosGT
-										set [status] = 1
-									else
-										begin
-											update @prefijosGT
-											set [status] = 1
-						where tipoLlamada_id = @tipoLlamada_id
-
-						delete @table
-					end
-			end
-		end
-	else if @country = 12
-		begin
-			declare @prefijosCR table(
-			tipoLlamada_id smallint not null,
-			longitud tinyint not null,
-			prefijo varchar(15) not null,
-			[status] bit not null
-			)
-
-			insert into @prefijosCR
-			select tipoLlamada_id, longitud, prefijo, 0
-			from cstoTipoLlamada 
-			where country_id = 12
-
-			while (select count(*) from @prefijosCR where [status] = 0) > 0
-			begin
-				select top 1 @tipoLlamada_id = tipoLlamada_id, @longitud = longitud, @prefijo = prefijo
-				from @prefijosCR
-				where [status] = 0
-
-				insert into @table
-				select * from fn_RIASplitDelimited(@prefijo,''|'')
-
-				if @len = @longitud
-					begin
-						if (select count(*)	from @table	where @tel like prefijo) = 1
-							set @tipo = @tipoLlamada_id
-					end
-				else if @longitud = 0
-					begin
-						if (select count(*)	from @table	where @tel like prefijo) = 1
-							set @tipo = @tipoLlamada_id
-					end
-
-				if @tipo <> 0
-					update @prefijosCR
-					set [status] = 1
-				else
-					begin
-						update @prefijosCR
-						set [status] = 1
-						where tipoLlamada_id = @tipoLlamada_id
-
-						delete @table
-					end
-			end
-		end
-
-
-	return @tipo
- end'
-		EXEC(@sql)
-
-
-	set @process = 'ALTER function [dbo].[TelAni]--------------------'
-	set @sql='ALTER function [dbo].[TelAni](@tel varchar(32), @lista smallint)
-RETURNS varchar(32)
-AS
-BEGIN
---declare @edo varchar(250)
-declare @cldLocal varchar(10), @pais tinyint, @lon tinyint, @ret as varchar(10)
-
-select  @cldLocal = valor from ccsettings where setting_id = 17
-select @pais = valor, @ret = '''' from ccSettings where setting_id = 104
-
-	if @lista = 0 begin
-		select @tel = ''''
-	end
-
-	if @pais = 1 begin --Empieza Mexico
-		select @lon = len(@tel)
-		if @lon >= 7 and @lon <=13 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-			(( len(@tel) = 8 and @cldlocal = area and len(area) = 2 )
-				or
-				( len(@tel) = 7 and @cldlocal = area and len(area) = 3 )
-				or
-				( len(@tel) >= 10 and left(right(@tel, 10), 3) = area and len(area) = 3 )
-				or
-				( len(@tel) >= 10 and left(right(@tel, 10), 2) = area and len(area) = 2 ))
-		end
-		else begin
-			select @tel = ''''
-		end
-
-		return @tel
-	end --Termina Mexico
-
-	if @pais = 2 begin  -- Empieza Argentina
-		select @lon = len(@tel)
-		if @lon >= 6 and @lon <=13 begin
-			select @tel = telAni from ccEstadosAni where id_anilist = @lista and
-				(( @lon = 6 and left(@tel,4) = area and len(area) = 4 )
-				or
-				( @lon = 7 and left(@tel,3) = area and len(area) = 3 )
-				or
-				( @lon = 8 and left(@tel,2) = area and len(area) = 2 )
-				or
-				( @lon = 11 and substring(@tel, 2, 2) = area and len(area) = 2 )
-				or
-				( @lon = 11 and substring(@tel, 2, 3) = area and len(area) = 3 )
-				or
-				( @lon = 11 and substring(@tel, 2, 4) = area and len(area) = 4 )
-				or
-				( @lon = 13 and substring(@tel, 2, 2) = area and len(area) = 2 )
-				or
-				( @lon = 13 and substring(@tel, 2, 3) = area and len(area) = 3 )
-				or
-				( @lon = 13 and substring(@tel, 2, 4) = area and len(area) = 4 ))
-		end
-		else begin
-			select @tel = ''''
-		end
-			return @tel
-	end  --Termina Argentina
-
-	if @pais = 3 begin  --Empieza Colombia
-		select @lon = len(@tel)
-		if @lon >= 6 and @lon <=13 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-				(( len(@tel) = 7 and @cldlocal = area )
-				or
-				( len(@tel) = 8 and left(@tel,5) = area )
-				or
-				( len(@tel) in(10,11) and (left(@tel,1) = ''3'' or substring(@tel,2,1) = ''3'')))
-		end
-		else begin
-			select @tel = ''''
-		end
-		return @tel
-	end  --Termina Colombia
-
-	if @pais = 4 begin --Empieza USA
-		select @lon = len(@tel)
-		if @lon >= 6 and @lon <=15 begin
-			if @lon = 7 begin
-				set @tel = @cldLocal + @tel
-			end
-			set @tel = right(@tel, 10)
-			--select @edo = location from ccTimeZoneAreaUsa where area = left(@tel,3)
-			select @tel = telani from ccEstadosAni where area = left(@tel,3) and id_anilist = @lista
-		end
-		else begin
-			select @tel = ''''
-		end
-		return @tel
-	end --Termina USA
-
-	if @pais = 5 begin -- Empieza Chile
-		select @lon = len(@tel)
-		if @lon >= 6 and @lon <=15 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-			(( len(@tel) = 6 and @cldlocal = area )
-			or
-			( len(@tel) = 7 and @cldlocal = area )
-			or
-			( len(@tel) = 8 and left(@tel,1) = area )
-			or
-			( len(@tel) = 8 and left(@tel,2) = area )
-			or
-			( len(@tel) = 9 and left(@tel,2) = area )
-			or
-			( len(@tel) = 10 and substring(@tel,3,1) = area and left(@tel,2) = ''09'' ))
-		end
-		else begin
-			select @tel = ''''
-		end
-		return @tel
-	end --Termina Chile
-
-	if @pais = 6 begin -- Venezuela
-		select @lon = len(@tel)
-		if @lon >= 7 and @lon <=11 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-				(len(@tel) = 7 and left(@tel,3) = area or
-				len(@tel) = 11 and substring(@tel,2,3) = area)
-		end
-		else begin
-			select @tel = ''''
-		end
-
-		return @tel
-	end --Termina Venezuela
-
-	if @pais = 7 begin -- Empieza UK
-		select @lon = len(@tel)
-		if left(@tel,1) = ''0'' begin
-			set  @tel = substring(@tel,2,(len(@tel)-1))
-		end
-
-		if @lon >= 9 and @lon <=11 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-			(( len(@tel) = 10 and substring(@tel,1,5) = area )
-			or
-			( len(@tel) = 10 and substring(@tel,1,4) = area )
-			or
-			( len(@tel) = 10 and substring(@tel,1,3) = area )
-			or
-			( len(@tel) = 10 and substring(@tel,1,2) = area )
-			or
-			( len(@tel) = 9 and substring(@tel,1,5) = area )
-			or
-			( len(@tel) = 9 and substring(@tel,1,4) = area ) )
-		end
-		else begin
-			select @tel = ''''
-		end
-		return @tel
-	end --Termina UK
-
-	if @pais = 8 begin --Empieza Arabia Saudita
-		select @lon = len(@tel)
-		if @lon >= 7 and @lon <=13 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-				(len(@tel) = 7 and ''0''+@cldlocal + ''-''+ substring(@tel,1,1) + ''00'' = area or
-				len(@tel) = 9 and substring(@tel,1,3) + ''00'' = replace(area,''-'','''') or
-				len(@tel) = 10 and substring(@tel,1,4) + ''00'' = replace(area,''-'','''') or
-				len(@tel) = 11 and substring(@tel,1,4)+ ''0'' = replace(area,''-'','''') or
-				len(@tel) = 11 and substring(@tel,1,5) = replace(area,''-'',''''))
-		end
-		else begin
-			select @tel = ''''
-		end
-
-		return @tel
-	end --Termina Arabia Saudita
-
-	if @pais = 9 --Empieza Australia
-		begin
-			select @lon = len(@tel)
-			if @lon >= 8 and @lon <=10
-				begin
-					select @tel = telani from ccEstadosAni where id_anilist = @lista
-					and (len(@tel) = 8 and @cldLocal + substring(@tel,1,2) = area or
-						 len(@tel) = 9 and ''0'' + substring(@tel,1,3) = area or
-						 len(@tel) = 10 and substring(@tel,1,4) = area)
-				end
-			else
-				begin
-					select @tel = ''''
-				end
-
-			return @tel
-		end --Termina Australia
-
-	if @pais = 10 begin -- Empieza Brasil
-		select @lon = len(@tel)
-		if @lon >= 8 and @lon <=15 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and (
-				((@lon       = 8        )                                    and             @cldlocal = area) or
-				((@lon       = 9        ) and substring(@tel, 1, 1) = ''9''    and             @cldlocal = area) or
-				((@lon between 10 and 11)                                    and substring(@tel, 1, 2) = area) or
-				((@lon between 12 and 13) and substring(@tel, 1, 4) = ''9090'' and             @cldlocal = area) or
-				((@lon       = 13       )                                    and substring(@tel, 4, 2) = area) or
-				((@lon between 14 and 15) and substring(@tel, 1, 2) = ''90''   and substring(@tel, 5, 2) = area) or
-				((@lon       = 14       ) and substring(@tel, 1, 1) = ''0''    and substring(@tel, 4, 2) = area))
-		end
-		else begin
-			select @tel = ''''
-		end
-
-		return @tel
-	end -- Termina Brasil
-
-	if @pais = 11 begin --Empieza Guatemala
-		if len(@tel) = 8  begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
-		end
-		else begin
-			select @tel = ''''
-		end
-
-		return @tel
-	end --Termina Guatemala
-
-	if @pais = 12 begin --Empieza Costa Rica
-		if len(@tel) = 8  begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
-		end
-		else if len(@tel) = 10 begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 3) = area
-		end
-		else begin
-			if charindex(substring(@tel,1,2),''00,08'') <= 0
-				select @tel = ''''
-			else
-				select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 2) = area
-		end
-
-		return @tel
-	end --Termina Costa Rica
-
-	if @pais = 13 begin --Empieza Salvador
-		if len(@tel) = 8  begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
-		end
-		else begin
-			if charindex(substring(@tel,1,2),''00'') <= 0
-				select @tel = ''''
-			else
-				select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 2) = area
-		end
-
-		return @tel
-	end --Termina Salvador
-
-	if @pais = 14 begin --Empieza España
-		if len(@tel) = 9  begin
-			select @tel = telani from ccEstadosAni where id_anilist = @lista and
-			((substring(@tel, 1, 1) = area) or
-			(substring(@tel, 1, 2) = area) or
-			(substring(@tel, 1, 3) = area))
-		end
-		else
-			select @tel = ''''
-
-		return @tel
-	end --Termina España
-
-	return @ret
 END'
 		EXEC(@sql)
 
@@ -1959,7 +2259,7 @@ RETURNS varchar(32) AS
 		end -- Termina Salvador
 
 	if @pais= 14
-		begin -- Inicia España
+		begin -- Inicia Spain
 			select @tel = dbo.completa(@tel)
 			if left(@tel,1) <> ''E''
 				begin
@@ -1980,35 +2280,52 @@ RETURNS varchar(32) AS
 end'
 		EXEC(@sql)
 
+	set @process = 'Alter SP -- ccsp_RIAccSettingsConfig'
+	set @Sql='ALTER PROCEDURE [dbo].[ccsp_RIAccSettingsConfig]
+@command tinyint,
+@setting_id smallint = null,
+@value varchar(200) = null
+AS
+set nocount on
 
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_ExtAppsGetDialInfo] ----------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_ExtAppsGetDialInfo]
-@action tinyint = 0,
-@logDial_id int = null
-As
-Begin
+declare @idioma tinyint
+declare @activeChat tinyint
 
-	If @action = 1 begin
-		select count(*) from ccologdials with(nolock) where logDial_id >= @logDial_id
+select @idioma=valor from ccSettings where setting_id=27
+Select @activeChat=valor from ccSettings where setting_id=145
+
+if @command=0
+ begin
+	SELECT case @idioma when 0 then descripcion else [description] end descripcion
+	FROM ccSettings WITH(NOLOCK, index(PK_ccSettings)) WHERE setting_id=@setting_id
+	order by descripcion
+	return(0)
 	end
 
-	if @action = 2 begin
-		select top 500 logDial_id, callout_id, isnull(a.cam_id,0) as camId, isnull(c.cam_descripcion,'''') as camDescription,
-		isnull(b.descripcion,''Unknown'') as DialResult, Telefono, fecha, tDialing, tBusy, isnull(cal_id,0) as cal_id, cal_key
-		from ccologdials a with(nolock)
-		inner join ccTipoResultadoDial b
-		on a.tiporesdial_id = b.tiporesdial_id
-		inner join ccCamps c
-		on a.cam_id = c.cam_id
-		where logDial_id >= @logDial_id
-		order by logDial_id
+if @command=1
+ begin
+	Select setting_id, case @idioma when 0 then descripcion else [description] end descripcion, valor, tipo,validate
+	from ccSettings WITH(NOLOCK, index(PK_ccSettings)) where tipo in (''AGT'',''ADM'',''GRL'',''REP'',''SV'')
+	and (setting_id not in (139,140,141)
+	or   setting_id     in (139,140,141) and @activeChat > 0)
+	order by tipo, descripcion
+	return(0)
 	end
 
-End'
-	EXEC(@sql)
+if @command=2
+ begin
+	if @setting_id = 27 and @value not in(''0'',''1'') begin
+		set @value = 0
+	end
+	else if @setting_id = 104 and @value not in(''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'',''11'',''12'',''13'',''14'') begin
+		set @value = 1
+	end
+	update ccSettings set valor=@value where setting_id = @setting_id
+	return(0)
+ end
 
-	
-
+set nocount off'
+	EXEC(@Sql)	
 
 	set @process = 'ALTER procedure [dbo].[ccsp_Limpia] ----------'
 	set @sql='ALTER procedure [dbo].[ccsp_Limpia]
@@ -2462,7 +2779,7 @@ begin
 		end
 end
 
-if @pais = 14 -- España
+if @pais = 14 -- Spain
 begin
 	select @telTemp = @tel
 	select @tel = dbo.Completa_ListaNegra(@tel)
@@ -2501,123 +2818,6 @@ begin
 		end
 end'
 		EXEC(@sql)
-
-
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas] ---------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
-@option smallint,
-@IDArea smallint,
-@Descripcion varchar(40),
-@maxMails smallint = 3,
-@maxChats smallint = 3
-AS
-
-set nocount on
-
-if @option=1 --Selected Area
-begin
-	Select a.IDArea, AreaName, isnull(a.maxChats,0) as maxChats, isnull(maxMails,3) maxMails,
-	isnull(users,0) users, isnull(admins,0) admins,
-	isnull(camps,0) camps, isnull(acds,0) acds
-	from ccRIACat_Areas a (nolock)
-	left join (select IDArea , MAX(isnull(maxChats,0)) as maxChats from ccInbound GROUP BY IDArea) b on a.IDArea = b.IDArea
-	left join (select IDArea,count(case when TipoUser_id = 1 then 1 else null end) users, count(case when TipoUser_id > 1 then 1 else null end) admins from ccusers (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) userswg on userswg.IDArea=a.IDArea
-	left join (select IDArea,count(*) acds from ccinbound (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) acdswg on acdswg.IDArea=a.IDArea
-	left join (select IDArea,count(*) camps from cccamps (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) campswg on campswg.IDArea=a.IDArea
-	where StatusArea=1 and isnull(a.IDArea,0)=case isnull(@IDArea,0)
-	when 0 then isnull(a.IDArea,0) else @IDArea end
-	order by AreaName
-
-	return(0)
-end
-
-if @option=2 --Insert Area
-begin
-	if exists(select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
-	begin
-		select -1--, Nombre en Uso
-		return(0)
-	end
-
-	Insert into ccRIACat_Areas (AreaName,maxMails,maxChats) values (@Descripcion,@maxMails,@maxChats)
-
-	select 1, scope_identity()--, Area Insertada
-	return(0)
-end
-
-if @option=3 --Update Area
-begin
-	if not exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
-		Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats where IDArea=@IDArea
-	else
-		Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats where IDArea=@IDArea
-
-	if (select max(maxChats) as maxChats from ccinbound where IDArea=@IDArea) <> @maxChats
-		Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
-
-	return(0)
-end
-
-if @option=4 --Delete Area
-begin
-	if (exists(select IDArea from ccUsers where IDArea=@IDArea) or exists(select IDArea from ccCamps where IDArea = @IDArea)
-		or exists(select IDArea from ccInbound where IDArea=@IDArea)) and (select valor from ccSettings where setting_id=95)<>1
-	begin
-		select -1
-		return(0)
-	end
-
-	declare @DWorkGroups as varchar(500)
-
-	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-	select user_id,cam_id,prioridad,skill,rel_id,IDWG
-	from ccCampsAgente
-	where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-
-	insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
-	select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
-	from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-
-	Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-	Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-
-	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
-	select user_id,cam_id,tipo,IDWG,monitored
-	from ccSupervisorCam
-	where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-
-	Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-
-	delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
-	delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
-	delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
-	where cam_id in (select cam_id from ccCamps where IDArea=@IDArea))
-
-	Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
-	Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
-
-	Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
-	Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
-	Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
-
-	select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
-	Delete from ccRIAAreaWorkGroup where IDArea=@IDArea
-
-	if (select valor from ccSettings where setting_id=95)=1
-	begin
-		Update ccInbound set IDArea=NULL, status=0 where IDArea=@IDArea
-		Update ccCamps set IDArea=NULL where IDArea=@IDArea
-		Update ccUsers set IDArea=NULL where IDArea=@IDArea
-	end
-
-	Update ccRIACat_Areas set StatusArea=0 where IDArea=@IDArea
-
-	select @DWorkGroups
-
-	return(0)
-end'
-		EXEC(@sql)
-
 
 	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAAgentGetDialMask] ---------------'
 	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAAgentGetDialMask]
@@ -3100,151 +3300,34 @@ if @country = 13
 				set @tel=ltrim(rtrim(@tel))
 				if charindex(substring(@tel,1,1),''2'') > 0
 					set @value = 6
-			end
-		end
+	 end
+ end
 
 	end -- Termina Salvador
 
---España
+--Spain
 if @country = 14
-	begin
+ begin
 		--Restringe celulares
 		if (@mask & 1)>0
-		begin
+	 begin
 			set @tel=ltrim(rtrim(@tel))
 			if charindex(substring(@tel,1,1),''6,7'') > 0
 				set @value = 4
-		end
+	 end
 
 		--Restringe locales
 		if(@value=0)
-		begin
+	 begin
 			if ((@mask & 4) > 0)
-			begin
+ begin
 				set @tel=ltrim(rtrim(@tel))
 				if charindex(substring(@tel,1,1),''8,9'') > 0
 					set @value = 6
 			end
-		end
-
-	end -- Termina Salvador'
-		EXEC(@sql)
-
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIADialerAssignment] --------------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIADialerAssignment]
-@User_Id smallint,
-@cam_id smallint,
-@dialer_id varchar(4000),
-@Type2 tinyint,
-@Type tinyint
-AS
-set nocount on
-declare @SQL as nvarchar(4000), @nUser_id as nvarchar(10), @params as nvarchar(1000)
-
-If @Type=0--get ports
- begin
-	select a.dialer_id, a.puerto, a.Descripcion, b.descrip from ccoDialers a
-	inner join cstoProvedor b on a.provedor_id=b.provedor_id
-	order by a.dialer_id
-	return(0)
- end
-
-If @Type=1--get cams
- begin
-	SELECT a1.cam_id, cam_descripcion FROM ccCamps a1 inner join ccRIACampsGraph a2 on(a1.cam_id=a2.cam_id)
-	inner join ccRIAGraphics a3 on(a2.graphic_id=a3.graphic_id)
-	where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
-	order by 2
-	return(0)
- end
-
-If @Type=2--get port/cam relation
- begin
-	select c.cam_id, cd.dialer_id, d.descripcion,
-	d.puerto, e.descrip from ccCamps c
-	left join ccoDialerCamp cd on cd.cam_id=c.cam_id
-	left join ccoDialers d on cd.dialer_id=d.dialer_id
-	inner join cstoProvedor e on d.provedor_id=e.provedor_id
-	where c.cam_id=@cam_id
-	ORDER BY c.cam_id, cd.dialer_id
-	return(0)
- end
-
-If @Type=3--delete port/dialer relation
- begin
-	If @Type2=1--Sistema
-	 begin
-		set @nUser_id=@User_Id
-		set @sql=''delete ccoDialerCamp where dialer_id in('' + @dialer_id + '')''
-		execute sp_executesql @sql
-		return(0)
-	 end
-
-	If @Type2=2--Camp
-	 begin
-		delete ccoDialerCamp where cam_id=@cam_id and dialer_id=@dialer_id
-		return(0)
-	 end
- end
-
-If @Type=4--insert new relation
- begin
-	If @Type2=1--Sistema
-	 begin
-		set @nUser_id=@User_Id
-		set @sql=''insert ccoDialerCamp(cam_id, dialer_id)
-		select a.cam_id, b.dialer_id from ccCamps a, ccoDialers b where
-		b.dialer_id in('' + @dialer_id + '') and not exists(
-		select c.cam_id, c.dialer_id from ccoDialerCamp c
-		where b.dialer_id=c.dialer_id and a.cam_id=c.cam_id)''
-		execute sp_executesql @sql
-		return(0)
-	 end
-
-	If @Type2=2--Camp
-	 begin
-		set @params=''@Ncam_id int''
- 		set @sql=''insert ccoDialerCamp(cam_id, dialer_id) select distinct @Ncam_id,
- 		dialer_id from ccCamps, ccoDialers where dialer_id not in(select dialer_id
- 		from ccoDialerCamp where dialer_id in('' + @dialer_id + '')and cam_id=@Ncam_id)
-		and dialer_id in('' + @dialer_id + '')''
-		execute sp_executesql @sql, @params, @Ncam_id=@cam_id
-		return(0)
- 	 end
- end
-
-If @Type=5--Get existance of dialers
- begin
-	if exists (select c.cam_id, cd.dialer_id, d.descripcion,
-			   d.puerto, e.descrip from ccCamps c
-			   left join ccoDialerCamp cd on cd.cam_id=c.cam_id
-			   left join ccoDialers d on cd.dialer_id=d.dialer_id
-			   inner join cstoProvedor e on d.provedor_id=e.provedor_id
-			   where c.cam_id = @cam_id)
-		select 0
-	else
-		select 13
-	return(0)
- end'
-		EXEC(@sql)
-
-
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateChatConfig] ----------------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAUpdateChatConfig]
-@action smallint = 0,
-@idArea smallint = 0,
-@maxChats smallint = 0
-AS
-
-if @action = 1 begin
-	select @maxChats = maxChats from ccRIACat_Areas where IDArea = @idArea
-	return @maxChats
 end
 
-if @action = 2 begin
-	select @maxChats = maxChats from ccRIACat_Areas where IDArea = @idArea
-	update ccInbound set maxChats = @maxChats where IDArea = @idArea
-end'
+	end -- Termina Spain'
 		EXEC(@sql)
 
 
@@ -3388,213 +3471,279 @@ end'
 		EXEC(@sql)
 
 
-
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_AgentLogINOUT]-------------------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentLogINOUT]
-@UserID smallint,
-@Extension varchar(7)=null,
-@Computer varchar(20)=null,
-@TipoMov tinyint	-- 0= LogOut,  1=LogIN,	3=Consulta
+	set @process = 'ALTER function [dbo].[TelAni]--------------------'
+	set @sql='ALTER function [dbo].[TelAni](@tel varchar(32), @lista smallint)
+RETURNS varchar(32)
 AS
-set nocount on
-
-declare @hourlogin   varchar(8)
-declare @sessionsecs int
-declare @sessiontime varchar(8)
-declare @fecha_ini datetime
-
-IF  @TipoMov=1
  BEGIN
-	Insert ccLogLogIn ( User_id, Extension, TipoMov ) Values( @UserID, @Extension, 1)
-	Update c Set User_id=@UserID from ccPosicion c WITH (INDEX (IX_ccPosicion)) Where Computer =@Computer
-	update c set user_id = 0 from ccPosicion c WITH (INDEX (IX_ccPosicion_2)) where Computer <> @Computer and user_id = @UserId
-	update ccUsers set TipoStatusAge_id=3 where User_id=@UserID
+--declare @edo varchar(250)
+declare @cldLocal varchar(10), @pais tinyint, @lon tinyint, @ret as varchar(10)
 
-	if exists(select valor from ccSettings where tipo=''AGT'' and Status=''1'' and setting_id=''53'' and valor=2)
-	 begin
-	 	if not exists (select axLic_Desc from axLicG729_Data where axLic_Status=1 and pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid))
-		 begin
-	 		raiserror(''Error. Without License'', 18, 1)
-			return(0)
-		 end
+select  @cldLocal = valor from ccsettings where setting_id = 17
+select @pais = valor, @ret = '''' from ccSettings where setting_id = 104
 
-		update axLicG729_Data set axLic_Status=2 where axLic_Status=1 and pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid)
-		select ''0'' CPLic
-		return(0)
+	if @lista = 0 begin
+		select @tel = ''''
 	 end
 
-	return(0)
- END
-
-IF @TipoMov=0
- BEGIN
-	Insert ccLogLogIn ( User_id, Extension, TipoMov ) Values( @UserID, @Extension, 0 )
-	Update c Set User_id= 0 from ccPosicion c WITH (INDEX (IX_ccPosicion_2)) Where Computer =@Computer or user_id = @Userid
-	update ccUsers set TipoStatusAge_id=0 where User_id=@UserID
-
-	if exists(select valor from ccSettings where tipo=''AGT'' and Status=''1'' and setting_id=''53'' and valor=2)
-	 begin
-		update axLicG729_Data set axLic_Status=0, pos_id=null, fecha_log=null where pos_id in (select pos_id from ccPosicion Where Computer =@Computer or user_id = @Userid)
+	if @pais = 1 begin --Empieza Mexico
+		select @lon = len(@tel)
+		if @lon >= 7 and @lon <=13 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+			(( len(@tel) = 8 and @cldlocal = area and len(area) = 2 )
+				or
+				( len(@tel) = 7 and @cldlocal = area and len(area) = 3 )
+				or
+				( len(@tel) >= 10 and left(right(@tel, 10), 3) = area and len(area) = 3 )
+				or
+				( len(@tel) >= 10 and left(right(@tel, 10), 2) = area and len(area) = 2 ))
+		end
+		else begin
+			select @tel = ''''
 	 end
 
-	return(0)
- END
+		return @tel
+	end --Termina Mexico
 
-IF @TipoMov=3
- BEGIN
-    select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+	if @pais = 2 begin  -- Empieza Argentina
+		select @lon = len(@tel)
+		if @lon >= 6 and @lon <=13 begin
+			select @tel = telAni from ccEstadosAni where id_anilist = @lista and
+				(( @lon = 6 and left(@tel,4) = area and len(area) = 4 )
+				or
+				( @lon = 7 and left(@tel,3) = area and len(area) = 3 )
+				or
+				( @lon = 8 and left(@tel,2) = area and len(area) = 2 )
+				or
+				( @lon = 11 and substring(@tel, 2, 2) = area and len(area) = 2 )
+				or
+				( @lon = 11 and substring(@tel, 2, 3) = area and len(area) = 3 )
+				or
+				( @lon = 11 and substring(@tel, 2, 4) = area and len(area) = 4 )
+				or
+				( @lon = 13 and substring(@tel, 2, 2) = area and len(area) = 2 )
+				or
+				( @lon = 13 and substring(@tel, 2, 3) = area and len(area) = 3 )
+				or
+				( @lon = 13 and substring(@tel, 2, 4) = area and len(area) = 4 ))
+		end
+		else begin
+			select @tel = ''''
+		end
+			return @tel
+	end  --Termina Argentina
 
-	select @hourlogin = convert(varchar(8), isnull(min(fecha), getdate()), 114)
-	       from ccLogLogin where TipoMov=1 and user_id=@UserID and fecha >= @fecha_ini
+	if @pais = 3 begin  --Empieza Colombia
+		select @lon = len(@tel)
+		if @lon >= 6 and @lon <=13 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+				(( len(@tel) = 7 and @cldlocal = area )
+				or
+				( len(@tel) = 8 and left(@tel,5) = area )
+				or
+				( len(@tel) in(10,11) and (left(@tel,1) = ''3'' or substring(@tel,2,1) = ''3'')))
+		end
+		else begin
+			select @tel = ''''
+		end
+		return @tel
+	end  --Termina Colombia
 
-    SELECT @sessionsecs = isnull (case
-			WHEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) > 0
-			THEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov))
-			ELSE sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) +
-			         convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14)))
-			END, 0)
-		FROM ccLogLogin where user_id=@UserID and fecha > dateadd(hh, -10, getdate())
+	if @pais = 4 begin --Empieza USA
+		select @lon = len(@tel)
+		if @lon >= 6 and @lon <=15 begin
+			if @lon = 7 begin
+				set @tel = @cldLocal + @tel
+			end
+			set @tel = right(@tel, 10)
+			--select @edo = location from ccTimeZoneAreaUsa where area = left(@tel,3)
+			select @tel = telani from ccEstadosAni where area = left(@tel,3) and id_anilist = @lista
+		end
+		else begin
+			select @tel = ''''
+		end
+		return @tel
+	end --Termina USA
 
-    SELECT @sessiontime = RIGHT(''0'' + CONVERT(varchar(6),  @sessionsecs / 3600),       2) + '':'' +
-                          RIGHT(''0'' + CONVERT(varchar(2), (@sessionsecs % 3600) / 60), 2) + '':'' +
-                          RIGHT(''0'' + CONVERT(varchar(2),  @sessionsecs % 60),         2)
+	if @pais = 5 begin -- Empieza Chile
+		select @lon = len(@tel)
+		if @lon >= 6 and @lon <=15 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+			(( len(@tel) = 6 and @cldlocal = area )
+			or
+			( len(@tel) = 7 and @cldlocal = area )
+			or
+			( len(@tel) = 8 and left(@tel,1) = area )
+			or
+			( len(@tel) = 8 and left(@tel,2) = area )
+			or
+			( len(@tel) = 9 and left(@tel,2) = area )
+			or
+			( len(@tel) = 10 and substring(@tel,3,1) = area and left(@tel,2) = ''09'' ))
+		end
+		else begin
+			select @tel = ''''
+		end
+		return @tel
+	end --Termina Chile
 
-    select ''HourLogin'' = @hourlogin, ''SessionTime'' = @sessiontime, ''SessionSecs'' = @sessionsecs
-	return(0)
- END'
-		EXEC(@sql)
-
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentECRelations]-----------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_GetAgentECRelations]
-@User_id smallint,@action int =0
-AS
-set nocount on
-
-declare @idioma as bit, @tipo as varchar(6)
-
-if @action=0 begin
-	select distinct ''Tipo''=1, E.Inbound_id, E.descripcion, A.Login, A.user_id, prioridad, skill, E.cli_id
-		from ccInboundAgentes G join ccInbound E on G.inbound_id = E.inbound_id
-		join ccUsers A  on A.user_id = G.user_id and A.TipoUser_id =1
-		Where A.user_id = @User_id and A.status > 0
-	union
-	select distinct ''Tipo''=2, C.cam_id, C.cam_descripcion, A.Login, A.user_id, prioridad, skill, C.cli_id
-		from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
-		join ccUsers A  on A.user_id = CA.user_id and A.TipoUser_id =1
-		Where A.user_id = @User_id and A.status > 0
-		order by ''Tipo''
+	if @pais = 6 begin -- Venezuela
+		select @lon = len(@tel)
+		if @lon >= 7 and @lon <=11 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+				(len(@tel) = 7 and left(@tel,3) = area or
+				len(@tel) = 11 and substring(@tel,2,3) = area)
 end
 else begin
-	select distinct 1 tipo, E.Inbound_id, E.descripcion, A.Login, A.user_id, prioridad, skill, isnull(E.cli_id,0) cli_id
-	,right(''0''+cast(1 as varchar(1)),1) + right(''00000''+cast(E.Inbound_id as varchar(5)),5)
-	+ right(''00''+cast(prioridad as varchar(2)),2) + right(''00''+cast(skill as varchar(2)),2) sPertenencias
-		from ccInboundAgentes G join ccInbound E on G.inbound_id = E.inbound_id
-		join ccUsers A  on A.user_id = G.user_id and A.TipoUser_id =1
-		Where A.user_id = @User_id and A.status > 0
-		union
-	select distinct 2 tipo, C.cam_id, C.cam_descripcion, A.Login, A.user_id, prioridad, skill, C.cli_id
-	,right(''0''+cast(2 as varchar(1)),1) + right(''00000''+cast(C.cam_id as varchar(5)),5)
-	+ right(''00''+cast(prioridad as varchar(2)),2) + right(''00''+cast(skill as varchar(2)),2) sPertenencias
-		from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
-		join ccUsers A  on A.user_id = CA.user_id and A.TipoUser_id =1
-		Where A.user_id = @User_id and A.status > 0
-		order by ''Tipo''
+			select @tel = ''''
+		end
 
-end'
-	EXEC(@sql)		
+		return @tel
+	end --Termina Venezuela
 
-	set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]--------------'
-	set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
-@action int,
-@inboundId smallint = 0,
-@domain varchar(50) = '''',
-@session varchar(50) = '''',
-@tTimeout smallint = 0,
-@chatId int = 0,
-@status tinyInt = 0,
-@userId smallint = 0,
-@finished tinyInt = 0,
-@chattingTime int = 0,
-@startTime datetime = null,
-@clientName varchar(50) = '''',
-@firstMessage int = 0,
-@firstMessageTime datetime = null,
-@crmNode xml = null,
-@supervisor varchar(100) =null,
-@template varchar (100)= null,
-@ScoreTemplate int = null
-AS
-
-declare @xml xml
-declare @sql nvarchar(2000)
-
-if @action = 1 begin -- Inserta nuevo chat request /*comentario: se recomienda hacer la busqueda del userid del CRM en esta action*/
-       insert into ccRIAChats (domain,session,chatStatus,requestDate,inboundId,clientName)
-       values(@domain,@session,@status,getDate(),0,@clientName)
-       set @chatId = scope_identity()
-       select @chatId
+	if @pais = 7 begin -- Empieza UK
+		select @lon = len(@tel)
+		if left(@tel,1) = ''0'' begin
+			set  @tel = substring(@tel,2,(len(@tel)-1))
 end
 
-else if @action = 2 begin -- Save Initial Info
-update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = @userId, tTimeout = @tTimeout where chatId = @chatId
+		if @lon >= 9 and @lon <=11 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+			(( len(@tel) = 10 and substring(@tel,1,5) = area )
+			or
+			( len(@tel) = 10 and substring(@tel,1,4) = area )
+			or
+			( len(@tel) = 10 and substring(@tel,1,3) = area )
+			or
+			( len(@tel) = 10 and substring(@tel,1,2) = area )
+			or
+			( len(@tel) = 9 and substring(@tel,1,5) = area )
+			or
+			( len(@tel) = 9 and substring(@tel,1,4) = area ) )
+		end
+		else begin
+			select @tel = ''''
+end
+		return @tel
+	end --Termina UK
+
+	if @pais = 8 begin --Empieza Arabia Saudita
+		select @lon = len(@tel)
+		if @lon >= 7 and @lon <=13 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+				(len(@tel) = 7 and ''0''+@cldlocal + ''-''+ substring(@tel,1,1) + ''00'' = area or
+				len(@tel) = 9 and substring(@tel,1,3) + ''00'' = replace(area,''-'','''') or
+				len(@tel) = 10 and substring(@tel,1,4) + ''00'' = replace(area,''-'','''') or
+				len(@tel) = 11 and substring(@tel,1,4)+ ''0'' = replace(area,''-'','''') or
+				len(@tel) = 11 and substring(@tel,1,5) = replace(area,''-'',''''))
+		end
+		else begin
+			select @tel = ''''
 end
 
-else if @action = 3 begin -- Update Status
-update ccRIAChats set chatStatus = @status where chatId = @chatId
-end
+		return @tel
+	end --Termina Arabia Saudita
 
-else if @action = 4 begin -- Save Final Status
-if @firstMessage = 0
+	if @pais = 9 --Empieza Australia
        begin
-             update ccRIAChats set finishedBy = @finished where chatId = @chatId
+			select @lon = len(@tel)
+			if @lon >= 8 and @lon <=10
+				begin
+					select @tel = telani from ccEstadosAni where id_anilist = @lista
+					and (len(@tel) = 8 and @cldLocal + substring(@tel,1,2) = area or
+						 len(@tel) = 9 and ''0'' + substring(@tel,1,3) = area or
+						 len(@tel) = 10 and substring(@tel,1,4) = area)
        end
 else
        begin
-             update ccRIAChats set finishedBy = @finished, firstMessageTime  = @firstMessageTime where chatId = @chatId
-       end
+					select @tel = ''''
 end
 
-else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion del nodo (registro final para el finder) se recomiendo en esta action, no olvidar validar status = 4, finishedby != null y validar los tiempos para garantizar el dato final */
-       if @action = 5 begin
-             update ccRIAChats set tChatting = @chattingTime, chatDate = @startTime where chatId = @chatId
+			return @tel
+		end --Termina Australia
+
+	if @pais = 10 begin -- Empieza Brasil
+		select @lon = len(@tel)
+		if @lon >= 8 and @lon <=15 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and (
+				((@lon       = 8        )                                    and             @cldlocal = area) or
+				((@lon       = 9        ) and substring(@tel, 1, 1) = ''9''    and             @cldlocal = area) or
+				((@lon between 10 and 11)                                    and substring(@tel, 1, 2) = area) or
+				((@lon between 12 and 13) and substring(@tel, 1, 4) = ''9090'' and             @cldlocal = area) or
+				((@lon       = 13       )                                    and substring(@tel, 4, 2) = area) or
+				((@lon between 14 and 15) and substring(@tel, 1, 2) = ''90''   and substring(@tel, 5, 2) = area) or
+				((@lon       = 14       ) and substring(@tel, 1, 1) = ''0''    and substring(@tel, 4, 2) = area))
+		end
+		else begin
+			select @tel = ''''
+		end
+
+		return @tel
+	end -- Termina Brasil
+
+	if @pais = 11 begin --Empieza Guatemala
+		if len(@tel) = 8  begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
+		end
+		else begin
+			select @tel = ''''
+		end
+
+		return @tel
+	end --Termina Guatemala
+
+	if @pais = 12 begin --Empieza Costa Rica
+		if len(@tel) = 8  begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
+		end
+		else if len(@tel) = 10 begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 3) = area
+		end
+		else begin
+			if charindex(substring(@tel,1,2),''00,08'') <= 0
+				select @tel = ''''
+			else
+				select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 2) = area
+             end
+
+		return @tel
+	end --Termina Costa Rica
+
+	if @pais = 13 begin --Empieza Salvador
+		if len(@tel) = 8  begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 1) = area
+             end
+		else begin
+			if charindex(substring(@tel,1,2),''00'') <= 0
+				select @tel = ''''
+			else
+				select @tel = telani from ccEstadosAni where id_anilist = @lista and substring(@tel, 1, 2) = area
+             end
+
+		return @tel
+	end --Termina Salvador
+
+	if @pais = 14 begin --Empieza España
+		if len(@tel) = 9  begin
+			select @tel = telani from ccEstadosAni where id_anilist = @lista and
+			((substring(@tel, 1, 1) = area) or
+			(substring(@tel, 1, 2) = area) or
+			(substring(@tel, 1, 3) = area))
        end
+		else
+			select @tel = ''''
 
+		return @tel
+	end --Termina España
 
-
-       select @xml = convert(xml,''<R01 C01="''+convert(varchar(max),chatId)+''" C02="''+convert(varchar(max),isnull(ccinbound.descripcion,''''))+''" C03="''+convert(varchar(max),domain)+''" C04="''+convert(varchar(max), Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno )+
-       ''" C05="''+convert(varchar(max),tchatting)+''" C06="''+convert(varchar(max),isnull(cctipocalif.[Description],''''))+''" C07="''+convert(varchar(max),isnull(cctipocalifsub.califSubdesc,''''))+''" C08="''+convert(varchar(max),clientname)+''" C09="''+rtrim(ltrim(convert(varchar(23), chatDate, 126)))+
-       ''" C10="''+convert(varchar(max),isnull(@supervisor,'''') ) + ''" C11="''+convert(varchar(max),isnull(@template,'''') )  + ''" C12="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +  ''"/>'')
-       from ccRIAChats
-       left outer join ccinbound on ccinbound.inbound_id = ccRIAChats.inboundid
-       left outer join ccusers on ccusers.user_id = ccRIAChats.userid
-       left outer join cctipocalif on cctipocalif.calif_id = ccRIAChats.disposition
-       left outer join cctipocalifsub on cctipocalifsub.califsub_id = ccRIAChats.subdisposition and ccRIAChats.subdisposition <> 0
-       where chatId = @chatId and chatStatus = 4 and requestDate is not null and chatDate is not null
-
-       set @crmNode = null
-
-       if @xml is not null
-       begin
-             select @crmNode = node from ccCRMNodes where chatId = @chatId
-             if @crmNode is not null
-             begin
-                    set @sql = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R01)[1]'''') ''
-                    execute sp_executesql @sql,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
-             end
-
-             if not exists(select * from ccChatsNode where chatId=@chatId) begin ---insert finder
-                    insert into ccChatsNode (chatId,node, dateIn,[status]) values (@chatId,@xml, getdate(),0)
-             end
-             else begin ---update finder<
-                    update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId
-                    select @chatId
-             end
-       end
-end'
+	return @ret
+END'
 	EXEC(@sql)
 
-		----------------------------------------------email
 
+----------------------------------------------TERMINA PLAN DE SPAIN----------------------------------------------
+
+----------------------------------------------EMAIL----------------------------------------------
 	set @process = 'insert menu --'
 	set @Sql='if not exists(select * from ccMenus where menu_id in (81,84) and type=1)  begin
 insert into ccmenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF)  values(81,''Asignar correos de salida|Assign outgoing mail'',16,''B'',40,1,''924581cafd9fbd8aa9e5f65402fecc43d786c100156e029dce2b4bc741a1338d666f9f62a3f3b3538e380e6c99a71472'')
@@ -3713,7 +3862,7 @@ end'
 	EXEC(@Sql)
 
 	set @process = 'ccRIAMultimediaSignatures - Create Table'
-	set @Sql='if not exists (select * from sys.tables where name = N''[ccRIAMultimediaSignatures]'') begin
+	set @Sql='if not exists (select * from sys.tables where name = N''ccRIAMultimediaSignatures'') begin
 CREATE TABLE [dbo].[ccRIAMultimediaSignatures](
 	[signature_id] [smallint] NOT NULL,
 	[Description] [varchar](40) NOT NULL,
@@ -5673,52 +5822,6 @@ return(0)
 set nocount off'
 	EXEC(@Sql)
 
-	set @process = 'Alter SP -- ccsp_RIAccSettingsConfig'
-	set @Sql='ALTER PROCEDURE [dbo].[ccsp_RIAccSettingsConfig]
-@command tinyint,
-@setting_id smallint = null,
-@value varchar(200) = null
-AS
-set nocount on
-
-declare @idioma tinyint
-declare @activeChat tinyint
-
-select @idioma=valor from ccSettings where setting_id=27
-Select @activeChat=valor from ccSettings where setting_id=145
-
-if @command=0
- begin
-	SELECT case @idioma when 0 then descripcion else [description] end descripcion
-	FROM ccSettings WITH(NOLOCK, index(PK_ccSettings)) WHERE setting_id=@setting_id
-	order by descripcion
-	return(0)
- end
-
-if @command=1
- begin
-	Select setting_id, case @idioma when 0 then descripcion else [description] end descripcion, valor, tipo,validate
-	from ccSettings WITH(NOLOCK, index(PK_ccSettings)) where tipo in (''AGT'',''ADM'',''GRL'',''REP'',''SV'')
-	and (setting_id not in (139,140,141)
-	or   setting_id     in (139,140,141) and @activeChat > 0)
-	order by tipo, descripcion
-	return(0)
- end
-
-if @command=2
- begin
-	if @setting_id = 27 and @value not in(''0'',''1'') begin
-		set @value = 0
-	end
-	else if @setting_id = 104 and @value not in(''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'',''11'',''12'',''13'',''14'') begin
-		set @value = 1
-	end
-	update ccSettings set valor=@value where setting_id = @setting_id
-	return(0)
- end
-
-set nocount off'
-	EXEC(@Sql)	
 
 	set @process = 'Alter SP -- ccsp_RIACATChatPredefinedMsg'
 	set @Sql='ALTER PROCEDURE [dbo].[ccsp_RIAChatPredefinedMsg]

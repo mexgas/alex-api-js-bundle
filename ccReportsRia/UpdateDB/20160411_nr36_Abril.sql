@@ -471,7 +471,7 @@ end'
 
 
 	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByState'
-	set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
+	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null

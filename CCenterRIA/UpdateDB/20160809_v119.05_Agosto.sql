@@ -2316,7 +2316,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin try
 
 		set @process = 'DROP PROCEDURE ccsp_AgentTransfLstArea'
-		set @sql='if exists (select * from sys.procedures where name = N''ccsp_AgentTransfLstArea'') DROP PROCEDURE ccsp_AgentTransfLstArea)'
+		set @sql='if exists (select * from sys.procedures where name = N''ccsp_AgentTransfLstArea'') DROP PROCEDURE [dbo].[ccsp_AgentTransfLstArea]'
 		EXEC(@sql)
 
 		set @process = 'DROP SP -- ccsp_CleanNodeBaseX'

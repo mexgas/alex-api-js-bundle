@@ -2514,4 +2514,7 @@
   <data name="EmailDetail" xml:space="preserve">
     <value>Email Detail</value>
   </data>
+  <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
+    <value>Spam</value>
+  </data>
 </root>

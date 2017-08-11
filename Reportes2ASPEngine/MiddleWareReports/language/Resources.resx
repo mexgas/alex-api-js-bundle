@@ -2574,4 +2574,7 @@
   <data name="AgentDetailbyDay" xml:space="preserve">
     <value>Detalle de Agente por Día</value>
   </data>
+  <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
+    <value>Correo no deseado</value>
+  </data>
 </root>

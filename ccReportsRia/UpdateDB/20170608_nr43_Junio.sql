@@ -825,7 +825,7 @@ if @action=1 begin
 		,sum(cast((convert(float,tav)/36) as decimal(18,3))) as [% en disponible]
 		,convert(decimal(10,3), convert(decimal(10,3),sum(tlog - tnotes))/sum(tlog)) as [Adherencia]
 		,sum(ntotal) as [Numero de llamadas]
-		,convert(decimal(10,4),convert(decimal(10,4),sum(ntotal))/7) as [Numero de llamadas por hora]
+		,sum(ntotal) as [Numero de llamadas por hora]--convert(decimal(10,4),convert(decimal(10,4),sum(ntotal))/7) as [Numero de llamadas por hora]
 		,count(completeOut)+count(completeIn) as [Completo]
 		,convert(decimal(10,4),convert(decimal(10,4),count(completeOut)+count(completeIn))/7) as [Completo por hora]
 		,convert(decimal(10,4),isnull(convert(decimal(10,4),count(completeOut)+count(completeIn))/nullif(sum(ntotal),0),0)) as [Completo / llamadas]

@@ -15,6 +15,7 @@ Description:
 	Se modifica el SP ccspADMaddConversationTweet la parte donde recuperamos el campo close conversation del ACD CW-
 	Se modifica el SP ccsp_RIAChatDispositions para que se guarden las calificaciones de los chats de manera correcta
     Se modifica el SP ccsp_NetworkSocialAdminAccount HotFix:Cuenta de twitter ya existente
+	Se modifica el SP ccsp_CreateNodeMultimedia ya que tiene una relacion erronea para las calificaciones de Twitter
 
 Database: CCenterRia
 Required version: 119.06
@@ -444,6 +445,7 @@ If @Type=10
 set nocount off
 '
 		EXEC(@Sql)
+
 
 		set @process = 'Alter SP  -- ccsp_RIAsubCalif --CW-876'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAsubCalif]
@@ -2584,7 +2586,7 @@ else if @type=2 begin--Twitter
 	inner join messageOutTwitter b on a.conversationTwitterId=b.conversationTwitterId
 	left outer join ccinbound c on c.inbound_id = a.inboundid
 	left outer join ccusers d on d.user_id = b.userid
-	left outer join relationmessageDisposition e on e.messageId=b.messageOutTwitterId
+	left outer join relationMessageDispositionTwit e on e.messageOutTwitterId=b.messageOutTwitterId
 	left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
 	left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
 	where a.conversationTwitterId=@conversationId

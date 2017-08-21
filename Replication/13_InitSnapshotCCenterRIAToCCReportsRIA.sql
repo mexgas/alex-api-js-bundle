@@ -35,7 +35,7 @@ if @Version_Actual >= @Version
 		CREATE TABLE [dbo].[migration](
 		[id] [int] NOT NULL,
 		[description] [varchar](255) NOT NULL,
-		[status] [bit] NOT NULL,
+		[status] [int] NOT NULL,
 		[error] [nvarchar](max) NOT NULL,
 		[dateStart] datetime NOT NULL,
 		[dateEnd] datetime NOT NULL
@@ -57,17 +57,19 @@ if @Version_Actual >= @Version
 		insert into migration values (113 , ''MenuReportsRia'', 0, '''', '''', '''')
 		insert into migration values (114 , ''IVR'', 0, '''', '''', '''')
 		insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')
-		insert into migration values (114 , ''Conversationtweet'', 0, '''', '''', '''')
+		insert into migration values (116 , ''Conversationtweet'', 0, '''', '''', '''')
 
 	END
 	ELSE BEGIN
+	alter table migration alter column status int	
 			insert into migration values (115 , ''ConversationMail'', 0, '''', '''', '''')
 			insert into migration values (116 , ''Conversationtweet'', 0, '''', '''', '''')
 	END'
 
 		EXEC(@Sql)
 
-			set @Sql='USE [msdb]
+
+	set @Sql='USE [msdb]
 
 	/****** Object:  Job [CW Merge Replication]    Script Date: 08/08/2013 07:59:24 ******/
 	IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''CW Merge Replication'')
@@ -108,114 +110,53 @@ if @Version_Actual >= @Version
 			@retry_attempts=0,
 			@retry_interval=0,
 			@os_run_priority=0, @subsystem=N''TSQL'',
-			@command=N''if (select count(*) from migration  with (nolock) where id >= 100 and [dateStart] = convert(datetime ,''''jan 1 1900'''') and [dateEnd] = convert(datetime ,''''jan 1 1900'''')) > 0
-	begin
-		declare @id int
-		declare @publicationName varchar(max)
+			@command=N''  
+declare @id int 
+declare @publicationName varchar(max)
+declare @dateStart datetime
+declare @status int
 
-		select top 1 @id=id, @publicationName=[description] from migration  with (nolock) where [dateStart] = convert(datetime ,''''jan 1 1900'''') and [dateEnd] = convert(datetime ,''''jan 1 1900'''') and id>= 100 order by id
-
-		if @id > 100
-			begin
-				declare @temp varchar(max)
-				declare @jobName varchar(max)
-				declare @tempId int
-				set @tempId = @id -1
-
-				select @temp = [description] from migration  with (nolock) where id = @id-1
-
-				if (select count(*)
-				from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-				where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id and comments like ''''%A snapshot of%%article(s) was generated.%'''' and runstatus = 2
-				and publication = @temp) = 0
-				begin
-					set @id = @id - 1
-				end
-
-				if (select count(*)
-				from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-				where b.publisher_db = ''''CCenterRia'''' and runstatus in (5,6)
-				and publication = @temp) > 0
-				begin
-					set @id = @id + 1
-				end
-
-				if (select [dateStart] from migration  with (nolock) where id = @tempId) <> convert(datetime ,''''jan 1 1900'''')
-				begin
-					if exists(select *
-							  from distribution..MSreplication_monitordata
-							  where publication = @temp
-							  and agent_type = 1
-							  and [status] = 0)
-						begin
-							select @jobName = agent_name
-							from distribution..MSreplication_monitordata
-							where publication = @temp
-							and agent_type = 1
-							and [status] = 0
-
-							create table #jobActivity(
-							session_id int null,
-							job_id uniqueidentifier null,
-							job_name sysname null,
-							run_requested_date datetime null,
-							run_requested_source sysname null,
-							queued_date datetime null,
-							start_execution_date datetime null,
-							last_executed_step_id int null,
-							last_exectued_step_date datetime null,
-							stop_execution_date datetime null,
-							next_scheduled_run_date datetime null,
-							job_history_id int null,
-							[message] nvarchar(1024) null,
-							run_status int null,
-							operator_id_emailed int null,
-							operator_id_netsent int null,
-							operator_id_paged int null
-							)
-
-							insert into #jobActivity
-								exec msdb.dbo.sp_help_jobactivity @job_name = @jobName
-
-							if (select start_execution_date from #jobActivity) is null
-								begin
-									exec sp_startpublication_snapshot @publication = @temp
-								end
-
-							drop table #jobActivity
-						end
-				end
-			end
-		if (select [dateStart] from migration  with (nolock) where id = @id) = convert(datetime ,''''jan 1 1900'''')
-		begin
-			begin transaction replications
-			begin try
-				update migration with (rowlock) set [status] = 1, [dateEnd] = getdate() where id = @id - 1 and [dateEnd] = convert(datetime ,''''jan 1 1900'''')
-				update migration with (rowlock) set [dateStart] = getdate() where id = @id
-				exec sp_startpublication_snapshot @publication = @publicationName
-				commit transaction replications
-			end try
-			begin catch
-				ROLLBACK TRANSACTION replications;
-				update migration with (rowlock) set [dateStart] = getdate() where id = @id
-				update migration with (rowlock) set [error] = ERROR_MESSAGE() where id = @id
-				update migration with (rowlock) set [status] = 1, [dateEnd] = getdate() where id = @id
-			end catch
-		end
-	end
-	if exists (select * from migration where id = 115 and [dateStart] <> convert(datetime ,''''jan 1 1900'''') and [dateEnd] = convert(datetime ,''''jan 1 1900''''))
-			begin
-				if (select count(*)
-				from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
-				where b.publisher_db = ''''CCenterRia''''
-				and b.id = a.agent_id
-				and comments like ''''%A snapshot of%%article(s) was generated.%''''
-				and runstatus = 2
-				and publication = ''''MenuReportsRia'''') = 1
-				begin
-					update migration with (rowlock) set [status] = 1, [dateEnd] = getdate() where id = 115 and [dateEnd] = convert(datetime ,''''jan 1 1900'''')
-				end
-			end'',
+select top 1  @id=id, @publicationName=[description],  @dateStart  = dateStart, @status = status from migration  with (nolock) where status in(0,1)
+--select @id
+--select @publicationName
+--select @status
+--select @dateStart
+--select * from distribution.dbo.MSsnapshot_history where start_time > convert(datetime,convert(varchar(10),@dateStart,121))
+if (
+	  not exists(
+	  select *
+	  from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
+	  where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id 
+	  and a.runstatus = 2
+	  and b.publication = @publicationName and a.start_time < convert(datetime,convert(varchar(10),@dateStart,121))) 	 
+	  and @status = 0
+   )
+begin
+     update migration with (rowlock) set [status] = 1, [dateStart] = getdate() ,[dateEnd] = getdate() where id = @id       
+	 select @publicationName
+	 exec sp_startpublication_snapshot @publication = @publicationName
+end
+else if(
+	exists(
+	select *
+	from distribution.dbo.MSsnapshot_history a ,distribution.dbo.MSsnapshot_agents b
+	where b.publisher_db = ''''CCenterRia'''' and b.id = a.agent_id 
+	and a.runstatus = 2
+	and b.publication = @publicationName and a.start_time > convert(datetime,convert(varchar(10),@dateStart,121))) 	 
+	and @status = 1
+    )
+  begin 
+	begin try  
+		begin transaction replications		
+		update migration with (rowlock) set [status] = 2, [dateEnd] = getdate() where id = @id   	  
+      	commit transaction replications
+	end try
+			begin catch 
+			ROLLBACK TRANSACTION replications;
+			update migration with (rowlock) set [dateStart] = getdate(),[error] = ERROR_MESSAGE(), [status] = 3 where id = @id 
+	end catch	  
+end
+			'',
 			@database_name=N''CCenterRia'',
 			@flags=0
 	IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback

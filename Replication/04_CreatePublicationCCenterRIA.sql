@@ -809,6 +809,15 @@ if @Version_Actual >= @Version
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
 
+truncate table migration;
+
+
+insert into migration 
+select 99+ ROW_NUMBER() OVER(ORDER BY description ASC) AS Id,name as [description],0 status, 'error','1900-01-01 00:00:00.000' dateStart,'1900-01-01 00:00:00.000' dateEnd 
+from dbo.sysmergepublications where publisher_db='CCenterRia'
+
+
+
 
 	------------------ FIN SCRIPT ------------------
 

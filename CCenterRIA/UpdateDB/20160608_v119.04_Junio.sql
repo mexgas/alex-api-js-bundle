@@ -489,6 +489,354 @@ if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin tran
 	begin try
 
+  set @process = 'Add Column --ccCampsNvosCB.dateUpdate'
+    set @sql='if not exists (select * from sys.columns where name = N''dateUpdate'' and Object_ID = Object_ID(N''ccCampsNvosCB''))
+    ALTER TABLE ccCampsNvosCB ADD dateUpdate datetime'
+    EXEC(@sql)
+
+
+    set @process = 'ALTER SP -- ccsp_RIAGetCampsNvosCB'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0
+as
+set nocount on
+
+declare @TipoJobs as int,@isExecOutbound bit
+
+--declare  @cam_id integer, @Tipo tinyint, @user_id int,@regval int
+--select @cam_id=1,@Tipo=1,@user_id=4,@regval=0
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+  declare @id AS INTEGER
+
+  CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+  CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+
+  create table #temccocallsoutsource (cam_id int,Pend  int)
+
+  create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+  if @cam_id = 0 begin
+    if @user_id > 0 begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where user_id = @user_id and tipo = 1
+    end
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+    end
+
+  end
+  else begin
+    if @Tipo = 2
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+      from ccCamps cam
+      --left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where cam.cam_id = @cam_id --and user_id = @user_id and tipo = 1
+    else
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+        select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+        from ccCamps --where cam_procesando=1
+  end
+
+
+
+  insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+  select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
+    select A.* from #Tcamps A
+      left join ccCampsNvosCB B on A.cam_id=B.id
+      where datediff(ss,B.dateUpdate,getdate())>5 or B.dateUpdate is null
+  )X
+
+  group by cam_id
+
+
+  --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+  if (select count(*) from #Tcamps2)>0 begin
+
+    insert into #temccocallsoutsource(cam_id,Pend)
+    SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+    FROM ccocallsoutsource ccos --with(nolock index(IX_ccoCallsOutSource))
+    left join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    WHERE cal_status in(0, 7)
+    GROUP BY ccos.cam_id
+
+    insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+    SELECT A.cam_id,
+    count(case cal_status when 0 then 1 else null end) as New,
+    count(case cal_status when 1 then 1 else null end) as Cb,
+    count(case cal_status when 2 then 1 else null end) as Pro,
+    count(case cal_status when 3 then 1 else null end) as Fin
+    FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+    inner join #Tcamps2 B on A.cam_id = B.cam_id
+    GROUP BY A.cam_id
+
+    --select * from #Tcamps2
+
+    --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+    if @regval = 0 and @cam_id >0 and @Tipo =2 begin
+      update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
+    end
+    else begin
+      While (select count(*) from #Tcamps2 where status = 0) > 0 Begin
+        set rowcount 1
+        select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+        set rowcount 0
+        EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+        update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+      end
+    end
+
+    begin Tran updateccCampsNvosCB
+
+      delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+      where CampNvosCB.id = tcamp.cam_id
+
+      INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+      SELECT cams.cam_id, cams.cam_descripcion,
+      isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+      isNull(cs.Pend,0) as pend,
+      isNull(wt.Pro,0) as pro,
+      isNull(cams.procesando,0) cam_procesando,
+      isNull(cams.cam_tipojobs,0) cam_tipojobs,
+      isNull(wt.Fin,0) Fin,
+      isNull(tc.cantidad,0) cantidad,
+      getdate()
+      FROM #Tcamps cams with(nolock)
+      LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+      LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+      left join #Tcamps2 tc on (tc.cam_id = cams.cam_id)
+
+    COMMIT TRAN updateccCampsNvosCB
+  end
+
+  if @isExecOutbound = 0 begin
+
+    if @Tipo = 2
+      -- devuelve resultado de la taba, solo las camps del usuario
+      SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial
+      FROM #Tcamps tcam
+      left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+    else
+      SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial
+      FROM ccCampsNvosCB res
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+      WHERE res.id = @cam_id
+  end
+
+  drop table #Tcamps
+  drop table #Tcamps2
+  drop table #temccocallsoutsource
+  drop table #temWorkinTable
+
+  return(0)
+
+end
+
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'Alter SP -- ccsp_OUTGetNewJobs'
+    set @sql='ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
+@CAMPID int,
+@test int=0,
+@nAgentsLogin int=1,
+@iZonas int = null
+as
+--set nocount on
+declare @total int
+declare @topCount smallint, @bIsDaylight bit, @revHorario bit
+declare @country_id int, @TipoJobs int
+--declare @iZonas int --Zonas que se van a incluir en la marcacion 2 ^ zona
+declare @sql varchar(4000), @Order_Asc_Desc char(4)
+declare @camSurvey int
+select @camSurvey = 0
+DECLARE @iZonasTable TABLE (value int)
+
+select @camSurvey = cam_id from cccamps  where cam_id = @CAMPID  and isnull(callsBySurvey,0) > 0  and isnull(ivrScript,0) > 0
+
+-- VALIDAMOS EL IDIOMA Y LADA CONFIGURADA --
+SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
+select @revHorario=valor from ccsettings where setting_id = 112
+-- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
+SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@CAMPID
+SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
+
+SET DATEFIRST 1
+--Checamos si es horario de verano
+select @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+
+if @iZonas is null begin
+
+      INSERT INTO @iZonasTable exec ccsp_OUTcheckTimeZone @cam_id=@campid
+      select @iZonas=value from @iZonasTable    
+--Checamos si la campaña tiene horarios configurados
+      if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
+      begin
+                  if @iZonas = 0 begin                
+                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                        return
+                  end
+      end
+      else begin
+            if @camSurvey > 0
+                  begin                   
+                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                        return
+                  end
+      end
+end
+
+set @sql=''CREATE TABLE #NEW_JOBS
+(callout_id int,
+      cam_id int,
+      cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+      cal_status tinyint,
+      cal_fechaDial datetime,
+      user_id int,
+      tz int,
+tz2 int,
+tz3 int,
+tz4 int,
+tz5 int,
+list_id int,
+sequence smallint
+)''
+
+
+-- 0=Ambas, 1=CallBacks, 2=Nuevas
+select @topCount=valor from ccSettings where setting_id=94
+
+if isnull(@topCount,0)=0
+select @topCount=case when @nAgentsLogin<3 then 30
+      when @nAgentsLogin>=3 and @nAgentsLogin<6 then 70
+      when @nAgentsLogin>=6 and @nAgentsLogin<10 then 120
+      when @nAgentsLogin>=10 and @nAgentsLogin<16 then 180
+      when @nAgentsLogin>=16 then 240 else 20 end
+
+select @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
+
+declare @isVerano varchar(max)
+set @isVerano = ''izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' end
+
+if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
+begin
+
+            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
+            
+            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
+            SELECT callout_id, W.cam_id, cal_telefono, cal_status, cal_fechaDial, user_id,''
+            +@isVerano+'',''
+            +@isVerano+''2,''
+            +@isVerano+''3,''
+            +@isVerano+''4,''
+            +@isVerano+''5,
+            W.list_id, isNull(R.sequence,0) as sequence
+            FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+            WHERE cal_status=1 -- CallBacks
+            and cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+            and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+            and (
+                  ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+                  ((izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+                  ((izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+                  ((izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+                  ((izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+            )
+            and isnull(R.status,2) = 2
+            order by prioridad_cb desc, cal_fechaDial '' -- + @Order_Asc_Desc -- Solo se aplica el order en registros Nuevos (cal_status=0)
+
+            --select @sql
+end -- TOMA EN CUENTA LOS CALLBACKS
+
+if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
+begin
+            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
+
+            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
+            SELECT callout_id, W.cam_id, cal_telefono, cal_status, cal_fechaDial, user_id,''
+            +@isVerano+'',''
+            +@isVerano+''2,''
+            +@isVerano+''3,''
+            +@isVerano+''4,''
+            +@isVerano+''5,                
+            W.list_id, isNull(R.sequence,0) as sequence
+            FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+            WHERE cal_status=0 -- Nuevas sin Tiempo
+            and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+            and (
+                  ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+                   ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+                   ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+                   ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+                   ( (izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+            or izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+            )
+            and isnull(R.status,2) = 2
+            order by R.sequence, cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id''
+
+end -- TOMA EN CUENTA LAS NUEVAS
+----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
+select @sql=@sql+nchar(13)+ ''SET rowcount 0''
+if @Test=0
+      begin
+            select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
+            WHERE callout_id in(select callout_id from #NEW_JOBS)''
+end
+
+if @Test = 2
+begin
+      select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
+      declare @nSQL nvarchar(4000)
+      set @nSQL=cast(@sql as nvarchar(4000))
+      exec sp_executesql @nSQL, N''@outA int OUTPUT'',@outA=@total OUTPUT
+      return(@total)
+end
+else
+begin
+      select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,
+user_id, tz, tz2, tz3, tz4, tz5,
+case when tz is null then '''''''' else cal_telefono end as tel,
+case when tz2 is null then '''''''' else cal_telefono end as tel2,
+case when tz3 is null then '''''''' else cal_telefono end as tel3,
+case when tz4 is null then '''''''' else cal_telefono end as tel4,
+case when tz5 is null then '''''''' else cal_telefono end as tel5,
+NULL as dialOrder, list_id, sequence FROM #NEW_JOBS where len(cal_telefono)>0
+
+---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
+declare @regval int
+SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
+exec ccsp_RIAGetCampsNvosCB @cam_id=1,@Tipo=2,@user_id =0,@regval=@regval
+''
+end
+
+set @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''
+print (@sql)
+exec(@sql)
+
+return(0)'
+    EXEC(@sql)
+    
+
 		set @process = 'create table optionIVR -----------'
     set @sql='if not exists (select * from sys.tables where name = N''optionIVR'')
     begin

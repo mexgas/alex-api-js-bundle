@@ -39,9 +39,115 @@ IF @ACTUALVERSION = @VERSION - 1
 
 	/* START SCRIPT RELEASE */
 
-		set @process = ''
-		set @Sql= ''
-		EXEC(@Sql)
+		set @process = 'validate if exists procedure [dbo].[saveMyCRMxRecord]'
+    set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''saveMyCRMxRecord'') DROP PROCEDURE saveMyCRMxRecord'
+    EXEC(@sql)
+
+    set @process = 'create PROCEDURE [dbo].[saveMyCRMxRecord]'
+    set @Sql= 'create PROCEDURE [dbo].[saveMyCRMxRecord]  
+    @crmxRecord XML,  
+    @crmxCallData varchar(max) = null  
+   AS  
+   BEGIN  
+    -- SET NOCOUNT ON added to prevent extra result sets from  
+    -- interfering with SELECT statements.  
+    SET NOCOUNT ON;  
+  
+    IF @crmxRecord IS NULL  
+     SELECT -9991  
+  
+    DECLARE @templateID INT,  
+      @dataTName NVARCHAR(50),  
+      @rawDTName NVARCHAR(50),  
+      @crmxRecId INT,  
+      @SQL NVARCHAR(MAX),  
+      @CRI INT,  
+      @TIX INT,  
+      @CID VARCHAR(100),  
+      @BT VARCHAR(100),  
+      @DV VARCHAR(2000)  
+  
+    DECLARE @tempTable TABLE (  
+       CRI INT NOT NULL,  
+       TIX INT NULL,  
+       CID VARCHAR(100) NOT NULL,  
+       BT VARCHAR(100) NULL,  
+       DV VARCHAR(2000) NULL  
+      )  
+  
+    DECLARE @compTable TABLE (  
+       componentId varchar(100) NOT NULL  
+    )  
+  
+      
+  
+  
+    DECLARE cRunner CURSOR FOR  
+     SELECT CRI, TIX, CID, BT, DV FROM @tempTable  
+  
+    SELECT @templateID = @crmxRecord.value(''(/Template/@id)[1]'',''INT'')  
+    SELECT @crmxRecID = @crmxRecord.value(''(/Template/crmxRecord/@id)[1]'',''INT'')  
+  
+  
+    INSERT @compTable  
+     SELECT tabsheet.comp.value(''(@id)'',''varchar(max)'') AS ''componentId''  FROM crmxtabsheets WITH(NOLOCK)  
+     CROSS APPLY crmxtabsheets.tabsheetxml.nodes(''/tabSheet/*'')  tabsheet(comp)  
+     WHERE templateid = @templateID and tabsheet.comp.value(''(@id)'',''varchar(max)'') is not null AND tabsheet.comp.value(''(@reportable)'', ''varchar(max)'') IS NOT NULL  
+  
+  
+  
+  
+    SET @dataTName = N''CRMxData'' + CAST(@templateID AS NVARCHAR(10))  
+    SET @rawDTName = N''CRMxRawData'' + CAST(@templateID AS NVARCHAR(10))  
+  
+    -- Pre-save the obtained xml data unto table form  
+    INSERT @tempTable  
+     SELECT  @crmxRecID AS CRI,  
+        tabSheet.value(''@index'', ''INT'') AS TSI,  
+        component.value(''@id'', ''NVARCHAR(100)'') AS CID,  
+        ''none'' AS BT,  
+        component.value(''@value'', ''NVARCHAR(2000)'') AS DV  
+     FROM  @crmxRecord.nodes(''Template/tabSheets/tabSheet'') AS TabSheets(tabSheet)  
+     OUTER APPLY TabSheets.tabSheet.nodes(''node()'') AS Components(component)  
+     WHERE component.value(''@id'', ''NVARCHAR(100)'') IN (SELECT componentId FROM @compTable)  
+  
+    OPEN cRunner  
+    FETCH cRunner INTO @CRI, @TIX, @CID, @BT, @DV  
+  
+    EXEC [dbo].[CRMxAgent] @option = 18,  
+          @templateId = @templateId,  
+          @crmxRecordID = @CRI,  
+          @tabSheetIndex = @TIX,  
+          @componentId = @CID,  
+          @bindingType = @BT,  
+          @dataValue = @DV  
+  
+    WHILE(@@FETCH_STATUS = 0)  
+     BEGIN  
+      FETCH cRunner INTO @CRI, @TIX, @CID, @BT, @DV  
+      EXEC [dbo].[CRMxAgent] @option = 18,  
+          @templateId = @templateId,  
+          @crmxRecordID = @CRI,  
+          @tabSheetIndex = @TIX,  
+          @componentId = @CID,  
+          @bindingType = @BT,  
+          @dataValue = @DV  
+     END  
+  
+    CLOSE cRunner  
+    DEALLOCATE cRunner  
+  
+    -- Lastly, we update the record date  
+    if exists(SELECT top 1 * FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = ''callData'' AND TABLE_NAME = @dataTName)  
+     SET @SQL = ''UPDATE ['' + @dataTName + ''] WITH(ROWLOCK) SET [dateValue] = GETDATE(), callData=convert(xml,'''''' + @crmxCallData + '''''') WHERE [crmxRecordId] = '' + CAST(@crmxRecID AS NVARCHAR(10))  
+    else  
+     SET @SQL = ''UPDATE ['' + @dataTName + ''] WITH(ROWLOCK) SET [dateValue] = GETDATE() WHERE [crmxRecordId] = '' + CAST(@crmxRecID AS NVARCHAR(10))  
+    EXEC(@SQL)  
+  
+   END'
+    EXEC(@sql)
+
+
 
     set @process = 'ALTER SP -- CRMxAgent'
     set @Sql= 'ALTER PROCEDURE [dbo].[CRMxAgent]

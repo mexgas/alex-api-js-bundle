@@ -471,7 +471,7 @@ end'
 
 
 	set @process = 'CREATE PROCEDURE -------- ccspRepSpecialTelephoneNumbersByState'
-	set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
+	set @sql='CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -542,7 +542,7 @@ update ReportsCharts set x1=''year|month|day'',subX1=''campaign'',countColumn=''
 
 		set @process = 'Insert Pivot -- RepSpecialTelephoneNumbersByRegistry(4230)'
 		set @sql='if not exists(select * from PivotReports where id=4230)
-	insert into PivotReports(id,columns,complementColumns,pivotFunction,isGroup) values(4230,''cPhoneNumber_Count|percentage_avg'',''date|campaignId|campaign|listId|listName'',''sum'',1)'
+	insert into PivotReports(id,columns,complementColumns,pivotFunction) values(4230,''cPhoneNumber_Count|percentage_avg'',''date|campaignId|campaign|listId|listName'',''sum'')'
 		EXEC(@sql)
 
 		set @process = 'Insert Pivot -- TranslatedReports(4230)'

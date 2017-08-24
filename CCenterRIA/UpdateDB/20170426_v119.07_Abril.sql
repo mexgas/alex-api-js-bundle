@@ -13,7 +13,9 @@ Description:
 	Se modifica el SP ccsp_RIAManageAreas para desasociar cuentas de twitter,email y twitter CW-871
 	Se modifica el SP ccsp_TwitterSave donde se buscan los registros los tweets por contestar CW-902
 	Se modifica el SP ccspADMaddConversationTweet la parte donde recuperamos el campo close conversation del ACD CW-
-  Se modifica el SP ccsp_RIAChatDispositions para que se guarden las calificaciones de los chats de manera correcta
+	Se modifica el SP ccsp_RIAChatDispositions para que se guarden las calificaciones de los chats de manera correcta
+    Se modifica el SP ccsp_NetworkSocialAdminAccount HotFix:Cuenta de twitter ya existente
+	Se modifica el SP ccsp_CreateNodeMultimedia ya que tiene una relacion erronea para las calificaciones de Twitter
 
 Database: CCenterRia
 Required version: 119.06
@@ -444,6 +446,7 @@ set nocount off
 '
 		EXEC(@Sql)
 
+
 		set @process = 'Alter SP  -- ccsp_RIAsubCalif --CW-876'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAsubCalif]
 @action tinyint = 0,
@@ -817,8 +820,8 @@ IF @InOut = 11
 set nocount off'
 		EXEC(@Sql)
 
-		set @process = 'Alter SP  -- ccsp_AGENTInsertCallOut'
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
+	set @process = 'Alter SP  -- ccsp_AGENTInsertCallOut --CW-1010,CW-958'
+  set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
 @cam_id smallint,
 @cal_Key varchar(20),
 @cal_Telefono varchar(30),
@@ -828,74 +831,77 @@ set nocount off'
 @existCallOut as int = 0,
 @callmode as smallint = 0
 AS
-set
+set 
 nocount on
 declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
 select @fecha=getdate()
 
 if @callmode = 1
 begin
-	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-	 select @existCallOut, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 0, @cal_extension
-	select @cal_id = scope_identity()
+  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+   select @existCallOut, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 0, @cal_extension
+  select @cal_id = scope_identity()
 
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from ccRIACampEspWG wg 
+  where wg.tipo = 1 and wg.idcampesp =@cam_id
 
-	select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
-	select @existCallOut as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
-	return(0)
+  select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
+  select @existCallOut as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
+  return(0)
 end
 
 if @existCallOut=0
  begin
-	declare @LasCallKey varchar(20)
-	set @LasCallKey = @cal_Key
-	declare @settingCallKey as int
-	select @settingCallKey = valor from ccSettings where setting_id = 194
+  declare @LasCallKey varchar(20)
+  set @LasCallKey = @cal_Key
+  declare @settingCallKey as int
+  select @settingCallKey = valor from ccSettings where setting_id = 194
+  
+  if(@settingCallKey = 1)
+  begin
+    if (@cal_Key='''' or @cal_Key is null) 
+    begin   
+      select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime,getdate()) and cal_manual=0 order by cal_id desc
+      set @cal_Key= @LasCallKey
+    end
+  end
 
-	if(@settingCallKey = 1)
-	begin
-		if (@cal_Key='''' or @cal_Key is null)
-		begin
-			select top 1 @LasCallKey=cal_Key from ccoCallsOut where cam_id=@cam_id and cal_Inicio>=convert(datetime,getdate()) and cal_manual=0 order by cal_id desc
-			set @cal_Key= @LasCallKey
-		end
-	end
+  INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
+  select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
+  select @callout_id = scope_identity()
 
-	INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
-	select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
-	select @callout_id = scope_identity()
+  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+   select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
+  select @cal_id = scope_identity()
 
-	INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-	 select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
-	select @cal_id = scope_identity()
-
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from dbo.ccRIACampEspWG wg 
+  where wg.tipo = 1 and wg.idcampesp =@cam_id
  end
 
 else
  begin
-	Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
-		where callout_id = @existCallOut
-	Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
-		where callout_id = @existCallOut
-	set @callout_id = @existCallOut
-	select @cal_id=cal_id from ccocallsout where callout_id = @existCallOut
+  Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData 
+    where callout_id = @existCallOut
+  Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
+    where callout_id = @existCallOut
+  set @callout_id = @existCallOut
+  select @cal_id=cal_id from ccocallsout where callout_id = @existCallOut
 
-	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-	select idwg, cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccocallsout cc right join dbo.ccRIACampEspWG wg on (wg.idcampesp = cc.cam_id )
-	where wg.tipo = 1 and cal_id = @cal_id
+  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+  select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo 
+  from ccRIACampEspWG wg
+  where wg.tipo = 1  and wg.idcampesp =@cam_id
  end
 
 select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
 select @callout_id as [callout_id], @cal_id as [cal_id], @calloutMaxTime as [calloutMaxTime],@cal_Key as [callKey]
 return(0)
 set nocount off'
-		EXEC(@Sql)
+    EXEC(@Sql)
 
 		set @process = 'Alter SP  -- ccsp_AgentUpdateCallCALIF'
 		set @Sql= 'ALTER procedure [dbo].[ccsp_AgentUpdateCallCALIF]
@@ -2580,7 +2586,7 @@ else if @type=2 begin--Twitter
 	inner join messageOutTwitter b on a.conversationTwitterId=b.conversationTwitterId
 	left outer join ccinbound c on c.inbound_id = a.inboundid
 	left outer join ccusers d on d.user_id = b.userid
-	left outer join relationmessageDisposition e on e.messageId=b.messageOutTwitterId
+	left outer join relationMessageDispositionTwit e on e.messageOutTwitterId=b.messageOutTwitterId
 	left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
 	left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
 	where a.conversationTwitterId=@conversationId
@@ -3781,57 +3787,7 @@ end
 drop table #TempccoLogDials'
     EXEC(@Sql)
 
-    set @process = 'Alter SP ccsp_AGENTInsertCallOut -- CW-958'
-    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
-@cam_id smallint,
-@cal_Key varchar(20),
-@cal_Telefono varchar(30),
-@user_id int,
-@cal_extension varchar(7),
-@sData varchar(255) = '''', --HLAS para guardar notas de la llamada
-@existCallOut as int = 0
-AS
-set
-nocount on
-declare @fecha as datetime, @callout_id as int, @cal_id as int, @calloutMaxTime as int
-
-select @fecha=getdate()
-
-if @existCallOut=0
- begin
-  INSERT ccocallsoutsource (cal_key, cam_id, cal_telefono, cal_status, user_id, cal_fechaDial, dato1)
-  select @cal_Key, @cam_id, substring(@cal_Telefono, 1, 19), 6, @user_id, @fecha, @sData
-  select @callout_id = scope_identity()
-
-  INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
-   select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
-  select @cal_id = scope_identity()
-
-  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-  select idwg,  @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from dbo.ccRIACampEspWG wg
-  where wg.tipo = 1 and wg.idcampesp = @cam_id
- end
-
-else
- begin
-  Update ccocallsoutsource set cam_id=@cam_id, cal_telefono=substring(@cal_Telefono, 1, 19), dato1=@sData
-    where callout_id = @existCallOut
-  Update ccocallsout set cam_id=@cam_id, cal_telefono=@cal_Telefono
-    where callout_id = @existCallOut
-  set @callout_id = @existCallOut
-  select @cal_id=cal_id from ccocallsout with(nolock) where callout_id = @existCallOut
-
-  insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-  select idwg, @cal_id, 0 as [user_id], getdate() timestamp, 1 as tipo from ccRIACampEspWG wg
-  where wg.tipo = 1 and wg.IdCampEsp=@cam_id
- end
-
-select @calloutMaxTime = cam_tNoContesta from ccCamps where cam_id=@cam_id
-select ''callout_id''=@callout_id, ''cal_id''=@cal_id, ''calloutMaxTime'' = @calloutMaxTime
-return(0)
-set nocount off
-'
-    EXEC(@Sql)
+   
 
     set @process = 'Alter SP ccsp_DLRInsertCall -- CW-958'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
@@ -3906,6 +3862,365 @@ end
 '
     EXEC(@Sql)
 
+    set @process = 'Alter SP ccsp_MailAdminAccount --CW-1048'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_MailAdminAccount]
+@action int,
+@meanContactTypeId smallint = 1,
+@contactMeanId int=0,
+@name	varchar(30)=null,
+@conexionInfo	varchar(255)=null,
+@inboundId	int=0,
+@connUser	varchar(60)=null,
+@ConnPass	varchar(30)=null,
+@numMessages	tinyint=null,
+@timeAlertMessage	tinyint=null,
+@isActive bit =null,
+@UserId int =null,
+@idArea smallint =null,
+@maxMails tinyint =3,
+@answerTimeOut tinyint=null,
+@revisionTime varchar(10)=null,
+@daysTwitterRecord varchar(10)=null,
+@closeConversationTime varchar(10)=null
+AS
+BEGIN
+-- SET NOCOUNT ON added to prevent extra result sets from
+-- interfering with SELECT statements.
+
+SET NOCOUNT ON;
+/****
+Conexion Info Email In
+	protocol|server|ssl|port|cleanMail|revisionTime
+Conexion Info Email Out
+	serverOut|portOut|tls|sslOut
+Conexion Info Twitter
+	usuarioID|token|tokenSecret|time|daysTwitterRecord
+***/
+
+
+declare @isActiveMail bit
+set @isActiveMail=0
+
+if @action = 1 begin --checha si esta activo el servicio
+	select @isActiveMail = valor from ccSettings where setting_id=152
+	if @isActiveMail = 1 begin
+		select @isActiveMail=(case when isActive = 1 and @isActiveMail = 1 then 1 else 0 end) from meanContactType where meanContactTypeId = 1
+	end
+	select @isActiveMail as isActiveMail
+	return (0)
+end
+else if @action = 2 begin -- carga la relacion de especialidades y cuentas de email de entrada
+	select A.inboundId,A.conexionInfo,A.connUser,A.connPass, A.isActive
+		from ContactMeanIn A
+			inner join ccInbound B on A.inboundId=B.Inbound_Id
+		where meanContactTypeId = @meanContactTypeId and B.Status=1 and A.isActive=1
+end
+else if @action = 3 begin	--
+	select name,conexionInfo,connUser,ConnPass,numMessages,timeAlertMessage,answerTimeOut from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+end
+else if @action = 4 begin--insert or update relation mail whit ACD by in
+	---Es necesario cambiar [ccsp_NetworkSocialAdminAccount] por que tambien se ocupa aqui
+	DECLARE @tableConexionInfo TABLE(  id int, value varchar(255))
+	if @connUser='''' 	set @connUser=''nuxiba@nuxiba.com''
+	if not exists(select * from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId) begin
+		if not exists(select * from ContactMeanIn where connUser=@connUser) or @connUser=''nuxiba@nuxiba.com'' begin
+		if @name is null set @name=''''
+		if @conexionInfo is null and @meanContactTypeId=1  set @conexionInfo=''''
+		if @connUser is null set @connUser=''''
+		if @connPass is null set @connPass=''''
+		if @numMessages is null set @numMessages=3
+		if @timeAlertMessage is null set @timeAlertMessage=5
+		if @isActive is null set @isActive=0
+		if @answerTimeOut is null set @answerTimeOut=0
+		if @closeConversationTime is null set @closeConversationTime=3
+
+		--Twitter deja los token
+		--conexion Info usuarioID|token|tokenSecret|time|daysTwitterRecord
+		if @meanContactTypeId= 2 begin
+
+			if @conexionInfo is null begin
+				set @conexionInfo=''usuarioID|token|tokenSecret''
+				set @revisionTime=isnull(@revisionTime,''1'')
+				set @daysTwitterRecord=isnull(@daysTwitterRecord,''0'')
+			end
+			else begin
+			select @conexionInfo
+				insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+				set @conexionInfo=null
+
+				SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+				SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+				SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+			end
+			set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+		end
+
+
+
+		insert into ContactMeanIn (meanContactTypeId,name,conexionInfo,inboundId,connUser,ConnPass,numMessages,timeAlertMessage,isActive,answerTimeOut,closeConversationTime)
+				values (@meanContactTypeId,@name,@conexionInfo,@inboundId,@connUser,@connPass,@numMessages,@timeAlertMessage,@isActive,@answerTimeOut,@closeConversationTime)
+		select 1,''insert''
+	end
+		else select -1,''insert''
+	end
+	else begin
+		if not exists(select * from ContactMeanIn where inboundId<>@inboundId and connUser=@connUser) or @connUser=''nuxiba@nuxiba.com'' begin
+
+			select @name=isnull(@name,name), @conexionInfo = isnull(@conexionInfo,conexionInfo),@connUser= isnull(@connUser,connUser),@connPass= isnull(@connPass,ConnPass),
+				@numMessages= isnull(@numMessages,numMessages),@timeAlertMessage= isnull(@timeAlertMessage,timeAlertMessage),@isActive= isnull(@isActive,isActive),
+				@answerTimeOut= isnull(@answerTimeOut,answerTimeOut),@closeConversationTime=isnull(@closeConversationTime,closeConversationTime)
+			from ContactMeanIn where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+
+
+			--Twitter deja los token
+			if @meanContactTypeId= 2 begin
+				--usuarioID|token|tokenSecret|time|daysTwitterRecord
+				insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+				set @conexionInfo=null
+
+				SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+				SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+				SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+				set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+			end
+
+
+			update ContactMeanIn set name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,
+				numMessages=@numMessages,timeAlertMessage=@timeAlertMessage,isActive=@isActive,answerTimeOut=@answerTimeOut,
+				closeConversationTime=@closeConversationTime
+				where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+			select 1,''update''
+		end
+		else select -1,''update''
+	end
+	return (0)
+end
+
+else if @action = 5 begin--parameters check conection Mail In
+	select conexionInfo,connUser,connPass from ContactMeanIn with(nolock) where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+end
+else if @action = 6 begin--parameters check conection Mail Out
+	select conexionInfo,connUser,connPass, isActive
+		from ContactMeanOut with(nolock) where contactMeanOutId  = @contactMeanId
+end
+else if @action = 7 begin--list mail out by ACD
+	select A.contactMeanOutId,A.name, A.conexionInfo,A.connUser,A.connPass,A.isActive
+		from ContactMeanOut A with(nolock)
+
+end
+else if @action = 8 begin--insert account mail out
+	if not exists(select * from ContactMeanOut where connUser=@connUser) begin
+		insert into ContactMeanOut (meanContactTypeId,name,conexionInfo,connUser,ConnPass,isActive)
+			values (@meanContactTypeId,@name,@conexionInfo,@connUser,@connPass,@isActive)
+		select 1
+		return(0)
+	end
+	else select -1
+end
+else if @action = 9 begin--update account mail out
+	if not exists(select * from ContactMeanOut where contactMeanOutId <> @contactMeanId  and connUser=@connUser) begin
+
+		select  @meanContactTypeId=isnull(@meanContactTypeId,meanContactTypeId),@name=isnull(@name,name),
+			@conexionInfo=isnull(@conexionInfo,conexionInfo),@connUser=isnull(@connUser,connUser),
+			@connPass=isnull(@connPass,ConnPass),@isActive=isnull(@isActive,isActive)
+			from ContactMeanOut where contactMeanOutId = @contactMeanId
+
+		update ContactMeanOut set meanContactTypeId=@meanContactTypeId,name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,isActive=@isActive
+		 where contactMeanOutId = @contactMeanId
+		 select 1,''update ''
+	end
+	else select -1
+end
+else if @action = 10 begin	--insert relation mail out and ACD
+	if not exists(select * from relationContactMeanOutInbound where contactMeanOutId=@contactMeanId) begin
+		insert into relationContactMeanOutInbound(contactMeanOutId,inboundId) values (@contactMeanId,@inboundId)
+	end
+end
+else if @action = 11 begin --delete relation mail out and ACD
+	delete relationContactMeanOutInbound where contactMeanOutId=@contactMeanId and inboundId=@inboundId
+end
+else if @action = 12 begin --delete mail out
+	delete relationContactMeanOutInbound where contactMeanOutId=@contactMeanId
+	delete ContactMeanOut where contactMeanOutId=@contactMeanId
+end
+else if @action = 13 begin --delete mail out
+	if not exists(select * from ContactMeanOut where contactMeanOutId=@contactMeanId) begin
+		update ContactMeanOut set isActive=@isActive where contactMeanOutId = @contactMeanId
+		select 1
+	end
+	else select -1
+end
+else if @action = 14 begin
+	select * from relationContactMeanOutInbound
+end
+else if @action = 15 begin
+	select * from relationContactMeanOutInbound where inboundId=@inboundId
+end
+--else if @action = 16 begin
+--	update ccRIACat_Areas set maxMails = @maxMails where IDArea=@idArea
+--end
+else if @action = 17 begin	--
+	select A.conexionInfo,A.connUser,A.connPass,A.isActive from ContactMeanIn A where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+End
+else if @action = 18 begin	--Carga cuentas de salida
+	select A.contactMeanOutId,A.conexionInfo,A.connUser,A.connPass,isActive from contactMeanOut A where isActive=1
+end
+else if @action = 19 begin	 --relation MailOut and ACD
+	select contactMeanOutId,inboundId from relationContactMeanOutInbound where inboundId = @inboundId or @inboundId = 0 order by inboundId
+end
+else if @action = 20 begin --relation MailOut and ACD
+	select B.inboundId,A.conexionInfo,A.connUser,A.connPass
+	from ContactMeanOut A
+	inner join relationContactMeanOutInbound B on B.contactMeanOutId=A.contactMeanOutId
+	where B.inboundId = @inboundId or @inboundId = 0
+end
+else if @action = 21 begin --relation MailOut and ACD
+	update ContactMeanOut set isActive=@isActive where contactMeanOutId = @contactMeanId
+end
+else if @action = 22 begin --Update type
+	if @meanContactTypeId = 2 --Twitter
+		set @conexionInfo=''usuarioID|token|tokenSecret|1|0''
+	else
+		set @conexionInfo=''''
+	update ContactMeanIn set name = '''', conexionInfo = @conexionInfo, connUser = '''', isActive = 0 where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+	select 1,''unAssigned''
+end
+END'
+    EXEC(@Sql)
+
+    set @process = 'Alter SP ccsp_NetworkSocialAdminAccount HotFix:Cuenta de twitter ya existente'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_NetworkSocialAdminAccount]
+@action int,
+@meanContactTypeId smallint = 2,
+@contactMeanId int=0,
+@name	varchar(30)=null,
+@conexionInfo	varchar(255)=null,
+@inboundId	int=0,
+@connUser	varchar(60)=null,
+@ConnPass	varchar(30)=null,
+@numMessages	tinyint=null,
+@timeAlertMessage	tinyint=null,
+@isActive bit =null,
+@UserId int =null,
+@idArea smallint =null,
+@maxMails tinyint =3,
+@answerTimeOut tinyint=null,
+@revisionTime varchar(10)=null,
+@daysTwitterRecord varchar(10)=null,
+@closeConversationTime varchar(10)=null
+AS
+BEGIN
+-- SET NOCOUNT ON added to prevent extra result sets from
+-- interfering with SELECT statements.
+SET NOCOUNT ON;
+
+declare @isActiveMail bit
+set @isActiveMail=0
+
+if @action = 1 begin--insert account twitter account
+	DECLARE @tableConexionInfo TABLE(  id int, value varchar(255))
+	if exists(select * from ContactMeanIn where conexionInfo = @conexionInfo and meanContactTypeId=@meanContactTypeId and inboundId<>@inboundId) begin
+		select 0, ''Error: acount already exists''
+		return -1
+	end
+	if not exists(select * from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId) begin
+	if @name is null set @name=''''
+		--if @conexionInfo is null set @conexionInfo=''''
+		if @connUser is null set @connUser=''''
+		if @connPass is null set @connPass=''''
+		if @numMessages is null set @numMessages=3
+		if @timeAlertMessage is null set @timeAlertMessage=5
+		if @isActive is null set @isActive=0
+		if @answerTimeOut is null set @answerTimeOut=0
+		if @closeConversationTime is null set @closeConversationTime=3
+
+		--Twitter deja los token
+		--conexion Info usuarioID|token|tokenSecret|time|daysTwitterRecord
+		if @meanContactTypeId= 2 begin
+
+			if @conexionInfo is null begin
+				set @conexionInfo=''usuarioID|token|tokenSecret''
+				set @revisionTime=isnull(@revisionTime,''1'')
+				set @daysTwitterRecord=isnull(@daysTwitterRecord,''0'')
+			end
+			else begin
+				insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+				set @conexionInfo=null
+
+				SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+				SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+				SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+				SELECT @closeConversationTime=  isnull(@closeConversationTime,isnull(max(value),''3'')) FROM @tableConexionInfo where id=6
+			end
+			set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+		end
+
+
+		insert into ContactMeanIn (meanContactTypeId,name,conexionInfo,inboundId,connUser,ConnPass,numMessages,timeAlertMessage,isActive,answerTimeOut,closeConversationTime)
+				values (@meanContactTypeId,@name,@conexionInfo,@inboundId,@connUser,@connPass,@numMessages,@timeAlertMessage,@isActive,@answerTimeOut,@closeConversationTime)
+		select 1,''insert''
+	end
+	else begin
+		select @conexionInfo = isnull(@conexionInfo,conexionInfo),@connUser= isnull(@connUser,connUser),@connPass= isnull(@connPass,ConnPass),
+				@numMessages= isnull(@numMessages,numMessages),@timeAlertMessage= isnull(@timeAlertMessage,timeAlertMessage),@isActive= isnull(@isActive,isActive),
+				@answerTimeOut= isnull(@answerTimeOut,answerTimeOut),@name=isnull(@name,name),@closeConversationTime=isnull(@closeConversationTime,closeConversationTime)
+				from ContactMeanIn where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+
+		--Twitter deja los token
+		if @meanContactTypeId= 2 begin
+			--usuarioID|token|tokenSecret|time|daysTwitterRecord|closeConversation
+			insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+			set @conexionInfo=null
+
+			SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+			SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+			SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+
+			set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+		end
+
+
+
+		update ContactMeanIn set name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,
+			numMessages=@numMessages,timeAlertMessage=@timeAlertMessage,isActive=@isActive,answerTimeOut=@answerTimeOut,
+			closeConversationTime=@closeConversationTime
+			where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+		select 1,''update''
+	end
+end
+else if @action = 2 begin
+	if @inboundId=0
+		select A.inboundId,A.conexionInfo,A.connUser,A.ConnPass,A.isActive,A.name from contactMeanIn A
+		inner join ccInbound B on A.inboundId=B.Inbound_id
+		and B.chat = case when A.meanContactTypeId=1 then 3 when A.meanContactTypeId=2 then 4 else -1 end
+		where meanContactTypeId=@meanContactTypeId and isActive=1
+	else
+		select A.inboundId,A.conexionInfo,A.connUser,A.ConnPass,A.isActive,A.name from contactMeanIn A
+		inner join ccInbound B on A.inboundId=B.Inbound_id
+		and B.chat = case when A.meanContactTypeId=1 then 3 when A.meanContactTypeId=2 then 4 else -1 end
+
+		where meanContactTypeId=@meanContactTypeId and isActive=1 and inboundId=@inboundId
+end
+else if @action = 3 begin
+	select A.name,A.connUser,A.numMessages,A.timeAlertMessage,A.answerTimeOut ,B.tNotas,B.descripcion,C.graphic_id,D.frame
+	from ContactMeanIn A
+	inner join ccinbound B on A.inboundId=B.Inbound_id
+	inner join ccRIAinboundGraph C on C.Inbound_id=B.Inbound_id
+	inner join ccRIAGraphics D on D.graphic_id=C.graphic_id
+	where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+end
+else if @action=4 begin
+	--Estos es para Twitter
+	--usuarioID|token|tokenSecret|time|daysTwitterRecord
+	select isnull(max(conexionInfo),''usuarioID|token|tokenSecret|1|0'') from contactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+end
+END'
+    EXEC(@Sql)
+    
     set @process = ''
     set @Sql= ''
     EXEC(@Sql)

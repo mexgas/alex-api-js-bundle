@@ -809,7 +809,6 @@ if @Version_Actual >= @Version
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
 
-
 	------------------ FIN SCRIPT ------------------
 
 

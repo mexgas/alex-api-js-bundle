@@ -90,25 +90,23 @@ delete migration where description=''ConversationMail'''
 
 		
 
-		set @process = 'insert into ccSettings twitter -------'
-		set @sql='if not exists(select * from ccSettings where setting_id = 174 and setting_id = 175) begin
+		set @process = 'insert into ccSettings twitter ------- 174'
+		set @sql='if not exists(select * from ccSettings where setting_id = 174) begin
 				INSERT INTO ccSettings (setting_id, valor, descripcion, Status,Tipo, detalle, description, bLoadSettings, validate) 
 VALUES (174, 0, ''WS Twitter'', 1, ''X'', ''Conexión de WS con la API de twitter'', ''Web services for validating twitter account'', 1,''.*'');
+end'
+		EXEC(@sql)
 
-
-
-				insert into ccSettings (setting_id,valor,
-				descripcion,
-				Status,
-				Tipo,
-				detalle,
-				description,
-				bLoadSettings,
-				validate)
+		set @process = 'insert into ccSettings twitter ------- 175'
+		set @sql='if not exists(select * from ccSettings where setting_id = 175) begin
+	insert into ccSettings (setting_id,valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
 				 values (175,'''',''ruta compartida twitter'',1,''X'',''se tiene ruta compartida'',''have shared path'',0,''.*'')
 
 		 end '
 		EXEC(@sql)
+
+
+
 
 		
 

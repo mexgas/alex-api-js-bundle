@@ -128,7 +128,10 @@ namespace MiddleWareReports
         {
             return string.Format("{0:00}:{1:00}:{2:00}", Convert.ToInt32(seconds) / 3600, (Convert.ToInt32(seconds) / 60) % 60, Convert.ToInt32(seconds) % 60);
         }
-
+        public static string formatTime(long seconds)
+        {
+            return string.Format("{0:00}:{1:00}:{2:00}", Convert.ToInt64(seconds) / 3600, (Convert.ToInt64(seconds) / 60) % 60, Convert.ToInt64(seconds) % 60);
+        }
         /// <summary>
         /// Parses database values to current culture format if necessary.
         /// </summary>

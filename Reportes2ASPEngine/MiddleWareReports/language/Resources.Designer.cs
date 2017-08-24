@@ -2322,15 +2322,6 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Looks up a localized string similar to Correo por ACD.
         /// </summary>
-        public static string EmailACD {
-            get {
-                return ResourceManager.GetString("EmailACD", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Correo por ACD.
-        /// </summary>
         public static string EmailbyACD {
             get {
                 return ResourceManager.GetString("EmailbyACD", resourceCulture);

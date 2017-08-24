@@ -25,12 +25,7 @@ if @Version_Actual >= @Version
 	if @indexInstancia>0
 		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
 
-	set @publicationServer = convert(nvarchar(max),@@servername)
-
-	declare @subscriptionServer nvarchar(max)
-	select @subscriptionServer = convert(nvarchar(max),par_valor)
-	from TREC_PARAMETROS
-	where par_id = 64
+	set @publicationServer = convert(nvarchar(max),@@servername)	
 
 	declare @jobLogin nvarchar(max)
 	declare @jobPassword nvarchar(max)
@@ -66,40 +61,9 @@ if @Version_Actual >= @Version
 	set @publisherPassword = isnull(@passwordSQL,'replication')
 
 	-----Folder compartido para las replicas-----
-	set @snapshotFolder = '\\' + @hostName + '\ReplData'
+	set @snapshotFolder = '\\' + @hostName + '\ReplData\'+@publicationServer
 
-	/****************************************************/
-	/*** Crea registro de Alias para replicas remotas ***/
-	/****************************************************/
-	declare @name nvarchar(max)
-	declare @ip nvarchar(max)
-	declare @registryValue nvarchar(max)
-
-	select @name = substring(@subscriptionServer, 0, charindex('|',@subscriptionServer))
-	select @ip = substring(@subscriptionServer, charindex('|',@subscriptionServer) + 1, len(@subscriptionServer))
-	select @registryValue = 'DBMSSOCN,'+@ip+',1433'
-
-	if @subscriptionServer <> '' and @publicationServer <> @name
-	begin
-		set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		@rootkey = N''HKEY_LOCAL_MACHINE''
-		,@key = N''Software\Microsoft\MSSQLServer\Client\ConnectTo''
-		,@value_name = ''' + @name + '''
-		,@type = N''REG_SZ''
-		,@value = ''' + @registryValue + ''''
-		EXEC(@Sql)
-
-		set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		@rootkey = N''HKEY_LOCAL_MACHINE''
-		,@key = N''SOFTWARE\Wow6432Node\Microsoft\MSSQLServer\Client\ConnectTo''
-		,@value_name = ''' + @name + '''
-		,@type = N''REG_SZ''
-		,@value = ''' + @registryValue + ''''
-		EXEC(@Sql)
-	end
-
-	select @subscriptionServer = @name
-
+	
 	/***********************************************/
 	/*** Revisa la BD distribution para replicas ***/
 	/***********************************************/
@@ -172,31 +136,7 @@ if @Version_Actual >= @Version
 		-- START SQL Server Agent
 		EXEC xp_servicecontrol N'START',N'SQLServerAGENT'
 
-	drop table #SQLAgentStatus
-
-	/******************************************************************
-	/*** Inicia los servicios necesarios para las replicas remotas ***/
-	******************************************************************/
-	if @subscriptionServer <> '' and @publicationServer <> @name
-	begin
-		exec sp_configure 'show advanced options', 1
-		reconfigure
-		exec sp_configure 'xp_cmdshell',1
-		reconfigure
-		exec xp_cmdshell 'sc config "RasMan" start= auto'
-		exec xp_cmdshell 'sc config "RasAuto" start= auto'
-		exec xp_cmdshell 'sc config "Netman" start= auto'
-		exec xp_cmdshell 'sc config "RemoteAccess" start= auto'
-		exec xp_cmdshell 'sc config "RpcSs" start= auto'
-		exec xp_cmdshell 'sc config "SQLBrowser" start= auto'
-
-		exec xp_cmdshell 'net start RasMan'
-		exec xp_cmdshell 'net start RasAuto'
-		exec xp_cmdshell 'net start Netman'
-		exec xp_cmdshell 'net start RemoteAccess'
-		exec xp_cmdshell 'net start RpcSs'
-		exec xp_cmdshell 'net start SQLBrowser'
-	end
+	drop table #SQLAgentStatus	
 
 	------------------ INICIO SCRIPT ------------------
 

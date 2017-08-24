@@ -33,8 +33,7 @@ if @Version_Actual >= @Version
 		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
 
 
-	select @publicationServer = convert(nvarchar(max),valor)
-	from ccsettings where setting_id = 31
+	select @publicationServer = convert(nvarchar(max),valor) from ccsettings where setting_id = 31
 
 	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
 

@@ -41,29 +41,27 @@ if @Version_Actual >= @Version
 	declare @passwordSQL nvarchar(50)
 	declare @userNameWin nvarchar(50)
 	declare @passwordWin nvarchar(50)
-	
+
 	declare @settingBD nvarchar(100)
 
 	declare @publDistLogin nvarchar(max)
 	declare @publDistPassword nvarchar(max)
-		
-	declare @temp table
-	(id int, 
-	value nvarchar(100));
+
+	declare @temp table  (id int, value nvarchar(100));
 	select @settingBD = valor from ccSettings where setting_id = 35
 
 	insert into @temp
-	 select id,Value from fn_RIASplitDelimited(@settingBD,'|') 
-	
+	 select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+
 	select @userNameWin = value  from @temp where id = 1
 	select @passwordWin = value  from @temp where id = 2
 	select @userNameSQL = value  from @temp where id = 3
 	select @passwordSQL = value  from @temp where id = 4
-	select @hostName = value  from @temp where id = 5	
-	
+	select @hostName = value  from @temp where id = 5
+
 	-----agregado de credenciales WINDOWS-----
 	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
-	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')	
+	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
 
 	-----agregado de credenciales SQL SERVER-----
 	set @publDistLogin = isnull(@userNameSQL,'replication')

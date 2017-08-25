@@ -6,10 +6,10 @@
 Author: Omar Mejía Magos
 Date: 2017/08/25
 Description:
-	se modfiica el SP ccsp_OUTGetNewJobs Clicker
-	se modifica el SP ccsp_OUTGetNewProviderJobs
-	se modifico el SP ccsp_OUTUpdateDialJob
-	Se modifica el SP ccsp_OUTcheckTimeZone
+	se modfiica el SP ccsp_OUTGetNewJobs CW-974 Clicker
+	se modifica el SP ccsp_OUTGetNewProviderJobs CW-974 Clicker
+	se modifico el SP ccsp_OUTUpdateDialJob CW-974 Clicker
+	Se modifica el SP ccsp_OUTcheckTimeZone CW-974 Clicker
 	
 
 Database: CCenterRia

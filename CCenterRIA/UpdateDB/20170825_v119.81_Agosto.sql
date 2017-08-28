@@ -6,10 +6,10 @@
 Author: Omar Mejía Magos
 Date: 2017/08/25
 Description:
-	se modfiica el SP ccsp_OUTGetNewJobs CW-974 Clicker
-	se modifica el SP ccsp_OUTGetNewProviderJobs CW-974 Clicker
-	se modifico el SP ccsp_OUTUpdateDialJob CW-974 Clicker
-	Se modifica el SP ccsp_OUTcheckTimeZone CW-974 Clicker
+	se modfiica el SP ccsp_OUTGetNewJobs CW-974 Clicker, CW-986 Cancelar callbacks para buzon/máquina contestadora: Para hacer la validación de la hora de marcación para los registros que están en status nuevos
+	se modifica el SP ccsp_OUTGetNewProviderJobs CW-974 Clicker, CW-986 Cancelar callbacks para buzon/máquina contestadora: Para hacer la validación de la hora de marcación para los registros que están en status nuevos
+	se modifico el SP ccsp_OUTUpdateDialJob CW-974 Clicker,CW-986 Cancelar callbacks para buzon/máquina contestadora: Para no generar callbacks y mandarlos a nuevos cuando el resultado es ocupado, no contesta,Fax/Modem, maquina contestadora 
+	Se modifica el SP ccsp_OUTcheckTimeZone CW-974 Clicker:Se modifico el tipo de dato de la variable @timeMaxContestacion, ya que se desbordaba en un escenario al cargar los callbacks. 
 	
 
 Database: CCenterRia
@@ -244,7 +244,6 @@ print (@sql)
 exec(@sql)
 
 return(0)
-	
 	'
 	EXEC(@Sql)
 	
@@ -439,7 +438,6 @@ select @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''
 --print @sql
 exec(@sql)
 return(0)	
-	
 	'
 	EXEC(@Sql)
 
@@ -671,7 +669,6 @@ IF @CallResultDial in (10,90) --No Dial Tone, otros, NoService
 
 return(0)
 set nocount off	
-	
 	'
 	EXEC(@Sql)    
 	
@@ -773,7 +770,6 @@ inner join #tempCamp on
 
 )
 drop table #tempCamp	
-	
 	'
 	EXEC(@Sql)
 

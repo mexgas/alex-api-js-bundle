@@ -1197,6 +1197,7 @@ set nocount off'
            WHERE  object_id = OBJECT_ID(N''[dbo].[fn_getSIPHeaderCfg]'')
                   AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
   DROP FUNCTION [dbo].[fn_getSIPHeaderCfg]'
+   EXEC(@Sql)
 
 	---------------- function fn_getSIPHeaderCfg
     set @process = 'create fn_getSIPHeaderCfg -- CW-558_Integracion_Cyber_encabezado_sip'

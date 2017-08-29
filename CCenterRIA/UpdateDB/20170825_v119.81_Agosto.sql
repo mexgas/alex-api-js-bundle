@@ -781,7 +781,7 @@ drop table #tempCamp
 	
 		---------------- new columns
     set @process = 'new columns -- CW-558_Integracion_Cyber_encabezado_sip'
-    set @Sql= 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+    set @Sql= 'IF NOT EXISTS(SELECT * FROM sys.columns 
           WHERE Name = N''call_TS''
           AND Object_ID = Object_ID(N''dbo.ccoLogDials''))
 BEGIN
@@ -1190,17 +1190,17 @@ return(0)
 set nocount off'
     EXEC(@Sql)
 	
-	---------------- function fn_getSIPHeaderCfg
-    set @process = 'create fn_getSIPHeaderCfg -- CW-558_Integracion_Cyber_encabezado_sip'
+
+ set @process = 'Drop ig exists fn_getSIPHeaderCfg -- CW-558_Integracion_Cyber_encabezado_sip'
     set @Sql= 'IF EXISTS (SELECT *
            FROM   sys.objects
            WHERE  object_id = OBJECT_ID(N''[dbo].[fn_getSIPHeaderCfg]'')
                   AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
-  DROP FUNCTION [dbo].[fn_getSIPHeaderCfg]
+  DROP FUNCTION [dbo].[fn_getSIPHeaderCfg]'
 
-GO
-
-CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
+	---------------- function fn_getSIPHeaderCfg
+    set @process = 'create fn_getSIPHeaderCfg -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
 returns varchar(500)
 as
 begin
@@ -1213,11 +1213,6 @@ begin
 
 	return @result
 end'
-    EXEC(@Sql)
-	
-
-    set @process = ''
-    set @Sql= ''
     EXEC(@Sql)
 
 

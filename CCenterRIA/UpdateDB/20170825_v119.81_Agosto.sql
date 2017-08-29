@@ -3,14 +3,19 @@
 /*******************************/
 
 /*
-Author: Omar Mejía Magos
+Author: Omar Mejía Magos/Hugo Longoria
 Date: 2017/08/25
 Description:
 	se modfiica el SP ccsp_OUTGetNewJobs CW-974 Clicker, CW-986 Cancelar callbacks para buzon/máquina contestadora: Para hacer la validación de la hora de marcación para los registros que están en status nuevos
 	se modifica el SP ccsp_OUTGetNewProviderJobs CW-974 Clicker, CW-986 Cancelar callbacks para buzon/máquina contestadora: Para hacer la validación de la hora de marcación para los registros que están en status nuevos
 	se modifico el SP ccsp_OUTUpdateDialJob CW-974 Clicker,CW-986 Cancelar callbacks para buzon/máquina contestadora: Para no generar callbacks y mandarlos a nuevos cuando el resultado es ocupado, no contesta,Fax/Modem, maquina contestadora 
 	Se modifica el SP ccsp_OUTcheckTimeZone CW-974 Clicker:Se modifico el tipo de dato de la variable @timeMaxContestacion, ya que se desbordaba en un escenario al cargar los callbacks. 
-	
+	Se modifica SP ccsp_DLRGetDialInfo (CW-558_Integracion_Cyber_encabezado_sip) para obtener el formato de cabecera SIP de la llamada
+	Se modifica SP ccsp_DLRgetDialPrefix (CW-558_Integracion_Cyber_encabezado_sip) para obtener el formato de cabecera SIP de la llamada
+	Se modifica SP ccsp_DLRSaveDialResult (CW-558_Integracion_Cyber_encabezado_sip) para guardar un identificador (TIMESTAMP) de la llamada
+	Se modifica SP ccsp_RIAConfCamp (CW-558_Integracion_Cyber_encabezado_sip) para obtener el formato de la cabecera SIP
+	Se modifica SP ccsp_RIAUpdateCamConfig (CW-558_Integracion_Cyber_encabezado_sip) para actualizar el formato de la cabecera SIP
+	Se crea la funcion fn_getSIPHeaderCfg (CW-558_Integracion_Cyber_encabezado_sip) para completar la informacion de la cabecera SIP
 
 Database: CCenterRia
 Required version: 119.74
@@ -773,12 +778,443 @@ drop table #tempCamp
 	'
 	EXEC(@Sql)
 
+	
+		---------------- new columns
+    set @process = 'new columns -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''call_TS''
+          AND Object_ID = Object_ID(N''dbo.ccoLogDials''))
+BEGIN
+    alter table ccoLogDials add call_TS varchar(15)
+END
 
-
-    
-    set @process = ''
-    set @Sql= ''
+IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''sipHdrFormat''
+          AND Object_ID = Object_ID(N''dbo.ccCamps''))
+BEGIN
+    alter table ccCamps add sipHdrFormat varchar(255)
+END'
     EXEC(@Sql)
+	
+
+    ---------------- SP ccsp_DLRGetDialInfo
+    set @process = 'alter ccsp_DLRGetDialInfo -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
+@callout_id int,
+@cam_id smallint=0,
+@iPortNumber smallint = 0
+AS
+set nocount on
+declare @message_name as varchar(max), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)
+declare @prefix as varchar(15)
+declare @tNoContesta as tinyint
+declare @ani as varchar(32)
+declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint
+declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
+declare @ivr_script smallint, @surveycamid int
+declare @call_record_cam as tinyint
+declare @pais as tinyint 
+declare @sipHdrFormat varchar(255)
+
+set @prefix =''''
+set @tNoContesta = 25
+set @ani=''''
+set @iTipoDial = 0
+set @detectAnswerMachine = 0
+set @detectVoiceMail =1
+set @cam_tnotas = 30
+set @keepDial = 0
+
+select @pais = valor from ccsettings where setting_id = 104
+
+-- Mensajes
+select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
+from dbo.fn_ccCamps_SelMessage(@cam_id)
+
+-- Prefijo por puerto
+select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+-- Prefijo por campaña
+if @prefix =''''
+    select @prefix = dialPrefix from ccCamps where cam_id = @cam_id
+-- Prefijo general, si es que esta habilitado
+if @prefix ='''' and ((select cast(valor as int) from ccsettings where setting_id =102) & 1 = 1)
+    select @prefix = valor from ccsettings where setting_id =101
+
+select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
+
+-- Propiedades de campaña
+select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
+@detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
+@call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0)
+from ccCamps C (nolock) where C.cam_id=@cam_id
+
+if @surveycamid > 0
+    select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+--Custom MOH Files
+DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
+SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+if @iPortNumber >= 0 
+begin
+	SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+
+    SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)
+    , dial_tels
+    , C.cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, isnull(@message_name, '''') as message_name
+    , @tNoContesta as tNoContesta, @prefix as sDialPrefix
+    , case when dbo.TelAni(c.cal_telefono,@lista_id) <> '''' then dbo.TelAni(c.cal_telefono,@lista_id) else @ani end ani
+    , case when dbo.TelAni(c.cal_telefono2,@lista_id) <> '''' then dbo.TelAni(c.cal_telefono2,@lista_id) else @ani end ani2
+    , case when dbo.TelAni(c.cal_telefono3,@lista_id) <> '''' then dbo.TelAni(c.cal_telefono3,@lista_id) else @ani end ani3
+    , case when dbo.TelAni(c.cal_telefono4,@lista_id) <> '''' then dbo.TelAni(c.cal_telefono4,@lista_id) else @ani end ani4
+    , case when dbo.TelAni(c.cal_telefono5,@lista_id) <> '''' then dbo.TelAni(c.cal_telefono5,@lista_id) else @ani end ani5
+    , @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
+    , @cam_tnotas cam_tnotas, @keepDial keepDial
+    , isnull(@messageDNCL_name, '''') as messageDNCL_name
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
+    , isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
+    , isnull(@MohFiles,'''') as mohFiles
+    ,@ivr_script ivrScript
+	,@sipheader data
+    FROM ccoCallsOutSource C with(nolock)
+    WHERE C.callout_id = @callout_id
+    return
+end 
+
+set nocount off'
+    EXEC(@Sql)
+
+    ---------------- SP ccsp_DLRgetDialPrefix
+    set @process = 'alter ccsp_DLRgetDialPrefix -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]
+@cam_id smallint=0,
+@iPortNumber smallint = 0,
+@phone varchar(30) = '''',
+@callout_id int = 0
+as
+declare @prefix as varchar(15), @sipheader varchar(500)
+declare @ani as varchar(32)
+declare @call_record_cam as tinyint
+declare @pais as tinyint 
+declare @aniglobal varchar(32), @sipHdrFormat varchar(255)
+declare @ivr_script smallint, @surveycamid int
+declare @call_record bit, @tNoContesta tinyint, @detectAnswerMachine smallint, @detectVoiceMail tinyint
+
+select @pais = valor from ccsettings with(nolock) where setting_id = 104
+select @call_record_cam = call_record from ccCamps where cam_id = @cam_id
+select @aniglobal = valor from ccsettings with(nolock) where setting_id = 177
+
+set @prefix =''''
+-- Prefijo por puerto
+select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
+
+-- Prefijo por campaña,
+if @prefix =''''
+    select @prefix = dialPrefixMan from ccCamps where cam_id = @cam_id
+
+-- Prefijo general
+if @prefix ='''' and ((select cast(valor as int) from ccsettings where setting_id =102) & 2 = 2)
+    select @prefix = valor from ccsettings with(nolock) where setting_id =101
+
+-- Ani
+set @ani = dbo.TelAni(@phone, (select id_anilist from ccCamps where cam_id =@cam_id) )
+
+--AnswerMachine Message Files
+DECLARE @MsgFiles VARCHAR(8000) 
+SELECT @MsgFiles = COALESCE(@MsgFiles + '','', '''') + V.msgfile 
+FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 8 ORDER BY orden
+
+--Custom MOH Files
+DECLARE @MohFiles VARCHAR(8000) 
+SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+select @surveycamid = 0, @ivr_script = 0
+
+select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta = cam_tNoContesta, @ani = case when @ani = '''' then ani else @ani end
+,@detectAnswerMachine = detectAnswerMachine, @detectVoiceMail = detectVoiceMail
+,@call_record = dbo.EnableCallRecord(@call_record_cam,@pais,@phone), @surveycamid = isnull(surveycamid,0)
+from ccCamps where cam_id = @cam_id
+
+SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+
+if @surveycamid > 0
+    select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+    
+
+if @ani = '''' begin 
+set @ani = @aniglobal 
+end 
+
+select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail,
+@call_record as call_record, isnull(@MsgFiles,'''') as messageFiles, isnull(@MohFiles,'''') as mohFiles, @ivr_script ivrScript, @sipheader data'
+    EXEC(@Sql)
+	
+	---------------- SP ccsp_DLRSaveDialResult
+    set @process = 'alter ccsp_DLRSaveDialResult -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'ALTER procedure [dbo].[ccsp_DLRSaveDialResult]
+@callout_id int,
+@cam_id smallint,
+@tipoResDial_id tinyint,
+@Telefono varchar(30),
+@Puerto smallint,
+@tDialing tinyint=0,
+@tBusy smallint=0,
+@call_id int = 0,
+@answerbit bit = null,
+@tAnswerBit smallint = 0,
+@canceledNoAgents bit =0,
+@disconnectCause varchar(250) = '''',
+@cal_key varchar(20) = '''',
+@call_TS varchar(15) = ''''
+AS
+set nocount on
+declare @tNow as datetime, @RecicleSIC tinyint
+declare @logDial_id int, @preview smallint
+declare @tAnswerBitFinal as datetime
+
+SELECT @RecicleSIC=IsNull(valor, 0) FROM ccSettings WHERE setting_id = 60
+select @tNow=getdate()
+
+select @tAnswerBitFinal = dateadd(ss,-@tAnswerBit,@tNow)
+
+if @call_id > 0 and @tipoResDial_id = 1
+BEGIN
+	INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS)
+	select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, ''00000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS
+END
+ELSE
+BEGIN
+	INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS)
+	select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, ''00000000'', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS
+END
+
+select @logDial_id=scope_identity()
+
+if (@RecicleSIC=1) begin
+	UPDATE ccoWorkingTable with(rowlock) SET tipoResDial_id = @tipoResDial_id where callout_id = @callout_id
+end
+
+select @logDial_id
+
+-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+if @call_id > 0 and @tipoResDial_id = 1
+begin
+	select @preview = case when progdial=2 then 1 else 0 end from cccamps nolock where cam_id=@cam_id
+	if @preview = 1
+	begin
+		update ccoCallsOut with(rowlock) set cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
+	end
+	else
+	begin
+		update ccoCallsOut with(rowlock) set cal_manual = 2, cal_puerto = @Puerto where cal_manual =1 and cal_id = @call_id and cal_puerto = 0
+	end
+	exec ccsp_CstoCalculaCosto @call_id
+
+	if @cal_key ='''' begin
+		select @cal_key=cal_key from ccoCallsOutSource with(nolock) where @callout_id=callout_id
+		update ccologdials with(rowlock) set cal_key=@cal_key where logDial_id=@logDial_id
+	end
+
+end
+
+-- inserta informacion para reportes de workgroup
+insert ccRIAWorkGroup_logDial_id (IDWG, logDial_id, cam_id, timestamp)
+select IDWG, @logDial_id, IdCampEsp, getdate() 
+from ccRIACampEspWG where tipo = 1 and IdCampEsp = @cam_id
+
+-- Guarda configuracion de TipoDialingMode
+update ccoLogDials with(rowlock) set TipoDialingMode = dbo.fn_getDialingMode(@call_id, 0, @logDial_id, @cam_id) where logDial_id=@logDial_id
+set nocount off'
+    EXEC(@Sql)
+	
+	---------------- SP ccsp_RIAConfCamp
+    set @process = 'alter ccsp_RIAConfCamp -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
+@User_id smallint
+AS
+set nocount on
+ select a1.cam_id, cam_Descripcion
+  , cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+  , cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+  , cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+  , detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+  , cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+  , stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, cam_maxqueue as queSize,
+  DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+     ,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+  ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+  ,isnull(sipHdrFormat, '''') sipHdrFormat
+  from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+  inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+  where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+  order by cam_descripcion
+ return(0)
+ set nocount off'
+    EXEC(@Sql)
+	
+	---------------- SP ccsp_RIAUpdateCamConfig
+    set @process = 'alter ccsp_RIAUpdateCamConfig -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+@cam_id smallint,
+@cam_descripcion varchar(40) = null,
+@cam_tnotas smallint = null,
+@cam_ocupado tinyint = null,
+@cam_NoInt_ocupado tinyint = null,
+@cam_inter_ocupado smallint = null,
+@cam_nocontesto tinyint = null,
+@cam_NoInt_nocontesto tinyint = null,
+@cam_inter_nocontesto smallint = null,
+@cam_fax tinyint = null,
+@cam_NoInt_fax tinyint = null,
+@cam_inter_fax smallint = null,
+@cam_ModoManual tinyint= null,
+@ANI varchar(15) = null,
+@cam_ShowCalifWnd bit = null,
+@cam_StartTimerOnHangUp bit = null,
+@editableCallKey bit = null,
+@cam_tNoContesta tinyint = null,
+@cam_intensive_dialing tinyint = null,
+@detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+@detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+@compliance TinyInt = null,
+@cam_inter_graba smallint = null,
+@cam_NoInt_graba tinyint = null,
+@progDial smallint = null,
+@excCallBack Tinyint = null,
+@dialOrder Tinyint = null,
+@dialPrefix varchar(10) = null,
+@dialPrefixMan varchar(10) = null,
+@dialPrefixXfe varchar(10) = null,
+@listenManualCall bit = null,
+@stopRecording bit = null,
+@abandonCallback bit = null,
+@autoCB smallint = null,
+@id_listAni int = null,
+@tDialonWrapUp smallint = null,
+@quesize smallint=null,
+@DNCScrub int=null,
+@callerIdDesc varchar(15)=null,
+@timeZoneRule int=null,
+@callsBySurvey int=null,
+@ivrScript int=null,
+@surveyPctg int=null,
+@call_record tinyint=null,
+@dRestrictPlay bit = null,
+@leaveRecMessage bit = null,
+@manualCallOnChat bit = null,
+@callBackSurveyClient bit = null,
+@callBackSurveyAgent bit = null,
+@funcEspDtmf int =null,
+@sipHdrsCfg varchar(255) = null
+as
+set nocount on
+UPDATE ccCamps SET
+ cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+ cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+ cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+ cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+ cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+ cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+ cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+ cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+ cam_fax = isnull(@cam_fax,cam_fax),
+ cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+ cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+ cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+ ANI = isnull(@ANI,ANI),
+ cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+ editableCallKey = isnull(@editableCallKey, editableCallKey),
+ cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+ iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+ detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+ detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+ compliance = isnull(@compliance, compliance),
+ cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+ cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+ cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+ progDial = isnull(@progDial, progDial),
+ excCallBack = isnull(@excCallBack,excCallBack),
+ dialOrder = isnull(@dialOrder, dialOrder),
+ dialPrefix = isnull(@dialPrefix, dialPrefix),
+ dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+ dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+ listenManualCall = isnull(@listenManualCall, listenManualCall),
+ stopRecording = isnull(@stopRecording, stopRecording),
+ abandonCallback = isnull(@abandonCallback, abandonCallback),
+ t_autoCB = isnull(@autoCB,t_autoCB),
+ id_anilist = isnull(@id_listAni,id_anilist),
+ tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+ cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+ cam_maxqueue = isnull(@quesize,cam_maxqueue),
+ DNCScrub = isnull(@DNCScrub,DNCScrub),
+ callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+ timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+ callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+ ivrScript = isnull(@ivrScript,ivrScript),
+ surveyPctg = isnull(@surveyPctg,surveyPctg),
+ call_record = isnull(@call_record,call_record),
+ startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+ leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+ manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+ callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+ callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+ funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+ sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat)
+Where cam_id = @cam_id
+
+if @cam_ShowCalifWnd = 1
+ begin
+ If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+  begin
+  select 0
+  return(0)
+  end
+
+ UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+ where cam_id = @cam_id
+ select 1
+ return(0)
+  end
+
+--else
+UPDATE ccCamps SET
+cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+where cam_id = @cam_id
+return(0)
+set nocount off'
+    EXEC(@Sql)
+	
+	---------------- function fn_getSIPHeaderCfg
+    set @process = 'create fn_getSIPHeaderCfg -- CW-558_Integracion_Cyber_encabezado_sip'
+    set @Sql= 'IF EXISTS (SELECT *
+           FROM   sys.objects
+           WHERE  object_id = OBJECT_ID(N''[dbo].[fn_getSIPHeaderCfg]'')
+                  AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+  DROP FUNCTION [dbo].[fn_getSIPHeaderCfg]
+
+GO
+
+CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
+returns varchar(500)
+as
+begin
+	declare @result varchar(500)
+	SELECT 
+		@result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
+	FROM ccocallsoutsource where callout_id=@callout_id
+
+	select @result = isnull(@result,'''')
+
+	return @result
+end'
+    EXEC(@Sql)
+	
 
     set @process = ''
     set @Sql= ''

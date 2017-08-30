@@ -23,72 +23,11 @@ drop table #temp
 if @Version_Actual >= @Version
  begin
 	declare @Sql nvarchar(max)
-
-	declare @publicationServer nvarchar(max)
-	set @publicationServer = convert(nvarchar(max),@@servername)
-
+	
 	declare @subscriptionServerAVRS nvarchar(max)
 	select @subscriptionServerAVRS = convert(nvarchar(max),valor) from ccsettings where setting_id = 138
-
-	/****************************************************/
-	/*** Crea registro de Alias para replicas remotas ***/
-	/****************************************************/
-	declare @name nvarchar(max)
-	declare @ip nvarchar(max)
-	declare @registryValue nvarchar(max)
-
-	if @subscriptionServerAVRS <> '' begin
-		select @name = substring(@subscriptionServerAVRS, 0, charindex('|',@subscriptionServerAVRS))
-		select @ip = substring(@subscriptionServerAVRS, charindex('|',@subscriptionServerAVRS) + 1, len(@subscriptionServerAVRS))
-		select @registryValue = 'DBMSSOCN,'+@ip+',1433'
-
-		-- if @publicationServer <> @name
-		-- begin
-		-- 	set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		-- 	@rootkey = N''HKEY_LOCAL_MACHINE''
-		-- 	,@key = N''Software\Microsoft\MSSQLServer\Client\ConnectTo''
-		-- 	,@value_name = ''' + @name + '''
-		-- 	,@type = N''REG_SZ''
-		-- 	,@value = ''' + @registryValue + ''''
-		-- 	EXEC(@Sql)
-
-		-- 	set @Sql = 'EXECUTE [master].[dbo].[xp_regwrite]
-		-- 	@rootkey = N''HKEY_LOCAL_MACHINE''
-		-- 	,@key = N''SOFTWARE\Wow6432Node\Microsoft\MSSQLServer\Client\ConnectTo''
-		-- 	,@value_name = ''' + @name + '''
-		-- 	,@type = N''REG_SZ''
-		-- 	,@value = ''' + @registryValue + ''''
-		-- 	EXEC(@Sql)
-		-- end
-
-		select @subscriptionServerAVRS = @name
-	end
-
-	/******************************************************************
-	/*** Inicia los servicios necesarios para las replicas remotas ***/
-	******************************************************************/
-
-	-- if @subscriptionServerAVRS <> '' and @publicationServer <> @subscriptionServerAVRS
-	-- begin
-	-- 	exec sp_configure 'show advanced options', 1
-	-- 	reconfigure
-	-- 	exec sp_configure 'xp_cmdshell',1
-	-- 	reconfigure
-	-- 	exec xp_cmdshell 'sc config "RasMan" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RasAuto" start= auto'
-	-- 	exec xp_cmdshell 'sc config "Netman" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RemoteAccess" start= auto'
-	-- 	exec xp_cmdshell 'sc config "RpcSs" start= auto'
-	-- 	exec xp_cmdshell 'sc config "SQLBrowser" start= auto'
-
-	-- 	exec xp_cmdshell 'net start RasMan'
-	-- 	exec xp_cmdshell 'net start RasAuto'
-	-- 	exec xp_cmdshell 'net start Netman'
-	-- 	exec xp_cmdshell 'net start RemoteAccess'
-	-- 	exec xp_cmdshell 'net start RpcSs'
-	-- 	exec xp_cmdshell 'net start SQLBrowser'
-	-- end
-
+	
+	select @subscriptionServerAVRS = substring(@subscriptionServerAVRS, 0, charindex('|',@subscriptionServerAVRS))
 	------------------ INICIO SCRIPT ------------------
 
 	if exists (select * from sys.databases where name='CCenterRia')

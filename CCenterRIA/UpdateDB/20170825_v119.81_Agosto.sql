@@ -1217,6 +1217,20 @@ end'
     EXEC(@Sql)
 
 
+		---------------- UPDATE Settings 53 y 130 MizuJavascript
+    set @process = 'UPDATE Settings 53 MizuJavascript'
+    set @Sql= 'IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 53) 
+				UPDATE ccSettings set detalle = ''Indica si se ocupara sipphoneWeb o un softphone externo.Dependiendo de este valor el agente por default abrira indexsip.aspx, indexg729.aspx o index,aspx. 0-otro / 1-SipPhoneWeb / 2-SipPhoneWeb con g729 (depende de licencias disponibles) / 3-Mizu / 4-WebRTC / 5-MizuJavaScript'' 
+				WHERE setting_id = 53'
+    EXEC(@Sql)
+
+	set @process = 'UPDATE Settings 130 MizuJavascript'
+    set @Sql= 'IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 130)
+				UPDATE ccSettings set detalle = ''Dependiendo de este valor el admin por default abrira un home page distinto. 0-AdministratorRIA.aspx; 1-AdministratorRIASip.aspx; 2-SipPhoneWeb con g729(depende de licencias disponibles); 3-AdministratorRIAMizu.aspx; 4-AdministratorRIAWebRTC.aspx; 5-AdministratorRIAMizuJS.aspx'' 
+				WHERE setting_id = 130'
+    EXEC(@Sql)
+
+
 
 		/* End script release */
 

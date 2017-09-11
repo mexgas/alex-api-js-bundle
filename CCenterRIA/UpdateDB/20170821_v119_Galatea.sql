@@ -236,3 +236,75 @@ SET NOCOUNT OFF'
 		rollback tran
 		end catch
 	end
+	GO
+
+
+GO
+/***************GALATEA LOGIN SERVICES*********************************/
+--LoginAttempts Number of times users have tried to login to the system.
+IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'LoginAttempts' AND TABLE_NAME = 'ccUsers') = 0 
+BEGIN
+	ALTER TABLE ccUsers ADD  LoginAttempts int default 0;
+END
+GO
+
+
+--LastLoginAttempt day and hour whene the user tried to access the system for the last time.
+IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'LastLoginAttempt' AND TABLE_NAME = 'ccUsers') = 0 
+BEGIN
+
+	ALTER TABLE ccUsers ADD  LastLoginAttempt datetime;
+
+	ALTER TABLE ccUsers 
+		ADD CONSTRAINT Default_LastLoginAttempt
+		DEFAULT GETDATE() FOR LastLoginAttempt
+END
+GO
+UPDATE ccUsers SET LoginAttempts = 0 WHERE LoginAttempts IS NULL
+GO
+UPDATE ccUsers SET LastLoginAttempt = GETDATE() WHERE LastLoginAttempt IS NULL
+GO
+
+
+--Setting_ID 255 Time the user will wait before being able to access the system after severar bad login attempts
+IF ((SELECT COUNT(*) FROM ccSettings WHERE setting_id = 197) = 0)
+BEGIN
+	INSERT INTO ccSettings 
+			(setting_id,valor,
+			descripcion,
+			Status, Tipo,
+			detalle,
+			description,
+			bLoadSettings, validate)
+	VALUES	(197, '5',
+			'Tiempo de bloqueo para Login Erroneo (mins)',
+			1, 'x',
+			'Tiempo (mins) que el usuario tendra que esperar antes de volverse a Logear, luego de producirse demasiados intentos de login.',
+			'Time to block user after several Bad Login Attempts (mins)',
+			1,'^\d{1,3}$')
+END
+GO
+--Setting_id 256 Number of chances the user have to try accessing the system.
+IF ((SELECT COUNT(*) FROM ccSettings WHERE setting_id = 198) = 0)
+BEGIN
+	INSERT INTO ccSettings 
+			(setting_id,
+			valor,
+			descripcion,
+			Status,
+			Tipo,
+			detalle,
+			description,
+			bLoadSettings,
+			validate)
+	VALUES	(198, 
+			'5',
+			'Cantidad permita de intentos en Login',
+			1,
+			'x',
+			'Numero de veces que un usuario puede intentar ingresar al sistema antes de que se bloquee.',
+			'Number of Login Attempts available before blocking',
+			1,
+			'^\d{1,3}$')
+END
+GO

@@ -30,7 +30,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 119--**********actualizar a 129 sin fix
-set @versionfix = 81
+set @versionfix = 83
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -39,7 +39,9 @@ exec @actualVersion = ccsp_getVersion 'BD'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if @actualVersion = @version and (@actualVersionFix = 7 or @actualVersionFix = @versionfix)
+select @actualVersion,@actualVersionFix,@versionfix
+
+if @actualVersion = @version --and (@actualVersionFix = 7 or @actualVersionFix = @versionfix)
 	begin
 		begin tran
 		begin try
@@ -192,6 +194,7 @@ set nocount off'
 
     set @process = 'Alter SP -- ccsp_RIACampsSupAgent'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIACampsSupAgent]
+@loginAgent varchar(30),
 @PassAgent varchar(32),
 @PassSup varchar(32)
 AS
@@ -212,11 +215,75 @@ select
 SET NOCOUNT OFF'
     EXEC(@Sql)
 
-    set @process = ''
+    set @process = 'Add Column -- ccUsers.LoginAttempts --LoginAttempts Number of times users have tried to login to the system.'
+    set @Sql= 'IF not exists (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = ''LoginAttempts'' AND TABLE_NAME = ''ccUsers'')
+	ALTER TABLE ccUsers ADD  LoginAttempts int default 0'
+    EXEC(@Sql)
+
+    set @process = 'Add column ccUsers.LastLoginAttempt -- LastLoginAttempt day and hour whene the user tried to access the system for the last time.'
+    set @Sql= 'IF not exists (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = ''LastLoginAttempt'' AND TABLE_NAME = ''ccUsers'') 
+BEGIN
+	ALTER TABLE ccUsers ADD  LastLoginAttempt datetime;
+
+	ALTER TABLE ccUsers 
+		ADD CONSTRAINT Default_LastLoginAttempt
+		DEFAULT GETDATE() FOR LastLoginAttempt
+END
+'
+    EXEC(@Sql)
+
+	set @process = 'update ccUsers.LoginAttempts'
+    set @Sql= 'UPDATE ccUsers SET LoginAttempts = 0 WHERE LoginAttempts IS NULL'
+    EXEC(@Sql)
+
+	set @process = 'update ccUsers.LastLoginAttempt'
+    set @Sql= 'UPDATE ccUsers SET LastLoginAttempt = GETDATE() WHERE LastLoginAttempt IS NULL'
+    EXEC(@Sql)
+
+	set @process = 'Setting_ID 197 Time the user will wait before being able to access the system after severar bad login attempts'
+    set @Sql= 'IF not exists (SELECT * FROM ccSettings WHERE setting_id = 197)
+	INSERT INTO ccSettings 
+			(setting_id,valor,
+			descripcion,
+			Status, Tipo,
+			detalle,
+			description,
+			bLoadSettings, validate)
+	VALUES	(197, ''5'',
+			''Tiempo de bloqueo para Login Erroneo (mins)'',
+			1, ''x'',
+			''Tiempo (mins) que el usuario tendra que esperar antes de volverse a Logear, luego de producirse demasiados intentos de login.'',
+			''Time to block user after several Bad Login Attempts (mins)'',
+			1,''^\d{1,3}$'')'
+    EXEC(@Sql)
+
+	set @process = 'Setting_id 256 Number of chances the user have to try accessing the system'
+    set @Sql= 'IF not exists (SELECT * FROM ccSettings WHERE setting_id = 198)
+	INSERT INTO ccSettings 
+			(setting_id,
+			valor,
+			descripcion,
+			Status,
+			Tipo,
+			detalle,
+			description,
+			bLoadSettings,
+			validate)
+	VALUES	(198, 
+			''5'',
+			''Cantidad permita de intentos en Login'',
+			1,
+			''x'',
+			''Numero de veces que un usuario puede intentar ingresar al sistema antes de que se bloquee.'',
+			''Number of Login Attempts available before blocking'',
+			1,
+			''^\d{1,3}$'')'
+    EXEC(@Sql)
+
+	set @process = ''
     set @Sql= ''
     EXEC(@Sql)
 
-    
 
 		/* End script release */
 
@@ -236,75 +303,3 @@ SET NOCOUNT OFF'
 		rollback tran
 		end catch
 	end
-	GO
-
-
-GO
-/***************GALATEA LOGIN SERVICES*********************************/
---LoginAttempts Number of times users have tried to login to the system.
-IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'LoginAttempts' AND TABLE_NAME = 'ccUsers') = 0 
-BEGIN
-	ALTER TABLE ccUsers ADD  LoginAttempts int default 0;
-END
-GO
-
-
---LastLoginAttempt day and hour whene the user tried to access the system for the last time.
-IF (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = 'LastLoginAttempt' AND TABLE_NAME = 'ccUsers') = 0 
-BEGIN
-
-	ALTER TABLE ccUsers ADD  LastLoginAttempt datetime;
-
-	ALTER TABLE ccUsers 
-		ADD CONSTRAINT Default_LastLoginAttempt
-		DEFAULT GETDATE() FOR LastLoginAttempt
-END
-GO
-UPDATE ccUsers SET LoginAttempts = 0 WHERE LoginAttempts IS NULL
-GO
-UPDATE ccUsers SET LastLoginAttempt = GETDATE() WHERE LastLoginAttempt IS NULL
-GO
-
-
---Setting_ID 255 Time the user will wait before being able to access the system after severar bad login attempts
-IF ((SELECT COUNT(*) FROM ccSettings WHERE setting_id = 197) = 0)
-BEGIN
-	INSERT INTO ccSettings 
-			(setting_id,valor,
-			descripcion,
-			Status, Tipo,
-			detalle,
-			description,
-			bLoadSettings, validate)
-	VALUES	(197, '5',
-			'Tiempo de bloqueo para Login Erroneo (mins)',
-			1, 'x',
-			'Tiempo (mins) que el usuario tendra que esperar antes de volverse a Logear, luego de producirse demasiados intentos de login.',
-			'Time to block user after several Bad Login Attempts (mins)',
-			1,'^\d{1,3}$')
-END
-GO
---Setting_id 256 Number of chances the user have to try accessing the system.
-IF ((SELECT COUNT(*) FROM ccSettings WHERE setting_id = 198) = 0)
-BEGIN
-	INSERT INTO ccSettings 
-			(setting_id,
-			valor,
-			descripcion,
-			Status,
-			Tipo,
-			detalle,
-			description,
-			bLoadSettings,
-			validate)
-	VALUES	(198, 
-			'5',
-			'Cantidad permita de intentos en Login',
-			1,
-			'x',
-			'Numero de veces que un usuario puede intentar ingresar al sistema antes de que se bloquee.',
-			'Number of Login Attempts available before blocking',
-			1,
-			'^\d{1,3}$')
-END
-GO

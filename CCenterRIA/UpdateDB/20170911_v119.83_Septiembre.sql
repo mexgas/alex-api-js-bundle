@@ -40,13 +40,18 @@ exec @actualVersion = ccsp_getVersion 'BD'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if @actualVersion = @version and (@actualVersionFix >= 8 or @actualVersionFix = @versionfix)
+if @actualVersion = @version and (@actualVersionFix = @versionfix-2 or @actualVersionFix = 8)
 	begin
 		begin tran
 		begin try
 
 	    set @process = 'ALTER TABLE ccRIACat_Areas -- CW-679 Default Campaign on manual call component'
-    	set @Sql= 'ALTER TABLE ccRIACat_Areas ADD defCampaing smallint'
+    	set @Sql= '
+    	IF COL_LENGTH(''[dbo].[ccRIACat_Areas]'', ''defCampaing'') IS NULL
+		BEGIN
+		    ALTER TABLE ccRIACat_Areas ADD defCampaing smallint
+		END
+		'
     	EXEC(@Sql)
 		
 

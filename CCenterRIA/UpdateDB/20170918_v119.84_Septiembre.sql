@@ -1603,7 +1603,7 @@ end --Termina Mexico
 				  DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
 					 ,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
 				  ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
-				  ,isnull(sipHdrFormat, '') sipHdrFormat
+				  ,isnull(sipHdrFormat, '''') sipHdrFormat
 				  ,cam_inter_cancelled
 				  from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
 				  inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)

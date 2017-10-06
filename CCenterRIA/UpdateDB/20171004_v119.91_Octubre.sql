@@ -50,7 +50,7 @@ if @actualVersion = @version and (@actualVersionFix = 84)
           WHERE Name = N''cam_inter_cancelled''
           AND Object_ID = Object_ID(N''dbo.cccamps''))
 			BEGIN
-				alter table cccamps add cam_inter_cancelled smallint not null default 180
+				alter table cccamps add cam_inter_cancelled smallint not null default 300
 			END'
     	EXEC(@Sql)
     	

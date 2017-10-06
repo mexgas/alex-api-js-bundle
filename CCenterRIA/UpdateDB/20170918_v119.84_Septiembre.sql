@@ -1576,11 +1576,16 @@ end --Termina Mexico
 
     return @tel
    end
-'
-    	EXEC(@Sql)
+'		
+		EXEC(@Sql)
     	
-    	    set @process = ''
-	set @Sql= ''
+    	set @process = ''
+		set @Sql= ''
+    	EXEC(@Sql)
+		
+    	
+    	set @process = ''
+		set @Sql= ''
     	EXEC(@Sql)
 
     	/* End script release */

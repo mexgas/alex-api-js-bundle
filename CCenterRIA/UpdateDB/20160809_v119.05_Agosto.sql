@@ -44,6 +44,7 @@ if @actualVersion = @version and @actualVersionFix = @versionfix-1
 	begin
 		begin tran
 		begin try
+		
 
 		set @process = 'drop sp -- [dbo].[ccsp_isFinished]'
 		set @Sql= 'if exists (select * from sys.procedures where name = ''ccsp_isFinished'') DROP PROCEDURE [dbo].[ccsp_isFinished]'
@@ -2313,6 +2314,10 @@ END'
 if @actualVersion = @version and @actualVersionFix = @versionfix begin
 	begin tran
 	begin try
+
+		set @process = 'DROP PROCEDURE ccsp_AgentTransfLstArea'
+		set @sql='if exists (select * from sys.procedures where name = N''ccsp_AgentTransfLstArea'') DROP PROCEDURE [dbo].[ccsp_AgentTransfLstArea]'
+		EXEC(@sql)
 
 		set @process = 'DROP SP -- ccsp_CleanNodeBaseX'
 		set @sql='if exists (select * from sys.procedures where name = ''ccsp_CleanNodeBaseX'') DROP PROCEDURE [dbo].[ccsp_CleanNodeBaseX]'
@@ -6105,22 +6110,22 @@ if @Tipo in (1,2) begin
 end
 
 set nocount off'
-		EXEC(@Sql)
+		EXEC(@Sql)	
 
 		set @process = 'Insert ccSettings -- Limit of calls per seconds'
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+	set @sql='if exists (select * from ccSettings where setting_id = 190)
     begin
 	INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (190, ''0'',''Porcentaje de limite de llamadas por segundo'',1,''ADM'',''0 funcion inhabilitada, 1-100 porcentaje de puertos de salida por segundo'',''Percent of limit of calls per seconds'',1,''^(100|\d{1,2})$'')
     end'
-EXEC(@sql)
+	EXEC(@sql)
 
-set @process = 'Insert ccSettings -- Telephone transfer list'
+	set @process = 'Insert ccSettings -- Telephone transfer list'
 
-set @sql='if exists (select * from sys.tables where name = N''ccSettings'')
+	set @sql='if exists (select * from ccSettings where setting_id = 191)
     begin
     INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) VALUES (191, ''0'',''Restringir transferencia de llamadas por área'',1,''GRL'',''1:Activar 0:Desactivar'',''Restrict transfer directory by area'',1,''^[0-1]$'')
     end'
-EXEC(@sql)
+	EXEC(@sql)
 
 	set @process = 'Create procedure -- [dbo].[ccsp_AgentTransfLstArea]'
 	set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentTransfLstArea]

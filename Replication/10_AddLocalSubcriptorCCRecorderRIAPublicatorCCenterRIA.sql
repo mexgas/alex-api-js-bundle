@@ -25,9 +25,7 @@ if @Version_Actual >= @Version
 	if @indexInstancia>0
 		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
 
-	select @publicationServer = convert(nvarchar(max),par_valor)
-	from TREC_PARAMETROS where par_id = 66
-
+	select @publicationServer = convert(nvarchar(max),par_valor) from TREC_PARAMETROS where par_id = 66
 	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
 
 	declare @jobLogin nvarchar(max)

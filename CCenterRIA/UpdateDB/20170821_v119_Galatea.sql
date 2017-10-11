@@ -46,7 +46,36 @@ select @actualVersion,@actualVersionFix,@versionfix
 if @actualVersion = @version --and (@actualVersionFix = 7 or @actualVersionFix = @versionfix)
 	begin
 		begin tran
-		begin try
+		begin try	
+
+    set @process = 'CW-1162 -- Drop SP ccsp_AgentDataACD'
+    set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_AgentDataACD'')
+    begin
+        DROP PROCEDURE ccsp_AgentDataACD;
+    end
+'
+    EXEC(@Sql)
+
+	set @process = 'CW-1162 -- Create SP ccsp_AgentDataACD'
+    set @Sql= 'CREATE PROCEDURE ccsp_AgentDataACD
+@inboundId as smallint
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+    select a1.Inbound_id, a2.descripcion, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey, 0 as leaveRecMessage ,
+	case when isnull(a4.callsBySurvey,0) > 0 then 1 else 0 end isRelationSurvey ,
+	isnull(a2.callBackSurveyAgent,1) callBackSurveyAgent,isnull(a2.callBackSurveyClient,1) callBackSurveyClient 
+	from ccRIAInboundGraph a1 
+	inner join ccInbound a2 on (a1.inbound_id=a2.inbound_id)
+	 inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id) 
+	 left join ccCamps a4 on a4.cam_id=a2.cam_id  where a1.inbound_id=@inboundId and type_id in(1,2,3) order by type_id
+
+END
+'
+    EXEC(@Sql)
 
 	set @process = 'CW-1148 -- Alter column ccLogAgentesDia.tStatus float '
     set @Sql= 'ALTER TABLE ccLogAgentesDia ALTER COLUMN tStatus float'
@@ -56,7 +85,7 @@ if @actualVersion = @version --and (@actualVersionFix = 7 or @actualVersionFix =
     set @Sql= 'ALTER TABLE ccLogAgentesNotReady ALTER COLUMN tStatus float;'
     EXEC(@Sql)
 
-    set @process = ''
+	set @process = ''
     set @Sql= ''
     EXEC(@Sql)
 
@@ -300,41 +329,41 @@ if exists(
 	select @relationCamId =cam_id from ccInbound where Inbound_id=@cam_id
 	if @relationCamId is null set @relationCamId=0
 
-	set @sql =''''
+	set @sql =''
 	select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.orden "selection!1!califorden",
 		isnull(calif.EndConversation,0) "selection!1!endConversation",
 		null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!orden",  null "subSelection!2!endConversation"
 		from ccTipoCalif calif
 	 inner join ccCalifCamp camp on camp.calif_id=calif.calif_id 
-	 and camp.cam_id=''''+convert(varchar(max), @cam_id)+'''' and  camp.tipo = ''''+convert(varchar(max), @InOut)+''''
+	 and camp.cam_id=''+convert(varchar(max), @cam_id)+'' and  camp.tipo = ''+convert(varchar(max), @InOut)+''
 	 left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
 	 left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
 	 where calif.CanReprogram=0 or (
-		calif.CanReprogram=1 and ''''+convert(varchar(max), @relationCamId)+''''>0
+		calif.CanReprogram=1 and ''+convert(varchar(max), @relationCamId)+''>0
 	 )
 	 union
 	 select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", calif.orden "selection!1!califorden", isnull(calif.EndConversation,0) "selection!1!endConversation",
 		sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", cast(sb.orden as int) "subSelection!2!orden" ,isnull(sb.EndConversation,0) "subSelection!2!endConversation"
 		from ccTipoCalif calif
-		inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id=''''+convert(varchar(max), @cam_id)+'''' and  camp.tipo = ''''+convert(varchar(max), @InOut)+''''
+		inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id=''+convert(varchar(max), @cam_id)+'' and  camp.tipo = ''+convert(varchar(max), @InOut)+''
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
 		left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
 		where sb.califsub_id is not null
 		and (
 			sb.CanReprogram=0 or
-			(sb.CanReprogram=1 and ''''+convert(varchar(max), @relationCamId)+''''>0)
-		)''''
+			(sb.CanReprogram=1 and ''+convert(varchar(max), @relationCamId)+''>0)
+		)''
 	  
 	  if @isXml=1 begin
-		set @sql= @sql+'''' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''''
+		set @sql= @sql+'' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''
 	  end
 	  else begin 
-	  set @sql=''''select 
-				tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''''''''''') as Description,
+	  set @sql=''select 
+				tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''') as Description,
 				"selection!1!califorden" as Orden, "selection!1!endConversation" EndConversation, isnull("subSelection!2!id",0) as SubId,
-				isnull("subSelection!2!string",'''''''''''''''') as SubDescription, isnull("subSelection!2!orden",0) as SubOrden,	
+				isnull("subSelection!2!string",'''''''') as SubDescription, isnull("subSelection!2!orden",0) as SubOrden,	
 				isnull("subSelection!2!endConversation",0) as SubEndConversation
-			from (  '''' + @sql+'''' )X''''
+			from (  '' + @sql+'' )X''
 	  end
 	  print (@sql)
 	  exec (@sql)
@@ -349,14 +378,14 @@ IF @InOut = 1 BEGIN
 	left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
 	where cam_id = @cam_id and tipo = @InOut)
   begin
-	set @sql =''''
+	set @sql =''
 		select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.keepDial "selection!1!keepOnDial",
 		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!keepOnDial",
 		null "subSelection!2!orden"
 		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
 		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
-		where cam_id = ''''+convert(varchar(max), @cam_id)+'''' and tipo = ''''+convert(varchar(max),@InOut)+''''
+		where cam_id = ''+convert(varchar(max), @cam_id)+'' and tipo = ''+convert(varchar(max),@InOut)+''
 		union
 		select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", null "selection!1!keepOnDial",
 		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string",
@@ -365,18 +394,18 @@ IF @InOut = 1 BEGIN
 		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
 		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
-		where cam_id = ''''+convert(varchar(max), @cam_id)+'''' and tipo =''''+convert(varchar(max),@InOut)+'''' and sb.califsub_id is not null	''''
+		where cam_id = ''+convert(varchar(max), @cam_id)+'' and tipo =''+convert(varchar(max),@InOut)+'' and sb.califsub_id is not null	''
 		if @isXml=1 begin
-			set @sql= @sql+'''' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''''
+			set @sql= @sql+'' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''
 		end
 		else begin 
-		  set @sql=''''select 	tag as Tag, isnull(parent,0) Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''''''''''') as Description,
-					isnull("selection!1!keepOnDial",'''''''''''''''') as KeepOnDial,
+		  set @sql=''select 	tag as Tag, isnull(parent,0) Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''') as Description,
+					isnull("selection!1!keepOnDial",'''''''') as KeepOnDial,
 					"selection!1!califorden" as Orden, "selection!1!finishPreview" FinishPreview, isnull("subSelection!2!id",0) as SubId,
-					isnull("subSelection!2!string",'''''''''''''''') as SubDescription,isnull("subSelection!2!keepOnDial",0) as SubKeepOnDial,
+					isnull("subSelection!2!string",'''''''') as SubDescription,isnull("subSelection!2!keepOnDial",0) as SubKeepOnDial,
 					isnull("subSelection!2!orden",0) as SubOrden
 					
-				from (  '''' + @sql+'''' )X''''
+				from (  '' + @sql+'' )X''
 		  end
 		  print @sql
 		exec (@sql)

@@ -7,7 +7,8 @@ Author: Armando Rodriguez,
 Date: 2017/10/16
 Description:
 	*se modifica SP ccsp_limpia para aceptar marcacion a 10 digitos para llamadas locales, LD, celular y celular LD.
-	*
+	*CW-1152 se modifica ccsp_RIALoadCamps para traer en el query el campo aggressionFactor de cccamps.
+	*CW-1152 se modifica ccsp_RIAGetCampsNvosCB para traer en el query el campo aggressionFactor de cccamps.
 
 Database: CCenterRia
 Required version: 119.09-2
@@ -560,6 +561,267 @@ if @actualVersion = @version and (@actualVersionFix = @versionfix-1)
 			'
     	EXEC(@Sql)
     	
+		set @process = 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB] CW-1152-Clicker1'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0
+as
+set nocount on
+
+declare @TipoJobs as int,@isExecOutbound bit
+
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+  declare @id AS INTEGER
+
+  CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+  CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+
+  create table #temccocallsoutsource (cam_id int,Pend  int)
+
+  create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+  if @cam_id = 0 begin
+    if @user_id > 0 begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam with(nolock) left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where user_id = @user_id and tipo = 1
+    end
+    else begin
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+      from ccCamps cam left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+    end
+
+  end
+  else begin
+    if @Tipo = 2
+      insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+      select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+      from ccCamps cam with(nolock)
+      left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+      where cam.cam_id = @cam_id
+    else
+      if @user_id > 0 begin
+        insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+        select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+        from ccCamps cam with(nolock) left join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+        where user_id = @user_id and tipo = 1
+       end
+      else begin
+        insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+          select cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+          from ccCamps where cam_activo=1
+      end
+  end
+
+
+
+  insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+  select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0 from(
+  select A.* from #Tcamps A
+  left join ccCampsNvosCB B  on A.cam_id=B.id
+  where datediff(ss,B.dateUpdate,getdate())>5 or B.dateUpdate is null)X
+
+  group by cam_id
+
+
+  --Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+  if (select count(*) from #Tcamps2)>0 begin
+
+    insert into #temccocallsoutsource(cam_id,Pend)
+    SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+    FROM ccocallsoutsource ccos with(nolock)
+    left join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+    WHERE cal_status in(0, 7)
+    GROUP BY ccos.cam_id
+
+    insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+    SELECT A.cam_id,
+    count(case cal_status when 0 then 1 else null end) as New,
+    count(case cal_status when 1 then 1 else null end) as Cb,
+    count(case cal_status when 2 then 1 else null end) as Pro,
+    count(case cal_status when 3 then 1 else null end) as Fin
+    FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+    inner join #Tcamps2 B on A.cam_id = B.cam_id
+    GROUP BY A.cam_id
+
+    --select * from #Tcamps2
+
+    --Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+    if @regval = 0 and @cam_id >0 and @Tipo =2 begin
+      update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
+    end
+    else begin
+      While (select count(*) from #Tcamps2 where status = 0) > 0 Begin
+        set rowcount 1
+        select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+        set rowcount 0
+        EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+        update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+      end
+    end
+
+    begin Tran updateccCampsNvosCB
+
+      delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+      where CampNvosCB.id = tcamp.cam_id
+
+      INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+      SELECT cams.cam_id, cams.cam_descripcion,
+      isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+      isNull(cs.Pend,0) as pend,
+      isNull(wt.Pro,0) as pro,
+      isNull(cams.procesando,0) cam_procesando,
+      isNull(cams.cam_tipojobs,0) cam_tipojobs,
+      isNull(wt.Fin,0) Fin,
+      isNull(tc.cantidad,0) cantidad,
+      getdate()
+      FROM #Tcamps cams with(nolock)
+      LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+      LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+      left join #Tcamps2 tc on (tc.cam_id = cams.cam_id)
+
+    COMMIT TRAN updateccCampsNvosCB
+  end
+
+  if @isExecOutbound = 0 begin
+
+    if @Tipo = 2
+      -- devuelve resultado de la taba, solo las camps del usuario
+      SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor
+      FROM #Tcamps tcam
+      left join  ccCampsNvosCB res  on tcam.cam_id  = res.id
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+	  inner join cccamps cc on res.id=cc.cam_id
+    else
+      SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,cc.aggressionFactor
+      FROM ccCampsNvosCB res
+      LEFT JOIN ccCampsPrioridadTel prio on res.id = prio.cam_id
+	  inner join cccamps cc on res.id=cc.cam_id
+      WHERE res.id = @cam_id
+  end
+
+  drop table #Tcamps
+  drop table #Tcamps2
+  drop table #temccocallsoutsource
+  drop table #temWorkinTable
+
+  return(0)
+
+end
+
+set nocount off'
+    	EXEC(@Sql)
+		
+		set @process = 'ALTER PROCedure [dbo].[ccsp_RIALoadCamps] CW-1152-Clicker1'
+		set @Sql= 'ALTER PROCedure [dbo].[ccsp_RIALoadCamps]
+@option smallint,
+@AreaId smallint = null,
+@Sup smallint = null
+as
+set nocount on
+if @option = 1 -- Todas las campañas
+begin
+      select a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea,0), isnull(DNCscrub,0)
+      from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+      join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+      where a3.type_id = 1 and a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@Sup, 1))
+      order by 5,2
+      return(0)
+end
+ 
+if @option = 2 -- Campañas de un Area
+begin
+      select distinct a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea,0)
+      IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG
+      from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+      join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+      where a3.type_id = 1 and isnull(IDArea, 0) = isnull(@AreaId, 0)
+      order by cam_descripcion
+      return(0)
+end
+ 
+if @option = 3 -- Campañas por Supervisor
+begin
+      select distinct a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(a1.IDArea,0) IDArea
+      from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+      join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+      join ccSupervisorCam a4 on a1.cam_id = a4.cam_id
+      where a3.type_id = 1 and a4.tipo = 1 and a4.user_id = @Sup
+      order by 5, 2
+      return(0)
+end
+ 
+if @option = 4 -- Rels Camps-Agents
+begin
+      select Login, User_id, Prioridad, Skill, cam_id, cam_descripcion, IDArea, min(rel_id) rel_id
+      from (select A.Login, A.User_id, Prioridad, Skill, C.cam_id, C.cam_descripcion, isnull(C.IDArea,0) IDArea, CA.rel_id
+            from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
+            join ccRIACampsGraph a2 on C.cam_id = a2.cam_id
+            join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+            join ccUsers A on A.User_id = CA.User_id and A.TipoUser_id = 1 and A.Status = 1
+            where C.cam_id in(select cam_id from ccsupervisorcam where user_id = case isnull(@Sup,0)
+             when 0 then user_id else @Sup end and tipo=1)) Relations
+      group by Login, User_id, Prioridad, Skill, cam_id, cam_descripcion, IDArea
+      order by User_id, cam_descripcion, cam_id, Prioridad
+      return(0)
+end
+ 
+if @option = 5 -- Campañas por Supervisor
+      begin
+			select @AreaId= IDArea from ccUsers where User_id=@sup
+
+            select distinct Camps.cam_id, Camps.cam_descripcion, a3.frame, Camps.cam_procesando, isnull(Camps.IDArea,0)IDArea,
+            IsNull(CN.New, 0) as New, IsNull(CN.CB, 0) as CB, IsNull(CN.Pro, 0) as Pro,
+            IsNull(CN.pen, 0) as Pen, cast(Camps.cam_procesando as int) as St, Camps.cam_TipoJobs as Job,
+            isnull(CN.Fin, 0)Fin, isnull(CP.prioridad,''12345NNN'') prioridad, cast(camps.dialorder as tinyint) dialorder,
+            cast(camps.progDial as tinyint) progDial, U.monitored, Camps.aggressionFactor
+            from ccCamps Camps left join ccCampsPrioridadTel CP on CP.cam_id = Camps.cam_id
+            left join ccCampsNvosCB CN on CN.id = Camps.cam_id
+            join ccRIACampsGraph a2 on (Camps.cam_id = a2.cam_id)
+            join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+            join ccSupervisorCam U on Camps.cam_id = U.cam_id
+            where U.user_id = @sup
+            and tipo = 1
+            and a3.type_id = 1
+            and Camps.cam_id in (select cam_id from ccSupervisorCam where tipo = 1 and user_id = @sup)
+			and Camps.IDArea=@AreaId
+            order by 5, cam_procesando desc, cam_descripcion
+            return(0)
+      end
+ 
+if @option = 7 -- Una sola
+begin
+      select distinct a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(IDArea,0) IDArea,
+      isnull(DNCscrub,0) DNCScrub
+      from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+      join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+      where a3.type_id=1 and isnull(a1.cam_id,0)=isnull(@AreaId,0)
+      order by 5,2
+      return(0)
+end
+ 
+if @option = 8 -- Campañas de un Agente
+begin
+      select distinct a1.cam_id, a1.cam_descripcion, a3.frame
+      from ccCamps a1 join ccRIACampsGraph a2 on a1.cam_id = a2.cam_id
+      join ccRIAGraphics a3 on a2.graphic_id = a3.graphic_id
+      join ccCampsAgente a4 on a1.cam_id = a4.cam_id
+      where a3.type_id=1 and a4.user_id = @Sup
+      order by 2
+      return(0)
+end
+ 
+return(0)
+set nocount off'
+    	EXEC(@Sql)
+		
     	set @process = ''
 		set @Sql= ''
     	EXEC(@Sql)

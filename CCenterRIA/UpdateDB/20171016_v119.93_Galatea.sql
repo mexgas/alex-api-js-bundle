@@ -56,7 +56,7 @@ if @actualVersion = @version and (@actualVersionFix >= 92)
 '
     EXEC(@Sql)
 
-	set @process = 'CW-1162 -- Create SP ccsp_LoadGraphics'
+	set @process = 'CW-1162 - CW-714 Tonos DTMF --- Create SP ccsp_LoadGraphics'
     set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_LoadGraphics]
 @Id as smallint,
 @callType as smallint,
@@ -77,18 +77,16 @@ BEGIN
 
 	
 	if (@callType=1)
-	begin
+	begin		
 		select a1.Inbound_id, a2.descripcion, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey, 0 as leaveRecMessage ,
 		case when isnull(a4.callsBySurvey,0) > 0 then 1 else 0 end isRelationSurvey ,
 		isnull(a2.callBackSurveyAgent,1) callBackSurveyAgent,isnull(a2.callBackSurveyClient,1) callBackSurveyClient,
-		a2.ShowCalifWnd as ShowDisposition, a2.StartTimerOnHangUp,@realValue as isStartStopRecording
+		a2.ShowCalifWnd as ShowDisposition,isnull(a2.startStopRecording,0) as StartStopRecording,@realValue as IsStartStopRecording,isnull(a2.editableDtmf, 0) as isEditDtmf
 		from ccRIAInboundGraph a1 
 		inner join ccInbound a2 on (a1.inbound_id=a2.inbound_id)
 		 inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id) 
-		 left join ccCamps a4 on a4.cam_id=a2.cam_id  where a1.inbound_id=@Id and type_id in(1,2,3) order by type_id
-		
-	 end
-	
+		 left join ccCamps a4 on a4.cam_id=a2.cam_id  where a1.inbound_id=@Id and type_id in(1,2,3) order by type_id		
+	 end	
 END'
     EXEC(@Sql)
 

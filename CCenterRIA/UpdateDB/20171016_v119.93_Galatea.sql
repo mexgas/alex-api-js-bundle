@@ -47,6 +47,48 @@ if @actualVersion = @version and (@actualVersionFix >= 92)
 	begin
 		begin tran
 		begin try	
+    set @process = 'CW-718 -- Drop SP ccspAgent_GetLastCalls'
+    set @Sql= 'if exists (select * from sys.procedures where name = N''ccspAgent_GetLastCalls'')
+    begin
+        DROP PROCEDURE ccspAgent_GetLastCalls;
+    end
+'
+    EXEC(@Sql)
+
+	set @process = 'CW-718 -- Create SP ccspAgent_GetLastCalls'
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
+set nocount on
+
+select * from
+
+(select top 10 cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, cast(cal_tDialog / 3600 as varchar(10)) + '':'' + right(''0'' + cast(cal_tDialog / 60 % 60 as varchar(3)), 2) + 
+'':'' + right(''0'' + cast(cal_tDialog % 60 as varchar(3)), 2) as Duracion, '''' as CallBack, cal_key, c.inbound_id as IDCampEsp
+from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
+inner join ccInbound i on c.inbound_id = i.inbound_id
+left join ccTipoCalif cal on c.calif_id = cal.calif_id
+where user_id = @user_id
+and cal_inicio > dateadd(hh, -3, getdate())
+order by cal_id desc) a
+
+Union
+
+select * from
+(select top 10 cal_id as id, ''OUT'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_telefono as Telefono,cam_descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, cast(cal_tDialog / 3600 as varchar(10)) + '':'' + right(''0'' + cast(cal_tDialog / 60 % 60 as varchar(3)), 2) + 
+'':'' + right(''0'' + cast(cal_tDialog % 60 as varchar(3)), 2) as Duracion, convert(varchar(16), cal_fcallback, 121) as CallBack, cal_key, c.cam_id as IDCampEsp
+from ccoCallsOut c with(nolock index(IX_ccoCallsOut_9)) 
+inner join ccCamps o on c.cam_id = o.cam_id
+left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
+where user_id = @user_id
+and cal_inicio > dateadd(hh, -3, getdate())
+order by cal_id desc) b
+
+order by hora desc
+
+set nocount off
+	'
+    EXEC(@Sql)
 
     set @process = 'CW-1162 -- Drop SP ccsp_LoadGraphics'
     set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_LoadGraphics'')

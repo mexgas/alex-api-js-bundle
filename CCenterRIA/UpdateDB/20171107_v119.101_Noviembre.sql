@@ -296,8 +296,11 @@ if @actualVersion = @version and (@actualVersionFix = 94)
     	EXEC(@Sql)
 		
     	
-    	set @process = ''
-		set @Sql= ''
+    	set @process = 'Setting 200 para cadena en marcaciones no efectivas. CW-1143-Bugfix munoz'
+		set @Sql= 'if not exists(select * from ccsettings where setting_id=200)
+			begin
+				insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) values (200,''0'',''Cadena de llamada entrante en llamandas manuales no contactadas (Preview)'',1,''AGT'',''Cadena de llamada entrante en llamandas manuales no contactadas (Preview)'',''Incoming call command (preview)'',1,''.*'')
+			end'
     	EXEC(@Sql)
 
     	/* End script release */

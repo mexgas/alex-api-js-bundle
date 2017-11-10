@@ -39,7 +39,7 @@ exec @actualVersion = ccsp_getVersion 'BD'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and @actualVersionFix = 101 
+if  @actualVersion = @version and ( @actualVersionFix = 101 or  @actualVersionFix= @versionfix)
 	begin
 		begin tran
 		begin try

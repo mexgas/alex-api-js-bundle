@@ -1131,42 +1131,7 @@ else
 	order by cam_descripcion
 
 set nocount off'
-    EXEC(@Sql)   
-
-    set @process = 'CW-1273 Alter SP -- ccsp_CheckTarifas Error Parse column cstoTipoLlamada.longitud'
-    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_CheckTarifas]
-@tel varchar(255)
-AS
-set nocount on
-
---declare @tel varchar(255)
-declare @countryId tinyint
-declare @len varchar(10)
-declare @porcentaje tinyint
-declare @typeLlamada tinyint
-
-if (select valor from ccsettings where setting_id=164)= 1 begin
-
-	--set @tel=dbo.limpia(''044 55 64234886'')
-	set @tel = dbo.limpia(@tel)
-	set @len = convert(varchar(10),len(@tel))
-	
-	select @countryId=valor from ccsettings where setting_id=104
-
-	select @typeLlamada=tipoLlamada_id
-	from cstoTipoLlamada where country_id=@countryId and prefijo = substring(@tel,0,CHARINDEX(''%'',prefijo))+''%'' and longitud like ''%''+@len+''%'' 
-
-
-	if exists (select * from cstoTarifa where tipoLlamada_Id= @typeLlamada)  select 0,''existe tarifa''
-	else select 11,''No existe tarifa''
-
-end
-else begin 
-	select 0
-end
-
-set nocount off'
-    EXEC(@Sql)
+    EXEC(@Sql)    
 
     set @process = ''
     set @Sql= ''

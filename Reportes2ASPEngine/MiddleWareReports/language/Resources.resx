@@ -2574,4 +2574,7 @@
   <data name="AgentDetailbyDay" xml:space="preserve">
     <value>Detalle de Agente por Día</value>
   </data>
+  <data name="AverageHandleTime" xml:space="preserve">
+    <value>Tiempo promedio de operación</value>
+  </data>
 </root>

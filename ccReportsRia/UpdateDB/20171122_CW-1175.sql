@@ -45,13 +45,6 @@ if @actualVersion  in(@version,@version - 1) begin
 	EXEC(@Sql)
 
 	set @process = 'ADD COLUMN TO RepInCallsDetail  CW-1175'
-	set @Sql='if not exists (select * from sys.columns where name = N''holdTime'' and Object_ID = Object_ID(N''RepInCallsDetail''))
-    begin
-        ALTER TABLE RepInCallsDetail ADD holdTime smallint default (0);
-    end'
-	EXEC(@Sql)
-
-	set @process = 'ADD COLUMN TO RepInCallsDetail  CW-1175'
 	set @Sql='if not exists (select * from sys.columns where name = N''AverageHandleTime'' and Object_ID = Object_ID(N''RepInCallsDetail''))
     begin
         ALTER TABLE RepInCallsDetail ADD AverageHandleTime smallint default (0);
@@ -86,7 +79,7 @@ if @actualVersion  in(@version,@version - 1) begin
 		, datepart(hh,cal_inicio), datepart(mi,cal_inicio)
 		,di.provedor_id,prov.descrip [Proveedor],a.cal_puerto
 		,case when a.file_moved = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved
-		,cal_tNotas,cal_tMoh,AverageHandleTime= cal_tNotas+cal_tDialog
+		,cal_tNotas,AverageHandleTime= cal_tNotas+cal_tDialog
 		from cccallsin a
 		left join ccoDialers di on di.dialer_id = a.cal_puerto
 		left join cstoProvedor prov on di.provedor_id = prov.provedor_id

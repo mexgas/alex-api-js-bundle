@@ -45,7 +45,7 @@ if  @actualVersion = @version and ( @actualVersionFix = 102 or  @actualVersionFi
 		begin try
 
 
-set @process = '  CREATE TABLE emailSpam donde se registran los emails que son spam CW-976 Email Discard' 
+set @process = 'CREATE TABLE emailSpam donde se registran los emails que son spam CW-976 Email Discard' 
 set @Sql= '
  if not exists (select * from sys.tables where name = N''emailSpam'')
 begin
@@ -54,6 +54,7 @@ correoSpamId int NOT NULL identity(1,1),
 inboundId int NOT NULL,
 agentId int,
 conversationId int,
+fecha datetime,
 correo varchar(255)  
 PRIMARY KEY  (correoSpamId)	
 )
@@ -355,7 +356,7 @@ END'
 
 SET @process = 'Inserta nuevo Status de mensaje CW-976 '
 set @sql = '
-if exits (select * from messageStatus where name = ''Spam'' )
+if exists (select * from messageStatus where name = ''Spam'' )
 begin
 insert messageStatus (name,description,isFinished) values (''Spam'',''Message is Spam'' ,0)
 end'

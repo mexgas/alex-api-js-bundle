@@ -356,7 +356,7 @@ END'
 
 SET @process = 'Inserta nuevo Status de mensaje CW-976 '
 set @sql = '
-if exists (select * from messageStatus where name = ''Spam'' )
+if not exists (select * from messageStatus where name = ''Spam'' )
 begin
 insert messageStatus (name,description,isFinished) values (''Spam'',''Message is Spam'' ,0)
 end'

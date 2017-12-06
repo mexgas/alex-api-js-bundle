@@ -5749,6 +5749,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Correo no deseado.
+        /// </summary>
+        public static string systemTranslated_Message_email_Spam {
+            get {
+                return ResourceManager.GetString("systemTranslated_Message_email_Spam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a No enviado por servidor.
         /// </summary>
         public static string systemTranslated_Message_rejected_for_server {

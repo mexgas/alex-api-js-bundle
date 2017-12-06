@@ -13,7 +13,7 @@ insertarla en la tabla RepInCallsDetail. Adicionalmente insertar la información
 -Agregar la columna wrapup y "Average Handle Time" a la tabla RepInCallsDetail
 **********************************************************************************************
 Database: ccReportsRia
-Required version: 43
+Required version: 44
 
 
 
@@ -30,7 +30,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =44
+set @version =45
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 

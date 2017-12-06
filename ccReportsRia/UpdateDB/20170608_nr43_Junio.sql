@@ -863,15 +863,6 @@ END'
 	set @Sql= 'update ccSettings set descripcion=''Id Calificacion Contacto efectivo de Llamada de Salida|Id Calificacion Contacto efectivo de Llamada de Entrada'' where setting_id=39'
 	EXEC(@sql)
 
-	set @process = ''
-	set @Sql= ''
-	EXEC(@sql)
-
-	set @process = ''
-	set @Sql= ''
-	EXEC(@sql)
-
-
 	if @actualVersion  = @version - 1
 		exec ccsp_getVersion 'BD', @version
 

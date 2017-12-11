@@ -6,7 +6,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Threading;
 using System.Globalization;
-using System.Text; 
+using System.Text;
 using System.Xml;
 using System.IO;
 using MiddleWareReports;
@@ -54,8 +54,8 @@ public partial class CWReportsEngine : System.Web.UI.Page
         #region CacheControl
         Response.Expires = 0;
         Response.ExpiresAbsolute = DateTime.Now.AddDays(-1);
-        Response.AddHeader ("pragma","no-cache");
-        Response.AddHeader ("cache-control","private");
+        Response.AddHeader("pragma", "no-cache");
+        Response.AddHeader("cache-control", "private");
         Response.CacheControl = "no-cache";
         #endregion
 
@@ -101,7 +101,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
         {
             if (Session["sourceUserId"] != null)
             {
-                int.TryParse(Session["sourceUserId"].ToString(),out sourceUserId);
+                int.TryParse(Session["sourceUserId"].ToString(), out sourceUserId);
             }
         }
 
@@ -126,7 +126,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             if (Session["lang"] != null)
             {
                 lang = Session["lang"].ToString();
-            }            
+            }
         }
 
         //Set active chat session
@@ -279,19 +279,20 @@ public partial class CWReportsEngine : System.Web.UI.Page
             string reportName;
 
             //Get report name
-            if (crmTemplateId == "" && templateId == "")
+            if (!string.IsNullOrEmpty(crmTemplateId) && !string.IsNullOrEmpty(templateId))
             {
-                 reportName= MiddleWareReports.ReportFactory.getReportName(process).GetType().ToString();
+                reportName = MiddleWareReports.ReportFactory.getReportName(process + 1).GetType().ToString();
             }
             else
             {
-                reportName = MiddleWareReports.ReportFactory.getReportName(process+1).GetType().ToString();
+                reportName = MiddleWareReports.ReportFactory.getReportName(process).GetType().ToString();
+
             }
 
             //Create generic report   
             MiddleWareReports.GenericReport report;
             report = MiddleWareReports.GenericReport.createReport(reportName);
-            report.ReportName += crmTemplateId + templateId;
+            report.ReportName += !string.IsNullOrEmpty(crmTemplateId) && !string.IsNullOrEmpty(templateId) ? crmTemplateId + templateId : "";
 
 
             //Set app culture
@@ -339,7 +340,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 }
                 else //Get filters from CRM
                 {
-                    Response.Write(report.getCRMReportFilters(parameters, process,true).OuterXml);
+                    Response.Write(report.getCRMReportFilters(parameters, process, true).OuterXml);
                 }
 
             }
@@ -386,8 +387,8 @@ public partial class CWReportsEngine : System.Web.UI.Page
                     Response.ContentType = "text/plain";
                 }
                 MiddleWareReports.ReportFormat exportFormat = MiddleWareReports.ExportReportFactory.GenerateReport(format);
-               byte[] output;
-                if(process >= 9000 && process < 10000)
+                byte[] output;
+                if (process >= 9000 && process < 10000)
                 {
                     output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true, process);
                 }
@@ -439,7 +440,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             errorMessage = sqlEx.StackTrace;
             errorType = "SqlException";
         }
-        catch (SecurityException secEx) 
+        catch (SecurityException secEx)
         {
             hadException = true;
             code = "7";

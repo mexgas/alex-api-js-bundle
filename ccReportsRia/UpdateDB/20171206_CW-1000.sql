@@ -3,18 +3,14 @@
 /*******************************/
 
 /*
-Author: Mike Trejo
-Date: 2017/11/22
+Author: Victor Paramo 
+Date: 2017/12/18
 Description:
 **********************************************************************************************
-CW-1175 Nuevas Columnas en Reportes
--Modificar el SP ccspRepInCallsDetail para obtener la columna cal_tnotas de la tabla cccallsin e 
-insertarla en la tabla RepInCallsDetail. Adicionalmente insertar la información a la nueva columna "Average Handle Time" 
--Agregar la columna wrapup y "Average Handle Time" a la tabla RepInCallsDetail
+CW-1000 - The following changes are required to generate the Quality/Scoring Template/Dispositions Report.
 **********************************************************************************************
 Database: ccReportsRia
 Required version: 44
-
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -50,7 +46,7 @@ end
 
 	set @process = 'CW-1000 -- CREATE TABLE '
 	set @Sql= '
-if exists (select * from sys.tables where name = N''RepAVRSQuestionDetail'')
+if not exists (select * from sys.tables where name = N''RepAVRSQuestionDetail'')
 begin
 CREATE TABLE RepAVRSQuestionDetail(
 [date] [datetime] NOT NULL,
@@ -76,16 +72,35 @@ end
 
 	set @process = 'CW-1000 -- update ReportsFiltersRange'
 	set @Sql= '
-if exists (select * from sys.tables where name = N''ReportsFiltersRange'')
+if exists (select * from ReportsFiltersRange where id = 8071)
 begin
 update ReportsFiltersRange set filterName=''score'' where id=8071
+end
+'
+	EXEC(@sql)
+	
+	set @process = 'CW-1000 -- update ReportsTotals'
+	set @Sql= '
+if exists (select * from ReportsTotals where id = 8071)
+begin
+update ReportsTotals set totalColumns=''special:score:ISNULL(SUM(score)/NULLIF(count(score)_ 0)_ 0)'' where id=8071
+end
+'
+	EXEC(@sql)
+
+
+	set @process = 'CW-1000 -- Delete from GroupByReports'
+	set @Sql= '
+if exists (select * from GroupByReports where id=8071)
+begin
+delete from GroupByReports where id=8071
 end
 '
 	EXEC(@sql)
 
 	set @process = 'CW-1000 -- Insert into TranslatedReports'
 	set @Sql= '
-if exists (select * from sys.tables where name = N''TranslatedReports'')
+if not exists (select * from TranslatedReports where id = 8071)
 begin
 insert into TranslatedReports (id, columns) values (8071,''media'') 
 end
@@ -162,6 +177,14 @@ from reportQaEvaluation
 set nocount off
 END	
 			
+'
+	EXEC(@sql)
+
+	set @process = 'CW-1000 -- Execute Store Procedure'
+	set @Sql= '
+declare @dateStart datetime
+select @dateStart =isnull(min(fecha_calif),getdate()) from RIA_FORMACALIF
+exec ccspRepAVRSQuestionDetail 1,@dateStart
 '
 	EXEC(@sql)
 

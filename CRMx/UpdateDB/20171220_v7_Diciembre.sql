@@ -32,20 +32,20 @@ SET @VERSION = 7
 /* ACTUAL VERSION (USE YOUR OWN SCRIPT TO DO IT) */
 SET @ACTUALVERSION =  (SELECT VALUE FROM SETTINGS WHERE ID = 1)
 
-IF @ACTUALVERSION = @VERSION - 1
+IF @ACTUALVERSION in( @VERSION - 1, @VERSION )
 	BEGIN
 		BEGIN TRAN
 		BEGIN TRY
 
 	/* START SCRIPT RELEASE */
 
-    set @process = 'ALTER SP -- CRMxAgent'
+    set @process = 'ALTER SP -- CRMxAgent CW-1244'
     set @Sql= 'ALTER PROCEDURE [dbo].[CRMxAgent]
  -- Add the parameters for the stored procedure here
  @option INT = 0,    -- Type of Action/proceess to perform
-    @serviceType VARCHAR(50) = NULL,  -- Type of invoker service
-    @servicesType VARCHAR(50) = NULL,  -- Type of service associated, catalog
-    @serviceSource VARCHAR(50) = NULL,  -- The invoker serviceSource
+@serviceType VARCHAR(50) = NULL,  -- Type of invoker service
+@servicesType VARCHAR(50) = NULL,  -- Type of service associated, catalog
+@serviceSource VARCHAR(50) = NULL,  -- The invoker serviceSource
  @callType INT = NULL,     -- Call Type, ACD or CAMP
  @callTypeId INT= NULL,     -- Call identifier, camp #1 or acd#2
  @dnis BIGINT = NULL,       -- Dnis, i.e. 2099
@@ -755,6 +755,35 @@ SET @currentDataTemplateTable = ''[dbo].[CRMxRawData'' + CAST(@templateId AS VAR
 		END
 	END
    END
+
+if @option=21 begin
+
+	declare @xml xml	
+	declare @countTabSheet int
+	declare @i int=0
+	declare @tab table(tabsheetindex int, id varchar(max),relationId varchar(max))
+
+
+	select @countTabSheet=count(*) from CRMxTabSheets where [templateId]= @templateId
+
+	while @i <@countTabSheet begin
+
+		declare @ids varchar(max)=''''		
+		declare @RelationIds varchar(max)=''''	
+
+		SELECT @xml =tabSheetXml  FROM CRMxTabSheets WITH(NOLOCK) 
+		WHERE [templateId] = @templateId  and tabSheetIndex =@i 
+			
+		insert into @tab
+		select @i, Tbl.textInput.value(''(./@id)[1]'', ''varchar(max)''),	
+		 Tbl.textInput.value(''(./@relationGroup)[1]'', ''varchar(max)'') 	 
+		from   @xml.nodes(''//tabSheet/textInput'') as Tbl(textInput)
+		where Tbl.textInput.value(''(./@relationGroup)[1]'', ''varchar(max)'')<>''''	
+	
+		set @i=@i+1
+	end
+	select * from @tab
+end
 
 END'
     EXEC(@Sql)

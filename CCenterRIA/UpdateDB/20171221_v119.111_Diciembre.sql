@@ -65,7 +65,8 @@ end'
 	insert into seriesPA values(''Santiago De Veraguas'', ''9'', ''0000000'', ''9999999'')
 	insert into seriesPA values(''Provincia De Chiriqui'', ''5'', ''0000000'', ''9999999'')
 	insert into seriesPA values(''Movil'', ''6'', ''0000000'', ''9999999'')
-	insert into seriesPA values(''Provincia de Panama'', ''3'', ''0000000'', ''9999999'')'
+	insert into seriesPA values(''Provincia de Panama'', ''3'', ''0000000'', ''9999999'')
+	END'
 		EXEC(@Sql)
 
 		set @process = 'CW-322 -- Modificacion en la funcion fnGetTimeZone'

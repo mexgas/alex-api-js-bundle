@@ -2328,6 +2328,29 @@ AS
 
 			end'
 		EXEC(@Sql)
+		
+		
+		
+		
+		set @process = 'CW-1228 -- Insertar descripcion de operaciones'
+		set @Sql= 'delete ccRIALog_Operation where operationType between 150 and 167
+		insert ccRIALog_Operation values (150, ''Actualiza prioridad|Update Prioriry'')
+		insert ccRIALog_Operation values (151, ''Actualiza Caller ID Personalizado|Update Custom Caller ID'')
+		insert ccRIALog_Operation values (152, ''Actualiza Validacion Zona Horaria (Manual)|Update Time Zone Validation (Manual)'')
+		insert ccRIALog_Operation values (153, ''Actualiza Llamadas por Encuesta|Update Calls by Survey'')
+		insert ccRIALog_Operation values (154, ''Actualiza Script IVR|Update IVR Script'')
+		insert ccRIALog_Operation values (156, ''Actualiza Tiempo de Chat Inactivo|Update Inactive Chat Time'')
+		insert ccRIALog_Operation values (157, ''Actualiza Chats Maximos|Update Max Chats'')
+		insert ccRIALog_Operation values (158, ''Actualiza Dominio Chat|Update Chat Domain'')
+		insert ccRIALog_Operation values (159, ''Actualiza Tiempo de desborde Chat|Update Chat Time Overflow'')
+		insert ccRIALog_Operation values (160, ''Actualiza Cola de desborde Chat|Update Chat Queue Overflow'')
+		insert ccRIALog_Operation values (161, ''Actualiza Dejar mensaje manualmente|Update Leave prerecorded message'')
+		insert ccRIALog_Operation values (162, ''Actualiza Llamadas manuales en Chat|Update Manual Calls on Chat'')
+		insert ccRIALog_Operation values (164, ''Actualiza Intervalo remarcacion en canceladas|Update Redial Interval on Cancelled'')
+		insert ccRIALog_Operation values (165, ''Actualiza Funcion especial DTMF|Update Special Function DTMF'')
+		insert ccRIALog_Operation values (166, ''Actualiza Cabecera SIP Personalizada|Update Custom SIP Header'')
+		insert ccRIALog_Operation values (167, ''Actualiza Pausar y continuar grabacion|Update Pause and resume recording'')'
+		EXEC(@Sql)
 
 
 	/* End script release */

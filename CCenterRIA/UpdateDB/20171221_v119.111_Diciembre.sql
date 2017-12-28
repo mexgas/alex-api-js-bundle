@@ -69,6 +69,25 @@ end'
 	END'
 		EXEC(@Sql)
 
+
+		set @process = 'CW-322 -- Update en tabla ccSettings'
+    	set @Sql= 'UPDATE ccSettings 
+		set detalle = ''1:Mexico, 2:Argentina, 3:Colombia, 4:USA, 5:Chile, 6: Venezuela, 7: Reino Unido, 8: Arabia saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España, 15:Peru, 16: Panama'' 
+		where setting_id = ''104'''
+    	EXEC(@Sql)
+
+
+		set @process = 'CW-322 -- Insertar valor en tabla ccRIACat_Country'
+    	set @Sql= 'insert into ccRIACat_Country values(''Panama'', ''507'', ''7'', ''7'')'
+    	EXEC(@Sql)
+
+		set @process = 'CW-322 -- Insertar registros en tabla cstoTipoLlamada'
+    	set @Sql= 'insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''1'', ''Local'', ''%'', ''7'')
+		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''2'', ''Celular'', ''6%'', ''7'')
+		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''3'', ''LD Internacional'', ''00%'', ''0'')'
+    	EXEC(@Sql)
+
+
 		set @process = 'CW-322 -- Modificacion en la funcion fnGetTimeZone'
 		set @Sql= 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
@@ -2309,7 +2328,7 @@ AS
 			begin
 				if len(@resultado)=7
 					begin
-						if charindex(substring(@resultado,1,1),''2,4,5,6,7,9'') <= 0
+						if charindex(substring(@resultado,1,1),''2,3,4,5,6,7,9'') <= 0
 							select @resultado = ''E_'' + @resultado
 					end
 				else
@@ -2352,7 +2371,6 @@ AS
 		insert ccRIALog_Operation values (166, ''Actualiza Cabecera SIP Personalizada|Update Custom SIP Header'')
 		insert ccRIALog_Operation values (167, ''Actualiza Pausar y continuar grabacion|Update Pause and resume recording'')'
 		EXEC(@Sql)
-
 
 	/* End script release */
 

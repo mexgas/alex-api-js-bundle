@@ -82,9 +82,11 @@ end'
     	EXEC(@Sql)
 
 		set @process = 'CW-322 -- Insertar registros en tabla cstoTipoLlamada'
-    	set @Sql= 'insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''1'', ''Local'', ''%'', ''7'')
-		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''2'', ''Celular'', ''6%'', ''7'')
-		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(''16'', ''3'', ''LD Internacional'', ''00%'', ''0'')'
+    	set @Sql= 'if not exists (select * from cstoTipoLlamada where country_id = 16) begin
+		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(16, 1, ''Local'', ''%'', ''7'')
+		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(16, 2, ''Celular'', ''6%'', ''7'')
+		insert into cstoTipoLlamada (country_id, tipoLlamada_id, descrip, prefijo, longitud) values(16, 3, ''LD Internacional'', ''00%'', ''0'')
+		end'
     	EXEC(@Sql)
 
 

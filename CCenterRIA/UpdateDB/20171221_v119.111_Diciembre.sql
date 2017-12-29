@@ -78,7 +78,11 @@ end'
 
 
 		set @process = 'CW-322 -- Insertar valor en tabla ccRIACat_Country'
-    	set @Sql= 'insert into ccRIACat_Country values(''Panama'', ''507'', ''7'', ''7'')'
+    	set @Sql= 'if not exists (select * from ccRIACat_Country where CtyID = 16) begin
+		SET IDENTITY_INSERT ccRIACat_Country ON
+		insert into ccRIACat_Country (CtyID, CtyName, CtyCode, minPhoneLength, maxPhoneLength) values(''16'',''Panama'', ''507'', ''7'', ''7'')
+		SET IDENTITY_INSERT ccRIACat_Country OFF
+		end'
     	EXEC(@Sql)
 
 		set @process = 'CW-322 -- Insertar registros en tabla cstoTipoLlamada'
@@ -2337,11 +2341,6 @@ AS
 					begin
 						if charindex(substring(@resultado,1,2),''00'') <= 0
 							select @resultado = ''E_'' + @resultado
-						else
-							begin
-							if charindex(substring(@resultado,3,5),''507'') <= 0
-								select @resultado = ''00507'' + substring(@resultado,3,len(@resultado)) 
-							end
 					end
 			end
 

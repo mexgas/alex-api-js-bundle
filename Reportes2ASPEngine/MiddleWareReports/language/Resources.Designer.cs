@@ -718,6 +718,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tiempo promedio de operación.
+        /// </summary>
+        public static string AverageHandleTime {
+            get {
+                return ResourceManager.GetString("AverageHandleTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tiempo promedio en espera.
         /// </summary>
         public static string avg {

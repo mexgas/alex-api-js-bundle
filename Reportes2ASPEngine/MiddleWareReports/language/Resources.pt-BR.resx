@@ -2106,6 +2106,9 @@
   <data name="DialingResultsDetail" xml:space="preserve">
     <value>Dialing Results Detail</value>
   </data>
+  <data name="AverageHandleTime" xml:space="preserve">
+    <value>Average Handle Time</value>
+  </data>
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Spam</value>
   </data>

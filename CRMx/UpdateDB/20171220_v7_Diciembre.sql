@@ -3,16 +3,16 @@
 /*******************************/
 
 /*
-Author: Jesus Gallardo
-Date: 2016/01/05
+Author: Carlos Chavez
+Date: 2017/11/28
 Description: CWX-CW_CRMx
 ********************************************************************************************
 
-	 Se modifica el SP CRMxAgent
+	 Se modifican los SPs CRMxAgent y el CRMxUploader
 
 
 Database: CW_CRMx
-Required version: 5
+Required version: 6
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 
@@ -27,135 +27,25 @@ DECLARE @ERRORGENERATED VARCHAR(MAX)
 DECLARE @PROCESS VARCHAR(MAX)
 
 /* VERSION TO RELEASE (USE THE VERSION OF YOUR OWN DATABSE)*/
-SET @VERSION = 6
+SET @VERSION = 7
 
 /* ACTUAL VERSION (USE YOUR OWN SCRIPT TO DO IT) */
 SET @ACTUALVERSION =  (SELECT VALUE FROM SETTINGS WHERE ID = 1)
 
-IF @ACTUALVERSION = @VERSION - 1
+IF @ACTUALVERSION in( @VERSION - 1, @VERSION )
 	BEGIN
 		BEGIN TRAN
 		BEGIN TRY
 
 	/* START SCRIPT RELEASE */
 
-		set @process = 'validate if exists procedure [dbo].[saveMyCRMxRecord]'
-    set @Sql= 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''saveMyCRMxRecord'') DROP PROCEDURE saveMyCRMxRecord'
-    EXEC(@sql)
-
-    set @process = 'create PROCEDURE [dbo].[saveMyCRMxRecord]'
-    set @Sql= 'create PROCEDURE [dbo].[saveMyCRMxRecord]  
-    @crmxRecord XML,  
-    @crmxCallData varchar(max) = null  
-   AS  
-   BEGIN  
-    -- SET NOCOUNT ON added to prevent extra result sets from  
-    -- interfering with SELECT statements.  
-    SET NOCOUNT ON;  
-  
-    IF @crmxRecord IS NULL  
-     SELECT -9991  
-  
-    DECLARE @templateID INT,  
-      @dataTName NVARCHAR(50),  
-      @rawDTName NVARCHAR(50),  
-      @crmxRecId INT,  
-      @SQL NVARCHAR(MAX),  
-      @CRI INT,  
-      @TIX INT,  
-      @CID VARCHAR(100),  
-      @BT VARCHAR(100),  
-      @DV VARCHAR(2000)  
-  
-    DECLARE @tempTable TABLE (  
-       CRI INT NOT NULL,  
-       TIX INT NULL,  
-       CID VARCHAR(100) NOT NULL,  
-       BT VARCHAR(100) NULL,  
-       DV VARCHAR(2000) NULL  
-      )  
-  
-    DECLARE @compTable TABLE (  
-       componentId varchar(100) NOT NULL  
-    )  
-  
-      
-  
-  
-    DECLARE cRunner CURSOR FOR  
-     SELECT CRI, TIX, CID, BT, DV FROM @tempTable  
-  
-    SELECT @templateID = @crmxRecord.value(''(/Template/@id)[1]'',''INT'')  
-    SELECT @crmxRecID = @crmxRecord.value(''(/Template/crmxRecord/@id)[1]'',''INT'')  
-  
-  
-    INSERT @compTable  
-     SELECT tabsheet.comp.value(''(@id)'',''varchar(max)'') AS ''componentId''  FROM crmxtabsheets WITH(NOLOCK)  
-     CROSS APPLY crmxtabsheets.tabsheetxml.nodes(''/tabSheet/*'')  tabsheet(comp)  
-     WHERE templateid = @templateID and tabsheet.comp.value(''(@id)'',''varchar(max)'') is not null AND tabsheet.comp.value(''(@reportable)'', ''varchar(max)'') IS NOT NULL  
-  
-  
-  
-  
-    SET @dataTName = N''CRMxData'' + CAST(@templateID AS NVARCHAR(10))  
-    SET @rawDTName = N''CRMxRawData'' + CAST(@templateID AS NVARCHAR(10))  
-  
-    -- Pre-save the obtained xml data unto table form  
-    INSERT @tempTable  
-     SELECT  @crmxRecID AS CRI,  
-        tabSheet.value(''@index'', ''INT'') AS TSI,  
-        component.value(''@id'', ''NVARCHAR(100)'') AS CID,  
-        ''none'' AS BT,  
-        component.value(''@value'', ''NVARCHAR(2000)'') AS DV  
-     FROM  @crmxRecord.nodes(''Template/tabSheets/tabSheet'') AS TabSheets(tabSheet)  
-     OUTER APPLY TabSheets.tabSheet.nodes(''node()'') AS Components(component)  
-     WHERE component.value(''@id'', ''NVARCHAR(100)'') IN (SELECT componentId FROM @compTable)  
-  
-    OPEN cRunner  
-    FETCH cRunner INTO @CRI, @TIX, @CID, @BT, @DV  
-  
-    EXEC [dbo].[CRMxAgent] @option = 18,  
-          @templateId = @templateId,  
-          @crmxRecordID = @CRI,  
-          @tabSheetIndex = @TIX,  
-          @componentId = @CID,  
-          @bindingType = @BT,  
-          @dataValue = @DV  
-  
-    WHILE(@@FETCH_STATUS = 0)  
-     BEGIN  
-      FETCH cRunner INTO @CRI, @TIX, @CID, @BT, @DV  
-      EXEC [dbo].[CRMxAgent] @option = 18,  
-          @templateId = @templateId,  
-          @crmxRecordID = @CRI,  
-          @tabSheetIndex = @TIX,  
-          @componentId = @CID,  
-          @bindingType = @BT,  
-          @dataValue = @DV  
-     END  
-  
-    CLOSE cRunner  
-    DEALLOCATE cRunner  
-  
-    -- Lastly, we update the record date  
-    if exists(SELECT top 1 * FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = ''callData'' AND TABLE_NAME = @dataTName)  
-     SET @SQL = ''UPDATE ['' + @dataTName + ''] WITH(ROWLOCK) SET [dateValue] = GETDATE(), callData=convert(xml,'''''' + @crmxCallData + '''''') WHERE [crmxRecordId] = '' + CAST(@crmxRecID AS NVARCHAR(10))  
-    else  
-     SET @SQL = ''UPDATE ['' + @dataTName + ''] WITH(ROWLOCK) SET [dateValue] = GETDATE() WHERE [crmxRecordId] = '' + CAST(@crmxRecID AS NVARCHAR(10))  
-    EXEC(@SQL)  
-  
-   END'
-    EXEC(@sql)
-
-
-
-    set @process = 'ALTER SP -- CRMxAgent'
+    set @process = 'ALTER SP -- CRMxAgent CW-1244'
     set @Sql= 'ALTER PROCEDURE [dbo].[CRMxAgent]
  -- Add the parameters for the stored procedure here
  @option INT = 0,    -- Type of Action/proceess to perform
-    @serviceType VARCHAR(50) = NULL,  -- Type of invoker service
-    @servicesType VARCHAR(50) = NULL,  -- Type of service associated, catalog
-    @serviceSource VARCHAR(50) = NULL,  -- The invoker serviceSource
+@serviceType VARCHAR(50) = NULL,  -- Type of invoker service
+@servicesType VARCHAR(50) = NULL,  -- Type of service associated, catalog
+@serviceSource VARCHAR(50) = NULL,  -- The invoker serviceSource
  @callType INT = NULL,     -- Call Type, ACD or CAMP
  @callTypeId INT= NULL,     -- Call identifier, camp #1 or acd#2
  @dnis BIGINT = NULL,       -- Dnis, i.e. 2099
@@ -844,9 +734,311 @@ SET @currentDataTemplateTable = ''[dbo].[CRMxRawData'' + CAST(@templateId AS VAR
     SET @SQL=''delete from ''+@currentDataTemplateTable +'' where crmxRecordId=0''
     EXEC(@SQL)
    END
+
+   /* INSERT
+    Insert new row at CRMxDataN*/
+   IF @option =20
+   BEGIN
+	 IF @templateId IS NOT NULL  BEGIN
+		SET @currentDataTemplateTable = ''CRMxData'' + CAST(@templateId AS VARCHAR(100))
+		IF exists(SELECT * FROM SYS.TABLES WHERE [NAME] = @currentDataTemplateTable) BEGIN
+		  SET @SQL = ''INSERT INTO '' + @currentDataTemplateTable + '' (serviceSource, dataKeyValue, '' 
+		  + case isnull(@destinySourceValue, 0) when 0 then '''' else ''destinySourceValue,'' end 
+		  + '' hasBeenLogicDeleted)
+		   VALUES ('''''' + @serviceSource + '''''', '''''' + @dataKeyValue + '''''''' +
+		  + case isnull(@destinySourceValue, 0) when 0 then '''' else '','''''' + @destinySourceValue + '''''''' end + 
+		  '', 0 )
+		   SELECT SCOPE_IDENTITY() AS CRMxRecord_Id_Result''
+
+		   --PRINT(@SQL)
+		   EXEC(@SQL)
+		END
+	END
+   END
+
+if @option=21 begin
+
+	declare @xml xml	
+	declare @countTabSheet int
+	declare @i int=0
+	declare @tab table(tabsheetindex int, id varchar(max),relationId varchar(max))
+
+
+	select @countTabSheet=count(*) from CRMxTabSheets where [templateId]= @templateId
+
+	while @i <@countTabSheet begin
+
+		declare @ids varchar(max)=''''		
+		declare @RelationIds varchar(max)=''''	
+
+		SELECT @xml =tabSheetXml  FROM CRMxTabSheets WITH(NOLOCK) 
+		WHERE [templateId] = @templateId  and tabSheetIndex =@i 
+			
+		insert into @tab
+		select @i, Tbl.textInput.value(''(./@id)[1]'', ''varchar(max)''),	
+		 Tbl.textInput.value(''(./@relationGroup)[1]'', ''varchar(max)'') 	 
+		from   @xml.nodes(''//tabSheet/textInput'') as Tbl(textInput)
+		where Tbl.textInput.value(''(./@relationGroup)[1]'', ''varchar(max)'')<>''''	
+	
+		set @i=@i+1
+	end
+	select * from @tab
+end
+
 END'
     EXEC(@Sql)
 
+
+	set @process = 'ALTER SP -- CRMxUploader'
+    set @Sql= 'ALTER PROCEDURE [dbo].[CRMxUploader]
+	-- Add the parameters for the stored procedure here
+	@option INT,				-- Type of Action/proceess to perform
+	@templateId INT = null,       -- Template id
+	@dataKeyCollection VARCHAR(MAX) = null, -- Collection of dataKeys. ''datakey1'',''datakey2'',...,''datakeyn''
+	@componentIdCollection VARCHAR(MAX) = null, -- Collection of componentId''s. ''textInpu1'', ''texTinput2'',....,''numeric1''
+	@isLoading BIT = NULL,
+	-- LoadingTemplateRelationships
+	@loadTempRelId INT = NULL,
+	@loadName NVARCHAR(141) = NULL,
+	@loadId INT = NULL,
+	@loadType TINYINT = 0,
+	@crmxRelation XML = NULL,
+	@cwxRelation XML = NULL,
+	@isUsingHeaders BIT = NULL
+
+AS
+
+DECLARE @SQL VARCHAR(MAX)
+DECLARE @currentDataTemplateTable VARCHAR(100)
+DECLARE @searchPattern VARCHAR(MAX)
+
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	-- Get Record Id by cal_key
+	IF @option = 1
+	BEGIN
+		IF (LEN(@dataKeyCollection) = 0	or @dataKeyCollection IS NULL)
+		BEGIN
+		  SELECT -1
+		END
+		ELSE
+		BEGIN
+			SET @SQL = ''SELECT crmxRecordId, dataKeyValue FROM crmxdata'' + CAST(@templateId AS VARCHAR(100))
+			+ '' Where dataKeyValue in ('' + @dataKeyCollection + '')''
+			EXEC(@SQL)
+		END
+
+
+	END
+
+	-- Delete by cal_key (bulkdelete)
+	IF @option = 2
+	BEGIN
+		IF ((LEN(@dataKeyCollection) = 0	or @dataKeyCollection IS NULL) and
+			(LEN(@componentIdCollection) = 0	or @componentIdCollection IS NULL) )
+		BEGIN
+		  SELECT -1
+		END
+		ELSE
+		BEGIN
+			SET @SQL = ''DELETE FROM crmxRawdata'' + CAST(@templateId AS VARCHAR(100))
+			+ '' Where crmxRecordId in (SELECT crmxRecordId FROM crmxData''+ CAST(@TemplateId as VARCHAR(100)) + '' WHERE dataKeyValue IN (''  + @dataKeyCollection + '')) and
+				componentId in ('' + @componentIdCollection + '')''
+			EXEC(@SQL)
+		END
+	END
+
+
+	-- Update CRMxData (set Date)
+	IF @option = 3
+	BEGIN
+		IF (LEN(@dataKeyCollection) = 0	or @dataKeyCollection IS NULL)
+		BEGIN
+		  SELECT -3
+		END
+		ELSE
+		BEGIN
+			SET @SQL = ''Update crmxdata'' + CAST(@templateId AS VARCHAR(100))
+			+ '' set dateValue = GETDATE() where dataKeyValue in ('' + @dataKeyCollection + '')''
+			exec (@SQL)
+		END
+	END
+
+IF @option = 4
+	BEGIN
+		IF(@templateID is NULL or @templateId = 0)
+		BEGIN
+			SELECT -1
+		END
+		ELSE
+		BEGIN
+			SET @SQL = ''SELECT  tabsheet.comp.value(''''(@id)'''',''''varchar(max)'''') AS ''''componentId'''', crmxtabsheets.tabSheetIndex as ''''tabSheetIndex'''' FROM crmxtabsheets WITH(NOLOCK)
+			CROSS APPLY crmxtabsheets.tabsheetxml.nodes(''''/tabSheet/*'''')  tabsheet(comp)
+			WHERE templateid='' + CAST(@templateId AS VARCHAR(100))  + '' and tabsheet.comp.value(''''(@id)'''',''''varchar(max)'''') IS NOT NULL and tabsheet.comp.value(''''(@id)'''',''''varchar(max)'''') not in(''+ @componentIdCollection +'')''
+			EXEC(@SQL)
+
+		END
+
+  END
+
+IF @option = 5
+	BEGIN
+		SELECT COUNT([NAME]) FROM SYS.TABLES WHERE [NAME] = ''CRMxData'' + CAST(@templateId AS VARCHAR(100)) or [NAME]= ''CRMxRawData'' + CAST(@templateId AS VARCHAR(100));
+	END
+
+
+/** ***************************************************************************
+	LoadingTemplateRelationships
+* ****************************************************************************/
+
+/*	CREATE
+		Create a new relationship.
+*/
+IF @option = 6
+	BEGIN
+		IF @templateID IS NULL
+		OR	@loadName IS NULL
+		OR	@loadID IS NULL
+		OR	@loadType IS NULL
+		OR	@crmxRelation IS NULL
+		OR	@cwxRelation IS NULL
+			BEGIN
+				SELECT ''-6 : A parameter is not provided or is null (templateID, loadName, loadID, loadType, crmxRelation, cwxRelation).''
+			END
+		INSERT INTO LoadingTemplateRelationships (crmxTemplateId, name, lastUsage, loadId, loadType, crmxRelation, cwxRelation, usingHeaders)
+		VALUES (@templateID, @loadName, GETDATE(), @loadId, @loadType, @crmxRelation, @cwxRelation, @isUsingHeaders)
+	END
+
+/*	READ
+		Get all the relationships for a specified template. And orders it by date.
+*/
+IF @option = 7
+	BEGIN
+		IF @templateID IS NULL
+			BEGIN
+				SELECT ''-7 : TemplateID not provided or is null.''
+			END
+		ELSE
+			BEGIN
+				SELECT id, crmxTemplateId,name,lastUsage,usingHeaders
+				FROM LoadingTemplateRelationships
+				WITH(NOLOCK)
+				WHERE crmxTemplateId = @templateID
+				AND logicDeleted = 0
+				ORDER BY lastUsage DESC
+			END
+	END
+
+/*	UPDATE
+		Update a specified loadingTemplateRelationship.
+*/
+IF @option = 8
+	BEGIN
+		IF @loadTempRelId = NULL
+			BEGIN
+				SELECT ''-8 : loadTempRelId not provided or is null''
+			END
+		ELSE
+			BEGIN
+				SET @SQL = ''
+				UPDATE LoadingTemplateRelationships
+				SET lastUsage = GETDATE()''
+				IF @loadName IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', name = '' + '''''''' + CAST(@loadName AS NVARCHAR(141)) + ''''''''
+					END
+				IF @loadID IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', loadID = '' + CAST(@loadId AS NVARCHAR(100))
+					END
+				IF @loadType IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', loadType = '' + CAST(@loadType AS NVARCHAR(10))
+					END
+				IF @crmxRelation IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', crmxRelation = N'' + '''''''' + CAST(@crmxRelation AS NVARCHAR(MAX)) + ''''''''
+					END
+				IF @cwxRelation IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', cwxRelation = N'' + '''''''' + CAST(@cwxRelation AS NVARCHAR(MAX)) + ''''''''
+					END
+				IF @isUsingHeaders IS NOT NULL
+					BEGIN
+						SET @SQL = @SQL + '', usingHeaders = N'' + '''''''' + CAST(@isUsingHeaders AS NVARCHAR(MAX)) + ''''''''
+					END
+				 SET @SQL = @SQL + ''
+				 WHERE id = '' + CAST(@loadTempRelId AS NVARCHAR(MAX))
+				PRINT(@SQL)
+				EXEC(@SQL)
+			END
+
+	END
+
+/*	DELETE
+		Sets a relationship as unreachable
+*/
+IF @option = 9
+	BEGIN
+		IF @templateId IS NULL
+			BEGIN
+				SELECT ''-9 : TemplateID is not provided or null.''
+			END
+		ELSE
+			UPDATE LoadingTemplateRelationships
+			SET logicDeleted = 1
+			WHERE id = @templateID
+	END
+
+ /*  READ
+		Select a
+ */
+ IF @option = 10
+	BEGIN
+		IF @loadID IS NULL
+			BEGIN
+				SELECT ''-10 : LoadID is not provided or null.''
+			END
+		ELSE
+			BEGIN
+				SELECT *
+				FROM LoadingTemplateRelationships
+				WITH(NOLOCK)
+				WHERE id = @loadID
+			END
+	END
+
+
+END
+
+/** ***************************************************************************
+	Mich uploader changes
+* ****************************************************************************/
+
+IF @option = 11
+	BEGIN
+		UPDATE CRMxTemplates SET isLoadingData = @isLoading WHERE id = @templateId
+	END
+
+
+-- Delete by cal_key 
+IF @option = 12
+BEGIN
+	IF (LEN(@dataKeyCollection) = 0 or @dataKeyCollection IS NULL) 
+	BEGIN
+		SELECT -1
+	END
+	ELSE
+	BEGIN
+		SET @SQL = ''DELETE FROM crmxRawdata'' + CAST(@templateId AS VARCHAR(100))
+		+ '' Where crmxRecordId in (SELECT crmxRecordId FROM crmxData''+ CAST(@TemplateId as VARCHAR(100)) + '' WHERE dataKeyValue IN (''  + @dataKeyCollection + '')) ''
+		EXEC(@SQL)
+	END
+END'
+    EXEC(@Sql)
 
 
 

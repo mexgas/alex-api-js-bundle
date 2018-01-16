@@ -2576,8 +2576,14 @@
   </data>
   <data name="AverageHandleTime" xml:space="preserve">
     <value>Tiempo promedio de operación</value>
- </data>
+  </data>
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Correo no deseado</value>
+  </data>
+  <data name="systemTranslated_Chat" xml:space="preserve">
+    <value>Chat </value>
+  </data>
+  <data name="systemTranslated_Recording" xml:space="preserve">
+    <value>Grabación </value>
   </data>
 </root>

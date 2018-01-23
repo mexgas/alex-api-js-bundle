@@ -2586,4 +2586,7 @@
   <data name="systemTranslated_Recording" xml:space="preserve">
     <value>Grabación </value>
   </data>
+  <data name="systemTranslated_Survey" xml:space="preserve">
+    <value>Encuesta</value>
+  </data>
 </root>

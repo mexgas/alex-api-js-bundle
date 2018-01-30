@@ -173,9 +173,41 @@ else if @action = 11 begin--trae el nombre de la base de datos en BX
 end'
     	EXEC(@Sql)
 
-    	set @process = ''
-    	set @Sql= ''
-    	EXEC(@Sql)
+    	set @process = 'CW-971 -- ALTER SP ccspAgent_GetLastCalls'
+      set @Sql= 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
+set nocount on
+
+select * from
+
+(select top 10 cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+convert(varchar(14), dateadd(second, cal_tDialog-cal_tMoh,0), 108) Duracion,
+'''' as CallBack, cal_key, c.inbound_id as IDCampEsp
+from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
+inner join ccInbound i on c.inbound_id = i.inbound_id
+left join ccTipoCalif cal on c.calif_id = cal.calif_id
+where user_id = @user_id
+and cal_inicio > dateadd(hh, -3, getdate())
+order by cal_id desc) a
+
+Union
+
+select * from
+(select top 10 cal_id as id, ''OUT'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_telefono as Telefono,cam_descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+convert(varchar(14), dateadd(second, cal_tDialog-cal_tMoh,0), 108) Duracion,
+convert(varchar(16), cal_fcallback, 121) as CallBack, cal_key, c.cam_id as IDCampEsp
+from ccoCallsOut c with(nolock index(IX_ccoCallsOut_9)) 
+inner join ccCamps o on c.cam_id = o.cam_id
+left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
+where user_id = @user_id
+and cal_inicio > dateadd(hh, -3, getdate())
+order by cal_id desc) b
+
+order by hora desc
+
+set nocount off '
+      EXEC(@Sql)
 
 
 	/* End script release */

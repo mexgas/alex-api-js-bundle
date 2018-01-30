@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 43
+	Set @Version = 44
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
@@ -106,7 +106,7 @@ end'
 	
 	EXEC(@sql)
 
-	set @process = 'CW-1380'
+	set @process = ''
  	set @sql =''
 	
 	EXEC(@sql)

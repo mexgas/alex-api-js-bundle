@@ -209,6 +209,64 @@ order by hora desc
 set nocount off '
       EXEC(@Sql)
 
+    set @process = 'CW-1273 CW-1280 Alter SP ccsp_AgentUpdateCallTimes'
+    set @Sql= 'ALTER procedure [dbo].[ccsp_AgentUpdateCallTimes]
+@IDCall int,
+@cal_tXfer smallint,
+@cal_tDialog smallint,
+@cal_tNotas smallint,
+@TipoCall tinyint,
+@cal_tRing smallint=0,
+@mtmoh smallint = 0,
+@isChatCall bit = 0,
+@isErroManualCall bit =0
+AS
+set nocount on
+if @IDCall<=0 
+  return(0)
+
+declare @tMinAVRS smallint
+
+if @TipoCall=1 --INBOUND
+ begin
+  Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
+  cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+  cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+  Where cal_id= @IDCall
+    
+ 
+  -- Elimina callback generado por abandono
+  Declare @ANI_x varchar(19)
+  select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+
+  DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+  DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+ end
+
+if @TipoCall=2 --OUTBOUND
+ begin   
+  Update ccoCallsOUT with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
+   cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end, 
+   cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end, 
+   cal_manual=case when @isChatCall=1 then 3 else cal_manual end 
+   Where cal_id=@IDCall
+  select * from ccoCallsOUT Where cal_id=@IDCall
+
+  -- calcula el costo de la llamada
+  exec ccsp_CstoCalculaCosto @IDCall
+ end
+
+select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+if @cal_tDialog >= @tMinAVRS
+ begin
+  insert ccAVRSTransfer (cal_id, tipo) values (@IDCall, @TipoCall - 1)
+  return(0)
+ end
+
+set nocount off'
+    EXEC(@Sql)
+
 
 	/* End script release */
 

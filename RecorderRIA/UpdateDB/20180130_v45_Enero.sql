@@ -21,6 +21,10 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	begin tran
 	begin try
 
+	set @process = 'Drop SP -- tmp_detGritosOut'
+	set @Sql= 'if exists (select * from sys.procedures where name = ''tmp_detGritosOut'') DROP PROCEDURE [dbo].[tmp_detGritosOut]'
+	EXEC(@sql)
+ 
 	set @process = 'CW-1182 CREATE SP tmp_detGritosOut'
  	set @sql ='
 	CREATE PROCEDURE [dbo].[tmp_detGritosOut]

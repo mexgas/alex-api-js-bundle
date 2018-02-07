@@ -31,8 +31,8 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 119--**********actualizar a 129 sin fix
-set @versionfix = 93
+set @version = 120--**********actualizar a 129 sin fix
+set @versionfix = 1
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -43,7 +43,7 @@ select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASpli
 
 select @actualVersion,@actualVersionFix,@versionfix
 
-if @actualVersion = @version and (@actualVersionFix >= 92)
+if @actualVersion in(@version ,@version-1)
 	begin
 		begin tran
 		begin try	
@@ -139,11 +139,7 @@ END'
     set @process = 'CW-1148 -- Alter column ccLogAgentesNotReady.tStatus float '
     set @Sql= 'ALTER TABLE ccLogAgentesNotReady ALTER COLUMN tStatus float;'
     EXEC(@Sql)
-
-	set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
-   
+	
 
     set @process = 'CW-1058 Programar notReady en la maquina de estados'
     set @Sql= 'ALTER procedure [dbo].[ccsp_RIAGetSelectedNotReady]
@@ -1000,110 +996,110 @@ declare @hora smallint
 declare @minuto smallint
 declare @value int
 
-	SET DATEFIRST 1
+SET DATEFIRST 1
 
-	select @fecha =  getdate()
-	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
+select @fecha =  getdate()
+select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
 
-	set @value = 0
-	select @value = valor from ccSettings where setting_id = 191
+set @value = 0
+select @value = valor from ccSettings where setting_id = 191
 
-	if @value = 0
-		begin
-			select -1 as inbound_id, ''IVR'' as name
-			union
-			select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+if @value = 0
+	begin
+		select -1 as inbound_id, ''IVR'' as name
+		union
+		select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+		(
+			select inbound_id from ccInboundHorarios where horario_id in
 			(
-				select inbound_id from ccInboundHorarios where horario_id in
-				(
-					select horario_id  from ccHorarios
-					where
-					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-					AND (
-						Lunes  = @dia or
-						Martes *2 = @dia or
-						Miercoles*3 = @dia or
-						Jueves*4 = @dia or
-						Viernes*5 = @dia or
-						Sabado*6 = @dia or
-						domingo*7 = @dia
-					)
+				select horario_id  from ccHorarios
+				where
+				( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+				AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+				AND (
+					Lunes  = @dia or
+					Martes *2 = @dia or
+					Miercoles*3 = @dia or
+					Jueves*4 = @dia or
+					Viernes*5 = @dia or
+					Sabado*6 = @dia or
+					domingo*7 = @dia
 				)
 			)
-			and inbound_id <> @current
-			-- las activas
-			and status <> 0
-			-- las que tienen agentes firmados
-			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-			order by 2
-		end
+		)
+		and inbound_id <> @current
+		-- las activas
+		and status <> 0
+		-- las que tienen agentes firmados
+		-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+		order by 2
+	end
 
-	if @value = 1
-		begin
-			if (@current <> 0)
-				begin
-					select -1 as inbound_id, ''IVR'' as name
-					union
-					select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+if @value = 1
+	begin
+		if (@current <> 0)
+			begin
+				select -1 as inbound_id, ''IVR'' as name
+				union
+				select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+				(
+					select inbound_id from ccInboundHorarios where horario_id in
 					(
-						select inbound_id from ccInboundHorarios where horario_id in
-						(
-							select horario_id  from ccHorarios
-							where
-							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (
-								Lunes  = @dia or
-								Martes *2 = @dia or
-								Miercoles*3 = @dia or
-								Jueves*4 = @dia or
-								Viernes*5 = @dia or
-								Sabado*6 = @dia or
-								domingo*7 = @dia
-							)
+						select horario_id  from ccHorarios
+						where
+						( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+						AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						AND (
+							Lunes  = @dia or
+							Martes *2 = @dia or
+							Miercoles*3 = @dia or
+							Jueves*4 = @dia or
+							Viernes*5 = @dia or
+							Sabado*6 = @dia or
+							domingo*7 = @dia
 						)
 					)
-					and inbound_id <> @current
-					-- las activas
-					and status <> 0
-					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
-					order by 2
-				end
-			else
-				begin
-					select -1 as inbound_id, ''IVR'' as name
-					union
-					select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+				)
+				and inbound_id <> @current
+				-- las activas
+				and status <> 0
+				and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+				order by 2
+			end
+		else
+			begin
+				select -1 as inbound_id, ''IVR'' as name
+				union
+				select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
+				(
+					select inbound_id from ccInboundHorarios where horario_id in
 					(
-						select inbound_id from ccInboundHorarios where horario_id in
-						(
-							select horario_id  from ccHorarios
-							where
-							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-							AND (
-								Lunes  = @dia or
-								Martes *2 = @dia or
-								Miercoles*3 = @dia or
-								Jueves*4 = @dia or
-								Viernes*5 = @dia or
-								Sabado*6 = @dia or
-								domingo*7 = @dia
-							)
+						select horario_id  from ccHorarios
+						where
+						( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+						AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						AND (
+							Lunes  = @dia or
+							Martes *2 = @dia or
+							Miercoles*3 = @dia or
+							Jueves*4 = @dia or
+							Viernes*5 = @dia or
+							Sabado*6 = @dia or
+							domingo*7 = @dia
 						)
 					)
-					and inbound_id <> @current
-					-- las activas
-					and status <> 0
-					and IDArea in (
-					select IDArea from ccUsers where User_id = @userID
-					)
-					-- las que tienen agentes firmados
-					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-					order by 2
-				end
-		end'
+				)
+				and inbound_id <> @current
+				-- las activas
+				and status <> 0
+				and IDArea in (
+				select IDArea from ccUsers where User_id = @userID
+				)
+				-- las que tienen agentes firmados
+				-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+				order by 2
+			end
+	end'
     EXEC(@Sql)
 
 	
@@ -1132,19 +1128,11 @@ else
 
 set nocount off'
     EXEC(@Sql)    
-
-    set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
-
-    set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
-
+    
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
+		exec ccsp_getVersion 'BD', @version
 		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran

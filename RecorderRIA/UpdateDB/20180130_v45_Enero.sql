@@ -21,53 +21,57 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	begin tran
 	begin try
 
+	set @process = 'Drop SP -- tmp_detGritosOut'
+	set @Sql= 'if exists (select * from sys.procedures where name = ''tmp_detGritosOut'') DROP PROCEDURE [dbo].[tmp_detGritosOut]'
+	EXEC(@sql)
+ 
 	set @process = 'CW-1182 CREATE SP tmp_detGritosOut'
  	set @sql ='
-	CREATE PROCEDURE [dbo].[tmp_detGritosOut]
+CREATE PROCEDURE [dbo].[tmp_detGritosOut]
 AS
 BEGIN
-	SET NOCOUNT ON;
+SET NOCOUNT ON;
 
-	declare @ENC  as varchar(4),@sExtension as varchar(10),@Encriptado as int
-	declare @sSql1 as nvarchar(max)
+declare @ENC  as varchar(4),@sExtension as varchar(10),@Encriptado as int
+declare @sSql1 as nvarchar(max)
 
-	set @sExtension = (select par_valor from trec_parametros where par_id = 54)
-	select @Encriptado = par_valor from trec_parametros where par_id = 15
+set @sExtension = (select par_valor from trec_parametros where par_id = 54)
+select @Encriptado = par_valor from trec_parametros where par_id = 15
 	
-	if @Encriptado = 1
-	begin
-		set @ENC = ''.enc''
-	end
-	else
-	begin
-		set @ENC = ''''
-	end
+if @Encriptado = 1
+begin
+	set @ENC = ''.enc''
+end
+else
+begin
+	set @ENC = ''''
+end
 									
 
-	set @sSql1 = ''Select top(1000) grab_id, cal_id, cast(cal_id as varchar(20))+''+char(0x27)+@sExtension + @ENC+char(0x27) 
-	+ '', isnull(tipo_llamada,0), id_repositorio from ria_grabacion NOLOCK where finicio < dateadd(MINUTE, -1, getdate()) ''
-	 + '' and id_nivel_grito is NULL and cal_id in ( select cal_id from ccRIAWorkGroup_Calid)  and grab_id not in (select grab_id from ria_RecNode)''
-	--select into @temptable
-	DECLARE @grab_id bigint
-	DECLARE @t TABLE ( grab_id bigint, cal_id int, campo1 varchar(2000), campo2 smallint, id_repositorio tinyint )
-	insert into @t exec sp_executesql @sSql1
-	--select grab_id from @t
-	DECLARE detector_cursor cursor for
-	select grab_id from @t
-	open detector_cursor
-	FETCH NEXT FROM detector_cursor INTO @grab_id
-	WHILE @@FETCH_STATUS = 0  
-	BEGIN
-	--print @grab_id
-	update RIA_GRABACION set id_nivel_grito=-1 where grab_id=@grab_id
-	exec trsp_InsertRecNode  @grab_id,0
-	FETCH NEXT FROM detector_cursor   
-	    INTO @grab_id  
-	END
-	CLOSE detector_cursor
-	DEALLOCATE detector_cursor
+set @sSql1 = ''Select top(1000) grab_id from ria_grabacion NOLOCK where finicio < dateadd(MINUTE, -1, getdate()) ''
+ + '' and id_nivel_grito is NULL and grab_id not in (select grab_id from ria_RecNode) ''
+--select into @temptable
+DECLARE @grab_id bigint
+DECLARE @t TABLE ( grab_id bigint)
+insert into @t exec sp_executesql @sSql1
+--select grab_id from @t
+DECLARE detector_cursor cursor for
+select grab_id from @t
+open detector_cursor
+FETCH NEXT FROM detector_cursor INTO @grab_id
+WHILE @@FETCH_STATUS = 0  
+BEGIN
+--print @grab_id
+update RIA_GRABACION set id_nivel_grito=-1 where grab_id=@grab_id
+exec trsp_InsertRecNode  @grab_id,0
+FETCH NEXT FROM detector_cursor   
+    INTO @grab_id  
+END
+CLOSE detector_cursor
+DEALLOCATE detector_cursor
 	
-END'	
+END	
+	'	
 	EXEC(@sql)
 	
 	set @process = 'CW-1182 ALTER SP trsp_GetFilesAnalisisGritos'

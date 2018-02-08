@@ -1105,28 +1105,29 @@ if @value = 1
 	
 	set @process = 'CW-703 -- Alter SP ccsp_RIACampsManualCall'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
-@UserID int,
-@onChat int = 0
-AS
-set nocount on
+		@UserID int,
+		@onChat int = 0
+		AS
+		set nocount on
 
-if (@onChat = 0)
-begin
-	declare @mod smallint
-	select @mod = valor from ccsettings where setting_id = 196
+		if (@onChat = 0)
+		begin
+			declare @mod smallint
+			select @mod = defCampaing from ccRIACat_Areas A
+			where A.IDArea = (select IDArea from ccUsers where User_id = @UserID) 
 
-	select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault]
-	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
-	where (ca.user_id = @UserID and cam_modoManual = 1) or ca.cam_id=@mod
-	order by cam_descripcion
-end
-else
-	select distinct c.cam_id, c.cam_descripcion
-	from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
-	where ca.user_id = @UserID and manualCallOnChat = 1
-	order by cam_descripcion
+			select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
+			from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+			where ca.user_id = @UserID and cam_modoManual = 1
+			order by cam_descripcion
+		end
+		else
+			select distinct c.cam_id, c.cam_descripcion
+			from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+			where ca.user_id = @UserID and manualCallOnChat = 1
+			order by cam_descripcion
 
-set nocount off'
+		set nocount off'
     EXEC(@Sql)    
     
 		/* End script release */

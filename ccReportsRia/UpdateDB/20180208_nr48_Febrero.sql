@@ -26,7 +26,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =47
+set @version =48
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
@@ -362,8 +362,8 @@ END'
 	EXEC(@sql)
 
 	
-	-- if @actualVersion  = @version - 1
-	-- 	exec ccsp_getVersion 'BD', @version
+	 if @actualVersion  = @version - 1
+	 	exec ccsp_getVersion 'BD', @version
 
 
 	commit tran

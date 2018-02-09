@@ -323,8 +323,9 @@ set nocount off	'
 			set nocount off'
 		EXEC(@Sql)
 		
-		set @process = ''
-    	set @Sql= ''
+		set @process = 'Alter Column cctipocalif.Description, cctipocalifsub.califSubDesc -- CW-972'
+    	set @Sql= 'ALTER TABLE cctipocalif ALTER COLUMN Description varchar(60);
+			ALTER TABLE cctipocalifsub ALTER COLUMN  califSubDesc varchar(60)'
 		EXEC(@Sql)
 
 	/* End script release */

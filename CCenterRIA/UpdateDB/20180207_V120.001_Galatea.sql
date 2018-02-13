@@ -357,7 +357,7 @@ END
 	IF not exists (SELECT * FROM ccSettings WHERE setting_id = 201)
 	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
 	VALUES	(201, 
-			''Driver={SQL Server};Server=192.168.0.109;Database=ccenterRIA;Uid=sa; Pwd=nuxiba;'',
+			''Driver={SQL Server};Server=192.168.0.112;Database=ccenterRIA;Uid=sa; Pwd=nuxiba;'',
 			''Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'',	
 			1,
 			''AGT'',

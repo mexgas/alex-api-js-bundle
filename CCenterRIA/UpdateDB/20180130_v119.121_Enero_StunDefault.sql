@@ -47,7 +47,23 @@ if  @actualVersion = @version and ( @actualVersionFix >= 114)
 
 
 		set @process = 'CW-1330 -- Update en tabla ccSettings. Valor de setting 183'
-    	set @Sql= 'UPDATE CCSettings set valor=''0|ws://192.168.1.246:10080|#UserIP#|sip:#UserIP#@#UserIP#|||"stun.l.google.com:19302"|true|true|3|4|root|false|5||true|true|3'' where setting_id=183'
+    	set @Sql= 'if exists (select valor from ccSettings where setting_id=183 and valor <> '''')
+		begin
+			declare @valor table (Id int, Value varchar(255))
+			insert into @valor select * from fn_RIASplitDelimited((select valor from ccSettings where setting_id=183),''|'')
+	
+			if SUBSTRING((select Value from @valor where Id=7),1,1) <> ''"''
+			begin
+				declare @stun varchar(100), @newvalue varchar(255)
+				select @stun = ''"'' + (select Value from @valor where Id=7) + ''"'' 
+				UPDATE @valor set Value = @stun where Id=7
+				select @newvalue = COALESCE(@newvalue + ''|'', '''') + Value FROM @valor
+
+				UPDATE ccSettings set valor = @newvalue where setting_id=183
+			end
+		end
+		else
+			UPDATE CCSettings set valor=''0|ws://192.168.1.246:10080|#UserIP#|sip:#UserIP#@#UserIP#|||"stun.l.google.com:19302"|true|true|3|4|root|false|5||true|true|3'' where setting_id=183'
     	EXEC(@Sql)
 
 

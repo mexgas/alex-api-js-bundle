@@ -10,7 +10,8 @@ Description:
 	CW-1058 Programar notReady en la maquina de estados
 	CW-1160 Cambio para guardar tiempo llamada ACD
 	CW-1170 Guardar las lista de calificaciones
-
+	CW-1439 Setting_ID 201 Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual
+	
 Database: CCenterRia
 Required version: 119.74
 
@@ -139,7 +140,15 @@ END'
     set @process = 'CW-1148 -- Alter column ccLogAgentesNotReady.tStatus float '
     set @Sql= 'ALTER TABLE ccLogAgentesNotReady ALTER COLUMN tStatus float;'
     EXEC(@Sql)
-	
+
+	set @process = 'Setting_id 183 WebRTC Configuration Se modifica la longitud de la columna valor'
+    set @Sql= 'ALter table ccSettings Alter column valor varchar(300)'
+	EXEC(@Sql)
+
+	set @process = ''
+    set @Sql= ''
+    EXEC(@Sql)
+   
 
     set @process = 'CW-1058 Programar notReady en la maquina de estados'
     set @Sql= 'ALTER procedure [dbo].[ccsp_RIAGetSelectedNotReady]
@@ -343,7 +352,21 @@ END
 			''Time to block user after several Bad Login Attempts (mins)'',
 			1,''^\d{1,3}$'')'
     EXEC(@Sql)
-
+	set @process = 'CW-1439 Setting_ID 201 Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'
+    set @Sql= '
+	IF not exists (SELECT * FROM ccSettings WHERE setting_id = 201)
+	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
+	VALUES	(201, 
+			''Driver={SQL Server};Server=192.168.0.109;Database=ccenterRIA;Uid=sa; Pwd=nuxiba;'',
+			''Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'',	
+			1,
+			''AGT'',
+			''Cadena de conexion(ODBC) para la BD externa a la cual se va a conectar el agente para buscar contactos en la ventana de llamada manual. Si no aplica el valor debe venir vacio'',
+			''Database connection string(ODBC) for manual call'',
+			0,
+			 ''*'')
+	'
+    EXEC(@Sql)
 	set @process = 'Setting_id 256 Number of chances the user have to try accessing the system'
     set @Sql= 'IF not exists (SELECT * FROM ccSettings WHERE setting_id = 198)
 	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
@@ -352,7 +375,16 @@ END
 			''Number of Login Attempts available before blocking'',	1, ''^\d{1,3}$'')'
     EXEC(@Sql)
 
-	set @process = 'CW-1170 -- Alter ccsp_AgentGetCalificaciones'
+	set @process = 'Setting_id 183 WebRTC Configuration Se modifica la descripcion del setting'
+    set @Sql= 'UPDATE ccSettings set detalle =''Configuración para WebRTC <type>|<ws[,ws_gw]>|<private_identity>|<public_identity>|<password>|<realm>|<ice_servers>|<IMS>|<WebBreaker>|<ServerMaxReconnection>|<ServerReconectionTimeout>|<authorizationUser>|<register>|<iceCheckingTimeout>|<userAgentString>|<traceSip>|<builtinEnabled>|<level>'' where setting_id = 183'
+    EXEC(@Sql)
+
+	set @process = 'Setting_id 183 WebRTC Configuration Se modifica la descripcion del setting'
+    set @Sql= 'UPDATE ccSettings set description =''WebRTC Configuration <type>|<ws[,ws_gw]>|<private_identity>|<public_identity>|<password>|<realm>|<ice_servers>|<IMS>|<WebBreaker>|<ServerMaxReconnection>|<ServerReconectionTimeout>|<authorizationUser>|<register>|<iceCheckingTimeout>|<userAgentString>|<traceSip>|<builtinEnabled>|<level>'' where setting_id = 183'
+    EXEC(@Sql)
+
+
+	set @process = 'CW-1170/CW-1347  -- Alter ccsp_AgentGetCalificaciones'
     set @Sql= 'ALTER procedure [dbo].[ccsp_AgentGetCalificaciones]
 @InOut tinyint, --0 in, 1 out
 @cam_id int, --ADC or CAMP Id
@@ -376,7 +408,8 @@ if exists(
 	set @sql =''
 	select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.orden "selection!1!califorden",
 		isnull(calif.EndConversation,0) "selection!1!endConversation",
-		null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!orden",  null "subSelection!2!endConversation"
+		null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!orden",  null "subSelection!2!endConversation",
+		isnull(calif.CanReprogram,0) "selection!1!canReprogram", null "subSelection!2!canReprogram"
 		from ccTipoCalif calif
 	 inner join ccCalifCamp camp on camp.calif_id=calif.calif_id 
 	 and camp.cam_id=''+convert(varchar(max), @cam_id)+'' and  camp.tipo = ''+convert(varchar(max), @InOut)+''
@@ -387,7 +420,8 @@ if exists(
 	 )
 	 union
 	 select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", calif.orden "selection!1!califorden", isnull(calif.EndConversation,0) "selection!1!endConversation",
-		sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", cast(sb.orden as int) "subSelection!2!orden" ,isnull(sb.EndConversation,0) "subSelection!2!endConversation"
+		sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", cast(sb.orden as int) "subSelection!2!orden" ,isnull(sb.EndConversation,0) "subSelection!2!endConversation",
+		null "selection!1!canReprogram", isnull(sb.CanReprogram,0) "subSelection!2!canReprogram"
 		from ccTipoCalif calif
 		inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id=''+convert(varchar(max), @cam_id)+'' and  camp.tipo = ''+convert(varchar(max), @InOut)+''
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
@@ -406,7 +440,8 @@ if exists(
 				tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''') as Description,
 				"selection!1!califorden" as Orden, "selection!1!endConversation" EndConversation, isnull("subSelection!2!id",0) as SubId,
 				isnull("subSelection!2!string",'''''''') as SubDescription, isnull("subSelection!2!orden",0) as SubOrden,	
-				isnull("subSelection!2!endConversation",0) as SubEndConversation
+				isnull("subSelection!2!endConversation",0) as SubEndConversation, 
+				isnull("selection!1!canReprogram",0) as CanReprogram,isnull("subSelection!2!canReprogram",0) as SubCanReprogram
 			from (  '' + @sql+'' )X''
 	  end
 	  print (@sql)
@@ -425,7 +460,7 @@ IF @InOut = 1 BEGIN
 	set @sql =''
 		select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.keepDial "selection!1!keepOnDial",
 		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!keepOnDial",
-		null "subSelection!2!orden"
+		null "subSelection!2!orden",   isnull(calif.CanReprogram,0) "selection!1!canReprogram", null "subSelection!2!canReprogram"
 		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
 		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
@@ -434,7 +469,8 @@ IF @InOut = 1 BEGIN
 		select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", null "selection!1!keepOnDial",
 		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string",
 		sb.keepDial "subSelection!2!keepOnDial",
-		cast(sb.orden as int) "subSelection!2!orden"
+		cast(sb.orden as int) "subSelection!2!orden",
+		null "selection!1!canReprogram", isnull(sb.CanReprogram,0) "subSelection!2!canReprogram"
 		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
 		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
 		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
@@ -447,7 +483,8 @@ IF @InOut = 1 BEGIN
 					isnull("selection!1!keepOnDial",'''''''') as KeepOnDial,
 					"selection!1!califorden" as Orden, "selection!1!finishPreview" FinishPreview, isnull("subSelection!2!id",0) as SubId,
 					isnull("subSelection!2!string",'''''''') as SubDescription,isnull("subSelection!2!keepOnDial",0) as SubKeepOnDial,
-					isnull("subSelection!2!orden",0) as SubOrden
+					isnull("subSelection!2!orden",0) as SubOrden,
+					isnull("selection!1!canReprogram", 0) CanReprogram,  isnull("subSelection!2!canReprogram",0) SubCanReprogram
 					
 				from (  '' + @sql+'' )X''
 		  end
@@ -946,38 +983,38 @@ select @value = case when valor=''1'' then 1 else 0 end from ccSettings where se
 
 	IF @value = 0
 		begin
-			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
 			(
 				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
 			)
 			x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
-			Order by nomb
+			Order by name
 		end
 
 	if @value = 1
 		begin
 			if (@current <> 0)
 				begin
-					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
 					(
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
 					)
 					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
 					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
-					Order by nomb
+					Order by name
 				end
 			else
 				begin
-					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as nomb from ccusers cu join
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
 					(
 						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
 						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
 					)
 					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
 					and IDArea in (select IDArea from ccUsers where User_id = @userID)
-					Order by nomb
+					Order by name
 				end
 		end
 END
@@ -996,110 +1033,110 @@ declare @hora smallint
 declare @minuto smallint
 declare @value int
 
-SET DATEFIRST 1
+	SET DATEFIRST 1
 
-select @fecha =  getdate()
-select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
+	select @fecha =  getdate()
+	select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
 
-set @value = 0
-select @value = valor from ccSettings where setting_id = 191
+	set @value = 0
+	select @value = valor from ccSettings where setting_id = 191
 
-if @value = 0
-	begin
-		select -1 as inbound_id, ''IVR'' as name
-		union
-		select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
-		(
-			select inbound_id from ccInboundHorarios where horario_id in
+	if @value = 0
+		begin
+			select -1 as inbound_id, ''IVR'' as name
+			union
+			select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
 			(
-				select horario_id  from ccHorarios
-				where
-				( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-				AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-				AND (
-					Lunes  = @dia or
-					Martes *2 = @dia or
-					Miercoles*3 = @dia or
-					Jueves*4 = @dia or
-					Viernes*5 = @dia or
-					Sabado*6 = @dia or
-					domingo*7 = @dia
+				select inbound_id from ccInboundHorarios where horario_id in
+				(
+					select horario_id  from ccHorarios
+					where
+					( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+					AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+					AND (
+						Lunes  = @dia or
+						Martes *2 = @dia or
+						Miercoles*3 = @dia or
+						Jueves*4 = @dia or
+						Viernes*5 = @dia or
+						Sabado*6 = @dia or
+						domingo*7 = @dia
+					)
 				)
 			)
-		)
-		and inbound_id <> @current
-		-- las activas
-		and status <> 0
-		-- las que tienen agentes firmados
-		-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-		order by 2
-	end
+			and inbound_id <> @current
+			-- las activas
+			and status <> 0
+			-- las que tienen agentes firmados
+			-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+			order by 2
+		end
 
-if @value = 1
-	begin
-		if (@current <> 0)
-			begin
-				select -1 as inbound_id, ''IVR'' as name
-				union
-				select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
-				(
-					select inbound_id from ccInboundHorarios where horario_id in
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select -1 as inbound_id, ''IVR'' as name
+					union
+					select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
 					(
-						select horario_id  from ccHorarios
-						where
-						( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-						AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-						AND (
-							Lunes  = @dia or
-							Martes *2 = @dia or
-							Miercoles*3 = @dia or
-							Jueves*4 = @dia or
-							Viernes*5 = @dia or
-							Sabado*6 = @dia or
-							domingo*7 = @dia
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
 						)
 					)
-				)
-				and inbound_id <> @current
-				-- las activas
-				and status <> 0
-				and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
-				order by 2
-			end
-		else
-			begin
-				select -1 as inbound_id, ''IVR'' as name
-				union
-				select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
-				(
-					select inbound_id from ccInboundHorarios where horario_id in
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					order by 2
+				end
+			else
+				begin
+					select -1 as inbound_id, ''IVR'' as name
+					union
+					select inbound_id as inbound_id, descripcion as name from ccInbound where inbound_id in
 					(
-						select horario_id  from ccHorarios
-						where
-						( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
-						AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
-						AND (
-							Lunes  = @dia or
-							Martes *2 = @dia or
-							Miercoles*3 = @dia or
-							Jueves*4 = @dia or
-							Viernes*5 = @dia or
-							Sabado*6 = @dia or
-							domingo*7 = @dia
+						select inbound_id from ccInboundHorarios where horario_id in
+						(
+							select horario_id  from ccHorarios
+							where
+							( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+							AND (
+								Lunes  = @dia or
+								Martes *2 = @dia or
+								Miercoles*3 = @dia or
+								Jueves*4 = @dia or
+								Viernes*5 = @dia or
+								Sabado*6 = @dia or
+								domingo*7 = @dia
+							)
 						)
 					)
-				)
-				and inbound_id <> @current
-				-- las activas
-				and status <> 0
-				and IDArea in (
-				select IDArea from ccUsers where User_id = @userID
-				)
-				-- las que tienen agentes firmados
-				-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
-				order by 2
-			end
-	end'
+					and inbound_id <> @current
+					-- las activas
+					and status <> 0
+					and IDArea in (
+					select IDArea from ccUsers where User_id = @userID
+					)
+					-- las que tienen agentes firmados
+					-- and inbound_id  in ( select distinct inbound_id from ccInboundAgentes where user_id in ( select user_id from ccPosicion where user_id > 0 ))
+					order by 2
+				end
+		end'
     EXEC(@Sql)
 
 	
@@ -1127,13 +1164,754 @@ if @value = 1
 			where ca.user_id = @UserID and manualCallOnChat = 1
 			order by cam_descripcion
 
-		set nocount off'
+set nocount off'
     EXEC(@Sql)    
-    
+
+    set @process = ''
+    set @Sql= ''
+    EXEC(@Sql)
+
+	set @process = 'CW-1274 -- Alter SP ccsp_RIAAgentGetDialMask'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAAgentGetDialMask]
+@user_id integer,
+@tel varchar(15)
+AS
+declare @mask integer, @idioma integer, @value integer, @lada integer
+declare @country as tinyint
+
+set @value = 0
+select @mask = isnull(dialmask,7) from ccusers where user_id=@user_id
+select @country = valor from ccsettings where setting_id = 104
+
+-- Restricciones por pais 1:Mexico 2:Argentina 3:Colombia 4:USA 5:Chile 6:Venezuela 7:uk 8:Arabia Saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador
+if @country = 1
+ begin
+	--Restringe celulares
+	if (@mask & 1)>0
+	 begin
+		if ((left(ltrim(rtrim(@tel)),3) = ''044'' Or left(ltrim(rtrim(@tel)),3) = ''045''))
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if ((left(ltrim(rtrim(@tel)),2) = ''01'') and len(ltrim(rtrim(@tel))) = 12)
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+ end
+
+-- Argentina
+if @country = 2
+ begin
+	--Restringe celulares
+	if ((@mask & 1) > 0)
+	 begin
+		if (left(@tel,2)=''15'') or (len(@tel)>=13 and substring(@tel,1,1)=''0'' and
+			(substring(@tel,4,2)=''15'' or substring(@tel,5,2)=''15'' or substring(@tel,3,2)=''15''))
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if ((left(ltrim(rtrim(@tel)),2) =''0'') and len(ltrim(rtrim(@tel))) = 11)
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask&4)>0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+			 begin
+				set @value=6
+			 end
+		 end
+	 end
+ end
+
+if @country = 3 --Colombia
+ begin
+	--Restringe Celulares
+	if ((@mask & 1) > 0)
+	 begin
+		if len(@tel) > 8
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if len(@tel) = 8 or left(@tel,1) = ''0''
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+ end
+
+if @country = 4 --USA
+ begin
+	--Restringe larga distancia usa
+	if ((@mask & 2) > 0)
+	 begin
+		if len(ltrim(rtrim(@tel))) >= 11  and (left(ltrim(rtrim(@tel)),1) = ''1'')
+		 begin
+			set @value = 5
+		 end
+	 end
+
+	--Restringe locales usa
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			--if Len(ltrim(rtrim(@tel))) = 7
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+			 begin
+				set @value = 6
+			end
+		 end
+	 end
+ end
+
+--Chile
+if @country = 5
+ begin
+
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+	 begin
+		if len(@tel) >= 10 and left(@tel,2) = ''09''
+		 begin
+			set @value = 4
+		 end
+	 end
+
+		--Restringe Locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			if Len(@tel) in (6,7)
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if len(@tel) >= 8 and len(@tel) < 10
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+ end
+
+--Venezuela
+if @country = 6
+begin
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+	 begin
+		if len(@tel) >= 10 and left(@tel,2) = ''04''
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if len(@tel) >= 10 and left(@tel,1) = ''0''
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+
+end
+
+--United Kingdom
+if @country = 7
+begin
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+	 begin
+		if (len(@tel) >= 9) and left(@tel,2) = ''07''
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if len(@tel) >= 9 and left(@tel,1) = ''0''
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			if len(@tel) >= 9 and left(@tel,1) <> ''0''
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+
+end
+
+--arabia saudita
+if @country = 8
+begin
+
+	--Restringe celulares
+	if (@mask & 1)>0
+	 begin
+		if (left(ltrim(rtrim(@tel)),2) = ''05'' and len(ltrim(rtrim(@tel))) = 10 )
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if ( left(ltrim(rtrim(@tel)),2) <> ''05'' and len(ltrim(rtrim(@tel))) in (11, 9))
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+end
+
+--Australia
+if @country = 9
+begin
+
+	--Restringe celulares
+	if (@mask & 1)>0
+	 begin
+		if (left(ltrim(rtrim(@tel)),2) = ''04'' and len(ltrim(rtrim(@tel))) = 10)
+		 begin
+			set @value = 4
+		 end
+	 end
+
+	--Restringe larga distancia
+	if(@value=0)
+	 begin
+		if ((@mask & 2) > 0)
+		 begin
+			if ( left(ltrim(rtrim(@tel)),2) <> ''04'' and len(ltrim(rtrim(@tel))) = 10)
+			 begin
+				set @value = 5
+			 end
+		 end
+	 end
+
+	--Restringe locales
+	if(@value=0)
+	 begin
+		if ((@mask & 4) > 0)
+		 begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if ((Len(ltrim(rtrim(@tel))) = 8) or
+				(''0'' + left(ltrim(rtrim(@tel)),1) = @lada and Len(ltrim(rtrim(@tel))) = 9) or
+				(left(ltrim(rtrim(@tel)),2) = @lada and Len(ltrim(rtrim(@tel))) = 10))
+			 begin
+				set @value = 6
+			 end
+		 end
+	 end
+end
+
+--Brasil
+if @country = 10
+	begin
+		declare @lon int
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			set @lon=len(@tel)
+			if
+				(@lon in(7,8) and left(@tel,1) in (''6'',''7'',''8'',''9'') )
+				or (@lon=9 and left(@tel,1) = ''9'' )
+				or (@lon=10 and substring(@tel,3,1) in (''6'',''7'',''8'',''9'') )
+				or (@lon=11 and substring(@tel,3,1) = ''9'')
+				--or (@lon=12 and substring(@tel,5,1) in (''6'',''7'',''8'',''9'') )
+				--or (@lon=13 and substring(@tel,5,1) = ''9'' )
+				--or (@lon=13 and substring(@tel,5,1) = ''9'' )
+				begin
+					set @value = 4
+				end
+		end
+
+		--Restringe larga distancia
+		if(@value=0)
+		begin
+			if ((@mask & 2) > 0)
+			begin
+				select @lada=valor from ccSettings WHERE setting_id=17
+				set @tel=ltrim(rtrim(@tel))
+				set @lon=len(@tel)
+				if  @lon>=10 and left(@tel,2) <> @lada
+				begin
+					set @value = 5
+				end
+			end
+		end
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				select @lada=valor from ccSettings WHERE setting_id=17
+				set @tel=ltrim(rtrim(@tel))
+				set @lon=len(@tel)
+				if @lon in (7,8,9) or (@lon in (10,11) and left(@tel,2)= @lada)
+				begin
+					set @value = 6
+				end
+			end
+		end
+
+		--Restringe por cobrar
+		if(@value=0)
+		begin
+			declare @llamadasPorCobrar varchar(4);
+			select @llamadasPorCobrar= valor from ccSettings where setting_id=126
+			set @tel=ltrim(rtrim(@tel))
+			set @lon=len(@tel)
+			if @lon >= 12 and  left(@tel,2) = ''90'' and @llamadasPorCobrar=''0''
+			begin
+				set @value = 10 -- pone para llamadas por cobrar
+			end
+		end
+
+	end -- Termina Brasil
+
+
+--Guatemala
+if @country = 11
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''3,4,5'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2,6,7'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Guatemala
+
+--Costa Rica
+if @country = 12
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''5,6,7,8'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2,3,4'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Costa Rica
+
+--Salvador
+if @country = 13
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''6,7'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Salvador
+
+--Spain
+if @country = 14
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''6,7'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''8,9'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Spain
+
+select @value Response
+'
+    EXEC(@Sql)
+
+	
+	set @process = 'CW-1274 -- Alter SP ccsp_CheckTarifas'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_CheckTarifas]
+@tel varchar(255)
+AS
+set nocount on
+
+--declare @tel varchar(255)
+declare @countryId tinyint
+declare @len varchar(10)
+declare @porcentaje tinyint
+declare @typeLlamada tinyint
+
+if (select valor from ccsettings where setting_id=164)= 1 begin
+
+	set @tel = dbo.limpia(@tel)
+	set @len = convert(varchar(10),len(@tel))
+	
+	select @countryId=valor from ccsettings where setting_id=104
+
+	select @typeLlamada=tipoLlamada_id
+	from cstoTipoLlamada where country_id=@countryId and prefijo = substring(@tel,0,CHARINDEX(''%'',prefijo))+''%'' and longitud like ''%''+@len+''%'' 
+
+
+	if exists (select * from cstoTarifa where tipoLlamada_Id= @typeLlamada)  select 0 Response ,''Existe tarifa'' Note
+	else select 11 Response ,''No existe tarifa'' Note
+
+end
+else begin 
+	select 0 Response
+end
+
+set nocount off
+'
+    EXEC(@Sql)
+
+
+	    set @process = 'CW-1274 Alter SP -- ccsp_RIADialerAssignment'
+    set @Sql= '
+ALTER PROCEDURE [dbo].[ccsp_RIADialerAssignment]
+@User_Id smallint,
+@cam_id smallint,
+@dialer_id varchar(4000),
+@Type2 tinyint,
+@Type tinyint
+AS
+set nocount on
+declare @SQL as nvarchar(4000), @nUser_id as nvarchar(10), @params as nvarchar(1000)
+
+If @Type=0--get ports
+ begin
+	select a.dialer_id, a.puerto, a.Descripcion, b.descrip from ccoDialers a with(index([IX_ccoDialers_I]),nolock)
+	inner join cstoProvedor b with(index(PK_cstoProvedor),nolock) on a.provedor_id=b.provedor_id
+	order by a.dialer_id
+	return(0)
+ end
+
+If @Type=1--get cams
+ begin
+	SELECT a1.cam_id, cam_descripcion FROM ccCamps a1 with(nolock)
+	inner join ccRIACampsGraph a2 with(nolock) on(a1.cam_id=a2.cam_id)
+	inner join ccRIAGraphics a3 with(nolock) on(a2.graphic_id=a3.graphic_id)
+	where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+	order by cam_descripcion
+	return(0)
+ end
+
+If @Type=2--get port/cam relation
+ begin
+	select c.cam_id, cd.dialer_id, d.descripcion,
+	d.puerto, e.descrip from ccCamps c with(nolock)
+	left join ccoDialerCamp cd on cd.cam_id=c.cam_id
+	left join ccoDialers d with(index(IX_ccoDialers_I),nolock) on cd.dialer_id=d.dialer_id
+	inner join cstoProvedor e with(index(PK_cstoProvedor),nolock) on d.provedor_id=e.provedor_id
+	where c.cam_id=@cam_id
+	ORDER BY c.cam_id, cd.dialer_id
+	return(0)
+ end
+
+If @Type=3--delete port/dialer relation
+ begin
+	If @Type2=1--Sistema
+	 begin
+		set @nUser_id=@User_Id
+		set @sql=''delete ccoDialerCamp with(rowlock) where dialer_id in('' + @dialer_id + '')''
+		execute sp_executesql @sql
+		return(0)
+	 end
+
+	If @Type2=2--Camp
+	 begin
+		delete ccoDialerCamp with(rowlock) where cam_id=@cam_id and dialer_id=@dialer_id
+		return(0)
+	 end
+ end
+
+If @Type=4--insert new relation
+ begin
+	If @Type2=1--Sistema
+	 begin
+		set @nUser_id=@User_Id
+		set @sql=''insert ccoDialerCamp(cam_id, dialer_id)
+		select a.cam_id, b.dialer_id from ccCamps a, ccoDialers b where
+		b.dialer_id in('' + @dialer_id + '') and not exists(
+		select c.cam_id, c.dialer_id from ccoDialerCamp c
+		where b.dialer_id=c.dialer_id and a.cam_id=c.cam_id)''
+		execute sp_executesql @sql
+		return(0)
+	 end
+
+	If @Type2=2--Camp
+	 begin
+		set @params=''@Ncam_id int''
+ 		set @sql=''insert ccoDialerCamp(cam_id, dialer_id) select distinct @Ncam_id,
+ 		dialer_id from ccCamps, ccoDialers where dialer_id not in(select dialer_id
+ 		from ccoDialerCamp where dialer_id in('' + @dialer_id + '')and cam_id=@Ncam_id)
+		and dialer_id in('' + @dialer_id + '')''
+		execute sp_executesql @sql, @params, @Ncam_id=@cam_id
+		return(0)
+ 	 end
+ end
+
+If @Type=5--Get existance of dialers
+ begin
+	if exists (select c.cam_id, cd.dialer_id, d.descripcion,
+			   d.puerto, e.descrip from ccCamps c with(nolock)
+			   left join ccoDialerCamp cd with(nolock) on cd.cam_id=c.cam_id
+			   left join ccoDialers d with(nolock) on cd.dialer_id=d.dialer_id
+			   inner join cstoProvedor e with(nolock) on d.provedor_id=e.provedor_id
+			   where c.cam_id = @cam_id)
+		select 0 Response
+	else
+		select 13 Response
+	return(0)
+ end
+'
+    EXEC(@Sql)
+
+	set @process = 'CW-1346 ALTER ccsptelefonosTransferencia'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsptelefonosTransferencia]
+@userID INT
+as
+set nocount on
+
+BEGIN
+declare @value bit
+declare @IDArea int
+set @value = 0
+set @IDArea =1
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+select @IDArea =IDArea from ccUsers where User_id =@userID
+if @value = 1
+	begin
+		select numtra_id id, nombre as  name, tel as number, isnull(IDArea,@IDArea) as id_area 
+		from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre asc 
+	end
+	else
+	begin
+		select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' - ''+  nombre , nombre ) as name, 
+		tel as number, isnull(IDArea,@IDArea) as id_area 
+		from telefonosTransferencia  order by nombre asc
+	end
+END'
+    EXEC(@Sql)
+
+set @process = 'CW-1346 ccsp_AgentTransfLstArea'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+@userID INT,
+@current INTEGER = 0
+AS
+set nocount on
+
+BEGIN
+declare @value int
+
+set @value = 0
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+	IF @value = 0
+		begin
+			select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
+			(
+				select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+				join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+			)
+			x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+			Order by name asc
+		end
+
+	if @value = 1
+		begin
+			if (@current <> 0)
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+					and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci on cu.IDArea = ci.IDArea where inbound_id =  @current)
+					Order by name asc
+				end
+			else
+				begin
+					select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name from ccusers cu join
+					(
+						select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp
+						join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+					)
+					x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+					and IDArea in (select IDArea from ccUsers where User_id = @userID)
+					Order by name asc
+				end
+		end
+END
+set nocount off'
+    EXEC(@Sql)
+
+    set @process = ''
+    set @Sql= ''
+    EXEC(@Sql)
+
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		exec ccsp_getVersion 'BD', @version
+		--exec ccsp_getVersion 'BD', @version
 		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran

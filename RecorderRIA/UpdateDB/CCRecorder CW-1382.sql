@@ -38,7 +38,7 @@ EXEC msdb.dbo.sp_delete_job @job_name=N''tmp_detGritosOut'', @delete_unused_sche
 	-- Updating DB Version
 
  	update trec_parametros set par_valor = @Version where par_id = 30
- 	set @Version_Actual=@Version_Actual+1
+ 	--set @Version_Actual=@Version_Actual+1
 
 	select par_valor from trec_parametros where par_id = 30
 

@@ -90,8 +90,26 @@ end'
     	EXEC(@Sql)
 
 
-		set @process = 'CW-1382 Version 119.114 -- CREATE SP ccsp_AvrsSyncronization'
-    	set @Sql= ''
+		set @process = 'CW-1382 Version 119.114 -- CREATE SP ccsp_EngineLogTransfers'
+    	set @Sql= 'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
+@cal_id as integer,
+@tipo as tinyint,
+@modo as tinyint,
+@destino as varchar(50),
+@tantes integer = 0,
+@tdespues integer = 0
+as
+-- tipo: 1 inbound, 2 outbound
+-- modo: 0 externa ciega, 1 agente, 2 acd, 3 confer, 4 externa supervisada, 5 desborde
+
+if @modo = 4
+	insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin)  values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate() )
+else
+	insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin) values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() )
+
+if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
+	insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
+end'
     	EXEC(@Sql)
 
 		

@@ -70,16 +70,25 @@ if  @actualVersion = @version and  @actualVersionFix >= 121
 			UPDATE CCSettings set valor=''0|ws://192.168.1.246:10080|#UserIP#|sip:#UserIP#@#UserIP#|||"stun.l.google.com:19302"|true|true|3|4|root|false|5||true|true|3'' where setting_id=183'
     	EXEC(@Sql)
 
-		set @process = 'Agregar columnas a las tablas ccoCallsOut, ccCallsIn y ivrcallsin para guardar tiempos-- CW-1338'
-    	set @Sql= 'Alter table ccoCallsOut ADD totalCall_Time int'
+		set @process = 'Agregar columnas a las tablas ccoCallsOut para guardar tiempo total-- CW-1338'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''ccoCallsOut'' and Object_ID = Object_ID(N''ccoCallsOut''))
+    begin
+        Alter table ccoCallsOut ADD totalCall_Time int
+    end'
+		EXEC(@Sql)
+
+		set @process = 'Agregar columnas a las tablas ccCallsIn para guardar id de llamada de salida-- CW-1338'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''callout_id'' and Object_ID = Object_ID(N''ccCallsIn''))
+    begin
+        Alter table ccCallsIn ADD callout_id int
+    end'
 		EXEC(@Sql)
 
 		set @process = 'Agregar columnas a las tablas ccoCallsOut, ccCallsIn y ivrcallsin para guardar tiempos-- CW-1338'
-    	set @Sql= 'Alter table ccCallsIn ADD callout_id int'
-		EXEC(@Sql)
-
-		set @process = 'Agregar columnas a las tablas ccoCallsOut, ccCallsIn y ivrcallsin para guardar tiempos-- CW-1338'
-    	set @Sql= 'Alter table ivrcallsin ADD callout_id int, tincall int'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''callout_id'' and Object_ID = Object_ID(N''ivrcallsin''))
+    begin
+        Alter table ivrcallsin ADD callout_id int, tincall int
+    end'
 		EXEC(@Sql)
 
 		set @process = 'CW-1382 Version 119.114 -- CREATE SP ccsp_AvrsSyncronization'
@@ -197,7 +206,8 @@ end'
 @TipoCall tinyint,
 @cal_tRing smallint=0,
 @mtmoh smallint = 0,
-@isChatCall bit = 0
+@isChatCall bit = 0,
+@isErroManualCall bit =0
 AS
 set nocount on
 if @IDCall<=0 
@@ -207,34 +217,32 @@ declare @tMinAVRS smallint
 
 if @TipoCall=1 --INBOUND
  begin
-	If @mtmoh > 0
-		Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
-		 cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, cal_tMoh=@mtmoh Where cal_id= @IDCall
-	Else
-	   Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
-		 cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13 Where cal_id= @IDCall
+  Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
+  cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+  cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+  Where cal_id= @IDCall
 
-	--Actualizar tiempo total de llamada
-	--select @tantes  = ISNULL((select cal_tWait from ccCallsIn where cal_id = @IDCall), 0) + @cal_tXfer
-	exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
+  --Actualizar tiempo total de llamada
+  exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
 
-	-- Elimina callback generado por abandono
-	Declare @ANI_x varchar(19)
-	select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+  -- Elimina callback generado por abandono
+  Declare @ANI_x varchar(19)
+  select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
 
-	DELETE ccoWorkingTable with(rowlock) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
-	DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+  DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+  DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
  end
 
 if @TipoCall=2 --OUTBOUND
  begin
 	Update ccoCallsOUT with(rowlock) Set cal_tXfer=case when @cal_tXfer > 0 then @cal_tXfer else cal_tXfer end, 
 	cal_tDialog=case when @cal_tDialog > 0 then @cal_tDialog else cal_tDialog end, 
+	@cal_tDialog=case when @cal_tDialog > 0 then @cal_tDialog else cal_tDialog end,
 	cal_tNotas=case when @cal_tNotas > 0 then @cal_tNotas else cal_tNotas end, 
 	cal_tMoh=case when @mtmoh > 0 then @mtmoh else cal_tMoh end,
 	cal_tRing=case when @cal_tRing > 0 then @cal_tRing else cal_tRing end, 
 	cal_manual=case when @isChatCall=1 then 3 else cal_manual end,
-	cal_colgada=0, statusCall_id=13
+	cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end 
 	Where cal_id=@IDCall
 
 	-- calcula el costo de la llamada
@@ -242,7 +250,6 @@ if @TipoCall=2 --OUTBOUND
 
 	--Actualizar tiempo total de llamada
 	exec ccsp_EngineLogTransfers 3, @IDCall, @TipoCall, 0, null, @cal_tXfer, @cal_tDialog
-
  end
 
 select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65

@@ -34,6 +34,42 @@ if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
 
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+	begin
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	end'
+	EXEC(@sql)
+
+	set @process = 'Agregar columnas a las tablas ccoCallsOut para guardar tiempo total-- CW-1338'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''ccoCallsOut'' and Object_ID = Object_ID(N''ccoCallsOut''))
+    begin
+        Alter table ccoCallsOut ADD totalCall_Time int
+    end'
+		EXEC(@Sql)
+
+		set @process = 'Agregar columnas a las tablas ccCallsIn para guardar id de llamada de salida-- CW-1338'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''callout_id'' and Object_ID = Object_ID(N''ccCallsIn''))
+    begin
+        Alter table ccCallsIn ADD callout_id int
+    end'
+		EXEC(@Sql)
+
+		set @process = 'Agregar columnas a las tablas ccoCallsOut, ccCallsIn y ivrcallsin para guardar tiempos-- CW-1338'
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''callout_id'' and Object_ID = Object_ID(N''ivrcallsin''))
+    begin
+        Alter table ivrcallsin ADD callout_id int, tincall int
+    end'
+		EXEC(@Sql)
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+
+
 	set @process = 'Modificacion al SP ccspRepOutCallsDetail-- CW-1338'
 	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
 @action as tinyint,

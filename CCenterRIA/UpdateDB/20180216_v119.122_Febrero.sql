@@ -150,26 +150,42 @@ declare @totalCall_Time integer
 declare @callout_id int
 
 if @action = 1 begin
-	if @modo = 4 begin
+	if @modo = 4 begin			
 		insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin)  values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate() )
-		if @tdespues = 0
-			select @totalCall_Time = ISNULL((select cal_tDialog from ccoCallsOut where cal_id = @cal_id), 0) + ISNULL((select cal_twait from ccoCallsOut where cal_id = @cal_id), 0) + ISNULL((select cal_tXfer from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
-		else
-			select @totalCall_Time = ISNULL((select cal_tDialog from ccoCallsOut where cal_id = @cal_id), 0) + ISNULL((select cal_twait from ccoCallsOut where cal_id = @cal_id), 0) + ISNULL((select cal_tXfer from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
-		update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+
+		if @tipo = 2 begin
+			if @tdespues = 0
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+			else
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues + @tantes
+			update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+		end
 	end
 	else begin
 		if not exists (select * from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
 			insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin) values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() )
 
-		if @modo = 5 begin
-			select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-			select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
-			update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) where cal_id = @cal_id and tipo = 2
-		end
+		if @tipo = 2 begin
+			if @modo = 5 begin
+				select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+				select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
+				update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) where cal_id = @cal_id and tipo = 2
+			end
 		
-		select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
-		update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+			if @modo in (0,1,2) begin
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+				update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+			end
+		end
+
+		else begin
+			if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
+				select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+				select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
+				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+				update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+			end
+		end
 	end
 	if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
 		insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
@@ -177,7 +193,7 @@ if @action = 1 begin
 end
 
 else if @action = 2 begin	
-	if (select callout_id from ccCallsIn where cal_id = @cal_id) > 0 begin
+	if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
 		select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
 		select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
 		update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) where cal_id = @cal_id and tipo = 2

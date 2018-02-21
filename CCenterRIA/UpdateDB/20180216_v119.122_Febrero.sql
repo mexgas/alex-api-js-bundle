@@ -71,7 +71,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 121
     	EXEC(@Sql)
 
 		set @process = 'Agregar columnas a las tablas ccoCallsOut para guardar tiempo total-- CW-1338'
-    	set @Sql= 'if not exists (select * from sys.columns where name = N''ccoCallsOut'' and Object_ID = Object_ID(N''ccoCallsOut''))
+    	set @Sql= 'if not exists (select * from sys.columns where name = N''totalCall_Time'' and Object_ID = Object_ID(N''ccoCallsOut''))
     begin
         Alter table ccoCallsOut ADD totalCall_Time int
     end'

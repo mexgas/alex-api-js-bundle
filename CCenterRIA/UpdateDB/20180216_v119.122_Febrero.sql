@@ -150,17 +150,8 @@ declare @totalCall_Time integer
 declare @callout_id int
 
 if @action = 1 begin
-	if @modo = 4 begin			
+	if @modo = 4
 		insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin)  values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate() )
-
-		if @tipo = 2 begin
-			if @tdespues = 0
-				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
-			else
-				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues + @tantes
-			update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
-		end
-	end
 	else begin
 		if not exists (select * from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
 			insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin) values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() )

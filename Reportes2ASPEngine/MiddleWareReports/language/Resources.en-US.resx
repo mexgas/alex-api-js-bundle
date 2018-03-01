@@ -2520,6 +2520,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Spam</value>
   </data>
+<<<<<<< HEAD
   <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat</value>
   </data>
@@ -2528,5 +2529,21 @@
   </data>
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Survey</value>
+=======
+  <data name="Dato1" xml:space="preserve">
+    <value>Data1</value>
+  </data>
+  <data name="Dato2" xml:space="preserve">
+    <value>Data2</value>
+  </data>
+  <data name="Dato3" xml:space="preserve">
+    <value>Data3</value>
+  </data>
+  <data name="Dato4" xml:space="preserve">
+    <value>Data4</value>
+  </data>
+  <data name="Dato5" xml:space="preserve">
+    <value>Data5</value>
+>>>>>>> feature/Puertos_ACDReminder
   </data>
 </root>

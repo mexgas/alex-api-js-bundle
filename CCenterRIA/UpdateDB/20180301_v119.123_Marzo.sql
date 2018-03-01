@@ -46,7 +46,6 @@ if  @actualVersion = @version and  @actualVersionFix >= 122
 		begin try
 
 	 
-
 		set @process = 'CW-934 -- Creacion de tabla nueva DataCallIn'
     	set @Sql= 'if not exists (select * from sys.tables where name = N''DataCallIn'')
     begin

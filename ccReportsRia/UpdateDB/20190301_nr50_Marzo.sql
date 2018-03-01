@@ -70,117 +70,116 @@ if @actualVersion  in(@version,@version - 1) begin
 		EXEC(@Sql)
 
 		
-
 	set @process = 'Modificacion al SP ccspRepInCallsDetail-- CW-934'
 	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepInCallsDetail]
-	@action as tinyint,
-	@from as datetime = null,
-	@to as datetime = null
-	AS
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
 
-	DECLARE @callId as int
+DECLARE @callId as int
 
-	if @from is null
-		select @from = convert(datetime,convert(varchar(11),getdate()))
-	select @to = getdate()
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
-	if @action = 1
-	begin
+if @action = 1
+begin
 
-		--Borrar lo que esta para no repetir
-		delete from RepInCallsDetail with(rowlock) where date >= @from AND date < @to
+	--Borrar lo que esta para no repetir
+	delete from RepInCallsDetail with(rowlock) where date >= @from AND date < @to
 
-		insert into RepInCallsDetail
-		select cal_inicio, Inbound_id, '''' as Inbound, statusCall_id, '''' as statusCall, calif_id, '''' as calif, isnull(califSub_id,0), '''' as califSub,
-		dni_id, '''' as dni, user_id, '''' as agentName,
-		isnull(cal_key,''''), cal_ANI, cal_tWait, cal_tXfer, cal_tRing, cal_tDialog, cal_extension, '''',
-		case when a.cal_whoHung = 0 then ''systemTranslated_Client''
-		when a.cal_whoHung = 1 then ''systemTranslated_Agent''
-		else ''systemTranslated_AgentSurvey'' end [whoHangUp]
-		, cal_tMoh, datepart(yyyy,cal_inicio), datepart(mm,cal_inicio), datepart(dd,cal_inicio)
-		, datepart(hh,cal_inicio), datepart(mi,cal_inicio)
-		,di.provedor_id,prov.descrip [Proveedor],a.cal_puerto
-		,case when a.file_moved = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved
-		,cal_tNotas,AverageHandleTime= cal_tNotas+cal_tDialog
-		,'''' as Dato1
-		,'''' as Dato2
-		,'''' as Dato3
-		,'''' as Dato4
-		,'''' as Dato5
-		from cccallsin a
-		left join ccoDialers di on di.dialer_id = a.cal_puerto
-		left join cstoProvedor prov on di.provedor_id = prov.provedor_id
-		where cal_inicio >= @from AND cal_inicio < @to
-		
-		update a set acdGroup = isnull(descripcion,'''')
-		from RepInCallsDetail a
-		left join ccInbound b
-		on a.inboundId = b.Inbound_id
-		where [date] >= @from AND [date] < @to
+	insert into RepInCallsDetail
+	select cal_inicio, Inbound_id, '''' as Inbound, statusCall_id, '''' as statusCall, calif_id, '''' as calif, isnull(califSub_id,0), '''' as califSub,
+	dni_id, '''' as dni, user_id, '''' as agentName,
+	isnull(cal_key,''''), cal_ANI, cal_tWait, cal_tXfer, cal_tRing, cal_tDialog, cal_extension, '''',
+	case when a.cal_whoHung = 0 then ''systemTranslated_Client''
+	when a.cal_whoHung = 1 then ''systemTranslated_Agent''
+	else ''systemTranslated_AgentSurvey'' end [whoHangUp]
+	, cal_tMoh, datepart(yyyy,cal_inicio), datepart(mm,cal_inicio), datepart(dd,cal_inicio)
+	, datepart(hh,cal_inicio), datepart(mi,cal_inicio)
+	,di.provedor_id,prov.descrip [Proveedor],a.cal_puerto
+	,case when a.file_moved = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved
+	,cal_tNotas,AverageHandleTime= cal_tNotas+cal_tDialog
+	,'''' as Dato1
+	,'''' as Dato2
+	,'''' as Dato3
+	,'''' as Dato4
+	,'''' as Dato5
+	from cccallsin a
+	left join ccoDialers di on di.dialer_id = a.cal_puerto
+	left join cstoProvedor prov on di.provedor_id = prov.provedor_id
+	where cal_inicio >= @from AND cal_inicio < @to
+	
+	update a set acdGroup = isnull(descripcion,'''')
+	from RepInCallsDetail a
+	left join ccInbound b
+	on a.inboundId = b.Inbound_id
+	where [date] >= @from AND [date] < @to
 
-		update a set callStatus = isnull(descripcion,'''')
-		from RepInCallsDetail a
-		left join ccstatusllamada b
-		on a.callStatusId = b.statusCall_id
-		where [date] >= @from AND [date] < @to
+	update a set callStatus = isnull(descripcion,'''')
+	from RepInCallsDetail a
+	left join ccstatusllamada b
+	on a.callStatusId = b.statusCall_id
+	where [date] >= @from AND [date] < @to
 
-		update a set disposition = isnull(description,'''')
-		from RepInCallsDetail a
-		left join cctipocalif b
-		on a.dispositionId = b.calif_id
-		where [date] >= @from AND [date] < @to
+	update a set disposition = isnull(description,'''')
+	from RepInCallsDetail a
+	left join cctipocalif b
+	on a.dispositionId = b.calif_id
+	where [date] >= @from AND [date] < @to
 
-		update a set subDisposition = isnull(califSubDesc,'''')
-		from RepInCallsDetail a
-		left join cctipocalifsub b
-		on a.subDispositionId = b.califSub_id
-		where [date] >= @from AND [date] < @to
+	update a set subDisposition = isnull(califSubDesc,'''')
+	from RepInCallsDetail a
+	left join cctipocalifsub b
+	on a.subDispositionId = b.califSub_id
+	where [date] >= @from AND [date] < @to
 
-		update a set username = isnull(login,'''')
-		from RepInCallsDetail a
-		left join ccusers b
-		on a.userId = b.user_id
-		where [date] >= @from AND [date] < @to
+	update a set username = isnull(login,'''')
+	from RepInCallsDetail a
+	left join ccusers b
+	on a.userId = b.user_id
+	where [date] >= @from AND [date] < @to
 
-		update a set dnis = isnull(dni_numero,'''')
-		from RepInCallsDetail a
-		left join ccdnis b
-		on a.dnisId = b.dni_id
-		where [date] >= @from AND [date] < @to
+	update a set dnis = isnull(dni_numero,'''')
+	from RepInCallsDetail a
+	left join ccdnis b
+	on a.dnisId = b.dni_id
+	where [date] >= @from AND [date] < @to
 
-		update a set agentName = isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno,'''')
-		from RepInCallsDetail a
-		left join ccusers b
-		on a.userId = b.user_id
-		where [date] >= @from AND [date] < @to
+	update a set agentName = isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno,'''')
+	from RepInCallsDetail a
+	left join ccusers b
+	on a.userId = b.user_id
+	where [date] >= @from AND [date] < @to
 
-		DECLARE CallidList cursor for
-		select CallId from [dbo].[DataCallIn]
-		open CallidList
-		FETCH NEXT FROM CallidList INTO @callId
-		WHILE @@FETCH_STATUS = 0  
-		BEGIN
-			update RepInCallsDetail set Dato1 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato1'') 
-			where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
+	DECLARE CallidList cursor for
+	select CallId from [dbo].[DataCallIn]
+	open CallidList
+	FETCH NEXT FROM CallidList INTO @callId
+	WHILE @@FETCH_STATUS = 0  
+	BEGIN
+		update RepInCallsDetail set Dato1 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato1'') 
+		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
 
-			update RepInCallsDetail set Dato2 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato2'') 
-			where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
+		update RepInCallsDetail set Dato2 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato2'') 
+		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
 
-			update RepInCallsDetail set Dato3 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato3'') 
-			where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
+		update RepInCallsDetail set Dato3 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato3'') 
+		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
 
-			update RepInCallsDetail set Dato4 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato4'') 
-			where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
+		update RepInCallsDetail set Dato4 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato4'') 
+		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
 
-			update RepInCallsDetail set Dato5 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato5'') 
-			where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-		FETCH NEXT FROM CallidList   
-		INTO @callId 
-		END
-		CLOSE CallidList
-		DEALLOCATE CallidList
+		update RepInCallsDetail set Dato5 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato5'') 
+		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
+	FETCH NEXT FROM CallidList   
+	INTO @callId 
+	END
+	CLOSE CallidList
+	DEALLOCATE CallidList
 
-	end'
+end'
 	EXEC(@sql)
 
 

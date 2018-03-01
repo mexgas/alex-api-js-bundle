@@ -2589,4 +2589,10 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Llamadas Contestadas y Transferidas</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transferencia</value>
+  </data>
 </root>

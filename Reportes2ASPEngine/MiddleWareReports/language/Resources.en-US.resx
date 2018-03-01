@@ -2529,4 +2529,10 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Survey</value>
   </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Answered and Transfer Calls</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transfer</value>
+  </data>
 </root>

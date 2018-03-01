@@ -493,6 +493,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas Contestadas y Transferidas.
+        /// </summary>
+        public static string AnsweredandTransferCalls {
+            get {
+                return ResourceManager.GetString("AnsweredandTransferCalls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Llamadas General.
         /// </summary>
         public static string AnsweredCalls {
@@ -6294,6 +6303,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_WorkGroup {
             get {
                 return ResourceManager.GetString("systemTranslated_WorkGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Transferencia.
+        /// </summary>
+        public static string systemTranslated_Xfer {
+            get {
+                return ResourceManager.GetString("systemTranslated_Xfer", resourceCulture);
             }
         }
         

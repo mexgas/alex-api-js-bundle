@@ -2121,4 +2121,10 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Survey</value>
   </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Chamadas Respondidas e Transferidas</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transferência</value>
+  </data>
 </root>

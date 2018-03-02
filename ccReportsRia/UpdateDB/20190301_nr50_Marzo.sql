@@ -85,6 +85,22 @@ select @to = getdate()
 
 if @action = 1
 begin
+	
+	declare @tab table(callId int primary key, [Dato1] varchar(255),[Dato2] varchar(255),[Dato3] varchar(255),[Dato4] varchar(255),[Dato5] varchar(255))
+
+	insert into @tab
+	select callId,[Dato 1],[Dato 2],[Dato 3],[Dato 4],[Dato 5]
+	from
+	(select A.CallId,[Data],[Description] from DataCallIn A
+	inner join ccCallsIn B on A.CallId=B.cal_id
+	where b.cal_Inicio >= @from AND b.cal_Inicio < @to
+	) as SourceTable
+	pivot
+	(
+	max([Data])
+	for [Description] in ([Dato 1],[Dato 2],[Dato 3],[Dato 4],[Dato 5])
+	)as pvt
+
 
 	--Borrar lo que esta para no repetir
 	delete from RepInCallsDetail with(rowlock) where date >= @from AND date < @to
@@ -101,14 +117,15 @@ begin
 	,di.provedor_id,prov.descrip [Proveedor],a.cal_puerto
 	,case when a.file_moved = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved
 	,cal_tNotas,AverageHandleTime= cal_tNotas+cal_tDialog
-	,'''' as Dato1
-	,'''' as Dato2
-	,'''' as Dato3
-	,'''' as Dato4
-	,'''' as Dato5
+	,ISNULL(tab.Dato1,'''') as Dato1
+	,ISNULL(tab.Dato2,'''') as Dato2
+	,ISNULL(tab.Dato3,'''') as Dato3
+	,ISNULL(tab.Dato4,'''') as Dato4
+	,ISNULL(tab.Dato5,'''') as Dato5
 	from cccallsin a
 	left join ccoDialers di on di.dialer_id = a.cal_puerto
 	left join cstoProvedor prov on di.provedor_id = prov.provedor_id
+	left join @tab tab on tab.callId=a.cal_id
 	where cal_inicio >= @from AND cal_inicio < @to
 	
 	update a set acdGroup = isnull(descripcion,'''')
@@ -152,32 +169,6 @@ begin
 	left join ccusers b
 	on a.userId = b.user_id
 	where [date] >= @from AND [date] < @to
-
-	DECLARE CallidList cursor for
-	select CallId from [dbo].[DataCallIn]
-	open CallidList
-	FETCH NEXT FROM CallidList INTO @callId
-	WHILE @@FETCH_STATUS = 0  
-	BEGIN
-		update RepInCallsDetail set Dato1 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato1'') 
-		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-
-		update RepInCallsDetail set Dato2 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato2'') 
-		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-
-		update RepInCallsDetail set Dato3 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato3'') 
-		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-
-		update RepInCallsDetail set Dato4 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato4'') 
-		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-
-		update RepInCallsDetail set Dato5 = (select Data from DataCallIn where @callId = CallId and Description = ''Dato5'') 
-		where (select cal_inicio from ccCallsIn where cal_id = @callId) = date
-	FETCH NEXT FROM CallidList   
-	INTO @callId 
-	END
-	CLOSE CallidList
-	DEALLOCATE CallidList
 
 end'
 	EXEC(@sql)

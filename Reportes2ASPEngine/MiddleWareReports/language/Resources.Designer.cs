@@ -5074,6 +5074,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Chat .
+        /// </summary>
+        public static string systemTranslated_Chat {
+            get {
+                return ResourceManager.GetString("systemTranslated_Chat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Cliente.
         /// </summary>
         public static string systemTranslated_Client {
@@ -6217,6 +6226,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Grabación .
+        /// </summary>
+        public static string systemTranslated_Recording {
+            get {
+                return ResourceManager.GetString("systemTranslated_Recording", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Remoto.
         /// </summary>
         public static string systemTranslated_Remoto {
@@ -6258,6 +6276,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_supXfer {
             get {
                 return ResourceManager.GetString("systemTranslated_supXfer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Encuesta.
+        /// </summary>
+        public static string systemTranslated_Survey {
+            get {
+                return ResourceManager.GetString("systemTranslated_Survey", resourceCulture);
             }
         }
         

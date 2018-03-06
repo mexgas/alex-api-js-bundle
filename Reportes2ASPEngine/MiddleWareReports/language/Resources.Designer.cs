@@ -2122,6 +2122,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tipo de marcaciones.
+        /// </summary>
+        public static string DialTypes {
+            get {
+                return ResourceManager.GetString("DialTypes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Dids.
         /// </summary>
         public static string Dids {

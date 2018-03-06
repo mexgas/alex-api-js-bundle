@@ -2127,4 +2127,7 @@
   <data name="systemTranslated_Xfer" xml:space="preserve">
     <value>Transferência</value>
   </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Tipo de rolamentos</value>
+  </data>
 </root>

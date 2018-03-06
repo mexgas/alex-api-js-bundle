@@ -2595,4 +2595,7 @@
   <data name="systemTranslated_Xfer" xml:space="preserve">
     <value>Transferencia</value>
   </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Tipo de marcaciones</value>
+  </data>
 </root>

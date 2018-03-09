@@ -2580,7 +2580,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Correo no deseado</value>
   </data>
-<data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat </value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2589,7 +2589,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
- <data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Dato1</value>
   </data>
   <data name="Dato2" xml:space="preserve">
@@ -2603,5 +2603,20 @@
   </data>
   <data name="Dato5" xml:space="preserve">
     <value>Dato5</value>
+  </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Llamadas Contestadas y Transferidas</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transferencia</value>
+  </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Tipo de marcaciones</value>
+  </data>
+  <data name="Dials" xml:space="preserve">
+    <value>Tipo de Llamadas</value>
+  </data>
+  <data name="systemTranslated_Out" xml:space="preserve">
+    <value>Llamada Salida</value>
   </data>
 </root>

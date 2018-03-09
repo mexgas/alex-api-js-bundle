@@ -100,6 +100,7 @@
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
     <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
     <Compile Include="reports\outboundreports\RepAnsweredCallsByDialingRetries.cs" />
+    <Compile Include="reports\outboundreports\RepOutAnswAndXferCalls.cs" />
     <Compile Include="reports\outboundreports\RepOutDispositionsContacOwner.cs" />
     <Compile Include="reports\outboundreports\RepSpecialAbndCamp.cs" />
     <Compile Include="reports\outboundreports\RepCallXfer.cs" />

@@ -118,13 +118,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="campaignAcd" xml:space="preserve">
-    <value />
+    <value>campanha / grupo ACD</value>
   </data>
   <data name="cam_id" xml:space="preserve">
-    <value />
+    <value>campanha / grupo ACD</value>
   </data>
   <data name="chatId" xml:space="preserve">
-    <value />
+    <value>ID da Bate-papo</value>
   </data>
   <data name="dateStartDetail" xml:space="preserve">
     <value>Data</value>
@@ -136,19 +136,19 @@
     <value>Data</value>
   </data>
   <data name="Disposisiton2" xml:space="preserve">
-    <value />
+    <value>Classificação</value>
   </data>
   <data name="idMedia" xml:space="preserve">
-    <value />
+    <value>ID da conversa</value>
   </data>
   <data name="inbound" xml:space="preserve">
-    <value />
+    <value>Grupos ACD</value>
   </data>
   <data name="inboundId" xml:space="preserve">
-    <value />
+    <value>Id da Grupos ACD</value>
   </data>
   <data name="media" xml:space="preserve">
-    <value />
+    <value>Médio</value>
   </data>
   <data name="phonein" xml:space="preserve">
     <value>Telefone</value>
@@ -157,9 +157,9 @@
     <value>Telefone</value>
   </data>
   <data name="tipoLlamada" xml:space="preserve">
-    <value />
+    <value>Tipo de chamada</value>
   </data>
   <data name="userId" xml:space="preserve">
-    <value />
+    <value>ID</value>
   </data>
 </root>

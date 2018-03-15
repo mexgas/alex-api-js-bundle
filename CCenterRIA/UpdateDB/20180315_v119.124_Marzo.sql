@@ -10,7 +10,7 @@ Description:
 
 
 Database: CCenterRia
-Required version: 119.10.2
+Required version: 119.119.123
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -30,7 +30,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 119--**********actualizar a 119 sin fix
-set @versionfix = 123
+set @versionfix = 124
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -40,7 +40,7 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version --and  @actualVersionFix >= 122
+if  @actualVersion = @version and  @actualVersionFix >= 123
 	begin
 		begin tran
 		begin try
@@ -258,10 +258,6 @@ if @fecha is null set @fecha=getdate()
 exec ccsp_AgentLogINOUT @UserID=@UserID,@Extension=@Extension,@Computer=@Computer,@TipoMov=0,@fecha=@fecha
 exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@TipoNotReady=@TipoNotReady,@tStatus=@tStatus,@TipoCall=@TipoCall,@Camp=0,@callout_id=0,@call_id=@call_id,@isLogout=1,@tDialog =@tDialog,@Fecha4=@fecha,@tMusicHold=@tMusicHold 
 '
-    	EXEC(@Sql)
-
-    	set @process = 'CW-1558 -- Version BD 119.122 -- '
-    	set @Sql= ''
     	EXEC(@Sql)
 	
 		/* End script release */

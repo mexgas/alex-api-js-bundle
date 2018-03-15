@@ -1816,6 +1816,51 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Dato1.
+        /// </summary>
+        public static string Dato1 {
+            get {
+                return ResourceManager.GetString("Dato1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Dato2.
+        /// </summary>
+        public static string Dato2 {
+            get {
+                return ResourceManager.GetString("Dato2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Dato3.
+        /// </summary>
+        public static string Dato3 {
+            get {
+                return ResourceManager.GetString("Dato3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Dato4.
+        /// </summary>
+        public static string Dato4 {
+            get {
+                return ResourceManager.GetString("Dato4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Dato5.
+        /// </summary>
+        public static string Dato5 {
+            get {
+                return ResourceManager.GetString("Dato5", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Día.
         /// </summary>
         public static string day {

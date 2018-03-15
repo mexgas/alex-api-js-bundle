@@ -16,7 +16,6 @@ Required version: 46
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
 
-
 set nocount on
 
 declare @version int
@@ -359,7 +358,7 @@ END'
 	EXEC(@Sql)
 	
 	set @process = 'CW-1335 -- VERSION 49  INSERT VALUE XFER INTO DIALS'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM Dials WHERE description = ''systemTranslaSted_Xfer'')
+    set @Sql= 'IF NOT EXISTS (SELECT * FROM Dials WHERE description = ''systemTranslated_Xfer'')
 BEGIN
     INSERT INTO Dials VALUES (''systemTranslated_Xfer'')
 END'

@@ -34,6 +34,11 @@ if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
 
+	set @process = 'CW-1335 -- VERSION 49  DROP FUNCTION fnGetCstoTarifa IF IT EXISTS'
+    set @Sql= 'IF object_id(N''dbo.fnGetCstoTarifa'', N''FN'') IS NOT NULL
+	DROP FUNCTION dbo.fnGetCstoTarifa'
+	EXEC(@Sql)
+
 	set @process = 'CW-1335 -- VERSION 49  CREATE TABLE DIALS'
     set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''Dials'')
 BEGIN
@@ -44,11 +49,7 @@ BEGIN
 END'
 	EXEC(@Sql)
 
-	set @process = 'CW-1335 -- VERSION 49  DROP FUNCTION fnGetCstoTarifa IF IT EXISTS'
-    set @Sql= 'IF object_id(N''dbo.fnGetCstoTarifa'', N''FN'') IS NOT NULL
-	DROP FUNCTION dbo.fnGetCstoTarifa'
-	EXEC(@Sql)
-
+	
 	set @process = 'CW-1335 -- VERSION 49  CREATE FUNCTION fnGetCstoTarifa'
     set @Sql= 'CREATE FUNCTION [dbo].[fnGetCstoTarifa](@tipoLlamada_id TINYINT, @provedor_id SMALLINT, @callTime INT)
 RETURNS DECIMAL(10,3)  

@@ -45,32 +45,6 @@ if  (@actualVersion = @version-1 and  @actualVersionFix >= 122) or( @actualVersi
 		begin tran
 		begin try
 
-		set @process = 'CW-943 ETIQUETAS EN PORTUGUES Funcion FNccsp_Split -- Version BD 119.122 -- '
-    	set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''FNccsp_Split'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-    begin
-        DROP FUNCTION FNccsp_Split;
-    end'
-	EXEC(@Sql)
-
-	 set @process = 'CW-943 ETIQUETAS EN PORTUGUES Creacion de funcion FNccsp_Split -- Version BD 119.122 -- '
-    	set @Sql= 'CREATE FUNCTION [dbo].[FNccsp_Split] 
-(@string NVARCHAR(MAX),@delimiter CHAR(1)) 
-RETURNS @output TABLE(splitdata NVARCHAR(MAX)) 
-BEGIN 
-    DECLARE @start INT, @end INT 
-    SELECT @start = 1, @end = CHARINDEX(@delimiter, @string) 
-    WHILE @start < LEN(@string) + 1 BEGIN 
-        IF @end = 0  
-            SET @end = LEN(@string) + 1
-       
-        INSERT INTO @output (splitdata)  
-        VALUES(SUBSTRING(@string, @start, @end - @start)) 
-        SET @start = @end + 1 
-        SET @end = CHARINDEX(@delimiter, @string, @start) 
-    END 
-    RETURN 
-END'
-    	EXEC(@Sql)
 
 		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccsp_ADMGetCalifDay -- Version BD 119.122 -- '
     	set @Sql= 'ALTER Procedure [dbo].[ccsp_ADMGetCalifDay]
@@ -461,7 +435,11 @@ set nocount off'
     	EXEC(@Sql)
 
 		set @process = 'CW-943 ETIQUETAS EN PORTUGUES Columna DescripcionPT ccSettings-- Version BD 119.122 -- '
-    	set @Sql= 'ALTER TABLE [ccSettings] ADD DescripcionPT VARCHAR(150) NULL; '
+    	set @Sql= 'IF NOT EXISTS(select * from sys.columns where name = N''DescripcionPT'' 
+		and Object_ID = Object_ID(N''ccSettings''))
+			BEGIN
+				ALTER TABLE [ccSettings] ADD DescripcionPT VARCHAR(150) NULL;
+			END'
 		EXEC(@Sql)
 
 		set @process = 'CW-943 ETIQUETAS EN PORTUGUES Update DescripcionPT ccSettings-- Version BD 119.122 -- '
@@ -852,11 +830,9 @@ if @Type = 1
 	begin
 	declare @Idioma INT
 	select @Idioma = valor from ccsettings where setting_id = 27
-	select CatAdmin.per_id, case @Idioma 
-	  when 0 then substring(CatAdmin.per_desc, 1, charindex(''|'',CatAdmin.per_desc)-1)
-	  when 1 then substring(CatAdmin.per_desc, charindex(''|'',CatAdmin.per_desc)+1, charindex(''|'',CatAdmin.per_desc,charindex(''|'', CatAdmin.per_desc)+1)-charindex(''|'', CatAdmin.per_desc)-1)
-	  when 2 then (SELECT item  FROM dbo.SplitString((select permissions.per_desc from ccRIACat_AdminPermissions as permissions where permissions.per_id= CatAdmin.per_id), ''|'')  where id=3)
-	end per_desc,release
+	select CatAdmin.per_id, 
+	(SELECT Value  FROM dbo.fn_RIASplitDelimited((select permissions.per_desc from ccRIACat_AdminPermissions as permissions 
+	  where permissions.per_id= CatAdmin.per_id), ''|'')  where id=@Idioma+1) ,release
 	from ccRIACat_AdminPermissions as CatAdmin where CatAdmin.bStatus = 1
 	return(0)
 	end

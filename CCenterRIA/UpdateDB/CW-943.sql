@@ -45,6 +45,26 @@ if  (@actualVersion = @version-1 and  @actualVersionFix >= 122) or( @actualVersi
 		begin tran
 		begin try
 
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccStatusLLamada -- Version BD 119.122 -- '
+    	set @Sql= 'ALTER TABLE [ccStatusLLamada] ALTER COLUMN [descripcion] [varchar](30);'
+    	EXEC(@Sql)
+
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccTipoDias -- Version BD 119.122 --'
+    	set @Sql= 'ALTER TABLE [ccTipoDias] ALTER COLUMN [descripcion] [varchar](14);'
+		EXEC(@Sql)
+
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccTipoResultadoDial -- Version BD 119.122 -- '
+    	set @Sql= 'ALTER TABLE [ccTipoResultadoDial] ALTER COLUMN [descripcion] [varchar](25);'
+		EXEC(@Sql)
+
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccTipoStatusAgente -- Version BD 119.122 -- '
+    	set @Sql= 'ALTER TABLE [ccTipoStatusAgente] ALTER COLUMN [descripcion] [varchar](31);'
+		EXEC(@Sql)
+
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccDias -- Version BD 119.122 -- '
+    	set @Sql= 'ALTER TABLE [ccDias] ALTER COLUMN [Name] [varchar](14);'
+    	EXEC(@Sql)
+
 
 		set @process = 'CW-943 ETIQUETAS EN PORTUGUES ccsp_ADMGetCalifDay -- Version BD 119.122 -- '
     	set @Sql= 'ALTER Procedure [dbo].[ccsp_ADMGetCalifDay]

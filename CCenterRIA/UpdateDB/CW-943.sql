@@ -40,7 +40,7 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 124
+if  (@actualVersion = @version-1 and  @actualVersionFix >= 122) or( @actualVersion=120 and  @actualVersionFix=1)
 	begin
 		begin tran
 		begin try
@@ -50,6 +50,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 124
     begin
         DROP FUNCTION FNccsp_Split;
     end'
+	EXEC(@Sql)
 
 	 set @process = 'CW-943 ETIQUETAS EN PORTUGUES Creacion de funcion FNccsp_Split -- Version BD 119.122 -- '
     	set @Sql= 'CREATE FUNCTION [dbo].[FNccsp_Split] 
@@ -460,8 +461,11 @@ set nocount off'
     	EXEC(@Sql)
 
 		set @process = 'CW-943 ETIQUETAS EN PORTUGUES Columna DescripcionPT ccSettings-- Version BD 119.122 -- '
-    	set @Sql= 'ALTER TABLE [ccSettings] ADD DescripcionPT VARCHAR(150) NULL; 
-update ccSettings set DescripcionPT = ''Tempo máximo de transferência (segs)'' where setting_id=1
+    	set @Sql= 'ALTER TABLE [ccSettings] ADD DescripcionPT VARCHAR(150) NULL; '
+		EXEC(@Sql)
+
+		set @process = 'CW-943 ETIQUETAS EN PORTUGUES Update DescripcionPT ccSettings-- Version BD 119.122 -- '
+    	set @Sql= 'update ccSettings set DescripcionPT = ''Tempo máximo de transferência (segs)'' where setting_id=1
 update ccSettings set DescripcionPT = ''Mensagem TTL'' where setting_id=2
 update ccSettings set DescripcionPT = ''Fora de serviço'' where setting_id=3
 update ccSettings set DescripcionPT = ''Estado do ccServer'' where setting_id=4
@@ -2824,7 +2828,7 @@ update ccRIACat_AdminPermissions set release = ''4fa74acb1f6a68e4c30f0b01ff93a04
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
+		exec ccsp_getVersion 'BD', @version
 		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran

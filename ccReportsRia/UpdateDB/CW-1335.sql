@@ -191,7 +191,7 @@ BEGIN
 		INNER JOIN cstoTipoLlamada tipoLlam ON  tipoLlam.country_id = @country AND tipoLlam.tipoLlamada_id = dbo.fnGetTipoLlamada(trans.destino)
 		LEFT JOIN ccChannelTransfer channel ON channel.pbxId=trans.pbxId AND trans.channel BETWEEN channel.startChannel AND channel.endChannel
 		LEFT JOIN cstoProvedor prov ON prov.provedor_id=channel.proveedorId
-		WHERE channel.proveedorId is NOT NULL and trans.fechaFin between @from and @to
+		WHERE channel.proveedorId is NOT NULL and trans.fechaFin between @from and @to and modo NOT IN (1,2)
 	)x
 	WHERE [costo] > 0
 	GROUP BY CONVERT(smalldatetime, CONVERT(varchar(13), [date], 121) + '':00'', 121),[camp_id],[inbund_id],[user_id],[proveedorId],provedor,[tipollamadaId],[tipoLlamada]

@@ -121,10 +121,10 @@ if (@User_id > 0 ) begin
 					end
 				end
 
-				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
+				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog, cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
 			end
 			else if @TipoStatusAge_id=4 and @cal_tDialog = 0 and @tDialog>0
-				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog where cal_id = @call_id
+				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog  where cal_id = @call_id
 			else if @TipoStatusAge_id=6 and @cal_tNotaOri = 0 and @cal_tNotas>0
 				update ccoCallsOut with(rowlock) set cal_tNotas=@cal_tNotas where cal_id = @call_id
 		end
@@ -259,6 +259,8 @@ exec ccsp_AgentLogINOUT @UserID=@UserID,@Extension=@Extension,@Computer=@Compute
 exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@TipoNotReady=@TipoNotReady,@tStatus=@tStatus,@TipoCall=@TipoCall,@Camp=0,@callout_id=0,@call_id=@call_id,@isLogout=1,@tDialog =@tDialog,@Fecha4=@fecha,@tMusicHold=@tMusicHold 
 '
     	EXEC(@Sql)
+
+
 	
 		/* End script release */
 

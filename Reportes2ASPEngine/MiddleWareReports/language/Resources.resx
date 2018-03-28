@@ -2580,7 +2580,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Correo no deseado</value>
   </data>
-<data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat </value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2589,7 +2589,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
- <data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Dato1</value>
   </data>
   <data name="Dato2" xml:space="preserve">
@@ -2603,5 +2603,23 @@
   </data>
   <data name="Dato5" xml:space="preserve">
     <value>Dato5</value>
+  </data>
+  <data name="GeneralInformationSpecial" xml:space="preserve">
+    <value>Información General Especial</value>
+  </data>
+  <data name="tavNum" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Tiempo no disponible</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Tiempo de notas (Salida)</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Sesión</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>En diálogo (Salida)</value>
   </data>
 </root>

@@ -2608,6 +2608,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Información General Especial.
+        /// </summary>
+        public static string GeneralInformationSpecial {
+            get {
+                return ResourceManager.GetString("GeneralInformationSpecial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Id grabación.
         /// </summary>
         public static string grabId {
@@ -6451,6 +6460,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Disponible.
+        /// </summary>
+        public static string tavNum {
+            get {
+                return ResourceManager.GetString("tavNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a tiempo ocupado.
         /// </summary>
         public static string tBusy {
@@ -6793,6 +6811,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo no disponible.
+        /// </summary>
+        public static string tnotavNum {
+            get {
+                return ResourceManager.GetString("tnotavNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo de notas (Entrada).
         /// </summary>
         public static string tnotesin {
@@ -6807,6 +6834,15 @@ namespace MiddleWareReports {
         public static string tnotesout {
             get {
                 return ResourceManager.GetString("tnotesout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de notas (Salida).
+        /// </summary>
+        public static string tnotesoutNum {
+            get {
+                return ResourceManager.GetString("tnotesoutNum", resourceCulture);
             }
         }
         
@@ -6924,6 +6960,15 @@ namespace MiddleWareReports {
         public static string TotalEmailMessagesbyACDGroup {
             get {
                 return ResourceManager.GetString("TotalEmailMessagesbyACDGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Sesión.
+        /// </summary>
+        public static string TotalNum {
+            get {
+                return ResourceManager.GetString("TotalNum", resourceCulture);
             }
         }
         
@@ -7185,6 +7230,15 @@ namespace MiddleWareReports {
         public static string tsend {
             get {
                 return ResourceManager.GetString("tsend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a En diálogo (Salida).
+        /// </summary>
+        public static string tTalkNum {
+            get {
+                return ResourceManager.GetString("tTalkNum", resourceCulture);
             }
         }
         

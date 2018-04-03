@@ -69,7 +69,7 @@ select * from RepAgentGI'
     	set @Sql= 'if not exists (select * from ccMenus where menu_id=2090)
 begin
 insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-values(2090,''Información General Especial|General Information Special|Informação geral Especial'',2000,''B'',2,3,'''',''c706077b228a003efcba36c3d76f8ccd4e17f812f5a12cb3c8666e690ccbc50ea32162bb1b7e93270d2ad3d8ed208670e8f3eacb3afdf20f6498b7429fd27db70bf9dee0ddb33bf9ccb2e5b160e058788852b419983e053d595a5390cb054b82'');
+values(2090,''Información General Especial|General Information Special'',2000,''B'',2,3,'''',''c706077b228a003efcba36c3d76f8ccd4e17f812f5a12cb3c8666e690ccbc50ea32162bb1b7e93270d2ad3d8ed208670e8f3eacb3afdf20f6498b7429fd27db70bf9dee0ddb33bf9ccb2e5b160e058788852b419983e053d595a5390cb054b82'');
 end'
 		EXEC(@Sql)
 

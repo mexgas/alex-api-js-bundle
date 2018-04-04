@@ -5,7 +5,8 @@ using System.Text;
 
 namespace MiddleWareReports
 {
-    class RepMKTDiario : GenericReport
+    class RepSpecialReportAgents : GenericReport
     {
     }
 }
+

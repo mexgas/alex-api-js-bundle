@@ -3031,15 +3031,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a MKT Agentes.
-        /// </summary>
-        public static string MKTAgents {
-            get {
-                return ResourceManager.GetString("MKTAgents", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a MKT Diario.
         /// </summary>
         public static string MKTDiario {
@@ -4476,6 +4467,15 @@ namespace MiddleWareReports {
         public static string Special {
             get {
                 return ResourceManager.GetString("Special", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Reporte Especial Agentes.
+        /// </summary>
+        public static string SpecialReportAgents {
+            get {
+                return ResourceManager.GetString("SpecialReportAgents", resourceCulture);
             }
         }
         

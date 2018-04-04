@@ -2010,8 +2010,8 @@
   <data name="Ayuda" xml:space="preserve">
     <value>Ayuda</value>
   </data>
-  <data name="MKTAgents" xml:space="preserve">
-    <value>MKT Agentes</value>
+  <data name="SpecialReportAgents" xml:space="preserve">
+    <value>Reporte Especial Agentes</value>
   </data>
   <data name="oHour" xml:space="preserve">
     <value>Otra Hora</value>
@@ -2580,7 +2580,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Correo no deseado</value>
   </data>
-<data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat </value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2589,7 +2589,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
- <data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Dato1</value>
   </data>
   <data name="Dato2" xml:space="preserve">

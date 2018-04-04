@@ -1971,8 +1971,8 @@
   <data name="tPer" xml:space="preserve">
     <value>Personal Time</value>
   </data>
-  <data name="MKTAgents" xml:space="preserve">
-    <value>MKT Agents</value>
+  <data name="SpecialReportAgents" xml:space="preserve">
+    <value>Agentes Especial</value>
   </data>
   <data name="MKTDiario" xml:space="preserve">
     <value>MKT daily</value>
@@ -2112,7 +2112,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Spam</value>
   </data>
- <data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat</value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2121,7 +2121,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Survey</value>
   </data>
-<data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Data1</value>
   </data>
   <data name="Dato2" xml:space="preserve">
@@ -2135,4 +2135,5 @@
   </data>
   <data name="Dato5" xml:space="preserve">
     <value>Data5</value>
-  </data></root>
+  </data>
+</root>

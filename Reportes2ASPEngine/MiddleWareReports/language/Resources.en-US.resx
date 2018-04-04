@@ -2559,4 +2559,7 @@
   <data name="tTalkNum" xml:space="preserve">
     <value>Talking time outbound</value>
   </data>
+  <data name="GeneralInformationSpecial" xml:space="preserve">
+    <value>General Information Special</value>
+  </data>
 </root>

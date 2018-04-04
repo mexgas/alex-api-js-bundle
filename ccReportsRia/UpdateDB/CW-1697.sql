@@ -65,14 +65,6 @@ END'
 select * from RepAgentGI'
 		EXEC(@Sql)
 
-	set @process = 'Agregar nuevo menú a ccMenus-- CW-1697'
-    	set @Sql= 'if not exists (select * from ccMenus where menu_id=2090)
-begin
-insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-values(2090,''Información General Especial|General Information Special'',2000,''B'',2,3,'''',''c706077b228a003efcba36c3d76f8ccd36593f3a4dd74e5c87b92746ea976e6fa69c0068d09919abe5b326a8e278fcaaf3a01cb1653f02e5933aa50fb8cf0147'');
-end'
-		EXEC(@Sql)
-
 		set @process = 'inserta valores a ReportsFiltersmenus-- CW-1697'
     	set @Sql= 'if not exists (select * from ReportsFiltersmenus where idReport=2090)
 		begin

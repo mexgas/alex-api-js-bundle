@@ -2604,4 +2604,31 @@
   <data name="Dato5" xml:space="preserve">
     <value>Dato5</value>
   </data>
+  <data name="LlamadasACD" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="MKTAgents" xml:space="preserve">
+    <value>MKT Agentes</value>
+  </data>
+  <data name="NombreAgente" xml:space="preserve">
+    <value>Nombre Agente</value>
+  </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>Tiempo Llamado Agente</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>Tiempo Prom ACD</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>Tiempo Prom ACW</value>
+  </data>
+  <data name="TransSalida" xml:space="preserve">
+    <value>Trans Salida</value>
+  </data>
+  <data name="userId" xml:space="preserve">
+    <value>user</value>
+  </data>
 </root>

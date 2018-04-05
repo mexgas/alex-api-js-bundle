@@ -2815,6 +2815,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas ACD.
+        /// </summary>
+        public static string LlamadasACD {
+            get {
+                return ResourceManager.GetString("LlamadasACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Agent.
         /// </summary>
         public static string login {
@@ -3027,6 +3036,15 @@ namespace MiddleWareReports {
         public static string minutes {
             get {
                 return ResourceManager.GetString("minutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a MKT Agentes.
+        /// </summary>
+        public static string MKTAgents {
+            get {
+                return ResourceManager.GetString("MKTAgents", resourceCulture);
             }
         }
         
@@ -3459,6 +3477,15 @@ namespace MiddleWareReports {
         public static string Nombre {
             get {
                 return ResourceManager.GetString("Nombre", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Nombre Agente.
+        /// </summary>
+        public static string NombreAgente {
+            get {
+                return ResourceManager.GetString("NombreAgente", resourceCulture);
             }
         }
         
@@ -6622,6 +6649,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo ACW.
+        /// </summary>
+        public static string TiempoACW {
+            get {
+                return ResourceManager.GetString("TiempoACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo en cola.
         /// </summary>
         public static string tiempoCola {
@@ -6636,6 +6672,33 @@ namespace MiddleWareReports {
         public static string tiempoEspera {
             get {
                 return ResourceManager.GetString("tiempoEspera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Llamado Agente.
+        /// </summary>
+        public static string TiempoLlamadoAgente {
+            get {
+                return ResourceManager.GetString("TiempoLlamadoAgente", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom ACD.
+        /// </summary>
+        public static string TiempoPromACD {
+            get {
+                return ResourceManager.GetString("TiempoPromACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom ACW.
+        /// </summary>
+        public static string TiempoPromACW {
+            get {
+                return ResourceManager.GetString("TiempoPromACW", resourceCulture);
             }
         }
         
@@ -7090,6 +7153,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Trans Salida.
+        /// </summary>
+        public static string TransSalida {
+            get {
+                return ResourceManager.GetString("TransSalida", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo promedio de respuesta.
         /// </summary>
         public static string tresp {
@@ -7392,6 +7464,15 @@ namespace MiddleWareReports {
         public static string user {
             get {
                 return ResourceManager.GetString("user", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a user.
+        /// </summary>
+        public static string userId {
+            get {
+                return ResourceManager.GetString("userId", resourceCulture);
             }
         }
         

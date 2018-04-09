@@ -293,8 +293,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''20 seg''
 		@active_start_date=20171025, 
 		@active_end_date=99991231, 
 		@active_start_time=0, 
-		@active_end_time=235959, 
-		@schedule_uid=N''bfff3804-2270-497b-8498-e3bb749c15c4''
+		@active_end_time=235959		
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback

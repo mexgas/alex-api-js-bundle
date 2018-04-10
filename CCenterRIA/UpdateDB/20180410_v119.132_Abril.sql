@@ -45,14 +45,6 @@ if  @actualVersion = @version and  @actualVersionFix >= 123
 		begin tran
 		begin try
 
-
-		set @process = 'CW-1725 Se agrega columna a tabla '
-    	set @Sql= 'if not exists (select * from sys.columns where name = N''cal_id'' and Object_ID = Object_ID(N''ivrcallsin''))
-    begin
-        alter table ivrcallsin add cal_id int 
-    end'
-		EXEC(@Sql)
-	 
 		set @process = 'CW-1725 Modificacion SP ccsp_IVRInCalls'
     	set @Sql= 'ALTER procedure [dbo].[ccsp_IVRInCalls]
 @action tinyint = 0 ,
@@ -66,8 +58,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 123
 @surveyId int = 0,
 @calId int = 0,
 @callout_id int = 0,
-@ttotalIVR int = 0,
-@cal_id int = null
+@ttotalIVR int = 0
 -- saveType 1 es menu 2 es dato
 -- accion 1 siempre @ani  -> @idIvr
 -- accion 2 siempre @idIvr @opcionDigitada -> nada
@@ -76,7 +67,7 @@ IF @action = 1
 BEGIN
     IF @ani IS NOT NULL
     BEGIN
-        INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id, cal_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id, @cal_id);
+        INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
         Select ''ID''=scope_identity()
     END
 END
@@ -91,10 +82,9 @@ BEGIN
 END
 ELSE IF @action = 3
 BEGIN
-	UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
-	select @cal_id = (select cal_id from IVRCallsIn where IVR_id = @idIvr and callout_id = @callout_id)
-	if @cal_id > 0
-		exec ccsp_EngineLogTransfers 4, @cal_id, 0, 0, null
+    UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
+    if @callout_id > 0
+        exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
 END'
     	EXEC(@Sql)
 
@@ -162,7 +152,7 @@ else if @action = 2 begin
 end
 
 else if @action = 4 begin
-    select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where cal_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
+    select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
     update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 end'
     	EXEC(@Sql)

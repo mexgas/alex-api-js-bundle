@@ -1156,7 +1156,7 @@ declare @value int
 			select @mod = defCampaing from ccRIACat_Areas A
 			where A.IDArea = (select IDArea from ccUsers where User_id = @UserID) 
 
-			select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [default]
+			select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault]
 			from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
 			where ca.user_id = @UserID and cam_modoManual = 1
 			order by cam_descripcion

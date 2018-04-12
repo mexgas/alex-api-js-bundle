@@ -45,7 +45,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 123
 		begin tran
 		begin try
 
-		set @process = 'CW-1764 Version 119.124 -- Alter SP ccsp_EngineLogTransfers'
+		set @process = 'CW-1764 Version 119.131 -- Alter SP ccsp_EngineLogTransfers'
     	set @Sql= 'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
 @action as tinyint,
 @cal_id as integer,
@@ -75,8 +75,8 @@ if @action = 1 begin
 
 		if @tipo = 2 begin
 			if @modo = 5 begin
-				select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-				--select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
+				select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+				select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
 				update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) where cal_id = @cal_id and tipo = 2
 			end
 		
@@ -88,8 +88,8 @@ if @action = 1 begin
 
 		else begin
 			if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
-				select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-				--select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
+				select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+				select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
 				select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
 				update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 			end
@@ -98,8 +98,8 @@ if @action = 1 begin
 	--Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
 	if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
 		declare @tMinAVRS smallint,@cal_tDialog int
-
-		select @tMinAVRS=isnull(max(valor),5) from ccSettings where setting_id=65
+		set tMinAVRS=5
+		select @tMinAVRS=valor from ccSettings where setting_id=65
 		if @tipo=2 begin
 			select @cal_tDialog=cal_tDialog from ccoCallsOut where cal_id=@cal_id
 		end
@@ -115,17 +115,12 @@ end
 
 else if @action = 2 begin	
 	if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
-		select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-		--select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
+		select @callout_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+		select @cal_id = (select cal_id from ccoCallsOut where callout_id = @callout_id)
 		update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) where cal_id = @cal_id and tipo = 2
 		select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
 		update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 	end
-end
-
-else if @action = 3 begin
-	select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
-	update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id	
 end
 
 else if @action = 4 begin

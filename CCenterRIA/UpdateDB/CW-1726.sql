@@ -107,6 +107,12 @@ else begin --@existCallOut<>0
 	set @callout_id = @existCallOut
 
 	select top 1 @cal_id=cal_id from ccocallsout where callout_id = @callout_id order by cal_id desc
+	
+	if exists(select * from ccoLogDials where cal_id=@cal_id) begin
+		INSERT ccoCallsOUT (callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id, user_id, cal_manual, cal_extension) --''Status 11=Iniciada
+		select @callout_id, @cam_id, @cal_Key, @cal_Telefono, 0,  @fecha, 11, @user_id, 1, @cal_extension
+		select @cal_id = scope_identity()
+	end
 	 
  end
 	

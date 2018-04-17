@@ -49,48 +49,58 @@ if  @actualVersion = @version --and  @actualVersionFix >= 132
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
 set nocount on
 
+declare @lastCallAgt table(
+cal_id int not null,
+tipo varchar(10) not null,
+Hora varchar(10) not null,
+Telefono varchar(55) not null,
+EspCamp varchar(55) not null,
+Calificacion varchar(60),
+Duracion varchar(10) not null,
+CallBack varchar(60),
+cal_key varchar(20),
+IDCampEsp int not null
+)
+insert into @lastCallAgt
 select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
 convert(varchar(14), dateadd(second, 
 cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
-    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+	+  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
 ,0), 108) Duracion,
-'''' as CallBack, cal_key, c.inbound_id as IDCampEsp,
-i.prefijo
+'''' as CallBack, cal_key, c.inbound_id as IDCampEsp
 from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
-inner join ccInbound i on c.inbound_id = i.inbound_id
+inner join ccInbound on ccInbound.Inbound_id=c.Inbound_id
 left join ccTipoCalif cal on c.calif_id = cal.calif_id
 left join 
 (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer  from ccLogTransfers where tipo=1  group by cal_id,tipo ) as t  
  on c.cal_id=t.cal_id 
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_id
 
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
 
-
-Union
-
+insert into @lastCallAgt
 select top 10 c.cal_id as id, ''OUT'' as Tipo,convert(varchar(10), cal_inicio, 108) as Hora,cal_telefono as Telefono,cam_descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
  CONVERT(varchar(8), DATEADD(ss, 
-    cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
-    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
-    , 0), 114)  as Duracion,
-    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp
-    ,o.prefijo
+	cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
+	+  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+	, 0), 114)  as Duracion,
+ 	isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp	
 from ccoCallsOut c
-inner join ccCamps o on c.cam_id = o.cam_id
+inner join ccCamps on ccCamps.cam_id=c.cam_id
 left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
 left join  
 (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo) as t  
 on c.cal_id=t.cal_id 
 
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_id
 
+select * from @lastCallAgt
 order by hora desc
 
-set nocount off '
+set nocount off'
     	EXEC(@Sql)
 
         set @process = 'CW-1741 Version 119.124 -- Alter SP ccsp_AvrsSyncronization '
@@ -109,14 +119,14 @@ if @action=1 begin
     cal_key, 0 as cal_manual, cal_puerto, dni_id , fvalida , cal_whohung,
     isnull(cast(califSub_id as smallint),0) as califSub_id,
     case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
-    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId, acds.prefijo 
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId
     from ccCallsIn as  call
+    inner join ccInbound on ccInbound.Inbound_id=call.Inbound_id
     inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=0   
     left join 
         (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=1 group by cal_id,tipo 
             )trans  
-    on call.cal_id=trans.cal_id 
-    left join ccInbound acds on call.Inbound_id = acds.Inbound_id
+    on call.cal_id=trans.cal_id     
     union       
     Select top(@maxRecordsToTransfer) call.cal_id as CallId, user_id as UserId, call.cam_id as camAcdId, cast(call.calif_id as smallint) as califId, cast(cal_extension as integer) as extension,  
     cal_inicio, cal_telefono, 
@@ -125,14 +135,14 @@ if @action=1 begin
     cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
     isnull(cast(califSub_id as smallint),0) as califSub_id,
     case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
-    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId, camps.prefijo            
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId
     from ccoCallsOut  as call   
+    inner join ccCamps on ccCamps.cam_id=call.cam_id
     inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=1   
     left join 
         (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo 
             )trans  
-    on call.cal_id=trans.cal_id 
-    left join ccCamps as camps on call.cam_id = camps.cam_id 
+    on call.cal_id=trans.cal_id     
 end 
 else if @action=2 begin
     delete from ccAVRSTransfer where id = @id

@@ -1907,6 +1907,48 @@ END
 set nocount off'
     EXEC(@Sql)
 
+	 set @process = 'Creates sp  -- ccsp_GalateaCallbacks -- Returns the total of callbacks by hour'
+    set @Sql= 'IF EXISTS (SELECT name FROM sysobjects WHERE name = ''ccsp_GalateaCallbacks'' AND type = ''P'') 
+	DROP PROCEDURE ccsp_GalateaCallbacks
+GO
+CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacks]
+@dateCallBack datetime
+AS
+-- Returns the total of callbacks by hour on especific day
+SELECT hora ''Hour'', SUM(callbacks) ''CallBacks'' 
+FROM ccRIACallbacks 
+WHERE Año = DATEPART(YEAR, @dateCallBack)
+		AND Mes = DATEPART(MONTH, @dateCallBack)
+		AND Dia = DATEPART(DAY, @dateCallBack)
+GROUP BY año, mes, dia, hora
+ORDER BY hora
+go
+'
+EXEC(@Sql)
+
+	 set @process = 'Creates sp  -- ccsp_GalateaCallbacksDetail -- Returns detail of callbacks made by an agent'
+    set @Sql= 'IF EXISTS (SELECT name FROM sysobjects WHERE name = ''ccsp_GalateaCallbacksDetail'' AND type = ''P'') 
+	DROP PROCEDURE ccsp_GalateaCallbacksDetail
+GO
+CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacksDetail]
+@userID int,
+@dateCallBack datetime
+AS
+-- Returns data of callbacks made by an agent on specific day
+SELECT	
+		CAST(DATEPART(HOUR, cal_fusercallback)AS smallint) ''Hour'',
+		DATEPART(MINUTE, cal_fusercallback) ''Minute'',
+		cb.cal_telefono Telephone,
+		cam_descripcion Campaign
+FROM ccoCallBacks cb
+	 join ccCamps c on cb.cam_id = c.cam_id
+WHERE user_id = @userID 
+		and DATEPART(YEAR, cal_fusercallback) = DATEPART(YEAR, @dateCallBack)
+		and DATEPART(DAY, cal_fusercallback) = DATEPART(DAY, @dateCallBack)
+		and DATEPART(MONTH, cal_fusercallback) = DATEPART(MONTH, @dateCallBack)
+'
+    EXEC(@Sql)
+
     set @process = ''
     set @Sql= ''
     EXEC(@Sql)

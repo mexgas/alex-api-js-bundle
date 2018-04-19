@@ -33,7 +33,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 120--**********actualizar a 129 sin fix
-set @versionfix = 132
+set @versionfix = 133
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -1908,10 +1908,7 @@ set nocount off'
     EXEC(@Sql)
 
 	 set @process = 'Creates sp  -- ccsp_GalateaCallbacks -- Returns the total of callbacks by hour'
-    set @Sql= 'IF EXISTS (SELECT name FROM sysobjects WHERE name = ''ccsp_GalateaCallbacks'' AND type = ''P'') 
-	DROP PROCEDURE ccsp_GalateaCallbacks
-GO
-CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacks]
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacks]
 @dateCallBack datetime
 AS
 -- Returns the total of callbacks by hour on especific day
@@ -1922,15 +1919,11 @@ WHERE Año = DATEPART(YEAR, @dateCallBack)
 		AND Dia = DATEPART(DAY, @dateCallBack)
 GROUP BY año, mes, dia, hora
 ORDER BY hora
-go
 '
 EXEC(@Sql)
 
 	 set @process = 'Creates sp  -- ccsp_GalateaCallbacksDetail -- Returns detail of callbacks made by an agent'
-    set @Sql= 'IF EXISTS (SELECT name FROM sysobjects WHERE name = ''ccsp_GalateaCallbacksDetail'' AND type = ''P'') 
-	DROP PROCEDURE ccsp_GalateaCallbacksDetail
-GO
-CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacksDetail]
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacksDetail]
 @userID int,
 @dateCallBack datetime
 AS

@@ -76,7 +76,7 @@ left join
 (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer  from ccLogTransfers where tipo=1  group by cal_id,tipo ) as t  
  on c.cal_id=t.cal_id 
 where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
-order by c.cal_id
+order by c.cal_inicio desc
 
 
 insert into @lastCallAgt
@@ -95,12 +95,12 @@ left join
 on c.cal_id=t.cal_id 
 
 where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
-order by c.cal_id
+order by c.cal_inicio desc
 
 select * from @lastCallAgt
 order by hora desc
 
-set nocount off'
+set nocount off '
     	EXEC(@Sql)
 
         set @process = 'CW-1741 Version 119.124 -- Alter SP ccsp_AvrsSyncronization '

@@ -128,6 +128,289 @@ return(0)
 set nocount off'
     	EXEC(@Sql)
 
+    	set @process = 'CW-1727 version 119.124 -- Alter SP ccsp_INInsertaCallBack'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_INInsertaCallBack]
+@cal_key varchar(20) ='''',
+@cam_id smallint,
+@cal_telefono varchar(19),
+@fechadial varchar(17),
+@dato1 varchar(255),
+@dato2 varchar(255),
+@dato3 varchar(255),
+@dato4 varchar(255),
+@dato5 varchar(255),
+@TelReprograma smallint = -1,
+@user_id int=0,
+@isAuto bit=0
+AS
+set nocount on
+declare @TelOriginal as varchar(15)
+declare @FechaOriginal as datetime
+
+if len(@cal_telefono)<=3
+	return(0)
+
+if isnull(@cal_key,'''') = ''''
+ begin
+      -- Generamos cal_key aleatorio para casos de reprogramacion inbound --
+      Genera_cal_key:
+      select @cal_key = right(newID(), 10)
+      if exists (select cal_key from ccoCallsOutSource where cal_key=@cal_key)
+            goto Genera_cal_key
+ end
+
+declare @bIsDaylight as bit
+declare @idioma as int
+declare @country_id as varchar(3)
+
+select @country_id = valor from ccsettings where setting_id = 104
+
+select @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+
+declare @difference as int
+declare @Fecha smalldatetime, @callout_id int, @iZonaHoraria int,@iZonaHoraria_verano int, @cal_statusTemp tinyint
+declare @iZonaHoraria2 int,@iZonaHoraria_verano2 int
+declare @iZonaHoraria3 int,@iZonaHoraria_verano3 int
+declare @iZonaHoraria4 int,@iZonaHoraria_verano4 int
+declare @iZonaHoraria5 int,@iZonaHoraria_verano5 int
+if @isAuto=0
+	select @difference = isNull(dbo.fnGetTimeDifference(dbo.fnGetTimeZone(@cal_telefono,@bIsDaylight)),0)
+else
+	set @difference = 0
+select @Fecha= dateadd(hh,@difference,convert(datetime,@FechaDial,101))
+
+if exists(select cal_Key, cam_id from ccoCallsOutSource where cal_Key = @cal_key and cam_id =@cam_id)
+ begin
+	select @callout_id=callout_id,@cal_statusTemp =cal_status,
+	@iZonaHoraria=case when len(cal_telefono)>0 then iZonaHoraria else null end,@iZonaHoraria_verano=case when len(cal_telefono)>0 then iZonaHoraria_verano else null end, 
+	@iZonaHoraria2=case when len(cal_telefono2)>0 then iZonaHoraria2 else null end,@iZonaHoraria_verano2=case when len(cal_telefono2)>0 then iZonaHoraria_verano2 else null end, 
+	@iZonaHoraria3=case when len(cal_telefono3)>0 then iZonaHoraria3 else null end,@iZonaHoraria_verano3=case when len(cal_telefono3)>0 then iZonaHoraria_verano3 else null end, 
+	@iZonaHoraria4=case when len(cal_telefono4)>0 then iZonaHoraria4 else null end,@iZonaHoraria_verano4=case when len(cal_telefono4)>0 then iZonaHoraria_verano4 else null end, 
+	@iZonaHoraria5=case when len(cal_telefono5)>0 then iZonaHoraria5 else null end,@iZonaHoraria_verano5=case when len(cal_telefono5)>0 then iZonaHoraria_verano5 else null end, 
+	@TelOriginal = cal_telefono, @FechaOriginal = cal_fechadial from ccoCallsOutSource 
+	where cal_Key = @cal_key and cam_id = @cam_id
+
+	update ccoCallsOutSource set cal_status = ''2'',cal_telefono=@cal_telefono where cal_key = @cal_key and cam_id = @cam_id
+
+	if exists(select callout_id from ccoWorkingTable where callout_id=@callout_id)
+		UPDATE ccoWorkingTable SET cal_telefono=@cal_telefono,cam_id=@cam_id,cal_fechaDial=@Fecha,cal_status=1,nTryingContact=3,prioridad_cb=1,[user_id]=@user_id,cal_keyw=@cal_key WHERE callout_id=@callout_id
+	else
+		INSERT ccoWorkingTable(callout_id,cal_telefono,cam_id,cal_fechaDial,cal_status,nTryingContact,prioridad_cb,[user_id],cal_keyw
+		,iZonaHoraria,iZonaHoraria_verano
+		,iZonaHoraria2,iZonaHoraria_verano2
+		,iZonaHoraria3,iZonaHoraria_verano3
+		,iZonaHoraria4,iZonaHoraria_verano4
+		,iZonaHoraria5,iZonaHoraria_verano5)
+		select @callout_id,@cal_telefono,@cam_id,@Fecha,1,3,1,@user_id,@cal_key
+		,@iZonaHoraria,@iZonaHoraria_verano
+		,@iZonaHoraria2,@iZonaHoraria_verano2
+		,@iZonaHoraria3,@iZonaHoraria_verano3
+		,@iZonaHoraria4,@iZonaHoraria_verano4
+		,@iZonaHoraria5,@iZonaHoraria_verano5
+
+		if not exists (select callout_id from ccoCallBacks with(nolock) where callout_id = @callout_id)
+			begin
+				insert into ccoCallBacks (callout_id, user_id, cam_id, cal_key, cal_telefono, cal_telCB, cal_fecha, cal_fusercallback, cal_fcallback, status, schedulerStatus)
+				values (@callout_id,@user_id,@cam_id,@cal_key,@TelOriginal,@cal_telefono,@FechaOriginal,@Fecha,NULL,0,1)
+			end
+		else
+			begin
+				update ccoCallBacks
+				set user_id = @user_id, cam_id = @cam_id, cal_key = @cal_key, cal_telefono = @TelOriginal, cal_telCB = @cal_telefono, cal_fecha = @FechaOriginal, cal_fusercallback = @Fecha, cal_fcallback = NULL, status = 0, schedulerStatus = 1
+				where callout_id = @callout_id
+			end
+  end
+
+else
+ begin
+	select @FechaOriginal = getdate()
+
+	insert into ccoCallsOutSource (cal_key,cam_id,cal_telefono,cal_fechadial,Dato1,Dato2,Dato3,Dato4,Dato5,dial_tels,cal_status)
+	values (@cal_key,@cam_id,@cal_telefono,@FechaOriginal,@dato1,@dato2,@dato3,@dato4,@dato5,cast(@TelReprograma as char(1))+ replace(''2345NNN'',cast(@TelReprograma as char(1)),''1''),''2'')
+
+	select @TelOriginal = @cal_telefono
+
+	select @callout_id = scope_identity()
+	select @iZonaHoraria=iZonaHoraria,@iZonaHoraria_verano=iZonaHoraria_verano from ccocallsoutsource where callout_id=@callout_id
+
+	select @callout_id=callout_id,
+	@iZonaHoraria=case when len(cal_telefono)>0 then iZonaHoraria else null end,@iZonaHoraria_verano=case when len(cal_telefono)>0 then iZonaHoraria_verano else null end, 
+	@iZonaHoraria2=case when len(cal_telefono2)>0 then iZonaHoraria2 else null end,@iZonaHoraria_verano2=case when len(cal_telefono2)>0 then iZonaHoraria_verano2 else null end, 
+	@iZonaHoraria3=case when len(cal_telefono3)>0 then iZonaHoraria3 else null end,@iZonaHoraria_verano3=case when len(cal_telefono3)>0 then iZonaHoraria_verano3 else null end, 
+	@iZonaHoraria4=case when len(cal_telefono4)>0 then iZonaHoraria4 else null end,@iZonaHoraria_verano4=case when len(cal_telefono4)>0 then iZonaHoraria_verano4 else null end, 
+	@iZonaHoraria5=case when len(cal_telefono5)>0 then iZonaHoraria5 else null end,@iZonaHoraria_verano5=case when len(cal_telefono5)>0 then iZonaHoraria_verano5 else null end
+	from ccoCallsOutSource 
+	where callout_id=@callout_id
+
+
+	 if exists(select callout_id from ccoWorkingTable where callout_id=@callout_id)
+		UPDATE ccoWorkingTable SET cal_telefono=@cal_telefono,cam_id=@cam_id,cal_fechaDial=@Fecha,cal_status=1,nTryingContact=3,prioridad_cb=1,[user_id]=@user_id,cal_keyw=@cal_key WHERE callout_id=@callout_id
+	 else
+		INSERT ccoWorkingTable(callout_id,cal_telefono,cam_id,cal_fechaDial,cal_status,nTryingContact,prioridad_cb,[user_id],cal_keyw
+		,iZonaHoraria,iZonaHoraria_verano
+		,iZonaHoraria2,iZonaHoraria_verano2
+		,iZonaHoraria3,iZonaHoraria_verano3
+		,iZonaHoraria4,iZonaHoraria_verano4
+		,iZonaHoraria5,iZonaHoraria_verano5)
+		select @callout_id,@cal_telefono,@cam_id,@Fecha,1,3,1,@user_id,@cal_key
+		,@iZonaHoraria,@iZonaHoraria_verano
+		,@iZonaHoraria2,@iZonaHoraria_verano2
+		,@iZonaHoraria3,@iZonaHoraria_verano3
+		,@iZonaHoraria4,@iZonaHoraria_verano4
+		,@iZonaHoraria5,@iZonaHoraria_verano5
+
+		if not exists (select callout_id from ccoCallBacks with(nolock) where callout_id = @callout_id)
+			begin
+				insert into ccoCallBacks (callout_id, user_id, cam_id, cal_key, cal_telefono, cal_telCB, cal_fecha, cal_fusercallback, cal_fcallback, status, schedulerStatus)
+				values (@callout_id,@user_id,@cam_id,@cal_key,@TelOriginal,@cal_telefono,@FechaOriginal,@Fecha,NULL,0,1)
+			end
+		else
+			begin
+				update ccoCallBacks
+				set user_id = @user_id, cam_id = @cam_id, cal_key = @cal_key, cal_telefono = @TelOriginal, cal_telCB = @cal_telefono, cal_fecha = @FechaOriginal, cal_fusercallback = @Fecha, cal_fcallback = NULL, status = 0, schedulerStatus = 1
+				where callout_id = @callout_id
+			end
+end
+
+if exists(select callbacks from ccRIAcallbacks where año=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id)
+	update ccRIAcallbacks set callbacks=callbacks+1 where año=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id
+else
+	insert ccRIAcallbacks select year(@Fecha),month(@Fecha),day(@Fecha),datepart(hh,@Fecha),''1'',@cam_id
+
+return(0)
+set nocount off'
+    	EXEC(@Sql)
+
+    	set @process = 'CW-1727 version 119.124 -- -- Alter SP ccsp_OUTInsertNewJOBS_WT'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_OUTInsertNewJOBS_WT] 
+AS
+-- Para Traer los Datos de ccoCallsOutSource a  WorkingTable
+-- ccoCallsOutSource ========> ccoWorkingTABLE
+declare @callout_id int
+declare @cam_id int
+declare @cal_telefono varchar(20)
+declare @cal_telefono2 varchar(20)
+declare @cal_telefono3 varchar(20)
+declare @cal_status int
+declare @cal_fechaDial smalldatetime
+declare @dato3 varchar(20)
+declare @dato4 varchar(20)
+
+Update ccoCallsOutSource set cal_status = 3 where callout_id in (select callout_id from ccoWorkingTable) --HLAS 2004/07/09 Mas rapido aqui que adentro
+Update ccoCallsOutSource set cal_status = 4 where cal_key in 
+	(select cal_key from ccoWorkingTable wt inner join ccoCallsOutSource cs on cs.callout_id = wt.callout_id and wt.cal_status in (0, 1, 2) )
+
+Insert ccoWorkingTable (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw
+	,iZonaHoraria,iZonaHoraria_verano
+	,iZonaHoraria2,iZonaHoraria_verano2
+	,iZonaHoraria3,iZonaHoraria_verano3
+	,iZonaHoraria4,iZonaHoraria_verano4
+	,iZonaHoraria5,iZonaHoraria_verano5)
+SELECT callout_id, cam_id,
+	rtrim(left(ltrim( cal_telefono    + ''        ''
+	+ cal_telefono2 + ''         ''
+	+ cal_telefono3 + ''         ''
+	+ cal_telefono4 + ''         ''
+	+ cal_telefono5 + ''         ''),13)) as cal_telefono,
+	case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key
+	,case when len(cal_telefono)>0 then iZonaHoraria else null end, case when len(cal_telefono)>0 then iZonaHoraria_verano else null end
+	,case when len(cal_telefono2)>0 then iZonaHoraria2 else null end, case when len(cal_telefono2)>0 then iZonaHoraria_verano2 else null end
+	,case when len(cal_telefono3)>0 then iZonaHoraria3 else null end, case when len(cal_telefono3)>0 then iZonaHoraria_verano3 else null end
+	,case when len(cal_telefono4)>0 then iZonaHoraria4 else null end, case when len(cal_telefono4)>0 then iZonaHoraria_verano4 else null end
+	,case when len(cal_telefono5)>0 then iZonaHoraria5 else null end, case when len(cal_telefono5)>0 then iZonaHoraria_verano5 else null end
+FROM ccoCallsOutSource
+WHERE cal_status <2 or cal_status=7-- Nuevos Jobs
+
+UPDATE ccoCallsOutSource SET cal_status = 2, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+where cal_status in (0, 1, 7)  --IN PROGRESS'
+    	EXEC(@Sql)
+
+    	set @process = 'CW-1727 version 119.124 -- Alter SP ccsp_OUTInsertNewJOBS_WT_Camp'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_OUTInsertNewJOBS_WT_Camp]
+@camp_id as int,
+@reciclar as int = 1
+AS
+set nocount on
+declare @callout_id int
+declare @cam_id int
+declare @cal_telefono varchar(20)
+declare @cal_telefono2 varchar(20)
+declare @cal_telefono3 varchar(20)
+declare @cal_status int
+declare @cal_fechaGNP smalldatetime
+declare @cal_fechaDial smalldatetime
+declare @dato3 varchar(20)
+declare @dato4 varchar(20)
+declare @prioridad varchar(8)
+
+declare @dbname varchar(50)
+select @dbname = c.name from sys.sysaltfiles a join sys.database_files c
+ on a.filename = c.physical_name collate SQL_Latin1_General_CP1_CI_AS
+ join master..sysprocesses d on a.dbid = d.dbid where d.spid=@@SPID and c.type=0
+
+-- BORRAR LAS CUENTA QUE YA NO VIENEN 
+--dejar en wt las que ya existen antes de subir y borrar las demas
+if @reciclar = 1 and 1 = 0
+ begin
+	--Version HLAS 20041016
+	update ccoWorkingTable set cal_Status = cal_Status + 22 
+	from ccoWorkingTable wt left join ccUploadTemporal ut
+	on wt.cal_keyw = ut.cal_key 
+	where wt.cam_id = ut.cam_id and
+	wt.cam_id = @camp_id
+	and ut.cal_key is null
+	and cal_status < 2
+
+	insert into ccBorrardasReciclaje ( callout_id, cal_key, cal_status, cam_id)
+	select callout_id, cal_keyw, cal_status - 22, cam_id from
+	ccoWorkingTable where cam_id=@camp_id
+	and cal_status in (22,23)
+
+	delete ccoWorkingTable where cam_id=@camp_id
+	and cal_status in (22,23)
+ end
+
+Delete ccUploadTemporal where cam_id = @camp_id
+
+-- DEJAR LAS CUENTAS CON CALLBACK COMO ESTAN 
+update ccoCallsOutSource set cal_Status = 4
+from ccoCallsOutSource cs inner join ccoWorkingTable wt 
+on cs.cal_key = wt.cal_keyw and cs.cam_id = wt.cam_id
+where cs.cam_id = @camp_id
+and wt.cal_status <= 2
+and cs.cal_status in(0,7)
+
+Insert ccoWorkingTable ( callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw
+	,iZonaHoraria,iZonaHoraria_verano
+	,iZonaHoraria2,iZonaHoraria_verano2
+	,iZonaHoraria3,iZonaHoraria_verano3
+	,iZonaHoraria4,iZonaHoraria_verano4
+	,iZonaHoraria5,iZonaHoraria_verano5)
+SELECT callout_id, cam_id, 
+	rtrim(left(ltrim(cal_telefono    + ''        ''
+	+ cal_telefono2 + ''         ''
+	+ cal_telefono3 + ''         ''
+	+ cal_telefono4 + ''         ''
+	+ cal_telefono5 + ''         ''),13)) as cal_telefono,
+	case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key
+	,case when len(cal_telefono)>0 then iZonaHoraria else null end, case when len(cal_telefono)>0 then iZonaHoraria_verano else null end
+	,case when len(cal_telefono2)>0 then iZonaHoraria2 else null end, case when len(cal_telefono2)>0 then iZonaHoraria_verano2 else null end
+	,case when len(cal_telefono3)>0 then iZonaHoraria3 else null end, case when len(cal_telefono3)>0 then iZonaHoraria_verano3 else null end
+	,case when len(cal_telefono4)>0 then iZonaHoraria4 else null end, case when len(cal_telefono4)>0 then iZonaHoraria_verano4 else null end
+	,case when len(cal_telefono5)>0 then iZonaHoraria5 else null end, case when len(cal_telefono5)>0 then iZonaHoraria_verano5 else null end
+FROM ccoCallsOutSource
+WHERE cam_id = @camp_id and (cal_status <2 or cal_status=7) -- Nuevos Jobs
+
+--la prioridad establecidad (si existe) 
+select @prioridad = NULL
+select @prioridad = Prioridad from ccCampsPrioridadTel where cam_id = @camp_id
+
+if @prioridad is null set @prioridad=''12345NNN''
+
+UPDATE ccoCallsOutSource SET cal_status = 2, dial_tels =  @prioridad, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+where cal_status in (0, 1, 7) and cam_id = @camp_id
+set nocount off'
+    	EXEC(@Sql)
 
 		
 	

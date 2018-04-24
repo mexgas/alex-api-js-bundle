@@ -259,6 +259,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas ACD.
+        /// </summary>
+        public static string acdCalls {
+            get {
+                return ResourceManager.GetString("acdCalls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Chats por ACD.
         /// </summary>
         public static string ACDChats {
@@ -862,11 +871,38 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Velocidad Promedio de Respuesta.
+        /// </summary>
+        public static string avrAnswer {
+            get {
+                return ResourceManager.GetString("avrAnswer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a % Llamadas Resp.
+        /// </summary>
+        public static string avrCallsAnswer {
+            get {
+                return ResourceManager.GetString("avrCallsAnswer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a AVRS.
         /// </summary>
         public static string AVRS {
             get {
                 return ResourceManager.GetString("AVRS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a % Tiempo ACD.
+        /// </summary>
+        public static string avrTimeACD {
+            get {
+                return ResourceManager.GetString("avrTimeACD", resourceCulture);
             }
         }
         
@@ -1258,6 +1294,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a LLamadas Elim Cola.
+        /// </summary>
+        public static string callsDeleteQue {
+            get {
+                return ResourceManager.GetString("callsDeleteQue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Detalle de llamadas por Especialidad.
         /// </summary>
         public static string CallsdetailperACDGroup {
@@ -1290,6 +1335,15 @@ namespace MiddleWareReports {
         public static string callsOut {
             get {
                 return ResourceManager.GetString("callsOut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a LLamadas Salida Ext.
+        /// </summary>
+        public static string callsOutExt {
+            get {
+                return ResourceManager.GetString("callsOutExt", resourceCulture);
             }
         }
         
@@ -2437,6 +2491,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Flujo de Entrada.
+        /// </summary>
+        public static string entryFlow {
+            get {
+                return ResourceManager.GetString("entryFlow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a emails enviados.
         /// </summary>
         public static string enviados {
@@ -2955,6 +3018,15 @@ namespace MiddleWareReports {
         public static string ManagementBase {
             get {
                 return ResourceManager.GetString("ManagementBase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Demora Máxima.
+        /// </summary>
+        public static string maxDelay {
+            get {
+                return ResourceManager.GetString("maxDelay", resourceCulture);
             }
         }
         
@@ -3909,6 +3981,15 @@ namespace MiddleWareReports {
         public static string OutboundTrunksbusy {
             get {
                 return ResourceManager.GetString("OutboundTrunksbusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Flujo de Salida.
+        /// </summary>
+        public static string outFlow {
+            get {
+                return ResourceManager.GetString("outFlow", resourceCulture);
             }
         }
         

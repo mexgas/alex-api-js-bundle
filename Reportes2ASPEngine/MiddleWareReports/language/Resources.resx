@@ -2580,7 +2580,7 @@
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Correo no deseado</value>
   </data>
-<data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat </value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2589,7 +2589,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Encuesta</value>
   </data>
- <data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Dato1</value>
   </data>
   <data name="Dato2" xml:space="preserve">
@@ -2603,5 +2603,32 @@
   </data>
   <data name="Dato5" xml:space="preserve">
     <value>Dato5</value>
+  </data>
+  <data name="acdCalls" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="avrAnswer" xml:space="preserve">
+    <value>Velocidad Promedio de Respuesta</value>
+  </data>
+  <data name="avrCallsAnswer" xml:space="preserve">
+    <value>% Llamadas Resp</value>
+  </data>
+  <data name="avrTimeACD" xml:space="preserve">
+    <value>% Tiempo ACD</value>
+  </data>
+  <data name="callsDeleteQue" xml:space="preserve">
+    <value>LLamadas Elim Cola</value>
+  </data>
+  <data name="callsOutExt" xml:space="preserve">
+    <value>LLamadas Salida Ext</value>
+  </data>
+  <data name="entryFlow" xml:space="preserve">
+    <value>Flujo de Entrada</value>
+  </data>
+  <data name="maxDelay" xml:space="preserve">
+    <value>Demora Máxima</value>
+  </data>
+  <data name="outFlow" xml:space="preserve">
+    <value>Flujo de Salida</value>
   </data>
 </root>

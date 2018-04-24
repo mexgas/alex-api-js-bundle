@@ -42,6 +42,13 @@ drop function [FNTruncateToDecimal]
 end'
 		EXEC(@Sql)
 
+		set @process = 'Elimina funcion [FNnoRoundGroupByReports]-- CW-1697'
+    	set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''[FNnoRoundGroupByReports]'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+begin
+drop function [FNnoRoundGroupByReports]
+end'
+		EXEC(@Sql)
+
 	set @process = 'Elimina Vista RepViewAgentGISpecial-- CW-1697'
     	set @Sql= 'if exists (select * FROM sys.views where name = N''RepViewAgentGISpecial'')
 begin
@@ -55,6 +62,19 @@ RETURNS  float
 AS
 begin
 Declare @NumConverted as float;
+set @NumConverted=(cast((cast(@Valor*100 as int)/100.00)/3600.00 as decimal(18,2)))
+	return @NumConverted
+END'
+		EXEC(@Sql)
+
+
+		set @process = 'Crear funcion [FNnoRoundGroupByReports]-- CW-1697'
+    	set @Sql= 'create FUNCTION [dbo].[FNnoRoundGroupByReports] (@Valor float)
+RETURNS  float
+AS
+begin
+Declare @NumConverted as float;
+
 set @NumConverted=(cast((cast(@Valor*100 as int)/100.00)/3600.00 as decimal(18,2)))
 	return @NumConverted
 END'

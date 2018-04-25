@@ -2150,5 +2150,19 @@
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
     <value>Chamada de saída</value>
+  <data name="tavNum" xml:space="preserve">
+    <value>Tempo de atenção</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Tempo de atenção</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Tempo de notas (saída)</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Sessões</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>Em diálogo (saída)</value>
   </data>
 </root>

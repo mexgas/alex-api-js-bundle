@@ -2635,7 +2635,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Id grabación.
+        ///   Busca una cadena traducida similar a Información General Especial.
+        /// </summary>
+        public static string GeneralInformationSpecial {
+            get {
+                return ResourceManager.GetString("GeneralInformationSpecial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Id grabación.
         /// </summary>
         public static string grabId {
             get {
@@ -2842,7 +2851,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Agent.
+        ///   Busca una cadena traducida similar a Agent.
         /// </summary>
         public static string login {
             get {
@@ -6496,7 +6505,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to tiempo ocupado.
+        ///   Busca una cadena traducida similar a Disponible.
+        /// </summary>
+        public static string tavNum {
+            get {
+                return ResourceManager.GetString("tavNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a tiempo ocupado.
         /// </summary>
         public static string tBusy {
             get {
@@ -6838,7 +6856,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo de notas (Entrada).
+        ///   Busca una cadena traducida similar a Tiempo no disponible.
+        /// </summary>
+        public static string tnotavNum {
+            get {
+                return ResourceManager.GetString("tnotavNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de notas (Entrada).
         /// </summary>
         public static string tnotesin {
             get {
@@ -6856,7 +6883,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Total.
+        ///   Busca una cadena traducida similar a Tiempo de notas (Salida).
+        /// </summary>
+        public static string tnotesoutNum {
+            get {
+                return ResourceManager.GetString("tnotesoutNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total.
         /// </summary>
         public static string total {
             get {
@@ -6973,7 +7009,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Total de tuits por grupo ACD.
+        ///   Busca una cadena traducida similar a Sesión.
+        /// </summary>
+        public static string TotalNum {
+            get {
+                return ResourceManager.GetString("TotalNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de tuits por grupo ACD.
         /// </summary>
         public static string TotalTweetMessagesbyACDGroup {
             get {
@@ -7234,7 +7279,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo indefinido.
+        ///   Busca una cadena traducida similar a En diálogo (Salida).
+        /// </summary>
+        public static string tTalkNum {
+            get {
+                return ResourceManager.GetString("tTalkNum", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo indefinido.
         /// </summary>
         public static string tundefined {
             get {

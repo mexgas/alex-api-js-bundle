@@ -2558,5 +2558,22 @@
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
     <value>Calls Out</value>
+  <data name="tavNum" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Service Time</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Wrapup Outbound</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Session</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>Talking time outbound</value>
+  </data>
+  <data name="GeneralInformationSpecial" xml:space="preserve">
+    <value>General Information Special</value>
   </data>
 </root>

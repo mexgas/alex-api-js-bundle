@@ -466,7 +466,7 @@
     <value>Extensión</value>
   </data>
   <data name="login" xml:space="preserve">
-    <value>Agent</value>
+    <value>Agente</value>
   </data>
   <data name="loginTime" xml:space="preserve">
     <value>Inicio de sesión</value>
@@ -2618,5 +2618,22 @@
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
     <value>Llamada Salida</value>
+  <data name="GeneralInformationSpecial" xml:space="preserve">
+    <value>Información General Especial</value>
+  </data>
+  <data name="tavNum" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Tiempo no disponible</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Tiempo de notas (Salida)</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Sesión</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>En diálogo (Salida)</value>
   </data>
 </root>

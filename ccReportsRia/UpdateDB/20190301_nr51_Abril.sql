@@ -152,7 +152,7 @@ select * from RepAgentGI'
 	EXEC(@Sql)
 
 	set @process = 'Crear tabla dialType -- CW-1331'
-    set @Sql= 'if not exists (select * from sys.tables where name = N''RepOutAnswAndXferCalls'')
+    set @Sql= 'if not exists (select * from sys.tables where name = N''dialType'')
     begin
         CREATE TABLE dialType (
 			[dialId] [int] NOT NULL PRIMARY KEY,

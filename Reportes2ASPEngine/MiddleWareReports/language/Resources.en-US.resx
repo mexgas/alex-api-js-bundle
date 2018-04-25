@@ -2544,6 +2544,21 @@
   <data name="Dato5" xml:space="preserve">
     <value>Data5</value>
   </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Answered and Transfer Calls</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transfer</value>
+  </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Dials Type</value>
+  </data>
+  <data name="Dials" xml:space="preserve">
+    <value>Call Type</value>
+  </data>
+  <data name="systemTranslated_Out" xml:space="preserve">
+    <value>Calls Out</value>
+  </data>
   <data name="tavNum" xml:space="preserve">
     <value>Ready</value>
   </data>

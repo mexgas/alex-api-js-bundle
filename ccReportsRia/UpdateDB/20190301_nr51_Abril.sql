@@ -162,14 +162,7 @@ select * from RepAgentGI'
 	EXEC(@Sql)
 
 	set @process = 'Crear SP ccspRepOutAnswAndXferCalls -- CW-1331'
-    set @Sql= 'USE [ccReportsRia]
-GO
-/****** Object:  StoredProcedure [dbo].[ccspRepOutAnswAndXferCalls]    Script Date: 15/03/2018 12:25:22 p. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null

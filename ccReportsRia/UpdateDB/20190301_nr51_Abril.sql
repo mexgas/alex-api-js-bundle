@@ -277,6 +277,37 @@ BEGIN
 END'
 	EXEC(@Sql)
 
+	
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+ 
+	
+		set @process = 'CW-1331  Version 119.122 ADD Column ccLogTransfers.pbxId'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''pbxId'' and Object_ID = Object_ID(N''ccLogTransfers''))
+begin
+    ALTER TABLE ccLogTransfers ADD pbxId tinyint;
+end'
+		EXEC(@sql)
+
+		set @process = 'CW-1331  Version 119.122 ADD Column ccLogTransfers.ccLogTransfers'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''channel'' and Object_ID = Object_ID(N''ccLogTransfers''))
+begin
+    ALTER TABLE ccLogTransfers ADD channel int;
+end'
+		EXEC(@sql)
+ 
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
+
 	set @process = 'CW-1335 -- VERSION 49  MODIFY SP ccspRepOutCallBilling'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepOutCallBilling]
 @action AS TINYINT,

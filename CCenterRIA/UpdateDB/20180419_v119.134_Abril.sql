@@ -156,7 +156,7 @@ values(2090,''Información General Especial|General Information Special'',2000,'
 end'
 		EXEC(@Sql)
 
-			set @process = 'Insertar datos en tabla ccMenus -- CW-1331'
+		set @process = 'Insertar datos en tabla ccMenus -- CW-1331'
 		set @Sql= 'if not exists (select * from ccmenus where menu_id=4250)
 		begin
 			insert into ccMenus(menu_id,menu_descrip,parent,Nivel,ordengral,type,release) values(4250,''Llamadas Contestadas y Transferidas|Answered and Transfer Calls'', 4000, ''B'', 4, 3,''d858e34ff9e6e3eac25177b292cc1ecd4db3504470848abb0c98ce0e953332e3194a869b013e81f376c6f4ee2d3eed7e7230ec9d5d275d790015a477571b5987780bf1f6f57527fb1a643962bb991c05'')

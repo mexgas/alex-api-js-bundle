@@ -1943,7 +1943,7 @@ WHERE user_id = @userID
     EXEC(@Sql)
 
 	 set @process = 'Creates sp  -- ccsp_GalateaGetHangUpData -- Returns the information of type of hangup'
-    set @Sql= 'CREATE PROCEDURE ccsp_GalateaGetHangUpData
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
 	@cam_id int,
 	@type int
 AS BEGIN
@@ -1961,11 +1961,11 @@ AS BEGIN
 	ELSE
 	BEGIN 
 		SELECT
-			   CASE WHEN msgFile <> '' and leaveRecMessage = 1 THEN 1 ELSE 0 END leaveRecMessage,
+			   CASE WHEN msgFile <> '''' and leaveRecMessage = 1 THEN 1 ELSE 0 END leaveRecMessage,
 			   CASE WHEN isnull(c.surveyCamId,0) >0 THEN 1 ELSE 0 END isRelationSurvey,
 			   c.callBackSurveyAgent,c.callBackSurveyClient
 		FROM ccCamps c
-		LEFT OUTER JOIN (SELECT TOP 1 M.cam_id, coalesce(T.msgFile+',','')  msgFile
+		LEFT OUTER JOIN (SELECT TOP 1 M.cam_id, coalesce(T.msgFile+'','','''')  msgFile
 						 FROM ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id
 						 WHERE M.cam_id =@cam_id and type = 8) b
 		on (c.cam_id = b.cam_id)

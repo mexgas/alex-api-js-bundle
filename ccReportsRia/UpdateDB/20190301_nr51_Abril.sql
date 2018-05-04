@@ -200,7 +200,23 @@ as
 
 	set @process = 'Crear vista de la tabla RepAgentGIl-- CW-1697'
     	set @Sql= 'CREATE VIEW RepViewAgentGISpecial AS
-select * from RepAgentGI'
+select date,
+userId,
+[user],
+login,
+tnotesout as tnotesoutNum,
+tdialogout as tdialogoutxxx,
+tringout as tringoutxxx,
+txferout as txferoutxxx,
+tunknown as tunknownxxx,
+tother as totherxxx,
+tprob as tprobxxx,
+tundefined as tundefinedxxx,
+tav as tavNum,
+0.0 as tTalkNum,
+tnotav as tnotavNum,
+0.0 as TotalNum,
+year,month,day,hour from RepAgentGI'
 		EXEC(@Sql)
 
 	set @process = 'Crear tabla RepOutAnswAndXferCalls -- CW-1331'
@@ -980,7 +996,7 @@ END'
 		set @process = 'Inserta valores a GroupByReports-- CW-1697'
     	set @Sql= 'if not exists (select * from GroupByReports where id=2090)
 begin
-insert into GroupByReports values(2090,''userId|max([user]):user|max([login]):login|[dbo].[FNnoRoundGroupByReports]((sum([tdialogout])+sum([tringout])+sum([txferout])+sum([tunknown])+sum([tother])+sum([tprob])+sum([tundefined]))):tTalkNum|[dbo].[FNnoRoundGroupByReports](sum([tnotesout])):tnotesoutNum|[dbo].[FNnoRoundGroupByReports](sum([tav])):tavNum|[dbo].[FNnoRoundGroupByReports](sum([tnotav])):tnotavNum|[dbo].[FNnoRoundGroupByReports]((sum([tdialogout])+sum([tringout])+sum([txferout])+sum([tunknown])+sum([tother])+sum([tprob])+sum([tundefined]))+(sum([tnotesout]))+(sum([tav]))+(sum([tnotav]))):TotalNum'',''userId'')
+insert into GroupByReports values(2090,''userId|max([user]):user|max([login]):login|[dbo].[FNTruncateToDecimal]((sum([tdialogoutxxx])+sum([tringoutxxx])+sum([txferoutxxx])+sum([tunknownxxx])+sum([totherxxx])+sum([tprobxxx])+sum([tundefinedxxx]))):tTalkNum|[dbo].[FNTruncateToDecimal](sum([tnotesoutNum])):tnotesoutNum|[dbo].[FNTruncateToDecimal](sum([tavNum])):tavNum|[dbo].[FNTruncateToDecimal](sum([tnotavNum])):tnotavNum|[dbo].[FNTruncateToDecimal]((sum([tdialogoutxxx])+sum([tringoutxxx])+sum([txferoutxxx])+sum([tunknownxxx])+sum([totherxxx])+sum([tprobxxx])+sum([tundefinedxxx]))+(sum([tnotesoutNum]))+(sum([tavNum]))+(sum([tnotavNum]))):TotalNum'',''userId'')
 END'
 		EXEC(@Sql)
 

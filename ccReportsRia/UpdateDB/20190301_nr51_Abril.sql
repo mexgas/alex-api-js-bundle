@@ -216,7 +216,7 @@ tav as tavNum,
 0.0 as tTalkNum,
 tnotav as tnotavNum,
 0.0 as TotalNum,
-year,month,day,hour from RepAgentGI'
+year,month,day,hour,minutes from RepAgentGI'
 		EXEC(@Sql)
 
 	set @process = 'Crear tabla RepOutAnswAndXferCalls -- CW-1331'

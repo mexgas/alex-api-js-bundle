@@ -3121,6 +3121,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a MKT Tiempos.
+        /// </summary>
+        public static string MKTTiempos {
+            get {
+                return ResourceManager.GetString("MKTTiempos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo en espera.
         /// </summary>
         public static string mohTime {
@@ -7077,6 +7086,24 @@ namespace MiddleWareReports {
         public static string tPromACW {
             get {
                 return ResourceManager.GetString("tPromACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a TProm Elim Cola.
+        /// </summary>
+        public static string tPromElimCola {
+            get {
+                return ResourceManager.GetString("tPromElimCola", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a TProm Salida Ext.
+        /// </summary>
+        public static string tPromSalidaExt {
+            get {
+                return ResourceManager.GetString("tPromSalidaExt", resourceCulture);
             }
         }
         

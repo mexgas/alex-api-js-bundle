@@ -2631,4 +2631,13 @@
   <data name="outFlow" xml:space="preserve">
     <value>Flujo de Salida</value>
   </data>
+  <data name="tPromElimCola" xml:space="preserve">
+    <value>TProm Elim Cola</value>
+  </data>
+  <data name="tPromSalidaExt" xml:space="preserve">
+    <value>TProm Salida Ext</value>
+  </data>
+  <data name="MKTTiempos" xml:space="preserve">
+    <value>MKT Tiempos</value>
+  </data>
 </root>

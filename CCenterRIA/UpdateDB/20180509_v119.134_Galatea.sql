@@ -134,6 +134,7 @@ BEGIN
 		select a1.cam_id Id, a2.cam_descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey,
 		case when msgFile <> '''' and leaveRecMessage = 1 then 1 else 0 end as leaveRecMessage, 
 		case when isnull(a2.surveyCamId,0) >0 then 1 else 0 end isRelationSurvey ,
+		a2.cam_ShowCalifWnd as ShowDisposition,
 		a2.callBackSurveyAgent,a2.callBackSurveyClient
 		from ccRIACampsGraph a1 
 		inner join ccCamps a2 on (a1.cam_id=a2.cam_id)

@@ -2516,11 +2516,11 @@
   </data>
   <data name="AverageHandleTime" xml:space="preserve">
     <value>Average Handle Time</value>
- </data>
+  </data>
   <data name="systemTranslated_Message_email_Spam" xml:space="preserve">
     <value>Spam</value>
   </data>
-<data name="systemTranslated_Chat" xml:space="preserve">
+  <data name="systemTranslated_Chat" xml:space="preserve">
     <value>Chat</value>
   </data>
   <data name="systemTranslated_Recording" xml:space="preserve">
@@ -2529,7 +2529,7 @@
   <data name="systemTranslated_Survey" xml:space="preserve">
     <value>Survey</value>
   </data>
- <data name="Dato1" xml:space="preserve">
+  <data name="Dato1" xml:space="preserve">
     <value>Data1</value>
   </data>
   <data name="Dato2" xml:space="preserve">
@@ -2543,5 +2543,38 @@
   </data>
   <data name="Dato5" xml:space="preserve">
     <value>Data5</value>
+  </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Answered and Transfer Calls</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transfer</value>
+  </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Dials Type</value>
+  </data>
+  <data name="Dials" xml:space="preserve">
+    <value>Call Type</value>
+  </data>
+  <data name="systemTranslated_Out" xml:space="preserve">
+    <value>Calls Out</value>
+  </data>
+  <data name="tavNum" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Service Time</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Wrapup Outbound</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Session</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>Talking time outbound</value>
+  </data>
+  <data name="GeneralInformationSpecial" xml:space="preserve">
+    <value>General Information Special</value>
   </data>
 </root>

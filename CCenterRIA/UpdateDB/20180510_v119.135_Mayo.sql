@@ -130,7 +130,7 @@ else if @action = 4 begin
 end'
 		EXEC(@sql)
 
-        set @process = 'CW-1741 Version 119.124 -- Alter SP ccspAgent_GetLastCalls'
+        set @process = 'CW-1741 CW-1856 Version 119.124 -- Alter SP ccspAgent_GetLastCalls'
         set @Sql= 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
 set nocount on
 
@@ -150,7 +150,7 @@ insert into @lastCallAgt
 select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
 convert(varchar(14), dateadd(second, 
-cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
+cal_tDialog - cal_tMoh 
     +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
 ,0), 108) Duracion,
 '''' as CallBack, cal_key, c.inbound_id as IDCampEsp
@@ -168,7 +168,7 @@ insert into @lastCallAgt
 select top 10 c.cal_id as id, ''OUT'' as Tipo,convert(varchar(10), cal_inicio, 108) as Hora,cal_telefono as Telefono,cam_descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
  CONVERT(varchar(8), DATEADD(ss, 
-    cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
+    cal_tDialog - cal_tMoh 
     +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
     , 0), 114)  as Duracion,
     isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp  
@@ -188,7 +188,7 @@ order by hora desc
 set nocount off '
         EXEC(@Sql)
 
-set @process = 'CW-1741 Version 119.124 -- Alter SP ccsp_AvrsSyncronization '
+        set @process = 'CW-1741  CW-1856 Version 119.124 -- Alter SP ccsp_AvrsSyncronization '
         set @Sql= 'ALTER procedure [dbo].[ccsp_AvrsSyncronization]
 @action smallint,
 @maxRecordsToTransfer int=10,
@@ -199,7 +199,7 @@ if @action=1 begin
 
     Select top(@maxRecordsToTransfer) call.cal_id, user_id, call.Inbound_id, call.calif_id, cast(cal_extension as integer) as cal_extension,  
     cal_inicio, cal_ANI as phone, 
-    cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
+    cal_tDialog - cal_tMoh    
     +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
     cal_key, 0 as cal_manual, cal_puerto, dni_id , fvalida , cal_whohung,
     isnull(cast(califSub_id as smallint),0) as califSub_id,
@@ -214,8 +214,8 @@ if @action=1 begin
     on call.cal_id=trans.cal_id     
     union       
     Select top(@maxRecordsToTransfer) call.cal_id as CallId, user_id as UserId, call.cam_id as camAcdId, cast(call.calif_id as smallint) as califId, cast(cal_extension as integer) as extension,  
-    cal_inicio, cal_telefono, 
-    cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
+    cal_inicio, cal_telefono,     
+    cal_tDialog - cal_tMoh
     +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
     cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
     isnull(cast(califSub_id as smallint),0) as califSub_id,

@@ -130,6 +130,176 @@ else if @action = 4 begin
 end'
 		EXEC(@sql)
 
+        set @process = 'CW-1741 Version 119.124 -- Alter SP ccspAgent_GetLastCalls'
+        set @Sql= 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
+set nocount on
+
+declare @lastCallAgt table(
+cal_id int not null,
+tipo varchar(10) not null,
+Hora varchar(10) not null,
+Telefono varchar(55) not null,
+EspCamp varchar(55) not null,
+Calificacion varchar(60),
+Duracion varchar(10) not null,
+CallBack varchar(60),
+cal_key varchar(20),
+IDCampEsp int not null
+)
+insert into @lastCallAgt
+select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+convert(varchar(14), dateadd(second, 
+cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+,0), 108) Duracion,
+'''' as CallBack, cal_key, c.inbound_id as IDCampEsp
+from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
+inner join ccInbound on ccInbound.Inbound_id=c.Inbound_id
+left join ccTipoCalif cal on c.calif_id = cal.calif_id
+left join 
+(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer  from ccLogTransfers where tipo=1  group by cal_id,tipo ) as t  
+ on c.cal_id=t.cal_id 
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
+
+
+insert into @lastCallAgt
+select top 10 c.cal_id as id, ''OUT'' as Tipo,convert(varchar(10), cal_inicio, 108) as Hora,cal_telefono as Telefono,cam_descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+ CONVERT(varchar(8), DATEADD(ss, 
+    cal_tDialog - case when t.tAntesXfer is null then cal_tMoh when cal_tMoh-t.tAntesXfer >0 then cal_tMoh-t.tAntesXfer else 0 end
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+    , 0), 114)  as Duracion,
+    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp  
+from ccoCallsOut c
+inner join ccCamps on ccCamps.cam_id=c.cam_id
+left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
+left join  
+(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo) as t  
+on c.cal_id=t.cal_id 
+
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
+
+select * from @lastCallAgt
+order by hora desc
+
+set nocount off '
+        EXEC(@Sql)
+
+set @process = 'CW-1741 Version 119.124 -- Alter SP ccsp_AvrsSyncronization '
+        set @Sql= 'ALTER procedure [dbo].[ccsp_AvrsSyncronization]
+@action smallint,
+@maxRecordsToTransfer int=10,
+@id int=0
+AS
+set nocount on
+if @action=1 begin
+
+    Select top(@maxRecordsToTransfer) call.cal_id, user_id, call.Inbound_id, call.calif_id, cast(cal_extension as integer) as cal_extension,  
+    cal_inicio, cal_ANI as phone, 
+    cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
+    +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
+    cal_key, 0 as cal_manual, cal_puerto, dni_id , fvalida , cal_whohung,
+    isnull(cast(califSub_id as smallint),0) as califSub_id,
+    case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId
+    from ccCallsIn as  call
+    inner join ccInbound on ccInbound.Inbound_id=call.Inbound_id
+    inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=0   
+    left join 
+        (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=1 group by cal_id,tipo 
+            )trans  
+    on call.cal_id=trans.cal_id     
+    union       
+    Select top(@maxRecordsToTransfer) call.cal_id as CallId, user_id as UserId, call.cam_id as camAcdId, cast(call.calif_id as smallint) as califId, cast(cal_extension as integer) as extension,  
+    cal_inicio, cal_telefono, 
+    cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
+    +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
+    cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
+    isnull(cast(califSub_id as smallint),0) as califSub_id,
+    case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId
+    from ccoCallsOut  as call   
+    inner join ccCamps on ccCamps.cam_id=call.cam_id
+    inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=1   
+    left join 
+        (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo 
+            )trans  
+    on call.cal_id=trans.cal_id     
+end 
+else if @action=2 begin
+    delete from ccAVRSTransfer where id = @id
+end'
+        EXEC(@Sql)
+
+        set @process = 'CW-1741 Version 119.124 -- Alter SP ccsp_AgentUpdateCallTimes '
+        set @Sql= 'ALTER procedure [dbo].[ccsp_AgentUpdateCallTimes]
+@IDCall int,
+@cal_tXfer smallint,
+@cal_tDialog smallint,
+@cal_tNotas smallint,
+@TipoCall tinyint,
+@cal_tRing smallint=0,
+@mtmoh smallint = 0,
+@isChatCall bit = 0,
+@isErroManualCall bit =0
+AS
+set nocount on
+if @IDCall<=0 
+    return(0)
+
+declare @tMinAVRS smallint
+
+if @TipoCall=1 --INBOUND
+ begin
+  Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, cal_tDialog=@cal_tDialog, cal_tNotas=@cal_tNotas, 
+  cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+  cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+  Where cal_id= @IDCall
+
+  --Actualizar tiempo total de llamada
+  exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
+
+  -- Elimina callback generado por abandono
+  Declare @ANI_x varchar(19)
+  select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+
+  DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+  DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+ end
+
+if @TipoCall=2 --OUTBOUND
+ begin
+    Update ccoCallsOUT with(rowlock) Set cal_tXfer=case when @cal_tXfer > 0 then @cal_tXfer else cal_tXfer end, 
+    cal_tDialog=case when @cal_tDialog > 0 then @cal_tDialog else cal_tDialog end, 
+    @cal_tDialog=case when @cal_tDialog > 0 then @cal_tDialog else cal_tDialog end,
+    cal_tNotas=case when @cal_tNotas > 0 then @cal_tNotas else cal_tNotas end, 
+    cal_tMoh=case when @mtmoh > 0 then @mtmoh else cal_tMoh end,
+    cal_tRing=case when @cal_tRing > 0 then @cal_tRing else cal_tRing end, 
+    cal_manual=case when @isChatCall=1 then 3 else cal_manual end,
+    cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end,
+    totalCall_Time=case when totalCall_Time is null then @cal_tDialog else totalCall_Time end 
+    Where cal_id=@IDCall
+
+    -- calcula el costo de la llamada
+    exec ccsp_CstoCalculaCosto @IDCall
+
+ end
+
+select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+if @cal_tDialog >= @tMinAVRS begin
+    if not exists(select * from ccAVRSTransfer where cal_id=@IDCall and tipo=@TipoCall - 1) begin
+        insert ccAVRSTransfer (cal_id, tipo) values (@IDCall, @TipoCall - 1)
+    end
+        return(0)
+ end
+
+set nocount off'
+        EXEC(@Sql)
+
 	
 		/* End script release */
 

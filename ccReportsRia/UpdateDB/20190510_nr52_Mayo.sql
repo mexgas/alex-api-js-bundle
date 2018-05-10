@@ -3,14 +3,15 @@
 /*******************************/
 
 /*
-Author: Alan Minor
-Date: 2018/03/01
+Author: Alan Minor/Hugo Longoria
+Date: 2018/05/10
 Description:
 **********************************************************************************************
 CW-1043 - faltan relaciones en las tablas de survey
+CW-1327 - Reporte de resultados de detalle de marcacion
 **********************************************************************************************
 Database: ccReportsRia
-Required version: 46
+Required version: 51
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -309,6 +310,85 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 
 drop table #reinitmergepullsubscription'
 		EXEC(@Sql)
+		
+		
+		
+	set @process = 'Modificacion al SP ccspRepOutDialDetail-- CW-1327'
+	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]  
+		@action as tinyint,  
+		@from as datetime = null,  
+		@to as datetime = null  
+		AS  
+		if @from is null  
+		select @from = convert(datetime,convert(varchar(11),getdate()))  
+		select @to = getdate()  
+		if @action = 1  begin  
+			--Borrar lo que esta para no repetir  
+			delete from RepOutDialDetail with(rowlock)  
+			where date >= @from AND date < @to  
+
+			--Inserta información de reporte  
+			insert into RepOutDialDetail  
+			SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado,  
+			dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
+			datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
+			,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
+			isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
+			,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved
+			FROM 
+			(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
+				dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved  
+				FROM ccoLogDials dial (nolock)
+				left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
+				WHERE fecha >= @from AND fecha < @to) dials  
+			LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
+			LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
+			LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
+			LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id  
+			WHERE fecha >= @from AND fecha < @to  
+			order by fecha  
+		 end
+
+
+		GO
+
+
+		ALTER PROCEDURE [dbo].[ccspRepDialingResultsDetail]
+		@action as tinyint,
+		@from as datetime=null,
+		@to as datetime=null
+		AS
+
+		if @from is null
+		select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+		select @to = getdate()
+
+		if @action = 1
+		begin
+
+
+		delete from  RepDialingResultsDetail where [date] between @from and @to
+
+		insert into RepDialingResultsDetail(date,telephone,dialResultId,dialResult,userId,login,campaignId,campaign,year,month,day,hour,minutes)
+		select dial.fecha as [date],dial.Telefono as [telephone],dial.tipoResDial_id as dialResultId,isnull(tr.descripcion,dial.disconnectCause) as dialResult,
+		isnull(co.User_id,0) as userId,isnull(cast(u.Login  as varchar(50)),''systemTranslated_NoUserName'') as [Login],
+		dial.cam_id as campaignId,camp.cam_descripcion as campaign
+		,datepart(yyyy,dial.fecha) as [year]
+		,datepart(mm,dial.fecha) as [month]
+		,datepart(dd,dial.fecha) as [day]
+		,datepart(hh,dial.fecha) as [hour]
+		,datepart(mi,dial.fecha) as [minute]
+		FROM ccoLogDials dial (nolock)
+		left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
+		left join cctipoResultadoDial tr ON dial.tiporesdial_id=tr.tiporesdial_id
+		left join ccUsers u on u.user_id =co.User_id
+		left join ccCamps camp on camp.cam_id=dial.cam_id
+		where dial.fecha>=@from and dial.fecha<@to
+
+
+		end'
+	EXEC(@sql)
 	
 
 

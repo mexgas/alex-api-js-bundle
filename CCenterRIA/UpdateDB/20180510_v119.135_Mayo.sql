@@ -4,7 +4,7 @@
 
 /*
 Author: Alan Minor
-Date: 2018/04/11
+Date: 2018/04/10
 Description:
 
 
@@ -30,7 +30,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 119--**********actualizar a 119 sin fix
-set @versionfix = 132
+set @versionfix = 135
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -40,64 +40,22 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 123
+if  @actualVersion = @version and  @actualVersionFix >= 134
 	begin
 		begin tran
 		begin try
 
-		set @process = 'CW-1725 Modificacion SP ccsp_IVRInCalls'
-    	set @Sql= 'ALTER procedure [dbo].[ccsp_IVRInCalls]
-@action tinyint = 0 ,
-@ani varchar(30) = null ,
-@idIvr int = 0 ,
-@option varchar(5)= null ,
-@saveType tinyInt = null,
-@dnis varchar(50) = null,
-@name varchar(50) = null,
-@questionId int = 0,
-@surveyId int = 0,
-@calId int = 0,
-@callout_id int = 0,
-@ttotalIVR int = 0
--- saveType 1 es menu 2 es dato
--- accion 1 siempre @ani  -> @idIvr
--- accion 2 siempre @idIvr @opcionDigitada -> nada
-AS
-IF @action = 1
-BEGIN
-    IF @ani IS NOT NULL
-    BEGIN
-        INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
-        Select ''ID''=scope_identity()
-    END
-END
-ELSE IF @action = 2
-BEGIN
-    IF @option IS NOT NULL AND @idIvr IS NOT NULL
-    BEGIN
-        INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0))
-        select 0
-    END
-    ELSE select -1
-END
-ELSE IF @action = 3
-BEGIN
-    UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
-    if @callout_id > 0
-        exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
-END'
-    	EXEC(@Sql)
-
-
-		set @process = 'CW-1725 Modificacion SP ccsp_EngineLogTransfers'
-    	set @Sql= 'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
+		set @process = 'CW-1331  Version 119.131 -- Alter SP ccsp_EngineLogTransfers'
+		set @Sql= 'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
 @action as tinyint,
 @cal_id as integer,
 @tipo as tinyint,
 @modo as tinyint,
 @destino as varchar(50),
 @tantes integer = 0,
-@tdespues integer = 0
+@tdespues integer = 0,
+@pbxId tinyint =0,
+@channel int =0
 as
 -- tipo: 1 inbound, 2 outbound
 -- modo: 0 externa ciega, 1 agente, 2 acd, 3 confer, 4 externa supervisada, 5 desborde
@@ -107,7 +65,8 @@ declare @callout_id int
 
 if @action = 1 begin
     if @modo = 4 begin
-        insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin)  values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate() )
+        insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel) 
+        values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate(), @pbxId,@channel )
         if @tdespues > 0 begin
                 select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
                 update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
@@ -115,7 +74,8 @@ if @action = 1 begin
     end
     else begin
         if not exists (select * from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
-            insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin) values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() )
+            insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel) 
+            values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() ,@pbxId,@channel )
 
         if @tipo = 2 begin
             if @modo = 5 begin
@@ -137,9 +97,22 @@ if @action = 1 begin
             end
         end
     end
-    if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
-        insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
-    end
+   --Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
+	if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
+		declare @tMinAVRS smallint,@cal_tDialog int
+		set tMinAVRS=5
+		select @tMinAVRS=valor from ccSettings where setting_id=65
+		if @tipo=2 begin
+			select @cal_tDialog=cal_tDialog from ccoCallsOut where cal_id=@cal_id
+		end
+		else begin
+			select @cal_tDialog=cal_tDialog from ccCallsIn where cal_id=@cal_id
+		end
+
+		if @cal_tDialog >= @tMinAVRS begin
+			insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
+		end
+	end
 end
 
 else if @action = 2 begin   
@@ -155,8 +128,7 @@ else if @action = 4 begin
     select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
     update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 end'
-    	EXEC(@Sql)
-
+		EXEC(@sql)
 
 	
 		/* End script release */

@@ -155,8 +155,6 @@ namespace MiddleWareReports
                     return new RepSpececialAgtPerformance();
                 case 7060: //RepSpecialCallKeyHistory
                     return new RepSpecialCallKeyHistory();
-                case 7070:
-                    return new RepMKTAgentes();
                 case 7090:
                     return new RepSpececialAbndPercentage();
                 case 7100:

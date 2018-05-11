@@ -347,13 +347,12 @@ drop table #reinitmergepullsubscription'
 			LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id  
 			WHERE fecha >= @from AND fecha < @to  
 			order by fecha  
-		 end
+		 end'
 
+		 EXEC(@Sql)
 
-		GO
-
-
-		ALTER PROCEDURE [dbo].[ccspRepDialingResultsDetail]
+		set @process = 'Modificacion al SP ccspRepOutDialDetail-- CW-1327'
+		set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepDialingResultsDetail]
 		@action as tinyint,
 		@from as datetime=null,
 		@to as datetime=null

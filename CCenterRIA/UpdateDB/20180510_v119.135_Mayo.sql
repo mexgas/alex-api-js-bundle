@@ -494,7 +494,7 @@ if @action = 1 begin
    --Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
 	if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
 		declare @tMinAVRS smallint,@cal_tDialog int
-		set tMinAVRS=5
+		set @tMinAVRS=5
 		select @tMinAVRS=valor from ccSettings where setting_id=65
 		if @tipo=2 begin
 			select @cal_tDialog=cal_tDialog from ccoCallsOut where cal_id=@cal_id

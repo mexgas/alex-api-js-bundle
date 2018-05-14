@@ -2824,7 +2824,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Agent.
+        ///   Busca una cadena traducida similar a Agente.
         /// </summary>
         public static string login {
             get {
@@ -7468,7 +7468,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a user.
+        ///   Busca una cadena traducida similar a Id de Usuario.
         /// </summary>
         public static string userId {
             get {

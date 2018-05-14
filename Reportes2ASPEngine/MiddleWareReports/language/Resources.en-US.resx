@@ -2544,4 +2544,16 @@
   <data name="Dato5" xml:space="preserve">
     <value>Data5</value>
   </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>ACW Time</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>Time Called Agent</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>Average Time ACD</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>Average Time ACW</value>
+  </data>
 </root>

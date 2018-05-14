@@ -1231,7 +1231,7 @@ END'
         EXEC(@Sql)
 
         set @process = 'CW-1652 Version 119.133 -- Remove conflict Replication'
-        set @Sql= 'if exists(select * from sys.tables where name='MSmerge_conflicts_info') begin
+        set @Sql= 'if exists(select * from sys.tables where name=''MSmerge_conflicts_info'') begin
 
 	SELECT s.conflict_table, c.rowguid, c.origin_datasource
 		  INTO #temp_conflicts

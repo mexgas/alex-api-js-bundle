@@ -231,21 +231,21 @@ else
 select 
 	l.tiponotready_id, Descripcion, frame, 
 	CONVERT(CHAR(8),DATEADD(second,sum(tStatus),0),108) as Tiempo,
-	count(l.tiponotready_id) as veces, 0 as fecha, time_Acum,time_xEv,
+	count(l.tiponotready_id) as veces, ''1900-01-01 00:00:00'' as fecha, time_Acum,time_xEv,
 	CONVERT(CHAR(8),DATEADD(second,time_Acum,0),108) as maxTimeAcum
-	from ccRIALogAgentesNotReady l with(index(IX_ccRIALogAgentesNotReady_1)) 
+	from ccLogAgentesNotReady l --with(index(IX_ccRIALogAgentesNotReady_1)) 
 	inner join ccTipoNotReady t on l.tiponotready_id = t.tiponotready_id
 	inner join ccRIAnotreadyGraph a2 on (t.tiponotready_id=a2.tiponotready_id)
 	inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 	where fecha between @fStart and @fEnd and user_id = @user_id
 	group by t.descripcion, l.tiponotready_id, frame,time_Acum,time_xEv
 
-union
+union all
 
 select l.TipoNotReady_id, Descripcion, 0 as frame,
 CONVERT(CHAR(8),DATEADD(second,tStatus,0),108) as Tiempo, 
  0 as veces, fecha, 0 as time_Acum,0  as time_xEv, ''00:00:00'' as maxTimeAcum
-from ccRIALogAgentesNotReady l with(index(IX_ccRIALogAgentesNotReady_1)) 
+from ccLogAgentesNotReady l --with(index(IX_ccRIALogAgentesNotReady_1)) 
 inner join ccTipoNotReady t on l.tiponotready_id = t.tiponotready_id
 where fecha between @fStart and @fEnd and (user_id = @user_id)
 order by l.TipoNotReady_id, fecha

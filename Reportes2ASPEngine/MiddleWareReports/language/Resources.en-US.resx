@@ -2044,7 +2044,7 @@
     <value>Number ACW</value>
   </data>
   <data name="tACW" xml:space="preserve">
-    <value>Time ACW</value>
+    <value>ACW Time</value>
   </data>
   <data name="tPromACD" xml:space="preserve">
     <value>Tiempo promedio ACD</value>
@@ -2548,12 +2548,15 @@
     <value>ACW Time</value>
   </data>
   <data name="TiempoLlamadoAgente" xml:space="preserve">
-    <value>Time Called Agent</value>
+    <value>Call Time Agent</value>
   </data>
   <data name="TiempoPromACD" xml:space="preserve">
     <value>Average Time ACD</value>
   </data>
   <data name="TiempoPromACW" xml:space="preserve">
     <value>Average Time ACW</value>
+  </data>
+  <data name="CallsperACDGroupD" xml:space="preserve">
+    <value>Calls per ACD Group</value>
   </data>
 </root>

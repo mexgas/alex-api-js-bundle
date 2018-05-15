@@ -153,15 +153,6 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
-        public static string CallsperACDGroupD {
-            get {
-                return ResourceManager.GetString("CallsperACDGroupD", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a convertToTime.
-        /// </summary>
         public static string crmx_duration {
             get {
                 return ResourceManager.GetString("crmx_duration", resourceCulture);
@@ -345,6 +336,15 @@ namespace MiddleWareReports {
         public static string tACD {
             get {
                 return ResourceManager.GetString("tACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tACW {
+            get {
+                return ResourceManager.GetString("tACW", resourceCulture);
             }
         }
         

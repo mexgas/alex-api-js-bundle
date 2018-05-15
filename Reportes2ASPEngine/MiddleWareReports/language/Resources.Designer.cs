@@ -1321,6 +1321,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas por Especialidad.
+        /// </summary>
+        public static string CallsperACDGroupD {
+            get {
+                return ResourceManager.GetString("CallsperACDGroupD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Llamadas por área.
         /// </summary>
         public static string CallsperArea {
@@ -6384,6 +6393,15 @@ namespace MiddleWareReports {
         public static string tACD {
             get {
                 return ResourceManager.GetString("tACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo ACW.
+        /// </summary>
+        public static string tACW {
+            get {
+                return ResourceManager.GetString("tACW", resourceCulture);
             }
         }
         

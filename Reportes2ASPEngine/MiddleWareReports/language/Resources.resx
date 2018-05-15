@@ -2631,4 +2631,10 @@
   <data name="userId" xml:space="preserve">
     <value>Id de Usuario</value>
   </data>
+  <data name="CallsperACDGroupD" xml:space="preserve">
+    <value>Llamadas por Especialidad</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
+  </data>
 </root>

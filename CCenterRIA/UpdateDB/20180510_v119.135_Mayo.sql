@@ -3,8 +3,8 @@
 /*******************************/
 
 /*
-Author: Alan Minor
-Date: 2018/04/10
+Author: Jesus Gallardo
+Date: 2018/05/15
 Description:
 
 
@@ -31,7 +31,6 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 
 set @version = 119--**********actualizar a 119 sin fix
 set @versionfix = 135
---select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'

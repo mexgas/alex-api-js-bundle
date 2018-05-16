@@ -74,6 +74,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="programmingstyle\CRMFieldsNotFoundException.cs" />
+    <Compile Include="reports\agentreports\RepViewAgentGISpecial.cs" />
     <Compile Include="reports\agentreports\RepAgentDetail.cs" />
     <Compile Include="reports\agentreports\RepAgentCallStatusesByInterval.cs" />
     <Compile Include="reports\agentreports\RepAgentSessionByInterval.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="reports\inboundreports\RepInAnsw.cs" />
     <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
     <Compile Include="reports\outboundreports\RepAnsweredCallsByDialingRetries.cs" />
+    <Compile Include="reports\outboundreports\RepOutAnswAndXferCalls.cs" />
     <Compile Include="reports\outboundreports\RepOutDispositionsContacOwner.cs" />
     <Compile Include="reports\outboundreports\RepSpecialAbndCamp.cs" />
     <Compile Include="reports\outboundreports\RepCallXfer.cs" />

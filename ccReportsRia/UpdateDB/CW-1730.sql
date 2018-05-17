@@ -26,7 +26,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =51
+set @version =52
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
@@ -358,9 +358,10 @@ values(''MKT Agents'',''users'',7120)
 	set @process = 'CW-1730 -- insert into ReportsTotals '
     	set @Sql= 'delete from ReportsTotals where id = 7120
 insert into ReportsTotals values (7120,''special:CallsperACDGroupD:sum(CallsperACDGroupD)|
-special:TiempoPromACD:sum([tACD])/sum([CallsperACDGroupD])|
-special:TiempoPromACW:sum([tacw])/sum([nacw])|
-sum:tACD|special:tACW:sum(tACW)|special:TiempoLlamadoAgente:sum(tAgent)|sum:oHour|sum:tAux|sum:readyTime|sum:tPer|sum:Ayuda|sum:nxfer'')'
+special:TiempoPromACD:case when sum([CallsperACDGroupD])>0 then sum([tACD])/sum([CallsperACDGroupD]) else 0 end|
+special:TiempoPromACW:case when sum([nacw])>0 then sum([tacw])/sum([nacw]) else 0 end|
+sum:tACD|special:tACW:sum(tACW)|special:TiempoLlamadoAgente:sum(tAgent)|sum:oHour|sum:tAux|sum:readyTime|sum:tPer|sum:Ayuda|sum:nxfer'')
+'
 	EXEC(@sql)
 	
 

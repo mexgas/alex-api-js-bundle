@@ -110,6 +110,7 @@
     <Compile Include="reports\outboundreports\RepOutManagementBase.cs" />
     <Compile Include="reports\specialreports\RepMKTAgentes.cs" />
     <Compile Include="reports\specialreports\RepMKTDiario.cs" />
+    <Compile Include="reports\specialreports\RepMKTIntervalos.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbnd.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbndPercentage.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbndProfiles.cs" />

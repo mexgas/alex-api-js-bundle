@@ -2577,4 +2577,10 @@
   <data name="GeneralInformationSpecial" xml:space="preserve">
     <value>General Information Special</value>
   </data>
+  <data name="avrPoscPersonal" xml:space="preserve">
+    <value>Promedio Posicion Personal</value>
+  </data>
+  <data name="callsByPoscition" xml:space="preserve">
+    <value>Llamadas por Posicion</value>
+  </data>
 </root>

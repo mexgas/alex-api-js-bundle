@@ -2637,4 +2637,10 @@
   <data name="tTalkNum" xml:space="preserve">
     <value>En diálogo (Salida)</value>
   </data>
+  <data name="avrPoscPersonal" xml:space="preserve">
+    <value>Promedio Posicion Personal</value>
+  </data>
+  <data name="callsByPoscition" xml:space="preserve">
+    <value>Llamadas por Posicion</value>
+  </data>
 </root>

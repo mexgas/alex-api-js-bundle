@@ -48,48 +48,64 @@ if @actualVersion in(@version ,@version-1)
 	begin
 		begin tran
 		begin try	
-    set @process = 'CW-718 -- Drop SP ccspAgent_GetLastCalls'
-    set @Sql= 'if exists (select * from sys.procedures where name = N''ccspAgent_GetLastCalls'')
-    begin
-        DROP PROCEDURE ccspAgent_GetLastCalls;
-    end
-'
-    EXEC(@Sql)
 
-	set @process = 'CW-718 -- Create SP ccspAgent_GetLastCalls'
-    set @Sql= 'CREATE PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
+	set @process = 'CW-718 -- ALTER SP ccspAgent_GetLastCalls'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
 set nocount on
 
-select * from
-
-(select top 10 cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
-isnull(cal.Description, '''') as Calificacion, cast(cal_tDialog / 3600 as varchar(10)) + '':'' + right(''0'' + cast(cal_tDialog / 60 % 60 as varchar(3)), 2) + 
-'':'' + right(''0'' + cast(cal_tDialog % 60 as varchar(3)), 2) as Duracion, '''' as CallBack, cal_key, c.inbound_id as IDCampEsp
+declare @lastCallAgt table(
+id int not null,
+tipo varchar(10) not null,
+Hora varchar(10) not null,
+Telefono varchar(55) not null,
+EspCamp varchar(55) not null,
+Calificacion varchar(60),
+Duracion varchar(10) not null,
+CallBack varchar(60),
+cal_key varchar(20),
+IDCampEsp int not null
+)
+insert into @lastCallAgt
+select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+convert(varchar(14), dateadd(second, 
+cal_tDialog - cal_tMoh 
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+,0), 108) Duracion,
+'''' as CallBack, cal_key, c.inbound_id as IDCampEsp
 from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
-inner join ccInbound i on c.inbound_id = i.inbound_id
+inner join ccInbound on ccInbound.Inbound_id=c.Inbound_id
 left join ccTipoCalif cal on c.calif_id = cal.calif_id
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
-order by cal_id desc) a
+left join 
+(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer  from ccLogTransfers where tipo=1  group by cal_id,tipo ) as t  
+ on c.cal_id=t.cal_id 
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
 
-Union
 
-select * from
-(select top 10 cal_id as id, ''OUT'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_telefono as Telefono,cam_descripcion as EspCamp, 
-isnull(cal.Description, '''') as Calificacion, cast(cal_tDialog / 3600 as varchar(10)) + '':'' + right(''0'' + cast(cal_tDialog / 60 % 60 as varchar(3)), 2) + 
-'':'' + right(''0'' + cast(cal_tDialog % 60 as varchar(3)), 2) as Duracion, convert(varchar(16), cal_fcallback, 121) as CallBack, cal_key, c.cam_id as IDCampEsp
-from ccoCallsOut c with(nolock index(IX_ccoCallsOut_9)) 
-inner join ccCamps o on c.cam_id = o.cam_id
+insert into @lastCallAgt
+select top 10 c.cal_id as id, ''OUT'' as Tipo,convert(varchar(10), cal_inicio, 108) as Hora,cal_telefono as Telefono,cam_descripcion as EspCamp, 
+isnull(cal.Description, '''') as Calificacion, 
+ CONVERT(varchar(8), DATEADD(ss, 
+    cal_tDialog - cal_tMoh 
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+    , 0), 114)  as Duracion,
+    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp  
+from ccoCallsOut c
+inner join ccCamps on ccCamps.cam_id=c.cam_id
 left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
-order by cal_id desc) b
+left join  
+(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo) as t  
+on c.cal_id=t.cal_id 
 
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
+
+select * from @lastCallAgt
 order by hora desc
 
-set nocount off
-	'
-    EXEC(@Sql)
+set nocount off '
+        EXEC(@Sql)
 
     set @process = 'CW-1162 -- Drop SP ccsp_LoadGraphics'
     set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_LoadGraphics'')
@@ -769,14 +785,15 @@ set nocount off'
 @tDialog int =0 ,
 @Extension varchar(7)=null,
 @Computer varchar(20)=null,
-@fecha datetime=null
+@fecha datetime=null,
+@tMusicHold int=0
 AS
 set nocount on
 
 if @fecha is null set @fecha=getdate()
 
 exec ccsp_AgentLogINOUT @UserID=@UserID,@Extension=@Extension,@Computer=@Computer,@TipoMov=0,@fecha=@fecha
-exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@TipoNotReady=@TipoNotReady,@tStatus=@tStatus,@TipoCall=@TipoCall,@Camp=0,@callout_id=0,@call_id=@call_id,@isLogout=1,@tDialog =@tDialog,@Fecha4=@fecha
+exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@TipoNotReady=@TipoNotReady,@tStatus=@tStatus,@TipoCall=@TipoCall,@Camp=0,@callout_id=0,@call_id=@call_id,@isLogout=1,@tDialog =@tDialog,@Fecha4=@fecha,@tMusicHold=@tMusicHold
 '
     EXEC(@Sql)
 
@@ -794,7 +811,8 @@ exec ccsp_SaveStatusAgent @User_id=@UserID,@TipoStatusAge_id=@TipoStatusAge_id,@
 @isLogout smallint=0, --Agrega el tiempo cuando esta dialogo y se desloguea
 @tDialog int =0 ,
 @currentStatus int =-2,--NUEVO PARÁMETRO PARA LA NUEVA COLUMNA
-@Fecha4 datetime=null
+@Fecha4 datetime=null,
+@tMusicHold int =0
 AS
 if @Fecha4 is null set @Fecha4 = getdate()
 
@@ -836,7 +854,7 @@ if (@User_id > 0 ) begin
 					end
 				end
 
-				update ccCallsIN with(rowlock) set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas where cal_id = @call_id and statusCall_id = 13
+				update ccCallsIN with(rowlock) set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
 			end
 		end
 		else begin --OUT
@@ -854,8 +872,12 @@ if (@User_id > 0 ) begin
 					end
 				end
 
-				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas where cal_id = @call_id and statusCall_id = 13
+				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog, cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
 			end
+			else if @TipoStatusAge_id=4 and @cal_tDialog = 0 and @tDialog>0
+				update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog  where cal_id = @call_id
+			else if @TipoStatusAge_id=6 and @cal_tNotaOri = 0 and @cal_tNotas>0
+				update ccoCallsOut with(rowlock) set cal_tNotas=@cal_tNotas where cal_id = @call_id
 		end
 
 		select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
@@ -922,8 +944,14 @@ if (@User_id > 0 ) begin
 
 	 end
 
-	 
-	INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus,callID)	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall,@currentStatus,@call_id )	
+	if @TipoStatusAge_id =6  and @isLogout=0
+	begin
+			--Valida que el ccserver no haya guardado antes el status antes al desloguear
+			if not exists(select  * from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=4 and fecha between dateadd(ss,-10,@Fecha4) and @Fecha4 and tStatus = @tStatus+1)
+				INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus,callID)	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall,@currentStatus,@call_id )
+	end
+	else
+		INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus,callID)	VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall,@currentStatus,@call_id )
 
 	if ( @TipoStatusAge_id = 2 )   -- 2 = No Disponible
 	begin

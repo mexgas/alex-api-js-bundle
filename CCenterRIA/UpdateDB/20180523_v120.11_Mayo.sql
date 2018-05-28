@@ -62,7 +62,7 @@ Calificacion varchar(60),
 Duracion varchar(10) not null,
 CallBack varchar(60),
 cal_key varchar(20),
-IDCampEsp int not null
+IDCampEsp smallint not null
 )
 insert into @lastCallAgt
 select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 

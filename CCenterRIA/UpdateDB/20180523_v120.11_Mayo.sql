@@ -385,19 +385,19 @@ END
 			''Time to block user after several Bad Login Attempts (mins)'',
 			1,''^\d{1,3}$'')'
     EXEC(@Sql)
-	set @process = 'CW-1439 Setting_ID 201 Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'
+	set @process = 'CW-1439 Setting_ID 203 Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'
     set @Sql= '
-	IF not exists (SELECT * FROM ccSettings WHERE setting_id = 201)
+	IF not exists (SELECT * FROM ccSettings WHERE setting_id = 203)
 	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
-	VALUES	(201, 
-			''Driver={SQL Server};Server=192.168.0.112;Database=ccenterRIA;Uid=sa; Pwd=nuxiba;'',
+	VALUES	(203, 
+			'''',
 			''Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual'',	
 			1,
 			''AGT'',
 			''Cadena de conexion(ODBC) para la BD externa a la cual se va a conectar el agente para buscar contactos en la ventana de llamada manual. Si no aplica el valor debe venir vacio'',
 			''Database connection string(ODBC) for manual call'',
 			0,
-			 ''*'')
+			 ''.*'')
 	'
     EXEC(@Sql)
 	set @process = 'Setting_id 256 Number of chances the user have to try accessing the system'

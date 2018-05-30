@@ -396,4 +396,16 @@
   <data name="AverageHandleTime" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="tPromElimCola" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tPromSalidaExt" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="avrAnswer" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="maxDelay" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

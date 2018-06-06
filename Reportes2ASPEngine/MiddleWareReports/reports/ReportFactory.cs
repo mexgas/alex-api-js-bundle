@@ -168,7 +168,7 @@ namespace MiddleWareReports
                 case 7110:
                     return new RepSpececialAbndTimes();
                 case 7130:
-                    return new RepMKTDiario();
+                    return new RepViewMKTDiario();
                 case 8010:
                     return new RepTrunkBusy();
                 case 8020:

@@ -2166,40 +2166,4 @@
   <data name="tTalkNum" xml:space="preserve">
     <value>Em diálogo (saída)</value>
   </data>
-  <data name="acdCalls" xml:space="preserve">
-    <value>Llamadas ACD</value>
-  </data>
-  <data name="avrAnswer" xml:space="preserve">
-    <value>Velocidad Promedio de Respuesta</value>
-  </data>
-  <data name="avrCallsAnswer" xml:space="preserve">
-    <value>% Llamadas Resp</value>
-  </data>
-  <data name="avrTimeACD" xml:space="preserve">
-    <value>% Tiempo ACD</value>
-  </data>
-  <data name="callsDeleteQue" xml:space="preserve">
-    <value>LLamadas Elim Cola</value>
-  </data>
-  <data name="callsOutExt" xml:space="preserve">
-    <value>LLamadas Salida Ext</value>
-  </data>
-  <data name="entryFlow" xml:space="preserve">
-    <value>Flujo de Entrada</value>
-  </data>
-  <data name="maxDelay" xml:space="preserve">
-    <value>Demora Máxima</value>
-  </data>
-  <data name="outFlow" xml:space="preserve">
-    <value>Flujo de Salida</value>
-  </data>
-  <data name="tPromElimCola" xml:space="preserve">
-    <value>TProm Elim Cola</value>
-  </data>
-  <data name="tPromSalidaExt" xml:space="preserve">
-    <value>TProm Salida Ext</value>
-  </data>
-  <data name="MKTTiempos" xml:space="preserve">
-    <value>MKT Tiempos</value>
-  </data>
 </root>

@@ -120,6 +120,10 @@ namespace MiddleWareReports
             {
                 bool isTimePeriod = false;
                 TimePeriod t = TimePeriod.H;
+                if (process == 7150)
+                {
+                    parametersTotals["timePeriod"] = "M";
+                }
                 if (parametersTotals["timePeriod"] != null && parametersTotals["timePeriod"].Length > 0)
                 {
                     isTimePeriod = TimePeriodGroup.isTimePeriod(parametersTotals["timePeriod"]);
@@ -1126,6 +1130,10 @@ namespace MiddleWareReports
             string originalTimePeriodCol = "";
             bool isTimePeriod = false;
             int timeMinutes;
+            if (process == 7150)
+            {
+                paramValueList["timePeriod"] = "M";
+            }
             if (paramValueList["timePeriod"] != null && paramValueList["timePeriod"].Length > 0)
             {
                 isTimePeriod = TimePeriodGroup.isTimePeriod(paramValueList["timePeriod"]);

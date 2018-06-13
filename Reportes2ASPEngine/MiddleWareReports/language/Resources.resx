@@ -2637,7 +2637,7 @@
   <data name="tTalkNum" xml:space="preserve">
     <value>En diálogo (Salida)</value>
   </data>
-  <data name="acdCalls" xml:space="preserve">
+<data name="acdCalls" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
   <data name="avrAnswer" xml:space="preserve">
@@ -2672,8 +2672,5 @@
   </data>
   <data name="MKTTiempos" xml:space="preserve">
     <value>MKT Tiempos</value>
-  </data>
-  <data name="MKTMensual" xml:space="preserve">
-    <value>MKT Mensual</value>
   </data>
 </root>

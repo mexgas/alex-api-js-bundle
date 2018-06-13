@@ -70,8 +70,6 @@ namespace MiddleWareReports
                 string dateEnd = DateTime.Parse(values["@dateEnd"]).ToString(currentCulture);
                 return String.Format("'{0} - {1}' as [date]", dateStart, dateEnd);
             }
-            if (t == TimePeriod.M)
-                return GetStringValue(timeDate) + " as [date]";
             return "min(date) as [date]";
 
         }
@@ -146,9 +144,6 @@ namespace MiddleWareReports
             {
                 TimePeriodSelectValue timePeriodSelect = (TimePeriodSelectValue)Enum.Parse(typeof(TimePeriodSelectValue), GetStringValue(t), true);
                 groupby += ", [hour], " + GetStringValue(timePeriodSelect);
-            }
-            else if (t == TimePeriod.M) {
-                groupby += ",CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + '-01', 121)";
             }
             else if (t == TimePeriod.H) groupby += ", [hour]";
 
@@ -328,8 +323,6 @@ namespace MiddleWareReports
         [StringValue("convert(datetime,convert(varchar(11),min(date)))")]
         D,
         [StringValue("")]
-        PE,
-        [StringValue("CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + '-01', 121)")]
-        M
+        PE
     }
 }

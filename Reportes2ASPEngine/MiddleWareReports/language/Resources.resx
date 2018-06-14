@@ -2637,9 +2637,6 @@
   <data name="tTalkNum" xml:space="preserve">
     <value>En diálogo (Salida)</value>
   </data>
-  <data name="acdCalls" xml:space="preserve">
-    <value>Llamadas ACD</value>
-  </data>
   <data name="avrAnswer" xml:space="preserve">
     <value>Velocidad Promedio de Respuesta</value>
   </data>
@@ -2681,5 +2678,8 @@
   </data>
   <data name="MKTIntervalos" xml:space="preserve">
     <value>MKT Intervalos</value>
+  </data>
+  <data name="acdCalls" xml:space="preserve">
+    <value>Llamadas ACD</value>
   </data>
 </root>

@@ -29,8 +29,8 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 119--**********actualizar a 119 sin fix
-set @versionfix = 136
+set @version = 120--**********actualizar a 119 sin fix
+set @versionfix = 12
 --
 /* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'
@@ -44,7 +44,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
 		begin tran
 		begin try
 
-        set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
+        set @process = 'CW-1702 --Create Table para registrar los movimientos de cambio de nombre'
         set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
 	    begin       
 			create table LogRenameRecording(
@@ -58,7 +58,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
 	    end'
         EXEC(@Sql)
 
- 		set @process = 'CW-1702 Version xxx.xxx --Alter table ccInbound se agrega prefijo de la grabacion '
+ 		set @process = 'CW-1702 --Alter table ccInbound se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound''))
 		    begin
@@ -68,7 +68,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
         EXEC(@Sql)
        
 
- 		set @process = 'CW-1702 Version xxx.xxx --Alter table ccCamps se agrega prefijo de la grabacion '
+ 		set @process = 'CW-1702 --Alter table ccCamps se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps''))
 		    begin
@@ -79,7 +79,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
 	
 	
 
-		set @process = 'CW-1702 Version xxx.xxx -- Inserta la accion para el log del admin'
+		set @process = 'CW-1702 -- Inserta la accion para el log del admin'
         set @Sql= '
 		if not exists (select * from ccRIALog_Operation where operationType  = 168 )
 		    begin
@@ -89,7 +89,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
         EXEC(@Sql)
 	
 	
-		set @process = 'CW-1702 Version xxx.xxx -- Se agrega el setting que habilita y deshabilita el prefijo de las grabaciones'
+		set @process = 'CW-1702 -- Se agrega el setting que habilita y deshabilita el prefijo de las grabaciones'
         set @Sql= '
 		if not exists (select * from ccSettings where setting_id = 201 )
 		    begin
@@ -101,7 +101,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
         EXEC(@Sql)
 
         --STORE PROCEDURE
-		set @process = 'CW-1702 Version xxx.xxx -- Se agrega el SP para contar las grabaciones por campaña'
+		set @process = 'CW-1702 -- Se agrega el SP para contar las grabaciones por campaña'
         set @Sql= '
 		if not exists (select * from sys.procedures where name = N''GetCampsAndAcd'')
 		    begin
@@ -131,7 +131,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
         '
         EXEC(@Sql)
 
-        set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCCamps'
+        set @process = 'CW-1702 -- ccsp_RIA_ABCCamps'
         set @Sql= '
 		if not exists (select * from sys.procedures where name = N''ccsp_RIA_ABCCamps'')
 		    begin
@@ -322,20 +322,20 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCACDGroups '
+		set @process = 'CW-1702 -- ccsp_RIA_ABCACDGroups '
         set @Sql= '
 		
 ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
-@option smallint''
-@userid int''
-@descripcion varchar(40)''
-@inbound_id varchar(1000)''
-@idarea smallint = null''
-@frame tinyint''
+@option smallint,
+@userid int,
+@descripcion varchar(40),
+@inbound_id varchar(1000),
+@idarea smallint = null,
+@frame tinyint,
 @Prefijo varchar(40) = null
 as
 set nocount on
-declare @new_inbound_id smallint'' @graph_id smallint
+declare @new_inbound_id smallint, @graph_id smallint
 
 if @option = 0 -- all acd
  begin
@@ -369,7 +369,7 @@ if @option = 2 -- insert
 	set @idarea = null
 	
 	insert into ccinbound (descripcion'' starttimeronhangup'' idarea'' showcalifwnd''Prefijo)
-	select @descripcion'' 1'' @idarea'' case when exists(select calif_id from cctipocalif) then 1 else 0 end''
+	select @descripcion'' 1'' @idarea'' case when exists(select calif_id from cctipocalif) then 1 else 0 end
 	@Prefijo
 	
 	if @@rowcount = 1
@@ -381,12 +381,12 @@ if @option = 2 -- insert
 		return(0)
 	 end
 
-	insert into cccalifcamp (calif_id'' cam_id'' tipo) select calif_id'' @new_inbound_id'' 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
+	insert into cccalifcamp (calif_id, cam_id, tipo) select calif_id, @new_inbound_id, 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
 
 	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like '%\Default%'))
 	 begin
-		insert into ccInboundMsgs (msg_id'' inbound_id'' orden'' type'' queue)
-		select msg_id'' @new_inbound_id'' 0'' cast(substring(msgFile'' 19''3) as integer)''0 from ccMsgFiles where msgFile like '%\Default%'
+		insert into ccInboundMsgs (msg_id, inbound_id, orden, type, queue)
+		select msg_id, @new_inbound_id, '' 0'' cast(substring(msgFile''19''3) as integer)''0 from ccMsgFiles where msgFile like '%\Default%'
 	 end
 
 	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like '%\Default%'))
@@ -396,11 +396,11 @@ if @option = 2 -- insert
 	 end
 
 	if not exists(select frame from ccriagraphics where frame = @frame and type_id = 1)
-	 insert into ccriagraphics (frame''type_id) values (@frame''1)
+	 insert into ccriagraphics (frame,type_id) values (@frame,1)
 	
 	 select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
 	 
-	 insert into ccriainboundgraph(Inbound_id''graphic_id) values(@new_inbound_id''@graph_id)
+	 insert into ccriainboundgraph(Inbound_id,graphic_id) values(@new_inbound_id,@graph_id)
 	 select @new_inbound_id
 	 return(0) 
  end
@@ -408,7 +408,7 @@ if @option = 2 -- insert
 if @option = 3 -- update
  begin
 	 if not exists (select frame from ccriagraphics where frame=@frame and type_id=1)
-		insert into ccriagraphics (frame'' type_id) values (@frame'' 1)
+		insert into ccriagraphics (frame, type_id) values (@frame,1)
 
 	 select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
 	 update ccinbound set descripcion = @descripcion where inbound_id = (cast(@inbound_id as int))
@@ -430,7 +430,7 @@ if @option = 4 -- delete
 if @option = 5 -- asignar campaña a ACD
  begin
 	if not exists (select inbound_id from ccInbound where inbound_id=@inbound_id) or
-	 (@descripcion is not null and @descripcion <> '' and @descripcion <> '0' and 
+	 (@descripcion is not null and @descripcion <> '' and @descripcion <> ''0'' and 
 		not exists (select cam_id from ccCamps where cam_id=@descripcion))
 	 begin
 		select -3 -- Campaña o ACD invalido
@@ -467,10 +467,8 @@ set nocount off
 
 
 
-
-
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_DLRgetDialPrefix'
+		set @process = 'CW-1702 -- ccsp_DLRgetDialPrefix'
         set @Sql= '
 		ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]
 @cam_id smallint=0,
@@ -545,7 +543,7 @@ select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectA
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_DLRGetDialInfo'
+		set @process = 'CW-1702 -- ccsp_DLRGetDialInfo'
         set @Sql= '
 		ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
 @callout_id int,
@@ -644,7 +642,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_IVRGetEspecialidadByDnis'
+		set @process = 'CW-1702 -- ccsp_IVRGetEspecialidadByDnis'
         set @Sql= '
 		
 ALTER PROCEDURE [dbo].[ccsp_IVRGetEspecialidadByDnis] 
@@ -691,9 +689,10 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- '
+		set @process = 'CW-1702  -- Modificacion del SP de Syncronization para que se recupere el prefijo '
         set @Sql= '
-		ALTER procedure [dbo].[ccsp_AvrsSyncronization]
+	
+ALTER procedure [dbo].[ccsp_AvrsSyncronization]
 @action smallint,
 @maxRecordsToTransfer int=10,
 @id int=0
@@ -701,95 +700,109 @@ AS
 set nocount on
 if @action=1 begin
 
-	Select top(@maxRecordsToTransfer) call.cal_id, user_id, call.Inbound_id, call.calif_id, cast(cal_extension as integer) as cal_extension,  
-	cal_inicio, cal_ANI as phone, 
-	cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
-	+  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end	as duration,
-	cal_key, 0 as cal_manual, cal_puerto, dni_id , fvalida , cal_whohung,
-	isnull(cast(califSub_id as smallint),0) as califSub_id,
-	case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
-	dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId, acds.prefijo	
-	from ccCallsIn as  call
-	inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=0	
-	left join 
-		(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=1 group by cal_id,tipo 
-			)trans 	
-	on call.cal_id=trans.cal_id 
-	left join ccInbound acds on call.Inbound_id = acds.Inbound_id
-	union		
-	Select top(@maxRecordsToTransfer) call.cal_id as CallId, user_id as UserId, call.cam_id as camAcdId, cast(call.calif_id as smallint) as califId, cast(cal_extension as integer) as extension,  
-	cal_inicio, cal_telefono, 
-	cal_tDialog - case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer >0 then cal_tMoh-trans.tAntesXfer else 0 end
-	+  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end	as duration,
-	cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
-	isnull(cast(califSub_id as smallint),0) as califSub_id,
-	case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
-	dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId, camps.prefijo			
-	from ccoCallsOut  as call	
-	inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=1	
-	left join 
-		(select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo 
-			)trans 	
-	on call.cal_id=trans.cal_id 
-	left join ccCamps as camps on call.cam_id = camps.cam_id 
+    Select top(@maxRecordsToTransfer) call.cal_id, user_id, call.Inbound_id, call.calif_id, cast(cal_extension as integer) as cal_extension,  
+    cal_inicio, cal_ANI as phone, 
+    cal_tDialog - cal_tMoh    
+    +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
+    cal_key, 0 as cal_manual, cal_puerto, dni_id , fvalida , cal_whohung,
+    isnull(cast(califSub_id as smallint),0) as califSub_id,
+    case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId,ccInbound.prefijo
+    from ccCallsIn as  call
+    inner join ccInbound on ccInbound.Inbound_id=call.Inbound_id
+    inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=0   
+    left join 
+        (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=1 group by cal_id,tipo 
+            )trans  
+    on call.cal_id=trans.cal_id     
+    union       
+    Select top(@maxRecordsToTransfer) call.cal_id as CallId, user_id as UserId, call.cam_id as camAcdId, cast(call.calif_id as smallint) as califId, cast(cal_extension as integer) as extension,  
+    cal_inicio, cal_telefono,     
+    cal_tDialog - cal_tMoh
+    +  case when stopRecording=0 then isnull( trans.tDespuesXfer ,0) else 0 end as duration,
+    cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
+    isnull(cast(califSub_id as smallint),0) as califSub_id,
+    case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId,camps.prefijo
+    from ccoCallsOut  as call   
+    inner join ccCamps on ccCamps.cam_id=call.cam_id
+    inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=1   
+    left join 
+        (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo 
+            )trans  
+    on call.cal_id=trans.cal_id     
 end 
 else if @action=2 begin
-	delete from ccAVRSTransfer where id = @id
+    delete from ccAVRSTransfer where id = @id
 end
 
         '
         EXEC(@Sql)
 
-
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccspAgent_GetLastCalls'
+		set @process = 'CW-1702 -- ccspAgent_GetLastCalls'
         set @Sql= '
-		ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
+	ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
 set nocount on
 
+declare @lastCallAgt table(
+id int not null,
+tipo varchar(10) not null,
+Hora varchar(10) not null,
+Telefono varchar(55) not null,
+EspCamp varchar(55) not null,
+Calificacion varchar(60),
+Duracion varchar(10) not null,
+CallBack varchar(60),
+cal_key varchar(20),
+IDCampEsp smallint not null
+)
+insert into @lastCallAgt
 select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
-convert(varchar(14), dateadd(second, cal_tDialog-cal_tMoh,0), 108) Duracion,
-'''' as CallBack, cal_key, c.inbound_id as IDCampEsp,ISNULL(i.prefijo,'''') Prefijo
+convert(varchar(14), dateadd(second, 
+cal_tDialog - cal_tMoh 
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+,0), 108) Duracion,
+'''' as CallBack, cal_key, c.inbound_id as IDCampEsp,ISNULL(ccInbound.prefijo,'''') Prefijo
 from ccCallsIn c with(nolock index(IX_ccCallsIn_4)) 
-inner join ccInbound i on c.inbound_id = i.inbound_id
+inner join ccInbound on ccInbound.Inbound_id=c.Inbound_id
 left join ccTipoCalif cal on c.calif_id = cal.calif_id
 left join 
 (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer  from ccLogTransfers where tipo=1  group by cal_id,tipo ) as t  
  on c.cal_id=t.cal_id 
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
 
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
 
-
-Union
-
+insert into @lastCallAgt
 select top 10 c.cal_id as id, ''OUT'' as Tipo,convert(varchar(10), cal_inicio, 108) as Hora,cal_telefono as Telefono,cam_descripcion as EspCamp, 
 isnull(cal.Description, '''') as Calificacion, 
  CONVERT(varchar(8), DATEADD(ss, 
-	cal_tDialog -	 case when t.tAntesXfer is null then cal_tMoh else cal_tMoh-t.tAntesXfer end 	+ isnull( t.tDespuesXfer ,0)	
-	, 0), 114)  as Duracion,
- 	isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp , ISNULL(o.prefijo,'''') Prefijo
+    cal_tDialog - cal_tMoh 
+    +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
+    , 0), 114)  as Duracion,
+    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp , ISNULL(o.prefijo,'''') Prefijo
 from ccoCallsOut c
-inner join ccCamps o on c.cam_id = o.cam_id
+inner join ccCamps on ccCamps.cam_id=c.cam_id
 left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
 left join  
 (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo) as t  
 on c.cal_id=t.cal_id 
 
-where user_id = @user_id
-and cal_inicio > dateadd(hh, -3, getdate())
+where user_id = @user_id and cal_inicio > dateadd(hh, -3, getdate())
+order by c.cal_inicio desc
 
+select * from @lastCallAgt
 order by hora desc
 
 set nocount off 
-
         '
         EXEC(@Sql)
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAConfCamp'
+		set @process = 'CW-1702 -- ccsp_RIAConfCamp'
         set @Sql= '
 		
 ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
@@ -815,14 +828,11 @@ ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
 				  order by cam_descripcion
 				 return(0)
 				 set nocount off
-
         '
         EXEC(@Sql)
 
-
-
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAConfEspec'
+		set @process = 'CW-1702 -- ccsp_RIAConfEspec'
         set @Sql= '
 		ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
 @User_id int
@@ -877,141 +887,145 @@ set nocount off
 
 
 	
-
-	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAUpdateCamConfig'
+		set @process = 'CW-1702 -- ccsp_RIAUpdateCamConfig'
         set @Sql= '
-		ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+	USE [CCenterRia]
+GO
+/****** Object:  StoredProcedure [dbo].[ccsp_RIAUpdateCamConfig]    Script Date: 14/06/2018 03:35:46 p. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@cam_id smallint,
-				@cam_descripcion varchar(40) '' null,
-				@cam_tnotas smallint '' null,
-				@cam_ocupado tinyint '' null,
-				@cam_NoInt_ocupado tinyint '' null,
-				@cam_inter_ocupado smallint '' null,
-				@cam_nocontesto tinyint '' null,
-				@cam_NoInt_nocontesto tinyint '' null,
-				@cam_inter_nocontesto smallint '' null,
-				@cam_fax tinyint '' null,
-				@cam_NoInt_fax tinyint '' null,
-				@cam_inter_fax smallint '' null,
-				@cam_ModoManual tinyint'' null,
-				@ANI varchar(15) '' null,
-				@cam_ShowCalifWnd bit '' null,
-				@cam_StartTimerOnHangUp bit '' null,
-				@editableCallKey bit '' null,
-				@cam_tNoContesta tinyint '' null,
-				@cam_intensive_dialing tinyint '' null,
-				@detectAnswerMachine smallint '' null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
-				@detectVoiceMail TinyInt '' null, -- permitidos 0,1 (bandera para activar)
-				@compliance TinyInt '' null,
-				@cam_inter_graba smallint '' null,
-				@cam_NoInt_graba tinyint '' null,
-				@progDial smallint '' null,
-				@excCallBack Tinyint '' null,
-				@dialOrder Tinyint '' null,
-				@dialPrefix varchar(10) '' null,
-				@dialPrefixMan varchar(10) '' null,
-				@dialPrefixXfe varchar(10) '' null,
-				@listenManualCall bit '' null,
-				@stopRecording bit '' null,
-				@abandonCallback bit '' null,
-				@autoCB smallint '' null,
-				@id_listAni int '' null,
-				@tDialonWrapUp smallint '' null,
-				@quesize smallint''null,
-				@DNCScrub int''null,
-				@callerIdDesc varchar(15)''null,
-				@timeZoneRule int''null,
-				@callsBySurvey int''null,
-				@ivrScript int''null,
-				@surveyPctg int''null,
-				@call_record tinyint''null,
-				@dRestrictPlay bit '' null,
-				@leaveRecMessage bit '' null,
-				@manualCallOnChat bit '' null,
-				@callBackSurveyClient bit '' null,
-				@callBackSurveyAgent bit '' null,
-				@funcEspDtmf int ''null,
-				@sipHdrsCfg varchar(255) '' null,
-				@cam_inter_cancelled smallint '' null,
-				@prefijo varchar(max) '' null
-
+				@cam_descripcion varchar(40) = null,
+				@cam_tnotas smallint = null,
+				@cam_ocupado tinyint = null,
+				@cam_NoInt_ocupado tinyint = null,
+				@cam_inter_ocupado smallint = null,
+				@cam_nocontesto tinyint = null,
+				@cam_NoInt_nocontesto tinyint = null,
+				@cam_inter_nocontesto smallint = null,
+				@cam_fax tinyint = null,
+				@cam_NoInt_fax tinyint = null,
+				@cam_inter_fax smallint = null,
+				@cam_ModoManual tinyint= null,
+				@ANI varchar(15) = null,
+				@cam_ShowCalifWnd bit = null,
+				@cam_StartTimerOnHangUp bit = null,
+				@editableCallKey bit = null,
+				@cam_tNoContesta tinyint = null,
+				@cam_intensive_dialing tinyint = null,
+				@detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+				@detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+				@compliance TinyInt = null,
+				@cam_inter_graba smallint = null,
+				@cam_NoInt_graba tinyint = null,
+				@progDial smallint = null,
+				@excCallBack Tinyint = null,
+				@dialOrder Tinyint = null,
+				@dialPrefix varchar(10) = null,
+				@dialPrefixMan varchar(10) = null,
+				@dialPrefixXfe varchar(10) = null,
+				@listenManualCall bit = null,
+				@stopRecording bit = null,
+				@abandonCallback bit = null,
+				@autoCB smallint = null,
+				@id_listAni int = null,
+				@tDialonWrapUp smallint = null,
+				@quesize smallint=null,
+				@DNCScrub int=null,
+				@callerIdDesc varchar(15)=null,
+				@timeZoneRule int=null,
+				@callsBySurvey int=null,
+				@ivrScript int=null,
+				@surveyPctg int=null,
+				@call_record tinyint=null,
+				@dRestrictPlay bit = null,
+				@leaveRecMessage bit = null,
+				@manualCallOnChat bit = null,
+				@callBackSurveyClient bit = null,
+				@callBackSurveyAgent bit = null,
+				@funcEspDtmf int =null,
+				@sipHdrsCfg varchar(255) = null,
+				@cam_inter_cancelled smallint = null,
+				@prefijo varchar(max) = null
 				as
 				set nocount on
 				UPDATE ccCamps SET
-				 cam_descripcion '' isnull(@cam_descripcion,cam_descripcion),
-				 cam_tnotas '' isnull(@cam_tnotas,cam_tnotas),
-				 cam_ocupado '' isnull(@cam_ocupado,cam_ocupado),
-				 cam_NoInt_ocupado '' isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
-				 cam_inter_ocupado '' isnull(@cam_inter_ocupado,cam_inter_ocupado),
-				 cam_nocontesto '' isnull(@cam_nocontesto,cam_nocontesto),
-				 cam_NoInt_nocontesto '' isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
-				 cam_inter_nocontesto '' isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
-				 cam_inter_cancelled '' isnull(@cam_inter_cancelled,cam_inter_cancelled),
-				 cam_fax '' isnull(@cam_fax,cam_fax),
-				 cam_NoInt_fax '' isnull(@cam_NoInt_fax,cam_NoInt_fax),
-				 cam_inter_fax '' isnull(@cam_inter_fax, cam_inter_fax),
-				 cam_ModoManual '' isnull(@cam_ModoManual, cam_ModoManual),
-				 ANI '' isnull(@ANI,ANI),
-				 cam_StartTimerOnHangUp '' isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
-				 editableCallKey '' isnull(@editableCallKey, editableCallKey),
-				 cam_tNoContesta '' isnull(@cam_tNoContesta, cam_tNoContesta),
-				 iTipoDial '' isnull(@cam_intensive_dialing, iTipoDial),
-				 detectAnswerMachine '' isnull(@detectAnswerMachine, detectAnswerMachine),
-				 detectVoiceMail '' isnull(@detectVoiceMail, detectVoiceMail),
-				 compliance '' isnull(@compliance, compliance),
-				 cam_inter_graba '' isnull(@cam_inter_graba, cam_inter_graba),
-				 cam_NoInt_graba '' isnull(@cam_NoInt_graba, cam_NoInt_graba),
-				 cam_graba '' isnull(convert(bit, @cam_NoInt_graba), cam_graba),
-				 progDial '' isnull(@progDial, progDial),
-				 excCallBack '' isnull(@excCallBack,excCallBack),
-				 dialOrder '' isnull(@dialOrder, dialOrder),
-				 dialPrefix '' isnull(@dialPrefix, dialPrefix),
-				 dialPrefixMan '' isnull(@dialPrefixMan, dialPrefixMan),
-				 dialPrefixXfe '' isnull(@dialPrefixXfe, dialPrefixXfe),
-				 listenManualCall '' isnull(@listenManualCall, listenManualCall),
-				 stopRecording '' isnull(@stopRecording, stopRecording),
-				 abandonCallback '' isnull(@abandonCallback, abandonCallback),
-				 t_autoCB '' isnull(@autoCB,t_autoCB),
-				 id_anilist '' isnull(@id_listAni,id_anilist),
-				 tDialonWrapUp '' case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
-				 cam_fDialOnWU '' case @tDialonWrapUp when 0 then 0 else 2 end,
-				 cam_maxqueue '' isnull(@quesize,cam_maxqueue),
-				 DNCScrub '' isnull(@DNCScrub,DNCScrub),
-				 callerIdDesc '' isnull(@callerIdDesc,callerIdDesc),
-				 timeZoneRule '' isnull(@timeZoneRule,timeZoneRule),
-				 callsBySurvey '' isnull(@callsBySurvey,callsBySurvey),
-				 ivrScript '' isnull(@ivrScript,ivrScript),
-				 surveyPctg '' isnull(@surveyPctg,surveyPctg),
-				 call_record '' isnull(@call_record,call_record),
-				 startStopRecording '' isnull(@dRestrictPlay, startStopRecording),
-				 leaveRecMessage '' isnull(@leaveRecMessage, leaveRecMessage),
-				 manualCallOnChat '' isnull(@manualCallOnChat, manualCallOnChat),
-				 callBackSurveyClient '' isnull(@callBackSurveyClient, callBackSurveyClient),
-				 callBackSurveyAgent '' isnull(@callBackSurveyAgent , callBackSurveyAgent ),
-				 funcEspDtmf ''  isnull(@funcEspDtmf , funcEspDtmf ),
-				 sipHdrFormat '' isnull(@sipHdrsCfg, sipHdrFormat),
-				 prefijo '' isnull(@prefijo, prefijo)
-				Where cam_id '' @cam_id
+				 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+				 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+				 cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+				 cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+				 cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+				 cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+				 cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+				 cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+				 cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+				 cam_fax = isnull(@cam_fax,cam_fax),
+				 cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+				 cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+				 cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+				 ANI = isnull(@ANI,ANI),
+				 cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+				 editableCallKey = isnull(@editableCallKey, editableCallKey),
+				 cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+				 iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+				 detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+				 detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+				 compliance = isnull(@compliance, compliance),
+				 cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+				 cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+				 cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+				 progDial = isnull(@progDial, progDial),
+				 excCallBack = isnull(@excCallBack,excCallBack),
+				 dialOrder = isnull(@dialOrder, dialOrder),
+				 dialPrefix = isnull(@dialPrefix, dialPrefix),
+				 dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+				 dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+				 listenManualCall = isnull(@listenManualCall, listenManualCall),
+				 stopRecording = isnull(@stopRecording, stopRecording),
+				 abandonCallback = isnull(@abandonCallback, abandonCallback),
+				 t_autoCB = isnull(@autoCB,t_autoCB),
+				 id_anilist = isnull(@id_listAni,id_anilist),
+				 tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+				 cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+				 cam_maxqueue = isnull(@quesize,cam_maxqueue),
+				 DNCScrub = isnull(@DNCScrub,DNCScrub),
+				 callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+				 timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+				 callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+				 ivrScript = isnull(@ivrScript,ivrScript),
+				 surveyPctg = isnull(@surveyPctg,surveyPctg),
+				 call_record = isnull(@call_record,call_record),
+				 startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+				 leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+				 manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+				 callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+				 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+				 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+				 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+				 prefijo = isnull(@prefijo, prefijo)
+				Where cam_id = @cam_id
 
-				if @cam_ShowCalifWnd '' 1
+				if @cam_ShowCalifWnd = 1
 				 begin
-				 If not exists(select cam_id from ccCalifCamp where cam_id '' @cam_id and tipo '' 1)
+				 If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
 				  begin
 				  select 0
 				  return(0)
 				  end
 
-				 UPDATE ccCamps SET cam_ShowCalifWnd '' isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
-				 where cam_id '' @cam_id
+				 UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+				 where cam_id = @cam_id
 				 select 1
 				 return(0)
 				  end
 
 				--else
 				UPDATE ccCamps SET
-				cam_ShowCalifWnd '' isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
-				where cam_id '' @cam_id
+				cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+				where cam_id = @cam_id
 				return(0)
 				set nocount off
 
@@ -1020,9 +1034,7 @@ set nocount off
 
 
 	
-
-	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAUpdateEspecConfig'
+		set @process = 'CW-1702  -- ccsp_RIAUpdateEspecConfig'
         set @Sql= '
 ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]
 @inbound_id smallint,
@@ -1125,13 +1137,15 @@ set nocount off
         EXEC(@Sql)
 
 
+		
+-------------------------------SERVICIO DE RENOMBRADO-----------------
 	
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- CheckRecordingsInCampOrAcd '
-        set @Sql= '
+	set @process = 'CW-1702 -- CheckRecordingsInCampOrAcd '
+    set @Sql= '
 		
-ALTER procedure [dbo].[CheckRecordingsInCampOrAcd]
+CREATE procedure [dbo].[CheckRecordingsInCampOrAcd]
 @id integer,
 @cam_mode  bit
 as
@@ -1152,10 +1166,8 @@ if( exists (select * from ccCallsIn where inbound_id = @id))
         EXEC(@Sql)
 
 
-	
--------------------------------SERVICIO DE RENOMBRADO-----------------
-	
-		set @process = 'CW-1702 Version xxx.xxx -- GetCampsAndAcd'
+
+		set @process = 'CW-1702 -- GetCampsAndAcd'
         set @Sql= '
 		
 CREATE procedure [dbo].[GetCampsAndAcd]
@@ -1182,13 +1194,10 @@ if @action = 2
 	end
 
 
-        '
-        EXEC(@Sql)
-
-
-
+'
+EXEC(@Sql)
 	
-		set @process = 'CW-1702 Version xxx.xxx -- '
+		set @process = ''
         set @Sql= '
         '
         EXEC(@Sql)

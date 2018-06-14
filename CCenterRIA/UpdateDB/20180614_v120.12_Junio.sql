@@ -1196,6 +1196,32 @@ if @action = 2
 
 '
 EXEC(@Sql)
+
+
+		set @process = 'CW-1703 -- Crear SP ccsp_DLRGetPBXInfo'
+        set @Sql= 'if not exists (select * from sys.procedures where name = N''ccsp_DLRGetPBXInfo'')
+			begin
+				CREATE procedure [dbo].[ccsp_DLRGetPBXInfo]
+				@pbx_id int
+				AS
+				set nocount on
+
+				declare @port varchar(5), @remotes varchar(300)
+				select @port = valor from ccsettings where setting_id=119
+				select @remotes = valor from ccsettings where setting_id=143
+				select 
+				case when charindex('':'',pbxIp)>0 then pbxIp else concat(pbxIp, '':'', @port) end pbxUri, @port port
+				from
+				(select
+				substring(value,0,charindex(''|'',value)) pbxId,
+				substring(value,charindex(''|'',value)+1,len(value)) pbxIp
+				from dbo.fn_RIASplitDelimited(@remotes, '','')
+				where cast(substring(value,0,charindex(''|'',value)) as int)=@pbx_id) x
+
+				set nocount off
+			end'
+        EXEC(@Sql)
+
 	
 		set @process = 'CW-1702 Version xxx.xxx -- '
         set @Sql= '

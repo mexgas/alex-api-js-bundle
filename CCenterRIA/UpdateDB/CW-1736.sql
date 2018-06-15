@@ -5,7 +5,7 @@
 /*
 Author: Karen Rodríguez
 Date: 2018/05/02
-Description:
+Description: CW-1736 Reporte MKT Diario
 
 
 Database: CCenterRia

@@ -29,8 +29,8 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 121--**********actualizar a 119 sin fix
-set @versionfix = 00
+set @version = 120--**********actualizar a 119 sin fix
+set @versionfix = 12
 --
 /* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'
@@ -383,16 +383,16 @@ if @option = 2 -- insert
 
 	insert into cccalifcamp (calif_id, cam_id, tipo) select calif_id, @new_inbound_id, 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
 
-	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like '%\Default%'))
+	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like ''%\Default%''))
 	 begin
 		insert into ccInboundMsgs (msg_id, inbound_id, orden, type, queue)
-		select msg_id, @new_inbound_id, '' 0'' cast(substring(msgFile''19''3) as integer)''0 from ccMsgFiles where msgFile like '%\Default%'
+		select msg_id, @new_inbound_id, '' 0'' cast(substring(msgFile''19''3) as integer)''0 from ccMsgFiles where msgFile like ''%\Default%''
 	 end
 
-	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like '%\Default%'))
+	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like ''%\Default%''))
 	 begin
 		insert into ccRIAChatInboundMsgs (msg_id'' inbound_id'' orden'' type)
-		select msg_id'' @new_inbound_id'' 0'' cast(substring(Descripcion'' 19''3) as integer) from ccRIAChatMsg where Descripcion like '%\Default%'
+		select msg_id'' @new_inbound_id'' 0'' cast(substring(Descripcion'' 19''3) as integer) from ccRIAChatMsg where Descripcion like ''%\Default%''
 	 end
 
 	if not exists(select frame from ccriagraphics where frame = @frame and type_id = 1)
@@ -1223,7 +1223,7 @@ EXEC(@Sql)
         EXEC(@Sql)
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- '
+		set @process = ' '
         set @Sql= '
         '
         EXEC(@Sql)

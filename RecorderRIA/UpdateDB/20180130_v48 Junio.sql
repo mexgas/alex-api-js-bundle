@@ -3,7 +3,7 @@ Autor: Omar Mejia
 Descripcion:
 
 
-Version requerida: 44
+Version requerida: 47
 */
 set nocount on
 declare @Version int
@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 45
+	Set @Version = 48
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
@@ -25,9 +25,7 @@ set @process = 'SP -- Alter ria_grabacion para saber si la grabacion a sido reno
 	set @Sql= '
 alter table ria_grabacion add 
 HasBeenToRename int null
-
 update RIA_GRABACION set HasBeenToRename = 0
-
 '
 
 EXEC(@sql)
@@ -323,7 +321,7 @@ exec sp_executesql @sSql, N''@fecInicio datetime'', @fecInicio = @FInicio
 	
  	set @process = 'SP -- CountRecorderByCampId'
 	set @Sql= '
-ALTER procedure [dbo].[CountRecorderByCampId]
+create procedure [dbo].[CountRecorderByCampId]
 @cam_id int,
 @tipoLLamada int
 
@@ -364,7 +362,7 @@ END
 	
  	set @process = 'SP --RecordingsToRename '
 	set @Sql= '
-ALTER procedure [dbo].[RecordingsToRename]
+CREATE procedure [dbo].[RecordingsToRename]
 @action int,
 @cam_id int = 0,
 @tipo_llamada int = 0,
@@ -516,12 +514,6 @@ ENDEND
 END
 '
 EXEC(@sql)
-
-
-
-
-
-
 	
 	
 ------------------ fin SCRIPT @Sql ------------------

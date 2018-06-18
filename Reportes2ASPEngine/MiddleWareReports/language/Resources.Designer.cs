@@ -3157,6 +3157,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a MKT Mensual.
+        /// </summary>
+        public static string MKTMensual {
+            get {
+                return ResourceManager.GetString("MKTMensual", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a MKT Tiempos.
         /// </summary>
         public static string MKTTiempos {

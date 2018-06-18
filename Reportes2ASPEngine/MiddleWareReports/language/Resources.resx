@@ -2673,4 +2673,7 @@
   <data name="acdCalls" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
+  <data name="MKTMensual" xml:space="preserve">
+    <value>MKT Mensual</value>
+  </data>
 </root>

@@ -35,7 +35,6 @@ alter table ria_grabacion add  Prefijo varchar(max) null
 '
 EXEC(@sql)
 
-
 set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
 	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
 		begin

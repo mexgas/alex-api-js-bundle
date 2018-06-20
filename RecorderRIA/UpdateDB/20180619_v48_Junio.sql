@@ -21,6 +21,21 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	begin tran
 	begin try
 
+
+ set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
+        set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
+	    begin       
+			create table LogRenameRecording(
+				id int identity(1,1),
+				userID int,
+				camId int,
+				OldNameRec varchar(max),
+				NewNameRec varchar(max),
+				DateRename DateTime
+			)
+	    end'
+        EXEC(@Sql)
+
 set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a sido renombrada'
 	set @Sql= '
 alter table ria_grabacion add 

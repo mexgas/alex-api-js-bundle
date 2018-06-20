@@ -42,20 +42,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
 	begin
 		begin tran
 		begin try
-
-        set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
-        set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
-	    begin       
-			create table LogRenameRecording(
-				id int identity(1,1),
-				userID int,
-				camId int,
-				OldNameRec varchar(max),
-				NewNameRec varchar(max),
-				DateRename DateTime
-			)
-	    end'
-        EXEC(@Sql)
+       
 
  		set @process = 'CW-1702 Version xxx.xxx --Alter table ccInbound se agrega prefijo de la grabacion '
         set @Sql= '
@@ -93,8 +80,8 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
 		if not exists (select * from ccSettings where setting_id = 201 )
 		    begin
 				insert ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
-				values (201,0,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
-				''con este settings se habilita el etiquetado de las grabaciones'',0,''.*'')
+				values (201,1,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
+				''con este settings se habilita el etiquetado de las grabaciones'',1,''.*'')
 			end
         '
         EXEC(@Sql)
@@ -203,6 +190,11 @@ if @option = 2 --Insert
 
 	-- ODC: la campaña siempre esta activa
 	set @Activa = 1
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''''
+
 
 	Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo)
 	select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
@@ -366,6 +358,12 @@ if @option = 2 -- insert
 	
 	if @idarea = 0
 	set @idarea = null
+
+
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''
 	
 	insert into ccinbound (descripcion, starttimeronhangup, idarea, showcalifwnd,prefijo)
 	select @descripcion, 1, @idarea, case when exists(select calif_id from cctipocalif) then 1 else 0 end,

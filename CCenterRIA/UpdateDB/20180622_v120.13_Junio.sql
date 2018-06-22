@@ -12,6 +12,7 @@ CW-1730 MKT Agentes
 CW-1825 Reporte MKT Intervalos
 CW-1937 MKT Mensual
 CW-1866 Resumen de intervalo de tiempos acumulados totales
+CW-1736 Reporte MKT Diario
 
 Database: CCenterRia
 Required version: 120.12
@@ -82,6 +83,13 @@ values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Tot
 insert into migration values(120,''Hold'',2,'''','''','''')
 '
 	EXEC(@sql)
+
+		set @process = 'CW-1736 -- VERSION 119.135 INSERT MktTiempos Menu INTO ccMenus'
+		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
+BEGIN
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7130, ''MKT Tiempos|MKT Tiempos'', 7000, ''B'', 7, 3, '''',''731f2ff063bb49c8a11caef2170ea6d1c14b65a8a1045b18f1558451646695ab'')
+END'
+		EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

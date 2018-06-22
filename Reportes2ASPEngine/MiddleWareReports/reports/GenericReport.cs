@@ -124,6 +124,9 @@ namespace MiddleWareReports
                     case 7150:
                         parametersTotals["timePeriod"] = "M";
                         break;
+                    case 7130:
+                        parametersTotals["timePeriod"] = "D";
+                        break;
                     default:
                         break;
                 }
@@ -1137,6 +1140,9 @@ namespace MiddleWareReports
             {
                 case 7150:
                     paramValueList["timePeriod"] = "M";
+                    break;
+                case 7130:
+                    paramValueList["timePeriod"] = "D";
                     break;
                 default:
                     break;

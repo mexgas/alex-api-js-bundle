@@ -153,6 +153,24 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string avrAnswer {
+            get {
+                return ResourceManager.GetString("avrAnswer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string CallsperACDGroupD {
+            get {
+                return ResourceManager.GetString("CallsperACDGroupD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string crmx_duration {
             get {
                 return ResourceManager.GetString("crmx_duration", resourceCulture);
@@ -192,6 +210,15 @@ namespace MiddleWareReports {
         public static string holdTime {
             get {
                 return ResourceManager.GetString("holdTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string maxDelay {
+            get {
+                return ResourceManager.GetString("maxDelay", resourceCulture);
             }
         }
         
@@ -687,6 +714,24 @@ namespace MiddleWareReports {
         public static string tPromACW {
             get {
                 return ResourceManager.GetString("tPromACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tPromElimCola {
+            get {
+                return ResourceManager.GetString("tPromElimCola", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tPromSalidaExt {
+            get {
+                return ResourceManager.GetString("tPromSalidaExt", resourceCulture);
             }
         }
         

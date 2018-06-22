@@ -140,6 +140,7 @@ inner join sys.tables t on t.name=Art.name
 insert into @tableTrigger
 select t.name as nameTrigger from @tableArticle Art
 inner join sys.triggers  t on Art.objectId=t.parent_id
+where name not like ''MSmerge_%''
 
 select @i=1,@count =count(*) from @tableTrigger
 while @i<=@count

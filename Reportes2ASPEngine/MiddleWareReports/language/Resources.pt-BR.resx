@@ -2136,4 +2136,34 @@
   <data name="Dato5" xml:space="preserve">
     <value>Data5</value>
   </data>
+  <data name="AnsweredandTransferCalls" xml:space="preserve">
+    <value>Chamadas Respondidas e Transferidas</value>
+  </data>
+  <data name="systemTranslated_Xfer" xml:space="preserve">
+    <value>Transferência</value>
+  </data>
+  <data name="DialTypes" xml:space="preserve">
+    <value>Tipo de rolamentos</value>
+  </data>
+  <data name="Dials" xml:space="preserve">
+    <value>Tipo de chamada</value>
+  </data>
+  <data name="systemTranslated_Out" xml:space="preserve">
+    <value>Chamada de saída</value>
+  </data>
+  <data name="tavNum" xml:space="preserve">
+    <value>Tempo de atenção</value>
+  </data>
+  <data name="tnotavNum" xml:space="preserve">
+    <value>Tempo de atenção</value>
+  </data>
+  <data name="tnotesoutNum" xml:space="preserve">
+    <value>Tempo de notas (saída)</value>
+  </data>
+  <data name="TotalNum" xml:space="preserve">
+    <value>Sessões</value>
+  </data>
+  <data name="tTalkNum" xml:space="preserve">
+    <value>Em diálogo (saída)</value>
+  </data>
 </root>

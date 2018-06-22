@@ -738,7 +738,12 @@ namespace MiddleWareReports
                 foreach (DataRow filterDataRow in catalog.Rows)
                 {
                     XmlElement childElement = xml.CreateElement("", xmlChildName, "");
-                    childElement.SetAttribute("description", filterDataRow["description"].ToString());
+                    string descriptionFilter = filterDataRow["description"].ToString();
+                    if (descriptionFilter.StartsWith("systemTranslated_"))
+                    {
+                        descriptionFilter = TranslatorHelper.getResource(descriptionFilter);
+                    }
+                    childElement.SetAttribute("description", descriptionFilter);
                     childElement.SetAttribute("id", filterDataRow["id"].ToString());
                     dbColumn = filterDataRow["dbColumn"].ToString();
                     element.AppendChild(childElement);

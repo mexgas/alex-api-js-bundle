@@ -43,6 +43,8 @@ namespace MiddleWareReports
                     return new RepAgentCallStatusesByInterval();
                 case 2080:
                     return new RepDetailAgent();
+                case 2090:
+                    return new RepViewAgentGISpecial();
                 case 3000: //IN
                     return null; //"Inbound"
                 case 3010:
@@ -129,6 +131,8 @@ namespace MiddleWareReports
                     return new RepSpecialTelephoneNumbersByRegistry();
                 case 4240://Dialing Results Report
                     return new RepSpecialDialingResults();
+                case 4250://Answered and Transfer calls
+                    return new RepOutAnswAndXferCalls();
                 case 6000: //IVR
                     return null; //"IVR"
                 case 6010:

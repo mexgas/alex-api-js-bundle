@@ -291,9 +291,6 @@
   <data name="tnotavg" xml:space="preserve">
     <value>convertToTime</value>
   </data>
-  <data name="CallsperACDGroupD" xml:space="preserve">
-    <value>convertToTime</value>
-  </data>
   <data name="oHour" xml:space="preserve">
     <value>convertToTime</value>
   </data>
@@ -394,6 +391,21 @@
     <value>convertToTime</value>
   </data>
   <data name="AverageHandleTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
     <value>convertToTime</value>
   </data>
 </root>

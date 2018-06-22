@@ -1971,8 +1971,8 @@
   <data name="tPer" xml:space="preserve">
     <value>Personal Time</value>
   </data>
-  <data name="MKTAgents" xml:space="preserve">
-    <value>MKT Agents</value>
+  <data name="SpecialReportAgents" xml:space="preserve">
+    <value>Agentes Especial</value>
   </data>
   <data name="MKTDiario" xml:space="preserve">
     <value>MKT daily</value>

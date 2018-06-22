@@ -2010,8 +2010,8 @@
   <data name="Ayuda" xml:space="preserve">
     <value>Ayuda</value>
   </data>
-  <data name="MKTAgents" xml:space="preserve">
-    <value>MKT Agentes</value>
+  <data name="SpecialReportAgents" xml:space="preserve">
+    <value>Reporte Especial Agentes</value>
   </data>
   <data name="oHour" xml:space="preserve">
     <value>Otra Hora</value>
@@ -2636,5 +2636,38 @@
   </data>
   <data name="tTalkNum" xml:space="preserve">
     <value>En diálogo (Salida)</value>
+  </data>
+  <data name="LlamadasACD" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="MKTAgents" xml:space="preserve">
+    <value>MKT Agentes</value>
+  </data>
+  <data name="NombreAgente" xml:space="preserve">
+    <value>Nombre Agente</value>
+  </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>Tiempo Llamado Agente</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>Tiempo Prom ACD</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>Tiempo Prom ACW</value>
+  </data>
+  <data name="TransSalida" xml:space="preserve">
+    <value>Trans Salida</value>
+  </data>
+  <data name="userId" xml:space="preserve">
+    <value>Id de Usuario</value>
+  </data>
+  <data name="CallsperACDGroupD" xml:space="preserve">
+    <value>Llamadas por Especialidad</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
   </data>
 </root>

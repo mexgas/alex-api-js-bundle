@@ -159,19 +159,17 @@ namespace MiddleWareReports
                     return new RepSpececialAgtPerformance();
                 case 7060: //RepSpecialCallKeyHistory
                     return new RepSpecialCallKeyHistory();
-                case 7070:
-                    return new RepMKTAgentes();
-                case 7080:
-                    return new RepMKTDiario();
                 case 7090:
                     return new RepSpececialAbndPercentage();
                 case 7100:
                     return new RepSpececialAbndProfiles();
                 case 7110:
                     return new RepSpececialAbndTimes();
-                case 7140:
-                    return new RepMKTIntervalos();
-                case 8010:
+		 case 7120:
+                    return new RepMKTAgentes();   
+ 		case 7140:
+                    return new RepMKTIntervalos();             
+		case 8010:
                     return new RepTrunkBusy();
                 case 8020:
                     return new RepOutTrunkBusy();

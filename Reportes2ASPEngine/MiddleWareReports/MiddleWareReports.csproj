@@ -109,6 +109,9 @@
     <Compile Include="reports\outboundreports\RepOutCallsOnChatDetail.cs" />
     <Compile Include="reports\outboundreports\RepOutManagementBase.cs" />
     <Compile Include="reports\specialreports\RepMKTAgentes.cs" />
+    <Compile Include="reports\specialreports\RepSpecialReportAgents.cs" />
+    <Compile Include="reports\specialreports\RepMKTDiario.cs" />
+    <Compile Include="reports\specialreports\RepMKTIntervalos.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbnd.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbndPercentage.cs" />
     <Compile Include="reports\specialreports\RepSpececialAbndProfiles.cs" />
@@ -121,6 +124,7 @@
     <Compile Include="reports\specialreports\RepSpecialDialingResults.cs" />
     <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByRegistry.cs" />
     <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByState.cs" />
+    <Compile Include="reports\specialreports\RepViewMKTMensual.cs" />
     <Compile Include="reports\specialreports\RepViewMKTDiario.cs" />
     <Compile Include="reports\twitter\RepTwitterACD.cs" />
     <Compile Include="reports\twitter\RepTwitterAgente.cs" />
@@ -259,9 +263,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

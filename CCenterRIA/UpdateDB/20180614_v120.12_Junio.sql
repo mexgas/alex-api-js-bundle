@@ -8,7 +8,6 @@ Date: 2018/05/29
 Description:
 
 
-
 Database: CCenterRia
 Required version: 119.119.135
 
@@ -29,8 +28,8 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 121--**********actualizar a 119 sin fix
-set @versionfix = 00
+set @version = 120--**********actualizar a 119 sin fix
+set @versionfix = 12
 --
 /* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'
@@ -39,41 +38,28 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 134
+if  @actualVersion = @version and  @actualVersionFix >= 11
 	begin
 		begin tran
 		begin try
-
-        set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
-        set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
-	    begin       
-			create table LogRenameRecording(
-				id int identity(1,1),
-				userID int,
-				camId int,
-				OldNameRec varchar(max),
-				NewNameRec varchar(max),
-				DateRename DateTime
-			)
-	    end'
-        EXEC(@Sql)
+       
 
  		set @process = 'CW-1702 Version xxx.xxx --Alter table ccInbound se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound''))
 		    begin
 		       alter table ccInbound ADD prefijo varchar(40) null
-		end
+			end
         '
         EXEC(@Sql)
-       
+   
 
  		set @process = 'CW-1702 Version xxx.xxx --Alter table ccCamps se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps''))
-		    begin
+			begin
 		       alter table ccCamps ADD prefijo varchar(40) null
-		end
+			end
         '
         EXEC(@Sql)
 	
@@ -94,48 +80,51 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
 		if not exists (select * from ccSettings where setting_id = 201 )
 		    begin
 				insert ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
-				values (201,0,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
-				''con este settings se habilita el etiquetado de las grabaciones'',0,''.*'')
+				values (201,1,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
+				''con este settings se habilita el etiquetado de las grabaciones'',1,''.*'')
 			end
         '
         EXEC(@Sql)
 
         --STORE PROCEDURE
-		set @process = 'CW-1702 Version xxx.xxx -- Se agrega el SP para contar las grabaciones por campaña'
+		set @process = 'CW-1702 Version validacion de getCampsAndAcd'
         set @Sql= '
-		if not exists (select * from sys.procedures where name = N''GetCampsAndAcd'')
+		if exists (select * from sys.procedures where name = N''GetCampsAndAcd'')
 		    begin
-		        CREATE procedure [dbo].[GetCampsAndAcd]
-				@action int,
-				@camId int = 0,
-				@tipoLlamada int = 0,
-				@prefijo varchar(max)=''''
+				drop procedure GetCampsAndAcd
+			end
+		'
+		EXEC(@Sql)
 
-				as
-				if @action =1 
-					begin
-						select cam_id as Cam_Id,cam_descripcion as Descripcion ,2 as [TipoLlamada] from ccCamps
-						union
-						select Inbound_id as Cam_Id,descripcion as Descripcion ,1 as [TipoLlamada] from ccinbound 
-					end
-				if @action = 2
-					if @tipoLlamada = 1
-					begin
-						UPDATE ccInbound set prefijo = @prefijo where Inbound_id = @camId 
-					end
-					if @tipoLlamada = 2
-					begin
-						UPDATE ccCamps set prefijo = @prefijo where cam_id = @camId 
-					end
-		    end
-        '
+		set @process = 'CW-1702 Version Se agrega el SP para contar las grabaciones por campaña'
+        set @Sql= '
+		    CREATE procedure [dbo].[GetCampsAndAcd]
+			@action int,
+			@camId int = 0,
+			@tipoLlamada int = 0,
+			@prefijo varchar(max)=''''
+
+			as
+			if @action =1 
+				begin
+					select cam_id as Cam_Id,cam_descripcion as Descripcion ,2 as [TipoLlamada] from ccCamps
+					union
+					select Inbound_id as Cam_Id,descripcion as Descripcion ,1 as [TipoLlamada] from ccinbound 
+				end
+			if @action = 2
+				if @tipoLlamada = 1
+				begin
+					UPDATE ccInbound set prefijo = @prefijo where Inbound_id = @camId 
+				end
+				if @tipoLlamada = 2
+				begin
+					UPDATE ccCamps set prefijo = @prefijo where cam_id = @camId 
+				end		    
+			'
         EXEC(@Sql)
 
         set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCCamps'
         set @Sql= '
-		if not exists (select * from sys.procedures where name = N''ccsp_RIA_ABCCamps'')
-		    begin
-		       
 ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 @option smallint,
 @UserId int = null,
@@ -201,6 +190,11 @@ if @option = 2 --Insert
 
 	-- ODC: la campaña siempre esta activa
 	set @Activa = 1
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''''
+
 
 	Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo)
 	select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
@@ -315,16 +309,13 @@ if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar
 
 return(0)
 set nocount off
-
-		    end
-        '
+ '
         EXEC(@Sql)
 
 
 	
 		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCACDGroups '
         set @Sql= '
-		
 ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
 @option smallint,
 @userid int,
@@ -339,8 +330,8 @@ declare @new_inbound_id smallint, @graph_id smallint
 
 if @option = 0 -- all acd
  begin
-	 select acd.inbound_id'' acd.descripcion'' isnull(acd.idarea''0) as idarea''
-	isnull(areas.areaname'''') as areaname
+	 select acd.inbound_id, acd.descripcion, isnull(acd.idarea,0) as idarea,
+	isnull(areas.areaname,'''') as areaname
 	 from ccinbound as acd with(nolock)
 	 left join dbo.ccriacat_areas as areas with(nolock) on acd.idarea = areas.idarea
 	 return(0)
@@ -348,7 +339,7 @@ if @option = 0 -- all acd
 
 if @option = 1 -- select acd
  begin
-	 select a1.inbound_id'' a1.descripcion'' a3.frame'' a1.showcalifwnd'' a1.starttimeronhangup'' isnull(a1.idarea''0)'' isnull(a1.cam_id''0) cam_id
+	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id
 	 from ccinbound a1 
 	  inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)
 	  inner join ccriagraphics a3 on (a2.graphic_id=a3.graphic_id)
@@ -361,15 +352,21 @@ if @option = 2 -- insert
  begin
 	if exists (select descripcion from ccinbound where descripcion = @descripcion and status = 1)
 	 begin
-			select -1--'' ''nombre en uso''
+			select -1--, ''nombre en uso''
 			return(0)
 	 end
 	
 	if @idarea = 0
 	set @idarea = null
+
+
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''
 	
-	insert into ccinbound (descripcion'' starttimeronhangup'' idarea'' showcalifwnd''Prefijo)
-	select @descripcion'' 1'' @idarea'' case when exists(select calif_id from cctipocalif) then 1 else 0 end
+	insert into ccinbound (descripcion, starttimeronhangup, idarea, showcalifwnd,prefijo)
+	select @descripcion, 1, @idarea, case when exists(select calif_id from cctipocalif) then 1 else 0 end,
 	@Prefijo
 	
 	if @@rowcount = 1
@@ -383,16 +380,16 @@ if @option = 2 -- insert
 
 	insert into cccalifcamp (calif_id, cam_id, tipo) select calif_id, @new_inbound_id, 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
 
-	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like '%\Default%'))
+	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like ''%\Default%''))
 	 begin
 		insert into ccInboundMsgs (msg_id, inbound_id, orden, type, queue)
-		select msg_id, @new_inbound_id, '' 0'' cast(substring(msgFile''19''3) as integer)''0 from ccMsgFiles where msgFile like '%\Default%'
+		select msg_id, @new_inbound_id, 0, cast(substring(msgFile, 19,3) as integer),0 from ccMsgFiles where msgFile like ''%\Default%''
 	 end
 
-	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like '%\Default%'))
+	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like ''%\Default%''))
 	 begin
-		insert into ccRIAChatInboundMsgs (msg_id'' inbound_id'' orden'' type)
-		select msg_id'' @new_inbound_id'' 0'' cast(substring(Descripcion'' 19''3) as integer) from ccRIAChatMsg where Descripcion like '%\Default%'
+		insert into ccRIAChatInboundMsgs (msg_id, inbound_id, orden, type)
+		select msg_id, @new_inbound_id, 0, cast(substring(Descripcion, 19,3) as integer) from ccRIAChatMsg where Descripcion like ''%\Default%''
 	 end
 
 	if not exists(select frame from ccriagraphics where frame = @frame and type_id = 1)
@@ -408,7 +405,7 @@ if @option = 2 -- insert
 if @option = 3 -- update
  begin
 	 if not exists (select frame from ccriagraphics where frame=@frame and type_id=1)
-		insert into ccriagraphics (frame, type_id) values (@frame,1)
+		insert into ccriagraphics (frame, type_id) values (@frame, 1)
 
 	 select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
 	 update ccinbound set descripcion = @descripcion where inbound_id = (cast(@inbound_id as int))
@@ -430,7 +427,7 @@ if @option = 4 -- delete
 if @option = 5 -- asignar campaña a ACD
  begin
 	if not exists (select inbound_id from ccInbound where inbound_id=@inbound_id) or
-	 (@descripcion is not null and @descripcion <> '' and @descripcion <> ''0'' and 
+	 (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
 		not exists (select cam_id from ccCamps where cam_id=@descripcion))
 	 begin
 		select -3 -- Campaña o ACD invalido
@@ -689,10 +686,9 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- '
+		set @process = 'CW-1702 Version xxx.xxx -- ccsp_AvrsSyncronization'
         set @Sql= '
-	
-ALTER procedure [dbo].[ccsp_AvrsSyncronization]
+	ALTER procedure [dbo].[ccsp_AvrsSyncronization]
 @action smallint,
 @maxRecordsToTransfer int=10,
 @id int=0
@@ -723,9 +719,9 @@ if @action=1 begin
     cal_key, cal_manual, cal_puerto,  0 as dni_id , fvalida , cal_whohung,
     isnull(cast(califSub_id as smallint),0) as califSub_id,
     case when trans.tAntesXfer is null then cal_tMoh when cal_tMoh-trans.tAntesXfer<0 then 0  else cal_tMoh-trans.tAntesXfer end  as cal_tMoh ,
-    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId,camps.prefijo
+    dateadd(ss,cal_tDialog, cal_inicio) dateEnd,avrs.tipo+1 as callType,avrs.id as avrsId,camps.prefijo 
     from ccoCallsOut  as call   
-    inner join ccCamps on ccCamps.cam_id=call.cam_id
+    inner join ccCamps camps on camps.cam_id=call.cam_id
     inner join ccAVRSTransfer avrs on call.cal_id=avrs.cal_id and avrs.tipo=1   
     left join 
         (select cal_id,tipo,sum(tAntesXfer) as tAntesXfer,sum(tDespuesXfer) as tDespuesXfer from ccLogTransfers where tipo=2 group by cal_id,tipo 
@@ -735,6 +731,9 @@ end
 else if @action=2 begin
     delete from ccAVRSTransfer where id = @id
 end
+
+
+
 
         '
         EXEC(@Sql)
@@ -755,7 +754,8 @@ Calificacion varchar(60),
 Duracion varchar(10) not null,
 CallBack varchar(60),
 cal_key varchar(20),
-IDCampEsp smallint not null
+IDCampEsp smallint not null,
+prefijo varchar(maX) null
 )
 insert into @lastCallAgt
 select top 10 c.cal_id as id, ''IN'' as Tipo, convert(varchar(10), cal_inicio, 108) as Hora, cal_ani as Telefono, descripcion as EspCamp, 
@@ -782,7 +782,7 @@ isnull(cal.Description, '''') as Calificacion,
     cal_tDialog - cal_tMoh 
     +  case when stopRecording=0 then isnull( t.tDespuesXfer ,0) else 0 end
     , 0), 114)  as Duracion,
-    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp , ISNULL(o.prefijo,'''') Prefijo
+    isnull(convert(varchar(16), cal_fcallback, 121) ,'''') as CallBack, cal_key, c.cam_id as IDCampEsp , ISNULL(ccCamps.prefijo,'''') Prefijo
 from ccoCallsOut c
 inner join ccCamps on ccCamps.cam_id=c.cam_id
 left join ccTipoCalifOut cal on c.calif_id = cal.calif_id
@@ -889,13 +889,6 @@ set nocount off
 	
 		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAUpdateCamConfig'
         set @Sql= '
-	USE [CCenterRia]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_RIAUpdateCamConfig]    Script Date: 14/06/2018 03:35:46 p. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@cam_id smallint,
 				@cam_descripcion varchar(40) = null,
@@ -1140,8 +1133,15 @@ set nocount off
 		
 -------------------------------SERVICIO DE RENOMBRADO-----------------
 	
+	set @process = 'CW-1702 Version xxx.xxx -- CheckRecordingsInCampOrAcd '
+    set @Sql= '
+		if exists (select * from sys.procedures where name = N''CheckRecordingsInCampOrAcd'')
+		    begin
+				drop procedure CheckRecordingsInCampOrAcd
+			end
+		'
+	  EXEC(@Sql)
 
-	
 	set @process = 'CW-1702 Version xxx.xxx -- CheckRecordingsInCampOrAcd '
     set @Sql= '
 		
@@ -1164,43 +1164,21 @@ if( exists (select * from ccCallsIn where inbound_id = @id))
 
         '
         EXEC(@Sql)
-
-
-
-		set @process = 'CW-1702 Version xxx.xxx -- GetCampsAndAcd'
-        set @Sql= '
 		
-CREATE procedure [dbo].[GetCampsAndAcd]
-@action int,
-@camId int = 0,
-@tipoLlamada int = 0,
-@prefijo varchar(max)=''''
-
-as
-if @action =1 
-	begin
-		select cam_id as Cam_Id,cam_descripcion as Descripcion ,2 as [TipoLlamada] from ccCamps
-		union
-		select Inbound_id as Cam_Id,descripcion as Descripcion ,1 as [TipoLlamada] from ccinbound 
-	end
-if @action = 2
-	if @tipoLlamada = 1
-	begin
-		UPDATE ccInbound set prefijo = @prefijo where Inbound_id = @camId 
-	end
-	if @tipoLlamada = 2
-	begin
-		UPDATE ccCamps set prefijo = @prefijo where cam_id = @camId 
-	end
-
-
-'
-EXEC(@Sql)
 
 
 		set @process = 'CW-1703 -- Crear SP ccsp_DLRGetPBXInfo'
-        set @Sql= 'if not exists (select * from sys.procedures where name = N''ccsp_DLRGetPBXInfo'')
+        set @Sql= '
+		if exists (select * from sys.procedures where name = N''ccsp_DLRGetPBXInfo'')
 			begin
+				drop procedure ccsp_DLRGetPBXInfo
+			end
+		'
+		 EXEC(@Sql)
+
+
+		set @process = 'CW-1703 -- Crear SP ccsp_DLRGetPBXInfo'
+        set @Sql= '
 				CREATE procedure [dbo].[ccsp_DLRGetPBXInfo]
 				@pbx_id int
 				AS
@@ -1219,16 +1197,14 @@ EXEC(@Sql)
 				where cast(substring(value,0,charindex(''|'',value)) as int)=@pbx_id) x
 
 				set nocount off
-			end'
+			'
         EXEC(@Sql)
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- '
+		set @process = ' '
         set @Sql= '
         '
         EXEC(@Sql)
-
-
 	
 
 		/* End script release */

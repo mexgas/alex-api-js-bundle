@@ -21,17 +21,66 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	begin tran
 	begin try
 
-set @process = 'SP -- Alter ria_grabacion para saber si la grabacion a sido renombrada'
+
+ set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
+        set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
+	    begin       
+			create table LogRenameRecording(
+				id int identity(1,1),
+				userID int,
+				camId int,
+				OldNameRec varchar(max),
+				NewNameRec varchar(max),
+				DateRename DateTime
+			)
+	    end'
+        EXEC(@Sql)
+
+set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a sido renombrada'
 	set @Sql= '
 alter table ria_grabacion add 
 HasBeenToRename int null
-update RIA_GRABACION set HasBeenToRename = 0
 '
-
 EXEC(@sql)
 
 
- 	set @process = 'SP -- trsp_InsertRecNode'
+set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
+	set @Sql= '
+alter table ria_grabacion add  Prefijo varchar(max) null
+'
+EXEC(@sql)
+
+set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+
+set @process = 'CW - 1702 Se agrega prefijo a las tablas ccCamps y ccInbound de la base CCRecorderRIA'
+	set @Sql= '
+alter table ccInbound ADD prefijo varchar(40) null
+alter table ccCamps ADD prefijo varchar(40) null
+'
+EXEC(@sql)
+
+
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
+set @process = 'CW - 1702 UPDATE column HasBeenToRename'
+	set @Sql= '
+update RIA_GRABACION set HasBeenToRename = 0
+'
+EXEC(@sql)
+
+
+ 	set @process = 'CW - 1702 SP -- trsp_InsertRecNode'
 	set @Sql= '
 ALTER procedure [dbo].[trsp_InsertRecNode]
 @grabId int,
@@ -510,7 +559,6 @@ SET NOCOUNT ON
 
 	drop table #tmpRepositorios
 
-ENDEND
 END
 '
 EXEC(@sql)

@@ -351,6 +351,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string tACW {
+            get {
+                return ResourceManager.GetString("tACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string tAgent {
             get {
                 return ResourceManager.GetString("tAgent", resourceCulture);
@@ -459,6 +468,24 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string tCliente {
+            get {
+                return ResourceManager.GetString("tCliente", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tDescon {
+            get {
+                return ResourceManager.GetString("tDescon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string tdialog {
             get {
                 return ResourceManager.GetString("tdialog", resourceCulture);
@@ -489,6 +516,24 @@ namespace MiddleWareReports {
         public static string tfocus {
             get {
                 return ResourceManager.GetString("tfocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoDispo {
+            get {
+                return ResourceManager.GetString("TiempoDispo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoSalidaExt {
+            get {
+                return ResourceManager.GetString("TiempoSalidaExt", resourceCulture);
             }
         }
         
@@ -543,6 +588,24 @@ namespace MiddleWareReports {
         public static string tlog {
             get {
                 return ResourceManager.GetString("tlog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tLogout {
+            get {
+                return ResourceManager.GetString("tLogout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tManual {
+            get {
+                return ResourceManager.GetString("tManual", resourceCulture);
             }
         }
         

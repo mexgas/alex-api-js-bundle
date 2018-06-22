@@ -175,6 +175,8 @@ namespace MiddleWareReports
                     return new RepMKTIntervalos();     
 		case 7150:
                     return new RepViewMKTMensual();        
+		case 7160:
+                    return new RepMKTIntervalosTiemposAcuTotales();
 		case 8010:
                     return new RepTrunkBusy();
                 case 8020:

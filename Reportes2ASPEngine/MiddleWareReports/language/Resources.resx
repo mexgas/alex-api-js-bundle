@@ -2718,4 +2718,62 @@
   <data name="MKTMensual" xml:space="preserve">
     <value>MKT Mensual</value>
   </data>
+
+  <data name="acdCalls" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="AHT" xml:space="preserve">
+    <value>AHT</value>
+  </data>
+  <data name="InboundId" xml:space="preserve">
+    <value>Id de Especialidad</value>
+  </data>
+  <data name="LlamadasAban" xml:space="preserve">
+    <value>Llamadas Abandonadas</value>
+  </data>
+  <data name="LlamadasAtendidas" xml:space="preserve">
+    <value>Llamadas Atendidas</value>
+  </data>
+  <data name="LlamadasenRing" xml:space="preserve">
+    <value>Llamadas en Ring</value>
+  </data>
+  <data name="LlamadasRecibidas" xml:space="preserve">
+    <value>Llamadas Recibidas</value>
+  </data>
+  <data name="LlamadasRetenidas" xml:space="preserve">
+    <value>LlamadasRetenidas</value>
+  </data>
+  <data name="LlamadasSalidaExt" xml:space="preserve">
+    <value>Llamadas Salida Ext</value>
+  </data>
+  <data name="PorcNiveldeServicio4080" xml:space="preserve">
+    <value>% Nivel de Servicio 4080</value>
+  </data>
+  <data name="PromPosicionPersonal" xml:space="preserve">
+    <value>Promedio Posicion Personal</value>
+  </data>
+  <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
+    <value>Resumen de Intervalos de Tiempos Acumulados Totales</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>Tiempo Cliente</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>Tiempo Desconocido</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>Tiempo Disponible</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>Tiempo Salida Ext</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>Tiempo Logout</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>Tiempo Manual</value>
+  </data>
 </root>

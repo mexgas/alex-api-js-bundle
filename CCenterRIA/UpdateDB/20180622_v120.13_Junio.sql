@@ -4,10 +4,12 @@
 
 /*
 Author: Miguel Trejo
+		Karen Rodríguez
 Date: 2018/05/15
 Description:
 
 CW-1730
+CW-1825 - Reporte MKT Intervalos
 
 
 Database: CCenterRia
@@ -53,6 +55,12 @@ insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,re
 values(7120,''MKT Agentes|MKT Agents'',7000,''B'',7,3,'''',''b4f4b155c759f8c7386fb027acee7f985b999b30ef1b03df4b7a0a752a0f9ba1'')'
         EXEC(@Sql)
 
+		set @process = 'CW-1825 -- VERSION 119.122 INSERT MktIntervalos Menu INTO ccMenus'
+		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7140)
+BEGIN
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7140, ''MKT Intervalos|MKT Intervalos'', 7000, ''B'', 7, 3, '''',''ccb46d451ea992fe4a7dc5bd92507ba08baf14ab7f0c3aa900516ba4033f4f38'')
+END'
+		EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

@@ -8,10 +8,10 @@ Author: Miguel Trejo
 Date: 2018/05/15
 Description:
 
-CW-1730
+CW-1730 MKT Agentes
 CW-1825 Reporte MKT Intervalos
 CW-1937 MKT Mensual
-
+CW-1866 Resumen de intervalo de tiempos acumulados totales
 
 Database: CCenterRia
 Required version: 120.12
@@ -69,6 +69,19 @@ BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7150, ''MKT Mensual|MKT Mensual'', 7000, ''B'', 7, 3, '''',''b5a6d57ea092a90659f714f4c26489201c744e4e7c7d8a2871b6a3a28481040e'')
 END'
 		EXEC(@Sql)
+
+        set @process = 'CW-1866-- Insert in ccMenus'
+        set @Sql= 'delete from ccMenus where menu_id=7160
+		insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Total Accumulated Time Intervals'',7000,''B'',7,3,'''',''9da7ea19137edfdce3dd75dcd46f3509cfdebfa2658a448ca534da4b6f560d56cfae860ede1124845ee01738cc486ba5c61945e0300fe54975c192843bdddeb76b9c53306f7aefefaa1058178c0e92df01e170a97c4f46f94804e148cea9c780d4498b4c5402eb17039884f01b482fa3'')	
+'
+        EXEC(@Sql)
+
+		set @process = 'CW-1866 insert into migration'
+    	set @Sql= 'delete from migration where id=120
+insert into migration values(120,''Hold'',2,'''','''','''')
+'
+	EXEC(@sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

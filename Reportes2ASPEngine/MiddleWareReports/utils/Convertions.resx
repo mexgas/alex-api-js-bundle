@@ -420,4 +420,26 @@
   <data name="maxDelay" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="tACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+
 </root>

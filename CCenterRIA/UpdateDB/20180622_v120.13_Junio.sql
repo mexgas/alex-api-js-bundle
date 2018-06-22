@@ -9,7 +9,8 @@ Date: 2018/05/15
 Description:
 
 CW-1730
-CW-1825 - Reporte MKT Intervalos
+CW-1825 Reporte MKT Intervalos
+CW-1937 MKT Mensual
 
 
 Database: CCenterRia
@@ -59,6 +60,13 @@ values(7120,''MKT Agentes|MKT Agents'',7000,''B'',7,3,'''',''b4f4b155c759f8c7386
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7140)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7140, ''MKT Intervalos|MKT Intervalos'', 7000, ''B'', 7, 3, '''',''ccb46d451ea992fe4a7dc5bd92507ba08baf14ab7f0c3aa900516ba4033f4f38'')
+END'
+		EXEC(@Sql)
+
+		set @process = 'CW-1937 -- VERSION 119.135 INSERT MktMensual Menu INTO ccMenus'
+		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7150)
+BEGIN
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7150, ''MKT Mensual|MKT Mensual'', 7000, ''B'', 7, 3, '''',''b5a6d57ea092a90659f714f4c26489201c744e4e7c7d8a2871b6a3a28481040e'')
 END'
 		EXEC(@Sql)
 		/* End script release */

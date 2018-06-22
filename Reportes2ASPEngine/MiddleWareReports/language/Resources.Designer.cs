@@ -2923,7 +2923,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
- ///   Busca una cadena traducida similar a Llamadas por Posicion.
+        ///   Busca una cadena traducida similar a Agent.
         /// </summary>
         public static string LlamadasporPosicion {
             get {
@@ -3183,6 +3183,13 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a MKT Mensual.
+        /// </summary>
+        public static string MKTMensual {
+            get {
+                return ResourceManager.GetString("MKTMensual", resourceCulture);
+            }
+        }
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
         public static string MKTIntervalos {
@@ -3200,8 +3207,8 @@ namespace MiddleWareReports {
             }
         }
         
-        /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo en espera.
+        /// <summary>        
+	/// Busca una cadena traducida similar a Tiempo en espera.
         /// </summary>
         public static string mohTime {
             get {

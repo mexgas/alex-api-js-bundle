@@ -78,12 +78,6 @@ values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Tot
 '
         EXEC(@Sql)
 
-		set @process = 'CW-1866 insert into migration'
-    	set @Sql= 'delete from migration where id=120
-insert into migration values(120,''Hold'',2,'''','''','''')
-'
-	EXEC(@sql)
-
 		set @process = 'CW-1736 -- VERSION 119.135 INSERT MktTiempos Menu INTO ccMenus'
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
 BEGIN

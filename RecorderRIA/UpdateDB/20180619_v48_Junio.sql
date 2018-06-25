@@ -43,7 +43,6 @@ set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a
 	    begin
 			alter table ria_grabacion add HasBeenToRename int null
 		end
-
 '
 EXEC(@sql)
 
@@ -1095,8 +1094,7 @@ create procedure [dbo].[CountRecorderByCampId]
 @tipoLLamada int
 
 as
-select count(*) from ria_grabacion where cam_id = @cam_id and tipo_llamada = @tipoLLamada
-
+select count(*) from ria_grabacion where cam_id = @cam_id and tipo_llamada = @tipoLLamada and (HasBeenToRename = 0 OR HasBeenToRename IS NULL)
 	'
 	EXEC(@sql)
 
@@ -1117,7 +1115,7 @@ if @action = 1
 	end
 if @action = 2
 	begin
-		SELECT     Cast(id_repositorio as Int ) as id_repositorio, ruta_repositorio, ruta_local
+		SELECT     Cast(id_repositorio as Int ) as id_repositorio, ruta_repositorio, ruta_local,ruta_local_imagenes
 		FROM       TREC_REPOSITORIOS
 	end
 END
@@ -1176,7 +1174,7 @@ if @action = 2
 				select @PrefijocampOrAcd=prefijo  from cccamps where cam_id = @cam_id 
 			end
 		
-		UPDATE RIA_GRABACION SET Prefijo =@PrefijocampOrAcd where
+		UPDATE RIA_GRABACION SET Prefijo =@PrefijocampOrAcd, HasBeenToRename = 1 where
 		cal_id = @cal_id and tipo_llamada = case @tipo When ''I'' then 1 when ''O'' then 2 end   
 				
 	

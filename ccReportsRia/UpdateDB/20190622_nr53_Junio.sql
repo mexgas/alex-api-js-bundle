@@ -55,6 +55,14 @@ set @process = 'CW-1730 -- DROP FUNCTION TimeInterval'
 '
 	EXEC(@sql)
 
+set @process = 'CW-1730 -- DROP FUNCTION AccountInterval'
+    	set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''AccountInterval'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        DROP FUNCTION AccountInterval
+    end
+'
+	EXEC(@sql)
+
 set @process = 'CW-1730 -- DROP FUNCTION GetTimeGroup'
     	set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''GetTimeGroup'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
     begin
@@ -78,6 +86,23 @@ BEGIN
 
 	RETURN (@time)
 END
+'
+	EXEC(@sql)
+
+		set @process = 'CW-1730 -- CREATE FUNCTION AccountInterval'
+    	set @Sql= 'create FUNCTION [dbo].[AccountInterval] (@start datetime,@stop datetime,@state1 datetime,@state2 datetime,@ntotal int)  
+RETURNS int
+AS  
+BEGIN 
+	declare @total int
+	
+	set @total= 
+	case when @start<= @state1 and  @stop > @state1 and @stop < @state2 then @ntotal 
+	else 0 end
+
+	RETURN (@total)
+END
+
 '
 	EXEC(@sql)
 
@@ -1387,14 +1412,7 @@ select
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
     set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7130)
 BEGIN
-INSERT INTO GroupByReports values(7130, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
-sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
-sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|
-case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|
-case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end)>0 
-		then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100)>100 then 100 
-			   else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100) end)
-		else 0 end|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
+INSERT INTO GroupByReports values(7130, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp2)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|  sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|  sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|  case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|  case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end)>0     then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100) end)    else 0 end:avrTimeACD|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
 

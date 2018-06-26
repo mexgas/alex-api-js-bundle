@@ -339,7 +339,8 @@ if @option = 0 -- all acd
 
 if @option = 1 -- select acd
  begin
-	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id
+	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id,
+	 prefijo as Prefijo
 	 from ccinbound a1 
 	  inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)
 	  inner join ccriagraphics a3 on (a2.graphic_id=a3.graphic_id)
@@ -1149,18 +1150,22 @@ CREATE procedure [dbo].[CheckRecordingsInCampOrAcd]
 @id integer,
 @cam_mode  bit
 as
-if (@cam_mode = 0)
-	if( exists (select * from ccoCallsOut where cam_id = @id))
-	select ISNULL(prefijo,'''') from ccCamps where cam_id =@id
-	else
+declare @PrefixEnable int
+select @PrefixEnable=valor from ccSettings where setting_id = 201
+if @PrefixEnable =0 
 	select ''0''
 else
-
-if( exists (select * from ccCallsIn where inbound_id = @id))
-	select ISNULL(prefijo,'''') from ccInbound where inbound_id = @id
+	if (@cam_mode = 0)
+		if( exists (select * from ccoCallsOut where cam_id = @id) )
+		select ISNULL(prefijo,'''') from ccCamps where cam_id =@id
+		else
+		select ''0''
 	else
-	select ''0''
-	
+
+	if( exists (select * from ccCallsIn where inbound_id = @id ) )
+		select ISNULL(prefijo,'''') from ccInbound where inbound_id = @id
+		else
+		select ''0''
 
         '
         EXEC(@Sql)

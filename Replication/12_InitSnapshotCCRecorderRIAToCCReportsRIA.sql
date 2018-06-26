@@ -27,7 +27,7 @@ if @Version_Actual >= @Version
 		CREATE TABLE [dbo].[MigrationAVRSReports](
 		[id] [int] NOT NULL,
 		[description] [varchar](255) NOT NULL,
-		[status] [bit] NOT NULL,
+		[status] [int] NOT NULL,
 		[error] [nvarchar](max) NOT NULL,
 		[dateStart] datetime NOT NULL,
 		[dateEnd] datetime NOT NULL

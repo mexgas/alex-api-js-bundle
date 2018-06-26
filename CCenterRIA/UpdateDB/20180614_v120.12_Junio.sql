@@ -339,7 +339,7 @@ if @option = 0 -- all acd
 
 if @option = 1 -- select acd
  begin
-	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id
+	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id,
 	 prefijo as Prefijo
 	 from ccinbound a1 
 	  inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)

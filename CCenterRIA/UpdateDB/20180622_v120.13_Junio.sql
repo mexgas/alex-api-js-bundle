@@ -91,6 +91,7 @@ END'
 		set @Sql= 'USE [msdb]
 
 /****** Object:  Job [CW (AutoStart),(Callback/abandoned update),(Campaign summary)]    Script Date: 23/06/2018 11:10:45 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
 
 /****** Object:  Job [CW (AutoStart),(Callback/abandoned update),(Campaign summary)]    Script Date: 23/06/2018 11:10:45 a.m. ******/
@@ -209,6 +210,7 @@ EndSave:'
 		set @Sql= 'USE [msdb]
 
 /****** Object:  Job [CW Delete old records]    Script Date: 23/06/2018 11:12:00 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''CW Delete old records'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''CW Delete old records'', @delete_unused_schedule=1
 
 /****** Object:  Job [CW Delete old records]    Script Date: 23/06/2018 11:12:00 a.m. ******/
@@ -433,6 +435,7 @@ EndSave:'
 		set @Sql= 'USE [msdb]
 
 /****** Object:  Job [CW Stop inactive campaigns]    Script Date: 23/06/2018 11:24:06 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''CW Stop inactive campaigns'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''CW Stop inactive campaigns'', @delete_unused_schedule=1
 
 /****** Object:  Job [CW Stop inactive campaigns]    Script Date: 23/06/2018 11:24:06 a.m. ******/
@@ -568,6 +571,7 @@ EndSave:'
 		set @Sql= 'USE [msdb]
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''DatabaseCentinella'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''DatabaseCentinella'', @delete_unused_schedule=1
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/

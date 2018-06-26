@@ -1732,6 +1732,7 @@ drop table #reinitmergepullsubscription'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [ReportsMasterProcess]    Script Date: 23/06/2018 11:25:37 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''ReportsMasterProcess'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterProcess'', @delete_unused_schedule=1
 
 /****** Object:  Job [ReportsMasterProcess]    Script Date: 23/06/2018 11:25:37 a.m. ******/
@@ -1801,6 +1802,7 @@ EndSave:'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''DatabaseCentinella'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''DatabaseCentinella'', @delete_unused_schedule=1
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/

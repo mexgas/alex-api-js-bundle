@@ -150,6 +150,7 @@ end'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''AVRSReports'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''AVRSReports Merge Replication'', @delete_unused_schedule=1
 
 /****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
@@ -287,6 +288,7 @@ EndSave:'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [AVRSSaveWorkGroupCalid]    Script Date: 23/06/2018 11:09:44 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''AVRSSaveWorkGroupCalid'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''AVRSSaveWorkGroupCalid'', @delete_unused_schedule=1
 
 /****** Object:  Job [AVRSSaveWorkGroupCalid]    Script Date: 23/06/2018 11:09:44 a.m. ******/
@@ -390,6 +392,7 @@ EndSave:'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''DatabaseCentinella'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''DatabaseCentinella'', @delete_unused_schedule=1
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/
@@ -780,6 +783,7 @@ EndSave:'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [Move Recordings]    Script Date: 23/06/2018 11:25:10 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''Move Recordings'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''Move Recordings'', @delete_unused_schedule=1
 
 
@@ -850,6 +854,7 @@ EndSave:'
     set @Sql= 'USE [msdb]
 
 /****** Object:  Job [ReportsMasterProcessAVRS]    Script Date: 23/06/2018 11:26:05 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''ReportsMasterProcessAVRS'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterProcessAVRS'', @delete_unused_schedule=1
 
 /****** Object:  Job [ReportsMasterProcessAVRS]    Script Date: 23/06/2018 11:26:05 a.m. ******/

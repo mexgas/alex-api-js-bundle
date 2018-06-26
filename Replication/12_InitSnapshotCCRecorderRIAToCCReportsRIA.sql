@@ -47,6 +47,7 @@ where  P.publisher_db=''CCRecorderRIA'' and M.[description] is null
 
 
 /****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''AVRSReports Merge Replication'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''AVRSReports Merge Replication'', @delete_unused_schedule=1
 
 /****** Object:  Job [AVRSReports Merge Replication]    Script Date: 23/06/2018 11:08:46 a.m. ******/

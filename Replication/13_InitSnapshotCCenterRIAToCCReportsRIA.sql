@@ -58,6 +58,7 @@ if @Version_Actual >= @Version
 	set @Sql='USE [msdb]
 
 /****** Object:  Job [CW Merge Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
+if exists( select * from msdb.dbo.sysjobs where name=''CW Merge Replication'')
 EXEC msdb.dbo.sp_delete_job @job_name=N''CW Merge Replication'', @delete_unused_schedule=1
 
 /****** Object:  Job [CW Merge Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/

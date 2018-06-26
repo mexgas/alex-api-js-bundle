@@ -44,7 +44,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
 		begin try
        
 
- 		set @process = 'CW-1702 Version xxx.xxx --Alter table ccInbound se agrega prefijo de la grabacion '
+ 		set @process = 'CW-1702  --Alter table ccInbound se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound''))
 		    begin
@@ -54,7 +54,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
         EXEC(@Sql)
    
 
- 		set @process = 'CW-1702 Version xxx.xxx --Alter table ccCamps se agrega prefijo de la grabacion '
+ 		set @process = 'CW-1702  --Alter table ccCamps se agrega prefijo de la grabacion '
         set @Sql= '
 		if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps''))
 			begin
@@ -65,7 +65,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
 	
 	
 
-		set @process = 'CW-1702 Version xxx.xxx -- Inserta la accion para el log del admin'
+		set @process = 'CW-1702  -- Inserta la accion para el log del admin'
         set @Sql= '
 		if not exists (select * from ccRIALog_Operation where operationType  = 168 )
 		    begin
@@ -75,7 +75,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
         EXEC(@Sql)
 	
 	
-		set @process = 'CW-1702 Version xxx.xxx -- Se agrega el setting que habilita y deshabilita el prefijo de las grabaciones'
+		set @process = 'CW-1702  -- Se agrega el setting que habilita y deshabilita el prefijo de las grabaciones'
         set @Sql= '
 		if not exists (select * from ccSettings where setting_id = 201 )
 		    begin
@@ -123,7 +123,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 11
 			'
         EXEC(@Sql)
 
-        set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCCamps'
+        set @process = 'CW-1702  -- ccsp_RIA_ABCCamps'
         set @Sql= '
 ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 @option smallint,
@@ -314,7 +314,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIA_ABCACDGroups '
+		set @process = 'CW-1702  -- ccsp_RIA_ABCACDGroups '
         set @Sql= '
 ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
 @option smallint,
@@ -339,7 +339,8 @@ if @option = 0 -- all acd
 
 if @option = 1 -- select acd
  begin
-	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id
+	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id,
+	 prefijo as Prefijo
 	 from ccinbound a1 
 	  inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)
 	  inner join ccriagraphics a3 on (a2.graphic_id=a3.graphic_id)
@@ -363,7 +364,7 @@ if @option = 2 -- insert
 	declare @pref int
 	select  @pref = valor from ccSettings where setting_id = 201
 	if (@pref = 0)
-		set @Prefijo = ''
+		set @Prefijo = ''''
 	
 	insert into ccinbound (descripcion, starttimeronhangup, idarea, showcalifwnd,prefijo)
 	select @descripcion, 1, @idarea, case when exists(select calif_id from cctipocalif) then 1 else 0 end,
@@ -465,7 +466,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_DLRgetDialPrefix'
+		set @process = 'CW-1702  -- ccsp_DLRgetDialPrefix'
         set @Sql= '
 		ALTER procedure [dbo].[ccsp_DLRgetDialPrefix]
 @cam_id smallint=0,
@@ -540,7 +541,7 @@ select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectA
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_DLRGetDialInfo'
+		set @process = 'CW-1702  -- ccsp_DLRGetDialInfo'
         set @Sql= '
 		ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
 @callout_id int,
@@ -639,7 +640,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_IVRGetEspecialidadByDnis'
+		set @process = 'CW-1702  -- ccsp_IVRGetEspecialidadByDnis'
         set @Sql= '
 		
 ALTER PROCEDURE [dbo].[ccsp_IVRGetEspecialidadByDnis] 
@@ -686,7 +687,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_AvrsSyncronization'
+		set @process = 'CW-1702  -- ccsp_AvrsSyncronization'
         set @Sql= '
 	ALTER procedure [dbo].[ccsp_AvrsSyncronization]
 @action smallint,
@@ -739,7 +740,7 @@ end
         EXEC(@Sql)
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccspAgent_GetLastCalls'
+		set @process = 'CW-1702  -- ccspAgent_GetLastCalls'
         set @Sql= '
 	ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id int AS
 set nocount on
@@ -802,7 +803,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAConfCamp'
+		set @process = 'CW-1702  -- ccsp_RIAConfCamp'
         set @Sql= '
 		
 ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
@@ -832,7 +833,7 @@ ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
         EXEC(@Sql)
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAConfEspec'
+		set @process = 'CW-1702  -- ccsp_RIAConfEspec'
         set @Sql= '
 		ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
 @User_id int
@@ -887,7 +888,7 @@ set nocount off
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAUpdateCamConfig'
+		set @process = 'CW-1702  -- ccsp_RIAUpdateCamConfig'
         set @Sql= '
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@cam_id smallint,
@@ -1027,7 +1028,7 @@ ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 
 
 	
-		set @process = 'CW-1702 Version xxx.xxx -- ccsp_RIAUpdateEspecConfig'
+		set @process = 'CW-1702  -- ccsp_RIAUpdateEspecConfig'
         set @Sql= '
 ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]
 @inbound_id smallint,
@@ -1133,7 +1134,7 @@ set nocount off
 		
 -------------------------------SERVICIO DE RENOMBRADO-----------------
 	
-	set @process = 'CW-1702 Version xxx.xxx -- CheckRecordingsInCampOrAcd '
+	set @process = 'CW-1702  -- CheckRecordingsInCampOrAcd '
     set @Sql= '
 		if exists (select * from sys.procedures where name = N''CheckRecordingsInCampOrAcd'')
 		    begin
@@ -1142,25 +1143,29 @@ set nocount off
 		'
 	  EXEC(@Sql)
 
-	set @process = 'CW-1702 Version xxx.xxx -- CheckRecordingsInCampOrAcd '
+	set @process = 'CW-1702  -- CheckRecordingsInCampOrAcd '
     set @Sql= '
 		
 CREATE procedure [dbo].[CheckRecordingsInCampOrAcd]
 @id integer,
 @cam_mode  bit
 as
-if (@cam_mode = 0)
-	if( exists (select * from ccoCallsOut where cam_id = @id))
-	select ISNULL(prefijo,'''') from ccCamps where cam_id =@id
-	else
+declare @PrefixEnable int
+select @PrefixEnable=valor from ccSettings where setting_id = 201
+if @PrefixEnable =0 
 	select ''0''
 else
-
-if( exists (select * from ccCallsIn where inbound_id = @id))
-	select ISNULL(prefijo,'''') from ccInbound where inbound_id = @id
+	if (@cam_mode = 0)
+		if( exists (select * from ccoCallsOut where cam_id = @id) )
+		select ISNULL(prefijo,'''') from ccCamps where cam_id =@id
+		else
+		select ''0''
 	else
-	select ''0''
-	
+
+	if( exists (select * from ccCallsIn where inbound_id = @id ) )
+		select ISNULL(prefijo,'''') from ccInbound where inbound_id = @id
+		else
+		select ''0''
 
         '
         EXEC(@Sql)

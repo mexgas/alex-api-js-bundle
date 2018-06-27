@@ -420,9 +420,6 @@
   <data name="maxDelay" xml:space="preserve">
     <value>convertToTime</value>
   </data>
-  <data name="tACW" xml:space="preserve">
-    <value>convertToTime</value>
-  </data>
   <data name="tCliente" xml:space="preserve">
     <value>convertToTime</value>
   </data>
@@ -441,5 +438,10 @@
   <data name="tManual" xml:space="preserve">
     <value>convertToTime</value>
   </data>
-
+  <data name="TiempoPromReten" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromRing" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

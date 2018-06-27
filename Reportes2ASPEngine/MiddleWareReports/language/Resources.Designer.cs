@@ -1834,6 +1834,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Diario Tiempos Totales.
+        /// </summary>
+        public static string DailyTotalTime {
+            get {
+                return ResourceManager.GetString("DailyTotalTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Dato1.
         /// </summary>
         public static string data1 {
@@ -2797,7 +2806,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-      ///   Busca una cadena traducida similar a Id de Especialidad.
+        ///   Busca una cadena traducida similar a Id de Especialidad.
         /// </summary>
         public static string InboundId {
             get {
@@ -2806,7 +2815,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Ocupación de puertos inbound.
+        ///   Busca una cadena traducida similar a Ocupación de puertos inbound.
         /// </summary>
         public static string InboundTrunksbusy {
             get {
@@ -2950,6 +2959,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas ACD.
+        /// </summary>
+        public static string LlamadasACD {
+            get {
+                return ResourceManager.GetString("LlamadasACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Llamadas Atendidas.
         /// </summary>
         public static string LlamadasAtendidas {
@@ -2964,6 +2982,15 @@ namespace MiddleWareReports {
         public static string LlamadasenRing {
             get {
                 return ResourceManager.GetString("LlamadasenRing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas por Posicion.
+        /// </summary>
+        public static string LlamadasporPosicion {
+            get {
+                return ResourceManager.GetString("LlamadasporPosicion", resourceCulture);
             }
         }
         
@@ -2997,23 +3024,6 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a Agente.
         /// </summary>
-        public static string LlamadasporPosicion {
-            get {
-                return ResourceManager.GetString("LlamadasporPosicion", resourceCulture);
-            }
-        }
-        
-        /// <summary>        ///   Busca una cadena traducida similar a Agent.
- ///   Busca una cadena traducida similar a Llamadas ACD.
-        /// </summary>
-        public static string LlamadasACD {
-            get {
-                return ResourceManager.GetString("LlamadasACD", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Agente.        /// </summary>
         public static string login {
             get {
                 return ResourceManager.GetString("login", resourceCulture);
@@ -3255,18 +3265,20 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a MKT Mensual.
-        /// </summary>
-        public static string MKTMensual {
-            get {
-                return ResourceManager.GetString("MKTMensual", resourceCulture);
-            }
-        }
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
         public static string MKTIntervalos {
             get {
                 return ResourceManager.GetString("MKTIntervalos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a MKT Mensual.
+        /// </summary>
+        public static string MKTMensual {
+            get {
+                return ResourceManager.GetString("MKTMensual", resourceCulture);
             }
         }
         
@@ -3279,8 +3291,8 @@ namespace MiddleWareReports {
             }
         }
         
-        /// <summary>        
-	/// Busca una cadena traducida similar a Tiempo en espera.
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en espera.
         /// </summary>
         public static string mohTime {
             get {
@@ -3712,7 +3724,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Chats no conectados por Especialidad.
+        ///   Busca una cadena traducida similar a Nombre de Operadora.
+        /// </summary>
+        public static string NombreDeOperadora {
+            get {
+                return ResourceManager.GetString("NombreDeOperadora", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Chats no conectados por Especialidad.
         /// </summary>
         public static string NotcontactedchatsperACDGroup {
             get {
@@ -4054,6 +4075,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Id de Operadora.
+        /// </summary>
+        public static string OpaId {
+            get {
+                return ResourceManager.GetString("OpaId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Opciones.
         /// </summary>
         public static string options {
@@ -4297,7 +4327,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Prom Posicion Personal.
+        ///   Busca una cadena traducida similar a Promedio Posicion Personal.
         /// </summary>
         public static string PromPosicionPersonal {
             get {
@@ -4909,7 +4939,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
- ///   Busca una cadena traducida similar a Resumen de Intervalos de Tiempos Acumulados Totales.
+        ///   Busca una cadena traducida similar a Resumen de Intervalos de Tiempos Acumulados Totales.
         /// </summary>
         public static string SummaryofTotalAccumulatedTimeIntervals {
             get {
@@ -4918,7 +4948,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Nombre de Supervisor.        ///   Looks up a localized string similar to Nombre de Supervisor.
+        ///   Busca una cadena traducida similar a Nombre de Supervisor.
         /// </summary>
         public static string Supervisor {
             get {
@@ -6674,7 +6704,6 @@ namespace MiddleWareReports {
         
         /// <summary>
         ///   Busca una cadena traducida similar a Tiempo llamada Agente.
-        ///   Looks up a localized string similar to Tiempo llamada Agente.
         /// </summary>
         public static string tAgent {
             get {
@@ -6818,7 +6847,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Diálogo.
+        ///   Busca una cadena traducida similar a Diálogo.
         /// </summary>
         public static string tdialog {
             get {
@@ -6971,7 +7000,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo en cola.
+        ///   Busca una cadena traducida similar a Tiempo en cola.
         /// </summary>
         public static string tiempoCola {
             get {
@@ -6980,7 +7009,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo de espera .
+        ///   Busca una cadena traducida similar a Tiempo Disponible.
+        /// </summary>
+        public static string TiempoDispo {
+            get {
+                return ResourceManager.GetString("TiempoDispo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de espera .
         /// </summary>
         public static string tiempoEspera {
             get {
@@ -7016,7 +7054,25 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo de respuesta.
+        ///   Busca una cadena traducida similar a Tiempo Prom. Retenidas.
+        /// </summary>
+        public static string TiempoPromReten {
+            get {
+                return ResourceManager.GetString("TiempoPromReten", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom. Timbrando.
+        /// </summary>
+        public static string TiempoPromRing {
+            get {
+                return ResourceManager.GetString("TiempoPromRing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo de respuesta.
         /// </summary>
         public static string tiempoRespuesta {
             get {
@@ -7025,7 +7081,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hora.
+        ///   Busca una cadena traducida similar a Tiempo Salida Ext.
+        /// </summary>
+        public static string TiempoSalidaExt {
+            get {
+                return ResourceManager.GetString("TiempoSalidaExt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Hora.
         /// </summary>
         public static string time {
             get {
@@ -7160,7 +7225,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No disponible 1.
+        ///   Busca una cadena traducida similar a No disponible 1.
         /// </summary>
         public static string tnav {
             get {
@@ -7538,7 +7603,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tiempo promedio de respuesta.
+        ///   Busca una cadena traducida similar a Tiempo promedio de respuesta.
         /// </summary>
         public static string tresp {
             get {
@@ -7862,7 +7927,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Nombre de Usuario.
+        ///   Busca una cadena traducida similar a Nombre de Usuario.
         /// </summary>
         public static string userName {
             get {

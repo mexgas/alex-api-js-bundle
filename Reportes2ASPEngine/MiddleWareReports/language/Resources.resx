@@ -2674,7 +2674,7 @@
     <value>Llamadas por Posicion</value>
   </data>
   <data name="PromPosicionPersonal" xml:space="preserve">
-    <value>Prom Posicion Personal</value>
+    <value>Promedio Posicion Personal</value>
   </data>
   <data name="MKTIntervalos" xml:space="preserve">
     <value>MKT Intervalos</value>
@@ -2682,7 +2682,7 @@
   <data name="acdCalls" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
-     <data name="LlamadasACD" xml:space="preserve">
+  <data name="LlamadasACD" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
   <data name="MKTAgents" xml:space="preserve">
@@ -2718,10 +2718,6 @@
   <data name="MKTMensual" xml:space="preserve">
     <value>MKT Mensual</value>
   </data>
-
-  <data name="acdCalls" xml:space="preserve">
-    <value>Llamadas ACD</value>
-  </data>
   <data name="AHT" xml:space="preserve">
     <value>AHT</value>
   </data>
@@ -2749,14 +2745,8 @@
   <data name="PorcNiveldeServicio4080" xml:space="preserve">
     <value>% Nivel de Servicio 4080</value>
   </data>
-  <data name="PromPosicionPersonal" xml:space="preserve">
-    <value>Promedio Posicion Personal</value>
-  </data>
   <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
     <value>Resumen de Intervalos de Tiempos Acumulados Totales</value>
-  </data>
-  <data name="tACW" xml:space="preserve">
-    <value>Tiempo ACW</value>
   </data>
   <data name="tCliente" xml:space="preserve">
     <value>Tiempo Cliente</value>
@@ -2775,5 +2765,20 @@
   </data>
   <data name="tManual" xml:space="preserve">
     <value>Tiempo Manual</value>
+  </data>
+  <data name="DailyTotalTime" xml:space="preserve">
+    <value>Diario Tiempos Totales</value>
+  </data>
+  <data name="NombreDeOperadora" xml:space="preserve">
+    <value>Nombre de Operadora</value>
+  </data>
+  <data name="OpaId" xml:space="preserve">
+    <value>Id de Operadora</value>
+  </data>
+  <data name="TiempoPromReten" xml:space="preserve">
+    <value>Tiempo Prom. Retenidas</value>
+  </data>
+  <data name="TiempoPromRing" xml:space="preserve">
+    <value>Tiempo Prom. Timbrando</value>
   </data>
 </root>

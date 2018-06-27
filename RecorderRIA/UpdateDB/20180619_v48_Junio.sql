@@ -47,8 +47,6 @@ set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a
 EXEC(@sql)
 
 
-
-
 set @process = 'CW - 1702 Modificacion del trsp_AdmRecSearchCallIdStr '
 	set @Sql= '
 ALTER PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
@@ -742,10 +740,6 @@ ALTER PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 EXEC(@sql)
 
 
-
-
-
-
 set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
 	set @Sql= '
 		if not exists (select * from sys.columns where name = N''Prefijo'' and Object_ID = Object_ID(N''ria_grabacion''))
@@ -755,41 +749,6 @@ set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
 '
 EXEC(@sql)
 
-set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
-	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-		begin
-		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-		end'
-	EXEC(@sql)
-
-set @process = 'CW - 1702 Se agrega prefijo a la tabla ccInbound de CCRecorderRIA'
-	set @Sql= '
-	if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound''))
-	     begin
-		    alter table ccInbound ADD prefijo varchar(40) null
-	end
-'
-EXEC(@sql)
-
-
-
-set @process = 'CW - 1702 Se agrega prefijo a la tabla ccCamps de CCRecorderRIA'
-	set @Sql= '
-if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps''))
-	begin
-	    alter table ccCamps ADD prefijo varchar(40) null
-	end
-'
-EXEC(@sql)
-
-
-
-	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
-	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-			begin
-				ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-			end'
-	EXEC(@sql)
 
 set @process = 'CW - 1702 UPDATE column HasBeenToRename'
 	set @Sql= '

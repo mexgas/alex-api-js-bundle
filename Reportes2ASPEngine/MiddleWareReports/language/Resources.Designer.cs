@@ -6744,7 +6744,14 @@ namespace MiddleWareReports {
                 return ResourceManager.GetString("tav", resourceCulture);
             }
         }
-        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempos Especiales.
+        /// </summary>
+        public static string TiempoSalidaExt {
+            get {
+                return ResourceManager.GetString("TiempoSalidaExt", resourceCulture);
+            }
+        }
         /// <summary>
         ///   Busca una cadena traducida similar a Tiempo atencion.
         /// </summary>

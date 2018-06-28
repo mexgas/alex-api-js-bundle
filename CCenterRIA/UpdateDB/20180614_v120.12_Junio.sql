@@ -1193,7 +1193,7 @@ else
 				select @port = valor from ccsettings where setting_id=119
 				select @remotes = valor from ccsettings where setting_id=143
 				select 
-				case when charindex('':'',pbxIp)>0 then pbxIp else concat(pbxIp, '':'', @port) end pbxUri, @port port
+				case when charindex('':'',pbxIp)>0 then pbxIp else pbxIp + '':'' + @port end pbxUri, @port port
 				from
 				(select
 				substring(value,0,charindex(''|'',value)) pbxId,

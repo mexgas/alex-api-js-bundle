@@ -50,6 +50,19 @@ if  @actualVersion = @version and  @actualVersionFix >= 12
 		begin tran
 		begin try
 
+set @process = 'CW-1702-- Actualizacion de setting 201 con valor default 0'
+        set @Sql= '
+
+        if( exists (select * from ccsettings where setting_id= 201 ) ) 
+			update ccsettings set valor = 0 where setting_id= 201
+		else
+			insert ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+			values (201,0,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
+			''con este settings se habilita el etiquetado de las grabaciones'',1,''.*'')'
+
+        EXEC(@Sql)
+
+
         set @process = 'CW-1730-- Insert in ccMenus'
         set @Sql= 'delete from ccMenus where menu_id=7070
 		delete from ccMenus where menu_id=7120

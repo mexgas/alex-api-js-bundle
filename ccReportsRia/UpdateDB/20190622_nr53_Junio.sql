@@ -1169,7 +1169,7 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		 [dbo].TimeInterval( th.[start],th.[stop] ,dateTRing,dateTResp) as tring,
 		 thold,
 		 th.[start] as timegroup,th.[stop] as timegroup_next
-		,[dateTResp] ,[dateTACD] 
+		,[dateTResp],[dateTRing] ,[dateTACD] 
 		,[dateTTransferStart] ,[dateTTransferEnd] 
 		,UserId
 	from #inboundTimeMayores t

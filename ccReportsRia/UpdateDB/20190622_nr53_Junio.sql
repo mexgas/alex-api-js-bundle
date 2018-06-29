@@ -826,7 +826,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 declare @dateNow datetime,@maxLogout datetime
 
@@ -1265,6 +1265,7 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		,DATEPART(hh, [date]) as [hour]
 		,DATEPART(mi, [date]) as [minutes]
 		,sum(nserv) as nserv
+		,sum(nacw) as nacw
 		from #RepMKTIntervalosTiemposAcuTotalesTemp
 		Left join ccinbound  inb ON inb.Inbound_id = inboundId
 		group by[date],inboundId,  inb.descripcion

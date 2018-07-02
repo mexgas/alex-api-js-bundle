@@ -13,6 +13,7 @@ CW-1825 Reporte MKT Intervalos
 CW-1937 MKT Mensual
 CW-1866 Resumen de intervalo de tiempos acumulados totales
 CW-1736 Reporte MKT Diario
+CW-1973 Reporte de resumen de intervalo de tiempos totales
 
 Database: CCenterRia
 Required version: 120.12
@@ -95,6 +96,13 @@ values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Tot
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7130, ''MKT Diario|MKT Daily'', 7000, ''B'', 7, 3, '''',''68ed1908ba3943bcca9958eec69a9e4c7f4f06778e026a0c2a8db08d5d6267e5'')
+END'
+		EXEC(@Sql)
+
+				set @process = 'CW-1973 -- VERSION 120.13 INSERT MktIntervalosTiemposTotales Menu INTO ccMenus'
+		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7170)
+BEGIN
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7170, ''Resumen de intervalo de tiempos totales|Total Time by Interval'', 7000, ''B'', 7, 3, '''',''bbbfef17301544a62f7e5f86ed1e5fc3efd0330aefc9e42dc3d453e3db64c7c6c419f65019600780b88f6e8037f79360485376eb5c083c88b13a6f469f539378'')
 END'
 		EXEC(@Sql)
 

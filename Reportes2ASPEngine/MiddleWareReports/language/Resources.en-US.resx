@@ -2643,6 +2643,9 @@
   <data name="MKTAgents" xml:space="preserve">
     <value>MKT Agents</value>
   </data>
+  <data name="DailyTotalTime" xml:space="preserve">
+    <value>Daily Total Time</value>
+  </data>
   <data name="LlamadasAtendidas" xml:space="preserve">
     <value>Answered Calls</value>
   </data>

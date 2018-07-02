@@ -48,7 +48,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 134
 		set @process = 'CW-1973 -- VERSION 120.13 INSERT MktIntervalosTiemposTotales Menu INTO ccMenus'
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7170)
 BEGIN
-	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7170, ''Resumen de intervalo de tiempos totales|Resumen de intervalo de tiempos totales'', 7000, ''B'', 7, 3, '''',''bbbfef17301544a62f7e5f86ed1e5fc3efd0330aefc9e42dc3d453e3db64c7c687d6f005b683dd7067acc88af52e3813c010e45ae1c99f7f0480903d8ec9fd7cf982fc13faead7cbd6de36c86bcd0a1614233d6a7f903285b738d683955df60e'')
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7170, ''Resumen de intervalo de tiempos totales|Total Time by Interval'', 7000, ''B'', 7, 3, '''',''bbbfef17301544a62f7e5f86ed1e5fc3efd0330aefc9e42dc3d453e3db64c7c6c419f65019600780b88f6e8037f79360485376eb5c083c88b13a6f469f539378'')
 END'
 		EXEC(@Sql)
 	

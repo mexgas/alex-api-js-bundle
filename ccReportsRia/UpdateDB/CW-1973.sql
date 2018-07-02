@@ -487,7 +487,7 @@ BEGIN
 	INSERT INTO ReportsTotals values(7170, ''special:PromPosicionPersonal:(round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1))
 |sum:receivedCalls|sum:acdCalls|sum:abandonedCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)
 |special:tPromRetention:(case when sum(nhold)>0 then sum(thold)/sum(nhold) else 0 end )|sum:callsOutExt|special:TPromSalidaExt:(isnull(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end,0))
-|special:tPromReady:(case when sum(ndispo)>0 then sum(tdispo)/sum(ndispo) else 0 end)|special:TPromRing:(case when sum(nring)>0 then sum(tring)/sum(nring) else 0 end)
+|special:TPromDispon:(case when sum(ndispo)>0 then sum(tdispo)/sum(ndispo) else 0 end)|special:TPromRing:(case when sum(nring)>0 then sum(tring)/sum(nring) else 0 end)
 |special:AHT:(sum(((case when acdCalls>0 then tacd/acdCalls else 0 end)+(case when nacw>0 then tacw/nacw else 0 end)+(case when nring>0 then tring/nring else 0 end)+(case when nhold>0 then thold/nhold else 0 end))))'')
 END'
 	EXEC(@Sql)

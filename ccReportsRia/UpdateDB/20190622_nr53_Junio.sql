@@ -456,7 +456,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 if @action = 1
 begin
@@ -766,13 +766,13 @@ INSERT INTO GroupByReports values(7150, ''Acds|inboundId|case when sum(acdCalls)
 sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
 sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|
 case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|
-case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))*count(distinct accountUserId))/100 else 0 end)>0 
+case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))*count(distinct accountUserId))/100 else 0 end)>0 
 		then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)
-		*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))
-		*count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121))))))*100)>100 then 100 
+		*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))
+		*count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121))))))*100)>100 then 100 
 			   else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)
-			   *MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))*
-			   count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121))))))*100) end)
+			   *MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))*
+			   count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121))))))*100) end)
 		else 0 end:avrTimeACD|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
@@ -826,7 +826,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 declare @dateNow datetime,@maxLogout datetime
 
@@ -1169,7 +1169,7 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		 [dbo].TimeInterval( th.[start],th.[stop] ,dateTRing,dateTResp) as tring,
 		 thold,
 		 th.[start] as timegroup,th.[stop] as timegroup_next
-		,[dateTResp] ,[dateTACD] 
+		,[dateTResp],[dateTRing] ,[dateTACD] 
 		,[dateTTransferStart] ,[dateTTransferEnd] 
 		,UserId
 	from #inboundTimeMayores t
@@ -1265,6 +1265,7 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		,DATEPART(hh, [date]) as [hour]
 		,DATEPART(mi, [date]) as [minutes]
 		,sum(nserv) as nserv
+		,sum(nacw) as nacw
 		from #RepMKTIntervalosTiemposAcuTotalesTemp
 		Left join ccinbound  inb ON inb.Inbound_id = inboundId
 		group by[date],inboundId,  inb.descripcion

@@ -50,6 +50,19 @@ if  @actualVersion = @version and  @actualVersionFix >= 12
 		begin tran
 		begin try
 
+set @process = 'CW-1702-- Actualizacion de setting 201 con valor default 0'
+        set @Sql= '
+
+        if( exists (select * from ccsettings where setting_id= 201 ) ) 
+			update ccsettings set valor = 0 where setting_id= 201
+		else
+			insert ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+			values (201,0,''Habilitar prefijo en grabaciones'',1,''X'',''0 - Prefijo no esta habilitado / 1 - Prefijo Habilitado'',
+			''con este settings se habilita el etiquetado de las grabaciones'',1,''.*'')'
+
+        EXEC(@Sql)
+
+
         set @process = 'CW-1730-- Insert in ccMenus'
         set @Sql= 'delete from ccMenus where menu_id=7070
 		delete from ccMenus where menu_id=7120
@@ -57,17 +70,17 @@ insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,re
 values(7120,''MKT Agentes|MKT Agents'',7000,''B'',7,3,'''',''b4f4b155c759f8c7386fb027acee7f985b999b30ef1b03df4b7a0a752a0f9ba1'')'
         EXEC(@Sql)
 
-		set @process = 'CW-1825 -- VERSION 119.122 INSERT MktIntervalos Menu INTO ccMenus'
+				set @process = 'CW-1825 -- VERSION 119.122 INSERT MktIntervalos Menu INTO ccMenus'
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7140)
 BEGIN
-	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7140, ''MKT Intervalos|MKT Intervalos'', 7000, ''B'', 7, 3, '''',''ccb46d451ea992fe4a7dc5bd92507ba08baf14ab7f0c3aa900516ba4033f4f38'')
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7140, ''MKT Intervalos|MKT Intervals'', 7000, ''B'', 7, 3, '''',''ccb46d451ea992fe4a7dc5bd92507ba0583351e417faa46e35d1d81f7bc6c807'')
 END'
 		EXEC(@Sql)
 
 		set @process = 'CW-1937 -- VERSION 119.135 INSERT MktMensual Menu INTO ccMenus'
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7150)
 BEGIN
-	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7150, ''MKT Mensual|MKT Mensual'', 7000, ''B'', 7, 3, '''',''b5a6d57ea092a90659f714f4c26489201c744e4e7c7d8a2871b6a3a28481040e'')
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7150, ''MKT Mensual|MKT by Month'', 7000, ''B'', 7, 3, '''',''b5a6d57ea092a90659f714f4c2648920ca846236b882a88e87682c894323791a'')
 END'
 		EXEC(@Sql)
 
@@ -81,7 +94,7 @@ values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Tot
 		set @process = 'CW-1736 -- VERSION 119.135 INSERT MktTiempos Menu INTO ccMenus'
 		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
 BEGIN
-	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7130, ''MKT Tiempos|MKT Tiempos'', 7000, ''B'', 7, 3, '''',''731f2ff063bb49c8a11caef2170ea6d1c14b65a8a1045b18f1558451646695ab'')
+	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7130, ''MKT Diario|MKT Daily'', 7000, ''B'', 7, 3, '''',''68ed1908ba3943bcca9958eec69a9e4c7f4f06778e026a0c2a8db08d5d6267e5'')
 END'
 		EXEC(@Sql)
 

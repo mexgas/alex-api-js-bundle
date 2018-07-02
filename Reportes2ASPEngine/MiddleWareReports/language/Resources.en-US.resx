@@ -2679,5 +2679,46 @@
   <data name="TiempoPromRing" xml:space="preserve">
     <value>Average Ringing Time</value>
   </data>
-
+  <data name="LlamadasAban" xml:space="preserve">
+    <value>Abandoned Calls</value>
+  </data>
+  <data name="LlamadasenRing" xml:space="preserve">
+    <value>Ringing Calls</value>
+  </data>
+  <data name="LlamadasRecibidas" xml:space="preserve">
+    <value>Received Calls</value>
+  </data>
+  <data name="LlamadasRetenidas" xml:space="preserve">
+    <value>Hold Calls</value>
+  </data>
+  <data name="LlamadasSalidaExt" xml:space="preserve">
+    <value>Transferred Calls</value>
+  </data>
+  <data name="PorcNiveldeServicio4080" xml:space="preserve">
+    <value>Service Level</value>
+  </data>
+  <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
+    <value>Total Time By Interval (Accumulated)</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>Customer Interaction Time</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>Unknown Time</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>Ready Time</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>Transferred Calls Time</value>
+  </data>
+  <data name="timeretention" xml:space="preserve">
+    <value>Hold Time</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>Offline Time</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>Manual Calls Time</value>
+  </data>
 </root>

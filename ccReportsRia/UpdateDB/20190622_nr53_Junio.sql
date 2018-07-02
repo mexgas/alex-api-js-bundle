@@ -654,8 +654,10 @@ begin
 end'
 	EXEC(@Sql)
 
-	set @process = 'CW-1825 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''date'')
+set @process = 'CW-1825 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
+    set @Sql= '
+	delete from ReportsFiltersMenus WHERE [idReport] = 7140 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''date'')
@@ -663,7 +665,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	delete from [ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''filterby'')
@@ -671,7 +675,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby'')
+    set @Sql= '
+	delete from [ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''groupby'')
@@ -679,7 +685,9 @@ END'
 	EXEC(@Sql)
 	
 	set @process = 'CW-1825 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Intervalos'', ''acds'', 7140)
@@ -687,14 +695,18 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7140)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7140
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7140)
 BEGIN
 	INSERT INTO ReportsTotals values(7140, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))|special:PromPosicionPersonal:(round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1))|special:LlamadasporPosicion:(case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct accountUserId) > 1 then sum(acdCalls)/count(distinct accountUserId) else 1 end) else 0 end)'')
 END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7140
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
 BEGIN
 	INSERT INTO GroupByReports values(7140, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
 sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
@@ -708,6 +720,7 @@ round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*
 case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct accountUserId) > 1 then sum(acdCalls)/count(distinct accountUserId) else 1 end) else 0 end:LlamadasporPosicion'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
+
 
 		set @process = 'CW-1937 -- VERSION 52  DROP SP RepViewMKTMensual'
     set @Sql= 'IF EXISTS(select * FROM sys.views where name = ''RepViewMKTMensual'')
@@ -762,7 +775,9 @@ group by
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7150)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7150
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7150)
 BEGIN
 INSERT INTO GroupByReports values(7150, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
 sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
@@ -780,7 +795,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7150, N''date'')
@@ -788,7 +805,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7150, N''filterby'')
@@ -796,7 +815,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Mensual'', ''acds'', 7150)
@@ -804,7 +825,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7150)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7150
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7150)
 BEGIN
 	INSERT INTO ReportsTotals values(7150, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))'')
 END'
@@ -1413,14 +1436,18 @@ select
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7130)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7130
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7130)
 BEGIN
 INSERT INTO GroupByReports values(7130, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp2)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|  sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|  sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|  case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|  case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end)>0     then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100) end)    else 0 end:avrTimeACD|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7130, N''date'')
@@ -1428,7 +1455,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7130, N''filterby'')
@@ -1436,7 +1465,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Tiempos'', ''acds'', 7130)
@@ -1444,11 +1475,14 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7130)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7130
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7130)
 BEGIN
 	INSERT INTO ReportsTotals values(7130, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp2)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))'')
 END'
 	EXEC(@Sql)
+
 
 
 	set @process = 'CW- -- VERSION 52  Update MDF ReportsMasterProcess add Reinicializa replicas '
@@ -2608,7 +2642,9 @@ END
 	EXEC(@Sql)
 
 	set @process = 'CW-1973 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''date'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7170, N''date'')
@@ -2616,7 +2652,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1973 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7170, N''filterby'')
@@ -2624,7 +2662,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1973 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''groupby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''groupby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''groupby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7170, N''groupby'')
@@ -2632,7 +2672,9 @@ END'
 	EXEC(@Sql)
 	
 	set @process = 'CW-1973 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7170 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7170 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7170 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''Resumen de intervalo de tiempos totales'', ''acds'', 7170)
@@ -2640,7 +2682,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1973 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7170)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7170
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7170)
 BEGIN
 	INSERT INTO ReportsTotals values(7170, ''special:PromPosicionPersonal:(round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1))
 |sum:receivedCalls|sum:acdCalls|sum:abandonedCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)
@@ -2651,7 +2695,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1973 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7170)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7170
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7170)
 BEGIN
 	INSERT INTO GroupByReports values(7170, ''Acds|inboundId|round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1):PromPosicionPersonal|
 	sum(receivedCalls):receivedCalls|sum(acdCalls):acdCalls|sum(abandonedCalls):abandonedCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|

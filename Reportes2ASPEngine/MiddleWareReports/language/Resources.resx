@@ -2028,7 +2028,7 @@
   <data name="tPer" xml:space="preserve">
     <value>Tiempo personal</value>
   </data>
-  <data name="MKTDiario" xml:space="preserve">
+  <data name="MKTDaily" xml:space="preserve">
     <value>MKT Diario</value>
   </data>
   <data name="tPromACD" xml:space="preserve">
@@ -2674,15 +2674,15 @@
     <value>Llamadas por Posicion</value>
   </data>
   <data name="PromPosicionPersonal" xml:space="preserve">
-    <value>Prom Posicion Personal</value>
+    <value>Promedio Posicion Personal</value>
   </data>
-  <data name="MKTIntervalos" xml:space="preserve">
+  <data name="MKTIntervals" xml:space="preserve">
     <value>MKT Intervalos</value>
   </data>
   <data name="acdCalls" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
-     <data name="LlamadasACD" xml:space="preserve">
+  <data name="LlamadasACD" xml:space="preserve">
     <value>Llamadas ACD</value>
   </data>
   <data name="MKTAgents" xml:space="preserve">
@@ -2715,12 +2715,8 @@
   <data name="tACW" xml:space="preserve">
     <value>Tiempo ACW</value>
   </data>
-  <data name="MKTMensual" xml:space="preserve">
+  <data name="MKTbyMonth" xml:space="preserve">
     <value>MKT Mensual</value>
-  </data>
-
-  <data name="acdCalls" xml:space="preserve">
-    <value>Llamadas ACD</value>
   </data>
   <data name="AHT" xml:space="preserve">
     <value>AHT</value>
@@ -2749,14 +2745,8 @@
   <data name="PorcNiveldeServicio4080" xml:space="preserve">
     <value>% Nivel de Servicio 4080</value>
   </data>
-  <data name="PromPosicionPersonal" xml:space="preserve">
-    <value>Promedio Posicion Personal</value>
-  </data>
   <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
     <value>Resumen de Intervalos de Tiempos Acumulados Totales</value>
-  </data>
-  <data name="tACW" xml:space="preserve">
-    <value>Tiempo ACW</value>
   </data>
   <data name="tCliente" xml:space="preserve">
     <value>Tiempo Cliente</value>
@@ -2775,5 +2765,20 @@
   </data>
   <data name="tManual" xml:space="preserve">
     <value>Tiempo Manual</value>
+  </data>
+  <data name="receivedCalls" xml:space="preserve">
+    <value>Llamadas Recibidas</value>
+  </data>
+  <data name="TPromDispon" xml:space="preserve">
+    <value>Tiempo Prom Dispon</value>
+  </data>
+  <data name="tPromRetention" xml:space="preserve">
+    <value>Tiempo Prom Reten</value>
+  </data>
+  <data name="TPromRing" xml:space="preserve">
+    <value>Tiempo Prom Ring</value>
+  </data>
+  <data name="TotalTimebyInterval" xml:space="preserve">
+    <value>Resumen de intervalo de tiempos totales</value>
   </data>
 </root>

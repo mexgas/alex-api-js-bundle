@@ -1950,7 +1950,7 @@
   <data name="DispositionsScoringTemplates" xml:space="preserve">
     <value>Dispositions(Scoring Templates)</value>
   </data>
-  <data name="inboundId" xml:space="preserve">
+  <data name="InboundId" xml:space="preserve">
     <value>ACD Group Id</value>
   </data>
   <data name="media" xml:space="preserve">
@@ -2613,7 +2613,7 @@
   <data name="MKTTiempos" xml:space="preserve">
     <value>MKT Tiempos</value>
   </data>
- <data name="MKTMensual" xml:space="preserve">
+  <data name="MKTMensual" xml:space="preserve">
     <value>MKT Mensual</value>
   </data>
   <data name="LlamadasporPosicion" xml:space="preserve">
@@ -2625,7 +2625,7 @@
   <data name="MKTIntervalos" xml:space="preserve">
     <value>MKT Intervalos</value>
   </data>
-   <data name="TiempoACW" xml:space="preserve">
+  <data name="TiempoACW" xml:space="preserve">
     <value>ACW Time</value>
   </data>
   <data name="TiempoLlamadoAgente" xml:space="preserve">
@@ -2643,5 +2643,19 @@
   <data name="MKTAgents" xml:space="preserve">
     <value>MKT Agents</value>
   </data>
-
+  <data name="LlamadasAtendidas" xml:space="preserve">
+    <value>Answered Calls</value>
+  </data>
+  <data name="NombreDeOperadora" xml:space="preserve">
+    <value>Agent Name</value>
+  </data>
+  <data name="OpaId" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="TiempoPromReten" xml:space="preserve">
+    <value>Average Hold Time</value>
+  </data>
+  <data name="TiempoPromRing" xml:space="preserve">
+    <value>Average Ringing Time</value>
+  </data>
 </root>

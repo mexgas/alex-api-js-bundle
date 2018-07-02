@@ -2776,9 +2776,9 @@
     <value>Id de Operadora</value>
   </data>
   <data name="TiempoPromReten" xml:space="preserve">
-    <value>Tiempo Prom. Retenidas</value>
+    <value>Tiempo Prom Retenidas</value>
   </data>
   <data name="TiempoPromRing" xml:space="preserve">
-    <value>Tiempo Prom. Timbrando</value>
+    <value>Tiempo Prom Timbrando</value>
   </data>
 </root>

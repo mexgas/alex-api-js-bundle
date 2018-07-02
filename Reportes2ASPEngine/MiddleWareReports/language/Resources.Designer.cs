@@ -7054,7 +7054,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo Prom. Retenidas.
+        ///   Busca una cadena traducida similar a Tiempo Prom Retenidas.
         /// </summary>
         public static string TiempoPromReten {
             get {
@@ -7063,7 +7063,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo Prom. Timbrando.
+        ///   Busca una cadena traducida similar a Tiempo Prom Timbrando.
         /// </summary>
         public static string TiempoPromRing {
             get {

@@ -2704,7 +2704,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 declare @dateNow datetime,@maxLogout datetime
 

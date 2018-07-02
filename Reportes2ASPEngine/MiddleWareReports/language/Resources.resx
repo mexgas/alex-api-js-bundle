@@ -2743,7 +2743,7 @@
     <value>Llamadas Salida Ext</value>
   </data>
   <data name="PorcNiveldeServicio4080" xml:space="preserve">
-    <value>% Nivel de Servicio 4080</value>
+    <value>% Nivel de Servicio 80/40</value>
   </data>
   <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
     <value>Resumen de Intervalos de Tiempos Acumulados Totales</value>

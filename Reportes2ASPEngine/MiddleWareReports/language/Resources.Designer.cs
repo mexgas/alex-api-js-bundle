@@ -3255,7 +3255,7 @@ namespace MiddleWareReports {
             }
         }
         
-        /// <summary>
+/// <summary>
         ///   Busca una cadena traducida similar a MKT Diario.
         /// </summary>
         public static string MKTDaily {
@@ -3263,7 +3263,6 @@ namespace MiddleWareReports {
                 return ResourceManager.GetString("MKTDaily", resourceCulture);
             }
         }
-        
         /// <summary>
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
@@ -4210,7 +4209,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a % Nivel de Servicio 4080.
+        ///   Busca una cadena traducida similar a % Nivel de Servicio 80/40.
         /// </summary>
         public static string PorcNiveldeServicio4080 {
             get {

@@ -13,6 +13,7 @@ CW-1825 - Reporte MKT Intervalos
 CW-1937 - Reporte MKT Mensual
 CW-1736 - MKT Reportes
 CW-1973 - Reporte de resumen de intervalo de tiempos totales
+CW-1994 - Diario Tiempos Totales
 **********************************************************************************************
 Database: ccReportsRia
 Required version: 52
@@ -2660,6 +2661,162 @@ BEGIN
 	sum(((case when acdCalls>0 then tacd/acdCalls else 0 end)+(case when nacw>0 then tacw/nacw else 0 end)+(case when nring>0 then tring/nring else 0 end)+(case when nhold>0 then thold/nhold else 0 end))):AHT'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
+
+	set @process = 'CW-1994 -- DROP PROCEDURE [ccspRepMKTDiarioTiemposTotales]'
+    	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepMKTDiarioTiemposTotales'')
+    begin
+        DROP PROCEDURE ccspRepMKTDiarioTiemposTotales;
+    end
+'
+	EXEC(@sql)
+
+	set @process = 'CW-1994 -- CREATE TABLE RepMKTDiarioTiemposTotales'
+    set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''RepMKTDiarioTiemposTotales'')
+BEGIN
+CREATE TABLE [dbo].[RepMKTDiarioTiemposTotales](
+	[date] [datetime] NOT NULL,
+	[OpaId] [varchar](50) NOT NULL,
+	[NombreDeOperadora] [varchar](100) NOT NULL,
+	[InboundId] [int] NOT NULL,
+	[tPromACD] [int] NOT NULL,
+	[tPromACW] [int] NOT NULL,
+	[TiempoPromReten] [int] NOT NULL,
+	[TiempoPromRing] [int] NOT NULL,
+	[AHT] [int] NOT NULL,
+	[LlamadasAtendidas] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]
+END'
+	EXEC(@Sql)
+
+set @process = 'CW-1994 -- CREATE PROCEDURE ccspRepMKTDiarioTiemposTotales'
+    	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepMKTDiarioTiemposTotales]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+select @to = convert(datetime,convert(varchar(11),getdate()))
+
+declare @dateNow datetime,@maxLogout datetime
+
+if @action = 1
+begin
+delete from [RepMKTDiarioTiemposTotales] with(rowlock) 
+	where date >= @from AND date <= @to 
+
+CREATE TABLE #sessionAgent 
+	(
+		[user_id] [smallint] NOT NULL,
+		[login] [datetime] NOT NULL,
+		[logout] [datetime] NOT NULL,
+		[extension] [varchar](7) NOT NULL,
+	);
+INSERT INTO #sessionAgent
+	exec ccspGenSession @from, @to
+	select ''#sessionAgent''
+
+select 
+	convert(datetime,convert(date,login)) fecha,
+	SUM(DATEDIFF(ss, login, logout)) t_ses,
+	count(distinct user_id) user_id
+into #infoSession
+from #sessionAgent
+GROUP BY convert(datetime,convert(date,login))
+
+SELECT 
+		i.cal_Inicio as [date],
+		i.user_id as acduser,
+		i.Inbound_id as inboundId,
+		case when i.statuscall_id=13 then i.cal_tmoh else 0 end thold,
+		case when i.statusCall_id=13 then i.cal_tring else 0 end tring,
+		case when i.statusCall_id=13 and i.cal_tdialog>=0 then i.cal_tdialog else 0 end tacd,
+		case when i.statusCall_id=13 then i.cal_tnotas else 0 end tacw,
+		case when i.statusCall_id=13 then 1 else null end nacd,
+		case when i.statusCall_id=13 and i.cal_tnotas>0 then 1 else null end nacw,
+		case when i.statusCall_id=13 and i.cal_tmoh>0 then 1 else null end nhold,
+		case when i.statusCall_id=13 and i.cal_tring>0 then 1 else null end nring	
+	into #inboundData2			
+	FROM	cccallsin i (NOLOCK)	
+	WHERE	i.cal_inicio between @from and @to
+
+SELECT user_id AS agtuser_id,
+	login AS agtlogin,
+	ISNULL(apellidopaterno,'''')+'' ''+ISNULL(apellidomaterno,'''')+'' ''+ISNULL(nombres,'''') agt_name
+	into #users
+	FROM ccusers (NOLOCK)
+
+insert RepMKTDiarioTiemposTotales 
+	select c.[date]	--
+		,l.agtlogin as [OpaId]
+		,l.agt_name [NombreDeOperadora]
+		,[InboundID]--
+		,[TiempoPromACD]--
+		,[TiempoPromACW]--
+		,[TiempoPromReten]
+		,[TiempoPromRing]
+		,[AHT]
+		,[LlamadasAtendidas]
+		,DATEPART(YYYY, c.[date]) as [year] 
+		,DATEPART(mm, c.[date]) as [month]
+		,DATEPART(dd, c.[date]) as [day]
+		,DATEPART(hh, c.[date]) as [hour]
+		,DATEPART(mi, c.[date]) as [minutes]
+	 from (
+		select convert(datetime,convert(date,[date])) as [date],
+			acduser as [user],
+			inboundId as [InboundId]
+			,case when sum(c.nacd)>0 then sum(c.tacd)/sum(c.nacd) else 0 end as [TiempoPromACD]
+			,case when sum(c.nacw)>0 then sum(c.tacw)/sum(c.nacw) else 0 end as [TiempoPromACW]
+			,case when sum(c.nhold)>0 then sum(c.thold)/sum(c.nhold) else 0 end as [TiempoPromReten]
+			,case when sum(c.nring)>0 then sum(c.tring)/sum(c.nring) else 0 end as [TiempoPromRing]
+			,sum(((case when c.nacd>0 then c.tacd/c.nacd else 0 end)+(case when c.nacw>0 then c.tacw/c.nacw else 0 end)+(case when c.nring>0 then c.tring/c.nring else 0 end)+(case when c.nhold>0 then c.thold/c.nhold else 0 end))) [AHT]
+			,isnull(sum(c.nacd),0) as [LlamadasAtendidas]
+		from #inboundData2 as c 
+		group by convert(datetime,convert(date,[date])),inboundId,acduser
+	) c
+	LEFT JOIN #infoSession G on G.fecha = c.date
+	left join #users l on [user]=l.agtuser_id --and c.date=l.date
+	--INNER JOIN ccinbound i on [ACD] = i.Inbound_id
+	WHERE @from <= C.[date] AND @to >= c.[date] and [LlamadasAtendidas]>0
+	order by [date]
+
+drop table #inboundData2
+drop table #sessionAgent
+drop table #infoSession 
+drop table #users
+end
+'
+	EXEC(@sql)
+
+		set @process = 'CW-1994-- insert into ReportsFilters'
+    	set @Sql= 'delete from ReportsFilters where id=7180
+insert into ReportsFilters (reportName,filterName,id)
+values(''Daily Total Time'',''acds'',7180) 
+'
+	EXEC(@sql)
+
+		set @process = 'CW-1994 -- insert into ReportsFiltersMenus '
+    	set @Sql= 'delete from ReportsFiltersMenus where idReport=7180
+insert into ReportsFiltersMenus values 
+(7180,''filterby''),
+(7180,''date'')'
+	EXEC(@sql)
+
+		set @process = 'CW-1994 -- insert into ReportsTotals '
+    	set @Sql= 'delete from ReportsTotals where id = 7180
+insert into ReportsTotals values (7180,''special:tPromACD:sum(tPromACD)|special:tPromACW:sum(tPromACW)|special:TiempoPromReten:sum(TiempoPromReten)|special:TiempoPromRing:sum(TiempoPromRing)|special:AHT:sum(AHT)|special:LlamadasAtendidas:sum(LlamadasAtendidas)'')
+'
+	EXEC(@sql)
+
 
 		if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

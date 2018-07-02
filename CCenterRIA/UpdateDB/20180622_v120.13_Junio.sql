@@ -14,6 +14,7 @@ CW-1937 MKT Mensual
 CW-1866 Resumen de intervalo de tiempos acumulados totales
 CW-1736 Reporte MKT Diario
 CW-1973 Reporte de resumen de intervalo de tiempos totales
+CW-1994 Diario Tiempos Totales
 
 Database: CCenterRia
 Required version: 120.12
@@ -979,6 +980,12 @@ QuitWithRollback:
 EndSave:'
 		EXEC(@Sql)		
 		
+			set @process = 'CW-1994-- Insert in ccMenus'
+        set @Sql= 'delete from ccMenus where menu_id=7180
+insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+values(7180,''Diario Tiempos Totales|Daily Total Time'',7000,''B'',7,3,'''',''8f9e94e80337e1b2650880134a1fff6b8c933ca6bf54306d1b8580fe658eaea872162ff4c5dea40a315b39fe4f70e1f3'')	
+'
+        EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

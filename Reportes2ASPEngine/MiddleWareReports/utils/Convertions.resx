@@ -438,6 +438,15 @@
   <data name="tManual" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="TPromDispon" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tPromRetention" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TPromRing" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
   <data name="TiempoPromReten" xml:space="preserve">
     <value>convertToTime</value>
   </data>

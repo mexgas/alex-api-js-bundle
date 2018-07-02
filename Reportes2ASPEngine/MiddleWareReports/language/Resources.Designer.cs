@@ -3256,32 +3256,30 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a MKT Diario.
+        ///   Busca una cadena traducida similar a MKT Mensual.
         /// </summary>
-        public static string MKTDiario {
+        public static string MKTbyMonth {
             get {
-                return ResourceManager.GetString("MKTDiario", resourceCulture);
+                return ResourceManager.GetString("MKTbyMonth", resourceCulture);
             }
         }
         
+/// <summary>
+        ///   Busca una cadena traducida similar a MKT Diario.
+        /// </summary>
+        public static string MKTDaily {
+            get {
+                return ResourceManager.GetString("MKTDaily", resourceCulture);
+            }
+        }
         /// <summary>
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
-        public static string MKTIntervalos {
+        public static string MKTIntervals {
             get {
-                return ResourceManager.GetString("MKTIntervalos", resourceCulture);
+                return ResourceManager.GetString("MKTIntervals", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a MKT Mensual.
-        /// </summary>
-        public static string MKTMensual {
-            get {
-                return ResourceManager.GetString("MKTMensual", resourceCulture);
-            }
-        }
-        
         /// <summary>
         ///   Busca una cadena traducida similar a MKT Tiempos.
         /// </summary>
@@ -4237,7 +4235,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a % Nivel de Servicio 4080.
+        ///   Busca una cadena traducida similar a % Nivel de Servicio 80/40.
         /// </summary>
         public static string PorcNiveldeServicio4080 {
             get {
@@ -4494,6 +4492,15 @@ namespace MiddleWareReports {
         public static string Readytimeperuserbyhour {
             get {
                 return ResourceManager.GetString("Readytimeperuserbyhour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas Recibidas.
+        /// </summary>
+        public static string receivedCalls {
+            get {
+                return ResourceManager.GetString("receivedCalls", resourceCulture);
             }
         }
         
@@ -7414,6 +7421,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Resumen de intervalo de tiempos totales.
+        /// </summary>
+        public static string TotalTimebyInterval {
+            get {
+                return ResourceManager.GetString("TotalTimebyInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Total de tuits por grupo ACD.
         /// </summary>
         public static string TotalTweetMessagesbyACDGroup {
@@ -7486,11 +7502,38 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom Dispon.
+        /// </summary>
+        public static string TPromDispon {
+            get {
+                return ResourceManager.GetString("TPromDispon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a TProm Elim Cola.
         /// </summary>
         public static string tPromElimCola {
             get {
                 return ResourceManager.GetString("tPromElimCola", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom Reten.
+        /// </summary>
+        public static string tPromRetention {
+            get {
+                return ResourceManager.GetString("tPromRetention", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo Prom Ring.
+        /// </summary>
+        public static string TPromRing {
+            get {
+                return ResourceManager.GetString("TPromRing", resourceCulture);
             }
         }
         

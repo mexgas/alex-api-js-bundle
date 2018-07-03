@@ -2662,7 +2662,7 @@
     <value>Total Time by Interval</value>
   </data>
   <data name="DailyTotalTime" xml:space="preserve">
-    <value>Daily Total Time</value>
+    <value>Total Time by Day</value>
   </data>
   <data name="LlamadasAtendidas" xml:space="preserve">
     <value>Answered Calls</value>

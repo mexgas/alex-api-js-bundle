@@ -66,21 +66,24 @@ set @process = 'CW-1702-- Actualizacion de setting 201 con valor default 0'
 
 
         set @process = 'CW-1730-- Insert in ccMenus'
-        set @Sql= 'delete from ccMenus where menu_id=7070
-		delete from ccMenus where menu_id=7120
+        set @Sql= 'delete from ccMenus where menu_id=7120
 insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
 values(7120,''MKT Agentes|MKT Agents'',7000,''B'',7,3,'''',''b4f4b155c759f8c7386fb027acee7f985b999b30ef1b03df4b7a0a752a0f9ba1'')'
         EXEC(@Sql)
 
 				set @process = 'CW-1825 -- VERSION 119.122 INSERT MktIntervalos Menu INTO ccMenus'
-		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7140)
+		set @Sql= '
+		DELETE FROM [dbo].[ccMenus] WHERE [menu_id] = 7140
+		IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7140)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7140, ''MKT Intervalos|MKT Intervals'', 7000, ''B'', 7, 3, '''',''ccb46d451ea992fe4a7dc5bd92507ba0583351e417faa46e35d1d81f7bc6c807'')
 END'
 		EXEC(@Sql)
 
 		set @process = 'CW-1937 -- VERSION 119.135 INSERT MktMensual Menu INTO ccMenus'
-		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7150)
+		set @Sql= '
+		DELETE FROM [dbo].[ccMenus] WHERE [menu_id] = 7150
+		IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7150)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7150, ''MKT Mensual|MKT by Month'', 7000, ''B'', 7, 3, '''',''b5a6d57ea092a90659f714f4c2648920ca846236b882a88e87682c894323791a'')
 END'
@@ -94,14 +97,18 @@ values(7160,''Resumen de Intervalos de Tiempos Acumulados Totales|Summary of Tot
         EXEC(@Sql)
 
 		set @process = 'CW-1736 -- VERSION 119.135 INSERT MktTiempos Menu INTO ccMenus'
-		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
+		set @Sql= '
+		DELETE FROM [dbo].[ccMenus] WHERE [menu_id] = 7130
+		IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7130)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7130, ''MKT Diario|MKT Daily'', 7000, ''B'', 7, 3, '''',''68ed1908ba3943bcca9958eec69a9e4c7f4f06778e026a0c2a8db08d5d6267e5'')
 END'
 		EXEC(@Sql)
 
 				set @process = 'CW-1973 -- VERSION 120.13 INSERT MktIntervalosTiemposTotales Menu INTO ccMenus'
-		set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7170)
+		set @Sql= '
+		DELETE FROM [dbo].[ccMenus] WHERE [menu_id] = 7170
+		IF NOT EXISTS (SELECT * FROM [dbo].[ccMenus] WHERE [menu_id] = 7170)
 BEGIN
 	INSERT INTO ccMenus(menu_id, menu_descrip, parent,Nivel,ordengral,type,HelpSWF,release) values(7170, ''Resumen de intervalo de tiempos totales|Total Time by Interval'', 7000, ''B'', 7, 3, '''',''bbbfef17301544a62f7e5f86ed1e5fc3efd0330aefc9e42dc3d453e3db64c7c6c419f65019600780b88f6e8037f79360485376eb5c083c88b13a6f469f539378'')
 END'

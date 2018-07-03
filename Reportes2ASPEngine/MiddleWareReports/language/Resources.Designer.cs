@@ -3264,7 +3264,7 @@ namespace MiddleWareReports {
             }
         }
         
-/// <summary>
+        /// <summary>
         ///   Busca una cadena traducida similar a MKT Diario.
         /// </summary>
         public static string MKTDaily {
@@ -3272,6 +3272,7 @@ namespace MiddleWareReports {
                 return ResourceManager.GetString("MKTDaily", resourceCulture);
             }
         }
+        
         /// <summary>
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
@@ -3280,6 +3281,7 @@ namespace MiddleWareReports {
                 return ResourceManager.GetString("MKTIntervals", resourceCulture);
             }
         }
+        
         /// <summary>
         ///   Busca una cadena traducida similar a MKT Tiempos.
         /// </summary>

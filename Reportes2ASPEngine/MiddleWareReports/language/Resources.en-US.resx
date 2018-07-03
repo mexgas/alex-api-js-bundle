@@ -562,10 +562,10 @@
     <value>Wrapup Outbound</value>
   </data>
   <data name="tother" xml:space="preserve">
-    <value>Other</value>
+    <value>Other Time</value>
   </data>
   <data name="tprob" xml:space="preserve">
-    <value>Problem</value>
+    <value>Failure Time</value>
   </data>
   <data name="tringin" xml:space="preserve">
     <value>Ringing time in</value>
@@ -769,7 +769,7 @@
     <value>Ringing Time</value>
   </data>
   <data name="txfer" xml:space="preserve">
-    <value>On Transfer</value>
+    <value>Transfer Time</value>
   </data>
   <data name="dnisDescription" xml:space="preserve">
     <value>DNIS Description</value>

@@ -200,7 +200,7 @@ left outer join master.sys.servers s
 on (ma.publisher_id = s.server_id)
 where 
 (mh.comments like ''%You must reinitialize the subscription (without upload)%'' or
-mh.comments like  ''%Start the Snapshot Agent to generate the snapshot for this publication%'')
+mh.comments like  ''%The Merge Agent failed because the schema of the article at the Publisher does not match the schema of the article at the Subscriber%'')
 and mh.time >= @lastTenMinuteFirst
 and ma.subscriber_db = ''CCRecorderRIA''
 
@@ -210,9 +210,9 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 		select @id = id, @publisher_reinit = publisher, @publisher_db_reinit = publisher_db, @publication_reinit = publication, @upload_first_reinit = upload_first
 		from #reinitmergepullsubscription
 		where [status] = 0
-		set rowcount 0
-		
-		EXEC sp_reinitmergesubscription @publication = @publication_reinit, @subscriber = @publisher_reinit, @subscriber_db = ''CCRecorderRIA'', @upload_first = @upload_first_reinit
+		set rowcount 0			
+
+		exec sp_reinitmergepullsubscription  @publisher = @publisher_reinit,    @publisher_db = ''CCenterRia'',    @publication = @publisher_db_reinit,    @upload_first = @upload_first_reinit		
 
 		update #reinitmergepullsubscription
 		set [status] = 1

@@ -291,9 +291,6 @@
   <data name="tnotavg" xml:space="preserve">
     <value>convertToTime</value>
   </data>
-  <data name="CallsperACDGroupD" xml:space="preserve">
-    <value>convertToTime</value>
-  </data>
   <data name="oHour" xml:space="preserve">
     <value>convertToTime</value>
   </data>
@@ -394,6 +391,66 @@
     <value>convertToTime</value>
   </data>
   <data name="AverageHandleTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tPromElimCola" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tPromSalidaExt" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="avrAnswer" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="maxDelay" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TPromDispon" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="tPromRetention" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TPromRing" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromReten" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TiempoPromRing" xml:space="preserve">
     <value>convertToTime</value>
   </data>
 </root>

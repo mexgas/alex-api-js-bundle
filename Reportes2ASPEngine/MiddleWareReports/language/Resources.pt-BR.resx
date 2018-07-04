@@ -1693,7 +1693,7 @@
     <value>Sessão</value>
   </data>
   <data name="tnotav" xml:space="preserve">
-    <value>Tempo de atenção</value>
+    <value>Tempo não disponível</value>
   </data>
   <data name="tnotavg" xml:space="preserve">
     <value>Média de atenção</value>
@@ -1723,7 +1723,7 @@
     <value>Outro</value>
   </data>
   <data name="tprob" xml:space="preserve">
-    <value>Problema</value>
+    <value>Tempo problema</value>
   </data>
   <data name="tque" xml:space="preserve">
     <value>Tempo na fila de espera acumulado</value>
@@ -1756,7 +1756,7 @@
     <value>Tempo médio de resposta</value>
   </data>
   <data name="tring" xml:space="preserve">
-    <value>Tocando</value>
+    <value>Tempo tocando</value>
   </data>
   <data name="tringin" xml:space="preserve">
     <value>Tocando (entrada)</value>
@@ -1888,7 +1888,7 @@
     <value />
   </data>
   <data name="inboundId" xml:space="preserve">
-    <value />
+    <value>ID do grupo ACD</value>
   </data>
   <data name="media" xml:space="preserve">
     <value />
@@ -1933,7 +1933,7 @@
     <value />
   </data>
   <data name="userId" xml:space="preserve">
-    <value />
+    <value>Id de Usuario</value>
   </data>
   <data name="Templates" xml:space="preserve">
     <value>Templates</value>
@@ -1960,7 +1960,7 @@
     <value>Other hour</value>
   </data>
   <data name="tACD" xml:space="preserve">
-    <value>ACD Time</value>
+    <value>Tempo de chamadas de entrada</value>
   </data>
   <data name="tAgent" xml:space="preserve">
     <value>Call Time Agent</value>
@@ -1971,11 +1971,11 @@
   <data name="tPer" xml:space="preserve">
     <value>Personal Time</value>
   </data>
-  <data name="MKTAgents" xml:space="preserve">
-    <value>MKT Agents</value>
+  <data name="SpecialReportAgents" xml:space="preserve">
+    <value>Agentes Especial</value>
   </data>
-  <data name="MKTDiario" xml:space="preserve">
-    <value>MKT daily</value>
+  <data name="MKTDaily" xml:space="preserve">
+    <value>MKT Daily</value>
   </data>
   <data name="tPromACD" xml:space="preserve">
     <value>Averange time ACD</value>
@@ -2165,5 +2165,140 @@
   </data>
   <data name="tTalkNum" xml:space="preserve">
     <value>Em diálogo (saída)</value>
+  </data>
+  <data name="acdCalls" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="avrAnswer" xml:space="preserve">
+    <value>Velocidad Promedio de Respuesta</value>
+  </data>
+  <data name="avrCallsAnswer" xml:space="preserve">
+    <value>% Llamadas Resp</value>
+  </data>
+  <data name="avrTimeACD" xml:space="preserve">
+    <value>% Tiempo ACD</value>
+  </data>
+  <data name="callsDeleteQue" xml:space="preserve">
+    <value>LLamadas Elim Cola</value>
+  </data>
+  <data name="callsOutExt" xml:space="preserve">
+    <value>LLamadas Salida Ext</value>
+  </data>
+  <data name="entryFlow" xml:space="preserve">
+    <value>Flujo de Entrada</value>
+  </data>
+  <data name="maxDelay" xml:space="preserve">
+    <value>Demora Máxima</value>
+  </data>
+  <data name="outFlow" xml:space="preserve">
+    <value>Flujo de Salida</value>
+  </data>
+  <data name="tPromElimCola" xml:space="preserve">
+    <value>TProm Elim Cola</value>
+  </data>
+  <data name="tPromSalidaExt" xml:space="preserve">
+    <value>TProm Salida Ext</value>
+  </data>
+  <data name="MKTTiempos" xml:space="preserve">
+    <value>MKT Tempo</value>
+  </data>
+  <data name="LlamadasporPosicion" xml:space="preserve">
+    <value>Llamadas por Posicion</value>
+  </data>
+  <data name="PromPosicionPersonal" xml:space="preserve">
+    <value>Prom Posicion Personal</value>
+  </data>
+  <data name="MKTIntervals" xml:space="preserve">
+    <value>MKT Intervalos</value>
+  </data>
+  <data name="LlamadasACD" xml:space="preserve">
+    <value>Llamadas ACD</value>
+  </data>
+  <data name="MKTAgents" xml:space="preserve">
+    <value>MKT Agentes</value>
+  </data>
+  <data name="NombreAgente" xml:space="preserve">
+    <value>Nombre Agente</value>
+  </data>
+  <data name="TiempoACW" xml:space="preserve">
+    <value>Tiempo ACW</value>
+  </data>
+  <data name="TiempoLlamadoAgente" xml:space="preserve">
+    <value>Tiempo Llamado Agente</value>
+  </data>
+  <data name="TiempoPromACD" xml:space="preserve">
+    <value>Tiempo Prom ACD</value>
+  </data>
+  <data name="TiempoPromACW" xml:space="preserve">
+    <value>Tiempo Prom ACW</value>
+  </data>
+  <data name="TransSalida" xml:space="preserve">
+    <value>Trans Salida</value>
+  </data>
+  <data name="CallsperACDGroupD" xml:space="preserve">
+    <value>Llamadas por Especialidad</value>
+  </data>
+  <data name="tACW" xml:space="preserve">
+    <value>Tempo de notas</value>
+  </data>
+  <data name="MKTbyMonth" xml:space="preserve">
+    <value>MKT Mensal</value>
+  </data>
+  <data name="AHT" xml:space="preserve">
+    <value>Tempo médio de processamento</value>
+  </data>
+  <data name="receivedCalls" xml:space="preserve">
+    <value>Chamadas recebidas</value>
+  </data>
+  <data name="TPromDispon" xml:space="preserve">
+    <value>Tempo médio disponível</value>
+  </data>
+  <data name="tPromRetention" xml:space="preserve">
+    <value>Tempo médio em pausa</value>
+  </data>
+  <data name="TPromRing" xml:space="preserve">
+    <value>Tempo médio tocando</value>
+  </data>
+  <data name="TotalTimebyInterval" xml:space="preserve">
+    <value>Tempo total por intervalo</value>
+  </data>
+  <data name="descripcion" xml:space="preserve">
+    <value>Nome do grupo ACD</value>
+  </data>
+  <data name="LlamadasAban" xml:space="preserve">
+    <value>Chamadas abandonadas</value>
+  </data>
+  <data name="LlamadasAtendidas" xml:space="preserve">
+    <value>Chamadas atendidas</value>
+  </data>
+  <data name="LlamadasRecibidas" xml:space="preserve">
+    <value>Chamadas recebidas</value>
+  </data>
+  <data name="LlamadasSalidaExt" xml:space="preserve">
+    <value>Chamadas transferidas</value>
+  </data>
+  <data name="PorcNiveldeServicio4080" xml:space="preserve">
+    <value>Nível de serviço</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>Tempo interação com cliente</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>Tempo desconhecido</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>Disponível</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>Tempo de chamadas transferidas</value>
+  </data>
+  <data name="timeretention" xml:space="preserve">
+    <value>Tempo em pausa</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>Tempo desconectado</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>Tempo de chamadas manuais</value>
   </data>
 </root>

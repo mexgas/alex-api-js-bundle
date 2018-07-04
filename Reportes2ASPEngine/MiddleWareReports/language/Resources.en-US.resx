@@ -562,10 +562,10 @@
     <value>Wrapup Outbound</value>
   </data>
   <data name="tother" xml:space="preserve">
-    <value>Other</value>
+    <value>Other Time</value>
   </data>
   <data name="tprob" xml:space="preserve">
-    <value>Problem</value>
+    <value>Failure Time</value>
   </data>
   <data name="tringin" xml:space="preserve">
     <value>Ringing time in</value>
@@ -769,7 +769,7 @@
     <value>Ringing Time</value>
   </data>
   <data name="txfer" xml:space="preserve">
-    <value>On Transfer</value>
+    <value>Transfer Time</value>
   </data>
   <data name="dnisDescription" xml:space="preserve">
     <value>DNIS Description</value>
@@ -1950,7 +1950,7 @@
   <data name="DispositionsScoringTemplates" xml:space="preserve">
     <value>Dispositions(Scoring Templates)</value>
   </data>
-  <data name="inboundId" xml:space="preserve">
+  <data name="InboundId" xml:space="preserve">
     <value>ACD Group Id</value>
   </data>
   <data name="media" xml:space="preserve">
@@ -2037,8 +2037,8 @@
   <data name="SpecialReportAgents" xml:space="preserve">
     <value>Special Report Agents</value>
   </data>
-  <data name="MKTDiario" xml:space="preserve">
-    <value>MKT daily</value>
+  <data name="MKTDaily" xml:space="preserve">
+    <value>MKT Daily</value>
   </data>
   <data name="nacw" xml:space="preserve">
     <value>Number ACW</value>
@@ -2613,8 +2613,8 @@
   <data name="MKTTiempos" xml:space="preserve">
     <value>MKT Tiempos</value>
   </data>
- <data name="MKTMensual" xml:space="preserve">
-    <value>MKT Mensual</value>
+  <data name="MKTbyMonth" xml:space="preserve">
+    <value>MKT by Month</value>
   </data>
   <data name="LlamadasporPosicion" xml:space="preserve">
     <value>Calls by Agent</value>
@@ -2622,10 +2622,10 @@
   <data name="PromPosicionPersonal" xml:space="preserve">
     <value>Average Calls by Agent</value>
   </data>
-  <data name="MKTIntervalos" xml:space="preserve">
-    <value>MKT Intervalos</value>
+  <data name="MKTIntervals" xml:space="preserve">
+    <value>MKT Intervals</value>
   </data>
-   <data name="TiempoACW" xml:space="preserve">
+  <data name="TiempoACW" xml:space="preserve">
     <value>ACW Time</value>
   </data>
   <data name="TiempoLlamadoAgente" xml:space="preserve">
@@ -2643,5 +2643,82 @@
   <data name="MKTAgents" xml:space="preserve">
     <value>MKT Agents</value>
   </data>
-
+  <data name="AHT" xml:space="preserve">
+    <value>Average Handle Time</value>
+  </data>
+  <data name="receivedCalls" xml:space="preserve">
+    <value>receivedCalls</value>
+  </data>
+  <data name="TPromDispon" xml:space="preserve">
+    <value>Average Ready Time</value>
+  </data>
+  <data name="tPromRetention" xml:space="preserve">
+    <value>Average Hold Time</value>
+  </data>
+  <data name="TPromRing" xml:space="preserve">
+    <value>Average Ringing Time</value>
+  </data>
+  <data name="TotalTimebyInterval" xml:space="preserve">
+    <value>Total Time by Interval</value>
+  </data>
+  <data name="DailyTotalTime" xml:space="preserve">
+    <value>Total Time by Day</value>
+  </data>
+  <data name="LlamadasAtendidas" xml:space="preserve">
+    <value>Answered Calls</value>
+  </data>
+  <data name="NombreDeOperadora" xml:space="preserve">
+    <value>Agent Name</value>
+  </data>
+  <data name="OpaId" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="TiempoPromReten" xml:space="preserve">
+    <value>Average Hold Time</value>
+  </data>
+  <data name="TiempoPromRing" xml:space="preserve">
+    <value>Average Ringing Time</value>
+  </data>
+  <data name="LlamadasAban" xml:space="preserve">
+    <value>Abandoned Calls</value>
+  </data>
+  <data name="LlamadasenRing" xml:space="preserve">
+    <value>Ringing Calls</value>
+  </data>
+  <data name="LlamadasRecibidas" xml:space="preserve">
+    <value>Received Calls</value>
+  </data>
+  <data name="LlamadasRetenidas" xml:space="preserve">
+    <value>Hold Calls</value>
+  </data>
+  <data name="LlamadasSalidaExt" xml:space="preserve">
+    <value>Transferred Calls</value>
+  </data>
+  <data name="PorcNiveldeServicio4080" xml:space="preserve">
+    <value>Service Level</value>
+  </data>
+  <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
+    <value>Total Time By Interval (Accumulated)</value>
+  </data>
+  <data name="tCliente" xml:space="preserve">
+    <value>Customer Interaction Time</value>
+  </data>
+  <data name="tDescon" xml:space="preserve">
+    <value>Unknown Time</value>
+  </data>
+  <data name="TiempoDispo" xml:space="preserve">
+    <value>Ready Time</value>
+  </data>
+  <data name="TiempoSalidaExt" xml:space="preserve">
+    <value>Transferred Calls Time</value>
+  </data>
+  <data name="timeretention" xml:space="preserve">
+    <value>Hold Time</value>
+  </data>
+  <data name="tLogout" xml:space="preserve">
+    <value>Offline Time</value>
+  </data>
+  <data name="tManual" xml:space="preserve">
+    <value>Manual Calls Time</value>
+  </data>
 </root>

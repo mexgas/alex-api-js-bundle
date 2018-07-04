@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 49
+	Set @Version = 50
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
@@ -90,9 +90,6 @@ while exists(SELECT	s.session_id AS SessionID
 	end
 	delete from @sessionKIll
 end
-
-
-
 
 print ''---Get Jobs Replication ----''
 create table #replications ([name] nvarchar(100), flag bit)
@@ -224,9 +221,6 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 
 drop table #reinitmergepullsubscription
 
-
-
-
 if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
 	set @scheduleTime=@scheduleTime+1
 	if  @scheduleTime< 59 begin
@@ -235,15 +229,13 @@ if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
 	
 end'
 	EXEC(@sql)
-	
 
-
- 	set @process = 'CW-  VERSION 120.11 Alter Table  MigrationAVRSReports.status'
-    set @Sql= 'if exists(select * from sys.tables where name=''MigrationAVRSReports'') begin
-	alter table MigrationAVRSReports alter column [status] int
-end'
-    EXEC(@Sql)
-
+	 set @process = 'CW-  VERSION 120.11 Delete JOb [Shrink-IndexOptimizationRIA] '
+    set @Sql= 'USE [msdb]
+if exists( select * from msdb.dbo.sysjobs where name=''Shrink-IndexOptimizationRIA'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''Shrink-IndexOptimizationRIA'', @delete_unused_schedule=1'
+	EXEC(@sql)
+ 	
     set @process = 'CW-  VERSION 120.11 JOb [AVRSReports Merge Replication] '
     set @Sql= 'USE [msdb]
 

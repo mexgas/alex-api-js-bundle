@@ -12,6 +12,8 @@ CW-1730 - Reporte MKT Agentes
 CW-1825 - Reporte MKT Intervalos
 CW-1937 - Reporte MKT Mensual
 CW-1736 - MKT Reportes
+CW-1973 - Reporte de resumen de intervalo de tiempos totales
+CW-1994 - Diario Tiempos Totales
 **********************************************************************************************
 Database: ccReportsRia
 Required version: 52
@@ -456,7 +458,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 if @action = 1
 begin
@@ -652,8 +654,10 @@ begin
 end'
 	EXEC(@Sql)
 
-	set @process = 'CW-1825 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''date'')
+set @process = 'CW-1825 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
+    set @Sql= '
+	delete from ReportsFiltersMenus WHERE [idReport] = 7140 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''date'')
@@ -661,7 +665,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	delete from [ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''filterby'')
@@ -669,7 +675,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby'')
+    set @Sql= '
+	delete from [ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7140 AND [filterMenuName] = ''groupby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7140, N''groupby'')
@@ -677,7 +685,9 @@ END'
 	EXEC(@Sql)
 	
 	set @process = 'CW-1825 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7140 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Intervalos'', ''acds'', 7140)
@@ -685,14 +695,18 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7140)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7140
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7140)
 BEGIN
 	INSERT INTO ReportsTotals values(7140, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))|special:PromPosicionPersonal:(round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1))|special:LlamadasporPosicion:(case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct accountUserId) > 1 then sum(acdCalls)/count(distinct accountUserId) else 1 end) else 0 end)'')
 END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1825 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7140
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
 BEGIN
 	INSERT INTO GroupByReports values(7140, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
 sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
@@ -706,6 +720,7 @@ round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*
 case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct accountUserId) > 1 then sum(acdCalls)/count(distinct accountUserId) else 1 end) else 0 end:LlamadasporPosicion'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
+
 
 		set @process = 'CW-1937 -- VERSION 52  DROP SP RepViewMKTMensual'
     set @Sql= 'IF EXISTS(select * FROM sys.views where name = ''RepViewMKTMensual'')
@@ -760,25 +775,29 @@ group by
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7150)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7150
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7150)
 BEGIN
 INSERT INTO GroupByReports values(7150, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
 sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
 sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|
 case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|
-case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))*count(distinct accountUserId))/100 else 0 end)>0 
+case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))*count(distinct accountUserId))/100 else 0 end)>0 
 		then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)
-		*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))
-		*count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121))))))*100)>100 then 100 
+		*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))
+		*count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121))))))*100)>100 then 100 
 			   else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)
-			   *MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121)))))*
-			   count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime, EOMONTH(date), 121))))))*100) end)
+			   *MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121)))))*
+			   count(distinct accountUserId))/100 else 0 end))*MAX(datediff(ss,CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + ''''-01'''', 121),CONVERT(smalldatetime,DATEADD(M, datediff(M, ''''18991231'''', date), ''''18991231''''), 121))))))*100) end)
 		else 0 end:avrTimeACD|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7150, N''date'')
@@ -786,7 +805,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7150 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7150, N''filterby'')
@@ -794,7 +815,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7150 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Mensual'', ''acds'', 7150)
@@ -802,7 +825,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7150)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7150
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7150)
 BEGIN
 	INSERT INTO ReportsTotals values(7150, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))'')
 END'
@@ -826,7 +851,7 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = convert(datetime,convert(varchar(11),getdate()))
+select @to = getdate()
 
 declare @dateNow datetime,@maxLogout datetime
 
@@ -1169,7 +1194,7 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		 [dbo].TimeInterval( th.[start],th.[stop] ,dateTRing,dateTResp) as tring,
 		 thold,
 		 th.[start] as timegroup,th.[stop] as timegroup_next
-		,[dateTResp] ,[dateTACD] 
+		,[dateTResp],[dateTRing] ,[dateTACD] 
 		,[dateTTransferStart] ,[dateTTransferEnd] 
 		,UserId
 	from #inboundTimeMayores t
@@ -1265,6 +1290,7 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		,DATEPART(hh, [date]) as [hour]
 		,DATEPART(mi, [date]) as [minutes]
 		,sum(nserv) as nserv
+		,sum(nacw) as nacw
 		from #RepMKTIntervalosTiemposAcuTotalesTemp
 		Left join ccinbound  inb ON inb.Inbound_id = inboundId
 		group by[date],inboundId,  inb.descripcion
@@ -1410,14 +1436,18 @@ select
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7130)
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7130
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7130)
 BEGIN
 INSERT INTO GroupByReports values(7130, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp2)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|  sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|  sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|  case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|  case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end)>0     then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*86400))*count(distinct accountUserId))/100 else 0 end))*86400)))*100) end)    else 0 end:avrTimeACD|avg(avrCallsAnswer):avrCallsAnswer'',''Acds|inboundId'')
 END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''date'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7130, N''date'')
@@ -1425,7 +1455,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7130 AND [filterMenuName] = ''filterby'')
 BEGIN
 	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
 	VALUES (7130, N''filterby'')
@@ -1433,7 +1465,9 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds'')
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7130 AND [filterName] = ''acds'')
 BEGIN
 	INSERT INTO ReportsFilters 
 	VALUES (''MKT Tiempos'', ''acds'', 7130)
@@ -1441,11 +1475,14 @@ END'
 	EXEC(@Sql)
 
 	set @process = 'CW-1736 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
-    set @Sql= 'IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7130)
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7130
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7130)
 BEGIN
 	INSERT INTO ReportsTotals values(7130, ''special:avrAnswer:(case when sum(acdCalls)>0 then sum(tresp2)/sum(acdCalls) else 0 end)|special:avgAbandonTime:(case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end)|sum:acdCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)|sum:abandonedCalls|max:maxDelay|sum:entryFlow|sum:outFlow|sum:callsOutExt|special:tPromSalidaExt:(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end)|sum:callsDeleteQue|special:tPromElimCola:(case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end)|special:avrTimeACD:(case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100         else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)    else 0 end)|special:avrCallsAnswer:(isnull(case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end,0))'')
 END'
 	EXEC(@Sql)
+
 
 
 	set @process = 'CW- -- VERSION 52  Update MDF ReportsMasterProcess add Reinicializa replicas '
@@ -2188,6 +2225,644 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
 	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  Drop SP ccspRepMKTTiemposTotales'
+    set @Sql= 'IF EXISTS (select * from sys.procedures where name = N''ccspRepMKTTiemposTotales'')
+    begin
+        DROP PROCEDURE ccspRepMKTTiemposTotales;
+    end'
+    EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  CREATE TABLE RepMKTTiemposTotales'
+    set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''RepMKTTiemposTotales'')
+BEGIN
+	CREATE TABLE RepMKTTiemposTotales(
+		[date] DATETIME  NOT NULL,
+		[inboundId] INT NOT NULL,
+		[Acds] VARCHAR(50) NOT NULL,
+		[PromPosicionPersonal] [numeric](18, 1) NULL,
+		[receivedCalls] [int] NULL,
+		[acdCalls] INT NOT NULL,
+		[abandonedCalls] INT NOT NULL,
+		[tPromACD] INT NOT NULL,
+		[tPromACW] INT NOT NULL,
+		[tPromRetention] INT NOT NULL,
+		[callsOutExt] INT NOT NULL,
+		[tPromSalidaExt] INT NOT NULL,
+		[TPromDispon] INT NOT NULL,
+		[TPromRing] INT NULL,
+		[AHT] [int] NOT NULL,
+		[tacd] INT NOT NULL,	
+		[tacw] INT NOT NULL,	
+		[nacw] INT NOT NULL,	
+		[tprosalext] INT NOT NULL,
+		[tlog] INT NOT NULL,
+		[thold] INT NOT NULL,	
+		[nhold] INT NOT NULL,
+		[tdispo] INT NOT NULL,	
+		[ndispo] INT NOT NULL,
+		[tring] INT NOT NULL,	
+		[nring] INT NOT NULL,
+		[accountUserId] INT NULL,
+		[year] int NOT NULL,
+		[month] int NOT NULL,
+		[day] int NOT NULL,
+		[hour] int NOT NULL,
+		[minutes] int NOT NULL,
+	) 
+
+END'
+	EXEC(@Sql)
+
+
+	set @process = 'CW-1973 -- VERSION 52  CREATE SP ccspRepMKTTiemposTotales'
+    set @Sql= '
+	CREATE PROCEDURE [dbo].[ccspRepMKTTiemposTotales]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+select @to = getdate()
+
+if @action = 1
+begin
+	delete from [RepMKTTiemposTotales] with(rowlock) 
+	where date >= @from AND date <= @to
+
+	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
+	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
+	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	CREATE TABLE #inbound([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,ncalls int,nacd int,tresp int,nabnd int,
+	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
+	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
+	CREATE TABLE #inboundTimeMayores([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,ncalls int,nacd int,tresp int,nabnd int,
+	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
+	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
+	CREATE TABLE #holdTime([userId] int not null,inbound_id int not null,tiempohold int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
+	create nonclustered index ix_times2 on #times([Start] DESC)
+	create table #ccLogAgentesDia(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null,dateIni datetime not null,dateEnd datetime not null,
+	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+	create table #ccLogAgentesDiaMayores(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null, dateIni datetime not null,dateEnd datetime not null,
+	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+
+	insert into #times
+	exec ccspTimesReports @from=@from,@to=@to,@interval=15
+	
+	INSERT INTO #sessionTime
+	exec ccspGenSession @from, @to	
+
+	INSERT INTO #sessionTimeGroup
+	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
+		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
+		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
+	where wg.Tipo = 0 		
+
+	INSERT into #sessionTimeMayores SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+		
+	insert into #sessionTimeGroup
+	select [User_id],[login],logout, th.[start] as timegroup,th.[stop] as timegroup_next,
+		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
+	from #sessionTimeMayores t
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	where  datediff(ss,th.start,timegroup_next)>0	
+	
+	insert into #inbound
+	select 
+		cal_Inicio as [dateStart],
+		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
+		,Inbound_id as inboundId
+		,1 as ncalls
+		,case when i.statusCall_id=13 then 1 else 0 end as nacd
+		,case when i.statuscall_id = 13  then (i.cal_twait + i.cal_txfer + i.cal_tring) else 0 end as tresp
+		,case when (i.statuscall_id <> 13) then 1 else 0 end as nabnd
+		,case when i.statusCall_id=13 and i.cal_tnotas>0 then 1 else 0 end as nacw
+		,case when i.statusCall_id=13 and i.cal_tring>0 then 1 else null end nring
+		,case when i.statusCall_id=13 and i.cal_tdialog>=0 then i.cal_tdialog else 0 end as tacd	
+		,case when i.statusCall_id=13 then i.cal_tnotas else 0 end as tacw
+		,case when i.statusCall_id=13 then i.cal_tring else null end tring
+		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then 1 else 0 end as SalExt
+		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then (t.tAntesXfer + t.tDespuesXfer) else 0 end as tprosalext	
+		,case when i.statusCall_id=13 and i.cal_tmoh>0 then 1 else 0 end nhold
+		,dbo.GetTimeGroup(cal_Inicio,0) as timegroup
+		,dbo.GetTimeGroup(dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio),1) as timegroup
+		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring,cal_Inicio) as [dateTResp]
+		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring+i.cal_tdialog,cal_Inicio) as [dateTACD]	
+		,dateadd(ss,-t.tAntesXfer - t.tDespuesXfer,fechaFin) as [dateTTransferStart]	
+		,fechaFin as [dateTTransferEnd]
+		,i.User_id
+		,1 as ntotal
+	from cccallsin i (nolock) 
+	left join ccLogTransfers t (nolock) on i.cal_id=t.cal_id and t.tipo=1
+	where cal_Inicio between @from and @to
+	
+	INSERT into #inboundTimeMayores 
+	SELECT * from #inbound where datediff(mi,timegroup,timegroup_next)>15
+	delete #inbound where  datediff(mi,timegroup,timegroup_next)>15	
+
+	insert into #inbound
+	select dateStart,dateEnd,inboundId,
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ncalls) as ncalls,	
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacd) as nacd,	
+		[dbo].TimeInterval( th.[start],th.[stop] ,dateStart,dateTResp) as tresp,
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nabnd) as nabnd,		
+		[dbo].TimeInterval( th.[start],th.[stop] ,dateTResp,[dateTACD]) as tacd,
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacw) as nacw,
+		[dbo].TimeInterval( th.[start],th.[stop] ,[dateTACD],dateEnd) as tacw,
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nring) as nring
+		,[dbo].TimeInterval( th.[start],th.[stop] ,[dateTACD],tring) as tring
+		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,SalExt) as SalExt,
+		case when [dateTTransferStart] is null then 0 else  [dbo].TimeInterval( th.[start],th.[stop] ,[dateTTransferStart],[dateTTransferEnd]) end as tprosalext,	
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nhold) as nhold,
+		th.[start] as timegroup,th.[stop] as timegroup_next
+		,[dateTResp] ,[dateTACD] ,[dateTTransferStart] ,[dateTTransferEnd] 
+		,UserId
+		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ntotal) as ntotal
+	from #inboundTimeMayores t
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+
+	insert into #ccLogAgentesDia
+	select [User_id]
+	,IdCampEsp
+	,TipoStatusAge_id
+	,tStatus
+	,case when tStatus is not null then 1 else 0 end nstatusfra
+	,DATEADD(ss,-tStatus,fecha) dateIni
+	,fecha dateEnd
+	,dbo.GetTimeGroup(DATEADD(ss,-tStatus,fecha),0) as timegroup
+	,dbo.GetTimeGroup(fecha,1) as timegroup_next
+	from ccLogAgentesDia A
+	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
+	and TipoStatusAge_id = 3
+
+	INSERT into #ccLogAgentesDiaMayores 
+	SELECT * from #ccLogAgentesDia where datediff(mi,dateIni,dateEnd)>15
+	delete #ccLogAgentesDia where  datediff(mi,timegroup,timegroup_next)>15	
+
+	insert into #ccLogAgentesDia
+	select User_id,IdCampEsp
+	,TipoStatusAge_id
+	,[dbo].TimeInterval( th.[start],th.[stop], dateIni, dateEnd) as tstatus
+	,nstatusfra
+	,DATEADD(ss,-tStatus,dateEnd) dateIni
+	,dateEnd dateEnd
+	,th.[start] as timegroup
+	,th.[stop] as timegroup_next
+	from #ccLogAgentesDiaMayores A 
+	inner join #times th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
+	WHERE dateIni>=@from AND dateIni<@to
+	and TipoStatusAge_id = 3
+
+	select User_id,IdCampEsp
+		,TipoStatusAge_id
+		,sum(tstatus) as tstatus
+		,sum(nstatusfra) as nstatusfra
+		,timegroup
+	INTO #groupLog
+	from #ccLogAgentesDia
+	GROUP BY User_id,IdCampEsp,TipoStatusAge_id,timegroup
+
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	------------------------------------------------------------------------------------HOLD TIME--------------------------------------------------------------------------------------------------------------
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	CREATE TABLE #hold ([userId] int not null,[dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,call_id int not null,inbound_id int not null,  marca int not null, Tipo_marca int not null,
+					Tipo_llamada int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL, [time_dialog] [datetime] not null,[time_notes] [datetime] not null
+					,[time_hold] [datetime] not null)
+
+	CREATE TABLE #tempccHoldSession([fila] int NOT NULL,[call_id] [smallint] NOT NULL,[userId] int not null,[inbound_id] [int] NOT NULL,[hold] [datetime] NOT NULL,[unhold] [datetime] NULL,[Tipo_marca] [int] not null
+				,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL primary key (fila,call_id))	
+
+	CREATE TABLE #holdMayores2 (call_id int not null,[userId] int not null,inbound_id int not null,  hold [datetime] not null , [unhold] [datetime] not null,Tipo_marca int not null,tiempoHold int not null,
+					[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+
+	insert into #hold
+	select 
+		User_id as userId
+		,cal_Inicio as [dateStart],
+		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
+		,cal_id as cal_id		
+		,inbound_id as inbound_id
+		,isnull(h.marca,0) as Marca,
+		case when (h.tipo_marca>0) then h.tipo_marca else 0 end as Tipo_marca,
+		isnull(tipo_llamada,0) as Tipo_llamada
+		,dbo.GetTimeGroup(cal_Inicio,0) as timegroup
+		,dbo.GetTimeGroup(dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio),1) as timegroup_next
+		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring,0),cal_inicio) as time_dialog
+		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog,0),cal_inicio) as time_notes
+		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + marca,0),cal_Inicio) as time_hold
+		--isnull(th.holdout,'''') as holdout
+	from cccallsin i (nolock) 
+	left join RiaMarkHold h (nolock) on i.cal_id=h.call_id and h.tipo_llamada=1
+	where cal_Inicio between @from and @to
+	
+
+	insert into #tempccHoldSession
+	select A.Fila 
+		,A.call_id
+		,a.userId
+		,a.inbound_id
+		,A.time_hold hold,
+		--S.fecha holdout
+		isnull(S.time_hold,a.time_notes) unhold,
+		a.Tipo_marca Tipo_marca
+		,a.timegroup timegroup
+		,a.timegroup_next timegroup_next
+	from (
+		select ROW_NUMBER() OVER(PARTITION BY call_id ORDER BY time_hold,tipo_marca) Fila,call_id,userId,inbound_id,marca,tipo_marca,tipo_llamada,time_hold,time_notes,timegroup,timegroup_next
+		from #hold a where time_hold >= @from and time_hold <= @to
+	)A
+	left join (
+		select ROW_NUMBER() OVER(PARTITION BY call_id ORDER BY time_hold,tipo_marca) Fila,call_id,userId,inbound_id,marca,tipo_marca,tipo_llamada,time_hold,time_notes,timegroup,timegroup_next
+		from #hold a where time_hold >= @from	and time_hold <= @to
+	) S
+	on A.Fila=S.Fila-1 and A.call_id=S.call_id and A.tipo_marca=1 and S.tipo_marca=0
+	where A.tipo_llamada=1 --and a.Tipo_marca=1 
+	order by hold
+
+	select 
+		ths.call_id,
+		ths.userId,
+		ths.inbound_id,
+		ths.hold,
+		ths.unhold,
+		ths.Tipo_marca,
+		[dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold) as tiempohold,
+		ths.timegroup,
+		ths.timegroup_next
+		into #tiempoHold
+	 from #tempccHoldSession ths
+	 inner join #times th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
+	 where [dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold)>0 and Tipo_marca=1	
+	
+	INSERT into #holdMayores2 
+	SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15 
+	delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15	
+
+	insert into #tiempoHold
+	select DISTINCT  call_id,
+		userId as userId,
+		inbound_id as inbound_id,
+		hold,
+		unhold,
+		Tipo_marca,
+		[dbo].TimeInterval( th.[start],th.[stop],hold ,unhold) as tiempohold, 
+		th.[start] as timegroup,
+		th.[stop] as timegroup_next
+	from #holdMayores2 t
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
+	where [dbo].TimeInterval( th.[start],th.[stop],hold ,unhold)>0 
+
+	select 
+	inbound_id,
+	userId,
+	sum(tiempohold) as tiempohold,
+	--sum(Tipo_marca) as Tipo_marca,
+	timegroup,
+	timegroup_next
+	into #timeHoldInterval 
+	from #tiempoHold 
+	where tiempoHold>0 and Tipo_marca=1
+	group by userId,inbound_id,timegroup,timegroup_next
+
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	select case when c.timegroup is not null then c.timegroup else G.timegroup end  as [date]
+		,isnull(c.inboundId,inb_id) as inboundId
+		,isnull(c.nacd,0) as nacd
+		,isnull(c.nabnd,0) 	as nabnd	
+		,isnull(c.tacd,0)tacd, isnull(c.tacw,0) tacw,isnull(c.nacw,0) nacw		
+		,isnull(c.SalExt,0)  SalExt,isnull(c.tprosalext,0)  tprosalext
+		,G.userId 
+		,isnull(G.[tlog seg],0) as tlog
+		,isnull(c.ncalls, 0) AS ncalls		
+		,isnull(c.tring, 0) AS tring
+		,isnull(c.nring, 0) AS nring
+		,isnull(c.nhold, 0) AS nhold
+	 INTO #IntervalosInbound
+	 from (
+			select timegroup,inboundId,userId 
+				,sum(c.nacd) as nacd			
+				,sum(c.nabnd) as nabnd
+				,sum(c.tacd) as tacd
+				,sum(c.tacw) as tacw
+				,sum(c.nacw) as nacw			
+				,sum(SalExt) as SalExt
+				,sum(tprosalext) as tprosalext
+				,sum(c.ncalls) as ncalls	
+				,SUM(c.tring) as tring
+				,SUM(c.nring) as nring
+				,SUM(c.nhold) as nhold
+			from #inbound as c
+			where inboundId > 0
+			group by timegroup,inboundId,userId 
+		) c		
+	full join 
+	(select [user_id] as userId, timegroup, inb_id,sum([tlog seg] ) as [tlog seg] from  #sessionTimeGroup group by [user_id] ,timegroup,inb_id ) G
+	on G.timegroup=c.[timegroup] and c.inboundId = G.inb_id and G.userId=c.userId
+	 
+	select i.*
+	,isnull(case when lo.TipoStatusAge_id=3 then isnull(lo.tStatus,0) end,0) tdispo
+	,isnull(case when lo.TipoStatusAge_id=3 then lo.nstatusfra end,0) ndispo
+	,isnull(h.tiempohold, 0) AS thold
+	--,isnull(h.Tipo_marca, 0) AS nhold	
+	INTO #HoldDisp
+	from #IntervalosInbound i
+	left JOIN #groupLog lo on i.date = lo.timegroup and i.inboundId = lo.IdCampEsp and i.userId = lo.user_id
+	left JOIN #timeHoldInterval h on h.inbound_id = i.inboundId and i.date = h.timegroup and i.userId = h.userId
+
+	INSERT INTO [RepMKTTiemposTotales]
+	select 
+		[date] as [date]
+		,inboundId
+		,inb.descripcion as Acds
+		,round(case when count(distinct userId)>1 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct userId)*1800))*count(distinct userId))/100 else 0 end,1) as [Llamadas por Posic.]
+		,sum(ncalls) [Recibidas]
+		,sum(nacd) [Atendidas]
+		,sum(nabnd) [Abandonadas]
+		,case when sum(nacd)>0 then sum(tacd)/sum(nacd) else 0 end as [tPromACD]
+		,case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end as [tPromACW]
+		,case when sum(nhold)>0 then sum(thold)/sum(nhold) else 0 end as [tPromRetention]
+		,sum(SalExt) as [callsOutExt]	
+		,isnull(case when sum(SalExt)>0 then sum(tprosalext)/sum(SalExt) else 0 end,0) as [TPromSalidaExt]
+		,case when sum(ndispo)>0 then sum(tdispo)/sum(ndispo) else 0 end as [TPromDispon]
+		,case when sum(nring)>0 then sum(tring)/sum(nring) else 0 end [TPromRing]
+		,sum(((case when nacd>0 then tacd/nacd else 0 end)+(case when nacw>0 then tacw/nacw else 0 end)+(case when nring>0 then tring/nring else 0 end)+(case when nhold>0 then thold/nhold else 0 end))) [AHT1]
+		,sum(tacd) as tacd
+		,sum(tacw) as tacw
+		,sum(nacw) as nacw				
+		,sum(tprosalext) as tprosalext
+		,sum(tlog) as tlog
+		,sum(nhold) as nhold
+		,sum(thold) as thold
+		,sum(tdispo) as tdispo
+		,sum(ndispo) as ndispo
+		,sum(tring) as tring
+		,sum(nring) as nring
+		,userId as accountUserId			
+		,DATEPART(YYYY, [date]) as [year] 
+		,DATEPART(mm, [date]) as [month]
+		,DATEPART(dd, [date]) as [day]
+		,DATEPART(hh, [date]) as [hour]
+		,DATEPART(mi, [date]) as [minutes]
+		from #HoldDisp
+		Left join ccinbound  inb ON inb.Inbound_id = inboundId
+		group by[date],inboundId, userId, inb.descripcion
+		order by date
+		--having sum(nacd)>0 --or sum(nabnd)>0 or sum(tlog) >0	
+
+	drop table #sessionTimeGroup;
+	drop table #sessionTimeMayores;
+	drop table #times;
+	drop table #sessionTime;
+	drop table #inbound
+	drop table #inboundTimeMayores
+	drop table #holdTime
+	DROP TABLE #hold
+	DROP TABLE #tempccHoldSession
+	DROP TABLE #tiempoHold
+	DROP TABLE #holdMayores2
+	DROP TABLE #timeHoldInterval
+	DROP TABLE #IntervalosInbound
+	DROP TABLE #ccLogAgentesDia
+	DROP TABLE #ccLogAgentesDiaMayores
+	drop table #HoldDisp
+	drop table #groupLog
+
+END
+	'
+	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  INSERT DATE FILTER INTO ReportsFiltersMenus'
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''date''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''date'')
+BEGIN
+	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
+	VALUES (7170, N''date'')
+END'
+	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''filterby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''filterby'')
+BEGIN
+	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
+	VALUES (7170, N''filterby'')
+END'
+	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  INSERT filterby FILTER INTO ReportsFiltersMenus'
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''groupby''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFiltersMenus] WHERE [idReport] = 7170 AND [filterMenuName] = ''groupby'')
+BEGIN
+	INSERT [dbo].[ReportsFiltersMenus] ([idReport], [filterMenuName])
+	VALUES (7170, N''groupby'')
+END'
+	EXEC(@Sql)
+	
+	set @process = 'CW-1973 -- VERSION 52  INSERT acds FILTER INTO ReportsFilters'
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsFilters] WHERE [id] = 7170 AND [filterName] = ''acds''
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsFilters] WHERE [id] = 7170 AND [filterName] = ''acds'')
+BEGIN
+	INSERT INTO ReportsFilters 
+	VALUES (''Resumen de intervalo de tiempos totales'', ''acds'', 7170)
+END'
+	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  INSERT Totals FILTER INTO ReportsTotals'
+    set @Sql= '
+	DELETE FROM [dbo].[ReportsTotals] WHERE [id] = 7170
+	IF NOT EXISTS (SELECT * FROM [dbo].[ReportsTotals] WHERE [id] = 7170)
+BEGIN
+	INSERT INTO ReportsTotals values(7170, ''special:PromPosicionPersonal:(round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1))
+|sum:receivedCalls|special:LlamadasAtendidas:(sum(acdCalls))|sum:abandonedCalls|special:tPromACD:(case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end)|special:tPromACW:(case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end)
+|special:tPromRetention:(case when sum(nhold)>0 then sum(thold)/sum(nhold) else 0 end )|sum:callsOutExt|special:tPromSalidaExt:(isnull(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end,0))
+|special:TPromDispon:(case when sum(ndispo)>0 then sum(tdispo)/sum(ndispo) else 0 end)|special:TPromRing:(case when sum(nring)>0 then sum(tring)/sum(nring) else 0 end)
+|special:AHT:(sum(((case when acdCalls>0 then tacd/acdCalls else 0 end)+(case when nacw>0 then tacw/nacw else 0 end)+(case when nring>0 then tring/nring else 0 end)+(case when nhold>0 then thold/nhold else 0 end))))'')
+END'
+	EXEC(@Sql)
+
+	set @process = 'CW-1973 -- VERSION 52  INSERT Groups INTO GroupByReports'
+    set @Sql= '
+	DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7170
+	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7170)
+BEGIN
+	INSERT INTO GroupByReports values(7170, ''Acds|inboundId|round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1):PromPosicionPersonal|
+	sum(receivedCalls):receivedCalls|sum(acdCalls):LlamadasAtendidas|sum(abandonedCalls):abandonedCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|
+	case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|case when sum(nhold)>0 then sum(thold)/sum(nhold) else 0 end:tPromRetention|sum(callsOutExt):callsOutExt|
+	isnull(case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end,0):tPromSalidaExt|case when sum(ndispo)>0 then sum(tdispo)/sum(ndispo) else 0 end:TPromDispon|
+	case when sum(nring)>0 then sum(tring)/sum(nring) else 0 end:TPromRing|
+	sum(((case when acdCalls>0 then tacd/acdCalls else 0 end)+(case when nacw>0 then tacw/nacw else 0 end)+(case when nring>0 then tring/nring else 0 end)+(case when nhold>0 then thold/nhold else 0 end))):AHT'',''Acds|inboundId'')
+END'
+	EXEC(@Sql)
+
+	set @process = 'CW-1994 -- DROP PROCEDURE [ccspRepMKTDiarioTiemposTotales]'
+    	set @Sql= 'if exists (select * from sys.procedures where name = N''ccspRepMKTDiarioTiemposTotales'')
+    begin
+        DROP PROCEDURE ccspRepMKTDiarioTiemposTotales;
+    end
+'
+	EXEC(@sql)
+
+	set @process = 'CW-1994 -- CREATE TABLE RepMKTDiarioTiemposTotales'
+    set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''RepMKTDiarioTiemposTotales'')
+BEGIN
+CREATE TABLE [dbo].[RepMKTDiarioTiemposTotales](
+	[date] [datetime] NOT NULL,
+	[OpaId] [varchar](50) NOT NULL,
+	[NombreDeOperadora] [varchar](100) NOT NULL,
+	[InboundId] [int] NOT NULL,
+	[tPromACD] [int] NOT NULL,
+	[tPromACW] [int] NOT NULL,
+	[TiempoPromReten] [int] NOT NULL,
+	[TiempoPromRing] [int] NOT NULL,
+	[AHT] [int] NOT NULL,
+	[LlamadasAtendidas] [int] NOT NULL,
+	[year] [int] NOT NULL,
+	[month] [int] NOT NULL,
+	[day] [int] NOT NULL,
+	[hour] [int] NOT NULL,
+	[minutes] [int] NOT NULL
+) ON [PRIMARY]
+END'
+	EXEC(@Sql)
+
+set @process = 'CW-1994 -- CREATE PROCEDURE ccspRepMKTDiarioTiemposTotales'
+    	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepMKTDiarioTiemposTotales]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+
+AS
+
+if @from is null
+select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+select @to = getdate()
+
+declare @dateNow datetime,@maxLogout datetime
+
+if @action = 1
+begin
+delete from [RepMKTDiarioTiemposTotales] with(rowlock) 
+	where date >= @from AND date <= @to 
+
+CREATE TABLE #sessionAgent 
+	(
+		[user_id] [smallint] NOT NULL,
+		[login] [datetime] NOT NULL,
+		[logout] [datetime] NOT NULL,
+		[extension] [varchar](7) NOT NULL,
+	);
+INSERT INTO #sessionAgent
+	exec ccspGenSession @from, @to
+	select ''#sessionAgent''
+
+select 
+	convert(datetime,convert(date,login)) fecha,
+	SUM(DATEDIFF(ss, login, logout)) t_ses,
+	count(distinct user_id) user_id
+into #infoSession
+from #sessionAgent
+GROUP BY convert(datetime,convert(date,login))
+
+SELECT 
+		i.cal_Inicio as [date],
+		i.user_id as acduser,
+		i.Inbound_id as inboundId,
+		case when i.statuscall_id=13 then i.cal_tmoh else 0 end thold,
+		case when i.statusCall_id=13 then i.cal_tring else 0 end tring,
+		case when i.statusCall_id=13 and i.cal_tdialog>=0 then i.cal_tdialog else 0 end tacd,
+		case when i.statusCall_id=13 then i.cal_tnotas else 0 end tacw,
+		case when i.statusCall_id=13 then 1 else null end nacd,
+		case when i.statusCall_id=13 and i.cal_tnotas>0 then 1 else null end nacw,
+		case when i.statusCall_id=13 and i.cal_tmoh>0 then 1 else null end nhold,
+		case when i.statusCall_id=13 and i.cal_tring>0 then 1 else null end nring	
+	into #inboundData2			
+	FROM	cccallsin i (NOLOCK)	
+	WHERE	i.cal_inicio between @from and @to
+
+SELECT user_id AS agtuser_id,
+	login AS agtlogin,
+	ISNULL(apellidopaterno,'''')+'' ''+ISNULL(apellidomaterno,'''')+'' ''+ISNULL(nombres,'''') agt_name
+	into #users
+	FROM ccusers (NOLOCK)
+
+insert RepMKTDiarioTiemposTotales 
+	select c.[date]	--
+		,l.agtlogin as [OpaId]
+		,l.agt_name [NombreDeOperadora]
+		,[InboundID]--
+		,[TiempoPromACD]--
+		,[TiempoPromACW]--
+		,[TiempoPromReten]
+		,[TiempoPromRing]
+		,[AHT]
+		,[LlamadasAtendidas]
+		,DATEPART(YYYY, c.[date]) as [year] 
+		,DATEPART(mm, c.[date]) as [month]
+		,DATEPART(dd, c.[date]) as [day]
+		,DATEPART(hh, c.[date]) as [hour]
+		,DATEPART(mi, c.[date]) as [minutes]
+	 from (
+		select convert(datetime,convert(date,[date])) as [date],
+			acduser as [user],
+			inboundId as [InboundId]
+			,case when sum(c.nacd)>0 then sum(c.tacd)/sum(c.nacd) else 0 end as [TiempoPromACD]
+			,case when sum(c.nacw)>0 then sum(c.tacw)/sum(c.nacw) else 0 end as [TiempoPromACW]
+			,case when sum(c.nhold)>0 then sum(c.thold)/sum(c.nhold) else 0 end as [TiempoPromReten]
+			,case when sum(c.nring)>0 then sum(c.tring)/sum(c.nring) else 0 end as [TiempoPromRing]
+			,sum(((case when c.nacd>0 then c.tacd/c.nacd else 0 end)+(case when c.nacw>0 then c.tacw/c.nacw else 0 end)+(case when c.nring>0 then c.tring/c.nring else 0 end)+(case when c.nhold>0 then c.thold/c.nhold else 0 end))) [AHT]
+			,isnull(sum(c.nacd),0) as [LlamadasAtendidas]
+		from #inboundData2 as c 
+		group by convert(datetime,convert(date,[date])),inboundId,acduser
+	) c
+	LEFT JOIN #infoSession G on G.fecha = c.date
+	left join #users l on [user]=l.agtuser_id --and c.date=l.date
+	--INNER JOIN ccinbound i on [ACD] = i.Inbound_id
+	WHERE @from <= C.[date] AND @to >= c.[date] and [LlamadasAtendidas]>0
+	order by [date]
+
+drop table #inboundData2
+drop table #sessionAgent
+drop table #infoSession 
+drop table #users
+end
+'
+	EXEC(@sql)
+
+		set @process = 'CW-1994-- insert into ReportsFilters'
+    	set @Sql= 'delete from ReportsFilters where id=7180
+insert into ReportsFilters (reportName,filterName,id)
+values(''Daily Total Time'',''acds'',7180) 
+'
+	EXEC(@sql)
+
+		set @process = 'CW-1994 -- insert into ReportsFiltersMenus '
+    	set @Sql= 'delete from ReportsFiltersMenus where idReport=7180
+insert into ReportsFiltersMenus values 
+(7180,''filterby''),
+(7180,''date'')'
+	EXEC(@sql)
+
+		set @process = 'CW-1994 -- insert into ReportsTotals '
+    	set @Sql= 'delete from ReportsTotals where id = 7180
+insert into ReportsTotals values (7180,''special:tPromACD:sum(tPromACD)|special:tPromACW:sum(tPromACW)|special:TiempoPromReten:sum(TiempoPromReten)|special:TiempoPromRing:sum(TiempoPromRing)|special:AHT:sum(AHT)|special:LlamadasAtendidas:sum(LlamadasAtendidas)'')
+'
+	EXEC(@sql)
+
 
 		if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

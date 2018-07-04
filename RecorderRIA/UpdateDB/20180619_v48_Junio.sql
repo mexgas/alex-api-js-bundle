@@ -85,7 +85,7 @@ EXEC(@sql)
 	
 
 	set @process = 'CW - 1702 UPDATE column HasBeenToRename'
-	set @Sql= 'update RIA_GRABACION set HasBeenToRename = 0'
+	set @Sql= 'update RIA_GRABACION set HasBeenToRename = 0 where HasBeenToRename is null'
 	EXEC(@sql)
 
 	set @process = 'SP -- CountRecorderByCampId'

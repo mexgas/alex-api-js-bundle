@@ -298,7 +298,7 @@ declare @publisher_db_reinit nvarchar(max)
 declare @publication_reinit nvarchar(max)
 declare @upload_first_reinit nvarchar(max)
 
-set @lastTenMinuteFirst = dateadd(minute,-120,dateadd(minute, datepart(minute, getdate()) / 10 * 10, dateadd(hour, datediff(hour, 0,getdate()), 0)))
+set @lastTenMinuteFirst = dateadd(minute,-@scheduleTime*2,getdate())
 
 create table #reinitmergepullsubscription(
 id int not null identity,
@@ -320,9 +320,9 @@ left outer join master.sys.servers s
 on (ma.publisher_id = s.server_id)
 where 
 (mh.comments like ''%You must reinitialize the subscription (without upload)%'' or
-mh.comments like  ''%Start the Snapshot Agent to generate the snapshot for this publication%'')
+mh.comments like  ''%The Merge Agent failed because the schema of the article at the Publisher does not match the schema of the article at the Subscriber%'')
 and mh.time >= @lastTenMinuteFirst
-and ma.subscriber_db = ''CCRecorderRIA''
+and ma.subscriber_db = ''ccReportsRia''
 
 while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 	begin
@@ -332,7 +332,7 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 		where [status] = 0
 		set rowcount 0
 		
-		EXEC sp_reinitmergesubscription @publication = @publication_reinit, @subscriber = @publisher_reinit, @subscriber_db = ''CCRecorderRIA'', @upload_first = @upload_first_reinit
+		exec sp_reinitmergepullsubscription  @publisher = @publisher_reinit,    @publisher_db = @publisher_db_reinit,    @publication = @publication_reinit,    @upload_first = @upload_first_reinit
 
 		update #reinitmergepullsubscription
 		set [status] = 1

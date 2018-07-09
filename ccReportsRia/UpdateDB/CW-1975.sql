@@ -1,3 +1,7 @@
+ALTER TABLE RepOutCallsDetail
+      ADD MessageTime smallint null
+
+
 ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
 @action as tinyint,
 @from as datetime = null,
@@ -39,7 +43,6 @@ if @action = 1
         ISNULL(Usr.ApellidoPaterno + ' ' + ISNULL(Usr.ApellidoMaterno, '') + ' ' + Usr.Nombres, '') AS [username],
         camps.cam_id as [campaignId],
         ISNULL(camps.cam_descripcion, 'systemTranslated_NoCampaign') as [campaign],
-		ISNULL(Call.cal_tMsg,0) as [MessageTime],
         (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg,0)) / 60.0 )* 60) AS [duration],
         ISNULL(Call.costo,0.00) as [ncost],
         @IVA as iva,
@@ -64,6 +67,7 @@ if @action = 1
         , ISNULL(cs.Dato3,'') as [data3]
         , ISNULL(cs.Dato4,'') as [data4]
         , ISNULL(cs.Dato5,'') as [data5]
+        , ISNULL(Call.cal_tMsg,0) as [MessageTime]
         FROM ccoCallsOut Call
         LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id
         INNER JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL

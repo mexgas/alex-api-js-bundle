@@ -2722,6 +2722,6 @@
     <value>Manual Calls Time</value>
   </data>
   <data name="MessageTime" xml:space="preserve">
-    <value>Message Time</value>
+    <value>Time on Message</value>
   </data>
 </root>

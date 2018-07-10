@@ -44,7 +44,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 14
 		begin tran
 		begin try
 
-		set @process = 'CW-1809 -- VERSION 120.14 Alter SP ccsp_RIAvoiceMail '
+		set @process = 'CW-2022 -- VERSION 120.14 Alter SP ccsp_RIAvoiceMail '
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAvoiceMail]
 @type as tinyint,
 @msgId int=null,
@@ -73,8 +73,7 @@ if @type=1 -- getSettings
 	return(0)
  end
 
-if @type=2 -- getMailBoxes
- begin
+else if @type=2 begin-- getMailBoxes 
 	if isnull(@msgId,0)=0
 	 begin
 		raiserror(''Missing msgId'', 18, 1)
@@ -83,21 +82,18 @@ if @type=2 -- getMailBoxes
 
 	declare @inbound_id int, @calid int, @acdName varchar(50)
 
-	if @mailType = 0
-	begin
+	if @mailType = 0 begin
 		select @calid=cal_id from ccRIA_vmMessages where vmID=@msgId
 		select @inbound_id=inbound_id from ccCallsIn where cal_id=@calid
 	end
-	else
-	begin
+	else begin
 		select @calid=chatId from ccRIAChatMailbox where ID=@msgId
 		select @inbound_id=inboundId from ccRIAChats where chatId=@calid
 	end
 	
 	select @acdName = descripcion from ccInbound where Inbound_id = @inbound_id
 	
-	if @mailType = 2
-	begin
+	if @mailType = 2 begin
 		select '''', @acdName as acdName
 		return(0)
 	end
@@ -107,63 +103,82 @@ if @type=2 -- getMailBoxes
 	return(0)
  end
 
-if @type=3 -- getNext
- begin
-	declare @idm int, @archiv varchar(256), @tipo int
-	select top 1 @idm= tt.ID, @archiv = tt.[file], @tipo = tt.[type]  from
+else if @type=3 begin-- getNext
+ 
+ declare @mailBySend table(
+	idm int,
+	nameFile varchar(256),
+	[type] int,
+	Inbound_id int,
+	acdName varchar(100)
+	)
 
-	(select audios.vmID as ID, audios.archivo as [file], 1 as [type]  from 
-	(select top 1 vmID, archivo from ccRIA_vmMessages where vmStatus=0 and vmintentos<100  order by vmintentos, vmID) audios
-	union 
-	 select chats.ID,chats.[file], 2 as [type] from 
-	(select top 1 ID as ID, [file] as [file] from ccRIAChatMailbox where [status] = 0 and tries<100  order by tries, ID) chats) tt
+	insert into @mailBySend
+	select top 30  * from (
+	select vmID, archivo, 1 as [type],C.Inbound_id,ISNULL(I.descripcion,'''') as acdName from ccRIA_vmMessages M
+	inner join ccCallsIn C on M.cal_id=C.cal_id
+	left join ccInbound I on C.Inbound_id=I.Inbound_id
+	where vmStatus=0  
+	union
+	select M.ID, M.[file] as [file],2 as [type],C.inboundId,ISNULL(I.descripcion,'''') as acdName   from ccRIAChatMailbox M
+	inner join ccRIAChats C on M.chatID=C.chatID
+	left join ccInbound I on C.inboundId=I.Inbound_id
+	where M.[status] = 0 
+	)x
+	where 
+	Inbound_id in(
 
-	if @tipo = 1
-	begin
-		update ccRIA_vmMessages set vmintentos=vmintentos+1 where vmID=@idm		
-	end
-	else
-	begin
-		update ccRIAChatMailbox set tries=tries+1 where [ID]=@idm		
-	end
+	select distinct A.inbound_id  from ccRIA_vmMailBoxes M 
+	inner join ccRIA_vmACDMailBoxes A on M.vmID = A.vmID 
+	)
 
-	select @idm as id, @archiv as archivo where @idm is not null
+	
+
+	update A set vmintentos=vmintentos+1 from ccRIA_vmMessages A 
+	inner join @mailBySend B on A.vmID=B.idm and B.type=1
+
+	update A set tries=tries+1 from ccRIAChatMailbox A 
+	inner join @mailBySend B on A.ID=B.idm and B.type=2
+	
+	select * from @mailBySend
 
 	return(0)
  end
 
-if @type=4 -- setResult
- begin
+else if @type=4 begin-- setResult 
 	if @bSent is null or isnull(@msgId,0)=0
 	 begin
 		raiserror(''Missing data'', 18, 1)
 		return(0)
 	 end
 
- 	if @bSent=1
-	 begin
-		if @mailType = 0
-		begin
+ 	if @bSent=1  begin
+		if @mailType = 0 begin
 			update ccRIA_vmMessages set vmStatus=1 where vmID=@msgId			
 		end
-		else
-		begin
+		else begin
 			update ccRIAChatMailbox set [status] = 1 where ID = @msgId						
 		end
 		return(0)
 	 end
 
-		if @mailType = 0 
-		begin
-			update ccRIA_vmMessages set vmStatus=case when vmintentos<10 then vmStatus else 2 end where vmID=@msgId 
-		end
-		else
-		begin
-			update ccRIAChatMailbox set [status]=case when tries<10 then [status] else 2 end where ID=@msgId 
-		end		
-		return(0)	
+	if @mailType = 0  begin
+		update ccRIA_vmMessages set vmStatus=case when vmintentos<10 then vmStatus else 2 end where vmID=@msgId 
+	end
+	else begin
+		update ccRIAChatMailbox set [status]=case when tries<10 then [status] else 2 end where ID=@msgId 
+	end		
+	return(0)	
 	
 	
+ end
+else if @type=5  begin-- reset vmintentos
+	if @mailType = 0 begin
+		update ccRIA_vmMessages set vmintentos=case when vmintentos>1 then vmintentos-1 else 0 end where vmID=@msgId		
+	end
+	else begin
+		update ccRIAChatMailbox set tries=case when tries>1 then tries-1 else 0 end where [ID]=@msgId		
+	end
  end'
 		EXEC(@Sql)
 				

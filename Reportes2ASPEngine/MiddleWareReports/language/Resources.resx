@@ -2797,6 +2797,6 @@
     <value>Tiempo Prom Timbrando</value>
   </data>
   <data name="disconnectCause" xml:space="preserve">
-    <value>Estatus del Proveedor</value>
+    <value>Estado del Proveedor</value>
   </data>
 </root>

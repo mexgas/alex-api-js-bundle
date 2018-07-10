@@ -2302,6 +2302,6 @@
     <value>Tempo de chamadas manuais</value>
   </data>
   <data name="disconnectCause" xml:space="preserve">
-    <value>Estado de Provedor</value>
+    <value>Estado da operadora</value>
   </data>
 </root>

@@ -21,9 +21,13 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 	begin tran
 	begin try
 
+	set @process = 'CW - 1702 drop procedure CountRecorderByCampId'
+	set @Sql= 'if exists (select * from sys.procedures where name=''CountRecorderByCampId'')
+	drop procedure CountRecorderByCampId'
+	EXEC(@sql)
 
- set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
-        set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
+ 	set @process = 'CW-1702 Version xxx.xxx --Create Table para registrar los movimientos de cambio de nombre'
+    set @Sql= 'if not exists (select * from sys.tables where name = N''LogRenameRecording'')
 	    begin       
 			create table LogRenameRecording(
 				id int identity(1,1),
@@ -34,713 +38,17 @@ if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
 				DateRename DateTime
 			)
 	    end'
-        EXEC(@Sql)
+        EXEC(@Sql)        
 
-set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a sido renombrada'
-	set @Sql= '
-
-	if not exists (select * from sys.columns where name = N''HasBeenToRename'' and Object_ID = Object_ID(N''ria_grabacion''))
+	set @process = 'CW - 1702 SP -- Alter ria_grabacion para saber si la grabacion a sido renombrada'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''HasBeenToRename'' and Object_ID = Object_ID(N''ria_grabacion''))
 	    begin
 			alter table ria_grabacion add HasBeenToRename int null
-		end
-'
-EXEC(@sql)
+		end'
+	EXEC(@sql)
 
 
-set @process = 'CW - 1702 Modificacion del trsp_AdmRecSearchCallIdStr '
-	set @Sql= '
-ALTER PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
-				@Sup_id int,
-				@callIdList as nvarchar(max),
-				@UserList varchar(MAX) =null,
-				@IDWGList varchar(MAX) =null,
-				@TypeCall int = null,
-				@CampaingsList varchar(MAX) =null,
-				@ACDList varchar(MAX) =null,
-				@DispositionList varchar(MAX) =null,
-				@SubdispositionList varchar(MAX) =null
-
-				AS
-				BEGIN
-
-				SET NOCOUNT ON
-
-				declare @sql1 nvarchar(max)
-
-				--Tabla con toda la informaciom
-				CREATE TABLE #tempRiAAllInfo(
-					cal_id int,
-					tipo_llamada smallint,
-					cam_id smallint,
-					calif_id smallint,
-					duracion int,
-					id_nivel_grito int,
-					[user_id] int,
-					finicio datetime,
-					ani varchar (100),
-					dni varchar (100),
-					cal_key varchar (100),
-					cal_manual tinyint,
-					posicion int,
-					computer varchar(100),
-					total_forma int,
-					id_repositorio tinyint,
-					score varchar (100),
-					formato_duracion varchar(15),
-					grab_id bigint,
-					IDWG varchar (800),
-					califSub_id varchar(800),
-					cal_tMoh smallint,
-					Prefijo varchar(max)
-				)
-
-				CREATE CLUSTERED INDEX [IX_tempRiAAllInfodate] ON [#tempRiAAllInfo]
-				(
-				[finicio] ASC
-				)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
-
-
-				create table #auxOutbound(
-				   	cal_id int,
-					tipo_llamada smallint,
-					cam_id smallint,
-					calif_id smallint,
-					duracion int,
-					id_nivel_grito int,
-					[user_id] int,
-					finicio datetime,
-					ani varchar (100),
-					dni varchar (100),
-					cal_key varchar (100),
-					cal_manual tinyint,
-					posicion int,
-					computer varchar(100),
-					total_forma int,
-					id_repositorio tinyint,
-					score varchar (100),
-					formato_duracion varchar(15),
-					grab_id bigint,
-					IDWG varchar (800),
-					califSub_id  varchar(800),
-					cal_tMoh smallint,
-					Prefijo varchar(max)
-					)
-
-				--Segmento de Calificaciones
-				create table #tempRiaFormaCalif6(
-				id_grabacion bigint,
-				total_forma int)
-
-				insert into #tempRiaFormaCalif6 (id_grabacion,total_forma)
-				select r.id_grabacion, avg(r.total_forma) as total_forma
-				from ria_formacalif r
-				inner join (select id_formato,id_grabacion,max(version) as version from ria_formacalif group by id_grabacion,id_formato)t
-				on r.id_grabacion=t.id_grabacion and r.id_formato=t.id_formato and r.version=t.version
-				group by r.id_grabacion
-
-
-				--Segmento de Supervisor
-				create table #tempCampEspWG6(
-				IdCampEsp smallint,
-				Tipo smallint,
-				[user_id] smallint)
-
-				CREATE NONCLUSTERED INDEX [IX_tempCampEspWG6] ON [#tempCampEspWG6]
-				(
-				[user_id] ASc
-				)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
-
-				insert into #tempCampEspWG6 (IdCampEsp,Tipo,user_id)
-				  select distinct a.IdCampEsp, a.Tipo as Tipo_llamada,b.User_id
-				from ccRIACampEspWGConsulta a
-				inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
-
-				--Segmento de usurios asociados al supervisor
-				create table #tempComplete6(
-				IdCampEsp smallint,
-				Tipo smallint,
-				[user_id] int,
-				IDWG smallint)
-
-				CREATE NONCLUSTERED INDEX [IX_tempComplete6User] ON [#tempComplete6]
-				(
-				[user_id] ASC
-				)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
-
-
-
-				if @UserList is not null and @UserList <> ''''
-				BEGIN
-					set @sql1=''insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
-							select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
-							from ccRIACampEspWGConsulta a  inner join
-							(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
-							(select  distinct a.IDWG from ccRIACampEspWGConsulta a
-										inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = ''+cast(@Sup_id as nvarchar(max))+'' and a.IDWG = b.IDWG
-							)and user_id <> ''+cast(@Sup_id as nvarchar(max))+'' and user_id in (''+@UserList+'')
-							) b on a.IDWG=b.IDWG''
-					exec (@sql1)
-
-				END
-				else
-				BEGIN
-					insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
-					select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
-					from  ccRIACampEspWGConsulta a  inner join
-					(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
-						(select  distinct a.IDWG from ccRIACampEspWGConsulta a
-							inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
-							)and user_id <> @Sup_id
-					) b on a.IDWG=b.IDWG
-				END
-
-
-				if @TypeCall is not null and @TypeCall <> ''''
-					BEGIN
-						if @TypeCall=1 -- Only Inbound
-							BEGIN
-								set @sql1 =''
-								insert into #tempRiAAllInfo
-								select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-											finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-											isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-											isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-											isnull (f.description,'''''''')  AS score,
-											CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-											grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-								left join cctipocalifsub p on p.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
-								where''
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
-
-								if @ACDList is not null and @ACDList <> ''''
-									set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-								--print @sql1
-								exec (@sql1)
-
-								set @sql1 =''
-								insert into #tempRiAAllInfo
-								select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-											finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-											isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-											isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-											isnull (f.description,'''''''')  AS score,
-											CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-											grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-								left join cctipocalifsub p on p.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
-								where''
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
-
-								if @ACDList is not null and @ACDList <> ''''
-									set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-								--print @sql1
-								exec (@sql1)
-
-								if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
-									begin
-										set @sql1 =''
-										insert into #tempRiAAllInfo
-										select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-												finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-												isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-												isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-												isnull (f.description,'''''''')  AS score,
-												CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-												grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-										left join cctipocalifsub p on p.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-
-										if @ACDList is not null and @ACDList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-										--print @sql1
-										exec (@sql1)
-
-										set @sql1 =''
-										insert into #tempRiAAllInfo
-										select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-													finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-													isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-													isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-													isnull (f.description,'''''''')  AS score,
-													CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-													grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-										left join cctipocalifsub p on p.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-										if @ACDList is not null and @ACDList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-										--print @sql1
-										exec (@sql1)
-									end
-							END
-						ELSE
-							BEGIN --Only Outbound
-								set @sql1 =''
-								insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
-											    finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-											    id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
-								select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-												finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-												isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-												isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-												isnull (e.description,'''''''')  AS score,
-												CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-												grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
-								left join cctipocalifsubout k on k.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								where''
-
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
-
-								if @CampaingsList is not null and @CampaingsList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=2''
-								--print @sql1
-								exec (@sql1)
-
-								insert into #tempRiAAllInfo
-								select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-												finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-												id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
-								inner join #tempComplete6 U  on a.user_id=U.user_id
-
-								insert into #tempRiAAllInfo
-								select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-												finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-												id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
-								inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-
-
-								if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
-									begin
-										set @sql1 =''
-										insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
-													finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-													id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
-										select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-														finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-														isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-														isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-														isnull (e.description,'''''''')  AS score,
-														CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-														grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
-										left join cctipocalifsubout k on k.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-										if @CampaingsList is not null and @CampaingsList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=2''
-										--print @sql1
-										exec (@sql1)
-
-										insert into #tempRiAAllInfo
-										select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-														finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-														id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
-										inner join #tempComplete6 U  on a.user_id=U.user_id
-
-										insert into #tempRiAAllInfo
-										select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-														finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-														id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
-										inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-
-									end
-							END
-					END
-				ELSE
-					BEGIN --NOT Inbound or Outbound this mean both
-								set @sql1 =''
-								insert into #tempRiAAllInfo
-								select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-											finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-											isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-											isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-											isnull (f.description,'''''''')  AS score,
-											CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-											grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh, ISNULL(a.prefijo,'''''''')
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-								left join cctipocalifsub p on p.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
-								where''
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
-
-								if @ACDList is not null and @ACDList <> ''''
-									set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-								--print @sql1
-								exec (@sql1)
-
-								set @sql1 =''
-								insert into #tempRiAAllInfo
-								select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-											finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-											isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-											isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-											isnull (f.description,'''''''')  AS score,
-											CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-											grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh,ISNULL(a.prefijo,'''''''')
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-								left join cctipocalifsub p on p.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
-								where''
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
-
-								if @ACDList is not null and @ACDList <> ''''
-									set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-								--print @sql1
-								exec (@sql1)
-
-								set @sql1 =''
-								insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
-											    finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-											    id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh,prefijo)
-								select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-												finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-												isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-												isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-												isnull (e.description,'''''''')  AS score,
-												CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-												grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh,ISNULL(a.prefijo,'''''''')
-								from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
-								left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
-								left join cctipocalifsubout k on k.califSub_id=a.califSub_id
-								left join ccPosicion b on b.pos_id = a.cal_extension * -1
-								left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-								left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-								where''
-
-								if @IDWGList is not null and @IDWGList <> ''''
-									set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-												'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-								else
-									--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
-									set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
-
-								if @CampaingsList is not null and @CampaingsList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-								if @DispositionList is not null and @DispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-								if @SubdispositionList is not null and @SubdispositionList <> ''''
-									set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-								set @sql1 = @sql1 + '' and a.tipo_llamada=2''
-							
-								print @sql1
-								exec (@sql1)
-								
-								insert into #tempRiAAllInfo
-								select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-												finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-												id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh, prefijo from #auxOutbound a
-								inner join #tempComplete6 U  on a.user_id=U.user_id
-
-								insert into #tempRiAAllInfo
-								select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-												finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-												id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh, prefijo from #auxOutbound a
-								inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-
-								
-								if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
-								begin
-										set @sql1 =''
-										insert into #tempRiAAllInfo
-										select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-												finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-												isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-												isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-												isnull (f.description,'''''''')  AS score,
-												CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-												grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh ,''''''''
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-										left join cctipocalifsub p on p.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-
-										if @ACDList is not null and @ACDList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-										--print @sql1
-										exec (@sql1)
-
-										set @sql1 =''
-										insert into #tempRiAAllInfo
-										select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-													finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-													isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-													isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-													isnull (f.description,'''''''')  AS score,
-													CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-													grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh, ''''''''
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalif AS f ON a.calif_id = f.calif_id
-										left join cctipocalifsub p on p.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-
-										if @ACDList is not null and @ACDList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=1''
-										--print @sql1
-										exec (@sql1)
-
-										set @sql1 =''
-										insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
-													finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-													id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
-										select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
-														finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
-														isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
-														isnull (z.total_forma,0) as total_forma,a.id_repositorio,
-														isnull (e.description,'''''''')  AS score,
-														CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
-														grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh , ''''''''
-										from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
-										left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
-										left join cctipocalifsubout k on k.califSub_id=a.califSub_id
-										left join ccPosicion b on b.pos_id = a.cal_extension * -1
-										left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
-										left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
-										where''
-
-										if @IDWGList is not null and @IDWGList <> ''''
-											set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
-													'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-										else
-											set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
-
-										if @CampaingsList is not null and @CampaingsList <> ''''
-											set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
-
-										if @DispositionList is not null and @DispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
-
-										if @SubdispositionList is not null and @SubdispositionList <> ''''
-											set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
-
-										set @sql1 = @sql1 + '' and a.tipo_llamada=2''
-										print @sql1
-										exec (@sql1)
-
-										insert into #tempRiAAllInfo
-										select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-														finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-														id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh,a.Prefijo from #auxOutbound a
-										inner join #tempComplete6 U  on a.user_id=U.user_id
-
-										insert into #tempRiAAllInfo
-										select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
-														finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-														id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh,a.Prefijo from #auxOutbound a
-										inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-
-								end
-
-					END
-
-
-
-				--Seleccionar info de tabla global
-				select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
-					   finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
-					   id_repositorio,score,formato_duracion,grab_id,IDWG,califSub_id,cal_tMoh,Prefijo
-				from #tempRiAAllInfo with (index(IX_tempRiAAllInfodate))  order by finicio asc
-
-				drop table #tempRiaFormaCalif6
-				drop table #tempCampEspWG6
-				drop table #tempComplete6
-				drop table #tempRiAAllInfo
-				drop table #auxOutbound
-
-				END
-'
-EXEC(@sql)
-
-
-set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
+	set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
 	set @Sql= '
 		if not exists (select * from sys.columns where name = N''Prefijo'' and Object_ID = Object_ID(N''ria_grabacion''))
 	    begin
@@ -749,17 +57,793 @@ set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
 '
 EXEC(@sql)
 
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
 
-set @process = 'CW - 1702 UPDATE column HasBeenToRename'
-	set @Sql= '
-update RIA_GRABACION set HasBeenToRename = 0
+	set @process = 'CW - 1702 Se agrega prefijo a la tabla ccInbound de CCRecorderRIA, tabla ccCamps de CCRecorderRIA'
+	set @sql='if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps'')) begin
+			    alter table ccCamps ADD prefijo varchar(40) null
+			end'
+	EXEC(@sql)	
+
+	set @process = 'CW - 1702 Se agrega prefijo a la tabla ccInbound de CCRecorderRIA, tabla ccCamps de CCRecorderRIA'
+	set @sql='if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound'')) begin
+			    alter table ccInbound ADD prefijo varchar(40) null
+			end'
+	EXEC(@sql)
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+	
+
+	set @process = 'CW - 1702 UPDATE column HasBeenToRename'
+	set @Sql= 'update RIA_GRABACION set HasBeenToRename = 0 where HasBeenToRename is null'
+	EXEC(@sql)
+
+	set @process = 'SP -- CountRecorderByCampId'
+	set @Sql= 'create procedure [dbo].[CountRecorderByCampId]
+@cam_id int,
+@tipoLLamada int
+
+as
+select count(*) from ria_grabacion where cam_id = @cam_id and tipo_llamada = @tipoLLamada and (HasBeenToRename = 0 OR HasBeenToRename IS NULL)
+	'
+	EXEC(@sql)
+
+
+set @process = 'CW - 1702 Modificacion del trsp_AdmRecSearchCallIdStr '
+	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
+@Sup_id int,
+@callIdList as nvarchar(max),
+@UserList varchar(MAX) =null,
+@IDWGList varchar(MAX) =null,
+@TypeCall int = null,
+@CampaingsList varchar(MAX) =null,
+@ACDList varchar(MAX) =null,
+@DispositionList varchar(MAX) =null,
+@SubdispositionList varchar(MAX) =null
+
+AS
+BEGIN
+
+SET NOCOUNT ON
+
+declare @sql1 nvarchar(max)
+
+--Tabla con toda la informaciom
+CREATE TABLE #tempRiAAllInfo(
+	cal_id int,
+	tipo_llamada smallint,
+	cam_id smallint,
+	calif_id smallint,
+	duracion int,
+	id_nivel_grito int,
+	[user_id] int,
+	finicio datetime,
+	ani varchar (100),
+	dni varchar (100),
+	cal_key varchar (100),
+	cal_manual tinyint,
+	posicion int,
+	computer varchar(100),
+	total_forma int,
+	id_repositorio tinyint,
+	score varchar (100),
+	formato_duracion varchar(15),
+	grab_id bigint,
+	IDWG varchar (800),
+	califSub_id varchar(800),
+	cal_tMoh smallint,
+	Prefijo varchar(max)
+)
+
+CREATE CLUSTERED INDEX [IX_tempRiAAllInfodate] ON [#tempRiAAllInfo]
+(
+[finicio] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
+
+
+create table #auxOutbound(
+   	cal_id int,
+	tipo_llamada smallint,
+	cam_id smallint,
+	calif_id smallint,
+	duracion int,
+	id_nivel_grito int,
+	[user_id] int,
+	finicio datetime,
+	ani varchar (100),
+	dni varchar (100),
+	cal_key varchar (100),
+	cal_manual tinyint,
+	posicion int,
+	computer varchar(100),
+	total_forma int,
+	id_repositorio tinyint,
+	score varchar (100),
+	formato_duracion varchar(15),
+	grab_id bigint,
+	IDWG varchar (800),
+	califSub_id  varchar(800),
+	cal_tMoh smallint,
+	Prefijo varchar(max)
+	)
+
+--Segmento de Calificaciones
+create table #tempRiaFormaCalif6(
+id_grabacion bigint,
+total_forma int)
+
+insert into #tempRiaFormaCalif6 (id_grabacion,total_forma)
+select r.id_grabacion, avg(r.total_forma) as total_forma
+from ria_formacalif r
+inner join (select id_formato,id_grabacion,max(version) as version from ria_formacalif group by id_grabacion,id_formato)t
+on r.id_grabacion=t.id_grabacion and r.id_formato=t.id_formato and r.version=t.version
+group by r.id_grabacion
+
+
+--Segmento de Supervisor
+create table #tempCampEspWG6(
+IdCampEsp smallint,
+Tipo smallint,
+[user_id] smallint)
+
+CREATE NONCLUSTERED INDEX [IX_tempCampEspWG6] ON [#tempCampEspWG6]
+(
+[user_id] ASc
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
+
+insert into #tempCampEspWG6 (IdCampEsp,Tipo,user_id)
+  select distinct a.IdCampEsp, a.Tipo as Tipo_llamada,b.User_id
+from ccRIACampEspWGConsulta a
+inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
+
+--Segmento de usurios asociados al supervisor
+create table #tempComplete6(
+IdCampEsp smallint,
+Tipo smallint,
+[user_id] int,
+IDWG smallint)
+
+CREATE NONCLUSTERED INDEX [IX_tempComplete6User] ON [#tempComplete6]
+(
+[user_id] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
+
+
+
+if @UserList is not null and @UserList <> ''''
+BEGIN
+	set @sql1=''insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
+			select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
+			from ccRIACampEspWGConsulta a  inner join
+			(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
+			(select  distinct a.IDWG from ccRIACampEspWGConsulta a
+						inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = ''+cast(@Sup_id as nvarchar(max))+'' and a.IDWG = b.IDWG
+			)and user_id <> ''+cast(@Sup_id as nvarchar(max))+'' and user_id in (''+@UserList+'')
+			) b on a.IDWG=b.IDWG''
+	exec (@sql1)
+
+END
+else
+BEGIN
+	insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
+	select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
+	from  ccRIACampEspWGConsulta a  inner join
+	(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
+		(select  distinct a.IDWG from ccRIACampEspWGConsulta a
+			inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
+			)and user_id <> @Sup_id
+	) b on a.IDWG=b.IDWG
+END
+
+
+if @TypeCall is not null and @TypeCall <> ''''
+	BEGIN
+		if @TypeCall=1 -- Only Inbound
+			BEGIN
+				set @sql1 =''
+				insert into #tempRiAAllInfo
+				select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+							finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+							isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+							isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+							isnull (f.description,'''''''')  AS score,
+							CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+							grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+				left join cctipocalifsub p on p.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
+				where''
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
+
+				if @ACDList is not null and @ACDList <> ''''
+					set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+				--print @sql1
+				exec (@sql1)
+
+				set @sql1 =''
+				insert into #tempRiAAllInfo
+				select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+							finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+							isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+							isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+							isnull (f.description,'''''''')  AS score,
+							CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+							grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+				left join cctipocalifsub p on p.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
+				where''
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
+
+				if @ACDList is not null and @ACDList <> ''''
+					set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+				--print @sql1
+				exec (@sql1)
+
+				if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
+					begin
+						set @sql1 =''
+						insert into #tempRiAAllInfo
+						select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+								finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+								isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+								isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+								isnull (f.description,'''''''')  AS score,
+								CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+								grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+						left join cctipocalifsub p on p.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+
+						if @ACDList is not null and @ACDList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+						--print @sql1
+						exec (@sql1)
+
+						set @sql1 =''
+						insert into #tempRiAAllInfo
+						select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+									finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+									isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+									isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+									isnull (f.description,'''''''')  AS score,
+									CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+									grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+						left join cctipocalifsub p on p.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+						if @ACDList is not null and @ACDList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+						--print @sql1
+						exec (@sql1)
+					end
+			END
+		ELSE
+			BEGIN --Only Outbound
+				set @sql1 =''
+				insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
+							    finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+							    id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
+				select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+								finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+								isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+								isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+								isnull (e.description,'''''''')  AS score,
+								CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+								grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
+				left join cctipocalifsubout k on k.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				where''
+
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
+
+				if @CampaingsList is not null and @CampaingsList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=2''
+				--print @sql1
+				exec (@sql1)
+
+				insert into #tempRiAAllInfo
+				select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+								finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+								id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
+				inner join #tempComplete6 U  on a.user_id=U.user_id
+
+				insert into #tempRiAAllInfo
+				select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+								finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+								id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
+				inner join #tempCampEspWG6 U  on a.user_id=U.user_id
+
+
+				if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
+					begin
+						set @sql1 =''
+						insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
+									finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+									id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
+						select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+										finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+										isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+										isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+										isnull (e.description,'''''''')  AS score,
+										CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+										grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
+						left join cctipocalifsubout k on k.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+						if @CampaingsList is not null and @CampaingsList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=2''
+						--print @sql1
+						exec (@sql1)
+
+						insert into #tempRiAAllInfo
+						select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+										finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+										id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
+						inner join #tempComplete6 U  on a.user_id=U.user_id
+
+						insert into #tempRiAAllInfo
+						select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+										finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+										id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a
+						inner join #tempCampEspWG6 U  on a.user_id=U.user_id
+
+					end
+			END
+	END
+ELSE
+	BEGIN --NOT Inbound or Outbound this mean both
+				set @sql1 =''
+				insert into #tempRiAAllInfo
+				select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+							finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+							isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+							isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+							isnull (f.description,'''''''')  AS score,
+							CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+							grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh, ISNULL(a.prefijo,'''''''')
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+				left join cctipocalifsub p on p.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
+				where''
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
+
+				if @ACDList is not null and @ACDList <> ''''
+					set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+				--print @sql1
+				exec (@sql1)
+
+				set @sql1 =''
+				insert into #tempRiAAllInfo
+				select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+							finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+							isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+							isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+							isnull (f.description,'''''''')  AS score,
+							CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+							grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh,ISNULL(a.prefijo,'''''''')
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+				left join cctipocalifsub p on p.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
+				where''
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + ''  a.cal_id in('' + @callIdList +'')''
+
+				if @ACDList is not null and @ACDList <> ''''
+					set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+				--print @sql1
+				exec (@sql1)
+
+				set @sql1 =''
+				insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
+							    finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+							    id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh,prefijo)
+				select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+								finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+								isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+								isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+								isnull (e.description,'''''''')  AS score,
+								CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+								grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh,ISNULL(a.prefijo,'''''''')
+				from RIA_GRABACION a with (index(IX_RIA_GRABACION_3))
+				left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
+				left join cctipocalifsubout k on k.califSub_id=a.califSub_id
+				left join ccPosicion b on b.pos_id = a.cal_extension * -1
+				left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+				left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+				where''
+
+				if @IDWGList is not null and @IDWGList <> ''''
+					set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+								'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+				else
+					--set @sql1 = @sql1 + '' a.IDWG is not null and a.finicio BETWEEN '' + '''''''' + cast(@Finicio as nvarchar) + '''''''' +  '' AND '' + '''''''' + cast(@Ffin as nvarchar) + ''''''''
+					set @sql1 = @sql1 + '' a.cal_id in('' + @callIdList +'')''
+
+				if @CampaingsList is not null and @CampaingsList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+				if @DispositionList is not null and @DispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+				if @SubdispositionList is not null and @SubdispositionList <> ''''
+					set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+				set @sql1 = @sql1 + '' and a.tipo_llamada=2''
+			
+				print @sql1
+				exec (@sql1)
+				
+				insert into #tempRiAAllInfo
+				select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+								finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+								id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh, prefijo from #auxOutbound a
+				inner join #tempComplete6 U  on a.user_id=U.user_id
+
+				insert into #tempRiAAllInfo
+				select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+								finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+								id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh, prefijo from #auxOutbound a
+				inner join #tempCampEspWG6 U  on a.user_id=U.user_id
+
+				
+				if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
+				begin
+						set @sql1 =''
+						insert into #tempRiAAllInfo
+						select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+								finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+								isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+								isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+								isnull (f.description,'''''''')  AS score,
+								CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+								grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh ,''''''''
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+						left join cctipocalifsub p on p.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+
+						if @ACDList is not null and @ACDList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+						--print @sql1
+						exec (@sql1)
+
+						set @sql1 =''
+						insert into #tempRiAAllInfo
+						select  DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+									finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+									isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+									isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+									isnull (f.description,'''''''')  AS score,
+									CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+									grab_id as grabID, a.IDWG as IDWG,isnull( p.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh, ''''''''
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalif AS f ON a.calif_id = f.calif_id
+						left join cctipocalifsub p on p.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+
+						if @ACDList is not null and @ACDList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@ACDList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=1''
+						--print @sql1
+						exec (@sql1)
+
+						set @sql1 =''
+						insert into #auxOutbound(cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
+									finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+									id_repositorio ,score ,formato_duracion ,grab_id ,IDWG ,califSub_id ,cal_tMoh)
+						select DISTINCT a.cal_id, a.Tipo_llamada, a.cam_id, a.calif_id, a.duracion, isnull(a.id_nivel_grito,-1) as id_nivel_grito, a.age_id,
+										finicio,a.ani, a.dni, a.cal_key, isnull(a.cal_manual,0) as cal_manual,
+										isnull(CASE WHEN b.ext_id = 0 THEN b.pos_id ELSE b.ext_id END,-1) as pos_id, isnull(b.Computer,''''''''),
+										isnull (z.total_forma,0) as total_forma,a.id_repositorio,
+										isnull (e.description,'''''''')  AS score,
+										CASE WHEN duracion / 3600 < 10 THEN ''''0'''' ELSE '''''''' END + RTRIM(a.duracion / 3600) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 / 60), 2) + '''':'''' + RIGHT(''''0'''' + RTRIM(a.duracion % 3600 % 60), 2) AS formato_duracion,
+										grab_id as grabID, a.IDWG as IDWG,isnull(k.califSubDesc ,'''''''') AS califSub_id,a.cal_tMoh as cal_tMoh , ''''''''
+						from RIA_GRABACIONCONSULTA a with (index(IX_RIA_GRABACIONCONSULTA_3))
+						left join ccTipoCalifOUT AS e ON a.calif_id = e.calif_id
+						left join cctipocalifsubout k on k.califSub_id=a.califSub_id
+						left join ccPosicion b on b.pos_id = a.cal_extension * -1
+						left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id
+						left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
+						where''
+
+						if @IDWGList is not null and @IDWGList <> ''''
+							set @sql1 = @sql1 + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.IDWG) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@IDWGList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ '''''''' +
+									'' and a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+						else
+							set @sql1 = @sql1 + '' a.IDWG is not null and a.cal_id in('' + @callIdList +'')''
+
+						if @CampaingsList is not null and @CampaingsList <> ''''
+							set @sql1 = @sql1 + '' and'' + '' ('' + ''''''''+'',''+'''''''' + ''+ RTRIM(a.cam_id) + '' +''''''''+'',''+''''''''+'')'' + '' LIKE'' + ''''''''+ ''%,'' +''''''''+ ''+'' + ''''''''+ cast(@CampaingsList as nvarchar) + ''''''''+ ''+'' + ''''''''+ ''%,''+ ''''''''
+
+						if @DispositionList is not null and @DispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.calif_id in (''+@DispositionList+'')''
+
+						if @SubdispositionList is not null and @SubdispositionList <> ''''
+							set  @sql1 = @sql1 +'' and a.califSub_id in (''+@SubdispositionList+'')''
+
+						set @sql1 = @sql1 + '' and a.tipo_llamada=2''
+						print @sql1
+						exec (@sql1)
+
+						insert into #tempRiAAllInfo
+						select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+										finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+										id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh,a.Prefijo from #auxOutbound a
+						inner join #tempComplete6 U  on a.user_id=U.user_id
+
+						insert into #tempRiAAllInfo
+						select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
+										finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+										id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh,a.Prefijo from #auxOutbound a
+						inner join #tempCampEspWG6 U  on a.user_id=U.user_id
+
+				end
+
+	END
+
+
+
+--Seleccionar info de tabla global
+select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,user_id,
+	   finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
+	   id_repositorio,score,formato_duracion,grab_id,IDWG,califSub_id,cal_tMoh,Prefijo
+from #tempRiAAllInfo with (index(IX_tempRiAAllInfodate))  order by finicio asc
+
+drop table #tempRiaFormaCalif6
+drop table #tempCampEspWG6
+drop table #tempComplete6
+drop table #tempRiAAllInfo
+drop table #auxOutbound
+
+END
 '
 EXEC(@sql)
 
 
- 	set @process = 'CW - 1702 SP -- trsp_InsertRecNode'
+
+
+
+
+	set @process = 'CW - 1702 Se agrega el campo prefijo a ria_grabacion '
 	set @Sql= '
-ALTER procedure [dbo].[trsp_InsertRecNode]
+		if not exists (select * from sys.columns where name = N''Prefijo'' and Object_ID = Object_ID(N''ria_grabacion''))
+	    begin
+			alter table ria_grabacion add  Prefijo varchar(max) null
+		end'
+	EXEC(@sql)
+
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+
+	set @process = 'CW - 1702 Se agrega prefijo a la tabla ccInbound de CCRecorderRIA'
+	set @Sql= '
+	if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccInbound''))
+	     begin
+		    alter table ccInbound ADD prefijo varchar(40) null
+	end'
+	EXEC(@sql)
+
+
+
+	set @process = 'CW - 1702 Se agrega prefijo a la tabla ccCamps de CCRecorderRIA'
+	set @Sql= '
+if not exists (select * from sys.columns where name = N''prefijo'' and Object_ID = Object_ID(N''ccCamps''))
+	begin
+	    alter table ccCamps ADD prefijo varchar(40) null
+	end'
+EXEC(@sql)
+
+
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+				ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
+	set @process = 'CW - 1702 UPDATE column HasBeenToRename'
+	set @Sql= 'update RIA_GRABACION set HasBeenToRename = 0'
+	EXEC(@sql)
+
+
+ 	set @process = 'CW - 1702 SP -- trsp_InsertRecNode'
+	set @Sql= 'ALTER procedure [dbo].[trsp_InsertRecNode]
 @grabId int,
 @type int=0
 
@@ -845,8 +929,6 @@ begin
 	 left join (select top 1 total_forma,id_grabacion from ria_formacalif where id_grabacion = @grabId order by fecha_calif desc)  formCalif on formCalif.id_grabacion=rec.grab_id
 	 where grab_id = @grabId
  end
-
-
 
 
  --Languages 0 spanish 1 english
@@ -966,9 +1048,7 @@ end
 
 
  	set @process = 'SP -- trsp_GetFilesAnalisisGritos'
-	set @Sql= '
-
-ALTER PROCEDURE [dbo].[trsp_GetFilesAnalisisGritos] 
+	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_GetFilesAnalisisGritos] 
 --@idRepositorios as varchar(32),
 @sExtension as varchar(10) = ''.vox''
 AS
@@ -1042,20 +1122,7 @@ set @sSql = @sSql1 + @sSql2 + N'' order by finicio asc''
 exec sp_executesql @sSql, N''@fecInicio datetime'', @fecInicio = @FInicio
 	
 	'
-	EXEC(@sql)
-
-
-	
- 	set @process = 'SP -- CountRecorderByCampId'
-	set @Sql= '
-create procedure [dbo].[CountRecorderByCampId]
-@cam_id int,
-@tipoLLamada int
-
-as
-select count(*) from ria_grabacion where cam_id = @cam_id and tipo_llamada = @tipoLLamada and (HasBeenToRename = 0 OR HasBeenToRename IS NULL)
-	'
-	EXEC(@sql)
+	EXEC(@sql) 	
 
 
 	
@@ -1180,8 +1247,7 @@ if @action = 3
 
 
  	set @process = 'SP -- trsp_AdmRecSearchRecs '
-	set @Sql= '
-ALTER PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
+	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
 @grabIds nvarchar(max)
 
 AS
@@ -1239,6 +1305,134 @@ SET NOCOUNT ON
 END
 '
 EXEC(@sql)
+
+	set @process = 'Alter SP ReportsMasterProcessAVRS'
+	set @Sql= 'ALTER procedure [dbo].[ReportsMasterProcessAVRS] as
+
+declare @replicationName nvarchar(100)
+declare @numOfReplications int
+declare @minReplication int
+
+set nocount on
+
+set @replicationName = ''''
+set @numOfReplications = 0
+set @minReplication = 600
+
+create table #replications ([name] nvarchar(100), flag bit)
+
+insert into #replications
+select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%CCRecorderRIA- 0%'' and [name] like ''%CCenterRia%'' order by [name]
+
+select @numOfReplications = count(*)
+from #replications with(nolock)
+
+while(select count(*) from #replications with(nolock) where flag = 0) > 0
+begin
+	set rowcount 1
+		select @replicationName = [name]
+		from #replications with(nolock)
+		where flag = 0
+	set rowcount 0
+	
+	if not exists(
+		SELECT * FROM msdb.dbo.sysjobactivity ja
+		LEFT JOIN msdb.dbo.sysjobhistory jh ON ja.job_history_id = jh.instance_id
+		INNER JOIN msdb.dbo.sysjobs j ON ja.job_id = j.job_id
+		INNER JOIN msdb.dbo.sysjobsteps js ON ja.job_id = js.job_id AND ISNULL(ja.last_executed_step_id,0)+1 = js.step_id
+		WHERE ja.session_id = (SELECT TOP 1 session_id FROM msdb.dbo.syssessions   ORDER BY agent_start_date DESC)
+		AND start_execution_date is not null AND stop_execution_date is null and j.name=@replicationName
+	) 
+
+	exec msdb.dbo.sp_start_job @job_name = @replicationName
+
+	update #replications with(rowlock) 	set flag = 1	where [name] = @replicationName
+
+	WAITFOR DELAY ''00:00:01''
+
+	while exists(
+		SELECT * FROM msdb.dbo.sysjobactivity ja
+		LEFT JOIN msdb.dbo.sysjobhistory jh ON ja.job_history_id = jh.instance_id
+		INNER JOIN msdb.dbo.sysjobs j ON ja.job_id = j.job_id
+		INNER JOIN msdb.dbo.sysjobsteps js ON ja.job_id = js.job_id AND ISNULL(ja.last_executed_step_id,0)+1 = js.step_id
+		WHERE ja.session_id = (SELECT TOP 1 session_id FROM msdb.dbo.syssessions   ORDER BY agent_start_date DESC)
+		AND start_execution_date is not null AND stop_execution_date is null and j.name=@replicationName
+	) 
+	begin
+		WAITFOR DELAY ''00:00:01''
+	end
+end
+
+drop table #replications
+-------------------------Para busquedas en finder
+
+if not exists (select * from sys.indexes where name = N''IX_ccRIAWorkGroupUsersConsulta2'' and object_id = OBJECT_ID(N''ccRIAWorkGroupUsersConsulta''))
+begin
+	CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta2] ON [dbo].[ccRIAWorkGroupUsersConsulta]
+		(
+			[IDWG] ASC,
+			[User_id] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 80) ON [PRIMARY]
+end
+-----------------------
+
+
+declare @lastTenMinuteFirst datetime
+declare @lastTenMinuteSecond datetime
+declare @id int
+declare @publisher_reinit nvarchar(max)
+declare @publisher_db_reinit nvarchar(max)
+declare @publication_reinit nvarchar(max)
+declare @upload_first_reinit nvarchar(max)
+
+set @lastTenMinuteFirst = dateadd(minute,-120,dateadd(minute, datepart(minute, getdate()) / 10 * 10, dateadd(hour, datediff(hour, 0,getdate()), 0)))
+set @lastTenMinuteSecond = dateadd(minute,120,@lastTenMinuteFirst)
+
+create table #reinitmergepullsubscription(
+id int not null identity,
+publisher nvarchar(max) not null,
+publisher_db nvarchar(max)not null,
+publication nvarchar(max) not null,
+upload_first nvarchar(max) not null,
+[status] bit not null
+)
+
+insert into #reinitmergepullsubscription
+select distinct s.name, ma.publisher_db, ma.publication, ''true'', 0
+from distribution.dbo.MSmerge_history mh
+left outer join distribution.dbo.MSrepl_errors me
+on (mh.error_id = me.id)
+left outer join distribution.dbo.MSmerge_agents ma
+on (mh.agent_id = ma.id)
+left outer join master.sys.servers s
+on (ma.publisher_id = s.server_id)
+where 
+(mh.comments like ''%You must reinitialize the subscription (without upload)%'' or
+mh.comments like  ''%Start the Snapshot Agent to generate the snapshot for this publication%'')
+--and me.error_code = -2147199402
+and mh.time >= @lastTenMinuteFirst
+and mh.time < @lastTenMinuteSecond
+and ma.subscriber_db = ''CCRecorderRIA''
+--order by mh.time desc
+
+while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
+	begin
+		set rowcount 1
+		select @id = id, @publisher_reinit = publisher, @publisher_db_reinit = publisher_db, @publication_reinit = publication, @upload_first_reinit = upload_first
+		from #reinitmergepullsubscription
+		where [status] = 0
+		set rowcount 0
+
+		--EXEC sp_reinitmergepullsubscription @publisher = @publisher_reinit, @publisher_db = @publisher_db_reinit, @publication = @publication_reinit, @upload_first = @upload_first_reinit
+		EXEC sp_reinitmergesubscription @publication = @publication_reinit, @subscriber = @publisher_reinit, @subscriber_db = ''CCRecorderRIA'', @upload_first = @upload_first_reinit
+
+		update #reinitmergepullsubscription
+		set [status] = 1
+		where id = @id
+	end
+
+drop table #reinitmergepullsubscription'
+	EXEC(@sql)
 	
 	
 ------------------ fin SCRIPT @Sql ------------------

@@ -1490,31 +1490,153 @@ END'
 
 set nocount on
 
-declare @dateStart datetime
-declare @delay int
-declare @strDelay nvarchar(8)
-declare @reportName nvarchar(100), @replicationName nvarchar(100)
-declare @numOfReports int,@numOfReplications int
-declare @repDelay int
-declare @repStrDelay nvarchar(8)
-declare @minReplication int,@minReports int
-DECLARE @dateBegin DATETIME,@dateSP datetime
-
----shedule
-declare @schedule_id int,@nameSchudule sysname,@job_id uniqueidentifier,@scheduleTime int
+declare @replicationName varchar(max)
+declare @dateStart datetime,@dateSP datetime
+declare @schedule_id int,@scheduleTime int
 declare @isSunday tinyint,  @hourSunday tinyint,@minSunday tinyint
 
-
-declare @descError nvarchar(max)
+declare @sessionKIll table(id int, sessionId int)
 declare @i int,@count int
-declare @name sysname,@sql nvarchar(max)
---------------------------- Creacion tablas cada domingo ---------------------------
+declare @sessionId int
+declare @SQL varchar(max)
+declare @name sysname
+declare @descError nvarchar(max)
+
+set @dateStart = getdate()
+set @scheduleTime = 10
+
+
+print ''---Get schedule_id and @scheduleTime ----''
+select @schedule_id=C.schedule_id, @scheduleTime=C.freq_subday_interval
+	FROM msdb.dbo.sysjobs A
+	LEFT OUTER JOIN msdb.dbo.sysjobschedules B  ON A.job_id = B.job_id
+	INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
+	where A.name=''ReportsMasterProcess''
+
+
+
+print ''---Kill Process Replication Merge Agent----''
+while exists(SELECT	s.session_id AS SessionID		
+	from [master].sys.dm_exec_sessions  as s 
+	LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
+	where s.session_id in(
+	select distinct r.blocking_session_id
+	FROM [master].sys.dm_exec_sessions AS s
+	INNER JOIN [master].sys.dm_exec_requests AS r ON r.session_id = s.session_id
+	WHERE    r.session_id != @@SPID and  r.blocking_session_id   <>0
+	)
+	and s.[program_name] like ''%Replication Merge Agent%''	
+	and DB_NAME(p.dbid)=''ccReportsRia''	
+) begin
+	insert into @sessionKIll(id,sessionId)
+	
+	SELECT	ROW_NUMBER() OVER(ORDER BY s.session_id) AS Row#, s.session_id AS SessionID		
+	from [master].sys.dm_exec_sessions  as s 
+	LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
+	where s.session_id in(
+	select distinct r.blocking_session_id
+	FROM [master].sys.dm_exec_sessions AS s
+	INNER JOIN [master].sys.dm_exec_requests AS r ON r.session_id = s.session_id
+	WHERE    r.session_id != @@SPID and  r.blocking_session_id   <>0
+	)
+	and s.[program_name] like ''%Replication Merge Agent%''
+	and DB_NAME(p.dbid)=''ccReportsRia''
+
+	select * from @sessionKIll
+
+	select @i=1,@count =COUNT(*) from @sessionKIll
+	while @i<=@count begin
+		select @sessionId=sessionId from @sessionKIll where id=@i
+		SET @SQL = ''KILL '' + CAST(@sessionId as varchar(max))
+		begin try
+			EXEC (@SQL)
+		end try
+		begin catch
+			print @SQL+ '' is proccess end''
+		end catch
+		set @i=@i+1
+	end
+	delete from @sessionKIll
+end
+
+print ''--------------- Get Jobs Replication ------------------------------''
+create table #replications ([name] nvarchar(100), flag bit)
+
+insert into #replications
+select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%ccReportsRia- 0%'' and [name] like ''%CCenterRia%''
+
+insert into #replications
+select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%ccReportsRia- 0%'' and [name] like ''%CCRecorderRia%'' order by [name]
+
+select @count=count(*) from #replications
+
+while(select count(*) from #replications with(nolock) where flag = 0) > 0 and datediff(ss,@dateStart,getdate())<(@scheduleTime*60)
+begin
+	set rowcount 1
+		select @replicationName = [name]
+		from #replications with(nolock)
+		where flag = 0
+	set rowcount 0
+	
+	if (
+		SELECT top 1 sjh.run_status
+	  FROM msdb.dbo.sysjobhistory                sjh  
+	  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
+	  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+	  WHERE
+	  j.name = @replicationName
+	  order by sjh.instance_id desc		
+	) <>4 
+	or not exists(SELECT top 1 sjh.run_status
+	  FROM msdb.dbo.sysjobhistory                sjh  
+	  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
+	  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+	  WHERE
+	  j.name = @replicationName
+	  order by sjh.instance_id desc	)
+	
+	begin
+		exec msdb.dbo.sp_start_job @job_name = @replicationName
+		print ''sp_start_job ''+@replicationName
+	end
+	else begin
+		print ''Job is Init ''+@replicationName
+	end
+
+	update #replications with(rowlock) 	set flag = 1	where [name] = @replicationName
+
+	WAITFOR DELAY ''00:00:03''		
+
+	while (
+		SELECT top 1 sjh.run_status
+	  FROM msdb.dbo.sysjobhistory                sjh  
+	  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
+	  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+	  WHERE
+	  j.name = @replicationName
+	  order by sjh.instance_id desc		
+	) = 4
+	begin	
+		WAITFOR DELAY ''00:00:01''
+		print ''In Progress Job in ReplicationName: ''+@replicationName
+		if datediff(ss,@dateStart,getdate())>((@scheduleTime*60)/@count) begin
+			print ''Stop Job in ReplicationName: ''+@replicationName
+			break	
+		end
+	end
+	print ''Progress End Job in ReplicationName: ''+@replicationName
+end
+
+drop table #replications
+
+print ''--------------------------- Creacion tablas cada domingo ---------------------------''
 select  @isSunday = datepart(dw, getdate()),@hourSunday = datepart(hh, getdate()), @minSunday = datepart(mi, getdate())
 
 if @isSunday=1 and @hourSunday = 3 and @minSunday>=30 begin
 
-	if exists (select * from sys.tables where name = ''logsReportsMaster'')
-			drop table logsReportsMaster
+	if exists (select * from sys.tables where name = ''logsReportsMaster'') begin
+		drop table logsReportsMaster
+	end
 
 	create table [logsReportsMaster](
 		[id] int identity not null primary key,
@@ -1542,42 +1664,8 @@ if @isSunday=1 and @hourSunday = 3 and @minSunday>=30 begin
 
 end
 
---------------------------- Termina Creacion tablas cada domingo ---------------------------
+print ''--------------------------- Termina Creacion tablas cada domingo ---------------------------''
 
-set @dateStart = getdate()
-set @delay = 0
-set @strDelay = ''''
-set @reportName = ''''
-set @replicationName = ''''
-set @numOfReports = 0
-set @numOfReplications = 0
-set @repDelay = 0
-set @repStrDelay = ''''
-set @minReplication = 0
-set @minReports = 0
-set @scheduleTime = 10
-
---- obtiene el job_id, y el nombre del schedule_id asocioado al job reports Master
-select  @job_id=A.job_id,@schedule_id=C.schedule_id, @nameSchudule=C.name,@scheduleTime=C.freq_subday_interval
-	FROM msdb.dbo.sysjobs A
-	LEFT OUTER JOIN msdb.dbo.sysjobschedules B  ON A.job_id = B.job_id
-	INNER JOIN msdb.dbo.sysschedules C ON C.schedule_id = B.schedule_id
-	where A.name=''ReportsMasterProcess''
-
--- obtiene los valores de los settings para el tiempo ejecucion de las replicas  y los jobs
-select @minReplication = cast(substring(valor, 0, charindex(''|'',valor)) as int) from ccsettings where setting_id = 28
-select @minReports = cast(substring(valor, charindex(''|'',valor) + 1, len(valor)) as int) from ccsettings where setting_id = 28
-
----- revisar los tiempos y actulizar el setting
-if (@minReplication + @minReports) > @scheduleTime
-begin
-	set @scheduleTime= @minReplication + @minReports
-	EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
-end
-
-set @minReplication = @minReplication * 60
-
--------------------- Revision que no existe conflictos  -----------------------------------------
 
 declare @tableArticle table(nameArticle [sysname],objectId int)
 declare @tableTrigger table(id int identity, nameArticle [sysname])
@@ -1601,54 +1689,8 @@ begin
 	set @i = @i+1
 end
 
+print ''--------------------------- DROP TRIGGER Tables ---------------------------''
 
--------------------- ejecuccion de las replicas -----------------------------------------
-
-create table #replications ([name] nvarchar(100), flag bit)
-
-insert into #replications
-select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%ccReportsRia- 0%'' and [name] like ''%CCenterRia%''
-
-insert into #replications
-select [name], 0 as flag from msdb.dbo.sysjobs where [name] like ''%ccReportsRia- 0%'' and [name] like ''%CCRecorderRia%'' order by [name]
-
-select @numOfReplications = count(*) from #replications with(nolock)
-
-set @repDelay = floor(cast(@minReplication as decimal) / cast(@numOfReplications as decimal))
-
-set @repStrDelay = CONVERT(char(8), DATEADD(second, @repDelay, ''00:00:00''), 108)
-
-set @dateSP = getdate()
-
-while(select count(*) from #replications with(nolock) where flag = 0) > 0
-begin
-	set rowcount 1
-		select @replicationName = [name]
-		from #replications with(nolock)
-		where flag = 0
-	set rowcount 0
-
-	exec msdb.dbo.sp_start_job @job_name = @replicationName
-
-
-	update #replications with(rowlock) 	set flag = 1 where [name] = @replicationName
-
-	WAITFOR DELAY ''00:00:01''
-
-	while(
-		SELECT count(*) FROM msdb.dbo.sysjobactivity ja
-		LEFT JOIN msdb.dbo.sysjobhistory jh ON ja.job_history_id = jh.instance_id
-		INNER JOIN msdb.dbo.sysjobs j ON ja.job_id = j.job_id
-		INNER JOIN msdb.dbo.sysjobsteps js ON ja.job_id = js.job_id AND ISNULL(ja.last_executed_step_id,0)+1 = js.step_id
-		WHERE ja.session_id = (SELECT TOP 1 session_id FROM msdb.dbo.syssessions   ORDER BY agent_start_date DESC)
-		AND start_execution_date is not null AND stop_execution_date is null and j.name=@replicationName
-	) > 0
-	begin
-		WAITFOR DELAY ''00:00:01''
-	end
-end
-
-drop table #replications
 
 -------------------- ejecuccion de las construnccion de los reportes -----------------------------------------
 
@@ -1662,7 +1704,7 @@ select name,0,''19000101'',''19000101'','''',@scheduleTime from #tmpProcedureRep
 
 select @i=1,@count =count(*) from #tmpProcedureReports
 
-while @i<=@count
+while @i<=@count and datediff(mi,@dateStart,getdate()) < @scheduleTime
 begin
 	select @name = name from #tmpProcedureReports where id=@i
 
@@ -1683,41 +1725,32 @@ begin
 			WAITFOR DELAY ''00:00:01''
 		end
 
-		if( datediff(mi,@dateStart,getdate()) > @scheduleTime) begin
-		set @scheduleTime = @scheduleTime+1
-			update [logsReportsMaster] set status=2,dateStart=@dateSP,dateEnd=getdate(),maxTime=@scheduleTime,error=''Increment time shuduler ''+convert(varchar(max),@scheduleTime)  where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''
-			update [logsReportsMaster] set dateStart=@dateSP,dateEnd=getdate(),maxTime=@scheduleTime where status=0 and dateStart=''19000101'' and dateEnd=''19000101''
-
-			set @minReplication=@minReplication/60
-			if(@scheduleTime>60) set @scheduleTime=59
-			EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
-			update ccsettings set valor=convert(varchar(max),@minReplication)+''|''+convert(varchar(max),@minReports+1),descripcion = ''Min. replicas | Min. reportes este se modifica automaticamente revisar tabla de logsReportsMaster, (Total ''+convert(varchar(max),@scheduleTime) +'' Minutos)'' where setting_id = 28
+		if( datediff(ss,@dateStart,getdate()) > @scheduleTime*60) begin		
+			update [logsReportsMaster] set status=2,dateStart=@dateSP,dateEnd=getdate(),maxTime=@scheduleTime+1,error=''Increment time shuduler ''+convert(varchar(max),@scheduleTime)  where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''
+			update [logsReportsMaster] set dateStart=@dateSP,dateEnd=getdate(),maxTime=@scheduleTime where status=0 and dateStart=''19000101'' and dateEnd=''19000101''			
 			break
-		end
-		set @i = @i+1
+		end		
 		update [logsReportsMaster] set status=1,dateStart=@dateSP,dateEnd=getdate() where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''
 	end try
 	begin catch
 		select @descError = ''Line: '' + cast(error_line() as nvarchar) + '' Number: '' + cast(@@error as nvarchar) + '' Message: '' + error_message()
-		update [logsReportsMaster] set status=3,dateStart=@dateSP,dateEnd=getdate(),error=@descError where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''
-		set @i = @i+1
+		update [logsReportsMaster] set status=3,dateStart=@dateSP,dateEnd=getdate(),error=@descError where name =@name and status=0 and dateStart=''19000101'' and dateEnd=''19000101''		
 	end catch
+
+	set @i = @i+1
 end
 
 drop table #tmpProcedureReports
 
--------------------- Reinicializa las subcripciones en caso de caducar-----------------------------------------
-
+print ''---#reinitmergepullsubscription----''
 declare @lastTenMinuteFirst datetime
-declare @lastTenMinuteSecond datetime
 declare @id int
 declare @publisher_reinit nvarchar(max)
 declare @publisher_db_reinit nvarchar(max)
 declare @publication_reinit nvarchar(max)
 declare @upload_first_reinit nvarchar(max)
 
-set @lastTenMinuteFirst = dateadd(minute,-10,dateadd(minute, datepart(minute, getdate()) / 10 * 10, dateadd(hour, datediff(hour, 0,getdate()), 0)))
-set @lastTenMinuteSecond = dateadd(minute,10,@lastTenMinuteFirst)
+set @lastTenMinuteFirst = dateadd(minute,-120,dateadd(minute, datepart(minute, getdate()) / 10 * 10, dateadd(hour, datediff(hour, 0,getdate()), 0)))
 
 create table #reinitmergepullsubscription(
 id int not null identity,
@@ -1729,7 +1762,7 @@ upload_first nvarchar(max) not null,
 )
 
 insert into #reinitmergepullsubscription
-select s.name, ma.publisher_db, ma.publication, ''false'', 0
+select distinct s.name, ma.publisher_db, ma.publication, ''false'', 0
 from distribution.dbo.MSmerge_history mh
 left outer join distribution.dbo.MSrepl_errors me
 on (mh.error_id = me.id)
@@ -1740,11 +1773,8 @@ on (ma.publisher_id = s.server_id)
 where 
 (mh.comments like ''%You must reinitialize the subscription (without upload)%'' or
 mh.comments like  ''%Start the Snapshot Agent to generate the snapshot for this publication%'')
-and me.error_code = -2147199402
 and mh.time >= @lastTenMinuteFirst
-and mh.time < @lastTenMinuteSecond
-and ma.subscriber_db = ''ccReportsRia''
-order by mh.time desc
+and ma.subscriber_db = ''CCRecorderRIA''
 
 while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 	begin
@@ -1753,18 +1783,25 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 		from #reinitmergepullsubscription
 		where [status] = 0
 		set rowcount 0
-
-		EXEC sp_reinitmergepullsubscription @publisher = @publisher_reinit, @publisher_db = @publisher_db_reinit, @publication = @publication_reinit, @upload_first = @upload_first_reinit
+		
+		EXEC sp_reinitmergesubscription @publication = @publication_reinit, @subscriber = @publisher_reinit, @subscriber_db = ''CCRecorderRIA'', @upload_first = @upload_first_reinit
 
 		update #reinitmergepullsubscription
 		set [status] = 1
 		where id = @id
 	end
 
-drop table #reinitmergepullsubscription'
+drop table #reinitmergepullsubscription
+
+if DATEDIFF(ss,@dateStart,getdate())>@scheduleTime*60 begin
+	set @scheduleTime=@scheduleTime+1
+	if  @scheduleTime < 59 begin
+		EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
+	end	
+end'
 	EXEC(@Sql)
 
-
+	select 'CW- -- VERSION 52  Update MDF JOB ReportsMasterProcess'
 	set @process = 'CW- -- VERSION 52  Update MDF JOB ReportsMasterProcess'
     set @Sql= 'USE [msdb]
 
@@ -1807,7 +1844,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Generat
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N''TSQL'', 
-		@command=N''EXEC ReportsMasterProcess'', 
+		@command=N''EXEC ReportsMasterProcess'',
 		@database_name=N''ccReportsRia'', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -1818,7 +1855,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''RepotsMa
 		@freq_type=4, 
 		@freq_interval=1, 
 		@freq_subday_type=4, 
-		@freq_subday_interval=20, 
+		@freq_subday_interval=10, 
 		@freq_relative_interval=0, 
 		@freq_recurrence_factor=0, 
 		@active_start_date=20130912, 

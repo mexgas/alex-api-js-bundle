@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 49
+	Set @Version = 50
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual = @Version -1 -- Aqui poner numero de nueva version
@@ -90,9 +90,6 @@ while exists(SELECT	s.session_id AS SessionID
 	end
 	delete from @sessionKIll
 end
-
-
-
 
 print ''---Get Jobs Replication ----''
 create table #replications ([name] nvarchar(100), flag bit)
@@ -181,7 +178,7 @@ declare @publisher_db_reinit nvarchar(max)
 declare @publication_reinit nvarchar(max)
 declare @upload_first_reinit nvarchar(max)
 
-set @lastTenMinuteFirst = dateadd(minute,-120,dateadd(minute, datepart(minute, getdate()) / 10 * 10, dateadd(hour, datediff(hour, 0,getdate()), 0)))
+set @lastTenMinuteFirst = dateadd(minute,-@scheduleTime*2,getdate())
 
 create table #reinitmergepullsubscription(
 id int not null identity,
@@ -203,7 +200,7 @@ left outer join master.sys.servers s
 on (ma.publisher_id = s.server_id)
 where 
 (mh.comments like ''%You must reinitialize the subscription (without upload)%'' or
-mh.comments like  ''%Start the Snapshot Agent to generate the snapshot for this publication%'')
+mh.comments like  ''%The Merge Agent failed because the schema of the article at the Publisher does not match the schema of the article at the Subscriber%'')
 and mh.time >= @lastTenMinuteFirst
 and ma.subscriber_db = ''CCRecorderRIA''
 
@@ -213,9 +210,9 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 		select @id = id, @publisher_reinit = publisher, @publisher_db_reinit = publisher_db, @publication_reinit = publication, @upload_first_reinit = upload_first
 		from #reinitmergepullsubscription
 		where [status] = 0
-		set rowcount 0
-		
-		EXEC sp_reinitmergesubscription @publication = @publication_reinit, @subscriber = @publisher_reinit, @subscriber_db = ''CCRecorderRIA'', @upload_first = @upload_first_reinit
+		set rowcount 0			
+
+		exec sp_reinitmergepullsubscription  @publisher = @publisher_reinit,    @publisher_db = @publisher_db_reinit,    @publication = @publication_reinit,    @upload_first = @upload_first_reinit		
 
 		update #reinitmergepullsubscription
 		set [status] = 1
@@ -223,9 +220,6 @@ while (select count(*) from #reinitmergepullsubscription where [status] = 0) > 0
 	end
 
 drop table #reinitmergepullsubscription
-
-
-
 
 if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
 	set @scheduleTime=@scheduleTime+1
@@ -235,15 +229,13 @@ if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
 	
 end'
 	EXEC(@sql)
-	
 
-
- 	set @process = 'CW-  VERSION 120.11 Alter Table  MigrationAVRSReports.status'
-    set @Sql= 'if exists(select * from sys.tables where name=''MigrationAVRSReports'') begin
-	alter table MigrationAVRSReports alter column [status] int
-end'
-    EXEC(@Sql)
-
+	 set @process = 'CW-  VERSION 120.11 Delete JOb [Shrink-IndexOptimizationRIA] '
+    set @Sql= 'USE [msdb]
+if exists( select * from msdb.dbo.sysjobs where name=''Shrink-IndexOptimizationRIA'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''Shrink-IndexOptimizationRIA'', @delete_unused_schedule=1'
+	EXEC(@sql)
+ 	
     set @process = 'CW-  VERSION 120.11 JOb [AVRSReports Merge Replication] '
     set @Sql= 'USE [msdb]
 

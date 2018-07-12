@@ -2796,4 +2796,7 @@
   <data name="TiempoPromRing" xml:space="preserve">
     <value>Tiempo Prom Timbrando</value>
   </data>
+  <data name="AnswersCustomerSatisfactionSurvey" xml:space="preserve">
+    <value>Respuestas</value>
+  </data>
 </root>

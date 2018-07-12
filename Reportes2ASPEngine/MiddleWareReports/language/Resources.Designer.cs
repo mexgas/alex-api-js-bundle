@@ -673,6 +673,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Respuestas.
+        /// </summary>
+        public static string AnswersCustomerSatisfactionSurvey {
+            get {
+                return ResourceManager.GetString("AnswersCustomerSatisfactionSurvey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a área.
         /// </summary>
         public static string area {

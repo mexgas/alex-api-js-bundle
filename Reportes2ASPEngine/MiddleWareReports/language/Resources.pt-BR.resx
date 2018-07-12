@@ -2301,4 +2301,7 @@
   <data name="tManual" xml:space="preserve">
     <value>Tempo de chamadas manuais</value>
   </data>
+  <data name="AnswersCustomerSatisfactionSurvey" xml:space="preserve">
+    <value>Respostas</value>
+  </data>
 </root>

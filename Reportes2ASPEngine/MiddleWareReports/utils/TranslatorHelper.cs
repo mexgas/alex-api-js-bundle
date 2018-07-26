@@ -177,7 +177,11 @@ namespace MiddleWareReports
             try
             {
                 Type sourceType = typeof(MiddleWareReports.Resources);
-                var property = sourceType.GetProperty(propertyName);
+                Dictionary<string, string> method = getMethodResource(sourceType);
+                string p = method[propertyName.ToLower()];
+                var property = sourceType.GetProperty(p);
+
+
                 object result = property.GetValue(property, null);
                 if (result is string)
                 {
@@ -202,6 +206,19 @@ namespace MiddleWareReports
                 }
             }
             return value;
+        }
+
+        private static Dictionary<string, string> getMethodResource(Type sourceType)
+        {
+            Dictionary<string, string> d = new Dictionary<string, string>();
+            MethodInfo[] methods = sourceType.GetMethods();
+            foreach (var m in methods)
+            {
+                if(!d.ContainsKey(m.Name.Substring(4).ToLower())){
+                    d.Add(m.Name.Substring(4).ToLower(), m.Name.Substring(4));
+                }
+            }
+            return d;
         }
 
         /// <summary>
@@ -299,7 +316,7 @@ namespace MiddleWareReports
 
             return columnName;
         }
-        
+
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

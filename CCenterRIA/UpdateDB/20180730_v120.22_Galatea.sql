@@ -6,12 +6,7 @@
 Author: Armando Rodriguez
 Date: 2017/04/26
 Description:
-	CW-1087 Setting de Cola mensajeria
-	CW-1058 Programar notReady en la maquina de estados
-	CW-1160 Cambio para guardar tiempo llamada ACD
-	CW-1170 Guardar las lista de calificaciones
-	CW-1439 Setting_ID 201 Cadena de conexion(ODBC) para consultar una BD externa en la llamada manual
-	
+	CW-2092 ccsp_GalateaCallbacksDays Returns days with callbacks made by an agent
 Database: CCenterRia
 Required version: 120.21
 
@@ -54,6 +49,23 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
 
 	set @process = ''
     set @Sql= ''
+    EXEC(@Sql)
+	
+	set @process = 'CW-2092 ccsp_GalateaCallbacksDays Returns days with callbacks made by an agent'
+    set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacksDays]--[dbo].[ccsp_GalateaCallbacksDays] 40
+				@userID int
+				AS
+				declare @currentDay datetime=getdate(),
+				@rangeDays int 
+
+				select @rangeDays=valor from ccSettings where setting_id=35
+
+				-- Returns days with callbacks made by an agent
+				SELECT cal_fusercallback DayCB
+				FROM ccoCallBacks cb
+				WHERE user_id = @userID
+				and cal_fusercallback between @currentDay and dateadd(dd,@rangeDays,getdate())
+				order by DayCB'
     EXEC(@Sql)
 
 	set @process = 'Setting_id 204 Configuration of Galatea integration service'

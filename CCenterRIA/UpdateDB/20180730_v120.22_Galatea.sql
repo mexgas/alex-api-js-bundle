@@ -56,6 +56,13 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
     set @Sql= ''
     EXEC(@Sql)
 
+	set @process = 'Setting_id 204 Configuration of Galatea integration service'
+    set @Sql= 'IF not exists (SELECT * FROM ccSettings WHERE setting_id = 204)
+	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
+	VALUES	(204, ''0.0.0.0|1337|1338|1'', ''Configuración de Galatea integration service'',	1,''AGT'',
+			''IP|WebSocketServerPort|SocketServerPort|Autorun'',
+			'' Galatea Integration Service configuration'',	1, ''.*'')'
+    EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

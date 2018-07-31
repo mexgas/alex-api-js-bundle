@@ -44,6 +44,12 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
 		begin tran
 		begin try
 
+
+
+
+
+
+
 		set @process = 'CW-2022 -- VERSION 120.14 Alter SP ccsp_RIAvoiceMail '
 		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAvoiceMail]
 @type as tinyint,
@@ -171,16 +177,32 @@ else if @type=4 begin-- setResult
 	return(0)	
 	
 	
- end
-else if @type=5  begin-- reset vmintentos
-	if @mailType = 0 begin
-		update ccRIA_vmMessages set vmintentos=case when vmintentos>1 then vmintentos-1 else 0 end where vmID=@msgId		
-	end
-	else begin
-		update ccRIAChatMailbox set tries=case when tries>1 then tries-1 else 0 end where [ID]=@msgId		
-	end
- end'
+	 end
+	else if @type=5  begin-- reset vmintentos
+		if @mailType = 0 begin
+			update ccRIA_vmMessages set vmintentos=case when vmintentos>1 then vmintentos-1 else 0 end where vmID=@msgId		
+		end
+		else begin
+			update ccRIAChatMailbox set tries=case when tries>1 then tries-1 else 0 end where [ID]=@msgId		
+		end
+	 end'
 		EXEC(@Sql)
+
+
+
+
+		set @process = 'CW-893-DAVC_Administrator_Rights se agrega nuevo permiso'
+		set @Sql= '
+		if (not exists(select * from ccRIACat_AdminPermissions where per_id = 10 ) )
+		begin
+			insert into ccRIACat_AdminPermissions(per_desc,bStatus,release) 
+			values(''Ocultar base de datos|Hide database'',1,''beb771b4d7317a2fa20084db183694df92b9ec58cfc6aee81aeaa59a90a26648dad4a7681abba7e285a1b39d6b32aa15'')
+		end
+		'
+
+		EXEC(@Sql)
+
+
 				
 		/* End script release */
 

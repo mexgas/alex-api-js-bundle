@@ -120,7 +120,8 @@ namespace MiddleWareReports
             {
                 bool isTimePeriod = false;
                 TimePeriod t = TimePeriod.H;
-                switch (process) { 
+                switch (process)
+                {
                     case 7150:
                         parametersTotals["timePeriod"] = "M";
                         break;
@@ -262,24 +263,27 @@ namespace MiddleWareReports
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
 
+            DataTable detailTableConvert = GetConvertColumnTime(detailTable);
+            DataTable totalsTableConvert = GetConvertColumnTime(totalsTable);
+            
             DataTable union = new DataTable();
-            DataColumn[] newcolumns = new DataColumn[detailTable.Columns.Count];
+            DataColumn[] newcolumns = new DataColumn[detailTableConvert.Columns.Count];
 
-            for (int i = 0; i < totalsTable.Columns.Count; i++)
+            for (int i = 0; i < totalsTableConvert.Columns.Count; i++)
             {
                 newcolumns[i] = new DataColumn(
-                totalsTable.Columns[i].ColumnName, totalsTable.Columns[i].DataType);
+                totalsTableConvert.Columns[i].ColumnName, totalsTableConvert.Columns[i].DataType);
             }
 
             union.Columns.AddRange(newcolumns);
             union.BeginLoadData();
 
             //Object to translate system columns
-            object[] systemTranslatedColumns = new object[detailTable.Columns.Count];
+            object[] systemTranslatedColumns = new object[detailTableConvert.Columns.Count];
 
-            foreach (DataRow row in detailTable.Rows)
+            foreach (DataRow row in detailTableConvert.Rows)
             {
-                for (int i = 0; i < detailTable.Columns.Count; i++)
+                for (int i = 0; i < detailTableConvert.Columns.Count; i++)
                 {
                     systemTranslatedColumns[i] = getSystemTranslatedColumns(detailTable.Columns[i].ColumnName.ToString(), row[i].ToString());
                 }
@@ -288,13 +292,51 @@ namespace MiddleWareReports
 
             systemTranslatedColumns = null;
 
-            foreach (DataRow row in totalsTable.Rows)
+            foreach (DataRow row in totalsTableConvert.Rows)
             {
                 union.LoadDataRow(row.ItemArray, true);
             }
 
             union.EndLoadData();
             return union;
+        }
+
+        private DataTable GetConvertColumnTime(DataTable detailTable)
+        {
+            DataTable detailTableConvert = detailTable.Clone();
+
+            foreach (DataColumn column in detailTableConvert.Columns)
+            {
+                if (translatedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                {
+                    detailTableConvert.Columns[column.ColumnName].DataType = typeof(string);
+                }
+            }
+            foreach (DataRow dataRow in detailTable.Rows) //Add rows to the XML
+            {
+                DataRow dataRowNew = detailTableConvert.NewRow();
+                foreach (DataColumn column in detailTable.Columns)
+                {
+                    if (translatedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                    {
+                        string value = TranslatorHelper.parseDbValue(dataRow[column.ColumnName]);
+                        if (
+                            (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time"))
+                            && value != "")
+                        {
+                            value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                        }
+
+                        dataRowNew[column.ColumnName] = value;
+                    }
+                    else
+                    {
+                        dataRowNew[column.ColumnName] = dataRow[column.ColumnName];
+                    }
+                }
+                detailTableConvert.Rows.Add(dataRowNew);
+            }
+            return detailTableConvert;
         }
 
         /// <summary>

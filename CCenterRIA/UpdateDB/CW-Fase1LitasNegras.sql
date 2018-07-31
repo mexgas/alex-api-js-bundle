@@ -59,6 +59,35 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
     end'
         EXEC(@Sql)
 
+        set @process = 'CW-1653 --function hashList'
+        set @Sql= 'if not exists (select * from sys.objects where object_id = OBJECT_ID(N''hashList'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT'')) begin
+        CREATE FUNCTION [dbo].[hashList] (@calKey varchar(255)) 
+RETURNS bigint AS
+BEGIN
+--declare @calKey varchar(255) = ''Key de Prueba 134''
+declare @codigo varchar(max)
+declare @hash bigint
+
+set @codigo=''''
+set @hash=0
+declare @i int,@len int
+select @i=1,@len=len(@calKey)
+while @i<=@len begin
+	select @codigo=@codigo+convert(varchar(max), ASCII(SUBSTRING(@calKey,@i,1)))
+	
+	if @i%5=0 begin
+		set @hash=@hash+cast(@codigo as bigint)
+		set @codigo=''''
+	end	
+	set @i=@i+1
+end
+if @codigo<>''''
+set @hash=@hash+cast(@codigo as bigint)
+return @hash % 127499997
+END
+end'
+        EXEC(@Sql)
+
 		set @process = 'CW-1653 --Crear indice en la tabla ccListaNegra'
         set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_ccListaNegra_I'' and object_id = OBJECT_ID(N''ccListaNegra''))
     begin

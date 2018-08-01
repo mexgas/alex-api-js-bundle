@@ -68,6 +68,29 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
 				order by DayCB'
     EXEC(@Sql)
 
+	set @process = 'CW-2093 ccsp_GalateaCallbacks Returns the total of callbacks by hour on especific day'
+    set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_GalateaCallbacks]
+				@dateCallBack datetime
+				AS
+				-- Returns the total of callbacks by hour on especific day
+				IF OBJECT_ID(''tempdb..#CallBackHours'') IS NOT NULL
+				BEGIN
+					DROP TABLE #CallBackHours
+				END
+
+				CREATE TABLE #CallBackHours (Hour int, callback int )
+
+				INSERT INTO #CallBackHours
+				select  DATEPART(HOUR, cal_fcallback) ''Hour'', 1
+				from ccoCallsOut
+				where convert(date, cal_fcallback) = @dateCallBack
+
+				SELECT Hour, SUM(callback) ''CallBacks'' FROM #CallBackHours
+				GROUP BY Hour
+				ORDER BY Hour
+				'
+    EXEC(@Sql)
+
 	set @process = 'Setting_id 204 Configuration of Galatea integration service'
     set @Sql= 'IF not exists (SELECT * FROM ccSettings WHERE setting_id = 204)
 	INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)

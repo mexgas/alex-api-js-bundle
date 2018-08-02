@@ -2301,4 +2301,22 @@
   <data name="tManual" xml:space="preserve">
     <value>Tempo de chamadas manuais</value>
   </data>
+  <data name="Origin" xml:space="preserve">
+    <value>Origem da transferência</value>
+  </data>
+  <data name="systemTranslated_cellPhone" xml:space="preserve">
+    <value>Celular</value>
+  </data>
+  <data name="systemTranslated_fijo" xml:space="preserve">
+    <value>Fixo</value>
+  </data>
+  <data name="systemTranslated_interno" xml:space="preserve">
+    <value>Interno</value>
+  </data>
+  <data name="TipoTel" xml:space="preserve">
+    <value>Tipo de telefone</value>
+  </data>
+  <data name="TotalTimeDuration" xml:space="preserve">
+    <value>Duração da transferência</value>
+  </data>
 </root>

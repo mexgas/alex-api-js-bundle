@@ -4147,6 +4147,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Origen de transferencia.
+        /// </summary>
+        public static string Origin {
+            get {
+                return ResourceManager.GetString("Origin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Fecha Original.
         /// </summary>
         public static string originalDate {
@@ -5335,6 +5344,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Celular.
+        /// </summary>
+        public static string systemTranslated_cellPhone {
+            get {
+                return ResourceManager.GetString("systemTranslated_cellPhone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Celular Minutos Facturados.
         /// </summary>
         public static string systemTranslated_CelMinBilled_Count {
@@ -5533,6 +5551,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Fijo.
+        /// </summary>
+        public static string systemTranslated_fijo {
+            get {
+                return ResourceManager.GetString("systemTranslated_fijo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Inbound.
         /// </summary>
         public static string systemTranslated_inbound {
@@ -5547,6 +5574,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_Indefinite {
             get {
                 return ResourceManager.GetString("systemTranslated_Indefinite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Interno.
+        /// </summary>
+        public static string systemTranslated_interno {
+            get {
+                return ResourceManager.GetString("systemTranslated_interno", resourceCulture);
             }
         }
         
@@ -7207,6 +7243,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tipo de teléfono.
+        /// </summary>
+        public static string TipoTel {
+            get {
+                return ResourceManager.GetString("TipoTel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Sesión.
         /// </summary>
         public static string tlog {
@@ -7428,6 +7473,15 @@ namespace MiddleWareReports {
         public static string TotalTimebyInterval {
             get {
                 return ResourceManager.GetString("TotalTimebyInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Duración de transferencia.
+        /// </summary>
+        public static string TotalTimeDuration {
+            get {
+                return ResourceManager.GetString("TotalTimeDuration", resourceCulture);
             }
         }
         

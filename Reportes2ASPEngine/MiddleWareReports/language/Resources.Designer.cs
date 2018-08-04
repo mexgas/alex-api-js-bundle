@@ -2293,6 +2293,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Estado del Proveedor.
+        /// </summary>
+        public static string disconnectCause {
+            get {
+                return ResourceManager.GetString("disconnectCause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Calificación.
         /// </summary>
         public static string disposition {

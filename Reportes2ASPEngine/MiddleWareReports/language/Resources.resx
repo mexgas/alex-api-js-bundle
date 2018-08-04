@@ -2796,7 +2796,4 @@
   <data name="TiempoPromRing" xml:space="preserve">
     <value>Tiempo Prom Timbrando</value>
   </data>
-  <data name="disconnectCause" xml:space="preserve">
-    <value>Estado del Proveedor</value>
-  </data>
 </root>

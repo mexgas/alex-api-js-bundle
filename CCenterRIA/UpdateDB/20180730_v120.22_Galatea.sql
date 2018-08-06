@@ -85,7 +85,7 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
 				from ccoCallsOut
 				where convert(date, cal_fcallback) = @dateCallBack
 
-				SELECT Hour, SUM(callback) ''CallBacks'' FROM #CallBackHours
+				SELECT  CAST(Hour AS smallint) Hour, SUM(callback) ''CallBacks'' FROM #CallBackHours
 				GROUP BY Hour
 				ORDER BY Hour
 				'

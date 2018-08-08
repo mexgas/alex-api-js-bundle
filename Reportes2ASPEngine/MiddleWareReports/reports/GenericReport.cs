@@ -262,7 +262,7 @@ namespace MiddleWareReports
             dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
-
+        
             DataTable detailTableConvert = GetConvertColumnTime(detailTable);
             DataTable totalsTableConvert = GetConvertColumnTime(totalsTable);
             
@@ -304,10 +304,11 @@ namespace MiddleWareReports
         private DataTable GetConvertColumnTime(DataTable detailTable)
         {
             DataTable detailTableConvert = detailTable.Clone();
+            convertedColumns = TranslatorHelper.convertColumns(detailTable.Columns);
 
             foreach (DataColumn column in detailTableConvert.Columns)
             {
-                if (translatedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                if (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
                 {
                     detailTableConvert.Columns[column.ColumnName].DataType = typeof(string);
                 }
@@ -317,7 +318,7 @@ namespace MiddleWareReports
                 DataRow dataRowNew = detailTableConvert.NewRow();
                 foreach (DataColumn column in detailTable.Columns)
                 {
-                    if (translatedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                    if (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
                     {
                         string value = TranslatorHelper.parseDbValue(dataRow[column.ColumnName]);
                         if (

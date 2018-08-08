@@ -53,8 +53,17 @@ namespace MiddleWareReports
                 }
 
                 for (int i = 0; i < data.Columns.Count; i++)
-                {
-                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+                {                    
+                    string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+
+                    try
+                    {
+                        data.Columns[i].ColumnName = nameTranslated;
+                    }
+                    catch (Exception)
+                    {
+                        data.Columns[i].ColumnName = nameTranslated + i;
+                    }
                 }
 
                 foreach (string col in columnsNames)
@@ -123,17 +132,7 @@ namespace MiddleWareReports
             csv.AppendLine();
             //Place headers                     
             foreach (string header in headers)
-            {
-                //if (!translate && i == headers.Count - 1)
-                //    csv.Append(string.Format("{0}", header));
-                //else if (!translate)
-                //    csv.Append(string.Format("{0},", header));
-                //else if (i == headers.Count - 1)
-                //    csv.Append(string.Format("{0}", translatedColumns[header]));
-                //else if(translate && !string.IsNullOrEmpty(translatedColumns[header]))
-                //    csv.Append(string.Format("{0},", translatedColumns[header]));
-                //else
-                //    csv.Append(string.Format("{0},", header));
+            {               
 
                 if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
                 {
@@ -157,10 +156,6 @@ namespace MiddleWareReports
                 {
                     value = row[col].ToString();
                     value = TranslatorHelper.parseDbValue(value);
-                    if (translate && convertedColumns[col] != null && value != "")
-                    {
-                        value = TranslatorHelper.formatTime(Convert.ToInt32(value));
-                    }
 
                     if (i == 0)
                         csv.Append(string.Format("=\"{0}\"",value));

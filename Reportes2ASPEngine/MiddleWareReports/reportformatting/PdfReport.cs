@@ -33,7 +33,16 @@ namespace MiddleWareReports
                 TranslatorHelper.removeUntranslatedTableColumns(data, process);
             for (int i = 0; i < data.Columns.Count; i++)
             {
-                data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+                string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+
+                try
+                {
+                    data.Columns[i].ColumnName = nameTranslated;
+                }
+                catch (Exception)
+                {
+                    data.Columns[i].ColumnName = nameTranslated + i;
+                }
             }
             
             DataTable dataClone = data.Clone();

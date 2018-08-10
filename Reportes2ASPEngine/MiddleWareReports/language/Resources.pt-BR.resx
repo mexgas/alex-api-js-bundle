@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -2300,6 +2300,9 @@
   </data>
   <data name="tManual" xml:space="preserve">
     <value>Tempo de chamadas manuais</value>
+  </data>
+  <data name="disconnectCause" xml:space="preserve">
+    <value>Estado da operadora</value>
   </data>
   <data name="MessageTime" xml:space="preserve">
     <value>Tempo em mensagem</value>

@@ -453,4 +453,7 @@
   <data name="TiempoPromRing" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="MessageTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

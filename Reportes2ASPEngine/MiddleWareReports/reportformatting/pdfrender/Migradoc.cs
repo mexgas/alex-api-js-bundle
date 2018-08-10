@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Data;
-//using System.Data.DataSetExtensions;
 using System.Data.SqlClient;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.DocumentObjectModel;
@@ -12,6 +11,7 @@ using System.Collections.Specialized;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using System.Linq;
+
 namespace MiddleWareReports
 {
     public class Migradoc
@@ -301,11 +301,6 @@ namespace MiddleWareReports
 
                         value = dRow[nColumn + start].ToString();
                         value = TranslatorHelper.parseDbValue(value);
-
-                        if (convertedColumns[data.Columns[nColumn + start].ColumnName] != null && value != "") // si y solo si la columna tiene transformacion de seg a hh:mm:ss
-                        {
-                            value = TranslatorHelper.formatTime(Convert.ToInt32(value));
-                        }
 
                         rowx.Cells[nColumn].AddParagraph(value);
                     }

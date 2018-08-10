@@ -2301,4 +2301,7 @@
   <data name="tManual" xml:space="preserve">
     <value>Tempo de chamadas manuais</value>
   </data>
+  <data name="MessageTime" xml:space="preserve">
+    <value>Tempo em mensagem</value>
+  </data>
 </root>

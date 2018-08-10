@@ -3229,6 +3229,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en Mensaje.
+        /// </summary>
+        public static string MessageTime {
+            get {
+                return ResourceManager.GetString("MessageTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Desasignados.
         /// </summary>
         public static string messageUnAssigned {

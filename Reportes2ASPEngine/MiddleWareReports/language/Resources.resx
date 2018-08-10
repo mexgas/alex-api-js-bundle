@@ -2796,4 +2796,7 @@
   <data name="TiempoPromRing" xml:space="preserve">
     <value>Tiempo Prom Timbrando</value>
   </data>
+  <data name="MessageTime" xml:space="preserve">
+    <value>Tiempo en mensaje</value>
+  </data>
 </root>

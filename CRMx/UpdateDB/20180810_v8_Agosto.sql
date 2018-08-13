@@ -38,6 +38,33 @@ IF @ACTUALVERSION in( @VERSION - 1, @VERSION )
     BEGIN TRY
 
   /* START SCRIPT RELEASE */
+  
+  
+  
+    set @process = 'Alter/ Add columns LoadingTemplateRelationships C-1151'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''fileNameExcel'' and Object_ID = Object_ID(N''LoadingTemplateRelationships''))
+    begin
+	     alter table LoadingTemplateRelationships add fileNameExcel nvarchar(125) not null default '''';
+	 end'
+    EXEC(@Sql)
+
+
+	set @process = 'Alter/ Add columns LoadingTemplateRelationships C-1151'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''conString'' and Object_ID = Object_ID(N''LoadingTemplateRelationships''))
+    begin
+	     alter table LoadingTemplateRelationships add conString nvarchar(145) not null default '''';
+	 end'
+    EXEC(@Sql)
+
+
+
+	set @process = 'Alter/ Add columns LoadingTemplateRelationships C-1151'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''tableName'' and Object_ID = Object_ID(N''LoadingTemplateRelationships''))
+    begin
+	     alter table LoadingTemplateRelationships add tableName nvarchar(125) not null default '''';
+	 end'
+    EXEC(@Sql)  
+  
 
     set @process = 'ALTER SP -- CRMxUploader CW-1151'
     set @Sql= 'ALTER PROCEDURE [dbo].[CRMxUploader]

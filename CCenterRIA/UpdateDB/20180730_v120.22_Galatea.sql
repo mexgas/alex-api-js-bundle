@@ -61,11 +61,11 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
 				select @rangeDays=valor from ccSettings where setting_id=35
 
 				-- Returns days with callbacks made by an agent
-				SELECT cal_fusercallback DayCB
+				SELECT cal_fusercallback Day
 				FROM ccoCallBacks cb
 				WHERE user_id = @userID
 				and cal_fusercallback between @currentDay and dateadd(dd,@rangeDays,getdate())
-				order by DayCB'
+				order by Day'
     EXEC(@Sql)
 
 	set @process = 'CW-2093 ccsp_GalateaCallbacks Returns the total of callbacks by hour on especific day'

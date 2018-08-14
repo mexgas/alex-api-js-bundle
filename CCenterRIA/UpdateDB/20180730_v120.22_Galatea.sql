@@ -98,6 +98,11 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
 			''IP|WebSocketServerPort|SocketServerPort|Autorun'',
 			'' Galatea Integration Service configuration'',	1, ''.*'')'
     EXEC(@Sql)
+
+		set @process = 'Setting_id 204 Configuration of Galatea integration service'
+    set @Sql= 'IF exists (SELECT * FROM ccSettings WHERE setting_id = 204)
+	UPDATE  ccSettings set valor=''0.0.0.0|1337|1338|1'', detalle=''IP|WebSocketServerPort|SocketServerPort|Autorun'' WHERE setting_id = 204'
+    EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

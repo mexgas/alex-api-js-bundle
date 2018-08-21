@@ -47,13 +47,19 @@ if @actualVersion  in(@version,@version - 1) begin
 		EXEC(@Sql)
 		
 		set @process = 'CW-1974 -- editar Columna ncost en RepOutAnswAndXferCalls_ARO'
-		set @Sql= 'alter table RepOutAnswAndXferCalls
-				alter column ncost decimal(10,2)'
+		set @Sql= 'if exists (select * from sys.columns where name = N''ncost'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
+			begin
+				alter table RepOutAnswAndXferCalls
+					alter column ncost decimal(10,2)
+			end'
 		EXEC(@Sql)
 
 		set @process = 'CW-1974 -- editar Columna total en RepOutAnswAndXferCalls_ARO'
-		set @Sql= 'alter table RepOutAnswAndXferCalls
-				alter column total decimal(10,2)'
+		set @Sql= 'if exists (select * from sys.columns where name = N''total'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
+			begin
+				alter table RepOutAnswAndXferCalls
+					alter column total decimal(10,2)
+			end'
 		EXEC(@Sql)
 		
 		set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'

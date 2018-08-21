@@ -51,6 +51,11 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
 			values(''Enviar y extraer archivos|Email and transfer files'',1,''f497d327698765762eea6d10a29f4b5168ff1469c6135b2a88aa48ea7404aeada5a285c1899dcea00a01033056a22f68effdc7bfba4357cc070ea32c48287a9c'')
 		end'
 		EXEC(@Sql)
+		
+		set @process = 'CW-1508	Etiquetas En ingles incorrecta'
+		set @Sql= 'update ccmenus set menu_descrip=''Respuestas(Encuestas de Satisfacción)|AnswersCustomerSatisfactionSurvey''
+				where menu_id=8083 and type=3'
+		EXEC(@Sql)
 
 				
 		/* End script release */

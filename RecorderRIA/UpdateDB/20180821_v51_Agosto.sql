@@ -1,5 +1,5 @@
 /*
-Autor: Hugo Longoria
+Autor: Daniel vega
 Descripcion:
 
 

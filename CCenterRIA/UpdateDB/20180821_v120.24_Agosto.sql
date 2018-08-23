@@ -52,6 +52,16 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
 		EXEC(@Sql)
 	
 
+
+		set @process = 'CW-1869 Med Fase 2 Alter setting 202 bLoadSettings = 1'
+		set @Sql= '
+			if exists (select * from ccSettings where setting_id = 202 )begin
+			update ccSettings set bLoadSettings = 1 where setting_id = 202
+			end
+		'
+		EXEC(@Sql)
+
+
 		set @process = 'CW-1682 Permiso Exportación Finder'
 		set @Sql= 'if not exists(select * from ccRIACat_AdminPermissions where per_id = 11 ) 
 		begin

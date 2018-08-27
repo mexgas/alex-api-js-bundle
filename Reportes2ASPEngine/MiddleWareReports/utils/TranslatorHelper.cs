@@ -180,25 +180,20 @@ namespace MiddleWareReports
             {
                 Type sourceType = typeof(MiddleWareReports.Resources);
 
-                if (!Methods.ContainsKey(propertyName.ToLower()))
+                string p = propertyName;
+                if (Methods.ContainsKey(propertyName.ToLower()))
                 {
-                    return value;
-                }
-                string p = Methods[propertyName.ToLower()];
-                var property = sourceType.GetProperty(p);
+                    p = Methods[propertyName.ToLower()];
+                    var property = sourceType.GetProperty(p);
 
-
-                object result = property.GetValue(property, null);
-                if (result is string)
-                {
-                    value = result.ToString();
-                    isTranslated = true;
+                    object result = property.GetValue(property, null);
+                    if (result is string)
+                    {
+                        value = result.ToString();
+                        isTranslated = true;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                string getResourceProperty = ex.Message;
-                if (isPivotColumn(propertyName))
+                else if (isPivotColumn(propertyName))
                 {
                     value = original;
                 }
@@ -210,7 +205,9 @@ namespace MiddleWareReports
                 {
                     value = propertyName.Trim();
                 }
+
             }
+            catch (Exception) { }
             return value;
         }
 

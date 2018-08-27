@@ -17,6 +17,8 @@ namespace MiddleWareReports
     /// </summary>
     public static class TranslatorHelper
     {
+        private static Dictionary<string, string> Methods = getMethodResource();
+
         /// <summary>
         /// Resource that wants to be translated
         /// </summary>
@@ -177,8 +179,12 @@ namespace MiddleWareReports
             try
             {
                 Type sourceType = typeof(MiddleWareReports.Resources);
-                Dictionary<string, string> method = getMethodResource(sourceType);
-                string p = method[propertyName.ToLower()];
+
+                if (!Methods.ContainsKey(propertyName.ToLower()))
+                {
+                    return value;
+                }
+                string p = Methods[propertyName.ToLower()];
                 var property = sourceType.GetProperty(p);
 
 
@@ -208,13 +214,14 @@ namespace MiddleWareReports
             return value;
         }
 
-        private static Dictionary<string, string> getMethodResource(Type sourceType)
+        private static Dictionary<string, string> getMethodResource()
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
-            MethodInfo[] methods = sourceType.GetMethods();
+            MethodInfo[] methods = typeof(MiddleWareReports.Resources).GetMethods();
             foreach (var m in methods)
             {
-                if(!d.ContainsKey(m.Name.Substring(4).ToLower())){
+                if (!d.ContainsKey(m.Name.Substring(4).ToLower()))
+                {
                     d.Add(m.Name.Substring(4).ToLower(), m.Name.Substring(4));
                 }
             }

@@ -2730,4 +2730,7 @@
   <data name="MessageTime" xml:space="preserve">
     <value>Time on Message</value>
   </data>
+  <data name="DCCustomer" xml:space="preserve">
+    <value>Carrier Status 2</value>
+  </data>
 </root>

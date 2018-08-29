@@ -2721,6 +2721,9 @@
   <data name="tManual" xml:space="preserve">
     <value>Manual Calls Time</value>
   </data>
+  <data name="AnswersCustomerSatisfactionSurvey" xml:space="preserve">
+    <value>Answers</value>
+  </data>
   <data name="disconnectCause" xml:space="preserve">
     <value>Carrier Status</value>
   </data>

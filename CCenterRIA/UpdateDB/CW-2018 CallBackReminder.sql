@@ -245,7 +245,7 @@ if exists (select cal_ANI from ccRIAUpdateCallBack_Abandon where cal_ANI=@ANI)
 	insert ccRIAUpdateCallBack_Abandon (cal_id, cal_ANI, cam_id, callout_id, inbound_id, minCallBackAbandon)
 	select @cal_id, @ANI, @cam_id, @callout_id, @inbound_id, @fechadial
 	declare @dato1 varchar (max),  @dato2 varchar (max), @dato3 varchar (max), @dato4 varchar (max), @dato5 varchar (max)
-	select * from DataCallIn
+	set @dato1 = ''''	set @dato2 = ''''	set @dato3 = ''''	set @dato4 = ''''	set @dato5 = ''''
 	
 	select @dato1 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 1''
 	select @dato2 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 2''

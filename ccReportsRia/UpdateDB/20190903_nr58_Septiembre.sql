@@ -43,7 +43,7 @@ if @actualVersion  in(@version,@version - 1) begin
 				set @sql='CREATE TABLE DC_Extra
 				(
 					[id] [int] primary key,
-					[description] varchar(100) default('')
+					[description] varchar(100) default('''')
 				)'
 		EXEC(@sql)
 		

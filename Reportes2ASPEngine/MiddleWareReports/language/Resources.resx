@@ -2805,4 +2805,7 @@
   <data name="MessageTime" xml:space="preserve">
     <value>Tiempo en mensaje</value>
   </data>
+  <data name="DCCustomer" xml:space="preserve">
+    <value>Estado del Proveedor 2</value>
+  </data>
 </root>

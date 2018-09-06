@@ -9,7 +9,7 @@ Author:
 Date: 2018/08/21
 Description:
 
-Release 120.24_20180906
+Release  120.24_20180906
 
 Database: CCenterRia
 Required version: 120.14

@@ -103,6 +103,33 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
     set @Sql= 'IF exists (SELECT * FROM ccSettings WHERE setting_id = 204)
 	UPDATE  ccSettings set valor=''0.0.0.0|1337|1338|1'', detalle=''IP|WebSocketServerPort|SocketServerPort|Autorun'' WHERE setting_id = 204'
     EXEC(@Sql)
+
+		set @process = 'ccsp_AgentGetStartStopPermission Return Allowed tag '
+    set @Sql= '
+ALTER PROCEDURE [dbo].[ccsp_AgentGetStartStopPermission]
+					@age_id int,
+					@cam_id int,
+					@call_type int
+					AS
+					BEGIN
+						SET NOCOUNT ON;
+
+						declare @agentRec int, @valor as int
+						set @valor = 0
+						set @agentRec = (select isnull(startStopRecording,0) from ccusers (nolock) where [User_id] = @age_id)
+
+						IF @agentRec = 1
+						BEGIN
+							---------- Entra agente con permiso de StartStopRecording
+							IF @call_type = 1 ------- Revisamos especialidad
+								set @valor = (select isnull(startStopRecording,0) from ccInbound (nolock) where Inbound_id = @cam_id)
+							ELSE ------- Revisamos Campaña
+								set @valor = (select isnull(startStopRecording,0) from ccCamps (nolock) where cam_id = @cam_id)
+						END
+
+						select @valor Allowed
+					END'
+	EXEC(@Sql)
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

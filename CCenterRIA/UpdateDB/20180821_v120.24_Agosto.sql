@@ -2,11 +2,14 @@
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 
+ 
 /*
 Author: 
 		
 Date: 2018/08/21
 Description:
+
+Release  120.24_20180906
 
 Database: CCenterRia
 Required version: 120.14
@@ -908,12 +911,12 @@ set nocount off
         set @Sql= 'delete from series where CLD=''CLD'''
         EXEC(@Sql)
 
-        set @process = 'CW-2195 Version 120.22 '
-        set @Sql= 'alter table series alter column [NUMERACION INICIAL] int 120.24 20180906'
+        set @process = 'CW-2195 Version 120.22 Alter COlumn [NUMERACION INICIAL] 120.24 20180906 '
+        set @Sql= 'alter table series alter column [NUMERACION INICIAL] int '
         EXEC(@Sql)
 
-        set @process = 'CW-2195 Version 120.22 '
-        set @Sql= 'alter table series alter column [NUMERACION FINAL] int 120.24 20180906'
+        set @process = 'CW-2195 Version 120.22 Alter COlumn [NUMERACION FINAL] 120.24 20180906'
+        set @Sql= 'alter table series alter column [NUMERACION FINAL] int'
         EXEC(@Sql)
 
         set @process = 'CW-2195 Version 120.22 Create index series.IX_Series_1 120.24 20180906'

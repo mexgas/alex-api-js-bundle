@@ -16,7 +16,7 @@ declare @process varchar(max)
 	Set @Version = 52
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
-if @Version_Actual in(Version, @Version -1) -- Aqui poner numero de nueva version
+if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva version
 	 begin
 	begin tran
 	begin try

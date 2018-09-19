@@ -36,8 +36,7 @@ exec @actualVersion = ccsp_getVersion 'BD'
 if  @actualVersion in(@version-1,@version)
 begin
 	begin tran
-	begin try
-		
+	begin try		
 
 	set @process = 'CW-1823 agrega TipoTel a RepCallXfer'
     set @Sql= '

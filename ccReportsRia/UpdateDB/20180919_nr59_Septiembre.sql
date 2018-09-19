@@ -4,7 +4,7 @@
 
 
 /*
-Author: 
+Author: Daniel Vega
 	
 Date: 
 Description:
@@ -46,7 +46,6 @@ begin
     end
 	'
     EXEC(@Sql)        
-
 
 	set @process = 'CW-1823 agrega Origin a RepCallXfer'
     set @Sql= '

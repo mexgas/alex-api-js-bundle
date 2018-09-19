@@ -4183,7 +4183,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Fecha Original.
+        ///   Busca una cadena traducida similar a Origen de transferencia.
+        /// </summary>
+        public static string Origin {
+            get {
+                return ResourceManager.GetString("Origin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Fecha Original.
         /// </summary>
         public static string originalDate {
             get {
@@ -5371,7 +5380,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Celular Minutos Facturados.
+        ///   Busca una cadena traducida similar a Celular.
+        /// </summary>
+        public static string systemTranslated_cellPhone {
+            get {
+                return ResourceManager.GetString("systemTranslated_cellPhone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Celular Minutos Facturados.
         /// </summary>
         public static string systemTranslated_CelMinBilled_Count {
             get {
@@ -5569,7 +5587,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Inbound.
+        ///   Busca una cadena traducida similar a Fijo.
+        /// </summary>
+        public static string systemTranslated_fijo {
+            get {
+                return ResourceManager.GetString("systemTranslated_fijo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Inbound.
         /// </summary>
         public static string systemTranslated_inbound {
             get {
@@ -5587,7 +5614,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Opción inválida.
+        ///   Busca una cadena traducida similar a Interno.
+        /// </summary>
+        public static string systemTranslated_interno {
+            get {
+                return ResourceManager.GetString("systemTranslated_interno", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Opción inválida.
         /// </summary>
         public static string systemTranslated_Invalid {
             get {
@@ -7243,7 +7279,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sesión.
+        ///   Busca una cadena traducida similar a Tipo de teléfono.
+        /// </summary>
+        public static string TipoTel {
+            get {
+                return ResourceManager.GetString("TipoTel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Sesión.
         /// </summary>
         public static string tlog {
             get {
@@ -7468,7 +7513,16 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Total de tuits por grupo ACD.
+        ///   Busca una cadena traducida similar a Duración de transferencia.
+        /// </summary>
+        public static string TotalTimeDuration {
+            get {
+                return ResourceManager.GetString("TotalTimeDuration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Total de tuits por grupo ACD.
         /// </summary>
         public static string TotalTweetMessagesbyACDGroup {
             get {

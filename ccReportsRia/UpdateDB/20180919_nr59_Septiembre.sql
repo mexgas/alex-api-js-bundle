@@ -129,8 +129,8 @@ begin
 				isnull((select cam_descripcion from cccamps where cam_id = clt.destino),''systemTranslated_Indefinite'')
 				end as Origin,
 				tantesxfer+tdespuesxfer as TotalTimeDuration,				
-				case tipo when 1 then isnull((select case dbo.fnGettipollamada(cal_ANI) when 1 then ''Local''
-					 when 3 then ''Celular'' else ''Interno'' end from ccCallsIn where cal_id= clt.cal_id
+				case tipo when 1 then isnull((select case dbo.fnGettipollamada(cal_ANI) when 1 then ''systemTranslated_fijo''
+					 when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end from ccCallsIn where cal_id= clt.cal_id
 					 ),''systemTranslated_Indefinite'')
 				else
 				isnull((

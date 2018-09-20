@@ -37,15 +37,6 @@ begin
 	begin tran
 	begin try		
 
-	set @process = 'CW-1823 agrega TipoTel a RepCallXfer'
-    set @Sql= '
-    if not exists (select * from sys.columns where name = N''TipoTel'' and Object_ID = Object_ID(N''RepCallXfer''))
-    begin
-       alter table ccReportsRia..RepCallXfer add TipoTel varchar(max) null
-    end
-	'
-    EXEC(@Sql)        
-
 	set @process = 'CW-1823 agrega Origin a RepCallXfer'
     set @Sql= '
 	 if not exists (select * from sys.columns where name = N''Origin'' and Object_ID = Object_ID(N''RepCallXfer''))
@@ -53,7 +44,7 @@ begin
        alter table ccReportsRia..RepCallXfer add Origin varchar(max) null
     end
 	'
-    EXEC(@Sql)        
+    EXEC(@Sql)     
 
 	
 	set @process = 'CW-1823 agrega TotalTimeDuration a RepCallXfer'
@@ -64,6 +55,18 @@ begin
     end
 	'
     EXEC(@Sql)        
+
+
+	set @process = 'CW-1823 agrega TipoTel a RepCallXfer'
+    set @Sql= '
+    if not exists (select * from sys.columns where name = N''TipoTel'' and Object_ID = Object_ID(N''RepCallXfer''))
+    begin
+       alter table ccReportsRia..RepCallXfer add TipoTel varchar(max) null
+    end
+	'
+    EXEC(@Sql)        
+
+	   
 
 	set @process = 'CW-1823 se agregan las columnas para traducciones'
     set @Sql= '    

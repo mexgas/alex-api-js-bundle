@@ -2808,4 +2808,22 @@
   <data name="DCCustomer" xml:space="preserve">
     <value>Estado del Proveedor 2</value>
   </data>
+  <data name="Origin" xml:space="preserve">
+    <value>Origen de transferencia</value>
+  </data>
+  <data name="systemTranslated_cellPhone" xml:space="preserve">
+    <value>Celular</value>
+  </data>
+  <data name="systemTranslated_fijo" xml:space="preserve">
+    <value>Fijo</value>
+  </data>
+  <data name="systemTranslated_interno" xml:space="preserve">
+    <value>Interno</value>
+  </data>
+  <data name="TipoTel" xml:space="preserve">
+    <value>Tipo de teléfono</value>
+  </data>
+  <data name="TotalTimeDuration" xml:space="preserve">
+    <value>Duración de transferencia</value>
+  </data>
 </root>

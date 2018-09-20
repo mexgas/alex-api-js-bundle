@@ -72,7 +72,7 @@ begin
     set @Sql= '    
     if exists (select * from TranslatedReports where id = 4120)
     begin
-	update TranslatedReports set columns = ''CallTypes|Agent|xfertype|destination|TipoTel'' where id = 4120
+	update TranslatedReports set columns = ''CallTypes|Agent|xfertype|destination|TipoTel|Origin'' where id = 4120
 	end
 
 

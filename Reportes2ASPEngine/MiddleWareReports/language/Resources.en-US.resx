@@ -2733,4 +2733,22 @@
   <data name="DCCustomer" xml:space="preserve">
     <value>Carrier Status 2</value>
   </data>
+  <data name="Origin" xml:space="preserve">
+    <value>Transfer Source</value>
+  </data>
+  <data name="systemTranslated_cellPhone" xml:space="preserve">
+    <value>Mobile</value>
+  </data>
+  <data name="systemTranslated_fijo" xml:space="preserve">
+    <value>Landline</value>
+  </data>
+  <data name="systemTranslated_interno" xml:space="preserve">
+    <value>Internal</value>
+  </data>
+  <data name="TipoTel" xml:space="preserve">
+    <value>Number Type</value>
+  </data>
+  <data name="TotalTimeDuration" xml:space="preserve">
+    <value>Transfer Length</value>
+  </data>
 </root>

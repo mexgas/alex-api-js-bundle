@@ -81,7 +81,7 @@ begin
 
 	set @process = 'CW-1823 Se modifica el SP del reporte ccspRepCallXfer'
     set @Sql= '
-	ALTER PROCEDURE [dbo].[ccspRepCallXfer]
+		ALTER PROCEDURE [dbo].[ccspRepCallXfer]
 			@action as tinyint,
 			@from AS datetime = null,
 			@to AS datetime = null
@@ -123,11 +123,10 @@ begin
 				tantesxfer timebeforexfer,
 				tdespuesxfer timeafterxfer,
 				dateadd(ss,-(tantesxfer + tdespuesxfer),fechafin) startDate,
-				fechafin as endDate,
-				case tipo when 1 then isnull((select descripcion from ccinbound where inbound_id = clt.destino),''systemTranslated_Indefinite'')
-				else
-				isnull((select cam_descripcion from cccamps where cam_id = clt.destino),''systemTranslated_Indefinite'')
-				end as Origin,
+				fechafin as endDate,		
+				case when camp.cam_descripcion is not null then  camp.cam_descripcion 
+				when inbound.descripcion is not null then  inbound.descripcion				
+				else ''systemTranslated_Indefinite'' end as Origin,
 				tantesxfer+tdespuesxfer as TotalTimeDuration,				
 				case tipo when 1 then isnull((select case dbo.fnGettipollamada(cal_ANI) when 1 then ''systemTranslated_fijo''
 					 when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end from ccCallsIn where cal_id= clt.cal_id
@@ -141,9 +140,13 @@ begin
 				from cclogtransfers clt 
 				left join ccocallsout co (nolock) on co.cal_id=clt.cal_id and tipo=2 
 				left join cccallsin ci (nolock) on ci.cal_id=clt.cal_id and tipo=1
+				left join cccamps camp on camp.cam_id =co.cam_id
+				left join ccinbound inbound on inbound.Inbound_id =ci.Inbound_id
 				WHERE fechafin >= @from and fechafin < @to
 			end
 			
+
+	
 
 	'
     EXEC(@Sql)        

@@ -37,7 +37,7 @@ begin
 	begin tran
 	begin try		
 
-	set @process = 'CW-1823 agrega Origin a RepCallXfer'
+	set @process = 'CW-1334 agrega Origin a RepCallXfer'
     set @Sql= '
 	 if not exists (select * from sys.columns where name = N''Origin'' and Object_ID = Object_ID(N''RepCallXfer''))
     begin
@@ -47,7 +47,7 @@ begin
     EXEC(@Sql)     
 
 	
-	set @process = 'CW-1823 agrega TotalTimeDuration a RepCallXfer'
+	set @process = 'CW-1334 agrega TotalTimeDuration a RepCallXfer'
     set @Sql= '
 		if not exists (select * from sys.columns where name = N''TotalTimeDuration'' and Object_ID = Object_ID(N''RepCallXfer''))
     begin
@@ -57,7 +57,7 @@ begin
     EXEC(@Sql)        
 
 
-	set @process = 'CW-1823 agrega TipoTel a RepCallXfer'
+	set @process = 'CW-1334 agrega TipoTel a RepCallXfer'
     set @Sql= '
     if not exists (select * from sys.columns where name = N''TipoTel'' and Object_ID = Object_ID(N''RepCallXfer''))
     begin
@@ -68,7 +68,7 @@ begin
 
 	   
 
-	set @process = 'CW-1823 se agregan las columnas para traducciones'
+	set @process = 'CW-1334 se agregan las columnas para traducciones'
     set @Sql= '    
     if exists (select * from TranslatedReports where id = 4120)
     begin
@@ -79,7 +79,7 @@ begin
 	'
     EXEC(@Sql)        
 
-	set @process = 'CW-1823 Se modifica el SP del reporte ccspRepCallXfer'
+	set @process = 'CW-1334 Se modifica el SP del reporte ccspRepCallXfer'
     set @Sql= '
 		ALTER PROCEDURE [dbo].[ccspRepCallXfer]
 			@action as tinyint,
@@ -144,10 +144,6 @@ begin
 				left join ccinbound inbound on inbound.Inbound_id =ci.Inbound_id
 				WHERE fechafin >= @from and fechafin < @to
 			end
-			
-
-	
-
 	'
     EXEC(@Sql)        
 
@@ -155,8 +151,10 @@ begin
 	/* End script release */
 
 	/* Upgrade database version (use your own script to do it) */
-	--exec ccsp_getVersion 'BD', @version
-	
+	if @actualVersion  = @version - 1
+ 	exec ccsp_getVersion 'BD', @version
+
+
 
 	commit tran
 	end try

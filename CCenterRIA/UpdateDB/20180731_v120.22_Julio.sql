@@ -48,7 +48,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
 		set @Sql= 'if (not exists(select * from ccRIACat_AdminPermissions where per_id = 10 ) )
 		begin
 			insert into ccRIACat_AdminPermissions(per_desc,bStatus,release) 
-			values(''Ocultar base de datos|Hide database'',1,''beb771b4d7317a2fa20084db183694df92b9ec58cfc6aee81aeaa59a90a26648dad4a7681abba7e285a1b39d6b32aa15'')
+			values(''Ocultar base de datos|Hide database'',1,''35de1759d270c0d2dca33c41d808e21d9435403b55fadeec49f9600d6aa4d8b988c645ddcae94716bb412788c6d0585c'')
 		end'
 		EXEC(@Sql)
 

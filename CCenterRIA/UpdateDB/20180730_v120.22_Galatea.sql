@@ -116,6 +116,7 @@ BEGIN
 		case when isnull(a2.surveyCamId,0) >0 then 1 else 0 end isRelationSurvey ,
 		a2.cam_ShowCalifWnd as ShowDisposition,
 		a2.callBackSurveyAgent,a2.callBackSurveyClient,
+		isnull(a2.startStopRecording,0) as StartStopRecording,
 		@realValue as IsStartStopRecording
 		from ccRIACampsGraph a1 
 		inner join ccCamps a2 on (a1.cam_id=a2.cam_id)

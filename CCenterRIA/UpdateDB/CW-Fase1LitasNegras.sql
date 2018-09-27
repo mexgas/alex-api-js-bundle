@@ -9,7 +9,7 @@ Date: 2018/05/15
 Description:
 
 Database: CCenterRia
-Required version: 120.14
+Required version: 120.24
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -39,7 +39,7 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 22
+if  @actualVersion = @version and  @actualVersionFix >= 24
 	begin
 		begin tran
 		begin try
@@ -64,6 +64,15 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
         DROP PROCEDURE xx_ChecaVersion;
     end'
         EXEC(@Sql)
+
+         set @process = 'CW-1653 --Setting 209 Search for do-not-call numbers in server memory'
+        set @Sql= 'if not exists(select * from ccSettings where setting_id=209) begin
+	--Portugues no esta es necesario agregar  --->Validar as listas negras para os números na memória do servidor
+	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+	values(209,''0'',''Realizar validación de lista negra a números en memoria del servidor'',1,''X'',''El marcado predictivo revisara todos los registros a marcar si el esta 1, 0 la revision la realizara solo el databaseLoader es necesario reiniciar para tome el cambio''
+		,''Search for do-not-call numbers in server memory'',0,''^[0-1]$'')
+end'
+        EXEC(@Sql)
 	
 	set @process = 'CW-1653 --Borrar PK de la tabla ccListaNegra'
         set @Sql= 'if exists (select o.* from sys.objects o INNER JOIN sys.schemas s on o.schema_id = s.schema_id  where o.Type = ''PK'' and OBJECT_NAME(o.parent_object_id) = ''ccListaNegra'')
@@ -85,6 +94,22 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
 			DateDeleteWT datetime
 		)
     end'
+        EXEC(@Sql)
+
+
+        set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
+        set @Sql= 'if not exists (select * from sys.columns where name = N''Hashtel'' and Object_ID = Object_ID(N''ccListaNegra''))
+begin
+	alter table ccListaNegra add Hashtel int
+end'
+        EXEC(@Sql)
+
+
+		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
+        set @Sql= 'if not exists (select * from sys.columns where name = N''HashKey'' and Object_ID = Object_ID(N''ccListaNegra''))
+begin
+	alter table ccListaNegra add HashKey int
+end'
         EXEC(@Sql)
 
         set @process = 'CW-1653 --function hashList'
@@ -117,8 +142,7 @@ END'
 
 	    set @process = 'CW-1653 --function ValidateBlackListPhone'
 		if not exists (select * from sys.objects where object_id = OBJECT_ID(N'ValidateBlackListPhone') and type in (N'FN', N'IF', N'TF', N'FS', N'FT')) begin
-        set @Sql= '
-CREATE FUNCTION [dbo].[ValidateBlackListPhone](@tel varchar(32),@camId int,@calKey varchar(20))
+        set @Sql= 'CREATE FUNCTION [dbo].[ValidateBlackListPhone](@tel varchar(32),@camId int,@calKey varchar(20))
 RETURNS bit AS
 BEGIN
 	declare @isBlackPhone bit
@@ -143,22 +167,7 @@ BEGIN
 END'
        EXEC(@Sql)
 	   end
-
-
-		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
-        set @Sql= 'if not exists (select * from sys.columns where name = N''Hashtel'' and Object_ID = Object_ID(N''ccListaNegra''))
-begin
-	alter table ccListaNegra add Hashtel int
-end'
-        EXEC(@Sql)
-
-
-		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
-        set @Sql= 'if not exists (select * from sys.columns where name = N''HashKey'' and Object_ID = Object_ID(N''ccListaNegra''))
-begin
-	alter table ccListaNegra add HashKey int
-end'
-        EXEC(@Sql)
+		
 
 		set @process = 'CW-1653 --Crear indice en la tabla ccListaNegra'
         set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_ccListaNegra_I'' and object_id = OBJECT_ID(N''ccListaNegra''))
@@ -199,36 +208,12 @@ set nocount off'
 @telefono as varchar(20),
 @cal_key as varchar(30) = null
 AS
-if @action = 1
-begin
-	declare @hashPhone int,@hashCallKey int 
-	set @hashPhone= (cast(@telefono as bigint) % 127499997)
-	
-	if @cal_key is not null and @cal_key<>'''' set @hashCallKey= dbo.hashList(@cal_Key) 	
-
-	if @hashCallKey is null begin
-		if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey is null
-		and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-			on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-			select 1
-		else
-			select 0
-
-	end 
+if @action = 1 begin	
+	if (select dbo.ValidateBlackListPhone(@telefono,@cam_id,@cal_key)) = 1 begin
+		select 1 as IsBlackList
+	end
 	else begin
-		if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey is null
-		and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-			on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-		begin
-			select 1
-		end		
-
-		else if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey = @hashCallKey
-			and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-				on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-			select 1
-		else
-			select 0
+		select 0 as IsBlackList
 	end
 end'
         EXEC(@Sql)
@@ -518,7 +503,8 @@ else if @pais in(9,10,11,12,13,14,15,16) begin--9: Australia, 10:Brasil, 11:Guat
 		select 0 as res, @tel  as tel			
 	end
 	return(0)	
-end'
+end
+'
         EXEC(@Sql)
 
 		set @process = 'CW-1653 --Modificacion al SP ccsp_LimpiaUsa'
@@ -591,8 +577,6 @@ if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
 end	
 
 select 0 as res, @tel as tel
-
-
 
 set nocount off'
 		EXEC(@Sql)

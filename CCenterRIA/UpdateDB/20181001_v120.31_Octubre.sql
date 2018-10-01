@@ -28,7 +28,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 120--**********actualizar a 119 sin fix
-set @versionfix = 22
+set @versionfix = 31
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -38,7 +38,7 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix = @versionfix-1
+if  @actualVersion = @version and  @actualVersionFix = 25
 	begin
 		begin tran
 		begin try	

@@ -38,7 +38,7 @@ if  @actualVersion = @version and  @actualVersionFix = 31
 		begin tran
 		begin try
 
-	set @process = 'CW-2167 -- DROP PROCEDURE getPrefixByAcdId'
+	set @process = 'CW-2376 -- DROP PROCEDURE getPrefixByAcdId'
     	set @Sql= 'if exists (select * from sys.procedures where name = N''getPrefixByAcdId'')
     begin
         DROP PROCEDURE getPrefixByAcdId;

@@ -3,8 +3,8 @@
 /*******************************/
 
 /*
-Author: Armando Rodriguez
-Date: 2017/04/26
+Author: Jesus Gallardo
+Date: 2018/10/11
 Description:
 Database: CCenterRia
 Required version: 120.32

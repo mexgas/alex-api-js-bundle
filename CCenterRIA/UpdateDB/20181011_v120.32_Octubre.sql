@@ -6,6 +6,7 @@
 Author: Jesus Gallardo
 Date: 2018/10/11
 Description:
+	CW-2376
 Database: CCenterRia
 Required version: 120.32
 

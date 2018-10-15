@@ -907,8 +907,8 @@ set nocount off
         set @Sql= 'drop index IX_Series_1 on series'
         EXEC(@Sql)
 
-        set @process = 'CW-2195 Version 120.22 Delete From Row CLD 120.24 20180906'
-        set @Sql= 'delete from series where CLD=''CLD'''
+        set @process = 'CW-2195 y CW-2388 Version 120.22 Delete From Row CLD 120.24 20180906'
+        set @Sql= 'delete from series where CLD=''CLD'' or  MUNICIPIO  like''%MUNICIPIO%''' 
         EXEC(@Sql)
 
         set @process = 'CW-2195 Version 120.22 Alter COlumn [NUMERACION INICIAL] 120.24 20180906 '

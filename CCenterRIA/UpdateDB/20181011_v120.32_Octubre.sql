@@ -3,9 +3,10 @@
 /*******************************/
 
 /*
-Author: Armando Rodriguez
-Date: 2017/04/26
+Author: Jesus Gallardo
+Date: 2018/10/11
 Description:
+	CW-2376
 Database: CCenterRia
 Required version: 120.32
 
@@ -18,6 +19,7 @@ declare @actualVersion int,@actualVersionFix int
 declare @sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
+declare @versionALL varchar(max);
 
 /* Version to release (use the version of your own databse)*/
 /*******************************************************************************************************
@@ -26,19 +28,23 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 120--**********actualizar a 119 sin fix
-set @versionfix = 33
+set @versionfix = 32
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
 exec @actualVersion = ccsp_getVersion 'BD'
 exec @actualVersionFix = ccsp_getVersion 'BDF'
 
+select @versionALL = valor from ccsettings where setting_id=77;
+select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
+
+
 if  @actualVersion = @version and  @actualVersionFix = 31
 	begin
 		begin tran
 		begin try
 
-	set @process = 'CW-2167 -- DROP PROCEDURE getPrefixByAcdId'
+	set @process = 'CW-2376 -- DROP PROCEDURE getPrefixByAcdId'
     	set @Sql= 'if exists (select * from sys.procedures where name = N''getPrefixByAcdId'')
     begin
         DROP PROCEDURE getPrefixByAcdId;
@@ -101,8 +107,7 @@ set nocount off
 	
 		/* End script release */
 
-		/* Upgrade database version (use your own script to do it) */
-		exec ccsp_getVersion 'BD', @version
+		/* Upgrade database version (use your own script to do it) */		
 		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran

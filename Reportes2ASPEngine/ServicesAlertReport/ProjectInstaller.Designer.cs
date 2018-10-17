@@ -42,7 +42,6 @@
             this.serviceInstaller1.Description = "Send Email Error Report ";
             this.serviceInstaller1.DisplayName = "NuxibaAlertReportServices";
             this.serviceInstaller1.ServiceName = "NuxibaAlertReportServices";
-            this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 
             // ProjectInstaller
             // 

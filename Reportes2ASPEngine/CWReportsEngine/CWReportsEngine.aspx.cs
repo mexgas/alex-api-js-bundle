@@ -279,20 +279,21 @@ public partial class CWReportsEngine : System.Web.UI.Page
             string reportName;
 
             //Get report name
-            if (!string.IsNullOrEmpty(crmTemplateId) && !string.IsNullOrEmpty(templateId))
+            int processNew = process;
+            if (process == 9010
+                && (crmTemplateId != "" || templateId != "")
+                )
             {
-                reportName = MiddleWareReports.ReportFactory.getReportName(process + 1).GetType().ToString();
+                processNew++;
             }
-            else
-            {
-                reportName = MiddleWareReports.ReportFactory.getReportName(process).GetType().ToString();
 
-            }
+            reportName = MiddleWareReports.ReportFactory.getReportName(processNew).GetType().ToString();            
+
 
             //Create generic report   
             MiddleWareReports.GenericReport report;
             report = MiddleWareReports.GenericReport.createReport(reportName);
-            report.ReportName += !string.IsNullOrEmpty(crmTemplateId) && !string.IsNullOrEmpty(templateId) ? crmTemplateId + templateId : "";
+            report.ReportName += processNew != process ? crmTemplateId + templateId : "";
 
 
             //Set app culture

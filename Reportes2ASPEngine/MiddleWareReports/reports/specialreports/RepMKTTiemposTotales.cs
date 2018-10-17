@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MiddleWareReports.reports.specialreports
 {
-    class RepMKTAgentes: GenericReport
+    class RepMKTTiemposTotales : GenericReport
     {
     }
 }

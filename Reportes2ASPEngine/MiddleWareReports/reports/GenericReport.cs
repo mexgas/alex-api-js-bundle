@@ -120,6 +120,17 @@ namespace MiddleWareReports
             {
                 bool isTimePeriod = false;
                 TimePeriod t = TimePeriod.H;
+                switch (process)
+                {
+                    case 7150:
+                        parametersTotals["timePeriod"] = "M";
+                        break;
+                    case 7130:
+                        parametersTotals["timePeriod"] = "D";
+                        break;
+                    default:
+                        break;
+                }
                 if (parametersTotals["timePeriod"] != null && parametersTotals["timePeriod"].Length > 0)
                 {
                     isTimePeriod = TimePeriodGroup.isTimePeriod(parametersTotals["timePeriod"]);
@@ -251,25 +262,28 @@ namespace MiddleWareReports
             dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
-
+        
+            DataTable detailTableConvert = GetConvertColumnTime(detailTable);
+            DataTable totalsTableConvert = GetConvertColumnTime(totalsTable);
+            
             DataTable union = new DataTable();
-            DataColumn[] newcolumns = new DataColumn[detailTable.Columns.Count];
+            DataColumn[] newcolumns = new DataColumn[detailTableConvert.Columns.Count];
 
-            for (int i = 0; i < totalsTable.Columns.Count; i++)
+            for (int i = 0; i < totalsTableConvert.Columns.Count; i++)
             {
                 newcolumns[i] = new DataColumn(
-                totalsTable.Columns[i].ColumnName, totalsTable.Columns[i].DataType);
+                totalsTableConvert.Columns[i].ColumnName, totalsTableConvert.Columns[i].DataType);
             }
 
             union.Columns.AddRange(newcolumns);
             union.BeginLoadData();
 
             //Object to translate system columns
-            object[] systemTranslatedColumns = new object[detailTable.Columns.Count];
+            object[] systemTranslatedColumns = new object[detailTableConvert.Columns.Count];
 
-            foreach (DataRow row in detailTable.Rows)
+            foreach (DataRow row in detailTableConvert.Rows)
             {
-                for (int i = 0; i < detailTable.Columns.Count; i++)
+                for (int i = 0; i < detailTableConvert.Columns.Count; i++)
                 {
                     systemTranslatedColumns[i] = getSystemTranslatedColumns(detailTable.Columns[i].ColumnName.ToString(), row[i].ToString());
                 }
@@ -278,13 +292,52 @@ namespace MiddleWareReports
 
             systemTranslatedColumns = null;
 
-            foreach (DataRow row in totalsTable.Rows)
+            foreach (DataRow row in totalsTableConvert.Rows)
             {
                 union.LoadDataRow(row.ItemArray, true);
             }
 
             union.EndLoadData();
             return union;
+        }
+
+        private DataTable GetConvertColumnTime(DataTable detailTable)
+        {
+            DataTable detailTableConvert = detailTable.Clone();
+            convertedColumns = TranslatorHelper.convertColumns(detailTable.Columns);
+
+            foreach (DataColumn column in detailTableConvert.Columns)
+            {
+                if (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                {
+                    detailTableConvert.Columns[column.ColumnName].DataType = typeof(string);
+                }
+            }
+            foreach (DataRow dataRow in detailTable.Rows) //Add rows to the XML
+            {
+                DataRow dataRowNew = detailTableConvert.NewRow();
+                foreach (DataColumn column in detailTable.Columns)
+                {
+                    if (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time")) //Only return translated columns
+                    {
+                        string value = TranslatorHelper.parseDbValue(dataRow[column.ColumnName]);
+                        if (
+                            (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time"))
+                            && value != "")
+                        {
+                            value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                        }
+
+                        dataRowNew[column.ColumnName] = value;
+                    }
+                    else
+                    {
+                        dataRowNew[column.ColumnName] = dataRow[column.ColumnName];
+                    }
+                }
+                detailTableConvert.Rows.Add(dataRowNew);
+            }
+            return detailTableConvert;
         }
 
         /// <summary>
@@ -738,7 +791,12 @@ namespace MiddleWareReports
                 foreach (DataRow filterDataRow in catalog.Rows)
                 {
                     XmlElement childElement = xml.CreateElement("", xmlChildName, "");
-                    childElement.SetAttribute("description", filterDataRow["description"].ToString());
+                    string descriptionFilter = filterDataRow["description"].ToString();
+                    if (descriptionFilter.StartsWith("systemTranslated_"))
+                    {
+                        descriptionFilter = TranslatorHelper.getResource(descriptionFilter);
+                    }
+                    childElement.SetAttribute("description", descriptionFilter);
                     childElement.SetAttribute("id", filterDataRow["id"].ToString());
                     dbColumn = filterDataRow["dbColumn"].ToString();
                     element.AppendChild(childElement);
@@ -1121,6 +1179,17 @@ namespace MiddleWareReports
             string originalTimePeriodCol = "";
             bool isTimePeriod = false;
             int timeMinutes;
+            switch (process)
+            {
+                case 7150:
+                    paramValueList["timePeriod"] = "M";
+                    break;
+                case 7130:
+                    paramValueList["timePeriod"] = "D";
+                    break;
+                default:
+                    break;
+            }
             if (paramValueList["timePeriod"] != null && paramValueList["timePeriod"].Length > 0)
             {
                 isTimePeriod = TimePeriodGroup.isTimePeriod(paramValueList["timePeriod"]);

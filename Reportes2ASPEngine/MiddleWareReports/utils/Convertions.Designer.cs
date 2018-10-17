@@ -153,9 +153,9 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
-        public static string CallsperACDGroupD {
+        public static string avrAnswer {
             get {
-                return ResourceManager.GetString("CallsperACDGroupD", resourceCulture);
+                return ResourceManager.GetString("avrAnswer", resourceCulture);
             }
         }
         
@@ -207,6 +207,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string maxDelay {
+            get {
+                return ResourceManager.GetString("maxDelay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string maxTQueueCalls {
             get {
                 return ResourceManager.GetString("maxTQueueCalls", resourceCulture);
@@ -219,6 +228,15 @@ namespace MiddleWareReports {
         public static string maxTQueueChats {
             get {
                 return ResourceManager.GetString("maxTQueueChats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string MessageTime {
+            get {
+                return ResourceManager.GetString("MessageTime", resourceCulture);
             }
         }
         
@@ -351,6 +369,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string tACW {
+            get {
+                return ResourceManager.GetString("tACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string tAgent {
             get {
                 return ResourceManager.GetString("tAgent", resourceCulture);
@@ -459,6 +486,24 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string tCliente {
+            get {
+                return ResourceManager.GetString("tCliente", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tDescon {
+            get {
+                return ResourceManager.GetString("tDescon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string tdialog {
             get {
                 return ResourceManager.GetString("tdialog", resourceCulture);
@@ -489,6 +534,78 @@ namespace MiddleWareReports {
         public static string tfocus {
             get {
                 return ResourceManager.GetString("tfocus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoACW {
+            get {
+                return ResourceManager.GetString("TiempoACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoDispo {
+            get {
+                return ResourceManager.GetString("TiempoDispo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoLlamadoAgente {
+            get {
+                return ResourceManager.GetString("TiempoLlamadoAgente", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoPromACD {
+            get {
+                return ResourceManager.GetString("TiempoPromACD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoPromACW {
+            get {
+                return ResourceManager.GetString("TiempoPromACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoPromReten {
+            get {
+                return ResourceManager.GetString("TiempoPromReten", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoPromRing {
+            get {
+                return ResourceManager.GetString("TiempoPromRing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TiempoSalidaExt {
+            get {
+                return ResourceManager.GetString("TiempoSalidaExt", resourceCulture);
             }
         }
         
@@ -543,6 +660,24 @@ namespace MiddleWareReports {
         public static string tlog {
             get {
                 return ResourceManager.GetString("tlog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tLogout {
+            get {
+                return ResourceManager.GetString("tLogout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tManual {
+            get {
+                return ResourceManager.GetString("tManual", resourceCulture);
             }
         }
         
@@ -651,6 +786,51 @@ namespace MiddleWareReports {
         public static string tPromACW {
             get {
                 return ResourceManager.GetString("tPromACW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TPromDispon {
+            get {
+                return ResourceManager.GetString("TPromDispon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tPromElimCola {
+            get {
+                return ResourceManager.GetString("tPromElimCola", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tPromRetention {
+            get {
+                return ResourceManager.GetString("tPromRetention", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TPromRing {
+            get {
+                return ResourceManager.GetString("TPromRing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string tPromSalidaExt {
+            get {
+                return ResourceManager.GetString("tPromSalidaExt", resourceCulture);
             }
         }
         

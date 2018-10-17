@@ -7,10 +7,10 @@ Author: Miguel Trejo
 Date: 2018/03/20
 Description:
 **********************************************************************************************
-CW-943 - Etiquetas en Portugués
+CW-2393 - Etiquetas en Portugués
 **********************************************************************************************
 Database: ccReportsRia
-Required version: 50
+Required version: 60
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -26,7 +26,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =50
+set @version =61
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
@@ -34,12 +34,8 @@ if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
 
-	set @process = 'CW-943 Etiquetas en Portugués GetReportMenus'
+	set @process = 'CW-2393 Etiquetas en Portugués GetReportMenus'
     	set @Sql= 'Alter PROCEDURE [dbo].[GetReportMenus]
---@userId = 10,@activeChat = 1,
---@activeAVRS = 1,
---@activeEmail =1,
---@activeTwitter =1
 @userId int,
 @activeChat tinyint,
 @activeAVRS tinyint,
@@ -100,7 +96,7 @@ drop table #tempCCMenusUser
 end'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués SaveReportTemplates'
+		set @process = 'CW-2393 Etiquetas en Portugués SaveReportTemplates'
     	set @Sql= 'ALTER PROCEDURE [dbo].[SaveReportTemplates] @userId int, @process int, @parameters varchar(max)
 AS
 BEGIN
@@ -166,7 +162,7 @@ select 0
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués'
+		set @process = 'CW-2393 Etiquetas en Portugués'
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
 @action as tinyint,
 @from as datetime = null,
@@ -226,7 +222,7 @@ WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués'
+		set @process = 'CW-2393 Etiquetas en Portugués'
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
 @action as tinyint,
 @from as datetime = null,
@@ -290,7 +286,7 @@ WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués'
+		set @process = 'CW-2393 Etiquetas en Portugués'
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
 @action as tinyint,
 @from as datetime = null,
@@ -354,7 +350,7 @@ BEGIN
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués'
+		set @process = 'CW-2393 Etiquetas en Portugués'
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSAgent]		
 @action as tinyint,
 @from as datetime = null,
@@ -414,7 +410,7 @@ BEGIN
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-943 Etiquetas en Portugués'
+		set @process = 'CW-2393 Etiquetas en Portugués'
     	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]
 @action as tinyint,
 @from as datetime = null,
@@ -472,84 +468,7 @@ BEGIN
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 set nocount off
 END'
-		EXEC(@Sql)
-
-		set @process = 'CW-943 Etiquetas en Portugués'
-    	set @Sql= 'ALTER procedure [dbo].[ccsp_getVersion]
-@Module varchar(3) = null,
-@Version int = 0 output
-as
-set nocount on
-declare @Idioma bit
-select @Idioma = cast(valor as bit) from ccSettings where setting_id = 23
-if upper(isnull(@Module, '''')) not in (''BD'', ''REP'', ''ALL'')
- begin
-	select ''-2'' ID, case @Idioma when 1 then ''ERROR. Invalid module''
-	when 2 then ''ERRO. Módulo inválido''
-	else ''ERROR. Invalid Module'' end [Description]
-	return(0)
- end
-if @Module = ''ALL''
- begin
-	select valor Ver_BD_REP from ccSettings where setting_id = 24
-	return(0)
- end
-declare @nVersion varchar(30)
-select @nVersion = cast(valor as varchar(15)) from ccSettings where setting_id = 24
-BEGIN TRY
-	declare @version_1 varchar(15), @version_2 varchar(9)
-	set @version_1 = substring(@nVersion, 1, charindex(''.'', @nVersion)-1)
-	set @nVersion = substring(@nVersion, charindex(''.'', @nVersion) + 1, len(@nVersion))
-	set @version_2 = @nVersion
-END TRY
-BEGIN CATCH
-	select ''-1'' ID, ERROR_MESSAGE() [Description]
-	return(0)
-END CATCH
-if isnull(@Version, 0) = 0
- begin
-	select @version = cast(case upper(@Module) when ''BD'' then @version_1
-	else @version_2 end as int)
-	select @version Version
-	return(@version)
- end
-if upper(@Module) = ''BD'' and (@Version <= cast(@version_1 as int) or (@Version - cast(@version_1 as int))>1)
- begin
-	select ''-3'' ID, case @Idioma when 1
-	then ''ERROR. Invalid version for DB current version: '' + @version_1 
-	when 2 then ''ERRO. Versão inválida para BD, versão atual: '' + @version_1 
-	else ''ERROR. Versión no válida para BD, versión actual: '' + @version_1
-	end [Description]
-	return(0)
- end
-if @Version <= cast(case upper(@Module) when ''BD'' then @version_1
-else @version_2 end as int)
- begin
-	select ''-3'' ID, case @Idioma when 1
-	then ''ERROR. Invalid version for '' + @Module + ''. Current version: '' +
-	 case upper(@Module) when ''BD'' then @version_1 else @version_2 end
-	 when 2 then ''ERRO. Versão inválida para '' + @Module + ''. Versão atual: '' +
-	 case upper(@Module) when ''BD'' then @version_1 else @version_2 end
-	else ''ERROR. Versión no válida para '' + @Module + ''. Versión actual: '' +
-	 case upper(@Module) when ''BD'' then @version_1 else @version_2 end
-	end [Description]
-	return(0)
- end
-if upper(@Module) = ''BD'' set @version_1 = @Version
-else set @version_2 = @Version
-set @nVersion = @version_1 + ''.'' + @version_2 
-update ccSettings set valor = @nVersion where setting_id = 24
-if @@rowcount = 1
-	select ''0'' ID, ''Actualizado a version: '' + @nVersion [Description]
-else
-	select ''-4'' ID, case @Idioma when 1 
-	then ''ERROR occurred while upgrading to version:'' + @nVersion
-	when 2 then ''ERRO encontrado ao atualizar a versão '' + @nVersion
-	else ''ERROR generado al actualizar a versión '' + @nVersion
-	end [Description]
-return (0)
-set nocount off'
-		EXEC(@Sql)
+		EXEC(@Sql)		
 
 		 if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

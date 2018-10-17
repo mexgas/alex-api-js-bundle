@@ -33,339 +33,40 @@ exec @actualVersion = ccsp_getVersion 'BD'
 if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
+		
+		set @process = 'CW-2393 add translate media'
+    	set @Sql= 'if not  exists(select * from TranslatedReports where id=8062)
+	insert into TranslatedReports values(8062,''media'')
 
-	set @process = 'CW-2393 Etiquetas en Portugués GetReportMenus'
-    	set @Sql= 'Alter PROCEDURE [dbo].[GetReportMenus]
-@userId int,
-@activeChat tinyint,
-@activeAVRS tinyint,
-@activeCRM tinyint=0,
-@activeEmail tinyint=0,
-@activeTwitter tinyint=0
-AS
-BEGIN
-select menu_id,
--- Se modificó la función substring para que muestre solo las etiquetas que se encuentran entre
--- los dos Pipes "|    |" 
--- En la primer linea se busca el primer "|" y busca hasta el final de la cadena
--- en la segunda linea quita los caracteres que ni pertenecen a lo seleccionado
-	substring(menu_descrip, charindex(''|'', menu_descrip)+1, charindex(''|'', menu_descrip,
-							charindex(''|'', menu_descrip)+1)-charindex(''|'', menu_descrip)-1)as menu_descrip,
-	--substring(menu_descrip, charindex(''|'', menu_descrip) + 1, len(menu_descrip)) as menu_descrip,
-	nullif(parent,menu_id) as parent,Nivel,ordengral,release
-	into #tempCCMenus
-	from ccMenus with(nolock)
-	where type = 3 and menu_id >= 2000 and(
-		(menu_id not in (
-		3130,3131,3132,3133,3134,3135,3136,
-		8050,8060,8061,8062,8063,8070,8071,8072,8080,
-		9000,9010,
-		10000,10010,10020,10030,10040,
-		11000,11010,11020,11030,11040
-		))
-		or  (@activeChat = 1 and menu_id in (3130,3131,3132,3133,3134,3135,3136))
-		or  (@activeAVRS = 1 and menu_id in (8050,8060,8061,8062,8063,8070,8071,8072,8080) )
-		or  (@activeCRM = 1 and menu_id in (9000,9010) )
-		or  (@activeEmail = 1 and menu_id in (10000,10010,10020,10030,10040) )
-		or (@activeTwitter = 1 and menu_id in (11000,11010,11020,11030,11040))
-		)
-		order by menu_id
-;WITH ccMenusUserRec(Nivel, menu_descrip, menu_id, ordengral, parent,release)
-AS
-(
-	select
-		distinct b.Nivel as Nivel,
-		b.menu_descrip as menu_descrip,
-		b.menu_id as menu_id,
-		b.ordengral as ordengral,
-		b.parent as parent,b.release
-		from #tempCCMenus as b
-		inner join ccMenuUser as a with(nolock) on a.id_menu = b.menu_id and a.id_User = @userId and b.menu_id<>b.parent and a.type = 3
-	UNION ALL
---RECURSIViDAD
-	select a.Nivel, a.menu_descrip, a.menu_id, a.ordengral, a.parent,a.release
-		from #tempCCMenus a inner join ccMenusUserRec b on a.menu_id=b.parent
-)
-select distinct Nivel,menu_descrip,menu_id,ordengral,parent,release into #tempCCMenusUser from ccMenusUserRec order by menu_id
-select distinct A.Nivel, A.menu_descrip, A.menu_id, A.ordengral,5 filtersType,A.release from #tempCCMenusUser A
-where  menu_id not in
-	(select distinct parent from  #tempCCMenus where Nivel=''C'' and parent not in (select distinct  A.parent from  #tempCCMenusUser A where A.Nivel=''C''))
-order by menu_id
-drop table #tempCCMenus
-drop table #tempCCMenusUser
-end'
+if not  exists(select * from TranslatedReports where id=8063)
+	insert into TranslatedReports values(8063,''media'')
+
+if not  exists(select * from TranslatedReports where id=8072)
+	insert into TranslatedReports values(8072,''media'')
+
+if not  exists(select * from TranslatedReports where id=8064)
+	insert into TranslatedReports values(8064,''media'')'
 		EXEC(@Sql)
 
-		set @process = 'CW-2393 Etiquetas en Portugués SaveReportTemplates'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[SaveReportTemplates] @userId int, @process int, @parameters varchar(max)
-AS
-BEGIN
-DECLARE @reportName varchar(255)
-DECLARE @id int
-DECLARE @max int
-DECLARE @idReport int
-select @max = 10
-if exists(select *
-	from ccTemplates
-	where user_Id = @userId)
-begin
-select @id = max(id) + 1
-from ccTemplates
-where user_Id = @userId
-end
-else
-begin
-select @id = 1
-end
-select @reportName = substring(menu_descrip, charindex(''|'', menu_descrip)+1, charindex(''|'', menu_descrip,
-				charindex(''|'', menu_descrip)+1)-charindex(''|'', menu_descrip)-1)
---substring(menu_descrip, charindex(''|'', menu_descrip) + 1, len(menu_descrip))
-from ccMenus
-where menu_id = @process
-if not exists (select * from ccTemplates where user_Id = @userId and reportName = @reportName)
-begin
-if (@id <= @max)
-	begin
-		update ccTemplates
-		set id = id + 1
-		where user_Id = @userId
-		insert into ccTemplates
-		values (1, @userId, replace(@parameters,'','',''|''), @reportName, getdate())
-	end
-else
-	begin
-		delete ccTemplates
-		where user_Id = @userId
-		and id = @max
-		update ccTemplates
-		set id = id + 1
-		where user_Id = @userId
-		insert into ccTemplates
-		values (1, @userId, replace(@parameters,'','',''|''), @reportName, getdate())
-	end
-end
-else
-begin
-select @idReport = id
-from cctemplates
-where user_Id = @userId
-and reportName = @reportName
-update cctemplates
-set id = id + 1
-where id < @idReport
-update cctemplates
-set id = 1, parameters = replace(@parameters,'','',''|''), date = GETDATE()
-where user_Id = @userId
-and reportName = @reportName
-end
-select 0
-END'
-		EXEC(@Sql)
-
-		set @process = 'CW-2393 Etiquetas en Portugués'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-declare @idioma as tinyint
-select @idioma = valor from ccSettings where setting_id=23
-if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()	
-if @action = 1
-BEGIN
----Before insert delete first  table dbo.RepAVRSSupervisor 
-DELETE FROM dbo.RepAVRSSupervisor with(rowlock) 
-where date >= @from AND date < @to
-INSERT INTO dbo.RepAVRSSupervisor
---By Supervisor
-select
-	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
-	a.User_id,
-	a.Login,
-	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
-	f.total_forma AS scores, 
-	f.total_forma AS scores, 
-	f.total_forma AS scores,
-	s.User_id,
-	s.Login,
-	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
-	f.id_formato,
-	k.nombre,		
-	f.id_grabacion,
-	(case f.tipo 
-		when ''1'' then CASE WHEN @idioma = 0 THEN ''Grabaciones'' WHEN @idioma = 2 THEN ''Gravações'' ELSE ''Recordings'' END 
-		when ''2'' then ''Chat''
-	end) as Medio,	
-	f.cam_id as CamId,
-	f.tipo_llamada as TipoLlamada,	
-	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
-		AS Cam,		 
-	YEAR(f.fecha_calif) AS [year], 
-	MONTH(f.fecha_calif) AS [month], 
-	DAY(f.fecha_calif) AS [day], 
-	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
-	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
-from dbo.RIA_FORMACALIF f
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
-INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
-							FROM dbo.RIA_FORMATOS
-							WHERE activo = 1
-							GROUP BY id_formato,nombre) as t 
-							ON t.id_formato= f.id_formato
-INNER JOIN dbo.RIA_FORMATOS k ON k.id_formato=f.id_formato
-left join cccamps AS e ON f.cam_id = e.cam_id
-left join ccinbound AS u ON f.cam_id = u.Inbound_id
-WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
-END'
-		EXEC(@Sql)
-
-		set @process = 'CW-2393 Etiquetas en Portugués'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-declare @idioma as tinyint
-select @idioma = valor from ccSettings where setting_id=23
-if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-if @action = 1
-BEGIN
----Before insert delete first  table dbo.RepAVRSSection 
-DELETE FROM dbo.RepAVRSSection with(rowlock)
-where date >= @from AND date < @to
-INSERT INTO dbo.RepAVRSSection
-select
-	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
-	a.User_id,
-	a.Login,
-	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
-	s.User_id,
-	s.Login,
-	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
-	f.id_formato,
-	t.nombre,
-	c.id_concepto,
-	c.con_descripcion,
-	r.peso AS scores, 
-	r.peso as avgDisposition,
-	r.peso as avgDisposition,
-	r.peso as avgDisposition,
-	f.id_grabacion,
-	(case f.tipo 
-		when ''1'' then CASE WHEN @idioma = 0 THEN ''Grabaciones'' WHEN @idioma = 2 THEN ''Gravações'' ELSE ''Recordings'' END 
-		when ''2'' then ''Chat''
-	end) as Medio,	
-	f.cam_id as CamId,
-	f.tipo_llamada as TipoLlamada,	
-	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
-		AS Cam,
-		f.id_forma,		 
-	YEAR(f.fecha_calif) AS [year], 
-	MONTH(f.fecha_calif) AS [month], 
-	DAY(f.fecha_calif) AS [day], 
-	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
-	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
-from RIA_RESULTADOSFORMA r
-INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
-INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
-							FROM dbo.RIA_FORMATOS
-							WHERE activo = 1 and tipo=1
-							GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
-INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
-INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
-left join cccamps AS e ON f.cam_id = e.cam_id
-left join ccinbound AS u ON f.cam_id = u.Inbound_id
-WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
-END'
-		EXEC(@Sql)
-
-		set @process = 'CW-2393 Etiquetas en Portugués'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-declare @idioma as tinyint
-select @idioma = valor from ccSettings where setting_id=23
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-if @action = 1
-BEGIN
-	---Before insert delete first  table dbo.RepAVRRateDetail 
-	DELETE FROM dbo.RepAVRSRateDetail with(rowlock)
-	where date >= @from AND date < @to
-	INSERT INTO dbo.RepAVRSRateDetail
-	select
-		DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
-		a.User_id,
-		a.Login,
-		(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
-		s.User_id,
-		s.Login,
-		(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
-		f.id_grabacion,
-		(case f.tipo 
-			when ''1'' then CASE WHEN @idioma = 0 THEN ''Grabaciones'' WHEN @idioma = 2 THEN ''Gravações'' ELSE ''Recordings'' END 
-			when ''2'' then ''Chat''
-		end) as Medio,
-		t.id_formato,
-		t.nombre,
-		c.con_descripcion,
-		p.enunciado_pregunta,
-		r.etiquetas,
-		r.peso as avgDisposition,	
-		r.peso as avgDisposition,	
-		r.peso as avgDisposition,
-		f.cam_id as CamId,
-		f.tipo,
-		(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
-			AS Cam,
-		r.id_forma,
-		YEAR(f.fecha_calif) AS [year], 
-		MONTH(f.fecha_calif) AS [month], 
-		DAY(f.fecha_calif) AS [day], 
-		CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
-		CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
-	from RIA_RESULTADOSFORMA r
-	INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-	INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
-	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
-								FROM dbo.RIA_FORMATOS
-								WHERE activo = 1 and tipo=1
-								GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
-	INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
-	INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
-	left join cccamps AS e ON f.cam_id = e.cam_id
-	left join ccinbound AS u ON f.cam_id = u.Inbound_id
-	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
-END'
-		EXEC(@Sql)
-
-		set @process = 'CW-2393 Etiquetas en Portugués'
+		set @process = 'CW-2393 Alter SP ccspRepAVRSAgent'
     	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSAgent]		
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
 AS
-declare @idioma as tinyint
-select @idioma = valor from ccSettings where setting_id=23
+
 if @from is null
 	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
+if @to is null
+	select @to = getdate()
+
 if @action = 1
 BEGIN
+
 	---Before insert delete first  table dbo.RepAVRSAgent 
 	DELETE FROM dbo.RepAVRSAgent with(rowlock)
 	where date >= @from AND date < @to
+
 	INSERT INTO dbo.RepAVRSAgent
 	--By Agent		
 	select
@@ -382,10 +83,12 @@ BEGIN
 		f.id_formato,
 		k.nombre,		
 		f.id_grabacion,
-		(case f.tipo 
-			when ''1'' then CASE WHEN @idioma = 0 THEN ''Grabaciones'' WHEN @idioma = 2 THEN ''Gravações'' ELSE ''Recordings'' END 
-			when ''2'' then ''Chat''
-		end) as Medio,	
+		case f.tipo 
+			when 1 then ''systemTranslated_Recording'' 
+			when 2 then ''systemTranslated_Chat''
+			when 3 then ''systemTranslated_Email''
+			when 3 then ''systemTranslated_Twitter''
+		end as Medio,		
 		f.cam_id as CamId,
 		f.tipo_llamada as TipoLlamada,	
 		(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
@@ -410,65 +113,451 @@ BEGIN
 END'
 		EXEC(@Sql)
 
-		set @process = 'CW-2393 Etiquetas en Portugués'
+		set @process = 'CW-2393 Alter SP ccspRepAVRSDetailChat'
+    	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSDetailChat]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+set nocount on
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN		
+	---Before insert delete first table dbo.RepAVRSQuestionDetail 
+	DELETE FROM dbo.RepAVRSDetailChat with(rowlock)
+	where date >= @from AND date < @to
+
+	INSERT INTO dbo.RepAVRSDetailChat
+
+		select
+		DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+		a.User_id,
+		a.Login,
+		(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+		t.id_formato,
+		t.nombre,
+		p.enunciado_pregunta,
+		r.etiquetas,
+		r.peso as avgDisposition,
+		i.Inbound_id AS inboundId,
+		i.descripcion AS inbound	
+	from RIA_RESULTADOSFORMA_CHAT r
+	INNER JOIN dbo.RIA_FORMACALIF_CHAT f ON f.id_forma = r.id_forma
+	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+								FROM dbo.RIA_FORMATOS
+								WHERE activo = 1 and tipo=2
+								GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
+	INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+	INNER JOIN dbo.ccriachats c ON f.id_chat=c.chatId
+	INNER JOIN ccinbound AS i ON c.inboundId = i.Inbound_id
+	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+				
+set nocount off
+END'
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSSupervisor'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()	
+
+if @action = 1
+BEGIN
+---Before insert delete first  table dbo.RepAVRSSupervisor 
+DELETE FROM dbo.RepAVRSSupervisor with(rowlock) 
+where date >= @from AND date < @to
+
+INSERT INTO dbo.RepAVRSSupervisor
+--By Supervisor
+select
+	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+	a.User_id,
+	a.Login,
+	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+	f.total_forma AS scores, 
+	f.total_forma AS scores, 
+	f.total_forma AS scores,
+	s.User_id,
+	s.Login,
+	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+	f.id_formato,
+	k.nombre,		
+	f.id_grabacion,
+	case f.tipo 
+		when 1 then ''systemTranslated_Recording'' 
+		when 2 then ''systemTranslated_Chat''
+		when 3 then ''systemTranslated_Email''
+		when 3 then ''systemTranslated_Twitter''
+	end as Medio,	
+	f.cam_id as CamId,
+	f.tipo_llamada as TipoLlamada,	
+	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+		AS Cam,		 
+	YEAR(f.fecha_calif) AS [year], 
+	MONTH(f.fecha_calif) AS [month], 
+	DAY(f.fecha_calif) AS [day], 
+	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
+	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
+from dbo.RIA_FORMACALIF f
+INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+							FROM dbo.RIA_FORMATOS
+							WHERE activo = 1
+							GROUP BY id_formato,nombre) as t 
+							ON t.id_formato= f.id_formato
+INNER JOIN dbo.RIA_FORMATOS k ON k.id_formato=f.id_formato
+left join cccamps AS e ON f.cam_id = e.cam_id
+left join ccinbound AS u ON f.cam_id = u.Inbound_id
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+
+END'
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestion'
     	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
 AS
 set nocount on
-declare @idioma as tinyint
-select @idioma = valor from ccSettings where setting_id=23
+
+
 if @from is null
 	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
+if @to is null
+	select @to = getdate()
+
+if @action = 1 BEGIN		
+---Before insert delete first table dbo.RepAVRSQuestionDetail 
+DELETE FROM dbo.RepAVRSQuestion with(rowlock)
+where date >= @from AND date < @to
+
+INSERT INTO dbo.RepAVRSQuestion
+
+select
+	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+	a.User_id,
+	a.Login,
+	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+	s.User_id,
+	s.Login,
+	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+	t.id_formato,
+	t.nombre,
+	c.id_concepto,
+	c.con_descripcion,
+	p.id_pregunta,
+	p.enunciado_pregunta,
+	r.peso as avgDisposition,
+	r.peso as avgDisposition,
+	r.peso as avgDisposition,
+	f.id_grabacion,
+	case f.tipo 
+		when 1 then ''systemTranslated_Recording'' 
+		when 2 then ''systemTranslated_Chat''
+		when 3 then ''systemTranslated_Email''
+		when 3 then ''systemTranslated_Twitter''
+	end as Medio,		
+	f.cam_id as CamId,
+	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+		AS Cam	
+from RIA_RESULTADOSFORMA r
+INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+							FROM dbo.RIA_FORMATOS
+							WHERE activo = 1 and tipo=1
+							GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
+INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+left join cccamps AS e ON f.cam_id = e.cam_id
+left join ccinbound AS u ON f.cam_id = u.Inbound_id
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+				
+set nocount off
+END'
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestionChat'
+    	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestionChat]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+set nocount on
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
 if @action = 1
 BEGIN		
 	---Before insert delete first table dbo.RepAVRSQuestionDetail 
-	DELETE FROM dbo.RepAVRSQuestion with(rowlock)
+	DELETE FROM dbo.RepAVRSQuestionChat with(rowlock)
 	where date >= @from AND date < @to
-	INSERT INTO dbo.RepAVRSQuestion
-	select
+
+	INSERT INTO dbo.RepAVRSQuestionChat
+
+		select
 		DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
 		a.User_id,
 		a.Login,
 		(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
-		s.User_id,
-		s.Login,
-		(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
 		t.id_formato,
 		t.nombre,
-		c.id_concepto,
-		c.con_descripcion,
 		p.id_pregunta,
 		p.enunciado_pregunta,
 		r.peso as avgDisposition,
 		r.peso as avgDisposition,
 		r.peso as avgDisposition,
-		f.id_grabacion,
-		(case f.tipo 
-			when ''1'' then CASE WHEN @idioma = 0 THEN ''Grabaciones'' WHEN @idioma = 2 THEN ''Gravações'' ELSE ''Recordings'' END 
-			when ''2'' then ''Chat''
-		end) as Medio,	
-		f.cam_id as CamId,
-		(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
-			AS Cam	
-	from RIA_RESULTADOSFORMA r
-	INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+		i.Inbound_id AS inboundId,
+		i.descripcion AS inbound	
+	from RIA_RESULTADOSFORMA_CHAT r
+	INNER JOIN dbo.RIA_FORMACALIF_CHAT f ON f.id_forma = r.id_forma
 	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-	INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
 	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 								FROM dbo.RIA_FORMATOS
-								WHERE activo = 1 and tipo=1
+								WHERE activo = 1 and tipo=2
 								GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
 	INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
-	INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
-	left join cccamps AS e ON f.cam_id = e.cam_id
-	left join ccinbound AS u ON f.cam_id = u.Inbound_id
+	INNER JOIN dbo.ccriachats c ON f.id_chat=c.chatId
+	INNER JOIN ccinbound AS i ON c.inboundId = i.Inbound_id
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+					
 set nocount off
 END'
-		EXEC(@Sql)		
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestionDetail'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSQuestionDetail]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+set nocount on
+
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN		
+---Before insert delete first table dbo.RepAVRSQuestionDetail 
+DELETE FROM dbo.RepAVRSQuestionDetail with(rowlock)
+where date >= @from AND date < @to;
+
+WITH reportQaEvaluation (Fecha,agentId, LoginAgent, Agent,SupId,LoginSup,Supervisor,formatId,nameTemplate,score,Medio)
+AS
+(
+select
+f.fecha_calif Fecha,
+a.User_id agentId,
+a.Login as LoginAgent,  
+(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) Agent, 
+s.User_id as SupId,
+s.Login as LoginSup,
+(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+t.id_formato formatId,
+t.nombre as nameTemplate,
+SUM (r.peso) as score,
+f.tipo as medio
+		
+
+from RIA_RESULTADOSFORMA r
+INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre
+FROM dbo.RIA_FORMATOS
+WHERE activo = 1 and tipo=1
+GROUP BY id_formato,nombre) as t ON t.id_formato = f.id_formato
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to	
+GROUP BY f.fecha_calif,a.User_id,
+(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres),a.Login,(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres), s.Login, t.nombre,f.tipo,s.User_id,t.id_formato
+)
+insert into RepAVRSQuestionDetail
+select Fecha,agentId, LoginAgent, Agent, SupId,LoginSup,Supervisor,formatId,nameTemplate,score,
+(case Medio 
+when 1 then ''systemTranslated_Recording'' 
+when 2 then ''systemTranslated_Chat''
+when 3 then ''systemTranslated_Email''
+when 3 then ''systemTranslated_Twitter''
+end) as Medio,	
+		
+YEAR(Fecha) AS [year], 
+MONTH(Fecha) AS [month], 
+DAY(Fecha) AS [day],
+DATEPART(HOUR,Fecha) AS [hour], 
+DATEPART(MINUTE,Fecha) AS [minute]
+from reportQaEvaluation
+
+
+set nocount off
+END	
+			
+'
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSRateDetail'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN
+---Before insert delete first  table dbo.RepAVRRateDetail 
+DELETE FROM dbo.RepAVRSRateDetail with(rowlock)
+where date >= @from AND date < @to
+
+INSERT INTO dbo.RepAVRSRateDetail
+
+select
+	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+	a.User_id,
+	a.Login,
+	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+	s.User_id,
+	s.Login,
+	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+	f.id_grabacion,
+	case f.tipo 
+		when 1 then ''systemTranslated_Recording'' 
+		when 2 then ''systemTranslated_Chat''
+		when 3 then ''systemTranslated_Email''
+		when 3 then ''systemTranslated_Twitter''
+	end as Medio,	
+	t.id_formato,
+	t.nombre,
+	c.con_descripcion,
+	p.enunciado_pregunta,
+	r.etiquetas,
+	r.peso as avgDisposition,	
+	r.peso as avgDisposition,	
+	r.peso as avgDisposition,
+	f.cam_id as CamId,
+	f.tipo,
+	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+		AS Cam,
+	r.id_forma,
+	YEAR(f.fecha_calif) AS [year], 
+	MONTH(f.fecha_calif) AS [month], 
+	DAY(f.fecha_calif) AS [day], 
+	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
+	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
+from RIA_RESULTADOSFORMA r
+INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+							FROM dbo.RIA_FORMATOS
+							WHERE activo = 1 and tipo=1
+							GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
+INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+left join cccamps AS e ON f.cam_id = e.cam_id
+left join ccinbound AS u ON f.cam_id = u.Inbound_id
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+
+END
+			'
+		EXEC(@Sql)
+
+		set @process = 'CW-2393 Alter SP ccspRepAVRSSection'
+    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN
+---Before insert delete first  table dbo.RepAVRSSection 
+DELETE FROM dbo.RepAVRSSection with(rowlock)
+where date >= @from AND date < @to
+
+INSERT INTO dbo.RepAVRSSection
+				
+select
+	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+	a.User_id,
+	a.Login,
+	(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
+	s.User_id,
+	s.Login,
+	(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor,
+	f.id_formato,
+	t.nombre,
+	c.id_concepto,
+	c.con_descripcion,
+	r.peso AS scores, 
+	r.peso as avgDisposition,
+	r.peso as avgDisposition,
+	r.peso as avgDisposition,
+	f.id_grabacion,
+	case f.tipo 
+		when 1 then ''systemTranslated_Recording'' 
+		when 2 then ''systemTranslated_Chat''
+		when 3 then ''systemTranslated_Email''
+		when 3 then ''systemTranslated_Twitter''
+	end as Medio,		
+	f.cam_id as CamId,
+	f.tipo_llamada as TipoLlamada,	
+	(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END)
+		AS Cam,
+		f.id_forma,		 
+	YEAR(f.fecha_calif) AS [year], 
+	MONTH(f.fecha_calif) AS [month], 
+	DAY(f.fecha_calif) AS [day], 
+	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
+	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
+from RIA_RESULTADOSFORMA r
+INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
+							FROM dbo.RIA_FORMATOS
+							WHERE activo = 1 and tipo=1
+							GROUP BY id_formato,nombre) as t ON t.id_formato= f.id_formato
+INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+left join cccamps AS e ON f.cam_id = e.cam_id
+left join ccinbound AS u ON f.cam_id = u.Inbound_id
+WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
+
+END'
+		EXEC(@Sql)
+
+			
 
 		 if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

@@ -39,6 +39,7 @@ namespace MiddleWareReports
 
             this.reportName = reportName;
             StringBuilder output = new StringBuilder();
+            
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
@@ -61,7 +62,19 @@ namespace MiddleWareReports
 
                 for (int i = 0; i < data.Columns.Count; i++)
                 {
-                    data.Columns[i].ColumnName = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+
+                    string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
+
+                    try
+                    {
+                        data.Columns[i].ColumnName = nameTranslated;
+                    }
+                    catch (Exception)
+                    {
+                        data.Columns[i].ColumnName = nameTranslated + i;
+                    }
+
+
                 }
 
                 foreach (string col in columnsNames)
@@ -152,11 +165,6 @@ namespace MiddleWareReports
                 {
                     value = row[col].ToString();
                     value = TranslatorHelper.parseDbValue(value);
-                    if (translate && convertedColumns[col] != null && value != "")
-                    {
-                        value = TranslatorHelper.formatTime(Convert.ToInt32(value));
-                    }
-
                     html.AppendLine(string.Format("<td class=\"b\">{0}</td>", value));
                 }
                 html.AppendLine("</tr>");

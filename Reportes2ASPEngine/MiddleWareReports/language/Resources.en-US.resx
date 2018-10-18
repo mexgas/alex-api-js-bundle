@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -2720,5 +2720,35 @@
   </data>
   <data name="tManual" xml:space="preserve">
     <value>Manual Calls Time</value>
+  </data>
+  <data name="AnswersCustomerSatisfactionSurvey" xml:space="preserve">
+    <value>Answers</value>
+  </data>
+  <data name="disconnectCause" xml:space="preserve">
+    <value>Carrier Status</value>
+  </data>
+  <data name="MessageTime" xml:space="preserve">
+    <value>Time on Message</value>
+  </data>
+  <data name="DCCustomer" xml:space="preserve">
+    <value>Carrier Status 2</value>
+  </data>
+  <data name="Origin" xml:space="preserve">
+    <value>Transfer Source</value>
+  </data>
+  <data name="systemTranslated_cellPhone" xml:space="preserve">
+    <value>Mobile</value>
+  </data>
+  <data name="systemTranslated_fijo" xml:space="preserve">
+    <value>Landline</value>
+  </data>
+  <data name="systemTranslated_interno" xml:space="preserve">
+    <value>Internal</value>
+  </data>
+  <data name="TipoTel" xml:space="preserve">
+    <value>Number Type</value>
+  </data>
+  <data name="TotalTimeDuration" xml:space="preserve">
+    <value>Transfer Length</value>
   </data>
 </root>

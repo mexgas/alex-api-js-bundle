@@ -308,14 +308,26 @@ namespace MiddleWareReports
             string partToTranslate;
             string partTraslated;
 
-            if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
-            {
-                partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
-                partToTranslate = columnName.Substring(columnName.LastIndexOf("_"));
+            partTraslated = TranslatorHelper.getResourceProperty(columnName, out isTranslated, false);
 
-                partTraslated = TranslatorHelper.getResourceProperty(partToTranslate, out isTranslated, false);
-                if (isTranslated)
-                    columnName = partNotToTranslate + partTraslated.Replace('_', ' ');
+            if (isTranslated)
+            {
+
+                columnName = partTraslated;
+            }
+
+            else
+            {
+
+                if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
+                {
+                    partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
+                    partToTranslate = columnName.Substring(columnName.LastIndexOf("_"));
+
+                    partTraslated = TranslatorHelper.getResourceProperty(partToTranslate, out isTranslated, false);
+                    if (isTranslated)
+                        columnName = partNotToTranslate + partTraslated.Replace('_', ' ');
+                }
             }
 
             return columnName;

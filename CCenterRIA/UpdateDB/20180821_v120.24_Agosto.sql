@@ -8,7 +8,7 @@ Author:
 		
 Date: 2018/08/21
 Description:
-
+Se modifica para eliminar las series
 Release  120.24_20180906
 
 Database: CCenterRia

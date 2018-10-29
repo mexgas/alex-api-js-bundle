@@ -1,15 +1,14 @@
-/*******************************/
+﻿/*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 
 /*
-Author: 
-		
-Date: 
+Author: Daniel Vega
+Date: 2018/10/29
 Description:
-
+	CW-2257
 Database: CCenterRia
-Required version: 
+Required version: 120.32
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -28,8 +27,8 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 120--**********actualizar a 119 sin fix
-set @versionfix = 22
+set @version = 120--**********actualizar a 120 sin fix
+set @versionfix = 34
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -39,13 +38,13 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 15
+
+if  @actualVersion = @version and  @actualVersionFix = 31
 	begin
 		begin tran
 		begin try
-		
 
-		set @process = 'CW-2257 Se agrega el setting 207 contraseña segura'
+	set @process = 'CW-2257 Se agrega el setting 207 contraseña segura'
         set @Sql= '
 		
 		if not exists(select * from ccSettings where setting_id = 207)
@@ -123,17 +122,19 @@ From ccUsers Where User_id=@UserID
 return(0)
 set nocount off   
     		'
-        EXEC(@Sql)  	
+    EXEC(@Sql)  	
 
 		 
 	
 
-				
+
+	
+	
+	
 		/* End script release */
 
-		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		exec ccsp_getVersion 'BDF', @versionFix 
+		/* Upgrade database version (use your own script to do it) */		
+		exec ccsp_getVersion 'BDF', @versionFix
 
 		commit tran
 		end try

@@ -50,7 +50,7 @@ if  @actualVersion = @version and  @actualVersionFix = 32
 		if not exists(select * from ccSettings where setting_id = 207)
 		begin
 		insert ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
-		values (207,1,''Habilita validaciones de contraseña segura para el admin'',1,''ADM'',
+		values (207,0,''Habilita validaciones de contraseña segura para el admin'',1,''ADM'',
 		''1 - en el admin la contraseña caduca cada 30 dias y tiene las validaciones de 1 caracter especial, 1 mayuscula, 1 numero y longitud minima de 8 caracteres'',
 		''Habilita contraseña segura'',1,''.*'')
 		end

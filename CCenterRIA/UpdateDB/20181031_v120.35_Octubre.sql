@@ -1,9 +1,15 @@
-﻿/*******************************/
+/*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 
 /*
+Author:Daniel Vega
+		
+Date: 
+Description:
 
+Database: CCenterRia
+Required version: 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -23,7 +29,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 120--**********actualizar a 119 sin fix
-set @versionfix = 32
+set @versionfix = 35
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -33,12 +39,22 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix = 31
+if  @actualVersion = @version and  @actualVersionFix >= 34
 	begin
 		begin tran
 		begin try
+			
 
-	set @process = 'CW-2028 Alter Column ccChatsNodeHistory.chatId is not null'
+		set @process = 'CW-1799 Version 120.25 Display error message on email service failure.'
+        set @Sql= '	if not exists(select * from ccSettings where setting_id=208) begin
+	--PT-->Exibir mensagem de erro na falha do serviço de e-mail.
+	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+	values(208,''0'',''Mostrar mensaje de error en falla del servicio de correo electrónico.'',1,''X'',''Mensaje cuando la carpeta compartida para leer o escribir un correo no tiene permisos''
+		,''Display error message on email service failure.'',1,''^[0-1]$'')
+end'
+        EXEC(@Sql)
+
+        set @process = 'CW-2028 Alter Column ccChatsNodeHistory.chatId is not null'
     set @Sql= 'ALTER TABLE ccChatsNodeHistory ALTER COLUMN chatId int NOT NULL'
     EXEC(@Sql)
 
@@ -389,15 +405,15 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
-    EXEC(@Sql)
-
-
+    EXEC(@Sql)      
 	
+
+				
 		/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */
-		exec ccsp_getVersion 'BD', @version
-		exec ccsp_getVersion 'BDF', @versionFix
+		--exec ccsp_getVersion 'BD', @version
+		exec ccsp_getVersion 'BDF', @versionFix 
 
 		commit tran
 		end try

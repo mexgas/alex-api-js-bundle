@@ -117,7 +117,7 @@ Nombres +'' ''+ isnull(ApellidoPaterno,'''') +'' ''+isnull(ApellidoMaterno,'''')
 (SELECT valor FROM ccSettings WHERE setting_id=8) [ADMServer],
 isnull(IDArea,0) ''AreaId'',
 @ver  ''ViewAvrs'', @changeRecDisposition  ''changeRecDisposition'',
-IIF (DATEDIFF(DAY,LastPasswordChange ,GETDATE()) > 30,1,0) passExpired
+CASE when DATEDIFF(DAY,@variable ,GETDATE()) >30 THEN 1 ELSE 0 END
 From ccUsers Where User_id=@UserID
 return(0)
 set nocount off   

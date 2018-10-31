@@ -41,15 +41,7 @@ select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASpli
 if  @actualVersion = @version and  @actualVersionFix = 25
 	begin
 		begin tran
-		begin try	
-
-	set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
-
-	set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
+		begin try		
 
 	set @process = 'CW-2167 -- DROP PROCEDURE ccsp_LoadGraphics'
     	set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_LoadGraphics'')

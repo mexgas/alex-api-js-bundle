@@ -148,54 +148,18 @@ if @actualVersion  in(@version,@version - 1) begin
 			end'
 		EXEC(@sql)
 
-		set @process = 'CW-2019 drop and create table RepInCallsDetail'
-		set @Sql= 'drop table [RepInCallsDetail]
-			create TABLE [dbo].[RepInCallsDetail](
-				[date] [datetime] NOT NULL,
-				[callid] [int] NOT NULL,
-				[inboundId] [smallint] NOT NULL,
-				[ACDGroup] [varchar](255) NOT NULL,
-				[callStatusId] [tinyint] NOT NULL,
-				[callStatus] [varchar](255) NOT NULL,
-				[dispositionId] [smallint] NOT NULL,
-				[disposition] [varchar](255) NOT NULL,
-				[subDispositionId] [smallint] NOT NULL,
-				[subDisposition] [varchar](255) NOT NULL,
-				[dnisId] [smallint] NOT NULL,
-				[dnis] [varchar](255) NOT NULL,
-				[userId] [smallint] NOT NULL,
-				[username] [varchar](100) NOT NULL,
-				[callKey] [varchar](255) NOT NULL,
-				[ANI] [varchar](255) NOT NULL,
-				[queueTime] [smallint] NOT NULL,
-				[xferTime] [smallint] NOT NULL,
-				[ringingTime] [smallint] NOT NULL,
-				[dialogTime] [smallint] NOT NULL,
-				[extension] [varchar](10) NOT NULL,
-				[agentName] [varchar](500) NOT NULL,
-				[whoHangUp] [varchar](255) NULL,
-				[mohTime] [smallint] NOT NULL,
-				[year] [int] NOT NULL,
-				[month] [int] NOT NULL,
-				[day] [int] NOT NULL,
-				[hour] [int] NOT NULL,
-				[minutes] [int] NOT NULL,
-				[provedorId] [smallint] NULL,
-				[provider] [varchar](30) NULL,
-				[trunk] [smallint] NULL,
-				[fileMoved] [nvarchar](100) NULL,
-				[twrapup] [smallint] NULL,
-				[AverageHandleTime] [smallint] NULL,
-				[Dato1] [varchar](100) NULL,
-				[Dato2] [varchar](100) NULL,
-				[Dato3] [varchar](100) NULL,
-				[Dato4] [varchar](100) NULL,
-				[Dato5] [varchar](100) NULL
-			) ON [PRIMARY]
-
-			ALTER TABLE [dbo].[RepInCallsDetail] ADD  DEFAULT ((0)) FOR [twrapup]
-			ALTER TABLE [dbo].[RepInCallsDetail] ADD  DEFAULT ((0)) FOR [AverageHandleTime]'
+		set @process = 'CW-2019 alter table RepInCallsDetail'
+		set @Sql= 'if not exists (select * from sys.columns where name = N''callid'' and Object_ID = Object_ID(N''RepInCallsDetail''))
+    begin
+        alter table [RepInCallsDetail]
+		add [callid] [int] NULL		
+    end'
 		EXEC(@Sql)
+
+		set @process = 'CW-2019 update RepInCallsDetail set callid=0 where callid is null'
+		set @Sql= 'update RepInCallsDetail set callid=0 where callid is null'
+		EXEC(@Sql)
+		
 		
 		set @process = 'CW-1290 -- Columna userName en RepInCallsDetail'
 		set @Sql= 'EXEC sp_RENAME ''RepInCallsDetail.username'', ''userName'', ''COLUMN'''
@@ -236,8 +200,8 @@ if @actualVersion  in(@version,@version - 1) begin
 				--Borrar lo que esta para no repetir
 				delete from RepInCallsDetail with(rowlock) where date >= @from AND date < @to
 
-				insert into RepInCallsDetail
-				select cal_inicio, cal_id, Inbound_id, '''' as Inbound, statusCall_id, '''' as statusCall, calif_id, '''' as calif, isnull(califSub_id,0), '''' as califSub,
+				insert into RepInCallsDetail(date,callid,inboundId,ACDGroup,callStatusId,callStatus,dispositionId,disposition,subDispositionId,subDisposition,dnisId,dnis,userId,userName,callKey,ANI,queueTime,xferTime,ringingTime,dialogTime,extension,agentName,whoHangUp,mohTime,year,month,day,hour,minutes,provedorId,provider,trunk,fileMoved,twrapup,AverageHandleTime,Dato1,Dato2,Dato3,Dato4,Dato5)
+				select cal_inicio,cal_id ,Inbound_id, '''' as Inbound, statusCall_id, '''' as statusCall, calif_id, '''' as calif, isnull(califSub_id,0), '''' as califSub,
 				dni_id, '''' as dni, user_id, '''' as agentName,
 				isnull(cal_key,''''), cal_ANI, cal_tWait, cal_tXfer, cal_tRing, cal_tDialog, cal_extension, '''',
 				case when a.cal_whoHung = 0 then ''systemTranslated_Client''
@@ -252,7 +216,7 @@ if @actualVersion  in(@version,@version - 1) begin
 				,ISNULL(tab.Dato2,'''') as Dato2
 				,ISNULL(tab.Dato3,'''') as Dato3
 				,ISNULL(tab.Dato4,'''') as Dato4
-				,ISNULL(tab.Dato5,'''') as Dato5
+				,ISNULL(tab.Dato5,'''') as Dato5				
 				from cccallsin a
 				left join ccoDialers di on di.dialer_id = a.cal_puerto
 				left join cstoProvedor prov on di.provedor_id = prov.provedor_id

@@ -39,7 +39,7 @@ select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
 
-if  @actualVersion = @version and  @actualVersionFix = 32
+if  @actualVersion = @version and  @actualVersionFix >= 32
 	begin
 		begin tran
 		begin try

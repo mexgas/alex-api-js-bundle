@@ -244,7 +244,7 @@
     <value>Answered</value>
   </data>
   <data name="AnsweredandTransferCalls" xml:space="preserve">
-    <value>Answered and Transfer Calls</value>
+    <value>Answered and Transferred Calls</value>
   </data>
   <data name="AnsweredCalls" xml:space="preserve">
     <value>Answered Calls</value>
@@ -298,7 +298,7 @@
     <value>Answered Calls per WorkGroup</value>
   </data>
   <data name="AnswersCustomerSatisfactionSurvey" xml:space="preserve">
-    <value>Answers</value>
+    <value>User inputs</value>
   </data>
   <data name="area" xml:space="preserve">
     <value>Area</value>
@@ -535,7 +535,7 @@
     <value>Calls per ACD Group by hour</value>
   </data>
   <data name="CallsperACDGroupD" xml:space="preserve">
-    <value>Calls per ACD Group</value>
+    <value>Calls by ACD group</value>
   </data>
   <data name="CallsperArea" xml:space="preserve">
     <value>Calls per Area</value>
@@ -655,7 +655,7 @@
     <value>Conversation ID</value>
   </data>
   <data name="cPhoneNumber_Count" xml:space="preserve">
-    <value />
+    <value>Phone numbers</value>
   </data>
   <data name="CRM" xml:space="preserve">
     <value>CRM</value>
@@ -813,9 +813,6 @@
   <data name="dialType" xml:space="preserve">
     <value>Dialing Type</value>
   </data>
-  <data name="DialTypes" xml:space="preserve">
-    <value>Dials Type</value>
-  </data>
   <data name="Dids" xml:space="preserve">
     <value>DNIS</value>
   </data>
@@ -871,13 +868,13 @@
     <value>Downloaded</value>
   </data>
   <data name="DownloadEmailsbyACDGroup" xml:space="preserve">
-    <value>Download Emails by ACD Group</value>
+    <value>Downloaded emails by ACD group</value>
   </data>
   <data name="DownloadEmailsbyAgent" xml:space="preserve">
-    <value>Download Emails by Agent</value>
+    <value>Downloaded emails by agent</value>
   </data>
   <data name="DownloadTweetsbyACDGroup" xml:space="preserve">
-    <value>Download Tweets by ACD Group</value>
+    <value>Downloaded tweets by ACD group</value>
   </data>
   <data name="DownloadTweetsbyAgent" xml:space="preserve">
     <value>Download Tweets by Agent</value>
@@ -913,7 +910,7 @@
     <value>End Interval</value>
   </data>
   <data name="entryFlow" xml:space="preserve">
-    <value>In-Out Calls</value>
+    <value>In-out calls</value>
   </data>
   <data name="extension" xml:space="preserve">
     <value>Extension</value>
@@ -967,10 +964,10 @@
     <value>General Information</value>
   </data>
   <data name="GeneralInformationSpecial" xml:space="preserve">
-    <value>General Information Special</value>
+    <value>General Information (Special)</value>
   </data>
   <data name="grabId" xml:space="preserve">
-    <value>Recording Id</value>
+    <value>Recording ID</value>
   </data>
   <data name="GT300" xml:space="preserve">
     <value>300</value>
@@ -994,7 +991,7 @@
     <value>ACD Group</value>
   </data>
   <data name="InboundId" xml:space="preserve">
-    <value>ACD Group Id</value>
+    <value>ACD group ID</value>
   </data>
   <data name="InboundTrunksbusy" xml:space="preserve">
     <value>Inbound Trunks busy</value>
@@ -1102,7 +1099,7 @@
     <value>Month</value>
   </data>
   <data name="mailclient" xml:space="preserve">
-    <value>email address</value>
+    <value>Contact address</value>
   </data>
   <data name="ManagementBase" xml:space="preserve">
     <value>Base Management</value>
@@ -1150,7 +1147,7 @@
     <value>MKT Intervals</value>
   </data>
   <data name="MKTTiempos" xml:space="preserve">
-    <value>MKT Tiempos</value>
+    <value>MKT Time</value>
   </data>
   <data name="mohTime" xml:space="preserve">
     <value>Hold Time</value>
@@ -1207,7 +1204,7 @@
     <value>Abandoned before service level threshold</value>
   </data>
   <data name="nacw" xml:space="preserve">
-    <value>Number ACW</value>
+    <value>ACW</value>
   </data>
   <data name="nanswer" xml:space="preserve">
     <value>Answered transfer</value>
@@ -1408,7 +1405,7 @@
     <value>Pending</value>
   </data>
   <data name="OpaId" xml:space="preserve">
-    <value>Agent</value>
+    <value>Agent username</value>
   </data>
   <data name="options" xml:space="preserve">
     <value>Options</value>
@@ -1453,10 +1450,10 @@
     <value>Not sent</value>
   </data>
   <data name="percentage" xml:space="preserve">
-    <value />
+    <value>Percentage</value>
   </data>
   <data name="percentComplete" xml:space="preserve">
-    <value>% Efective Calls</value>
+    <value />
   </data>
   <data name="Performanceperagent" xml:space="preserve">
     <value>Performance per agent</value>
@@ -1515,9 +1512,6 @@
   <data name="question" xml:space="preserve">
     <value>Question</value>
   </data>
-  <data name="QuestionDetail" xml:space="preserve">
-    <value>Question</value>
-  </data>
   <data name="Questions" xml:space="preserve">
     <value>Questions</value>
   </data>
@@ -1534,7 +1528,7 @@
     <value>In queue Time</value>
   </data>
   <data name="RateDetail" xml:space="preserve">
-    <value>Disposition Detail</value>
+    <value>Score detail</value>
   </data>
   <data name="readyPercent" xml:space="preserve">
     <value>% Ready</value>
@@ -1549,7 +1543,7 @@
     <value>Ready time per user by hour</value>
   </data>
   <data name="receivedCalls" xml:space="preserve">
-    <value>receivedCalls</value>
+    <value>Received calls</value>
   </data>
   <data name="recordDate" xml:space="preserve">
     <value>Recording date</value>
@@ -1594,7 +1588,7 @@
     <value>Scoring Template</value>
   </data>
   <data name="screenNameClient" xml:space="preserve">
-    <value>User Name</value>
+    <value>Username</value>
   </data>
   <data name="se" xml:space="preserve">
     <value>Semester</value>
@@ -1609,10 +1603,10 @@
     <value>Sections(Scoring Templates)</value>
   </data>
   <data name="Seguimiento" xml:space="preserve">
-    <value />
+    <value>Pending emails </value>
   </data>
   <data name="send" xml:space="preserve">
-    <value />
+    <value>Sent</value>
   </data>
   <data name="serviceLevelCalls" xml:space="preserve">
     <value>Calls service level</value>
@@ -1642,7 +1636,7 @@
     <value>Special</value>
   </data>
   <data name="SpecialReportAgents" xml:space="preserve">
-    <value>Special Report Agents</value>
+    <value>General Information (Special)</value>
   </data>
   <data name="SpecialTimes" xml:space="preserve">
     <value>Special Times</value>
@@ -1669,25 +1663,25 @@
     <value>Status</value>
   </data>
   <data name="statusCall" xml:space="preserve">
-    <value>Status Call</value>
+    <value>Call status</value>
   </data>
   <data name="statusCallId" xml:space="preserve">
     <value>Status Call ID</value>
   </data>
   <data name="StatusCalls" xml:space="preserve">
-    <value>Status Calls</value>
+    <value>Calls status</value>
   </data>
   <data name="statusCall_id" xml:space="preserve">
     <value>Dialing Result</value>
   </data>
   <data name="statusMail" xml:space="preserve">
-    <value />
+    <value>Email status</value>
   </data>
   <data name="statusTime" xml:space="preserve">
-    <value>Time</value>
+    <value />
   </data>
   <data name="statusTwitter" xml:space="preserve">
-    <value>Status Twitter</value>
+    <value>Tweet status</value>
   </data>
   <data name="subDisposition" xml:space="preserve">
     <value>Sub Disposition</value>
@@ -1696,7 +1690,7 @@
     <value>Sub Dispositions</value>
   </data>
   <data name="SummaryofTotalAccumulatedTimeIntervals" xml:space="preserve">
-    <value>Total Time By Interval (Accumulated)</value>
+    <value>Total Accumulated Time by Interval</value>
   </data>
   <data name="Supervisor" xml:space="preserve">
     <value>Supervisor Name</value>
@@ -1909,13 +1903,13 @@
     <value>Internal</value>
   </data>
   <data name="systemTranslated_Invalid" xml:space="preserve">
-    <value>Invalid option</value>
+    <value>Invalid user input</value>
   </data>
   <data name="systemTranslated_It_forwards_the_message" xml:space="preserve">
-    <value />
+    <value>Pending</value>
   </data>
   <data name="systemTranslated_jobBoth" xml:space="preserve">
-    <value>Job type Both</value>
+    <value />
   </data>
   <data name="systemTranslated_jobCB" xml:space="preserve">
     <value>Job type Callback</value>
@@ -2170,7 +2164,7 @@
     <value>No Username</value>
   </data>
   <data name="systemTranslated_No_Option" xml:space="preserve">
-    <value>No option</value>
+    <value>No user input</value>
   </data>
   <data name="systemTranslated_OffNetCalls_Count" xml:space="preserve">
     <value>Off Net Calls</value>
@@ -2212,7 +2206,7 @@
     <value>On Ring Tax</value>
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
-    <value>Calls Out</value>
+    <value>Outbound calls</value>
   </data>
   <data name="systemTranslated_outbound" xml:space="preserve">
     <value>Outbound</value>
@@ -2224,7 +2218,7 @@
     <value>Remaining</value>
   </data>
   <data name="systemTranslated_percentage1_Avg" xml:space="preserve">
-    <value>Percentage</value>
+    <value>Percentage 1</value>
   </data>
   <data name="systemTranslated_percentage2_Avg" xml:space="preserve">
     <value>Percentage 2</value>
@@ -2251,7 +2245,7 @@
     <value>Remote</value>
   </data>
   <data name="systemTranslated_Sending_the_message_is_rescheduled" xml:space="preserve">
-    <value />
+    <value>Reprogrammed</value>
   </data>
   <data name="systemTranslated_Start" xml:space="preserve">
     <value>Start</value>
@@ -2293,10 +2287,10 @@
     <value>ACD Time</value>
   </data>
   <data name="tACW" xml:space="preserve">
-    <value>ACW Time</value>
+    <value>Wrap-up time</value>
   </data>
   <data name="tAgent" xml:space="preserve">
-    <value>Call Time Agent</value>
+    <value>Talking time</value>
   </data>
   <data name="talkingPercent" xml:space="preserve">
     <value>% Talking</value>
@@ -2318,9 +2312,6 @@
   </data>
   <data name="tav" xml:space="preserve">
     <value>Ready</value>
-  </data>
-  <data name="tavg" xml:space="preserve">
-    <value>avg service time</value>
   </data>
   <data name="tAvgAtentionMultimedia" xml:space="preserve">
     <value>Tiempo promedio de atención</value>
@@ -2362,13 +2353,13 @@
     <value>Telephone Numbers by Record/List</value>
   </data>
   <data name="TelephoneNumbersbyRecordperDay" xml:space="preserve">
-    <value>Telephone Numbers by Record/List per Day</value>
+    <value>Daily phone numbers by record/list</value>
   </data>
   <data name="TelephoneNumbersbyState" xml:space="preserve">
-    <value>Telephone Numbers by State</value>
+    <value>Phone numbers by State </value>
   </data>
   <data name="TelephoneNumbersbyStateperDay" xml:space="preserve">
-    <value>Telephone Numbers by State per Day</value>
+    <value>Daily phone numbers by State</value>
   </data>
   <data name="TelephoneNumbersbyStateReport" xml:space="preserve">
     <value>Telephone Numbers by State</value>
@@ -2391,14 +2382,11 @@
   <data name="TiempoDispo" xml:space="preserve">
     <value>Ready Time</value>
   </data>
-  <data name="TiempoLlamadoAgente" xml:space="preserve">
-    <value>Call Time Agent</value>
-  </data>
   <data name="TiempoPromACD" xml:space="preserve">
-    <value>Average Time ACD</value>
+    <value>Average inbound calls time</value>
   </data>
   <data name="TiempoPromACW" xml:space="preserve">
-    <value>Average Time ACW</value>
+    <value>Average wrap-up time</value>
   </data>
   <data name="TiempoPromReten" xml:space="preserve">
     <value>Average Hold Time</value>
@@ -2461,7 +2449,7 @@
     <value>Average Handle Time</value>
   </data>
   <data name="tnotavNum" xml:space="preserve">
-    <value>Service Time</value>
+    <value>Unavailable time</value>
   </data>
   <data name="tnotesin" xml:space="preserve">
     <value>Wrapup Inbound</value>
@@ -2470,7 +2458,7 @@
     <value>Wrapup Outbound</value>
   </data>
   <data name="tnotesoutNum" xml:space="preserve">
-    <value>Wrapup Outbound</value>
+    <value>Outbound wrap-up time</value>
   </data>
   <data name="total" xml:space="preserve">
     <value>Total</value>
@@ -2503,7 +2491,7 @@
     <value>Total dispositions per Supervisor by date range</value>
   </data>
   <data name="TotalEmailConversationsbyACDGroup" xml:space="preserve">
-    <value>Total Email Conversations by ACD Group</value>
+    <value>Total email conversations by ACD group</value>
   </data>
   <data name="TotalEmailMessagesbyACDGroup" xml:space="preserve">
     <value>Total Email Messages by ACD Group</value>
@@ -2522,9 +2510,6 @@
   </data>
   <data name="TotalTwitterConversationsbyACDGroup" xml:space="preserve">
     <value>Total Twitter Conversations by ACD Group</value>
-  </data>
-  <data name="totalwait" xml:space="preserve">
-    <value>assignment time</value>
   </data>
   <data name="tother" xml:space="preserve">
     <value>Other Time</value>
@@ -2545,7 +2530,7 @@
     <value>Average Ready Time</value>
   </data>
   <data name="tPromElimCola" xml:space="preserve">
-    <value>Average Time (Queued Calls Missed)</value>
+    <value>Average missed queued calls time</value>
   </data>
   <data name="tPromRetention" xml:space="preserve">
     <value>Average Hold Time</value>
@@ -2554,7 +2539,7 @@
     <value>Average Ringing Time</value>
   </data>
   <data name="tPromSalidaExt" xml:space="preserve">
-    <value>Average Transfer or Conference Calls</value>
+    <value>Average transfer or conference calls time</value>
   </data>
   <data name="tque" xml:space="preserve">
     <value>Total wait time</value>
@@ -2587,10 +2572,10 @@
     <value>Transferred</value>
   </data>
   <data name="tresp" xml:space="preserve">
-    <value>ASA</value>
+    <value>Average answer speed</value>
   </data>
   <data name="tresp1" xml:space="preserve">
-    <value />
+    <value>Average answer time</value>
   </data>
   <data name="tResponse" xml:space="preserve">
     <value>service time</value>
@@ -2618,9 +2603,6 @@
   </data>
   <data name="tsend" xml:space="preserve">
     <value>Send Time</value>
-  </data>
-  <data name="tTalkNum" xml:space="preserve">
-    <value>Talking time outbound</value>
   </data>
   <data name="tundefined" xml:space="preserve">
     <value>Undefined time</value>
@@ -2668,7 +2650,7 @@
     <value>Unassigned</value>
   </data>
   <data name="UnassignMessageAgent" xml:space="preserve">
-    <value>deassigned by agent</value>
+    <value>Unassigned by agent</value>
   </data>
   <data name="unavaibleTime" xml:space="preserve">
     <value>Unavailable Time</value>
@@ -2689,13 +2671,13 @@
     <value>Unrated</value>
   </data>
   <data name="unsent" xml:space="preserve">
-    <value>unsent</value>
+    <value>Not sent</value>
   </data>
   <data name="user" xml:space="preserve">
     <value>User</value>
   </data>
   <data name="userId" xml:space="preserve">
-    <value>Agent Id</value>
+    <value>Agent ID</value>
   </data>
   <data name="userName" xml:space="preserve">
     <value>Agent Name</value>

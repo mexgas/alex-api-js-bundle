@@ -223,7 +223,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas ACD.
+        ///   Busca una cadena traducida similar a Total de llamadas.
         /// </summary>
         public static string acdCalls {
             get {
@@ -637,7 +637,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Respuestas.
+        ///   Busca una cadena traducida similar a Selecciones de usuario.
         /// </summary>
         public static string AnswersCustomerSatisfactionSurvey {
             get {
@@ -781,7 +781,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo Promedio Espera.
+        ///   Busca una cadena traducida similar a Tiempo promedio de espera.
         /// </summary>
         public static string avgQueueTime {
             get {
@@ -1492,7 +1492,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Grupo Campaña/ ACD.
+        ///   Busca una cadena traducida similar a Campaña/Grupo ACD.
         /// </summary>
         public static string campaignAcd {
             get {
@@ -1951,7 +1951,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Estado del Proveedor 2.
+        ///   Busca una cadena traducida similar a Estado de proveedor 2.
         /// </summary>
         public static string DCCustomer {
             get {
@@ -1960,7 +1960,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Descripcion.
+        ///   Busca una cadena traducida similar a Descripción.
         /// </summary>
         public static string descripcion {
             get {
@@ -2185,15 +2185,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tipo de marcaciones.
-        /// </summary>
-        public static string DialTypes {
-            get {
-                return ResourceManager.GetString("DialTypes", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a Dids.
         /// </summary>
         public static string Dids {
@@ -2221,7 +2212,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Estado del Proveedor.
+        ///   Busca una cadena traducida similar a Estado de proveedor.
         /// </summary>
         public static string disconnectCause {
             get {
@@ -2356,7 +2347,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Emails descargados por grupo ACD.
+        ///   Busca una cadena traducida similar a Correos descargados por grupo ACD.
         /// </summary>
         public static string DownloadEmailsbyACDGroup {
             get {
@@ -2365,7 +2356,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Emails descargados por agente.
+        ///   Busca una cadena traducida similar a Correos descargados por agente.
         /// </summary>
         public static string DownloadEmailsbyAgent {
             get {
@@ -2383,7 +2374,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tuits descargados por agente.
+        ///   Busca una cadena traducida similar a Downloaded tweets by agent.
         /// </summary>
         public static string DownloadTweetsbyAgent {
             get {
@@ -2644,7 +2635,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Información General Especial.
+        ///   Busca una cadena traducida similar a Información general (especial).
         /// </summary>
         public static string GeneralInformationSpecial {
             get {
@@ -2653,7 +2644,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Id grabación.
+        ///   Busca una cadena traducida similar a ID de grabación.
         /// </summary>
         public static string grabId {
             get {
@@ -2725,7 +2716,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Id de Especialidad.
+        ///   Busca una cadena traducida similar a ID de especialidad.
         /// </summary>
         public static string InboundId {
             get {
@@ -3049,7 +3040,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a email de cliente.
+        ///   Busca una cadena traducida similar a Correo de contacto.
         /// </summary>
         public static string mailclient {
             get {
@@ -3967,7 +3958,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Id de Operadora.
+        ///   Busca una cadena traducida similar a ID de operadora.
         /// </summary>
         public static string OpaId {
             get {
@@ -4111,7 +4102,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Promedio de llamadas efectivas.
+        ///   Busca una cadena traducida similar a .
         /// </summary>
         public static string percentComplete {
             get {
@@ -4291,15 +4282,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Detalles Pregunta.
-        /// </summary>
-        public static string QuestionDetail {
-            get {
-                return ResourceManager.GetString("QuestionDetail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a Preguntas.
         /// </summary>
         public static string Questions {
@@ -4345,7 +4327,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Detalles Calificación.
+        ///   Busca una cadena traducida similar a Detalle de evaluación.
         /// </summary>
         public static string RateDetail {
             get {
@@ -4669,7 +4651,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Reporte Especial Agentes.
+        ///   Busca una cadena traducida similar a Información general (especial).
         /// </summary>
         public static string SpecialReportAgents {
             get {
@@ -4786,7 +4768,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Estado.
+        ///   Busca una cadena traducida similar a Estado de correo.
         /// </summary>
         public static string statusMail {
             get {
@@ -4804,7 +4786,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Estado.
+        ///   Busca una cadena traducida similar a Estado de tuit.
         /// </summary>
         public static string statusTwitter {
             get {
@@ -5002,7 +4984,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Mensajes no asignados.
+        ///   Busca una cadena traducida similar a Asignado al agente.
         /// </summary>
         public static string systemTranslated_Assign_message_to_agent1 {
             get {
@@ -5470,7 +5452,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Opción inválida.
+        ///   Busca una cadena traducida similar a Selección de usuario inválida.
         /// </summary>
         public static string systemTranslated_Invalid {
             get {
@@ -6154,7 +6136,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Sin opción.
+        ///   Busca una cadena traducida similar a Sin selección de usuario.
         /// </summary>
         public static string systemTranslated_No_Option {
             get {
@@ -6379,7 +6361,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamada Salida.
+        ///   Busca una cadena traducida similar a Lamadas de salida.
         /// </summary>
         public static string systemTranslated_Out {
             get {
@@ -6703,15 +6685,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo atencion.
-        /// </summary>
-        public static string tAvg {
-            get {
-                return ResourceManager.GetString("tAvg", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo promedio de atención.
         /// </summary>
         public static string tAvgAtentionMultimedia {
@@ -6829,7 +6802,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Números teléfonicos por registro/lista por día.
+        ///   Busca una cadena traducida similar a Números telefónicos por registro/lista al día.
         /// </summary>
         public static string TelephoneNumbersbyRecordperDay {
             get {
@@ -6838,7 +6811,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Números telefónicos por estado.
+        ///   Busca una cadena traducida similar a Números telefónicos por Estado.
         /// </summary>
         public static string TelephoneNumbersbyState {
             get {
@@ -6847,7 +6820,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Números telefónicos por estado por día.
+        ///   Busca una cadena traducida similar a Números telefónicos por Estado al día.
         /// </summary>
         public static string TelephoneNumbersbyStateperDay {
             get {
@@ -6915,15 +6888,6 @@ namespace MiddleWareReports {
         public static string TiempoDispo {
             get {
                 return ResourceManager.GetString("TiempoDispo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo Llamado Agente.
-        /// </summary>
-        public static string TiempoLlamadoAgente {
-            get {
-                return ResourceManager.GetString("TiempoLlamadoAgente", resourceCulture);
             }
         }
         
@@ -7027,7 +6991,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo de retencion.
+        ///   Busca una cadena traducida similar a Tiempo de retención.
         /// </summary>
         public static string timeretention {
             get {
@@ -7252,7 +7216,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Total de conversaciones por grupo ACD.
+        ///   Busca una cadena traducida similar a Total de conversaciones de correo por grupo ACD.
         /// </summary>
         public static string TotalEmailConversationsbyACDGroup {
             get {
@@ -7261,7 +7225,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Total de emails por grupo ACD.
+        ///   Busca una cadena traducida similar a Total de correos por grupo ACD.
         /// </summary>
         public static string TotalEmailMessagesbyACDGroup {
             get {
@@ -7311,15 +7275,6 @@ namespace MiddleWareReports {
         public static string TotalTwitterConversationsbyACDGroup {
             get {
                 return ResourceManager.GetString("TotalTwitterConversationsbyACDGroup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a Total espera.
-        /// </summary>
-        public static string totalWait {
-            get {
-                return ResourceManager.GetString("totalWait", resourceCulture);
             }
         }
         
@@ -7522,7 +7477,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo de respuesta.
+        ///   Busca una cadena traducida similar a Tiempo de atención.
         /// </summary>
         public static string tResponse {
             get {
@@ -7599,15 +7554,6 @@ namespace MiddleWareReports {
         public static string tsend {
             get {
                 return ResourceManager.GetString("tsend", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Busca una cadena traducida similar a En diálogo (Salida).
-        /// </summary>
-        public static string tTalkNum {
-            get {
-                return ResourceManager.GetString("tTalkNum", resourceCulture);
             }
         }
         
@@ -7828,7 +7774,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Id de Usuario.
+        ///   Busca una cadena traducida similar a ID de agente.
         /// </summary>
         public static string userId {
             get {

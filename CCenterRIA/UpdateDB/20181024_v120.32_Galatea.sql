@@ -45,7 +45,7 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix - 1
 
 	set @process = 'CW 2409 Setting_id 204 Configuration of Galatea integration service'
     set @Sql= 'IF exists (SELECT * FROM ccSettings WHERE setting_id = 204)
-	UPDATE ccSettings set valor = ''0.0.0.0|1337|1338|0|0'', Tipo = ''X'' detalle = ''IP|WebSocketServerPort|SocketServerPort|Autorun|IconActived'' where setting_id = 204'
+	UPDATE ccSettings set valor = ''0.0.0.0|1337|1338|0|0'', Tipo = ''X'', detalle = ''IP|WebSocketServerPort|SocketServerPort|Autorun|IconActived'' where setting_id = 204'
     EXEC(@Sql)
 	
 	set @process = 'CW-2419 Deshardcodear conexión segura - funcion split'

@@ -279,6 +279,10 @@ if @lon>1 begin
 	end
 
 	if @extLen=@lon begin -- Setting 108 validar el tamaño de longitud del telefono
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList
+			return(0)
+		end	
 		select 0 as res, @tel as tel -- Extension
 		return(0)
 	end

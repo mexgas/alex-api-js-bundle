@@ -5,11 +5,11 @@
 /*
 Author: 
 		
-Date: 2018/05/15
+Date: 2018/11/21
 Description:
 
 Database: CCenterRia
-Required version: 120.24
+Required version: 120.35
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

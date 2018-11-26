@@ -274,7 +274,7 @@ select @validateTel = valor from ccsettings with(nolock) where setting_id = 206
 
 if @lon>1 begin
 	if @validateTel = 1 begin --Setting 206 para no validar longitud ni listas negras
-		select 1 as res, @tel as tel
+		select 0 as res, @tel as tel
 		return(0) 
 	end
 

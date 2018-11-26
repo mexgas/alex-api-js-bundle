@@ -5,11 +5,11 @@
 /*
 Author: 
 		
-Date: 2018/05/15
+Date: 2018/11/21
 Description:
 
 Database: CCenterRia
-Required version: 120.24
+Required version: 120.35
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -274,11 +274,15 @@ select @validateTel = valor from ccsettings with(nolock) where setting_id = 206
 
 if @lon>1 begin
 	if @validateTel = 1 begin --Setting 206 para no validar longitud ni listas negras
-		select 1 as res, @tel as tel
+		select 0 as res, @tel as tel
 		return(0) 
 	end
 
 	if @extLen=@lon begin -- Setting 108 validar el tamaño de longitud del telefono
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList
+			return(0)
+		end	
 		select 0 as res, @tel as tel -- Extension
 		return(0)
 	end

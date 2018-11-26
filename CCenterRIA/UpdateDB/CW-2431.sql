@@ -77,16 +77,22 @@ isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwit
 ,isnull(A.editableDtmf,0) as editableDtmf
 ,isnull(gra.graphic_id,1) as frame
 ,isnull(A.prefijo,'''') as prefijo
-,isnull(Conv.hasMessage,1) as hasMessageMail
+,isnull(Conv.hasMessage,0) as hasMessageMail
 from ccInbound A
 left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
 left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
 left join ccCamps C on C.cam_id=A.cam_id
 left join(
-select B.inboundId, case when count(*)>0 then 1 else 0 end hasMessage from message A
-inner join conversation B on A.conversationId=B.conversationId
-where messageStatusId not in(6,10,11,12,13)
-group by B.inboundId
+
+select GP.inboundId,case when count(*)>0 then 1 else 0 end hasMessage 
+ from (
+	select A.inboundId, A.conversationId, max(B.messageId) messageId  from conversation A 
+	inner join message B  on A.conversationId = B.conversationId  where A.isFinished=0
+		GROUP BY A.inboundId,A.conversationId
+	) GP
+inner join message M on GP.messageId=M.messageId and messageStatusId not in(6,10,11,12,13)
+group by inboundId
+
 )  Conv on Conv.inboundId=A.inbound_id
 
 
@@ -100,8 +106,6 @@ from ContactMeanIn D
 where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
 where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4)
 )
-
-
 
 
 return(0)

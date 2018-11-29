@@ -5,11 +5,11 @@
 /*
 Author: 
 		
-Date: 2018/05/15
+Date: 2018/11/21
 Description:
 
 Database: CCenterRia
-Required version: 120.14
+Required version: 120.35
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -29,7 +29,7 @@ set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
 set @version = 120--**********actualizar a 119 sin fix
-set @versionfix = 22
+set @versionfix = 36
 --select * from ccsettings where setting_id=77
 --
 /* Actual version (use your own script to do it)*/
@@ -39,11 +39,48 @@ exec @actualVersionFix = ccsp_getVersion 'BDF'
 select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
-if  @actualVersion = @version and  @actualVersionFix >= 15
+if  @actualVersion = @version and  @actualVersionFix >= 35
 	begin
 		begin tran
 		begin try
-				
+
+		 set @process = 'CW-1653 --Borrar SP ccsp_OUTDeleteJobBlackList para poder crearlo'
+        set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_OUTDeleteJobBlackList'')
+    begin
+        DROP PROCEDURE ccsp_OUTDeleteJobBlackList;
+    end'
+        EXEC(@Sql)
+
+		set @process = 'CW-1653 --Borrar SP ccsp_PhoneInBL para poder crearlo'
+        set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_PhoneInBL'')
+    begin
+        DROP PROCEDURE ccsp_PhoneInBL;
+    end'
+        EXEC(@Sql)
+
+		set @process = 'CW-1653 --Borrar SP xx_ChecaVersion para poder crearlo'
+        set @Sql= 'if exists (select * from sys.procedures where name = N''xx_ChecaVersion'')
+    begin
+        DROP PROCEDURE xx_ChecaVersion;
+    end'
+        EXEC(@Sql)
+
+         set @process = 'CW-1653 --Setting 209 Search for do-not-call numbers in server memory'
+        set @Sql= 'if not exists(select * from ccSettings where setting_id=209) begin
+	--Portugues no esta es necesario agregar  --->Validar as listas negras para os números na memória do servidor
+	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+	values(209,''0'',''Realizar validación de lista negra a números en memoria del servidor'',1,''X'',''El marcado predictivo revisara todos los registros a marcar si el esta 1, 0 la revision la realizara solo el databaseLoader es necesario reiniciar para tome el cambio''
+		,''Search for do-not-call numbers in server memory'',0,''^[0-1]$'')
+end'
+        EXEC(@Sql)
+	
+	set @process = 'CW-1653 --Borrar PK de la tabla ccListaNegra'
+        set @Sql= 'if exists (select o.* from sys.objects o INNER JOIN sys.schemas s on o.schema_id = s.schema_id  where o.Type = ''PK'' and OBJECT_NAME(o.parent_object_id) = ''ccListaNegra'')
+    begin
+        ALTER TABLE ccListaNegra DROP CONSTRAINT PK_ccListaNegra
+    end'
+        EXEC(@Sql)
+			
 
 		set @process = 'CW-1653 --Create new Table ccoLogBlackList'
         set @Sql= 'if not exists (select * from sys.tables where name = N''ccoLogBlackList'')
@@ -59,6 +96,79 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
     end'
         EXEC(@Sql)
 
+
+        set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
+        set @Sql= 'if not exists (select * from sys.columns where name = N''Hashtel'' and Object_ID = Object_ID(N''ccListaNegra''))
+begin
+	alter table ccListaNegra add Hashtel int
+end'
+        EXEC(@Sql)
+
+
+		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
+        set @Sql= 'if not exists (select * from sys.columns where name = N''HashKey'' and Object_ID = Object_ID(N''ccListaNegra''))
+begin
+	alter table ccListaNegra add HashKey int
+end'
+        EXEC(@Sql)
+
+        set @process = 'CW-1653 --function hashList'
+		if not exists (select * from sys.objects where object_id = OBJECT_ID(N'hashList') and type in (N'FN', N'IF', N'TF', N'FS', N'FT')) begin
+        set @Sql= 'CREATE FUNCTION [dbo].[hashList] (@calKey varchar(255)) 
+RETURNS bigint AS
+BEGIN
+declare @codigo varchar(max)
+declare @hash bigint
+
+set @codigo=''''
+set @hash=0
+declare @i int,@len int
+select @i=1,@len=len(@calKey)
+while @i<=@len begin
+	select @codigo=@codigo+convert(varchar(max), ASCII(SUBSTRING(@calKey,@i,1)))
+	
+	if @i%5=0 begin
+		set @hash=@hash+cast(@codigo as bigint)
+		set @codigo=''''
+	end	
+	set @i=@i+1
+end
+if @codigo<>''''
+set @hash=@hash+cast(@codigo as bigint)
+return @hash % 127499997
+END'
+       EXEC(@Sql)
+	   end
+
+	    set @process = 'CW-1653 --function ValidateBlackListPhone'
+		if not exists (select * from sys.objects where object_id = OBJECT_ID(N'ValidateBlackListPhone') and type in (N'FN', N'IF', N'TF', N'FS', N'FT')) begin
+        set @Sql= 'CREATE FUNCTION [dbo].[ValidateBlackListPhone](@tel varchar(32),@camId int,@calKey varchar(20))
+RETURNS bit AS
+BEGIN
+	declare @isBlackPhone bit
+	--PARA LA VALIDACION DE LISTAS NEGRAS CON HASH
+	declare @hasTelefono bigint
+	select @hasTelefono =(cast(@tel as bigint) % 127499997)			
+	declare @hasCalKey bigint
+	if @calKey is not null or @calKey <> ''''
+		select @hasCalKey = dbo.hashList(@calKey)
+
+	
+	set @isBlackPhone=0
+	if exists(	
+		select a2.idtipolista from cclistanegra a1 
+		inner join camplistanegra a2 with(index(IX_Camplistanegra)) on a1.idtipolista=a2.idtipolista
+		where a2.cam_id=@camId and status=1 
+		and	a1.Hashtel = @hasTelefono and ( a1.HashKey is null or  a1.HashKey = @hasCalKey)
+	)
+		set @isBlackPhone=1		
+	
+	return @isBlackPhone
+END'
+       EXEC(@Sql)
+	   end
+		
+
 		set @process = 'CW-1653 --Crear indice en la tabla ccListaNegra'
         set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_ccListaNegra_I'' and object_id = OBJECT_ID(N''ccListaNegra''))
     begin
@@ -71,14 +181,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 15
     begin
         CREATE INDEX IX_ccListaNegra_II ON ccListaNegra (idtipolista,Hashtel,HashKey);
     end'
-        EXEC(@Sql)
-
-        set @process = 'CW-1653 --Borrar SP ccsp_OUTDeleteJobBlackList para poder crearlo'
-        set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_OUTDeleteJobBlackList'')
-    begin
-        DROP PROCEDURE ccsp_OUTDeleteJobBlackList;
-    end'
-        EXEC(@Sql)
+        EXEC(@Sql)       
 
 
 		set @process = 'CW-1653 --Crear SP ccsp_OUTDeleteJobBlackList'
@@ -96,15 +199,7 @@ if exists(select * from ccoWorkingTable where callout_id = @callout_id)
 
 set nocount off'
         EXEC(@Sql)
-
-
-		set @process = 'CW-1653 --Borrar SP ccsp_PhoneInBL para poder crearlo'
-        set @Sql= 'if exists (select * from sys.procedures where name = N''ccsp_PhoneInBL'')
-    begin
-        DROP PROCEDURE ccsp_PhoneInBL;
-    end'
-        EXEC(@Sql)
-
+		
 
 		set @process = 'CW-1653 --Modificacion al SP ccsp_PhoneInBL'
         set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_PhoneInBL]
@@ -113,47 +208,16 @@ set nocount off'
 @telefono as varchar(20),
 @cal_key as varchar(30) = null
 AS
-if @action = 1
-begin
-	declare @hashPhone int,@hashCallKey int 
-	set @hashPhone= (cast(@telefono as bigint) % 127499997)
-	
-	if @cal_key is not null and @cal_key<>'''' set @hashCallKey= dbo.hashList(@cal_Key) 	
-
-	if @hashCallKey is null begin
-		if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey is null
-		and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-			on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-			select 1
-		else
-			select 0
-
-	end 
+if @action = 1 begin	
+	if (select dbo.ValidateBlackListPhone(@telefono,@cam_id,@cal_key)) = 1 begin
+		select 1 as IsBlackList
+	end
 	else begin
-		if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey is null
-		and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-			on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-		begin
-			select 1
-		end		
-
-		else if exists(SELECT telefono from cclistanegra nolock where Hashtel = @hashPhone and HashKey = @hashCallKey
-			and idtipolista in (select ln.idtipolista from Camplistanegra (nolock) cl left join ccTiposListaNegra (nolock) ln 
-				on ln.idtipolista=cl.idtipolista where cam_id = @cam_id))	
-			select 1
-		else
-			select 0
+		select 0 as IsBlackList
 	end
 end'
         EXEC(@Sql)
-
-
-		set @process = 'CW-1653 --Borrar SP xx_ChecaVersion para poder crearlo'
-        set @Sql= 'if exists (select * from sys.procedures where name = N''xx_ChecaVersion'')
-    begin
-        DROP PROCEDURE xx_ChecaVersion;
-    end'
-        EXEC(@Sql)
+		
 
 		set @process = 'CW-1653 --Crear SP xx_ChecaVersion'
         set @Sql= 'CREATE procedure [dbo].[xx_ChecaVersion]
@@ -166,608 +230,360 @@ if @major=1 and @minor=15
 else
 	select 0 as ok'
         EXEC(@Sql)
+				
 
+		set @process = 'CW-1653 --Creacion de Trigger trigZonaHoraria'
+		if not exists (select * from sys.triggers where name = N'trigHashPhone' and parent_id = OBJECT_ID(N'ccListaNegra')) begin
+        set @Sql= 'CREATE TRIGGER [dbo].[trigHashPhone] ON [dbo].[ccListaNegra]
+FOR INSERT
+AS
+SET NOCOUNT ON
+begin	
+	update A set A.Hashtel= convert(bigint,B.telefono) % 127499997	from ccListaNegra A
+	inner join INSERTED B on  A.idtipolista=B.idtipolista and A.telefono=B.telefono 
 
-		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
-        set @Sql= 'if not exists (select * from sys.columns where name = N''Hashtel'' and Object_ID = Object_ID(N''ccListaNegra''))
-begin
-	alter table ccListaNegra add Hashtel int
 end'
-        EXEC(@Sql)
-
-
-		set @process = 'CW-1653 --Añadir una columna a la tabla ccListaNegra'
-        set @Sql= 'if not exists (select * from sys.columns where name = N''HashKey'' and Object_ID = Object_ID(N''ccListaNegra''))
-begin
-	alter table ccListaNegra add HashKey int
-end'
-        EXEC(@Sql)
-
-
-		set @process = 'CW-1653 --Borrar PK de la tabla ccListaNegra'
-        set @Sql= 'if exists (select o.* from sys.objects o INNER JOIN sys.schemas s on o.schema_id = s.schema_id  where o.Type = ''PK'' and OBJECT_NAME(o.parent_object_id) = ''ccListaNegra'')
-    begin
-        ALTER TABLE ccListaNegra DROP CONSTRAINT PK_ccListaNegra
-    end'
-        EXEC(@Sql)
+      EXEC(@Sql)        
+	  end
 
 
 		set @process = 'CW-1653 --Modificacion al SP ccsp_Limpia'
         set @Sql= 'ALTER procedure [dbo].[ccsp_Limpia]
-@tel varchar(30),
+@tel varchar(50),
 @Camp int = 0,
 @calKey varchar(20) = ''''
 			
 as
 set nocount on
-declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint, @manOpt smallint
+declare @lon tinyint, @ld varchar(4), @pais varchar(3), @extLen smallint, @manOpt smallint, @validateTel smallint
+/***
+ 4  as res lista Negra
+ 2 as res Digitos incorrectos Prefijo Marcacion 01,044,045,001
+ 3 as res Number notExists
+ 1 as res Longitud invalida
+ 0 as res Numero correcto
+ 
+***/
 select @tel = dbo.limpia(@tel)
 select @lon = len(@tel)
-select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @pais = valor from ccSettings with(nolock) where setting_id = 104 
 select @ld = valor from ccSettings with(nolock) where setting_id = 17
 select @extLen = valor from ccsettings with(nolock) where setting_id = 108
 select @manOpt = valor from ccsettings with(nolock) where setting_id = 195
-declare @telTemp as varchar(15)
+select @validateTel = valor from ccsettings with(nolock) where setting_id = 206
 
-
-
---PARA LA VALIDACION DE LISTAS NEGRAS CON HASH
-declare @hasTelefono bigint
-select @hasTelefono =(cast(@tel as bigint) % 127499997)			
-declare @hasCalKey bigint
-select @hasCalKey = dbo.hashList(@calKey)
-			
-if @extLen=@lon and @lon>1
-	begin
-	select 0 as res, @tel as tel -- Extension
-	return(0)
+if @lon>1 begin
+	if @validateTel = 1 begin --Setting 206 para no validar longitud ni listas negras
+		select 0 as res, @tel as tel
+		return(0) 
 	end
 
-if @pais = 1
-	begin
-	if @lon = 3 and @tel = ''911''
-	begin
-		select 4 as res, @tel as tel
+	if @extLen=@lon begin -- Setting 108 validar el tamaño de longitud del telefono
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList
+			return(0)
+		end	
+		select 0 as res, @tel as tel -- Extension
+		return(0)
+	end
+end
+
+declare @telTemp as varchar(15)
+			
+select @telTemp = @tel
+
+if @pais = 1 begin ---Mexico
+	if @lon = 3 and @tel = ''911'' begin
+		select 4 as res, @tel as tel --Lista Negra
 		return(0)
 	end
 
-	if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13
-		begin
+	if @lon < 7 or @lon = 7 and len(@ld) = 2 or @lon = 8 and len(@ld) = 3 or @lon in (9, 11) or @lon > 13 begin
 		select 1 as res, @tel as tel --Longitud invalida
 		return(0)
-		end
-
-	if @lon = 12 and left(@tel, 2) <> ''01'' or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001''
-		begin
-		select 2 as res, @tel as tel--Digitos incorrectos
-		return(0)
-		end
-
-	if left(@tel, 3) = ''001''
-		begin
-		select 0 as res, @tel as tel
-		return(0)
-		end
-
-	declare @mod varchar(5)
-	select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
-	select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
-
-
-	if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
-	on (a1.idtipolista=a2.idtipolista) where a2.cam_id=@Camp and status=1 and
-	a1.Hashtel = @hasTelefono and a1.HashKey is null)
-		begin
-		select 4 as res, @tel as tel
-		return(0)
-		end
-								
-	else if exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra))
-	on (a1.idtipolista=a2.idtipolista) where a2.cam_id=@Camp and status=1 and
-	a1.Hashtel = @hasTelefono and (@hasCalKey > 0  and a1.HashKey = @hasCalKey)  )
-		begin
-		select 4 as res, @tel as tel
-		return(0)
-		end
-
-	if @mod = ''CPP''
-		begin
-		select 0 as res, case left(@tel, len(@ld)) when @ld then ''044'' else ''045'' end + @tel as tel
-		return(0)
-		end
-
-	if @mod in (''FIJO'', ''MPP'')
-		begin
-		if @manOpt = 1 --10 digits
-		begin
-			set @lon = len(@tel)
-			if @lon = 10 - len(@ld)
-				set @tel = @ld + @tel
-
-			if @lon = 12 and left(@tel, 2) = ''01''
-				set @tel = right(@tel, 10)
-			select 0 as res, @tel
-		end
-		else
-			select 0 as res, case left(@tel, len(@ld)) when @ld then right(@tel, 10 - len(@ld)) else ''01'' + @tel end as tel
-		return(0)
-		end
-
-	--if @mod is null
-	select 3 as res, @tel as tel--No encontrado
-	return(0)
 	end
 
-if @pais = 2
-	begin
-	select @telTemp = @tel
+	if @lon = 12 and left(@tel, 2) <> ''01'' 
+		or @lon = 13 and left(@tel, 3) <> ''044'' and left(@tel, 3) <> ''045'' and left(@tel, 3) <> ''001'' begin
+		select 2 as res, @tel as tel--Digitos incorrectos
+		return(0)
+	end
+
+	if left(@tel, 3) = ''001'' begin
+		select 0 as res, @tel as tel
+		return(0)
+	end
+
+	
+	select @tel = case when @lon in (7, 8) then @ld + @tel else right(@tel, 10) end
+
+	if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+		select 4 as res, @tel as tel --blackList
+		return(0)
+	end	
+
+	declare @mod varchar(5),@isLocal bit
+	set @mod=''''
+
+	
+	select @mod = modalidad from series where cld + serie = left(@tel, 6) and right(@tel, 4) between [NUMERACION INICIAL] and [NUMERACION FINAL]
+
+	if @mod not in (''FIJO'', ''MPP'',''CPP'')  begin
+      select 3 as res, @tel as tel--No encontrado
+	  return (0)
+    end
+	
+	if @manOpt =1 begin
+		select 0 as res, @tel as tel
+		return (0)
+	end
+
+	set @isLocal= case when left(@tel, len(@ld))= @ld then 1 else 0 end
+
+	select @tel = case
+      when @mod in (''FIJO'', ''MPP'') then case when @isLocal=1 then right(@tel, 10 - len(@ld)) else ''01'' + @tel end
+      when @mod = ''CPP'' then case when @isLocal=1 then ''044'' + @tel else ''045'' + @tel end
+      end
+
+	select 0 as res, @tel as tel
+	return(0)
+end
+
+else if @pais = 2 begin --Argentina	
 	set @tel = dbo.completa(@tel, @pais, @ld)
+	
 	if left(@tel,1)=''E'' begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return
+		select 1 as res, @telTemp as tel --Longitud Invalida
+		return (0)
 	end
 
 	select @tel = dbo.fnClearPhoneArg(@tel)
 
 	if (len(@tel) = 10 or len(@ld + @tel) = 10) and left(@tel,1) <> ''E'' begin
-		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) and status=1)
-		begin
-			select  @tel = dbo.verifica(@tel)
-			select 0 as res, @tel
-			return(0)
-		end else begin
-			select 4 as res, @tel
-			return(0)
-		end
-	end else begin select 2 as res, @telTemp as tel end --Digitos incorrectos
-	end
-
-if @pais = 3
-	begin
-	select @telTemp = @tel
-	if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return(0)
-	end
-	select @tel = dbo.Completa_ListaNegra(@tel)
-
-	if (len(@tel) = 8 or len(@tel) = 10) and left(@tel,1) <> ''E''
-		begin
-		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and
-		a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey)  and status=1)
-			begin
-			select @tel = dbo.verifica(@tel)
-			select 0 as res, @tel
-			return(0)
-			end
-		else
-			begin
-			select 4 as res, @tel
-			return(0)
-			end
-		end
-	else
-		begin
-		select 2 as res, @telTemp as tel
-		end --Digitos incorrectos
-	end
-
-if @pais = 4
-	begin
-	exec ccsp_LimpiaUsa @tel, @Camp
-	return(0)
-	end
-
-if @pais = 5
-	begin
-	select @telTemp = @tel
-	if left(@tel,1)=''E''
-		begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return(0)
-		end
-
-	select @tel = dbo.Completa_ListaNegra(@tel)
-
-	if len(@tel) in(8,9) and left(@tel,1) <> ''E''
-		begin
-		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and 
-		a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-			and status=1)
-			begin
-			select  @tel = dbo.verifica(@tel)
-			select 0 as res, @tel
-			return(0)
-			end
-		else
-			begin
-			select 4 as res, @tel
-			return(0)
-			end
-		end
-	else
-		begin
-		select 2 as res, @telTemp as tel
-		end --Digitos incorrectos
-	end
-
-if @pais = 6
-	begin
-	select @telTemp = @tel
-	if left(@tel,1)=''E''
-		begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return(0)
-		end
-
-	select @tel = dbo.Completa_ListaNegra(@tel)
-
-
-	if len(@tel) = 10 and left(@tel,1) <> ''E''
-		begin
-		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey)  and status=1)
-			begin
-			select @tel = dbo.verifica(@tel)
-			select 0 as res, @tel
-			return(0)
-			end
-		else
-			begin
-			select 4 as res, @tel
-			return(0)
-			end
-		end
-	else
-		begin
-		select 2 as res, @telTemp as tel
-		end --Digitos incorrectos
-	end
-
-if @pais = 7
-
-	begin
-	select @telTemp = @tel
-	if left(@tel,1)=''E''
-		begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return(0)
-		end
-
-	select @tel = dbo.Completa_ListaNegra(@tel)
-
-	if (len(@tel) = 9 or len(@tel) = 10) and left(@tel,1) <> ''E''
-		begin
-		if not Exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and 
-		a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-			and status=1)
-			begin
-
-			select @tel = dbo.verifica(@tel)
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
 			if left(@tel,1)=''E'' begin
-				select 3 as res, @telTemp -- No existe el telefono
+				select 3 as res, @telTemp --Not existsFound
 			end
-			else begin
-				select 0 as res, @telTemp  -- Todo Bien
-			end
-			return(0)
-			end
-		else
-			begin
-			select 4 as res, @tel --lista negra
-			return(0)
-			end
-		end
-	else
-		begin
-		select 2 as res, @telTemp as tel
-		end --Digitos incorrectos
+			select 0 as res, @tel  as tel			
+		end		
+	end 
+	else begin 
+		select 2 as res, @telTemp as tel --Digitos incorrectos			
 	end
+	return (0)
+end	
 
 
-if @pais = 8
-	begin
-	select @telTemp = @tel
+else if @pais = 3 begin --Colombia	
+	if @lon < 7 or @lon = 9 or (@lon = 10 and  left(@telTemp,1) <> ''3'') or (@lon = 11 and  left(@telTemp,2) <> ''03'') begin
+		select 1 as res, @telTemp as tel --Longitud Invalida
+		return(0)
+	end
 	select @tel = dbo.Completa_ListaNegra(@tel)
 
+	if (len(@tel) in(8 ,10) ) and left(@tel,1) <> ''E'' begin
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp --Not existsFound
+			end
+			select 0 as res, @tel  as tel			
+		end		
+	end
+	else begin
+		select 2 as res, @telTemp as tel --Digitos incorrectos
+	end 
+	return(0)
+end
+
+else if @pais = 4 begin--USA 
+	exec ccsp_LimpiaUsa @tel, @Camp,@calKey
+	return(0)
+end
+
+else if @pais = 5 begin--Chile	
+	select @tel = dbo.Completa_ListaNegra(@tel)
+	if len(@tel) in(8,9) and left(@tel,1) <> ''E'' begin
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp --Not existsFound
+			end
+			select 0 as res, @tel  as tel			
+		end		
+	end
+	else begin
+		select 2 as res, @telTemp as tel --Digitos incorrectos
+	end 
+	return(0)
+end
+else if @pais = 6 begin--Venezuela		
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if len(@tel) = 10 and left(@tel,1) <> ''E'' begin
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp --Not existsFound
+			end
+			select 0 as res, @tel  as tel			
+		end		
+	end
+	else begin
+		select 2 as res, @telTemp as tel --Digitos incorrectos
+	end 
+	return(0)
+end
+
+else if @pais = 7 begin--Reino Unido
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if (len(@tel) in( 9 ,10) ) and left(@tel,1) <> ''E'' begin
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp --Not existsFound
+			end
+			select 0 as res, @tel  as tel			
+		end		
+	end	
+	else begin
+		select 2 as res, @telTemp as tel --Digitos incorrectos
+	end 
+	return(0)
+end
+
+else if @pais = 8 begin--Arabia saudita		
+	select @tel = dbo.Completa_ListaNegra(@tel)
+
+	if (len(@tel) in( 9 ,10, 11 ))
+	begin
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList			
+		end	
+		else begin
+			select @tel=dbo.verifica2(@tel,@pais,@ld)
+			if left(@tel,1)=''E'' begin
+				select 3 as res, @telTemp --Not existsFound
+			end
+			select 0 as res, @tel  as tel			
+		end		
+	end
+	else begin
+		select 2 as res, @telTemp as tel --Digitos incorrectos
+	end 
+	return(0)
+end
+
+else if @pais in(9,10,11,12,13,14,15,16) begin--9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España, 15:Peru, 16: Panama	
+	select @tel = dbo.Completa_ListaNegra(@tel)
 	if left(@tel,1)=''E'' begin
-		select 1 as res, @telTemp --Longitud Invalida
-		return (0)
+		select 1 as res, @telTemp --Longitud Invalida		
 	end
-
-	if (len(@tel) = 9 or len(@tel) = 10 or len(@tel) = 11 )
-	begin
-		if not exists(select a2.idtipolista from cclistanegra a1 inner join camplistanegra a2 with(index(IX_Camplistanegra)) on (a1.idtipolista=a2.idtipolista) where cam_id=@Camp and 
-		a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-			and status=1)
-		begin
-			select  @tel = dbo.verifica(@tel)
-			select 0 as res, @tel
-			return(0)
+	else if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+		select 4 as res, @tel as tel --blackList			
+	end	
+	else begin
+		select @tel=dbo.verifica2(@tel,@pais,@ld)
+		if left(@tel,1)=''E'' begin
+			select 2 as res, @telTemp --Digitos Incorrectos ??? debe ser numero no existe
 		end
-		else
-		begin
-			select 4 as res, @tel
-			return(0)
-		end
+		select 0 as res, @tel  as tel			
 	end
-	end
-
-if @pais = 9 --Australia
-	begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and telefono = @tel
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-	end
-
-if @pais = 10 -- Brasil
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	set @lon = len(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
+	return(0)	
 end
-
-if @pais = 11 -- Guatemala
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-end
-
-if @pais = 12 -- Costa Rica
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-end
-
-if @pais = 13 -- Salvador
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-end
-
-if @pais = 14 -- Spain
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-end
-
-
-if @pais = 16 -- Panama
-begin
-	select @telTemp = @tel
-	select @tel = dbo.Completa_ListaNegra(@tel)
-	if left(@tel,1)=''E''
-		begin
-			select 1 as res, @telTemp --Longitud Invalida
-			return (0)
-		end
-	else
-		begin
-			if not exists(select a2.idtipolista
-							from cclistanegra a1
-							inner join camplistanegra a2 with(index(IX_Camplistanegra))
-							on (a1.idtipolista=a2.idtipolista)
-							where cam_id=@Camp
-							and a1.Hashtel = @hasTelefono and (@hasCalKey = 0  OR a1.HashKey = @hasCalKey) 
-							and status=1)
-				begin
-					select  @tel = dbo.verifica(@tel)
-					if left(@tel,1) <> ''E''
-						begin
-							select 0 as res, @tel
-							return(0)
-						end
-					else
-						begin
-							select 2 as res, @telTemp as tel --digitos incorrectos
-							return(0)
-						end
-				end
-			else
-				begin
-					select 4 as res, @tel
-					return(0)
-				end
-		end
-end'
+'
         EXEC(@Sql)
+
+		set @process = 'CW-1653 --Modificacion al SP ccsp_LimpiaUsa'
+        set @Sql= 'ALTER procedure [dbo].[ccsp_LimpiaUsa]
+@tel varchar(20),
+@Camp int = 0,
+@calKey varchar(20) = ''''
+as
+set nocount on
+declare @lon tinyint
+
+select @tel = dbo.limpia(@tel)
+select @lon = len(@tel)
+
+if @lon not in (7, 10, 11) and @tel <> ''911''
+ begin
+	select 1 as res, @tel as tel --Longitud invalida
+	return(0)
+ end
+
+if @tel = ''911''
+ begin
+ 	select 0 as res, @tel as tel -- ok
+ 	return(0)
+ end
+
+declare @ld varchar(4)
+select @ld = valor from ccsettings where setting_id = 17
+
+declare @len tinyint, @plans tinyint, @hl tinyint, @ht tinyint, @fl tinyint, @ft tinyint
+declare @plan varchar(15), @tel10 varchar(10)
+select @plan = valor from ccSettings where setting_id = 149
+select @plans = COUNT(*) from dbo.fn_RIASplitDelimited(@plan,''|'')
+if @plans = 4
+begin
+	select 
+	 @hl = case when id = 1 then cast(value as tinyint) else @hl end,
+	 @ht = case when id = 2 then cast(value as tinyint) else @ht end,
+	 @fl = case when id = 3 then cast(value as tinyint) else @fl end,
+	 @ft = case when id = 4 then cast(value as tinyint) else @ft end from dbo.fn_RIASplitDelimited(@plan,''|'')
+	 print @hl
+end
+else if @plans = 2
+begin
+	select 
+	 @hl = case when id = 1 then cast(value as tinyint) else @hl end,
+	 @ft = case when id = 2 then cast(value as tinyint) else @ft end from dbo.fn_RIASplitDelimited(@plan,''|'')
+	 select @ht = @hl, @fl = @ft
+end
+select @tel10 = RIGHT(@ld + @tel, 10)
+if SUBSTRING(@tel10, 1, LEN(@ld)) = @ld
+begin --HNPA
+	set @len = @hl
+	if @hl <> @ht and (select COUNT(*) from ccNPALocalPrefixes) > 0 and not exists(select * from ccNPALocalPrefixes where NPA+NXX = SUBSTRING(@tel10, 1, 6))
+		set @len = @ht
+end
+else --FNPA
+begin
+	set @len = @ft
+	if @fl <> @ft and (select COUNT(*) from ccNPALocalPrefixes) > 0 and exists(select * from ccNPALocalPrefixes where NPA+NXX = SUBSTRING(@tel10, 1, 6))
+		set @len = @fl
+end
+
+select @tel = case @len when 7 then SUBSTRING(@tel10, 4, 7) when 10 then @tel10 when 11 then ''1'' + @tel10 end
+
+-- lista negra
+if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+	select 4 as res, @tel as tel --blackList
+	return(0)
+end	
+
+select 0 as res, @tel as tel
+
+set nocount off'
+		EXEC(@Sql)
 
 
 		set @process = 'CW-1653 --Modificacion al SP ccsp_InsertDNCList'
@@ -1109,9 +925,9 @@ if @calKey is not null begin
 end 
 
 if @hashCalKey is null begin
-	if @command in (1,4)--LookForNumber
-	--and exists(SELECT idtipolista FROM cclistanegra where telefono= @telephone and idtipolista=@idtipolista)
-	and exists(SELECT idtipolista FROM cclistanegra where Hashtel= @hashPhone and HashKey is null)
+	if @command in (1,4)--LookForNumber	
+	and exists(
+	SELECT idtipolista FROM cclistanegra where Hashtel= @hashPhone and HashKey is null and idtipolista=@idtipolista)
 	 begin
 		select 1
 		return(0)
@@ -1119,7 +935,7 @@ if @hashCalKey is null begin
  end
 else begin
 	if @command in (1,4)--LookForNumber	
-	and exists(SELECT idtipolista FROM cclistanegra where Hashtel= @hashPhone and HashKey=@hashCalKey)
+	and exists(SELECT idtipolista FROM cclistanegra where Hashtel= @hashPhone and HashKey=@hashCalKey and idtipolista=@idtipolista)
 	 begin
 		select 1
 		return(0)
@@ -1136,8 +952,7 @@ if @command=1--Insert Number
 
 if @command=2--Delete Number
  begin
-	insert into cchistoriallistanegra (telefono,idtipomov,idtipolista) values(@telephone,5,@idtipolista)
-	--Delete from cclistanegra where telefono=@telephone and idtipolista=@idtipolista
+	insert into cchistoriallistanegra (telefono,idtipomov,idtipolista) values(@telephone,5,@idtipolista)	
 	if @hashCalKey is null begin
 		Delete from cclistanegra where Hashtel= @hashPhone and HashKey is null
 	end
@@ -1178,22 +993,96 @@ set nocount off'
         EXEC(@Sql)
 
 
-		set @process = 'CW-1653 --Creacion de Trigger trigZonaHoraria'
-        set @Sql= 'if not exists (select * from sys.triggers where name = N''trigZonaHoraria'' and parent_id = OBJECT_ID(N''ccListaNegra''))
-    begin
-        CREATE TRIGGER [dbo].[trigHashPhone] ON [dbo].[ccListaNegra]
-FOR INSERT
-AS
-SET NOCOUNT ON
-begin	
-	update A set A.Hashtel= convert(bigint,B.telefono) % 127499997	from ccListaNegra A
-	inner join INSERTED B on  A.idtipolista=B.idtipolista and A.telefono=B.telefono 
+		set @process = 'CW-1653 --Modificacion al FN Completa_ListaNegra'
+        set @Sql= 'ALTER FUNCTION [dbo].[Completa_ListaNegra] (@Cadena varchar(30))
+RETURNS varchar(30) AS
+begin
+declare @resultado varchar(30), @ld varchar(6), @pais tinyint, @BLActivo tinyint
 
-end
-    end'
-        EXEC(@Sql)        
+select @ld=valor from ccSettings with(nolock) where setting_id=17
+select @pais = valor from ccsettings with(nolock) where setting_id = 104
+select @BLActivo = valor from ccsettings with(nolock) where setting_id = 114
+
+select @resultado=dbo.Completa(@Cadena, @pais, @ld)
+
+if @BLActivo = 1 begin
+	if @pais in (1,4)
+		begin
+		if left(@resultado, 1)=''E''
+			return @resultado
+
+		select @resultado = case
+			when len(@resultado)in(7,8) then @ld + @resultado
+			when @resultado=''911'' OR len(@resultado)=10 then @resultado
+			when len(@resultado) in (11,12,13) then right(@resultado,10)
+			else ''E_NV_Longitud''
+			end
+
+			return @resultado
+		end
+
+	if @pais = 2 begin
+		select @resultado = dbo.fnClearPhoneArg(@cadena)
+		return @resultado
+	end
+
+	if @pais = 3 and left(@resultado,1) <> ''E'' begin
+		select @resultado = case
+			when len(@resultado) = 7 then @ld + @resultado
+			when len(@resultado) in(8,10) then @resultado
+			when len(@resultado) = 11 then right(@resultado,10)
+			else ''E_NV_Longitud'' end
+		return @resultado
+	end
+
+	if @pais = 5 and left(@resultado,1) <> ''E'' begin
+		select @resultado = case
+			when len(@resultado) in (6,7) then @ld + @resultado
+			when len(@resultado) in (8,9) then @resultado
+			when len(@resultado) = 10 then right(@resultado,9)
+			else ''E_NV_Longitud'' end
+		return @resultado
+	end
+
+	if @pais = 6 and left(@resultado,1) <> ''E'' begin
+		select @resultado = case
+			when len(@resultado) = 7 then @ld + @resultado
+			when len(@resultado) = 10 then @resultado
+			when len(@resultado) = 11 then right(@resultado,10)
+			else ''E_NV_Longitud'' end
+		return @resultado
+	end
+
+	if @pais = 7 and left(@resultado,1) <> ''E'' begin
+		select @resultado = right(@resultado,10)
+		return @resultado
+	end
+
+	if @pais = 8 begin
+		if left(@resultado,1) = ''E'' begin
+			return @resultado
+		end
+		select @resultado = case
+			when len(@resultado) = 7 then ''0'' + @ld + @resultado
+			when len(@resultado) = 9 and substring(@resultado,1,1) = ''0'' then @resultado
+			when len(@resultado) = 10 and substring(@resultado,2,1) = ''5'' then @resultado
+			when len(@resultado) = 11 and substring(@resultado,3,3) in (''111'',''510'',''511'') then @resultado
+			else ''E_NV_Longitud'' end
+		return @resultado
+	end
+
+	if @pais in(9,10,11,12,13,14,15,16) and left(@resultado,1) <> ''E'' begin
+		return @resultado
+	end
 	
+end
+else begin
+	select @resultado = dbo.Limpia(@cadena)
+end
 
+return @resultado
+end'
+        EXEC(@Sql)
 				
 		/* End script release */
 

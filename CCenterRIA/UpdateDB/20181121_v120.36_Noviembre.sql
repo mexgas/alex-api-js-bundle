@@ -1168,8 +1168,7 @@ begin
 		COUNT(*) as countAll		
 		from ccoCallsOut
 		with( index(IX_ccoCallsOut_2) )
-		where cal_manual in (0,2 ) and cal_inicio >= @fecha2 and cal_inicio < @fecha
-		and cam_id=3
+		where cal_manual in (0,2 ) and cal_inicio >= @fecha2 and cal_inicio < @fecha		
 		group by cam_id
 	)x on x.cam_id = ccCamps.cam_id
 	where ccCamps.idArea is not null

@@ -9,7 +9,11 @@ Date: 2018/11/21
 Description:
 
 Database: CCenterRia
-Required version: 120.35
+Required version: 120.35 
+
+Se agrega la tarea
+	*CW-1653
+	*CW-1635
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -1164,8 +1168,7 @@ begin
 		COUNT(*) as countAll		
 		from ccoCallsOut
 		with( index(IX_ccoCallsOut_2) )
-		where cal_manual in (0,2 ) and cal_inicio >= @fecha2 and cal_inicio < @fecha
-		and cam_id=3
+		where cal_manual in (0,2 ) and cal_inicio >= @fecha2 and cal_inicio < @fecha		
 		group by cam_id
 	)x on x.cam_id = ccCamps.cam_id
 	where ccCamps.idArea is not null

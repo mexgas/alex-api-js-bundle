@@ -9,7 +9,11 @@ Date: 2018/11/21
 Description:
 
 Database: CCenterRia
-Required version: 120.35
+Required version: 120.35 
+
+Se agrega la tarea
+	*CW-1653
+	*CW-1635
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -1083,6 +1087,118 @@ end
 return @resultado
 end'
         EXEC(@Sql)
+
+
+        set @process = 'CW-1635 version 120.24--- '
+		set @Sql= 'ALTER procedure [dbo].[ccsp_RIAADMgetAbandonoSalida]
+@User_id smallint = null,
+@cam_id smallint = null
+AS 
+set nocount on
+declare @fecha datetime, @ultimo datetime
+declare @lastAband float
+
+select @ultimo = valor from ccSettings where setting_id = 25
+if datediff(ss, @ultimo, getdate()) > 300 
+begin
+	set @fecha = getdate()
+	update ccsettings set valor = convert(varchar(19), @fecha, 121) where setting_id = 25
+
+	-- calcula abandono para la grafica
+	exec ccsp_RIAADMgetAbandonoSalida_Fix	
+end
+
+if @User_id is not null
+begin
+	select distinct h.cam_id, isnull(h.AbndPctg,0)
+	from ccAbandonoSalida h inner join ccSupervisorCam i on h.cam_id = i.cam_id
+	where i.user_id = @User_id
+
+	return(0)
+end
+
+if @cam_id is not null
+begin
+	select top 1 @lastAband = AbndPctg from ccAbandonoSalida_Chart
+	where cam_id = @cam_id order by timestamp desc
+
+	select @cam_id as cam_id, x.cam_descripcion, isNull(@lastAband,0) as LastAbndPctg, x.ts as timestamp, x.AbndPctg from 
+	(
+		select top 20 C.cam_descripcion,
+		convert(varchar(4), A.Timestamp, 108)+''0'' as ts, isnull(A.AbndPctg,0) as AbndPctg
+		from ccAbandonoSalida_Chart A 
+		join ccCamps C on A.cam_id = C.cam_id
+		Where A.cam_id=@cam_id
+		order by timestamp desc
+	)x order by x.ts
+
+	return(0)
+end
+
+set nocount off'
+	EXEC(@Sql)
+
+		set @process = 'CW-1635 version 120.24_'
+		set @Sql= 'ALTER proc [dbo].[ccsp_RIAADMgetAbandonoSalida_Fix]
+as
+set nocount on
+declare @fecha smalldatetime, @fecha2 smalldatetime
+declare @i int
+
+
+
+declare @tempChart table (
+cam_id	int,
+countAbnd int,
+countAll int,
+timestamp	smalldatetime
+)
+
+set @fecha = convert(varchar(10), getdate(), 112)+'' ''+convert(varchar(4), getdate(), 108)+''0''
+set @i =0
+while @i < 30
+begin
+	set @fecha2 = dateadd( mi, -10, @fecha)
+
+	insert into @tempChart
+	select ccCamps.cam_id, x.countAbnd,x.countAll, @fecha2 from ccCamps
+	left join
+	(
+		select cam_id,count(case statuscall_id when 6 then 1 else null end ) as countAbnd,
+		COUNT(*) as countAll		
+		from ccoCallsOut
+		with( index(IX_ccoCallsOut_2) )
+		where cal_manual in (0,2 ) and cal_inicio >= @fecha2 and cal_inicio < @fecha		
+		group by cam_id
+	)x on x.cam_id = ccCamps.cam_id
+	where ccCamps.idArea is not null
+
+	set @fecha = @fecha2
+	set @i = @i +1
+end
+
+truncate table ccAbandonoSalida_Chart
+
+insert into ccAbandonoSalida_Chart
+select cam_id,
+CONVERT(decimal(10,2),
+case when countAll=0 then 0 else countAbnd*100.00/countAll end
+),[timestamp]
+  from @tempChart order by cam_id 
+
+truncate table ccAbandonoSalida  
+  
+ insert into ccAbandonoSalida
+ select cam_id,
+ CONVERT(decimal(10,2),
+ SUM(countAbnd*100.0)/sum(countAll) 
+ ) as AbndPctg 
+
+ from @tempChart
+ group by cam_id
+ 
+set nocount off'
+		EXEC(@Sql)
 				
 		/* End script release */
 

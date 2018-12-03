@@ -73,8 +73,11 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix - 1
 				 SELECT @stringToSplit
 
 				 RETURN
-				END
+				END'
 
+EXEC(@Sql)
+set @process = 'CW-2419 Deshardcodear conexión segura'
+set @Sql= ' DECLARE @setting VARCHAR(MAX)
 				DECLARE @setting VARCHAR(MAX)
 				DECLARE @MQIP VARCHAR(MAX)
 				DECLARE @pos INT

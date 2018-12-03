@@ -48,54 +48,6 @@ if  @actualVersion = @version and  @actualVersionFix = @versionfix - 1
 	UPDATE ccSettings set valor = ''0.0.0.0|1337|1338|0|0'', Tipo = ''X'', detalle = ''IP|WebSocketServerPort|SocketServerPort|Autorun|IconActived'' where setting_id = 204'
     EXEC(@Sql)
 	
-	set @process = 'CW-2419 Deshardcodear conexión segura - funcion split'
-    set @Sql= 'CREATE FUNCTION dbo.splitstring ( @stringToSplit VARCHAR(MAX) )
-				RETURNS
-				@returnList TABLE ([Name] [nvarchar] (500))
-				AS
-				BEGIN
-
-				 DECLARE @name NVARCHAR(255)
-				 DECLARE @pos INT
-
-				 WHILE CHARINDEX(''|'', @stringToSplit) > 0
-				 BEGIN
-				  SELECT @pos  = CHARINDEX(''|'', @stringToSplit)  
-				  SELECT @name = SUBSTRING(@stringToSplit, 1, @pos-1)
-
-				  INSERT INTO @returnList 
-				  SELECT @name
-
-				  SELECT @stringToSplit = SUBSTRING(@stringToSplit, @pos+1, LEN(@stringToSplit)-@pos)
-				 END
-
-				 INSERT INTO @returnList
-				 SELECT @stringToSplit
-
-				 RETURN
-				END'
-
-EXEC(@Sql)
-set @process = 'CW-2419 Deshardcodear conexión segura'
-set @Sql= ' DECLARE @setting VARCHAR(MAX)
-				DECLARE @setting VARCHAR(MAX)
-				DECLARE @MQIP VARCHAR(MAX)
-				DECLARE @pos INT
-				IF EXISTS (SELECT *
-						FROM   sys.objects
-						WHERE  object_id = OBJECT_ID(N''[dbo].[splitstring]'')
-								AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
-				BEGIN
-				SELECT @setting = valor FROM ccSettings
-				WHERE setting_id = 199
-				update ccSettings set valor = (SELECT CONCAT((SELECT TOP 1 * FROM splitstring(@setting)), ''|15674|15671|/|adminNuxiba|Nuxiba2017|5000'')),
-				detalle = ''Configuracion rabbit IP|WSPort|WSSPort|VirtualHost|User|Password|Tiempo expiracion mensaje)'' where setting_id = 199
-				END
-				ELSE
-				SELECT ''Function splitstring does not exists'''
-    EXEC(@Sql)
-
-	
 	set @process = 'CW-2101 Historial de Chat para Galateas Agent'
     set @Sql= 'Alter Procedure [dbo].[ccsp_RIAABCChat]
 @OperationType tinyint = 0, -- 0:Select | 1:Insert | 2:Select Excel | 3:DateRange | 4:Admins | 5:Agents

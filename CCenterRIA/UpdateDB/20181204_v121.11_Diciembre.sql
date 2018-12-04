@@ -87,7 +87,7 @@ set @Sql= ' DECLARE @setting VARCHAR(MAX)
                 BEGIN
                 SELECT @setting = valor FROM ccSettings
                 WHERE setting_id = 199
-                update ccSettings set valor = (SELECT CONCAT((SELECT TOP 1 * FROM splitstring(@setting)), ''|15674|15671|/|adminNuxiba|Nuxiba2017|5000'')),
+                update ccSettings set valor = (SELECT CONCAT((SELECT TOP 1 * FROM splitstring(@setting)), ''|5674|15671|/|adminNuxiba|Nuxiba2017|5000'')),
                 detalle = ''Configuracion rabbit IP|WSPort|WSSPort|VirtualHost|User|Password|Tiempo expiracion mensaje)'' where setting_id = 199
                 END
                 ELSE

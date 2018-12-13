@@ -947,11 +947,13 @@ print ''--------------------------- DROP TRIGGER Tables ------------------------
 
 			declare @from datetime,@userId int,@date datetime
 
-			select @userId=user_id,@date =min(fecha)  from ccLogLogin where fecha>=convert(date, GETDATE()) and TipoMov=0 group by User_id
+			select @userId=user_id,@date =min(fecha)  from ccLogLogin where fecha>=convert(datetime,convert(varchar(11),getdate())) and TipoMov=0 group by User_id
 
 
-			select @from=case when datediff(dd,convert(date,max(fecha)),convert(date,@date)) =0 then convert(date, GETDATE()) else max(fecha) end
-			from ccLogLogin where fecha between dateadd(dd,-1,convert(date, GETDATE())) and @date and User_id=@userId and TipoMov=1 
+
+			select @from=case when datediff(dd,convert(datetime,convert(varchar(11),max(fecha)))),convert(datetime,convert(varchar(11),@date))) =0 then 
+			convert(datetime,convert(varchar(11),getdate())) else max(fecha) end
+			from ccLogLogin where fecha between dateadd(dd,-1,convert(datetime,convert(varchar(11),getdate()))) and @date and User_id=@userId and TipoMov=1 
 create table #tmpProcedureReports( id int, name sysname)
 
 insert into #tmpProcedureReports

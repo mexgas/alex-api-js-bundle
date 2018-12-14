@@ -5,11 +5,11 @@
 /*
 Author: 
 		
-Date: 2018/11/21
+Date: 2018/12/17
 Description:
 
 Database: CCenterRia
-Required version: 120.35 
+Required version: 121.11
 
 Se agrega la tarea
 	CW-2467

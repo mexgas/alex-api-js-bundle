@@ -54,9 +54,23 @@ if  @actualVersion = @version and  @actualVersionFix >= 34
 end'
         EXEC(@Sql)
 
+    set @process = 'CW-2451 DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+	begin
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	end'
+	EXEC(@sql)
+
     set @process = 'CW-2428 Alter Lenght Column conversation.mailClient'
     set @Sql= 'alter table conversation alter column mailClient varchar(255) not null'
     EXEC(@Sql)
+
+    set @process = 'CW-2451 ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
 
     set @process = 'CW-2028 Alter Column ccChatsNodeHistory.chatId is not null'
     set @Sql= 'ALTER TABLE ccChatsNodeHistory ALTER COLUMN chatId int NOT NULL'

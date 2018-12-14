@@ -3,37 +3,44 @@
 /*******************************/
 
 /*
-Author: 
-Date: 2018/07/11
-Description:
+Author: Guadalupe Colin
+Date: 2017/08/10
+Description: 
+********************************************************************************************
 
-Database: ccReportsRia
-Required version: 54
+   Se modifican el SPs CRMxUploader
 
+
+Database: CW_CRMx
+Required version: 7
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+
 */
 
+SET NOCOUNT ON
 
-set nocount on
+DECLARE @VERSION INT
+DECLARE @ACTUALVERSION INT
+DECLARE @SQL VARCHAR(MAX)
+DECLARE @ERRORGENERATED VARCHAR(MAX)
+DECLARE @PROCESS VARCHAR(MAX)
 
-declare @version int
-declare @actualVersion int
-declare @sql varchar(max)
-declare @errorGenerated varchar(max)
-declare @process varchar(max)
+/* VERSION TO RELEASE (USE THE VERSION OF YOUR OWN DATABSE)*/
+SET @VERSION = 9
 
-/* Version to release (use the version of your own databse)*/
-set @version =55
-/* Actual version (use your own script to do it) */
-exec @actualVersion = ccsp_getVersion 'BD'
+/* ACTUAL VERSION (USE YOUR OWN SCRIPT TO DO IT) */
+SET @ACTUALVERSION =  (SELECT VALUE FROM SETTINGS WHERE ID = 1)
 
-if @actualVersion  in(@version,@version - 1) begin
-	begin tran
-	begin try
-	
-		set @process = 'CW-1903 -- JOB DatabaseCentinella '
-		set @Sql= 'USE [msdb]
+IF @ACTUALVERSION in( @VERSION - 1, @VERSION )
+  BEGIN
+    BEGIN TRAN
+    BEGIN TRY
+
+  /* START SCRIPT RELEASE */
+  
+  set @process = 'CW-1903 -- JOB DatabaseCentinella '
+	set @Sql= 'USE [msdb]
 
 /****** Object:  Job [DatabaseCentinella]    Script Date: 23/06/2018 11:24:41 a.m. ******/
 if exists( select * from msdb.dbo.sysjobs where name=''DatabaseCentinella'')
@@ -432,29 +439,36 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
-		EXEC(@Sql)	
+		EXEC(@Sql)
+  
+    
+  /* END SCRIPT RELEASE */
+
+    /* UPGRADE DATABASE VERSION (USE YOUR OWN SCRIPT TO DO IT) */
+    UPDATE SETTINGS SET VALUE = @VERSION WHERE ID = 1
+
+    COMMIT TRAN
+    END TRY
+
+    BEGIN CATCH
+
+      /* ERROR GENERATED BASED ON SINTAX */
+      SELECT @ERRORGENERATED = 'DB SCRIPT VERSION: ' + CAST(@VERSION AS NVARCHAR) +
+      ' ERROR PROCESS: ' + @PROCESS +
+      ' LINE: ' + CAST(ERROR_LINE() AS NVARCHAR) +
+      ' NUMBER: ' + CAST(@@ERROR AS NVARCHAR) +
+      ' MESSAGE: ' + ERROR_MESSAGE()
+      RAISERROR(@ERRORGENERATED, 11, 1)
+
+    ROLLBACK TRAN
+    END CATCH
+  END
+ELSE
+  BEGIN
+    /* ERROR GENERATED BASED ON DATABASE VERSION */
+    SELECT 'INCORRECT DATABASE VERSION, ACTUAL VERSION: ' + CAST(@ACTUALVERSION AS VARCHAR(5)) + ', VERSION TO RELEASE: ' + CAST(@VERSION AS VARCHAR(5))
+  END
+
+SET NOCOUNT OFF
 
 
-		if @actualVersion  = @version - 1
-	 	exec ccsp_getVersion 'BD', @version
-
-
-	commit tran
-	end try
-
-	begin catch
-
-	/* Error generated based on sintax */
-	select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + ' Error process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
-	RAISERROR(@errorGenerated, 11, 1)
-
-	rollback tran
-	end catch
-end
-else
-	begin
-		/* Error generated based on database version */
-		select 'Incorrect database version, actual version: ' + cast(@actualVersion as varchar(5)) + ', version to release: ' + cast(@version as varchar(5))
-	end
-
-set nocount off

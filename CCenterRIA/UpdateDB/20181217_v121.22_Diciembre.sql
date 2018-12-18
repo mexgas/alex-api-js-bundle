@@ -5,11 +5,11 @@
 /*
 Author: 
 		
-Date: 2018/11/21
+Date: 2018/12/17
 Description:
 
 Database: CCenterRia
-Required version: 120.35 
+Required version: 121.11
 
 Se agrega la tarea
 	CW-2467
@@ -31,7 +31,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 
-set @version = 122--**********actualizar a 119 sin fix
+set @version = 121--**********actualizar a 119 sin fix
 set @versionfix = 22
 --select * from ccsettings where setting_id=77
 --

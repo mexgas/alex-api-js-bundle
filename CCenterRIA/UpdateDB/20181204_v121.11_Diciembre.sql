@@ -48,6 +48,13 @@ if (@actualVersion = @version - 1 and  @actualVersionFix = 36) or @actualVersion
 	UPDATE ccSettings set valor = ''0.0.0.0|1337|1338|0|0'', Tipo = ''X'', detalle = ''IP|WebSocketServerPort|SocketServerPort|Autorun|IconActived'' where setting_id = 204'
     EXEC(@Sql)
 
+    set @process = 'CW 2409 Drop Function splitstring'
+    set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''splitstring'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        drop function splitstring
+    end'
+    EXEC(@Sql)
+
         set @process = 'CW-2419 Deshardcodear conexión segura - funcion split'
     set @Sql= 'CREATE FUNCTION dbo.splitstring ( @stringToSplit VARCHAR(MAX) )
 RETURNS

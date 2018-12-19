@@ -1232,17 +1232,8 @@ if @action = 1 begin
 	-- Columnas Hora intervalo inicio = dateStartDetail, Hora intervalo fin = dateEndDetail, Tiempo en timbrando = tring, Tiempo de notas (acw) = tnotes
 	insert into #outboundData(dateStartDetail,dateEndDetail,timegroup,timegroup_next,cal_id,User_id,tque,txfer,tring,tdialog,tnotes,time_endque,time_ring,time_dialog,time_notes,time_end_call)
 	SELECT cal_Inicio AS dateStartDetail,DATEADD(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio) AS dateEndDetail
-		   ,case when datepart(mi,cal_inicio) between 0 and 14 then convert(varchar(13),cal_Inicio,121) + '':00:00.000''
-				 when datepart(mi,cal_inicio) between 15 and 29 then convert(varchar(13),cal_Inicio,121) + '':15:00.000''
-		   when datepart(mi,cal_inicio) between 30 and 44 then convert(varchar(13),cal_Inicio,121) + '':30:00.000''
-		   when datepart(mi,cal_inicio) between 45 and 59 then convert(varchar(13),cal_Inicio,121) + '':45:00.000'' end as timegroup
-		   ,case when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio))
-		   between 0 and 14 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio),121) + '':15:00.000''
-		   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio))
-		   between 15 and 29 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio),121) + '':30:00.000''
-		   when datepart(mi,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio))
-		   between 30 and 44 then convert(varchar(13),dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio),121) + '':45:00.000''
-		   else  convert(varchar(13),dateadd(hh,1,dateadd(ss,isnull((0 + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_Inicio)),121) + '':00:00.000'' end as timegroup_next
+		   ,dbo.GetTimeGroup(cal_inicio,0) as timegroup
+		   ,dbo.GetTimeGroup(dateadd(ss,(cal_txfer + cal_tring + cal_tdialog + cal_tnotas),cal_Inicio),1) as timegroup_next		   
 		   ,cal_id
 		   , [User_id]
 		   ,ISNULL((cal_twait),0) as tque
@@ -1260,11 +1251,7 @@ if @action = 1 begin
 
 	 update C
 	 set C.dateEndDetail=@dateNow
-	 ,C.timegroup_next=
-	 case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':15:00.000''
-	 	when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':30:00.000''
-	 	when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss, tiempo,B.fecha),121) + '':45:00.000''
-	 	when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end
+	 ,C.timegroup_next= dbo.GetTimeGroup(dateadd(ss,tiempo,B.fecha),1)	 
 	 ,C.time_dialog= case when A.currentStatus in (4,5,9) then @dateNow when A.TipoStatusAge_id=4 then B.fecha else C.dateStartDetail end
 	 ,C.time_notes=@dateNow
 	 ,C.time_end_call=@dateNow
@@ -1329,14 +1316,8 @@ if @action = 1 begin
 
 	insert into #timeDetailAgent
 	select A.user_id, A.dateIni, A.dateEnd
-	,convert(datetime,case when datepart(mi,A.dateIni) between 0 and 14 then convert(varchar(13),A.dateIni,121) + '':00:00.000''
-			when datepart(mi,A.dateIni) between 15 and 29 then convert(varchar(13),A.dateIni,121) + '':15:00.000''
-			when datepart(mi,A.dateIni) between 30 and 44 then convert(varchar(13),A.dateIni,121) + '':30:00.000''
-			when datepart(mi,A.dateIni) between 45 and 59 then convert(varchar(13),A.dateIni,121) + '':45:00.000'' end) AS timegroup
-	,convert(datetime,case when datepart(mi,A.dateEnd) between 0 and 14 then convert(varchar(13),A.dateEnd,121) + '':15:00.000''
-			when datepart(mi,A.dateEnd) between 15 and 29 then convert(varchar(13),A.dateEnd,121) + '':30:00.000''
-			when datepart(mi,A.dateEnd) between 30 and 44 then convert(varchar(13),A.dateEnd,121) + '':45:00.000''
-			when datepart(mi,A.dateEnd) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEnd),121) + '':00:00.000'' end) as timegroup_next,
+	,dbo.GetTimeGroup(A.dateIni,0) AS timegroup
+	,dbo.GetTimeGroup(A.dateEnd,1) as timegroup_next,
 	case when A.tipostatusage_id=3 then A.tStatus else 0 end tav,
 	case when A.tipostatusage_id=7 then A.tStatus else 0 end tother,
 	case when abs(isnull( 1.0*DATEDIFF(ms,A.dateEnd,S.dateIni)/1000  ,0) )>A.tStatus then 0
@@ -1353,15 +1334,9 @@ if @action = 1 begin
 	 select
 	 	User_id,
 	 	B.fecha as dateStartDetail,
-	 	@dateNow as dateEndDetail,
-	 	case when datepart(mi,B.fecha) between 0 and 14 then convert(varchar(13),B.fecha,121) + '':00:00.000''
-	 		when datepart(mi,B.fecha) between 15 and 29 then convert(varchar(13),B.fecha,121) + '':15:00.000''
-	 		when datepart(mi,B.fecha) between 30 and 44 then convert(varchar(13),B.fecha,121) + '':30:00.000''
-	 		when datepart(mi,B.fecha) between 45 and 59 then convert(varchar(13),B.fecha,121) + '':45:00.000'' end as timegroup
-	 	,case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':15:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':30:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':45:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then  convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end as timegroup_next
+	 	@dateNow as dateEndDetail
+		,dbo.GetTimeGroup(B.fecha,0) as timegroup
+		,dbo.GetTimeGroup(dateadd(ss,tiempo,B.fecha),1) as timegroup_next
 	 	,case when tipostatusage_id=1 then tiempo when currentStatus = 3 then tiempo else 0 end as tav,
 	 	0,0 as tunknown2
 	 	from ccLogAgentesDia A
@@ -1398,14 +1373,8 @@ if @action = 1 begin
 
 	insert into #tempNotReady (user_id,dateStartDetail,dateEndDetail, timegroup, timegroup_next, tnav, twbcall)
 	select user_id,dateStart,dateEnd
-	,convert(datetime,case when datepart(mi,A.dateStart) between 0 and 14 then convert(varchar(13),A.dateStart,121) + '':00:00.000''
-			when datepart(mi,A.dateStart) between 15 and 29 then convert(varchar(13),A.dateStart,121) + '':15:00.000''
-			when datepart(mi,A.dateStart) between 30 and 44 then convert(varchar(13),A.dateStart,121) + '':30:00.000''
-			when datepart(mi,A.dateStart) between 45 and 59 then convert(varchar(13),A.dateStart,121) + '':45:00.000'' end) AS timegroup
-	,convert(datetime,case when datepart(mi,A.dateEnd) between 0 and 14 then convert(varchar(13),A.dateEnd,121) + '':15:00.000''
-			when datepart(mi,A.dateEnd) between 15 and 29 then convert(varchar(13),A.dateEnd,121) + '':30:00.000''
-			when datepart(mi,A.dateEnd) between 30 and 44 then convert(varchar(13),A.dateEnd,121) + '':45:00.000''
-			when datepart(mi,A.dateEnd) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEnd),121) + '':00:00.000'' end) as timegroup_next,
+	,dbo.GetTimeGroup(A.dateStart,0)  AS timegroup
+	,dbo.GetTimeGroup(A.dateEnd,1) as timegroup_next,
 	case when A.TipoNotReady_id=@tnav then A.tStatus else 0 end tnav,
 	case when A.TipoNotReady_id=@twbCall then A.tStatus else 0 end twbcall
 	from #tempccLogAgentesNotReadyDay A
@@ -1433,14 +1402,8 @@ if @action = 1 begin
 	--Columnas Tiempo en “Transferencia estando en llamada” = tcallTransf
 	insert into #tempccLogtransfers (user_id, cal_id, dateStartTransf, dateEndTransf, timegroup, timegroup_next, tcallTransf)
 	select A.[User_id],A.cal_id, A.dateStartDetail, A.dateEndDetail
-	,convert(datetime,case when datepart(mi,A.dateStartDetail) between 0 and 14 then convert(varchar(13),A.dateStartDetail,121) + '':00:00.000''
-			when datepart(mi,A.dateStartDetail) between 15 and 29 then convert(varchar(13),A.dateStartDetail,121) + '':15:00.000''
-			when datepart(mi,A.dateStartDetail) between 30 and 44 then convert(varchar(13),A.dateStartDetail,121) + '':30:00.000''
-			when datepart(mi,A.dateStartDetail) between 45 and 59 then convert(varchar(13),A.dateStartDetail,121) + '':45:00.000'' end) AS timegroup
-	,convert(datetime,case when datepart(mi,A.dateEndDetail) between 0 and 14 then convert(varchar(13),A.dateEndDetail,121) + '':15:00.000''
-			when datepart(mi,A.dateEndDetail) between 15 and 29 then convert(varchar(13),A.dateEndDetail,121) + '':30:00.000''
-			when datepart(mi,A.dateEndDetail) between 30 and 44 then convert(varchar(13),A.dateEndDetail,121) + '':45:00.000''
-			when datepart(mi,A.dateEndDetail) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEndDetail),121) + '':00:00.000'' end) as timegroup_next
+	,dbo.GetTimeGroup(A.dateStartDetail,0) AS timegroup
+	,dbo.GetTimeGroup(A.dateEndDetail,1) as timegroup_next
 	,isnull((0 + B.tAntesXfer + B.tDespuesXfer),0) as tcallTransf
 	from #outboundData A
 	left join ccLogtransfers B on A.cal_id=B.cal_id and Tipo=2 and modo <> 6

@@ -1477,17 +1477,7 @@ if @action = 1 begin
 	end
 end'
 		EXEC(@sql)
-
-		set @process = 'CW-2377 Alter SP --  Report Info NUll '
-		set @sql=''
-		EXEC(@sql)
-
-		set @process = 'CW-2377 Alter SP --  Report Info NUll '
-		set @sql=''
-		EXEC(@sql)
-
-
-
+		
 		if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version
 

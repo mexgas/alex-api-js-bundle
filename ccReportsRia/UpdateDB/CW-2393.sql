@@ -99,8 +99,8 @@ BEGIN
 		CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
 		CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
 	from dbo.RIA_FORMACALIF f
-	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-	INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+	INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+	INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 								FROM dbo.RIA_FORMATOS 
 								WHERE activo = 1 and tipo=1
@@ -148,7 +148,7 @@ BEGIN
 		i.descripcion AS inbound	
 	from RIA_RESULTADOSFORMA_CHAT r
 	INNER JOIN dbo.RIA_FORMACALIF_CHAT f ON f.id_forma = r.id_forma
-	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+	INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
 	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 								FROM dbo.RIA_FORMATOS
 								WHERE activo = 1 and tipo=2
@@ -212,8 +212,8 @@ select
 	CAST(DATEPART(hour, f.fecha_calif) as varchar(2)) AS [hour], 
 	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]
 from dbo.RIA_FORMACALIF f
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 							FROM dbo.RIA_FORMATOS
 							WHERE activo = 1
@@ -277,8 +277,8 @@ select
 		AS Cam	
 from RIA_RESULTADOSFORMA r
 INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 							FROM dbo.RIA_FORMATOS
 							WHERE activo = 1 and tipo=1
@@ -330,7 +330,7 @@ BEGIN
 		i.descripcion AS inbound	
 	from RIA_RESULTADOSFORMA_CHAT r
 	INNER JOIN dbo.RIA_FORMACALIF_CHAT f ON f.id_forma = r.id_forma
-	INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
+	INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
 	INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 								FROM dbo.RIA_FORMATOS
 								WHERE activo = 1 and tipo=2
@@ -383,8 +383,8 @@ f.tipo as medio
 
 from RIA_RESULTADOSFORMA r
 INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 INNER JOIN (SELECT id_formato,nombre
 FROM dbo.RIA_FORMATOS
 WHERE activo = 1 and tipo=1
@@ -471,8 +471,8 @@ select
 	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
 from RIA_RESULTADOSFORMA r
 INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 							FROM dbo.RIA_FORMATOS
 							WHERE activo = 1 and tipo=1
@@ -542,8 +542,8 @@ select
 	CAST(DATEPART(minute, f.fecha_calif) as varchar(2)) AS [minute]		
 from RIA_RESULTADOSFORMA r
 INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
-INNER JOIN dbo.ccUsers a ON f.age_id = a.User_id
-INNER JOIN dbo.ccUsers s ON f.id_calificador = s.User_id
+INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
 INNER JOIN (SELECT id_formato,nombre,MAX(version)AS version
 							FROM dbo.RIA_FORMATOS
 							WHERE activo = 1 and tipo=1

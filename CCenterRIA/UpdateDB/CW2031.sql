@@ -5,14 +5,14 @@
 /*
 Author: 
 		
-Date: 2018/12/17
+Date: 2019/01/08
 Description:
 
 Database: CCenterRia
 Required version: 121.11
 
 Se agrega la tarea
-	CW-2467
+CW-2031
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

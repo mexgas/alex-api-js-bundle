@@ -3,14 +3,13 @@
 /*******************************/
 
 /*
-Author: Karen Rodriguez
-Date: 2019/01/08
+Author: Miguel Angel Trejo Mandujano
+Date: 2018/09/10
 Description:
-CW-2258 Reporte Mkt Intervalos no coinciden datos con Xion
-CW-2259 ccspRepMKTIntervalosTiemposAcuTotales no coinciden columnas con reporte de Xion 4
+
 
 Database: ccReportsRia
-Required version: 63
+Required version: 56
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -26,15 +25,15 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =62
+set @version =57
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
 if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
-
-	set @process = 'CW-2259 no coinciden columnas en reporte ccspRepMKTIntervalosTiemposAcuTotales'
+	
+		set @process = 'CW-2259 no coinciden columnas en reporte ccspRepMKTIntervalosTiemposAcuTotales'
 		set @sql='Alter PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
 @action as tinyint,
 @from as datetime = null,
@@ -571,230 +570,7 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
  end
  '
 		EXEC(@sql)
-
-	set @process = 'CW-2258 -- ALTER ST ccspRepMKTIntervalos'
-	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepMKTIntervalos]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-
-AS
-
-if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-if @to is null
-select @to = getdate()
-
-if @action = 1
-begin
-	delete from [RepMKTIntervalos] with(rowlock) 
-	where date >= @from AND date <= @to
-
-	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
-	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
-	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
-	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
-
-	CREATE TABLE #inbound([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,nacd int,tresp int,nabnd int,
-	tAbnd int,tacd int,nacw int,tacw int,maxdem int,ncalque int,tcalque int,fent int,fsal int,SalExt int,tprosalext int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
-	,[dateTWait] datetime,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int, ntotal int
-	)
-
-	CREATE TABLE #inboundTimeMayores([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,nacd int,tresp int,nabnd int,
-	tAbnd int,tacd int,nacw int,tacw int,maxdem int,ncalque int,tcalque int,fent int,fsal int,SalExt int,tprosalext int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
-	,[dateTWait] datetime,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int, ntotal int
-	)
-
-	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
-	create nonclustered index ix_times2 on #times([Start] DESC)
-
-	insert into #times
-	exec ccspTimesReports @from=@from,@to=@to,@interval=15
-	
-	INSERT INTO #sessionTime
-	exec ccspGenSession @from, @to	
-
-	INSERT INTO #sessionTimeGroup
-	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
-		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
-		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
-	where wg.Tipo = 0 		
-
-	INSERT into #sessionTimeMayores SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
-	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
 		
-	insert into #sessionTimeGroup
-	select [User_id],[login],logout, th.[start] as timegroup,th.[stop] as timegroup_next,
-		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
-	from #sessionTimeMayores t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-	where  datediff(ss,th.start,timegroup_next)>0		
-
-	insert into #inbound
-	select 
-		cal_Inicio as [dateStart],
-		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
-		,Inbound_id as inboundId
-		,case when i.statusCall_id=13 then 1 else 0 end as nacd,
-		case when i.statuscall_id = 13  then (i.cal_twait + i.cal_txfer + i.cal_tring) else 0 end as tresp,
-		case when (i.statuscall_id <> 13) then 1 else 0 end as nabnd,
-		case when (i.statuscall_id <> 13) then (i.cal_twait + i.cal_txfer + i.cal_tring) else 0 end AS tAbnd
-		,case when i.statusCall_id=13 and i.cal_tdialog>=0 then i.cal_tdialog else 0 end as tacd
-		,case when i.statusCall_id=13 and i.cal_tnotas>0 then 1 else 0 end as nacw
-		,case when i.statusCall_id=13 then i.cal_tnotas else 0 end as tacw
-		,case when i.statuscall_id = 13 then (i.cal_twait + i.cal_txfer + i.cal_tring) else 0 end as maxdem
-		,case when (i.statuscall_id in (7,8) AND (i.cal_que > 0) AND (i.cal_xfer=0)) then 1 else 0 end as ncalque
-		,case when (i.statusCall_id in (7,8) AND (i.cal_que > 0) AND (i.cal_xfer=0)) then i.cal_tWait else 0 end as tcalque
-		,CASE WHEN t.modo = 2 then 1 else 0 end as fent
-		,CASE WHEN t.modo = 2 and t.tipo=1 then 1 else 0 end as fsal
-		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then 1 else 0 end as SalExt
-		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then (t.tAntesXfer + t.tDespuesXfer) else 0 end as tprosalext
-		,dbo.GetTimeGroup(dateadd(ss,cal_tDialog+cal_tWait+cal_tXfer+cal_tRing,cal_Inicio) ,0) as timegroup
-		,dbo.GetTimeGroup(dateadd(ss,cal_tDialog+cal_tWait+cal_tXfer+cal_tRing,cal_Inicio) ,1) as timegroup
-		,dateadd(ss,i.cal_twait,cal_Inicio) as [dateTWait]
-		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring,cal_Inicio) as [dateTResp]
-		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring+i.cal_tdialog,cal_Inicio) as [dateTACD]	
-		,dateadd(ss,-t.tAntesXfer - t.tDespuesXfer,fechaFin) as [dateTTransferStart]	
-		,fechaFin as [dateTTransferEnd]
-		,i.User_id
-		,1 as ntotal
-	from cccallsin i (nolock) 
-	left join ccLogTransfers t (nolock) on i.cal_id=t.cal_id and t.tipo=1
-	where cal_Inicio between @from and @to
-	
-	INSERT into #inboundTimeMayores SELECT * from #inbound where datediff(mi,timegroup,timegroup_next)>15
-	delete #inbound where  datediff(mi,timegroup,timegroup_next)>15	
-
-	insert into #inbound
-	select dateStart,dateEnd,inboundId,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacd) as nacd,
-		[dbo].TimeInterval( th.[start],th.[stop] ,dateStart,dateTResp) as tresp,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nabnd) as nabnd,		
-		case when tAbnd=0 then 0 else [dbo].TimeInterval( th.[start],th.[stop] ,dateStart,dateTResp) end as tAbnd,
-		[dbo].TimeInterval( th.[start],th.[stop] ,dateTResp,[dateTACD]) as tacd,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacw) as nacw,
-		[dbo].TimeInterval( th.[start],th.[stop] ,[dateTACD],dateEnd) as tacw,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,maxdem) as maxdem,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ncalque) as ncalque,
-		[dbo].TimeInterval( th.[start],th.[stop] ,dateStart,[dateTWait]) as tcalque,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,fent) as fent,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,fsal) as fsal,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,SalExt) as SalExt,
-		case when [dateTTransferStart] is null then 0 else  [dbo].TimeInterval( th.[start],th.[stop] ,[dateTTransferStart],[dateTTransferEnd]) end as tprosalext,	
-		 th.[start] as timegroup,th.[stop] as timegroup_next,
-		[dateTWait] ,[dateTResp] ,[dateTACD] ,[dateTTransferStart] ,[dateTTransferEnd] 
-		,UserId
-		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ntotal) as ntotal
-	from #inboundTimeMayores t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-		
-	
-	select case when c.timegroup is not null then c.timegroup else G.timegroup end  as [date]
-		,isnull(c.inboundId,inb_id) as inboundId
-		,isnull(c.tresp,0) as tresp,isnull(c.nacd,0) as nacd
-		,isnull(c.tabnd,0) tabnd,isnull(c.nabnd,0) 	as nabnd	
-		,isnull(c.tacd,0)tacd, isnull(c.tacw,0) tacw,isnull(c.nacw,0) nacw		
-		,isnull(c.maxdem,0) maxdem
-		,isnull(c.fent,0)  fent, isnull(c.fsal,0) fsal,isnull(c.SalExt,0)  SalExt,isnull(c.tprosalext,0)  tprosalext		
-		,isnull(c.ncalque,0) ncalque,isnull(c.tcalque,0) tcalque
-		,G.userId 
-		,isnull(G.[tlog seg],0) as tlog
-		,isnull(c.ntotal, 0) AS ntotal
-	INTO #RepMKTIntervalosTemp 				
-	 from (
-		select [timegroup]
-			,inboundId,userId	
-			,sum(c.tresp) as tresp,sum(c.nacd) as nacd			
-			,sum(c.tabnd) as tabnd
-			,sum(c.nabnd) as nabnd
-			,sum(c.tacd) as tacd
-			,sum(c.tacw) as tacw
-			,sum(c.nacw) as nacw			
-			,max(c.maxdem) as maxdem			
-			,sum(c.ncalque) as ncalque
-			,sum(c.tcalque) as tcalque			
-			,sum(fent) as fent
-			,sum(fsal) as fsal
-			,sum(SalExt) as SalExt
-			,sum(tprosalext) as tprosalext
-			,sum(ntotal) as ntotal	
-		from #inbound as c 
-		group by [timegroup],inboundId,userId) c		
-		full join 
-		(select [user_id] as userId, timegroup, inb_id,sum([tlog seg] ) as [tlog seg] from  #sessionTimeGroup group by [user_id] ,timegroup,inb_id ) G
-		on G.timegroup=c.[timegroup] and c.inboundId = G.inb_id and G.userId=c.userId		
-		
-	INSERT INTO [RepMKTIntervalos]
-	select 
-		[date] as [date]
-		,inboundId
-		,inb.descripcion as Acds
-		,case when sum(nacd)>0 then sum(tresp)/isnull(nullif(sum(nacd),0), 1) else 0 end as [avrAnswer]
-		,case when sum(nabnd)>0 then sum(tabnd)/sum(nabnd) else 0 end as [AvgAbandonTime]
-		,sum(nacd)  [acdCalls]
-		,case when sum(nacd)>0 then sum(tacd)/isnull(nullif(sum(nacd),0), 1) else 0 end as [tPromACD]
-		,case when sum(nacw)>0 then sum(tacw)/isnull(nullif(sum(nacw),0), 1) else 0 end as [tPromACW]
-		,sum(nabnd) as [abondeonedCalls]
-		,max(maxdem) as [maxDelay]
-		,sum(fent) as  [entryFlow]	
-		,sum(fsal) as  [outFLow]
-		,sum(SalExt) as [calloutExt]	
-		,isnull(case when sum(SalExt)>0 then sum(tprosalext)/isnull(nullif(sum(SalExt),0), 1) else 0 end,0) as [TPromSalidaExt]
-		,sum(ncalque) as [callDeleteQue]	
-		,case when sum(ncalque)>0 then sum(tcalque)/isnull(nullif(sum(ncalque),0), 1) else 0 end as [TpromElimCola]
-		,case when round(case when count(distinct userId)>0 then ((convert(float,(sum(tlog)*100))/isnull(nullif(convert(float,count(distinct userId)*1800),0), 1))*count(distinct userId))/100 else 0 end,1)>0 
-		then (case when convert(decimal(15,2),((sum(nacd) * case when sum(nacd)>0 then sum(tacd)/isnull(nullif(sum(nacd),0), 1) else 0 end) / convert(float,((round(case when (count(distinct userId))>0 then ((convert(float,(sum(tlog)*100))/isnull(nullif(convert(float,count(distinct userId)*1800),0), 1))*count(distinct userId))/100 else 0 end,1))*1800)))*100)>100 then 100 
-			   else convert(decimal(15,2),((sum(nacd) * case when sum(nacd)>0 then sum(tacd)/isnull(nullif(sum(nacd),0), 1) else 0 end) / convert(float,((round(case when count(distinct userId)>0 then ((convert(float,(sum(tlog)*100))/isnull(nullif(convert(float,count(distinct userId)*1800),0), 1))*count(distinct userId))/100 else 0 end,1))*1800)))*100) end)
-		else 0 end [% Tiempo ACD]
-		,isnull(case when (sum(nacd)+sum(nabnd))>0 then convert(decimal(15,2),(convert(float,sum(nacd))*100)/isnull(nullif((convert(float,sum(nacd))+convert(float,sum(nabnd))),0), 1)) else 0 end,0) [% Llamadas Resp]
-		,round(case when count(distinct userId)>1 then ((convert(float,(sum(tlog)*100))/ isnull(nullif(convert(float,count(distinct userId)*1800),0), 1))*count(distinct userId))/100 else 0 end,1) as [Llamadas por Posic.]
-		,case when sum(nacd) >0 then (case when sum(nacd)/isnull(nullif(count(distinct (case when nacd > 0 then userId end)),0), 1) >0 then convert(int, sum(nacd)/isnull(nullif(count(distinct (case when nacd > 0 then userId end)),0), 1)) else 1 end) else 0 end as [LlamadasporPosicion]
-		,sum(tresp) as tresp
-		,sum(tabnd) as tabnd
-		,sum(tacd) as tacd
-		,sum(tacw) as tacw
-		,sum(nacw) as nacw		
-		,sum(tcalque) as tcalque			
-		,sum(tprosalext) as tprosalext
-		,sum(tlog) as tlog
-		,isnull(userId,0) accountUserId			
-		,DATEPART(YYYY, [date]) as [year] 
-		,DATEPART(mm, [date]) as [month]
-		,DATEPART(dd, [date]) as [day]
-		,DATEPART(hh, [date]) as [hour]
-		,DATEPART(mi, [date]) as [minutes]
-		from #RepMKTIntervalosTemp
-		Left join ccinbound  inb ON inb.Inbound_id = inboundId
-		group by[date],inboundId, userId, inb.descripcion
-		having sum(nacd)>0 or sum(nabnd)>0 or sum(tlog) >0	
-
-	drop table #sessionTimeGroup;
-	drop table #sessionTimeMayores;
-	drop table #times;
-	drop table #sessionTime;
-	drop table #inbound
-	drop table #inboundTimeMayores
-	drop table #RepMKTIntervalosTemp
-end
-'
-		EXEC(@sql)
-		
-		set @process = 'CW-2258 - Reporte Mkt Intervalos no coinciden datos con Xion'
-		set @sql='DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7140
-	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
-	BEGIN
-		INSERT INTO GroupByReports values(7140, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
-	sum(acdCalls):acdCalls|case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end:tPromACD|case when sum(nacw)>0 then sum(tacw)/sum(nacw) else 0 end:tPromACW|sum(abandonedCalls):abandonedCalls|max(maxDelay):maxDelay|
-	sum(entryFlow):entryFlow|sum(outFlow):outFlow|sum(callsOutExt):callsOutExt|case when sum(callsOutExt)>0 then sum(tprosalext)/sum(callsOutExt) else 0 end:tPromSalidaExt|sum(callsDeleteQue):callsDeleteQue|
-	case when sum(callsDeleteQue)>0 then sum(tcalque)/sum(callsDeleteQue) else 0 end:tPromElimCola|
-	case when (case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end)>0 
-			then (case when convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when (count(distinct accountUserId))>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100)>100 then 100 
-				   else convert(decimal(15,2),((sum(acdCalls) * case when sum(acdCalls)>0 then sum(tacd)/sum(acdCalls) else 0 end) / convert(float,(((case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end))*CONVERT(float_TIMEGROUP))))*100) end)
-			else 0 end:avrTimeACD|case when (sum(acdCalls)+sum(abandonedCalls))>0 then convert(decimal(15,2),(convert(float,sum(acdCalls))*100)/(convert(float,sum(acdCalls))+convert(float,sum(abandonedCalls)))) else 0 end:avrCallsAnswer|
-	round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1):PromPosicionPersonal|
-	case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end)) >0 then convert(int, sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end))) else 1 end) else 0 end:LlamadasporPosicion'',''Acds|inboundId'')
-	END'
-		EXEC(@sql)
 
 		if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

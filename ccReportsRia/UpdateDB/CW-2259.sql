@@ -4,13 +4,9 @@
 
 /*
 Author: Miguel Angel Trejo Mandujano
-        Guadalupe Colin
-Date: 2018/07/11
+Date: 2018/09/10
 Description:
-CW-2156 Valores negativos en reporte especiale de MKT
-CW-1860 Alter SP ReportMasterProcess
-CW-1975 Tiempo completo de llamadas en reporte de detalle
-CW-2020 Geller agregar columna a rep. detalle de llamadas ARO
+
 
 Database: ccReportsRia
 Required version: 56
@@ -37,228 +33,8 @@ if @actualVersion  in(@version,@version - 1) begin
 	begin tran
 	begin try
 	
-		set @process = 'CW-1975 Tiempo completo de llamadas en reporte de detalle ARO'
-		set @sql='if not exists (select * from sys.columns where name = N''MessageTime'' and Object_ID = Object_ID(N''RepOutCallsDetail''))
-				begin
-					ALTER TABLE RepOutCallsDetail
-      						ADD MessageTime smallint null
-				end'
-		EXEC(@sql)
-		
-		set @process = 'CW-2020 Geller agregar columna a rep. detalle de llamadas ARO'
-		set @sql='if not exists (select * from sys.columns where name = N''disconnectCause'' and Object_ID = Object_ID(N''RepOutDialDetail''))
-				begin
-					alter table RepOutDialDetail
-						add disconnectCause varchar(250) null
-				end'
-		EXEC(@sql)
-				
-		set @process = 'CW-1975 Tiempo completo de llamadas en reporte de detalle ARO'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-if @from is null
-    select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-
-DECLARE @IVA INT
-declare @country as tinyint
-
-
-SELECT @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
-select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104
-
-
-if @country is null set @country = 1
-
-if @action = 1
-    begin
-        --Borrar lo que esta para no repetir
-        delete from RepOutCallsDetail with(rowlock)
-        where date >= @from AND date < @to
-
-        INSERT INTO RepOutCallsDetail
-        SELECT Call.cal_inicio as [date],
-        Call.cal_key as [callKey],
-        Call.cal_telefono AS [telephone],
-        Call.cal_txfer + call.cal_tring AS [transfer],
-        Call.cal_tdialog AS [dialog], 
-        ISNULL(Call.cal_tMoh,0) as [nque],
-        Call.cal_tnotas AS [wrapup],
-        ISNULL( Tipo.[description], '''') AS [CallDisposition],
-        Call.cal_extension AS [extension],
-        Usr.user_id as [userId],
-        ISNULL(Usr.login,''systemTranslated_NoUserName'') [login],
-        ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
-        camps.cam_id as [campaignId],
-        ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
-        (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg,0)) / 60.0 )* 60) AS [duration],
-        ISNULL(Call.costo,0.00) as [ncost],
-        @IVA as iva,
-        convert(decimal(10,2),ISNULL(Call.costo,0.00) * (1 + (@IVA / 100.00))) as total,
-        case when prov.descrip is not null then prov.descrip when cstoProvedor.descrip is not null then cstoProvedor.descrip else ''systemTranslated_NoCarrier'' end as [ByCarrier],
-        ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [Calltypes],
-        case when Call.cal_manual = 0 then ''systemTranslated_Auto'' else ''systemTranslated_Manual'' end as [dialType],
-        case when cal_whoHung = 0 then ''systemTranslated_Client''
-        when cal_whoHung = 1 then ''systemTranslated_Agent''
-        else ''systemTranslated_AgentSurvey'' end [whoHangUp],
-        case when call.califsub_id = 0 then ''systemTranslated_NoSubDisposition'' else isnull(sub.califSubDesc, '''') end as [subDisposition],
-        sta.descripcion as [dialResult],
-        Call.cal_id as [calId]
-        , datepart(yyyy,Call.cal_inicio) AS [year]
-        , datepart(mm,Call.cal_inicio) as [month]
-        , datepart(dd,Call.cal_inicio) as [day]
-        , datepart(hh,Call.cal_inicio) as [hour]
-        , datepart(mi,Call.cal_inicio) as [minutes]
-        ,Call.cal_puerto
-        , ISNULL(cs.Dato1,'''') as [data1]
-        , ISNULL(cs.Dato2,'''') as [data2]
-        , ISNULL(cs.Dato3,'''') as [data3]
-        , ISNULL(cs.Dato4,'''') as [data4]
-        , ISNULL(cs.Dato5,'''') as [data5]
-        , ISNULL(Call.cal_tMsg,0) as [MessageTime]
-        FROM ccoCallsOut Call
-        LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id
-        INNER JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
-        LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
-        LEFT JOIN ccStatusLlamada sta on call.statuscall_id = sta.statuscall_id
-        LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
-        LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] and tl.Country_id = @country)
-        LEFT JOIN ccTipoCalifSubOut sub on call.califsub_id = sub.califsub_id
-        LEFT JOIN ccoDialers di on di.dialer_id = Call.cal_puerto
-        LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
-        LEFT JOIN cstoProvedor on di.provedor_id = cstoProvedor.provedor_id
-        WHERE Call.cal_inicio >= @from
-        AND Call.cal_inicio < @to
-        and cal_manual in (0, 2)
-        order by date
-
-    end
-'
-		EXEC(@sql)
-		
-		set @process = 'CW-2020 Geller agregar columna a rep. detalle de llamadas ARO'
-				set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]  
-				@action as tinyint,  
-				@from as datetime = null,  
-				@to as datetime = null  
-				AS  
-				if @from is null  
-				select @from = convert(datetime,convert(varchar(11),getdate()))  
-				select @to = getdate()  
-				if @action = 1  begin  
-					--Borrar lo que esta para no repetir  
-					delete from RepOutDialDetail with(rowlock)  
-					where date >= @from AND date < @to  
-
-					--Inserta información de reporte  
-					insert into RepOutDialDetail  
-					SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado,  
-					dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
-					datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
-					,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
-					isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
-					,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved, dials.disconnectCause
-					FROM 
-					(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
-						dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved 
-						FROM ccoLogDials dial (nolock)
-						left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
-						WHERE fecha >= @from AND fecha < @to) dials  
-					LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
-					LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
-					LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
-					LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id  
-					WHERE fecha >= @from AND fecha < @to  
-					order by fecha  
-				 end'
-		EXEC(@sql)
-	
-		set @process = 'CW-2020 Geller acorreccion rep. llamadas contestadas y transferidas ARO'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-
-declare @IVA INT
-declare @country as tinyint
-
-
-select @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
-select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104
-
-
-if @country is null set @country = 1
-
-
-if @action = 1
-begin
-	--Borrar lo que esta para no repetir
-	delete from RepOutAnswAndXferCalls with(rowlock) where date >= @from AND date < @to
-
-	insert into RepOutAnswAndXferCalls
-	select COALESCE([Call].cal_inicio,ccld.fecha) as [date],
-	isnull(ccld.cal_id,0) as [callid],
-	isnull(ccld.cam_id,0) as [campaignId],
-	ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
-	isnull([Call].user_id,0) as [userId],
-	ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, ''N/A'') as [Agent],
-	case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end as [dialog],
-	ccld.telefono as [telephone],
-	isnull(Call.cal_manual,0) as [dialId],
-	isnull((select [description] from dialType where dialId = Call.cal_manual),''systemTranslated_Auto'') as [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [CallTypes],
-	dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), case when Call.provedor_id is not null then Call.provedor_id else 1 end , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end) as [ncost],
-	@IVA as iva,
-	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), case when Call.provedor_id is not null then Call.provedor_id else 1 end , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end),0.00) * (1 + (@IVA / 100.00))) as total
-	from (select *, dbo.fnGetTipoLlamada(telefono) as CallType from ccologdials where fecha >= @from and fecha < @to and answerbit = 1) ccld
-	LEFT JOIN ccoCallsOut Call on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
-	LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
-	LEFT JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id]
-	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = COALESCE(Call.[tipoLlamada_id],ccld.CallType) and tl.Country_id = @country)
-	order by date
-
-	insert into RepOutAnswAndXferCalls
-	select dateadd(ss,-(clt.tAntesXfer + clt.tDespuesXfer),clt.fechaFin) as [date],
-	clt.cal_id as [callid],
-	'''' as [campaignId],
-	'''' as [campaign],
-	isnull((case tipo when 1 then ci.User_id else co.User_id end),0) as [userId],
-	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccusers nolock where user_id = 
-	(case tipo when 1 then ci.User_id else co.User_id end)),''systemTranslated_NoName'') as [Agent],
-	case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end as [dialog],
-	case when modo = 0 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino)  
-	when modo = 3 then isnull((select tel from telefonosConferencia where tel = clt.destino),clt.destino) 
-	when modo = 4 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino) 
-	when modo = 5 then isnull((select Computer from ccposicion where pos_id = abs(clt.destino)),clt.destino) end as [telephone],
-	3 as [dialId],
-	(select [description] from dialType where dialId = 3) as [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [CallTypes],
-	ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end), 0) as [ncost],
-	@IVA as iva,
-	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else  60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end),0.00) * (1 + (@IVA / 100.00))) as [total]
-	from (select *,dbo.fnGetTipoLlamada(ccenterria.dbo.Verifica(destino)) as  CallType from cclogtransfers where modo not in (1,2) and (tAntesXfer > 0 or tDespuesXfer > 0) and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) >= @from and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) < @to) clt
-	LEFT JOIN cccallsin ci (nolock) on ci.cal_id=clt.cal_id and tipo=1
-	LEFT JOIN ccocallsout co (nolock) on co.cal_id=clt.cal_id and tipo=2 
-	LEFT JOIN ccChannelTransfer channel on clt.pbxId=channel.pbxId and clt.channel between channel.startChannel and channel.endChannel
-	LEFT JOIN cstoTarifa tarifa on tarifa.provedor_id=channel.proveedorId and tarifa.tipoLlamada_id=dbo.fnGetTipoLlamada(clt.destino)
-	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = clt.CallType and tl.Country_id = @country)
-	order by date 
-
-end'
-		EXEC(@sql)
-	
-	
-		set @process = 'CW-2156 Valores negativos en reporte especial de MKT '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
+		set @process = 'CW-2259 no coinciden columnas en reporte ccspRepMKTIntervalosTiemposAcuTotales'
+		set @sql='Alter PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -268,16 +44,16 @@ AS
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = getdate()
-
+select @to = convert(datetime,convert(varchar(11),getdate()))
 declare @dateNow datetime,@maxLogout datetime
 
 if @action = 1
 begin
 delete from [RepMKTIntervalosTiemposAcuTotales] with(rowlock) 
-	where date >= @from AND date <= @to 
+	where date >= @from AND date <= @to 	
 
-CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
+
+	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
 	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
 	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
 	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
@@ -303,20 +79,26 @@ CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT 
 	create table #tempccLogAgentesDia(row int not null,user_id int not null,[IdCampEsp] [int] not null,[callId] [int]not null,TipoStatusAge_id tinyint not null,tStatus int not null,dateIni datetime not null,dateEnd datetime not null,currentStatus int)
 	create table #timeDetailAgent([User_id] int null,[IdCampEsp][int] not null,[callId][int] not null,dateStartDetail datetime null,dateEndDetail datetime null,timegroup datetime null,	timegroup_next datetime null,tunknown int null,tnot_av int null,tav int null,tprob int null,tother int null,nother int null,tmanualcall int null,tunknown2 decimal(10,3),tlogout int,tcliente int ,tchatting int null,[PromPosicionPersonal] [numeric](18, 1) NULL,)
 	create table #tempAgentLastStatus(id int,fecha datetime,tiempo int)
-
+	create table #ccLogAgentesDia(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null,dateIni datetime not null,dateEnd datetime not null,
+	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+	create table #ccLogAgentesDiaMayores(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null, dateIni datetime not null,dateEnd datetime not null,
+	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
 
 	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
 	create nonclustered index ix_times2 on #times([Start] DESC)
 
 	insert into #times
 	exec ccspTimesReports @from=@from,@to=@to,@interval=15
+
 	INSERT INTO #sessionTime
-	exec ccspGenSession @from, @to	
+	exec ccspGenSession @from, @to
+
 	INSERT INTO #sessionTimeGroup
 	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
 		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
 		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
-	where wg.Tipo = 0 		
+	where wg.Tipo = 0 
+
 	INSERT into #sessionTimeMayores 
 	SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
 	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
@@ -326,7 +108,7 @@ CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT 
 		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
 	from #sessionTimeMayores t
 	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-	where  datediff(ss,th.start,timegroup_next)>0		
+	where  datediff(ss,th.start,timegroup_next)>0	
 
 -------------------HOLD PROCESS-------------------
 insert into #hold
@@ -347,7 +129,7 @@ insert into #hold
 	from cccallsin i (nolock) 
 	left join RiaMarkHold h (nolock) on i.cal_id=h.call_id and h.tipo_llamada=1
 	where cal_Inicio between @from and @to 
---select * from #hold
+
 insert into #tempccHoldSession
 select A.Fila, A.call_id
 ,a.inbound_id
@@ -380,8 +162,8 @@ select
  from #tempccHoldSession ths
  inner join #times th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
  where [dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold)>0 and Tipo_marca=1
- INSERT into #holdMayores2 SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15 
-	delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15	
+ INSERT into #holdMayores2 SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15
+	delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15
 
 insert into #tiempoHold
 	select DISTINCT  call_id,
@@ -409,18 +191,20 @@ insert into #tempccLogAgentesDia(row,[User_id],[IdCampEsp],[callId],TipoStatusAg
 	select ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY DATEADD(ss,-tStatus,fecha)) AS Row,User_id,IdCampEsp,callID,
 	TipoStatusAge_id,tStatus,DATEADD(ss,-tStatus,fecha) dateIni, fecha dateEnd, isnull(currentStatus,-2)
 	from ccLogAgentesDia
-	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
-	delete A from(
-	select case when A.tStatus>S.tStatus then S.row else A.row end row,A.user_id,a.IdCampEsp,a.callId
-	from #tempccLogAgentesDia A
-	left join #tempccLogAgentesDia S on A.Row=S.Row-1 and A.user_id=S.user_id
-	WHERE  A.dateIni>=@from AND A.dateIni<@to and A.TipoStatusAge_id=S.TipoStatusAge_id
-	and (S.dateEnd between A.dateIni and A.dateEnd or S.dateIni between A.dateIni and A.dateEnd)
-	and abs(DATEDIFF(ss,A.dateEnd,S.dateIni))>2
-	)x
-	inner join 	#tempccLogAgentesDia A on A.row=x.row and A.user_id=x.user_id
+		WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
+		delete A from(
+		select case when A.tStatus>S.tStatus then S.row else A.row end row,A.user_id,a.IdCampEsp,a.callId
+		from #tempccLogAgentesDia A
+		left join #tempccLogAgentesDia S on A.Row=S.Row-1 and A.user_id=S.user_id
+		WHERE  A.dateIni>=@from AND A.dateIni<@to and A.TipoStatusAge_id=S.TipoStatusAge_id
+		and (S.dateEnd between A.dateIni and A.dateEnd or S.dateIni between A.dateIni and A.dateEnd)
+		and abs(DATEDIFF(ss,A.dateEnd,S.dateIni))>2
+		)x
+		inner join 	#tempccLogAgentesDia A on A.row=x.row and A.user_id=x.user_id
 
+	
 	select ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY dateIni) AS Row,User_id,IdCampEsp,callId,TipoStatusAge_id,tStatus,dateIni,dateEnd,currentStatus into #tempccLogAgentesDia2 from #tempccLogAgentesDia
+
 
 	insert into #timeDetailAgent
 	select A.user_id,A.IdCampEsp,A.callId,A.dateIni,A.dateEnd
@@ -470,7 +254,7 @@ insert into #timeDetailAgent(User_id,IdCampEsp,callId,dateStartDetail,dateEndDet
 	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then  convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end as timegroup_next
 	 	,case when currentStatus = 1 then tiempo else 0 end as tunknown,
 	 	case when currentStatus = 2 then tiempo else 0 end as tnot_av,
-	 	case when tipostatusage_id=1 then tiempo when currentStatus = 3 then tiempo else 0 end as tav,
+	 	case when currentStatus = 3 then tiempo else 0 end as tav,
 	 	 0,0,0,0,0 as tunknown2
 		 ,0,0
 		,case when currentStatus in (23,24) then tiempo else 0 end as tchatting
@@ -527,9 +311,9 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
 	where  datediff(ss,th.start,timegroup_next)>0
 
-  select 
+  select distinct
 		isnull(c.IdCampEsp,0) as IdCampEsp
-		,C.timegroup
+		,c.timegroup
 		,isnull(c.tunknown,0) as tunknown
 		,isnull(c.tnot_av,0) as tnot_av
 		,isnull(c.tav,0) as tav
@@ -553,11 +337,12 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		from #timeDetailAgent as c 
 		group by [timegroup],IdCampEsp) c
 		left join #sessionTimeGroup s (nolock) on s.inb_id=c.IdCampEsp AND s.timegroup=C.timegroup
+
 ----------------------------------------------------------
 	insert into #inbound
 	select 
 		cal_Inicio as [dateStart],
-		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
+		dateadd(ss,cal_tDialog+cal_tWait+cal_tXfer+cal_tRing,cal_Inicio) as [dateEnd]
 		,i.Inbound_id as inboundId
 		,i.cal_id as cal_id
 		,1 as [LlamadasRecibidas]
@@ -574,8 +359,8 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		,case when i.statusCall_id=13 and i.cal_tring>0 then 1 else 0 end as nring
 		,case when i.statusCall_id=13 then i.cal_tring else 0 end as tring
 		,case when i.statuscall_id = 13 then i.cal_tmoh else 0 end as thold
-		,dbo.GetTimeGroup(cal_Inicio,0) as timegroup
-		,dbo.GetTimeGroup(dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio),1) as timegroup
+		,dbo.GetTimeGroup(dateadd(ss,cal_tDialog+cal_tWait+cal_tXfer+cal_tRing,cal_Inicio) ,0) as timegroup
+		,dbo.GetTimeGroup(dateadd(ss,cal_tDialog+cal_tWait+cal_tXfer+cal_tRing,cal_Inicio) ,1) as timegroup_next
 		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring,cal_Inicio) as [dateTResp]
 		,dateadd(ss,i.cal_twait + i.cal_txfer,cal_Inicio) as [dateTRing]
 		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring+i.cal_tdialog,cal_Inicio) as [dateTACD]	
@@ -586,16 +371,18 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		dateadd(ss,cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas ,cal_inicio) as dateEndDetail
 	from cccallsin i (nolock) 
 	left join ccLogTransfers t (nolock) on i.cal_id=t.cal_id and t.tipo=1
-	where cal_Inicio between @from and @to
+	 where cal_Inicio between @from and @to
+
 				
 	INSERT into #inboundTimeMayores SELECT * from #inbound where datediff(mi,timegroup,timegroup_next)>15
-	delete #inbound where  datediff(mi,timegroup,timegroup_next)>15	
+	delete #inbound where  datediff(mi,timegroup,timegroup_next)>15
+	
 	
 	insert into #inbound
 	select dateStart,dateEnd,
 		inboundId
-		,cal_id
-		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,[LlamadasRecibidas]) as[LlamadasRecibidas],
+		,cal_id,
+		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,[LlamadasRecibidas]) as[LlamadasRecibidas],
 		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacd) as nacd,
 		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nabnd) as nabnd,		
 		[dbo].TimeInterval( th.[start],th.[stop] ,dateTResp,[dateTACD]) as tacd,
@@ -609,15 +396,57 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		 dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nring) as nring,
 		 [dbo].TimeInterval( th.[start],th.[stop] ,dateTRing,dateTResp) as tring,
 		 thold,
-		 th.[start] as timegroup,th.[stop] as timegroup_next
+		 th.[start] as timegroup,
+		 th.[stop] as timegroup_next
 		,[dateTResp],[dateTRing] ,[dateTACD] 
 		,[dateTTransferStart] ,[dateTTransferEnd] 
 		,UserId
 		,time_notes
 		, dateEndDetail
-	from #inboundTimeMayores t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	from #inboundTimeMayores t 
+	inner join #times th on (t.timegroup> th.Start and t.timegroup < th.stop) OR th.Stop between t.timegroup and t.timegroup_next
+-----------------------------------------------------------------------------------
+insert into #ccLogAgentesDia
+	select [User_id]
+	,IdCampEsp
+	,TipoStatusAge_id
+	,tStatus
+	,case when tStatus is not null then 1 else 0 end nstatusfra
+	,DATEADD(ss,-tStatus,fecha) dateIni
+	,fecha dateEnd
+	,dbo.GetTimeGroup(DATEADD(ss,-tStatus,fecha),0) as timegroup
+	,dbo.GetTimeGroup(fecha,1) as timegroup_next
+	from ccLogAgentesDia A
+	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
+	and TipoStatusAge_id = 3
 
+	INSERT into #ccLogAgentesDiaMayores 
+	SELECT * from #ccLogAgentesDia where datediff(mi,dateIni,dateEnd)>15
+	delete #ccLogAgentesDia where  datediff(mi,timegroup,timegroup_next)>15	
+
+	insert into #ccLogAgentesDia
+	select User_id,IdCampEsp
+	,TipoStatusAge_id
+	,[dbo].TimeInterval( th.[start],th.[stop], dateIni, dateEnd) as tstatus
+	,nstatusfra
+	,DATEADD(ss,-tStatus,dateEnd) dateIni
+	,dateEnd dateEnd
+	,th.[start] as timegroup
+	,th.[stop] as timegroup_next
+	from #ccLogAgentesDiaMayores A 
+	inner join #times th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
+	WHERE dateIni>=@from AND dateIni<@to
+	and TipoStatusAge_id = 3
+
+	select User_id,IdCampEsp
+		,TipoStatusAge_id
+		,sum(tstatus) as tstatus
+		,sum(nstatusfra) as nstatusfra
+		,timegroup
+	INTO #groupLog
+	from #ccLogAgentesDia
+	GROUP BY User_id,IdCampEsp,TipoStatusAge_id,timegroup
+	
 	 select distinct case when c.timegroup is not null then c.timegroup else G.timegroup end  as [date]
 		,isnull(c.inboundId,inb_id) as inboundId
 		,isnull(ci.descripcion,'''') as [descripcion]
@@ -630,7 +459,6 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		,isnull(c.nacw,0) as nacw --nACW
 		,isnull(d.tunknown,0) as tunknown --TiempoDescon
 		,isnull(d.tnot_av,0) as tnot_av --TiempoNoDispo
-		,isnull(d.tav,0) as tav --TiempoDispo
 		,isnull(c.txfer,0) as txfer --TiempoXfer
 		,isnull(d.tother,0) as tother --TiempoOtra
 		,isnull(d.tcliente,0) as tcliente --TiempoCliente
@@ -646,10 +474,12 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		,isnull(c.nserv,0) nserv
 		,isnull(c.nring,0) nring
 		,isnull(c.tring,0) tring
+		
 	INTO #RepMKTIntervalosTiemposAcuTotalesTemp				
 	 from (
-		select [timegroup]
-			,inboundId,userId	
+		select 
+			timegroup
+			,inboundId,userId
 			,sum(nacd) as nacd			
 			,sum(nabnd) as nabnd
 			,sum(tacd) as tacd
@@ -660,7 +490,7 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 			,sum(SalExt) as SalExt
 			,sum(tprosalext) as tprosalext
 			,sum(nhold) as nhold
-			,sum(nserv) as nserv
+			,count(nserv) as nserv
 			,sum(tring) as tring
 			,sum(nring) as nring
 			,sum(thold) as thold
@@ -672,8 +502,10 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		LEFT JOIN #timeHoldInterval hi ON hi.inbound_id=C.inboundId AND hi.timegroup=C.timegroup
 		left join ccinbound ci (nolock) on ci.Inbound_id=c.inboundId	
 		left join #timeDetailAgentFinal d (nolock) on d.IdCampEsp=ci.Inbound_id AND d.timegroup=C.timegroup
+		left JOIN #groupLog lo on c.timegroup = lo.timegroup and c.inboundId = lo.IdCampEsp and c.userId = lo.user_id
 	
-insert INTO [RepMKTIntervalosTiemposAcuTotales]
+	
+insert INTO [RepMKTIntervalosTiemposAcuTotales]	
 	select 
 		[date] as [date]
 		,inboundId
@@ -684,16 +516,16 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		,sum(nabnd)  LlamadasAban
 		,sum(tacd) as TiempoACD --tACD
 		,sum(tacw) as TiempoACW --tACW
-		,sum(tlogout) as TiempoLogout --tLogout
-		,sum(tunknown) as TiempoDescon --tDescon
-		,sum(tnot_av) as TiempoNoDispo --tnotav
-		,sum(tav) as TiempoDispo
+		,sum(c.tlogout) as TiempoLogout --tLogout
+		,sum(c.tunknown) as TiempoDescon --tDescon
+		,sum(distinct c.tnot_av) as TiempoNoDispo --tnotav
+		,sum(distinct d.tav) as TiempoDispo
 		,sum(txfer) as TiempoXfer  --txfer
-		,sum(tother) as TiempoOtra --tother
-		,sum(tcliente) as TiempoCliente --tCliente
+		,sum(c.tother) as TiempoOtra --tother
+		,sum(c.tcliente) as TiempoCliente --tCliente
 		,sum(tring) as TiempoRing --tring
-		,sum(tprob) as TiempoProblema --tprob
-		,sum(tmanualCall) as TiempoManual --tManual
+		,sum(c.tprob) as TiempoProblema --tprob
+		,sum(c.tmanualCall) as TiempoManual --tManual
 		,sum(tiempoHold) as TiempoReten --[timeretention]
 		,sum(SalExt) as LlamadasSalidaExt
 		,case when sum(SalExt)>0 then sum(tprosalext) else 0 end as [TiempoSalidaExt]
@@ -708,10 +540,11 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		,DATEPART(mi, [date]) as [minutes]
 		,sum(nserv) as nserv
 		,sum(nacw) as nacw
-		from #RepMKTIntervalosTiemposAcuTotalesTemp
-		Left join ccinbound  inb ON inb.Inbound_id = inboundId
+		from #RepMKTIntervalosTiemposAcuTotalesTemp c
+		Left join ccinbound  inb ON inb.Inbound_id = inboundId 
+		left join #timeDetailAgentFinal d (nolock) on d.IdCampEsp=c.inboundId AND d.timegroup=c.date
 		group by[date],inboundId,  inb.descripcion
-		having sum(nacd)>0 or sum(nabnd)>0 or sum(tlog) >0	
+		having sum(nacd)>0 or sum(nabnd)>0 or sum(tlog) >0
 
 	drop table #sessionTimeGroup;
 	drop table #sessionTimeMayores;
@@ -731,9 +564,13 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 	drop table #timeDetailAgent2
 	drop table #tempAgentLastStatus
 	drop table #timeDetailAgentFinal
-
-end'
-		EXEC(@sql)	
+	drop table #ccLogAgentesDia
+	drop table #ccLogAgentesDiaMayores
+	drop table #groupLog
+ end
+ '
+		EXEC(@sql)
+		
 
 		if @actualVersion  = @version - 1
 	 	exec ccsp_getVersion 'BD', @version

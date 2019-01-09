@@ -48,6 +48,13 @@ if (@actualVersion = @version - 1 and  @actualVersionFix = 36) or @actualVersion
 	UPDATE ccSettings set valor = ''0.0.0.0|1337|1338|0|0'', Tipo = ''X'', detalle = ''IP|WebSocketServerPort|SocketServerPort|Autorun|IconActived'' where setting_id = 204'
     EXEC(@Sql)
 
+    set @process = 'CW 2409 Drop Function splitstring'
+    set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''splitstring'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        drop function splitstring
+    end'
+    EXEC(@Sql)
+
         set @process = 'CW-2419 Deshardcodear conexión segura - funcion split'
     set @Sql= 'CREATE FUNCTION dbo.splitstring ( @stringToSplit VARCHAR(MAX) )
 RETURNS
@@ -87,7 +94,7 @@ IF EXISTS (SELECT *
 BEGIN
 SELECT @setting = valor FROM ccSettings
 WHERE setting_id = 199
-update ccSettings set valor = (SELECT CONCAT((SELECT TOP 1 * FROM splitstring(@setting)), ''|5672|15671|/|adminNuxiba|Nuxiba2017|5000'')),
+update ccSettings set valor = (SELECT {fn CONCAT(ISNULL((SELECT TOP 1 * FROM splitstring(@setting)), ''''), ISNULL(''|5672|15671|/|adminNuxiba|Nuxiba2017|5000'', ''''))}),
 detalle = ''Configuracion rabbit IP|WSPort|WSSPort|VirtualHost|User|Password|Tiempo expiracion mensaje)'' where setting_id = 199
 END
 ELSE
@@ -248,7 +255,7 @@ if @OperationType=5
  if @OperationType=6
  begin
 	--This action was created for Galatea''s Agent Chat Log
-	SELECT  FORMAT(Fecha_Chat ,''hh:mm:ss'') HourChat,
+	SELECT  convert(varchar(10),Fecha_Chat(),108) HourChat,
 	C.TipoMsgChat , u2.Login AdminLogin,
 	U1.Login AgentLogin,
 	''"''+ REPLACE(C.ChatMsg,''"'',''""'') + ''"'' AS ChatMsg

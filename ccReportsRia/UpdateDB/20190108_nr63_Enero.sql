@@ -3,18 +3,18 @@
 /*******************************/
 
 /*
-Author: Karen Rodríguez
-Date: 2018/08/31
+Author: Karen Rodriguez
+Date: 2019/01/08
 Description:
-**********************************************************************************************
-CW-2258 - Reporte Mkt Intervalos no coinciden datos con Xion
-**********************************************************************************************
+CW-2258 Reporte Mkt Intervalos no coinciden datos con Xion
+
 Database: ccReportsRia
-Required version: 57
+Required version: 63
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
+
 
 set nocount on
 
@@ -25,7 +25,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =58
+set @version =62
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 

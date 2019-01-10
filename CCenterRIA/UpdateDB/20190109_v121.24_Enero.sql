@@ -65,6 +65,28 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
     EXEC(@Sql)
 
 
+    set @process = 'CW-2018 CallBack Reminder alter column addDataCallBackReminder in ccInbound'
+        set @Sql= '
+        ALTER TABLE ccInbound ADD addDataCallBackReminder bit default(0)
+      '
+    EXEC(@Sql)
+
+    
+    set @process = 'CW-2018 CallBack Reminder table ccStatusLLamada ALTER COLUMN '
+        set @Sql= '
+        ALTER TABLE ccStatusLLamada ALTER COLUMN descripcion varchar(50)  
+      '
+        EXEC(@Sql)        
+  
+
+    set @process = 'CW-2018 CallBack Reminder alter column ccStatusLlamada'
+        set @Sql= '
+        ALTER TABLE ccStatusLLamada ALTER COLUMN descripcion varchar(50)
+      '
+        EXEC(@Sql)        
+
+
+
   set @process = 'CW-2393 ETIQUETAS EN PORTUGUES Validate y Detalle ccSettings -- Version BD 119.122 -- '
       set @Sql= 'update ccSettings set detalle = ''Idioma en que apareceran tanto agente como admin RIA.  (0 español - 1 inglés - 2 portugués)'' where setting_id=27
 update ccSettings set validate = ''^[0-2]$'' where setting_id=27
@@ -471,6 +493,17 @@ set @process = 'CW-1501 Version  120.24'
   end'
 
   EXEC(@Sql)
+
+  
+    set @process = 'CW-2018 CallBack Reminder insert ccStatusLLamada 18'
+        set @Sql= '
+    if not exists ( select * from ccStatusLLamada where statusCall_id = 18)
+    begin
+    insert into ccStatusLLamada(statusCall_id,descripcion,inAbandonConfig) values(18,''Colgada en dialogo (Reminder)'',1)---esto es por lo configurado en el setting_id 13
+    end
+      '
+    EXEC(@Sql)      
+
 
 
   set @process = 'CW-2152 Alter FN fn_RIASplitDelimited'
@@ -1634,12 +1667,17 @@ if exists (select cal_ANI from ccRIAUpdateCallBack_Abandon where cal_ANI=@ANI)
   declare @dato1 varchar (max),  @dato2 varchar (max), @dato3 varchar (max), @dato4 varchar (max), @dato5 varchar (max)
   set @dato1 = '''' set @dato2 = '''' set @dato3 = '''' set @dato4 = '''' set @dato5 = ''''
   
-  select @dato1 = ISNULL(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 1''
-  select @dato2 = ISNULL(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 2''
-  select @dato3 = ISNULL(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 3''
-  select @dato4 = ISNULL(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 4''
-  select @dato5 = ISNULL(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 5''
+  declare @datosToAgent varchar(max)
+  select @datosToAgent= addDataCallBackReminder from ccInbound where Inbound_id = @inbound_id
   
+  if(@datosToAgent = 1)
+  begin
+    select @dato1 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 1''
+    select @dato2 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 2''
+    select @dato3 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 3''
+    select @dato4 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 4''
+    select @dato5 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 5''
+  end 
   exec ccsp_INInsertaCallBack @cal_id, @cam_id, @ANI, @fechadial, @dato1,@dato2,@dato3,@dato4,@dato5, 1, 0, 1
 
   select top 1 @callout_id=callout_id from ccoWorkingTable WITH(INDEX(PK_ccoWorkingTable)) WHERE cal_telefono=@ANI
@@ -2081,6 +2119,117 @@ else if @action = 4 begin
     update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 end'
         EXEC(@Sql)
+
+
+set @process = 'CW-2018 CallBack Reminder alter ccsp_RIAUpdateEspecConfig '
+set @Sql= '
+      ALTER procedure [dbo].[ccsp_RIAUpdateEspecConfig]
+@inbound_id smallint,
+@descripcion varchar(50) = null,
+@Status tinyint = null,
+@tNotas int = null,
+@tMaxWaitCall int = null,
+@nMaxQue int = null,
+@tel_maxwait varchar(15) = null,
+@tel_MaxQueue varchar(15) = null,
+@tel_outservice varchar(15) = null,
+@tel_noct varchar(15) = null,
+@ShowCalifWnd bit = null,
+@StartTimerOnHangUp bit = null,
+@editableCallKey bit = null,
+@queuePosition bit = null,
+@tMaxQueueCallBack smallint = null,
+@stopRecording bit = null,
+@dialPrefixOverflow varchar(10) = null,
+@OpriorityT smallint= null,
+@callerIdDesc varchar(15) = null,
+@chat tinyint = null,
+@inactiveChatTime smallint = null,
+@maxChats tinyint = null,
+@chatDomain varchar(max) = null,
+@chatQueue smallint = null,
+@chatTime smallint = null,
+@dRestrictPlay bit = null,
+@callBackSurveyAgent bit = null,
+@callBackSurveyClient bit = null,
+@agts_notavailable varchar(15) = null,
+@editableDtmf bit = null,
+@prefijo VARCHAR(max) = null,
+@addDataCallBackReminder bit = null
+as
+set nocount on
+UPDATE ccInbound SET
+descripcion = isnull(@descripcion,descripcion),
+Status = isnull(@status,status),
+tNotas = isnull(@tNotas,tNotas),
+tMaxWaitCall = isnull(@tMaxWaitCall,tMaxWaitCall),
+nMaxQue = isnull(@nMaxQue,nMaxQue),
+tel_maxwait = isnull(@tel_maxwait,tel_maxwait),
+tel_MaxQueue = isnull(@tel_MaxQueue,tel_MaxQueue),
+tel_outservice = isnull(@tel_outservice,tel_outservice),
+tel_noct = isnull(@tel_noct,tel_noct),
+bnocturno = case when isnull(@tel_noct,0)=''0'' or @tel_noct='''' then ''0'' else ''1'' end,
+StartTimerOnHangUp = isnull(@StartTimerOnHangUp,StartTimerOnHangUp),
+editableCallKey = isnull(@editableCallKey,editableCallKey),
+queuePosition = isnull(@queuePosition,queuePosition),
+tMaxQueueCallBack = isnull(@tMaxQueueCallBack,tMaxQueueCallBack),
+stopRecording = isnull(@stopRecording, stopRecording),
+dialPrefixOverflow = isnull(@dialPrefixOverflow, dialPrefixOverflow),
+OpriorityT = isnull(@OpriorityT, OpriorityT),
+callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+chat = isnull(@chat,chat),
+inactiveChatTime = isnull(@inactiveChatTime,inactiveChatTime),
+maxChats = isnull(@maxChats,maxChats),
+chatQueueOverflow = isnull(@chatQueue,isnull(chatQueueOverflow,15)),
+chatTimeOverflow = isnull(@chatTime,isnull(chatTimeOverflow,300)),
+startStopRecording = isnull(@dRestrictPlay,startStopRecording),
+callBackSurveyAgent = isnull(@callBackSurveyAgent,callBackSurveyAgent),
+callBackSurveyClient = isnull(@callBackSurveyClient,callBackSurveyClient),
+agts_notavailable = isnull(@agts_notavailable,agts_notavailable),
+editableDtmf = isnull(@editableDtmf,editableDtmf),
+prefijo = isnull(@prefijo,prefijo),
+addDataCallBackReminder = isnull(@addDataCallBackReminder,addDataCallBackReminder)
+where inbound_id = @inbound_id
+
+
+if not exists( select inbound_id from ccinbound where inbound_id <> @inbound_id and chatDomain = @chatDomain and chatDomain <> '''') begin
+  if @chatDomain is not null begin
+    update ccinbound set chatDomain = @chatDomain where inbound_id = @inbound_id
+  end
+end
+else begin
+  update ccinbound set chatDomain = '''' where inbound_id = @inbound_id
+  raiserror(''Domain already in another ACD Group'',15,4)
+end
+
+
+if @ShowCalifWnd = 1
+begin
+If exists(select cam_id from ccCalifCamp where cam_id = @inbound_id and tipo = 0)
+  begin
+  UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+  where inbound_id = @inbound_id
+  select 1
+  return(0)
+  end
+
+select 0
+return(0)
+end
+
+else
+UPDATE ccInbound SET ShowCalifWnd = isnull(@ShowCalifWnd,ShowCalifWnd)
+where inbound_id = @inbound_id
+return(0)
+set nocount off
+        
+      '
+        EXEC(@Sql)        
+  
+
+
+
+
 
 
                 set @process = 'CW-2024 Alter SP --ccsp_SaveStatusAgent validate manual call'

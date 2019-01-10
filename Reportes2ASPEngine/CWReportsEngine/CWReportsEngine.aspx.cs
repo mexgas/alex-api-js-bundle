@@ -305,6 +305,10 @@ public partial class CWReportsEngine : System.Web.UI.Page
             {
                 strCulture = lang + "-US";
             }
+            else if (lang == "pt")
+            {
+                strCulture = lang + "-BR";
+            }
             else
             {
                 strCulture = "es-MX";

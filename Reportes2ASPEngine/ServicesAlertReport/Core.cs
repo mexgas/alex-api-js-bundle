@@ -57,11 +57,14 @@ namespace ServicesAlertReport
                 if (eachTimeAlert < 9) eachTimeAlert = 9;
                 if (eachTimeStatistics < 21) eachTimeAlert = 21;
 
-                lang = db.getValueSetting(23) == "0" ? "es" : "en";
+                lang = db.getValueSetting(23);
                 switch (lang)
                 {
                     case "en":
                         strCulture = lang + "-US";
+                        break;
+                    case "pt":
+                        strCulture = lang + "-BR";
                         break;
                     case "es":
                     default:

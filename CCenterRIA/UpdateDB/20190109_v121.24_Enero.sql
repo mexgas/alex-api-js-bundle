@@ -108,13 +108,23 @@ description=''Special dialing structures (Mexico)'',validate=''^[0-2]$''
     EXEC(@Sql)
 
     set @process = 'CW-1501 Version 102.24 '
-      set @Sql= 'if not exists (select * from sys.tables where name = N''targetRecord'')
+    set @Sql= 'if not exists (select * from sys.tables where name = N''targetRecord'')
       begin
           create table targetRecord(
         targetT varchar(250) primary key,en varchar(255),es varchar(255),pt varchar(255)
       );
       end'
     EXEC(@Sql)
+
+
+    set @process = 'CW-2603 Reporte Clicks TCPA create tabla ClicksByAdmin '
+    set @Sql= 'if not exists (select * from sys.tables where name = N''ClicksByAdmin'')
+      begin
+        create table ClicksByAdmin  ( id int identity (1,1),  userId int, campId int, clicks int, date datetime );
+      end'
+    EXEC(@Sql)
+
+
 
     set @process = 'CW-1501 Version 102.24 '
       set @Sql= 'if not exists (select * from sys.tables where name = N''valueRecord'')
@@ -132,6 +142,22 @@ description=''Special dialing structures (Mexico)'',validate=''^[0-2]$''
         DROP PROCEDURE ccsp_Multimedia2;
     end'
     EXEC(@Sql)
+
+
+set @process = 'CW-2603 --CREATE SP SaveClicksAdminByCamp'
+set @Sql= '
+create procedure SaveClicksAdminByCamp
+ 
+@User_Id int,
+@Camps varchar(1000),
+@Clicks varchar(1000)
+as
+insert into ClicksByAdmin 
+select @User_Id,A.Value,B.Value,GETDATE() from dbo.fn_RIASplitDelimited(@Camps,'','') A
+inner join dbo.fn_RIASplitDelimited(@clicks,'','') B on A.Id=B.Id
+'
+  EXEC(@Sql) 
+
 
   set @process = 'CW-2605 --CREATE SP ccsp_Multimedia2'
   set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_Multimedia2]

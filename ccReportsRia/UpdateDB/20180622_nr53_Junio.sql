@@ -373,10 +373,10 @@ values(''MKT Agents'',''users'',7120)
 
 	set @process = 'CW-1730 -- insert into ReportsFiltersMenus '
     	set @Sql= 'delete from ReportsFiltersMenus where idReport=7120
-		insert into ReportsFiltersMenus values 
-(7120,''groupby''),
-(7120,''filterby''),
-(7120,''date'')'
+		insert into ReportsFiltersMenus values (7120,''groupby'')
+insert into ReportsFiltersMenus values (7120,''filterby'')
+insert into ReportsFiltersMenus values (7120,''date'')
+'
 	EXEC(@sql)
 	
 
@@ -731,9 +731,8 @@ END'
 
 	set @process = 'CW-1937 -- VERSION 52  CREATE VIEW RepViewMKTMensual'
     set @Sql= 'CREATE VIEW [dbo].RepViewMKTMensual AS
-select 
-	 convert(date, [date])
-	 AS date
+select 	 
+	DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	 AS date
 	,inboundId
 	,Acds	
 	,case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end as [avrAnswer]
@@ -763,14 +762,14 @@ select
 	,sum(tcalque) as tcalque			
 	,sum(tprosalext) as tprosalext
 	,sum(tlog) as tlog
-	,DATEPART(YYYY, convert(date, [date])) as [year] 
-	,DATEPART(mm, convert(date, [date])) as [month]
+	,DATEPART(YYYY, DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	) as [year] 
+	,DATEPART(mm, DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	) as [month]
 	,0 as [day]
 	,0 as [hour]
 	,0 as [minutes]
 from RepMKTIntervalos
 group by 	
-	convert(date, [date])
+	DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))
 	,inboundId, Acds'
 	EXEC(@Sql)
 
@@ -1368,10 +1367,9 @@ values(''Summary of Total Accumulated Time Intervals'',''acds'',7160)
 
 	set @process = 'CW-1866 insert into ReportsFiltersMenus'
     	set @Sql= 'delete from ReportsFiltersMenus where idReport=7160
-		insert into ReportsFiltersMenus values 
-(7160,''groupby''),
-(7160,''filterby''),
-(7160,''date'')'
+		insert into ReportsFiltersMenus values (7160,''groupby'')
+insert into ReportsFiltersMenus values (7160,''filterby'')
+insert into ReportsFiltersMenus values (7160,''date'')'
 	EXEC(@sql)
 
 	set @process = 'CW-1866 insert into GroupByReports'
@@ -1396,7 +1394,7 @@ insert into ReportsTotals values (7160,''special:PromPosicionPersonal:sum(PromPo
 	set @process = 'CW-1736 -- VERSION 52  CREATE VIEW RepViewMKTDiario'
     set @Sql= 'CREATE VIEW [dbo].RepViewMKTDiario AS
 select 
-	convert(date, [date]) as[date]		
+	DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	 AS date	
 	,inboundId
 	,Acds
 	,case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end as [avrAnswer]
@@ -1426,13 +1424,13 @@ select
 	,sum(tcalque) as tcalque			
 	,sum(tprosalext) as tprosalext
 	,sum(tlog) as tlog
-	,DATEPART(YYYY, convert(date, [date])) as [year] 
-	,DATEPART(mm, convert(date, [date])) as [month]
-	,DATEPART(dd, convert(date, [date])) as [day]
+	,DATEPART(YYYY, DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	 ) as [year] 
+	,DATEPART(mm, DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	 ) as [month]
+	,DATEPART(dd, DATEADD(dd, 0, DATEDIFF(dd, 0, [date]))	 ) as [day]
 	,0 as [hour]
 	,0 as [minutes]
 	from RepMKTIntervalos
-	group by convert(date, [date]),inboundId, Acds'
+	group by DATEADD(dd, 0, DATEDIFF(dd, 0, [date])) ,inboundId, Acds'
 	EXEC(@Sql)
 
 	set @process = 'CW-1937 -- VERSION 52  INSERT Groups INTO GroupByReports'
@@ -2889,9 +2887,8 @@ values(''Daily Total Time'',''acds'',7180)
 
 		set @process = 'CW-1994 -- insert into ReportsFiltersMenus '
     	set @Sql= 'delete from ReportsFiltersMenus where idReport=7180
-insert into ReportsFiltersMenus values 
-(7180,''filterby''),
-(7180,''date'')'
+insert into ReportsFiltersMenus values (7180,''filterby'')
+insert into ReportsFiltersMenus values (7180,''date'')'
 	EXEC(@sql)
 
 		set @process = 'CW-1994 -- insert into ReportsTotals '

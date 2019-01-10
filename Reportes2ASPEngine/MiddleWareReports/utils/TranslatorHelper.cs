@@ -17,6 +17,8 @@ namespace MiddleWareReports
     /// </summary>
     public static class TranslatorHelper
     {
+        private static Dictionary<string, string> Methods = getMethodResource();
+
         /// <summary>
         /// Resource that wants to be translated
         /// </summary>
@@ -177,18 +179,21 @@ namespace MiddleWareReports
             try
             {
                 Type sourceType = typeof(MiddleWareReports.Resources);
-                var property = sourceType.GetProperty(propertyName);
-                object result = property.GetValue(property, null);
-                if (result is string)
+
+                string p = propertyName;
+                if (Methods.ContainsKey(propertyName.ToLower()))
                 {
-                    value = result.ToString();
-                    isTranslated = true;
+                    p = Methods[propertyName.ToLower()];
+                    var property = sourceType.GetProperty(p);
+
+                    object result = property.GetValue(property, null);
+                    if (result is string)
+                    {
+                        value = result.ToString();
+                        isTranslated = true;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                string getResourceProperty = ex.Message;
-                if (isPivotColumn(propertyName))
+                else if (isPivotColumn(propertyName))
                 {
                     value = original;
                 }
@@ -200,8 +205,24 @@ namespace MiddleWareReports
                 {
                     value = propertyName.Trim();
                 }
+
             }
+            catch (Exception) { }
             return value;
+        }
+
+        private static Dictionary<string, string> getMethodResource()
+        {
+            Dictionary<string, string> d = new Dictionary<string, string>();
+            MethodInfo[] methods = typeof(MiddleWareReports.Resources).GetMethods();
+            foreach (var m in methods)
+            {
+                if (!d.ContainsKey(m.Name.Substring(4).ToLower()))
+                {
+                    d.Add(m.Name.Substring(4).ToLower(), m.Name.Substring(4));
+                }
+            }
+            return d;
         }
 
         /// <summary>
@@ -311,7 +332,7 @@ namespace MiddleWareReports
 
             return columnName;
         }
-        
+
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

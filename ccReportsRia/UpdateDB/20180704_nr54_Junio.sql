@@ -1454,9 +1454,8 @@ values(''Daily Total Time'',''acds'',7180)
 
 		set @process = 'CW-1994 -- insert into ReportsFiltersMenus '
     	set @Sql= 'delete from ReportsFiltersMenus where idReport=7180
-insert into ReportsFiltersMenus values 
-(7180,''filterby''),
-(7180,''date'')'
+insert into ReportsFiltersMenus values (7180,''filterby'')
+insert into ReportsFiltersMenus values (7180,''date'')'
 	EXEC(@sql)
 
 		set @process = 'CW-1994 -- insert into ReportsTotals '

@@ -22,6 +22,20 @@ if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva versi
 	begin try
 
 
+	set @process = 'CW-2155 Se agrega columna HHMM a TREC_FORM_ARCHIVOSEXPORT'
+    set @Sql= '
+	
+	if not exists(select * from TREC_FORM_ARCHIVOSEXPORT where id = 23)
+			begin	
+	insert into TREC_FORM_ARCHIVOSEXPORT (id,Formato,Campo,Orden,Comentarios)
+	values (23,''HHMM'',''REPLACE(CONVERT(varchar(5), finicio, 108), '''':'''', '''''''') as HHMM'',0,''Time in format HHMM'')
+	end
+		'
+    EXEC(@Sql)       
+
+
+
+
 	set @process = 'CW-943 Etiquetas en Portugués'
 	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_AdmAVRSReportLanguage]
 @idioma as int

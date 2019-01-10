@@ -54,7 +54,14 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
 
   set @process = 'CW-2152 Alter column Data'
   set @Sql= 'alter table DataCallIn alter column [Data] varchar(255)'
-  EXEC(@Sql)        
+  EXEC(@Sql) 
+
+
+  set @process = 'CW-2393 ETIQUETAS EN PORTUGUES Validate y Detalle ccSettings -- Version BD 119.122 -- '
+      set @Sql= 'update ccSettings set detalle = ''Idioma en que apareceran tanto agente como admin RIA.  (0 español - 1 inglés - 2 portugués)'' where setting_id=27
+update ccSettings set validate = ''^[0-2]$'' where setting_id=27
+'
+      EXEC(@Sql)       
 
 
   set @process = 'CW-2027 Plan de marcación update setting 195'
@@ -2389,7 +2396,56 @@ select @DNIS = rtrim(ltrim(@DNIS))
   END
 
   Select @cal_id as IDCall, @dni_id as IDdnis'
-        EXEC(@Sql) 
+        EXEC(@Sql)
+
+
+  set @process = 'CW-2393 ETIQUETAS EN PORTUGUES Permitir el valor 2 que es portugués en base de datos ccsp_RIAccSettingsConfig -- Version BD 119.122 -- '
+      set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_RIAccSettingsConfig]
+@command tinyint,
+@setting_id smallint = null,
+@value varchar(200) = null
+AS
+set nocount on
+declare @idioma tinyint
+declare @activeChat tinyint
+select @idioma=valor from ccSettings where setting_id=27
+Select @activeChat=valor from ccSettings where setting_id=145
+if @command=0
+  begin
+  SELECT case @idioma when 0 then descripcion 
+            when 1 then [description]
+            else DescripcionPT end descripcion
+  FROM ccSettings WITH(NOLOCK, index(PK_ccSettings)) WHERE setting_id=@setting_id
+  order by descripcion
+  return(0)
+  end
+
+if @command=1
+  begin
+  Select setting_id, case @idioma  
+            when 0 then descripcion 
+            when 1 then [description]
+            else DescripcionPT end descripcion,valor, tipo,validate
+  from ccSettings WITH(NOLOCK, index(PK_ccSettings)) where tipo in (''AGT'',''ADM'',''GRL'',''REP'',''SV'')
+  and (setting_id not in (139,140,141)
+  or   setting_id     in (139,140,141) and @activeChat > 0)
+  order by tipo, descripcion
+  return(0)
+  end
+
+if @command=2
+  begin
+  if @setting_id = 27 and @value not in(''0'',''1'',''2'') begin
+    set @value = 0
+  end
+  else if @setting_id = 104 and @value not in(''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'',''11'',''12'',''13'',''14'',''15'',''16'') begin
+    set @value = 1
+  end
+  update ccSettings set valor=@value where setting_id = @setting_id
+  return(0)
+  end
+set nocount off'
+      EXEC(@Sql)
 				/* End script release */
 
 		/* Upgrade database version (use your own script to do it) */

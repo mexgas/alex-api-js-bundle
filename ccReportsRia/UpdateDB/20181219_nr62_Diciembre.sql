@@ -25,7 +25,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =61
+set @version =62
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
@@ -35,7 +35,7 @@ if @actualVersion  in(@version,@version - 1) begin
 				
 		set @process = 'CW-2465 ST_2018_11_107 Error generacion reportes cliente 24 horas -- Alter SP ReportsMasterProcess'
 		set @sql='ALTER procedure [dbo].[ReportsMasterProcess] 
-@from as date=null
+@from as datetime=null
 as
 
 set nocount on

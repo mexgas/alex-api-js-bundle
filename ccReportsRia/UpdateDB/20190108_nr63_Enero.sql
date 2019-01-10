@@ -27,7 +27,7 @@ declare @errorGenerated varchar(max)
 declare @process varchar(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =62
+set @version =63
 /* Actual version (use your own script to do it) */
 exec @actualVersion = ccsp_getVersion 'BD'
 
@@ -39,6 +39,39 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @process = 'CW-2379 Drop View ccuserView '
 	set @sql='if exists(select * from sys.views where name=''ccuserView'')
 drop view ccuserView'	
+		EXEC(@sql)
+
+
+		set @process = 'CW-2379 CREATE Table ccUsers_Consulta '
+	set @sql='if not exists (select * from sys.tables where name=''ccUsers_Consulta'') begin
+CREATE TABLE [dbo].[ccUsers_Consulta](
+	[User_id] [smallint] NOT NULL,
+	[Login] [varchar](20) NOT NULL,
+	[Nombres] [varchar](45) NULL,
+	[ApellidoPaterno] [varchar](35) NULL,
+	[ApellidoMaterno] [varchar](35) NULL,
+	[TipoStatusAge_id] [tinyint] NOT NULL,
+	[Password] [varchar](33) NOT NULL,
+	[TipoUser_id] [int] NOT NULL,
+	[Status] [tinyint] NOT NULL,
+	[TipoLLamadas] [tinyint] NOT NULL,
+	[Sexo] [bit] NOT NULL,
+	[filter] [bit] NOT NULL,
+	[CanChangeStatus] [bit] NOT NULL,
+	[fCreate] [smalldatetime] NOT NULL,
+	[DialMask] [tinyint] NOT NULL,
+	[XferMask] [tinyint] NOT NULL,
+	[LastPasswordChange] [smalldatetime] NULL,
+	[IDArea] [smallint] NULL,
+	[NotReadyRestricted] [tinyint] NOT NULL,
+	[startStopRecording] [bit] NULL,
+ CONSTRAINT [PK_ccUsers_Consulta] PRIMARY KEY CLUSTERED 
+(
+	[User_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+end'	
 		EXEC(@sql)
 
 		set @process = 'CW-2379 CREATE View ccuserView '

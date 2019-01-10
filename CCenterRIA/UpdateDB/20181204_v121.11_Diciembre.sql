@@ -255,7 +255,7 @@ if @OperationType=5
  if @OperationType=6
  begin
 	--This action was created for Galatea''s Agent Chat Log
-	SELECT  convert(varchar(10),Fecha_Chat(),108) HourChat,
+	SELECT  convert(varchar(10),Fecha_Chat,108) HourChat,
 	C.TipoMsgChat , u2.Login AdminLogin,
 	U1.Login AgentLogin,
 	''"''+ REPLACE(C.ChatMsg,''"'',''""'') + ''"'' AS ChatMsg

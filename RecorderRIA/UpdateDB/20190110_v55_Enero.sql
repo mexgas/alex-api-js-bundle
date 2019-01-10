@@ -37,7 +37,7 @@ begin
  declare @crmNode as xml
  declare @manual as nvarchar(10)
  declare @rating as nvarchar(20)
- declare @sqlCRM nvarchar(2000)
+ declare @sqlCRM nvarchar(max)
  declare @supervisor as nvarchar(50)
  declare @template as nvarchar(50)
  declare @callID as nvarchar(50)
@@ -208,7 +208,7 @@ if @xml is not null begin
 	select @crmNode = node from ccCRMNodes where [type]= @callType and cal_id=@callID
 	if @crmNode is not null begin
 		update ccCRMNodes set grab_id=@grabId where [type]=@callType and cal_id=@callID
-		set @sqlCRM = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R02)[1]'''') ''
+		set @sqlCRM = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(max),@crmNode)+'' into(/R02)[1]'''') ''
 		execute sp_executesql @sqlCRM,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
 	end
 end

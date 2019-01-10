@@ -52,20 +52,21 @@ if  @actualVersion = @version and  @actualVersionFix = 25
 
 	set @process = 'CW-2092 ccsp_GalateaCallbacksDays Returns days with callbacks made by an agent'
     set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_GalateaCallbacksDays]--[dbo].[ccsp_GalateaCallbacksDays] 40
-				@userID int
-				AS
-				declare @currentDay datetime=getdate(),
-				@rangeDays int 
+@userID int
+AS
+declare @currentDay datetime,@rangeDays int 
 
-				select @rangeDays=valor from ccSettings where setting_id=35
+set @currentDay =getdate()
 
-				-- Returns days with callbacks made by an agent
-				SELECT cal_fusercallback Day
-				FROM ccoCallBacks cb
-				WHERE user_id = @userID
-				and cal_fusercallback between @currentDay and dateadd(dd,@rangeDays,getdate())
-				order by Day'
-    EXEC(@Sql)
+select @rangeDays=valor from ccSettings where setting_id=35
+
+-- Returns days with callbacks made by an agent
+SELECT cal_fusercallback Day
+FROM ccoCallBacks cb
+WHERE user_id = @userID
+and cal_fusercallback between @currentDay and dateadd(dd,@rangeDays,getdate())
+order by Day'
+	EXEC(@Sql)
 
 	
 	set @process = 'CW-2167 ccsp_LoadGraphics Add IsStartStopRecording for callBacks Acd'
@@ -124,25 +125,25 @@ END'
 
 	set @process = 'CW-2093 ccsp_GalateaCallbacks Returns the total of callbacks by hour on especific day'
     set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_GalateaCallbacks]
-				@dateCallBack datetime
-				AS
-				-- Returns the total of callbacks by hour on especific day
-				IF OBJECT_ID(''tempdb..#CallBackHours'') IS NOT NULL
-				BEGIN
-					DROP TABLE #CallBackHours
-				END
+@dateCallBack datetime
+AS
+-- Returns the total of callbacks by hour on especific day
+IF OBJECT_ID(''tempdb..#CallBackHours'') IS NOT NULL
+BEGIN
+	DROP TABLE #CallBackHours
+END
 
-				CREATE TABLE #CallBackHours (Hour int, callback int )
+CREATE TABLE #CallBackHours (Hour int, callback int )
 
-				INSERT INTO #CallBackHours
-				select  DATEPART(HOUR, cal_fcallback) ''Hour'', 1
-				from ccoCallsOut
-				where convert(date, cal_fcallback) = @dateCallBack
+INSERT INTO #CallBackHours
+select  DATEPART(HOUR, cal_fcallback) ''Hour'', 1
+from ccoCallsOut
+where convert(datetime,convert(varchar(10),cal_fcallback,121))  = convert(datetime,convert(varchar(10),@dateCallBack,121))
 
-				SELECT  CAST(Hour AS smallint) Hour, SUM(callback) ''CallBacks'' FROM #CallBackHours
-				GROUP BY Hour
-				ORDER BY Hour
-				'
+SELECT  CAST(Hour AS smallint) Hour, SUM(callback) ''CallBacks'' FROM #CallBackHours
+GROUP BY Hour
+ORDER BY Hour
+'
     EXEC(@Sql)
 
 	set @process = 'Setting_id 204 Configuration of Galatea integration service'
@@ -161,28 +162,28 @@ END'
 		set @process = 'ccsp_AgentGetStartStopPermission Return Allowed tag '
     set @Sql= '
 ALTER PROCEDURE [dbo].[ccsp_AgentGetStartStopPermission]
-					@age_id int,
-					@cam_id int,
-					@call_type int
-					AS
-					BEGIN
-						SET NOCOUNT ON;
+@age_id int,
+@cam_id int,
+@call_type int
+AS
+BEGIN
+	SET NOCOUNT ON;
 
-						declare @agentRec int, @valor as int
-						set @valor = 0
-						set @agentRec = (select isnull(startStopRecording,0) from ccusers (nolock) where [User_id] = @age_id)
+	declare @agentRec int, @valor as int
+	set @valor = 0
+	set @agentRec = (select isnull(startStopRecording,0) from ccusers (nolock) where [User_id] = @age_id)
 
-						IF @agentRec = 1
-						BEGIN
-							---------- Entra agente con permiso de StartStopRecording
-							IF @call_type = 1 ------- Revisamos especialidad
-								set @valor = (select isnull(startStopRecording,0) from ccInbound (nolock) where Inbound_id = @cam_id)
-							ELSE ------- Revisamos Campaña
-								set @valor = (select isnull(startStopRecording,0) from ccCamps (nolock) where cam_id = @cam_id)
-						END
+	IF @agentRec = 1
+	BEGIN
+		---------- Entra agente con permiso de StartStopRecording
+		IF @call_type = 1 ------- Revisamos especialidad
+			set @valor = (select isnull(startStopRecording,0) from ccInbound (nolock) where Inbound_id = @cam_id)
+		ELSE ------- Revisamos Campaña
+			set @valor = (select isnull(startStopRecording,0) from ccCamps (nolock) where cam_id = @cam_id)
+	END
 
-						select @valor Allowed
-					END'
+	select @valor Allowed
+END'
 	EXEC(@Sql)
 		/* End script release */
 

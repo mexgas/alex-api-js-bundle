@@ -59,8 +59,8 @@ namespace MiddleWareReports.db
             }
             csb = new SqlConnectionStringBuilder();
             string cypherKey = "nuxibaenckey0706";
-            csb.DataSource = server; // AesCipher.transform(server, cypherKey, false);
-            csb.InitialCatalog = database;//AesCipher.transform(database, cypherKey, false);
+            csb.DataSource = server; 
+            csb.InitialCatalog = database;
             csb.UserID = AesCipher.transform(user, cypherKey, false);
             csb.Password = AesCipher.transform(password, cypherKey, false);
             csb.AsynchronousProcessing = true;

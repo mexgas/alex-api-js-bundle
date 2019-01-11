@@ -11,7 +11,7 @@ namespace MiddleWareReports
     /// Creates instances of the various reports of the application
     /// </summary>
     public class ReportFactory
-    {        
+    {
         /// <summary>
         /// Creates an instance of a report based on its report id
         /// </summary>
@@ -36,9 +36,9 @@ namespace MiddleWareReports
                 case 2040:
                     return new RepAgentNotReadyDet();
                 case 2050:
-                    return new RepAgentKPI();               
+                    return new RepAgentKPI();
                 case 2060:
-                    return new RepAgentSessionByInterval();                
+                    return new RepAgentSessionByInterval();
                 case 2070: //Reporte Estados de agente y llamadas por intervalo Errescuer
                     return new RepAgentCallStatusesByInterval();
                 case 2080:
@@ -96,7 +96,7 @@ namespace MiddleWareReports
                 case 4030://Answered Calls Report                    
                     return new RepOutCalls();
                 case 4040:
-                    return new RepOutDispositions();               
+                    return new RepOutDispositions();
                 case 4050:
                     return new RepOutDials();
                 case 4060:
@@ -106,7 +106,7 @@ namespace MiddleWareReports
                 case 4090:
                     return new RepOutKPI();
                 case 4100:
-                    return new RepOutSubDispositions(); 
+                    return new RepOutSubDispositions();
                 case 4110:
                     return new RepOutCallBacks();
                 case 4120: //Calls with Transference
@@ -119,11 +119,11 @@ namespace MiddleWareReports
                     return new RepSpecialAbndCamp();
                 case 4160:
                     return new RepOutDispositionsContacOwner();
-		case 4170:
+                case 4170:
                     return new RepOutManagementBase(); //reporte de errescuer gestion de base 
                 case 4180: //Reporte de errescuer RepDialingResultsDetail
                     return new RepDialingResultsDetail();
-		case 4190:
+                case 4190:
                     return new RepAnsweredCallsByDialingRetries();
                 case 4220: //Telephone Numbers by State Report
                     return new RepSpecialTelephoneNumbersByState();
@@ -167,17 +167,17 @@ namespace MiddleWareReports
                     return new RepSpececialAbndProfiles();
                 case 7110:
                     return new RepSpececialAbndTimes();
-		 case 7120:
-                    return new RepMKTAgentes();  
- 		case 7130:
+                case 7120:
+                    return new RepMKTAgentes();
+                case 7130:
                     return new RepViewMKTDiario();
- 		case 7140:
-                    return new RepMKTIntervalos();     
-		case 7150:
-                    return new RepViewMKTMensual();        
-		case 7160:
+                case 7140:
+                    return new RepMKTIntervalos();
+                case 7150:
+                    return new RepViewMKTMensual();
+                case 7160:
                     return new RepMKTIntervalosTiemposAcuTotales();
-       	        case 7170:
+                case 7170:
                     return new RepMKTTiemposTotales();
                 case 7180:
                     return new RepMKTDiarioTiemposTotales();
@@ -201,8 +201,8 @@ namespace MiddleWareReports
                     return new RepAVRSQuestionDetail();
                 case 8072:
                     return new RepAVRSRateDetail();
-               /* case 8080:
-                    return new RepAVRSDisposition();*/
+                /* case 8080:
+                     return new RepAVRSDisposition();*/
                 case 8081:
                     return new RepAVRSAgentChat();//RepAVRSAgentChat();
                 case 8082:

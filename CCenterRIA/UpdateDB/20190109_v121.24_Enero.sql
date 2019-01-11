@@ -88,9 +88,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
 
 
   set @process = 'CW-2393 ETIQUETAS EN PORTUGUES Validate y Detalle ccSettings -- Version BD 119.122 -- '
-      set @Sql= 'update ccSettings set detalle = ''Idioma en que apareceran tanto agente como admin RIA.  (0 español - 1 inglés - 2 portugués)'' where setting_id=27
-update ccSettings set validate = ''^[0-2]$'' where setting_id=27
-'
+      set @Sql= 'update ccSettings set detalle = ''Idioma en que apareceran tanto agente como admin RIA.  (0 español - 1 inglés - 2 portugués)'',validate = ''^[0-2]$'' where setting_id=27'
       EXEC(@Sql)       
 
 
@@ -2816,8 +2814,8 @@ Select @activeChat=valor from ccSettings where setting_id=145
 if @command=0
   begin
   SELECT case @idioma when 0 then descripcion 
-            when 1 then [description]
-            else DescripcionPT end descripcion
+            --when 2 then DescripcionPT 
+            else [description] 	end descripcion
   FROM ccSettings WITH(NOLOCK, index(PK_ccSettings)) WHERE setting_id=@setting_id
   order by descripcion
   return(0)
@@ -2825,10 +2823,11 @@ if @command=0
 
 if @command=1
   begin
-  Select setting_id, case @idioma  
-            when 0 then descripcion 
-            when 1 then [description]
-            else DescripcionPT end descripcion,valor, tipo,validate
+  Select setting_id, 
+		case @idioma  when 0 then descripcion 
+            --when 2 then DescripcionPT 
+            else [description] end descripcion,
+			valor, tipo,validate
   from ccSettings WITH(NOLOCK, index(PK_ccSettings)) where tipo in (''AGT'',''ADM'',''GRL'',''REP'',''SV'')
   and (setting_id not in (139,140,141)
   or   setting_id     in (139,140,141) and @activeChat > 0)
@@ -3255,8 +3254,10 @@ BEGIN
 
 SET NOCOUNT ON;
 declare @from datetime,@to datetime
-  set @from =convert(date,getdate(),121)
+  set @from =convert(datetime, convert(varchar(10),getdate(),121))
   set @to =dateadd(dd,1,@from)
+
+  
 
 if(@Option=0)
 begin
@@ -3280,8 +3281,8 @@ begin
   and (
     (
      messageStatusId in (1,4) or
-    (tQueue is not null and convert(date, tQueue) = @from) or
-    (tSend is not null and convert(date, tsend) = @from)
+    (tQueue is not null and convert(datetime, convert(varchar(10),tQueue,121)) = @from) or
+    (tSend is not null and convert(datetime, convert(varchar(10),tsend,121)) = @from)
     )
     or [date] between @from and @to
    )
@@ -3309,15 +3310,14 @@ BEGIN
   and (
     (
      messageStatusId in (1,4) or
-    (tQueue is not null and convert(date, tQueue,121) =@from) or
-    (tSend is not null and convert(date, tsend,121) = @from)
+    (tQueue is not null and convert(datetime, convert(varchar(10),tQueue,121)) = @from) or
+    (tSend is not null and convert(datetime, convert(varchar(10),tsend,121)) = @from)
     )
     or [date] between @from and @to
    )
   GROUP BY InboundId
   END
-END
-'
+END'
   EXEC(@Sql) 
 
   set @process = 'CW-2605 --Alter SP ccsp_MailSave'

@@ -13,13 +13,30 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 52
+	Set @Version = 55
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva version
 	 begin
 	begin tran
 	begin try
+
+	set @process = 'CW-1770 Version 51  drop index ria_recnode.IX_status'
+	set @Sql= 'if exists (select * from sys.indexes where name = N''IX_status'' and object_id = OBJECT_ID(N''ria_recnode'')) begin
+	drop index ria_recnode.IX_status
+ end'
+    EXEC(@Sql)
+
+    set @process = 'CW-1770 Version 51 Alter column ria_RecNode.status'
+	set @Sql= 'alter table ria_RecNode alter column status smallint'
+    EXEC(@Sql)
+
+    set @process = 'CW-1770 Version 51  CReate index ria_recnode.IX_status'
+	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_status'' and object_id = OBJECT_ID(N''ria_recnode'')) begin
+	create index IX_status on ria_RecNode(status)
+ end
+'
+    EXEC(@Sql)
 
 
 	set @process = 'CW-2155 Se agrega columna HHMM a TREC_FORM_ARCHIVOSEXPORT'
@@ -32,9 +49,6 @@ if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva versi
 	end
 		'
     EXEC(@Sql)       
-
-
-
 
 	set @process = 'CW-943 Etiquetas en Portugués'
 	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_AdmAVRSReportLanguage]
@@ -427,23 +441,48 @@ else if @xml is not null begin
 end
 	--select @xml
 end'
-    EXEC(@Sql)
+    EXEC(@Sql)    
 
-    set @process = 'CW-1770 Version 51  drop index ria_recnode.IX_status'
-	set @Sql= 'if exists (select * from sys.indexes where name = N''IX_status'' and object_id = OBJECT_ID(N''ria_recnode'')) begin
-	drop index ria_recnode.IX_status
- end'
-    EXEC(@Sql)
+    set @process = 'CW-2495 -- trsp_muevegrabaciones'
+	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_muevegrabaciones]
+AS
+BEGIN
+declare @fecha datetime
+declare @Integrado as int
 
-    set @process = 'CW-1770 Version 51 Alter column ria_RecNode.status'
-	set @Sql= 'alter table ria_RecNode alter column status smallint'
-    EXEC(@Sql)
+select @integrado = par_valor from trec_parametros where par_id = 29
+set @fecha = CAST(CONVERT(VARCHAR(8), DATEADD(DD,-30,GETDATE()), 1) AS DATETIME)
 
-    set @process = 'CW-1770 Version 51  CReate index ria_recnode.IX_status'
-	set @Sql= 'if not exists (select * from sys.indexes where name = N''IX_status'' and object_id = OBJECT_ID(N''ria_recnode'')) begin
-	create index IX_status on ria_RecNode(status)
- end
-'
+
+--AVRS XION
+if (@integrado = 2) BEGIN       
+
+       	INSERT INTO [RIA_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+			info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+			cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh)												
+		SELECT grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+			info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+			cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh
+		FROM [RIA_GRABACION] with(nolock, index(IX_RIA_GRABACION_3)) WHERE [finicio] < @fecha;		
+
+		DELETE RIA_GRABACION with(rowlock) WHERE [finicio] < @fecha;
+END
+else BEGIN  --AVRS Integrada ó AVRS Stand Alone
+       SET IDENTITY_INSERT TREC_GRABACIONCONSULTA ON
+
+       INSERT INTO [TREC_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+			info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+			cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG)
+       SELECT grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+			info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+			cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG
+       FROM [TREC_GRABACION] with(nolock, index(IX_TREC_GRABACION_3)) WHERE [finicio] < @fecha;
+
+       SET IDENTITY_INSERT TREC_GRABACIONCONSULTA OFF
+
+       DELETE TREC_GRABACION with(rowlock) WHERE [finicio] < @fecha;
+END
+END'
     EXEC(@Sql)
 		
 		

@@ -903,7 +903,7 @@ begin
 	from (select *, [dbo].[GetProveedor](Telefono, Puerto,CallType) as proBIDs from (select *, dbo.fnGetTipoLlamada(ccenterria.dbo.Verifica(telefono)) as CallType from ccologdials WITH(NOLOCK) where fecha >= @from and fecha < @to and answerbit = 1 ) as basequery ) ccld
 	LEFT JOIN ccoCallsOut Call WITH(NOLOCK) on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
 	LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
-	LEFT JOIN ccUsers Usr ON Usr.[user_id] = Call.[user_id]
+	LEFT JOIN ccuserView Usr ON Usr.[user_id] = Call.[user_id]
 	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = COALESCE(Call.[tipoLlamada_id],ccld.CallType) and tl.Country_id = @country)
 	order by date
 
@@ -913,7 +913,7 @@ begin
 	'''' as [campaignId],
 	'''' as [campaign],
 	isnull((case tipo when 1 then ci.User_id else co.User_id end),0) as [userId],
-	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccusers nolock where user_id = 
+	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccuserView nolock where user_id = 
 	(case tipo when 1 then ci.User_id else co.User_id end)),''systemTranslated_NoName'') as [Agent],
 	case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end as [dialog],
 	case when modo = 0 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino)  
@@ -1460,7 +1460,7 @@ begin
 	from ccoCallsOut A
 	left join ccoLogDials B on A.cal_id=B.cal_id
 	left join ccoCallsOutSource C on C.callout_id=A.callout_id
-	left join ccUsers D on A.User_id=D.User_id
+	left join ccuserView D on A.User_id=D.User_id
 	left join ccCamps E on A.cam_id=E.cam_id
 	left join ccTipoCalifOUT disp On disp.calif_id=A.calif_id
 	left join ccTipoCalifSubOUT subDisp On subDisp.califSub_id=A.califSub_id
@@ -1779,7 +1779,7 @@ if @action = 1 begin
 			(select timegroup, timegroup_next,user_id, sum(tnav) as tnav,sum(twbcall) as twbcall from #tempNotReady
 			group by timegroup, timegroup_next,user_id)
 		nReady on nReady.timegroup=O.timegroup and O.User_id=nReady.User_id
-		inner join ccUsers U on O.User_id = U.User_id or Agent.User_id=U.User_id or nReady.User_id=U.User_id
+		inner join ccuserView U on O.User_id = U.User_id or Agent.User_id=U.User_id or nReady.User_id=U.User_id
 		where  O.timegroup>=@from AND O.timegroup_next<@to
 		
 

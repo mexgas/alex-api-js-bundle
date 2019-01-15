@@ -1,6 +1,7 @@
 /*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
+
 /*
 Author: 
 		
@@ -24,7 +25,7 @@ declare @sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 declare @versionALL varchar(max);
- 
+
 /* Version to release (use the version of your own databse)*/
 /*******************************************************************************************************
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
@@ -65,9 +66,10 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
 
 
     set @process = 'CW-2018 CallBack Reminder alter column addDataCallBackReminder in ccInbound'
-        set @Sql= '
+    set @Sql= 'if not exists (select * from sys.columns where name = N''ccInbound'' and Object_ID = Object_ID(N''addDataCallBackReminder''))
+    begin
         ALTER TABLE ccInbound ADD addDataCallBackReminder bit default(0)
-      '
+    end'
     EXEC(@Sql)
 
     
@@ -141,9 +143,15 @@ description=''Special dialing structures (Mexico)'',validate=''^[0-2]$''
     EXEC(@Sql)
 
 
+	set @Sql= 'if exists (select * from sys.procedures where name = N''SaveClicksAdminByCamp'')
+    begin
+        DROP PROCEDURE SaveClicksAdminByCamp;
+    end'
+    EXEC(@Sql)
+
+
 set @process = 'CW-2603 --CREATE SP SaveClicksAdminByCamp'
-set @Sql= '
-create procedure SaveClicksAdminByCamp
+set @Sql= 'create procedure SaveClicksAdminByCamp
  
 @User_Id int,
 @Camps varchar(1000),

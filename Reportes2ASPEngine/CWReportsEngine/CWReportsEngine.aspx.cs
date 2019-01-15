@@ -37,7 +37,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
     private string templateId;
     private string chartFields;
 
-
     protected void Page_Load(object sender, EventArgs e)
     {
         short process;

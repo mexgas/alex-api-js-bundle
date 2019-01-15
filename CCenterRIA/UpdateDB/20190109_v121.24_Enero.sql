@@ -25,7 +25,7 @@ declare @sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 declare @versionALL varchar(max);
-
+ 
 /* Version to release (use the version of your own databse)*/
 /*******************************************************************************************************
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo

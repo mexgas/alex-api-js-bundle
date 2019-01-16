@@ -66,7 +66,7 @@ if  @actualVersion = @version and  @actualVersionFix >= 22
 
 
     set @process = 'CW-2018 CallBack Reminder alter column addDataCallBackReminder in ccInbound'
-    set @Sql= 'if not exists (select * from sys.columns where name = N''ccInbound'' and Object_ID = Object_ID(N''addDataCallBackReminder''))
+    set @Sql= 'if not exists (select * from sys.columns where name = N''addDataCallBackReminder'' and Object_ID = Object_ID(N''ccInbound''))
     begin
         ALTER TABLE ccInbound ADD addDataCallBackReminder bit default(0)
     end'

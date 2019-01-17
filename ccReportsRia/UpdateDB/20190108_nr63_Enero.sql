@@ -857,86 +857,33 @@ end
 	case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end)) >0 then convert(int, sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end))) else 1 end) else 0 end:LlamadasporPosicion'',''Acds|inboundId'')
 	END'
 		EXEC(@sql)
+
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+	BEGIN
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+		EXEC(@Sql)
+
 		
-	set @process = 'CW-2576 correccion de reporte de contestadas y transferidas 1'
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
-
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
-
-declare @IVA INT
-declare @country as tinyint
-
-
-select @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
-select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104
-
-
-if @country is null set @country = 1
-
-
-if @action = 1
-begin
-	--Borrar lo que esta para no repetir
-	delete from RepOutAnswAndXferCalls with(rowlock) where date >= @from AND date < @to
-
-	insert into RepOutAnswAndXferCalls
-	select COALESCE([Call].cal_inicio,ccld.fecha) as [date],
-	isnull(ccld.cal_id,0) as [callid],
-	isnull(ccld.cam_id,0) as [campaignId],
-	ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
-	isnull([Call].user_id,0) as [userId],
-	ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, ''N/A'') as [Agent],
-	case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end as [dialog],
-	ccld.telefono as [telephone],
-	isnull(Call.cal_manual,0) as [dialId],
-	isnull((select [description] from dialType where dialId = Call.cal_manual),''systemTranslated_Auto'') as [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [CallTypes],
-	dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end) as [ncost],
-	@IVA as iva,
-	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end),0.00) * (1 + (@IVA / 100.00))) as total
-	from (select *, [dbo].[GetProveedor](Telefono, Puerto,CallType) as proBIDs from (select *, dbo.fnGetTipoLlamada(ccenterria.dbo.Verifica(telefono)) as CallType from ccologdials WITH(NOLOCK) where fecha >= @from and fecha < @to and answerbit = 1 ) as basequery ) ccld
-	LEFT JOIN ccoCallsOut Call WITH(NOLOCK) on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
-	LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
-	LEFT JOIN ccuserView Usr ON Usr.[user_id] = Call.[user_id]
-	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = COALESCE(Call.[tipoLlamada_id],ccld.CallType) and tl.Country_id = @country)
-	order by date
-
-	insert into RepOutAnswAndXferCalls
-	select dateadd(ss,-(clt.tAntesXfer + clt.tDespuesXfer),clt.fechaFin) as [date],
-	clt.cal_id as [callid],
-	'''' as [campaignId],
-	'''' as [campaign],
-	isnull((case tipo when 1 then ci.User_id else co.User_id end),0) as [userId],
-	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccuserView nolock where user_id = 
-	(case tipo when 1 then ci.User_id else co.User_id end)),''systemTranslated_NoName'') as [Agent],
-	case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end as [dialog],
-	case when modo = 0 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino)  
-	when modo = 3 then isnull((select tel from telefonosConferencia where tel = clt.destino),clt.destino) 
-	when modo = 4 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino) 
-	when modo = 5 then isnull((select Computer from ccposicion where pos_id = abs(clt.destino)),clt.destino) end as [telephone],
-	3 as [dialId],
-	(select [description] from dialType where dialId = 3) as [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [CallTypes],
-	ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end), 0) as [ncost],
-	@IVA as iva,
-	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else  60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end),0.00) * (1 + (@IVA / 100.00))) as [total]
-	from (select *,dbo.fnGetTipoLlamada(ccenterria.dbo.Verifica(destino)) as  CallType from cclogtransfers WITH(NOLOCK) where modo not in (1,2) and (tAntesXfer > 0 or tDespuesXfer > 0) and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) >= @from and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) < @to) clt
-	LEFT JOIN cccallsin ci WITH(NOLOCK) on ci.cal_id=clt.cal_id and tipo=1
-	LEFT JOIN ccocallsout co WITH(NOLOCK) on co.cal_id=clt.cal_id and tipo=2 
-	LEFT JOIN ccChannelTransfer channel on clt.pbxId=channel.pbxId and clt.channel between channel.startChannel and channel.endChannel
-	LEFT JOIN cstoTarifa tarifa on tarifa.provedor_id=channel.proveedorId and tarifa.tipoLlamada_id=dbo.fnGetTipoLlamada(clt.destino)
-	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = clt.CallType and tl.Country_id = @country)
-	order by date 
-
-end'
-		 
-		EXEC(@sql)
+	set @process = 'ccLogTransfers - Alter Table'
+	set @Sql='if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccLogTransfers''))
+	begin
+		alter table ccLogTransfers
+		add tipoLlamada_id smallint default(0)
+	end'
+	
+	EXEC(@Sql)
+		
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+	BEGIN 
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+		
+	EXEC(@Sql)
+		
 
 set @process = 'CW-2576 correccion de reporte de contestadas y transferidas 2'
 		set @sql='ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
@@ -6252,7 +6199,7 @@ end
 '	
 		EXEC(@sql)
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		set @process = 'CW-2379, CW-2576 Alter SP --  Report ccspRepOutAnswAndXferCalls ,use View ccuserView '
 		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
 @action as tinyint,
 @from as datetime = null,
@@ -6291,13 +6238,13 @@ begin
 	isnull(Call.cal_manual,0) as [dialId],
 	isnull((select [description] from dialType where dialId = Call.cal_manual),''systemTranslated_Auto'') as [dialType],
 	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [CallTypes],
-	dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), case when Call.provedor_id is not null then Call.provedor_id else 1 end , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end) as [ncost],
+	dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end) as [ncost],
 	@IVA as iva,
-	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), case when Call.provedor_id is not null then Call.provedor_id else 1 end , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end),0.00) * (1 + (@IVA / 100.00))) as total
-	from (select *, dbo.fnGetTipoLlamada(telefono) as CallType from ccologdials where fecha >= @from and fecha < @to and answerbit = 1) ccld
-	LEFT JOIN ccoCallsOut Call on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
+	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end),0.00) * (1 + (@IVA / 100.00))) as total
+	from (select *, [dbo].[GetProveedor](Telefono, Puerto,CallType) as proBIDs from (select *, 0 as CallType from ccologdials WITH(NOLOCK) where fecha >= @from and fecha < @to and answerbit = 1 ) as basequery ) ccld
+	LEFT JOIN ccoCallsOut Call WITH(NOLOCK) on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
 	LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
-	LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id]
+	LEFT JOIN ccuserView Usr ON Usr.[user_id] = Call.[user_id]
 	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = COALESCE(Call.[tipoLlamada_id],ccld.CallType) and tl.Country_id = @country)
 	order by date
 
@@ -6307,7 +6254,7 @@ begin
 	'''' as [campaignId],
 	'''' as [campaign],
 	isnull((case tipo when 1 then ci.User_id else co.User_id end),0) as [userId],
-	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccUserView nolock where user_id = 
+	isnull((select nombres + '' '' + apellidopaterno + '' '' + apellidomaterno from ccuserView nolock where user_id = 
 	(case tipo when 1 then ci.User_id else co.User_id end)),''systemTranslated_NoName'') as [Agent],
 	case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end as [dialog],
 	case when modo = 0 then isnull((select top 1 tel from telefonosTransferencia where tel = clt.destino),clt.destino)  
@@ -6320,9 +6267,9 @@ begin
 	ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else 60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end), 0) as [ncost],
 	@IVA as iva,
 	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId, case when ((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60) <> 0 then (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) + (60 -((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) % 60)) else  60 + (ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0)) end),0.00) * (1 + (@IVA / 100.00))) as [total]
-	from (select *,dbo.fnGetTipoLlamada(ccenterria.dbo.Verifica(destino)) as  CallType from cclogtransfers where modo not in (1,2) and (tAntesXfer > 0 or tDespuesXfer > 0) and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) >= @from and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) < @to) clt
-	LEFT JOIN cccallsin ci (nolock) on ci.cal_id=clt.cal_id and tipo=1
-	LEFT JOIN ccocallsout co (nolock) on co.cal_id=clt.cal_id and tipo=2 
+	from (select *, tipoLlamada_id as CallType from cclogtransfers WITH(NOLOCK) where modo not in (1,2) and (tAntesXfer > 0 or tDespuesXfer > 0) and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) >= @from and dateadd(ss,-(tAntesXfer + tDespuesXfer),fechaFin) < @to) clt
+	LEFT JOIN cccallsin ci WITH(NOLOCK) on ci.cal_id=clt.cal_id and tipo=1
+	LEFT JOIN ccocallsout co WITH(NOLOCK) on co.cal_id=clt.cal_id and tipo=2 
 	LEFT JOIN ccChannelTransfer channel on clt.pbxId=channel.pbxId and clt.channel between channel.startChannel and channel.endChannel
 	LEFT JOIN cstoTarifa tarifa on tarifa.provedor_id=channel.proveedorId and tarifa.tipoLlamada_id=dbo.fnGetTipoLlamada(clt.destino)
 	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = clt.CallType and tl.Country_id = @country)

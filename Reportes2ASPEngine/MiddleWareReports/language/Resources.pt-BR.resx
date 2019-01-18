@@ -826,10 +826,10 @@
     <value>Estado do prestador</value>
   </data>
   <data name="disposition" xml:space="preserve">
-    <value>Qualificaçõe</value>
+    <value>Qualificação</value>
   </data>
   <data name="Disposition2" xml:space="preserve">
-    <value>Qualificaçõe</value>
+    <value>Qualificação</value>
   </data>
   <data name="dispositionContactOwner" xml:space="preserve">
     <value>Contato com o proprietário</value>

@@ -1678,7 +1678,7 @@
     <value>Email status</value>
   </data>
   <data name="statusTime" xml:space="preserve">
-    <value />
+    <value>Time</value>
   </data>
   <data name="statusTwitter" xml:space="preserve">
     <value>Tweet status</value>

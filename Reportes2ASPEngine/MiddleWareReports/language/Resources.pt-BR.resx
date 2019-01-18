@@ -538,7 +538,7 @@
     <value>Chamadas por grupo ACD</value>
   </data>
   <data name="CallsperArea" xml:space="preserve">
-    <value />
+    <value>Chamadas por área</value>
   </data>
   <data name="CallsperCampaign" xml:space="preserve">
     <value>Chamadas por campanha</value>
@@ -742,7 +742,7 @@
     <value>Descrição</value>
   </data>
   <data name="descriptionOption" xml:space="preserve">
-    <value />
+    <value>Descrição</value>
   </data>
   <data name="destination" xml:space="preserve">
     <value>Destino</value>
@@ -811,7 +811,7 @@
     <value>Tipo de chamada</value>
   </data>
   <data name="dialType" xml:space="preserve">
-    <value />
+    <value>Tipo de discagem</value>
   </data>
   <data name="Dids" xml:space="preserve">
     <value>DID</value>
@@ -826,7 +826,7 @@
     <value>Estado do prestador</value>
   </data>
   <data name="disposition" xml:space="preserve">
-    <value />
+    <value>Qualificaçõe</value>
   </data>
   <data name="Disposition2" xml:space="preserve">
     <value>Qualificaçõe</value>
@@ -880,7 +880,7 @@
     <value>Tweets baixados por agente</value>
   </data>
   <data name="duration" xml:space="preserve">
-    <value />
+    <value>Duração</value>
   </data>
   <data name="Effectiveness" xml:space="preserve">
     <value>Efetividade</value>
@@ -913,7 +913,7 @@
     <value>Chamadas e transferências</value>
   </data>
   <data name="extension" xml:space="preserve">
-    <value />
+    <value>Ramal</value>
   </data>
   <data name="Fields" xml:space="preserve">
     <value>Campos</value>
@@ -970,7 +970,7 @@
     <value>ID da gravação</value>
   </data>
   <data name="GT300" xml:space="preserve">
-    <value />
+    <value>300</value>
   </data>
   <data name="gt60" xml:space="preserve">
     <value>60</value>
@@ -994,7 +994,7 @@
     <value>ID do grupo ACD</value>
   </data>
   <data name="InboundTrunksbusy" xml:space="preserve">
-    <value />
+    <value>Ocupação de portos de entrada</value>
   </data>
   <data name="iva" xml:space="preserve">
     <value>IVA</value>
@@ -1048,7 +1048,7 @@
     <value>Chamadas por agente</value>
   </data>
   <data name="LlamadasRecibidas" xml:space="preserve">
-    <value />
+    <value>Chamadas recebidas</value>
   </data>
   <data name="LlamadasRetenidas" xml:space="preserve">
     <value>Chamadas recebidas</value>
@@ -1057,13 +1057,13 @@
     <value>Chamadas em espera</value>
   </data>
   <data name="login" xml:space="preserve">
-    <value />
+    <value>Conta</value>
   </data>
   <data name="loginTime" xml:space="preserve">
     <value>Transferências ou conferências</value>
   </data>
   <data name="logoutTime" xml:space="preserve">
-    <value />
+    <value>Terminar sessão</value>
   </data>
   <data name="LT10" xml:space="preserve">
     <value>&lt; 10</value>
@@ -1102,7 +1102,7 @@
     <value>Endereço do contato</value>
   </data>
   <data name="ManagementBase" xml:space="preserve">
-    <value />
+    <value>Gestão de base</value>
   </data>
   <data name="maxDelay" xml:space="preserve">
     <value>Tempo máximo na fila de espera</value>
@@ -1408,7 +1408,7 @@
     <value>Usuário do agente</value>
   </data>
   <data name="options" xml:space="preserve">
-    <value />
+    <value>Opções</value>
   </data>
   <data name="Optionsselected" xml:space="preserve">
     <value>Opções selecionadas</value>
@@ -1531,7 +1531,7 @@
     <value>Detalhe de avaliação</value>
   </data>
   <data name="readyPercent" xml:space="preserve">
-    <value />
+    <value>% em disponível</value>
   </data>
   <data name="readyTime" xml:space="preserve">
     <value>Tempo disponível</value>
@@ -1591,7 +1591,7 @@
     <value>Nome de usuário </value>
   </data>
   <data name="se" xml:space="preserve">
-    <value />
+    <value>Semestre</value>
   </data>
   <data name="Section" xml:space="preserve">
     <value>Conceito</value>
@@ -1639,7 +1639,7 @@
     <value>Informação geral (especial)</value>
   </data>
   <data name="SpecialTimes" xml:space="preserve">
-    <value />
+    <value>Tempos especiais</value>
   </data>
   <data name="startDate" xml:space="preserve">
     <value>Data de início</value>
@@ -1678,13 +1678,13 @@
     <value>Estado de correio</value>
   </data>
   <data name="statusTime" xml:space="preserve">
-    <value />
+    <value>Tempo</value>
   </data>
   <data name="statusTwitter" xml:space="preserve">
     <value>Estado de tweet</value>
   </data>
   <data name="subDisposition" xml:space="preserve">
-    <value />
+    <value>Subclassificação</value>
   </data>
   <data name="Subdispositions" xml:space="preserve">
     <value>Subclassificações</value>
@@ -1693,7 +1693,7 @@
     <value>Tempo acumulado total por intervalo</value>
   </data>
   <data name="Supervisor" xml:space="preserve">
-    <value />
+    <value>Nome do Supervisor</value>
   </data>
   <data name="SupervisorAgent" xml:space="preserve">
     <value>Supervisor/Agente</value>

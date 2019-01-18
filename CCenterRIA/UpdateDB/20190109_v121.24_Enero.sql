@@ -336,8 +336,7 @@ BEGIN
 	RETURN (0)
 END
 
-SET nocou
-nt off'
+SET nocount off'
 
 		EXEC (@Sql)
 

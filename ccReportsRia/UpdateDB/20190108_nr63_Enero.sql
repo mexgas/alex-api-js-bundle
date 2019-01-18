@@ -1,7 +1,6 @@
 /*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
-
 /*
 Author: Karen Rodriguez
 Date: 2019/01/08
@@ -16,34 +15,34 @@ Required version: 63
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
+SET NOCOUNT ON
 
-
-set nocount on
-
-declare @version int
-declare @actualVersion int
-declare @sql varchar(max)
-declare @errorGenerated varchar(max)
-declare @process varchar(max)
+DECLARE @version INT
+DECLARE @actualVersion INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
 
 /* Version to release (use the version of your own databse)*/
-set @version =63
+SET @version = 63
+
 /* Actual version (use your own script to do it) */
-exec @actualVersion = ccsp_getVersion 'BD'
+EXEC @actualVersion = ccsp_getVersion 'BD'
 
-if @actualVersion  in(@version,@version - 1) begin
-	begin tran
-	begin try
+IF @actualVersion IN (@version, @version - 1)
+BEGIN
+	BEGIN TRAN
 
+	BEGIN TRY
+		SET @process = 'CW-2379 Drop View ccuserView '
+		SET @sql = 'if exists(select * from sys.views where name=''ccuserView'')
+drop view ccuserView'
 
-	set @process = 'CW-2379 Drop View ccuserView '
-	set @sql='if exists(select * from sys.views where name=''ccuserView'')
-drop view ccuserView'	
-		EXEC(@sql)
+		EXEC (@sql)
 
-
-		set @process = 'CW-2379 CREATE Table ccUsers_Consulta '
-	set @sql='if not exists (select * from sys.tables where name=''ccUsers_Consulta'') begin
+		SET @process = 'CW-2379 CREATE Table ccUsers_Consulta '
+		SET @sql = 
+			'if not exists (select * from sys.tables where name=''ccUsers_Consulta'') begin
 CREATE TABLE [dbo].[ccUsers_Consulta](
 	[User_id] [smallint] NOT NULL,
 	[Login] [varchar](20) NOT NULL,
@@ -71,19 +70,20 @@ CREATE TABLE [dbo].[ccUsers_Consulta](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 CREATE View ccuserView '
-		set @sql='CREATE VIEW [dbo].[ccUserView] AS
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 CREATE View ccuserView '
+		SET @sql = 'CREATE VIEW [dbo].[ccUserView] AS
 select User_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,TipoStatusAge_id,TipoUser_id,Status,Sexo,IDArea from ccUsers 
 union
-select User_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,TipoStatusAge_id,TipoUser_id,Status,Sexo,IDArea from ccUsers_Consulta'	
-		EXEC(@sql)
+select User_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,TipoStatusAge_id,TipoUser_id,Status,Sexo,IDArea from ccUsers_Consulta'
 
+		EXEC (@sql)
 
-	set @process = 'CW-2393 add translate media'
-    	set @Sql= 'if not  exists(select * from TranslatedReports where id=8062)
+		SET @process = 'CW-2393 add translate media'
+		SET @Sql = 'if not  exists(select * from TranslatedReports where id=8062)
 	insert into TranslatedReports values(8062,''media'')
 
 if not  exists(select * from TranslatedReports where id=8063)
@@ -94,10 +94,12 @@ if not  exists(select * from TranslatedReports where id=8072)
 
 if not  exists(select * from TranslatedReports where id=8064)
 	insert into TranslatedReports values(8064,''media'')'
-		EXEC(@Sql)
 
-	set @process = 'CW-2259 no coinciden columnas en reporte ccspRepMKTIntervalosTiemposAcuTotales'
-	set @sql='Alter PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2259 no coinciden columnas en reporte ccspRepMKTIntervalosTiemposAcuTotales'
+		SET @sql = 
+			'Alter PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -271,14 +273,8 @@ insert into #tempccLogAgentesDia(row,[User_id],[IdCampEsp],[callId],TipoStatusAg
 
 	insert into #timeDetailAgent
 	select A.user_id,A.IdCampEsp,A.callId,A.dateIni,A.dateEnd
-	,convert(datetime,case when datepart(mi,A.dateIni) between 0 and 14 then convert(varchar(13),A.dateIni,121) + '':00:00.000''
-			when datepart(mi,A.dateIni) between 15 and 29 then convert(varchar(13),A.dateIni,121) + '':15:00.000''
-			when datepart(mi,A.dateIni) between 30 and 44 then convert(varchar(13),A.dateIni,121) + '':30:00.000''
-			when datepart(mi,A.dateIni) between 45 and 59 then convert(varchar(13),A.dateIni,121) + '':45:00.000'' end) AS timegroup
-	,convert(datetime,case when datepart(mi,A.dateEnd) between 0 and 14 then convert(varchar(13),A.dateEnd,121) + '':15:00.000''
-			when datepart(mi,A.dateEnd) between 15 and 29 then convert(varchar(13),A.dateEnd,121) + '':30:00.000''
-			when datepart(mi,A.dateEnd) between 30 and 44 then convert(varchar(13),A.dateEnd,121) + '':45:00.000''
-			when datepart(mi,A.dateEnd) between 45 and 59 then convert(varchar(13),dateadd(hh,1,A.dateEnd),121) + '':00:00.000'' end) as timegroup_next,
+	,dbo.GetTimeGroup(A.dateIni,0) AS timegroup
+	,dbo.GetTimeGroup(A.dateEnd,1) AS timegroup_next,
 	case when A.tipostatusage_id=1 then A.tStatus else 0 end tunknown,
 	case when A.tipostatusage_id=2 then A.tStatus else 0 end tnot_av,
 	case when A.tipostatusage_id=3 then A.tStatus else 0 end tav,
@@ -307,14 +303,8 @@ insert into #timeDetailAgent(User_id,IdCampEsp,callId,dateStartDetail,dateEndDet
 		callId,
 	 	B.fecha as dateStartDetail,
 	 	@dateNow as dateEndDetail,
-	 	case when datepart(mi,B.fecha) between 0 and 14 then convert(varchar(13),B.fecha,121) + '':00:00.000''
-	 		when datepart(mi,B.fecha) between 15 and 29 then convert(varchar(13),B.fecha,121) + '':15:00.000''
-	 		when datepart(mi,B.fecha) between 30 and 44 then convert(varchar(13),B.fecha,121) + '':30:00.000''
-	 		when datepart(mi,B.fecha) between 45 and 59 then convert(varchar(13),B.fecha,121) + '':45:00.000'' end as timegroup
-	 	,case when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 0 and 14 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':15:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 15 and 29 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':30:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 30 and 44 then convert(varchar(13),dateadd(ss,tiempo ,B.fecha),121) + '':45:00.000''
-	 		when datepart(mi,dateadd(ss,tiempo,B.fecha)) between 45 and 59 then  convert(varchar(13),dateadd(hh,1,B.fecha),121) + '':00:00.000'' end as timegroup_next
+		dbo.GetTimeGroup(B.fecha,0)  as timegroup,
+		dbo.GetTimeGroup(dateadd(ss,tiempo,B.fecha),1)  as timegroup_next
 	 	,case when currentStatus = 1 then tiempo else 0 end as tunknown,
 	 	case when currentStatus = 2 then tiempo else 0 end as tnot_av,
 	 	case when currentStatus = 3 then tiempo else 0 end as tav,
@@ -632,10 +622,12 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 	drop table #groupLog
  end
  '
-		EXEC(@sql)
 
-	set @process = 'CW-2258 -- ALTER ST ccspRepMKTIntervalos'
-	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepMKTIntervalos]
+		EXEC (@sql)
+
+		SET @process = 'CW-2258 -- ALTER ST ccspRepMKTIntervalos'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepMKTIntervalos]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -839,10 +831,12 @@ begin
 	drop table #RepMKTIntervalosTemp
 end
 '
-		EXEC(@sql)
-		
-		set @process = 'CW-2258 - Reporte Mkt Intervalos no coinciden datos con Xion'
-		set @sql='DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7140
+
+		EXEC (@sql)
+
+		SET @process = 'CW-2258 - Reporte Mkt Intervalos no coinciden datos con Xion'
+		SET @sql = 
+			'DELETE FROM [dbo].[GroupByReports] WHERE [id] = 7140
 	IF NOT EXISTS (SELECT * FROM [dbo].[GroupByReports] WHERE [id] = 7140)
 	BEGIN
 		INSERT INTO GroupByReports values(7140, ''Acds|inboundId|case when sum(acdCalls)>0 then sum(tresp)/sum(acdCalls) else 0 end:avrAnswer|case when sum(abandonedCalls)>0 then sum(tabnd)/sum(abandonedCalls) else 0 end:avgAbandonTime|
@@ -856,37 +850,37 @@ end
 	round(case when count(distinct accountUserId)>0 then ((convert(float,(sum(tlog)*100))/convert(float,count(distinct accountUserId)*CONVERT(float_TIMEGROUP)))*count(distinct accountUserId))/100 else 0 end,1):PromPosicionPersonal|
 	case when sum(acdCalls) >0 then (case when sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end)) >0 then convert(int, sum(acdCalls)/count(distinct(case when acdCalls > 0 then accountUserId end))) else 1 end) else 0 end:LlamadasporPosicion'',''Acds|inboundId'')
 	END'
-		EXEC(@sql)
 
-	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
-	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+		EXEC (@sql)
+
+		SET @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
 	BEGIN
 		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
 	END'
 
-		EXEC(@Sql)
+		EXEC (@Sql)
 
-		
-	set @process = 'ccLogTransfers - Alter Table'
-	set @Sql='if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccLogTransfers''))
+		SET @process = 'ccLogTransfers - Alter Table'
+		SET @Sql = 'if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccLogTransfers''))
 	begin
 		alter table ccLogTransfers
 		add tipoLlamada_id smallint default(0)
 	end'
-	
-	EXEC(@Sql)
-		
-	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
-	set @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+
+		EXEC (@Sql)
+
+		SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
 	BEGIN 
 		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
 	END'
-		
-	EXEC(@Sql)
-		
 
-set @process = 'CW-2576 correccion de reporte de contestadas y transferidas 2'
-		set @sql='ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
+		EXEC (@Sql)
+
+		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas 2'
+		SET @sql = 
+			'ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
 returns int
 as
  begin
@@ -957,18 +951,19 @@ as
 	return @tipo
  end
  '
-		 
-		EXEC(@sql)
 
-    set @process = 'CW-2576 correccion de reporte de contestadas y transferidas 3'
-    set @Sql= 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''GetProveedor'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		EXEC (@sql)
+
+		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas 3'
+		SET @Sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''GetProveedor'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
     begin
         drop function GetProveedor
     end'
-    EXEC(@Sql)
 
-set @process = 'CW-2576 correccion de reporte de contestadas y transferidas 4'
-		set @sql='
+		EXEC (@Sql)
+
+		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas 4'
+		SET @sql = '
 CREATE function [dbo].[GetProveedor](@tel varchar(32), @pto int, @tipocall int)
 RETURNS int 
 AS  
@@ -986,12 +981,12 @@ and d.puerto = @pto
 return @resultado
 
 end'
-		 
-		EXEC(@sql)
 
+		EXEC (@sql)
 
-		set @process = 'CW-2377 Alter SP ccspRepMKTTiemposTotales--  Report Info NUll '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepMKTTiemposTotales]
+		SET @process = 'CW-2377 Alter SP ccspRepMKTTiemposTotales--  Report Info NUll '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepMKTTiemposTotales]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1351,12 +1346,13 @@ begin
 	drop table #groupLog
 
 END
-	'		
-		EXEC(@sql)
+	'
 
+		EXEC (@sql)
 
-		set @process = 'CW-2377 Alter SP ccspRepAnsweredCallsByDialingRetries --  Report Info NUll '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAnsweredCallsByDialingRetries]
+		SET @process = 'CW-2377 Alter SP ccspRepAnsweredCallsByDialingRetries --  Report Info NUll '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAnsweredCallsByDialingRetries]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -1419,11 +1415,12 @@ begin
 	
 	order by date
 END'
-		EXEC(@sql)
 
+		EXEC (@sql)
 
-				set @process = 'CW-2377 Alter SP ccspRepAgentCallStatusesByInterval--  Report Info NUll '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentCallStatusesByInterval]
+		SET @process = 'CW-2377 Alter SP ccspRepAgentCallStatusesByInterval--  Report Info NUll '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentCallStatusesByInterval]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1747,11 +1744,12 @@ if @action = 1 begin
 	drop table #tempccLogtransfers2
 	end
 end'
-		EXEC(@sql)
 
+		EXEC (@sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSAgent'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSAgent]		
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSAgent'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSAgent]		
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1813,10 +1811,12 @@ BEGIN
 	left join ccinbound AS u ON f.cam_id = u.Inbound_id
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 END'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSDetailChat'
-    	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSDetailChat]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSDetailChat'
+		SET @Sql = 
+			'ALTER PROCEDURE  [dbo].[ccspRepAVRSDetailChat]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1862,10 +1862,12 @@ BEGIN
 				
 set nocount off
 END'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSSupervisor'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSSupervisor'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSSupervisor]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1927,10 +1929,12 @@ left join ccinbound AS u ON f.cam_id = u.Inbound_id
 WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 
 END'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestion'
-    	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSQuestion'
+		SET @Sql = 
+			'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestion]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -1993,10 +1997,12 @@ WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 				
 set nocount off
 END'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestionChat'
-    	set @Sql= 'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestionChat]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSQuestionChat'
+		SET @Sql = 
+			'ALTER PROCEDURE  [dbo].[ccspRepAVRSQuestionChat]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -2044,10 +2050,12 @@ BEGIN
 					
 set nocount off
 END'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSQuestionDetail'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSQuestionDetail]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSQuestionDetail'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSQuestionDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -2116,10 +2124,12 @@ set nocount off
 END	
 			
 '
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSRateDetail'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSRateDetail'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSRateDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -2187,10 +2197,12 @@ WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 
 END
 			'
-		EXEC(@Sql)
 
-		set @process = 'CW-2393 Alter SP ccspRepAVRSSection'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
+		EXEC (@Sql)
+
+		SET @process = 'CW-2393 Alter SP ccspRepAVRSSection'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -2257,11 +2269,12 @@ left join ccinbound AS u ON f.cam_id = u.Inbound_id
 WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 
 END'
-		EXEC(@Sql)
 
+		EXEC (@Sql)
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentCallStatusesByInterval]
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentCallStatusesByInterval]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -2584,11 +2597,13 @@ if @action = 1 begin
 	drop table #tempccLogtransfers
 	drop table #tempccLogtransfers2
 	end
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentGI]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentGI]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -3236,11 +3251,13 @@ if @action=1 begin
 	drop table #tempccLogAgentesDia2
 	drop table #sessionTimeGroup
 	drop table #sessionTimeMayores;
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'
 ALTER PROCEDURE [dbo].[ccspRepAgentKPI]
 @action as tinyint,
 @from as datetime = null,
@@ -3316,11 +3333,13 @@ begin
 	on Snd.User_id = Trd.User_id
 
 	drop table #ccCalls_Temp
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentNotReady]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentNotReady]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -3720,11 +3739,13 @@ begin
 	drop table #tempFechasR
 
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentNotReadyDet]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentNotReadyDet]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -3775,11 +3796,13 @@ begin
 	where usr.user_id is not null
 	order by [user], [status], fechaInicio
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSession]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentSession]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -3812,11 +3835,13 @@ inner join ccUserView u on A.user_id=u.User_id
 
 drop table #sessionTime
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSessionByInterval]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAgentSessionByInterval]
 @action as tinyint,
 @from as datetime=null,
 @to as datetime=null
@@ -3886,11 +3911,13 @@ drop table #sessionTimeMayores;
 drop table #times;
 drop table #sessionTime;
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAnsweredCallsByDialingRetries]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAnsweredCallsByDialingRetries]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -3951,11 +3978,13 @@ begin
 	and A.cal_Inicio < @to
 	and A.cal_manual in(0,2)
 	order by date
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAvgAnswerTimeChats]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAvgAnswerTimeChats]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -3992,11 +4021,13 @@ if @action = 1
 		and a.chatstatus = 4) as answerTime
 		group by CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121), userId, [Login], inboundId, [inbound], [user]
 
-	end'	
-		EXEC(@sql)
+	end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE  [dbo].[ccspRepAVRSAgentChat]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE  [dbo].[ccspRepAVRSAgentChat]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -4045,11 +4076,13 @@ BEGIN
 		INNER JOIN ccinbound AS i ON c.inboundId = i.Inbound_id
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 					
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAVRSDisposition]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSDisposition]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -4077,11 +4110,13 @@ BEGIN
 		 ON f.id_formato = t.id_formato AND f.version = t.version
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 	order by f.fecha_calif,t.nombre,u.login
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE  [dbo].[ccspRepAVRSRateChat]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE  [dbo].[ccspRepAVRSRateChat]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -4135,11 +4170,13 @@ BEGIN
 		INNER JOIN ccinbound AS u ON c.inboundId = u.Inbound_id
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 					
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepAVRSScores]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepAVRSScores]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -4181,11 +4218,13 @@ BEGIN
 		 ON f.id_formato = t.id_formato AND f.version = t.version
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 	GROUP BY DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)),u.Login,u.User_id,u.apellidopaterno,u.apellidomaterno,u.nombres,YEAR(f.fecha_calif),MONTH(f.fecha_calif),DAY(f.fecha_calif)
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepCallXfer]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepCallXfer]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -4248,11 +4287,13 @@ begin
 	left join ccinbound inbound on inbound.Inbound_id =ci.Inbound_id
 	WHERE fechafin >= @from and fechafin < @to
 end
-	'	
-		EXEC(@sql)
+	'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepCatalogos]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 @type as tinyint,
 @action tinyint = 0 -- 0 Filter select; 1 Filters Range
 ,@userId int =0 ---- se agrega parametro para filtros
@@ -4535,11 +4576,13 @@ if @action = 1 begin
 	begin
 		SELECT 0 as [min], 100 as [max],''score'' as dbColumn
 	end
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepChatsDetail]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepChatsDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -4583,11 +4626,13 @@ if @action = 1
 			from RepChatsDetail a, #tmpxferTime b where a.date = b.date 
 			
 			drop table #tmpxferTime 
-	end'	
-		EXEC(@sql)
+	end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepDetailAgent]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepDetailAgent]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5160,11 +5205,13 @@ if @action=1 begin
 	drop table #sessionTimeGroup
 	drop table #sessionTimeMayores;
 end
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepDialingResultsDetail]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepDialingResultsDetail]
 @action as tinyint,
 @from as datetime=null,
 @to as datetime=null
@@ -5198,11 +5245,13 @@ left join ccCamps camp on camp.cam_id=dial.cam_id
 where dial.fecha>=@from and dial.fecha<@to
 
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepEmailACD]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepEmailACD]
 
 @action as tinyint,
 @from as datetime = null,
@@ -5261,11 +5310,13 @@ delete from RepEmailACD with(rowlock) where date >= @from AND date < @to
 				where msg.date >= @from AND msg.date < @to
 				)x
 				group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion ,inboundid
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepEmailAgente]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepEmailAgente]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5333,11 +5384,13 @@ if @action = 1	begin
 			group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion ,inboundid,name,userId
 
 end
-	'	
-		EXEC(@sql)
+	'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER procedure [dbo].[ccspRepEmailDetail]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER procedure [dbo].[ccspRepEmailDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5386,11 +5439,13 @@ if @action = 1	begin
 	order by date,msg.conversationId,msg.messageId
 
 end
-	'	
-		EXEC(@sql)
+	'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER procedure [dbo].[ccspRepEmailGeneral]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER procedure [dbo].[ccspRepEmailGeneral]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5455,11 +5510,13 @@ select
 	group by CONVERT(smalldatetime,CONVERT(varchar(13), date, 121)+'':00'',121),descripcion,inboundid,conversationId
 
 end
-	'	
-		EXEC(@sql)
+	'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepInCallsDetail]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepInCallsDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5554,11 +5611,13 @@ begin
 	on a.userId = b.user_id
 	where [date] >= @from AND [date] < @to
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepInDispositions]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepInDispositions]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5630,11 +5689,13 @@ begin
 	left join ccRIACat_Areas b 
 	on a.areaId = b.IDArea
 	where [date] >= @from AND [date] < @to
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepInSubDispositions]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepInSubDispositions]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5707,11 +5768,13 @@ begin
 	left join ccRIACat_Areas b 
 	on a.areaId = b.IDArea
 	where [date] >= @from AND [date] < @to
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepIVRDetail]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepIVRDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -5780,11 +5843,13 @@ if @action = 1
 	
 	drop table #IVRLlamadas
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -5886,11 +5951,13 @@ from
 )surveys
 order by calId,orden
 end
-'	
-		EXEC(@sql)
+'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepMKTAgentes]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepMKTAgentes]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -6092,11 +6159,13 @@ drop table #timeAgenteStatus
 drop table #timeAgenteStatus2
 
 end
-'	
-		EXEC(@sql)
+'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepMKTDiarioTiemposTotales]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepMKTDiarioTiemposTotales]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -6196,11 +6265,13 @@ drop table #sessionAgent
 drop table #infoSession 
 drop table #users
 end
-'	
-		EXEC(@sql)
+'
 
-		set @process = 'CW-2379, CW-2576 Alter SP --  Report ccspRepOutAnswAndXferCalls ,use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379, CW-2576 Alter SP --  Report ccspRepOutAnswAndXferCalls ,use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -6275,11 +6346,13 @@ begin
 	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = clt.CallType and tl.Country_id = @country)
 	order by date 
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallBacks]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutCallBacks]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -6318,11 +6391,13 @@ begin
 	where cal_fecha between @from and @to
 	and a.user_id = b.user_id
 	and a.cam_id = c.cam_id
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallBilling]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutCallBilling]
 @action AS TINYINT,
 @from AS DATETIME=null,
 @to AS DATETIME=null
@@ -6504,11 +6579,13 @@ BEGIN
 	DROP TABLE #TempOutCallBilling
 	DROP TABLE #cstoTipoLlamadaTemp
 	DROP TABLE #TempTransCallBilling	
-END'	
-		EXEC(@sql)
+END'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCalls]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutCalls]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7008,98 +7085,65 @@ begin
 	drop table #tempTime
 	drop table #tempRepOutCalls
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 AS
+IF @from IS NULL
+	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
 
-if @from is null
-    select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
+IF @to IS NULL
+	SELECT @to = getdate()
 
 DECLARE @IVA INT
-declare @country as tinyint
+DECLARE @country AS TINYINT
 
+SELECT @IVA = convert(INT, isnull(valor, 0))
+FROM ccsettings
+WHERE setting_id = 25
 
-SELECT @IVA = convert(int,isnull(valor,0)) from ccsettings where setting_id = 25
-select @country = convert(tinyint,isnull(valor,1)) from ccsettings where setting_id = 104
+SELECT @country = convert(TINYINT, isnull(valor, 1))
+FROM ccsettings
+WHERE setting_id = 104
 
+IF @country IS NULL
+	SET @country = 1
 
-if @country is null set @country = 1
+IF @action = 1
+BEGIN
+	--Borrar lo que esta para no repetir
+	DELETE
+	FROM RepOutCallsDetail WITH (ROWLOCK)
+	WHERE DATE >= @from AND DATE < @to
 
-if @action = 1
-    begin
-        --Borrar lo que esta para no repetir
-        delete from RepOutCallsDetail with(rowlock)
-        where date >= @from AND date < @to
+	INSERT INTO RepOutCallsDetail
+	SELECT Call.cal_inicio AS [date], Call.cal_key AS [callKey], Call.cal_telefono AS [telephone], Call.cal_txfer + call.cal_tring AS [transfer], Call.cal_tdialog AS [dialog], ISNULL(Call.cal_tMoh, 0) AS [nque], Call.cal_tnotas AS [wrapup], ISNULL(Tipo.[description], '''') AS [CallDisposition], Call.cal_extension AS [extension], isnull(Usr.user_id, 0) AS [userId], ISNULL(convert(VARCHAR(255), Usr.LOGIN), ''systemTranslated_NoUserName'') [login], ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username], camps.cam_id AS [campaignId], ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') AS [campaign], (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration], ISNULL(Call.costo, 0.00) AS [ncost], @IVA AS iva, convert(DECIMAL(10, 2), ISNULL(Call.costo, 0.00) * (1 + (@IVA / 100.00))) AS total, CASE WHEN prov.descrip IS NOT NULL THEN prov.descrip WHEN cstoProvedor.descrip IS NOT NULL THEN cstoProvedor.descrip ELSE 
+				''systemTranslated_NoCarrier'' END AS [ByCarrier], ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [Calltypes], CASE WHEN Call.cal_manual = 0 THEN ''systemTranslated_Auto'' ELSE ''systemTranslated_Manual'' END AS [dialType], CASE WHEN cal_whoHung = 0 THEN ''systemTranslated_Client'' WHEN cal_whoHung = 1 THEN ''systemTranslated_Agent'' ELSE ''systemTranslated_AgentSurvey'' END [whoHangUp], CASE WHEN call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' ELSE isnull(sub.califSubDesc, '''') END AS [subDisposition], sta.descripcion AS [dialResult], Call.cal_id AS [calId], datepart(yyyy, Call.cal_inicio) AS [year], datepart(mm, Call.cal_inicio) AS [month], datepart(dd, Call.cal_inicio) AS [day], datepart(hh, Call.cal_inicio) AS [hour], datepart(mi, Call.cal_inicio) AS [minutes], Call.cal_puerto, ISNULL(cs.Dato1, '''') AS [data1], ISNULL(cs.Dato2, '''') AS [data2], ISNULL(cs.Dato3, '''') AS [data3], ISNULL(cs.Dato4, '''') AS [data4], ISNULL(cs.Dato5, '''') AS [data5], ISNULL(Call.cal_tMsg, 0) AS [MessageTime]
+	FROM ccoCallsOut Call
+	LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id = Tipo.calif_id
+	LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+	LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
+	LEFT JOIN ccStatusLlamada sta ON call.statuscall_id = sta.statuscall_id
+	LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
+	LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] AND tl.Country_id = @country)
+	LEFT JOIN ccTipoCalifSubOut sub ON call.califsub_id = sub.califsub_id
+	LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto
+	LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
+	LEFT JOIN cstoProvedor ON di.provedor_id = cstoProvedor.provedor_id
+	WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND cal_manual IN (0, 2)
+	ORDER BY DATE
+END
+'
 
-        INSERT INTO RepOutCallsDetail
-        SELECT Call.cal_inicio as [date],
-        Call.cal_key as [callKey],
-        Call.cal_telefono AS [telephone],
-        Call.cal_txfer + call.cal_tring AS [transfer],
-        Call.cal_tdialog AS [dialog], 
-        ISNULL(Call.cal_tMoh,0) as [nque],
-        Call.cal_tnotas AS [wrapup],
-        ISNULL( Tipo.[description], '''') AS [CallDisposition],
-        Call.cal_extension AS [extension],
-        isnull(Usr.user_id,0) as [userId],
-        ISNULL(Usr.login,''systemTranslated_NoUserName'') [login],
-        ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
-        camps.cam_id as [campaignId],
-        ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') as [campaign],
-        (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg,0)) / 60.0 )* 60) AS [duration],
-        ISNULL(Call.costo,0.00) as [ncost],
-        @IVA as iva,
-        convert(decimal(10,2),ISNULL(Call.costo,0.00) * (1 + (@IVA / 100.00))) as total,
-        case when prov.descrip is not null then prov.descrip when cstoProvedor.descrip is not null then cstoProvedor.descrip else ''systemTranslated_NoCarrier'' end as [ByCarrier],
-        ISNULL(tl.descrip, ''systemTranslated_Indefinite'') as [Calltypes],
-        case when Call.cal_manual = 0 then ''systemTranslated_Auto'' else ''systemTranslated_Manual'' end as [dialType],
-        case when cal_whoHung = 0 then ''systemTranslated_Client''
-        when cal_whoHung = 1 then ''systemTranslated_Agent''
-        else ''systemTranslated_AgentSurvey'' end [whoHangUp],
-        case when call.califsub_id = 0 then ''systemTranslated_NoSubDisposition'' else isnull(sub.califSubDesc, '''') end as [subDisposition],
-        sta.descripcion as [dialResult],
-        Call.cal_id as [calId]
-        , datepart(yyyy,Call.cal_inicio) AS [year]
-        , datepart(mm,Call.cal_inicio) as [month]
-        , datepart(dd,Call.cal_inicio) as [day]
-        , datepart(hh,Call.cal_inicio) as [hour]
-        , datepart(mi,Call.cal_inicio) as [minutes]
-        ,Call.cal_puerto
-        , ISNULL(cs.Dato1,'''') as [data1]
-        , ISNULL(cs.Dato2,'''') as [data2]
-        , ISNULL(cs.Dato3,'''') as [data3]
-        , ISNULL(cs.Dato4,'''') as [data4]
-        , ISNULL(cs.Dato5,'''') as [data5]
-        , ISNULL(Call.cal_tMsg,0) as [MessageTime]
-        FROM ccoCallsOut Call
-        LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id=Tipo.calif_id
-        left JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
-        LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
-        LEFT JOIN ccStatusLlamada sta on call.statuscall_id = sta.statuscall_id
-        LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
-        LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] and tl.Country_id = @country)
-        LEFT JOIN ccTipoCalifSubOut sub on call.califsub_id = sub.califsub_id
-        LEFT JOIN ccoDialers di on di.dialer_id = Call.cal_puerto
-        LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
-        LEFT JOIN cstoProvedor on di.provedor_id = cstoProvedor.provedor_id
-        WHERE Call.cal_inicio >= @from
-        AND Call.cal_inicio < @to
-        and cal_manual in (0, 2)
-        order by date
+		EXEC (@sql)
 
-    end
-'	
-		EXEC(@sql)
-
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallsOnChatDetail]
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutCallsOnChatDetail]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7172,11 +7216,13 @@ if @action = 1
 		AND Call.cal_inicio < @to
 		and cal_manual = 3
 		order by date
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDispositions]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutDispositions]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7237,11 +7283,13 @@ begin
 	where [date] >= @from AND [date] < @to
 
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutKPI]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutKPI]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7299,11 +7347,13 @@ begin
 	on a.campaignId = b.cam_id
 	where date >= @from AND date < @to
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE[dbo].[ccspRepOutManagementBase]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE[dbo].[ccspRepOutManagementBase]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7353,11 +7403,13 @@ begin
 		where [date] >= @from AND [date] < @to
 
 
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepOutSubDispositions]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepOutSubDispositions]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -7416,11 +7468,13 @@ begin
 	left join ccRIACat_Areas b 
 	on a.areaId = b.IDArea
 	where [date] >= @from AND [date] < @to
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAgtPerformance]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepSpececialAgtPerformance]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -7466,11 +7520,13 @@ begin
 	from ccCallsIn with(index(IX_ccCallsIn),nolock) where cal_inicio between @from and @to  and USER_ID>0
 	group by CONVERT(varchar(10),cal_inicio,121),user_id) calls group by [date],user_id) rcalls 
 	left join ccUserView us on us.user_id=rcalls.user_id
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialCamMovs]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepSpececialCamMovs]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -7511,11 +7567,13 @@ begin
 	FROM ccCampsMovs as movs JOIN ccCamps as camp ON movs.cam_id = camp.cam_id 
 	LEFT OUTER JOIN ccUserView AS usr ON movs.user_id = usr.user_id
 	WHERE movs.fecha BETWEEN @from AND @to
-end'	
-		EXEC(@sql)
+end'
 
-		set @process = 'CW-2379 Alter SP --  Report use View ccuserView '
-		set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialCallKeyHistory]
+		EXEC (@sql)
+
+		SET @process = 'CW-2379 Alter SP --  Report use View ccuserView '
+		SET @sql = 
+			'ALTER PROCEDURE [dbo].[ccspRepSpecialCallKeyHistory]
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -7543,30 +7601,29 @@ begin
 		left join ccTipoCalifOUT cal on cal.calif_id=co.calif_id 
 		left join ccUserView us on us.User_id=co.User_id
 		where ld.fecha between @from and @to and len(ld.cal_key)>0
-end'	
-		EXEC(@sql)
+end'
 
+		EXEC (@sql)
 
-		if @actualVersion  = @version - 1
-	 	exec ccsp_getVersion 'BD', @version
+		IF @actualVersion = @version - 1
+			EXEC ccsp_getVersion 'BD', @version
 
+		COMMIT TRAN
+	END TRY
 
-	commit tran
-	end try
+	BEGIN CATCH
+		/* Error generated based on sintax */
+		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + ' Error process: ' + @process + ' Line: ' + cast(error_line() AS NVARCHAR) + ' Number: ' + cast(@@error AS NVARCHAR) + ' Message: ' + error_message()
 
-	begin catch
+		RAISERROR (@errorGenerated, 11, 1)
 
-	/* Error generated based on sintax */
-	select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + ' Error process: ' + @process + ' Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
-	RAISERROR(@errorGenerated, 11, 1)
+		ROLLBACK TRAN
+	END CATCH
+END
+ELSE
+BEGIN
+	/* Error generated based on database version */
+	SELECT 'Incorrect database version, actual version: ' + cast(@actualVersion AS VARCHAR(5)) + ', version to release: ' + cast(@version AS VARCHAR(5))
+END
 
-	rollback tran
-	end catch
-end
-else
-	begin
-		/* Error generated based on database version */
-		select 'Incorrect database version, actual version: ' + cast(@actualVersion as varchar(5)) + ', version to release: ' + cast(@version as varchar(5))
-	end
-
-set nocount off
+SET NOCOUNT OFF

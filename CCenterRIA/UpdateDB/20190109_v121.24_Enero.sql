@@ -2390,7 +2390,7 @@ end
 				insert into ccCalifCamp (calif_id, cam_id, tipo) 
 				select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
 
-				update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id)
+				update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
 
 				If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
 				 begin

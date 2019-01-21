@@ -240,9 +240,8 @@ END'
 		--Alter-Start
 		SET @process = 'CW-1501 Version  120.24'
 		SET @Sql = 
-			'ALTER procedure [dbo].[ccsp_RIA_ABCLog]
-@optiON TINYINT, @areaName VARCHAR(50) = NULL, @operationType TINYINT = NULL, @login VARCHAR(20) = NULL, @moduleId INT = NULL, @value VARCHAR(250) = NULL, @target VARCHAR(250) = NULL, @operationDateIni SMALLDATETIME = NULL, @operationDateFin SMALLDATETIME = NULL, @top INT = 0 AS
-
+			'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCLog] @optiON TINYINT, @areaName VARCHAR(50) = NULL, @operationType TINYINT = NULL, @login VARCHAR(20) = NULL, @moduleId INT = NULL, @value VARCHAR(250) = NULL, @target VARCHAR(250) = NULL, @operationDateIni SMALLDATETIME = NULL, @operationDateFin SMALLDATETIME = NULL, @top INT = 0
+AS
 SET NOCOUNT ON
 
 IF @option = 1 -- muestra todo
@@ -282,7 +281,7 @@ IF @option = 3 -- muestra información por filtros (System>Log) // Fechas
 BEGIN
 	SET ROWCOUNT @top
 
-	SELECT L.log_id, L.areaName, L.operationDate, CASE @lang WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX('' | '', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX('' | '', o.descripcion) + 1, len(o.descripcion)) END operationType, L.LOGIN, CASE @lang WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX('' | '', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX('' | '', m.descripcion) + 1, len(m.descripcion)) END module_id, CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE @lang WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target, CASE WHEN v.valueT IS NULL THEN L.value ELSE CASE @lang WHEN 0 THEN v.es WHEN 2 THEN v.pt ELSE v.en END END AS value
+	SELECT L.log_id, L.areaName, L.operationDate, CASE @lang WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''|'', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''|'', o.descripcion) + 1, len(o.descripcion)) END operationType, L.LOGIN, CASE @lang WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''|'', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''|'', m.descripcion) + 1, len(m.descripcion)) END module_id, CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE @lang WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target, CASE WHEN v.valueT IS NULL THEN L.value ELSE CASE @lang WHEN 0 THEN v.es WHEN 2 THEN v.pt ELSE v.en END END AS value
 	FROM CCRIALOG L
 	JOIN ccRIALog_Module M WITH (INDEX (IX_ccRIALog_Module)) ON L.module_id = M.module_id
 	JOIN ccRIALog_Operation O WITH (INDEX (IX_ccRIALog_Operation)) ON L.operationType = O.operationType
@@ -296,7 +295,7 @@ END
 
 IF @option = 4 -- Catalogo de modulos
 BEGIN
-	SELECT m.module_id, o.operationType, CASE @lang WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX('' | '', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX('' | '', m.descripcion) + 1, len(m.descripcion)) END AS mDescripcion, CASE @lang WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX('' | '', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX('' | '', o.descripcion) + 1, len(o.descripcion)) END AS oDescripcion
+	SELECT m.module_id, o.operationType, CASE @lang WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''|'', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''|'', m.descripcion) + 1, len(m.descripcion)) END AS mDescripcion, CASE @lang WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''|'', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''|'', o.descripcion) + 1, len(o.descripcion)) END AS oDescripcion
 	FROM ccRIALog_Operation o WITH (INDEX (IX_ccRIALog_Operation))
 	JOIN ccRIALog_Cat_Relation r ON o.operationType = r.operationType
 	JOIN ccRIALog_Module m WITH (INDEX (IX_ccRIALog_Module)) ON r.module_id = m.module_id
@@ -311,12 +310,12 @@ BEGIN
 	
 	UNION
 	
-	SELECT module_id, 0, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX('' | '', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX('' | '', descripcion) + 1, len(descripcion)) END AS descripcion, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+	SELECT module_id, 0, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX(''|'', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX(''|'', descripcion) + 1, len(descripcion)) END AS descripcion, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
 	FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module))
 	
 	UNION
 	
-	SELECT module_id, - 1, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX('' | '', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX('' | '', descripcion) + 1, len(descripcion)) END AS descripcion, '' - ''
+	SELECT module_id, - 1, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX(''|'', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX(''|'', descripcion) + 1, len(descripcion)) END AS descripcion, '' - ''
 	FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module))
 	ORDER BY mDescripcion, oDescripcion
 
@@ -325,7 +324,7 @@ END
 
 IF @option = 5 -- Catalogo de operaciones
 BEGIN
-	SELECT operationType, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX('' | '', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX('' | '', descripcion) + 1, len(descripcion)) END AS descripcion
+	SELECT operationType, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX(''|'', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX(''|'', descripcion) + 1, len(descripcion)) END AS descripcion
 	FROM ccRIALog_Operation WITH (INDEX (IX_ccRIALog_Operation))
 	
 	UNION
@@ -336,7 +335,8 @@ BEGIN
 	RETURN (0)
 END
 
-SET nocount off'
+SET NOCOUNT OFF
+'
 
 		EXEC (@Sql)
 

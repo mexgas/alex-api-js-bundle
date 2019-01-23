@@ -147,10 +147,93 @@ description=''Special dialing structures (Mexico)'',validate=''^[0-2]$''
 
 		EXEC (@Sql)
 
+		SET @process = 'CW-2605 -- Drop SP SaveClicksAdminByCamp'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''SaveClicksAdminByCamp'')
     begin
         DROP PROCEDURE SaveClicksAdminByCamp;
     end'
+
+		EXEC (@Sql)
+
+		SET @process = 'CW-2207 -- Drop function VerificaMex '
+		SET @Sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''VerificaMex'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        drop function VerificaMex
+    end'
+
+		EXEC (@Sql)
+
+		SET @process = 'CW-2207 -- CREATE function VerificaMex '
+		SET @Sql = 
+			'CREATE FUNCTION [dbo].[VerificaMex] (@tel VARCHAR(32))
+RETURNS VARCHAR(32)
+AS
+BEGIN
+	DECLARE @ld VARCHAR(7)
+	DECLARE @lon TINYINT
+	DECLARE @result TINYINT
+	DECLARE @mod VARCHAR(10)
+	DECLARE @Cadena VARCHAR(32)
+	DECLARE @cldLocal VARCHAR(10)
+
+	SELECT @cldLocal = valor
+	FROM ccSettings WITH (NOLOCK)
+	WHERE setting_id = 17	
+
+	SELECT @lon = len(@tel), @mod = ''''
+
+	IF (@lon = 8 AND len(@cldLocal) = 2) OR (@lon = 7 AND len(@cldLocal) = 3)
+	BEGIN
+		SET @tel = @cldLocal + @tel
+		SET @ld = @cldLocal
+	END
+
+	SELECT @tel = right(@tel, 10)
+
+	SELECT @lon = len(@tel)
+
+	IF @lon = 10
+	BEGIN
+		IF @ld IS NULL
+		BEGIN
+			IF (
+					EXISTS (
+						SELECT TOP 1 cld
+						FROM series NOLOCK
+						WHERE cld = left(@tel, 2)
+						)
+					)
+				SELECT @ld = left(@tel, 2)
+			ELSE IF (
+					EXISTS (
+						SELECT TOP 1 cld
+						FROM series NOLOCK
+						WHERE cld = left(@tel, 3)
+						)
+					)
+				SELECT @ld = left(@tel, 3)
+			ELSE
+				RETURN ''E_'' + @tel
+		END
+
+		SELECT TOP 1 @mod = modalidad
+		FROM series NOLOCK
+		WHERE cld = @ld AND serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) AND right(@tel, 4) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+		IF @mod NOT IN (''FIJO'', ''MPP'', ''CPP'')
+		BEGIN
+			RETURN ''E_'' + @tel
+		END		
+		SELECT @tel = CASE WHEN @mod IN (''FIJO'', ''MPP'') THEN CASE WHEN @ld = @cldLocal THEN right(@tel, 10 - len(@ld)) ELSE ''01'' + @tel END WHEN @mod = ''CPP'' THEN CASE WHEN @ld = @cldLocal THEN ''044'' + @tel ELSE ''045'' + @tel END END
+		
+	END
+	ELSE IF @lon > 0
+	BEGIN
+		SET @tel = ''E_'' + @tel
+	END
+
+	RETURN @tel
+END'
 
 		EXEC (@Sql)
 
@@ -2052,7 +2135,8 @@ end'
 
 		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas - fnGetTipoLlamada'
 		SET @Sql = 
-			'ALTER function [dbo].[fnGetTipoLlamada]( @tel varchar(20) )
+			'ALTER function [dbo].[fnGetTipoLlamada]( @tel
+ varchar(32) )
 returns int
 as
  begin
@@ -2065,7 +2149,13 @@ as
 	prefijo nvarchar(100) not null
 	)
 
-	select @country = valor from ccsettings where setting_id = 104
+	select @country = valor from ccsettings where setting_id = 104	
+
+	if @country=1 begin
+		select @tel=dbo.VerificaMex(@tel)
+	end
+
+
 	set @len = len( @tel )
 	set @tipo = 0
 
@@ -2121,8 +2211,7 @@ as
 	end
 
 	return @tipo
- end
- '
+ end'
 
 		EXEC (@Sql)
 
@@ -2148,7 +2237,7 @@ as
  if @action = 1 begin
      if @modo = 4 begin
          insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id) 
-         values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate(), @pbxId,@channel, dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) )
+         values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate(), @pbxId,@channel, dbo.fnGetTipoLlamada(@destino) )
          if @tdespues > 0 begin
                  select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
                  update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
@@ -2157,17 +2246,19 @@ as
      else begin
          if not exists (select * from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
              insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id) 
-             values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() ,@pbxId,@channel, dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) )
+             values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() ,@pbxId,@channel, dbo.fnGetTipoLlamada(@destino) )
  
          if @tipo = 2 begin
              if @modo = 5 begin
                  select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-                 update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tipoLlamada_id = dbo.Verifica(@destino) where cal_id = @cal_id and tipo = 2
+                 update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2) 
+                 	,tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) 
+                 	where cal_id = @cal_id and tipo = 2
              end
 
              if @modo in (0,1,2) begin
                  select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
-                 update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) where cal_id = @cal_id
+                 update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
              end
          end
  
@@ -2175,7 +2266,7 @@ as
              if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
                  select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
                  select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
-                 update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) where cal_id = @cal_id
+                 update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
              end
          end
      end
@@ -2201,7 +2292,9 @@ as
  else if @action = 2 begin   
      if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
          select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
-         update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) where cal_id = @cal_id and tipo = 2
+         update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)
+         ,tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) 
+         	where cal_id = @cal_id and tipo = 2
          select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
          update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
      end
@@ -2209,7 +2302,7 @@ as
 
  else if @action = 4 begin
      select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
-     update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(@destino)) where cal_id = @cal_id
+     update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
 end
 '
 
@@ -2240,7 +2333,7 @@ end
           from ccoCallsOut cco with(index(IX_ccoCallsOut_7), nolock), ccoDialers cd, cstoTarifa t
           where cco.cal_puerto = cd.puerto
            and cd.provedor_id = t.provedor_id 
-           and t.tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(ltrim(rtrim(cal_telefono))))--dbo.fnGetTipoLlamada(cco.cal_telefono)
+           and t.tipoLlamada_id = dbo.fnGetTipoLlamada(cal_telefono)
            and cco.cal_manual <> 1
            return(0)
        end
@@ -2254,7 +2347,7 @@ end
       from ccoCallsOut cco with(index(IX_ccoCallsOut_8), nolock), ccoDialers cd, cstoTarifa t
       where cco.cal_puerto = cd.puerto
        and cd.provedor_id = t.provedor_id 
-       and t.tipoLlamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(cco.cal_telefono))
+       and t.tipoLlamada_id = dbo.fnGetTipoLlamada(cco.cal_telefono)
        and cco.cal_manual <> 1
        and cco.cal_inicio between @from and @to
        and cco.provedor_id is null
@@ -2267,10 +2360,12 @@ end
   if @puerto = 0
       return(0)
   
-  select @minutouno = minutouno, @minutoadicional = minutoadicional, @provedor_id = d.provedor_id, @tipoLlamada_id = t.tipollamada_id 
+  select @tipoLlamada_id = dbo.fnGetTipoLlamada(@telefono)
+
+  select @minutouno = minutouno, @minutoadicional = minutoadicional, @provedor_id = d.provedor_id
   from cstoTarifa t
   inner join ccoDialers d on d.provedor_id = t.provedor_id
-  where t.tipollamada_id = dbo.fnGetTipoLlamada(dbo.Verifica(@telefono))
+  where t.tipollamada_id = @tipoLlamada_id
   and d.puerto = @puerto
   
   update ccoCallsOut with(rowlock) 
@@ -2288,192 +2383,192 @@ end
 		--Insert-End
 		SET @process = 'CW-2609 ALTER ccsp_RIA_ABCCamps'
 		SET @Sql = 
-			'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
-			@option smallint,
-			@UserId int = null,
-			@Descripcion varchar(40) = null,
-			@Cam_id varchar(1000),
-			@Activa tinyint = null,
-			@IDArea smallint = null,
-			@frame tinyint = null, 
-			@MirrorInbound_Id smallint = null,
-			@Prefijo varchar(40) = null
-			as
-			set nocount on
+'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
+@option smallint,
+@UserId int = null,
+@Descripcion varchar(40) = null,
+@Cam_id varchar(1000),
+@Activa tinyint = null,
+@IDArea smallint = null,
+@frame tinyint = null, 
+@MirrorInbound_Id smallint = null,
+@Prefijo varchar(40) = null
+as
+set nocount on
 
-			if @option = 0
-			 begin
-				 select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
-				 from ccCamps as CAMP with(nolock) 
-				 left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
-				 return(0)
-			 end
+if @option = 0
+	begin
+		select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
+		from ccCamps as CAMP with(nolock) 
+		left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
+		return(0)
+	end
 
-			if @option = 1 -- select Camp
-			 begin
-				 select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
-				 prefijo as Prefijo
-				 from ccCamps a1 with(nolock) 
-				  inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
-				  inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
-				 where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
-				 return(0)
-			 end
+if @option = 1 -- select Camp
+	begin
+		select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
+		prefijo as Prefijo
+		from ccCamps a1 with(nolock) 
+		inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
+		inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
+		return(0)
+	end
 
-			if @option = 4 --Delete
-			 begin
-				 if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
-				  begin
-					declare @error varchar(70)
-					Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad'' 
-					 else ''Campaign can not be deleted, it has an association with an ACD'' end
-					from ccsettings with(nolock) where setting_id = 27
-					raiserror (@error,18,1)		
-					return(0)
-				  end
+if @option = 4 --Delete
+	begin
+		if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
+		begin
+		declare @error varchar(70)
+		Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad'' 
+			else ''Campaign can not be deleted, it has an association with an ACD'' end
+		from ccsettings with(nolock) where setting_id = 27
+		raiserror (@error,18,1)		
+		return(0)
+		end
 
-				 delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
-				 insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
-				 Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
-				 Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
-				 delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
-				 delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
-				 return(0)
-			 end
+		delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
+		insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
+		Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
+		Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
+		delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
+		delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
+		return(0)
+	end
 
-			if @option = 2 --Insert
-			 begin
-				declare @new_cam_id smallint
+if @option = 2 --Insert
+	begin
+	declare @new_cam_id smallint
 
-				if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
-				 begin
-					select -1 --, ''Nombre en Uso''
-					return(0)  
-				 end
+	if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
+		begin
+		select -1 --, ''Nombre en Uso''
+		return(0)  
+		end
 
-				-- ODC: la campaña siempre esta activa
-				set @Activa = 1
-				declare @pref int
-				select  @pref = valor from ccSettings where setting_id = 201
-				if (@pref = 0)
-					set @Prefijo = ''''
+	-- ODC: la campaña siempre esta activa
+	set @Activa = 1
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''''
 
 
-				Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo)
-				select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
-				case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end,@Prefijo
+	Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo)
+	select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
+	case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end,@Prefijo
 
-				if @@rowcount = 1
-				select @new_cam_id = scope_identity()
+	if @@rowcount = 1
+	select @new_cam_id = scope_identity()
 
-				else
-				 begin
-					select -2 --, ''Error al crear campaña''
-					return(0)
-				 end
+	else
+		begin
+		select -2 --, ''Error al crear campaña''
+		return(0)
+		end
 
-				if isnull(@MirrorInbound_Id, 0)<>0
-				 begin
-					if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
-					 begin
-						select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
-						return(0)
-					 end
-
-					update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
-					update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
-				 end
-
-				insert into ccoDialerCamp (dialer_id, cam_id) 
-				select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
-
-				insert into ccCalifCamp (calif_id, cam_id, tipo) 
-				select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
-
-				update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
-
-				If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-				 begin
-					insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
-				 end
-
-				insert into ccRIACampsGraph (cam_id, graphic_id)
-				select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
-
-				--inserta la lista negra por default
-				if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
-				begin
-					declare @tempId as int
-					DECLARE @dnclId TABLE 
-					(
-					  id int 
-					);
-					insert into @dnclId
-					exec dbo.ccsp_RIACATBList null, null, 5
-					select @tempId=id from @dnclId;
-					exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
-				end
-
-				select @new_cam_id
-				return(0)
-			 end
-
-			if @option = 3 -- Update
-			 begin
-				 if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-				  insert into ccRIAGraphics (frame,type_id) values (@frame,1)
-
-				 Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
-
-				 update ccRIACampsGraph with(rowlock)
-				  set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-				  where cam_id = @Cam_id
-
-				 return(0)
-			 end
-
-			 if @option = 5 --Obtener relaciones de campañas - campañas
-			   begin
-				  if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
-				 (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
-					not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
-				 begin
-					select -3 -- Campaña invalida
-					return(0)
-				 end
-				
-				if @descripcion=0
-					set @descripcion = null
-
-				update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
-				if @@rowcount=0
-					select -4 -- Error al actualizar
-					
-				else
-				 begin
-					delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
-
-				 end
-
-				return(0)
-			   end
-
-			if @option = 6
-				begin
-					select cam_id, isnull(surveycamid,0)
-					from cccamps with(index(PK_ccCamps),nolock)
-					where cam_id = @Cam_id
-					return(0)
-				end
-
-			if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
-				begin	
-					select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
-					--select 0 as Grabaciones	
-				end
-
+	if isnull(@MirrorInbound_Id, 0)<>0
+		begin
+		if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
+			begin
+			select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
 			return(0)
-			set nocount off'
+			end
+
+		update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
+		update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
+		end
+
+	insert into ccoDialerCamp (dialer_id, cam_id) 
+	select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+
+	insert into ccCalifCamp (calif_id, cam_id, tipo) 
+	select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
+
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
+
+	If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		begin
+		insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
+		end
+
+	insert into ccRIACampsGraph (cam_id, graphic_id)
+	select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
+
+	--inserta la lista negra por default
+	if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
+	begin
+		declare @tempId as int
+		DECLARE @dnclId TABLE 
+		(
+			id int 
+		);
+		insert into @dnclId
+		exec dbo.ccsp_RIACATBList null, null, 5
+		select @tempId=id from @dnclId;
+		exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
+	end
+
+	select @new_cam_id
+	return(0)
+	end
+
+if @option = 3 -- Update
+	begin
+		if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		insert into ccRIAGraphics (frame,type_id) values (@frame,1)
+
+		Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
+
+		update ccRIACampsGraph with(rowlock)
+		set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		where cam_id = @Cam_id
+
+		return(0)
+	end
+
+	if @option = 5 --Obtener relaciones de campañas - campañas
+	begin
+		if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
+		(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+		not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
+		begin
+		select -3 -- Campaña invalida
+		return(0)
+		end
+				
+	if @descripcion=0
+		set @descripcion = null
+
+	update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
+	if @@rowcount=0
+		select -4 -- Error al actualizar
+					
+	else
+		begin
+		delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+		end
+
+	return(0)
+	end
+
+if @option = 6
+	begin
+		select cam_id, isnull(surveycamid,0)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
+	end
+
+if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
+	begin	
+		select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
+		--select 0 as Grabaciones	
+	end
+
+return(0)
+set nocount off'
 
 		EXEC (@Sql)
 

@@ -2130,7 +2130,15 @@ begin
 	alter table ccLogTransfers
 	add tipoLlamada_id smallint default(0)
 end'
+		EXEC (@Sql)
 
+		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas- Alter Table ccologdials'
+		SET @Sql = 'if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccologdials''))
+		begin
+			alter table ccologdials
+			add tipoLlamada_id smallint default(0)
+		end'
+		
 		EXEC (@Sql)
 
 		SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas - fnGetTipoLlamada'

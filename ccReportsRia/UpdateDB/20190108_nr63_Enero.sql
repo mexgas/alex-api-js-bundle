@@ -870,6 +870,15 @@ end
 
 		EXEC (@Sql)
 
+	SET @process = 'CW-2576 correccion de reporte de contestadas y transferidas- Alter Table ccologdials'
+	SET @Sql = 'if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccologdials''))
+	begin
+		alter table ccologdials
+		add tipoLlamada_id smallint default(0)
+	end'
+		
+	EXEC (@Sql)
+
 		SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
 		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
 	BEGIN 
@@ -6312,7 +6321,7 @@ begin
 	dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end) as [ncost],
 	@IVA as iva,
 	convert(decimal(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType), COALESCE(Call.provedor_id,ccld.proBIDs) , case when (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 then COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) else 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) end),0.00) * (1 + (@IVA / 100.00))) as total
-	from (select *, [dbo].[GetProveedor](Telefono, Puerto,CallType) as proBIDs from (select *, 0 as CallType from ccologdials WITH(NOLOCK) where fecha >= @from and fecha < @to and answerbit = 1 ) as basequery ) ccld
+	from (select *, [dbo].[GetProveedor](Telefono, Puerto,CallType) as proBIDs from (select *, tipoLlamada_id as CallType from ccologdials WITH(NOLOCK) where fecha >= @from and fecha < @to and answerbit = 1 ) as basequery ) ccld
 	LEFT JOIN ccoCallsOut Call WITH(NOLOCK) on ccld.cal_id = Call.cal_id and ccld.answerbit = 1
 	LEFT JOIN ccCamps camps ON camps.[cam_id] = ccld.[cam_id]
 	LEFT JOIN ccuserView Usr ON Usr.[user_id] = Call.[user_id]

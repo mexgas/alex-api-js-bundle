@@ -77,6 +77,8 @@ namespace MiddleWareReports
             }
         }
 
+        protected virtual DataTable GetDefaultFilters(int type, DataTable catalog) { return catalog; }
+
         /// <summary>
         /// Gets the report data as a XML document
         /// </summary>
@@ -788,6 +790,7 @@ namespace MiddleWareReports
                 XmlElement element = xml.CreateElement("", xmlParentName, "");
                 element.SetAttribute("description", TranslatorHelper.getResource(xmlParentName));
                 DataTable catalog = db.executeSP("dbo.ccspRepCatalogos", parameters);
+                catalog = GetDefaultFilters(int.Parse(filterRow["type"].ToString()), catalog);
                 foreach (DataRow filterDataRow in catalog.Rows)
                 {
                     XmlElement childElement = xml.CreateElement("", xmlChildName, "");

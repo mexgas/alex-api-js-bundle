@@ -37,7 +37,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
     private string templateId;
     private string chartFields;
 
-
     protected void Page_Load(object sender, EventArgs e)
     {
         short process;
@@ -304,6 +303,10 @@ public partial class CWReportsEngine : System.Web.UI.Page
             else if (lang == "en")
             {
                 strCulture = lang + "-US";
+            }
+            else if (lang == "pt")
+            {
+                strCulture = lang + "-BR";
             }
             else
             {

@@ -223,10 +223,6 @@ namespace MiddleWareReports
 
             }
 
-
-
-
-
             if (acdsRoot.HasChildNodes)
                 crmxFilters.AppendChild(acdsRoot);
             if (campaingsRoot.HasChildNodes)

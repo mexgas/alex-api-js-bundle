@@ -485,6 +485,10 @@ END
 END'
     EXEC(@Sql)
 		
+	set @process = 'CW-2469 -- Clave de cifrado de grabaciones'
+	set @Sql= 'if(not exists(select * from trec_parametros where par_id=75))
+		insert trec_parametros values (75, ''Clave cifrado'', '''', ''Clave usada para la encripcion de grabaciones'')'
+	EXEC(@Sql)
 		
 ------------------ fin SCRIPT @Sql ------------------
 

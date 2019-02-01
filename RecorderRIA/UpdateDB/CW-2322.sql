@@ -79,7 +79,7 @@ BEGIN
 			WHERE STATUS = 0
 			)
 	BEGIN
-		SELECT @baseXName = Xname
+		SELECT TOP 1 @baseXName = Xname
 		FROM RiaRecnodeBasexBackup
 		WHERE STATUS = 0
 
@@ -87,11 +87,8 @@ BEGIN
 
 		SELECT @fileName, @baseXName
 
-		SET @sqlStr = ''
-SELECT top 1 ''''<root> ''''+ CHAR(10) +replace(convert(varchar(MAX), nodes,0),''''/>'''',''''/>''''+CHAR(10)) +''''</root>''''
-FROM '' + DB_NAME() + ''..RiaRecnodeBasexBackup
-WHERE STATUS = 0''
-		SET @sqlCmd = ''bcp "'' + @sqlStr + ''" queryout '' + @fileName + '' -w -T''
+		SET @sqlStr = ''"SELECT top 1 ''''<root> ''''+ CHAR(10) +replace(convert(varchar(MAX), nodes,0),''''/>'''',''''/>''''+CHAR(10)) +''''</root>'''' FROM '' + DB_NAME() + ''..RiaRecnodeBasexBackup WHERE STATUS = 0"''
+		SET @sqlCmd = ''bcp '' + @sqlStr + '' queryout '' + @fileName + '' -S -w -T''
 
 		EXEC xp_cmdshell @sqlCmd
 

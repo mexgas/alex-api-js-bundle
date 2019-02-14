@@ -3,7 +3,7 @@ Autor: Jesus Gallardo
 Descripcion: Optimization BaseX
 
 
-Version requerida: 55
+Version requerida: 56
 */
 set nocount on
 declare @Version int
@@ -13,7 +13,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-	Set @Version = 56
+	Set @Version = 57
 	Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva version

@@ -69,16 +69,17 @@ END
 '
     EXEC(@Sql)
 	
-	set @process = 'CW-2644 Alter SP ccsp_RIA_ABCLog'
+	set @process = 'CW-2644 DROP SP ccsp_RIA_ABCLog'
 	set @Sql= 'IF EXISTS ( SELECT * 
 							FROM   sysobjects 
 							WHERE  id = object_id(N''[dbo].[ccsp_RIA_ABCLog]'') 
 								   and OBJECTPROPERTY(id, N''IsProcedure'') = 1 )
 				BEGIN
 					DROP PROCEDURE [dbo].[ccsp_RIA_ABCLog]
-				END
-				GO
-				CREATE PROCEDURE [dbo].[ccsp_RIA_ABCLog] @moduleId SMALLINT, @operationType SMALLINT, @login VARCHAR(20), @target VARCHAR(250), @value VARCHAR(250)
+				END'
+	EXEC(@Sql)
+	set @process = 'CW-2644 Alter SP ccsp_RIA_ABCLog'
+	set @Sql= 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCLog] @moduleId SMALLINT, @operationType SMALLINT, @login VARCHAR(20), @target VARCHAR(250), @value VARCHAR(250)
 				AS
 				SET NOCOUNT ON
 
@@ -97,16 +98,17 @@ END
 				SET NOCOUNT OFF'
 	EXEC(@Sql)
 	
-	set @process = 'CW-2644 Alter SP trsp_AdmRecSearchRecs'
+	set @process = 'CW-2644 DROP SP trsp_AdmRecSearchRecs'
 	set @Sql= 'IF EXISTS ( SELECT * 
 							FROM   sysobjects 
 							WHERE  id = object_id(N''[dbo].[trsp_AdmRecSearchRecs]'') 
 								   and OBJECTPROPERTY(id, N''IsProcedure'') = 1 )
 				BEGIN
 					DROP PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
-				END
-				GO
-				CREATE PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
+				END'
+	EXEC(@Sql)
+	set @process = 'CW-2644 Alter SP ccsp_RIA_ABCLog'
+	set @Sql= 'CREATE PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
 				@grabIds nvarchar(max)
 
 				AS
@@ -166,16 +168,17 @@ END
 				END'
 	EXEC(@Sql)
 	
-	set @process = 'CW-2644 Alter SP trsp_AdmRecSearchGreaterThatGrabID'
+	set @process = 'CW-2644 DROP SP trsp_AdmRecSearchGreaterThatGrabID'
 	set @Sql= 'IF EXISTS ( SELECT * 
 							FROM   sysobjects 
 							WHERE  id = object_id(N''[dbo].[trsp_AdmRecSearchGreaterThatGrabID]'') 
 								   and OBJECTPROPERTY(id, N''IsProcedure'') = 1 )
 				BEGIN
 					DROP PROCEDURE [dbo].[trsp_AdmRecSearchGreaterThatGrabID]
-				END
-				GO
-				CREATE PROCEDURE [dbo].[trsp_AdmRecSearchGreaterThatGrabID]
+				END'
+	EXEC(@Sql)
+	set @process = 'CW-2644 Alter SP ccsp_RIA_ABCLog'
+	set @Sql= 'CREATE PROCEDURE [dbo].[trsp_AdmRecSearchGreaterThatGrabID]
 				@Sup_id int,
 				@Grab_id int
 				AS

@@ -143,17 +143,12 @@ set nocount off
 '
     EXEC(@Sql)
 
-    	set @process = 'CW-2568 Deshardcodear conexión segura - eliminar funcion split'
+    set @process = 'CW-2568 Deshardcodear conexión segura - eliminar funcion split'
     set @Sql= 'IF OBJECT_ID(''dbo.splitstring'') IS NOT NULL
 				BEGIN
 				DROP FUNCTION splitstring
 				END'
     EXEC(@Sql)
-
-    set @process = ''
-    set @Sql= ''
-    EXEC(@Sql)
-
 
 		/* End script release */
 

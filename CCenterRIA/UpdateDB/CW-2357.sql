@@ -81,7 +81,7 @@ WHERE TipoUser_id = 1
 		)
 BEGIN
 	INSERT INTO ccSettings (setting_id, valor, descripcion, STATUS, Tipo, detalle, description, bLoadSettings, validate)
-	VALUES (211, ''0'', ''Mostrar agentes en grupo de trabajo con una conexión no mayor a (días)'', 1, ''ADM'', ''0 carga todas las relaciones, mayor a cero valida que el ultimo inicio de sesion por numero de dias'', ''Load the list of agents last login'', 0, ''^[0-1]$'')
+	VALUES (211, ''0'', ''Mostrar agentes en grupo de trabajo con una conexión no mayor a (días)'', 1, ''ADM'', ''0 carga todas las relaciones, mayor a cero valida que el ultimo inicio de sesion por numero de dias'', ''Show workgroup agents who logged in to the system on the last (days)'', 0, ''^[0-1]$'')
 END
 '
 		EXEC (@Sql)

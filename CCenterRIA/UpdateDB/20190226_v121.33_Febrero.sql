@@ -8,7 +8,7 @@ Date: 2019/01/08
 Description:
 
 Database: CCenterRia
-Required version: 121.31
+Required version: 121.32
 
 Se agrega la tarea
 CW-2031

@@ -3,6 +3,7 @@
 /*******************************/
 /*
 Author: Vic Gonzalez
+		Karen Rodríguez
 		
 Date: 2019/03/12
 Description: 
@@ -11,7 +12,7 @@ Database: CCenterRia
 Required version: 121.32
 
 Se agrega la tarea
-
+CW-2729-Validar_setting_para_no_tener_admin_y_agente_al_mismo_tiempo
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -49,6 +50,19 @@ IF @actualVersion = @version AND @actualVersionFix >= 32
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
+		SET @process = 'CW-2729 Create table ccGalateaActiveSession'
+		SET @Sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaActiveSession''
+BEGIN
+CREATE TABLE ccGalateaActiveSession(
+	session_id int IDENTITY(1,1) PRIMARY KEY,
+	[user_id] smallint NOT NULL ,
+	user_ip varchar(30) NOT NULL,
+	FOREIGN KEY (user_id)
+	REFERENCES ccUsers(User_id)
+)
+END
+		'
+		EXEC (@Sql)
 		SET @process = 'CW-2617 Drop SP ccsp_GalateaAdminLogin'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
     begin
@@ -151,6 +165,53 @@ SET NOCOUNT ON
 
 END
 '
+		EXEC (@Sql)
+		SET @process = 'CW-2729 Drop SP ccsp_GalateaValidateActiveSession'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaValidateActiveSession'')
+    begin
+        DROP PROCEDURE ccsp_GalateaValidateActiveSession;
+    end'
+		EXEC (@Sql)
+
+
+		SET @process = 'CW-2729 Create ccsp_GalateaValidateActiveSession'
+		SET @Sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaValidateActiveSession]
+@userId varchar(30),
+@userIp varchar(30),
+@action tinyint = NULL
+AS
+--VALIDA QUE NO EXISTA UN MISMO USUARIO CON LA MISMA SESION Y QUE
+--EL SETING DE LA SESION ESTA ACTIVO.
+	IF @action = 1
+	BEGIN
+		IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 110 and valor = 0)
+		BEGIN
+			IF EXISTS (SELECT * FROM ccGalateaActiveSession WHERE user_ip = @userIp) 
+			BEGIN
+				SELECT cast (1 as bit) ''IpAlreadyExists'' 
+			END
+			ELSE
+			BEGIN
+				SELECT cast (0 as bit) ''IpAlreadyExists'' 
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT cast (0 as bit) ''IpAlreadyExists'' 
+		END
+	END
+	--INSERTA EN LA TABLA DE SESIONES ACTIVAS EL REGISTRO DEL USUARIO ACTUAL
+	IF @action = 2
+	BEGIN 	
+		INSERT INTO ccGalateaActiveSession VALUES (@userId, @userIp) 
+	END
+	--ELIMINA EN LA TABLA DE SESIONES ACTIVAS EL REGISTRO DEL USUARIO ACTUAL
+	IF @action = 3
+	BEGIN
+		DELETE FROM ccGalateaActiveSession WHERE @userId = user_id
+	END
+		'
 		EXEC (@Sql)
 
 				

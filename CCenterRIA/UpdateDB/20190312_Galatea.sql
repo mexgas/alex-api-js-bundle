@@ -179,6 +179,7 @@ END
 CREATE PROCEDURE [dbo].[ccsp_GalateaValidateActiveSession]
 @userId varchar(30),
 @userIp varchar(30),
+@userType tinyint, -- 1-Agente 2-Admin
 @action tinyint = NULL
 AS
 --VALIDA QUE NO EXISTA UN MISMO USUARIO CON LA MISMA SESION Y QUE
@@ -189,7 +190,22 @@ AS
 		BEGIN
 			IF EXISTS (SELECT * FROM ccGalateaActiveSession WHERE user_ip = @userIp) 
 			BEGIN
-				SELECT cast (1 as bit) ''IpAlreadyExists'' 
+				--SE OBTIENE EL TIPO DE USUARIO YA REGISTRADO
+				IF 0 <> (
+						SELECT TOP 1 ccUsers.User_id
+						FROM ccUsers
+						LEFT JOIN ccGalateaActiveSession 
+						ON ccGalateaActiveSession.user_id = ccUsers.User_id
+						where ccUsers.TipoUser_id <> @userType
+						AND ccGalateaActiveSession.user_ip = @userIp
+				)
+				BEGIN
+					SELECT cast (1 as bit) ''IpAlreadyExists'' 
+				END
+				ELSE
+				BEGIN
+					SELECT cast (0 as bit) ''IpAlreadyExists'' 
+				END
 			END
 			ELSE
 			BEGIN

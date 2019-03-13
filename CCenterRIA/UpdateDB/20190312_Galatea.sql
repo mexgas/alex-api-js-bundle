@@ -179,8 +179,8 @@ END
 CREATE PROCEDURE [dbo].[ccsp_GalateaValidateActiveSession]
 @userId varchar(30),
 @userIp varchar(30),
-@userType tinyint, -- 1-Agente 2-Admin
-@action tinyint = NULL
+@action tinyint = NULL,
+@userType tinyint -- 1-Agente 2-Admin
 AS
 --VALIDA QUE NO EXISTA UN MISMO USUARIO CON LA MISMA SESION Y QUE
 --EL SETING DE LA SESION ESTA ACTIVO.

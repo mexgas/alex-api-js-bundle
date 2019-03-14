@@ -51,7 +51,7 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 		SET @process = 'CW-2729 Create table ccGalateaActiveSession'
-		SET @Sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaActiveSession''
+		SET @Sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaActiveSession'')
 BEGIN
 CREATE TABLE ccGalateaActiveSession(
 	session_id int IDENTITY(1,1) PRIMARY KEY,

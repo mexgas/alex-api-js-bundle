@@ -413,6 +413,12 @@ set nocount off'
     	EXEC(@Sql)
 
 		
+		set @process = 'Cambios lenguaje'
+		set @Sql= 'update ccRIALog_Module set descripcion=''RECORDING SERVER|RECORDING SERVER'' where module_id=59
+					update ccRIALog_Module set descripcion=''RECORDINGS MANAGER|RECORDINGS MANAGER'' where module_id=57
+					update ccRIALog_Operation set descripcion=''ADJUNTAR EN EMAIL|EMAIL FILE''where operationType=172'
+		EXEC(@Sql)
+		
 	
 		/* End script release */
 

@@ -411,7 +411,6 @@ UPDATE ccoCallsOutSource SET cal_status = 2, dial_tels =  @prioridad, nOcupado=0
 where cal_status in (0, 1, 7) and cam_id = @camp_id
 set nocount off'
     	EXEC(@Sql)
-
 		
 	
 		/* End script release */

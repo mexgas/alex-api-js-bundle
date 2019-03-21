@@ -1,6 +1,6 @@
 /*
 Autor: Jesus Gallardo
-Descripcion: Optimization BaseX
+Descripcion: trsp_FinderCRMNode
 
 
 Version requerida: 56
@@ -40,6 +40,57 @@ BEGIN
 END
 '
     EXEC(@Sql)
+	
+	
+	set @process = 'CW-2464 Update parameter. Correct format'
+	set @Sql= 'update trec_parametros set par_valor=case isnumeric(par_valor) when 0 then 0 else par_valor end, par_detail=''Puede ser 0:wav, 1:mp3, 2:vox'' where par_id=35'
+	EXEC(@Sql)
+	
+	set @process = 'CW-2464 Alter SP trsp_SaveAVRSBackupParameters'
+	set @Sql= 'ALTER PROCEDURE [dbo].[trsp_SaveAVRSBackupParameters]
+						  @settings AS VARCHAR(MAX),
+						  @NetBiosSettings AS VARCHAR(MAX) = '''',
+						  @FTPSettings AS VARCHAR(MAX) = '''',
+						  @ExtDriveSettings AS VARCHAR(MAX) = ''''
+						  AS
+						  BEGIN
+						    
+						    UPDATE TREC_PARAMETROS
+						    SET par_valor = @settings
+						    WHERE par_id = 67
+
+						    --NetBios
+						    IF LEN(@NetBiosSettings) > 0
+						      BEGIN
+						    
+						        UPDATE TREC_PARAMETROS
+						        SET par_valor = @NetBiosSettings
+						        WHERE par_id = 68
+						        
+						      END
+
+						    --FTP 
+						    IF LEN(@FTPSettings) > 0
+						      BEGIN
+						    
+						        UPDATE TREC_PARAMETROS
+						        SET par_valor = @FTPSettings
+						        WHERE par_id = 69
+						        
+						      END
+
+						    --ExtDrive  
+						    IF LEN(@ExtDriveSettings) > 0
+						      BEGIN
+						    
+						        UPDATE TREC_PARAMETROS
+						        SET par_valor = @ExtDriveSettings
+						        WHERE par_id = 70
+						        
+						      END
+						      
+						  END'
+	EXEC(@Sql)
 	
 	------------------ fin SCRIPT @Sql ------------------
 

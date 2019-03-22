@@ -2545,7 +2545,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas Finalizadas (10 seg).
+        ///   Busca una cadena traducida similar a Llamadas canceladas (10 seg).
         /// </summary>
         public static string finishedCalls10 {
             get {
@@ -2554,7 +2554,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas Finalizadas (20 seg).
+        ///   Busca una cadena traducida similar a Llamadas canceladas (20 seg).
         /// </summary>
         public static string finishedCalls20 {
             get {
@@ -2563,7 +2563,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas Finalizadas (30 seg).
+        ///   Busca una cadena traducida similar a Llamadas canceladas (30 seg).
         /// </summary>
         public static string finishedCalls30 {
             get {

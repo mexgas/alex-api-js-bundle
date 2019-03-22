@@ -934,13 +934,13 @@
     <value>Terminados pelo sistema</value>
   </data>
   <data name="finishedCalls10" xml:space="preserve">
-    <value>Chamadas finalizadas (10 segundos)</value>
+    <value>Chamadas canceladas (10 segundos)</value>
   </data>
   <data name="finishedCalls20" xml:space="preserve">
-    <value>Chamadas finalizadas (20 segundos)</value>
+    <value>Chamadas canceladas (20 segundos)</value>
   </data>
   <data name="finishedCalls30" xml:space="preserve">
-    <value>Chamadas finalizadas (30 segundos)</value>
+    <value>Chamadas canceladas (30 segundos)</value>
   </data>
   <data name="finishedConversation" xml:space="preserve">
     <value>Conversas finalizadas</value>

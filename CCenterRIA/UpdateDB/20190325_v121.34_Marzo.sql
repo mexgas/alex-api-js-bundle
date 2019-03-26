@@ -2,8 +2,10 @@
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
-Author: Erick Muñoz
+Author: Daniel Vega
+		Erick Muñoz
 		Victor González
+
 		
 Date: 2019/03/12
 Description: 
@@ -13,6 +15,8 @@ Required version: 121.33
 
 Se agrega la tarea
 CW-2729-Validar_setting_para_no_tener_admin_y_agente_al_mismo_tiempo
+CW-2742 Reproductor externo
+
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -92,6 +96,7 @@ BEGIN
 			END
 		END'
 		EXEC (@Sql)
+
 
 		SET @process = 'CW-2775 ALTER SP ccsp_AgentGetEspecialidadesActivas'
 		SET @Sql = '
@@ -218,6 +223,55 @@ BEGIN
 			IF NOT EXISTS(SELECT * FROM ccsettings WHERE setting_id=212)
 			INSERT ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
 			VALUES (212,0,''Mensajes de error personalizados para llamada manual'',1,''ADM'',''0:Desactivado,1:Habilitar'',''Custom messages for manual call errors. 0:Disabled,1:Enabled'',1,''^[0-1]$'')'
+		EXEC (@Sql)
+
+
+		SET @process = 'CW-2762 agrega operation module ccRIALog_Operation'
+		SET @Sql = '
+			IF NOT EXISTS(SELECT * FROM ccRIALog_Operation WHERE setting_id=212)
+			INSERT ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+			VALUES (212,0,''Mensajes de error personalizados para llamada manual'',1,''ADM'',''0:Desactivado,1:Habilitar'',''Custom messages for manual call errors. 0:Disabled,1:Enabled'',1,''^[0-1]$'')'
+		EXEC (@Sql)
+
+
+
+		SET @process = 'CW-2762 agrega operation en ccRIALog_Operation'
+		SET @Sql = '
+			IF NOT EXISTS
+			(
+			    SELECT *
+			    FROM ccRIALog_Operation
+			    WHERE operationType = 177
+			)
+			    INSERT INTO ccRIALog_Operation
+			    (operationType, 
+			     descripcion
+			    )
+			    VALUES
+			    (177, 
+			     ''Re-Encrypt|Reencryptar''
+			    );
+
+			'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2762 agrega operation module ccRIALog_Module'
+		SET @Sql = '
+			IF NOT EXISTS
+			(
+			    SELECT *
+			    FROM ccRIALog_Module
+			    WHERE module_id = 60
+			)
+			    INSERT INTO ccRIALog_Module
+			    (module_id, 
+			     descripcion
+			    )
+			    VALUES
+			    (60, 
+			     ''RE-ENCRYPTER OF RECORDINGS| REENCRIPTADOR DE GRABACIONES''
+			    );
+			'
 		EXEC (@Sql)
 
 		SET @process = 'CW-2762 Drop SP ccsp_GalateaGetCustomErrorMessages'

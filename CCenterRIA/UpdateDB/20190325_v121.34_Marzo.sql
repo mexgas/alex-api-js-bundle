@@ -3,8 +3,8 @@
 /*******************************/
 /*
 Author: Vic Gonzalez
-		Karen Rodríguez
-		Erick Muñoz
+		Karen Rodr?uez
+		Erick Mu?z
 		Daniel Vega
 		
 Date: 2019/03/12
@@ -400,11 +400,23 @@ AS
 			VALUES (212,0,''Mensajes de error personalizados para llamada manual'',1,''ADM'',''0:Desactivado,1:Habilitar'',''Custom messages for manual call errors. 0:Disabled,1:Enabled'',1,''^[0-1]$'')'
 		EXEC (@Sql)
 
-		SET @process = 'CW-2762 agrega operation module ccRIALog_Operation'
+		SET @process = 'CW-2762 agrega operation module ccRIALog_Module'
 		SET @Sql = '
-			IF NOT EXISTS(SELECT * FROM ccRIALog_Operation WHERE setting_id=212)
-			INSERT ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
-			VALUES (212,0,''Mensajes de error personalizados para llamada manual'',1,''ADM'',''0:Desactivado,1:Habilitar'',''Custom messages for manual call errors. 0:Disabled,1:Enabled'',1,''^[0-1]$'')'
+			IF NOT EXISTS
+			(
+			    SELECT *
+			    FROM ccRIALog_Module
+			    WHERE module_id = 60
+			)
+			   INSERT INTO ccRIALog_Module
+				(module_id, 
+				 descripcion
+				)
+				VALUES
+				(60, 
+				 ''RE-ENCRYPTER OF RECORDINGS| REENCRIPTADOR DE GRABACIONES''
+				);
+			'
 		EXEC (@Sql)
 
 		SET @process = 'CW-2762 agrega operation en ccRIALog_Operation'
@@ -460,7 +472,7 @@ AS
 			@callout_id int 
 			AS
 				DECLARE @disconnectCause AS VARCHAR(250)
-				--VALIDA QUE EL SETTING PARA MENSAJES PERSONALIZADOS ESTÉ ACTIVO
+				--VALIDA QUE EL SETTING PARA MENSAJES PERSONALIZADOS EST?ACTIVO
 				IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 212 and valor = 1)
 				BEGIN
 					--VALIDA QUE EL CALLOUT_ID EXISTA EN CCOLOGDIALS
@@ -473,21 +485,21 @@ AS
 
 						WHILE PATINDEX(''%[^0-9]%'',@disconnectCause) <> 0
 						BEGIN
-						    --ELIMINA LAS LETRAS PARA DEJAR SOLO NÚMEROS
+						    --ELIMINA LAS LETRAS PARA DEJAR SOLO N?EROS
 						    SET @disconnectCause = STUFF(@disconnectCause,PATINDEX(''%[^0-9]%'',@disconnectCause),1,'''')
 						END
 
-						--VALIDA QUE EXISTA UN MENSAJE DE ERROR PARA EL CÓDIGO
+						--VALIDA QUE EXISTA UN MENSAJE DE ERROR PARA EL C?IGO
 						IF EXISTS (SELECT message_description FROM ccGalateaCustomErrorMessages WHERE message_id = @disconnectCause)
 						BEGIN
-							--REGRESA MENSAJE ASOCIADO AL CÓDIGO DE ERROR
+							--REGRESA MENSAJE ASOCIADO AL C?IGO DE ERROR
 							SELECT message_description
 							FROM ccGalateaCustomErrorMessages
 							WHERE message_id = @disconnectCause
 						END
 						ELSE
 						BEGIN
-							--REGRESA MENSAJE POR DEFAULT SI NO SE ENCUENTRA UNO ASOCIADO AL CÓDIGO DE ERROR
+							--REGRESA MENSAJE POR DEFAULT SI NO SE ENCUENTRA UNO ASOCIADO AL C?IGO DE ERROR
 							SELECT message_description
 							FROM ccGalateaCustomErrorMessages
 							WHERE message_id = ''DEFAULT''
@@ -503,7 +515,7 @@ AS
 				END
 				ELSE
 				BEGIN
-					--REGRESA UN MENSAJE PREDETERMINADO PARA INFORMAR QUE EL SETTING ESTÁ DESHABILITADO
+					--REGRESA UN MENSAJE PREDETERMINADO PARA INFORMAR QUE EL SETTING EST? DESHABILITADO
 					SELECT ''SETTING_DISABLED'' ''message_description''
 				END'
 		EXEC (@Sql)

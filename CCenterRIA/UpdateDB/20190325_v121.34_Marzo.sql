@@ -469,14 +469,16 @@ AS
 		SET @process = 'CW-2762 Create ccsp_GalateaGetCustomErrorMessages'
 		SET @Sql = '
 			CREATE PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
-			@callout_id int 
+			@cal_id INT
 			AS
 				DECLARE @disconnectCause AS VARCHAR(250)
 				--VALIDA QUE EL SETTING PARA MENSAJES PERSONALIZADOS EST?ACTIVO
+				DECLARE @callout_id AS INT
 				IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 212 and valor = 1)
 				BEGIN
 					--VALIDA QUE EL CALLOUT_ID EXISTA EN CCOLOGDIALS
-					IF EXISTS (SELECT * FROM ccoLogDials WHERE callout_id = @callout_id) 
+					SELECT @callout_id=callout_id FROM ccoCallsOut WHERE cal_id = @cal_id
+					IF @callout_id IS NOT NULL
 					BEGIN
 						--SE OBTIENE EL TIPO DE USUARIO YA REGISTRADO
 						SELECT @disconnectCause=disconnectCause
@@ -520,8 +522,14 @@ AS
 				END'
 		EXEC (@Sql)
 
-
-		
+		set @process = 'CW-2762 agrega etiqueta default'
+		set @Sql= 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaCustomErrorMessages'')
+			BEGIN
+				INSERT INTO ccGalateaCustomErrorMessages
+				(message_id, message_description)
+				VALUES (''DEFAULT'',''This is the default custom message'')
+			END'
+		EXEC(@Sql)		
 		
 		set @process = 'Cambios lenguaje'
 		set @Sql= 'update ccRIALog_Module set descripcion=''RECORDING SERVER|RECORDING SERVER'' where module_id=59

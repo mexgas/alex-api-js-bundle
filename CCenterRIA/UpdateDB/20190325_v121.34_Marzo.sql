@@ -525,9 +525,12 @@ AS
 		set @process = 'CW-2762 agrega etiqueta default'
 		set @Sql= 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaCustomErrorMessages'')
 			BEGIN
-				INSERT INTO ccGalateaCustomErrorMessages
-				(message_id, message_description)
-				VALUES (''DEFAULT'',''This is the default custom message'')
+			IF NOT EXISTS (SELECT * FROM ccGalateaCustomErrorMessages WHERE message_id = ''DEFAULT'')
+				BEGIN
+					INSERT INTO ccGalateaCustomErrorMessages
+					(message_id, message_description)
+					VALUES (''DEFAULT'',''This is the default custom message'')
+				END
 			END'
 		EXEC(@Sql)		
 		

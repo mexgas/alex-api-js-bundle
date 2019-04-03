@@ -6,6 +6,7 @@ Author: Vic Gonzalez
 		Karen Rodr?uez
 		Erick Mu?z
 		Daniel Vega
+		Armando Rodriguez
 		
 Date: 2019/03/12
 Description: 
@@ -538,6 +539,291 @@ AS
 		set @Sql= 'update ccRIALog_Module set descripcion=''RECORDING SERVER|RECORDING SERVER'' where module_id=59
 					update ccRIALog_Module set descripcion=''RECORDINGS MANAGER|RECORDINGS MANAGER'' where module_id=57
 					update ccRIALog_Operation set descripcion=''ADJUNTAR EN EMAIL|EMAIL FILE''where operationType=172'
+		EXEC(@Sql)
+		
+		set @process = 'correcion de identificacion del tipo de llamada'
+				set @Sql= 'ALTER procedure [dbo].[ccsp_DLRSaveDialResult]
+		@callout_id int,
+		@cam_id smallint,
+		@tipoResDial_id tinyint,
+		@Telefono varchar(30),
+		@Puerto smallint,
+		@tDialing tinyint=0,
+		@tBusy smallint=0,
+		@call_id int = 0,
+		@answerbit bit = null,
+		@tAnswerBit smallint = 0,
+		@canceledNoAgents bit =0,
+		@disconnectCause varchar(250) = '''',
+		@cal_key varchar(20) = '''',
+		@call_TS varchar(15) = ''''
+		AS
+		set nocount on
+		declare @tNow as datetime, @RecicleSIC tinyint
+		declare @logDial_id int, @preview smallint
+		declare @tAnswerBitFinal as datetime
+		
+		SELECT @RecicleSIC=IsNull(valor, 0) FROM ccSettings WHERE setting_id = 60
+		select @tNow=getdate()
+		
+		select @tAnswerBitFinal = dateadd(ss,-@tAnswerBit,@tNow)
+		
+		if @call_id > 0 and @tipoResDial_id = 1
+		BEGIN
+			INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id)
+			select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, ''00000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(@Telefono)
+		END
+		ELSE
+		BEGIN
+			INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id)
+			select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, ''00000000'', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(@Telefono)
+		END
+		
+		select @logDial_id=scope_identity()
+		
+		if (@RecicleSIC=1) begin
+			UPDATE ccoWorkingTable with(rowlock) SET tipoResDial_id = @tipoResDial_id where callout_id = @callout_id
+		end
+		
+		select @logDial_id
+		
+		-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+		if @call_id > 0 and @tipoResDial_id = 1
+		begin
+			select @preview = case when progdial=2 then 1 else 0 end from cccamps nolock where cam_id=@cam_id
+			if @preview = 1
+			begin
+				update ccoCallsOut with(rowlock) set cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
+			end
+			else
+			begin
+				update ccoCallsOut with(rowlock) set cal_manual = 2, cal_puerto = @Puerto where cal_manual =1 and cal_id = @call_id and cal_puerto = 0
+			end
+			exec ccsp_CstoCalculaCosto @call_id
+		
+			if @cal_key ='''' begin
+				select @cal_key=cal_key from ccoCallsOutSource with(nolock) where @callout_id=callout_id
+				update ccologdials with(rowlock) set cal_key=@cal_key where logDial_id=@logDial_id
+			end
+		
+		end
+		
+		-- inserta informacion para reportes de workgroup
+		insert ccRIAWorkGroup_logDial_id (IDWG, logDial_id, cam_id, timestamp)
+		select IDWG, @logDial_id, IdCampEsp, getdate() 
+		from ccRIACampEspWG where tipo = 1 and IdCampEsp = @cam_id
+		
+		-- Guarda configuracion de TipoDialingMode
+		update ccoLogDials with(rowlock) set TipoDialingMode = dbo.fn_getDialingMode(@call_id, 0, @logDial_id, @cam_id) where logDial_id=@logDial_id
+		set nocount off'
+		EXEC(@Sql)
+		
+		set @process = 'correcion de identificacion del tipo de llamada'
+				set @Sql= 'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
+		 @action as tinyint,
+		 @cal_id as integer,
+		 @tipo as tinyint,
+		 @modo as tinyint,
+		 @destino as varchar(50),
+		 @tantes integer = 0,
+		 @tdespues integer = 0,
+		 @pbxId tinyint =0,
+		 @channel int =0
+		 as
+		 -- tipo: 1 inbound, 2 outbound
+		 -- modo: 0 externa ciega, 1 agente, 2 acd, 3 confer, 4 externa supervisada, 5 desborde
+		 
+		 declare @totalCall_Time integer
+		 declare @callout_id int
+		 
+		 if @action = 1 begin
+		     if @modo = 4 begin
+		         insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id) 
+		         values ( @cal_id, @tipo, @modo, @destino, @tantes, @tdespues, getdate(), @pbxId,@channel, dbo.fnGetTipoLlamada(@destino) )
+		         if @tdespues > 0 begin
+		                 select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tdespues
+		                 update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+		         end
+		     end
+		     else begin
+		         if not exists (select * from ccLogTransfers where cal_id = @cal_id and tipo = @tipo)
+		             insert into ccLogTransfers(cal_id,tipo,modo,destino,tAntesXfer,tDespuesXfer,fechaFin,pbxId,channel, tipoLlamada_id) 
+		             values ( @cal_id, @tipo, @modo, @destino, 0, @tantes, getdate() ,@pbxId,@channel, dbo.fnGetTipoLlamada(@destino) )
+		 
+		         if @tipo = 2 begin
+		             if @modo = 5 begin
+		                 select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+		                 update ccLogTransfers set tDespuesXfer = @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2), tAntesXfer = @tdespues + (select tAntesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+		             end
+		         
+		             if @modo in (0,1,2) begin
+		                 select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+		                 update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+		             end
+		         end
+		 
+		         else begin
+		             if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
+		                 select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+		                 select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes
+		                 update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+		             end
+		         end
+		     end
+		    --Valida que no existe y que el tiempo minimo de la grabacion se mayor al establecido para que lo tome el detector de gritos
+		   if not exists(select * from ccAVRSTransfer where cal_id=@cal_id and tipo= @tipo-1) begin
+		     declare @tMinAVRS smallint,@cal_tDialog int,@cal_manual int
+		     set @tMinAVRS=5
+		     set @cal_manual=0
+		     select @tMinAVRS=valor from ccSettings where setting_id=65
+		     if @tipo=2 begin
+		       select @cal_tDialog=cal_tDialog,@cal_manual=cal_manual from ccoCallsOut where cal_id=@cal_id
+		     end
+		     else begin
+		       select @cal_tDialog=cal_tDialog from ccCallsIn where cal_id=@cal_id
+		     end
+		 
+		     if @cal_tDialog >= @tMinAVRS and @cal_manual<>1 begin
+		       insert into ccAVRSTransfer (cal_id,tipo) values(@cal_id,@tipo-1)
+		     end
+		   end
+		 end
+		 
+		 else if @action = 2 begin   
+		     if (select callout_id from ccCallsIn where cal_id = @cal_id) <> 0 begin
+		         select @cal_id = (select callout_id from ccCallsIn where cal_id = @cal_id)
+		         update ccLogTransfers set tDespuesXfer = @tdespues + @tantes + (select tDespuesXfer from ccLogTransfers where cal_id = @cal_id and tipo = 2)  where cal_id = @cal_id and tipo = 2
+		         select @totalCall_Time = ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0) + @tantes + @tdespues
+		         update ccoCallsOut set totalCall_Time = @totalCall_Time where cal_id = @cal_id
+		     end
+		 end
+		 
+		 else if @action = 4 begin
+		     select @totalCall_Time = ISNULL((select sum(tincall) from IVRCallsIn where callout_id = @cal_id), 0) + ISNULL((select totalCall_Time from ccoCallsOut where cal_id = @cal_id), 0)
+		     update ccoCallsOut set totalCall_Time = @totalCall_Time, tipoLlamada_id = dbo.fnGetTipoLlamada(@destino) where cal_id = @cal_id
+		end
+		'
+		EXEC(@Sql)
+		
+		set @process = 'correcion de identificacion del tipo de llamada'
+				set @Sql= 'ALTER function [dbo].[fnGetTipoLlamada](@tel varchar(32))
+		RETURNS tinyint
+		AS
+		BEGIN
+		
+		declare @ladatemp smallint, @ldlocal smallint, @serie smallint, @numeracion smallint, @lenght tinyint
+		declare @mod varchar(10), @country tinyint
+		
+		select @country = valor from ccsettings where setting_id = 104
+		select @lenght = LEN(@tel), @ldlocal = valor from ccSettings with(nolock) where setting_id = 17
+		--print '' longitud: '' + convert(varchar(2),@lenght) + '' lada: '' + convert(varchar(3),@ldlocal)
+		
+			declare @table table(
+			id int not null,
+			prefijo nvarchar(100) not null
+			)
+		
+			declare @t_tipos table(
+			tipollamada_id int not null,
+			prefijo nvarchar(100) not null,
+			rowid int not null
+			)
+		
+		declare @tipoLlamada_id smallint, @prefijo varchar(15), @tipo tinyint, @cantidadLL tinyint
+		set @tipoLlamada_id = 0
+		--set @tipo = 0
+		
+			insert into @t_tipos
+			select tipoLlamada_id, prefijo, ROW_NUMBER() over(order by len(prefijo) desc) as rowid from (select tipoLlamada_id, longitud, prefijo, (select count(*) from fn_RIASplitDelimited(longitud,''|'') where value=@lenght) as exist
+			from cstoTipoLlamada with(index(IX_cstoTipoLlamada),nolock) 
+			where country_id = @country
+			and (country_id <> 1 or (country_id = 1 and tipoLlamada_id not in (8,9,10,11,12))) ) as a where exist = 1
+		
+			select @cantidadLL =count(*) from @t_tipos 
+			--print ''cantidad de regs'' + convert(varchar(2),@cantidadLL)
+		
+			if @cantidadLL <> 0 begin
+				--print ''existen opciones''
+				declare @i int = 1;
+		
+				while @i <= @cantidadLL
+				begin
+					select @tipoLlamada_id = tipoLlamada_id, @prefijo = prefijo from @t_tipos where rowid = @i
+					--print ''tipo llamada:'' + convert(varchar(2),@tipoLlamada_id) + '' prefijo:'' + @prefijo
+		
+					insert into @table
+					select * from fn_RIASplitDelimited(@prefijo,''|'') order by len(value) desc
+		
+					if (select count(*)	from @table	where @tel like prefijo) = 1
+					begin
+						set @tipo = @tipoLlamada_id
+						set @i = @cantidadLL
+					end
+		
+					set @i = @i + 1
+				end
+			end
+			else begin
+				--print ''revisar contra longitud 0''
+		
+				select @tipoLlamada_id = tipoLlamada_id, @prefijo = prefijo from (select tipoLlamada_id, longitud, prefijo, (select count(*) from fn_RIASplitDelimited(prefijo,''|'') where @tel like (value)) as exist
+				from cstoTipoLlamada with(index(IX_cstoTipoLlamada),nolock) 
+				where country_id = @country and longitud = ''0''
+				and (country_id <> 1 or (country_id = 1 and tipoLlamada_id not in (8,9,10,11,12))) ) as a where exist = 1
+		
+				if @tipoLlamada_id <> 0 begin
+					set @tipo = @tipoLlamada_id
+				end
+				else begin
+					--print ''revisar contra series''
+		
+					if @lenght = 10 - LEN(@ldlocal) begin
+						select @tel = convert(varchar(3),@ldlocal) + @tel
+					end
+		
+					select @tel = RIGHT(@tel,10)
+					select @ladatemp = left(@tel,2)
+		
+					if(@ladatemp in (55,56,33,81)) begin
+						--print ''es de dos digitos''
+						select @serie = convert(smallint,SUBSTRING(@tel,3,4)), @numeracion = RIGHT(@tel,4)
+						--print ''serie: '' + convert(varchar(4),@serie) + '' numeracion: '' + convert(varchar(4),@numeracion)
+						select @mod = MODALIDAD from Series where CLD = @ladatemp and SERIE = @serie and @numeracion between [NUMERACION INICIAL] and [NUMERACION FINAL]
+					end
+					else begin
+						--print ''es de tres digitos''
+						select @ladatemp = left(@tel,3)
+						select @serie = convert(smallint,SUBSTRING(@tel,4,3)), @numeracion = RIGHT(@tel,4)
+						--print ''serie: '' + convert(varchar(4),@serie) + '' numeracion: '' + convert(varchar(4),@numeracion)
+						select @mod =MODALIDAD from Series where CLD = @ladatemp and SERIE = @serie and @numeracion between [NUMERACION INICIAL] and [NUMERACION FINAL]
+					end
+		
+					if @mod in (''FIJO'', ''MPP'') begin
+						if @ldlocal = @ladatemp begin
+							--print ''misma lada -> es local''
+							set @tipo = 1
+						end
+						else begin
+							--print ''diferente lada -> es ld''
+							set @tipo = 2
+						end
+					end
+		
+					if @mod in (''CPP'') begin
+						if @ldlocal = @ladatemp begin
+							--print ''misma lada -> es celular local''
+							set @tipo = 3
+						end
+						else begin
+							--print ''diferente lada -> es celular ld''
+							set @tipo = 4
+						end
+					end
+				end
+			end
+		
+			return @tipo
+		END'
 		EXEC(@Sql)
 
 				

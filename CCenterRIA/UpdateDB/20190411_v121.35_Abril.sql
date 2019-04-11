@@ -4,14 +4,14 @@
 /*
 Author: Vic Gonzalez
 		
-Date: 2019/04/05
+Date: 2019/04/11
 Description: 
 
 Database: CCenterRia
-Required version: 121.32
+Required version: 121.34
 
 Se agrega la tarea
-CW-2729-Validar_setting_para_no_tener_admin_y_agente_al_mismo_tiempo
+CW-SETTNGS
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -30,7 +30,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 121 --**********actualizar a 119 sin fix
-SET @versionfix = 34
+SET @versionfix = 35
 
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -45,23 +45,12 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 32
+IF @actualVersion = @version AND @actualVersionFix >= 34
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
-		SET @process = 'CW-2729 Create table ccGalateaActiveSession'
-		SET @Sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccGalateaActiveSession''
-BEGIN
-CREATE TABLE ccGalateaActiveSession(
-	session_id int IDENTITY(1,1) PRIMARY KEY,
-	[user_id] smallint NOT NULL ,
-	user_ip varchar(30) NOT NULL,
-	FOREIGN KEY (user_id)
-	REFERENCES ccUsers(User_id)
-)
-END
-		'
-		EXEC (@Sql)
+		
+			EXEC (@Sql)
 		SET @process = 'CW-2805 Drop SP ccsp_GalateaAdminSettings'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings'')
     begin
@@ -89,6 +78,9 @@ BEGIN
 	DROP TABLE #Settings;
 END
 '
+			
+		EXEC (@Sql)
+
 				
 
 		-- *********************** END  121.03-3_201900307 *********************** ---

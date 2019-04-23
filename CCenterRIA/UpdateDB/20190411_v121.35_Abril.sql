@@ -3,6 +3,7 @@
 /*******************************/
 /*
 Author: Vic Gonzalez
+
 		
 Date: 2019/04/11
 Description: 
@@ -50,7 +51,7 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 		
-			EXEC (@Sql)
+			
 		SET @process = 'CW-2805 Drop SP ccsp_GalateaAdminSettings'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings'')
     begin
@@ -78,19 +79,189 @@ BEGIN
 	DROP TABLE #Settings;
 END
 '
-			
 		EXEC (@Sql)
-
 				
 
 		-- *********************** END  121.03-3_201900307 *********************** ---
-
-
-				/* End script release */
-		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		EXEC ccsp_getVersion 'BDF', @versionFix
 		
+
+		-- *********************** START 121.03-5_20190417 *********************** ---
+
+		SET @process = 'CW-2737 Drop Table xxClienteCarga'
+		SET @Sql = 'if exists (SELECT * FROM sys.tables WHERE name = N''xxClienteCarga'')
+		begin
+		DROP TABLE xxClienteCarga;
+		end'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2737 Create Table xxClienteCarga'
+		SET @Sql = '	CREATE TABLE xxClienteCarga (
+			[cuenta] [varchar](20) NOT NULL,
+			[tel1] [varchar](13) NOT NULL,
+			[tel2] [varchar](13) NOT NULL,
+			[tel3] [varchar](13) NOT NULL,
+			[tel4] [varchar](13) NOT NULL,
+			[tel5] [varchar](13) NOT NULL,
+			[dato1] [varchar](255) NOT NULL,
+			[dato2] [varchar](255) NOT NULL,
+			[dato3] [varchar](255) NOT NULL,
+			[dato4] [varchar](255) NOT NULL,
+			[dato5] [varchar](255) NOT NULL,
+			[callout_id] [int] NULL,
+			[cam_id] [int] NULL,
+			[FCallBack] [smalldatetime] NULL,
+			[User_id] [int] NOT NULL,
+		 CONSTRAINT [PK_clienteCarga] PRIMARY KEY CLUSTERED 
+		(
+			[cuenta] ASC
+		))
+
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_tel1]  DEFAULT ('''') FOR [tel1]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_tel2]  DEFAULT ('''') FOR [tel2]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_tel3]  DEFAULT ('''') FOR [tel3]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_tel4]  DEFAULT ('''') FOR [tel4]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_tel5]  DEFAULT ('''') FOR [tel5]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato1]  DEFAULT ('''') FOR [dato1]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato2]  DEFAULT ('''') FOR [dato2]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato3]  DEFAULT ('''') FOR [dato3]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato4]  DEFAULT ('''') FOR [dato4]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato5]  DEFAULT ('''') FOR [dato5]
+		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_User_id] DEFAULT ((0)) FOR [User_id]
+		'
+		EXEC (@Sql)
+
+
+						
+		SET @process = 'CW-2737 Drop Procedure xx_ChecaHorario'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_ChecaHorario'')
+		begin
+		DROP PROCEDURE xx_ChecaHorario;
+		end'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2737 Create Procedure xx_ChecaHorario'
+				SET @Sql = '	CREATE PROCEDURE xx_ChecaHorario
+		as
+		declare @hora integer
+
+		set  @hora = datepart( hh, getdate())
+
+		if @hora > 6 or @hora < 22
+			select 1 as ok	-- valido (dentro de horario de operaciones)
+		else
+			select 0 as ok -- invalido (fuera de horario de operaciones)
+		'
+		EXEC (@Sql)
+
+
+
+		SET @process = 'CW-2737 Drop Procedure xx_Inserta'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_Inserta'')
+		begin
+		DROP PROCEDURE xx_Inserta;
+		end'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2737 Create Procedure xx_Inserta'
+				SET @Sql = '	CREATE PROCEDURE xx_Inserta 
+		@cal_key varchar(20),
+		@cal_telefono varchar(19),
+		@cal_telefono2 varchar(19),
+		@cal_telefono3 varchar(19),
+		@cal_telefono4 varchar(19),
+		@cal_telefono5 varchar(19),
+		@dato1 varchar(255),
+		@dato2 varchar(255),
+		@dato3 varchar(255),
+		@dato4 varchar(255),
+		@dato5 varchar(255),
+		@cam_id integer,
+		@FCallBack smalldatetime = '''',
+		@cal_status tinyint=0,
+		@User_id integer=0
+		as
+		declare @calloutid int
+		if (@cal_status=0) set @FCallBack=getdate()
+		Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id)
+		values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id)
+		select @calloutid=scope_identity()
+		Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )
+		select @calloutid
+		'
+		EXEC (@Sql)
+
+
+
+		SET @process = 'CW-2737 Drop Procedure xx_OUTInsertNewJOBS_WT_Camp'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_OUTInsertNewJOBS_WT_Camp'')
+		begin
+		DROP PROCEDURE xx_OUTInsertNewJOBS_WT_Camp;
+		end'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2737 Create Procedure xx_OUTInsertNewJOBS_WT_Camp'
+				SET @Sql = '	CREATE PROCEDURE xx_OUTInsertNewJOBS_WT_Camp
+		@camp_id as int
+		AS
+		set nocount on
+		declare @prioridad varchar(8)
+
+		Insert ccoWorkingTable ( callout_id, user_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano,
+		 iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5  )
+		SELECT callout_id, user_id, cam_id, 
+		rtrim(left(ltrim(cal_telefono + ''         ''
+				 + cal_telefono2 + ''         ''
+				 + cal_telefono3 + ''         ''
+				 + cal_telefono4 + ''         ''
+				 + cal_telefono5 + ''         ''),13)) as cal_telefono,
+		case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key, 
+		case when len( cal_telefono ) > 0 then iZonaHoraria else null end, case when len( cal_telefono ) > 0 then iZonaHoraria_verano else null end, 
+		case when len( cal_telefono2 ) > 0 then iZonaHoraria2 else null end, case when len( cal_telefono2 ) > 0 then iZonaHoraria_verano2 else null end, 
+		case when len( cal_telefono3 ) > 0 then iZonaHoraria3 else null end, case when len( cal_telefono3 ) > 0 then iZonaHoraria_verano3 else null end, 
+		case when len( cal_telefono4 ) > 0 then iZonaHoraria4 else null end, case when len( cal_telefono4 ) > 0 then iZonaHoraria_verano4 else null end, 
+		case when len( cal_telefono5 ) > 0 then iZonaHoraria5 else null end, case when len( cal_telefono5 ) > 0 then iZonaHoraria_verano5 else null end
+		FROM ccoCallsOutSource with( index(IX_ccoCallsOutSource_11), nolock)
+		WHERE cam_id = @camp_id and (cal_status <2 or cal_status=7) -- Nuevos Jobs
+
+		--la prioridad establecidad (si existe) 
+		select @prioridad = NULL
+		select @prioridad = Prioridad from ccCampsPrioridadTel (nolock) where cam_id = @camp_id
+
+		UPDATE ccoCallsOutSource with(rowlock) SET cal_status = 3, dial_tels = isNull( @prioridad, ''12345NNN''), nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+		where cal_status in (0, 1, 7) and cam_id = @camp_id
+		'
+		EXEC (@Sql)
+
+
+
+		SET @process = 'CW-2737 Drop Procedure xx_Redirecciona'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_Redirecciona'')
+		begin
+		DROP PROCEDURE xx_Redirecciona;
+		end'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2737 Create Procedure xx_Redirecciona'
+				SET @Sql = '	CREATE PROCEDURE xx_Redirecciona
+		@calkey as varchar(50),
+		@camOrigen as integer,
+		@camDestino as integer
+		as
+			update ccoCallsOutSource set cam_id = @camDestino where cam_id = @camOrigen and cal_key = @calkey and len(@calkey) > 0
+			update ccoWorkingtable  set cam_id = @camDestino where cam_id = @camOrigen and cal_keyw = @calkey and len(@calkey) > 0
+			if( @@ROWCOUNT = 0 )
+			begin
+				-- No esta cargada, vuelve a cargar
+				update ccoCallsOutSource set cal_status =0 where cam_id = @camDestino and cal_key = @calkey and len(@calkey) > 0
+			end
+		'
+		EXEC (@Sql)		
+		
+		
+
+		-- *********************** END 	121.03-5_20190417 *********************** ---
+		
+	
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

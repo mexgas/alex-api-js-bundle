@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Text;
 using System.Collections.Specialized;
+using System.Web;
 
 namespace MiddleWareReports
 {
@@ -39,7 +40,7 @@ namespace MiddleWareReports
 
             this.reportName = reportName;
             StringBuilder output = new StringBuilder();
-            
+
             try
             {
                 LinkedList<string> columnsNames = new LinkedList<string>();
@@ -111,11 +112,11 @@ namespace MiddleWareReports
         private StringBuilder generateHtml(LinkedList<string> headers, DataTable data, string filterSummaryData, bool translate)
         {
             StringBuilder html = new StringBuilder();
-            html.AppendLine("<html><head><style>.b{border: 1px solid black; mso-number-format:\\@; }.a{background:#FF0000;color:#FFFFFF;border: 1px solid black ;}</style></head><body>");
+            html.AppendLine("<html><head><style>.b{border: 1px solid black; mso-number-format:\\@; }.a{background:#F00;color:#FFF;border: 1px solid black ;}</style></head><body>");
             html.AppendLine("<table style=\"border: 1px solid black ; text-align:center; font-family:sans-serif;\">");
             //Place report name
             html.AppendLine("<tr>");
-            html.AppendLine(string.Format("<td colspan=\"{1}\" style=\"background:#000000;color:#FFFFFF;border: 1px solid black ; text-align:center; \" >{0}</td>", reportName, headers.Count));
+            html.AppendLine(string.Format("<td colspan=\"{1}\" style=\"background:#000;color:#FFF;border: 1px solid black ; text-align:center; \" >{0}</td>", HttpUtility.HtmlEncode(reportName), headers.Count));
             html.AppendLine("</tr>");
 
             if (filterSummaryData != "")
@@ -127,14 +128,14 @@ namespace MiddleWareReports
                     {
                         string header = filter.Split('>')[0];
                         html.AppendLine("<tr>");
-                        html.AppendLine(string.Format("<td style=\"background:#FF0000;color:#FFFFFF;border: 1px solid black ; \" >{0}</td>", header));
+                        html.AppendLine(string.Format("<td style=\"background:#F00;color:#FFF;border: 1px solid black ; \" >{0}</td>", HttpUtility.HtmlEncode(header)));
                         html.AppendLine("</tr>");
 
                         foreach (string elem in filter.Split('>')[1].Split(','))
                         {
                             html.AppendLine("<tr>");
                             html.AppendLine(string.Format("<td style=\"border: 1px solid black ;\"></td>"));
-                            html.AppendLine(string.Format("<td style=\"border: 1px solid black ;\">{0}</td>", elem));
+                            html.AppendLine(string.Format("<td style=\"border: 1px solid black ;\">{0}</td>", HttpUtility.HtmlEncode(elem)));
                             html.AppendLine("</tr>");
                         }
                     }
@@ -165,7 +166,7 @@ namespace MiddleWareReports
                 {
                     value = row[col].ToString();
                     value = TranslatorHelper.parseDbValue(value);
-                    html.AppendLine(string.Format("<td class=\"b\">{0}</td>", value));
+                    html.AppendLine(string.Format("<td class=\"b\">{0}</td>", HttpUtility.HtmlEncode(value)));
                 }
                 html.AppendLine("</tr>");
             }

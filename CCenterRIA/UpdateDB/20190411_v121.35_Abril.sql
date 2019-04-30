@@ -9,7 +9,7 @@ Date: 2019/04/11
 Description: 
 
 Database: CCenterRia
-Required version: 121.34
+Required version: 121.35
 
 Se agrega la tarea
 CW-SETTNGS

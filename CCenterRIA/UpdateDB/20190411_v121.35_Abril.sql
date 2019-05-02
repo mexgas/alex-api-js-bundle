@@ -715,18 +715,16 @@ end'
 
 
 
-		SET @process = 'Drop SP [ccsp_GalateaAdminLogin]'
-		SET @Sql = 'if exists (select * from sys.procedures where name = N''[ccsp_GalateaAdminLogin]'')
+		SET @process = 'CW-2869 Drop SP [ccsp_GalateaAdminLogin]'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
     begin
         DROP PROCEDURE [ccsp_GalateaAdminLogin];
     end'
 		EXEC (@Sql)
 
 
-		SET @process = 'ccsp_GalateaAdminLogin'
-		SET @Sql = '	
-
-	CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+		SET @process = 'CW-2869 Create SP  ccsp_GalateaAdminLogin'
+		SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
 	@Password varchar(40) = '''',
 	@PasswordLwC varchar(40) = null,

@@ -9,7 +9,7 @@ Date: 2019/04/11
 Description: 
 
 Database: CCenterRia
-Required version: 121.34
+Required version: 121.35
 
 Se agrega la tarea
 CW-SETTNGS
@@ -257,106 +257,7 @@ END
 		'
 		EXEC (@Sql)		
 		
-		SET @process = 'CW-2804 Correction to ccsp_GalateaAdminSettings'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
-			@Login varchar(20) = '''',
-			@Password varchar(40) = '''',
-			@PasswordLwC varchar(40) = null,
-			@IPAddress varchar(20) = '''',
-			@adminId int = 0
-		AS
-		begin
-		SET NOCOUNT ON
-
-			DECLARE @LoginOK bit = 0, 
-					@PswdOK bit = 0,
-					@User_id smallint, 
-					@Nombre varchar(100), 
-					@ADMServer varchar(300), 
-					@AreaId smallint, 
-					@ViewAvrs int, 
-					@changeRecDisposition int, 
-					@PasswordExpired int = 0,
-					@UsernameMatch bit = 1,
-					@UserBlocked bit = 0,
-					@LastPasswordChange datetime,
-					@Ext varchar(80);
-
-			CREATE TABLE #temp 
-			(LoginOK int, 
-				PswdOK int,
-				User_id smallint, 
-				Nombre varchar(100), 
-				ADMServer varchar(300), 
-				AreaId smallint, 
-				ViewAvrs int, 
-				changeRecDisposition int, 
-				LastPasswordchange int );
-
-			INSERT INTO #temp
-			exec ccsp_RIAADMChecaLogin @Login, @Password, @PasswordLwC, @adminId
-
-			SELECT  @LoginOK = LoginOK, @PswdOK = PswdOK,  @Nombre = Nombre, @ADMServer=ADMServer,@AreaId=AreaId,
-				@ViewAvrs = ViewAvrs, @changeRecDisposition=changeRecDisposition, @PasswordExpired =LastPasswordchange	 FROM #temp
 			
-			IF @LoginOK = 1 
-			BEGIN 
-				SELECT @User_id =  User_id FROM ccUsers where Login = @Login
-				DECLARE @LastLoginAttempt DATETIME, @LoginAttempts int, @MaxAttemptsAllow int, @TimeBloqued int, @TimeFromLastAttempt int
-				SELECT @LastLoginAttempt = LastLoginAttempt,
-						 @LoginAttempts = LoginAttempts, 
-						 @LastPasswordChange = LastPasswordChange FROM  ccUsers WHERE User_id = @User_id 
-				SELECT @MaxAttemptsAllow = valor FROM  ccSettings WHERE setting_id = 198
-				SELECT @TimeBloqued = valor FROM  ccSettings WHERE setting_id = 197
-				SELECT @TimeFromLastAttempt = DATEDIFF(MINUTE, @LastLoginAttempt, GETDATE())  
-
-				IF @LoginAttempts > @MaxAttemptsAllow  
-				BEGIN
-					SET @LoginAttempts = 0
-					UPDATE ccUsers SET LoginAttempts = 0, LastLoginAttempt = GETDATE() WHERE User_id = @User_id 
-				END
-				IF(@LoginAttempts >= @MaxAttemptsAllow AND @TimeFromLastAttempt < @TimeBloqued)
-				BEGIN 
-					SET @UserBlocked = 1
-				END 
-
-				
-				--Checks Username match case sensitive    
-				IF CAST(@Login as varbinary(200)) <> (SELECT CAST(LOGIN as varbinary(200)) FROM ccUsers WHERE User_id = @User_id )
-				BEGIN 
-					SET @UsernameMatch = 0
-				END
-				
-				--Increments attemps if error
-				IF   @UserBlocked = 0  AND (@UsernameMatch = 0 OR @PswdOK = 0)
-				BEGIN
-					UPDATE ccUsers SET LoginAttempts = @LoginAttempts + 1, LastLoginAttempt = GETDATE(), onLine = 0  WHERE User_id = @User_id 
-
-				END
-				
-				--Sets to default to try another attempt
-				DECLARE @ExpirationTime int 
-				SELECT @ExpirationTime = valor FROM ccSettings where setting_id = 29
-				SELECT @PasswordExpired = (CASE WHEN DATEDIFF(DAY,LastPasswordChange ,GETDATE()) > @ExpirationTime AND @ExpirationTime>0 THEN 1 ELSE 0 END )  FROM ccUsers
-
-				IF   @UserBlocked = 0  AND @UsernameMatch = 1 AND  @PswdOK = 1 AND @PasswordExpired = 0
-				BEGIN
-					UPDATE ccUsers SET LoginAttempts = 0, LastLoginAttempt = GETDATE() WHERE User_id = @User_id 
-				END
-				
-				SELECT @Ext = dbo.fn_Ext_X_ip (@IPAddress);
-			END
-
-
-			SELECT @LoginOK UserExists, @UserBlocked UserBlocked , @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID,
-			@Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext
-
-		END
-
-		'
-			
-		EXEC (@Sql)
-		
 
 		-- *********************** END 	121.03-5_20190417 *********************** ---
 
@@ -810,6 +711,322 @@ IF @action = 9 begin
 
 end'
 		EXEC (@Sql)
+
+
+
+
+		SET @process = 'CW-2869 Drop SP [ccsp_GalateaAdminLogin]'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
+    begin
+        DROP PROCEDURE [ccsp_GalateaAdminLogin];
+    end'
+		EXEC (@Sql)
+
+
+		SET @process = 'CW-2869 Create SP  ccsp_GalateaAdminLogin'
+		SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+	@Login varchar(20) = '''',
+	@Password varchar(40) = '''',
+	@PasswordLwC varchar(40) = null,
+	@IPAddress varchar(20) = '''',
+	@adminId int = 0
+AS
+begin
+SET NOCOUNT ON
+
+	DECLARE @LoginOK bit = 0, 
+			@PswdOK bit = 0,
+			@User_id smallint, 
+			@Nombre varchar(100), 
+			@ADMServer varchar(300), 
+			@AreaId smallint, 
+			@ViewAvrs int, 
+			@changeRecDisposition int, 
+			@PasswordExpired int = 0,
+			@UsernameMatch bit = 1,
+			@UserBlocked bit = 0,
+			@LastPasswordChange datetime,
+			@Ext varchar(80);
+
+	CREATE TABLE #temp 
+	(LoginOK int, 
+		PswdOK int,
+		User_id smallint, 
+		Nombre varchar(100), 
+		ADMServer varchar(300), 
+		AreaId smallint, 
+		ViewAvrs int, 
+		changeRecDisposition int, 
+		LastPasswordchange int );
+
+	INSERT INTO #temp
+	exec ccsp_RIAADMChecaLogin @Login, @Password, @PasswordLwC, @adminId
+
+	SELECT  @LoginOK = LoginOK, @PswdOK = PswdOK,  @Nombre = Nombre, @ADMServer=ADMServer,@AreaId=AreaId,
+		@ViewAvrs = ViewAvrs, @changeRecDisposition=changeRecDisposition, @PasswordExpired =LastPasswordchange	 FROM #temp
+	
+	IF @LoginOK = 1 
+	BEGIN 
+		SELECT @User_id =  User_id FROM ccUsers where Login = @Login
+		DECLARE @LastLoginAttempt DATETIME, @LoginAttempts int, @MaxAttemptsAllow int, @TimeBloqued int, @TimeFromLastAttempt int
+		SELECT @LastLoginAttempt = LastLoginAttempt,
+				 @LoginAttempts = LoginAttempts, 
+				 @LastPasswordChange = LastPasswordChange FROM  ccUsers WHERE User_id = @User_id 
+		SELECT @MaxAttemptsAllow = valor FROM  ccSettings WHERE setting_id = 198
+		SELECT @TimeBloqued = valor FROM  ccSettings WHERE setting_id = 197
+		SELECT @TimeFromLastAttempt = DATEDIFF(MINUTE, @LastLoginAttempt, GETDATE())  
+
+		IF @LoginAttempts > @MaxAttemptsAllow  
+		BEGIN
+			SET @LoginAttempts = 0
+			UPDATE ccUsers SET LoginAttempts = 0, LastLoginAttempt = GETDATE() WHERE User_id = @User_id 
+		END
+		IF(@LoginAttempts >= @MaxAttemptsAllow AND @TimeFromLastAttempt < @TimeBloqued)
+		BEGIN 
+			SET @UserBlocked = 1
+		END 
+
+		
+		--Checks Username match case sensitive    
+		IF CAST(@Login as varbinary(200)) <> (SELECT CAST(LOGIN as varbinary(200)) FROM ccUsers WHERE User_id = @User_id )
+		BEGIN 
+			SET @UsernameMatch = 0
+		END
+		
+		--Increments attemps if error
+		IF   @UserBlocked = 0  AND (@UsernameMatch = 0 OR @PswdOK = 0)
+		BEGIN
+			UPDATE ccUsers SET LoginAttempts = @LoginAttempts + 1, LastLoginAttempt = GETDATE(), onLine = 0  WHERE User_id = @User_id 
+
+		END
+		
+		--Sets to default to try another attempt
+		DECLARE @ExpirationTime int 
+		SELECT @ExpirationTime = valor FROM ccSettings where setting_id = 29
+		SELECT @PasswordExpired = (CASE WHEN DATEDIFF(DAY,LastPasswordChange ,GETDATE()) > @ExpirationTime AND @ExpirationTime>0 THEN 1 ELSE 0 END )  FROM ccUsers
+
+		IF   @UserBlocked = 0  AND @UsernameMatch = 1 AND  @PswdOK = 1 AND @PasswordExpired = 0
+		BEGIN
+			UPDATE ccUsers SET LoginAttempts = 0, LastLoginAttempt = GETDATE() , onLine = 1 WHERE User_id = @User_id 
+		END
+		
+		SELECT @Ext = dbo.fn_Ext_X_ip (@IPAddress);
+	END
+
+
+	SELECT @LoginOK UserExists, @UserBlocked UserBlocked , @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID,
+	@Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext
+
+END
+
+'
+		EXEC (@Sql)
+
+		SET @process = 'CW-2770 Alter SP ccsp_RIAABCChat-- Version 121.34'
+		SET @Sql = 'ALTER Procedure [dbo].[ccsp_RIAABCChat]
+@OperationType tinyint = 0, -- 0:Select | 1:Insert | 2:Select Excel | 3:DateRange | 4:Admins | 5:Agents | 6:GalateaAdmin
+@TipoMsgChat tinyint = null,
+@User_id_Adm varchar(8000) = null,
+@User_id_Agt varchar(8000) = null,
+@ChatMsg varchar(1500) = null,
+@Fecha_Chat_ini datetime = null,
+@Fecha_Chat_fin datetime = null,
+@IDArea int = null
+AS
+set nocount on
+
+if @OperationType not in (0,1,2,3,4,5,6)
+	raiserror(''Invalid Operation Type'', 18, 1)
+
+if @OperationType=0
+ begin
+	Declare @User_id_Adm2 smallint, @User_id_Agt2 smallint, @Fecha2 varchar(10), @Fecha3 varchar(10), @Fecha4 varchar(10)
+	CREATE TABLE #CHAT (id int identity, xmlType tinyint, User_id_Adm smallint, User_id_Agt smallint, date varchar(10),
+	 iniTime varchar(10), endTime varchar(10), TipoMsgChat tinyint, text varchar(1500), time varchar(10))
+
+	Declare CursorChat Cursor For
+	-- Realizamos la Select para extraer las tablas
+	select distinct User_id_Adm, User_id_Agt, convert(varchar(25), Fecha_Chat, 103) date
+	 , min(convert(varchar(8), Fecha_Chat, 108)) iniTime
+	 , max(convert(varchar(8), Fecha_Chat, 108)) endTime
+	from ccRIAChat_Log --with (nolock, index(PK_ccRIAChat_Log))
+	where TipoMsgChat = case when isnull(@TipoMsgChat,0)=0 then TipoMsgChat else @TipoMsgChat end
+	 and User_id_Adm in (select case when isnull(@User_id_Adm,''0'') in (''0'','''') then User_id_Adm else value end from dbo.fn_RIASplitDelimited (@User_id_Adm, '',''))
+	 and User_id_Agt in (select case when isnull(@User_id_Agt,''0'') in (''0'','''') then User_id_Agt else value end from dbo.fn_RIASplitDelimited (@User_id_Agt, '',''))
+	 and Fecha_Chat between isnull(@Fecha_Chat_ini, ''19000101 00:00'')
+	 and isnull(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+	group by User_id_Adm, User_id_Agt, convert(varchar(25), Fecha_Chat, 103)
+	Order by date desc, iniTime desc
+
+	Open CursorChat
+	Fetch Next From CursorChat
+	Into @User_id_Adm2, @User_id_Agt2, @Fecha2, @Fecha3, @Fecha4
+
+	if @@FETCH_STATUS = 0
+	 Begin
+
+	-- Mientras hay resultados para procesar
+		While @@FETCH_STATUS = 0
+		 Begin
+			insert into #CHAT select ''1'' xmlType, @User_id_Adm2 User_id_Adm, @User_id_Agt2 User_id_Agt,
+			 @Fecha2 date, @Fecha3 iniTime, @Fecha4 endTime, 0 TipoMsgChat, '''' text, '''' time
+
+			-- Iniciamos el proceso
+			insert into #CHAT select ''0'' xmlType, @User_id_Adm2 User_id_Adm, @User_id_Agt2 User_id_Agt, @Fecha2 date, '''' iniTime,
+			'''' endTime, TipoMsgChat, ChatMsg text, convert(varchar(25), Fecha_Chat, 108) time
+			from ccRIAChat_Log where User_id_Adm = @User_id_Adm2 and User_id_Agt = @User_id_Agt2 and convert(varchar(25), Fecha_Chat, 103) = @Fecha2
+			order by time desc
+
+			-- Recuperamos la siguiente fila
+			Fetch Next From CursorChat
+				Into @User_id_Adm2, @User_id_Agt2, @Fecha2, @Fecha3, @Fecha4
+		 End
+	 End
+
+
+	Close CursorChat
+	Deallocate CursorChat
+	select C.xmlType, U2.Nombres + isnull('' '' + U2.ApellidoPaterno, '''') + isnull('' '' + U2.ApellidoMaterno, '''') Nombre_Adm,
+	 U1.Nombres + isnull('' '' + U1.ApellidoPaterno, '''') + isnull('' '' + U1.ApellidoMaterno, '''') Nombre_Agt,
+	C.date, C.iniTime, C.endTime, C.TipoMsgChat, C.text, C.time
+	from #CHAT C join ccUsers U1 on U1.user_id = C.User_id_Agt
+	 join ccUsers U2 on U2.user_id = C.User_id_Adm
+	order by C.id
+	return(0)
+ end
+
+if @OperationType=1
+ begin
+	if  @TipoMsgChat is NULL or @User_id_Adm is NULL or @User_id_Agt is NULL or @ChatMsg is NULL
+		raiserror(''Invalid Data 3'', 18, 3)
+
+	insert ccRIAChat_Log (TipoMsgChat, User_id_Adm, User_id_Agt, ChatMsg)
+	select @TipoMsgChat, @User_id_Adm, @User_id_Agt, @ChatMsg
+	select SCOPE_IDENTITY() ChatID
+	return(0)
+ end
+
+if @OperationType=2
+ begin
+	-- Realizamos la Select para extraer las tablas
+	if isnull(@User_id_Adm,''0'')=''0'' and isnull(@User_id_Agt,''0'')=''0'' and isnull(@TipoMsgChat,0)=0 and (@Fecha_Chat_ini is null and @Fecha_Chat_fin is null)
+		raiserror(''Invalid Data 2'', 18, 2)
+
+	create table #ExcelChat (Fecha_Chat datetime, TipoMsgChat varchar(30), Nombre_Adm varchar(100), Nombre_Agt varchar(100), ChatMsg varchar(2000))
+
+	insert into #ExcelChat
+	select Fecha_Chat,
+	case C.TipoMsgChat when 1 then ''Admin -> Agent'' when 2 then ''Admin <- Agent'' else ''Admin -> Global'' end TipoMsgChat,
+	U2.Nombres + isnull('' '' + U2.ApellidoPaterno, '''') + isnull('' '' + U2.ApellidoMaterno, '''') Nombre_Adm,
+	U1.Nombres + isnull('' '' + U1.ApellidoPaterno, '''') + isnull('' '' + U1.ApellidoMaterno, '''') Nombre_Agt,
+	''"''+ REPLACE(C.ChatMsg,''"'',''""'') + ''"'' as ChatMsg
+	from ccRIAChat_Log C join ccUsers U1 on U1.user_id = C.User_id_Agt
+	 join ccUsers U2 on U2.user_id = C.User_id_Adm
+	where TipoMsgChat = case when isnull(@TipoMsgChat,0)=0 then TipoMsgChat else @TipoMsgChat end
+	 and User_id_Adm in (select case when isnull(@User_id_Adm,''0'')=''0'' then User_id_Adm else value end from dbo.fn_RIASplitDelimited (@User_id_Adm, '',''))
+	 and User_id_Agt in (select case when isnull(@User_id_Agt,''0'')=''0'' then User_id_Agt else value end from dbo.fn_RIASplitDelimited (@User_id_Agt, '',''))
+	 and Fecha_Chat between isnull(@Fecha_Chat_ini, ''19000101 00:00'')
+	 and isnull(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+
+	if (select valor from ccsettings where setting_id=27) = 0
+	 begin
+		select convert(varchar(10), Fecha_Chat, 103)+'' ''+convert(varchar(8), Fecha_Chat, 108) Fecha_Chat, TipoMsgChat, Nombre_Adm, Nombre_Agt, ChatMsg from #ExcelChat Order by 1 desc
+	 end
+
+	else
+	 begin
+		select convert(varchar(10), Fecha_Chat, 101)+'' ''+convert(varchar(8), Fecha_Chat, 108) timestamp, TipoMsgChat MsgChatType, Nombre_Adm Adm_Name, Nombre_Agt Agt_Name, ChatMsg ChatMsg from #ExcelChat Order by 1 desc
+	 end
+
+	return(0)
+ end
+
+if @OperationType=3
+ begin
+	set @Fecha_Chat_fin=getdate()
+	select @Fecha_Chat_ini=dateadd(year,-1,@Fecha_Chat_fin)
+	from ccRIAChat_Log
+	select  convert(varchar(11),@Fecha_Chat_ini ,103) Fecha_Chat_MIN, convert(varchar(11),@Fecha_Chat_fin,103)Fecha_Chat_MAX
+	return(0)
+ end
+
+if @OperationType=4
+ begin
+	if not exists(select IDArea from ccRIACat_Areas where IDArea = @IDArea) or not exists(select user_id from ccusers where TipoUser_id in(2,6) and IDArea=@IDArea)
+		raiserror(''Invalid Area'', 18, 4)
+
+	select User_id, Login, Nombres + isnull('' '' + ApellidoPaterno, '''') + isnull('' '' + ApellidoMaterno, '''') Nombre
+	from ccusers where TipoUser_id in(2,6) and IDArea=@IDArea
+	order by login, Nombre
+	return(0)
+ end
+
+if @OperationType=5
+ begin
+	if not exists(select IDArea from ccRIACat_Areas where IDArea = @IDArea) or not exists(select user_id from ccusers where TipoUser_id in(1) and IDArea=@IDArea)
+		raiserror(''Invalid Area'', 18, 4)
+
+	select User_id, Login, Nombres + isnull('' '' + ApellidoPaterno, '''') + isnull('' '' + ApellidoMaterno, '''') Nombre, Sexo gender
+	from ccusers where TipoUser_id in(1) and IDArea=@IDArea
+	order by login, Nombre
+	return(0)
+ end
+
+ if @OperationType=6
+ begin
+	--This action was created for Galatea''s Agent Chat Log
+	SELECT  convert(varchar(10),Fecha_Chat,108) HourChat,
+	C.TipoMsgChat , u2.Login AdminLogin,
+	U1.Login AgentLogin,
+	''"''+ REPLACE(C.ChatMsg,''"'',''""'') + ''"'' AS ChatMsg
+	FROM ccRIAChat_Log C join ccUsers U1 on U1.user_id = C.User_id_Agt
+	 JOIN ccUsers U2 on U2.user_id = C.User_id_Adm
+	WHERE 
+	  User_id_Agt in (select case when isnull(@User_id_Agt,''0'')=''0'' then User_id_Agt else value end from dbo.fn_RIASplitDelimited (@User_id_Agt, '',''))
+	 AND Fecha_Chat BETWEEN ISNULL(@Fecha_Chat_ini, ''19000101 00:00'')
+	 AND ISNULL(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+
+ end
+select 0
+set nocount off'
+		EXEC (@Sql)
+
+		SET @process = 'CW-XXXX Alter SP ccsp_Multimedia2 --Acd DUplicate'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --Lista  ACD
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, A.IDArea AS AreaId
+		FROM ccInbound A
+		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
+	END
+	ELSE IF @action = 2
+	BEGIN --Lista Agentes  
+		SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+		FROM ccRIAWorkGroupUsers A
+		INNER JOIN ccusers B ON A.User_id = B.User_id
+		INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
+		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+		LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+		WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+		ORDER BY A.User_id
+	END
+	ELSE IF @action = 3
+	BEGIN --List Sender Mail
+		SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+		FROM contactMeanOut A
+		LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+		WHERE @senderId IS NULL OR @senderId = A.contactMeanOutId
+	END
+END
+'
+		EXEC (@Sql)
+		
+	
 		
 	-- *********************** END 	121.03-5_20190430 *********************** ---
 		

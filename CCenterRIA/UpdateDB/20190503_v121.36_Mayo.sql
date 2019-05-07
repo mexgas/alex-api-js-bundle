@@ -61,11 +61,12 @@ BEGIN
 						DECLARE @callout_id AS INT
 						IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 212 and valor = 1)
 						BEGIN
-							--VALIDA QUE EL CALLOUT_ID EXISTA EN CCOLOGDIALS
+							--OBTIENE EL CALLOUT_ID A TRAVES DEL CAL_ID
 							SELECT @callout_id=callout_id FROM ccoCallsOut WHERE cal_id = @cal_id
+							--VERIFICA SI EL CALLOUT_ID EXISTE
 							IF @callout_id IS NOT NULL
 							BEGIN
-								--SE OBTIENE EL TIPO DE USUARIO YA REGISTRADO
+								--SE OBTIENE EL MESAJE DE ERROR DEL CARRIER A TRAVES DEL CALLOUT_ID
 								SELECT @disconnectCause=disconnectCause
 								FROM ccoLogDials
 								WHERE callout_id = @callout_id
@@ -87,7 +88,7 @@ BEGIN
 								ELSE
 								BEGIN
 									--REGRESA MENSAJE DE ERROR NO ENCONTRADO SI AL MOMENTO DE CONSULTAR NO EXISTE UN ERROR
-									IF (@disconnectCause ='''')
+									IF @disconnectCause IS NULL
 									BEGIN
 										SELECT ''ERROR_NOT_FOUND'' ''message_description''
 									END
@@ -110,7 +111,7 @@ BEGIN
 						END
 						ELSE
 						BEGIN
-							--REGRESA UN MENSAJE PREDETERMINADO PARA INFORMAR QUE EL SETTING EST? DESHABILITADO
+							--REGRESA UN MENSAJE PREDETERMINADO PARA INFORMAR QUE EL SETTING ESTE DESHABILITADO
 							SELECT ''SETTING_DISABLED'' ''message_description''
 						END
 						'

@@ -2,7 +2,7 @@
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
-Author: Vic Gonzalez
+Author: 
 
 		
 Date: 2019/04/11
@@ -12,7 +12,9 @@ Database: CCenterRia
 Required version: 121.35
 
 Se agrega la tarea
-CW-SETTNGS
+CW-2831
+CW-2645 
+CW-2556
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

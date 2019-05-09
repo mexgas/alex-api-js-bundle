@@ -331,8 +331,14 @@ return(0)
 set nocount off	'
 		EXEC (@Sql)
 
-		SET @process = ''
-		SET @Sql = ''
+		SET @process = 'CW-2556 ST_2018_12_35 some area codes are missing (USA)'
+		SET @Sql = 'insert into ccTimeZoneArea (id_country, area, location, tz_standard, tz_daylight, call_record)
+ select id_country, area, location, tz_standard, tz_daylight, call_record from (
+	values (4,327,''AR'',64,32,null), 
+  (4,986,''ID'',128,64,null),(4,930,''IN'',32,16,null),(4,332,''NY'',32,16,null),
+  (4,680,''NY'',32,16,null),(4,838,''NY'',32,16,null),(4,929,''NY'',32,16,null),(4,934,''NY'',32,16,null),
+  (4,445,''PA'',32,16,null)
+ ) as timezone(id_country, area, location, tz_standard, tz_daylight, call_record) where area not in (select area from ccTimeZoneArea where id_country = 4)'
 		EXEC (@Sql)
 		
 	-- *********************** END 	121.03-5_20190430 *********************** ---

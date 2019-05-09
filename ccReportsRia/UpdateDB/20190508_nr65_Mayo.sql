@@ -96,39 +96,25 @@ WHERE c.name = ''userName'' AND t.name = ''RepOutSubDispositions'')
 begin	
 	EXEC sp_RENAME ''RepOutSubDispositions.userName'', ''user'', ''COLUMN''
 end
-
-if exists(SELECT c.name AS ''ColumnName'', t.name AS ''TableName''
-FROM sys.columns c
-inner JOIN sys.tables t ON c.object_id = t.object_id
-WHERE c.name = ''user'' AND t.name = ''RepSpececialAgent'')
-begin	
-	EXEC sp_RENAME ''RepSpececialAgent.user'', ''userName'', ''COLUMN''
-end
-
-if exists(SELECT c.name AS ''ColumnName'', t.name AS ''TableName''
-FROM sys.columns c
-inner JOIN sys.tables t ON c.object_id = t.object_id
-WHERE c.name = ''user'' AND t.name = ''RepAgentCallStatusesByInterval'')
-begin	
-	EXEC sp_RENAME ''RepSpececialCamMovs.user'', ''userName'', ''COLUMN''
-end
-
-if exists(SELECT c.name AS ''ColumnName'', t.name AS ''TableName''
-FROM sys.columns c
-inner JOIN sys.tables t ON c.object_id = t.object_id
-WHERE c.name = ''user'' AND t.name = ''RepSpececialAgtPerformance'')
-begin	
-	EXEC sp_RENAME ''RepSpececialAgtPerformance.user'', ''userName'', ''COLUMN''
-end
-
-if exists(SELECT c.name AS ''ColumnName'', t.name AS ''TableName''
-FROM sys.columns c
-inner JOIN sys.tables t ON c.object_id = t.object_id
-WHERE c.name = ''user'' AND t.name = ''RepSpecialCallKeyHistory'')
-begin	
-	EXEC sp_RENAME ''RepSpecialCallKeyHistory.user'', ''userName'', ''COLUMN''
-end
 '
+		EXEC (@sql)
+
+
+		SET @process = 'CW-2114 Change Name Pivot and GroupBy '
+		SET @sql = 'update GroupByReports set columns=''userId|login|min([startInterval]):startInterval|max([endInterval]):endInterval|sum([readyTime]):readyTime|sum([twrapup]):twrapup|sum([tring]):tring|sum([tother]):tother|sum([tnav]):tnav|sum([tCallTransf]):tCallTransf|sum([twbCall]):twbCall'' 
+,groupByColumns=''userId|login''
+where id=2070
+
+update PivotReports set complementColumns=''date|ACDGroup|agentName|user|area|wg|workgroupId|inboundId|areaId|dispositionId'' where id=3040
+update PivotReports set complementColumns=''date|ACDGroup|agentName|user|area|wg|workgroupId|inboundId|areaId'' where id=3120
+
+
+update PivotReports set complementColumns=''date|inboundId|campaignId|campACDDescription|userId|agentName|user|providerId|provider|dialId|dialType'' where id=4060
+
+update PivotReports set complementColumns=''date|campaign|agentName|user|area|wg'' where id=4100
+
+
+update TranslatedReports set columns=''agentName|user|dialType'' where id=4060'
 		EXEC (@sql)
 
 		SET @process = 'CW-2114 Alter SP ccspRepInCallsDetail'

@@ -2,13 +2,13 @@
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
-Author: Armando Rodriguez
+Author: Jesus Gallardo
 Date: 2019/04/02
-Description:
-correccion de reporte de llamadas contestadas y transferidas, se pone el nombre de la campaña cuando es una transferencia
+Description: CW-2114
+
 
 Database: ccReportsRia
-Required version: 63
+Required version: 64
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it

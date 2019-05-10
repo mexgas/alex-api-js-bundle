@@ -334,7 +334,7 @@ if @Tipo in (1,2) begin
 	group by cam_id
 
 
-	--Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+	
 	if (select count(*) from #Tcamps2)>0 begin
 
 	insert into #temccocallsoutsource(cam_id,Pend)
@@ -354,7 +354,7 @@ if @Tipo in (1,2) begin
 	join #Tcamps2 B on A.cam_id = B.cam_id
 	GROUP BY A.cam_id	
 
-	--Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+	
 	if (@regval = 0 and @cam_id >0 and @Tipo =2) or @tcpa = 1 begin
 		update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
 	end
@@ -373,7 +373,7 @@ if @Tipo in (1,2) begin
 		delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
 		where CampNvosCB.id = tcamp.cam_id
 
-		INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+		INSERT into ccCampsNvosCB 
 		SELECT cams.cam_id, cams.cam_descripcion,
 		isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
 		isNull(cs.Pend,0) as pend,

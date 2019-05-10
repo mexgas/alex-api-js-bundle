@@ -334,7 +334,7 @@ if @Tipo in (1,2) begin
 	group by cam_id
 
 
-	--Se revisa que por lo menos una campaña se pueda actualizar para realizar el proceso en caso contrario se regresa el valro extablecido
+	
 	if (select count(*) from #Tcamps2)>0 begin
 
 	insert into #temccocallsoutsource(cam_id,Pend)
@@ -354,7 +354,7 @@ if @Tipo in (1,2) begin
 	join #Tcamps2 B on A.cam_id = B.cam_id
 	GROUP BY A.cam_id	
 
-	--Se va agregar al ccsp_OUTGetNewJobs cuando lo ejecute el SP Outbound para actualizar de manera seguida si solo es una campaña
+	
 	if (@regval = 0 and @cam_id >0 and @Tipo =2) or @tcpa = 1 begin
 		update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
 	end
@@ -373,7 +373,7 @@ if @Tipo in (1,2) begin
 		delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
 		where CampNvosCB.id = tcamp.cam_id
 
-		INSERT into ccCampsNvosCB (id, campaña, new, cb, pen, pro, st, Job, Fin, NextDial,dateUpdate)
+		INSERT into ccCampsNvosCB 
 		SELECT cams.cam_id, cams.cam_descripcion,
 		isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
 		isNull(cs.Pend,0) as pend,
@@ -394,13 +394,13 @@ if @Tipo in (1,2) begin
 
 	if @Tipo = 2
 		-- devuelve resultado de la taba, solo las camps del usuario
-		SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor
+		SELECT res.id, res.campaÃ±a, res.new, res.cb, res.pro, res.pen, res.st, res.job, res.Fin, isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor
 		FROM #Tcamps tcam
 		left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
 		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
 		inner join cccamps cc (nolock) on res.id=cc.cam_id
 	else
-		SELECT id, campaña, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,cc.aggressionFactor
+		SELECT id, campaÃ±a, new, cb, pro, pen,st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,cc.aggressionFactor
 		FROM ccCampsNvosCB res (nolock)
 		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
 		inner join cccamps cc (nolock) on res.id=cc.cam_id
@@ -608,7 +608,7 @@ IF @action = 3 begin
 
 end
 
--- lista campañas y listas de registros
+-- lista campaÃ±as y listas de registros
 IF @action = 4 begin
 	select a.cam_id, b.cam_descripcion, count(list_id) as NoListas, c.graphic_id as Frame from ccRIARegistryLists a 
 	left join cccamps b on a.cam_id = b.cam_id

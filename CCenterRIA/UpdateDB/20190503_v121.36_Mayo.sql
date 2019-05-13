@@ -615,7 +615,7 @@ end'
 		SET @Sql = 'IF NOT EXISTS (SELECT * FROM ccSettings WHERE setting_id = 213)
 BEGIN
 	INSERT INTO ccSettings (setting_id, valor, descripcion, STATUS, Tipo, detalle, description, bLoadSettings, validate)
-	VALUES (213, ''0'', ''Marcar números a 10 dígitos al utilizar un ANI local predeterminado.'', 1, ''X'', ''0 - Marcacion normal / 1 - Marcacion de ANI local a 10 digitos'', ''Set dialing format according to custom local ANI numbers.'', 0, ''^[0-1]$'')
+	VALUES (213, ''0'', ''Marcar nÃºmeros a 10 dÃ­gitos al utilizar un ANI local predeterminado.'', 1, ''X'', ''0 - Marcacion normal / 1 - Marcacion de ANI local a 10 digitos'', ''Set dialing format according to custom local ANI numbers.'', 0, ''^[0-1]$'')
 END'
 		EXEC (@Sql)
 
@@ -668,7 +668,7 @@ BEGIN
 	END
 
 	IF @extLen = @lon
-	BEGIN -- Setting 108 validar el tamaño de longitud del telefono
+	BEGIN -- Setting 108 validar el tamaÃ±o longitud del telefono
 		IF (
 				SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
 				) = 1
@@ -976,7 +976,7 @@ BEGIN --Arabia saudita
 	RETURN (0)
 END
 ELSE IF @pais IN (9, 10, 11, 12, 13, 14, 15, 16)
-BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España, 15:Peru, 16: Panama 
+BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:EspaÃ±a 15:Peru, 16: Panama 
 	SELECT @tel = dbo.Completa_ListaNegra(@tel)
 
 	IF left(@tel, 1) = ''E''

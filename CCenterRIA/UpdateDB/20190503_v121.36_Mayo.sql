@@ -1006,6 +1006,8 @@ END
 '
 		EXEC(@Sql)
 
+	-- *********************** END 121.03-6_20190513 *********************** ---
+
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

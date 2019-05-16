@@ -1866,7 +1866,7 @@ BEGIN -- get agent status (Logged in or Logged out)
 	SELECT @isLoggedIn
 		,@lastLogIn_Out
 END
-ELSE IF (@action = 11) -- verify User
+ELSE IF (@action = 11) --verify User
 BEGIN
 	DECLARE @response AS INT
 

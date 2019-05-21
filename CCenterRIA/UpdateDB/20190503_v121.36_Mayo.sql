@@ -1904,15 +1904,6 @@ END'
 
  		set @process = 'CW-2946 CenterwareWS Security Layer'
  		set @sql = 'USE [CCenterRia]
-GO
-
-/****** Object:  StoredProcedure [dbo].[sp_CsCenterwareWS_ApiKey]    Script Date: 21/05/2019 08:55:31 a. m. ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 -- =============================================
 -- Author:		<Author,,Name>
@@ -1947,7 +1938,7 @@ BEGIN
 		WHERE setting_id = 214
 	END
 END
-GO'
+'
  		EXEC(@sql)
 
  		set @process = 'CW-2946 CenterwareWS Security Layer'

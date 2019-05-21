@@ -1880,6 +1880,111 @@ END'
 
 		EXEC(@sql)
 		-- *********************** END 121.03-6_20190515 *********************** ---
+		-- *********************** BEGIN 121.03-6_20190521 *********************** ---
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'USE [CCenterRia]
+			GO
+
+			/****** Object:  Table [dbo].[CsCenterwareWS_ApiKey]    Script Date: 21/05/2019 08:51:46 a. m. ******/
+			SET ANSI_NULLS ON
+			GO
+
+			SET QUOTED_IDENTIFIER ON
+			GO
+
+			CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
+				[Api_id] [int] IDENTITY(1, 1) NOT NULL
+				,[APIkey] [varchar](32) NOT NULL
+				,[Description] [varchar](50) NOT NULL
+				) ON [PRIMARY]
+			GO'
+
+ 		EXEC(@Sql)
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'USE [CCenterRia]
+GO
+
+/****** Object:  StoredProcedure [dbo].[sp_CsCenterwareWS_ApiKey]    Script Date: 21/05/2019 08:55:31 a. m. ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+CREATE PROCEDURE [dbo].[sp_CsCenterwareWS_ApiKey]
+	-- Add the parameters for the stored procedure here
+	@action INT
+	,@apiKey VARCHAR(32) = ''''
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	IF (@action = 1) -- verify API key
+	BEGIN
+		DECLARE @response AS INT
+
+		SELECT @response = len(apikey)
+		FROM CsCenterwareWS_ApiKey
+		WHERE APIkey = @apiKey COLLATE Latin1_General_CS_AS 
+
+		SELECT isnull(@response, '''')
+	END
+
+	IF (@action = 2) -- verify setting
+	BEGIN
+		SELECT valor
+		FROM ccSettings
+		WHERE setting_id = 214
+	END
+END
+GO'
+ 		EXEC(@sql)
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'IF NOT EXISTS (
+		SELECT setting_id
+		FROM ccSettings
+		WHERE setting_id = 214
+		)
+BEGIN
+	INSERT INTO ccSettings (
+		setting_id
+		,valor
+		,descripcion
+		,STATUS
+		,Tipo
+		,detalle
+		,description
+		,bLoadSettings
+		,validate
+		)
+	VALUES (
+		214
+		,0
+		,''Parametro API key en CsCenterwareWS''
+		,0
+		,''ADM''
+		,''0 inactivo, 1 activo''
+		,''API key parameter in CsCenterwareWS''
+		,0
+		,''^[0-1]$''
+		)
+END'
+
+ 		 EXEC(@sql)
+
+
+		-- *********************** END 121.03-6_20190515 *********************** ---
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

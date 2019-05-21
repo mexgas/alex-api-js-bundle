@@ -1883,34 +1883,27 @@ END'
 		-- *********************** BEGIN 121.03-6_20190521 *********************** ---
 
  		set @process = 'CW-2946 CenterwareWS Security Layer '
- 		set @sql = 'USE [CCenterRia]
-			GO
-
-			/****** Object:  Table [dbo].[CsCenterwareWS_ApiKey]    Script Date: 21/05/2019 08:51:46 a. m. ******/
-			SET ANSI_NULLS ON
-			GO
-
-			SET QUOTED_IDENTIFIER ON
-			GO
-
-			CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
+ 		set @sql = '
+if not exists (select * from sys.tables where name = N''cc_CsCenterwareWS_ApiKey'')
+    begin
+		CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
 				[Api_id] [int] IDENTITY(1, 1) NOT NULL
 				,[APIkey] [varchar](32) NOT NULL
 				,[Description] [varchar](50) NOT NULL
 				) ON [PRIMARY]
-			GO'
+    end'
 
  		EXEC(@Sql)
 
  		set @process = 'CW-2946 CenterwareWS Security Layer'
- 		set @sql = 'USE [CCenterRia]
+ 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_CsCenterwareWS_ApiKey'')
+    begin
+        DROP PROCEDURE ccsp_CsCenterwareWS_ApiKey
+    end'
+ 		EXEC(@sql)
 
--- =============================================
--- Author:		<Author,,Name>
--- Create date: <Create Date,,>
--- Description:	<Description,,>
--- =============================================
-CREATE PROCEDURE [dbo].[sp_CsCenterwareWS_ApiKey]
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_CsCenterwareWS_ApiKey]
 	-- Add the parameters for the stored procedure here
 	@action INT
 	,@apiKey VARCHAR(32) = ''''
@@ -1931,15 +1924,13 @@ BEGIN
 		SELECT isnull(@response, '''')
 	END
 
-	IF (@action = 2) -- verify setting
+	ELSE IF (@action = 2) -- verify setting
 	BEGIN
 		SELECT valor
 		FROM ccSettings
 		WHERE setting_id = 214
 	END
-END
-'
- 		EXEC(@sql)
+END'
 
  		set @process = 'CW-2946 CenterwareWS Security Layer'
  		set @sql = 'IF NOT EXISTS (
@@ -1965,7 +1956,7 @@ BEGIN
 		,''Parametro API key en CsCenterwareWS''
 		,0
 		,''ADM''
-		,''0 inactivo, 1 activo''
+		,''0 inactivo, 1 activo. Api key en CsCenterwareWS_ApiKey''
 		,''API key parameter in CsCenterwareWS''
 		,0
 		,''^[0-1]$''

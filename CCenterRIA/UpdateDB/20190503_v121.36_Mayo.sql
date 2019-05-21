@@ -1882,7 +1882,7 @@ END'
 		-- *********************** END 121.03-6_20190515 *********************** ---
 		-- *********************** BEGIN 121.03-6_20190521 *********************** ---
 
- 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @process = 'CW-2946 CenterwareWS Security Layer '
  		set @sql = 'USE [CCenterRia]
 			GO
 

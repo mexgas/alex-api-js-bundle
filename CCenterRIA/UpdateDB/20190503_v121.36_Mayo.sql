@@ -1884,7 +1884,7 @@ END'
 
  		set @process = 'CW-2946 CenterwareWS Security Layer '
  		set @sql = '
-if not exists (select * from sys.tables where name = N''cc_CsCenterwareWS_ApiKey'')
+if not exists (select * from sys.tables where name = N''CsCenterwareWS_ApiKey'')
     begin
 		CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
 				[Api_id] [int] IDENTITY(1, 1) NOT NULL
@@ -1931,6 +1931,7 @@ BEGIN
 		WHERE setting_id = 214
 	END
 END'
+EXEC(@sql)
 
  		set @process = 'CW-2946 CenterwareWS Security Layer'
  		set @sql = 'IF NOT EXISTS (

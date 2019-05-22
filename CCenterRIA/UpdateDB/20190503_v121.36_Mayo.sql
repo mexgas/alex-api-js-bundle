@@ -49,7 +49,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 36
+IF @actualVersion = @version AND @actualVersionFix >= 35
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
@@ -1880,6 +1880,94 @@ END'
 
 		EXEC(@sql)
 		-- *********************** END 121.03-6_20190515 *********************** ---
+		-- *********************** BEGIN 121.03-6_20190521 *********************** ---
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer '
+ 		set @sql = '
+if not exists (select * from sys.tables where name = N''CsCenterwareWS_ApiKey'')
+    begin
+		CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
+				[Api_id] [int] IDENTITY(1, 1) NOT NULL
+				,[APIkey] [varchar](32) NOT NULL
+				,[Description] [varchar](50) NOT NULL
+				) ON [PRIMARY]
+    end'
+
+ 		EXEC(@Sql)
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_CsCenterwareWS_ApiKey'')
+    begin
+        DROP PROCEDURE ccsp_CsCenterwareWS_ApiKey
+    end'
+ 		EXEC(@sql)
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_CsCenterwareWS_ApiKey]
+	-- Add the parameters for the stored procedure here
+	@action INT
+	,@apiKey VARCHAR(32) = ''''
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	IF (@action = 1) -- verify API key
+	BEGIN
+		DECLARE @response AS INT
+
+		SELECT @response = len(apikey)
+		FROM CsCenterwareWS_ApiKey
+		WHERE APIkey = @apiKey COLLATE Latin1_General_CS_AS 
+
+		SELECT isnull(@response, '''')
+	END
+
+	ELSE IF (@action = 2) -- verify setting
+	BEGIN
+		SELECT valor
+		FROM ccSettings
+		WHERE setting_id = 214
+	END
+END'
+EXEC(@sql)
+
+ 		set @process = 'CW-2946 CenterwareWS Security Layer'
+ 		set @sql = 'IF NOT EXISTS (
+		SELECT setting_id
+		FROM ccSettings
+		WHERE setting_id = 214
+		)
+BEGIN
+	INSERT INTO ccSettings (
+		setting_id
+		,valor
+		,descripcion
+		,STATUS
+		,Tipo
+		,detalle
+		,description
+		,bLoadSettings
+		,validate
+		)
+	VALUES (
+		214
+		,0
+		,''Parametro API key en CsCenterwareWS''
+		,0
+		,''ADM''
+		,''0 inactivo, 1 activo. Api key en CsCenterwareWS_ApiKey''
+		,''API key parameter in CsCenterwareWS''
+		,0
+		,''^[0-1]$''
+		)
+END'
+
+ 		 EXEC(@sql)
+
+
+		-- *********************** END 121.03-6_20190521 *********************** ---
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

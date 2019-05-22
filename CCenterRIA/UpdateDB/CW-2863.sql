@@ -120,7 +120,7 @@ if @Tipo in (1,2) begin
 	select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0,max(dateUpdate) from(
 	select A.*,dateUpdate from #Tcamps A
 	left join ccCampsNvosCB B (nolock) on A.cam_id=B.id
-	where datediff(ss,B.dateUpdate,getdate())> case @tcpa when 1 then 1 else 65 end or B.dateUpdate is null)X
+	where datediff(ss,B.dateUpdate,getdate())> case @tcpa when 1 then 1 else 5 end or B.dateUpdate is null)X
 	group by cam_id
 
 

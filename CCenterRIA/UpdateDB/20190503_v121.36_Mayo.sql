@@ -49,7 +49,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 36
+IF @actualVersion = @version AND @actualVersionFix >= 35
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY

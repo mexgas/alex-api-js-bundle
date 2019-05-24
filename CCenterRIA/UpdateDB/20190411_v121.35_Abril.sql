@@ -49,16 +49,15 @@ WHERE id = 4;
 IF @actualVersion = @version AND @actualVersionFix >= 34
 BEGIN
 	BEGIN TRAN
+
 	BEGIN TRY
-		
-			
 		SET @process = 'CW-2805 Drop SP ccsp_GalateaAdminSettings'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminSettings;
     end'
-		EXEC (@Sql)
 
+		EXEC (@Sql)
 
 		SET @process = 'CW-2805 Galatea Settings'
 		SET @Sql = '	CREATE PROCEDURE ccsp_GalateaAdminSettings
@@ -79,23 +78,22 @@ BEGIN
 	DROP TABLE #Settings;
 END
 '
+
 		EXEC (@Sql)
-				
 
 		-- *********************** END  121.03-3_201900307 *********************** ---
-		
-
 		-- *********************** START 121.03-5_20190417 *********************** ---
-
 		SET @process = 'CW-2737 Drop Table xxClienteCarga'
 		SET @Sql = 'if exists (SELECT * FROM sys.tables WHERE name = N''xxClienteCarga'')
 		begin
 		DROP TABLE xxClienteCarga;
 		end'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2737 Create Table xxClienteCarga'
-		SET @Sql = '	CREATE TABLE xxClienteCarga (
+		SET @Sql = 
+			'	CREATE TABLE xxClienteCarga (
 			[cuenta] [varchar](20) NOT NULL,
 			[tel1] [varchar](13) NOT NULL,
 			[tel2] [varchar](13) NOT NULL,
@@ -128,19 +126,19 @@ END
 		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_dato5]  DEFAULT ('''') FOR [dato5]
 		ALTER TABLE [xxClienteCarga] ADD  CONSTRAINT [DF_xxClienteCarga_User_id] DEFAULT ((0)) FOR [User_id]
 		'
+
 		EXEC (@Sql)
 
-
-						
 		SET @process = 'CW-2737 Drop Procedure xx_ChecaHorario'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_ChecaHorario'')
 		begin
 		DROP PROCEDURE xx_ChecaHorario;
 		end'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2737 Create Procedure xx_ChecaHorario'
-				SET @Sql = '	CREATE PROCEDURE xx_ChecaHorario
+		SET @Sql = '	CREATE PROCEDURE xx_ChecaHorario
 		as
 		declare @hora integer
 
@@ -151,121 +149,120 @@ END
 		else
 			select 0 as ok -- invalido (fuera de horario de operaciones)
 		'
+
 		EXEC (@Sql)
-
-
 
 		SET @process = 'CW-2737 Drop Procedure xx_Inserta'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_Inserta'')
 		begin
 		DROP PROCEDURE xx_Inserta;
 		end'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2737 Create Procedure xx_Inserta'
-				SET @Sql = '	CREATE PROCEDURE xx_Inserta 
-		@cal_key varchar(20),
-		@cal_telefono varchar(19),
-		@cal_telefono2 varchar(19),
-		@cal_telefono3 varchar(19),
-		@cal_telefono4 varchar(19),
-		@cal_telefono5 varchar(19),
-		@dato1 varchar(255),
-		@dato2 varchar(255),
-		@dato3 varchar(255),
-		@dato4 varchar(255),
-		@dato5 varchar(255),
-		@cam_id integer,
-		@FCallBack smalldatetime = '''',
-		@cal_status tinyint=0,
-		@User_id integer=0
-		as
-		declare @calloutid int
-		if (@cal_status=0) set @FCallBack=getdate()
-		Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id)
-		values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id)
-		select @calloutid=scope_identity()
-		Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )
-		select @calloutid
+		SET @Sql = 
+			'	CREATE PROCEDURE xx_Inserta 
+@cal_key varchar(20),
+@cal_telefono varchar(19),
+@cal_telefono2 varchar(19),
+@cal_telefono3 varchar(19),
+@cal_telefono4 varchar(19),
+@cal_telefono5 varchar(19),
+@dato1 varchar(255),
+@dato2 varchar(255),
+@dato3 varchar(255),
+@dato4 varchar(255),
+@dato5 varchar(255),
+@cam_id integer,
+@FCallBack smalldatetime = '''',
+@cal_status tinyint=0,
+@User_id integer=0
+as
+declare @calloutid int
+if (@cal_status=0) set @FCallBack=getdate()
+Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id)
+values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id)
+select @calloutid=scope_identity()
+Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )
+select @calloutid
 		'
+
 		EXEC (@Sql)
-
-
 
 		SET @process = 'CW-2737 Drop Procedure xx_OUTInsertNewJOBS_WT_Camp'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_OUTInsertNewJOBS_WT_Camp'')
 		begin
 		DROP PROCEDURE xx_OUTInsertNewJOBS_WT_Camp;
 		end'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2737 Create Procedure xx_OUTInsertNewJOBS_WT_Camp'
-				SET @Sql = '	CREATE PROCEDURE xx_OUTInsertNewJOBS_WT_Camp
-		@camp_id as int
-		AS
-		set nocount on
-		declare @prioridad varchar(8)
+		SET @Sql = 
+			'	CREATE PROCEDURE xx_OUTInsertNewJOBS_WT_Camp
+@camp_id as int
+AS
+set nocount on
+declare @prioridad varchar(8)
 
-		Insert ccoWorkingTable ( callout_id, user_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano,
-		 iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5  )
-		SELECT callout_id, user_id, cam_id, 
-		rtrim(left(ltrim(cal_telefono + ''         ''
-				 + cal_telefono2 + ''         ''
-				 + cal_telefono3 + ''         ''
-				 + cal_telefono4 + ''         ''
-				 + cal_telefono5 + ''         ''),13)) as cal_telefono,
-		case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key, 
-		case when len( cal_telefono ) > 0 then iZonaHoraria else null end, case when len( cal_telefono ) > 0 then iZonaHoraria_verano else null end, 
-		case when len( cal_telefono2 ) > 0 then iZonaHoraria2 else null end, case when len( cal_telefono2 ) > 0 then iZonaHoraria_verano2 else null end, 
-		case when len( cal_telefono3 ) > 0 then iZonaHoraria3 else null end, case when len( cal_telefono3 ) > 0 then iZonaHoraria_verano3 else null end, 
-		case when len( cal_telefono4 ) > 0 then iZonaHoraria4 else null end, case when len( cal_telefono4 ) > 0 then iZonaHoraria_verano4 else null end, 
-		case when len( cal_telefono5 ) > 0 then iZonaHoraria5 else null end, case when len( cal_telefono5 ) > 0 then iZonaHoraria_verano5 else null end
-		FROM ccoCallsOutSource with( index(IX_ccoCallsOutSource_11), nolock)
-		WHERE cam_id = @camp_id and (cal_status <2 or cal_status=7) -- Nuevos Jobs
+Insert ccoWorkingTable ( callout_id, user_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano,
+iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5  )
+SELECT callout_id, user_id, cam_id, 
+rtrim(left(ltrim(cal_telefono + ''         ''
+		  + cal_telefono2 + ''         ''
+		  + cal_telefono3 + ''         ''
+		  + cal_telefono4 + ''         ''
+		  + cal_telefono5 + ''         ''),13)) as cal_telefono,
+case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key, 
+case when len( cal_telefono ) > 0 then iZonaHoraria else null end, case when len( cal_telefono ) > 0 then iZonaHoraria_verano else null end, 
+case when len( cal_telefono2 ) > 0 then iZonaHoraria2 else null end, case when len( cal_telefono2 ) > 0 then iZonaHoraria_verano2 else null end, 
+case when len( cal_telefono3 ) > 0 then iZonaHoraria3 else null end, case when len( cal_telefono3 ) > 0 then iZonaHoraria_verano3 else null end, 
+case when len( cal_telefono4 ) > 0 then iZonaHoraria4 else null end, case when len( cal_telefono4 ) > 0 then iZonaHoraria_verano4 else null end, 
+case when len( cal_telefono5 ) > 0 then iZonaHoraria5 else null end, case when len( cal_telefono5 ) > 0 then iZonaHoraria_verano5 else null end
+FROM ccoCallsOutSource with( index(IX_ccoCallsOutSource_11), nolock)
+WHERE cam_id = @camp_id and (cal_status <2 or cal_status=7) -- Nuevos Jobs
 
-		--la prioridad establecidad (si existe) 
-		select @prioridad = NULL
-		select @prioridad = Prioridad from ccCampsPrioridadTel (nolock) where cam_id = @camp_id
+--la prioridad establecidad (si existe) 
+select @prioridad = NULL
+select @prioridad = Prioridad from ccCampsPrioridadTel (nolock) where cam_id = @camp_id
 
-		UPDATE ccoCallsOutSource with(rowlock) SET cal_status = 3, dial_tels = isNull( @prioridad, ''12345NNN''), nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
-		where cal_status in (0, 1, 7) and cam_id = @camp_id
+UPDATE ccoCallsOutSource with(rowlock) SET cal_status = 3, dial_tels = isNull( @prioridad, ''12345NNN''), nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+where cal_status in (0, 1, 7) and cam_id = @camp_id
 		'
+
 		EXEC (@Sql)
-
-
 
 		SET @process = 'CW-2737 Drop Procedure xx_Redirecciona'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''xx_Redirecciona'')
 		begin
 		DROP PROCEDURE xx_Redirecciona;
 		end'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2737 Create Procedure xx_Redirecciona'
-				SET @Sql = '	CREATE PROCEDURE xx_Redirecciona
-		@calkey as varchar(50),
-		@camOrigen as integer,
-		@camDestino as integer
-		as
-			update ccoCallsOutSource set cam_id = @camDestino where cam_id = @camOrigen and cal_key = @calkey and len(@calkey) > 0
-			update ccoWorkingtable  set cam_id = @camDestino where cam_id = @camOrigen and cal_keyw = @calkey and len(@calkey) > 0
-			if( @@ROWCOUNT = 0 )
-			begin
-				-- No esta cargada, vuelve a cargar
-				update ccoCallsOutSource set cal_status =0 where cam_id = @camDestino and cal_key = @calkey and len(@calkey) > 0
-			end
+		SET @Sql = '	CREATE PROCEDURE xx_Redirecciona
+@calkey as varchar(50),
+@camOrigen as integer,
+@camDestino as integer
+as
+update ccoCallsOutSource set cam_id = @camDestino where cam_id = @camOrigen and cal_key = @calkey and len(@calkey) > 0
+update ccoWorkingtable  set cam_id = @camDestino where cam_id = @camOrigen and cal_keyw = @calkey and len(@calkey) > 0
+if( @@ROWCOUNT = 0 )
+begin
+    -- No esta cargada, vuelve a cargar
+    update ccoCallsOutSource set cal_status =0 where cam_id = @camDestino and cal_key = @calkey and len(@calkey) > 0
+end
 		'
-		EXEC (@Sql)		
-		
-			
+
+		EXEC (@Sql)
 
 		-- *********************** END 	121.03-5_20190417 *********************** ---
-
 		-- *********************** START 	121.03-5_20190430 *********************** ---
-
-
 		SET @process = 'CW-2901 alter SP ccsp_RIAGetCampsNvosCB--Cortizo'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
 @cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
 @regval int =0, @tcpa int=0
 as
@@ -417,10 +414,12 @@ if @Tipo in (1,2) begin
 end
 
 set nocount off'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2901 Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp --Cortizo'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1
 AS
 SET NOCOUNT ON
 
@@ -554,10 +553,12 @@ WHERE id = @camp_id
 
 SET NOCOUNT OFF
 '
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2901 Alter SP ccsp_RIARegistryLists--Cortizo'
-		SET @Sql = 'ALTER Procedure [dbo].[ccsp_RIARegistryLists]
+		SET @Sql = 
+			'ALTER Procedure [dbo].[ccsp_RIARegistryLists]
 @action tinyint = 0, 
 @list_id int = 0,
 @cam_id smallint = 0,
@@ -710,21 +711,20 @@ IF @action = 9 begin
 	exec ccsp_RIARegistryLists @action=2,@list_id=@list_id,@sequence=@sequence
 
 end'
+
 		EXEC (@Sql)
-
-
-
 
 		SET @process = 'CW-2869 Drop SP [ccsp_GalateaAdminLogin]'
 		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
     begin
         DROP PROCEDURE [ccsp_GalateaAdminLogin];
     end'
+
 		EXEC (@Sql)
 
-
 		SET @process = 'CW-2869 Create SP  ccsp_GalateaAdminLogin'
-		SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+		SET @Sql = 
+			'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
 	@Password varchar(40) = '''',
 	@PasswordLwC varchar(40) = null,
@@ -820,10 +820,12 @@ SET NOCOUNT ON
 END
 
 '
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2770 Alter SP ccsp_RIAABCChat-- Version 121.34'
-		SET @Sql = 'ALTER Procedure [dbo].[ccsp_RIAABCChat]
+		SET @Sql = 
+			'ALTER Procedure [dbo].[ccsp_RIAABCChat]
 @OperationType tinyint = 0, -- 0:Select | 1:Insert | 2:Select Excel | 3:DateRange | 4:Admins | 5:Agents | 6:GalateaAdmin
 @TipoMsgChat tinyint = null,
 @User_id_Adm varchar(8000) = null,
@@ -989,10 +991,12 @@ if @OperationType=5
  end
 select 0
 set nocount off'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-XXXX Alter SP ccsp_Multimedia2 --Acd DUplicate'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -1024,12 +1028,10 @@ BEGIN
 	END
 END
 '
+
 		EXEC (@Sql)
-		
-	
-		
-	-- *********************** END 	121.03-5_20190430 *********************** ---
-		
+
+		-- *********************** END 	121.03-5_20190430 *********************** ---
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

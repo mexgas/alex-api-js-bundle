@@ -52,10 +52,11 @@ WHERE id = 4;
 IF @actualVersion = @version AND @actualVersionFix >= 35
 BEGIN
 	BEGIN TRAN
+
 	BEGIN TRY
-					
 		SET @process = 'CW-2831 Alter ccsp_GalateaGetCustomErrorMessages'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
 @cal_id INT
 AS
 DECLARE @disconnectCause AS VARCHAR(250)
@@ -117,10 +118,12 @@ BEGIN
 	SELECT ''SETTING_DISABLED'' ''message_description''
 END
 						'
+
 		EXEC (@Sql)
-		
+
 		SET @process = 'CW-2645 ST_2019_01_31 ALter SP ccsp_OUTUpdateDialJob'
-		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
 @callout_id int,
 @CallResultDial tinyint,
 @isTCPA bit =0
@@ -332,6 +335,7 @@ else if @CallResultDial > 13 and @CallResultDial <> 51 begin--Dial Result not re
 
 return(0)
 set nocount off	'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2556 ST_2018_12_35 some area codes are missing (USA)'
@@ -342,6 +346,7 @@ set nocount off	'
   (4,680,''NY'',32,16,null),(4,838,''NY'',32,16,null),(4,929,''NY'',32,16,null),(4,934,''NY'',32,16,null),
   (4,445,''PA'',32,16,null)
  ) as timezone(id_country, area, location, tz_standard, tz_daylight, call_record) where area not in (select area from ccTimeZoneArea where id_country = 4)'
+
 		EXEC (@Sql)
 
 		SET @process = 'CW-2909 CenterwareWS call history date'
@@ -606,22 +611,20 @@ end'
 
 		EXEC (@Sql)
 
-		
-	-- *********************** END 	121.03-5_20190430 *********************** ---
-
-	-- *********************** Begin 121.03-6_20190513 *********************** ---
-
+		-- *********************** END 	121.03-5_20190430 *********************** ---
+		-- *********************** Begin 121.03-6_20190513 *********************** ---
 		SET @process = 'CW-2543 Insert setting 213'
 		SET @Sql = 'IF NOT EXISTS (SELECT * FROM ccSettings WHERE setting_id = 213)
 BEGIN
 	INSERT INTO ccSettings (setting_id, valor, descripcion, STATUS, Tipo, detalle, description, bLoadSettings, validate)
 	VALUES (213, ''0'', ''Marcar números a 10 dígitos al utilizar un ANI local predeterminado.'', 1, ''X'', ''0 - Marcacion normal / 1 - Marcacion de ANI local a 10 digitos'', ''Set dialing format according to custom local ANI numbers.'', 0, ''^[0-1]$'')
 END'
+
 		EXEC (@Sql)
 
-
 		SET @process = 'CW-2543 --ALTER PROCEDURE ccsp_Limpia'
-		set @Sql='ALTER PROCEDURE [dbo].[ccsp_Limpia] @tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = ''''
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_Limpia] @tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = ''''
 AS
 SET NOCOUNT ON
 
@@ -1004,14 +1007,14 @@ BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:Es
 	RETURN (0)
 END
 '
-		EXEC(@Sql)
 
-	-- *********************** END 121.03-6_20190513 *********************** ---
+		EXEC (@Sql)
 
-	-- *********************** BEGIN 121.03-6_20190515*********************** ---
-
+		-- *********************** END 121.03-6_20190513 *********************** ---
+		-- *********************** BEGIN 121.03-6_20190515*********************** ---
 		SET @process = 'CW-2910 CenterwareWS Agent Status Function'
-		SET @Sql ='ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
 	,@call_id INT = 0
 	,@startDate VARCHAR(30) = NULL
 	,@endDate VARCHAR(30) = NULL
@@ -1443,10 +1446,11 @@ BEGIN
 	SELECT isnull(@response, '''')
 END'
 
-		EXEC(@sql)
+		EXEC (@sql)
 
 		SET @process = 'CW-2910 CenterwareWS Agent Status Function'
-		SET @Sql ='ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
 	,@call_id INT = 0
 	,@startDate VARCHAR(30) = NULL
 	,@endDate VARCHAR(30) = NULL
@@ -1878,12 +1882,12 @@ BEGIN
 	SELECT isnull(@response, '''')
 END'
 
-		EXEC(@sql)
+		EXEC (@sql)
+
 		-- *********************** END 121.03-6_20190515 *********************** ---
 		-- *********************** BEGIN 121.03-6_20190521 *********************** ---
-
- 		set @process = 'CW-2946 CenterwareWS Security Layer '
- 		set @sql = '
+		SET @process = 'CW-2946 CenterwareWS Security Layer '
+		SET @sql = '
 if not exists (select * from sys.tables where name = N''CsCenterwareWS_ApiKey'')
     begin
 		CREATE TABLE [dbo].[CsCenterwareWS_ApiKey] (
@@ -1893,17 +1897,18 @@ if not exists (select * from sys.tables where name = N''CsCenterwareWS_ApiKey'')
 				) ON [PRIMARY]
     end'
 
- 		EXEC(@Sql)
+		EXEC (@Sql)
 
- 		set @process = 'CW-2946 CenterwareWS Security Layer'
- 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_CsCenterwareWS_ApiKey'')
+		SET @process = 'CW-2946 CenterwareWS Security Layer'
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_CsCenterwareWS_ApiKey'')
     begin
         DROP PROCEDURE ccsp_CsCenterwareWS_ApiKey
     end'
- 		EXEC(@sql)
 
- 		set @process = 'CW-2946 CenterwareWS Security Layer'
- 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_CsCenterwareWS_ApiKey]
+		EXEC (@sql)
+
+		SET @process = 'CW-2946 CenterwareWS Security Layer'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_CsCenterwareWS_ApiKey]
 	-- Add the parameters for the stored procedure here
 	@action INT
 	,@apiKey VARCHAR(32) = ''''
@@ -1931,10 +1936,11 @@ BEGIN
 		WHERE setting_id = 214
 	END
 END'
-EXEC(@sql)
 
- 		set @process = 'CW-2946 CenterwareWS Security Layer'
- 		set @sql = 'IF NOT EXISTS (
+		EXEC (@sql)
+
+		SET @process = 'CW-2946 CenterwareWS Security Layer'
+		SET @sql = 'IF NOT EXISTS (
 		SELECT setting_id
 		FROM ccSettings
 		WHERE setting_id = 214
@@ -1964,11 +1970,59 @@ BEGIN
 		)
 END'
 
- 		 EXEC(@sql)
+		EXEC (@sql)
 
+		SET @process = 'CW-2843 Alter ccsp_ExtAppsCamList'
+		SET @Sql = 
+			'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCamList] @action SMALLINT, @area INT = 0
+AS
+SET NOCOUNT ON
+
+IF @action = 1
+BEGIN
+    IF @area = 0
+	   SELECT a1.inbound_id, descripcion, a1.STATUS
+	   FROM ccinbound a1
+	   JOIN ccRIAinboundGraph a2 ON (a1.inbound_id = a2.inbound_id)
+	   JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+	   WHERE a3.type_id = 1
+	   ORDER BY descripcion
+    ELSE
+	   SELECT DISTINCT a1.inbound_id, descripcion, a1.STATUS
+	   FROM ccinbound a1
+	   JOIN ccRIAinboundGraph a2 ON a1.inbound_id = a2.inbound_id
+	   JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+	   WHERE a3.type_id = 1 AND (@area IS NULL OR IDArea = @area)
+	   ORDER BY descripcion
+
+    RETURN (0)
+END
+
+IF @action = 2
+BEGIN
+    IF @area = 0
+	   SELECT a1.cam_id, cam_descripcion, cam_activo
+	   FROM ccCamps a1
+	   JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+	   JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+	   WHERE a3.type_id = 1
+	   ORDER BY cam_descripcion
+    ELSE
+	   SELECT DISTINCT a1.cam_id, cam_descripcion, cam_activo
+	   FROM ccCamps a1
+	   JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+	   JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+	   WHERE a3.type_id = 1 AND (@area IS NULL OR IDArea = @area)
+	   ORDER BY cam_descripcion
+
+    RETURN (0)
+END
+
+SET NOCOUNT OFF'
+
+		EXEC (@Sql)
 
 		-- *********************** END 121.03-6_20190521 *********************** ---
-
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

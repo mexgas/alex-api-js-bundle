@@ -2023,6 +2023,54 @@ SET NOCOUNT OFF'
 		EXEC (@Sql)
 
 		-- *********************** END 121.03-6_20190521 *********************** ---
+
+		 set @process = 'cw-2963 Webservice Unavailable Options'
+ 		 set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GetUnavailableTypes'')
+    begin
+        DROP PROCEDURE ccsp_GetUnavailableTypes;
+    end'
+ 		 EXEC(@SQL)
+
+ 		 set @process = 'cw-2963 Webservice Unavailable Options'
+ 		 set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GetUnavailableTypes] @action INT
+	,@startDate DATETIME =  null
+	,@endDate DATETIME = null
+	,@unavailable_id VARCHAR(300) = null
+AS
+IF (@action = 0)
+BEGIN
+	SELECT TipoNotReady_id AS [unavailable_id]
+		,Descripcion AS [description]
+		,Time_Acum AS [MaxTime]
+		,Time_xEv AS [MaxTimePerEvent]
+		,Pas_Sup AS [AdminPw]
+		,NextStatus AS [NextStatus]
+		,IsSup AS [AdminOnly]
+		,StatusTipoNotReady AS [UnavailableStatus]
+	FROM ccTipoNotReady
+END
+
+IF (@action = 1)
+BEGIN
+	DECLARE @tabla TABLE (notReadyId INT PRIMARY KEY)
+
+	INSERT INTO @tabla
+	SELECT value
+	FROM dbo.fn_RIASplitDelimited(@unavailable_id, '','')
+	
+	SELECT TipoNotReady_id
+		,SUM(tStatus)
+	FROM ccLogAgentesNotReady A WITH (NOLOCK)
+	INNER JOIN @tabla B ON A.TipoNotReady_id = B.notReadyId
+	WHERE fecha >= @startDate
+		AND fecha <= @enddate
+	GROUP BY TipoNotReady_id
+END
+'
+ 		
+ 		EXEC(@sql)
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

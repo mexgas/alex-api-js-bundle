@@ -2023,6 +2023,7 @@ SET NOCOUNT OFF'
 		EXEC (@Sql)
 
 		-- *********************** END 121.03-6_20190521 *********************** ---
+		-- *********************** BEGIN 121.03-6_20190527 *********************** ---
 
 		 set @process = 'cw-2963 Webservice Unavailable Options'
  		 set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GetUnavailableTypes'')
@@ -2070,7 +2071,7 @@ END
  		
  		EXEC(@sql)
 
-
+-- *********************** END 121.03-6_20190527 *********************** ---
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

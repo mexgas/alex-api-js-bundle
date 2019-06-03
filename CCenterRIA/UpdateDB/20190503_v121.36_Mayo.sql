@@ -1974,8 +1974,7 @@ END'
 		EXEC (@sql)
 
 		SET @process = 'CW-2843 Alter ccsp_ExtAppsCamList'
-		SET @Sql = 
-			'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCamList] @action SMALLINT, @area INT = 0
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCamList] @action SMALLINT, @area INT = 0
 AS
 SET NOCOUNT ON
 

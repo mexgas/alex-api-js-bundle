@@ -136,7 +136,7 @@ end'
 		exec (@sql)
 
 		set @process = 'cw-2915 create table cc_killList table'
-		set @sql = 'if exists (select * from sys.tables where name = N''cc_KillList'')
+		set @sql = 'if not exists (select * from sys.tables where name = N''cc_KillList'')
     begin
        CREATE TABLE [dbo].[cc_KillList](
 	[id] [int] IDENTITY(1,1) NOT NULL,

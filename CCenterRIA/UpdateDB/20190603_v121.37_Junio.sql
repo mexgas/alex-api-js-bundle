@@ -12,7 +12,8 @@ Database: CCenterRia
 Required version: 121.35
 
 Se agrega la tarea
-
+cw-2915
+cw-3001
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -50,6 +51,50 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+
+		SET @process = 'Galatea Admin CW CW-2976 check exist ccspGalateaGetAgentCounters '
+		SET @Sql = '   
+			if exists (select * from sys.procedures where name = N''ccspGalateaGetAgentCounters'')
+			begin
+				drop procedure ccspGalateaGetAgentCounters
+			end
+		 '
+
+		EXEC (@Sql)
+
+
+
+
+		SET @process = 'Galatea Admi CW-2976 add ccspGalateaGetAgentCounters '
+		SET @Sql = '   
+		create procedure ccspGalateaGetAgentCounters
+		@type as int, @sup_id as int = 0 as
+		set nocount on
+		if @type = 1
+		    begin
+		        ;
+		    WITH TableUserAgent (userId)
+		    AS
+		    (
+		        select distinct wgAgt.User_id as userId --,usr.login 
+		        from ccriaworkgroupusers wgAdmin
+		        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+		        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+		        where 
+		        wgAdmin.User_id=@sup_id
+		    )
+
+
+		        select a.user_id, a.login as UserName, CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '',a.ApellidoMaterno) as Name
+		        from ccusers a (nolock)--, ccGenViewRelsSupsAgent b
+		        inner join TableUserAgent b on a.User_id=b.userId       
+		    end
+
+		set nocount on
+		 '
+
+		EXEC (@Sql)
+
 	
 		SET @process = 'cw-2915 add kill list setting'
 		SET @Sql = 'IF NOT EXISTS (
@@ -91,7 +136,7 @@ end'
 		exec (@sql)
 
 		set @process = 'cw-2915 create table cc_killList table'
-		set @sql = 'if exists (select * from sys.tables where name = N''cc_KillList'')
+		set @sql = 'if not exists (select * from sys.tables where name = N''cc_KillList'')
     begin
        CREATE TABLE [dbo].[cc_KillList](
 	[id] [int] IDENTITY(1,1) NOT NULL,

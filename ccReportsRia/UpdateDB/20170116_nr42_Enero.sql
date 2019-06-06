@@ -38,9 +38,6 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepDialingResultsDetail'') DROP PROCEDURE [dbo].[ccspRepDialingResultsDetail]'
 	EXEC(@sql)
 
-
-
-
 	set @process = 'Drop SP -- RepOutManagementBase 4170'
 	set @Sql= 'if exists (select * from sys.procedures where name = ''ccspRepOutManagementBase'') DROP PROCEDURE [dbo].[ccspRepOutManagementBase]'
 	EXEC(@sql)
@@ -56,10 +53,6 @@ if @actualVersion  in(@version,@version - 1) begin
 	set @process = 'Drop Procedures  -- ccspRepDetailAgent'
 	set @Sql= 'IF EXISTS (SELECT * FROM sys.procedures where name = N''ccspRepDetailAgent'') Drop PROCEDURE ccspRepDetailAgent'
 	EXEC(@sql)
-
-
-
-
 
 	set @process = 'RepAnsweredCallsByDialingRetries - Tabla'
 	set @Sql= 'IF NOT EXISTS (SELECT * FROM sys.tables where name = N''RepAnsweredCallsByDialingRetries'')

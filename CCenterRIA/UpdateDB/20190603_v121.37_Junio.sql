@@ -14,6 +14,7 @@ Required version: 121.35
 Se agrega la tarea
 cw-2915
 cw-3001
+CW-3201
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -52,45 +53,66 @@ BEGIN
 
 	BEGIN TRY
 
+		SET @process = 'cw-3201 drop function hashPhone'
+		SET @Sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''hashPhone'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+    begin
+        Drop function hashPhone
+    end'
+		EXEC (@Sql)
+
+
+		set @process = 'cw-2915 drop sp'
+		set @sql = 'if exists (select * from sys.procedures where name = N''cc_DNCKillList'')
+    begin
+        DROP PROCEDURE cc_DNCKillList;
+    end'
+
+		exec (@sql)
+
+		SET @process = 'cw-3201 CREATE FUNCTION hashPhone'
+		SET @Sql = 'CREATE FUNCTION [dbo].[hashPhone] (@phoneNumber varchar(30)) 
+RETURNS bigint AS
+BEGIN
+  return convert(bigint,@phoneNumber) % 127499997
+END
+'
+		EXEC (@Sql)
+
 		SET @process = 'Galatea Admin CW CW-2976 check exist ccspGalateaGetAgentCounters '
 		SET @Sql = '   
 			if exists (select * from sys.procedures where name = N''ccspGalateaGetAgentCounters'')
 			begin
 				drop procedure ccspGalateaGetAgentCounters
-			end
-		 '
-
+			end'
 		EXEC (@Sql)
-
-
 
 
 		SET @process = 'Galatea Admi CW-2976 add ccspGalateaGetAgentCounters '
 		SET @Sql = '   
-		create procedure ccspGalateaGetAgentCounters
-		@type as int, @sup_id as int = 0 as
-		set nocount on
-		if @type = 1
-		    begin
-		        ;
-		    WITH TableUserAgent (userId)
-		    AS
-		    (
-		        select distinct wgAgt.User_id as userId --,usr.login 
-		        from ccriaworkgroupusers wgAdmin
-		        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
-		        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
-		        where 
-		        wgAdmin.User_id=@sup_id
-		    )
+create procedure ccspGalateaGetAgentCounters
+@type as int, @sup_id as int = 0 as
+set nocount on
+if @type = 1
+    begin
+        ;
+    WITH TableUserAgent (userId)
+    AS
+    (
+        select distinct wgAgt.User_id as userId --,usr.login 
+        from ccriaworkgroupusers wgAdmin
+        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+        where 
+        wgAdmin.User_id=@sup_id
+    )
 
 
-		        select a.user_id, a.login as UserName, CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '',a.ApellidoMaterno) as Name
-		        from ccusers a (nolock)--, ccGenViewRelsSupsAgent b
-		        inner join TableUserAgent b on a.User_id=b.userId       
-		    end
+        select a.user_id, a.login as UserName, CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '',a.ApellidoMaterno) as Name
+        from ccusers a (nolock)--, ccGenViewRelsSupsAgent b
+        inner join TableUserAgent b on a.User_id=b.userId       
+    end
 
-		set nocount on
+set nocount on
 		 '
 
 		EXEC (@Sql)
@@ -148,13 +170,6 @@ end'
     end'
 		exec (@sql)
 		
-		set @process = 'cw-2915 drop sp'
-		set @sql = 'if exists (select * from sys.procedures where name = N''cc_DNCKillList'')
-    begin
-        DROP PROCEDURE cc_DNCKillList;
-    end'
-
-		exec (@sql)
 
 		set @process = 'cw-2915 create sp'
 		set @sql = 'CREATE PROCEDURE [dbo].[cc_DNCKillList]
@@ -185,162 +200,499 @@ BEGIN
 END'
 		exec (@sql)
 
-		set @process = 'cw-2915 modify sp ccsp_AgentUpdateCallCALIF'
-		set @sql = 'ALTER procedure [dbo].[ccsp_AgentUpdateCallCALIF]
-@IDCall int,
-@calif_id smallint,
-@TipoCall smallint,
-@Origin int=0,
-@cal_key varchar(20)=null,
-@callOutId int=0,
-@subId smallint=0
+		set @process = 'cw-2915 y cw-3201 modify sp ccsp_AgentUpdateCallCALIF'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentUpdateCallCALIF] @IDCall INT, @calif_id SMALLINT, @TipoCall SMALLINT, @Origin INT = 0, @cal_key VARCHAR(20) = NULL, @callOutId INT = 0, @subId SMALLINT = 0
+AS
+SET NOCOUNT ON
 
-as
-set nocount on
-declare @RecicleSIC tinyint, @Reprogram tinyint, @DateNewDial smalldatetime, @idTipoLista int, @autoCB tinyint, @tel varchar(30), @camp int, @iddncList as int
-declare @userid int
-select @RecicleSIC=valor FROM ccSettings WHERE setting_id=60
-select @RecicleSIC=IsNull(@RecicleSIC, 0)
+DECLARE @RecicleSIC TINYINT, @Reprogram TINYINT, @DateNewDial SMALLDATETIME, @idTipoLista INT, @autoCB TINYINT, @tel VARCHAR(30), @camp INT, @iddncList AS INT
+DECLARE @userid INT
 
- declare @hashTel int
- declare @killListID int = (SELECT idtipolista FROM ccTiposListaNegra WHERE Tipolista = ''default/KillList'')
- declare @killListSetting int = (select status from ccSettings where setting_id = 215)
+SELECT @RecicleSIC = valor
+FROM ccSettings
+WHERE setting_id = 60
 
-if @TipoCall=1
- begin
-	Update ccCallsIN Set calif_id=@calif_id, cal_origin_id=@Origin, cal_key=isnull(@cal_key, cal_key),
-	califSub_id=case @subId when 0 then null else @subId end Where cal_id=@IDCall
+SELECT @RecicleSIC = IsNull(@RecicleSIC, 0)
 
-	if exists(select idTipoLista from cccalifblacklist with(index(IX_cccalifblacklist)) where tipo = 0 and calif_id=@calif_id)
-	 begin
-		select @tel=dbo.Completa_ListaNegra(ci.cal_ANI), @iddncList = cbl.idTipoLista
+DECLARE @hashTel INT
+DECLARE @killListID INT = (
+		SELECT idtipolista
+		FROM ccTiposListaNegra
+		WHERE Tipolista = ''default/KillList''
+		)
+DECLARE @killListSetting INT = (
+		SELECT STATUS
+		FROM ccSettings
+		WHERE setting_id = 215
+		)
 
-		from ccCallsIN ci with (index (PK_ccCallsIn))
-		 join cccalifblacklist as cbl on ci.calif_id=cbl.calif_id
-		where ci.cal_id=@idCall and left(dbo.Completa_ListaNegra(ci.cal_ANI),1)<>''E'' and cbl.tipo=0
+IF @TipoCall = 1
+BEGIN
+	UPDATE ccCallsIN
+	SET calif_id = @calif_id, cal_origin_id = @Origin, cal_key = isnull(@cal_key, cal_key), califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
 
-		if @tel is not null and @iddncList is not null begin
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 0 AND calif_id = @calif_id
+			)
+	BEGIN
+		SELECT @tel = dbo.Completa_ListaNegra(ci.cal_ANI), @iddncList = cbl.idTipoLista
+		FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+		JOIN cccalifblacklist AS cbl ON ci.calif_id = cbl.calif_id
+		WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+
+		IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+		BEGIN
 			--insert ccListaNegra
-			insert into cclistanegra (telefono, idtipolista) values(@tel,@iddncList)
+			INSERT INTO cclistanegra (telefono, idtipolista)
+			VALUES (@tel, @iddncList)
+
 			--insert cc_killlist
-			if(@killListSetting = 1 and @iddncList = @killListID) -- verifies if kill list setting is active and if the list_id matches killList id
-			begin
-			    set @hashTel = convert(bigint,@tel) % 127499997
-				if not exists (select hashtel from cc_KillList where hashTel = @hashTel)
-				begin
-				 insert into cc_KillList (hashTel,id_tipoLista, date) values(@hashTel, @iddncList, GETDATE())
-				end
-			end
+			IF (@killListSetting = 1 AND @iddncList = @killListID) -- verifies if kill list setting is active and if the list_id matches killList id
+			BEGIN
+				select @hashTel = dbo.hashPhone(@tel)
 
-			insert ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
-			select dbo.Completa_ListaNegra(ci.cal_ANI), cbl.idTipoLista, ci.Inbound_id, getdate(), ci.dni_id, 6
-			from ccCallsIN ci with (index (PK_ccCallsIn)) join cccalifblacklist cbl on ci.calif_id=cbl.calif_id
-			where ci.cal_id=@idCall and left(dbo.Completa_ListaNegra(ci.cal_ANI),1)<>''E'' and cbl.tipo=0
-		end
-	 end
+				IF NOT EXISTS (
+						SELECT hashtel
+						FROM cc_KillList
+						WHERE hashTel = @hashTel
+						)
+				BEGIN
+					INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+					VALUES (@hashTel, @iddncList, GETDATE())
+				END
+			END
 
-	return(0)
- end
+			INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+			SELECT dbo.Completa_ListaNegra(ci.cal_ANI), cbl.idTipoLista, ci.Inbound_id, getdate(), ci.dni_id, 6
+			FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+			JOIN cccalifblacklist cbl ON ci.calif_id = cbl.calif_id
+			WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+		END
+	END
 
-if @TipoCall=2
- begin
- 	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
-	select @autoCB=autocallback from ccTipoCalifSubout where califSub_Id = @subId
+	RETURN (0)
+END
+
+IF @TipoCall = 2
+BEGIN
+	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	SELECT @autoCB = autocallback
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
 
 	-- Si no tiene subcalificacion toma la de la calificacion
-	if @autoCB is null
-	 begin
-		select @autoCB = autocallback from cctipocalifout where calif_id = @calif_id
-	 end
+	IF @autoCB IS NULL
+	BEGIN
+		SELECT @autoCB = autocallback
+		FROM cctipocalifout
+		WHERE calif_id = @calif_id
+	END
 
-	if @autoCB = 1
-	begin
-		select @callOutId=callout_id, @camp=cam_id,@userid=user_id from ccocallsout where Cal_id=@IDCall
-		select @DateNewDial=dateadd(mi,t_autoCB,getdate()) from cccamps cam where cam.cam_id = @camp
+	IF @autoCB = 1
+	BEGIN
+		SELECT @callOutId = callout_id, @camp = cam_id, @userid = user_id
+		FROM ccocallsout
+		WHERE Cal_id = @IDCall
 
-		exec ccsp_OUTInsertaCallBack @IDCall, '''', @camp, @DateNewDial, @callOutId, 1, @userid, '''', 1
-	end
+		SELECT @DateNewDial = dateadd(mi, t_autoCB, getdate())
+		FROM cccamps cam
+		WHERE cam.cam_id = @camp
 
-	Update ccoCallsOUT Set calif_id=@calif_id, califSub_id=case @subId when 0 then null else @subId end Where cal_id=@IDCall
+		EXEC ccsp_OUTInsertaCallBack @IDCall, '''', @camp, @DateNewDial, @callOutId, 1, @userid, '''', 1
+	END
 
-	if exists(select idTipoLista from cccalifblacklist with(index(IX_cccalifblacklist)) where tipo = 1 and calif_id=@calif_id)
-	and not exists (select co.cal_telefono from ccoCallsOut co with (index (PK_ccoCallsOut))
-	join ccListaNegra bl on dbo.Completa_ListaNegra(co.cal_telefono)=bl.telefono or co.cal_telefono=bl.telefono where co.cal_id=@idCall
-	and bl.idtipolista in (select idTipoLista from cccalifblacklist with(index(IX_cccalifblacklist)) where tipo = 1 and calif_id=@calif_id))
-	 begin
-		select @tel=dbo.Completa_ListaNegra(co.cal_telefono), @iddncList = cbl.idTipoLista
-		from ccoCallsOut co with (index (PK_ccoCallsOut)) join cccalifblacklist cbl on co.calif_id=cbl.calif_id
-		where co.cal_id=@idCall and left(dbo.Completa_ListaNegra(co.cal_telefono),1)<>''E'' and cbl.tipo=1
+	UPDATE ccoCallsOUT
+	SET calif_id = @calif_id, califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
 
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 1 AND calif_id = @calif_id
+			) AND NOT EXISTS (
+			SELECT co.cal_telefono
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			JOIN ccListaNegra bl ON dbo.Completa_ListaNegra(co.cal_telefono) = bl.telefono OR co.cal_telefono = bl.telefono
+			WHERE co.cal_id = @idCall AND bl.idtipolista IN (
+					SELECT idTipoLista
+					FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+					WHERE tipo = 1 AND calif_id = @calif_id
+					)
+			)
+	BEGIN
+		SELECT @tel = dbo.Completa_ListaNegra(co.cal_telefono), @iddncList = cbl.idTipoLista
+		FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+		JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+		WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> ''E'' AND cbl.tipo = 1
 
-		if @tel is not null and @iddncList is not null begin
-			exec ccsp_InsertDNCList @tel, @iddncList
+		IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+		BEGIN
+			EXEC ccsp_InsertDNCList @tel, @iddncList
 
-			if(@killListSetting = 1 and @iddncList = @killListID)
-			begin
-			    set @hashTel = convert(bigint,@tel) % 127499997
-				if not exists (select hashtel from cc_KillList where hashTel = @hashTel)
-				begin
-				 insert into cc_KillList (hashTel,id_tipoLista, date) values(@hashTel, @iddncList, GETDATE())
-				end
-			end
+			IF (@killListSetting = 1 AND @iddncList = @killListID)
+			BEGIN
+				select @hashTel = dbo.hashPhone(@tel)
 
-			insert ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
-			select dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
-			from ccoCallsOut co with (index (PK_ccoCallsOut)) join cccalifblacklist cbl on co.calif_id=cbl.calif_id
-			where co.cal_id=@idCall and left(dbo.Completa_ListaNegra(co.cal_telefono),1)<>''E'' and cbl.tipo=1
-		end
-	 end
+				IF NOT EXISTS (
+						SELECT hashtel
+						FROM cc_KillList
+						WHERE hashTel = @hashTel
+						)
+				BEGIN
+					INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+					VALUES (@hashTel, @iddncList, GETDATE())
+				END
+			END
 
-	if @RecicleSIC=1
-	 begin
-	 	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
-		select @Reprogram=CanReprogram from ccTipoCalifSubout where califSub_Id = @subId
+			INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+			SELECT dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+			WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> ''E'' AND cbl.tipo = 1
+		END
+	END
+
+	IF @RecicleSIC = 1
+	BEGIN
+		-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+		SELECT @Reprogram = CanReprogram
+		FROM ccTipoCalifSubout
+		WHERE califSub_Id = @subId
 
 		-- Si no tiene subcalificacion toma la de la calificacion
-		if @Reprogram is null
-		 begin
-			select @Reprogram=CanReprogram from ccTipoCalifOUT where calif_id=@calif_id
-		 end
+		IF @Reprogram IS NULL
+		BEGIN
+			SELECT @Reprogram = CanReprogram
+			FROM ccTipoCalifOUT
+			WHERE calif_id = @calif_id
+		END
 
-		if @callOutId=0
-			select @callOutId=callout_id from ccocallsout where Cal_id=@IDCall
+		IF @callOutId = 0
+			SELECT @callOutId = callout_id
+			FROM ccocallsout
+			WHERE Cal_id = @IDCall
 
-		Update ccoWorkingTable Set calif_id=@calif_id,
-		 cal_status=case @Reprogram when 0 then 3 else cal_status end
-		Where callout_id=@callOutId
+		UPDATE ccoWorkingTable
+		SET calif_id = @calif_id, cal_status = CASE @Reprogram WHEN 0 THEN 3 ELSE cal_status END
+		WHERE callout_id = @callOutId
+	END
 
-	 end
-	declare @keepDial bit
-	declare @finishPreview smallint
+	DECLARE @keepDial BIT
+	DECLARE @finishPreview SMALLINT
+
 	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
-	select @keepDial=keepDial from ccTipoCalifSubout where califSub_Id = @subId
+	SELECT @keepDial = keepDial
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
 
 	-- Si no tiene subcalificacion toma la de la calificacion
-	if @keepDial is null
-	 begin
-		select @keepDial=keepDial from ccTipoCalifout where calif_id = @calif_id
-	 end
+	IF @keepDial IS NULL
+	BEGIN
+		SELECT @keepDial = keepDial
+		FROM ccTipoCalifout
+		WHERE calif_id = @calif_id
+	END
 
-	select @finishPreview=isnull(finishPreview,0) from ccTipoCalifout where calif_id = @calif_id
+	SELECT @finishPreview = isnull(finishPreview, 0)
+	FROM ccTipoCalifout
+	WHERE calif_id = @calif_id
 
-	if @keepDial=1
-	 begin
-		update ccologdials set TipoDialingMode=dbo.fn_getDialingMode(@IDCall, 3, 0, @camp)
-		where logDial_id in (select top 1 L.logDial_id from
-			ccoLogDials L with(index(IX_ccoLogDials_2), nolock)
-			 join ccoCallsOut O with(index(PK_ccoCallsOut), nolock)
-			 on L.callout_id = O.callout_id where O.cal_id=@IDCall
-			order by L.logDial_id desc)
-	 end
+	IF @keepDial = 1
+	BEGIN
+		UPDATE ccologdials
+		SET TipoDialingMode = dbo.fn_getDialingMode(@IDCall, 3, 0, @camp)
+		WHERE logDial_id IN (
+				SELECT TOP 1 L.logDial_id
+				FROM ccoLogDials L WITH (INDEX (IX_ccoLogDials_2), NOLOCK)
+				JOIN ccoCallsOut O WITH (INDEX (PK_ccoCallsOut), NOLOCK) ON L.callout_id = O.callout_id
+				WHERE O.cal_id = @IDCall
+				ORDER BY L.logDial_id DESC
+				)
+	END
 
-	select @keepDial, @finishPreview
-	return(0)
- end
+	SELECT @keepDial, @finishPreview
 
-set nocount off'
+	RETURN (0)
+END
+
+SET NOCOUNT OFF
+'
+		EXEC (@Sql)
+
+		SET @process = 'cw-3201 Alter SP ccsp_RIADNCList'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_RIADNCList] @phoneNumber AS VARCHAR(30), @idDNCList AS INTEGER, @tipoMov AS TINYINT, @calKey AS VARCHAR(20) = NULL
+AS
+DECLARE @hashCalKey INT, @hashPhone BIGINT
+
+IF @calKey IS NOT NULL
+BEGIN
+	SELECT @hashCalKey = dbo.hashList(@calKey)
+END
+
+IF @tipoMov = 1
+BEGIN -- Inserta Lista Negra	
+	EXEC ccsp_InsertDNCList @telephone = @phoneNumber, @ln_id = @idDNCList, @hashCalKey = @hashCalKey
+
+	INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@phoneNumber, 7, @idDNCList)
+END
+
+IF @tipoMov = 2
+BEGIN -- Borra Lista Negra	
+	SELECT @hashPhone = dbo.hashPhone(@phoneNumber)
+
+	IF @hashCalKey IS NULL
+	BEGIN
+		DELETE
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idDNCList
+	END
+	ELSE
+	BEGIN
+		DELETE
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idDNCList
+	END
+
+	INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@phoneNumber, 5, @idDNCList)
+END
+
+IF @tipoMov = 3
+BEGIN -- Reemplaza Lista Negra
+	INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	SELECT telefono, ''4'', @idDNCList
+	FROM cclistanegra
+	WHERE idtipolista = @idDNCList
+
+	DELETE
+	FROM cclistanegra
+	WHERE idtipolista = @idDNCList
+END
+'
+		EXEC (@Sql)	
+
+		set @process = 'cw-3001 alter procedure getUnavailableTimes'
+		set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GetUnavailableTypes] @action INT
+	,@startDate DATETIME =  null
+	,@endDate DATETIME = null
+	,@unavailable_id VARCHAR(300) = null
+AS
+IF (@action = 0)
+BEGIN
+	SELECT TipoNotReady_id AS [unavailable_id]
+		,Descripcion AS [description]
+		,Time_Acum AS [MaxTime]
+		,Time_xEv AS [MaxTimePerEvent]
+		,Pas_Sup AS [AdminPw]
+		,NextStatus AS [NextStatus]
+		,IsSup AS [AdminOnly]
+		,StatusTipoNotReady AS [UnavailableStatus]
+	FROM ccTipoNotReady
+END
+
+IF (@action = 1)
+BEGIN
+	DECLARE @tabla TABLE (notReadyId INT PRIMARY KEY)
+
+	INSERT INTO @tabla
+	SELECT value
+	FROM dbo.fn_RIASplitDelimited(@unavailable_id, '','')
+	
+	SELECT user_id, sum(tstatus)
+	FROM ccLogAgentesNotReady A WITH (NOLOCK)
+	INNER JOIN @tabla B ON A.TipoNotReady_id = B.notReadyId
+	WHERE fecha >= @startDate
+		AND fecha <= @enddate
+	GROUP BY user_id
+END'
 
 		exec (@sql)
+		
+
+		SET @process = 'cw-3201 ALTER FUNCTION ValidateBlackListPhone'
+		SET @Sql = 'ALTER FUNCTION [dbo].[ValidateBlackListPhone] (@tel VARCHAR(32), @camId INT, @calKey VARCHAR(20))
+RETURNS BIT
+AS
+BEGIN
+	DECLARE @isBlackPhone BIT
+	--PARA LA VALIDACION DE LISTAS NEGRAS CON HASH
+	DECLARE @hasTelefono BIGINT
+
+	SELECT @hasTelefono = dbo.hashPhone(@tel)
+
+	DECLARE @hasCalKey BIGINT
+
+	IF @calKey IS NOT NULL OR @calKey <> ''''
+		SELECT @hasCalKey = dbo.hashList(@calKey)
+
+	SET @isBlackPhone = 0
+
+	IF EXISTS (
+			SELECT a2.idtipolista
+			FROM cclistanegra a1
+			INNER JOIN camplistanegra a2 WITH (INDEX (IX_Camplistanegra)) ON a1.idtipolista = a2.idtipolista
+			WHERE a2.cam_id = @camId AND STATUS = 1 AND a1.Hashtel = @hasTelefono AND (a1.HashKey IS NULL OR a1.HashKey = @hasCalKey)
+			)
+		SET @isBlackPhone = 1
+
+	RETURN @isBlackPhone
+END
+'
+		EXEC (@Sql)
+
+		SET @process = 'cw-3201 Alter SP ccsp_RIAUploadBLst'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUploadBLst] @command TINYINT, @telephone VARCHAR(20) = 0, @idtipolista INT, @calKey AS VARCHAR(20) = NULL
+AS
+SET NOCOUNT ON
+
+DECLARE @hashCalKey INT, @hashPhone BIGINT
+
+SELECT @hashPhone = dbo.hashPhone(@telephone)
+
+IF @calKey IS NOT NULL
+BEGIN
+	SELECT @hashCalKey = dbo.hashList(@calKey)
+END
+
+IF @hashCalKey IS NULL
+BEGIN
+	IF @command IN (1, 4) --LookForNumber	
+		AND EXISTS (
+			SELECT idtipolista
+			FROM cclistanegra
+			WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista
+			)
+	BEGIN
+		SELECT 1
+
+		RETURN (0)
+	END
+END
+ELSE
+BEGIN
+	IF @command IN (1, 4) --LookForNumber	
+		AND EXISTS (
+			SELECT idtipolista
+			FROM cclistanegra
+			WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+			)
+	BEGIN
+		SELECT 1
+
+		RETURN (0)
+	END
+END
+
+IF @command = 1 --Insert Number
+BEGIN
+	EXEC ccsp_InsertDNCList @telephone, @idtipolista, @hashCalKey
+
+	INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@telephone, 1, @idtipolista)
+
+	RETURN (0)
+END
+
+IF @command = 2 --Delete Number
+BEGIN
+	INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	VALUES (@telephone, 5, @idtipolista)
+
+	IF @hashCalKey IS NULL
+	BEGIN
+		DELETE
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey IS NULL
+	END
+	ELSE
+	BEGIN
+		DELETE
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey
+	END
+
+	RETURN (0)
+END
+
+IF @command = 3 --Reemplaza
+BEGIN
+	INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+	SELECT telefono, 4, @idtipolista
+	FROM cclistanegra
+	WHERE idtipolista = @idtipolista
+
+	DELETE
+	FROM cclistanegra
+	WHERE idtipolista = @idtipolista
+
+	RETURN (0)
+END
+
+IF @command = 5 --Delete by idtipolista
+BEGIN
+	UPDATE ccTiposListaNegra
+	SET STATUS = 0
+	WHERE idtipolista = @idtipolista
+
+	DELETE ccAgendaListaNegra
+	WHERE idagenda IN (
+			SELECT idagenda
+			FROM ccAgenda_TipolistaNegra
+			WHERE idtipolista = @idtipolista
+			)
+
+	DELETE ccAgenda_TipolistaNegra
+	WHERE idtipolista = @idtipolista
+
+	DELETE cccalifblacklist
+	WHERE idtipolista = @idtipolista
+
+	DELETE Camplistanegra
+	WHERE idtipolista = @idtipolista
+
+	DECLARE @telefono VARCHAR(10)
+
+	WHILE EXISTS (
+			SELECT telefono
+			FROM ccListaNegra
+			WHERE idtipolista = @idtipolista
+			)
+	BEGIN
+		SELECT TOP 1 @hashPhone = Hashtel, @telefono = telefono
+		FROM ccListaNegra
+		WHERE idtipolista = @idtipolista
+
+		INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+		VALUES (@telefono, 5, @idtipolista)
+
+		DELETE
+		FROM cclistanegra
+		WHERE Hashtel = @hashPhone AND idtipolista = @idtipolista
+	END
+
+	RETURN (0)
+END
+
+SET NOCOUNT OFF
+'
+		EXEC (@Sql)
+
+		SET @process = 'cw-3201 Alter Trigger ccListaNegra.[trigHashPhone]'
+		SET @Sql = 'ALTER TRIGGER [dbo].[trigHashPhone] ON [dbo].[ccListaNegra]
+FOR INSERT
+AS
+SET NOCOUNT ON
+begin	
+	update A set A.Hashtel= dbo.hashPhone(B.telefono) from ccListaNegra A
+	inner join INSERTED B on  A.idtipolista=B.idtipolista and A.telefono=B.telefono 
+
+end'
+		EXEC (@Sql)
 
 
 		set @process = 'cw-2915 delete  job dnckillList'
@@ -414,43 +766,80 @@ EndSave:
 
 		exec (@sql)
 
-		set @process = 'cw-3001 alter procedure getUnavailableTimes'
-		set @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GetUnavailableTypes] @action INT
-	,@startDate DATETIME =  null
-	,@endDate DATETIME = null
-	,@unavailable_id VARCHAR(300) = null
-AS
-IF (@action = 0)
+		SET @process = 'cw-3201 JOB CW Update ccListaNegra Hashtel'
+		SET @Sql = 'USE [msdb]
+
+
+if exists(select * from msdb.dbo.sysjobs_view where name=N''CW Update ccListaNegra Hashtel'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''CW Update ccListaNegra Hashtel'', @delete_unused_schedule=1
+
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SELECT @ReturnCode = 0
+
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
 BEGIN
-	SELECT TipoNotReady_id AS [unavailable_id]
-		,Descripcion AS [description]
-		,Time_Acum AS [MaxTime]
-		,Time_xEv AS [MaxTimePerEvent]
-		,Pas_Sup AS [AdminPw]
-		,NextStatus AS [NextStatus]
-		,IsSup AS [AdminOnly]
-		,StatusTipoNotReady AS [UnavailableStatus]
-	FROM ccTipoNotReady
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
 END
 
-IF (@action = 1)
-BEGIN
-	DECLARE @tabla TABLE (notReadyId INT PRIMARY KEY)
+DECLARE @jobId BINARY(16)
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW Update ccListaNegra Hashtel'', 
+		@enabled=1, 
+		@notify_level_eventlog=2, 
+		@notify_level_email=0, 
+		@notify_level_netsend=0, 
+		@notify_level_page=0, 
+		@delete_level=0, 
+		@description=N''No description available.'', 
+		@category_name=N''[Uncategorized (Local)]'', 
+		@owner_login_name=N''sa'', @job_id = @jobId OUTPUT
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Run sp]    Script Date: 05/06/2019 10:12:59 a. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Run sp'', 
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=1, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''if exists(select * from ccListaNegra where Hashtel is null) begin
+    update top (20000) ccListaNegra set  Hashtel=dbo.hashPhone(telefono) where Hashtel is null
+end
+else begin 
+    EXEC msdb.dbo.sp_delete_job @job_name=N''''CW Update ccListaNegra Hashtel'''', @delete_unused_schedule=1
+end'', 
+		@database_name=N''CCenterRia'', 
+		@flags=4
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''CW Update ccListaNegra Hashtel schedule'', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=4, 
+		@freq_subday_interval=5, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=0, 
+		@active_start_date=20041022, 
+		@active_end_date=99991231, 
+		@active_start_time=10000, 
+		@active_end_time=235959
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+COMMIT TRANSACTION
+GOTO EndSave
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+EndSave:'
+		EXEC (@Sql)
 
-	INSERT INTO @tabla
-	SELECT value
-	FROM dbo.fn_RIASplitDelimited(@unavailable_id, '','')
-	
-	SELECT user_id, sum(tstatus)
-	FROM ccLogAgentesNotReady A WITH (NOLOCK)
-	INNER JOIN @tabla B ON A.TipoNotReady_id = B.notReadyId
-	WHERE fecha >= @startDate
-		AND fecha <= @enddate
-	GROUP BY user_id
-END'
-
-		exec (@sql)
 
 
 		/* End script release */

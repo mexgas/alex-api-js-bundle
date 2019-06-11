@@ -15,6 +15,7 @@ Se agrega la tarea
 cw-2915
 cw-3001
 CW-3201
+CW-3032
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -692,6 +693,41 @@ begin
 	inner join INSERTED B on  A.idtipolista=B.idtipolista and A.telefono=B.telefono 
 
 end'
+		EXEC (@Sql)
+
+
+		SET @process = 'CW-3032 Alter SP ccsp_AgentLastNotReady'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentLastNotReady] 
+				@user_id SMALLINT
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @lastStatus TINYINT;
+	DECLARE @info VARCHAR(100);
+
+	
+	SELECT @lastStatus = 0;
+
+	SELECT TOP 1 @lastStatus = ISNULL(tipoStatusAge_id, 0)
+	FROM ccLogAgentesDia 
+	WHERE user_id = @user_id and tipoStatusAge_id not in(0,1)
+	ORDER BY fecha DESC;
+
+	IF @lastStatus = 2
+	BEGIN
+		SELECT TOP 1 tipoNotReady_Id
+		FROM ccLogAgentesNotReady
+		WHERE user_id = @user_id
+		ORDER BY fecha DESC;
+	
+		RETURN( 0 );
+	END;
+
+	SELECT 0 AS tipoNotReady_Id;
+
+	SET NOCOUNT OFF;
+END;'
 		EXEC (@Sql)
 
 

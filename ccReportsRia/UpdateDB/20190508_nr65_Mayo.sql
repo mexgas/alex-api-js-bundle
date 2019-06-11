@@ -394,12 +394,8 @@ BEGIN
 END
 '
 		EXEC (@sql)
-
 		
-
-
-		--IF @actualVersion = @version - 1
-			--EXEC ccsp_getVersion 'BD', @version
+		EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN
 	END TRY

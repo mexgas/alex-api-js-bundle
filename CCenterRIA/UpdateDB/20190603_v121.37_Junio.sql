@@ -88,33 +88,38 @@ END
 		EXEC (@Sql)
 
 
-		SET @process = 'Galatea Admi CW-2976 add ccspGalateaGetAgentCounters '
-		SET @Sql = '   
-create procedure ccspGalateaGetAgentCounters
-@type as int, @sup_id as int = 0 as
-set nocount on
-if @type = 1
-    begin
-        ;
-    WITH TableUserAgent (userId)
-    AS
-    (
-        select distinct wgAgt.User_id as userId --,usr.login 
-        from ccriaworkgroupusers wgAdmin
-        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
-        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
-        where 
-        wgAdmin.User_id=@sup_id
-    )
-
-
-        select a.user_id, a.login as UserName, CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '',a.ApellidoMaterno) as Name
-        from ccusers a (nolock)--, ccGenViewRelsSupsAgent b
-        inner join TableUserAgent b on a.User_id=b.userId       
-    end
-
-set nocount on
-		 '
+		SET @process = 'Galatea Admi CW-2976,CW-3043 Ordenar lista de agentes alfabeticamente'
+		SET @Sql = 'CREATE PROCEDURE [dbo].[ccspGalateaGetAgentCounters] @type AS   INT, 
+                                                    @sup_id AS INT = 0,
+													@agent_id AS int = 0
+AS
+     SET NOCOUNT ON;
+     IF @type = 1
+         BEGIN
+             WITH TableUserAgent(userId)
+                  AS (SELECT DISTINCT 
+                             wgAgt.User_id AS userId --,usr.login 
+                      FROM ccriaworkgroupusers wgAdmin
+                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
+                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
+                                                     AND usr.TipoUser_id = 1
+                      WHERE wgAdmin.User_id = @sup_id )
+                  SELECT a.user_id, 
+                         a.login AS UserName, 
+                         CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '', a.ApellidoMaterno) AS Name
+                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
+                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
+					   ORDER BY a.Login ASC ;
+     END;
+     IF @type = 2
+         BEGIN
+             SELECT Login UserName, 
+                    CONCAT(Nombres, '' '', ApellidoPaterno, '' '', ApellidoMaterno) Name
+             FROM ccUsers
+             WHERE User_id = @agent_id;
+     END;
+     SET NOCOUNT ON;
+'
 
 		EXEC (@Sql)
 

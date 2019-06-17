@@ -88,40 +88,44 @@ END
 		EXEC (@Sql)
 
 
-		SET @process = 'Galatea Admi CW-2976,CW-3043 Ordenar lista de agentes alfabeticamente'
-		SET @Sql = 'CREATE PROCEDURE [dbo].[ccspGalateaGetAgentCounters] @type AS   INT, 
-                                                    @sup_id AS INT = 0,
-													@agent_id AS int = 0
-AS
-     SET NOCOUNT ON;
-     IF @type = 1
-         BEGIN
-             WITH TableUserAgent(userId)
-                  AS (SELECT DISTINCT 
-                             wgAgt.User_id AS userId --,usr.login 
-                      FROM ccriaworkgroupusers wgAdmin
-                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
-                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
-                                                     AND usr.TipoUser_id = 1
-                      WHERE wgAdmin.User_id = @sup_id )
-                  SELECT a.user_id, 
-                         a.login AS UserName, 
-                         CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '', a.ApellidoMaterno) AS Name
-                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
-                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
-					   ORDER BY a.Login ASC ;
-     END;
-     IF @type = 2
-         BEGIN
-             SELECT Login UserName, 
-                    CONCAT(Nombres, '' '', ApellidoPaterno, '' '', ApellidoMaterno) Name
-             FROM ccUsers
-             WHERE User_id = @agent_id;
-     END;
-     SET NOCOUNT ON;
-'
+		SET @process = 'Galatea Admi CW-2976, CW-3019 Ordenar lista de agentes alfabeticamente CW-3019 procesar agente nuevo SP '
+			set @process = ''
+		SET @Sql = '
 
-		EXEC (@Sql)
+		CREATE PROCEDURE [dbo].[ccspGalateaGetAgentCounters] @type AS   INT, 
+		                                                    @sup_id AS INT = 0,
+															@agent_id AS int = 0
+		AS
+		     SET NOCOUNT ON;
+		     IF @type = 1
+		         BEGIN
+		             WITH TableUserAgent(userId)
+		                  AS (SELECT DISTINCT 
+		                             wgAgt.User_id AS userId --,usr.login 
+		                      FROM ccriaworkgroupusers wgAdmin
+		                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
+		                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
+		                                                     AND usr.TipoUser_id = 1
+		                      WHERE wgAdmin.User_id = @sup_id)
+		                  SELECT a.user_id, 
+		                         a.login AS UserName, 
+		                         CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '', a.ApellidoMaterno) AS Name
+		                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
+		                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
+							    ORDER BY a.Login ASC ;
+		     END;
+		     IF @type = 2
+		         BEGIN
+		             SELECT Login UserName, 
+		                    CONCAT(Nombres, '' '', ApellidoPaterno, '' '', ApellidoMaterno) Name
+		             FROM ccUsers
+		             WHERE User_id = @agent_id;
+		     END;
+		     SET NOCOUNT ON;
+		     '
+
+		
+		exec (@sql)
 
 	
 		SET @process = 'cw-2915 add kill list setting'
@@ -207,42 +211,7 @@ END'
 		exec (@sql)
 
 
-		set @process = 'CW-3019 procesar agente nuevo SP '
-		SET @Sql = '
-
-		ALTER PROCEDURE [dbo].[ccspGalateaGetAgentCounters] @type AS   INT, 
-		                                                    @sup_id AS INT = 0,
-															@agent_id AS int = 0
-		AS
-		     SET NOCOUNT ON;
-		     IF @type = 1
-		         BEGIN
-		             WITH TableUserAgent(userId)
-		                  AS (SELECT DISTINCT 
-		                             wgAgt.User_id AS userId --,usr.login 
-		                      FROM ccriaworkgroupusers wgAdmin
-		                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
-		                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
-		                                                     AND usr.TipoUser_id = 1
-		                      WHERE wgAdmin.User_id = @sup_id)
-		                  SELECT a.user_id, 
-		                         a.login AS UserName, 
-		                         CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '', a.ApellidoMaterno) AS Name
-		                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
-		                       INNER JOIN TableUserAgent b ON a.User_id = b.userId;
-		     END;
-		     IF @type = 2
-		         BEGIN
-		             SELECT Login UserName, 
-		                    CONCAT(Nombres, '' '', ApellidoPaterno, '' '', ApellidoMaterno) Name
-		             FROM ccUsers
-		             WHERE User_id = @agent_id;
-		     END;
-		     SET NOCOUNT ON;
-		     '
-
-		
-		exec (@sql)
+	
 
 
 

@@ -79,6 +79,27 @@ END
 '
 		EXEC (@Sql)
 
+			SET @process = 'Galatea Admin CW CW-3067 Mantener filtro de Agentes Conectados '
+		SET @Sql = '   
+			if exists (select * from sys.procedures where name = N''ccspGalateaMonitoringConfiguration'')
+			begin
+				drop procedure ccspGalateaMonitoringConfiguration
+			end'
+		EXEC (@Sql)
+
+			SET @process = 'Galatea Admin CW CW-3067 Mantener filtro de Agentes Conectados '
+		SET @Sql = '   
+			CREATE PROCEDURE ccspGalateaMonitoringConfiguration
+@userId smallint,
+@viewAgents int
+AS
+BEGIN
+	UPDATE ccusers
+	SET viewAgents = @viewAgents
+	WHERE user_id = @userId
+END'
+		EXEC (@Sql)
+
 		SET @process = 'Galatea Admin CW CW-2976 check exist ccspGalateaGetAgentCounters '
 		SET @Sql = '   
 			if exists (select * from sys.procedures where name = N''ccspGalateaGetAgentCounters'')

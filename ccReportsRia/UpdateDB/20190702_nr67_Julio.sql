@@ -32,6 +32,32 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+	
+	SET @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+	BEGIN
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+	EXEC (@Sql)
+	
+		SET @process = 'CW-1386 Add Column ccoLogDials.TipoDialingMode'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''TipoDialingMode'' and Object_ID = Object_ID(N''ccoLogDials''))
+    begin
+        ALTER TABLE ccoLogDials  ADD TipoDialingMode Varchar(8)  NULL 
+    end
+'
+		EXEC (@sql)
+	
+	SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+	BEGIN 
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+		EXEC (@Sql)
+	
+	
 		SET @process = 'CW-1386 Add Column RepOutDialDetail.dialType'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''dialType'' and Object_ID = Object_ID(N''RepOutDialDetail''))
     begin

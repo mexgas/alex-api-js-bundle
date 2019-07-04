@@ -17,6 +17,7 @@ cw-3001
 CW-3201
 CW-3032
 CW-3045
+CW-3199
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -54,6 +55,58 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+
+
+
+
+		set @process = 'cw-Mantener filtro de agentes conectados'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadCamps'')
+    begin
+        DROP PROCEDURE ccsp_GalateaLoadCamps;
+    end'
+
+		exec (@sql)
+
+		SET @process = 'CW-3119 Obtener campañas ccsp_GalateaLoadCamps'
+		SET @Sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option   SMALLINT, 
+                                               @TypeCamp SMALLINT
+AS
+     SET NOCOUNT ON;
+     DECLARE @AreaId SMALLINT;
+     SELECT @AreaId = IDArea
+     FROM ccUsers
+     WHERE User_id = @Sup;
+     IF @option = 1 -- Get Camps
+         BEGIN
+             IF @TypeCamp = 1 -- Campañas salida por Supervisor
+                 SELECT DISTINCT 
+                        camps.cam_id AS Cam_id, 
+                        camps.cam_descripcion AS Cam_descripcion, 
+                        graph.graphic_id AS Frame
+                 FROM ccCamps camps
+                      LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+                      LEFT JOIN ccSupervisorCam supCam ON camps.cam_id = supCam.cam_id
+                 WHERE supCam.user_id = @Sup
+                       AND tipo = 1
+                 ORDER BY camps.cam_descripcion ASC;
+             IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
+                 BEGIN
+                     SELECT inbound.Inbound_id AS Cam_id, 
+                            inbound.descripcion AS Cam_descripcion, 
+                            graph.graphic_id AS Frame
+                     FROM ccInbound inbound
+                          LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
+                          LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
+                     WHERE supCam.user_id = @Sup
+                           AND tipo = 0
+                     ORDER BY inbound.descripcion ASC;
+             END;
+     END;
+ '
+
+	exec (@sql)
+
 
 		set @process = 'cw-Mantener filtro de agentes conectados'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')

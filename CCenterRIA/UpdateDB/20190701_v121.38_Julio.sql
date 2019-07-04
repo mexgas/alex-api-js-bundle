@@ -67,6 +67,7 @@ BEGIN
 		SET @process = 'CW-3119 Obtener campañas ccsp_GalateaLoadCamps'
 		SET @Sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option   SMALLINT, 
+ 											   @Sup      SMALLINT = NULL, 
                                                @TypeCamp SMALLINT
 AS
      SET NOCOUNT ON;

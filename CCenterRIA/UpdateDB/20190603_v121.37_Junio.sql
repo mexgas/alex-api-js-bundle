@@ -131,7 +131,7 @@ END'
 		                      WHERE wgAdmin.User_id = @sup_id)
 		                  SELECT a.user_id, 
 		                         a.login AS UserName, 
-		                         CONCAT(a.Nombres, '' '', a.ApellidoPaterno, '' '', a.ApellidoMaterno) AS Name
+		                         a.Nombres + '' '' + a.ApellidoPaterno + '' '' + a.ApellidoMaterno AS Name
 		                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
 		                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
 							    ORDER BY a.Login ASC ;
@@ -139,7 +139,7 @@ END'
 		     IF @type = 2
 		         BEGIN
 		             SELECT Login UserName, 
-		                    CONCAT(Nombres, '' '', ApellidoPaterno, '' '', ApellidoMaterno) Name
+		             Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno Name                                   
 		             FROM ccUsers
 		             WHERE User_id = @agent_id;
 		     END;

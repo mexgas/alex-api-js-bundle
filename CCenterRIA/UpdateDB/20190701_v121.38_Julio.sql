@@ -17,6 +17,7 @@ cw-3001
 CW-3201
 CW-3032
 CW-3045
+CW-3199
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -54,6 +55,56 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+
+		set @process = 'cw-Mantener filtro de agentes conectados'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadCamps'')
+    begin
+        DROP PROCEDURE ccsp_GalateaLoadCamps;
+    end'
+
+		exec (@sql)
+
+		SET @process = 'CW-3119 Obtener campañas ccsp_GalateaLoadCamps'
+		SET @Sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option   SMALLINT, 
+ 											   @Sup      SMALLINT = NULL, 
+                                               @TypeCamp SMALLINT
+AS
+     SET NOCOUNT ON;
+     DECLARE @AreaId SMALLINT;
+     SELECT @AreaId = IDArea
+     FROM ccUsers
+     WHERE User_id = @Sup;
+     IF @option = 1 -- Get Camps
+         BEGIN
+             IF @TypeCamp = 1 -- Campañas salida por Supervisor
+                 SELECT DISTINCT 
+                        camps.cam_id AS Cam_id, 
+                        camps.cam_descripcion AS Cam_descripcion, 
+                        graph.graphic_id AS Frame
+                 FROM ccCamps camps
+                      LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+                      LEFT JOIN ccSupervisorCam supCam ON camps.cam_id = supCam.cam_id
+                 WHERE supCam.user_id = @Sup
+                       AND tipo = 1
+                 ORDER BY camps.cam_descripcion ASC;
+             IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
+                 BEGIN
+                     SELECT inbound.Inbound_id AS Cam_id, 
+                            inbound.descripcion AS Cam_descripcion, 
+                            graph.graphic_id AS Frame
+                     FROM ccInbound inbound
+                          LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
+                          LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
+                     WHERE supCam.user_id = @Sup
+                           AND tipo = 0
+                     ORDER BY inbound.descripcion ASC;
+             END;
+     END;
+ '
+
+	exec (@sql)
+
 
 		set @process = 'cw-Mantener filtro de agentes conectados'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
@@ -164,6 +215,118 @@ END
 '
 		EXEC (@Sql)
 
+		
+		set @process = 'cw-3085 No mostrar calificaciones en Agente Kolob'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetHangUpData'')
+    begin
+        DROP PROCEDURE ccsp_GalateaGetHangUpData;
+    end'
+
+		exec (@sql)
+		
+		set @process = 'cw-3085 No mostrar calificaciones en Agente Kolob'
+		SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
+	@cam_id int,
+	@type int
+AS BEGIN
+	IF(@type = 1)
+	BEGIN
+		SELECT   0 leaveRecMessage,
+				CASE WHEN isnull(c.callsBySurvey,0) > 0 THEN 1 ELSE 0 END isRelationSurvey,
+				isnull(i.callBackSurveyAgent,1) callBackSurveyAgent,
+				isnull(i.callBackSurveyClient,1) callBackSurveyClient,
+				I.ShowCalifWnd showDisposition
+       FROM ccInbound i
+       LEFT JOIN ccCamps c on c.cam_id=i.cam_id
+       WHERE i.inbound_id=@cam_id
+
+	END
+	ELSE
+	BEGIN 
+		SELECT
+			   CASE WHEN msgFile <> '''' and leaveRecMessage = 1 THEN 1 ELSE 0 END leaveRecMessage,
+			   CASE WHEN isnull(c.surveyCamId,0) >0 THEN 1 ELSE 0 END isRelationSurvey,
+			   c.callBackSurveyAgent,c.callBackSurveyClient, c.cam_ShowCalifWnd showDisposition
+		FROM ccCamps c
+		LEFT OUTER JOIN (SELECT TOP 1 M.cam_id, coalesce(T.msgFile+'','','''')  msgFile
+						 FROM ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id
+						 WHERE M.cam_id =@cam_id and type = 8) b
+		on (c.cam_id = b.cam_id)
+		where c.cam_id=@cam_id
+	END
+END
+'
+		EXEC (@Sql)
+
+
+		set @process = 'Devops Alter FUNCTION VerificaRegionLocalidad'
+		SET @Sql = 'ALTER FUNCTION [dbo].[VerificaRegionLocalidad](@tel varchar(32),@pais tinyint = 0, @cldLocal varchar(7) = '''')
+RETURNS @retVRL TABLE
+(
+    tel varchar(32) PRIMARY KEY NOT NULL,
+    region varchar(32) NULL,
+    localidad varchar(32) NULL
+)
+ BEGIN
+ declare @ld varchar(7)
+ declare @lon tinyint 
+ declare @lonLd tinyint 
+ declare @region varchar(20)
+ declare @localidad varchar(20) 
+ declare @serie varchar(4)
+ 
+ select @region='''',@localidad=''''
+
+ if (@pais = 0 and @cldLocal = '''') begin
+	select @pais = valor from ccSettings with(nolock) where setting_id = 104
+	select @cldLocal = valor from ccSettings with(nolock) where setting_id = 17
+end
+
+ select @tel = dbo.limpia(@tel)
+
+if @pais = 1 begin --Empieza Mexico
+	select @lon = len(@tel)
+	if @lon in(7,8) begin
+		set @tel = @cldLocal + @tel
+		set @ld=@cldLocal
+	end	
+	
+	select @tel = right(@tel, 10)
+	select @lon = len(@tel)	
+  if @lon = 10 begin		
+	
+		if @ld is null begin
+			if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))begin
+				select @ld = left(@tel,2)			
+			end
+			else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))  begin
+				select @ld = left(@tel,3)			
+			end
+		end
+
+		if @ld is not null begin
+			set @lonLd=len(@ld)		
+			set @serie=substring(@tel,len(@ld)+1,case @lonLd when 2 then 4 else 3 end)		
+			select top 1 @region = estado, @localidad = municipio from series nolock where cld=@ld and SERIE=@serie
+		end
+		else begin
+			select top 1 @region = estado, @localidad = municipio from series nolock where cld=@cldLocal
+		end
+
+	end
+   else  begin
+		if (@region is null) begin
+			select top 1 @region = estado from series nolock where cld=@cldLocal
+		end		
+	end
+end --Termina Mexico
+
+  INSERT @retVRL
+        SELECT @tel as phone, @region as estado, @localidad as municipio
+  RETURN
+
+end'
+		EXEC (@Sql)
 		
 
 		/* End script release */

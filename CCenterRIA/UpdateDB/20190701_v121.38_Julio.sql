@@ -327,6 +327,51 @@ end --Termina Mexico
 
 end'
 		EXEC (@Sql)
+
+
+
+		------------------------------------------------- 121.03-8_20190715_1 -------------------------------------
+
+				set @process = 'CW-2708 -- Add New Setting ccSettings 216'
+		set @sql = 'IF NOT EXISTS
+(
+	SELECT *
+	FROM ccSettings
+	WHERE setting_id = 216
+)
+BEGIN
+	INSERT INTO ccSettings( setting_id, valor, descripcion, STATUS, Tipo, detalle, description, bLoadSettings, validate )
+	VALUES( 216, ''1|24|smtp.ionos.com|notifications@centernext.net|6zJLvMd2|587|0|0'', ''Notificar vencimiento de licencia vía correo electrónico '', 1,
+	''X'', ''Numero dias envio del correo #DaysBefore|#HourSendMail|STMPServer|User|Password|Port|SSL|TLS'',
+	''Notify license expiration via email L'', 0,
+	''^(\d+)\|(\d+)\|(\w+\.?)+\|[_a-z0-9-]+(.[_a-z0-9-]+)*@[a-z0-9-]+(.[a-z0-9-]+)*(.[a-z]{2,4})\|.*\|\d+\|[0-1]$'' );
+END;'
+		exec (@sql)
+
+		set @process = 'CW-2708 -- Create table ccRiaCat_AccountMailNotifyExpirationLicense'
+		set @sql = 'if not exists(select * from sys.tables where name=''ccRiaCat_AccountMailNotifyExpirationLicense'') begin
+create table ccRiaCat_AccountMailNotifyExpirationLicense(
+Mail varchar(255) Not NUll,
+Name varchar(255) Not null default('''')
+)
+end'
+		exec (@sql)
+
+		set @process = 'CW-2708 -- Create Index ccRiaCat_AccountMailNotifyExpirationLicense.IX_ccRiaCat_AccountMailNotifyExpirationLicense_I'
+		set @sql = 'IF NOT EXISTS (SELECT name from sys.indexes  
+           WHERE name = N''IX_ccRiaCat_AccountMailNotifyExpirationLicense_I'')   begin   
+   CREATE UNIQUE INDEX IX_ccRiaCat_AccountMailNotifyExpirationLicense_I ON ccRiaCat_AccountMailNotifyExpirationLicense (mail);   
+end'
+		exec (@sql)
+
+		set @process = 'CW-2708 -- Add Mail Send Notify license expiration'
+		set @sql = 'if not exists(select * from ccRiaCat_AccountMailNotifyExpirationLicense where Mail=''ccRiaCat_AccountMailNotifyExpirationLicense'')
+insert into ccRiaCat_AccountMailNotifyExpirationLicense (Mail) values(''instalaciones@nuxiba.com'')
+'
+		exec (@sql)
+
+		
+
 		
 
 		/* End script release */

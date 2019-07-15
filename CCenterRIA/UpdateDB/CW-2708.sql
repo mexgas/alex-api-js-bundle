@@ -59,8 +59,8 @@ BEGIN
 )
 BEGIN
 	INSERT INTO ccSettings( setting_id, valor, descripcion, STATUS, Tipo, detalle, description, bLoadSettings, validate )
-	VALUES( 216, ''1|24|smtp.gmail.com|nuxiba.prueba@gmail.com|Nuxiba2010|465|1'', ''Notificar vencimiento de licencia vía correo electrónico '', 1,
-	''X'', ''Numero dias envio del correo #DaysBefore|#HourSendMail|STMPServer|User|Password|Port|SS'',
+	VALUES( 216, ''1|24|smtp.ionos.com|notifications@centernext.net|6zJLvMd2|587|0|0'', ''Notificar vencimiento de licencia vía correo electrónico '', 1,
+	''X'', ''Numero dias envio del correo #DaysBefore|#HourSendMail|STMPServer|User|Password|Port|SSL|TLS'',
 	''Notify license expiration via email L'', 0,
 	''^(\d+)\|(\d+)\|(\w+\.?)+\|[_a-z0-9-]+(.[_a-z0-9-]+)*@[a-z0-9-]+(.[a-z0-9-]+)*(.[a-z]{2,4})\|.*\|\d+\|[0-1]$'' );
 END;'

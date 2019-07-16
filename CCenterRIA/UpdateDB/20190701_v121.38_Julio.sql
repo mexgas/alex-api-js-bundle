@@ -365,7 +365,7 @@ end'
 		exec (@sql)
 
 		set @process = 'CW-2708 -- Add Mail Send Notify license expiration'
-		set @sql = 'if not exists(select * from ccRiaCat_AccountMailNotifyExpirationLicense where Mail=''ccRiaCat_AccountMailNotifyExpirationLicense'')
+		set @sql = 'if not exists(select * from ccRiaCat_AccountMailNotifyExpirationLicense where Mail=''instalaciones@nuxiba.com'')
 insert into ccRiaCat_AccountMailNotifyExpirationLicense (Mail) values(''instalaciones@nuxiba.com'')
 '
 		exec (@sql)

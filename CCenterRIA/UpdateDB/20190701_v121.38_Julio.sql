@@ -64,11 +64,13 @@ BEGIN
 
 		exec (@sql)
 
-		SET @process = 'CW-3119 Obtener campañas ccsp_GalateaLoadCamps'
+		SET @process = 'CW-3225 Obtener campañas ccsp_GalateaLoadCamps'
 		SET @Sql = '
-CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option   SMALLINT, 
- 											   @Sup      SMALLINT = NULL, 
-                                               @TypeCamp SMALLINT
+CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
+                                              @Sup       SMALLINT = NULL, 
+                                              @TypeCamp  SMALLINT = NULL, 
+                                              @CamId     SMALLINT = NULL, 
+                                              @PinUpdate SMALLINT = NULL
 AS
      SET NOCOUNT ON;
      DECLARE @AreaId SMALLINT;
@@ -81,10 +83,18 @@ AS
                  SELECT DISTINCT 
                         camps.cam_id AS Cam_id, 
                         camps.cam_descripcion AS Cam_descripcion, 
-                        graph.graphic_id AS Frame
+                        graph.graphic_id AS Frame, 
+                        CAST(CASE
+                                 WHEN pins.Cam_Id IS NOT NULL
+                                      AND pins.Sup_Id = @Sup
+                                 THEN 1
+                                 ELSE 0
+                             END AS BIT) AS Pin
                  FROM ccCamps camps
                       LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
                       LEFT JOIN ccSupervisorCam supCam ON camps.cam_id = supCam.cam_id
+                      LEFT JOIN ccRIAWorkGroupUsers workGroup ON workGroup.User_id = supCam.user_id
+                      LEFT JOIN PinCampaings pins ON pins.Cam_Id = supCam.Cam_Id
                  WHERE supCam.user_id = @Sup
                        AND tipo = 1
                  ORDER BY camps.cam_descripcion ASC;
@@ -100,6 +110,26 @@ AS
                            AND tipo = 0
                      ORDER BY inbound.descripcion ASC;
              END;
+     END;
+     IF @option = 2 -- update Pin campaing
+         BEGIN
+             IF @PinUpdate = 1
+                 BEGIN
+                     INSERT INTO PinCampaings
+                     (Cam_Id, 
+                      Sup_Id
+                     )
+                     VALUES
+                     (@CamId, 
+                      @Sup
+                     );
+             END;
+                 ELSE
+                 IF @PinUpdate = 0
+                     BEGIN
+                         DELETE FROM PinCampaings
+                         WHERE Cam_Id = @CamId;
+                 END;
      END;
  '
 
@@ -356,6 +386,19 @@ Name varchar(255) Not null default('''')
 )
 end'
 		exec (@sql)
+
+
+
+				set @process = 'CW-3225 -- Create table PinCampaings'
+		set @sql = 'if not exists(select * from sys.tables where name=''PinCampaings'') begin
+CREATE TABLE [dbo].[PinCampaings](
+	[Cam_Id] [int] NULL,
+	[Sup_Id] [int] NULL
+) 
+
+end'
+		exec (@sql)
+
 
 		set @process = 'CW-2708 -- Create Index ccRiaCat_AccountMailNotifyExpirationLicense.IX_ccRiaCat_AccountMailNotifyExpirationLicense_I'
 		set @sql = 'IF NOT EXISTS (SELECT name from sys.indexes  

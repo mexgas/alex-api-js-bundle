@@ -1453,7 +1453,7 @@
     <value>Percentage</value>
   </data>
   <data name="percentComplete" xml:space="preserve">
-    <value />
+    <value>Effective Calling Average</value>
   </data>
   <data name="Performanceperagent" xml:space="preserve">
     <value>Performance per agent</value>

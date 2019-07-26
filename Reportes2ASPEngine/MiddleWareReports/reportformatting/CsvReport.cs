@@ -129,8 +129,7 @@ namespace MiddleWareReports
 
             }
             csv.AppendLine();
-            csv.AppendLine();
-            //Place headers                     
+            csv.AppendLine();                              
             foreach (string header in headers)
             {
 
@@ -139,11 +138,9 @@ namespace MiddleWareReports
                     csv.Append(string.Format("{0},", translatedColumns[header]));
                 }
                 else
-                {
-                    //i = headers.Count - 1;
+                {                    
                     csv.Append(string.Format("{0},", header));
-                }
-                //i++;
+                }                
             }
 
             //Place Rows
@@ -160,20 +157,13 @@ namespace MiddleWareReports
                         value = TranslatorHelper.parseDbValue(value);
 
                         if (i == 0)
-                            csv.Append(string.Format("=\"{0}\"", value));
+                            csv.Append(string.Format("\"{0}\"", value));
                         else
-                            csv.Append(string.Format(",=\"{0}\"", value));
+                            csv.Append(string.Format(",\"{0}\"", value));
                     }
-                    else
-                    {
-                        Console.WriteLine("Not exists {0}", col);
-                    }
-
                     i++;
                 }
             }
-
-
 
             return csv;
         }

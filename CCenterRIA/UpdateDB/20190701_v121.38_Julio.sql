@@ -81,28 +81,28 @@ AS
          BEGIN
              IF @TypeCamp = 1 -- Campañas salida por Supervisor
                  SELECT DISTINCT 
-                        camps.cam_id AS Cam_id, 
-                        camps.cam_descripcion AS Cam_descripcion, 
-                        graph.graphic_id AS Frame, 
-                        CAST(CASE
-                                 WHEN pins.Cam_Id IS NOT NULL
-                                      AND pins.Sup_Id = @Sup
-                                 THEN 1
-                                 ELSE 0
-                             END AS BIT) AS Pin
-                 FROM ccCamps camps
+                        rel.cam_id, 
+                        camps.cam_descripcion, 
+                        graph.graphic_id AS Frame,
+                        CASE
+                            WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                            THEN 1
+                            ELSE 0
+                        END AS Pin
+                 FROM ccSupervisorCam rel
+                      LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                    AND rel.cam_id = pin.Cam_Id
+                      LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
                       LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-                      LEFT JOIN ccSupervisorCam supCam ON camps.cam_id = supCam.cam_id
-                      LEFT JOIN ccRIAWorkGroupUsers workGroup ON workGroup.User_id = supCam.user_id
-                      LEFT JOIN PinCampaings pins ON pins.Cam_Id = supCam.Cam_Id
-                 WHERE supCam.user_id = @Sup
-                       AND tipo = 1
+                 WHERE rel.user_id = @Sup
+                       AND rel.tipo = 1
                  ORDER BY camps.cam_descripcion ASC;
              IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
                  BEGIN
-                     SELECT inbound.Inbound_id AS Cam_id, 
+                     SELECT CAST(inbound.Inbound_id AS INT) AS Cam_id, 
                             inbound.descripcion AS Cam_descripcion, 
-                            graph.graphic_id AS Frame
+                            graph.graphic_id AS Frame, 
+                            0
                      FROM ccInbound inbound
                           LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
                           LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
@@ -128,7 +128,8 @@ AS
                  IF @PinUpdate = 0
                      BEGIN
                          DELETE FROM PinCampaings
-                         WHERE Cam_Id = @CamId;
+                         WHERE Cam_Id = @CamId
+                               AND Sup_Id = @Sup;
                  END;
      END;
  '

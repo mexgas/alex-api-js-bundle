@@ -53,7 +53,7 @@ namespace MiddleWareReports
                 }
 
                 for (int i = 0; i < data.Columns.Count; i++)
-                {                    
+                {
                     string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
 
                     try
@@ -76,7 +76,7 @@ namespace MiddleWareReports
             }
             catch (Exception e)
             {
-                String temp = e.Message;                
+                String temp = e.Message;
             }
 
             //Add BOM byte to display correctly foreign characters in UTF-8 
@@ -129,21 +129,18 @@ namespace MiddleWareReports
 
             }
             csv.AppendLine();
-            csv.AppendLine();
-            //Place headers                     
+            csv.AppendLine();                              
             foreach (string header in headers)
-            {               
+            {
 
                 if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
                 {
                     csv.Append(string.Format("{0},", translatedColumns[header]));
                 }
                 else
-                {
-                    //i = headers.Count - 1;
+                {                    
                     csv.Append(string.Format("{0},", header));
-                }
-                //i++;
+                }                
             }
 
             //Place Rows
@@ -154,19 +151,19 @@ namespace MiddleWareReports
                 i = 0;
                 foreach (string col in headers)
                 {
-                    value = row[col].ToString();
-                    value = TranslatorHelper.parseDbValue(value);
+                    if (row.Table.Columns.Contains(col))
+                    {
+                        value = row[col].ToString();
+                        value = TranslatorHelper.parseDbValue(value);
 
-                    if (i == 0)
-                        csv.Append(string.Format("=\"{0}\"",value));
-                    else
-                        csv.Append(string.Format(",=\"{0}\"", value));
-
+                        if (i == 0)
+                            csv.Append(string.Format("\"{0}\"", value));
+                        else
+                            csv.Append(string.Format(",\"{0}\"", value));
+                    }
                     i++;
                 }
             }
-
-            
 
             return csv;
         }

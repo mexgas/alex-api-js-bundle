@@ -364,9 +364,11 @@ end'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRgetDialMask'')
 			begin
 				DROP PROCEDURE ccsp_DLRgetDialMask;
-			end
+			end'
+		EXEC (@Sql)
 			
-			create procedure ccsp_DLRgetDialMask
+		set @process = 'cw-2542 enmascaramiento xfer asistida'
+		set @sql = 'create procedure ccsp_DLRgetDialMask
 			@cam_id int,
 			@phone varchar(50)
 			as

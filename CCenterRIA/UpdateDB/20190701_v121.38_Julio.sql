@@ -64,11 +64,13 @@ BEGIN
 
 		exec (@sql)
 
-		SET @process = 'CW-3119 Obtener campañas ccsp_GalateaLoadCamps'
+		SET @process = 'CW-3225 Obtener campañas ccsp_GalateaLoadCamps'
 		SET @Sql = '
-CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option   SMALLINT, 
- 											   @Sup      SMALLINT = NULL, 
-                                               @TypeCamp SMALLINT
+CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
+                                              @Sup       SMALLINT = NULL, 
+                                              @TypeCamp  SMALLINT = NULL, 
+                                              @CamId     SMALLINT = NULL, 
+                                              @PinUpdate SMALLINT = NULL
 AS
      SET NOCOUNT ON;
      DECLARE @AreaId SMALLINT;
@@ -79,20 +81,28 @@ AS
          BEGIN
              IF @TypeCamp = 1 -- Campañas salida por Supervisor
                  SELECT DISTINCT 
-                        camps.cam_id AS Cam_id, 
-                        camps.cam_descripcion AS Cam_descripcion, 
-                        graph.graphic_id AS Frame
-                 FROM ccCamps camps
+                        rel.cam_id, 
+                        camps.cam_descripcion, 
+                        graph.graphic_id AS Frame,
+                        CASE
+                            WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                            THEN 1
+                            ELSE 0
+                        END AS Pin
+                 FROM ccSupervisorCam rel
+                      LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                    AND rel.cam_id = pin.Cam_Id
+                      LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
                       LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-                      LEFT JOIN ccSupervisorCam supCam ON camps.cam_id = supCam.cam_id
-                 WHERE supCam.user_id = @Sup
-                       AND tipo = 1
+                 WHERE rel.user_id = @Sup
+                       AND rel.tipo = 1
                  ORDER BY camps.cam_descripcion ASC;
              IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
                  BEGIN
-                     SELECT inbound.Inbound_id AS Cam_id, 
+                     SELECT CAST(inbound.Inbound_id AS INT) AS Cam_id, 
                             inbound.descripcion AS Cam_descripcion, 
-                            graph.graphic_id AS Frame
+                            graph.graphic_id AS Frame, 
+                            0
                      FROM ccInbound inbound
                           LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
                           LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
@@ -100,6 +110,27 @@ AS
                            AND tipo = 0
                      ORDER BY inbound.descripcion ASC;
              END;
+     END;
+     IF @option = 2 -- update Pin campaing
+         BEGIN
+             IF @PinUpdate = 1
+                 BEGIN
+                     INSERT INTO PinCampaings
+                     (Cam_Id, 
+                      Sup_Id
+                     )
+                     VALUES
+                     (@CamId, 
+                      @Sup
+                     );
+             END;
+                 ELSE
+                 IF @PinUpdate = 0
+                     BEGIN
+                         DELETE FROM PinCampaings
+                         WHERE Cam_Id = @CamId
+                               AND Sup_Id = @Sup;
+                 END;
      END;
  '
 
@@ -327,6 +358,70 @@ end --Termina Mexico
 
 end'
 		EXEC (@Sql)
+		
+		
+		set @process = 'cw-2542 enmascaramiento xfer asistida'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRgetDialMask'')
+			begin
+				DROP PROCEDURE ccsp_DLRgetDialMask;
+			end'
+		EXEC (@Sql)
+			
+		set @process = 'cw-2542 enmascaramiento xfer asistida'
+		set @sql = 'create procedure ccsp_DLRgetDialMask
+			@cam_id int,
+			@phone varchar(50)
+			as
+			declare @checkLd_In_ANILst smallint = 0
+			declare @ani varchar(50), @pais varchar(3)
+
+			SELECT @pais = valor
+			FROM ccSettings WITH (NOLOCK)
+			WHERE setting_id = 104
+
+			SELECT @checkLd_In_ANILst = valor 
+			FROM ccsettings WITH (NOLOCK) 
+			WHERE setting_id = 213
+
+			IF @pais = 1
+			BEGIN ---Mexico
+				If (@cam_id > 0 AND @checkLd_In_ANILst = 1)
+				BEGIN
+					select @ani = ltrim(rtrim(ani)) FROM ccCamps nolock WHERE cam_id = @cam_id
+					If datalength(@ani) > 0
+					BEGIN
+						SELECT @ani	ani
+						RETURN (0)
+					END
+
+					IF len(@phone) < 10 select @phone = dbo.Completa(@phone, @pais, '''')
+
+					IF len(@phone) < 10 or isnumeric(@phone) <= 0 select '''' ani
+
+					select @phone = right(@phone, 10)
+
+					SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+							  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+							  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 3)
+					If datalength(@ani) > 0
+					BEGIN
+						SELECT @ani ani
+						RETURN (0)
+					END
+					SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+							  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+							  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 2)
+					If datalength(@ani) > 0
+					BEGIN
+						SELECT @ani ani
+						RETURN (0)
+					END
+				END
+				select '''' ani
+			END
+			'
+
+		exec (@sql)
 
 
 
@@ -356,6 +451,19 @@ Name varchar(255) Not null default('''')
 )
 end'
 		exec (@sql)
+
+
+
+				set @process = 'CW-3225 -- Create table PinCampaings'
+		set @sql = 'if not exists(select * from sys.tables where name=''PinCampaings'') begin
+CREATE TABLE [dbo].[PinCampaings](
+	[Cam_Id] [int] NULL,
+	[Sup_Id] [int] NULL
+) 
+
+end'
+		exec (@sql)
+
 
 		set @process = 'CW-2708 -- Create Index ccRiaCat_AccountMailNotifyExpirationLicense.IX_ccRiaCat_AccountMailNotifyExpirationLicense_I'
 		set @sql = 'IF NOT EXISTS (SELECT name from sys.indexes  

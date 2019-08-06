@@ -22,7 +22,7 @@ DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 
 /* Version to release (use the version of your own databse)*/
-SET @version = 69
+SET @version = 70
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -54,107 +54,147 @@ BEGIN
 
 		exec (@sql)
 
+		SET @process = 'CW-2703 Correccion de la funcion'
+		SET @sql = '
+ALTER FUNCTION [dbo].[fnGetCstoTarifa](
+		@tipoLlamada_id TINYINT, 
+		@provedor_id SMALLINT, 
+		@callTime INT,
+		@country_id smallint = null)
+	RETURNS DECIMAL(10,3)  
+	AS
+	BEGIN
+
+		DECLARE @minutouno DECIMAL(10,3)  
+		DECLARE @minutoadicional DECIMAL(10,3)
+		DECLARE  @costo DECIMAL(10,3)
+		IF @provedor_id IS NOT NULL
+			BEGIN
+			SELECT @minutouno = minutouno, 
+				@minutoadicional = minutoadicional
+				FROM cstoTarifa 
+				WHERE tipollamada_id =  @tipoLlamada_id and @provedor_id = provedor_id
+			SELECT @costo = @MinutoUno + CASE WHEN ISNULL(@callTime,0) > 0 
+				THEN((CEILING(( ISNULL(@callTime,0) ) / 60.0 )- 1) * @MinutoAdicional ) 
+				ELSE 0 
+				END
+		END
+		ELSE
+			BEGIN
+				SELECT @minutouno = cost_per_min, 
+					@minutoadicional = additional_min
+					FROM ccCallCost_RIA 
+					WHERE tipollamada_id =  @tipoLlamada_id AND country_id = @country_id
+				SELECT @costo = @MinutoUno + CASE WHEN ISNULL(@callTime,0) > 0 
+					THEN((CEILING(( ISNULL(@callTime,0) ) / 60.0 )- 1) * @MinutoAdicional ) 
+					ELSE 0 
+					END
+			END
+		RETURN ISNULL(@costo, 0)
+	END'
+		EXEC (@sql)
+
 		SET @process = 'CW-2703 Correccion del sp ccspRepOutCallsDetail'
 		SET @sql = '
-			ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail] 
-				@action as tinyint,
-				@from as datetime = NULL,
-				@to as datetime = NULL
-				AS
+ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail] 
+@action as tinyint,
+@from as datetime = NULL,
+@to as datetime = NULL
+AS
 
-					IF @from IS NULL
-						SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+IF @from IS NULL
+	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
 
-					IF @to IS NULL
-						SELECT @to = getdate()
+IF @to IS NULL
+	SELECT @to = getdate()
 
-					DECLARE @IVA INT
-					DECLARE @country AS TINYINT
+DECLARE @IVA INT
+DECLARE @country AS TINYINT
 
-					SELECT @IVA = convert(INT, isnull(valor, 0))
-					FROM ccsettings
-					WHERE setting_id = 25
+SELECT @IVA = convert(INT, isnull(valor, 0))
+FROM ccsettings
+WHERE setting_id = 25
 
-					SELECT @country = convert(TINYINT, isnull(valor, 1))
-					FROM ccsettings
-					WHERE setting_id = 104
+SELECT @country = convert(TINYINT, isnull(valor, 1))
+FROM ccsettings
+WHERE setting_id = 104
 
-					IF @country IS NULL
-						SET @country = 1
+IF @country IS NULL
+	SET @country = 1
 
-					IF @action = 1
-					BEGIN
-						--Borrar lo que esta para no repetir
-						DELETE
-						FROM RepOutCallsDetail WITH (ROWLOCK)
-						WHERE DATE >= @from AND DATE < @to
+IF @action = 1
+BEGIN
+	--Borrar lo que esta para no repetir
+	DELETE
+	FROM RepOutCallsDetail WITH (ROWLOCK)
+	WHERE DATE >= @from AND DATE < @to
 
-						INSERT INTO RepOutCallsDetail
-						SELECT Call.cal_inicio AS [date],
-							Call.cal_key AS [callKey],
-							Call.cal_telefono AS [telephone],
-							Call.cal_txfer + call.cal_tring AS [transfer],
-							Call.cal_tdialog AS [dialog],
-							ISNULL(Call.cal_tMoh, 0) AS [nque],
-							Call.cal_tnotas AS [wrapup],
-							ISNULL(Tipo.[description], '''') AS [CallDisposition],
-							Call.cal_extension AS [extension],
-							isnull(Usr.user_id, 0) AS [userId],
-							ISNULL(convert(VARCHAR(255), Usr.LOGIN), ''systemTranslated_NoUserName'') [login],
-							ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
-							camps.cam_id AS [campaignId],
-							ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') AS [campaign],
-							(CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration],
-							CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country)) AS [ncost],
+	INSERT INTO RepOutCallsDetail
+	SELECT Call.cal_inicio AS [date],
+		Call.cal_key AS [callKey],
+		Call.cal_telefono AS [telephone],
+		Call.cal_txfer + call.cal_tring AS [transfer],
+		Call.cal_tdialog AS [dialog],
+		ISNULL(Call.cal_tMoh, 0) AS [nque],
+		Call.cal_tnotas AS [wrapup],
+		ISNULL(Tipo.[description], '''') AS [CallDisposition],
+		Call.cal_extension AS [extension],
+		isnull(Usr.user_id, 0) AS [userId],
+		ISNULL(convert(VARCHAR(255), Usr.LOGIN), ''systemTranslated_NoUserName'') [login],
+		ISNULL(Usr.ApellidoPaterno + '' '' + ISNULL(Usr.ApellidoMaterno, '''') + '' '' + Usr.Nombres, '''') AS [username],
+		camps.cam_id AS [campaignId],
+		ISNULL(camps.cam_descripcion, ''systemTranslated_NoCampaign'') AS [campaign],
+		(CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60) AS [duration],
+		CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country)) AS [ncost],
 
-							@IVA AS iva,
-							CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country) * (1 + (@IVA / 100.00))) AS total,
-							CASE 
-								WHEN prov.descrip IS NOT NULL THEN prov.descrip
-								ELSE ''systemTranslated_NoCarrier'' 
-							END AS [ByCarrier],
-							ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [Calltypes],
-							CASE 
-								WHEN Call.cal_manual = 0 THEN ''systemTranslated_Auto'' 
-								ELSE ''systemTranslated_Manual'' 
-							END AS [dialType], 
-							CASE 
-								WHEN cal_whoHung = 0 THEN ''systemTranslated_Client'' 
-								WHEN cal_whoHung = 1 THEN ''systemTranslated_Agent'' 
-								ELSE ''systemTranslated_AgentSurvey'' 
-							END [whoHangUp], 
-							CASE 
-								WHEN call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' 
-								ELSE isnull(sub.califSubDesc, '''') 
-							END AS [subDisposition],
-							sta.descripcion AS [dialResult], 
-							Call.cal_id AS [calId],
-							datepart(yyyy, Call.cal_inicio) AS [year],
-							datepart(mm, Call.cal_inicio) AS [month],
-							datepart(dd, Call.cal_inicio) AS [day],
-							datepart(hh, Call.cal_inicio) AS [hour],
-							datepart(mi, Call.cal_inicio) AS [minutes],
-							Call.cal_puerto,
-							ISNULL(cs.Dato1, '''') AS [data1],
-							ISNULL(cs.Dato2, '''') AS [data2],
-							ISNULL(cs.Dato3, '''') AS [data3],
-							ISNULL(cs.Dato4, '''') AS [data4],
-							ISNULL(cs.Dato5, '''') AS [data5],
-							ISNULL(Call.cal_tMsg, 0) AS [MessageTime]
-						FROM ccoCallsOut Call
-							LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id = Tipo.calif_id
-							LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
-							LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
-							LEFT JOIN ccStatusLlamada sta ON call.statuscall_id = sta.statuscall_id
-							LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
-							LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] AND tl.Country_id = @country)
-							LEFT JOIN ccTipoCalifSubOut sub ON call.califsub_id = sub.califsub_id
-							LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
-							LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
-							LEFT JOIN ccCallCost_RIA cc ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
-						WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND cal_manual IN (0, 2)
-						ORDER BY DATE
-					END'
+		@IVA AS iva,
+		CONVERT(DECIMAL(10,2), dbo.fnGetCstoTarifa(Call.tipoLlamada_id, Call.provedor_id, (CEILING((ISNULL(Call.totalCall_Time, 0) + ISNULL(Call.cal_tMsg, 0)) / 60.0) * 60),@country) * (1 + (@IVA / 100.00))) AS total,
+		CASE 
+			WHEN prov.descrip IS NOT NULL THEN prov.descrip
+			ELSE ''systemTranslated_NoCarrier'' 
+		END AS [ByCarrier],
+		ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [Calltypes],
+		CASE 
+			WHEN Call.cal_manual = 0 THEN ''systemTranslated_Auto'' 
+			ELSE ''systemTranslated_Manual'' 
+		END AS [dialType], 
+		CASE 
+			WHEN cal_whoHung = 0 THEN ''systemTranslated_Client'' 
+			WHEN cal_whoHung = 1 THEN ''systemTranslated_Agent'' 
+			ELSE ''systemTranslated_AgentSurvey'' 
+		END [whoHangUp], 
+		CASE 
+			WHEN call.califsub_id = 0 THEN ''systemTranslated_NoSubDisposition'' 
+			ELSE isnull(sub.califSubDesc, '''') 
+		END AS [subDisposition],
+		sta.descripcion AS [dialResult], 
+		Call.cal_id AS [calId],
+		datepart(yyyy, Call.cal_inicio) AS [year],
+		datepart(mm, Call.cal_inicio) AS [month],
+		datepart(dd, Call.cal_inicio) AS [day],
+		datepart(hh, Call.cal_inicio) AS [hour],
+		datepart(mi, Call.cal_inicio) AS [minutes],
+		Call.cal_puerto,
+		ISNULL(cs.Dato1, '''') AS [data1],
+		ISNULL(cs.Dato2, '''') AS [data2],
+		ISNULL(cs.Dato3, '''') AS [data3],
+		ISNULL(cs.Dato4, '''') AS [data4],
+		ISNULL(cs.Dato5, '''') AS [data5],
+		ISNULL(Call.cal_tMsg, 0) AS [MessageTime]
+	FROM ccoCallsOut Call
+		LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id = Tipo.calif_id
+		LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+		LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
+		LEFT JOIN ccStatusLlamada sta ON call.statuscall_id = sta.statuscall_id
+		LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
+		LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] AND tl.Country_id = @country)
+		LEFT JOIN ccTipoCalifSubOut sub ON call.califsub_id = sub.califsub_id
+		LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
+		LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
+		LEFT JOIN ccCallCost_RIA cc ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
+	WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND cal_manual IN (0, 2)
+	ORDER BY DATE
+END'
 		EXEC (@sql)
 
 		SET @process = 'CW-2703 Correcion del sp ccspRepOutCallBilling '
@@ -581,45 +621,7 @@ order by date
 	end'
 		EXEC (@sql)
 
-		SET @process = 'CW-2703 Correccion de la funcion'
-		SET @sql = '
-ALTER FUNCTION [dbo].[fnGetCstoTarifa](
-		@tipoLlamada_id TINYINT, 
-		@provedor_id SMALLINT, 
-		@callTime INT,
-		@country_id smallint = null)
-	RETURNS DECIMAL(10,3)  
-	AS
-	BEGIN
-
-		DECLARE @minutouno DECIMAL(10,3)  
-		DECLARE @minutoadicional DECIMAL(10,3)
-		DECLARE  @costo DECIMAL(10,3)
-		IF @provedor_id IS NOT NULL
-			BEGIN
-			SELECT @minutouno = minutouno, 
-				@minutoadicional = minutoadicional
-				FROM cstoTarifa 
-				WHERE tipollamada_id =  @tipoLlamada_id and @provedor_id = provedor_id
-			SELECT @costo = @MinutoUno + CASE WHEN ISNULL(@callTime,0) > 0 
-				THEN((CEILING(( ISNULL(@callTime,0) ) / 60.0 )- 1) * @MinutoAdicional ) 
-				ELSE 0 
-				END
-		END
-		ELSE
-			BEGIN
-				SELECT @minutouno = cost_per_min, 
-					@minutoadicional = additional_min
-					FROM ccCallCost_RIA 
-					WHERE tipollamada_id =  @tipoLlamada_id AND country_id = @country_id
-				SELECT @costo = @MinutoUno + CASE WHEN ISNULL(@callTime,0) > 0 
-					THEN((CEILING(( ISNULL(@callTime,0) ) / 60.0 )- 1) * @MinutoAdicional ) 
-					ELSE 0 
-					END
-			END
-		RETURN ISNULL(@costo, 0)
-	END'
-		EXEC (@sql)
+		
 
 		SET @process = 'CW-2703 Update del traductor'
 		SET @sql = 'Update TranslatedReports set columns = ''agentName|user|dialType|provider'' where id = 4060 '
@@ -651,53 +653,53 @@ ALTER FUNCTION [dbo].[fnGetCstoTarifa](
 
 		SET @process = 'CW-3133 Alter SP ccspRepOutDialDetail agregando la columna TipoTel '
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]   
-				@action as tinyint,  
-				@from as datetime = null,  
-				@to as datetime = null  
-				AS  
-				if @from is null  
-				select @from = convert(datetime,convert(varchar(11),getdate()))  
-				select @to = getdate()  
-				if @action = 1  begin  
-					--Borrar lo que esta para no repetir  
-					delete from RepOutDialDetail with(rowlock)  
-					where date >= @from AND date < @to  
+@action as tinyint,  
+@from as datetime = null,  
+@to as datetime = null  
+AS  
+if @from is null  
+select @from = convert(datetime,convert(varchar(11),getdate()))  
+select @to = getdate()  
+if @action = 1  begin  
+--Borrar lo que esta para no repetir  
+delete from RepOutDialDetail with(rowlock)  
+where date >= @from AND date < @to  
 
-					--Inserta informaci?n de reporte  
-					insert into RepOutDialDetail  
-					SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado, 
-					dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
-					datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
-					,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
-					isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
-					,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved, dials.disconnectCause, COALESCE(dat.description, descripcion,''N/A'') DCCustomer
-					,dials.dialType,isnull((select case dials.tipoLlamada_id when 1 then ''systemTranslated_fijo''
-						when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end
-						),''systemTranslated_Indefinite'') as TipoTel
-					FROM 
-					(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
-						case when Left(dial.TipoDialingMode,1)=''1'' then ''Preview'' else
-							 case when right(dial.TipoDialingMode,2)=''00'' then ''systemTranslated_Auto'' 
-							 when right(dial.TipoDialingMode,2) in (''10'',''01'') then ''systemTranslated_Manual'' end end as dialType,
-						dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved,dial.tipoLlamada_id 
-						FROM ccoLogDials dial (nolock)
-						left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
-						WHERE fecha >= @from AND fecha < @to) dials  
-					LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
-					LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
-					LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
-					LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id 
-					LEFT JOIN DC_Extra dat on(dat.id = substring(dials.disconnectCause,21,3))
-					WHERE fecha >= @from AND fecha < @to  
-					order by fecha  
-				 end'
+--Inserta informaci?n de reporte  
+insert into RepOutDialDetail  
+SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado, 
+dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
+datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
+,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
+isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
+,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved, dials.disconnectCause, COALESCE(dat.description, descripcion,''N/A'') DCCustomer
+,dials.dialType,isnull((select case dials.tipoLlamada_id when 1 then ''systemTranslated_fijo''
+	when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end
+	),''systemTranslated_Indefinite'') as TipoTel
+FROM 
+(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
+	case when Left(dial.TipoDialingMode,1)=''1'' then ''Preview'' else
+			case when right(dial.TipoDialingMode,2)=''00'' then ''systemTranslated_Auto'' 
+			when right(dial.TipoDialingMode,2) in (''10'',''01'') then ''systemTranslated_Manual'' end end as dialType,
+	dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved,dial.tipoLlamada_id 
+	FROM ccoLogDials dial (nolock)
+	left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
+	WHERE fecha >= @from AND fecha < @to) dials  
+LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
+LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
+LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
+LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id 
+LEFT JOIN DC_Extra dat on(dat.id = substring(dials.disconnectCause,21,3))
+WHERE fecha >= @from AND fecha < @to  
+order by fecha  
+end'
 
 		EXEC (@sql)
 
 
 
-		--IF @actualVersion = @version - 1
-			--EXEC ccsp_getVersion 'BD', @version
+		IF @actualVersion = @version - 1
+			EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN
 	END TRY

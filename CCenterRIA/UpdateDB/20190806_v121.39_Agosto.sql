@@ -42,11 +42,41 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 37
+IF @actualVersion = @version AND @actualVersionFix >= 38
 BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+
+	set @process = 'CW-2703 Creacion de la tabla ccCallCost_Ria '
+		set @sql = 'if not exists (select * from sys.tables where name = N''ccCallCost_RIA'')
+			    begin
+			        CREATE TABLE [dbo].[ccCallCost_RIA](
+						[country_id] [smallint] NOT NULL,
+						[tipoLlamada_id] [smallint] NULL,
+						[cost_per_min] [float] NULL,
+						[additional_min] [float] NULL
+					) ON [PRIMARY]
+			    end'
+
+		exec (@sql)
+
+		set @process = 'CW-2703 Creacion del indice de la tabla ccCallCost_Ria '
+		set @sql = 'if not exists (select * from sys.indexes where name = N''PK_ccCallCost'' and object_id = OBJECT_ID(N''ccCallCost_RIA''))
+				    begin
+				        CREATE UNIQUE INDEX PK_ccCallCost ON ccCallCost_RIA (country_id,tipoLlamada_id)
+				    end'
+
+		exec (@sql)
+
+		set @process = 'CW-2703 Llenado de la tabla ccCallCost_RIA'
+		set @sql = 'if not exists (select * from ccCallCost_RIA)
+begin
+	insert into ccCallCost_RIA (country_id,tipoLlamada_id,cost_per_min,additional_min)
+	select country_id,tipoLlamada_id,1,1 from cstoTipoLlamada
+end'
+
+		exec (@sql)
 
 		set @process = 'cw-3226 update ccListaNegra set Hashtel=null'
 		set @sql = 'update ccListaNegra set Hashtel=null where Hashtel is not null'

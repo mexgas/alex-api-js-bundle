@@ -8,7 +8,7 @@ Description: CW-2703
 
 
 Database: ccReportsRia
-Required version: 67
+Required version: 69
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -624,6 +624,76 @@ ALTER FUNCTION [dbo].[fnGetCstoTarifa](
 		SET @process = 'CW-2703 Update del traductor'
 		SET @sql = 'Update TranslatedReports set columns = ''agentName|user|dialType|provider'' where id = 4060 '
 		EXEC (@sql)
+
+
+		SET @process = 'CW-3133 Add Column ccoLogDials.tipoLlamada_id'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccoLogDials''))
+		begin
+			ALTER TABLE ccoLogDials  ADD tipoLlamada_id smallint  NULL 
+		end'
+
+		EXEC (@sql)
+
+	
+		SET @process = 'CW-3133 Add Column RepOutDialDetail.TipoTel'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''TipoTel'' and Object_ID = Object_ID(N''RepOutDialDetail''))
+		begin
+			ALTER TABLE RepOutDialDetail  ADD TipoTel varchar(max)  NULL 
+		end'
+
+		EXEC (@sql)
+
+		SET @process = 'CW-3133 Update TranslatedReports id 4010'
+		SET @sql = 'Update TranslatedReports set [columns]=''campaign|billed|fileMoved|dialType|TipoTel''  where id=4010'
+		EXEC (@sql)
+
+		EXEC (@sql)
+
+		SET @process = 'CW-3133 Alter SP ccspRepOutDialDetail agregando la columna TipoTel '
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDialDetail]   
+				@action as tinyint,  
+				@from as datetime = null,  
+				@to as datetime = null  
+				AS  
+				if @from is null  
+				select @from = convert(datetime,convert(varchar(11),getdate()))  
+				select @to = getdate()  
+				if @action = 1  begin  
+					--Borrar lo que esta para no repetir  
+					delete from RepOutDialDetail with(rowlock)  
+					where date >= @from AND date < @to  
+
+					--Inserta informaci?n de reporte  
+					insert into RepOutDialDetail  
+					SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'''') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'''') as resultado, 
+					dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') as campa, dials.tbusy as Msgtime,  
+					datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'''')  
+					,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
+					isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
+					,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved, dials.disconnectCause, COALESCE(dat.description, descripcion,''N/A'') DCCustomer
+					,dials.dialType,isnull((select case dials.tipoLlamada_id when 1 then ''systemTranslated_fijo''
+						when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end
+						),''systemTranslated_Indefinite'') as TipoTel
+					FROM 
+					(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
+						case when Left(dial.TipoDialingMode,1)=''1'' then ''Preview'' else
+							 case when right(dial.TipoDialingMode,2)=''00'' then ''systemTranslated_Auto'' 
+							 when right(dial.TipoDialingMode,2) in (''10'',''01'') then ''systemTranslated_Manual'' end end as dialType,
+						dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved,dial.tipoLlamada_id 
+						FROM ccoLogDials dial (nolock)
+						left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
+						WHERE fecha >= @from AND fecha < @to) dials  
+					LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
+					LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
+					LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
+					LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id 
+					LEFT JOIN DC_Extra dat on(dat.id = substring(dials.disconnectCause,21,3))
+					WHERE fecha >= @from AND fecha < @to  
+					order by fecha  
+				 end'
+
+		EXEC (@sql)
+
 
 
 		--IF @actualVersion = @version - 1

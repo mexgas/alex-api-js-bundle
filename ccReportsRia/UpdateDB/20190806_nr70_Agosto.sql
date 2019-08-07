@@ -664,6 +664,8 @@ if @action = 1  begin
 --Borrar lo que esta para no repetir  
 delete from RepOutDialDetail with(rowlock)  
 where date >= @from AND date < @to  
+declare @country smallint
+select @country=valor from ccSettings where setting_id=104
 
 --Inserta informaci?n de reporte  
 insert into RepOutDialDetail  
@@ -673,9 +675,9 @@ datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha)
 ,case when answerbit = 1 then ''systemTranslated_Charged'' else ''systemTranslated_NotCharged'' end as billed, 
 isnull(cs.Dato1,'''') as data1, isnull(cs.Dato2,'''') as data2, isnull(cs.Dato3,'''') as data3, isnull(cs.Dato4,'''') as data4, isnull(cs.Dato5,'''') as data5
 ,case when dials.[file_moved] = 1 then ''systemTranslated_Remoto'' else ''Local'' end as file_Moved, dials.disconnectCause, COALESCE(dat.description, descripcion,''N/A'') DCCustomer
-,dials.dialType,isnull((select case dials.tipoLlamada_id when 1 then ''systemTranslated_fijo''
-	when 3 then ''systemTranslated_cellPhone'' else ''systemTranslated_interno'' end
-	),''systemTranslated_Indefinite'') as TipoTel
+,dials.dialType,case when @country=1 then isnull((select case when dials.tipoLlamada_id in (1,2,5)   then ''systemTranslated_fijo''
+	when dials.tipoLlamada_id in(3,4) then ''systemTranslated_cellPhone'' else  ''systemTranslated_Indefinite'' end
+	),''systemTranslated_Indefinite'') else '''' end as TipoTel
 FROM 
 (select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
 	case when Left(dial.TipoDialingMode,1)=''1'' then ''Preview'' else

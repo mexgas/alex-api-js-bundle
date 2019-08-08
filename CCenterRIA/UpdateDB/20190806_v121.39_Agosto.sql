@@ -578,8 +578,47 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
 		exec (@sql)
-		
 
+		set @process = 'CW-3195 OLACA WebApi Y Services deshecha si existe'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaExcelTemplatesABC'')
+			begin
+				DROP PROCEDURE ccsp_GalateaExcelTemplatesABC;
+			end'
+		EXEC (@Sql)
+
+		set @process = 'CW-3195 OLACA WebApi Y Services crea'
+		set @sql = '
+					CREATE procedure [dbo].[ccsp_GalateaExcelTemplatesABC]
+					-- @Type = 1:Consulta de plantillas por archivo | 2:Detalle de plantilla por id
+					@action tinyint, 
+					@userID smallint = null, 
+					@filename varchar(100) = null,
+					@tempID smallint = null 
+
+					AS
+					set nocount on
+					if @action not in (1) or (isnull(@userID,0)=0 and isnull(@filename,'''')='''')
+						raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+					Declare @idioma tinyint
+					select @idioma=valor from ccsettings where setting_id=27
+
+					if @action=1 -- Consulta de plantillas por archivo
+					 begin
+					 	if not exists(select User_id from ccUsers where TipoUser_id in(2,6) and Status>0 and User_id=@userID)
+						 begin
+							raiserror(''ERROR. invalid user id'', 18, 1)
+							return(0)
+						 end
+
+						select Temp_id as id, Temp_Desc as name from ccTideWater_Templates
+						where User_id = @userID
+						AND PathFile = @filename
+						return(0)
+					 end
+					set nocount off
+					'
+		exec (@sql)
 		
 
 		/* End script release */

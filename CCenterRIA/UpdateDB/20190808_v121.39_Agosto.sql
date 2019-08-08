@@ -347,11 +347,6 @@ END'
 	exec (@sql)
 
 
-		------------------------------------------------- 121.03-8_20190715_1 -------------------------------------
-
-	
-
-		
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

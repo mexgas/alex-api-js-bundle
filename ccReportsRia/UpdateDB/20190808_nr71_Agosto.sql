@@ -32,22 +32,44 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-		
+
 		
 		SET @process = 'CW-2611 Create Table ccEstadosAni'
+		SET @sql = 'if not exists (select * from sys.tables where name = N''ccEstadosAni'')
+		    begin
+				CREATE TABLE [dbo].[ccEstadosAni](
+				[id_AniList] [smallint] NOT NULL,
+				[Estado] [varchar](350) NOT NULL,
+				[telAni] [varchar](30) NOT NULL,
+				[area] [varchar](20) NOT NULL
+				) ON [PRIMARY]
+			end'
+		EXEC (@sql)
 
-		SET @sql = 'CREATE TABLE [dbo].[ccEstadosAni](
-	[id_AniList] [smallint] NOT NULL,
-	[Estado] [varchar](350) NOT NULL,
-	[telAni] [varchar](30) NOT NULL,
-	[area] [varchar](20) NOT NULL
-) ON [PRIMARY]'
+		
+		
+		SET @process = 'CW-2611 Add Column RepOutDialDetail.trunk'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''trunk'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
+		begin
+			ALTER TABLE RepOutAnswAndXferCalls ADD trunk smallint NULL 
+		end'
+		EXEC (@sql)
 
+
+
+		SET @process = 'CW-2611 Add Column RepOutDialDetail.ANI'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''ANI'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
+		begin
+			ALTER TABLE RepOutAnswAndXferCalls ADD ANI varchar(30) NULL 
+		end'
 		EXEC (@sql)
 		
+
 		
 		set @process = 'CW-2611 CREATE Function [dbo].[TelAni]'
-		set @sql = 'CREATE Function [dbo].[TelAni](@tel varchar(32), @lista smallint)
+		set @sql = 'if not exists (select * from sys.objects where object_id = OBJECT_ID(N''TelAni'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		begin
+CREATE Function [dbo].[TelAni](@tel varchar(32), @lista smallint)
 RETURNS varchar(32)
 AS
 BEGIN
@@ -338,30 +360,10 @@ select @pais = valor, @ret = '''' from ccSettings where setting_id = 104
 	end --Termina Panama
 
 	return @ret
-END'
-
+END
+end'
 		exec (@sql)
-		
-
-		SET @process = 'CW-2611 Add Column RepOutDialDetail.trunk'
-
-		SET @sql = 'if not exists (select * from sys.columns where name = N''trunk'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
-		begin
-			ALTER TABLE RepOutAnswAndXferCalls ADD trunk smallint NULL 
-		end'
-
-		EXEC (@sql)
-
-
-
-		SET @process = 'CW-2611 Add Column RepOutDialDetail.ANI'
-		SET @sql = 'if not exists (select * from sys.columns where name = N''ANI'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
-		begin
-			ALTER TABLE RepOutAnswAndXferCalls ADD ANI varchar(30) NULL 
-		end'
-
-		EXEC (@sql)
-
+	
 
 		SET @process = 'CW-2611 Alter Procedure ccspRepOutAnswAndXferCalls'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]

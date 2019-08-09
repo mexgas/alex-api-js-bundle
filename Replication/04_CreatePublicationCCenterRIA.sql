@@ -838,6 +838,7 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
+	
 
 	------------------ FIN SCRIPT ------------------
 

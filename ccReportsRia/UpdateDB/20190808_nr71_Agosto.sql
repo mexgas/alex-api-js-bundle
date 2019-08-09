@@ -65,11 +65,16 @@ BEGIN
 		EXEC (@sql)
 		
 
+		SET @process = 'CW-2611 Drop Function dbo.TelAni'
+		SET @sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''TelAni'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+			begin
+				DROP FUNCTION dbo.TelAni
+			end'
+		EXEC (@sql)
+
 		
-		set @process = 'CW-2611 CREATE Function [dbo].[TelAni]'
-		set @sql = 'if not exists (select * from sys.objects where object_id = OBJECT_ID(N''TelAni'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-		begin
-CREATE Function [dbo].[TelAni](@tel varchar(32), @lista smallint)
+		SET @process = 'CW-2611 CREATE Function [dbo].[TelAni]'
+		SET @sql = 'CREATE Function [dbo].[TelAni](@tel varchar(32), @lista smallint)
 RETURNS varchar(32)
 AS
 BEGIN
@@ -360,9 +365,8 @@ select @pais = valor, @ret = '''' from ccSettings where setting_id = 104
 	end --Termina Panama
 
 	return @ret
-END
-end'
-		exec (@sql)
+END'
+		EXEC (@sql)
 	
 
 		SET @process = 'CW-2611 Alter Procedure ccspRepOutAnswAndXferCalls'

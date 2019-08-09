@@ -48,7 +48,7 @@ BEGIN
 
 		
 		
-		SET @process = 'CW-2611 Add Column RepOutDialDetail.trunk'
+		SET @process = 'CW-2611 Add Column RepOutAnswAndXferCalls.trunk'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''trunk'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
 		begin
 			ALTER TABLE RepOutAnswAndXferCalls ADD trunk smallint NULL 
@@ -57,7 +57,7 @@ BEGIN
 
 
 
-		SET @process = 'CW-2611 Add Column RepOutDialDetail.ANI'
+		SET @process = 'CW-2611 Add Column RepOutAnswAndXferCalls.ANI'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''ANI'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
 		begin
 			ALTER TABLE RepOutAnswAndXferCalls ADD ANI varchar(30) NULL 

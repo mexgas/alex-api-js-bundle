@@ -48,6 +48,271 @@ BEGIN
 
 	BEGIN TRY
 
+
+
+set @process = 'CW-3265 Agregar grupos de trabajo a AdminKolob'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadCamps'')
+    begin
+        DROP PROCEDURE ccsp_GalateaLoadCamps;
+    end'
+
+		exec (@sql)
+
+		SET @process = 'CW-3265 Agregar grupos de trabajo a AdminKolob'
+		SET @Sql = '
+
+CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
+                                              @Sup       SMALLINT = NULL, 
+                                              @TypeCamp  SMALLINT = NULL, 
+                                              @CamId     SMALLINT = NULL, 
+                                              @PinUpdate SMALLINT = NULL
+AS
+     SET NOCOUNT ON;
+     DECLARE @AreaId SMALLINT;
+     SELECT @AreaId = IDArea
+     FROM ccUsers
+     WHERE User_id = @Sup;
+     IF @option = 1 -- Get Camps
+         BEGIN
+             IF @TypeCamp = 1 -- Campañas salida por Supervisor
+                 SELECT DISTINCT 
+                        rel.cam_id, 
+                        camps.cam_descripcion, 
+                        graph.graphic_id AS Frame,
+                        CASE
+                            WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                            THEN 1
+                            ELSE 0
+                        END AS Pin
+                 FROM ccSupervisorCam rel
+                      LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                    AND rel.cam_id = pin.Cam_Id
+                      LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
+                      LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+                 WHERE rel.user_id = @Sup
+                       AND rel.tipo = 1
+                 ORDER BY camps.cam_descripcion ASC;
+             IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
+                 BEGIN
+                     SELECT CAST(inbound.Inbound_id AS INT) AS Cam_id, 
+                            inbound.descripcion AS Cam_descripcion, 
+                            graph.graphic_id AS Frame, 
+                            0
+                     FROM ccInbound inbound
+                          LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
+                          LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
+                     WHERE supCam.user_id = @Sup
+                           AND tipo = 0
+                     ORDER BY inbound.descripcion ASC;
+             END;
+     END;
+     IF @option = 2 -- update Pin campaing
+         BEGIN
+             IF @PinUpdate = 1
+                 BEGIN
+                     INSERT INTO PinCampaings
+                     (Cam_Id, 
+                      Sup_Id
+                     )
+                     VALUES
+                     (@CamId, 
+                      @Sup
+                     );
+             END;
+                 ELSE
+                 IF @PinUpdate = 0
+                     BEGIN
+                         DELETE FROM PinCampaings
+                         WHERE Cam_Id = @CamId
+                               AND Sup_Id = @Sup;
+                 END;
+     END;
+     IF @option = 3
+         BEGIN
+             SELECT DISTINCT 
+                    rel.cam_id, 
+                    camps.cam_descripcion, 
+                    graph.graphic_id AS Frame,
+                    CASE
+                        WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                        THEN 1
+                        ELSE 0
+                    END AS Pin
+             FROM ccSupervisorCam rel
+                  LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                AND rel.cam_id = pin.Cam_Id
+                  LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
+                  LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+             WHERE rel.user_id = @Sup
+                   AND rel.cam_id = @CamId
+                   AND rel.tipo = @TypeCamp;
+     END;
+		'
+exec (@sql)
+
+	set @process = 'CW-3265 Agregar grupos de trabajo al SP de login de Kolob'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminLogin;
+    end'
+
+		exec (@sql)
+
+		SET @process = 'CW-3265 Agregar grupos de trabajo al SP de login de Kolob'
+		SET @Sql = '
+
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(20) = '''', 
+                                               @Password    VARCHAR(40) = '''', 
+                                               @PasswordLwC VARCHAR(40) = NULL, 
+                                               @IPAddress   VARCHAR(20) = '''', 
+                                               @adminId     INT         = 0
+AS
+    BEGIN
+        SET NOCOUNT ON;
+        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0;
+        CREATE TABLE #temp
+        (LoginOK              INT, 
+         PswdOK               INT, 
+         User_id              SMALLINT, 
+         Nombre               VARCHAR(100), 
+         ADMServer            VARCHAR(300), 
+         AreaId               SMALLINT, 
+         ViewAvrs             INT, 
+         changeRecDisposition INT, 
+         LastPasswordchange   INT
+        );
+        INSERT INTO #temp
+        EXEC ccsp_RIAADMChecaLogin 
+             @Login, 
+             @Password, 
+             @PasswordLwC, 
+             @adminId;
+        SELECT @LoginOK = LoginOK, 
+               @PswdOK = PswdOK, 
+               @Nombre = Nombre, 
+               @ADMServer = ADMServer, 
+               @AreaId = AreaId, 
+               @ViewAvrs = ViewAvrs, 
+               @changeRecDisposition = changeRecDisposition, 
+               @PasswordExpired = LastPasswordchange
+        FROM #temp;
+        IF @LoginOK = 1
+            BEGIN
+                SELECT @User_id = User_id, 
+                       @ViewAgents = viewAgents
+                FROM ccUsers
+                WHERE Login = @Login;
+                DECLARE @LastLoginAttempt DATETIME, @LoginAttempts INT, @MaxAttemptsAllow INT, @TimeBloqued INT, @TimeFromLastAttempt INT;
+                SELECT @LastLoginAttempt = LastLoginAttempt, 
+                       @LoginAttempts = LoginAttempts, 
+                       @LastPasswordChange = LastPasswordChange
+                FROM ccUsers
+                WHERE User_id = @User_id;
+                SELECT @MaxAttemptsAllow = valor
+                FROM ccSettings
+                WHERE setting_id = 198;
+                SELECT @TimeBloqued = valor
+                FROM ccSettings
+                WHERE setting_id = 197;
+                SELECT @TimeFromLastAttempt = DATEDIFF(MINUTE, @LastLoginAttempt, GETDATE());
+                IF @LoginAttempts > @MaxAttemptsAllow
+                    BEGIN
+                        SET @LoginAttempts = 0;
+                        UPDATE ccUsers
+                          SET 
+                              LoginAttempts = 0, 
+                              LastLoginAttempt = GETDATE()
+                        WHERE User_id = @User_id;
+                END;
+                IF(@LoginAttempts >= @MaxAttemptsAllow
+                   AND @TimeFromLastAttempt < @TimeBloqued)
+                    BEGIN
+                        SET @UserBlocked = 1;
+                END;
+
+                --Checks Username match case sensitive    
+                IF CAST(@Login AS VARBINARY(200)) <>
+                (
+                    SELECT CAST(LOGIN AS VARBINARY(200))
+                    FROM ccUsers
+                    WHERE User_id = @User_id
+                )
+                    BEGIN
+                        SET @UsernameMatch = 0;
+                END;
+
+                --Increments attemps if error
+                IF @UserBlocked = 0
+                   AND (@UsernameMatch = 0
+                        OR @PswdOK = 0)
+                    BEGIN
+                        UPDATE ccUsers
+                          SET 
+                              LoginAttempts = @LoginAttempts + 1, 
+                              LastLoginAttempt = GETDATE(), 
+                              onLine = 0
+                        WHERE User_id = @User_id;
+                END;
+
+                --Sets to default to try another attempt
+                DECLARE @ExpirationTime INT;
+                SELECT @ExpirationTime = valor
+                FROM ccSettings
+                WHERE setting_id = 29;
+                SELECT @PasswordExpired = (CASE
+                                               WHEN DATEDIFF(DAY, LastPasswordChange, GETDATE()) > @ExpirationTime
+                                                    AND @ExpirationTime > 0
+                                               THEN 1
+                                               ELSE 0
+                                           END)
+                FROM ccUsers;
+                IF @UserBlocked = 0
+                   AND @UsernameMatch = 1
+                   AND @PswdOK = 1
+                   AND @PasswordExpired = 0
+                    BEGIN
+                        UPDATE ccUsers
+                          SET 
+                              LoginAttempts = 0, 
+                              LastLoginAttempt = GETDATE(), 
+                              onLine = 1
+                        WHERE User_id = @User_id;
+                END;
+                SELECT @Ext = dbo.fn_Ext_X_ip(@IPAddress);
+                
+				DECLARE @WorkGroup VARCHAR(MAX);
+                SELECT @WorkGroup = COALESCE(@WorkGroup + ''|'' + CAST(IDWG AS VARCHAR(MAX)), CAST(IDWG AS VARCHAR(MAX)))
+                FROM ccRIAWorkGroupUsers
+                WHERE User_id = @User_id;
+        END;
+        SELECT @LoginOK UserExists, 
+               @UserBlocked UserBlocked, 
+               @UsernameMatch UsernameMatch, 
+               @PswdOK PasswordMatch, 
+               CAST(@PasswordExpired AS BIT) PasswordExpired, 
+               @User_id UserID, 
+               @Nombre Name, 
+               @ADMServer ADMServer, 
+               @AreaId AreaId, 
+               @ViewAvrs ViewAvrs, 
+               @changeRecDisposition ChangeRecDisposition, 
+               @Ext Ext, 
+               @ViewAgents ViewAgents,
+			   ISNULL(@WorkGroup, 0) WorkGroup;
+    END;
+
+
+
+
+		'
+
+
+
+	exec (@sql)
+
+
+
+
 	set @process = 'CW-2703 Creacion de la tabla ccCallCost_Ria '
 	set @sql = 'if not exists (select * from sys.tables where name = N''ccCallCost_RIA'')
 		    begin

@@ -563,6 +563,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'Catalogs', @article = N'cstotarifa', @source_owner = N'dbo', @source_object = N'cstotarifa', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccRIARegistryLists', @source_owner = N'dbo', @source_object = N'ccRIARegistryLists', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccCallCost_RIA', @source_owner = N'dbo', @source_object = N'ccCallCost_RIA', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccEstadosAni', @source_owner = N'dbo', @source_object = N'ccEstadosAni', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Catalogs',  @login = @publisherlogin
@@ -581,7 +582,12 @@ if @Version_Actual >= @Version
 			use [CCenterRia]
 			exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccCallCost_RIA', @source_owner = N'dbo', @source_object = N'ccCallCost_RIA', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
-
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'ccEstadosAni')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccEstadosAni', @source_owner = N'dbo', @source_object = N'ccEstadosAni', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
 	END
 
 	/****************************/
@@ -832,6 +838,7 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
+	
 
 	------------------ FIN SCRIPT ------------------
 

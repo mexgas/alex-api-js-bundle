@@ -1404,69 +1404,69 @@ END'
 
 			INSERT INTO @iZonasTable exec ccsp_OUTcheckTimeZone @cam_id=@campid
 			select @iZonas=value from @iZonasTable
-			--Checamos si ogin>=6 and @nAgentsLogin<10 then 120
+			--Checamos si la campaña tiene horarios configurados
+			if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
+				begin
+				declare @horaUniversal as datetime
+				set @horaUniversal=getutcdate()
+
+				if @iZonas = 0 begin
+					SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+					return
+				end
+				end
+
+			else
+			begin
+				if @camSurvey > 0
+					begin
+						SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+						return
+					end
+			end
+		end
+
+		set @sql=''CREATE TABLE #NEW_JOBS
+		(callout_id int,
+			cam_id int,
+			cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+			cal_status tinyint,
+			cal_fechaDial datetime,
+			user_id int,
+			tz int,
+		tz2 int,
+		tz3 int,
+		tz4 int,
+		tz5 int,
+		tel varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+		tel2 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+		tel3 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+		tel4 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+		tel5 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+		tel_type smallint,
+		tel2_type smallint,
+		tel3_type smallint,
+		tel4_type smallint,
+		tel5_type smallint,
+		dialOrder varchar(10),
+		list_id int,
+		sequence smallint,
+		calkey varchar(max)
+		)''
+
+		-- 0=Ambas, 1=CallBacks, 2=Nuevas
+		select @topCount=valor from ccSettings where setting_id=94
+
+		if isnull(@topCount,0)=0
+			select @topCount=case when @nAgentsLogin<3 then 30
+			when @nAgentsLogin>=3 and @nAgentsLogin<6 then 70
+			when @nAgentsLogin>=6 and @nAgentsLogin<10 then 120
 			when @nAgentsLogin>=10 and @nAgentsLogin<16 then 180
 			when @nAgentsLogin>=16 then 240 else 20 end
 
 		select @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
 
-		declare @isVeranla campaña tiene horarios configurados
-      if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
-        begin
-        declare @horaUniversal as datetime
-        set @horaUniversal=getutcdate()
-
-        if @iZonas = 0 begin
-          SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-          return
-        end
-        end
-
-      else
-      begin
-        if @camSurvey > 0
-          begin
-            SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-            return
-          end
-      end
-    end
-
-    set @sql=''CREATE TABLE #NEW_JOBS
-    (callout_id int,
-      cam_id int,
-      cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-      cal_status tinyint,
-      cal_fechaDial datetime,
-      user_id int,
-      tz int,
-    tz2 int,
-    tz3 int,
-    tz4 int,
-    tz5 int,
-    tel varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-    tel2 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-    tel3 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-    tel4 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-    tel5 varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-    tel_type smallint,
-    tel2_type smallint,
-    tel3_type smallint,
-    tel4_type smallint,
-    tel5_type smallint,
-    dialOrder varchar(10),
-    list_id int,
-    sequence smallint,
-    calkey varchar(max)
-    )''
-
-    -- 0=Ambas, 1=CallBacks, 2=Nuevas
-    select @topCount=valor from ccSettings where setting_id=94
-
-    if isnull(@topCount,0)=0
-      select @topCount=case when @nAgentsLogin<3 then 30
-      when @nAgentsLogin>=3 and @nAgentsLogin<6 then 70
-      when @nAgentsLo varchar(max)
+		declare @isVerano varchar(max)
 		set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' end
 
 		if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS

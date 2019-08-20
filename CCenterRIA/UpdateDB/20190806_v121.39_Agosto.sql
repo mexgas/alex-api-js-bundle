@@ -1666,7 +1666,7 @@ AS
     exec (@sql)
 
     SET @process = 'CW-3316 Alter SP [dbo].[ccsp_GalateaLoadCamps]'
-    SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
+    SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
                                               @Sup       SMALLINT = NULL, 
                                               @TypeCamp  SMALLINT = NULL, 
                                               @CamId     SMALLINT = NULL, 

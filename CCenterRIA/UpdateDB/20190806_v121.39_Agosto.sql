@@ -56,99 +56,7 @@ set @process = 'CW-3265 Agregar grupos de trabajo a AdminKolob'
         DROP PROCEDURE ccsp_GalateaLoadCamps;
     end'
 
-		exec (@sql)
-
-		SET @process = 'CW-3265 Agregar grupos de trabajo a AdminKolob'
-		SET @Sql = '
-
-CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
-                                              @Sup       SMALLINT = NULL, 
-                                              @TypeCamp  SMALLINT = NULL, 
-                                              @CamId     SMALLINT = NULL, 
-                                              @PinUpdate SMALLINT = NULL
-AS
-     SET NOCOUNT ON;
-     DECLARE @AreaId SMALLINT;
-     SELECT @AreaId = IDArea
-     FROM ccUsers
-     WHERE User_id = @Sup;
-     IF @option = 1 -- Get Camps
-         BEGIN
-             IF @TypeCamp = 1 -- Campañas salida por Supervisor
-                 SELECT DISTINCT 
-                        rel.cam_id, 
-                        camps.cam_descripcion, 
-                        graph.graphic_id AS Frame,
-                        CASE
-                            WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
-                            THEN 1
-                            ELSE 0
-                        END AS Pin
-                 FROM ccSupervisorCam rel
-                      LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
-                                                    AND rel.cam_id = pin.Cam_Id
-                      LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
-                      LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-                 WHERE rel.user_id = @Sup
-                       AND rel.tipo = 1
-                 ORDER BY camps.cam_descripcion ASC;
-             IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
-                 BEGIN
-                     SELECT CAST(inbound.Inbound_id AS INT) AS Cam_id, 
-                            inbound.descripcion AS Cam_descripcion, 
-                            graph.graphic_id AS Frame, 
-                            0
-                     FROM ccInbound inbound
-                          LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
-                          LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
-                     WHERE supCam.user_id = @Sup
-                           AND tipo = 0
-                     ORDER BY inbound.descripcion ASC;
-             END;
-     END;
-     IF @option = 2 -- update Pin campaing
-         BEGIN
-             IF @PinUpdate = 1
-                 BEGIN
-                     INSERT INTO PinCampaings
-                     (Cam_Id, 
-                      Sup_Id
-                     )
-                     VALUES
-                     (@CamId, 
-                      @Sup
-                     );
-             END;
-                 ELSE
-                 IF @PinUpdate = 0
-                     BEGIN
-                         DELETE FROM PinCampaings
-                         WHERE Cam_Id = @CamId
-                               AND Sup_Id = @Sup;
-                 END;
-     END;
-     IF @option = 3
-         BEGIN
-             SELECT DISTINCT 
-                    rel.cam_id, 
-                    camps.cam_descripcion, 
-                    graph.graphic_id AS Frame,
-                    CASE
-                        WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
-                        THEN 1
-                        ELSE 0
-                    END AS Pin
-             FROM ccSupervisorCam rel
-                  LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
-                                                AND rel.cam_id = pin.Cam_Id
-                  LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
-                  LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-             WHERE rel.user_id = @Sup
-                   AND rel.cam_id = @CamId
-                   AND rel.tipo = @TypeCamp;
-     END;
-		'
-exec (@sql)
+	exec (@sql)
 
 	set @process = 'CW-3265 Agregar grupos de trabajo al SP de login de Kolob'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
@@ -1691,6 +1599,182 @@ END'
 		return(0)'
 	exec (@sql)
 	
+  SET @process = 'CW-3316 Alter SP [dbo].[ccspGalateaGetAgentCounters]'
+  SET @Sql = 'ALTER PROCEDURE [dbo].[ccspGalateaGetAgentCounters] @type AS     INT, 
+                                                    @sup_id AS   INT = 0, 
+                                                    @agent_id AS INT = 0, 
+                                                    @WG AS       INT = 0
+AS
+     SET NOCOUNT ON;
+     IF @type = 1
+         BEGIN
+             WITH TableUserAgent(userId)
+                  AS (SELECT DISTINCT 
+                             wgAgt.User_id AS userId --,usr.login 
+                      FROM ccriaworkgroupusers wgAdmin
+                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
+                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
+                                                     AND usr.TipoUser_id = 1
+                      WHERE wgAdmin.User_id = @sup_id)
+                  SELECT a.user_id, 
+                         a.login AS UserName, 
+                         a.Nombres + '' '' + a.ApellidoPaterno + '' '' + a.ApellidoMaterno AS Name
+                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
+                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
+                  ORDER BY a.Login ASC;
+     END;
+     IF @type = 2
+         BEGIN
+             SELECT Login UserName, 
+                    Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno Name
+             FROM ccUsers
+             WHERE User_id = @agent_id;
+     END;
+     IF @type = 3 --Agents by supervisor and WG
+         BEGIN
+             DECLARE @table2 TABLE
+             (userId INT
+              PRIMARY KEY NOT NULL
+             );
+             INSERT INTO @table2
+                    SELECT DISTINCT 
+                           wg.User_id
+                    FROM ccRIAWorkGroupUsers wg
+                         LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                    WHERE us.TipoUser_id = 1
+                          AND wg.IDWG IN
+                    (
+                        SELECT IDWG
+                        FROM ccRIAWorkGroupUsers
+                        WHERE User_id = @sup_id
+                              AND IDWG <> @WG
+                    );
+             SELECT CAST(B.User_id AS NVARCHAR(MAX)) AS AgentId
+             FROM @table2 A
+                  RIGHT JOIN
+             (
+                 SELECT DISTINCT 
+                        wg.User_id
+                 FROM ccRIAWorkGroupUsers wg
+                      LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                 WHERE wg.IDWG = @WG
+                       AND us.TipoUser_id = 1
+             ) B ON A.userId = B.User_id
+             WHERE A.userId IS NULL;
+     END;
+     SET NOCOUNT ON;'
+    exec (@sql)
+
+    SET @process = 'CW-3316 Alter SP [dbo].[ccsp_GalateaLoadCamps]'
+    SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
+                                              @Sup       SMALLINT = NULL, 
+                                              @TypeCamp  SMALLINT = NULL, 
+                                              @CamId     SMALLINT = NULL, 
+                                              @PinUpdate SMALLINT = NULL,
+                        @WG    SMALLINT = NULL
+AS
+     SET NOCOUNT ON;
+     DECLARE @AreaId SMALLINT;
+     SELECT @AreaId = IDArea
+     FROM ccUsers
+     WHERE User_id = @Sup;
+     IF @option = 1 -- Get Camps
+         BEGIN
+             IF @TypeCamp = 1 -- Campañas salida por Supervisor
+                 SELECT DISTINCT 
+                        rel.cam_id, 
+                        camps.cam_descripcion, 
+                        graph.graphic_id AS Frame,
+                        CASE
+                            WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                            THEN 1
+                            ELSE 0
+                        END AS Pin
+                 FROM ccSupervisorCam rel
+                      LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                    AND rel.cam_id = pin.Cam_Id
+                      LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
+                      LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+                 WHERE rel.user_id = @Sup
+                       AND rel.tipo = 1
+                 ORDER BY camps.cam_descripcion ASC;
+             IF @TypeCamp = 2 -- Campañas entrada por Supervisor (ACDs)
+                 BEGIN
+                     SELECT CAST(inbound.Inbound_id AS INT) AS Cam_id, 
+                            inbound.descripcion AS Cam_descripcion, 
+                            graph.graphic_id AS Frame, 
+                            0
+                     FROM ccInbound inbound
+                          LEFT JOIN ccRIAinboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
+                          LEFT JOIN ccSupervisorCam supCam ON inbound.Inbound_id = supCam.cam_id
+                     WHERE supCam.user_id = @Sup
+                           AND tipo = 0
+                     ORDER BY inbound.descripcion ASC;
+             END;
+     END;
+     IF @option = 2 -- update Pin campaing
+         BEGIN
+             IF @PinUpdate = 1
+                 BEGIN
+                     INSERT INTO PinCampaings
+                     (Cam_Id, 
+                      Sup_Id
+                     )
+                     VALUES
+                     (@CamId, 
+                      @Sup
+                     );
+             END;
+                 ELSE
+                 IF @PinUpdate = 0
+                     BEGIN
+                         DELETE FROM PinCampaings
+                         WHERE Cam_Id = @CamId
+                               AND Sup_Id = @Sup;
+                 END;
+     END;
+     IF @option = 3  --Get campaign info 
+         BEGIN
+             SELECT DISTINCT 
+                    rel.cam_id, 
+                    camps.cam_descripcion, 
+                    graph.graphic_id AS Frame,
+                    CASE
+                        WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
+                        THEN 1
+                        ELSE 0
+                    END AS Pin
+             FROM ccSupervisorCam rel
+                  LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
+                                                AND rel.cam_id = pin.Cam_Id
+                  LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
+                  LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+             WHERE rel.user_id = @Sup
+                   AND rel.cam_id = @CamId
+                   AND rel.tipo = @TypeCamp;
+     END;
+   IF @option = 4 -- Get Campaigns by Supervisor, Wg and type
+         BEGIN
+            declare @table table (
+      camId int , campType tinyint,
+      primary key (camId,campType)
+      )
+
+      insert into @table
+      select distinct IdCampEsp,Tipo from ccRIACampEspWG wg 
+      where wg.IDWG in(select IDWG from ccRIAWorkGroupUsers where User_id = @Sup and IDWG<>@WG )
+
+      select cast(B.IdCampEsp as int) as Cam_id, cast(B.Tipo as int) as Type from @table A      right join 
+      (
+      select wg.IdCampEsp, wg.Tipo from ccRIACampEspWG wg 
+      where  wg.IDWG =@WG  
+      ) B
+      on A.camId=B.IdCampEsp and A.campType=B.Tipo
+      where A.camId is null
+      order by IdCampEsp;
+
+     END;'
+    exec (@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

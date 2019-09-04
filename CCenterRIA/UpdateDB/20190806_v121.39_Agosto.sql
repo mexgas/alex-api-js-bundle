@@ -1667,11 +1667,12 @@ AS
 
     SET @process = 'CW-3316 Alter SP [dbo].[ccsp_GalateaLoadCamps]'
     SET @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaLoadCamps] @option    SMALLINT, 
-                                              @Sup       SMALLINT = NULL, 
-                                              @TypeCamp  SMALLINT = NULL, 
-                                              @CamId     SMALLINT = NULL, 
-                                              @PinUpdate SMALLINT = NULL,
-                        @WG    SMALLINT = NULL
+                                              @Sup       SMALLINT     = NULL, 
+                                              @TypeCamp  SMALLINT     = NULL, 
+                                              @CamId     SMALLINT     = NULL, 
+                                              @PinUpdate SMALLINT     = NULL, 
+                                              @Wg        SMALLINT     = NULL, 
+                                              @WgList    VARCHAR(256) = NULL
 AS
      SET NOCOUNT ON;
      DECLARE @AreaId SMALLINT;
@@ -1689,7 +1690,8 @@ AS
                             WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
                             THEN 1
                             ELSE 0
-                        END AS Pin
+                        END AS Pin, 
+                        camps.DNCScrub
                  FROM ccSupervisorCam rel
                       LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
                                                     AND rel.cam_id = pin.Cam_Id
@@ -1743,7 +1745,8 @@ AS
                         WHEN(ISNULL(pin.Cam_Id, 0)) >= 1
                         THEN 1
                         ELSE 0
-                    END AS Pin
+                    END AS Pin, 
+                    camps.DNCScrub
              FROM ccSupervisorCam rel
                   LEFT JOIN PinCampaings pin ON rel.user_id = pin.Sup_Id
                                                 AND rel.cam_id = pin.Cam_Id
@@ -1753,26 +1756,50 @@ AS
                    AND rel.cam_id = @CamId
                    AND rel.tipo = @TypeCamp;
      END;
-   IF @option = 4 -- Get Campaigns by Supervisor, Wg and type
+     IF @option = 4 -- Get Campaigns by Supervisor, Wg and type
          BEGIN
-            declare @table table (
-      camId int , campType tinyint,
-      primary key (camId,campType)
-      )
-
-      insert into @table
-      select distinct IdCampEsp,Tipo from ccRIACampEspWG wg 
-      where wg.IDWG in(select IDWG from ccRIAWorkGroupUsers where User_id = @Sup and IDWG<>@WG )
-
-      select cast(B.IdCampEsp as int) as Cam_id, cast(B.Tipo as int) as Type from @table A      right join 
-      (
-      select wg.IdCampEsp, wg.Tipo from ccRIACampEspWG wg 
-      where  wg.IDWG =@WG  
-      ) B
-      on A.camId=B.IdCampEsp and A.campType=B.Tipo
-      where A.camId is null
-      order by IdCampEsp;
-
+             DECLARE @table TABLE
+             (camId    INT, 
+              campType TINYINT,
+              PRIMARY KEY(camId, campType)
+             );
+             INSERT INTO @table
+                    SELECT DISTINCT 
+                           IdCampEsp, 
+                           Tipo
+                    FROM ccRIACampEspWG wg
+                    WHERE wg.IDWG IN
+                    (
+                        SELECT IDWG
+                        FROM ccRIAWorkGroupUsers
+                        WHERE User_id = @Sup
+                              AND IDWG <> @WG
+                    );
+             SELECT CAST(B.IdCampEsp AS INT) AS Cam_id, 
+                    CAST(B.Tipo AS INT) AS Type
+             FROM @table A
+                  RIGHT JOIN
+             (
+                 SELECT wg.IdCampEsp, 
+                        wg.Tipo
+                 FROM ccRIACampEspWG wg
+                 WHERE wg.IDWG = @WG
+             ) B ON A.camId = B.IdCampEsp
+                    AND A.campType = B.Tipo
+             WHERE A.camId IS NULL
+             ORDER BY IdCampEsp;
+     END;
+     IF @option = 5 -- Get Campaigns by Supervisor, Wgs and type
+         BEGIN
+             SELECT COUNT(IdCampEsp)
+             FROM ccRIACampEspWG
+             WHERE IDWG IN
+             (
+                 SELECT Value
+                 FROM dbo.fn_RIASplitDelimited(@WgList, ''|'')
+             )
+             AND Tipo = 1
+             AND IdCampEsp = @CamId;
      END;'
     exec (@sql)
 		/* End script release */

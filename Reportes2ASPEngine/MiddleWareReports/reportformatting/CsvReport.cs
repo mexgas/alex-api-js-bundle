@@ -15,6 +15,8 @@ namespace MiddleWareReports
         private NameValueCollection translatedColumns;
         private NameValueCollection convertedColumns;
 
+        public bool UseSignFormat { get; set; }
+
         /// <summary>
         /// Given a datatable and a reportname, it transforms the contents of the DataTable into 
         /// an csv file and gives its output as bytes.
@@ -157,9 +159,9 @@ namespace MiddleWareReports
                         value = TranslatorHelper.parseDbValue(value);
 
                         if (i == 0)
-                            csv.Append(string.Format("\"{0}\"", value));
+                            csv.Append(string.Format("{0}\"{1}\"", UseSignFormat ? "=" : "", value));
                         else
-                            csv.Append(string.Format(",\"{0}\"", value));
+                            csv.Append(string.Format(",{0}\"{1}\"", UseSignFormat ? "=" : "", value));
                     }
                     i++;
                 }

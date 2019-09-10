@@ -367,14 +367,21 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
             else //Get report in format X 
             {
+                DataBase db;
                 string logoFileName = "";
 
                 //To avoid error messages when exporting
                 Response.ClearContent();
                 Response.ClearHeaders();
 
+                MiddleWareReports.ReportFormat exportFormat = MiddleWareReports.ExportReportFactory.GenerateReport(format);
+
                 if (format.Equals("csv"))
                 {
+                    db = new DataBase();
+                    string fmt = db.getSettingValue(41);
+                    (exportFormat as CsvReport).UseSignFormat = fmt == "1";
+
                     Response.ContentType = "text/csv";
                 }
                 else if (format.Equals("pdf"))
@@ -390,7 +397,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 {
                     Response.ContentType = "text/plain";
                 }
-                MiddleWareReports.ReportFormat exportFormat = MiddleWareReports.ExportReportFactory.GenerateReport(format);
+                
                 byte[] output;
                 if (process >= 9000 && process < 10000)
                 {

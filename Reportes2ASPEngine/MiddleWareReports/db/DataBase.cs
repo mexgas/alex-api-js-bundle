@@ -30,6 +30,31 @@ namespace MiddleWareReports
         }
 
         /// <summary>
+        /// Obtener el valor de un setting
+        /// </summary>
+        /// <returns></returns>
+        public String getSettingValue(int settingId)
+        {
+            String valor = "";
+            using (SqlConnection laConnection = new SqlConnection(csb.ConnectionString))
+            {
+                SqlCommand cmd = new SqlCommand();
+                try
+                {
+                    laConnection.Open();
+                    cmd.Connection = laConnection;
+                    cmd.CommandText = string.Format("Select valor from ccSettings where setting_id = {0}", settingId);
+                    valor = cmd.ExecuteScalar().ToString();
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+            return valor;
+        }
+
+        /// <summary>
         /// Executes the specified stored procedure with the given parameters
         /// </summary>
         /// <param name="storedProcedureName">Name of the stored procedure to be executed</param>

@@ -193,7 +193,7 @@ BEGIN
 	             FROM Camplistanegra
 	             WHERE cam_id = @CamId
 	                   AND STATUS = 1;
-	             SELECT @BlackListIds AS BlackListIds;
+	             SELECT isnull(@BlackListIds,''0'') AS BlackListIds;
 	     END;'
 
 	exec (@sql)

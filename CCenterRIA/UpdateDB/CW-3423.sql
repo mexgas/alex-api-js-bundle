@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-          CREATE PROCEDURE [dbo].[ccsp_GalateaGetImportState]
+          CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
           -- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
           @action tinyint, 
           @loadID int = NULL, 

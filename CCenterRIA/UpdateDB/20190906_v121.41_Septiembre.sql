@@ -824,11 +824,13 @@ BEGIN
 		              return(0)
 		             END
 
-		            SELECT DISTINCT load_id, camName, pctg, regsLoaded, regsNotLoaded, state
+		            SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded, regsNotLoaded, state, loadDate
 		            FROM ccRIALoading riaLoad
 		            JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+					JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
 		            WHERE superCam.user_id = @userID
 		            AND superCam.tipo = 1
+					ORDER BY riaLoad.loadDate DESC
 
 		            return(0)
 		           END

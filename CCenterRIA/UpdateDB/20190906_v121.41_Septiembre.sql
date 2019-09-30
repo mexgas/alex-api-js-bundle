@@ -1019,7 +1019,16 @@ AS
              )
              AND Tipo = 1
              AND IdCampEsp = @CamId;
-     END;
+     END; 
+	 IF @option = 6 -- Get Blacklist Ids by Campaign Id
+	         BEGIN
+	             DECLARE @BlackListIds VARCHAR(MAX);
+	             SELECT @BlackListIds = COALESCE(@BlackListIds + ''|'' + CAST(idtipolista AS VARCHAR(MAX)), CAST(idtipolista AS VARCHAR(MAX)))
+	             FROM Camplistanegra
+	             WHERE cam_id = @CamId
+	                   AND STATUS = 1;
+	             SELECT isnull(@BlackListIds,''0'') AS BlackListIds;
+	     END;
 '
 
 		exec (@sql)

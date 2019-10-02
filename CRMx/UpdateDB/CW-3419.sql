@@ -223,8 +223,33 @@ ALTER PROCEDURE [dbo].[GetCRMInfo]
 			end'
     EXEC(@Sql)
 
+	set @process = 'Update old Views'  
+	 
+		set @Sql= 'Declare @Vistas Table
+			(
+				Nombre varchar(200)
+			)
 
+			insert into @Vistas
+			SELECT templateid
+			FROM CRMxTabSheets s inner join CRMxTemplates t on t.id =s.templateId
 
+			DECLARE @name VARCHAR(200)  
+			DECLARE db_cursor CURSOR FOR 
+			select ''exec GetCRMInfo 3, ''+Nombre as ActualizaView from @Vistas
+			OPEN db_cursor  
+			FETCH NEXT FROM db_cursor INTO @name  
+
+			WHILE @@FETCH_STATUS = 0  
+			BEGIN  
+				  execute( @name)
+
+				  FETCH NEXT FROM db_cursor INTO @name 
+			END 
+			CLOSE db_cursor  
+			DEALLOCATE db_cursor'
+			
+	EXEC(@Sql)
 
   /* END SCRIPT RELEASE */
 

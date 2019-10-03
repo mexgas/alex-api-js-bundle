@@ -1,13 +1,3 @@
-----11
-
-/*
-Autor: Raymundo Gonzalez
-Fecha: 2013/11/30
-Descripcion:
-	Merge Replication (Snapshots)
-
-Version minima requerida: 102
-*/
 set nocount on
 
 use [CCenterRia]

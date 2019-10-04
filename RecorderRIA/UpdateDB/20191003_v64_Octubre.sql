@@ -1,10 +1,3 @@
-/*
-Autor: Ulises Espinosa
-Descripcion: CW-3141
-
-
-Version requerida: 59
-*/
 set nocount on
 declare @Version int
 declare @Version_Actual int
@@ -49,17 +42,17 @@ end'
 
 
 
-		SET @process = 'CW- Replication DROP PROCEDURE ReportsMasterProcessPublicationHighLoad'
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationHighLoad''
+		SET @process = 'CW- Replication DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad'
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessAVRSPublicationLowLoad'')
     begin
-        DROP PROCEDURE ReportsMasterProcessPublicationHighLoad;
+        DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad;
     end'
 		EXEC (@sql)
 
-		SET @process = 'CW- ReplicationDROP PROCEDURE ReportsMasterProcessPublicationLowLoad '
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationLowLoad''
+		SET @process = 'CW- ReplicationDROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad '
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessAVRSPublicationHighLoad'')
     begin
-        DROP PROCEDURE ReportsMasterProcessPublicationLowLoad;
+        DROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad;
     end'
 		EXEC (@sql)
 

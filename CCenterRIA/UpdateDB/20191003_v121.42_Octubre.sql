@@ -177,14 +177,7 @@ END'
 	exec (@sql)
 
 	set @process = 'CW- Timeout Issues and Answer Alter SP ccsp_OUTGetCallsInfo_AllCamps'
-	set @sql = 'USE [CCenterRia]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_OUTGetCallsInfo_AllCamps]    Script Date: 09/20/2019 09:25:25 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
+	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
 @Tipo as tinyint=0
 AS
 

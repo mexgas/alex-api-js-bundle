@@ -51,17 +51,15 @@ end'
 end'
 		EXEC (@sql)
 
-
-
 		SET @process = 'CW- Replication DROP PROCEDURE ReportsMasterProcessPublicationHighLoad'
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationHighLoad''
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationHighLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessPublicationHighLoad;
     end'
 		EXEC (@sql)
 
 		SET @process = 'CW- ReplicationDROP PROCEDURE ReportsMasterProcessPublicationLowLoad '
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationLowLoad''
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationLowLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessPublicationLowLoad;
     end'

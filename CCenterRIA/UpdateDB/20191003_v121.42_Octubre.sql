@@ -48,6 +48,46 @@ BEGIN
 
 	BEGIN TRY
 
+	set @process = 'CW- Timeout Issues and Answer'
+	set @sql = 'ALTER TRIGGER [dbo].[tg_ccUsers_Consulta] ON [dbo].[ccUsers] 
+after delete
+NOT for Replication
+as begin
+set nocount on
+insert into ccusers_Consulta (User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, TipoStatusAge_id, Password, 
+ TipoUser_id, Status, TipoLLamadas, Sexo, filter, CanChangeStatus, fCreate, DialMask, 
+ XferMask, LastPasswordChange, IDArea, NotReadyRestricted, startStopRecording)
+select User_id, Login, Nombres, ApellidoPaterno, ApellidoMaterno, TipoStatusAge_id, Password, 
+ TipoUser_id, Status, TipoLLamadas, Sexo, filter, CanChangeStatus, fCreate, DialMask, 
+ XferMask, LastPasswordChange, IDArea, NotReadyRestricted, startStopRecording
+from deleted
+set nocount off
+end'
+	exec (@sql)
+
+	set @process = 'CW- Timeout Issues and Answer'
+	set @sql = 'ALTER TRIGGER [dbo].[tMD5Users] ON [dbo].[ccUsers]
+FOR INSERT, UPDATE
+NOT for Replication
+AS
+if (substring(COLUMNS_UPDATED(),1,1) & 64) > 0 
+ begin
+	if (select len(password) from inserted) = 33 and (select ascii(right(password, 1)) from inserted) = 126
+	 begin	
+	 	update ccUsers set password = left(i.password, 32)
+		from ccUsers u inner join inserted i on u.user_id = i.user_id
+		where len(i.password) = 33
+	 end
+	 
+	else
+	 begin
+		update ccUsers set password = dbo.md5(i.password)
+		from ccUsers u inner join inserted i on u.user_id = i.user_id
+		where len(i.password) <> 32 AND len(dbo.md5(i.password)) = 32
+	 end
+ end'
+	exec (@sql)
+
 
 
 	set @process = 'CW- Timeout Issues and Answer -- Alter SP ccsp_CheckDATA'
@@ -285,9 +325,7 @@ BEGIN
 END;'
 	exec (@sql)
 
-	set @process = 'CW- Timeout Issues and Answer'
-	set @sql = ''
-	exec (@sql)
+
 	
 	
 			

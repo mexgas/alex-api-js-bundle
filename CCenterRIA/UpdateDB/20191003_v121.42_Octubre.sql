@@ -9,7 +9,7 @@ Date: 2019/04/11
 Description: 
 
 Database: CCenterRia
-Required version: 121.38
+Required version: 121.41
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

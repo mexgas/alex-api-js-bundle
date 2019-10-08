@@ -48,7 +48,7 @@ BEGIN
 
 	BEGIN TRY
 
-	set @process = 'CW- Timeout Issues and Answer'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER TRIGGER [dbo].[tg_ccUsers_Consulta] ON [dbo].[ccUsers] 
 after delete
 NOT for Replication
@@ -65,7 +65,7 @@ set nocount off
 end'
 	exec (@sql)
 
-	set @process = 'CW- Timeout Issues and Answer'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER TRIGGER [dbo].[tMD5Users] ON [dbo].[ccUsers]
 FOR INSERT, UPDATE
 NOT for Replication
@@ -90,7 +90,7 @@ if (substring(COLUMNS_UPDATED(),1,1) & 64) > 0
 
 
 
-	set @process = 'CW- Timeout Issues and Answer -- Alter SP ccsp_CheckDATA'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_CheckDATA]
 AS
 set nocount on
@@ -102,7 +102,7 @@ update ccPosicion set user_id = 0
 set nocount off'
 	exec (@sql)
 
-	set @process = 'CW- Timeout Issues and Answer alter SP ccsp_GalateaGetCustomErrorMessages'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
 @cal_id INT
 AS
@@ -176,7 +176,7 @@ BEGIN
 END'
 	exec (@sql)
 
-	set @process = 'CW- Timeout Issues and Answer Alter SP ccsp_OUTGetCallsInfo_AllCamps'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
 @Tipo as tinyint=0
 AS
@@ -254,7 +254,7 @@ end
 '
 	exec (@sql)
 
-	set @process = 'CW- Timeout Issues and Answer'
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER PROCEDURE dbo.ccsp_OUTResetJobs 
 				@camid AS INT= 0
 AS

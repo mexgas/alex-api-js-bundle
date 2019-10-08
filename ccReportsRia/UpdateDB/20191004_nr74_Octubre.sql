@@ -19,19 +19,19 @@ BEGIN
 	BEGIN TRY
 		
 
-		SET @process = 'CW- Replication Create table PublicationHighLoad'
+		SET @process = 'CW-3494 Replication Create table PublicationHighLoad'
 		SET @sql = 'if not exists(select * from sys.tables where name=''PublicationHighLoad'') begin
 	create table PublicationHighLoad(namePublication varchar(255))
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Create table PublicationLowLoad'
+		SET @process = 'CW-3494 Replication Create table PublicationLowLoad'
 		SET @sql = 'if not exists(select * from sys.tables where name=''PublicationLowLoad'') begin
 	create table PublicationLowLoad(namePublication varchar(255))
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Insert PublicationHighLoad'
+		SET @process = 'CW-3494 Replication Insert PublicationHighLoad'
 		SET @sql = 'if not exists(select * from PublicationHighLoad) begin
 	insert into PublicationHighLoad values(''LogAgentesDia'')
 	insert into PublicationHighLoad values(''LogAgentesDia_Dialog'')
@@ -43,7 +43,7 @@ end'
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Insert PublicationLowLoad'
+		SET @process = 'CW-3494 Replication Insert PublicationLowLoad'
 		SET @sql = 'if not exists(select * from PublicationLowLoad) begin
 	insert into PublicationLowLoad values(''Chats'')
 	insert into PublicationLowLoad values(''ConversationMail'')
@@ -51,21 +51,21 @@ end'
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication DROP PROCEDURE ReportsMasterProcessPublicationHighLoad'
+		SET @process = 'CW-3494 Replication DROP PROCEDURE ReportsMasterProcessPublicationHighLoad'
 		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationHighLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessPublicationHighLoad;
     end'
 		EXEC (@sql)
 
-		SET @process = 'CW- ReplicationDROP PROCEDURE ReportsMasterProcessPublicationLowLoad '
+		SET @process = 'CW-3494 ReplicationDROP PROCEDURE ReportsMasterProcessPublicationLowLoad '
 		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessPublicationLowLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessPublicationLowLoad;
     end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication '
+		SET @process = 'CW-3494 Replication '
 		SET @sql = 'CREATE procedure [dbo].[ReportsMasterProcessPublicationHighLoad]
 as
 
@@ -160,7 +160,7 @@ drop table #replications
 '
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Create SP ReportsMasterProcessPublicationLowLoad'
+		SET @process = 'CW-3494 Replication Create SP ReportsMasterProcessPublicationLowLoad'
 		SET @sql = 'create procedure [dbo].[ReportsMasterProcessPublicationLowLoad]
 as
 
@@ -257,7 +257,7 @@ drop table #replications
 
 
 
-		SET @process = 'CW- Replication '
+		SET @process = 'CW-3494 Replication '
 		SET @sql = 'ALTER procedure [dbo].[ReportsMasterProcess] 
 @from as datetime=null,@WithMedia bit =1
 as
@@ -585,7 +585,7 @@ if DATEDIFF(ss,@dateStart,getdate())>@scheduleTime*60 begin
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Create Job ReportsMasterProcessPublicationHighLoad'
+		SET @process = 'CW-3494 Replication Create Job ReportsMasterProcessPublicationHighLoad'
 		SET @sql = 'USE [msdb]
 
 IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''ReportsMasterProcessPublicationHighLoad'')
@@ -654,7 +654,7 @@ QuitWithRollback:
 EndSave:'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Create Job ReportsMasterProcessPublicationLowLoad'
+		SET @process = 'CW-3494 Replication Create Job ReportsMasterProcessPublicationLowLoad'
 		SET @sql = 'USE [msdb]
 
 IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''ReportsMasterProcessPublicationLowLoad'')

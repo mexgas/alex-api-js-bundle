@@ -14,25 +14,25 @@ if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva versi
 	begin tran
 	begin try
 
-	SET @process = 'CW- Replication Create table PublicationHighLoad'
+	SET @process = 'CW-3494 Replication Create table PublicationHighLoad'
 		SET @sql = 'if not exists(select * from sys.tables where name=''PublicationHighLoad'') begin
 	create table PublicationHighLoad(namePublication varchar(255))
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Create table PublicationLowLoad'
+		SET @process = 'CW-3494 Replication Create table PublicationLowLoad'
 		SET @sql = 'if not exists(select * from sys.tables where name=''PublicationLowLoad'') begin
 	create table PublicationLowLoad(namePublication varchar(255))
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Insert PublicationHighLoad'
+		SET @process = 'CW-3494 Replication Insert PublicationHighLoad'
 		SET @sql = 'if not exists(select * from PublicationHighLoad) begin
 	insert into PublicationHighLoad values(''ccRIAWorkGroup_Calid'')
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Insert PublicationLowLoad'
+		SET @process = 'CW-3494 Replication Insert PublicationLowLoad'
 		SET @sql = 'if not exists(select * from PublicationLowLoad) begin
 	insert into PublicationLowLoad values(''Chats'')
 	insert into PublicationLowLoad values(''ConversationMail'')
@@ -42,21 +42,21 @@ end'
 
 
 
-		SET @process = 'CW- Replication DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad'
+		SET @process = 'CW-3494 Replication DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad'
 		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessAVRSPublicationLowLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessAVRSPublicationLowLoad;
     end'
 		EXEC (@sql)
 
-		SET @process = 'CW- ReplicationDROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad '
+		SET @process = 'CW-3494 ReplicationDROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad '
 		SET @sql = 'if exists (select * from sys.procedures where name = N''ReportsMasterProcessAVRSPublicationHighLoad'')
     begin
         DROP PROCEDURE ReportsMasterProcessAVRSPublicationHighLoad;
     end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication Alter SP ReportsMasterProcessAVRS '
+		SET @process = 'CW-3494 Replication Alter SP ReportsMasterProcessAVRS '
 		SET @sql = 'ALTER procedure [dbo].[ReportsMasterProcessAVRS] as
 set nocount on
 declare @replicationName varchar(max),@name varchar(255)
@@ -297,7 +297,7 @@ if DATEDIFF(mi,@dateStart,getdate())>@scheduleTime begin
 end'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication CRATE SP ReportsMasterProcessAVRSPublicationLowLoad '
+		SET @process = 'CW-3494 Replication CRATE SP ReportsMasterProcessAVRSPublicationLowLoad '
 		SET @sql = 'create procedure [dbo].[ReportsMasterProcessAVRSPublicationLowLoad] as
 set nocount on
 declare @replicationName varchar(max)
@@ -392,7 +392,7 @@ end
 drop table #replications'
 		EXEC (@sql)
 
-		SET @process = 'CW- Replication CREATE SP ReportsMasterProcessAVRSPublicationHighLoad '
+		SET @process = 'CW-3494 Replication CREATE SP ReportsMasterProcessAVRSPublicationHighLoad '
 		SET @sql = 'create procedure [dbo].[ReportsMasterProcessAVRSPublicationHighLoad] as
 set nocount on
 declare @replicationName varchar(max)
@@ -487,7 +487,7 @@ drop table #replications'
 		EXEC (@sql)
 
 
-	SET @process = 'CW- Alter SP trsp_muevegrabaciones'
+	SET @process = 'CW-3494 Alter SP trsp_muevegrabaciones'
 	SET @Sql = 'ALTER PROCEDURE [dbo].[trsp_muevegrabaciones]
 AS
 BEGIN
@@ -530,7 +530,7 @@ END
 END'
 	EXEC (@Sql)
 
-	SET @process = 'CW- Job Move Recordings'
+	SET @process = 'CW-3494 Job Move Recordings'
 	SET @Sql = 'USE [msdb]
 
 IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''Move Recordings'')
@@ -599,7 +599,7 @@ QuitWithRollback:
 EndSave:'
 	EXEC (@Sql)
 
-	SET @process = 'CW- Replication Create Job ReportsMasterProcessAVRSPublicationHighLoad'
+	SET @process = 'CW-3494 Replication Create Job ReportsMasterProcessAVRSPublicationHighLoad'
 	SET @sql = 'USE [msdb]
 
 IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''ReportsMasterProcessAVRSPublicationHighLoad'')
@@ -667,7 +667,7 @@ QuitWithRollback:
 EndSave:'
 	EXEC (@sql)
 
-	SET @process = 'CW- Replication Create Job ReportsMasterProcessAVRSPublicationHighLoad'
+	SET @process = 'CW-3494 Replication Create Job ReportsMasterProcessAVRSPublicationHighLoad'
 	SET @sql = 'USE [msdb]
 
 IF  EXISTS (SELECT job_id FROM msdb.dbo.sysjobs_view WHERE name = N''ReportsMasterProcessAVRSPublicationLowLoad'')

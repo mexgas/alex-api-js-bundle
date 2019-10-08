@@ -1,10 +1,3 @@
-/*Autor: Raymundo Gonzalez
-Fecha: 2013/11/30
-Descripcion:
-	Merge Replication (Publications)
-
-Version minima requerida: 9
-*/
 set nocount on
 
 declare @Version int, @Version_Actual int
@@ -233,6 +226,8 @@ if @Version_Actual >= @Version
 			ALTER AUTHORIZATION ON DATABASE::CCRecorderRIA TO sa
 	end
 
+	declare @retentionDay int
+	set @retentionDay=7
 
 	/*************************/
 	/*** AVRSTemplatesRate ***/
@@ -242,7 +237,8 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCRecorderRIA]
-		exec sp_addmergepublication @publication = N'AVRSTemplatesRate', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSTemplatesRate', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = @retentionDay, 
+		@allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSTemplatesRate', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -255,7 +251,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'AVRSTemplatesRate',  @login = @publisherlogin
 	END
-
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSTemplatesRate' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSTemplatesRate', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/*********************/
 	/*** AVRSTemplates ***/
@@ -265,7 +264,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCRecorderRIA]
-		exec sp_addmergepublication @publication = N'AVRSTemplates', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSTemplates', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSTemplates', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -278,6 +277,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'AVRSTemplates',  @login = @publisherlogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSTemplates' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSTemplates', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/*********************/
 	/*** AVRSRecordings ***/
@@ -287,7 +290,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCRecorderRIA]
-		exec sp_addmergepublication @publication = N'AVRSRecordings', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSRecordings', @description = N'Merge publication of database CCRecorderRIA', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSRecordings', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -297,6 +300,10 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'AVRSRecordings',  @login = @publisherlogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSRecordings' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSRecordings', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 	------------------ FIN SCRIPT ------------------

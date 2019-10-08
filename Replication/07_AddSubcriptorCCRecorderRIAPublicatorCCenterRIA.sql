@@ -1,17 +1,9 @@
-/*
-Autor: Raymundo Gonzalez
-Fecha: 2013/11/30
-Descripcion:
-	Merge Replication (Publications)
-----07 	CCenterRia
-Version minima requerida: 102
-*/
 set nocount on
 use [CCenterRia]
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '118'
+Set @Version = '121'
 
 
 create table #temp([version] int)
@@ -37,48 +29,46 @@ if @Version_Actual >= @Version
 	end
 
 	if @subscriptionServerAVRS <> '' begin
-		use [CCenterRia]
-		-- Adding Subscription
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+		use [CCenterRia]		
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'SpecialAVRS' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'SpecialAVRS', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+			name = 'ccRIAWorkGroup_Calid' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
+				exec sp_addmergesubscription @publication = N'ccRIAWorkGroup_Calid', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
+		end
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'AVRSCampEsp' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'AVRSCampEsp', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'AVRSGraphs' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'AVRSGraphs', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'AVRSSettings' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'AVRSSettings', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
-
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
-			name = 'Chats' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
-				exec sp_addmergesubscription @publication = N'Chats', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
-		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
-			name = 'SpecialAVRS' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
-				exec sp_addmergesubscription @publication = N'SpecialAVRS', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
-		end
+	
 		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'OutIn' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'OutIn', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
 
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+			name = 'Chats' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
+				exec sp_addmergesubscription @publication = N'Chats', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
+		end
+
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'ConversationMail' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
 				exec sp_addmergesubscription @publication = N'ConversationMail', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
-			name = 'ConversationMail' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
-				exec sp_addmergesubscription @publication = N'ConversationMail', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
-		end
-		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA'AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
+				
+		if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
 			name = 'Conversationtweet' and UPPER(publisher)=UPPER(publishingservername()) and publisher_db=db_name()) AND status <>2 and subscription_type <> 2 and subscription_type <> 3) begin
+
 				exec sp_addmergesubscription @publication = N'Conversationtweet', @subscriber = @subscriptionServerAVRS, @subscriber_db = N'CCRecorderRIA', @subscription_type = N'pull', @subscriber_type = N'global', @subscription_priority = 1, @sync_type = N'Automatic'
 		end
 

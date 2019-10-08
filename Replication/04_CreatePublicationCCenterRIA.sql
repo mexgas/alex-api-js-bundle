@@ -1,18 +1,9 @@
-
-/*
-Autor: Raymundo Gonzalez
-Fecha: 2013/11/30
-Descripcion:
-	Merge Replication (Publications)
-
-Version minima requerida: 118
-*/
 set nocount on
 use [ccenterria]
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '119'
+Set @Version = '121'
 
 create table #temp([version] int)
 insert into #temp
@@ -240,6 +231,9 @@ if @Version_Actual >= @Version
 			ALTER AUTHORIZATION ON DATABASE::CCenterRia TO sa
 	end
 
+	declare @retentionDay int
+	set @retentionDay=7
+
 	/****************/
 	/*** LogDials ***/
 	/****************/
@@ -248,7 +242,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'LogDials', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14,
+		exec sp_addmergepublication @publication = N'LogDials', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay,
 		 @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true',
 		 @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false',
 		 @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0,
@@ -266,6 +260,11 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'LogDials',  @login = @publisherLogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'LogDials' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'LogDials', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
+
 
 	/*********************/
 	/*** LogAgentesDia ***/
@@ -275,7 +274,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'LogAgentesDia', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'LogAgentesDia', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'LogAgentesDia', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -285,8 +284,12 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'LogAgentesDia',  @login = @publisherLogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'LogAgentesDia' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'LogAgentesDia', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
-/**********************/
+	/**********************/
 	/*** Hold ***/
 	/**********************/
 	use [CCenterRia]
@@ -294,7 +297,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Hold', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Hold', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Hold', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -303,6 +306,10 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Hold',  @login = @publisherLogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Hold' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Hold', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 	/**********************/
@@ -313,7 +320,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'CallsOutSource', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'CallsOutSource', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'CallsOutSource', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -322,6 +329,10 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'CallsOutSource',  @login = @publisherLogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'CallsOutSource' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'CallsOutSource', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 	/****************/
@@ -332,7 +343,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'CallsOut', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'CallsOut', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'CallsOut', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -341,6 +352,10 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'CallsOut',  @login = @publisherLogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'CallsOut' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'CallsOut', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 	/***************/
@@ -351,7 +366,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'CallsIn', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'CallsIn', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'CallsIn', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -372,6 +387,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'CallsIn', @article = N'DataCallIn', @source_owner = N'dbo', @source_object = N'DataCallIn', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'CallsIn' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'CallsIn', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/****************/
 	/*** OutIn ***/
@@ -381,7 +400,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'OutIn', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'OutIn', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'OutIn', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -417,6 +436,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'OutIn', @article = N'messageStatus', @source_owner = N'dbo', @source_object = N'messageStatus', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'OutIn' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'OutIn', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/*************/
 	/*** Users ***/
@@ -426,7 +449,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Users', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Users', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Users', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -449,6 +472,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'Users', @article = N'ccCampsAgente', @source_owner = N'dbo', @source_object = N'ccCampsAgente', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Users' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Users', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/****************/
 	/*** Activity ***/
@@ -458,7 +485,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Activity', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Activity', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Activity', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -480,6 +507,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'Activity', @article = N'ccChannelTransfer', @source_owner = N'dbo', @source_object = N'ccChannelTransfer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Activity' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Activity', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/***********/
 	/*** IVR ***/
@@ -489,7 +520,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'IVR', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'IVR', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'IVR', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -540,6 +571,11 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'IVR', @article = N'relationQuestionAnswer', @source_owner = N'dbo', @source_object = N'relationQuestionAnswer', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'IVR' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'IVR', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
+
 	/****************/
 	/*** Catalogs ***/
 	/****************/
@@ -548,7 +584,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Catalogs', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Catalogs', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Catalogs', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -589,6 +625,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'Catalogs', @article = N'ccEstadosAni', @source_owner = N'dbo', @source_object = N'ccEstadosAni', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Catalogs' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Catalogs', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/****************************/
 	/*** LogAgentesDia_Dialog ***/
@@ -598,7 +638,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'LogAgentesDia_Dialog', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'LogAgentesDia_Dialog', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'LogAgentesDia_Dialog', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -607,6 +647,10 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'LogAgentesDia_Dialog',  @login = @publisherlogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'LogAgentesDia_Dialog' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'LogAgentesDia_Dialog', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 	/*****************/
@@ -617,7 +661,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Callbacks', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Callbacks', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Callbacks', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -627,7 +671,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Callbacks',  @login = @publisherlogin
 	END
-
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Callbacks' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Callbacks', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 	/*************/
 	/*** Chats ***/
 	/*************/
@@ -635,7 +682,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Chats', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Chats', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Chats', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -646,6 +693,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Chats',  @login = @publisherlogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Chats' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Chats', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/*******************/
 	/*** SpecialAVRS ***/
@@ -655,7 +706,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'SpecialAVRS', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'SpecialAVRS', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'SpecialAVRS', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -666,8 +717,7 @@ if @Version_Actual >= @Version
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccUsers_Consulta', @source_owner = N'dbo', @source_object = N'ccUsers_Consulta', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'cccamps', @source_owner = N'dbo', @source_object = N'cccamps', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccriacat_workgroup', @source_owner = N'dbo', @source_object = N'ccriacat_workgroup', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
-		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccriaworkgroupusers', @source_owner = N'dbo', @source_object = N'ccriaworkgroupusers', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
-		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccRIAWorkGroup_Calid', @source_owner = N'dbo', @source_object = N'ccRIAWorkGroup_Calid', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
+		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccriaworkgroupusers', @source_owner = N'dbo', @source_object = N'ccriaworkgroupusers', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0		
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'cctipocalifout', @source_owner = N'dbo', @source_object = N'cctipocalifout', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 		exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccBaseXDB', @source_owner = N'dbo', @source_object = N'ccBaseXDB', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
@@ -676,6 +726,12 @@ if @Version_Actual >= @Version
 	END
 	ELSE
 	BEGIN
+		---Delete Add new Publications
+		if exists(SELECT P.name as namePublish,Art.name nameArticle FROM dbo.sysmergepublications P inner join dbo.sysmergearticles Art on Art.pubid=P.pubid
+				where Art.name = 'ccRIAWorkGroup_Calid' and P.name ='SpecialAVRS') begin
+			EXEC sp_dropmergearticle     @publication = 'SpecialAVRS',     @article = 'ccRIAWorkGroup_Calid',    @force_invalidate_snapshot = 1; 
+		end
+
 		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'cctipocalifout')
 		BEGIN
 			-- Adding articles
@@ -695,6 +751,36 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'SpecialAVRS', @article = N'ccUsers_Consulta', @source_owner = N'dbo', @source_object = N'ccUsers_Consulta', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'SpecialAVRS' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'SpecialAVRS', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
+
+	/****************************/
+	/*** ccRIAWorkGroup_Calid ***/
+	/****************************/
+	use [CCenterRia]
+	IF NOT EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'ccRIAWorkGroup_Calid')
+	BEGIN
+		-- Adding the merge publication
+		use [CCenterRia]
+		exec sp_addmergepublication @publication = N'ccRIAWorkGroup_Calid', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addpublication_snapshot @publication = N'ccRIAWorkGroup_Calid', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
+
+		-- Adding articles
+		use [CCenterRia]
+		
+		exec sp_addmergearticle @publication = N'ccRIAWorkGroup_Calid', @article = N'ccRIAWorkGroup_Calid', @source_owner = N'dbo', @source_object = N'ccRIAWorkGroup_Calid', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0		
+
+		-- Add login to the PAL
+		exec sp_grant_publication_access @publication = N'ccRIAWorkGroup_Calid',  @login = @publisherlogin
+	END	
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'ccRIAWorkGroup_Calid' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'ccRIAWorkGroup_Calid', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
+
+
 
 	/*******************/
 	/*** AVRSCampEsp ***/
@@ -704,7 +790,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'AVRSCampEsp', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSCampEsp', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSCampEsp', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -716,6 +802,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'AVRSCampEsp',  @login = @publisherlogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSCampEsp' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSCampEsp', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/******************/
 	/*** AVRSGraphs ***/
@@ -725,7 +815,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'AVRSGraphs', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSGraphs', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSGraphs', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -754,6 +844,10 @@ if @Version_Actual >= @Version
 			exec sp_addmergearticle @publication = N'AVRSGraphs', @article = N'ccRIAWorkGroupUsersConsulta', @source_owner = N'dbo', @source_object = N'ccRIAWorkGroupUsersConsulta', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
 		END
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSGraphs' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSGraphs', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/********************/
 	/*** AVRSSettings ***/
@@ -763,7 +857,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'AVRSSettings', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'AVRSSettings', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'AVRSSettings', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -773,6 +867,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'AVRSSettings',  @login = @publisherlogin
 	END	
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'AVRSSettings' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'AVRSSettings', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 	/**********************/
 	/*** MenuReportsRia ***/
 	/**********************/
@@ -780,7 +878,7 @@ if @Version_Actual >= @Version
 	BEGIN
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'MenuReportsRia', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'MenuReportsRia', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'MenuReportsRia', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -791,6 +889,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'MenuReportsRia',  @login = @publisherlogin
 	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'MenuReportsRia' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'MenuReportsRia', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	/********************/
 	/*** Conversation MAIL***/
@@ -800,7 +902,7 @@ if @Version_Actual >= @Version
 
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'ConversationMail', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'ConversationMail', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'ConversationMail', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -811,7 +913,11 @@ if @Version_Actual >= @Version
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'ConversationMail',  @login = @publisherlogin
-	END -----
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'ConversationMail' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'ConversationMail', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 	/********************/
 	/*** TWETTER***/
 	/********************/
@@ -821,7 +927,7 @@ if @Version_Actual >= @Version
 
 		-- Adding the merge publication
 		use [CCenterRia]
-		exec sp_addmergepublication @publication = N'Conversationtweet', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = 14, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
+		exec sp_addmergepublication @publication = N'Conversationtweet', @description = N'Merge publication of database CCenterRia', @sync_mode = N'native', @retention = @retentionDay, @allow_push = N'true', @allow_pull = N'true', @allow_anonymous = N'true', @enabled_for_internet = N'false', @snapshot_in_defaultfolder = N'true', @compress_snapshot = N'false', @ftp_port = 21, @ftp_login = N'anonymous', @allow_subscription_copy = N'false', @add_to_active_directory = N'false', @dynamic_filters = N'false', @conflict_retention = 14, @keep_partition_changes = N'false', @allow_synctoalternate = N'false', @max_concurrent_merge = 0, @max_concurrent_dynamic_snapshots = 0, @use_partition_groups = null, @publication_compatibility_level = N'90RTM', @replicate_ddl = 1, @allow_subscriber_initiated_snapshot = N'false', @allow_web_synchronization = N'false', @allow_partition_realignment = N'true', @retention_period_unit = N'days', @conflict_logging = N'both', @automatic_reinitialization_policy = 0,@generation_leveling_threshold=0
 		exec sp_addpublication_snapshot @publication = N'Conversationtweet', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 500, @active_end_time_of_day = 235959, @active_start_date = 0, @active_end_date = 0, @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publisherLogin, @publisher_password = @publisherPassword
 
 		-- Adding articles
@@ -838,7 +944,10 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
-	
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Conversationtweet' and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = N'Conversationtweet', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
+	END
 
 	------------------ FIN SCRIPT ------------------
 

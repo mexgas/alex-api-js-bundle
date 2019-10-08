@@ -1,11 +1,3 @@
-/*
-Autor: Raymundo Gonzalez 
-Fecha: 2013/11/30
-Descripcion: 
-	Merge Replication (Snapshots)
-	
-Version minima requerida: 9
-*/
 set nocount on
 use [CCRecorderRIA]
 declare @Version int, @Version_Actual int

@@ -257,7 +257,7 @@ drop table #replications
 
 
 
-		SET @process = 'CW-3494 Replication '
+		SET @process = 'CW-3494 Replication Alter SP ReportsMasterProcess '
 		SET @sql = 'ALTER procedure [dbo].[ReportsMasterProcess] 
 @from as datetime=null,@WithMedia bit =1
 as

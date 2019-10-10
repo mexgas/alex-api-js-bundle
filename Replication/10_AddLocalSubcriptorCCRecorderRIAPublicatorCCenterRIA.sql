@@ -1,11 +1,3 @@
-/*
-Autor: Raymundo Gonzalez
-Fecha: 2013/11/30
-Descripcion:
-	Merge Replication (Subscriptions)
-
-Version minima requerida: 9
-*/
 set nocount on
 use [CCRecorderRIA]
 declare @Version int, @Version_Actual int
@@ -75,6 +67,9 @@ if @Version_Actual >= @Version
 		exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'SpecialAVRS', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
 		exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'SpecialAVRS', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 
+		exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'ccRIAWorkGroup_Calid', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
+		exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'ccRIAWorkGroup_Calid', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
+
 		exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'Chats', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
 		exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'Chats', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 
@@ -113,18 +108,26 @@ if @Version_Actual >= @Version
 			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'SpecialAVRS', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
 			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'SpecialAVRS', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 		end
-
+		
 		use [CCRecorderRIA]
-		if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRia' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = 'Chats'))
+		if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRia' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = 'ccRIAWorkGroup_Calid'))
 		begin
-			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'Chats', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
-			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'Chats', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
+			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'ccRIAWorkGroup_Calid', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
+			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'ccRIAWorkGroup_Calid', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 		end
+		
 		use [CCRecorderRIA]
 		if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRia' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = 'OutIn'))
 		begin
 			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'OutIn', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
 			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'OutIn', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
+		end
+		
+		use [CCRecorderRIA]
+		if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRia' AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = 'Chats'))
+		begin
+			exec sp_addmergepullsubscription @publisher = @publicationServer, @publication = N'Chats', @publisher_db = N'CCenterRia', @subscriber_type = N'Global', @subscription_priority = 1, @description = N'', @sync_type = N'Automatic'
+			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, @publisher_db = N'CCenterRia', @publication = N'Chats', @distributor = @publicationServer, @distributor_security_mode = 0, @distributor_login = @publDistLogin, @distributor_password = @publDistPassword, @enabled_for_syncmgr = N'False', @frequency_type = 1, @frequency_interval = 0, @frequency_relative_interval = 0, @frequency_recurrence_factor = 0, @frequency_subday = 0, @frequency_subday_interval = 0, @active_start_time_of_day = 0, @active_end_time_of_day = 0, @active_start_date = 0, @active_end_date = 19950101, @alt_snapshot_folder = N'', @working_directory = N'', @use_ftp = N'False', @job_login = @jobLogin, @job_password = @jobPassword, @publisher_security_mode = 0, @publisher_login = @publDistLogin, @publisher_password = @publDistPassword, @use_interactive_resolver = N'False', @dynamic_snapshot_location = null, @use_web_sync = 0
 		end
 		----Suscripcion para Email
 		use [CCRecorderRIA]

@@ -319,13 +319,11 @@ END;'
 	exec (@sql)
 
 	set @process = 'CW-3448 Bloqueo'
-	set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
-@cal_id INT
+	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCustomErrorMessages]
+@callout_id INT
 AS
 DECLARE @disconnectCause AS VARCHAR(250)
 --VALIDA QUE EL SETTING PARA MENSAJES PERSONALIZADOS ESTA ACTIVO
-DECLARE @callout_id AS INT
 declare @today datetime
 declare @logDial_id int
 
@@ -334,8 +332,6 @@ declare @logDial_id int
 
 IF EXISTS(SELECT * FROM ccSettings WHERE setting_id = 212 and valor = 1)
 BEGIN
-	--OBTIENE EL CALLOUT_ID A TRAVES DEL CAL_ID
-	SELECT @callout_id=callout_id FROM ccoCallsOut WHERE cal_id = @cal_id
 	--VERIFICA SI EL CALLOUT_ID EXISTE
 	IF @callout_id IS NOT NULL
 	BEGIN
@@ -390,8 +386,7 @@ ELSE
 BEGIN
 	--REGRESA UN MENSAJE PREDETERMINADO PARA INFORMAR QUE EL SETTING ESTE DESHABILITADO
 	SELECT ''SETTING_DISABLED'' ''message_description''
-END
-						
+END				
 	'
 	exec (@sql)
 

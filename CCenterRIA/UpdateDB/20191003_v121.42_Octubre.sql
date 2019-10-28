@@ -49,6 +49,28 @@ BEGIN
 	BEGIN TRY
 
 	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
+	set @sql = 'if exists (select * from sys.indexes where name = N''IX_ccoDialerCamp_I'' and object_id = OBJECT_ID(N''ccoDialerCamp''))
+    begin
+        CREATE NONCLUSTERED INDEX [IX_ccoDialerCamp_I]
+ON [dbo].[ccoDialerCamp] ([cam_id])
+INCLUDE ([dialer_id])
+    end
+
+
+'
+	exec (@sql)
+
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
+	set @sql = 'if exists (select * from sys.indexes where name = N''IX_ccusers_II'' and object_id = OBJECT_ID(N''ccUsers''))
+    begin
+        CREATE NONCLUSTERED INDEX IX_ccusers_II
+ON [dbo].[ccUsers] ([TipoUser_id])
+INCLUDE ([User_id],[TipoStatusAge_id])
+
+    end'
+	exec (@sql)
+
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
 	set @sql = 'ALTER TRIGGER [dbo].[tg_ccUsers_Consulta] ON [dbo].[ccUsers] 
 after delete
 NOT for Replication
@@ -95,8 +117,8 @@ if (substring(COLUMNS_UPDATED(),1,1) & 64) > 0
 AS
 set nocount on
  
-delete ccInboundAgentes with(rowlock) where user_id not in (select user_id from ccusers where  TipoUser_id=1 and Status=1)
-delete ccCampsAgente with(rowlock) where user_id not in (select user_id from ccusers where TipoUser_id=1 and Status=1)
+delete ccInboundAgentes with(rowlock) where user_id not in (select user_id from ccusers where  TipoUser_id=1 and Status=1 and (IDArea is not null or IDArea>0))
+delete ccCampsAgente with(rowlock) where user_id not in (select user_id from ccusers where  TipoUser_id=1 and Status=1 and (IDArea is not null or IDArea>0))
 update ccPosicion set user_id = 0
 
 set nocount off'
@@ -389,6 +411,112 @@ BEGIN
 END				
 	'
 	exec (@sql)
+
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
+	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_recordingStatus]
+@callType int,
+@id int,
+@action int ,
+@recordLocalization int
+AS
+begin
+
+SET NOCOUNT ON
+	if @action=0 begin
+		declare @time int
+		if @callType=0 begin
+			select @time=cal_tDialog from ccoCallsOut with(nolock) where cal_id=@id
+		end
+		else begin
+			select @time=cal_tDialog from ccCallsIn with(nolock) where cal_id=@id
+		end
+		select case when @time>0 then 1 else 0 end as result
+	end
+	else if @action=1 begin
+		if @callType=0 begin
+			update ccoCallsOut with(rowlock) set file_moved=@recordLocalization where cal_id=@id
+		end
+		else begin
+			update ccCallsIn with(rowlock) set file_moved=@recordLocalization where cal_id=@id
+		end
+	end
+end'
+	exec (@sql)
+
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
+	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ResetAgents] AS
+
+SET NOCOUNT ON
+
+Update ccPosicion Set User_id= 0
+update ccUsers set TipoStatusAge_id=0 where TipoUser_id=1 and (IDArea is not null or IDArea>0)
+'
+	exec (@sql)
+
+	set @process = 'CW-3494 Timeout en la base datos en Issues and Answer'
+	set @sql = 'ALTER PROCEDURE dbo.ccsp_RIAAdmPrioridadTelefonos 
+				@cam_id INT, @prioridad VARCHAR(8), @callbacks BIT= 0, @Type TINYINT
+AS
+BEGIN
+
+	--Actualiza la prioridad en la tabla
+	IF @Type = 3
+	BEGIN
+		INSERT INTO ccCampsPrioridadTel
+		VALUES( @cam_id, ''12345NNN'' );
+	END;
+
+	IF @Type = 2
+	BEGIN
+
+		IF NOT EXISTS
+		(
+			SELECT *
+			FROM ccCampsPrioridadTel
+			WHERE cam_id = @cam_id
+		)
+		BEGIN
+			INSERT INTO ccCampsPrioridadTel
+			VALUES( @cam_id, @prioridad );
+		END;
+			 ELSE
+		BEGIN
+			UPDATE ccCampsPrioridadTel
+			  SET prioridad = @prioridad
+			WHERE cam_id = @cam_id;
+		END;
+
+		IF @callbacks = 1
+		BEGIN
+			--Ahora cambia todos los registros en ccoCallsoutsource.  Solo nuevos
+			UPDATE ccoCallsoutsource
+			  SET dial_tels = @prioridad
+			WHERE cam_id = @cam_id AND 
+				  callout_id IN
+			(
+				SELECT callout_id
+				FROM ccoWorkingTable
+				WHERE cam_id = @cam_id AND 
+					  cal_status = 0
+			);
+		END;
+			 ELSE
+		BEGIN
+			UPDATE ccoCallsoutsource
+			  SET dial_tels = @prioridad
+			WHERE cam_id = @cam_id;
+		END;
+	END;
+	IF @Type = 1
+	BEGIN
+		SELECT ccCamps.cam_id, Prioridad
+		FROM ccCamps, ccCampsPrioridadTel
+		WHERE ccCamps.cam_id = @cam_id AND 
+			  ccCampsPrioridadTel.cam_id = @cam_id;
+	END;
+END;'
+	exec (@sql)
+
 
 	
 	

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIADispMonitorRel](	  [relId] INT NOT NULL IDENTITY(1,1)	, [userId] SMALLINT NOT NULL	, [dispositionId] SMALLINT NOT NULL	, [type] BIT NOT NULL	, CONSTRAINT [PK_ccRIADispMonitorRel] PRIMARY KEY ([relId] ASC))

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccInboundDnis](	  [Inbound_id] SMALLINT NOT NULL	, [dni_id] SMALLINT NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccInboundDNIS] ON [dbo].[ccInboundDnis] ([dni_id] ASC)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIAChatInboundPredefinedMsg](	  [message_id] SMALLINT NOT NULL	, [Inbound_id] SMALLINT NOT NULL	, [serviceId] SMALLINT NULL)

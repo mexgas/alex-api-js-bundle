@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[Camplistanegra](	  [idtipolista] INT NULL	, [cam_id] SMALLINT NULL	, [status] BIT NULL)CREATE NONCLUSTERED INDEX [IX_Camplistanegra] ON [dbo].[Camplistanegra] ([cam_id] ASC)

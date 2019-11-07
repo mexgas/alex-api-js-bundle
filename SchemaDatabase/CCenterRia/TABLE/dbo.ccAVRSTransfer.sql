@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccAVRSTransfer](	  [id] INT NOT NULL IDENTITY(1,1)	, [cal_id] INT NULL	, [tipo] BIT NULL	, [calif_id] SMALLINT NULL	, CONSTRAINT [PK_ccAVRSTransfer] PRIMARY KEY ([id] ASC))CREATE NONCLUSTERED INDEX [IX_ccAVRSTransfer] ON [dbo].[ccAVRSTransfer] ([cal_id] ASC)

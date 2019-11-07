@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ScriptingCampaignRelation](	  [scriptingId] SMALLINT NOT NULL	, [callId] SMALLINT NOT NULL	, [callType] TINYINT NOT NULL)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIAMultimediaSignatureRel](	  [signature_id] SMALLINT NOT NULL	, [campAcd_id] SMALLINT NOT NULL)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccChatsNodeHistory](	  [chatId] INT NOT NULL	, [node] XML NULL	, [dateIn] DATETIME NULL	, [dateOut] DATETIME NULL	, [status] TINYINT NULL	, CONSTRAINT [PK_ccChatsNodeHistory] PRIMARY KEY ([chatId] ASC))

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[PinCampaings](	  [Cam_Id] INT NULL	, [Sup_Id] INT NULL)

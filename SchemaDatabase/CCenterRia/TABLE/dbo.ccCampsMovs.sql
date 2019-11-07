@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccCampsMovs](	  [cam_id] SMALLINT NOT NULL	, [TipoMov] TINYINT NOT NULL	, [NewRecords] INT NOT NULL DEFAULT(0)	, [CBRecords] INT NOT NULL DEFAULT(0)	, [fecha] SMALLDATETIME NOT NULL DEFAULT(getdate())	, [User_id] SMALLINT NULL	, [cant_agent] INT NULL	, [prevMovs] SMALLINT NULL)

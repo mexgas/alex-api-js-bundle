@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[blackListContactInbound](	  [inboundId] SMALLINT NOT NULL IDENTITY(1,1)	, [blackListId] INT NOT NULL)

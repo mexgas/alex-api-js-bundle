@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccoDatos](	  [id] TINYINT NOT NULL	, [Nombre] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [visible] BIT NULL	, [updatable] BIT NULL	, CONSTRAINT [PK_ccoDatos] PRIMARY KEY ([id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACat_Country](	  [CtyID] TINYINT NOT NULL IDENTITY(1,1)	, [CtyName] VARCHAR(35) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [CtyCode] VARCHAR(5) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [minPhoneLength] TINYINT NULL	, [maxPhoneLength] TINYINT NULL)

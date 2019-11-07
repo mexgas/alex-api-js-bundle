@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccPosicionCamps](	  [cam_id] SMALLINT NULL	, [User_id] SMALLINT NULL	, [Tipo] TINYINT NULL	, [Fecha] DATETIME NULL)

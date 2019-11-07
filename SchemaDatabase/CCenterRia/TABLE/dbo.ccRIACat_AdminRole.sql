@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACat_AdminRole](	  [Role_id] SMALLINT NOT NULL	, [Description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [priority] TINYINT NULL	, [type] TINYINT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccRIACat_Restrictions] PRIMARY KEY ([Role_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ivrActividadPto](	  [Puerto] TINYINT NOT NULL	, [flagActivo] BIT NOT NULL	, [Telefono] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Extension] VARCHAR(7) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

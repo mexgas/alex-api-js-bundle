@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRiaCat_AccountMailNotifyExpirationLicense](	  [Mail] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Name] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT(''))CREATE UNIQUE NONCLUSTERED INDEX [IX_ccRiaCat_AccountMailNotifyExpirationLicense_I] ON [dbo].[ccRiaCat_AccountMailNotifyExpirationLicense] ([Mail] ASC)

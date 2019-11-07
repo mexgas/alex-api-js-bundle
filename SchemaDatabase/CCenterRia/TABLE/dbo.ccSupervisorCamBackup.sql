@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccSupervisorCamBackup](	  [user_id] INT NOT NULL	, [cam_id] INT NOT NULL	, [tipo] INT NOT NULL	, [IDWG] INT NOT NULL	, [monitored] INT NULL)

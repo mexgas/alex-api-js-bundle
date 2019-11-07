@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[xxClienteConexiones](	  [computadora] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [usuario] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [fecha] DATETIME NOT NULL	, [activo] BIT NOT NULL)

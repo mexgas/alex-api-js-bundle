@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccoXferType](	  [XferType_id] TINYINT NOT NULL	, [description] VARCHAR(55) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

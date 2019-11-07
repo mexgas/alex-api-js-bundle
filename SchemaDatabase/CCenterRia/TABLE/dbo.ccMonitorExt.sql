@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccMonitorExt](	  [ext_id] SMALLINT NOT NULL IDENTITY(1,1)	, [Extension] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Status] VARCHAR(7) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT(1)	, [isIP] BIT NULL DEFAULT((0))	, CONSTRAINT [PK_ccMonitorExt] PRIMARY KEY ([ext_id] ASC))

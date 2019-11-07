@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccMsgFiles](	  [msg_id] INT NOT NULL IDENTITY(1,1)	, [msgFile] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Descripcion] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT('')	, [length] SMALLINT NOT NULL DEFAULT((0))	, CONSTRAINT [PK_ccMsgFiles] PRIMARY KEY ([msg_id] ASC))

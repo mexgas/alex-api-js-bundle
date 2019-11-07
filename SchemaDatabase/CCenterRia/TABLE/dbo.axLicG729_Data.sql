@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[axLicG729_Data](	  [axLic_ID] INT NOT NULL IDENTITY(1,1)	, [axLic_Desc] VARCHAR(160) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [pos_id] INT NULL	, [axLic_Status] TINYINT NULL DEFAULT((0))	, [fecha_log] DATETIME NULL)CREATE NONCLUSTERED INDEX [IX_axLicG729_Data] ON [dbo].[axLicG729_Data] ([pos_id] ASC)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[optionIVR](	  [dtmf] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [tag] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [camID] INT NULL	, [type] INT NULL)CREATE UNIQUE NONCLUSTERED INDEX [AK_optionIVR_dtmf_tag_camID] ON [dbo].[optionIVR] ([dtmf] ASC, [tag] ASC, [camID] ASC)

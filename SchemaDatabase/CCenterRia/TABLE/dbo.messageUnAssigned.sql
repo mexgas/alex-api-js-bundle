@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[messageUnAssigned](	  [messageId] INT NOT NULL	, [userId] INT NOT NULL	, [time] INT NOT NULL DEFAULT((0))	, [isLogout] BIT NOT NULL DEFAULT((0)))

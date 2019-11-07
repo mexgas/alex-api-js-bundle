@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[xxClienteHistorial](	  [callout_id] INT NOT NULL	, [fechaAct] DATETIME NOT NULL)

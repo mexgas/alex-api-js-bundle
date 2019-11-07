@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoFiltro](	  [Tipo_Filtro] TINYINT NOT NULL IDENTITY(1,1)	, [Desc_Filtro] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Status_Filtro] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccTipoFiltro] PRIMARY KEY ([Tipo_Filtro] ASC))

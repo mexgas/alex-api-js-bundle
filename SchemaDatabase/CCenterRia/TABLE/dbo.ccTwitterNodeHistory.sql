@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTwitterNodeHistory](	  [conversationTwitterId] INT NOT NULL	, [node] XML NULL	, [dateIn] DATETIME NULL	, [dateOut] DATETIME NULL	, [status] INT NULL	, CONSTRAINT [PK_ccTwitterNodeHistory] PRIMARY KEY ([conversationTwitterId] ASC))

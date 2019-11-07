@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[xxLog](	  [Hostname] VARCHAR(256) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Level] TINYINT NULL	, [Info] VARCHAR(1000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Info2] VARCHAR(1000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Date] DATETIME NOT NULL DEFAULT(getdate()))

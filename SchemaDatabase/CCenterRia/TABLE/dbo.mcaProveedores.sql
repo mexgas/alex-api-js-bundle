@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[mcaProveedores](	  [provedor_id] SMALLINT NOT NULL IDENTITY(1,1)	, [descrip] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_mcaProveedores] PRIMARY KEY ([provedor_id] ASC))

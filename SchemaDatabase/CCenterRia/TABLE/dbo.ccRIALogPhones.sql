@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIALogPhones](	  [load_id] INT NULL	, [cal_key] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [telefono] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tipoMov] SMALLINT NOT NULL	, [motivo] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

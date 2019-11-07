@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccoLogBlackList](	  [id_BalckList] INT NOT NULL IDENTITY(1,1)	, [callOut_Id] INT NULL	, [telephone] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [calKey] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [camId] INT NULL	, [DateDeleteWT] DATETIME NULL)

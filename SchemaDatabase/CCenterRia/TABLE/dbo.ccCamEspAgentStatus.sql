@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccCamEspAgentStatus](	  [id] SMALLINT NOT NULL	, [type] BIT NOT NULL	, [amount] SMALLINT NULL DEFAULT((0))	, CONSTRAINT [PK_ccCamEspAgentStatus] PRIMARY KEY ([id] ASC, [type] ASC))

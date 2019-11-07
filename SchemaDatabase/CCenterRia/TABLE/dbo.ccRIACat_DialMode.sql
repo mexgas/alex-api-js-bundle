@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACat_DialMode](	  [TipoDialingMode] TINYINT NOT NULL IDENTITY(1,1)	, [cDialingMode] VARCHAR(70) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [bStatusDialingMode] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccRIACat_DialMode] PRIMARY KEY ([TipoDialingMode] ASC))

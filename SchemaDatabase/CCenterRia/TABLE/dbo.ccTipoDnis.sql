@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoDnis](	  [tipodni_id] INT NOT NULL	, [nombre] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [prioridad] TINYINT NULL)

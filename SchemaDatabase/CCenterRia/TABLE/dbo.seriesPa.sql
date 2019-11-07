@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[seriesPa](	  [zonaGeografica] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [indicativoDestino] VARCHAR(2) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [rangoInicio] VARCHAR(8) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [rangoFinal] VARCHAR(8) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

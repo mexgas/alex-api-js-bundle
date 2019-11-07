@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenSessionOutCamp](	  [login] DATETIME NOT NULL	, [user_id] SMALLINT NOT NULL	, [cam_id] SMALLINT NOT NULL	, [pos_tot] TINYINT NOT NULL	, [pos_time] INT NOT NULL	, [pos_efect] TINYINT NOT NULL	, CONSTRAINT [PK_ccGenSessionOutCamp] PRIMARY KEY ([login] ASC, [user_id] ASC, [cam_id] ASC))

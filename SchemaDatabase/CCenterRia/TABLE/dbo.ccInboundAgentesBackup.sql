@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccInboundAgentesBackup](	  [User_id] SMALLINT NOT NULL	, [Inbound_id] SMALLINT NOT NULL	, [cli_id] INT NULL	, [prioridad] INT NOT NULL	, [skill] TINYINT NOT NULL	, [rel_id] INT NOT NULL	, [IDWG] INT NOT NULL)

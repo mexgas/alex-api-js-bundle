@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ACDlistanegra](	  [idtipolista] INT NULL	, [inbound_id] SMALLINT NULL	, [status] BIT NULL)

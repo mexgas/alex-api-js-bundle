@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[tipoTwit](	  [tipoTwit_Id] TINYINT NOT NULL IDENTITY(1,1)	, [tipoTwit] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__tipoTwit__6A518D31] PRIMARY KEY ([tipoTwit_Id] ASC))

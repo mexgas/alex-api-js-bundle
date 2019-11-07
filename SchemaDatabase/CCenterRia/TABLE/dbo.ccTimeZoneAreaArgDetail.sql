@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTimeZoneAreaArgDetail](	  [area] VARCHAR(5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [prefix] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [tz_standard] INT NULL	, [tz_daylight] INT NULL	, [location] VARCHAR(250) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

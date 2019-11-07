@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAChatMailbox](	  [ID] INT NOT NULL IDENTITY(1,1)	, [file] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [chatID] INT NOT NULL	, [status] SMALLINT NOT NULL DEFAULT((0))	, [tries] INT NOT NULL DEFAULT((0))	, [date] DATETIME NOT NULL DEFAULT(getdate()))

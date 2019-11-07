@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoPBX](	  [TipoPBX_id] SMALLINT NOT NULL	, [Descripcion] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccTipoPBX] PRIMARY KEY ([TipoPBX_id] ASC))

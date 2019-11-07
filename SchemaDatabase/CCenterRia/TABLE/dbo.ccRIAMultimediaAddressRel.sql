@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIAMultimediaAddressRel](	  [address_id] SMALLINT NOT NULL	, [campAcd_id] SMALLINT NOT NULL)

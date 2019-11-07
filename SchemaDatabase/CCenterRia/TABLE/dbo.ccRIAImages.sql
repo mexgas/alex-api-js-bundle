@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIAImages](	  [idImage] SMALLINT NOT NULL IDENTITY(1,1)	, [path] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

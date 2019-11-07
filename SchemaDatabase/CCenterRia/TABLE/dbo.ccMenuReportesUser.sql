@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccMenuReportesUser](	  [id_User] INT NOT NULL	, [id_Menu] INT NOT NULL)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccCampsHorarios](	  [cam_id] INT NOT NULL	, [Horario_id] SMALLINT NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccCampsHorarios] ON [dbo].[ccCampsHorarios] ([cam_id] ASC)

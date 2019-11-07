@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIACatFunExt](	  [id] SMALLINT NOT NULL	, [type] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_ccRIACatFunExt] PRIMARY KEY ([id] ASC))

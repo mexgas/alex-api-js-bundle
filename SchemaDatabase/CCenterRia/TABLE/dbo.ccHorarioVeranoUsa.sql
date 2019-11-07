@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccHorarioVeranoUsa](	  [inicio] DATETIME NULL	, [fin] DATETIME NULL)CREATE NONCLUSTERED INDEX [IX_ccHorarioVeranoUsa] ON [dbo].[ccHorarioVeranoUsa] ([inicio] ASC)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccAbandonoSalida_Chart](	  [cam_id] INT NULL	, [AbndPctg] FLOAT NULL	, [timestamp] SMALLDATETIME NULL)CREATE NONCLUSTERED INDEX [IX_ccAbandonoSalida_Chart] ON [dbo].[ccAbandonoSalida_Chart] ([cam_id] ASC)

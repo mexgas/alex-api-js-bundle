@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccCampsMovsAgts](	  [superID] INT NOT NULL	, [user_id] INT NOT NULL	, [EC_id] INT NOT NULL	, [tipoAsig] INT NOT NULL	, [tipoMov] INT NOT NULL	, [fecha] DATETIME NOT NULL DEFAULT(getdate()))

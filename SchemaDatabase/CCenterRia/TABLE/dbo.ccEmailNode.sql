@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccEmailNode](	  [emailId] INT NOT NULL	, [node] XML NOT NULL	, [dateIn] DATETIME NOT NULL	, [dateOut] DATETIME NULL	, [status] INT NOT NULL DEFAULT((0))	, CONSTRAINT [PK__ccEmailNode__0DCFD398] PRIMARY KEY ([emailId] ASC))

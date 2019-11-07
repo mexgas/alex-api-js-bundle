@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccCampsAgenteBackup](	  [user_id] SMALLINT NULL	, [cam_id] SMALLINT NOT NULL	, [prioridad] TINYINT NOT NULL	, [skill] TINYINT NOT NULL	, [rel_id] INT NOT NULL	, [IDWG] INT NOT NULL)

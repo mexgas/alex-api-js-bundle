@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccsupervisorcam](	  [user_id] INT NOT NULL	, [cam_id] INT NOT NULL	, [tipo] INT NOT NULL	, [IDWG] INT NOT NULL DEFAULT((0))	, [monitored] INT NULL DEFAULT((1))	, CONSTRAINT [PK_ccSupervisorCam] PRIMARY KEY ([user_id] ASC, [cam_id] ASC, [tipo] ASC, [IDWG] ASC))CREATE NONCLUSTERED INDEX [ix_tipo_1] ON [dbo].[ccsupervisorcam] ([tipo] ASC)

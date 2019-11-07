@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_TPL_MODO](	  [modo_graba_id] TINYINT NOT NULL	, [tpl_id] INT NOT NULL	, [porcentaje] INT NOT NULL DEFAULT((0))	, [callsin] BIGINT NOT NULL DEFAULT((0))	, [records] BIGINT NOT NULL DEFAULT((0)))

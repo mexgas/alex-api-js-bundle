@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[RIA_KEYSTARJ_PBX](	  [tipo_tarj_id] INT NOT NULL	, [pbx_id] INT NOT NULL	, [num_teclas] SMALLINT NOT NULL)

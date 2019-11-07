@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_TPL_HORARIOS](	  [tpl_id] INT NOT NULL	, [val_id] INT NOT NULL)

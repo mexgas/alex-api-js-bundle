@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_ESP_EXTENSION](	  [val_id] INT NOT NULL	, [esp_id] INT NOT NULL	, [tpl_id] INT NOT NULL)

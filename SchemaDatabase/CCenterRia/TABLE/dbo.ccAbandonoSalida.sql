@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccAbandonoSalida](	  [cam_id] INT NOT NULL	, [AbndPctg] FLOAT NULL	, CONSTRAINT [PK__ccAbandonoSalida__39987BE6] PRIMARY KEY ([cam_id] ASC))

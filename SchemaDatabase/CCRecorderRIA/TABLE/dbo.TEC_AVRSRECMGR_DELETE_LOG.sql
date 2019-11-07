@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TEC_AVRSRECMGR_DELETE_LOG](	  [id] INT NOT NULL IDENTITY(1,1)	, [admin_id] INT NULL	, [delete_date] DATETIME NULL)

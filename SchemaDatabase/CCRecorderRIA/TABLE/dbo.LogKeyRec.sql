@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[LogKeyRec](	  [Id] INT NOT NULL IDENTITY(1,1)	, [CurrentKeyEnc] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [NewKeyEnc] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [DateUpdate] DATETIME NULL)

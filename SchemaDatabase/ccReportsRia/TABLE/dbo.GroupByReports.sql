@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[GroupByReports](	  [id] INT NOT NULL	, [columns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [groupByColumns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

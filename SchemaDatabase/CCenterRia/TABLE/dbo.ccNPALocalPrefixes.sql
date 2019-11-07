@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccNPALocalPrefixes](	  [NPA] VARCHAR(5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [NXX] VARCHAR(5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

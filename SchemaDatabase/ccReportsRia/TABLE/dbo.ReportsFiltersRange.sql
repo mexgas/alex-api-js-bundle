@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ReportsFiltersRange](	  [reportName] NVARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [filterName] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [id] INT NOT NULL	, CONSTRAINT [PK__ReportsF__4BC6BEE103176CA4] PRIMARY KEY ([reportName] ASC, [filterName] ASC, [id] ASC))

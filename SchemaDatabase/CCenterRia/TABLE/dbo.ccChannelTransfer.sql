@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccChannelTransfer](	  [pbxId] TINYINT NOT NULL	, [proveedorId] TINYINT NOT NULL	, [startChannel] INT NOT NULL	, [endChannel] INT NOT NULL	, CONSTRAINT [PK__ccChannelTransfe__38852773] PRIMARY KEY ([pbxId] ASC, [proveedorId] ASC))

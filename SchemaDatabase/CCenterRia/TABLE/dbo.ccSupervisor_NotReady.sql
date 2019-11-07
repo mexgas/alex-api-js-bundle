@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccSupervisor_NotReady](	  [user_id] INT NOT NULL	, [TipoNotReady_id] SMALLINT NOT NULL	, CONSTRAINT [PK_ccSupervisorND] PRIMARY KEY ([user_id] ASC, [TipoNotReady_id] ASC))

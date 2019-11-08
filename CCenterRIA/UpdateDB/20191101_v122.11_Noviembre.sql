@@ -131,6 +131,56 @@ BEGIN
 				 ''.*'')
 		'
 	exec (@sql)
+
+	set @process = 'CenterScript -- drop sp getACDCampaignList'
+	set @sql = 'if exists (select * from sys.procedures where name = N''cs_GetACDCampaignList'')
+    begin
+        DROP PROCEDURE cs_GetACDCampaignList;
+    end'
+    exec (@sql)
+
+    set @process = 'CenterScript -- create sp getACDCampaignList'
+    set @sql = '
+    	CREATE PROCEDURE [dbo].[cs_GetACDCampaignList] @action AS SMALLINT
+AS
+IF (@action = 1)
+BEGIN
+	SELECT cam_id AS [cam_id]
+		,cam_descripcion AS [name]
+	FROM ccCamps
+	WHERE cam_activo = 1 and cam_id not in (select Cam_id from CW_CenterScript..Campaign )
+		AND IDArea > 0
+END
+
+IF (@action = 2)
+BEGIN
+	SELECT inbound_id
+		,descripcion AS [name]
+	FROM ccInbound
+	WHERE STATUS = 1 and Inbound_id not in (select Inbound_id from CW_CenterScript..ACD)
+		AND IDArea > 0
+END
+
+IF (@action = 3)
+BEGIN
+	SELECT cam_id AS [cam_id]
+		,cam_descripcion AS [name]
+	FROM ccCamps
+	WHERE cam_activo = 1 
+		AND IDArea > 0
+END
+
+IF (@action = 4)
+BEGIN
+	SELECT inbound_id
+		,descripcion AS [name]
+	FROM ccInbound
+	WHERE STATUS = 1 
+		AND IDArea > 0
+END
+
+    ' 
+    exec (@sql)
 			
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

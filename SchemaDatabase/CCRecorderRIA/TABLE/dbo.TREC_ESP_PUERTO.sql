@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_ESP_PUERTO](	  [val_id] INT NOT NULL	, [esp_id] INT NOT NULL DEFAULT((0))	, [tpl_id] INT NOT NULL DEFAULT((0)))

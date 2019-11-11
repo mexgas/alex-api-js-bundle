@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIAUserRole](	  [User_id] SMALLINT NOT NULL	, [Role_id] SMALLINT NOT NULL	, [type] TINYINT NOT NULL DEFAULT((1)))

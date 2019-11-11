@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[Numbers](	  [Number] INT NOT NULL	, CONSTRAINT [PK__Numbers__3AD6B8E2] PRIMARY KEY ([Number] ASC))

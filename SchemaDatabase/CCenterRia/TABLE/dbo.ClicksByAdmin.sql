@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ClicksByAdmin](	  [id] INT NOT NULL IDENTITY(1,1)	, [userId] INT NULL	, [campId] INT NULL	, [clicks] INT NULL	, [date] DATETIME NULL)

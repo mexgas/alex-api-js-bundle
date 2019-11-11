@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccPosicionEspecialidad](	  [Inbound_id] SMALLINT NULL	, [User_id] SMALLINT NULL	, [Tipo] TINYINT NULL	, [Fecha] DATETIME NULL)

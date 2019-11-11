@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccGenInCalif](	  [timegroup] SMALLDATETIME NOT NULL	, [inbound_id] SMALLINT NOT NULL	, [user_id] SMALLINT NOT NULL	, [calif_id] SMALLINT NOT NULL	, [amount] SMALLINT NOT NULL	, CONSTRAINT [PK_ccGenInCalif] PRIMARY KEY ([timegroup] ASC, [inbound_id] ASC, [user_id] ASC, [calif_id] ASC))

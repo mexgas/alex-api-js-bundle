@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_VERIFICA_CALIF](	  [id] INT NULL	, [calif_id] INT NULL)

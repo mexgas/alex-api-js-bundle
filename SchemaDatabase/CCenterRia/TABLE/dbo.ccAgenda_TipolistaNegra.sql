@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccAgenda_TipolistaNegra](	  [idagenda] INT NOT NULL	, [idtipolista] INT NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccAgenda_TipolistaNegra] ON [dbo].[ccAgenda_TipolistaNegra] ([idagenda] ASC)

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIALog_Operation](	  [operationType] TINYINT NOT NULL	, [descripcion] VARCHAR(150) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccRIALog_Operation] ON [dbo].[ccRIALog_Operation] ([operationType] ASC)

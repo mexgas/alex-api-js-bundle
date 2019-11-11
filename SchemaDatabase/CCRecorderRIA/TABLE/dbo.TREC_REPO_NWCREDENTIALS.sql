@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[TREC_REPO_NWCREDENTIALS](	  [id_repository] INT NOT NULL	, [id_nwCredential] INT NOT NULL	, CONSTRAINT [PK__TREC_REP__43124E81380F4866] PRIMARY KEY ([id_repository] ASC, [id_nwCredential] ASC))

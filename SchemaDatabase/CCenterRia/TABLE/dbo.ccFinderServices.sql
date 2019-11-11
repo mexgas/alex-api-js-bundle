@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccFinderServices](	  [id] INT NOT NULL IDENTITY(1,1)	, [name] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [ref] VARCHAR(3) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK__ccFinderServices__76EC6E40] PRIMARY KEY ([id] ASC))

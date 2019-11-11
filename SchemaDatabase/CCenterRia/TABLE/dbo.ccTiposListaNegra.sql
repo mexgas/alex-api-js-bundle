@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccTiposListaNegra](	  [idtipolista] INT NOT NULL IDENTITY(1,1)	, [Tipolista] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Status] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccTiposListaNegra] PRIMARY KEY ([idtipolista] ASC))

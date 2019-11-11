@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ccRIALog_Cat_Relation](	  [module_id] TINYINT NOT NULL	, [operationType] TINYINT NOT NULL)

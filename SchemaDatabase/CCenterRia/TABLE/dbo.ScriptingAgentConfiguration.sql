@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[ScriptingAgentConfiguration](	  [agentId] INT NOT NULL	, [windowPosition] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [windowSize] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

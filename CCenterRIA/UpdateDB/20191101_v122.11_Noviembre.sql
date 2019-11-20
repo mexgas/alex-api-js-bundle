@@ -148,6 +148,14 @@ BEGIN
 		'
 	exec (@sql)
 
+	set @process = 'CW-3653 Add column OverallTotalNew'
+	set @Sql= 'if not exists (select * from sys.columns where name = N''OverallTotalNew'' and Object_ID = Object_ID(N''ccCampsNvosCB''))
+			   begin
+			        ALTER TABLE ccCampsNvosCB
+					ADD OverallTotalNew int; 
+			   end'
+	exec (@sql)
+
 	set @process = 'CW-3653 Drop if exists ccsp_GalateaUpdateOverallTotalNew'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateOverallTotalNew'')
     begin

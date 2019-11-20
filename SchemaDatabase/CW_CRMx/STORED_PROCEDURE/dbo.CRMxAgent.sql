@@ -40,7 +40,7 @@ BEGIN
    */
  IF @option = 1 BEGIN  
 	IF @serviceType LIKE 'call%' BEGIN-- CALL    
-		set @parameterDefinition='@id bigint,@servicesType varchar(50),@dnis bigint'     
+		set @parameterDefinition='@id bigint,@servicesType varchar(50),@dnis bigint,@callTypeId INT'     
 		IF @callType = 0 BEGIN -- CALL::Campaign 
 			set @id = @callTypeId
 			set @sql='IF exists(SELECT id FROM CRMxTemplates WITH(NOLOCK) WHERE [servicesType] like ''%''+@servicesType+''%'' and [hasBeenLogicDeleted] = 0
@@ -60,6 +60,7 @@ END'
 BEGIN
 	SELECT * FROM CRMxTemplates WITH(NOLOCK) WHERE [servicesType] like ''%''+@servicesType+''%'' and [hasBeenLogicDeleted] = 0
 	AND servicesRelation.exist(''/servicesRelation/call/ACD[@dnis=sql:variable("@dnis")]'') = 1
+	AND servicesRelation.exist(''/servicesRelation/call/ACD[@id=sql:variable("@callTypeId")]'') = 1
 END
 ELSE IF exists(SELECT id FROM CRMxTemplates WITH(NOLOCK) WHERE [servicesType] like ''%''+@servicesType+''%'' and [hasBeenLogicDeleted] = 0
 	AND servicesRelation.exist(''/servicesRelation/call/ACD[@id=sql:variable("@id")]'') = 1 )
@@ -83,7 +84,7 @@ ELSE BEGIN
 	SELECT -1.2
 END'		
 	  END		
-	EXECUTE sp_executesql  @sql, @parameterDefinition,@servicesType=@servicesType,@id=@id,@dnis=@dnis
+	EXECUTE sp_executesql  @sql, @parameterDefinition,@servicesType=@servicesType,@id=@id,@dnis=@dnis,@callTypeId=@callTypeId
 	print(@sql)
 	END
 END ---- @option = 1

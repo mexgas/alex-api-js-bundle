@@ -101,7 +101,20 @@ if @Tipo in (1,2) begin
 		end
 	end
 
+	declare @TotalNew table(
+			cam_id int primary key,
+			OverallTotalNew int 
+		)
+		
+		
+
+		
+
 	begin Tran updateccCampsNvosCB
+
+		insert into @TotalNew
+		select CampNvosCB.id,isnull(CampNvosCB.OverallTotalNew,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+		where CampNvosCB.id = tcamp.cam_id
 
 		delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
 		where CampNvosCB.id = tcamp.cam_id
@@ -115,25 +128,30 @@ if @Tipo in (1,2) begin
 		isNull(cams.cam_tipojobs,0) cam_tipojobs,
 		isNull(wt.Fin,0) Fin,
 		isNull(cams.cantidad,0) cantidad,
-		getdate()
+		getdate(),
+		isnull(T.OverallTotalNew,0)  as OverallTotalNew
 		FROM #Tcamps2 cams with(nolock)
 		LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
-		LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id		
+		LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+		LEFT JOIN @TotalNew  T on T.cam_id = cams.cam_id
 
 	COMMIT TRAN updateccCampsNvosCB
 	end
 
 	if @isExecOutbound = 0 begin
 
-	if @Tipo = 2
+	if @Tipo = 2 begin
 		-- devuelve resultado de la taba, solo las camps del usuario
-		SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, isnull(prio.prioridad,'12345NNN') as Prioridad, NextDial,cc.aggressionFactor
+		SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
+		isnull(prio.prioridad,'12345NNN') as Prioridad, NextDial,cc.aggressionFactor, OverallTotalNew
 		FROM #Tcamps tcam
 		left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
 		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
 		inner join cccamps cc (nolock) on res.id=cc.cam_id
-	else
-		SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,'12345NNN')  as Prioridad, NextDial,cc.aggressionFactor
+	end
+	else 
+		SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,'12345NNN')  as Prioridad, NextDial,
+		cc.aggressionFactor, OverallTotalNew
 		FROM ccCampsNvosCB res (nolock)
 		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
 		inner join cccamps cc (nolock) on res.id=cc.cam_id

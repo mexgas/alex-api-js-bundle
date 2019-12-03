@@ -135,7 +135,7 @@ END
 else if @action = 13 BEGIN  --Limpia las conversaciones quedaron abiertas por cerrar la aplicacion
 	update [messageoutTwitter] set @messageStatusId=1,twitId='',tQueue=null,userId=0,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0  where messageStatusId in(2,3)
 END
-else if @action = 14 begin --Asignar una evluacion
+else if @action = 14 begin --Asignar una evaluacion
 	exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate
 	if not exists(select * from ccEmailNode where emailId=@conversationId) begin
 		insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
@@ -143,6 +143,21 @@ else if @action = 14 begin --Asignar una evluacion
 	else begin
 		update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
 	end
-end
+END
+else if @action = 15 BEGIN  --Descartar Tweet
+	select @messageId=max(messageOutTwitterId) from messageOutTwitter with(nolock) where conversationTwitterId=@conversationId
+	
+	update messageOutTwitter set messageStatusId=14,userId=@userId,tResponse=@timeAtt,tRetention=@tRetention,isSender=0 where messageOutTwitterId=@messageId   
+	update conversationTwitter set isFinished=1 where meanContactTypeId = @meanContactTypeId and conversationTwitterId=@conversationId
+
+	exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
+	if not exists(select * from [ccTwitterNode] where [conversationTwitterId]=@conversationId) begin
+		insert into [ccTwitterNode]([conversationTwitterId],[node],dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
+	end
+	else begin
+		update [ccTwitterNode] set node=@xmlnode,status=2 where [conversationTwitterId]=@conversationId
+	end
+
+END
 
 END

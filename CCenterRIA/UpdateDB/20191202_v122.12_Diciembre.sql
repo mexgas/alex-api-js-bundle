@@ -224,6 +224,12 @@ END
 END'
 		exec (@sql)
 
+		set @process = 'CW- -- Add Permission CenterScript'
+		set @sql='if not exists(select * from ccRIACat_AdminPermissions where per_id=12) begin
+	insert into ccRIACat_AdminPermissions(per_desc,bStatus,release) values(''CenterScript|CenterScript'',1,''a7b041ea0b143f558de011020bdbb46745b87c972c042d729d4aca41457a31c4'')
+end'
+		EXEC(@sql)
+
 			
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

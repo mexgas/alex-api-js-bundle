@@ -300,7 +300,7 @@ END
 
     set @process = 'CW-3701 Se agrega store para obtención de id de carga de registros'
 	set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_GalateaGetRegistryListID]
+		CREATE PROCEDURE [dbo].[ccsp_GalateaGetRegistryListID]
 		@camID INT
 		AS
 

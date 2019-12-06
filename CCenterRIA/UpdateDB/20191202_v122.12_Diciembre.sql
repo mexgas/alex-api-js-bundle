@@ -263,6 +263,59 @@ END
 '
     exec (@sql)
 
+
+    set @process = 'CW-3701 Se borra store en caso de existir'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteRegistryLoad'')
+    begin
+        DROP PROCEDURE ccsp_GalateaDeleteRegistryLoad;
+    end'
+    exec (@sql)
+
+    set @process = 'CW-3701 Se agrega store para borrado de pendientes y nuevos'
+	set @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRegistryLoad]
+		@loadID INT
+		AS
+
+		IF (@loadID IS NOT NULL AND EXISTS(SELECT * FROM ccRIARegistryLists WHERE list_id = @loadID and status <> 0))
+		BEGIN
+			UPDATE ccoCallsOutSource SET cal_status = ''5'' WHERE list_id = @loadID
+			DELETE FROM ccoWorkingTable WHERE list_id = @loadID 
+			exec ccsp_RIARegistryLists @action=6, @list_id = @loadID 
+		END
+		ELSE
+		BEGIN
+			--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+			raiserror(''ERROR. No existe una carga el id especificado'', 18, 1)
+		END			
+	'
+    exec (@sql)
+
+    set @process = 'CW-3701 Se borra store en caso de existir'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRegistryListID'')
+    begin
+        DROP PROCEDURE ccsp_GalateaGetRegistryListID;
+    end'
+    exec (@sql)
+
+    set @process = 'CW-3701 Se agrega store para obtención de id de carga de registros'
+	set @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_GalateaGetRegistryListID]
+		@camID INT
+		AS
+
+		IF (@camID IS NOT NULL AND EXISTS(SELECT * FROM cccamps WHERE cam_id = @camID))
+		BEGIN
+			SELECT TOP 1 list_id FROM ccRIARegistryLists WHERE cam_id = @camID AND status = 2 ORDER BY list_id DESC
+		END
+		ELSE
+		BEGIN
+			--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+			raiserror(''ERROR. No existe una campaña con el id especificado'', 18, 1)
+		END	
+	'
+    exec (@sql)
+
 			
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

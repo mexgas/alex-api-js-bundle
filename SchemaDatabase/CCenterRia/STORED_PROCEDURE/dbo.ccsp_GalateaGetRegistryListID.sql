@@ -9,5 +9,5 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetRegistryListID]
 		ELSE
 		BEGIN
 			--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-			raiserror('ERROR. No existe una campaña con el id especificado', 18, 1)
+			raiserror('ERROR. No existe una campa?a con el id especificado', 18, 1)
 		END

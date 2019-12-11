@@ -67,11 +67,14 @@ BEGIN
 			)
 END
 
+declare @spacePhone varchar(13)
+set @spacePhone = '             '
+
 INSERT #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
 iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4,
  iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
-SELECT top(@top) callout_id, cam_id, rtrim(left(ltrim(cal_telefono + '        ' + cal_telefono2 + '         ' 
-+ cal_telefono3 + '         ' + cal_telefono4 + '         ' + cal_telefono5 + '         '), 13)) AS cal_telefono,
+SELECT top(@top) callout_id, cam_id, rtrim(left(ltrim(cal_telefono +@spacePhone+ cal_telefono2 +@spacePhone
++ cal_telefono3 +@spacePhone+ cal_telefono4 +@spacePhone+ cal_telefono5 +@spacePhone), 13)) AS cal_telefono,
  CASE cal_status WHEN 7 THEN 1 ELSE cal_status END cal_status, cal_fechaDial, cal_key, 
  CASE WHEN len(cal_telefono) > 0 THEN iZonaHoraria ELSE NULL END iZonaHoraria,
   CASE WHEN len(cal_telefono) > 0 THEN iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano, 

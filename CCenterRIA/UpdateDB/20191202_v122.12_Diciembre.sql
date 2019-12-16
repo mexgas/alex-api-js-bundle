@@ -265,15 +265,15 @@ END
 
 
     set @process = 'CW-3701 Se borra store en caso de existir'
-	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteRegistryLoad'')
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteRegistryList'')
     begin
-        DROP PROCEDURE ccsp_GalateaDeleteRegistryLoad;
+        DROP PROCEDURE ccsp_GalateaDeleteRegistryList;
     end'
     exec (@sql)
 
     set @process = 'CW-3701 Se agrega store para borrado de pendientes y nuevos'
 	set @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRegistryLoad]
+		CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRegistryList]
 		@loadID INT
 		AS
 

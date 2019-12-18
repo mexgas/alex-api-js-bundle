@@ -939,7 +939,7 @@ AS
 
 		exec (@sql)
 
-		set @process = 'drop procedure'
+		set @process = 'drop procedure en caso de existir'
 		set @sql = '
 
 		if exists (select * from sys.procedures where name = N''CS_GetAdminProps'')

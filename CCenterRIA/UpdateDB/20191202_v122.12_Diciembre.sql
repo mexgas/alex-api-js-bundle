@@ -939,6 +939,31 @@ AS
 
 		exec (@sql)
 
+		set @process = 'drop procedure en caso de existir'
+		set @sql = '
+
+		if exists (select * from sys.procedures where name = N''CS_GetAdminProps'')
+    begin
+        drop PROCEDURE CS_GetAdminProps
+    end
+
+		'
+exec (@sql)
+
+		set @process = 'CenterScript admin props'
+		set @sql = '
+			CREATE PROCEDURE [dbo].[CS_GetAdminProps] @admin_id INT
+AS
+SET NOCOUNT ON;
+
+SELECT convert(int,user_id) as [user_id], Nombres as [name]
+	,Upper(left(nombres, 1) + left(apellidopaterno, 1)) AS [initials]
+FROM ccUsers a
+WHERE TipoUser_id = 2
+	AND User_id = @admin_id
+		'
+		exec (@sql)
+
 			
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRegistryLoad]
+CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRegistryList]
 		@loadID INT
 		AS
 

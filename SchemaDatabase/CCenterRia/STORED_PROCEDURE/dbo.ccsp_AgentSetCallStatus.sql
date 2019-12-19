@@ -112,7 +112,6 @@ AS
                  WHERE cal_ani = @ANI_x
              )
 
-
              DELETE ccRIAUpdateCallBack_Abandon WITH(ROWLOCK)
              WHERE cal_ANI = @ANI_x
 

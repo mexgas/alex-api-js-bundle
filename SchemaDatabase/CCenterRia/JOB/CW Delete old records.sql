@@ -158,9 +158,6 @@ values (''delete ccoLogDials from ccoLogDials as a, #ccoCallsOutSourceIds as b w
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''delete ccoCallsOutSource from ccoCallsOutSource as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'', 0, 1)
 
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''delete ccoCallPriorityOrder from ccoCallPriorityOrder as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'', 0, 1)
-
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
 	begin
 		set rowcount 1

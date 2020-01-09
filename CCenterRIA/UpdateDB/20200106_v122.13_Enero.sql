@@ -9,7 +9,7 @@ Date: 2020/01/06
 Description: 
 
 Database: CCenterRia
-Required version: 122.12
+Required version: 122.13
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -28,7 +28,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 122 --**********actualizar a 122 sin fix
-SET @versionfix = 13
+SET @versionfix = 12
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -48,7 +48,7 @@ BEGIN
 
 	BEGIN TRY
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_RIAAdmPrioridadTelefonos'
+		set @process = 'CW-3764 - Actualizar sp ccsp_RIAAdmPrioridadTelefonos'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAAdmPrioridadTelefonos]
   @cam_id int,
   @prioridad varchar(8),
@@ -111,7 +111,7 @@ IF @Type = 1
 END'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_DLRGetDialInfo'
+		set @process = 'CW-3764 - Actualizar sp ccsp_DLRGetDialInfo'
 		set @sql='ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
 @callout_id int,
 @cam_id smallint=0,
@@ -214,7 +214,7 @@ end
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_INInsertaCallBack'
+		set @process = 'CW-3764 - Actualizar sp ccsp_INInsertaCallBack'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_INInsertaCallBack]
 @cal_key varchar(20) ='''',
 @cam_id smallint,
@@ -367,7 +367,7 @@ return(0)
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTGetNewProviderJobs'
+		set @process = 'CW-3764 - Actualizar sp ccsp_OUTGetNewProviderJobs'
 		set @sql='ALTER procedure [dbo].[ccsp_OUTGetNewProviderJobs]
 		@CAMPID as int,
 		@test as int=0,
@@ -598,7 +598,7 @@ set nocount off'
 		return(0)'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTInsertaCallBack'
+		set @process = 'CW-3764 - Actualizar sp ccsp_OUTInsertaCallBack'
 		set @sql='ALTER procedure [dbo].[ccsp_OUTInsertaCallBack]
 @cal_id int,
 @Telefono varchar(15),
@@ -730,10 +730,10 @@ else
 		where callout_id = @callout_id
 	end
 
-set nocount off'
+set nocount off '
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTInsertNewJOBS_WT_Camp'
+		set @process = 'CW-3764 - Actualizar sp ccsp_OUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_OUTInsertNewJOBS_WT_Camp]
 @camp_id as int,
 @reciclar as int = 1
@@ -823,7 +823,7 @@ where cal_status in (0, 1, 7) and cam_id = @camp_id
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_RIAOUTInsertNewJOBS_WT_Camp'
+		set @process = 'CW-3764 - Actualizar sp ccsp_RIAOUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1
 AS
 SET NOCOUNT ON
@@ -960,7 +960,7 @@ SET NOCOUNT OFF
 '
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion xx_OUTInsertNewJOBS_WT_Camp'
+		set @process = 'CW-3764 - Actualizar sp xx_OUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[xx_OUTInsertNewJOBS_WT_Camp]
 @camp_id as int
 AS
@@ -992,7 +992,8 @@ select @prioridad = NULL
 select @prioridad = Prioridad from ccCampsPrioridadTel (nolock) where cam_id = @camp_id
 
 UPDATE ccoCallsOutSource with(rowlock) SET cal_status = 3, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
-where cal_status in (0, 1, 7) and cam_id = @camp_id'
+where cal_status in (0, 1, 7) and cam_id = @camp_id
+		'
 		EXEC(@sql)
 
 			

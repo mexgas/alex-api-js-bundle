@@ -48,7 +48,7 @@ BEGIN
 
 	BEGIN TRY
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_RIAAdmPrioridadTelefonos'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAAdmPrioridadTelefonos]
   @cam_id int,
   @prioridad varchar(8),
@@ -111,7 +111,7 @@ IF @Type = 1
 END'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_DLRGetDialInfo'
 		set @sql='ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
 @callout_id int,
 @cam_id smallint=0,
@@ -214,7 +214,7 @@ end
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_INInsertaCallBack'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_INInsertaCallBack]
 @cal_key varchar(20) ='''',
 @cam_id smallint,
@@ -367,7 +367,7 @@ return(0)
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTGetNewProviderJobs'
 		set @sql='ALTER procedure [dbo].[ccsp_OUTGetNewProviderJobs]
 		@CAMPID as int,
 		@test as int=0,
@@ -598,7 +598,7 @@ set nocount off'
 		return(0)'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTInsertaCallBack'
 		set @sql='ALTER procedure [dbo].[ccsp_OUTInsertaCallBack]
 @cal_id int,
 @Telefono varchar(15),
@@ -733,7 +733,7 @@ else
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_OUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_OUTInsertNewJOBS_WT_Camp]
 @camp_id as int,
 @reciclar as int = 1
@@ -823,7 +823,7 @@ where cal_status in (0, 1, 7) and cam_id = @camp_id
 set nocount off'
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion ccsp_RIAOUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1
 AS
 SET NOCOUNT ON
@@ -960,7 +960,7 @@ SET NOCOUNT OFF
 '
 		EXEC(@sql)
 
-		set @process = 'CW-3764 - Actualizar orden de marcacion'
+		set @process = 'CW-3764 - Actualizar orden de marcacion xx_OUTInsertNewJOBS_WT_Camp'
 		set @sql='ALTER PROCEDURE [dbo].[xx_OUTInsertNewJOBS_WT_Camp]
 @camp_id as int
 AS

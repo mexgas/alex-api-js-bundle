@@ -149,7 +149,7 @@ from dbo.fn_ccCamps_SelMessage(@cam_id)
 
 -- Prefijo por puerto
 select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
--- Prefijo por campaña
+-- Prefijo por campaÃ±a
 if @prefix =''''
     select @prefix = dialPrefix from ccCamps where cam_id = @cam_id
 -- Prefijo general, si es que esta habilitado
@@ -158,7 +158,7 @@ if @prefix ='''' and ((select cast(valor as int) from ccsettings where setting_i
 
 select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
 
--- Propiedades de campaña
+-- Propiedades de campaÃ±a
 select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
 @detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
 @call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0)
@@ -358,8 +358,8 @@ else
 			end
 end
 
-if exists(select callbacks from ccRIAcallbacks where año=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id)
-	update ccRIAcallbacks set callbacks=callbacks+1 where año=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id
+if exists(select callbacks from ccRIAcallbacks where aÃ±o=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id)
+	update ccRIAcallbacks set callbacks=callbacks+1 where aÃ±o=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@cam_id
 else
 	insert ccRIAcallbacks select year(@Fecha),month(@Fecha),day(@Fecha),datepart(hh,@Fecha),''1'',@cam_id
 
@@ -399,7 +399,7 @@ set nocount off'
 
 			INSERT INTO @iZonasTable exec ccsp_OUTcheckTimeZone @cam_id=@campid
 			select @iZonas=value from @iZonasTable
-			--Checamos si la campaña tiene horarios configurados
+			--Checamos si la campaÃ±a tiene horarios configurados
 			if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
 				begin
 				declare @horaUniversal as datetime
@@ -639,7 +639,7 @@ BEGIN
       select @idZone = dbo.fnGetTimeZone(@Telefono,0)
       select @idZoneDaylight = dbo.fnGetTimeZone(@Telefono,1)
       select @phoneCompleted = dbo.Completa(@Telefono, @pais, @ld)
-      select @emptyPhoneMsg = case valor when 0 then ''El teléfono no puede ser nulo o vacío'' else ''Phone number can not be null or empty'' end from ccsettings where setting_id = 27
+      select @emptyPhoneMsg = case valor when 0 then ''El telÃ©fono no puede ser nulo o vacÃ­o'' else ''Phone number can not be null or empty'' end from ccsettings where setting_id = 27
 
       if charIndex(''E_NV'',@phoneCompleted) > 0
             set @phoneCompleted = @Telefono
@@ -684,8 +684,8 @@ select @Fecha= dateadd(hh,@difference,convert(datetime,@FechaDial,101))
 update ccoCallsOut set cal_fcallback=@FechaDial where cal_id=@cal_id
 
 --PARA LAS ESTADISTICAS
-if exists(select callbacks from ccRIAcallbacks where año=year(@Fecha) and mes=month(@Fecha) and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@Camp)
-      update ccRIAcallbacks set callbacks=callbacks+1 where año=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@Camp
+if exists(select callbacks from ccRIAcallbacks where aÃ±o=year(@Fecha) and mes=month(@Fecha) and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@Camp)
+      update ccRIAcallbacks set callbacks=callbacks+1 where aÃ±o=year(@Fecha)and mes=month(@Fecha)and dia=day(@Fecha)and hora=datepart(hh,@Fecha)and cam_id=@Camp
 else
       insert ccRIAcallbacks select year(@Fecha),month(@Fecha),day(@Fecha),datepart(hh,@Fecha),''1'',@Camp
 
@@ -1022,8 +1022,8 @@ set @today = convert(datetime, convert (varchar(11), getdate(), 101))
 select @typeACD = chat from ccInbound  where Inbound_id = @inbound_id
 
 
-select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end,
-@nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+select @nIdioma = case valor when 0 then ''Sin calificaciÃ³n Otros'' else ''No disposition Others'' end,
+@nIdiomaSub = case valor when 0 then ''Sin SubcalificaciÃ³n'' else ''No Subdisposition'' end
 from ccsettings where setting_id = 27 -- 0 esp
 
 ---------------OUT ----------------------------
@@ -1226,8 +1226,8 @@ set @today = convert(datetime, convert (varchar(11), getdate(), 101))
 select @typeACD = chat from ccInbound  where Inbound_id = @inbound_id
 
 
-select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end,
-@nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+select @nIdioma = case valor when 0 then ''Sin calificaciÃ³n Otros'' else ''No disposition Others'' end,
+@nIdiomaSub = case valor when 0 then ''Sin SubcalificaciÃ³n'' else ''No Subdisposition'' end
 from ccsettings where setting_id = 27 -- 0 esp
 
 ---------------OUT ----------------------------

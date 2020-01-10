@@ -175,7 +175,7 @@ else if @type = 2 begin
 end
 -------------------SUBCALIFICACIONES OUT-------------------
 else if @type = 4 begin
-    select 0 as tipo,co.cam_id as cam_id,
+    select 0 as Type,co.cam_id as CampId,
     case when co.statuscall_id = 13
     then case when description is not null
     then description else @nIdioma end
@@ -183,11 +183,11 @@ else if @type = 4 begin
     case when sll.descripcion is not null
     then 'cw:' + sll.descripcion else 'cw:' + @nIdioma
     end
-    end as Calificacion,
-    isnull(cso.califSubDesc,@nIdiomaSub) ,count(cso.califSub_id) cantidad
+    end as Calification,
+    isnull(cso.califSubDesc,@nIdiomaSub) as SubCalificationName ,count(cso.califSub_id) Quantity
     from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
     left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
-    left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+    left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id 
     left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
     left join ccCamps ci on ci.cam_id = co.cam_id
     where co.cal_inicio > @today

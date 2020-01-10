@@ -67,9 +67,9 @@ end
 if @iPortNumber >= 0 
 begin
 	SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
-
+	
     SELECT c.callout_id, 'cal_key'=c.cal_key+'~'+rtrim(dato1)+'~'+rtrim(dato2)+'~'+rtrim(dato3)+'~'+rtrim(dato4)+'~'+rtrim(dato5)
-    , dial_tels
+    , ISNULL(cpt.Prioridad,'12345NNN') dial_tels
     , C.cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, isnull(@message_name, '') as message_name
     , @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
     , case when dbo.TelAni(c.cal_telefono,@lista_id) <> '' then dbo.TelAni(c.cal_telefono,@lista_id) else @ani end ani
@@ -91,6 +91,8 @@ begin
 	,@sipheader data
 	,@PrefixRec as Prefijo
     FROM ccoCallsOutSource C with(nolock)
+	left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
+	left join ccCampsPrioridadTel cpt on cpt.cam_id = c.cam_id
     WHERE C.callout_id = @callout_id
     return
 end 

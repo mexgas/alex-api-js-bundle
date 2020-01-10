@@ -14,6 +14,7 @@ declare @cal_fechaDial smalldatetime
 declare @dato3 varchar(20)
 declare @dato4 varchar(20)
 declare @prioridad varchar(8)
+declare @space varchar(13)
 
 declare @dbname varchar(50)
 select @dbname = c.name from sys.sysaltfiles a join sys.database_files c
@@ -52,6 +53,8 @@ where cs.cam_id = @camp_id
 and wt.cal_status <= 2
 and cs.cal_status in(0,7)
 
+set @space = '             '
+
 Insert ccoWorkingTable ( callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw
 	,iZonaHoraria,iZonaHoraria_verano
 	,iZonaHoraria2,iZonaHoraria_verano2
@@ -59,11 +62,11 @@ Insert ccoWorkingTable ( callout_id, cam_id, cal_telefono, cal_status, cal_fecha
 	,iZonaHoraria4,iZonaHoraria_verano4
 	,iZonaHoraria5,iZonaHoraria_verano5)
 SELECT callout_id, cam_id, 
-	rtrim(left(ltrim(cal_telefono    + '        '
-	+ cal_telefono2 + '         '
-	+ cal_telefono3 + '         '
-	+ cal_telefono4 + '         '
-	+ cal_telefono5 + '         '),13)) as cal_telefono,
+	rtrim(left(ltrim(cal_telefono    +@space
+	+ cal_telefono2 + @space
+	+ cal_telefono3 + @space
+	+ cal_telefono4 + @space
+	+ cal_telefono5 + @space),13)) as cal_telefono,
 	case cal_status when 7 then 1 else cal_status end, cal_fechaDial, cal_key
 	,case when len(cal_telefono)>0 then iZonaHoraria else null end, case when len(cal_telefono)>0 then iZonaHoraria_verano else null end
 	,case when len(cal_telefono2)>0 then iZonaHoraria2 else null end, case when len(cal_telefono2)>0 then iZonaHoraria_verano2 else null end
@@ -79,6 +82,6 @@ select @prioridad = Prioridad from ccCampsPrioridadTel where cam_id = @camp_id
 
 if @prioridad is null set @prioridad='12345NNN'
 
-UPDATE ccoCallsOutSource SET cal_status = 2, dial_tels =  @prioridad, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
+UPDATE ccoCallsOutSource SET cal_status = 2, nOcupado=0, nNoContesta=0, nFax=0, nContestadora=0, nShortCall=0, nOtro=0
 where cal_status in (0, 1, 7) and cam_id = @camp_id
 set nocount off

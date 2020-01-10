@@ -124,12 +124,14 @@ CREATE procedure [dbo].[ccsp_OUTGetNewProviderJobs]
 				set @sql=@sql+'0 tel_type,0 tel2_type,0 tel3_type,0 tel4_type,0 tel5_type,'
 			end
 			set @sql=@sql+'
-			couts.dial_tels as dialOrder, W.list_id, isnull(R.sequence,0) as sequence,
+			cpt.Prioridad as dialOrder, W.list_id, isnull(R.sequence,0) as sequence,
 			couts.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5) calkey
 			FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists))
 			on W.list_id = R.list_id
 			left join ccocallsoutsource couts (nolock)
 			on W.callout_id = couts.callout_id
+			inner join ccCampsPrioridadTel cpt (nolock)
+			on cpt.cam_id = W.cam_id
 			WHERE W.cal_status=1 -- CallBacks
 			and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
 			and W.cam_id=' + cast(isnull(@CAMPID,'0') as varchar(7)) + '
@@ -179,12 +181,14 @@ CREATE procedure [dbo].[ccsp_OUTGetNewProviderJobs]
 				set @sql=@sql+'0 tel_type,0 tel2_type,0 tel3_type,0 tel4_type,0 tel5_type,'
 			end
 			set @sql=@sql+'
-			couts.dial_tels as dialOrder, W.list_id, isNull(R.sequence,0) as sequence,
+			cpt.Prioridad as dialOrder, W.list_id, isNull(R.sequence,0) as sequence,
 			couts.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5) calkey
 			FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists))
 			on W.list_id = R.list_id
 			left join ccocallsoutsource couts (nolock)
 			on W.callout_id = couts.callout_id
+			inner join ccCampsPrioridadTel cpt (nolock)
+			on cpt.cam_id = W.cam_id
 			WHERE W.cal_status=0 -- Nuevas
 			and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
 			and W.cam_id='+ cast(isnull(@CAMPID,'0') as varchar(7)) + '

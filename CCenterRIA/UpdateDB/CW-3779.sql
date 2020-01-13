@@ -1,6 +1,6 @@
 USE [CCenterRia]
 GO
-/****** Object:  StoredProcedure [dbo].[ccsp_OUTGetCallsInfo_AllCamps]    Script Date: 10/01/2020 10:32:56 a. m. ******/
+/****** Object:  StoredProcedure [dbo].[ccsp_OUTGetCallsInfo_AllCamps]    Script Date: 13/01/2020 12:48:56 p. m. ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -84,16 +84,11 @@ end
 
 else if @Tipo = 3 --Busqueda por campaña
 begin
-  select cam_id, L.Campana,
-    ((L.Contestan*100)/ L.Marcaciones) as pContesta,
-    ((L.Ocupado*100)/ L.Marcaciones) as pOcupado,
-    ((L.NoContesta*100)/ L.Marcaciones) as pNoContesta,
-    ((L.FaxModem*100)/ L.Marcaciones) as pFaxModem,
-    ((L.NoService*100)/ L.Marcaciones) as pNoService,
+  select L.cam_id,
     L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion
+    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, callsOut.Abandon
   from (
-  select cam_id, '' as Campana,
+  select cam_id,
     count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
     count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
     count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
@@ -111,21 +106,23 @@ begin
   and fecha >  @mToday
   group by cam_id
   ) L 
+  join (select 
+    cam_id,
+    count(case statuscall_id when 6 then 1 else null end) as Abandon,
+    count(*) as Contesta    
+  from ccoCallsOut with(nolock index(IX_ccoCallsOut_2))
+  where cal_Inicio > @mToday
+  group by cam_id) callsOut on L.cam_id = callsOut.cam_id
 
 end
 
 else if @Tipo = 4-- Busqueda por campañas asociadas a admin
 begin
-  select L.cam_id, L.Campana,
-    ((L.Contestan*100)/ L.Marcaciones) as pContesta,
-    ((L.Ocupado*100)/ L.Marcaciones) as pOcupado,
-    ((L.NoContesta*100)/ L.Marcaciones) as pNoContesta,
-    ((L.FaxModem*100)/ L.Marcaciones) as pFaxModem,
-    ((L.NoService*100)/ L.Marcaciones) as pNoService,
+  select L.cam_id,
     L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion
+    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, callsOut.Abandon
   from (
-  select logDials.cam_id, '' as Campana,
+  select logDials.cam_id,
     count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
     count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
     count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
@@ -138,10 +135,18 @@ begin
     ,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
     ,count(case tipoResDial_id when 12 then 1 else null end) as congestion
   from ccoLogDials logDials with(nolock)
-  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=@sup_id) B ON logDials.cam_id = B.cam_id
+  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=2) B ON logDials.cam_id = B.cam_id
   Where fecha >  @mToday
   group by logDials.cam_id
   ) L 
-  order by Campana
+  join (select 
+    cam_id,
+    count(case statuscall_id when 6 then 1 else null end) as Abandon,
+    count(*) as Contesta    
+  from ccoCallsOut with(nolock index(IX_ccoCallsOut_2))
+  where cal_Inicio > @mToday
+  group by cam_id) callsOut on L.cam_id = callsOut.cam_id
+  order by L.cam_id
 
 end
+

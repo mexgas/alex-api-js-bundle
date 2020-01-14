@@ -99,10 +99,10 @@ select tipo, cam_id, calificacion,subCalificacion,calif_id ,sum( total ) as tota
 )  as a group by tipo, cam_id, calificacion,subCalificacion,calif_id order by tipo,cam_id 
 if @type=0 
 
-select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex('@', @nIdioma)-1) 
+select tipo as Type,Cam_id as CampId,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex('@', @nIdioma)-1) 
 then calificacion 
 else @nIdioma--substring(@nIdioma, charindex('@', @nIdioma)+1, len(@nIdioma)) 
-end as Calificacion,subCalificacion, calif_id ,sum(Total) as Total -- , iTotal4Campaign -- para ver total por campaña
+end as Calification,subCalificacion as SubCalificationQuantity, calif_id as CalificationId,sum(Total) as Total -- , iTotal4Campaign -- para ver total por campaña
 from #CalifTemp 
 group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex('@', @nIdioma)-1) 
 then calificacion 

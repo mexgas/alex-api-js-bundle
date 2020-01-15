@@ -1435,7 +1435,7 @@ set nocount off'
 		begin
 		  select L.cam_id,
 		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, callsOut.Abandon
+		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select cam_id,
 		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
@@ -1455,7 +1455,7 @@ set nocount off'
 		  and fecha >  @mToday
 		  group by cam_id
 		  ) L 
-		  join (select 
+		  left join (select 
 		    cam_id,
 		    count(case statuscall_id when 6 then 1 else null end) as Abandon,
 		    count(*) as Contesta    
@@ -1469,7 +1469,7 @@ set nocount off'
 		begin
 		  select L.cam_id,
 		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, callsOut.Abandon
+		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion,  isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select logDials.cam_id,
 		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
@@ -1488,7 +1488,7 @@ set nocount off'
 		  Where fecha >  @mToday
 		  group by logDials.cam_id
 		  ) L 
-		  join (select 
+		  left join (select 
 		    cam_id,
 		    count(case statuscall_id when 6 then 1 else null end) as Abandon,
 		    count(*) as Contesta    

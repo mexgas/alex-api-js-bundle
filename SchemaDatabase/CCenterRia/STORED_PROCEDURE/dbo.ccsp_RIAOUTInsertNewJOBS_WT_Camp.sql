@@ -115,7 +115,7 @@ BEGIN
 	END
 
 	UPDATE ccoCallsOutSource
-	SET cal_status = 2, dial_tels = @prioridad, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
+	SET cal_status = 2, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
 	FROM ccoCallsOutSource co WITH (NOLOCK), #calloutIdSource2 cis3 WITH (NOLOCK)
 	WHERE co.callout_id = cis3.callout_id
 END

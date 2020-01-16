@@ -53,15 +53,13 @@ BEGIN
       select @TelReprograma=case when isnull(@tel4,'')='' then 4 when isnull(@tel3,'')='' then 3     when isnull(@tel2,'')='' then 2 else 5 end
 
       select @sSQL='update ccoCallsOutSource set cal_telefono'+cast(@TelReprograma as varchar(1))+'='''+@phoneCompleted+''''
-      +',cal_status=2,dial_Tels='''+cast(@TelReprograma as char(1))+replace('2345NNN',cast(@TelReprograma as char(1)),'1')+''''
-      +', iZonaHoraria'+cast(@TelReprograma as varchar(1))+'= '+cast(@idZone as varchar(10))+', iZonaHoraria_Verano'+cast(@TelReprograma as varchar(1))+'= '+cast(@idZoneDaylight as varchar(10))+' where callout_id='+cast(@callout_id as varchar(10))
+      +',cal_status=2,iZonaHoraria'+cast(@TelReprograma as varchar(1))+'= '+cast(@idZone as varchar(10))+', iZonaHoraria_Verano'+cast(@TelReprograma as varchar(1))+'= '+cast(@idZoneDaylight as varchar(10))+' where callout_id='+cast(@callout_id as varchar(10))
       exec(@sSQL)
 END
 
 ELSE--@>0 telefono ya existente
 BEGIN
-      update ccoCallsOutSource set cal_status=2,
-      dial_Tels=cast(@TelReprograma as char(1))+ replace('2345NNN',cast(@TelReprograma as char(1)),'1')
+      update ccoCallsOutSource set cal_status=2
       where callout_id=@callout_id
 
       select @sSQL= N'select @outA=cal_key, @outB=izonahoraria' +replace( cast( @TelReprograma as varchar(1)), '1', '' )+', @outC=izonahoraria_verano'+replace( cast( @TelReprograma as varchar(1)), '1', '' )+', @outD= rtrim(left(ltrim(cal_telefono + ''        ''

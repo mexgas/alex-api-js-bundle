@@ -1438,17 +1438,17 @@ set nocount off'
 		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select cam_id,
-		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
-		    count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
-		    count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
-		    count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
+		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
+		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
+		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
 		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
-		    count(*) as Marcaciones
-		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Otro
-		    ,count(case tipoResDial_id when 13 then 1 else null end) as Cancelado
-		    ,count(case tipoResDial_id when 11 then 1 else null end) as buzon
-		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
-		    ,count(case tipoResDial_id when 12 then 1 else null end) as congestion
+		    count(*) as Calls
+		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other
+		    ,count(case tipoResDial_id when 13 then 1 else null end) as Canceled
+		    ,count(case tipoResDial_id when 11 then 1 else null end) as Machine
+		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoTone
+		    ,count(case tipoResDial_id when 12 then 1 else null end) as Congestion
 
 		  from ccoLogDials with(nolock)
 		  Where cam_id = @cam_id
@@ -1472,17 +1472,17 @@ set nocount off'
 		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion,  isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select logDials.cam_id,
-		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
-		    count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
-		    count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
-		    count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
+		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
+		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
+		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
 		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
-		    count(*) as Marcaciones
-		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Otro
-		    ,count(case tipoResDial_id when 13 then 1 else null end) as Cancelado
-		    ,count(case tipoResDial_id when 11 then 1 else null end) as buzon
-		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
-		    ,count(case tipoResDial_id when 12 then 1 else null end) as congestion
+		    count(*) as Calls
+		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other
+		    ,count(case tipoResDial_id when 13 then 1 else null end) as Canceled
+		    ,count(case tipoResDial_id when 11 then 1 else null end) as Machine
+		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoTone
+		    ,count(case tipoResDial_id when 12 then 1 else null end) as Congestion
 		  from ccoLogDials logDials with(nolock)
 		  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=2) B ON logDials.cam_id = B.cam_id
 		  Where fecha >  @mToday

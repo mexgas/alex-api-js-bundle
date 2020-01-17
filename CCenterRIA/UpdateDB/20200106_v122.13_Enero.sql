@@ -1529,7 +1529,7 @@ BEGIN
 			SELECT Inbound_id
 			FROM CW_CenterScript..ACD
 			)
-		AND IDArea > 0 and chat = 0
+		AND IDArea > 0 
 END
 
 IF (@action = 3)

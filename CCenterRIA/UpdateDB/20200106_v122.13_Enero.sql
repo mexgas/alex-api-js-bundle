@@ -1434,8 +1434,8 @@ set nocount off'
 		else if @Tipo = 3 --Busqueda por campaña
 		begin
 		  select L.cam_id,
-		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, isnull(callsOut.Abandon,0) as Abandon
+		    L.Calls, L.Answer, L.Busy, L.NoAnswer, L.Fax, L.NoService
+		    ,L.Other,L.Canceled,L.Machine,L.NoTone,L.Congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select cam_id,
 		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
@@ -1468,8 +1468,8 @@ set nocount off'
 		else if @Tipo = 4-- Busqueda por campañas asociadas a admin
 		begin
 		  select L.cam_id,
-		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion,  isnull(callsOut.Abandon,0) as Abandon
+		    L.Calls, L.Answer, L.Busy, L.NoAnswer, L.Fax, L.NoService
+		    ,L.Other,L.Canceled,L.Machine,L.NoTone,L.Congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select logDials.cam_id,
 		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,

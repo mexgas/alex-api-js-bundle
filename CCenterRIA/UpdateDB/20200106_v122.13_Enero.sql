@@ -1516,7 +1516,7 @@ BEGIN
 			SELECT Cam_id
 			FROM CW_CenterScript..Campaign
 			)
-		AND IDArea > 0
+		AND IDArea > 0 and chat = 0
 END
 
 IF (@action = 2)

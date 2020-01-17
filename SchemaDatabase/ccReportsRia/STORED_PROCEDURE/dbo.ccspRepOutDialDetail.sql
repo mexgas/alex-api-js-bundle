@@ -1,43 +1,119 @@
-CREATE PROCEDURE [dbo].[ccspRepOutDialDetail]   
-		@action as tinyint,  
-		@from as datetime = null,  
-		@to as datetime = null  
-		AS  
-		if @from is null  
-		select @from = convert(datetime,convert(varchar(11),getdate()))  
-		select @to = getdate()  
-		if @action = 1  begin  
-		--Borrar lo que esta para no repetir  
-		delete from RepOutDialDetail with(rowlock)  
-		where date >= @from AND date < @to  
-		declare @country smallint
-		select @country=valor from ccSettings where setting_id=104
+CREATE PROCEDURE [dbo].[ccspRepOutDialDetail] 
+ @action AS TINYINT, 
+ @from AS   DATETIME = NULL, 
+ @to AS     DATETIME = NULL
+AS
+     IF @from IS NULL
+         SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE())) - 15
+     SELECT @to = GETDATE()
+     IF @action = 1
+         BEGIN  
+             --Borrar lo que esta para no repetir  
+             DELETE FROM RepOutDialDetail WITH(ROWLOCK)
+             WHERE date >= @from
+                   AND date < @to
+             DECLARE @country SMALLINT
+             SELECT @country = valor
+             FROM ccSettings
+             WHERE setting_id = 104
 
-		--Inserta informaci?n de reporte  
-		insert into RepOutDialDetail  
-		SELECT fecha,isnull(isnull(dials.cal_key,cs.cal_key),'') cal_key, telefono, dials.tiporesdial_id, isnull(descripcion,'') as resultado, 
-		dials.[cam_id],ISNULL(rtrim(ltrim(camps.cam_descripcion)), 'systemTranslated_NoCampaign') as campa, dials.tbusy as Msgtime,  
-		datepart(yyyy,fecha), datepart(mm,fecha), datepart(dd,fecha), datepart(hh,fecha), datepart(mi,fecha), isnull(rl.name,'')  
-		,case when answerbit = 1 then 'systemTranslated_Charged' else 'systemTranslated_NotCharged' end as billed, 
-		isnull(cs.Dato1,'') as data1, isnull(cs.Dato2,'') as data2, isnull(cs.Dato3,'') as data3, isnull(cs.Dato4,'') as data4, isnull(cs.Dato5,'') as data5
-		,case when dials.[file_moved] = 1 then 'systemTranslated_Remoto' else 'Local' end as file_Moved, dials.disconnectCause, COALESCE(dat.description, descripcion,'N/A') DCCustomer
-		,dials.dialType,case when @country=1 then isnull((select case when dials.tipoLlamada_id in (1,2,5)   then 'systemTranslated_fijo'
-			when dials.tipoLlamada_id in(3,4) then 'systemTranslated_cellPhone' else  'systemTranslated_Indefinite' end
-			),'systemTranslated_Indefinite') else '' end as TipoTel
-		FROM 
-		(select dial.logDial_id,dial.callout_id,dial.cam_id,dial.tipoResDial_id,dial.Telefono,dial.Puerto,dial.fecha,dial.tDialing,  
-			case when Left(dial.TipoDialingMode,1)='1' then 'Preview' else
-					case when right(dial.TipoDialingMode,2)='00' then 'systemTranslated_Auto' 
-					when right(dial.TipoDialingMode,2) in ('10','01') then 'systemTranslated_Manual' end end as dialType,
-			dial.tBusy,dial.answerbit,dial.canceledNoAgents,dial.cal_id,dial.disconnectCause, co.cal_key, co.file_moved,dial.tipoLlamada_id 
-			FROM ccoLogDials dial (nolock)
-			left join ccocallsout co (nolock) on dial.cal_id=co.cal_id
-			WHERE fecha >= @from AND fecha < @to) dials  
-		LEFT JOIN ccoCallsOutSource cs (nolock) ON dials.callout_id = cs.callout_id  
-		LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id=tr.tiporesdial_id  
-		LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]  
-		LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id 
-		LEFT JOIN DC_Extra dat on(dat.id = case when isnumeric(substring(dials.disconnectCause,21,3))=0 then '' else substring(dials.disconnectCause,21,3) end )
-		WHERE fecha >= @from AND fecha < @to  
-		order by fecha  
-		end
+             --Inserta informacon de reporte  
+             INSERT INTO RepOutDialDetail
+                    SELECT fecha, 
+                           ISNULL(ISNULL(dials.cal_key, cs.cal_key), '') cal_key, 
+                           telefono, 
+                           dials.tiporesdial_id, 
+                           ISNULL(descripcion, '') AS resultado, 
+                           dials.[cam_id], 
+                           ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), 'systemTranslated_NoCampaign') AS campa, 
+                           dials.tbusy AS Msgtime, 
+                           DATEPART(yyyy, fecha), 
+                           DATEPART(mm, fecha), 
+                           DATEPART(dd, fecha), 
+                           DATEPART(hh, fecha), 
+                           DATEPART(mi, fecha), 
+                           ISNULL(rl.name, ''),
+                           CASE
+                               WHEN answerbit = 1
+                               THEN 'systemTranslated_Charged'
+                               ELSE 'systemTranslated_NotCharged'
+                           END AS billed, 
+                           ISNULL(cs.Dato1, '') AS data1, 
+                           ISNULL(cs.Dato2, '') AS data2, 
+                           ISNULL(cs.Dato3, '') AS data3, 
+                           ISNULL(cs.Dato4, '') AS data4, 
+                           ISNULL(cs.Dato5, '') AS data5,
+                           CASE
+                               WHEN dials.[file_moved] = 1
+                               THEN 'systemTranslated_Remoto'
+                               ELSE 'Local'
+                           END AS file_Moved, 
+                           dials.disconnectCause, 
+                           COALESCE(dat.description, descripcion, 'N/A') DCCustomer, 
+                           dials.dialType,
+                           CASE
+                               WHEN @country = 1
+                               THEN ISNULL(
+                    (
+                        SELECT CASE
+                                   WHEN dials.tipoLlamada_id IN(1, 2, 5)
+                                   THEN 'systemTranslated_fijo'
+                                   WHEN dials.tipoLlamada_id IN(3, 4)
+                                   THEN 'systemTranslated_cellPhone'
+                                   ELSE 'systemTranslated_Indefinite'
+                               END
+                    ), 'systemTranslated_Indefinite')
+                               ELSE ''
+                           END AS TipoTel, 
+                           ISNULL(CallDisposition, 'N/A') AS CallDisposition, 
+                           ISNULL(califSubDesc, 'N/A') AS CallSubDisposition
+                    FROM
+                    (
+                        SELECT dial.logDial_id, 
+                               dial.callout_id, 
+                               dial.cam_id, 
+                               dial.tipoResDial_id, 
+                               dial.Telefono, 
+                               dial.Puerto, 
+                               dial.fecha, 
+                               dial.tDialing,
+                               CASE
+                                   WHEN LEFT(dial.TipoDialingMode, 1) = '1'
+                                   THEN 'Preview'
+                                   ELSE CASE
+                                            WHEN RIGHT(dial.TipoDialingMode, 2) = '00'
+                                            THEN 'systemTranslated_Auto'
+                                            WHEN RIGHT(dial.TipoDialingMode, 2) IN('10', '01')
+                                            THEN 'systemTranslated_Manual'
+                                        END
+                               END AS dialType, 
+                               dial.tBusy, 
+                               dial.answerbit, 
+                               dial.canceledNoAgents, 
+                               dial.cal_id, 
+                               dial.disconnectCause, 
+                               co.cal_key, 
+                               co.file_moved, 
+                               dial.tipoLlamada_id, 
+                               tco.Description AS CallDisposition, 
+                               tsco.califSubDesc
+                        FROM ccoLogDials dial(NOLOCK)
+                             LEFT JOIN ccocallsout co(NOLOCK) ON dial.cal_id = co.cal_id
+                             LEFT JOIN cctipocalifout tco WITH(NOLOCK) ON tco.calif_id = co.calif_id
+                             LEFT JOIN cctipocalifsubout tsco WITH(NOLOCK) ON tsco.califSub_id = co.califSub_id
+                        WHERE fecha >= @from
+                              AND fecha < @to
+                    ) dials
+                    LEFT JOIN ccoCallsOutSource cs(NOLOCK) ON dials.callout_id = cs.callout_id
+                    LEFT JOIN cctipoResultadoDial tr ON dials.tiporesdial_id = tr.tiporesdial_id
+                    LEFT JOIN ccCamps camps ON camps.[cam_id] = dials.[cam_id]
+                    LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id
+                    LEFT JOIN DC_Extra dat ON(dat.id = CASE
+                                                           WHEN ISNUMERIC(SUBSTRING(dials.disconnectCause, 21, 3)) = 0
+                                                           THEN ''
+                                                           ELSE SUBSTRING(dials.disconnectCause, 21, 3)
+                                                       END)
+                    WHERE fecha >= @from
+                          AND fecha < @to
+                    ORDER BY fecha
+     END

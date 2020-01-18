@@ -1,4 +1,7 @@
-CREATE PROCEDURE [dbo].[ccspRepOutManagementBase] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
+CREATE PROCEDURE [dbo].[ccspRepOutManagementBase] 
+@action AS TINYINT,
+@from AS DATETIME = null,
+@to AS DATETIME = null
 AS
 IF @from IS NULL
 	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
@@ -8,23 +11,43 @@ IF @to IS NULL
 
 IF @action = 1
 BEGIN
-	SELECT fecha AS DATE, logdial.callout_id AS dialResultCode, logdial.tipoResDial_id AS dialResultId, isnull(resdial.descripcion, '') AS dialResult--
-	, isnull(tipocal.calif_id, 0) AS dispositionId, ISNULL(tipocal.Description, '') AS disposition, isnull(tiposubcal.califSub_id, 0) AS subDispositionId--
-	, isnull(tiposubcal.califSubDesc, '') AS subDisposition, 1 AS Total, isnull(cUser.LOGIN, '') AS Agent, isnull(ccCamps.cam_descripcion, '') AS Campaigns--
-	, datepart(yyyy, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [year] --
-	, datepart(mm, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [month]--
-	, datepart(dd, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [day]--
-	, datepart(hh, fecha) AS [hour], datepart(mi, fecha) AS [minutes], logDial.cal_id
-	INTO #TempRepOutManagementBase
-	FROM ccoLogDials logdial
-	LEFT JOIN cctipoResultadodial resdial ON logdial.tipoResDial_id = resdial.tipoResDial_id
-	LEFT JOIN ccoCallsOut cout ON cout.cal_id = logdial.cal_id
-	LEFT JOIN cctipocalifout tipocal ON cout.calif_id = tipocal.calif_id
-	LEFT JOIN cctipocalifsubout tiposubcal ON cout.califSub_id = tiposubcal.califSub_id
-	LEFT JOIN ccUsers cUser ON cUser.User_id = cout.User_id
-	LEFT JOIN ccCamps ON ccCamps.cam_id = logdial.cam_id
-	WHERE fecha BETWEEN @from
-			AND @to
+
+	IF OBJECT_ID('tempdb..#TempRepOutManagementBase') IS NOT NULL DROP TABLE #TempRepOutManagementBase
+
+	SELECT fecha AS DATE, 
+       logdial.callout_id AS dialResultCode, 
+       logdial.tipoResDial_id AS dialResultId, 
+       ISNULL(resdial.descripcion, '') AS dialResult
+       ,-- 
+       ISNULL(tipocal.calif_id, 0) AS dispositionId, 
+       ISNULL(tipocal.Description, '') AS disposition, 
+       ISNULL(tiposubcal.califSub_id, 0) AS subDispositionId
+       ,-- 
+       ISNULL(tiposubcal.califSubDesc, '') AS subDisposition, 
+       1 AS Total, 
+       ISNULL(cUser.LOGIN, '') AS Agent, 
+       ISNULL(ccCamps.cam_descripcion, '') AS Campaigns
+       ,-- 
+       DATEPART(yyyy, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [year]
+       , -- 
+       DATEPART(mm, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [month]
+       ,-- 
+       DATEPART(dd, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [day]
+       ,-- 
+       DATEPART(hh, fecha) AS [hour], 
+       DATEPART(mi, fecha) AS [minutes], 
+       logDial.cal_id,
+	   ISNULL(logdial.Telefono,'') AS cal_telefono,
+	   ISNULL(logdial.cal_Key,'') AS cal_key
+INTO #TempRepOutManagementBase
+FROM ccoLogDials logdial
+     LEFT JOIN cctipoResultadodial resdial ON logdial.tipoResDial_id = resdial.tipoResDial_id
+     LEFT JOIN ccoCallsOut cout ON cout.cal_id = logdial.cal_id
+     LEFT JOIN cctipocalifout tipocal ON cout.calif_id = tipocal.calif_id
+     LEFT JOIN cctipocalifsubout tiposubcal ON cout.califSub_id = tiposubcal.califSub_id
+     LEFT JOIN ccUsers cUser ON cUser.User_id = cout.User_id
+     LEFT JOIN ccCamps ON ccCamps.cam_id = logdial.cam_id
+WHERE fecha BETWEEN @from AND @to
 
 	UPDATE A
 	SET A.Agent = isnull(cUser.LOGIN, ''), A.cal_id = cout.cal_id
@@ -45,9 +68,45 @@ BEGIN
 	WHERE [date] >= @from AND [date] < @to
 
 
-	INSERT RepOutManagementBase (DATE, dialResultCode, dialResultId, dialResult, dispositionId, disposition, subDispositionId, subDisposition, total, Agent, Campaigns, year, month, day, hour, minutes)
-	SELECT DATE, dialResultCode, dialResultId, dialResult, dispositionId, disposition, subDispositionId, subDisposition, Total, Agent, Campaigns, year, month, day, hour, minutes
-	FROM #TempRepOutManagementBase
+	INSERT INTO RepOutManagementBase
+							(DATE, 
+							 dialResultCode, 
+							 dialResultId, 
+							 dialResult, 
+							 dispositionId, 
+							 disposition, 
+							 subDispositionId, 
+							 subDisposition, 
+							 total, 
+							 Agent, 
+							 Campaigns, 
+							 year, 
+							 month, 
+							 day, 
+							 hour, 
+							 minutes,
+							 calKey,
+							 telephone
+							)
+       SELECT DATE, 
+              dialResultCode, 
+              dialResultId, 
+              dialResult, 
+              dispositionId, 
+              disposition,
+              subDispositionId,
+              subDisposition,
+              Total, 
+              Agent, 
+              Campaigns, 
+              year, 
+              month, 
+              day, 
+              hour, 
+              minutes,
+			  cal_Key,
+			  cal_telefono
+       FROM #TempRepOutManagementBase
 
 	DROP TABLE #TempRepOutManagementBase
 END

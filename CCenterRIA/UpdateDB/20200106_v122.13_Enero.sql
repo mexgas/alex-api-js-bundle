@@ -1434,21 +1434,21 @@ set nocount off'
 		else if @Tipo = 3 --Busqueda por campaña
 		begin
 		  select L.cam_id,
-		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion, isnull(callsOut.Abandon,0) as Abandon
+		    L.Calls, L.Answer, L.Busy, L.NoAnswer, L.Fax, L.NoService
+		    ,L.Other,L.Canceled,L.Machine,L.NoTone,L.Congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select cam_id,
-		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
-		    count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
-		    count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
-		    count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
+		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
+		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
+		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
 		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
-		    count(*) as Marcaciones
-		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Otro
-		    ,count(case tipoResDial_id when 13 then 1 else null end) as Cancelado
-		    ,count(case tipoResDial_id when 11 then 1 else null end) as buzon
-		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
-		    ,count(case tipoResDial_id when 12 then 1 else null end) as congestion
+		    count(*) as Calls
+		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other
+		    ,count(case tipoResDial_id when 13 then 1 else null end) as Canceled
+		    ,count(case tipoResDial_id when 11 then 1 else null end) as Machine
+		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoTone
+		    ,count(case tipoResDial_id when 12 then 1 else null end) as Congestion
 
 		  from ccoLogDials with(nolock)
 		  Where cam_id = @cam_id
@@ -1468,21 +1468,21 @@ set nocount off'
 		else if @Tipo = 4-- Busqueda por campañas asociadas a admin
 		begin
 		  select L.cam_id,
-		    L.Marcaciones, L.Contestan, L.Ocupado, L.NoContesta, L.FaxModem, L.NoService
-		    ,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion,  isnull(callsOut.Abandon,0) as Abandon
+		    L.Calls, L.Answer, L.Busy, L.NoAnswer, L.Fax, L.NoService
+		    ,L.Other,L.Canceled,L.Machine,L.NoTone,L.Congestion, isnull(callsOut.Abandon,0) as Abandon
 		  from (
 		  select logDials.cam_id,
-		    count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
-		    count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
-		    count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,
-		    count(case tipoResDial_id when 4 then 1 else null end) as FaxModem,
+		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
+		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
+		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
+		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
 		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
-		    count(*) as Marcaciones
-		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Otro
-		    ,count(case tipoResDial_id when 13 then 1 else null end) as Cancelado
-		    ,count(case tipoResDial_id when 11 then 1 else null end) as buzon
-		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoDialTone
-		    ,count(case tipoResDial_id when 12 then 1 else null end) as congestion
+		    count(*) as Calls
+		    ,count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other
+		    ,count(case tipoResDial_id when 13 then 1 else null end) as Canceled
+		    ,count(case tipoResDial_id when 11 then 1 else null end) as Machine
+		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoTone
+		    ,count(case tipoResDial_id when 12 then 1 else null end) as Congestion
 		  from ccoLogDials logDials with(nolock)
 		  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=2) B ON logDials.cam_id = B.cam_id
 		  Where fecha >  @mToday
@@ -1500,6 +1500,61 @@ set nocount off'
 		end
 	'
 	EXEC(@sql)
+
+	set @process = 'Alter procedure getacdCampaignList'
+	set @sql = '
+
+ALTER PROCEDURE [dbo].[cs_GetACDCampaignList] @action AS SMALLINT
+AS
+IF (@action = 1)
+BEGIN
+	SELECT cam_id AS [cam_id]
+		,cam_descripcion AS [name]
+	FROM ccCamps
+	WHERE cam_activo = 1
+		AND cam_id NOT IN (
+			SELECT Cam_id
+			FROM CW_CenterScript..Campaign
+			)
+		AND IDArea > 0 
+END
+
+IF (@action = 2)
+BEGIN
+	SELECT inbound_id
+		,descripcion AS [name]
+	FROM ccInbound
+	WHERE STATUS = 1
+		AND Inbound_id NOT IN (
+			SELECT Inbound_id
+			FROM CW_CenterScript..ACD
+			)
+		AND IDArea > 0 and chat = 0
+END
+
+IF (@action = 3)
+BEGIN
+	SELECT cam_id AS [cam_id]
+		,cam_descripcion AS [name]
+	FROM ccCamps
+	WHERE cam_activo = 1
+		AND IDArea > 0
+END
+
+IF (@action = 4)
+BEGIN
+	SELECT inbound_id
+		,descripcion AS [name]
+	FROM ccInbound
+	WHERE STATUS = 1
+		AND IDArea > 0
+		AND chat = 0
+END
+
+
+	'
+
+	exec (@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

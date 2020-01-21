@@ -1,4 +1,52 @@
-CREATE PROCEDURE [dbo].[ccspRepOutDialDetail] 
+SET NOCOUNT ON
+
+DECLARE @version INT
+DECLARE @actualVersion INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
+
+/* Version to release (use the version of your own databse)*/
+SET @version = 75
+
+/* Actual version (use your own script to do it) */
+EXEC @actualVersion = ccsp_getVersion 'BD'
+
+IF @actualVersion IN (@version, @version - 1)
+BEGIN
+	BEGIN TRAN
+
+	BEGIN TRY
+		
+
+		SET @process = 'CW-3780 Insert de las columnas CallSubDisposition y CallDisposition en RepOutDialDetail'
+		SET @sql = 'IF NOT EXISTS
+(
+    SELECT *
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE COLUMN_NAME = ''CallDisposition''
+          AND TABLE_NAME = ''RepOutDialDetail''
+)
+    BEGIN
+        ALTER TABLE RepOutDialDetail
+        ADD CallDisposition VARCHAR(60);
+END
+
+IF NOT EXISTS
+(
+    SELECT *
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE COLUMN_NAME = ''CallSubDisposition''
+          AND TABLE_NAME = ''RepOutDialDetail''
+)
+    BEGIN
+        ALTER TABLE RepOutDialDetail
+        ADD CallSubDisposition VARCHAR(60);
+END'
+		EXEC (@sql)
+
+		SET @process = 'CW-3780 se modifica el sp ccspRepOutDialDetail'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepOutDialDetail] 
  @action AS TINYINT, 
  @from AS   DATETIME = NULL, 
  @to AS     DATETIME = NULL
@@ -20,36 +68,36 @@ AS
              --Inserta informacon de reporte  
              INSERT INTO RepOutDialDetail
                     SELECT fecha, 
-                           ISNULL(ISNULL(dials.cal_key, cs.cal_key), '') cal_key, 
+                           ISNULL(ISNULL(dials.cal_key, cs.cal_key), '''') cal_key, 
                            telefono, 
                            dials.tiporesdial_id, 
-                           ISNULL(descripcion, '') AS resultado, 
+                           ISNULL(descripcion, '''') AS resultado, 
                            dials.[cam_id], 
-                           ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), 'systemTranslated_NoCampaign') AS campa, 
+                           ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') AS campa, 
                            dials.tbusy AS Msgtime, 
                            DATEPART(yyyy, fecha), 
                            DATEPART(mm, fecha), 
                            DATEPART(dd, fecha), 
                            DATEPART(hh, fecha), 
                            DATEPART(mi, fecha), 
-                           ISNULL(rl.name, ''),
+                           ISNULL(rl.name, ''''),
                            CASE
                                WHEN answerbit = 1
-                               THEN 'systemTranslated_Charged'
-                               ELSE 'systemTranslated_NotCharged'
+                               THEN ''systemTranslated_Charged''
+                               ELSE ''systemTranslated_NotCharged''
                            END AS billed, 
-                           ISNULL(cs.Dato1, '') AS data1, 
-                           ISNULL(cs.Dato2, '') AS data2, 
-                           ISNULL(cs.Dato3, '') AS data3, 
-                           ISNULL(cs.Dato4, '') AS data4, 
-                           ISNULL(cs.Dato5, '') AS data5,
+                           ISNULL(cs.Dato1, '''') AS data1, 
+                           ISNULL(cs.Dato2, '''') AS data2, 
+                           ISNULL(cs.Dato3, '''') AS data3, 
+                           ISNULL(cs.Dato4, '''') AS data4, 
+                           ISNULL(cs.Dato5, '''') AS data5,
                            CASE
                                WHEN dials.[file_moved] = 1
-                               THEN 'systemTranslated_Remoto'
-                               ELSE 'Local'
+                               THEN ''systemTranslated_Remoto''
+                               ELSE ''Local''
                            END AS file_Moved, 
                            dials.disconnectCause, 
-                           COALESCE(dat.description, descripcion, 'N/A') DCCustomer, 
+                           COALESCE(dat.description, descripcion, ''N/A'') DCCustomer, 
                            dials.dialType,
                            CASE
                                WHEN @country = 1
@@ -57,16 +105,16 @@ AS
                     (
                         SELECT CASE
                                    WHEN dials.tipoLlamada_id IN(1, 2, 5)
-                                   THEN 'systemTranslated_fijo'
+                                   THEN ''systemTranslated_fijo''
                                    WHEN dials.tipoLlamada_id IN(3, 4)
-                                   THEN 'systemTranslated_cellPhone'
-                                   ELSE 'systemTranslated_Indefinite'
+                                   THEN ''systemTranslated_cellPhone''
+                                   ELSE ''systemTranslated_Indefinite''
                                END
-                    ), 'systemTranslated_Indefinite')
-                               ELSE ''
+                    ), ''systemTranslated_Indefinite'')
+                               ELSE ''''
                            END AS TipoTel, 
-                           ISNULL(CallDisposition, 'N/A') AS CallDisposition, 
-                           ISNULL(califSubDesc, 'N/A') AS CallSubDisposition
+                           ISNULL(CallDisposition, ''N/A'') AS CallDisposition, 
+                           ISNULL(califSubDesc, ''N/A'') AS CallSubDisposition
                     FROM
                     (
                         SELECT dial.logDial_id, 
@@ -78,13 +126,13 @@ AS
                                dial.fecha, 
                                dial.tDialing,
                                CASE
-                                   WHEN LEFT(dial.TipoDialingMode, 1) = '1'
-                                   THEN 'Preview'
+                                   WHEN LEFT(dial.TipoDialingMode, 1) = ''1''
+                                   THEN ''Preview''
                                    ELSE CASE
-                                            WHEN RIGHT(dial.TipoDialingMode, 2) = '00'
-                                            THEN 'systemTranslated_Auto'
-                                            WHEN RIGHT(dial.TipoDialingMode, 2) IN('10', '01')
-                                            THEN 'systemTranslated_Manual'
+                                            WHEN RIGHT(dial.TipoDialingMode, 2) = ''00''
+                                            THEN ''systemTranslated_Auto''
+                                            WHEN RIGHT(dial.TipoDialingMode, 2) IN(''10'', ''01'')
+                                            THEN ''systemTranslated_Manual''
                                         END
                                END AS dialType, 
                                dial.tBusy, 
@@ -110,10 +158,35 @@ AS
                     LEFT JOIN ccRIARegistryLists rl ON cs.list_id = rl.list_id
                     LEFT JOIN DC_Extra dat ON(dat.id = CASE
                                                            WHEN ISNUMERIC(SUBSTRING(dials.disconnectCause, 21, 3)) = 0
-                                                           THEN ''
+                                                           THEN ''''
                                                            ELSE SUBSTRING(dials.disconnectCause, 21, 3)
                                                        END)
                     WHERE fecha >= @from
                           AND fecha < @to
                     ORDER BY fecha
-     END
+     END'
+		EXEC (@sql)
+
+
+		IF @actualVersion = @version - 1
+			EXEC ccsp_getVersion 'BD', @version
+
+		COMMIT TRAN
+	END TRY
+
+	BEGIN CATCH
+		/* Error generated based on sintax */
+		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + ' Error process: ' + @process + ' Line: ' + cast(error_line() AS NVARCHAR) + ' Number: ' + cast(@@error AS NVARCHAR) + ' Message: ' + error_message()
+
+		RAISERROR (@errorGenerated, 11, 1)
+
+		ROLLBACK TRAN
+	END CATCH
+END
+ELSE
+BEGIN
+	/* Error generated based on database version */
+	SELECT 'Incorrect database version, actual version: ' + cast(@actualVersion AS VARCHAR(5)) + ', version to release: ' + cast(@version AS VARCHAR(5))
+END
+
+SET NOCOUNT OFF

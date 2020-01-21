@@ -85,8 +85,8 @@ BEGIN
        DATEPART(hh, fecha) AS [hour], 
        DATEPART(mi, fecha) AS [minutes], 
        logDial.cal_id,
-	   ISNULL(cal_telefono,'''') AS cal_telefono,
-	   ISNULL(cout.cal_Key,'''') AS cal_key
+	   ISNULL(logdial.Telefono,'''') AS cal_telefono,
+	   ISNULL(logdial.cal_Key,'''') AS cal_key
 INTO #TempRepOutManagementBase
 FROM ccoLogDials logdial
      LEFT JOIN cctipoResultadodial resdial ON logdial.tipoResDial_id = resdial.tipoResDial_id

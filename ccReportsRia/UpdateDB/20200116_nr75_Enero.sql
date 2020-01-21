@@ -24,24 +24,24 @@ BEGIN
 (
     SELECT *
     FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE COLUMN_NAME = ''CallSubDisposition''
-          AND TABLE_NAME = ''RepOutDialDetail''
-)
-    BEGIN
-        ALTER TABLE RepOutDialDetail
-        ADD CallSubDisposition VARCHAR(60);
-END
-
-IF NOT EXISTS
-(
-    SELECT *
-    FROM INFORMATION_SCHEMA.COLUMNS
     WHERE COLUMN_NAME = ''CallDisposition''
           AND TABLE_NAME = ''RepOutDialDetail''
 )
     BEGIN
         ALTER TABLE RepOutDialDetail
         ADD CallDisposition VARCHAR(60);
+END
+
+IF NOT EXISTS
+(
+    SELECT *
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE COLUMN_NAME = ''CallSubDisposition''
+          AND TABLE_NAME = ''RepOutDialDetail''
+)
+    BEGIN
+        ALTER TABLE RepOutDialDetail
+        ADD CallSubDisposition VARCHAR(60);
 END'
 		EXEC (@sql)
 

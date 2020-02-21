@@ -21,7 +21,8 @@ BEGIN
 	WHERE STATUS = 1
 		AND Inbound_id NOT IN (
 			SELECT Inbound_id
-			FROM CW_CenterScript..ACD
+			FROM CW_CenterScript..Inbound_Campaign
+
 			)
 		AND IDArea > 0 and chat = 0
 END

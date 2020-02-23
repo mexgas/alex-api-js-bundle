@@ -2733,4 +2733,10 @@
   <data name="_UnCount" xml:space="preserve">
     <value>_</value>
   </data>
+  <data name="systemTranslated_AbandonedInIVR" xml:space="preserve">
+    <value>Abandoned in IVR</value>
+  </data>
+  <data name="systemTranslated_TransferredToACD" xml:space="preserve">
+    <value>Transferred to ACD Group</value>
+  </data>
 </root>

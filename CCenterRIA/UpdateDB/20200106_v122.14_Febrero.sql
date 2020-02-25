@@ -30,7 +30,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 SET @version = 122 --**********actualizar a 122 sin fix
 SET @versionfix = 14
 /* Actual version (use your own script to do it)*/
-EXEC @actualVersion = ccsp_getVersion 'BD'
+EXEC @actualVersion = ccsp_getVersion 'BD' 
 
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
 

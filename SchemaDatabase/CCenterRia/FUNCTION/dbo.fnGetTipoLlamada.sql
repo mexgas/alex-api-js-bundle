@@ -113,6 +113,11 @@ set @tipoLlamada_id = 0
 			 end
 	   end
     end
+
+	if @tipo is null
+	begin
+		set @tipo = 4
+	end
 		
     return @tipo
 END

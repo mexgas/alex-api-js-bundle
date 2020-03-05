@@ -22,7 +22,6 @@ EXECUTE msdb.dbo.sysmail_add_account_sp
 	@enable_ssl=0,
 	@username='notifications@centernext.net',
 	@password='@PhAiobES6'
-
 --==========================================================
 -- Create a Database Mail Profile
 --==========================================================

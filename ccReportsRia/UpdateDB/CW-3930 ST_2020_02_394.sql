@@ -92,57 +92,61 @@ set @number = 0
 if @action = 1
 begin
 
-insert into #timeDetailAgent
-exec ccsprepLogAgentriaseparate @from=@from,@to=@to
-
 insert into #times
 exec ccspTimesReports @from=@from,@to=@to,@interval=60
-
-insert into #notReadyTimeGroup
-SELECT [User_id], DATEADD(ss,-(tStatus),(fecha)) as dateStartDetail,(fecha) as dateEndDetail,
-  convert(smalldatetime,convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + '':00:00.000'',121) AS timegroup,
-  dateadd(hh,1,convert(smalldatetime,convert(varchar(13),fecha,121) + '':00:00.000'',121)) as timegroup_next, TipoNotReady_id,
-  (tStatus) as [timeNotReady], 1 as [count]
-  FROM ccLogAgentesNotReady
-  WHERE DATEADD(ss, -tStatus, fecha) >= @from AND  DATEADD(ss, -tStatus, fecha) < @to
-  
-INSERT into #notReadyTimeGroupMayores SELECT * from #notReadyTimeGroup where datediff(mi,timegroup,timegroup_next)>15
-delete #notReadyTimeGroup where  datediff(mi,timegroup,timegroup_next)>15
 
 insert into #sessionTime
 exec [ccspGenSession] @from=@from,@to=@to
 
+insert into #timeDetailAgent
+exec ccsprepLogAgentriaseparate @from=@from,@to=@to
+
+insert into #notReadyTimeGroup
+	SELECT [User_id], DATEADD(ss,-(tStatus),(fecha)) as dateStartDetail,(fecha) as dateEndDetail,
+		convert(smalldatetime,convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + '':00:00.000'',121) AS timegroup,
+		dateadd(hh,1,convert(smalldatetime,convert(varchar(13),fecha,121) + '':00:00.000'',121)) as timegroup_next, TipoNotReady_id,
+		(tStatus) as [timeNotReady],1 as [count]
+		FROM ccLogAgentesNotReady
+		WHERE DATEADD(ss, -tStatus, fecha) >= @from AND  DATEADD(ss, -tStatus, fecha) < @to
+  
+INSERT into #notReadyTimeGroupMayores SELECT * from #notReadyTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+delete #notReadyTimeGroup where  datediff(mi,timegroup,timegroup_next)>15
+
+
 delete from RepAgentNotReady with(rowlock) 	where date >= @from AND date < @to
 
-	insert into RepAgentNotReady
-	select th.Start as date, c.login, a.user_id as [userId], c.apellidopaterno + '' '' + c.apellidomaterno + '' '' + c.nombres as [user],
-	sT.logout as sessionTime,
-	isnull(d.tiponotready_id,0) tiponotready_id, isnull(d.descripcion,'''') descripcion,
-	isnull(d.descripcion,'''') + ''_Count'' as descripcion_count, sum(isnull(nR.[count],0)) count, isnull(d.descripcion,'''') + ''_Time'' as descripcion_time,
+insert into RepAgentNotReady
+	
+select th.Start,
+	c.Login,
+	a.User_id as userId,
+	c.ApellidoPaterno + '' '' + c.ApellidoMaterno + '' '' + c.Nombres as [user],
+	datediff(ss,sT.login,sT.logout) as sessionTime,
+	d.TipoNotReady_id as tiponotreadyId,
+	d.Descripcion as Descripcion,
+	d.Descripcion + ''_Count'' as descripcion_count,
+	nR.count as count,
+	d.Descripcion + ''_Time'' as descripcion_time,
 	isnull(dbo.TimeInterval(th.start,th.stop,nR.dateStartDetail,nR.dateEndDetail), 0) as time,
 	isnull(dbo.TimeInterval(th.start,th.stop,nR.dateStartDetail,nR.dateEndDetail), 0) as timeSeconds,
-	datepart(yyyy,a.timegroup) year, datepart(mm,a.timegroup) [month], datepart(dd,a.timegroup) [day], datepart(hh,a.timegroup) [hour], datepart(mi,a.timegroup) [minute]
-	from #timeDetailAgent a
-	left outer join #notReadyTimeGroupMayores nR on (nR.user_id = a.User_id and nR.timegroup = a.timegroup)
-	left outer join (
-		select user_id, login, apellidopaterno, apellidomaterno, nombres
-		from ccUserView
-	) as c on (a.user_id = c.user_id)
-	left outer join (
-		select tiponotready_id, descripcion
-		from ccTipoNotReady
-	) as d on (nR.typeNotReadyId = d.tiponotready_id)
-	inner join #times th on (nR.timegroup > th.Start and nR..timegroup < th.stop) OR th.Start between nR.timegroup and nR.timegroup_next
-	left outer join(select User_id,logout from #sessionTime) as sT on (sT.User_id = a.User_id)
-	where  datediff(ss,th.start,nR.timegroup_next)>0
-	group by a.timegroup, c.Login, a.user_id,c.apellidopaterno + '' '' + c.apellidomaterno + '' '' + c.nombres, sT.logout, d.tiponotready_id, d.descripcion
-
+	datepart(yyyy,a.timegroup) year, 
+	datepart(mm,a.timegroup) [month],
+	datepart(dd,a.timegroup) [day], 
+	datepart(hh,a.timegroup) [hour], 
+	datepart(mi,a.timegroup) [minutes]
+from #timeDetailAgent a
+left outer join #notReadyTimeGroupMayores nR on (nR.user_id = a.User_id and nR.timegroup = a.timegroup)
+inner join #times th on (nR.timegroup > th.Start and nR.timegroup < th.stop) OR th.Start between nR.timegroup and nR.timegroup_next
+left outer join  ccUserView as c on (a.user_id = c.user_id)
+left outer join #sessionTime as sT on (sT.User_id = a.User_id)
+left outer join ccTipoNotReady as d on (nR.typeNotReadyId = d.tiponotready_id)
 	
-	drop table #sessionTime
-	drop table #timeDetailAgent
-	drop table #times
-	drop table #notReadyTimeGroup
-	drop table #notReadyTimeGroupMayores
+drop table #sessionTime
+drop table #timeDetailAgent
+drop table #times
+drop table #notReadyTimeGroup
+drop table #notReadyTimeGroupMayores
+
 end'
 		EXEC (@sql)
 

@@ -69,6 +69,13 @@ end'
 	    end'
 	    exec (@sql)
 
+	    SET @process = 'CW-3533 ALTER TABLE ADD COLUMN holdCall in ccCamps'
+		SET @Sql = 'if not exists (select * from sys.columns where name = N''holdCall'' and Object_ID = Object_ID(N''ccCamps''))
+		    begin
+		    	ALTER TABLE ccCamps ADD holdCall BIT NOT NULL DEFAULT(1)
+		    end'		
+		EXEC(@sql)
+
 		set @process = 'CW-3933 - CREATE Fn ValidateBlackListPhoneByList'
 		set @sql='CREATE FUNCTION [dbo].[ValidateBlackListPhoneByList] (@tel VARCHAR(32), @calKey VARCHAR(20),@blackListId varchar(100))
 RETURNS BIT
@@ -496,12 +503,6 @@ AS
  END'
 		EXEC(@sql)		
 
-		SET @process = 'CW-3533 ALTER TABLE ADD COLUMN holdCall in ccCamps'
-		SET @Sql = 'if not exists (select * from sys.columns where name = N''holdCall'' and Object_ID = Object_ID(N''ccCamps''))
-		    begin
-		    	ALTER TABLE ccCamps ADD holdCall BIT NOT NULL DEFAULT(1)
-		    end'		
-		EXEC(@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

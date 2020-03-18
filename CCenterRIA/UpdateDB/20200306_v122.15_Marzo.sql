@@ -62,6 +62,20 @@ begin
 end'
 		EXEC(@sql)
 
+		set @process = 'CW-3533 Drop if exists ccspGalateaGetccCampsData'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspGalateaGetccCampsData'')
+	    begin
+	        DROP PROCEDURE ccspGalateaGetccCampsData;
+	    end'
+	    exec (@sql)
+
+	    SET @process = 'CW-3533 ALTER TABLE ADD COLUMN holdCall in ccCamps'
+		SET @Sql = 'if not exists (select * from sys.columns where name = N''holdCall'' and Object_ID = Object_ID(N''ccCamps''))
+		    begin
+		    	ALTER TABLE ccCamps ADD holdCall BIT NOT NULL DEFAULT(1)
+		    end'		
+		EXEC(@sql)
+
 		set @process = 'CW-3933 - CREATE Fn ValidateBlackListPhoneByList'
 		set @sql='CREATE FUNCTION [dbo].[ValidateBlackListPhoneByList] (@tel VARCHAR(32), @calKey VARCHAR(20),@blackListId varchar(100))
 RETURNS BIT
@@ -214,6 +228,22 @@ BEGIN
 END
 '
 		EXEC(@sql)
+
+		set @process = 'CW-3533 Create SP ccspGalateaGetccCampsData'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccspGalateaGetccCampsData]
+			@action tinyint,
+			@cam_id int
+			AS BEGIN
+			    IF @action = 1  -- Check if DTMF function is enabled (type int) 
+			    BEGIN
+					select isnull(funcEspDtmf, 0) as FuncEspDtmf from ccCamps where cam_id = @cam_id	
+			    END
+			    IF @action = 2  -- Check if hold is enabled (type bit) 
+			    BEGIN
+					select holdCall from ccCamps where cam_id = @cam_id	
+			    END
+			END'
+	    exec (@sql)
 
 		set @process = 'CW-3933 - Alter Fn fnGetTimeZone'
 		set @sql='ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)

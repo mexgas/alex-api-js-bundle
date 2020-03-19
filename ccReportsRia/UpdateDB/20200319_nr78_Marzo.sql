@@ -7,7 +7,7 @@ DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 
 /* Version to release (use the version of your own databse)*/
-SET @version = 77
+SET @version = 78
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -19,13 +19,7 @@ BEGIN
 	BEGIN TRY
 		
 		SET @process = 'alter SP ccspRepOutDispositions'
-		SET @sql = 'USE [ccReportsRia]
-GO
-/****** Object:  StoredProcedure [dbo].[ccspRepOutDispositions]    Script Date: 19/03/2020 08:57:17 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+		SET @sql = '
 ALTER PROCEDURE [dbo].[ccspRepOutDispositions]
 @action as tinyint,
 @from as datetime = null,

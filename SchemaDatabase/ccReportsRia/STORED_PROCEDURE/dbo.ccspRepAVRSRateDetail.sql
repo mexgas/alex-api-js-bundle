@@ -18,7 +18,7 @@ where date >= @from AND date < @to
 INSERT INTO dbo.RepAVRSRateDetail
 
 select
-	DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
+	f.fecha_calif AS fecha,
 	a.User_id,
 	a.Login,
 	(a.apellidopaterno+' '+a.apellidomaterno+' '+a.nombres) AS agent, 

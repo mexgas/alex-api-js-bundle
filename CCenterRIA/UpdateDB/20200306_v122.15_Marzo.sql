@@ -586,6 +586,46 @@ AS
      SET NOCOUNT ON;
 '
 	    exec (@sql)
+
+
+			set @process = 'CW-3928 Drop if exists ccsp_GalateaAdminWorkgroups'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminWorkgroups'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaAdminWorkgroups;
+	    end'
+	    exec (@sql)
+
+		
+			set @process = 'CW-3928 Refactorizacion AM'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+	@Option AS SMALLINT,
+	@AdminId AS INT = 0,
+	@WorkgroupId AS INT = 0
+AS
+BEGIN
+	IF @Option = 1
+	BEGIN 
+		SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+		JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+		WHERE User_id = @AdminId
+					
+	END
+	IF @Option = 2
+	BEGIN 
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id,
+				WGName Name,
+				StatusWorkGroup Status  
+		FROM 
+		ccRIACat_WorkGroup wg 
+		WHERE IDWG = @WorkgroupId
+					
+	END
+END'
+	    exec (@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

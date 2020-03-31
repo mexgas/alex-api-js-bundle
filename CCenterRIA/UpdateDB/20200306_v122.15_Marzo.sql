@@ -885,6 +885,15 @@ END
 	        DROP PROCEDURE ccsp_GalateaLoadCamps;
 	    end'
 	    exec (@sql) 
+
+	    set @process = 'CW-3941 Refactor:  Update PinedCampaigns Table '
+		set @sql = 'IF EXISTS(SELECT * FROM sys.tables WHERE name = N''PinCampaings'')
+						BEGIN 
+							EXEC sp_rename ''PinCampaings'', ''PinedCampaigns''
+							EXEC sp_rename ''PinedCampaigns.Cam_Id'', ''CampId''
+							EXEC sp_rename ''PinedCampaigns.Sup_Id'', ''AdminId''
+						END'
+	    exec (@sql) 
 	    
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

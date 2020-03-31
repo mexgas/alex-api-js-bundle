@@ -503,7 +503,7 @@ AS
  END'
 		EXEC(@sql)		
 
-	set @process = 'CW-3928 Drop if exists ccsp_GalateaAdminGetAgentCounters'
+		set @process = 'CW-3928 Drop if exists ccsp_GalateaAdminGetAgentCounters'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetAgentCounters'')
 	    begin
 	        DROP PROCEDURE ccsp_GalateaAdminGetAgentCounters;
@@ -629,11 +629,11 @@ END'
 
 
 			set @process = 'CW-3928 Drop if exists ccsp_GalateaAdminCampaigns'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
-	    begin
-	        DROP PROCEDURE ccsp_GalateaAdminCampaigns;
-	    end'
-	    exec (@sql)
+			set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
+		    begin
+		        DROP PROCEDURE ccsp_GalateaAdminCampaigns;
+		    end'
+		    exec (@sql)
 
 			set @process = 'CW-3928 Drop if exists ccsp_GalateaAdminCampaigns'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
@@ -851,8 +851,41 @@ END
 '
 	    exec (@sql)
 
+		set @process = 'CW-3941 Refactor: Add new operation with id 178 into ccRIALog_Operation'
+		set @sql = 'IF NOT EXISTS(SELECT * FROM ccRIALog_Operation WHERE operationType =  178)
+						BEGIN 
+							INSERT INTO ccRIALog_Operation(operationType,descripcion) VALUES (178,''CANCELAR PENDIENTES A NUEVOS|CANCEL PENDING TO NEW'');
+						END'
+	    exec (@sql)
 
-		
+		set @process = 'CW-3941 Refactor:  Drop if exists ccsp_GalateaGetRegistryListID'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRegistryListID'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaGetRegistryListID;
+	    end'
+	    exec (@sql)
+
+	    set @process = 'CW-3941 Refactor:  Drop if exists ccsp_GalateaDeleteRegistryList'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteRegistryList'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaDeleteRegistryList;
+	    end'
+	    exec (@sql)
+
+	    set @process = 'CW-3941 Refactor:  Drop if exists ccsp_GalateaUpdateOverallTotalNew'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateOverallTotalNew'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaUpdateOverallTotalNew;
+	    end'
+	    exec (@sql)
+
+		set @process = 'CW-3941 Refactor:  Drop if exists ccsp_GalateaLoadCamps'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadCamps'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaLoadCamps;
+	    end'
+	    exec (@sql) 
+	    
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		-- exec ccsp_getVersion 'BD', @version

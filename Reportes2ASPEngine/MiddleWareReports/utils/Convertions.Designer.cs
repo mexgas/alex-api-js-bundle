@@ -252,6 +252,33 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string NdBreak {
+            get {
+                return ResourceManager.GetString("NdBreak", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdPagos {
+            get {
+                return ResourceManager.GetString("NdPagos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdPersonal {
+            get {
+                return ResourceManager.GetString("NdPersonal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string ndTime {
             get {
                 return ResourceManager.GetString("ndTime", resourceCulture);

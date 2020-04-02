@@ -456,4 +456,13 @@
   <data name="MessageTime" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="NdBreak" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdPagos" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdPersonal" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

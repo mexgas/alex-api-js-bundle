@@ -45,6 +45,8 @@ namespace MiddleWareReports
                     return new RepDetailAgent();
                 case 2090:
                     return new RepViewAgentGISpecial();
+                case 2100:
+                    return new RepAgentSummary();
                 case 3000: //IN
                     return null; //"Inbound"
                 case 3010:

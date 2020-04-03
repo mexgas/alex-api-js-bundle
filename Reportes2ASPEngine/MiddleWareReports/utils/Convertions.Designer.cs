@@ -72,6 +72,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string Available {
+            get {
+                return ResourceManager.GetString("Available", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string AverageHandleTime {
             get {
                 return ResourceManager.GetString("AverageHandleTime", resourceCulture);
@@ -252,9 +261,108 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string NdBreak {
+            get {
+                return ResourceManager.GetString("NdBreak", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdCallWork {
+            get {
+                return ResourceManager.GetString("NdCallWork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdCapacitacion {
+            get {
+                return ResourceManager.GetString("NdCapacitacion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdFalla {
+            get {
+                return ResourceManager.GetString("NdFalla", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdInicio {
+            get {
+                return ResourceManager.GetString("NdInicio", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdPagos {
+            get {
+                return ResourceManager.GetString("NdPagos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdPausaGrl {
+            get {
+                return ResourceManager.GetString("NdPausaGrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdPersonal {
+            get {
+                return ResourceManager.GetString("NdPersonal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdRetro {
+            get {
+                return ResourceManager.GetString("NdRetro", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdRH {
+            get {
+                return ResourceManager.GetString("NdRH", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string ndTime {
             get {
                 return ResourceManager.GetString("ndTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdTrabajoAdm {
+            get {
+                return ResourceManager.GetString("NdTrabajoAdm", resourceCulture);
             }
         }
         
@@ -291,6 +399,15 @@ namespace MiddleWareReports {
         public static string postime {
             get {
                 return ResourceManager.GetString("postime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string PromDialog {
+            get {
+                return ResourceManager.GetString("PromDialog", resourceCulture);
             }
         }
         

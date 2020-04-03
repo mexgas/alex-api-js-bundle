@@ -2739,4 +2739,64 @@
   <data name="systemTranslated_TransferredToACD" xml:space="preserve">
     <value>Transferida al Grupo ACD</value>
   </data>
+  <data name="NAtend" xml:space="preserve">
+    <value>Llamadas no contestadas</value>
+  </data>
+  <data name="NCallsCorta" xml:space="preserve">
+    <value>Llamadas corta</value>
+  </data>
+  <data name="NCallsIn" xml:space="preserve">
+    <value>Llamadas de entrada</value>
+  </data>
+  <data name="NCallsOut" xml:space="preserve">
+    <value>Llamadas de salida</value>
+  </data>
+  <data name="NdBreak" xml:space="preserve">
+    <value>Tiempo en no disponible Break</value>
+  </data>
+  <data name="NdPagos" xml:space="preserve">
+    <value>Tiempo en no disponible Pagos</value>
+  </data>
+  <data name="NdPersonal" xml:space="preserve">
+    <value>Tiempo en no disponible Personal</value>
+  </data>
+  <data name="NNoCalif" xml:space="preserve">
+    <value>Llamadas no calificadas</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="Center" xml:space="preserve">
+    <value>Centro de atención telefónica</value>
+  </data>
+  <data name="NdCapacitacion" xml:space="preserve">
+    <value>Tiempo en no disponible Capacitacion</value>
+  </data>
+  <data name="NdCWCallWork" xml:space="preserve">
+    <value> Tiempo en no disponible Llamada de trabajo</value>
+  </data>
+  <data name="NdFalla" xml:space="preserve">
+    <value>Tiempo en no disponible Fallas</value>
+  </data>
+  <data name="NdInicio" xml:space="preserve">
+    <value>Tiempo en no disponible Inicio</value>
+  </data>
+  <data name="NdPausaGrl" xml:space="preserve">
+    <value>Tiempo en no disponible Pausa General</value>
+  </data>
+  <data name="NdRetro" xml:space="preserve">
+    <value>Tiempo en no disponible Retroalimentación</value>
+  </data>
+  <data name="NdRH" xml:space="preserve">
+    <value>Tiempo en no disponible Recursos Humanos</value>
+  </data>
+  <data name="NdTrabajoAdm" xml:space="preserve">
+    <value>Tiempo en no disponible Trabajo Administrativo</value>
+  </data>
+  <data name="PromDialog" xml:space="preserve">
+    <value>Tiempo promedio de diálogo</value>
+  </data>
+  <data name="Skill" xml:space="preserve">
+    <value>Prioridad de agente</value>
+  </data>
 </root>

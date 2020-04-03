@@ -2739,4 +2739,64 @@
   <data name="systemTranslated_TransferredToACD" xml:space="preserve">
     <value>Transferred to ACD Group</value>
   </data>
+  <data name="NAtend" xml:space="preserve">
+    <value>Not answered calls</value>
+  </data>
+  <data name="NCallsCorta" xml:space="preserve">
+    <value>Short calls</value>
+  </data>
+  <data name="NCallsIn" xml:space="preserve">
+    <value>Inbound calls</value>
+  </data>
+  <data name="NCallsOut" xml:space="preserve">
+    <value>Outbound calls</value>
+  </data>
+  <data name="NdBreak" xml:space="preserve">
+    <value>Time set to the unavailable status 'Break'</value>
+  </data>
+  <data name="NdPagos" xml:space="preserve">
+    <value>Time set to the unavailable status 'Payments'</value>
+  </data>
+  <data name="NdPersonal" xml:space="preserve">
+    <value>Time set to the unavailable status 'Personal'</value>
+  </data>
+  <data name="NNoCalif" xml:space="preserve">
+    <value>Calls without disposition</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Center" xml:space="preserve">
+    <value>Call center</value>
+  </data>
+  <data name="NdCapacitacion" xml:space="preserve">
+    <value>Time set to the unavailable status 'Training'</value>
+  </data>
+  <data name="NdCWCallWork" xml:space="preserve">
+    <value>Time set to the unavailable status 'Work call'</value>
+  </data>
+  <data name="NdFalla" xml:space="preserve">
+    <value>Time set to the unavailable status 'System failure'</value>
+  </data>
+  <data name="NdInicio" xml:space="preserve">
+    <value>Time set to the unavailable status 'Start'</value>
+  </data>
+  <data name="NdPausaGrl" xml:space="preserve">
+    <value>Time set to the unavailable status 'General pause'</value>
+  </data>
+  <data name="NdRetro" xml:space="preserve">
+    <value>Time set to the unavailable status 'Feedback'</value>
+  </data>
+  <data name="NdRH" xml:space="preserve">
+    <value>Time set to the unavailable status 'Human Resources'</value>
+  </data>
+  <data name="NdTrabajoAdm" xml:space="preserve">
+    <value>Time set to the unavailable status 'Administrative work'</value>
+  </data>
+  <data name="PromDialog" xml:space="preserve">
+    <value>Average talking time</value>
+  </data>
+  <data name="Skill" xml:space="preserve">
+    <value>Agent priority</value>
+  </data>
 </root>

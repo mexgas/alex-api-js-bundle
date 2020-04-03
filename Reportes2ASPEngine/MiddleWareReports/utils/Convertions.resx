@@ -465,4 +465,34 @@
   <data name="NdPersonal" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="Available" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdCallWork" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdCapacitacion" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdFalla" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdInicio" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdPausaGrl" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdRetro" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdRH" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="NdTrabajoAdm" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="PromDialog" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

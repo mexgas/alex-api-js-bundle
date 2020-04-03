@@ -691,6 +691,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Disponible.
+        /// </summary>
+        public static string Available {
+            get {
+                return ResourceManager.GetString("Available", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Tiempo Promedio de Respuesta.
         /// </summary>
         public static string AverageAnswerTime {
@@ -1542,6 +1551,15 @@ namespace MiddleWareReports {
         public static string Carriers {
             get {
                 return ResourceManager.GetString("Carriers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Centro de atención telefónica.
+        /// </summary>
+        public static string Center {
+            get {
+                return ResourceManager.GetString("Center", resourceCulture);
             }
         }
         
@@ -3418,7 +3436,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas no atendidas.
+        ///   Busca una cadena traducida similar a Llamadas no contestadas.
         /// </summary>
         public static string NAtend {
             get {
@@ -3436,7 +3454,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas cortadas.
+        ///   Busca una cadena traducida similar a Llamadas corta.
         /// </summary>
         public static string NCallsCorta {
             get {
@@ -3472,7 +3490,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo no disponible Break.
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Break.
         /// </summary>
         public static string NdBreak {
             get {
@@ -3481,7 +3499,43 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo no disponible Pagos.
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Capacitacion.
+        /// </summary>
+        public static string NdCapacitacion {
+            get {
+                return ResourceManager.GetString("NdCapacitacion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a  Tiempo en no disponible Llamada de trabajo.
+        /// </summary>
+        public static string NdCWCallWork {
+            get {
+                return ResourceManager.GetString("NdCWCallWork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Fallas.
+        /// </summary>
+        public static string NdFalla {
+            get {
+                return ResourceManager.GetString("NdFalla", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Inicio.
+        /// </summary>
+        public static string NdInicio {
+            get {
+                return ResourceManager.GetString("NdInicio", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Pagos.
         /// </summary>
         public static string NdPagos {
             get {
@@ -3490,11 +3544,38 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo no disponible Personal.
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Pausa General.
+        /// </summary>
+        public static string NdPausaGrl {
+            get {
+                return ResourceManager.GetString("NdPausaGrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Personal.
         /// </summary>
         public static string NdPersonal {
             get {
                 return ResourceManager.GetString("NdPersonal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Retroalimentación.
+        /// </summary>
+        public static string NdRetro {
+            get {
+                return ResourceManager.GetString("NdRetro", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Recursos Humanos.
+        /// </summary>
+        public static string NdRH {
+            get {
+                return ResourceManager.GetString("NdRH", resourceCulture);
             }
         }
         
@@ -3504,6 +3585,15 @@ namespace MiddleWareReports {
         public static string ndTime {
             get {
                 return ResourceManager.GetString("ndTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Trabajo Administrativo.
+        /// </summary>
+        public static string NdTrabajoAdm {
+            get {
+                return ResourceManager.GetString("NdTrabajoAdm", resourceCulture);
             }
         }
         
@@ -4255,6 +4345,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo promedio de diálogo.
+        /// </summary>
+        public static string PromDialog {
+            get {
+                return ResourceManager.GetString("PromDialog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Promesas.
         /// </summary>
         public static string promises {
@@ -4701,6 +4800,15 @@ namespace MiddleWareReports {
         public static string Sessiontimeperuserbyday {
             get {
                 return ResourceManager.GetString("Sessiontimeperuserbyday", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Prioridad de agente.
+        /// </summary>
+        public static string Skill {
+            get {
+                return ResourceManager.GetString("Skill", resourceCulture);
             }
         }
         

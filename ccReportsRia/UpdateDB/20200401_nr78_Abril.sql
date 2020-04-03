@@ -270,13 +270,7 @@ create table [dbo].[RepAgentSummary](
 		EXEC(@sql)
 
 		SET @process = 'Reajuste al stored procedure ccspRepAgentSummary'
-		SET @sql = 'USE [ccReportsRia]
-GO
-/****** Object:  StoredProcedure [dbo].[ccspRepAgentSummary]    Script Date: 03/04/2020 09:52:30 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+		SET @sql = '
 ALTER PROCEDURE [dbo].[ccspRepAgentSummary] 
 @action as tinyint, @from as datetime = null, @to as datetime = null	
 AS

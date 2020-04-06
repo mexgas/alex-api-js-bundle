@@ -1,4 +1,4 @@
---Version 122.01-5_20200323_1
+--Version 122.01-6_20200406_1
 SET NOCOUNT ON
 
 DECLARE @version INT
@@ -299,6 +299,19 @@ END'
 
 		EXEC(@sql)
 
+		SET @process = 'Se registra Reporte AgentSummary en BD'
+		SET @sql = '
+insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release) values
+(2100,''Resumen de agente|Agent summary'',2000, ''B'', 2, 3, '''', ''875116a11e987ae3b690eedb9cfea927a96b85c266832a3760107db8e5817f901fe9324fde95cb986465c3399ea18173'')
+
+insert into ReportsFilters values (''Agent Summary'',''users'',2100)
+
+insert into ReportsFiltersMenus values (2100,''date'')
+
+insert into ReportsFiltersMenus values (2100,''filterby'')		
+		'
+
+		EXEC(@sql)
 		IF @actualVersion = @version - 1
 			EXEC ccsp_getVersion 'BD', @version
 

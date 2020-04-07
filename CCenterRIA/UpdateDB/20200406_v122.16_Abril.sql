@@ -50,8 +50,11 @@ BEGIN
 
 		set @process = 'Se registra reporte Agent Summary en BD'
 		set @sql='
+		if not exists(select * from ccMenus where menu_id=2100) begin
 			insert into ccMenus(menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release) values
-			(2100,''Resumen de agente|Agent summary'',2000, ''B'', 2, 3, '''', ''875116a11e987ae3b690eedb9cfea927a96b85c266832a3760107db8e5817f901fe9324fde95cb986465c3399ea18173'')'
+			(2100,''Resumen de agente|Agent summary'',2000, ''B'', 2, 3, '''', ''875116a11e987ae3b690eedb9cfea927a96b85c266832a3760107db8e5817f901fe9324fde95cb986465c3399ea18173'')
+		end	
+			'
 		EXEC(@sql)
 
 		

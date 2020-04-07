@@ -18,12 +18,19 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-		
+
+		SET @process = 'drop function getDaygroup'
+		SET @sql = '
+		if exists (select * from sys.objects where object_id = OBJECT_ID(N''getDayGroup'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		begin
+			drop function getDaygroup;
+		end
+		'
+		EXEC(@sql)
+
 		SET @process = 'create Function getDaygroup'
 		SET @sql = '
 		
-	if not exists (select * from sys.objects where object_id = OBJECT_ID(N''getDayGroup'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-	begin
 		CREATE FUNCTION dbo.getDaygroup (@date datetime)
 		RETURNS datetime
 		AS
@@ -44,10 +51,10 @@ BEGIN
 
 			RETURN (@daygroup)
 
-		END
-	end'
+		END	'
 
 		EXEC (@sql)
+		
 
 		SET @process = 'Crear tabla RepAgentSummary'
 		SET @sql = '
@@ -91,16 +98,18 @@ end
 '		
 		EXEC(@sql)
 
+		
 		SET @process = 'Stored procedure ccspRepAgentSummary'
 		SET @sql = '
 
 if exists (select * from sys.procedures where name = N''ccspRepAgentSummary'')
 begin
 	DROP PROCEDURE ccspRepAgentSummary;
-end
+end'
+	EXEC(@sql)
 
-if not exists (select * from sys.procedures where name = N''ccspRepAgentSummary'')
-begin
+		SET @process = 'Stored procedure ccspRepAgentSummary'
+		SET @sql = '
 	CREATE PROCEDURE [dbo].[ccspRepAgentSummary] 
 	@action as tinyint, @from as datetime = null, @to as datetime = null	
 	AS
@@ -206,7 +215,7 @@ begin
 			dbo.getdaygroup(g.loginTime) as daygroup
 		from RepAgentSession g
 		where dbo.getdaygroup(g.loginTime) BETWEEN @from AND @to
-		group by dbo.getdaygroup(g.logintime), g.userId, g.login, g.[user]
+		group by dbo.getdaygroup(g.logintime), g.userId, g.[user]
 
 	insert into #RepDetail
 		select r.userId, sum(r.timeSeconds) as notReady, dbo.getdaygroup(r.date) as daygroup
@@ -216,23 +225,23 @@ begin
 
 	insert into #tipoNotReady
 		select	r.userId, dbo.getdaygroup(r.startDate) daygroup,
-				isnull(sum(case r.tiponotreadyId when @break then r.statusTime end), 0) as break_,
-				isnull(sum(case r.tiponotreadyId when @pagos then r.statusTime end), 0) as pagos_,
-				isnull(sum(case r.tiponotreadyId when @personal then r.statusTime end), 0) as personal_,
-				isnull(sum(case r.tiponotreadyId when @trabajoAdm then r.statusTime end), 0) as trabajoAdm_,
-				isnull(sum(case r.tiponotreadyId when @retro then r.statusTime end), 0) as retro_,
-				isnull(sum(case r.tiponotreadyId when @falla then r.statusTime end), 0) as falla_,
-				isnull(sum(case r.tiponotreadyId when @capacitacion then r.statusTime end), 0) as capacitacion_,
-				isnull(sum(case r.tiponotreadyId when @callwork then r.statusTime end), 0) as callwork_,
-				isnull(sum(case r.tiponotreadyId when @pausaGrl then r.statusTime end), 0) as pausagrl_,
-				isnull(sum(case r.tiponotreadyId when @rh then r.statusTime end), 0) as rh_,
-				isnull(sum(case r.tiponotreadyId when @inicio then r.statusTime end), 0) as inicio_
+			isnull(sum(case r.tiponotreadyId when @break then r.statusTime end), 0) as break_,
+			isnull(sum(case r.tiponotreadyId when @pagos then r.statusTime end), 0) as pagos_,
+			isnull(sum(case r.tiponotreadyId when @personal then r.statusTime end), 0) as personal_,
+			isnull(sum(case r.tiponotreadyId when @trabajoAdm then r.statusTime end), 0) as trabajoAdm_,
+			isnull(sum(case r.tiponotreadyId when @retro then r.statusTime end), 0) as retro_,
+			isnull(sum(case r.tiponotreadyId when @falla then r.statusTime end), 0) as falla_,
+			isnull(sum(case r.tiponotreadyId when @capacitacion then r.statusTime end), 0) as capacitacion_,
+			isnull(sum(case r.tiponotreadyId when @callwork then r.statusTime end), 0) as callwork_,
+			isnull(sum(case r.tiponotreadyId when @pausaGrl then r.statusTime end), 0) as pausagrl_,
+			isnull(sum(case r.tiponotreadyId when @rh then r.statusTime end), 0) as rh_,
+			isnull(sum(case r.tiponotreadyId when @inicio then r.statusTime end), 0) as inicio_
 		from RepAgentNotReadyDet r
 		where dbo.getdaygroup(r.startDate) between @from and @to
-		group by dbo.getdaygroup(r.startDate), r.userId, r.startDate
+		group by dbo.getdaygroup(r.startDate), r.userId
 
 	insert into #CallsOut
-	select	r.User_id,
+		select	r.User_id,
 			isnull(sum(case when r.calif_id =0 then 1 else null end),0) NoCalifOut,
 			isnull(sum(case when r.statusCall_id = 11 then 1 else null end),0) NotAttendedCallOut,
 			isnull(sum(case when r.statusCall_id = 13 then 1 else null end),0) AttendedCallOut,
@@ -241,12 +250,12 @@ begin
 			COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring<=@tresRing))THEN cal_id ELSE NULL END)AS abnd_ring,
 			COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog <=@tresDialog))THEN cal_id ELSE NULL END)AS abnd_dialog,
 			dbo.getdaygroup(r.cal_Inicio) as daygroup
-		from ccoCallsOut r
+		from ccoCallsOut r with(index(IX_ccoCallsOut_2),nolock)
 		where dbo.getdaygroup(r.cal_Inicio) between @from and @to and cal_manual in (0,2)
-		group by r.User_id, dbo.getdaygroup(r.cal_Inicio)
+		group by dbo.getdaygroup(r.cal_Inicio), r.User_id
 
 	insert into #CallsIn
-	select	r.User_id,
+		select	r.User_id,
 			isnull(sum(case when r.calif_id =0 then 1 else null end),0) NoCalifIn,
 			isnull(sum(case when r.statusCall_id = 11 then 1 else null end),0) NotAttendedCallIn,
 			isnull(sum(case when r.statusCall_id = 13 then 1 else null end),0) AttendedCallIn,
@@ -255,43 +264,43 @@ begin
 			COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring<=@tresRing))THEN 1 ELSE NULL END)AS abnd_ring,
 			COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog<=@tresDialog))THEN 1 ELSE NULL END)AS abnd_dialog,
 			dbo.getdaygroup(r.cal_Inicio) as daygroup
-		from ccCallsIn r
+		from ccCallsIn r with(index(IX_ccCallsIn),nolock)
 		where dbo.getdaygroup(r.cal_Inicio) between @from and @to
-		group by r.User_id, dbo.getdaygroup(r.cal_Inicio)
+		group by dbo.getdaygroup(r.cal_Inicio), r.User_id 
 
 	delete RepAgentSummary with(rowlock) where date between @from and @to
 
 	insert into RepAgentSummary
 
 	select	a.daygroup as date,
-			a.user_id as userId, 
-			a.[user] as [user],
-			''''  as Campaing,
-			sum(a.sessionTime) as sessionTime,
-			MIN(a.login) as loginTime,
-			MAX(a.logout) as logoutTime,
-			ISNULL((sum(co.tDialogOut) + sum(co.tNotesOut) + sum(ci.tDialogIn) + sum(ci.tNotesIn)),0) as dialogTime,
-			ISNULL(sum(r.notready),0) as ndTime,
-			ISNULL(sum(co.AttendedCallOut),0) as NCallsOut,
-			ISNULL(sum(ci.AttendedCallIn),0) as NCallsIn,
-			ISNULL(sum(co.abnd_xfer) + sum(co.abnd_ring) + sum(co.abnd_ring) + sum(ci.abnd_xfer) + sum(ci.abnd_ring) + sum(ci.abnd_ring),0) as NCallsCorta,
-			ISNULL(SUM(co.NotAttendedCallOut) + SUM(ci.NotAttendedCallIn),0) as NAtend,
-			ISNULL(sum(ci.NoCalifIn) + sum(co.NoCalifOut),0) as NNoCalif,
-			ISNULL(SUM(t.break_), 0) as NdBreak,
-			ISNULL(SUM(t.personal_), 0) as NdPersonal,
-			ISNULL(SUM(t.pagos_), 0) as NdPagos,
-			ISNULL(SUM(t.trabajoAdm_), 0) as NdTrabajoAdm,
-			ISNULL(SUM(t.retro_), 0) as NdRetro,
-			ISNULL(SUM(t.falla_), 0) as NdFalla,
-			ISNULL(SUM(t.capacitacion_), 0) as NdCapacitacion,
-			ISNULL(SUM(t.callwork_), 0) as NdCWCallWork,
-			ISNULL(SUM(t.pausagrl_), 0) as NdPausaGrl,
-			ISNULL(SUM(t.rh_), 0) as NdRH,
-			ISNULL(SUM(t.inicio_), 0) as NdInicio,
-			ISNULL(sum(a.sessionTime),0) - ISNULL(sum(r.notready),0) as Available,
-			ISNULL((sum(co.tDialogOut) + sum(co.tNotesOut) + sum(ci.tDialogIn) + sum(ci.tNotesIn)) / (sum(co.AttendedCallOut) + sum(ci.AttendedCallIn)) ,0) as PromDialog,
-			0 as Skill,
-			''Verde'' as Center
+		a.user_id as userId, 
+		a.[user] as [user],
+		''''  as Campaing,
+		sum(a.sessionTime) as sessionTime,
+		MIN(a.login) as loginTime,
+		MAX(a.logout) as logoutTime,
+		(sum(isnull(co.tDialogOut,0)) + sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tDialogIn,0)) + sum(isnull(ci.tNotesIn,0))) as dialogTime,
+		ISNULL(sum(r.notready),0) as ndTime,
+		sum(isnull(co.AttendedCallOut,0)) as NCallsOut,
+		sum(isnull(ci.AttendedCallIn,0)) as NCallsIn,
+		ISNULL(sum(co.abnd_xfer) + sum(co.abnd_ring) + sum(co.abnd_ring) + sum(ci.abnd_xfer) + sum(ci.abnd_ring) + sum(ci.abnd_ring),0) as NCallsCorta,
+		ISNULL(SUM(isnull(co.NotAttendedCallOut,0)) + SUM(isnull(ci.NotAttendedCallIn,0)),0) as NAtend,
+		ISNULL(sum(isnull(ci.NoCalifIn,0)) + sum(isnull(co.NoCalifOut,0)),0) as NNoCalif,
+		ISNULL(SUM(isnull(t.break_,0)), 0) as NdBreak,
+		ISNULL(SUM(t.personal_), 0) as NdPersonal,
+		ISNULL(SUM(t.pagos_), 0) as NdPagos,
+		ISNULL(SUM(t.trabajoAdm_), 0) as NdTrabajoAdm,
+		ISNULL(SUM(t.retro_), 0) as NdRetro,
+		ISNULL(SUM(t.falla_), 0) as NdFalla,
+		ISNULL(SUM(t.capacitacion_), 0) as NdCapacitacion,
+		ISNULL(SUM(t.callwork_), 0) as NdCWCallWork,
+		ISNULL(SUM(t.pausagrl_), 0) as NdPausaGrl,
+		ISNULL(SUM(t.rh_), 0) as NdRH,
+		ISNULL(SUM(t.inicio_), 0) as NdInicio,
+		ISNULL(sum(a.sessionTime),0) - ISNULL(sum(r.notready),0) as Available,
+		ISNULL((sum(isnull(co.tDialogOut,0)) + sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tDialogIn,0)) + sum(isnull(ci.tNotesIn,0))) / (sum(co.AttendedCallOut) + sum(ci.AttendedCallIn)),0)  as PromDialog,
+		0 as Skill,
+		''Verde'' as Center
 	from #AgentSession a
 	left join #RepDetail r on r.user_id = a.user_id and r.daygroup = a.daygroup
 	left join #tipoNotReady t on t.user_id = a.user_id and t.daygroup = a.daygroup
@@ -308,7 +317,7 @@ begin
 
 	END
 
-end'
+'
 
 		EXEC(@sql)
 
@@ -321,6 +330,25 @@ if not exists(select * from ReportsFilters where Id=2100) begin
 
 	insert into ReportsFiltersMenus values (2100,''filterby'')		
 end
+		'
+		EXEC(@sql)
+
+		SET @process = 'se actualiza información reporte RepAgentSummary'
+		SET @sql = '
+		if exists (select * from ccMenus where menu_id = 2100) begin
+			update ccMenus set release = ''9e0dc47226f51e50c8da24c1bdf9c28b7791c2539e6df0ef6e1e73f3f035af387c2638cf61c14718f87c94241af6ea9b'' 
+			where menu_id = 2100
+		end
+		'
+		EXEC(@sql)
+
+		SET @process = 'se actualiza información reporte RepAgentSummary'
+		SET @sql = '
+		if exists(select * from ReportsTotals where id = 2100) begin
+			delete from ReportsTotals where id = 2100
+			
+			insert into ReportsTotals values(2100,''sum:sessionTime,sum:dialogTime,sum:ndTime,sum:NCallsOut,sum:NCallsIn,sum:NCallsCorta,sum:NAtend,sum:NNoCalif,sum:NdBreak,sum:NdPersonal,sum:NdPagos,sum:NdTrabajoAdm,sum:NdRetro,sum:NdFalla,sum:NdCapacitacion,sum:NdCWCallWork,sum:NdPausaGrl,sum:NdRH,sum:NdInicio,sum:Available,sum:PromDialog'')
+		end
 		'
 
 		EXEC(@sql)

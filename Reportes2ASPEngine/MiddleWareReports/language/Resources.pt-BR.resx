@@ -2742,9 +2742,12 @@
   <data name="NAtend" xml:space="preserve">
     <value />
   </data>
+<<<<<<< HEAD
+=======
   <data name="NCallsCorta" xml:space="preserve">
     <value />
   </data>
+>>>>>>> release/122.01-6_20200406_1
   <data name="NCallsIn" xml:space="preserve">
     <value />
   </data>

@@ -50,7 +50,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 
 
 			create table #auxOutbound(
-				cal_id int,
+   				cal_id int,
 				tipo_llamada smallint,
 				cam_id smallint,
 				calif_id smallint,
@@ -102,8 +102,8 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 
 			insert into #tempCampEspWG6 (IdCampEsp,Tipo,user_id,IDWG)
 			  select distinct a.IdCampEsp, a.Tipo as Tipo_llamada,b.User_id,a.IDWG
-			from ccRIACampEspWGConsulta a
-			inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
+			from ccRIACampEspWG a
+			inner join  ccRIAWorkGroupUsers b with (index(IX_ccRIAWorkGroupUsers_I)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
 
 			--Segmento de usurios asociados al supervisor
 			create table #tempComplete6(
@@ -123,10 +123,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 			BEGIN
 				set @sql1='insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
 						select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
-						from ccRIACampEspWGConsulta a  inner join
-						(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
-						(select  distinct a.IDWG from ccRIACampEspWGConsulta a
-									inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = '+cast(@Sup_id as nvarchar(max))+' and a.IDWG = b.IDWG
+						from ccRIACampEspWG a  inner join
+						(select IDWG,user_id from ccRIAWorkGroupUsers where IDWG in
+						(select  distinct a.IDWG from ccRIACampEspWG a
+									inner join  ccRIAWorkGroupUsers b with (index(IX_ccRIAWorkGroupUsers_I)) on b.User_id = '+cast(@Sup_id as nvarchar(max))+' and a.IDWG = b.IDWG
 						)and user_id <> '+cast(@Sup_id as nvarchar(max))+' and user_id in ('+@UserList+')
 						) b on a.IDWG=b.IDWG'
 				exec (@sql1)
@@ -136,10 +136,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 			BEGIN
 				insert into #tempComplete6  (IdCampEsp,Tipo,user_id,IDWG)
 				select distinct a.IdCampEsp, a.Tipo as Tipo_llamada, b.user_id,b.IDWG
-				from  ccRIACampEspWGConsulta a  inner join
-				(select IDWG,user_id from ccRIAWorkGroupUsersConsulta where IDWG in
-					(select  distinct a.IDWG from ccRIACampEspWGConsulta a
-						inner join  ccRIAWorkGroupUsersConsulta b with (index(IX_ccRIAWorkGroupUsersConsulta2)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
+				from  ccRIACampEspWG a  inner join
+				(select IDWG,user_id from ccRIAWorkGroupUsers where IDWG in
+					(select  distinct a.IDWG from ccRIACampEspWG a
+						inner join  ccRIAWorkGroupUsers b with (index(IX_ccRIAWorkGroupUsers_I)) on b.User_id = @Sup_id and a.IDWG = b.IDWG
 						)and user_id <> @Sup_id
 				) b on a.IDWG=b.IDWG
 			END
@@ -531,10 +531,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 								set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
 
 							set @sql1 = @sql1 + ' and a.tipo_llamada=2'
-						
+			
 							print @sql1
 							exec (@sql1)
-							
+				
 							insert into #tempRiAAllInfo
 							select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,a.user_id,
 											finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
@@ -547,7 +547,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchCallIdStr]
 											id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh, prefijo from #auxOutbound a
 							inner join #tempCampEspWG6 U  on a.user_id=U.user_id
 
-							
+				
 							if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where cal_id in (select * from split_me(@callIdList) ) )> 0
 							begin
 									set @sql1 ='

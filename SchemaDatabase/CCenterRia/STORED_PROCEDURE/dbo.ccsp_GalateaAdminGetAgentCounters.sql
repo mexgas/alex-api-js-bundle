@@ -1,7 +1,9 @@
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
                                                     @sup_id AS   INT = 0, 
                                                     @agent_id AS INT = 0, 
-                                                    @WG AS       INT = 0
+                                                    @WG AS       INT = 0,
+													@campId AS INT = 0
+
 AS
      SET NOCOUNT ON;
      IF @type = 1
@@ -68,5 +70,13 @@ AS
 		FROM ccRIAWorkGroupUsers wg
 		JOIN CCUsers u on u.user_id = wg.user_id AND u.TipoUser_id = 1
 		where IDWG = @WG
+     END;
+
+	 IF @type = 5 --Agents IDs by Campaign
+     BEGIN
+		SELECT Distinct(CAST(U.User_id AS INT)) Id FROM ccRIACampEspWG camp
+		JOIN ccRIAWorkGroupUsers wg ON camp.IDWG = wg.IDWG
+		JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
+		WHERE IdCampEsp = @campId AND TIPO = 1
      END;
      SET NOCOUNT ON;

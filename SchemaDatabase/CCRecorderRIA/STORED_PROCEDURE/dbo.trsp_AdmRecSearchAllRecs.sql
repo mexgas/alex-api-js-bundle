@@ -50,7 +50,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 
 
 			create table #auxOutbound(
-				cal_id int,
+   				cal_id int,
 				tipo_llamada smallint,
 				cam_id smallint,
 				calif_id smallint,
@@ -73,7 +73,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 				califSub_id  varchar(800),
 				cal_tMoh smallint
 				)
-					
+		
 			--Segmento de Calificaciones
 			create table #tempRiaFormaCalif6(
 			id_grabacion bigint,
@@ -93,12 +93,12 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 			Tipo smallint,
 			[user_id] smallint,
 			IDWG smallint)
-			 
+ 
 			CREATE NONCLUSTERED INDEX [IX_tempCampEspWG6] ON [#tempCampEspWG6] 
 			(
 			[user_id] ASc
 			)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
-			 
+ 
 			insert into #tempCampEspWG6 (IdCampEsp,Tipo,user_id,IDWG)
 			  select distinct a.IdCampEsp, a.Tipo as Tipo_llamada,b.User_id,a.IDWG
 			from ccRIACampEspWG a
@@ -115,8 +115,8 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 			(		  
 			[user_id] ASC
 			)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON, FILLFACTOR = 80) ON [PRIMARY]
-			 
-				
+ 
+	
 
 			if @UserList is not null and @UserList <> ''
 			BEGIN
@@ -129,7 +129,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 						)and user_id <> '+cast(@Sup_id as nvarchar(max))+' and user_id in ('+@UserList+')
 						) b on a.IDWG=b.IDWG'
 				exec (@sql1)
-							
+				
 			END
 			else
 			BEGIN
@@ -143,7 +143,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 				) b on a.IDWG=b.IDWG
 			END
 
-					
+		
 			if @TypeCall is not null and @TypeCall <> ''
 				BEGIN
 					if @TypeCall=1 -- Only Inbound 
@@ -172,10 +172,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + '  a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-							
+				
 							if @ACDList is not null and @ACDList <> ''
 								set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' 						
-								
+					
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
@@ -210,10 +210,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + ' a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-																
+													
 							if @ACDList is not null and @ACDList <> ''
 								set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''	
-									
+						
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
@@ -244,23 +244,23 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join #tempCampEspWG6 h on h.IdCampEsp=a.cam_id and h.Tipo=0
 									inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id  
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-													
-									
+										
+						
 									if @ACDList is not null and @ACDList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 									if @SubdispositionList is not null and @SubdispositionList <> ''
 										set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
-																								
+																					
 									set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 									--print @sql1
 									exec (@sql1)
@@ -283,22 +283,22 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join #tempCampEspWG6 h on h.IdCampEsp=a.cam_id and h.Tipo=0
 									inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id  
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-															
+												
 									if @ACDList is not null and @ACDList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''				
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 									if @SubdispositionList is not null and @SubdispositionList <> ''
 										set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
-																								
+																					
 									set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 									--print @sql1
 									exec (@sql1)
@@ -332,10 +332,10 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + '  a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-									
+						
 							if @CampaingsList is not null and @CampaingsList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@CampaingsList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''							
-							
+				
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
@@ -357,8 +357,8 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 											finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
 											id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a 
 							inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-							
-							
+				
+				
 							if (select count(*) from RIA_GRABACIONConsulta with(index(IX_RIA_GRABACIONCONSULTA_3), nolock) where finicio BETWEEN cast(@Finicio as nvarchar)  AND  cast(@Ffin as nvarchar) )> 0
 								begin
 									set @sql1 ='
@@ -380,22 +380,22 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion			
 									left join #tempCampEspWG6 h on h.IdCampEsp=a.cam_id and h.Tipo=1
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-																					
+																		
 									if @CampaingsList is not null and @CampaingsList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@CampaingsList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''							
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 									if @SubdispositionList is not null and @SubdispositionList <> ''
 										set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'		
-																															
+																												
 									set @sql1 = @sql1 + ' and a.tipo_llamada=2'
 									--print @sql1
 									exec (@sql1)
@@ -411,7 +411,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 													finicio,ani,dni,cal_key,cal_manual,posicion,computer,total_forma,
 													id_repositorio,score,formato_duracion,grab_id,a.IDWG,califSub_id,cal_tMoh from #auxOutbound a 
 									inner join #tempCampEspWG6 U  on a.user_id=U.user_id
-									
+						
 								end
 						END
 				END
@@ -440,16 +440,16 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + ' a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-							
+				
 							if @ACDList is not null and @ACDList <> ''
 								set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' 						
-							
+				
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 							if @SubdispositionList is not null and @SubdispositionList <> ''
 								set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'	
-									
+						
 							set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 							print @sql1
 							exec (@sql1)
@@ -477,16 +477,16 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + '  a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-																
+													
 							if @ACDList is not null and @ACDList <> ''
 								set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''	
-										
+							
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 							if @SubdispositionList is not null and @SubdispositionList <> ''
 								set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
-									
+						
 							set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 							--print @sql1
 							exec (@sql1)
@@ -516,16 +516,16 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 							else
 								--set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 								set @sql1 = @sql1 + ' a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-									
+						
 							if @CampaingsList is not null and @CampaingsList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@CampaingsList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''							
-							
+				
 							if @DispositionList is not null and @DispositionList <> ''
 								set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 							if @SubdispositionList is not null and @SubdispositionList <> ''
 								set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'	
-																								
+																					
 							set @sql1 = @sql1 + ' and a.tipo_llamada=2'
 							--print @sql1
 							exec (@sql1)
@@ -561,23 +561,23 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
 									inner join #tempComplete6 U with (index(IX_tempComplete6User)) on a.age_id=U.user_id  
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-													
-									
+										
+						
 									if @ACDList is not null and @ACDList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 									if @SubdispositionList is not null and @SubdispositionList <> ''
 										set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
-																										
+																							
 									set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 									--print @sql1
 									exec (@sql1)
@@ -599,23 +599,23 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion
 									inner join #tempCampEspWG6 U with (index(IX_tempCampEspWG6)) on a.age_id=U.user_id  
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-									
-									
+						
+						
 									if @ACDList is not null and @ACDList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@ACDList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''				
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
 									if @SubdispositionList is not null and @SubdispositionList <> ''
 										set  @sql1 = @sql1 +' and a.califSub_id in ('+@SubdispositionList+')'
-																									
+																						
 									set @sql1 = @sql1 + ' and a.tipo_llamada=1'
 									--print @sql1
 									exec (@sql1)
@@ -638,16 +638,16 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 									left join ccRIAWorkGroup_Calid AS g ON g.cal_id = a.cal_id and g.user_id=a.age_id 
 									left join #tempRiaFormaCalif6 z on a.grab_id=z.id_grabacion			
 									where'	
-								
+					
 									if @IDWGList is not null and @IDWGList <> '' 
 										set @sql1 = @sql1 + ' (' + ''''+','+'''' + '+ RTRIM(a.IDWG) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@IDWGList as nvarchar) + ''''+ '+' + ''''+ '%,'+ '''' +
 												' and a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
 									else
 										set @sql1 = @sql1 + ' a.IDWG is not null and a.finicio BETWEEN ' + '''' + cast(@Finicio as nvarchar) + '''' +  ' AND ' + '''' + cast(@Ffin as nvarchar) + ''''
-																					
+																		
 									if @CampaingsList is not null and @CampaingsList <> ''
 										set @sql1 = @sql1 + ' and' + ' (' + ''''+','+'''' + '+ RTRIM(a.cam_id) + ' +''''+','+''''+')' + ' LIKE' + ''''+ '%,' +''''+ '+' + ''''+ cast(@CampaingsList as nvarchar) + ''''+ '+' + ''''+ '%,'+ ''''							
-									
+						
 									if @DispositionList is not null and @DispositionList <> ''
 										set  @sql1 = @sql1 +' and a.calif_id in ('+@DispositionList+')'
 
@@ -674,7 +674,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 
 				END
 
-				
+	
 
 			--Seleccionar info de tabla global
 			select distinct cal_id,tipo_llamada,cam_id,calif_id,duracion,id_nivel_grito,i.user_id,
@@ -688,5 +688,5 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchAllRecs]
 			drop table #tempComplete6
 			drop table #tempRiAAllInfo
 			drop table #auxOutbound
-				
+	
 			END

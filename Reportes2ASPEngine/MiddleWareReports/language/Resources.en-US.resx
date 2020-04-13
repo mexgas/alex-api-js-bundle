@@ -2740,30 +2740,6 @@
     <value>Transferred to ACD Group</value>
   </data>
   <data name="NAtend" xml:space="preserve">
-<<<<<<< HEAD
-    <value />
-  </data>
-  <data name="NCallsCorta" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NCallsIn" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NCallsOut" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NdBreak" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NdPagos" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NdPersonal" xml:space="preserve">
-    <value />
-  </data>
-  <data name="NNoCalif" xml:space="preserve">
-    <value />
-=======
     <value>Not answered calls</value>
   </data>
   <data name="NCallsCorta" xml:space="preserve">

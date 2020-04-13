@@ -3454,7 +3454,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas corta.
+        ///   Busca una cadena traducida similar a Llamadas cortas.
         /// </summary>
         public static string NCallsCorta {
             get {

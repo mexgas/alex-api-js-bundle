@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Abandoned" xml:space="preserve">
     <value>Abandonadas</value>
@@ -2740,34 +2740,10 @@
     <value>Transferida al Grupo ACD</value>
   </data>
   <data name="NAtend" xml:space="preserve">
-<<<<<<< HEAD
-    <value>Llamadas no atendidas</value>
-  </data>
-  <data name="NCallsCorta" xml:space="preserve">
-    <value>Número de llamadas cortadas</value>
-  </data>
-  <data name="NCallsIn" xml:space="preserve">
-    <value>Número de llamadas de entrada</value>
-  </data>
-  <data name="NCallsOut" xml:space="preserve">
-    <value>Número de llamadas de salida</value>
-  </data>
-  <data name="NdBreak" xml:space="preserve">
-    <value>Tiempo de no disponible Break</value>
-  </data>
-  <data name="NdPagos" xml:space="preserve">
-    <value>Tiempo de no disponible Pagos</value>
-  </data>
-  <data name="NdPersonal" xml:space="preserve">
-    <value>Tiempo de no disponible Personal</value>
-  </data>
-  <data name="NNoCalif" xml:space="preserve">
-    <value>Número de llamadas no calificadas</value>
-=======
     <value>Llamadas no contestadas</value>
   </data>
   <data name="NCallsCorta" xml:space="preserve">
-    <value>Llamadas corta</value>
+    <value>Llamadas cortas</value>
   </data>
   <data name="NCallsIn" xml:space="preserve">
     <value>Llamadas de entrada</value>
@@ -2822,6 +2798,5 @@
   </data>
   <data name="Skill" xml:space="preserve">
     <value>Prioridad de agente</value>
->>>>>>> release/122.01-6_20200406_1
   </data>
 </root>

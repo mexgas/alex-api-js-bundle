@@ -215,19 +215,25 @@ else if @action = 14 begin
  update [message] set @messageStatusId=1,tQueue=null,userId=0,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0  where messageStatusId in(2,3)
 end
 else if @action = 15 begin
+
     SELECT @existAttached = case when count(*)>0 then 1 else 0 end
     from attached where messageId in (select messageId from message where conversationId=@conversationId)
 
-    select max(messageid) as messageid,max(A.inboundid) as inboundid,max(a.conversationid) as conversationid,
-        max(mailClient) as mailClient, min([date]) as [date], @existAttached isAttached, max(C.descripcion) as descripcion,
-        max(B.tSend) as tSend, max(D.Nombres+' '+D.ApellidoPaterno+' '+D.ApellidoMaterno) as nameAgent,
-        max(E.timeAlertMessage) timeAlertMessage ,max( E.answerTimeOut) answerTimeOut, max(C.tNotas) as tNotas,
-        max(A.mailInbound) as MailInbound, isnull(max(E.name), '') as name
+	SELECT @existAttached = case when count(*)>0 then 1 else 0 end
+    from attached where messageId in (select messageId from message where conversationId=@conversationId)
+
+    select max(B.messageId) as MessageID, cast(max(A.inboundid) as int) as InboundID, max(A.conversationid) as ConversationID,
+        max(A.mailClient) as ClientEmail, min(B.[date]) as [Date], @existAttached isAttached, max(C.descripcion) as ACDName,
+        max(B.tSend) as tSend, max(D.Nombres+' '+D.ApellidoPaterno+' '+D.ApellidoMaterno) as NameAgent,
+        cast(max(E.timeAlertMessage) as int) tAlertMessage, cast(max(E.answerTimeOut) as int) tAnswerTimeOut, max(C.tNotas) as tWrapUp,
+        max(A.mailInbound) as InboundEmail, isnull(max(E.name), '') as SenderName, cast(max(F.graphic_id) as int) as ACDGraphicID
     from conversation A
     inner join message B  on A.conversationId = B.conversationId
     inner join ccinbound C on A.inboundid= C.inbound_id
     left join ccUsers D on B.userId = D.User_id
     inner join contactMeanIn E on E.inboundId=C.Inbound_id   and E.meanContactTypeId=@meanContactTypeId
+	inner join ccRIAinboundGraph F on C.Inbound_id = F.Inbound_id
+	inner join ccRIAGraphics G on F.graphic_id = g.graphic_id
     where A.conversationId=@conversationId
 
 end

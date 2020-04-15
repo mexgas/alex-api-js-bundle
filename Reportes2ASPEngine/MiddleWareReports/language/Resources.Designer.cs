@@ -376,11 +376,11 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Resumen por agente.
+        ///   Busca una cadena traducida similar a Resumen de agente.
         /// </summary>
-        public static string Agentsummary {
+        public static string AgentSummary {
             get {
-                return ResourceManager.GetString("Agentsummary", resourceCulture);
+                return ResourceManager.GetString("AgentSummary", resourceCulture);
             }
         }
         

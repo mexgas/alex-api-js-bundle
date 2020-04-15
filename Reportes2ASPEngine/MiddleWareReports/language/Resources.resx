@@ -210,8 +210,8 @@
   <data name="AgentScoringTemplates" xml:space="preserve">
     <value>Agente(Formatos de Calificación)</value>
   </data>
-  <data name="Agentsummary" xml:space="preserve">
-    <value>Resumen por agente</value>
+  <data name="AgentSummary" xml:space="preserve">
+    <value>Resumen de agente</value>
   </data>
   <data name="AgentTwitter" xml:space="preserve">
     <value>Tuits por agente</value>

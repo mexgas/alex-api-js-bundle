@@ -135,6 +135,8 @@ namespace MiddleWareReports
                     return new RepSpecialDialingResults();
                 case 4250://Answered and Transfer calls
                     return new RepOutAnswAndXferCalls();
+                case 4260: //Llamadas de salida
+                    return new RepMKTIntervalosSalida();
                 case 6000: //IVR
                     return null; //"IVR"
                 case 6010:

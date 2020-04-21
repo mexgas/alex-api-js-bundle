@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Abandoned" xml:space="preserve">
     <value>Abandoned</value>
@@ -2797,7 +2797,63 @@
     <value>Average talking time</value>
   </data>
   <data name="Skill" xml:space="preserve">
-    <value>Agent priority</value>
->>>>>>> release/122.01-6_20200406_1
+    <value>&gt;&gt;&gt;&gt;&gt;&gt;&gt; release/122.01-6_20200406_1</value>
+  </data>
+  <data name="Buzon" xml:space="preserve">
+    <value>Voicemail/Answering machine</value>
+  </data>
+  <data name="Cancelado" xml:space="preserve">
+    <value>Cancelled calls</value>
+  </data>
+  <data name="Congestion" xml:space="preserve">
+    <value>Busy circuit</value>
+  </data>
+  <data name="Contactos" xml:space="preserve">
+    <value>Answered calls</value>
+  </data>
+  <data name="dia" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Fax" xml:space="preserve">
+    <value>Fax/Modem</value>
+  </data>
+  <data name="MKTIntervalosSalida" xml:space="preserve">
+    <value>Outbound Calls Intervals</value>
+  </data>
+  <data name="NoContestadas" xml:space="preserve">
+    <value>Calls assigned but not answered</value>
+  </data>
+  <data name="OcupacionCOPC" xml:space="preserve">
+    <value>Agent productivity</value>
+  </data>
+  <data name="Ocupado" xml:space="preserve">
+    <value>Unavailable agents</value>
+  </data>
+  <data name="Personal" xml:space="preserve">
+    <value>Time set to the unavailable status Personal''</value>
+  </data>
+  <data name="rango1" xml:space="preserve">
+    <value>Start time</value>
+  </data>
+  <data name="rango2" xml:space="preserve">
+    <value>End time</value>
+  </data>
+  <data name="Realizadas" xml:space="preserve">
+    <value>Dialed calls</value>
+  </data>
+  <data name="Reductor" xml:space="preserve">
+    <value>Off-phone time</value>
+  </data>
+  <data name="SinAgentes" xml:space="preserve">
+    <value>No staffed agents</value>
+  </data>
+  <data name="SinTono" xml:space="preserve">
+    <value>No dial tone</value>
+  </data>
+  <data name="Staff" xml:space="preserve">
+    <value>Staffed agents</value>
+  </data>
+  <data name="TMO" xml:space="preserve">
+    <value>Average call duration</value>
   </data>
 </root>

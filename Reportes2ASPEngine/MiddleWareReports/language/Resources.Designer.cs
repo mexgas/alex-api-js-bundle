@@ -952,6 +952,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Buzón/Máquina.
+        /// </summary>
+        public static string Buzon {
+            get {
+                return ResourceManager.GetString("Buzon", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Agente.
         /// </summary>
         public static string ByAgent {
@@ -1546,6 +1555,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas canceladas.
+        /// </summary>
+        public static string Cancelado {
+            get {
+                return ResourceManager.GetString("Cancelado", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Carriers.
         /// </summary>
         public static string Carriers {
@@ -1708,11 +1726,29 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Congestión.
+        /// </summary>
+        public static string Congestion {
+            get {
+                return ResourceManager.GetString("Congestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Contactados.
         /// </summary>
         public static string contacted {
             get {
                 return ResourceManager.GetString("contacted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas contestadas.
+        /// </summary>
+        public static string Contactos {
+            get {
+                return ResourceManager.GetString("Contactos", resourceCulture);
             }
         }
         
@@ -2028,6 +2064,15 @@ namespace MiddleWareReports {
         public static string DetailScoringTemplates {
             get {
                 return ResourceManager.GetString("DetailScoringTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Fecha.
+        /// </summary>
+        public static string dia {
+            get {
+                return ResourceManager.GetString("dia", resourceCulture);
             }
         }
         
@@ -2505,6 +2550,15 @@ namespace MiddleWareReports {
         public static string extension {
             get {
                 return ResourceManager.GetString("extension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Fax/Módem.
+        /// </summary>
+        public static string Fax {
+            get {
+                return ResourceManager.GetString("Fax", resourceCulture);
             }
         }
         
@@ -3193,6 +3247,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas de salida Intervalos.
+        /// </summary>
+        public static string MKTIntervalosSalida {
+            get {
+                return ResourceManager.GetString("MKTIntervalosSalida", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
         public static string MKTIntervals {
@@ -3760,6 +3823,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas asignadas sin contestar.
+        /// </summary>
+        public static string NoContestadas {
+            get {
+                return ResourceManager.GetString("NoContestadas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Nombre.
         /// </summary>
         public static string Nombre {
@@ -4102,6 +4174,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Ocupación COPC.
+        /// </summary>
+        public static string OcupacionCOPC {
+            get {
+                return ResourceManager.GetString("OcupacionCOPC", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Agentes en estado ocupado.
+        /// </summary>
+        public static string Ocupado {
+            get {
+                return ResourceManager.GetString("Ocupado", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Otra Hora.
         /// </summary>
         public static string oHour {
@@ -4278,6 +4368,15 @@ namespace MiddleWareReports {
         public static string Performanceperagent {
             get {
                 return ResourceManager.GetString("Performanceperagent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Personal.
+        /// </summary>
+        public static string Personal {
+            get {
+                return ResourceManager.GetString("Personal", resourceCulture);
             }
         }
         
@@ -4498,6 +4597,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Hora de Inicio.
+        /// </summary>
+        public static string rango1 {
+            get {
+                return ResourceManager.GetString("rango1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Hora de fin.
+        /// </summary>
+        public static string rango2 {
+            get {
+                return ResourceManager.GetString("rango2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Detalle de evaluación.
         /// </summary>
         public static string RateDetail {
@@ -4543,6 +4660,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas realizadas.
+        /// </summary>
+        public static string Realizadas {
+            get {
+                return ResourceManager.GetString("Realizadas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Llamadas Recibidas.
         /// </summary>
         public static string receivedCalls {
@@ -4557,6 +4683,15 @@ namespace MiddleWareReports {
         public static string recordDate {
             get {
                 return ResourceManager.GetString("recordDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo fuera de llamada.
+        /// </summary>
+        public static string Reductor {
+            get {
+                return ResourceManager.GetString("Reductor", resourceCulture);
             }
         }
         
@@ -4804,6 +4939,24 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Sin agentes conectados.
+        /// </summary>
+        public static string SinAgentes {
+            get {
+                return ResourceManager.GetString("SinAgentes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Sin tono de línea.
+        /// </summary>
+        public static string SinTono {
+            get {
+                return ResourceManager.GetString("SinTono", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Prioridad de agente.
         /// </summary>
         public static string Skill {
@@ -4845,6 +4998,15 @@ namespace MiddleWareReports {
         public static string SpecialTimes {
             get {
                 return ResourceManager.GetString("SpecialTimes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Agentes conectados.
+        /// </summary>
+        public static string Staff {
+            get {
+                return ResourceManager.GetString("Staff", resourceCulture);
             }
         }
         
@@ -7257,6 +7419,15 @@ namespace MiddleWareReports {
         public static string tManual {
             get {
                 return ResourceManager.GetString("tManual", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Duración promedio de llamada.
+        /// </summary>
+        public static string TMO {
+            get {
+                return ResourceManager.GetString("TMO", resourceCulture);
             }
         }
         

@@ -3247,15 +3247,6 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas de salida Intervalos.
-        /// </summary>
-        public static string MKTIntervalosSalida {
-            get {
-                return ResourceManager.GetString("MKTIntervalosSalida", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Busca una cadena traducida similar a MKT Intervalos.
         /// </summary>
         public static string MKTIntervals {
@@ -4314,6 +4305,15 @@ namespace MiddleWareReports {
         public static string other {
             get {
                 return ResourceManager.GetString("other", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Llamadas de salida Intervalos.
+        /// </summary>
+        public static string OutboundCallsIntervals {
+            get {
+                return ResourceManager.GetString("OutboundCallsIntervals", resourceCulture);
             }
         }
         

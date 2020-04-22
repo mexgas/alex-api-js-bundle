@@ -2817,7 +2817,7 @@
   <data name="Fax" xml:space="preserve">
     <value>Fax/Módem</value>
   </data>
-  <data name="MKTIntervalosSalida" xml:space="preserve">
+  <data name="OutboundCallsIntervals" xml:space="preserve">
     <value>Llamadas de salida Intervalos</value>
   </data>
   <data name="NoContestadas" xml:space="preserve">

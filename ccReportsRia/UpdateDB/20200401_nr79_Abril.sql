@@ -356,7 +356,7 @@ end
 		SET @process = 'Se actualiza BD'
 		SET @sql = '
 			alter table repagentsummary alter column userid varchar(20)
-			alter table repagentsummary add tnotesout int
+			alter table repagentsummary add twrapup int
 		'
 		
 		EXEC(@sql)
@@ -563,7 +563,7 @@ end
 		ISNULL((sum(isnull(co.tDialogOut,0)) + sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tDialogIn,0)) + sum(isnull(ci.tNotesIn,0))) / (sum(co.AttendedCallOut) + sum(ci.AttendedCallIn)),0)  as PromDialog,
 		0 as Skill,
 		''Verde'' as Center,
-		(sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tNotesIn,0))) as tnotesout
+		(sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tNotesIn,0))) as twrapup
 	from #AgentSession a
 	left join #RepDetail r on r.user_id = a.user_id and r.daygroup = a.daygroup
 	left join #tipoNotReady t on t.user_id = a.user_id and t.daygroup = a.daygroup

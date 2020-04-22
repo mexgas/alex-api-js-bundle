@@ -2856,4 +2856,10 @@
   <data name="TMO" xml:space="preserve">
     <value>Average call duration</value>
   </data>
+  <data name="loginMktTime" xml:space="preserve">
+    <value>Login Time</value>
+  </data>
+  <data name="logoutMktTime" xml:space="preserve">
+    <value>Logout Time</value>
+  </data>
 </root>

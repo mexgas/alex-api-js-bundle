@@ -124,7 +124,7 @@ namespace MiddleWareReports
             }
             if (element != null && element.HasChildNodes)
                 mainElement.AppendChild(element);
-            
+
 
         }
 
@@ -159,7 +159,7 @@ namespace MiddleWareReports
             reportParams.Add("action", "2");
             DataTable crmInfo = crmDb.executeSP("dbo.GetCRMInfo", reportParams);
 
-            
+
             XmlElement crmxFilters = xml.CreateElement("", "CRMxFilters", "");
             string dbColumn = "crmxSource";
             XmlElement campaingsRoot = xml.CreateElement("", "Campaigns", "");  //Create a root for campaigns
@@ -227,7 +227,7 @@ namespace MiddleWareReports
                 crmxFilters.AppendChild(acdsRoot);
             if (campaingsRoot.HasChildNodes)
                 crmxFilters.AppendChild(campaingsRoot);
-            
+
             return crmxFilters;
 
 
@@ -244,8 +244,8 @@ namespace MiddleWareReports
         {
             changeCulture();
             DateTime dateEndParam = DateTime.Now;
-            DateTime dateNow=DateTime.Now;
-            if(parameters[""]!=null&&parameters[""].Length>0)
+            DateTime dateNow = DateTime.Now;
+            if (parameters[""] != null && parameters[""].Length > 0)
                 dateEndParam = DateTime.Parse(parameters["dateEnd"].ToString(), CultureInfo.CurrentCulture);
             string isDay = "0";
             if (dateEndParam.Year == dateEndParam.Year && dateEndParam.Month == dateEndParam.Month && dateEndParam.Day == dateEndParam.Day)
@@ -259,7 +259,7 @@ namespace MiddleWareReports
             XmlDocument xmlAddFilters = new XmlDocument();
             bool calculateTotals = true;
 
-            
+
             //Add Filrters used by report selected (Note: Fill DBSchema)
             if (addFilters.Length > 0)
             {
@@ -273,9 +273,9 @@ namespace MiddleWareReports
                         xmlAddFilters = getReportFilters(parametersAddFilter, process);
                         break;
                 }
-                
+
             }
-            if(parameters["TemplateId"] != null)
+            if (parameters["TemplateId"] != null)
                 parameters.Remove("TemplateId");
 
             //Get report data (details and totals) via a DB query
@@ -394,7 +394,15 @@ namespace MiddleWareReports
                         string value = TranslatorHelper.parseDbValue(dataRow[column.ColumnName]);
                         if (convertedColumns[column.ColumnName] != null && value != "")
                         {
-                            value = TranslatorHelper.formatTime(Convert.ToInt32(value));
+                            if (dataRow[column.ColumnName] is DateTime)
+                            {
+                                value = TranslatorHelper.formatTime((DateTime)dataRow[column.ColumnName]);
+                            }
+                            else
+                            {
+
+                                value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                            }
                         }
                         XmlElement el = xmlReport.CreateElement("", "Cell", "");
 
@@ -428,12 +436,12 @@ namespace MiddleWareReports
             String campName = string.Empty;
             if (value.StartsWith("call:i:"))//Acd
             {
-                if(acds.ContainsKey(split[2]))
+                if (acds.ContainsKey(split[2]))
                     campName = acds[split[2]] + "(" + split[3] + ")";
             }
             else if (value.StartsWith("call:o:"))//Campaign
             {
-                if(campaigns.ContainsKey(split[2]))
+                if (campaigns.ContainsKey(split[2]))
                     campName = campaigns[split[2]];
             }
             return campName;

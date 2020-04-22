@@ -87,7 +87,7 @@ namespace MiddleWareReports
             {
                 try
                 {
-                    Type sourceType = typeof(MiddleWareReports.Convertions);
+                    Type sourceType = typeof(Convertions);
                     var property = sourceType.GetProperty(column.ColumnName);
                     object result = property.GetValue(property, null);
                     if (result is string)
@@ -119,21 +119,18 @@ namespace MiddleWareReports
         public static string formatDate(DateTime date)
         {
             return string.Format(Thread.CurrentThread.CurrentCulture.DateTimeFormat.FullDateTimePattern, date);
-        }
+        }       
 
-        /// <summary>
-        /// Formats the given amount of seconds to the format HH:MM:SS
-        /// </summary>
-        /// <param name="seconds">The amount of seconds to be formated</param>
-        /// <returns>The time formated string</returns>
-        public static string formatTime(int seconds)
-        {
-            return string.Format("{0:00}:{1:00}:{2:00}", Convert.ToInt32(seconds) / 3600, (Convert.ToInt32(seconds) / 60) % 60, Convert.ToInt32(seconds) % 60);
-        }
         public static string formatTime(long seconds)
         {
             return string.Format("{0:00}:{1:00}:{2:00}", Convert.ToInt64(seconds) / 3600, (Convert.ToInt64(seconds) / 60) % 60, Convert.ToInt64(seconds) % 60);
         }
+
+        public static string formatTime(DateTime date)
+        {
+            return date.ToString("HH:mm:ss");
+        }
+
         /// <summary>
         /// Parses database values to current culture format if necessary.
         /// </summary>

@@ -2995,11 +2995,29 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a Entrada.
+        /// </summary>
+        public static string loginMktTime {
+            get {
+                return ResourceManager.GetString("loginMktTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Inicio de sesión.
         /// </summary>
         public static string loginTime {
             get {
                 return ResourceManager.GetString("loginTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Salida.
+        /// </summary>
+        public static string logoutMktTime {
+            get {
+                return ResourceManager.GetString("logoutMktTime", resourceCulture);
             }
         }
         

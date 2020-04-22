@@ -216,6 +216,24 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string loginMktTime {
+            get {
+                return ResourceManager.GetString("loginMktTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string logoutMktTime {
+            get {
+                return ResourceManager.GetString("logoutMktTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string maxDelay {
             get {
                 return ResourceManager.GetString("maxDelay", resourceCulture);

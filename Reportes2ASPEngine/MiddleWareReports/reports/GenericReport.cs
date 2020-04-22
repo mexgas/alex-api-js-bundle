@@ -476,7 +476,15 @@ namespace MiddleWareReports
                         string value = TranslatorHelper.parseDbValue(dataRow[column.ColumnName]);
                         if (convertedColumns[column.ColumnName] != null && value != "")
                         {
-                            value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                            if (dataRow[column.ColumnName] is DateTime)
+                            {
+                                value = TranslatorHelper.formatTime((DateTime)dataRow[column.ColumnName]);
+                            }
+                            else
+                            {
+
+                                value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                            }
                         }
                         XmlElement el = xmlReport.CreateElement("", "Cell", "");
 

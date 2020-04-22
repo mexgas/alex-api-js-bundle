@@ -2856,4 +2856,10 @@
   <data name="TMO" xml:space="preserve">
     <value>Duración promedio de llamada</value>
   </data>
+  <data name="loginMktTime" xml:space="preserve">
+    <value>Entrada</value>
+  </data>
+  <data name="logoutMktTime" xml:space="preserve">
+    <value>Salida</value>
+  </data>
 </root>

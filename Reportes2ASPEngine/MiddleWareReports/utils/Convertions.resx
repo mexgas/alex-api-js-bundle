@@ -495,4 +495,10 @@
   <data name="PromDialog" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="loginMktTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="logoutMktTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

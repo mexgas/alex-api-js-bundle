@@ -357,6 +357,10 @@ end
 		SET @sql = '
 			alter table repagentsummary alter column userid varchar(20)
 			alter table repagentsummary add twrapup int
+			exec sp_rename ''RepAgentSummary.campaing'', ''campaign'', ''COLUMN'';
+			EXEC sp_rename ''RepAgentSummary.loginTime'', ''loginMktTime'', ''COLUMN'';
+			EXEC sp_rename ''RepAgentSummary.logoutTime'', ''logoutMktTime'', ''COLUMN'';
+
 		'
 		
 		EXEC(@sql)

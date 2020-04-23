@@ -932,15 +932,7 @@ BEGIN
 	WHERE logDial_id = @logDial_id;
 	SET NOCOUNT OFF;
 END;'
-		EXEC(@sql)
-
-		set @process = ''
-		set @sql=''
-		EXEC(@sql)
-
-		set @process = ''
-		set @sql=''
-		EXEC(@sql)
+		EXEC(@sql)		
 
 		
 		/* End script release */

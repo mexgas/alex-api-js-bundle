@@ -38,7 +38,7 @@ if @option = 3 -- Insert camp area
 if @option = 4 begin-- Delete camp area
 	
 
-	--Si existe una campaña relacionada con el grupo
+	--Si existe una campa?a relacionada con el grupo
 	if exists(select cam_id from ccInbound where cam_id=@DeleteCamId) begin
 		select -4
 		return(0)	 
@@ -46,17 +46,14 @@ if @option = 4 begin-- Delete camp area
 
 	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId
 				 
-	delete from ccCampsAgente where cam_id = @DeleteCamId
-	--delete from ccoDialerCamp where cam_id = @DeleteCamId
-	delete from ccoWorkingTable where cam_id = @DeleteCamId
+	delete from ccCampsAgente where cam_id = @DeleteCamId	
 
 	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId and A.tipo = 1	
 
 	delete from ccSupervisorCam where cam_id = @DeleteCamId and tipo = 1
 	delete from ccRIACampEspWG where IdCampEsp = @DeleteCamId and tipo = 1	
-	delete from ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource where cam_id = @DeleteCamId)
+	delete from ccoWorkingTable where cam_id = @DeleteCamId
 	
-
 	Update ccCamps set IDArea= null where cam_id=@DeleteCamId--, cam_activo = 0 
 	return(0)
 	end
@@ -197,13 +194,12 @@ if @option = 7 begin-- Delete camp area
 	insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId
 
 	delete from ccCampsAgente where cam_id = @DeleteCamId
-	delete from ccoWorkingTable where cam_id = @DeleteCamId or callout_id 
-		in (select callout_id from ccoCallsOutSource where cam_id = @DeleteCamId)
-
 	insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id = @DeleteCamId and A.tipo = 1
 
 	delete from ccSupervisorCam where cam_id = @DeleteCamId and tipo = 1
-	delete from ccRIACampEspWG where IdCampEsp = @DeleteCamId and tipo = 1	
+	delete from ccRIACampEspWG where IdCampEsp = @DeleteCamId and tipo = 1
+	
+	delete from ccoWorkingTable where cam_id = @DeleteCamId  
 
 	select @CurrentWG = coalesce(@CurrentWG + '','', '') + CAST(IDWG as varchar(400)) 
 	from ccRIACampEspWG where IDCampEsp = @DeleteCamId and tipo = 1

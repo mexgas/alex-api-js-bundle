@@ -65,7 +65,8 @@ BEGIN
 	    end'
 	    exec (@sql)
 
-		 set @process = 'CW-3916 Obtener información de estados del agente por camp '
+		 set @process = 'CW-3916 Obtener información de estados del agente por camp 
+						Se agrega accion 6 para regresar el estado actual del agente'
 		set @sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
                                                     @sup_id AS   INT = 0, 
@@ -148,7 +149,12 @@ AS
 		JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
 		WHERE IdCampEsp = @campId AND TIPO = 1
      END;
+
+	  IF @type = 6 -- Get Agent current state
+	 BEGIN		WITH UserMaxFecha(User_id,fecha) as(			SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id		)		SELECT CASE WHEN CurrentState.currentStatus is null or  CurrentState.currentStatus<0 					then 0 else CAST(CurrentState.currentStatus as int) end CurrentState		from ccUsers u		left join 		(		select A.User_id,B.currentStatus from UserMaxFecha A 		inner join ccLogAgentesDia  B on A.User_id=B.User_id and A.fecha=B.fecha		) CurrentState on u.User_id=CurrentState.User_id		where u.TipoUser_id=1 and u.User_id = @agent_id
+	 END
      SET NOCOUNT ON;
+
 '
 	    exec (@sql)
 		

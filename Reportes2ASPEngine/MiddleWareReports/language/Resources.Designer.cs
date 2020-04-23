@@ -3841,6 +3841,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Busca una cadena traducida similar a No contestan.
+        /// </summary>
+        public static string NoContestan {
+            get {
+                return ResourceManager.GetString("NoContestan", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Busca una cadena traducida similar a Nombre.
         /// </summary>
         public static string Nombre {
@@ -4467,6 +4476,15 @@ namespace MiddleWareReports {
         public static string PromDialog {
             get {
                 return ResourceManager.GetString("PromDialog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Tiempo promedio de diálogo.
+        /// </summary>
+        public static string PromDialogo {
+            get {
+                return ResourceManager.GetString("PromDialogo", resourceCulture);
             }
         }
         

@@ -2862,4 +2862,10 @@
   <data name="logoutMktTime" xml:space="preserve">
     <value>Logout Time</value>
   </data>
+  <data name="NoContestan" xml:space="preserve">
+    <value>Not answered</value>
+  </data>
+  <data name="PromDialogo" xml:space="preserve">
+    <value>Average talking time</value>
+  </data>
 </root>

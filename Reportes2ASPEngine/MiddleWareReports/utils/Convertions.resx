@@ -501,4 +501,13 @@
   <data name="logoutMktTime" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="Personal" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="promDialogo" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="TMO" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

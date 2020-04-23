@@ -361,6 +361,13 @@ end
 		
 		EXEC(@sql)
 
+		SET @process = 'Se actualiza columna tnotesout'
+		SET @sql = '
+			exec sp_rename ''RepAgentSummary.tnotesout'', ''twrapup'', ''column''
+		'
+		
+		EXEC(@sql)
+
 		SET @process = 'Se modifica SP RepAgentSummary'
 		SET @sql = '
 	ALTER PROCEDURE [dbo].[ccspRepAgentSummary] 
@@ -563,7 +570,7 @@ end
 		ISNULL((sum(isnull(co.tDialogOut,0)) + sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tDialogIn,0)) + sum(isnull(ci.tNotesIn,0))) / (sum(co.AttendedCallOut) + sum(ci.AttendedCallIn)),0)  as PromDialog,
 		0 as Skill,
 		''Verde'' as Center,
-		(sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tNotesIn,0))) as tnotesout
+		(sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tNotesIn,0))) as twrapup
 	from #AgentSession a
 	left join #RepDetail r on r.user_id = a.user_id and r.daygroup = a.daygroup
 	left join #tipoNotReady t on t.user_id = a.user_id and t.daygroup = a.daygroup
@@ -584,7 +591,7 @@ end
 		'
 		
 		EXEC(@sql)
-
+		
 		IF @actualVersion = @version - 1
 			EXEC ccsp_getVersion 'BD', @version
 

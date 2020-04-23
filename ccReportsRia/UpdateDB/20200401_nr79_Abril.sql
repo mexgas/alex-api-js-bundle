@@ -19,7 +19,7 @@ BEGIN
 
 	BEGIN TRY
 
-		SET @process = 'drop function getDaygroup'
+		SET @process = 'CW-3956 drop function getDaygroup'
 		SET @sql = '
 		if exists (select * from sys.objects where object_id = OBJECT_ID(N''getDayGroup'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
 		begin
@@ -28,7 +28,7 @@ BEGIN
 		'
 		EXEC(@sql)
 
-		SET @process = 'create Function getDaygroup'
+		SET @process = 'CW-3956 create Function getDaygroup'
 		SET @sql = '
 		
 		CREATE FUNCTION dbo.getDaygroup (@date datetime)
@@ -56,7 +56,7 @@ BEGIN
 		EXEC (@sql)
 		
 
-		SET @process = 'Crear tabla RepAgentSummary'
+		SET @process = 'CW-3956 Crear tabla RepAgentSummary'
 		SET @sql = '
 		
 if not exists (select * from sys.tables where name = N''RepAgentSummary'')
@@ -99,7 +99,7 @@ end
 		EXEC(@sql)
 
 		
-		SET @process = 'Stored procedure ccspRepAgentSummary'
+		SET @process = 'CW-3956 stored procedure ccspRepAgentSummary'
 		SET @sql = '
 
 if exists (select * from sys.procedures where name = N''ccspRepAgentSummary'')
@@ -108,7 +108,7 @@ begin
 end'
 	EXEC(@sql)
 
-		SET @process = 'Stored procedure ccspRepAgentSummary'
+		SET @process = 'CW-3956 crear Stored procedure ccspRepAgentSummary'
 		SET @sql = '
 	CREATE PROCEDURE [dbo].[ccspRepAgentSummary] 
 	@action as tinyint, @from as datetime = null, @to as datetime = null	
@@ -321,7 +321,7 @@ end'
 
 		EXEC(@sql)
 
-		SET @process = 'Se registra Reporte AgentSummary en BD'
+		SET @process = 'CW-3956 Se registra Reporte AgentSummary en BD'
 		SET @sql = '
 if not exists(select * from ReportsFilters where Id=2100) begin
 	insert into ReportsFilters values (''Agent Summary'',''users'',2100)
@@ -333,7 +333,7 @@ end
 		'
 		EXEC(@sql)
 
-		SET @process = 'se actualiza información reporte RepAgentSummary'
+		SET @process = 'CW-3956 se actualiza información reporte RepAgentSummary'
 		SET @sql = '
 		if exists (select * from ccMenus where menu_id = 2100) begin
 			update ccMenus set release = ''9e0dc47226f51e50c8da24c1bdf9c28b7791c2539e6df0ef6e1e73f3f035af387c2638cf61c14718f87c94241af6ea9b'' 
@@ -342,7 +342,7 @@ end
 		'
 		EXEC(@sql)
 
-		SET @process = 'se actualiza información reporte RepAgentSummary'
+		SET @process = 'CW-3956 se actualiza información reporte RepAgentSummary'
 		SET @sql = '
 		if exists(select * from ReportsTotals where id = 2100) begin
 			delete from ReportsTotals where id = 2100
@@ -353,7 +353,7 @@ end
 
 		EXEC(@sql)
 
-		SET @process = 'Se actualiza BD'
+		SET @process = 'CW-3956 Se actualiza BD'
 		SET @sql = '
 			alter table repagentsummary alter column userid varchar(20)
 			alter table repagentsummary add twrapup int
@@ -365,7 +365,7 @@ end
 		
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP RepAgentSummary'
+		SET @process = 'CW-3956 Se modifica SP RepAgentSummary'
 		SET @sql = '
 	ALTER PROCEDURE [dbo].[ccspRepAgentSummary] 
 	@action as tinyint, @from as datetime = null, @to as datetime = null	

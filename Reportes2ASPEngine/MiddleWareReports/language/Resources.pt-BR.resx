@@ -2787,4 +2787,73 @@
   <data name="NdTrabajoAdm" xml:space="preserve">
     <value>Tiempo en no disponible Trabajo Administrativo</value>
   </data>
+  <data name="Buzon" xml:space="preserve">
+    <value>Buzón/Máquina</value>
+  </data>
+  <data name="Cancelado" xml:space="preserve">
+    <value>Llamadas canceladas</value>
+  </data>
+  <data name="Congestion" xml:space="preserve">
+    <value>Congestión</value>
+  </data>
+  <data name="Contactos" xml:space="preserve">
+    <value>Contactos</value>
+  </data>
+  <data name="dia" xml:space="preserve">
+    <value>Fecha</value>
+  </data>
+  <data name="Fax" xml:space="preserve">
+    <value>Fax/Módem</value>
+  </data>
+  <data name="OutboundCallsIntervals" xml:space="preserve">
+    <value>Llamadas de salida Intervalos</value>
+  </data>
+  <data name="NoContestadas" xml:space="preserve">
+    <value>Llamadas asignadas sin contestar</value>
+  </data>
+  <data name="OcupacionCOPC" xml:space="preserve">
+    <value>Ocupación COPC</value>
+  </data>
+  <data name="Ocupado" xml:space="preserve">
+    <value>Agentes en estado ocupado</value>
+  </data>
+  <data name="Personal" xml:space="preserve">
+    <value>Tiempo en no disponible Personal</value>
+  </data>
+  <data name="rango1" xml:space="preserve">
+    <value>Hora de Inicio</value>
+  </data>
+  <data name="rango2" xml:space="preserve">
+    <value>Hora de fin</value>
+  </data>
+  <data name="Realizadas" xml:space="preserve">
+    <value>Llamadas realizadas</value>
+  </data>
+  <data name="Reductor" xml:space="preserve">
+    <value>Tiempo fuera de llamada</value>
+  </data>
+  <data name="SinAgentes" xml:space="preserve">
+    <value>Sin agentes conectados</value>
+  </data>
+  <data name="SinTono" xml:space="preserve">
+    <value>Sin tono de línea</value>
+  </data>
+  <data name="Staff" xml:space="preserve">
+    <value>Agentes conectados</value>
+  </data>
+  <data name="TMO" xml:space="preserve">
+    <value>Duración promedio de llamada</value>
+  </data>
+  <data name="loginMktTime" xml:space="preserve">
+    <value>Login Time</value>
+  </data>
+  <data name="logoutMktTime" xml:space="preserve">
+    <value>Logout Time</value>
+  </data>
+  <data name="NoContestan" xml:space="preserve">
+    <value>No contestan</value>
+  </data>
+  <data name="PromDialogo" xml:space="preserve">
+    <value>Tiempo promedio de diálogo</value>
+  </data>
 </root>

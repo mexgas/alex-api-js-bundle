@@ -216,6 +216,24 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string loginMktTime {
+            get {
+                return ResourceManager.GetString("loginMktTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string logoutMktTime {
+            get {
+                return ResourceManager.GetString("logoutMktTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string maxDelay {
             get {
                 return ResourceManager.GetString("maxDelay", resourceCulture);
@@ -282,6 +300,15 @@ namespace MiddleWareReports {
         public static string NdCapacitacion {
             get {
                 return ResourceManager.GetString("NdCapacitacion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string NdCWCallWork {
+            get {
+                return ResourceManager.GetString("NdCWCallWork", resourceCulture);
             }
         }
         
@@ -396,6 +423,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string Personal {
+            get {
+                return ResourceManager.GetString("Personal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string postime {
             get {
                 return ResourceManager.GetString("postime", resourceCulture);
@@ -408,6 +444,15 @@ namespace MiddleWareReports {
         public static string PromDialog {
             get {
                 return ResourceManager.GetString("PromDialog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string promDialogo {
+            get {
+                return ResourceManager.GetString("promDialogo", resourceCulture);
             }
         }
         
@@ -795,6 +840,15 @@ namespace MiddleWareReports {
         public static string tManual {
             get {
                 return ResourceManager.GetString("tManual", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
+        public static string TMO {
+            get {
+                return ResourceManager.GetString("TMO", resourceCulture);
             }
         }
         

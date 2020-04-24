@@ -19,7 +19,7 @@ BEGIN
 
 	BEGIN TRY
 		
-		SET @process = 'CW-3956 Corregir columna loginTime'
+		SET @process = 'CW-3956 Corregir columna loginTime '
 SET @sql = '
 IF EXISTS(SELECT * FROM sys.columns WHERE name = N''loginTime'' AND Object_ID = OBJECT_ID(N''repagentsummary'') )
 BEGIN

@@ -129,7 +129,7 @@ end
 
 		EXEC(@sql)
 
-		SET @process = 'CW-3956 Se actualiza BD'
+		SET @process = 'se actualiza información reporte RepAgentSummary'
 		SET @sql = '
 			alter table repagentsummary alter column userid varchar(20)
 

@@ -142,8 +142,7 @@ end
 		EXEC(@sql)
 
 		SET @process = 'CW-3956 Se actualiza columna tnotesout'
-		SET @sql = '
-			IF EXISTS
+		SET @sql = 'IF EXISTS
 (
 	SELECT *
 	FROM sys.columns

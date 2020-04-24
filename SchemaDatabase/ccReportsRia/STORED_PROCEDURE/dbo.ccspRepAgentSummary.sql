@@ -42,6 +42,11 @@ CREATE PROCEDURE [dbo].[ccspRepAgentSummary]
 		daygroup datetime
 	)
 
+	create table #ccUsers(
+		user_id int not null,
+		login varchar(20)
+	)
+
 	create table #tipoNotReady(
 		user_id int not null,
 		daygroup datetime,
@@ -105,6 +110,10 @@ CREATE PROCEDURE [dbo].[ccspRepAgentSummary]
 		where dbo.getdaygroup(g.loginTime) BETWEEN @from AND @to
 		group by dbo.getdaygroup(g.logintime), g.userId, g.[user]
 
+	insert into #ccUsers	
+		select c.User_id, c.Login
+		from ccUsers c
+
 	insert into #RepDetail
 		select r.userId, sum(r.timeSeconds) as notReady, dbo.getdaygroup(r.date) as daygroup
 		from RepAgentNotReady r
@@ -161,7 +170,7 @@ CREATE PROCEDURE [dbo].[ccspRepAgentSummary]
 	insert into RepAgentSummary
 
 	select	a.daygroup as date,
-		a.user_id as userId, 
+		c.login as userId,
 		a.[user] as [user],
 		''  as Campaing,
 		sum(a.sessionTime) as sessionTime,
@@ -188,13 +197,15 @@ CREATE PROCEDURE [dbo].[ccspRepAgentSummary]
 		ISNULL(sum(a.sessionTime),0) - ISNULL(sum(r.notready),0) as Available,
 		ISNULL((sum(isnull(co.tDialogOut,0)) + sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tDialogIn,0)) + sum(isnull(ci.tNotesIn,0))) / (sum(co.AttendedCallOut) + sum(ci.AttendedCallIn)),0)  as PromDialog,
 		0 as Skill,
-		'Verde' as Center
+		'Verde' as Center,
+		(sum(isnull(co.tNotesOut,0)) + sum(isnull(ci.tNotesIn,0))) as twrapup
 	from #AgentSession a
 	left join #RepDetail r on r.user_id = a.user_id and r.daygroup = a.daygroup
 	left join #tipoNotReady t on t.user_id = a.user_id and t.daygroup = a.daygroup
 	left join #CallsOut co on co.user_id = a.user_id and co.daygroup = a.daygroup
 	left join #CallsIn ci on ci.user_id = a.user_id and ci.daygroup = a.daygroup 
-	group by a.user_id, a.daygroup, a.[user]
+	left join #ccUsers c on a.user_id = c.user_id
+	group by a.user_id, a.daygroup, a.[user], c.login
 	order by a.daygroup
 
 	drop table #AgentSession
@@ -202,5 +213,6 @@ CREATE PROCEDURE [dbo].[ccspRepAgentSummary]
 	drop table #tipoNotReady
 	drop table #CallsOut
 	drop table #CallsIn
+	drop table #ccUsers
 
 	END

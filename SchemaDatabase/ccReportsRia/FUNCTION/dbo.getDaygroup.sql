@@ -9,7 +9,7 @@ CREATE FUNCTION dbo.getDaygroup (@date datetime)
 				case 
 					when DATEPART(hh, @date) < 5 
 					then 
-						DATEADD(day, -1, @date) 
+					DATEADD(day, -1, @date) 
 					else 
 						DATEADD(day, 0,@date)
 				end 

@@ -3598,7 +3598,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo en no disponible Inicio.
+        ///   Busca una cadena traducida similar a Tiempo en no disponible Inicio .
         /// </summary>
         public static string NdInicio {
             get {

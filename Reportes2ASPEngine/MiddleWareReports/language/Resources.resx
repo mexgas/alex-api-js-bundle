@@ -2779,7 +2779,7 @@
     <value>Tiempo en no disponible Fallas</value>
   </data>
   <data name="NdInicio" xml:space="preserve">
-    <value>Tiempo en no disponible Inicio</value>
+    <value>Tiempo en no disponible Inicio </value>
   </data>
   <data name="NdPausaGrl" xml:space="preserve">
     <value>Tiempo en no disponible Pausa General</value>

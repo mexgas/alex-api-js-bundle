@@ -1744,7 +1744,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Llamadas contestadas.
+        ///   Busca una cadena traducida similar a Contactos.
         /// </summary>
         public static string Contactos {
             get {

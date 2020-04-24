@@ -932,7 +932,15 @@ BEGIN
 	WHERE logDial_id = @logDial_id;
 	SET NOCOUNT OFF;
 END;'
-		EXEC(@sql)		
+		EXEC(@sql)
+		
+		SET @process = 'CW-3957 Registrar reporte en ccMenus'
+SET @sql = '
+if not exists(select * from ccMenus where menu_id = 4260) begin
+	insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release) values (4260, ''Llamadas de salida Intervalos|Outbound Calls Intervals'', 4000, ''B'', 4, 3, '''',''7651cad7f793d912a0ee0b08f3f931296bcf3d27ae4e71bfcfb00c19a95535b66135ea334e3e95860576d463de30ee75907aac1eb3a31510e467cc3a2cdaa7ed'')
+end
+'
+EXEC(@sql)
 
 		
 		/* End script release */

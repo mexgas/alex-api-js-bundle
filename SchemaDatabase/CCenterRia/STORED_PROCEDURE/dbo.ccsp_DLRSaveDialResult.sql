@@ -1,74 +1,89 @@
-CREATE procedure [dbo].[ccsp_DLRSaveDialResult]
-@callout_id int,
-@cam_id smallint,
-@tipoResDial_id tinyint,
-@Telefono varchar(30),
-@Puerto smallint,
-@tDialing tinyint=0,
-@tBusy smallint=0,
-@call_id int = 0,
-@answerbit bit = null,
-@tAnswerBit smallint = 0,
-@canceledNoAgents bit =0,
-@disconnectCause varchar(250) = '',
-@cal_key varchar(20) = '',
-@call_TS varchar(15) = ''
+CREATE PROCEDURE dbo.ccsp_DLRSaveDialResult 
+				@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+				@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+				@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '', @cal_key VARCHAR(20)= '', @call_TS VARCHAR(15)=
+				''
 AS
-set nocount on
-declare @tNow as datetime, @RecicleSIC tinyint
-declare @logDial_id int, @preview smallint
-declare @tAnswerBitFinal as datetime
-		
-SELECT @RecicleSIC=IsNull(valor, 0) FROM ccSettings WHERE setting_id = 60
-select @tNow=getdate()
-		
-select @tAnswerBitFinal = dateadd(ss,-@tAnswerBit,@tNow)
-		
-if @call_id > 0 and @tipoResDial_id = 1
 BEGIN
-    INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id)
-    select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, '00000000', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(@Telefono)
-END
-ELSE
-BEGIN
-    INSERT ccoLogDials (callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy, TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id)
-    select @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy, '00000000', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(@Telefono)
-END
-		
-select @logDial_id=scope_identity()
-		
-if (@RecicleSIC=1) begin
-    UPDATE ccoWorkingTable with(rowlock) SET tipoResDial_id = @tipoResDial_id where callout_id = @callout_id
-end
-		
-select @logDial_id
-		
--- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
-if @call_id > 0 and @tipoResDial_id = 1
-begin
-    select @preview = case when progdial=2 then 1 else 0 end from cccamps nolock where cam_id=@cam_id
-    if @preview = 1
-    begin
-	   update ccoCallsOut with(rowlock) set cal_puerto = @Puerto where cal_id = @call_id and cal_puerto = 0
-    end
-    else
-    begin
-	   update ccoCallsOut with(rowlock) set cal_manual = 2, cal_puerto = @Puerto where cal_manual =1 and cal_id = @call_id and cal_puerto = 0
-    end
-    exec ccsp_CstoCalculaCosto @call_id
-		
-    if @cal_key ='' begin
-	   select @cal_key=cal_key from ccoCallsOutSource with(nolock) where @callout_id=callout_id
-	   update ccologdials with(rowlock) set cal_key=@cal_key where logDial_id=@logDial_id
-    end
-		
-end
-		
--- inserta informacion para reportes de workgroup
-insert ccRIAWorkGroup_logDial_id (IDWG, logDial_id, cam_id, timestamp)
-select IDWG, @logDial_id, IdCampEsp, getdate() 
-from ccRIACampEspWG where tipo = 1 and IdCampEsp = @cam_id
-		
--- Guarda configuracion de TipoDialingMode
-update ccoLogDials with(rowlock) set TipoDialingMode = dbo.fn_getDialingMode(@call_id, 0, @logDial_id, @cam_id) where logDial_id=@logDial_id
-set nocount off
+	SET NOCOUNT ON;
+
+	DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+	DECLARE @logDial_id INT;
+	DECLARE @tAnswerBitFinal AS DATETIME;
+
+	SELECT @RecicleSIC = ISNULL(valor, 0)
+	FROM ccSettings
+	WHERE setting_id = 60;
+
+	SELECT @tNow = GETDATE();
+
+	SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   '00000000', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.
+			   fnGetTipoLlamada( @Telefono );
+	END;
+		 ELSE
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   '00000000', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(
+			   @Telefono );
+	END;
+
+	SELECT @logDial_id = SCOPE_IDENTITY();
+
+	IF @RecicleSIC = 1
+	BEGIN
+		UPDATE ccoWorkingTable WITH(ROWLOCK)
+		  SET tipoResDial_id = @tipoResDial_id
+		WHERE callout_id = @callout_id;
+	END;
+
+	SELECT @logDial_id;
+
+	-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		UPDATE ccoCallsOut WITH(ROWLOCK)
+		  SET cal_puerto = @Puerto, cal_manual = CASE
+												 WHEN cal_manual = 1 THEN 2
+													  ELSE cal_manual
+												 END
+		WHERE cal_id = @call_id AND 
+			  cal_puerto = 0;
+
+		EXEC ccsp_CstoCalculaCosto @call_id;
+
+		IF @cal_key = ''
+		BEGIN
+			SELECT @cal_key = cal_key
+			FROM ccoCallsOutSource WITH(NOLOCK)
+			WHERE @callout_id = callout_id;
+
+			UPDATE ccologdials WITH(ROWLOCK)
+			  SET cal_key = @cal_key
+			WHERE logDial_id = @logDial_id;
+		END;
+	END;
+
+	-- inserta informacion para reportes de workgroup
+	INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )
+		   SELECT IDWG, @logDial_id, IdCampEsp, GETDATE()
+		   FROM ccRIACampEspWG
+		   WHERE tipo = 1 AND 
+				 IdCampEsp = @cam_id;
+
+	-- Guarda configuracion de TipoDialingMode
+	UPDATE ccoLogDials WITH(ROWLOCK)
+	  SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+	WHERE logDial_id = @logDial_id;
+	SET NOCOUNT OFF;
+END;

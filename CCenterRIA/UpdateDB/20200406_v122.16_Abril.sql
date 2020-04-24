@@ -65,7 +65,8 @@ BEGIN
 	    end'
 	    exec (@sql)
 
-		 set @process = 'CW-3916 Obtener información de estados del agente por camp '
+		 set @process = 'CW-3916 Obtener información de estados del agente por camp 
+						Se agrega accion 6 para regresar el estado actual del agente'
 		set @sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
                                                     @sup_id AS   INT = 0, 
@@ -148,7 +149,25 @@ AS
 		JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
 		WHERE IdCampEsp = @campId AND TIPO = 1
      END;
+
+	  IF @type = 6 -- Get Agent current state
+	 BEGIN
+		WITH UserMaxFecha(User_id,fecha) as(
+			SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id
+		)
+
+		SELECT CASE WHEN CurrentState.currentStatus is null or  CurrentState.currentStatus<0 
+					then 0 else CAST(CurrentState.currentStatus as int) end CurrentState
+		from ccUsers u
+		left join 
+		(
+		select A.User_id,B.currentStatus from UserMaxFecha A 
+		inner join ccLogAgentesDia  B on A.User_id=B.User_id and A.fecha=B.fecha
+		) CurrentState on u.User_id=CurrentState.User_id
+		where u.TipoUser_id=1 and u.User_id = @agent_id
+	 END
      SET NOCOUNT ON;
+
 '
 	    exec (@sql)
 		
@@ -756,6 +775,164 @@ return(0)
 set nocount off'
 		EXEC(@sql)
 
+
+		set @process = 'CW-4201 Alter SP ccsp_RIAConfEspec'
+		set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAConfEspec]
+@User_id int
+AS
+set nocount on
+/****
+Conexion Info Email In
+  protocol|server|ssl|port|cleanMail|revisionTime
+Conexion Info Email Out
+  serverOut|portOut|tls|sslOut
+Conexion Info Twitter
+  usuarioID|token|tokenSecret|time|daysTwitterRecord
+***/
+select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
+A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
+A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
+A.OpriorityT, A.callerIdDesc, A.chat mode, A.inactiveChatTime, A.maxChats, isnull(A.chatDomain,'''') chatDomain, A.chatQueueOverflow, A.chatTimeOverflow,
+isnull(A.startStopRecording,0) startStopRecording
+,isnull(B.name,'''') as nameMail,isnull(B.conexionInfo,'''') as conexionInfo,isnull(B.connUser,'''') as connUser,
+isnull(B.ConnPass,'''') as connPass,isnull(B.numMessages,3) as numMessages,isnull(B.timeAlertMessage,10)  as timeAlertMessage,
+isnull(B.IsActive,0) as Active, isnull(B.answerTimeOut,0) as answerTimeOut,
+case when A.cam_id > 0   and C.callsBySurvey>0 then A.callBackSurveyAgent else 0 end callBackSurveyAgent,
+case when A.cam_id > 0  and C.callsBySurvey>0 then A.callBackSurveyClient else 0 end callBackSurveyClient,
+case when A.cam_id > 0  and C.callsBySurvey>0 then 1 else 0 end isRelationSurvey,
+isnull(A.agts_notavailable,'''') as agts_notavailable,
+isnull(nameTwitter,'''') nameTwitter,isnull(userTwitter,'''') userTwitter,isnull(numMessagesTwitter,3) numMessagesTwitter,
+isnull(timeAlertMessageTwitter,10) timeAlertMessageTwitter,isnull(ActiveTwitter,0) ActiveTwitter,isnull(answerTimeOutTwitter,10) answerTimeOutTwitter,
+--usuarioID|token|tokenSecret|time|daysTwitterRecord
+isnull(conexionInfoTwitter,''usuarioID|token|tokenSecret|1|0'') conexionInfoTwitter
+,isnull(closeConversationTimeTwitter,3) closeConversationTimeTwitter,isnull(closeConversationTime,3) closeConversationTimeEmail
+,isnull(A.editableDtmf,0) as editableDtmf
+,isnull(gra.graphic_id,1) as frame
+,isnull(A.prefijo,'''') as prefijo
+,isnull(A.addDataCallBackReminder,0) as addDataCallBackReminder
+,isnull(Conv.hasMessage,0) as hasMessageMail
+from ccInbound A
+left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
+left join ccCamps C on C.cam_id=A.cam_id
+left join(
+
+select GP.inboundId,case when count(*)>0 then 1 else 0 end hasMessage 
+ from (
+  select A.inboundId, A.conversationId, max(B.messageId) messageId  from conversation A 
+  inner join message B  on A.conversationId = B.conversationId  where A.isFinished=0
+    GROUP BY A.inboundId,A.conversationId
+  ) GP
+inner join message M on GP.messageId=M.messageId and messageStatusId not in(6,10,11,12,13)
+group by inboundId
+
+)  Conv on Conv.inboundId=A.inbound_id
+
+left join (
+select D.inboundId,
+D.name as nameTwitter,D.connUser as userTwitter,D.numMessages as numMessagesTwitter,
+D.timeAlertMessage as timeAlertMessageTwitter,
+D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionInfo as conexionInfoTwitter,
+closeConversationTime as  closeConversationTimeTwitter
+from ContactMeanIn D
+where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
+where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+return(0)
+set nocount off
+'
+		EXEC(@sql)
+
+		set @process = 'CW-4038 Alter SP ccsp_DLRSaveDialResult'
+		set @sql='ALTER PROCEDURE dbo.ccsp_DLRSaveDialResult 
+				@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+				@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+				@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(20)= '''', @call_TS VARCHAR(15)=
+				''''
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+	DECLARE @logDial_id INT;
+	DECLARE @tAnswerBitFinal AS DATETIME;
+
+	SELECT @RecicleSIC = ISNULL(valor, 0)
+	FROM ccSettings
+	WHERE setting_id = 60;
+
+	SELECT @tNow = GETDATE();
+
+	SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   ''00000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.
+			   fnGetTipoLlamada( @Telefono );
+	END;
+		 ELSE
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   ''00000000'', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(
+			   @Telefono );
+	END;
+
+	SELECT @logDial_id = SCOPE_IDENTITY();
+
+	IF @RecicleSIC = 1
+	BEGIN
+		UPDATE ccoWorkingTable WITH(ROWLOCK)
+		  SET tipoResDial_id = @tipoResDial_id
+		WHERE callout_id = @callout_id;
+	END;
+
+	SELECT @logDial_id;
+
+	-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		UPDATE ccoCallsOut WITH(ROWLOCK)
+		  SET cal_puerto = @Puerto, cal_manual = CASE
+												 WHEN cal_manual = 1 THEN 2
+													  ELSE cal_manual
+												 END
+		WHERE cal_id = @call_id AND 
+			  cal_puerto = 0;
+
+		EXEC ccsp_CstoCalculaCosto @call_id;
+
+		IF @cal_key = ''''
+		BEGIN
+			SELECT @cal_key = cal_key
+			FROM ccoCallsOutSource WITH(NOLOCK)
+			WHERE @callout_id = callout_id;
+
+			UPDATE ccologdials WITH(ROWLOCK)
+			  SET cal_key = @cal_key
+			WHERE logDial_id = @logDial_id;
+		END;
+	END;
+
+	-- inserta informacion para reportes de workgroup
+	INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )
+		   SELECT IDWG, @logDial_id, IdCampEsp, GETDATE()
+		   FROM ccRIACampEspWG
+		   WHERE tipo = 1 AND 
+				 IdCampEsp = @cam_id;
+
+	-- Guarda configuracion de TipoDialingMode
+	UPDATE ccoLogDials WITH(ROWLOCK)
+	  SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+	WHERE logDial_id = @logDial_id;
+	SET NOCOUNT OFF;
+END;'
+		EXEC(@sql)		
 
 		
 		/* End script release */

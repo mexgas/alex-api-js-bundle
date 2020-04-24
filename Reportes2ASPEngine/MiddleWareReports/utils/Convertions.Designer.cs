@@ -306,6 +306,15 @@ namespace MiddleWareReports {
         /// <summary>
         ///   Busca una cadena traducida similar a convertToTime.
         /// </summary>
+        public static string NdCWCallWork {
+            get {
+                return ResourceManager.GetString("NdCWCallWork", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a convertToTime.
+        /// </summary>
         public static string NdFalla {
             get {
                 return ResourceManager.GetString("NdFalla", resourceCulture);

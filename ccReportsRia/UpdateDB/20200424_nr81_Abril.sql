@@ -23,7 +23,7 @@ BEGIN
 SET @sql = '
 IF EXISTS(SELECT * FROM sys.columns WHERE name = N''loginTime'' AND Object_ID = OBJECT_ID(N''repagentsummary'') )
 BEGIN
-	exec sp_rename ''RepAgentSummary.loginTime'', ''loginMktTime'', ''columnn''
+	exec sp_rename ''RepAgentSummary.loginTime'', ''loginMktTime'', ''column''
 END'
 EXEC(@sql)
 
@@ -31,7 +31,7 @@ SET @process = 'CW-3956 Corregir columna logoutTime'
 SET @sql = '
 IF EXISTS(SELECT * FROM sys.columns WHERE name = N''logoutTime'' AND Object_ID = OBJECT_ID(N''repagentsummary'') )
 BEGIN
-	exec sp_rename ''RepAgentSummary.logoutTime'', ''logoutMktTime'', ''columnn''
+	exec sp_rename ''RepAgentSummary.logoutTime'', ''logoutMktTime'', ''column''
 END
 '
 EXEC(@sql)
@@ -104,6 +104,15 @@ if not exists (select * from ReportsTotals where id = 4260) begin
 	insert into ReportsTotals values (4260, '''')
 end
 '
+EXEC(@sql)
+
+SET @process = 'CW-3957 Stored procedure ccspRepMKTIntervalosSalida'
+SET @sql = '
+
+if exists (select * from sys.procedures where name = N''ccspRepMKTIntervalosSalida'')
+begin
+	DROP PROCEDURE ccspRepMKTIntervalosSalida;
+end'
 EXEC(@sql)
 
 SET @process = 'CW-3957 Crear stored procedure ccspRepMKTIntervalosSalida'

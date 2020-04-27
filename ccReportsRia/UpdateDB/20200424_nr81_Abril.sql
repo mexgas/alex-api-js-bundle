@@ -109,13 +109,13 @@ EXEC(@sql)
 SET @process = 'CW-3957 Stored procedure ccspRepMKTIntervalosSalida'
 SET @sql = '
 
-if exists (select * from sys.procedures where name = N''ccspRepMKTIntervalosSalida'')
+if exists (select * from sys.procedures where name = N''ccspRepMKTIntervalosSalidas'')
 begin
-	DROP PROCEDURE ccspRepMKTIntervalosSalida;
+	DROP PROCEDURE ccspRepMKTIntervalosSalidas;
 end'
 EXEC(@sql)
 
-SET @process = 'CW-3957 Crear stored procedure ccspRepMKTIntervalosSalida'
+SET @process = 'CW-3957 Crear stored procedure ccspRepMKTIntervalosSalidas'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccspRepMKTIntervalosSalidas] 
 	@action as tinyint, @from as datetime = null, @to as datetime = null	

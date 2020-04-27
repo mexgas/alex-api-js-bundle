@@ -226,30 +226,30 @@ SET @sql = '
 		EXEC @tresRing=ccspConfigTresRing
 	
 			insert into #sessionTime
-			select [user_id], datediff(ss, min(login), max(logout)) as tlogueo, min(login) as login, max(logout) as logout,
-			case when datepart(mi,min(login)) < 30 then right(''00'' + cast(datepart(hh,min(login)) as varchar(2)),2) + '':00'' 
-			else right(''00'' + cast(datepart(hh,min(login)) as varchar(2)),2) + '':30'' end as login2,
-			case when datepart(mi,max(logout)) < 30 then right(''00'' + cast(datepart(hh,max(logout)) as varchar(2)),2) + '':30'' 
-			else right(''00'' + cast(datepart(hh,max(logout)) + 1 as varchar(2)),2) + '':00'' end as logout2
-			from(
-			select a.[user_id], a.fecha as ''login'',
-			(select isnull(max(Fecha),getdate()) from #loglogin b with(nolock) where b.user_id = a.user_id and b.tipo = 0 and b.fecha >= a.fecha and b.fecha <= (select isnull(min(fecha),''99991231 23:59:59.998'')
-			from #loglogin with(nolock) where [user_id] = b.[user_id] and tipo = 1 and fecha > a.fecha )) as ''logout'' from #loglogin a
-			where a.tipo=1 and fecha >= @from and fecha <= @to
-			union 
-			select * 
-			from( select a.[user_id], 
-				(select isnull(max(Fecha),getdate()) 
-				from #loglogin b with(nolock)
-				where b.[user_id] = a.[user_id] and b.tipo = 1 and b.fecha <= a.fecha and b.fecha >= (select isnull(max(fecha),b.fecha) from #loglogin with(nolock) where [user_id] = b.[user_id] and tipo = 0 and fecha < a.fecha )
-				) as ''login'', a.fecha as ''logout''
-			from #loglogin a
-			where a.tipo = 0 and fecha >= @from and fecha <= @to
-			) as session
-			where datediff(day,[login],logout) >= 1
-			) as Detail
-			group by [user_id]
-			order by [user_id], login
+	select [user_id], DATEDIFF(ss, d.login, d.logout) as tlogueo, min(d.login) as login, max(d.logout) as logout,
+	case when datepart(mi,min(d.login)) < 30 then right(''00'' + cast(datepart(hh,min(d.login)) as varchar(2)),2) + '':00'' 
+	else right(''00'' + cast(datepart(hh,min(d.login)) as varchar(2)),2) + '':30'' end as login2,
+	case when datepart(mi,max(logout)) < 30 then right(''00'' + cast(datepart(hh,max(logout)) as varchar(2)),2) + '':30'' 
+	else right(''00'' + cast(datepart(hh,max(logout)) + 1 as varchar(2)),2) + '':00'' end as logout2
+	from(
+	select a.[user_id], a.fecha as ''login'',
+	(select isnull(max(Fecha),getdate()) from #loglogin b with(nolock) where b.user_id = a.user_id and b.tipo = 0 and b.fecha >= a.fecha and b.fecha <= (select isnull(min(fecha),''99991231 23:59:59.998'')
+	from #loglogin with(nolock) where [user_id] = b.[user_id] and tipo = 1 and fecha > a.fecha )) as ''logout'' from #loglogin a
+	where a.tipo=1 and fecha >= @from and fecha <= @to
+	union 
+	select * 
+	from( select a.[user_id], 
+		(select isnull(max(Fecha),getdate()) 
+		from #loglogin b with(nolock)
+		where b.[user_id] = a.[user_id] and b.tipo = 1 and b.fecha <= a.fecha and b.fecha >= (select isnull(max(fecha),b.fecha) from #loglogin with(nolock) where [user_id] = b.[user_id] and tipo = 0 and fecha < a.fecha )
+		) as ''login'', a.fecha as ''logout''
+	from #loglogin a
+	where a.tipo = 0 and fecha >= @from and fecha <= @to
+	) as session
+	where datediff(day,[login],logout) >= 1
+	) as D
+	group by [user_id], d.login, d.logout
+	order by [user_id]
 
 			insert into #tPersonal
 			select Pg.rango1 rango1, Pg.rango2 rango2, count(distinct Pg.uid) uid, sum(Pg.tlogueofra) tlogueofra

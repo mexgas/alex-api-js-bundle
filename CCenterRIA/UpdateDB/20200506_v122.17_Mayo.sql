@@ -49,7 +49,8 @@ BEGIN
 	BEGIN TRY
 
 		set @process = 'CW-4065 Crear Setting para uso de Medios Unificados'
-		set @sql='insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+		set @sql='IF not exists (SELECT * FROM ccSettings WHERE setting_id = 220)
+				insert into ccSettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
 				Values(220,''0'',''Mostrar icono para medios unificados'',1,''AGT'',''0:Oculta icono para medios unificados, 1:Muestra icono para medios unificados'',''Shows multimedia icon'',0,''^[0-1]$'')	'
 		EXEC(@sql)
 

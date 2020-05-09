@@ -1,8 +1,9 @@
-CREATE PROCEDURE CW_trsp_AdmRecSearchAllRecs
+CREATE PROCEDURE CW_trsp_AdmRecSearchAllRecs--v3
 --params
 			@Sup_id int,
 			@dateStart datetime,
 			@dateEnd datetime,
+			@IdCallList varchar(MAX) =null,
 			@UserList varchar(MAX) =null,
 			@IDWGList varchar(MAX) =null,
 			@TypeCall int = null,
@@ -44,6 +45,10 @@ left join cccamps campOut on campOut.cam_id=a.cam_id
 left join ccinbound campIn on campIn.cam_id=a.cam_id
 left join ccUsers U on A.age_id=U.user_id
 where A.finicio between @dateStart and @dateEnd
+and ( 
+	@IdCallList is null or @IdCallList ='' or 
+	 A.cal_id in (select Value from dbo.fn_RIASplitDelimited(@IdCallList,',')) 
+)
 and ( 
 	@UserList is null or @UserList ='' or 
 	 A.age_id in (select Value from dbo.fn_RIASplitDelimited(@UserList,',')) 
@@ -92,6 +97,10 @@ left join cccamps campOut on campOut.cam_id=a.cam_id
 left join ccinbound campIn on campIn.cam_id=a.cam_id
 left join ccUsers U on A.age_id=U.user_id
 where A.finicio between @dateStart and @dateEnd
+and ( 
+	@IdCallList is null or @IdCallList ='' or 
+	 A.cal_id in (select Value from dbo.fn_RIASplitDelimited(@IdCallList,',')) 
+)
 and ( 
 	@UserList is null or @UserList ='' or 
 	 A.age_id in (select Value from dbo.fn_RIASplitDelimited(@UserList,',')) 

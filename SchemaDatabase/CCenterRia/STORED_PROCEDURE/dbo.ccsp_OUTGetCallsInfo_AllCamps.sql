@@ -128,7 +128,7 @@ CREATE PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
 		    ,count(case tipoResDial_id when 5 then 1 else null end) as NoTone
 		    ,count(case tipoResDial_id when 12 then 1 else null end) as Congestion
 		  from ccoLogDials logDials with(nolock)
-		  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=2) B ON logDials.cam_id = B.cam_id
+		  right join (select distinct cam_id from ccSupervisorCam supCam where user_id=@sup_id) B ON logDials.cam_id = B.cam_id
 		  Where fecha >  @mToday
 		  group by logDials.cam_id
 		  ) L 
@@ -140,5 +140,4 @@ CREATE PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
 		  where cal_Inicio > @mToday
 		  group by cam_id) callsOut on L.cam_id = callsOut.cam_id
 		  order by L.cam_id
-
 		end

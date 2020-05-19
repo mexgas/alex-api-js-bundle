@@ -23,7 +23,11 @@ CREATE PROCEDURE [dbo].[ccsp_MailSave]
 
 ---Finder
 @supervisor varchar(100)='' ,@template varchar (100)='',@ScoreTemplate int =0,
-@top int=30
+@top int=30,
+
+---Embedded images
+@contentId varchar(255)=null,
+@isEmbedded bit = null
 AS
 BEGIN
 
@@ -98,7 +102,8 @@ else if @action = 3 BEGIN --new Messages
 
 END
 else if @action = 4 BEGIN --new attachment
-    insert into [attached](messageId,pathFile,isUser) values(@messageId,@pathFile,@isUser)
+    --insert into [attached](messageId,pathFile,isUser) values(@messageId,@pathFile,@isUser)
+	insert into [attached](messageId,pathFile,isUser,contentId,isEmbedded) values(@messageId,@pathFile,@isUser,@contentId,@isEmbedded)
     select SCOPE_IDENTITY() as attachedId
 END
 else if @action = 5 BEGIN --Correos por contestar Status DOWNLOAD,Assigned,READ,UnaSSIGNED   
@@ -219,9 +224,6 @@ else if @action = 15 begin
     SELECT @existAttached = case when count(*)>0 then 1 else 0 end
     from attached where messageId in (select messageId from message where conversationId=@conversationId)
 
-	SELECT @existAttached = case when count(*)>0 then 1 else 0 end
-    from attached where messageId in (select messageId from message where conversationId=@conversationId)
-
     select max(B.messageId) as MessageID, cast(max(A.inboundid) as int) as InboundID, max(A.conversationid) as ConversationID,
         max(A.mailClient) as ClientEmail, min(B.[date]) as [Date], @existAttached isAttached, max(C.descripcion) as ACDName,
         max(B.tSend) as tSend, max(D.Nombres+' '+D.ApellidoPaterno+' '+D.ApellidoMaterno) as NameAgent,
@@ -314,6 +316,16 @@ else if @action = 23 begin
    else begin
         select 0 
    end
+end
+
+else if @action = 24 begin      
+	select count(*) as [Amount] from attached A inner join message B on A.messageId=B.messageId 
+	where A.messageId = @messageId and isEmbedded = 1
+end
+
+else if @action = 25 begin      
+	select pathFile as NameFile from attached A inner join message B on A.messageId=B.messageId 
+	where A.messageId = @messageId and contentId = @contentId and isEmbedded = 1
 end
 
 END

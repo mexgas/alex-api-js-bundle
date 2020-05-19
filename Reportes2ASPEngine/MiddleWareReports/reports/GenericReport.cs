@@ -327,7 +327,16 @@ namespace MiddleWareReports
                             (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time"))
                             && value != "")
                         {
-                            value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                            
+                            if (dataRow[column.ColumnName] is DateTime)
+                            {
+                                value = TranslatorHelper.formatTime((DateTime)dataRow[column.ColumnName]);
+                            }
+                            else
+                            {
+
+                                value = TranslatorHelper.formatTime(Convert.ToInt64(value));
+                            }
                         }
 
                         dataRowNew[column.ColumnName] = value;

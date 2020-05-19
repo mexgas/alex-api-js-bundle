@@ -54,6 +54,20 @@ BEGIN
 				Values(220,''0'',''Mostrar icono para medios unificados'',1,''AGT'',''0:Oculta icono para medios unificados, 1:Muestra icono para medios unificados'',''Shows multimedia icon'',0,''^[0-1]$'')	'
 		EXEC(@sql)
 
+		set @process = 'CW-4074 Tiempo de espera para tecla de reprogramacion'
+		set @sql='IF not exists (SELECT * FROM ccSettings WHERE setting_id = 221)
+				INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)
+				VALUES	(221, 
+						''5'',
+						''Tiempo en el que el usuario puede teclear el digito para reprogramar la llamada'',	
+						1,
+						''X'',
+						''Tiempo en el que el usuario puede teclear el digito para hacer una reprogramacion, cuando se encuentra en la cola de espera'',
+						''Time in which the user can type the digit to do a reprogramming, when the user is in the waiting queue'',
+						0,
+			 			''*'')'
+		EXEC(@sql)
+
 		set @process = 'CW-4009 Campañas se siguen mostrando aunque el Admin ya no esté asociado a WG'
 set @sql='ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
 												   @CampType AS SMALLINT = 0, 

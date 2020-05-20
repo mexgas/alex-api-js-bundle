@@ -334,7 +334,6 @@ namespace MiddleWareReports
                             }
                             else
                             {
-
                                 value = TranslatorHelper.formatTime(Convert.ToInt64(value));
                             }
                         }

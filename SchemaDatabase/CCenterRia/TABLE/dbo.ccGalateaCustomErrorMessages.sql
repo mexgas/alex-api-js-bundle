@@ -1,1 +1,1 @@
-CREATE TABLE [dbo].[ccGalateaCustomErrorMessages](	  [message_id] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [message_description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__ccGalate__0BBF6EE6479B1933] PRIMARY KEY ([message_id] ASC))
+CREATE TABLE [dbo].[ccGalateaCustomErrorMessages](	  [message_id] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [message_description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__ccGalate__0BBF6EE617FD86E3] PRIMARY KEY ([message_id] ASC))

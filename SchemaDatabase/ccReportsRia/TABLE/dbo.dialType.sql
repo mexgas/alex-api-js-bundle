@@ -1,1 +1,1 @@
-CREATE TABLE [dbo].[dialType](	  [dialId] INT NOT NULL	, [description] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__dialType__7B503EF231A27E52] PRIMARY KEY ([dialId] ASC))
+CREATE TABLE [dbo].[dialType](	  [dialId] INT NOT NULL	, [description] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__dialType__7B503EF2F7954F9E] PRIMARY KEY ([dialId] ASC))

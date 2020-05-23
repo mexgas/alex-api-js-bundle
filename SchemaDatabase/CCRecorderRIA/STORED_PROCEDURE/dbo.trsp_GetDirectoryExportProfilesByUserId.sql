@@ -1,3 +1,10 @@
+--USE [CCRecorderRIA]
+--GO
+--/****** Object:  StoredProcedure [dbo].[trsp_GetDirectoryExportProfilesByUserId]    Script Date: 22/05/2020 01:13:42 p. m. ******/
+--SET ANSI_NULLS ON
+--GO
+--SET QUOTED_IDENTIFIER ON
+--GO
 CREATE PROCEDURE [dbo].[trsp_GetDirectoryExportProfilesByUserId]
 				@userID int
 				AS

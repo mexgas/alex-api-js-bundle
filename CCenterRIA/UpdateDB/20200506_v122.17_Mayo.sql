@@ -458,7 +458,7 @@ END
 				   end'
 		exec (@sql)
 
-		set @process = 'CW-4066 Alter stored procedure ccsp_SaveMail '
+		set @process = 'CW-4066-4089 Alter stored procedure ccsp_SaveMail '
 		set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_MailSave]
 @action int,
 @uid varchar(max)=null,
@@ -787,6 +787,11 @@ end
 else if @action = 25 begin      
 	select pathFile as NameFile from attached A inner join message B on A.messageId=B.messageId 
 	where A.messageId = @messageId and contentId = @contentId and isEmbedded = 1
+end
+
+else if @action = 26 begin      -- Discard Email
+	update conversation set isFinished = 1 where conversationId = @conversationId
+	update message set messageStatusId = 14, userId = @userId where messageId = @messageId
 end
 
 END'

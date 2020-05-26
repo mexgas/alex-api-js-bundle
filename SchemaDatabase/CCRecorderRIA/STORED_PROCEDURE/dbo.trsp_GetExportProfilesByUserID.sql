@@ -3,5 +3,5 @@ CREATE PROCEDURE [dbo].[trsp_GetExportProfilesByUserID]
 				AS
 				BEGIN
 				SET NOCOUNT ON;
-						select id,profile,struct as structure,active from RIA_ExportProfilesRecordingsManager where [user_id] = @userId
+						select id,profile,struct,active from RIA_ExportProfilesRecordingsManager where [user_id] = @userId
 				END

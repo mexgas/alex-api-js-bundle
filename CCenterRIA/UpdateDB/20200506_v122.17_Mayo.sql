@@ -54,6 +54,23 @@ BEGIN
 				Values(220,''0'',''Mostrar icono para medios unificados'',1,''AGT'',''0:Oculta icono para medios unificados, 1:Muestra icono para medios unificados'',''Shows multimedia icon'',0,''^[0-1]$'')	'
 		EXEC(@sql)
 
+		set @process = 'CW-4109 Integracion galatea agent con sitio seguro y no seguro'
+		set @sql='declare @galateaIntegration varchar(max)
+select @galateaIntegration =valor from ccSettings where setting_id=204
+
+declare @table table(id int,value varchar(max))
+insert into @table 
+select * from dbo.fn_RIASplitDelimited(@galateaIntegration,''|'')
+
+if exists(select * from @table where id=3 and Value=''0'') begin
+	update @table set value=''1338'' where id=3
+	set @galateaIntegration=''''
+	select @galateaIntegration=@galateaIntegration+value+''|'' from @table 
+	update ccSettings set valor= substring(@galateaIntegration,0,len(@galateaIntegration)) where setting_id=204
+end
+'
+		EXEC(@sql)
+
 		set @process = 'CW-4074 Tiempo de espera para tecla de reprogramacion'
 		set @sql='IF not exists (SELECT * FROM ccSettings WHERE setting_id = 221)
 				INSERT INTO ccSettings (setting_id, valor, descripcion,	Status,	Tipo,detalle,description,bLoadSettings,	validate)

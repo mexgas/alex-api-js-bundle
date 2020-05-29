@@ -1,4 +1,3 @@
---Version 122.01-6_20200428_1
 SET NOCOUNT ON
 
 DECLARE @version INT

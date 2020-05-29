@@ -56,7 +56,7 @@ BEGIN
 
 	BEGIN TRY
 
-		set @process = 'cw-Mantener filtro de agentes conectados'
+		set @process = 'cw-Mantener drop ccsp_GalateaLoadCamps filtro de agentes conectados'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadCamps'')
     begin
         DROP PROCEDURE ccsp_GalateaLoadCamps;
@@ -135,19 +135,10 @@ AS
  '
 
 	exec (@sql)
+		
 
-
-		set @process = 'cw-Mantener filtro de agentes conectados'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
-    begin
-        DROP PROCEDURE ccsp_GalateaAdminLogin;
-    end'
-
-		exec (@sql)
-
-		SET @process = 'cw-Mantener filtro de agentes conectados'
-		SET @Sql = '
- CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+		SET @process = 'cw-Mantener Alter SP ccsp_GalateaAdminLogin filtro de agentes conectados'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
 	@Password varchar(40) = '''',
 	@PasswordLwC varchar(40) = null,
@@ -157,20 +148,27 @@ AS
 begin
 SET NOCOUNT ON
 
-	DECLARE @LoginOK bit = 0, 
-			@PswdOK bit = 0,
+	DECLARE @LoginOK bit, 
+			@PswdOK bit ,
 			@User_id smallint, 
 			@Nombre varchar(100), 
 			@ADMServer varchar(300), 
 			@AreaId smallint, 
 			@ViewAvrs int, 
 			@changeRecDisposition int, 
-			@PasswordExpired int = 0,
-			@UsernameMatch bit = 1,
-			@UserBlocked bit = 0,
+			@PasswordExpired int ,
+			@UsernameMatch bit ,
+			@UserBlocked bit ,
 			@LastPasswordChange datetime,
 			@Ext varchar(80),
-			@ViewAgents bit =0 ;
+			@ViewAgents bit  ;
+
+			select @LoginOK =0, 
+			@PswdOK = 0,			
+			@PasswordExpired = 0,
+			@UsernameMatch  = 1,
+			@UserBlocked = 0,
+			@ViewAgents  =0
 
 	CREATE TABLE #temp 
 	(LoginOK int, 
@@ -369,56 +367,58 @@ end'
 			
 		set @process = 'cw-2542 enmascaramiento xfer asistida'
 		set @sql = 'create procedure ccsp_DLRgetDialMask
-			@cam_id int,
-			@phone varchar(50)
-			as
-			declare @checkLd_In_ANILst smallint = 0
-			declare @ani varchar(50), @pais varchar(3)
+@cam_id int,
+@phone varchar(50)
+as
+declare @checkLd_In_ANILst smallint
+declare @ani varchar(50), @pais varchar(3)
 
-			SELECT @pais = valor
-			FROM ccSettings WITH (NOLOCK)
-			WHERE setting_id = 104
+set @checkLd_In_ANILst=0
 
-			SELECT @checkLd_In_ANILst = valor 
-			FROM ccsettings WITH (NOLOCK) 
-			WHERE setting_id = 213
+SELECT @pais = valor
+FROM ccSettings WITH (NOLOCK)
+WHERE setting_id = 104
 
-			IF @pais = 1
-			BEGIN ---Mexico
-				If (@cam_id > 0 AND @checkLd_In_ANILst = 1)
-				BEGIN
-					select @ani = ltrim(rtrim(ani)) FROM ccCamps nolock WHERE cam_id = @cam_id
-					If datalength(@ani) > 0
-					BEGIN
-						SELECT @ani	ani
-						RETURN (0)
-					END
+SELECT @checkLd_In_ANILst = valor 
+FROM ccsettings WITH (NOLOCK) 
+WHERE setting_id = 213
 
-					IF len(@phone) < 10 select @phone = dbo.Completa(@phone, @pais, '''')
+IF @pais = 1
+BEGIN ---Mexico
+	If (@cam_id > 0 AND @checkLd_In_ANILst = 1)
+	BEGIN
+		select @ani = ltrim(rtrim(ani)) FROM ccCamps nolock WHERE cam_id = @cam_id
+		If datalength(@ani) > 0
+		BEGIN
+			SELECT @ani	ani
+			RETURN (0)
+		END
 
-					IF len(@phone) < 10 or isnumeric(@phone) <= 0 select '''' ani
+		IF len(@phone) < 10 select @phone = dbo.Completa(@phone, @pais, '''')
 
-					select @phone = right(@phone, 10)
+		IF len(@phone) < 10 or isnumeric(@phone) <= 0 select '''' ani
 
-					SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
-							  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
-							  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 3)
-					If datalength(@ani) > 0
-					BEGIN
-						SELECT @ani ani
-						RETURN (0)
-					END
-					SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
-							  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
-							  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 2)
-					If datalength(@ani) > 0
-					BEGIN
-						SELECT @ani ani
-						RETURN (0)
-					END
-				END
-				select '''' ani
-			END
+		select @phone = right(@phone, 10)
+
+		SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+				  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+				  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 3)
+		If datalength(@ani) > 0
+		BEGIN
+			SELECT @ani ani
+			RETURN (0)
+		END
+		SELECT TOP 1 @ani=ltrim(rtrim(telAni)) FROM ccCamps c WITH (NOLOCK) inner join ccEdoAniList l WITH (NOLOCK) on c.id_anilist = l.id_AniList
+				  inner join ccEstadosAni e WITH (NOLOCK) on l.id_AniList = e.id_AniList
+				  WHERE cam_id = @cam_id and telAni <> '''''''' and area = left(@phone, 2)
+		If datalength(@ani) > 0
+		BEGIN
+			SELECT @ani ani
+			RETURN (0)
+		END
+	END
+	select '''' ani
+END
 			'
 
 		exec (@sql)

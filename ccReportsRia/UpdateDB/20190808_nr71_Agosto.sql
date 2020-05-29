@@ -79,7 +79,8 @@ RETURNS varchar(32)
 AS
 BEGIN
 declare @cldLocal varchar(10), @pais tinyint, @lon tinyint, @ret as varchar(10)
-declare @telResp varchar(32) = ''''
+declare @telResp varchar(32)
+set @telResp = ''''
 
 select  @cldLocal = valor from ccsettings where setting_id = 17
 select @pais = valor, @ret = '''' from ccSettings where setting_id = 104

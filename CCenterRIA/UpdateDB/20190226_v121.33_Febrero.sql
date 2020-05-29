@@ -59,7 +59,7 @@ BEGIN
 		EXEC (@Sql)
 
 
-		SET @process = 'CW-2697 Galatea Login Admin'
+		SET @process = 'CW-2697 CREATE SP ccsp_GalateaAdminLogin'
 		SET @Sql = '
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
@@ -70,18 +70,24 @@ AS
 begin
 SET NOCOUNT ON
 
-	DECLARE @LoginOK bit = 0, 
-			@PswdOK bit = 0,
+	DECLARE @LoginOK bit, 
+			@PswdOK bit ,
 			@User_id smallint, 
 			@Nombre varchar(100), 
 			@ADMServer varchar(300), 
 			@AreaId smallint, 
 			@ViewAvrs int, 
 			@changeRecDisposition int, 
-			@PasswordExpired int = 0,
-			@UsernameMatch bit = 1,
-			@UserBlocked bit = 0,
+			@PasswordExpired int,
+			@UsernameMatch bit ,
+			@UserBlocked bit ,
 			@LastPasswordChange datetime
+
+	select @LoginOK =0, 
+			@PswdOK = 0,			
+			@PasswordExpired = 0,
+			@UsernameMatch  = 1,
+			@UserBlocked = 0
 
 	CREATE TABLE #temp 
 	(LoginOK int, 
@@ -153,9 +159,8 @@ END
 		'
 		EXEC (@Sql)
 
-		SET @process = 'CW-2697 Galatea Login Admin'
-		SET @Sql = '
-ALTER PROCEDURE [dbo].[ccsp_RIAADMChecaLogin]
+		SET @process = 'CW-2697 Alter SP ccsp_RIAADMChecaLogin'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAADMChecaLogin]
 @Login varchar(20) = '''',
 @Password varchar(40) = '''',
 @PasswordLwC varchar(40) = null,
@@ -216,8 +221,7 @@ isnull(IDArea,0) ''AreaId'',
 CASE when DATEDIFF(DAY,LastPasswordChange ,GETDATE()) >30 THEN 1 ELSE 0 END ''LastPasswordchange''
 From ccUsers Where User_id=@UserID
 return(0)
-set nocount off   
-		'
+set nocount off  '
 		EXEC (@Sql)
 		
 

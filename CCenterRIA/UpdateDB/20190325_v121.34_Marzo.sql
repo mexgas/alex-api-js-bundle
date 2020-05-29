@@ -80,18 +80,10 @@ END
 			END'
 
 		EXEC (@Sql)
+		
 
-		SET @process = 'CW-2617 Drop SP ccsp_GalateaAdminLogin'
-		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
-    begin
-        DROP PROCEDURE ccsp_GalateaAdminLogin;
-    end'
-
-		EXEC (@Sql)
-
-		SET @process = 'CW-2697 Galatea Login Admin'
-		SET @Sql = 
-			'	CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+		SET @process = 'CW-2697 Alter SP ccsp_GalateaAdminLogin'
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
 	@Password varchar(40) = '''',
 	@PasswordLwC varchar(40) = null,
@@ -101,19 +93,25 @@ AS
 begin
 SET NOCOUNT ON
 
-	DECLARE @LoginOK bit = 0, 
-			@PswdOK bit = 0,
+	DECLARE @LoginOK bit , 
+			@PswdOK bit ,
 			@User_id smallint, 
 			@Nombre varchar(100), 
 			@ADMServer varchar(300), 
 			@AreaId smallint, 
 			@ViewAvrs int, 
 			@changeRecDisposition int, 
-			@PasswordExpired int = 0,
-			@UsernameMatch bit = 1,
-			@UserBlocked bit = 0,
+			@PasswordExpired int,
+			@UsernameMatch bit ,
+			@UserBlocked bit ,
 			@LastPasswordChange datetime,
 			@Ext varchar(80);
+
+		select @LoginOK =0, 
+			@PswdOK = 0,			
+			@PasswordExpired = 0,
+			@UsernameMatch  = 1,
+			@UserBlocked = 0
 
 	CREATE TABLE #temp 
 	(LoginOK int, 
@@ -560,7 +558,7 @@ END'
 
 		EXEC (@Sql)
 
-		SET @process = 'correcion de identificacion del tipo de llamada'
+		SET @process = 'Alter SP ccsp_DLRSaveDialResult '
 		SET @Sql = 
     'ALTER procedure [dbo].[ccsp_DLRSaveDialResult]
 @callout_id int,
@@ -639,7 +637,7 @@ set nocount off'
 
 	   EXEC (@Sql)
 
-		SET @process = 'correcion de identificacion del tipo de llamada'
+		SET @process = 'Alter SP correcion de identificacion del tipo de llamada'
 		SET @Sql = 
     'ALTER procedure [dbo].[ccsp_EngineLogTransfers]
 @action as tinyint,
@@ -728,7 +726,7 @@ end
 
 		EXEC (@Sql)
 
-		SET @process = 'correcion de identificacion del tipo de llamada'
+		SET @process = 'Alter SP fnGetTipoLlamada correcion de identificacion del tipo de llamada'
 		SET @Sql = 
     'ALTER function [dbo].[fnGetTipoLlamada](@tel varchar(32))
 RETURNS tinyint
@@ -768,8 +766,9 @@ set @tipoLlamada_id = 0
 		
     if @cantidadLL <> 0 begin
 	   --print ''existen opciones''
-	   declare @i int = 1;
-		
+	   declare @i int ;
+		set @i=1
+
 	   while @i <= @cantidadLL
 	   begin
 			 select @tipoLlamada_id = tipoLlamada_id, @prefijo = prefijo from @t_tipos where rowid = @i

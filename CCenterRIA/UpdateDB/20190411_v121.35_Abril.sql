@@ -713,18 +713,10 @@ IF @action = 9 begin
 end'
 
 		EXEC (@Sql)
-
-		SET @process = 'CW-2869 Drop SP [ccsp_GalateaAdminLogin]'
-		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminLogin'')
-    begin
-        DROP PROCEDURE [ccsp_GalateaAdminLogin];
-    end'
-
-		EXEC (@Sql)
-
+		
 		SET @process = 'CW-2869 Create SP  ccsp_GalateaAdminLogin'
 		SET @Sql = 
-			'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
+			'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] 
 	@Login varchar(20) = '''',
 	@Password varchar(40) = '''',
 	@PasswordLwC varchar(40) = null,
@@ -734,19 +726,25 @@ AS
 begin
 SET NOCOUNT ON
 
-	DECLARE @LoginOK bit = 0, 
-			@PswdOK bit = 0,
+	DECLARE @LoginOK bit, 
+			@PswdOK bit ,
 			@User_id smallint, 
 			@Nombre varchar(100), 
 			@ADMServer varchar(300), 
 			@AreaId smallint, 
 			@ViewAvrs int, 
 			@changeRecDisposition int, 
-			@PasswordExpired int = 0,
-			@UsernameMatch bit = 1,
-			@UserBlocked bit = 0,
+			@PasswordExpired int ,
+			@UsernameMatch bit ,
+			@UserBlocked bit ,
 			@LastPasswordChange datetime,
 			@Ext varchar(80);
+
+select @LoginOK =0, 
+			@PswdOK = 0,			
+			@PasswordExpired = 0,
+			@UsernameMatch  = 1,
+			@UserBlocked = 0			
 
 	CREATE TABLE #temp 
 	(LoginOK int, 

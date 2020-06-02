@@ -209,8 +209,10 @@ end'
 AS
 BEGIN
 	DECLARE @minTime AS INT 
-	declare @killListID int = (SELECT idtipolista FROM ccTiposListaNegra WHERE Tipolista = ''default/KillList'')
-	declare @killListSetting int = (select status from ccSettings where setting_id = 215)
+	declare @killListID int 	
+	declare @killListSetting int 
+	set @killListID= (SELECT idtipolista FROM ccTiposListaNegra WHERE Tipolista = ''default/KillList'')
+	set @killListSetting = (select status from ccSettings where setting_id = 215)
 
 	if(@killListSetting = 1)
 	begin
@@ -233,11 +235,6 @@ END'
 		exec (@sql)
 
 
-	
-
-
-
-
 		set @process = 'cw-2915 y cw-3201 modify sp ccsp_AgentUpdateCallCALIF'
 		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentUpdateCallCALIF] @IDCall INT, @calif_id SMALLINT, @TipoCall SMALLINT, @Origin INT = 0, @cal_key VARCHAR(20) = NULL, @callOutId INT = 0, @subId SMALLINT = 0
 AS
@@ -253,12 +250,14 @@ WHERE setting_id = 60
 SELECT @RecicleSIC = IsNull(@RecicleSIC, 0)
 
 DECLARE @hashTel INT
-DECLARE @killListID INT = (
+DECLARE @killListID INT 
+DECLARE @killListSetting INT 
+	set @killListID= (
 		SELECT idtipolista
 		FROM ccTiposListaNegra
 		WHERE Tipolista = ''default/KillList''
 		)
-DECLARE @killListSetting INT = (
+	set @killListSetting= (
 		SELECT STATUS
 		FROM ccSettings
 		WHERE setting_id = 215
@@ -456,8 +455,7 @@ BEGIN
 	RETURN (0)
 END
 
-SET NOCOUNT OFF
-'
+SET NOCOUNT OFF'
 		EXEC (@Sql)
 
 		SET @process = 'cw-3201 Alter SP ccsp_RIADNCList'
@@ -1202,7 +1200,8 @@ BEGIN
 	
 		RETURN( 0 );
 	END;
-	DECLARE @Default SMALLINT = 0
+	DECLARE @Default SMALLINT 
+	set @Default =0
 	SELECT @Default AS tipoNotReady_Id;
 
 	SET NOCOUNT OFF;

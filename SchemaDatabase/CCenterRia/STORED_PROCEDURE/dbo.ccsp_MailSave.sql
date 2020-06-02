@@ -328,4 +328,9 @@ else if @action = 25 begin
 	where A.messageId = @messageId and contentId = @contentId and isEmbedded = 1
 end
 
+else if @action = 26 begin      -- Discard Email
+	update conversation set isFinished = 1 where conversationId = @conversationId
+	update message set messageStatusId = 14, userId = @userId where messageId = @messageId
+end
+
 END

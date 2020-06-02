@@ -340,13 +340,31 @@ set nocount off	'
 		EXEC (@Sql)
 
 		SET @process = 'CW-2556 ST_2018_12_35 some area codes are missing (USA)'
-		SET @Sql = 'insert into ccTimeZoneArea (id_country, area, location, tz_standard, tz_daylight, call_record)
- select id_country, area, location, tz_standard, tz_daylight, call_record from (
-	values (4,327,''AR'',64,32,null), 
-  (4,986,''ID'',128,64,null),(4,930,''IN'',32,16,null),(4,332,''NY'',32,16,null),
-  (4,680,''NY'',32,16,null),(4,838,''NY'',32,16,null),(4,929,''NY'',32,16,null),(4,934,''NY'',32,16,null),
-  (4,445,''PA'',32,16,null)
- ) as timezone(id_country, area, location, tz_standard, tz_daylight, call_record) where area not in (select area from ccTimeZoneArea where id_country = 4)'
+		SET @Sql = '  declare @table table(id_country	smallint, area	varchar(10), location	varchar(50),tz_standard	int,tz_daylight	int,call_record	bit )
+
+  insert into @table 
+  select 4,327,''AR'',64,32,null
+  union
+  select 4,986,''ID'',128,64,null
+  union
+  select 4,930,''IN'',32,16,null
+  union
+  select 4,332,''NY'',32,16,null
+  union
+  select 4,680,''NY'',32,16,null
+  union
+  select 4,838,''NY'',32,16,null
+  union
+  select 4,929,''NY'',32,16,null  
+  union
+  select 4,934,''NY'',32,16,null
+  union
+  select 4,445,''PA'',32,16,null
+  
+  insert into ccTimeZoneArea (id_country, area, location, tz_standard, tz_daylight, call_record)
+  select A.id_country, A.area, A.location, A.tz_standard, A.tz_daylight, A.call_record from @table A
+  left join ccTimeZoneArea B on A.id_country=B.id_country and A.area=B.area and A.location=B.location and a.tz_standard=B.tz_standard and A.tz_daylight=B.tz_daylight
+  where B.id_country is null'
 
 		EXEC (@Sql)
 
@@ -629,8 +647,10 @@ END'
 AS
 SET NOCOUNT ON
 
-DECLARE @lon TINYINT, @cldLocal VARCHAR(7), @pais VARCHAR(3), @extLen SMALLINT, @specialDialPlan SMALLINT, @validateTel SMALLINT, @ld VARCHAR(7)
-DECLARE @checkLd_In_ANILst SMALLINT = 0
+DECLARE @lon TINYINT, @cldLocal VARCHAR(7), @pais VARCHAR(3), @extLen SMALLINT, 
+@specialDialPlan SMALLINT, @validateTel SMALLINT, @ld VARCHAR(7)
+DECLARE @checkLd_In_ANILst SMALLINT 
+set @checkLd_In_ANILst=0
 /***
  4  as res lista Negra
  2 as res Digitos incorrectos Prefijo Marcacion 01,044,045,001
@@ -1450,8 +1470,7 @@ END'
 		EXEC (@sql)
 
 		SET @process = 'CW-2910 CenterwareWS Agent Status Function'
-		SET @Sql = 
-			'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
+		SET @Sql = 'ALTER PROCEDURE [dbo].[ccsp_ExtAppsCallHistory] @action SMALLINT
 	,@call_id INT = 0
 	,@startDate VARCHAR(30) = NULL
 	,@endDate VARCHAR(30) = NULL
@@ -1853,7 +1872,7 @@ BEGIN -- get agent status (Logged in or Logged out)
 
 		SELECT @lastLogIn_Out = max(fecha)
 		FROM ccLogLogin
-		WHERE fecha >= convert(DATE, getdate())
+		WHERE fecha >= convert(datetime,convert(varchar(10),getdate(),121))
 			AND User_id = @agentId
 			AND TipoMov = 1 -- Login
 	END
@@ -1863,7 +1882,7 @@ BEGIN -- get agent status (Logged in or Logged out)
 
 		SELECT @lastLogIn_Out = max(fecha)
 		FROM ccLogLogin
-		WHERE fecha >= CONVERT(DATE, getdate())
+		WHERE fecha >= convert(datetime,convert(varchar(10),getdate(),121))
 			AND User_id = @agentId
 			AND TipoMov = 0 --Logout 
 	END
@@ -1871,7 +1890,7 @@ BEGIN -- get agent status (Logged in or Logged out)
 	SELECT @isLoggedIn
 		,@lastLogIn_Out
 END
-ELSE IF (@action = 11) --verify User
+ELSE IF (@action = 11) -- verify User
 BEGIN
 	DECLARE @response AS INT
 

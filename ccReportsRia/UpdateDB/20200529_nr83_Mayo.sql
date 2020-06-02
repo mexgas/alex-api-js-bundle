@@ -278,7 +278,8 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Generat
 		@on_fail_step_id=0, 
 		@retry_attempts=0, 
 		@retry_interval=0, 
-		@os_run_priority=0,  @subsystem=N''TSQL'', 
+		@os_run_priority=0,  
+		@subsystem=N''TSQL'', 
 		@command=N''EXEC ReportsMasterProcess'',
 		@database_name=N''ccReportsRia'',
 		@flags=0
@@ -435,32 +436,35 @@ QuitWithRollback:
 EndSave:'
 		EXEC(@sql)
 
-		SET @process = 'CW-Update MDF JOB ReportsMasterProcessYesterday'
-		SET @sql = 'USE [msdb]
-if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''ReportsMasterProcessYesterday'') begin
-	EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterProcessYesterday'', @delete_unused_schedule=1
-end
+		set @process = 'CW-2465 ST_2018_11_107 Error generacion reportes cliente 24 horas'
+		set @sql='USE [msdb]
+
+if exists(select * from msdb.dbo.sysjobs where name =N''ReportsMasterProcessYesterday'')
+EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterProcessYesterday'', @delete_unused_schedule=1
+
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
-IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''Nuxiba'' AND category_class=1)
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
 BEGIN
-EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''Nuxiba''
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 
 END
+
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessYesterday'', 
 		@enabled=1, 
-		@notify_level_eventlog=0,
-		@notify_level_email=0,
-		@notify_level_netsend=0,
-		@notify_level_page=0,
-		@delete_level=0,
+		@notify_level_eventlog=0, 
+		@notify_level_email=0, 
+		@notify_level_netsend=0, 
+		@notify_level_page=0, 
+		@delete_level=0, 
 		@description=N''ReportsMasterProcess'', 
-		@category_name=N''Nuxiba'', 
+		@category_name=N''[Uncategorized (Local)]'', 
 		@owner_login_name=N''sa'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Generate Reports]    Script Date: 14/11/2018 02:48:57 p. m. ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Generate Reports'', 
 		@step_id=1, 
 		@cmdexec_success_code=0, 
@@ -470,9 +474,9 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Generat
 		@on_fail_step_id=0, 
 		@retry_attempts=0, 
 		@retry_interval=0, 
-		@os_run_priority=0,  @subsystem=N''TSQL'', 
-		@command=N''EXEC ReportsMasterProcess'',
-		@database_name=N''ccReportsRia'',
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''EXEC ReportsMasterProcess'', 
+		@database_name=N''ccReportsRia'', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
@@ -480,8 +484,10 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''
 declare @from datetime
 declare @hour varchar(10)
-set @hour =''03:00''
-select @from= convert(datetime, convert(varchar(11),get'', 
+set @hour =''''03:00''''
+select @from= convert(datetime, convert(varchar(11),getdate(),121)+@hour)
+set @from =DATEADD(dd,-1,@from)
+exec RepotsMasterProcess @from=@from'', 
 		@enabled=1, 
 		@freq_type=4, 
 		@freq_interval=1, 
@@ -491,7 +497,7 @@ select @from= convert(datetime, convert(varchar(11),get'',
 		@freq_recurrence_factor=0, 
 		@active_start_date=20130912, 
 		@active_end_date=99991231, 
-		@active_start_time=30000,  
+		@active_start_time=30000, 
 		@active_end_time=235959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
@@ -500,7 +506,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:'
+EndSave:'		
 		EXEC(@sql)
 		
 		IF @actualVersion = @version - 1

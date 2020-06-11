@@ -46,7 +46,7 @@ from
 	datepart(MI,convert(datetime, convert(varchar(14),cci.cal_Inicio,121)+ '00',121)) as [minutes]
 	,rsq.orden, cal_ani clientPhoneNumber
 	from ccCallsIn cci with(nolock)
-	inner join IVROptions ivro on ivro.cal_id = cci.cal_id
+	inner join (IVROptions ivro inner join (select distinct cal_id,questionId,max(date) date from ivroptions group by cal_id,questionId)ivro2 on ivro.cal_id=ivro2.cal_id and ivro.date=ivro2.date) on cci.cal_id = ivro.cal_id
 	inner join ccUserView ccu on cci.User_id = ccu.User_id
 	inner join Survey s on ivro.surveyId = s.surveyId
 	inner join ccInbound ccin on cci.Inbound_id = ccin.Inbound_id
@@ -85,7 +85,7 @@ from
 	datepart(MI,convert(datetime, convert(varchar(14),cco.cal_Inicio,121)+ '00',121)) as [minutes]
 	,rsq.orden, cal_telefono clientPhoneNumber
 	from ccoCallsOut cco
-	inner join IVROptions ivro on cco.cal_id = ivro.cal_id
+	inner join (IVROptions ivro inner join (select distinct cal_id,questionId,max(date) date from ivroptions group by cal_id,questionId)ivro2 on ivro.cal_id=ivro2.cal_id and ivro.date=ivro2.date) on cco.cal_id = ivro.cal_id
 	inner join ccUserView ccu on cco.User_id = ccu.User_id
 	inner join Survey s on ivro.surveyId = s.surveyId
 	inner join ccCamps ccc on cco.cam_id = ccc.cam_id

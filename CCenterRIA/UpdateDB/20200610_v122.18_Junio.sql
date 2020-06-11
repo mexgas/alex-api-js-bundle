@@ -97,7 +97,7 @@ BEGIN
 							select Cco.cam_id, COUNT(CASE WHEN Cco.statusCall_id >= 10 THEN 1 END) AS  Xfer
 							from ccoCallsOut  as cco
 							right join (
-								select distinct supCam.cam_id from ccSupervisorCam supCam where user_id=48
+								select distinct supCam.cam_id from ccSupervisorCam supCam where user_id=@sup_id
 							) D ON Cco.cam_id = D.cam_id
 							Where cal_Inicio >  convert(smalldatetime, convert(varchar(11), getdate() ), 101)
 							group by Cco.cam_id

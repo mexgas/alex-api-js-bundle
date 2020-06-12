@@ -228,7 +228,8 @@ else if @action = 15 begin
         max(A.mailClient) as ClientEmail, min(B.[date]) as [Date], @existAttached isAttached, max(C.descripcion) as ACDName,
         max(B.tSend) as tSend, max(D.Nombres+' '+D.ApellidoPaterno+' '+D.ApellidoMaterno) as NameAgent,
         cast(max(E.timeAlertMessage) as int) tAlertMessage, cast(max(E.answerTimeOut) as int) tAnswerTimeOut, max(C.tNotas) as tWrapUp,
-        max(A.mailInbound) as InboundEmail, isnull(max(E.name), '') as SenderName, cast(max(F.graphic_id) as int) as ACDGraphicID
+        max(A.mailInbound) as InboundEmail, isnull(max(E.name), '') as SenderName, cast(max(F.graphic_id) as int) as ACDGraphicID,
+		max(B.[date]) MsgTimestamp
     from conversation A
     inner join message B  on A.conversationId = B.conversationId
     inner join ccinbound C on A.inboundid= C.inbound_id

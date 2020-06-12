@@ -19,7 +19,7 @@ namespace MiddleWareReports {
     // a través de una herramienta como ResGen o Visual Studio.
     // Para agregar o quitar un miembro, edite el archivo .ResX y, a continuación, vuelva a ejecutar ResGen
     // con la opción /str o recompile su proyecto de VS.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -5394,6 +5394,15 @@ namespace MiddleWareReports {
         public static string systemTranslated_blindXfer {
             get {
                 return ResourceManager.GetString("systemTranslated_blindXfer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a Cancelada por sistema.
+        /// </summary>
+        public static string systemTranslated_CancelledBySystem {
+            get {
+                return ResourceManager.GetString("systemTranslated_CancelledBySystem", resourceCulture);
             }
         }
         

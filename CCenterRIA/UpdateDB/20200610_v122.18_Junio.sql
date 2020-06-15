@@ -49,6 +49,13 @@ BEGIN
 	BEGIN TRY
 
 		set @process = 'CW-4083 Mostrar número de llamadas atendidas y canceladas'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetCampaignOutDialingStats'')
+	    begin
+	        DROP PROCEDURE ccsp_GalateaGetCampaignOutDialingStats;
+	    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4083 Mostrar número de llamadas atendidas y canceladas'
 		set @sql='
 			CREATE PROCEDURE [dbo].[ccsp_GalateaGetCampaignOutDialingStats]
 			@Tipo as tinyint=0,

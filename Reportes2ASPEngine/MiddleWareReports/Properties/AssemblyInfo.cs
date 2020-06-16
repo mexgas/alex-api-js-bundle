@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nuxiba Technologies")]
 [assembly: AssemblyProduct("MiddleWareReports")]
-[assembly: AssemblyCopyright("Copyright © 2019 Nuxiba Technologies Inc. All Rights Reserved.")]
+[assembly: AssemblyCopyright("Copyright © 2020 Nuxiba Technologies Inc. All Rights Reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Puede especificar todos los valores o establecer como predeterminados los números de versión de compilación y de revisión 
 // mediante el asterisco ('*'), como se muestra a continuación:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2020.0225.122.1401")]
-[assembly: AssemblyFileVersion("2020.0225.122.1401")]
+[assembly: AssemblyVersion("2020.0615.122.1801")]
+[assembly: AssemblyFileVersion("2020.0615.122.1801")]

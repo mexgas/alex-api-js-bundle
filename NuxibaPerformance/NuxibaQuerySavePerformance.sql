@@ -1,3 +1,7 @@
+create database NuxibaPerformance;
+GO
+
+
 USE NuxibaPerformance
 GO
 /****** Object:  StoredProcedure [dbo].[ccsp_ADMAddAgent]    Script Date: 16/06/2020 07:03:45 p. m. ******/

@@ -118,7 +118,7 @@ BEGIN
 		EXEC(@sql)	
 
 
-		set @process = 'CW-4123 Alter procedure ccsp_MailSave'
+		set @process = 'CW-4123,CW-4124 Alter procedure ccsp_MailSave'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_MailSave]
 @action int,
 @uid varchar(max)=null,
@@ -295,7 +295,7 @@ else if @action = 10 BEGIN --Correos por enviar
 	 from (
 	select A.inboundId,A.conversationId as ConversationId,max(B.messageId) as MessageId,A.mailInbound   from conversation A 
 	inner join message B on A.conversationId = B.conversationId
-	where A.meanContactTypeId = 1 --and (@inboundId is null or A.inboundId=3)
+	where A.meanContactTypeId = 1 and A.inboundId = @inboundId
 	GROUP BY A.conversationId,A.inboundId,A.mailInbound 
 	) A
 	inner join message B on A.MessageId = B.messageId
@@ -818,6 +818,7 @@ BEGIN TRY
                                     FROM fn_RIASplitDelimited(@Permissions_Id, '','')
                                 )
                             )
+
                                 SET @exists = 0
                     END
                     IF @exists = 0 -- IF not exist role with same menus and permissions create

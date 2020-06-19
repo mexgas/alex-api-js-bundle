@@ -91,7 +91,7 @@ BEGIN
 
 						select A.*, C.Xfer,
 						((A.Abandon *100.0)/ A.Answer) as AbandonRate,
-						(A.Answer - A.Abandon - A.Canceled) as Attended
+						(A.Answer - A.Abandon - A.Canceled) as Attended,
                         B.AggressionFactor
 						
 						from @table as A

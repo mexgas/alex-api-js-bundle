@@ -543,7 +543,7 @@ ALTER TABLE [dbo].[ccRoles] ADD  CONSTRAINT [DF_ccRoles_Rowguid]  DEFAULT (newid
 
 ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF_ccPermissions_Type]  DEFAULT ((1)) FOR [Type]
 ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF__ccPermissions__OrderGrl__7F01C5FD]  DEFAULT ((1)) FOR [OrderGrl]
-ALTER TABLE [dbo].[ccPermissions] ADD  DEFAULT ('') FOR [Release]
+ALTER TABLE [dbo].[ccPermissions] ADD  DEFAULT ('''') FOR [Release]
 ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF_ccPermissions_Rowguid]  DEFAULT (newid()) FOR [Rowguid]
 
 

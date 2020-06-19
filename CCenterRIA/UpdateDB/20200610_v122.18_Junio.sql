@@ -117,7 +117,7 @@ BEGIN
 		EXEC(@sql)	
 
 
-		set @process = 'CW-4123 Alter procedure ccsp_MailSave'
+		set @process = 'CW-4123,CW-4124 Alter procedure ccsp_MailSave'
 		set @sql='ALTER PROCEDURE [dbo].[ccsp_MailSave]
 @action int,
 @uid varchar(max)=null,
@@ -201,6 +201,7 @@ else if @action = 3 BEGIN --new Messages
         select 0 as ConversationId,0 as MessageId,0 as LastUserId
         return (0)
     end
+
     if @uid is null --for outbound messages
         select @uid = dbo.md5(cast(@conversationId as varchar(10)) + ''_'' + cast(@messageId as varchar(10)))
 
@@ -293,7 +294,7 @@ else if @action = 10 BEGIN --Correos por enviar
 	 from (
 	select A.inboundId,A.conversationId as ConversationId,max(B.messageId) as MessageId,A.mailInbound   from conversation A 
 	inner join message B on A.conversationId = B.conversationId
-	where A.meanContactTypeId = 1 --and (@inboundId is null or A.inboundId=3)
+	where A.meanContactTypeId = 1 and A.inboundId = @inboundId
 	GROUP BY A.conversationId,A.inboundId,A.mailInbound 
 	) A
 	inner join message B on A.MessageId = B.messageId

@@ -201,7 +201,6 @@ else if @action = 3 BEGIN --new Messages
         select 0 as ConversationId,0 as MessageId,0 as LastUserId
         return (0)
     end
-
     if @uid is null --for outbound messages
         select @uid = dbo.md5(cast(@conversationId as varchar(10)) + ''_'' + cast(@messageId as varchar(10)))
 

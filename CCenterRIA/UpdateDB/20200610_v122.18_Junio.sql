@@ -92,11 +92,12 @@ BEGIN
 						select A.*, C.Xfer,
 						((A.Abandon *100.0)/ A.Answer) as AbandonRate,
 						(A.Answer - A.Abandon - A.Canceled) as Attended
+                        B.AggressionFactor
 						
 						from @table as A
 
 						left join(
-							select ccC.cam_id, ccC.aggressionFactor
+							select ccC.cam_id, ccC.AggressionFactor
 							from ccCamps as ccC
 						)B ON A.cam_id = B.cam_id
 

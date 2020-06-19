@@ -817,6 +817,7 @@ BEGIN TRY
                                     FROM fn_RIASplitDelimited(@Permissions_Id, '','')
                                 )
                             )
+
                                 SET @exists = 0
                     END
                     IF @exists = 0 -- IF not exist role with same menus and permissions create

@@ -735,44 +735,93 @@ BEGIN TRY
 			END
 			SET @returnValue = (select top 1 * from  #Users_split)
     END
-    IF @action = 4 -- Delete Roles
-        BEGIN
-            IF OBJECT_ID(''tempdb..#roles_permissions'') IS NOT NULL DROP TABLE #roles_permissions
-			IF OBJECT_ID(''tempdb..#Users_Roles'') IS NOT NULL DROP TABLE #Users_Roles
-
-			SELECT DISTINCT(Rol_id)
-			INTO #roles_permissions
-				FROM ccroles_permissions a
-						INNER JOIN
+    
+	IF @action = 4 -- Delete Roles
+		BEGIN
+			SELECT STUFF(
+			(
+				SELECT '', 
+					   '' + CAST(ur.User_id AS VARCHAR)
+				FROM dbo.ccUsers_Roles ur
+					 INNER JOIN dbo.ccRoles C ON ur.Rol_id = C.Rol_id
+				WHERE c.Rol_id IN
 				(
-					SELECT value
-					FROM fn_RIASplitDelimited(@Roles_id, '','')
-				) b ON b.value = a.Rol_Id
-
-			SELECT  DISTINCT(value) AS Rol_id
+					SELECT fn_RIASplitDelimited.[value]
+					FROM dbo.fn_RIASplitDelimited(@Roles_id, '', '')
+				) FOR XML PATH('''')
+			), 1, 2, '''') AS Users_Ids;
+			IF OBJECT_ID('' tempdb..#roles_permissions '') IS NOT NULL
+				DROP TABLE #roles_permissions;
+			IF OBJECT_ID('' tempdb..#Users_Roles '') IS NOT NULL
+				DROP TABLE #Users_Roles;
+			SELECT DISTINCT
+				   (a.Rol_id)
+			INTO #roles_permissions
+			FROM dbo.ccroles_permissions a
+				 INNER JOIN
+			(
+				SELECT fn_RIASplitDelimited.[value]
+				FROM dbo.fn_RIASplitDelimited(@Roles_id, '', '')
+			) b ON b.[value] = a.Rol_Id;
+			SELECT DISTINCT
+				   (a.[value]) AS Rol_id
 			INTO #Users_Roles
-			FROM fn_RIASplitDelimited(@Roles_id, '','') a
-					INNER JOIN ccUsers_Roles b ON b.Rol_id = a.Value
-			WHERE b.Rol_id IS NOT NULL
-			IF EXISTS(SELECT TOP 1 * FROM #roles_permissions)
-			BEGIN
-				--select * from #roles_permissions
-				DELETE ccroles_permissions WHERE Rol_id in (select Rol_id from #roles_permissions )
-				SET @returnValue = 1
-			END
-			IF EXISTS(SELECT TOP 1 * FROM #Users_Roles)
-			BEGIN
-				--select * from #Users_Roles
-				DELETE ccUsers_Roles WHERE Rol_id in (select Rol_id from #Users_Roles )
-				SET @returnValue = 1
-			END
-			IF EXISTS(select top 1 Rol_id from ccRoles where Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '','')))
-			BEGIN
-				--select * from ccRoles where Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '',''))
-				DELETE ccRoles WHERE Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '',''))
-				SET @returnValue = 1
-			END
-		END
+			FROM dbo.fn_RIASplitDelimited(@Roles_id, '', '') a
+				 INNER JOIN dbo.ccUsers_Roles b ON b.Rol_id = a.[Value]
+			WHERE b.Rol_id IS NOT NULL;
+			IF EXISTS
+			(
+				SELECT TOP 1 *
+				FROM #roles_permissions
+			)
+				BEGIN
+					--select * from #roles_permissions
+					DELETE dbo.ccroles_permissions
+					WHERE ccroles_permissions.Rol_id IN
+					(
+						SELECT ccroles_permissions.Rol_id
+						FROM #roles_permissions
+					);
+					SET @returnValue = 1;
+			END;
+			IF EXISTS
+			(
+				SELECT TOP 1 *
+				FROM #Users_Roles
+			)
+				BEGIN
+					--select * from #Users_Roles
+					DELETE dbo.ccUsers_Roles
+					WHERE ccUsers_Roles.Rol_id IN
+					(
+						SELECT #Users_Roles.Rol_id
+						FROM #Users_Roles
+					);
+					SET @returnValue = 1;
+			END;
+			IF EXISTS
+			(
+				SELECT TOP 1 ccRoles.Rol_id
+				FROM dbo.ccRoles
+				WHERE ccRoles.Rol_id IN
+				(
+					SELECT DISTINCT
+						   (fn_RIASplitDelimited.[value])
+					FROM dbo.fn_RIASplitDelimited(@Roles_id, '', '')
+				)
+			)
+				BEGIN
+					--select * from ccRoles where Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, ','))
+					DELETE dbo.ccRoles
+					WHERE ccRoles.Rol_id IN
+					(
+						SELECT DISTINCT
+							   (fn_RIASplitDelimited.[value])
+						FROM dbo.fn_RIASplitDelimited(@Roles_id, '', '')
+					);
+					SET @returnValue = 1;
+			END;
+	END;
     IF @action = 5 -- New Role
         BEGIN
             IF @menus_id <> ''''

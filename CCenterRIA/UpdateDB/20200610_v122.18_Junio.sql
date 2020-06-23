@@ -609,7 +609,7 @@ insert into ccPermissions values(10004,''CenterScript|CenterScript'',''RolesPerm
 ---- Create date: 15/05/2020
 ---- Description:	Role management and permissions in galatea Admin
 ---- =============================================
-ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
 	@action SMALLINT,
 	@User_id VARCHAR(MAX)= '''',
 	@subaction VARCHAR(50)= '''',

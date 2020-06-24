@@ -911,6 +911,27 @@ BEGIN CATCH
     ROLLBACK TRANSACTION;
 END CATCH;'
 		EXEC(@sql)
+
+        
+        set @process = 'CW-4071 Callback Press 8'
+        set @sql = 'ALTER procedure [dbo].[ccsp_IVRUpdateCallSetStatus]
+@cal_id int,
+@nStatus tinyint,
+@userId int=0
+as
+set nocount on
+
+Update ccCallsIn SET cal_que=case @nStatus when 5 -- En Espera
+then 1 else cal_que end, statusCall_id=@nStatus
+,User_id= case when @userId >0 and User_id=0  then @userId else User_id end
+
+where cal_id=@cal_id
+
+exec ccsp_RIAUpdateCallBack_Abandon @cal_id, @nStatus
+
+return(0)
+set nocount off'
+        EXEC(@sql)
 		
 
 		/* End script release */

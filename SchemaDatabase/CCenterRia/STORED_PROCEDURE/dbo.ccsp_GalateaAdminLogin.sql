@@ -134,6 +134,6 @@ AS
                @ViewAvrs ViewAvrs, 
                @changeRecDisposition ChangeRecDisposition, 
                @Ext Ext, 
-               @ViewAgents ViewAgents,
+               isnull(@ViewAgents,0) ViewAgents,
 			   ISNULL(@WorkGroup, 0) WorkGroup;
     END;

@@ -936,8 +936,8 @@ set nocount off'
         set @process = 'ccTipoStatusAgente add status ChatReq y Chatting'
         set @sql = 'if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id in(23,24))
 begin
-	insert into ccTipoStatusAgente(23,''ChatReq'')
-	insert into ccTipoStatusAgente(24,''Chatting'')
+	insert into ccTipoStatusAgente values(23,''ChatReq'')
+	insert into ccTipoStatusAgente values(24,''Chatting'')
 end'
         EXEC(@sql)
 

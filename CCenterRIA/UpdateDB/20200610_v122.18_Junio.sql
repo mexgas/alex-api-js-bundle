@@ -460,29 +460,63 @@ END'
 
 		
 
-----------------------------------------------------------------------------------------------------------
+set @process = 'CW-4082 CW-4215 Create table with roles'
+		set @sql='IF EXISTS
+(
+    SELECT 1
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = ''BASE TABLE''
+          AND TABLE_NAME = ''ccRoles''
+)
+    BEGIN
+		IF EXISTS (SELECT * FROM sys.columns WHERE name = N''Rowguid'' and Object_ID = Object_ID(N''ccroles''))
+			begin
+				Alter table ccroles Drop Constraint DF_ccRoles_Rowguid
+				ALTER TABLE ccroles DROP COLUMN Rowguid
+			end
+	
+        IF NOT EXISTS (SELECT * FROM ccRoles WHERE Description IN(''It Manager'', ''Manager'', ''Room Manager''))
+		BEGIN
+			IF EXISTS (SELECT * FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor''))
+				BEGIN
+					DELETE B FROM ccRoles A 
+					INNER JOIN ccRoles_Permissions B
+					ON A.Rol_id=B.Rol_Id
+					WHERE A.Description in (''Supervisor'',''Monitor'')
 
-		set @process = 'CW-4082 CW-4215 If there are role tables remove'
-		set @sql='
-IF EXISTS
-(
-    SELECT 1
-    FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_TYPE = ''BASE TABLE''
-          AND TABLE_NAME = ''ccUsers_Roles''
-)
-    BEGIN
-        DROP TABLE [dbo].[ccUsers_Roles]
-END
-IF EXISTS
-(
-    SELECT 1
-    FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_TYPE = ''BASE TABLE''
-          AND TABLE_NAME = ''ccRoles_Permissions''
-)
-    BEGIN
-        DROP TABLE [dbo].[ccRoles_Permissions]
+					DELETE FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor'')
+				END
+				DECLARE @rolIdMax INT
+				SELECT @rolIdMax = ISNULL(MAX(rol_id), 0) + 1 FROM ccroles
+				DBCC CHECKIDENT(''ccroles'', RESEED, @rolIdMax)
+                
+				INSERT INTO ccroles VALUES (''It Manager'',''translate_it_manager'',GetDate(),1,3)
+				INSERT INTO ccroles VALUES (''Manager'',''translate_manager'',GetDate(),1,4)
+				INSERT INTO ccroles VALUES (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
+				INSERT INTO ccroles VALUES (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
+		END
+	END
+ELSE
+	BEGIN
+		CREATE TABLE [dbo].[ccRoles](
+		[Rol_id] [int] IDENTITY(1,1) NOT NULL,
+		[Description] [varchar](250) NULL,
+		[KeyJson] [varchar](250) NULL,
+		[CreateDate] [datetime] NULL,
+		[Active] [bit] NULL,
+		[Level] [smallint] NULL,
+	 CONSTRAINT [PK_ccRoles] PRIMARY KEY CLUSTERED 
+	(
+		[Rol_id] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY]
+
+	insert into ccroles values (''Root'',''translate_root'',GetDate(),1,1)
+	insert into ccroles values (''Admin'',''translate_admin'',GetDate(),1,2)
+	insert into ccroles values (''It Manager'',''translate_it_manager'',GetDate(),1,3)
+	insert into ccroles values (''Manager'',''translate_manager'',GetDate(),1,4)
+	insert into ccroles values (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
+	insert into ccroles values (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
 END
 
 IF EXISTS
@@ -492,115 +526,113 @@ IF EXISTS
     WHERE TABLE_TYPE = ''BASE TABLE''
           AND TABLE_NAME = ''ccPermissions''
 )
-    BEGIN
-        DROP TABLE [dbo].[ccPermissions]
-END
+	BEGIN
+		IF EXISTS (SELECT * FROM sys.columns WHERE name = N''Rowguid'' and Object_ID = Object_ID(N''ccPermissions''))
+			BEGIN
+				ALTER TABLE ccPermissions DROP CONSTRAINT DF_ccPermissions_Rowguid
+				ALTER TABLE ccPermissions DROP COLUMN Rowguid
+			END
+		IF EXISTS (SELECT * FROM ccPermissions WHERE Description = ''Sólo Monitoreo|Only Monitoring'')
+			BEGIN
+				UPDATE ccPermissions SET Description=''CenterScript|CenterScript'',KeyJson=''translate_centerScript'' WHERE Permissions_Id=10003
+			END
+		IF EXISTS (SELECT * FROM ccPermissions WHERE Permissions_id = 10004)
+			BEGIN
+				DELETE B FROM ccPermissions A 
+				INNER JOIN ccRoles_Permissions B
+				ON A.Permissions_id=B.Permissions_id
+				WHERE A.Permissions_id = 10004
+
+				Delete ccPermissions where Permissions_id = 10004
+			END
+
+	END
+ELSE
+	BEGIN
+		CREATE TABLE [dbo].[ccPermissions](
+			[Permissions_Id] [int] NOT NULL,
+			[Description] [varchar](250) NULL,
+			[KeyJson] [varchar](250) NULL,
+			[Parent] [smallint] NULL,
+			[Type] [smallint] NULL,
+			[OrderGrl] [smallint] NULL,
+			[Release] [varchar](max) NULL,
+			[Active] [bit] NULL,
+		 CONSTRAINT [PK_ccPermisos] PRIMARY KEY CLUSTERED 
+		(
+			[Permissions_Id] ASC
+		)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+		ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF_ccPermissions_Type]  DEFAULT ((1)) FOR [Type]
+		ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF__ccPermissions__OrderGrl__7F01C5FD]  DEFAULT ((1)) FOR [OrderGrl]
+		ALTER TABLE [dbo].[ccPermissions] ADD  DEFAULT ('''') FOR [Release]
+
+		INSERT INTO ccPermissions VALUES(10001,''Iniciar y detener campañas|Start and stop Campaign'',''translate_start_stop_camp'',0,0,0,''N/A'',1)
+		INSERT INTO ccPermissions VALUES(10002,''Carga de base de datos|Data Import'',''translate_data_import'',9,1,26,''644f3f9a7013f33219aae30ca25565240c0234b9a50a88494c16bb33bf9d3303b9cccff75b50ddb09b2242c5b3dbaf78'',1)
+		INSERT INTO ccPermissions VALUES(10003,''CenterScript|CenterScript'',''translate_centerScript'',0,0,0,''N/A'',1)
+	END
+
 IF EXISTS
 (
     SELECT 1
     FROM INFORMATION_SCHEMA.TABLES
     WHERE TABLE_TYPE = ''BASE TABLE''
-          AND TABLE_NAME = ''ccRoles''
+          AND TABLE_NAME = ''ccRoles_Permissions''
 )
-    BEGIN
-        DROP TABLE [dbo].[ccRoles]
-END'
-		EXEC(@sql)
+	BEGIN
+		DELETE ccRoles_Permissions WHERE Rol_Id BETWEEN 3 AND 1000
+	END
+ELSE
+	BEGIN 
+		CREATE TABLE [dbo].[ccRoles_Permissions](
+			[Rol_Id] [int] NOT NULL,
+			[Permissions_Id] [int] NOT NULL
+			CONSTRAINT [FK_ccRoles_Permissions_ccRoles]
+			  FOREIGN KEY ([Rol_Id]) REFERENCES [dbo].[ccRoles] ([Rol_Id]),
+			CONSTRAINT [FK_ccRoles_Permissions_ccPermissions] 
+			  FOREIGN KEY([Permissions_Id]) REFERENCES [dbo].[ccPermissions] ([Permissions_Id])
+		)
 
-		set @process = 'CW-4082 CW-4215 Create table ccRoles'
-		set @sql='CREATE TABLE [dbo].[ccRoles](
-	[Rol_id] [int] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](250) NULL,
-	[KeyJson] [varchar](250) NULL,
-	[CreateDate] [datetime] NULL,
-	[Active] [bit] NULL,
-	[Rowguid] [uniqueidentifier] ROWGUIDCOL  NULL,
-	[Level] [smallint] NULL,
- CONSTRAINT [PK_ccRoles] PRIMARY KEY CLUSTERED 
+		CREATE UNIQUE NONCLUSTERED INDEX [Index_Roles_Permissions] ON [dbo].[ccRoles_Permissions]
+		(
+			[Rol_Id] ASC,
+			[Permissions_Id] ASC
+		)
+
+		INSERT INTO ccRoles_Permissions SELECT 1,Permissions_Id FROM ccPermissions
+		INSERT INTO ccRoles_Permissions SELECT 2,Permissions_Id FROM ccPermissions
+	END
+
+IF EXISTS
 (
-	[Rol_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-ALTER TABLE [dbo].[ccRoles] ADD  CONSTRAINT [DF_ccRoles_Rowguid]  DEFAULT (newid()) FOR [Rowguid]'
-		EXEC(@sql)
-
-		set @process = 'CW-4082 CW-4215 Create table ccPermission'
-		set @sql='CREATE TABLE [dbo].[ccPermissions](
-	[Permissions_Id] [int] NOT NULL,
-	[Description] [varchar](250) NULL,
-	[KeyJson] [varchar](250) NULL,
-	[Parent] [smallint] NULL,
-	[Type] [smallint] NULL,
-	[OrderGrl] [smallint] NULL,
-	[Release] [varchar](max) NULL,
-	[Active] [bit] NULL,
-	[Rowguid] [uniqueidentifier] ROWGUIDCOL  NOT NULL,
- CONSTRAINT [PK_ccPermisos] PRIMARY KEY CLUSTERED 
-(
-	[Permissions_Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF_ccPermissions_Type]  DEFAULT ((1)) FOR [Type]
-ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF__ccPermissions__OrderGrl__7F01C5FD]  DEFAULT ((1)) FOR [OrderGrl]
-ALTER TABLE [dbo].[ccPermissions] ADD  DEFAULT ('''') FOR [Release]
-ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF_ccPermissions_Rowguid]  DEFAULT (newid()) FOR [Rowguid]
-
-
-'
-		EXEC(@sql)
-
-		set @process = 'CW-4082 CW-4215 Create table ccUsers_Roles'
-		set @sql='CREATE TABLE [dbo].[ccUsers_Roles](
-	[User_id] [smallint] NOT NULL,
-	[Rol_id] [int] NOT NULL
-	CONSTRAINT [FK_ccUsers_Roles_ccRoles]
-		FOREIGN KEY([Rol_id]) REFERENCES [dbo].[ccRoles] ([Rol_id]),
-	CONSTRAINT [FK_ccUsers_Roles_ccUsers]
-		FOREIGN KEY([User_id]) REFERENCES [dbo].[ccUsers] ([User_id])
-) ON [PRIMARY]
-
-CREATE UNIQUE NONCLUSTERED INDEX [Index_Users_Roles] ON [dbo].[ccUsers_Roles]
-(
-	[User_id] ASC,
-	[Rol_id] ASC
-)'
-		EXEC(@sql)
-
-		set @process = 'CW-4082 CW-4215 Create table ccRoles_Permissions'
-		set @sql='CREATE TABLE [dbo].[ccRoles_Permissions](
-	[Rol_Id] [int] NOT NULL,
-	[Permissions_Id] [int] NOT NULL
-	CONSTRAINT [FK_ccRoles_Permissions_ccRoles]
-      FOREIGN KEY ([Rol_Id]) REFERENCES [dbo].[ccRoles] ([Rol_Id]),
-	CONSTRAINT [FK_ccRoles_Permissions_ccPermissions] 
-	  FOREIGN KEY([Permissions_Id]) REFERENCES [dbo].[ccPermissions] ([Permissions_Id])
+    SELECT 1
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = ''BASE TABLE''
+          AND TABLE_NAME = ''ccUsers_Roles''
 )
+	BEGIN
+		DELETE ccUsers_Roles WHERE Rol_Id > 2
+	END
+ELSE
+	BEGIN
+		CREATE TABLE [dbo].[ccUsers_Roles](
+			[User_id] [smallint] NOT NULL,
+			[Rol_id] [int] NOT NULL
+			CONSTRAINT [FK_ccUsers_Roles_ccRoles]
+				FOREIGN KEY([Rol_id]) REFERENCES [dbo].[ccRoles] ([Rol_id]),
+			CONSTRAINT [FK_ccUsers_Roles_ccUsers]
+				FOREIGN KEY([User_id]) REFERENCES [dbo].[ccUsers] ([User_id])
+		) ON [PRIMARY]
 
-CREATE UNIQUE NONCLUSTERED INDEX [Index_Roles_Permissions] ON [dbo].[ccRoles_Permissions]
-(
-	[Rol_Id] ASC,
-	[Permissions_Id] ASC
-)'
-		EXEC(@sql)
+		CREATE UNIQUE NONCLUSTERED INDEX [Index_Users_Roles] ON [dbo].[ccUsers_Roles]
+		(
+			[User_id] ASC,
+			[Rol_id] ASC
+		)
 
-		set @process = 'CW-4082 CW-4215 Insert into  ccRoles and ccPermissions tables'
-		set @sql='insert into ccroles values (''Root'',''translate_root'',GetDate(),1,NEWID(),1)
-insert into ccroles values (''Admin'',''translate_admin'',GetDate(),1,NEWID(),2)
-insert into ccroles values (''It Manager'',''translate_it_manager'',GetDate(),1,NEWID(),3)
-insert into ccroles values (''Manager'',''translate_manager'',GetDate(),1,NEWID(),4)
-insert into ccroles values (''Room Manager'',''translate_Room_Manager'',GetDate(),1,NEWID(),5)
-insert into ccroles values (''Supervisor'',''translate_supervisor'',GetDate(),1,NEWID(),6)
-
-insert into ccPermissions values(10001,''Iniciar y detener campañas|Start and stop Campaign'',''translate_start_stop_camp'',0,0,0,''N/A'',1,NEWID())
-insert into ccPermissions values(10002,''Carga de base de datos|Data Import'',''translate_data_import'',9,1,26,''644f3f9a7013f33219aae30ca25565240c0234b9a50a88494c16bb33bf9d3303b9cccff75b50ddb09b2242c5b3dbaf78'',1,NEWID())
-insert into ccPermissions values(10003,''CenterScript|CenterScript'',''translate_centerScript'',0,0,0,''N/A'',1,NEWID())
-
-INSERT INTO ccRoles_Permissions SELECT 1,Permissions_Id FROM ccPermissions
-INSERT INTO ccRoles_Permissions SELECT 2,Permissions_Id FROM ccPermissions
-
-insert into ccUsers_Roles values (1,1)
-'
+		INSERT INTO ccUsers_Roles VALUES (1,1)
+	END'
 		EXEC(@sql)
 
 		set @process = 'CW-4082 CW-4215 if exists sp ccsp_GalateaAdminRolesManagement drop '
@@ -861,7 +893,6 @@ BEGIN TRY
                                     (Description, 
                                      KeyJson, 
                                      CreateDate, 
-                                     Rowguid, 
                                      Active,
 									 Level
                                     )
@@ -869,7 +900,6 @@ BEGIN TRY
                                     (@description, 
                                      @keyJson, 
                                      GETDATE(), 
-                                     NEWID(), 
                                      @active,
 									 1001
                                     );

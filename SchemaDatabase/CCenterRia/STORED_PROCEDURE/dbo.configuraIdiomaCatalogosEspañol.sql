@@ -135,6 +135,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (8, conve
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (9, convert(text, N'Ringing' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (11, convert(text, N'Problema' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (21, convert(text, N'Espera llamada manual' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, convert(text, N'ChatReq' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N'Chatting' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, convert(text, N'Transferencia Fallida' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, convert(text, N'Ringing Fallida' collate SQL_Latin1_General_CP1_CI_AS))
 

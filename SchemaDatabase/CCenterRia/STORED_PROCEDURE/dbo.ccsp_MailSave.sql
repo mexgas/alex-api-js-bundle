@@ -174,7 +174,7 @@ else if @action = 10 BEGIN --Correos por enviar
 	 from (
 	select A.inboundId,A.conversationId as ConversationId,max(B.messageId) as MessageId,A.mailInbound   from conversation A 
 	inner join message B on A.conversationId = B.conversationId
-	where A.meanContactTypeId = 1 --and (@inboundId is null or A.inboundId=3)
+	where A.meanContactTypeId = 1 and A.inboundId = @inboundId
 	GROUP BY A.conversationId,A.inboundId,A.mailInbound 
 	) A
 	inner join message B on A.MessageId = B.messageId

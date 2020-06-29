@@ -586,9 +586,9 @@ IF NOT EXISTS
 		ALTER TABLE [dbo].[ccPermissions] ADD  CONSTRAINT [DF__ccPermissions__OrderGrl__7F01C5FD]  DEFAULT ((1)) FOR [OrderGrl]
 		ALTER TABLE [dbo].[ccPermissions] ADD  DEFAULT ('''') FOR [Release]
 
-		INSERT INTO ccPermissions VALUES(10001,''Iniciar y detener campañas|Start and stop Campaign'',''translate_start_stop_camp'',0,0,0,''N/A'',1)
-		INSERT INTO ccPermissions VALUES(10002,''Carga de base de datos|Data Import'',''translate_data_import'',9,1,26,''644f3f9a7013f33219aae30ca25565240c0234b9a50a88494c16bb33bf9d3303b9cccff75b50ddb09b2242c5b3dbaf78'',1)
-		INSERT INTO ccPermissions VALUES(10003,''CenterScript|CenterScript'',''translate_centerScript'',0,0,0,''N/A'',1)
+		INSERT INTO ccPermissions VALUES(10001,''Iniciar y detener campañas|Start and stop Campaign'',''RolesPermissionStartStop'',0,0,0,''N/A'',1)
+		INSERT INTO ccPermissions VALUES(10002,''Carga de base de datos|Data Import'',''RolesPermissionDataImport'',9,1,26,''644f3f9a7013f33219aae30ca25565240c0234b9a50a88494c16bb33bf9d3303b9cccff75b50ddb09b2242c5b3dbaf78'',1)
+		INSERT INTO ccPermissions VALUES(10003,''CenterScript|CenterScript'',''RolesPermissionCenterScript'',0,0,0,''N/A'',1)
 	END
 
 IF EXISTS

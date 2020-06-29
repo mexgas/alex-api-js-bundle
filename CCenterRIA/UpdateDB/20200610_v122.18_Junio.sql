@@ -460,7 +460,7 @@ END'
 
 		
 
-set @process = 'CW-4082 CW-4215 Create table with roles'
+		set @process = 'CW-4082 CW-4215 Alter table with roles'
 		set @sql='IF EXISTS
 (
     SELECT 1
@@ -496,28 +496,6 @@ set @process = 'CW-4082 CW-4215 Create table with roles'
 				INSERT INTO ccroles VALUES (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
 		END
 	END
-ELSE
-	BEGIN
-		CREATE TABLE [dbo].[ccRoles](
-		[Rol_id] [int] IDENTITY(1,1) NOT NULL,
-		[Description] [varchar](250) NULL,
-		[KeyJson] [varchar](250) NULL,
-		[CreateDate] [datetime] NULL,
-		[Active] [bit] NULL,
-		[Level] [smallint] NULL,
-	 CONSTRAINT [PK_ccRoles] PRIMARY KEY CLUSTERED 
-	(
-		[Rol_id] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
-
-	insert into ccroles values (''Root'',''translate_root'',GetDate(),1,1)
-	insert into ccroles values (''Admin'',''translate_admin'',GetDate(),1,2)
-	insert into ccroles values (''It Manager'',''translate_it_manager'',GetDate(),1,3)
-	insert into ccroles values (''Manager'',''translate_manager'',GetDate(),1,4)
-	insert into ccroles values (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
-	insert into ccroles values (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
-END
 
 IF EXISTS
 (
@@ -546,8 +524,46 @@ IF EXISTS
 				Delete ccPermissions where Permissions_id = 10004
 			END
 
-	END
-ELSE
+	END'
+		EXEC(@sql)
+
+		set @process = 'CW-4082 CW-4215 Create table with roles'
+		set @sql='IF NOT EXISTS
+(
+    SELECT 1
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = ''BASE TABLE''
+          AND TABLE_NAME = ''ccRoles''
+)
+	BEGIN
+		CREATE TABLE [dbo].[ccRoles](
+		[Rol_id] [int] IDENTITY(1,1) NOT NULL,
+		[Description] [varchar](250) NULL,
+		[KeyJson] [varchar](250) NULL,
+		[CreateDate] [datetime] NULL,
+		[Active] [bit] NULL,
+		[Level] [smallint] NULL,
+	 CONSTRAINT [PK_ccRoles] PRIMARY KEY CLUSTERED 
+	(
+		[Rol_id] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY]
+
+	insert into ccroles values (''Root'',''translate_root'',GetDate(),1,1)
+	insert into ccroles values (''Admin'',''translate_admin'',GetDate(),1,2)
+	insert into ccroles values (''It Manager'',''translate_it_manager'',GetDate(),1,3)
+	insert into ccroles values (''Manager'',''translate_manager'',GetDate(),1,4)
+	insert into ccroles values (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
+	insert into ccroles values (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
+END
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = ''BASE TABLE''
+          AND TABLE_NAME = ''ccPermissions''
+)
 	BEGIN
 		CREATE TABLE [dbo].[ccPermissions](
 			[Permissions_Id] [int] NOT NULL,

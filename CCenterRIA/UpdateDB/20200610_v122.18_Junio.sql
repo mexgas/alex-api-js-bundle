@@ -474,27 +474,6 @@ END'
 				Alter table ccroles Drop Constraint DF_ccRoles_Rowguid
 				ALTER TABLE ccroles DROP COLUMN Rowguid
 			end
-	
-        IF NOT EXISTS (SELECT * FROM ccRoles WHERE Description IN(''It Manager'', ''Manager'', ''Room Manager''))
-		BEGIN
-			IF EXISTS (SELECT * FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor''))
-				BEGIN
-					DELETE B FROM ccRoles A 
-					INNER JOIN ccRoles_Permissions B
-					ON A.Rol_id=B.Rol_Id
-					WHERE A.Description in (''Supervisor'',''Monitor'')
-
-					DELETE FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor'')
-				END
-				DECLARE @rolIdMax INT
-				SELECT @rolIdMax = ISNULL(MAX(rol_id), 0) + 1 FROM ccroles
-				DBCC CHECKIDENT(''ccroles'', RESEED, @rolIdMax)
-                
-				INSERT INTO ccroles VALUES (''It Manager'',''translate_it_manager'',GetDate(),1,3)
-				INSERT INTO ccroles VALUES (''Manager'',''translate_manager'',GetDate(),1,4)
-				INSERT INTO ccroles VALUES (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
-				INSERT INTO ccroles VALUES (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
-		END
 	END
 
 IF EXISTS
@@ -525,6 +504,29 @@ IF EXISTS
 			END
 
 	END'
+		EXEC(@sql)
+
+		set @process = 'CW-4082 CW-4215 Insert table roles if not exists'
+		set @sql='IF NOT EXISTS (SELECT * FROM ccRoles WHERE Description IN(''It Manager'', ''Manager'', ''Room Manager''))
+		BEGIN
+			IF EXISTS (SELECT * FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor''))
+				BEGIN
+					DELETE B FROM ccRoles A 
+					INNER JOIN ccRoles_Permissions B
+					ON A.Rol_id=B.Rol_Id
+					WHERE A.Description in (''Supervisor'',''Monitor'')
+
+					DELETE FROM ccRoles WHERE Description IN(''Supervisor'', ''Monitor'')
+				END
+				DECLARE @rolIdMax INT
+				SELECT @rolIdMax = ISNULL(MAX(rol_id), 0) + 1 FROM ccroles
+				DBCC CHECKIDENT(''ccroles'', RESEED, @rolIdMax)
+                
+				INSERT INTO ccroles VALUES (''It Manager'',''translate_it_manager'',GetDate(),1,3)
+				INSERT INTO ccroles VALUES (''Manager'',''translate_manager'',GetDate(),1,4)
+				INSERT INTO ccroles VALUES (''Room Manager'',''translate_Room_Manager'',GetDate(),1,5)
+				INSERT INTO ccroles VALUES (''Supervisor'',''translate_supervisor'',GetDate(),1,6)
+		END'
 		EXEC(@sql)
 
 		set @process = 'CW-4082 CW-4215 Create table with roles'

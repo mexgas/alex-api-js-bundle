@@ -653,6 +653,15 @@ ELSE
 		END'
 		EXEC(@sql)
 
+		set @process = 'CW-4215 Update ccPermissions'
+		set @sql='IF EXISTS (select * from ccPermissions where KeyJson in (''translate_start_stop_camp'',''translate_data_import'',''translate_centerScript''))
+BEGIN
+	UPDATE ccPermissions SET KeyJson = ''RolesPermissionStartStop'' WHERE Permissions_Id = 10001
+	UPDATE ccPermissions SET KeyJson = ''RolesPermissionDataImport'' WHERE Permissions_Id = 10002
+	UPDATE ccPermissions SET KeyJson = ''RolesPermissionCenterScript'' WHERE Permissions_Id = 10003
+END'
+		EXEC(@sql)
+
 		set @process = 'CW-4082 CW-4215 if exists sp ccsp_GalateaAdminRolesManagement drop '
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminRolesManagement'')
 	    begin

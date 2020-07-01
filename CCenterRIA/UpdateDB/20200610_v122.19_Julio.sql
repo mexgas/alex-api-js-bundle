@@ -82,10 +82,15 @@ BEGIN
 		END'
 		EXEC(@sql)	
 
+		set @process = 'crea nuevo sp para las acciones del servicio de cofetel drop'
+		set @sql = 'if exists (select * from sys.procedures where name = N''CofetelActions'')
+	    begin
+	        DROP PROCEDURE CofetelActions;
+	    end'
+		EXEC(@sql)
 
 		set @process = 'crea nuevo sp para las acciones del servicio de cofetel'
-		set @sql='if exists (select * from sys.procedures where name = N''CofetelActions'')
-	    begin
+		set @sql='
 	        CREATE PROCEDURE [dbo].[CofetelActions]
 		@type tinyint
 		as
@@ -102,13 +107,18 @@ BEGIN
 		declare @ret bit
 		set @ret = 1
 		
-select @ret
-	    end'
+select @ret'
+		EXEC(@sql)
+		
+		set @process = 'crea SP para pasar la info a tabla de series drop'
+				set @sql = 'if exists (select * from sys.procedures where name = N''CofetelUpdateData'')
+			    begin
+			        DROP PROCEDURE CofetelUpdateData;
+			    end'
 		EXEC(@sql)
 
 		set @process = 'crea SP para pasar la info a tabla de series'
-		set @sql='if exists (select * from sys.procedures where name = N''CofetelUpdateData'')
-	    begin
+		set @sql='
 	        CREATE PROCEDURE [dbo].[CofetelUpdateData]
 		@type tinyint
 		as
@@ -121,15 +131,18 @@ select @ret
 		declare @ret bit
 		set @ret = 1
 		
-		select @ret
+		select @ret'
+		EXEC(@sql)
 		
-	    end'
+		set @process = 'crea SP para pasar la info a tabla de series drop'
+				set @sql = 'if exists (select * from sys.procedures where name = N''CofetelSettingsData'')
+			    begin
+				DROP PROCEDURE CofetelSettingsData;
+			    end'
 		EXEC(@sql)
 
 		set @process = 'crea sp para leer parametros del servicio'
-		set @sql = ''if exists (select * from sys.procedures where name = N''CofetelSettingsData'')
-	    begin
-		
+		set @sql = '
 		CREATE PROCEDURE [dbo].[CofetelSettingsData]
 		@type tinyint
 		as
@@ -257,7 +270,6 @@ END;'
 		set @process = ''
 		set @sql = ''
 		EXEC(@sql)
-        
         
 
 		/* End script release */

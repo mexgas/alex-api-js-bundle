@@ -33,14 +33,28 @@ BEGIN TRY
         BEGIN
         IF @subaction = 'Permissions'
             BEGIN
-                SELECT Permissions_Id, 
-                       KeyJson, 
-                       Parent, 
-                       Type, 
-                       OrderGrl
-                FROM ccPermissions
-                ORDER BY OrderGrl, 
-                         Parent;
+                IF OBJECT_ID('tempdb..#Permissions') IS NOT NULL DROP TABLE #Permissions;
+
+				SELECT DISTINCT
+					   (rp.Permissions_id)
+				INTO #Permissions
+				FROM ccUsers_Roles ur
+					 INNER JOIN ccRoles_Permissions rp WITH(NOLOCK) ON rp.Rol_id = ur.Rol_id
+				WHERE User_id = @User_id;
+				SELECT p.Permissions_Id, 
+					   p.KeyJson, 
+					   p.Parent, 
+					   p.Type, 
+					   p.OrderGrl,
+					   CASE
+						   WHEN tp.Permissions_Id IS NOT NULL
+						   THEN 1
+						   ELSE 0
+					   END AS State
+				FROM ccPermissions p
+					 LEFT JOIN #Permissions tp WITH(NOLOCK) ON tp.Permissions_Id = p.Permissions_Id
+				ORDER BY OrderGrl, 
+						 Parent;
         END;
         IF @subaction = 'Roles'
             BEGIN
@@ -234,7 +248,6 @@ BEGIN TRY
                                     (Description, 
                                      KeyJson, 
                                      CreateDate, 
-                                     Rowguid, 
                                      Active,
 									 Level
                                     )
@@ -242,7 +255,6 @@ BEGIN TRY
                                     (@description, 
                                      @keyJson, 
                                      GETDATE(), 
-                                     NEWID(), 
                                      @active,
 									 1001
                                     );

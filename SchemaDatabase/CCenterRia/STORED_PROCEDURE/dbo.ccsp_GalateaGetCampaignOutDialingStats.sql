@@ -25,13 +25,15 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetCampaignOutDialingStats]
 			    INSERT INTO @table
 			    	EXEC ccsp_OUTGetCallsInfo_AllCamps @Tipo, @cam_id, @sup_id
 
-					select L.*, (L.Attended-L.Xfer) AS Assigned
-					
+					--select L.*, (L.Attended-L.Xfer) AS Assigned
+					select  L.cam_id, ISNULL(L.Calls, 0) Calls, ISNULL(L.Answer, 0)Answer, ISNULL(L.Busy, 0)Busy, ISNULL(L.NoAnswer, 0)NoAnswer, ISNULL(L.Fax, 0)Fax, ISNULL(L.NoService, 0)NoService,
+										ISNULL(L.Other, 0)Other, ISNULL(L.Canceled, 0)Canceled, ISNULL(L.Machine, 0)Machine, ISNULL(L.NoTone, 0)NoTone, ISNULL(L.Congestion, 0)Congestion,
+										ISNULL(L.Abandon, 0)Abandon, ISNULL(L.Xfer, 0)Xfer, ISNULL(L.AbandonRate, 0)AbandonRate, ISNULL(L.Attended, 0)Attended, ISNULL(L.aggressionFactor, 0)aggressionFactor, ISNULL((L.Attended-L.Xfer), 0) AS Assigned
 					from
 					(
 
 						select A.*, C.Xfer,
-						((A.Abandon *100.0)/ A.Answer) as AbandonRate,
+						case when isnull(A.Answer, 0) = 0 then 0 else ((A.Abandon *100.0)/ A.Answer) end as AbandonRate,
 						(A.Answer - A.Abandon - A.Canceled) as Attended,
                         B.AggressionFactor
 						

@@ -1,4 +1,4 @@
-CREATE PROCEDURE dbo.ccsp_DLRSaveDialResult 
+CREATE PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
 				@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
 				@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
 				@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '', @cal_key VARCHAR(20)= '', @call_TS VARCHAR(15)=
@@ -73,6 +73,13 @@ BEGIN
 			WHERE logDial_id = @logDial_id;
 		END;
 	END;
+
+
+	--2020-06-04 para marcaciones manuales no efectivas guarda el cal_id
+					if @call_id > 0 and @tipoResDial_id != 1
+					begin
+						update ccologdials with(rowlock) set cal_id=@call_id where logDial_id=@logDial_id
+					end
 
 	-- inserta informacion para reportes de workgroup
 	INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )

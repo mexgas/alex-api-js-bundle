@@ -3,6 +3,7 @@ RETURNS bit
 AS  
 BEGIN
 
+
 declare @call_record as bit
 set @call_record = 1
 

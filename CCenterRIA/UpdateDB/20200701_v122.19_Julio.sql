@@ -330,7 +330,7 @@ isnull(a.Canceled, 0)Canceled, isnull(a.Machine, 0)Machine, isnull(a.NoTone, 0) 
 convert(decimal(5,2), isnull(( B.Abandoned*100.0)/nullif(A.Answer,0),0) )AbandonRate,camps.aggressionFactor
 from ResultDial A
 inner join ResultAgent B on A.cam_id=B.cam_id
-RIGHT JOIN @relationCamSup relation on relation.cam_id = A.cam_id
+inner JOIN @relationCamSup relation on relation.cam_id = A.cam_id
 INNER join ccCamps camps on camps.cam_id=relation.cam_id
 
 END'

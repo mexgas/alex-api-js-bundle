@@ -332,7 +332,7 @@ from ResultDial A
 inner join ResultAgent B on A.cam_id=B.cam_id
 inner JOIN @relationCamSup relation on relation.cam_id = A.cam_id
 INNER join ccCamps camps on camps.cam_id=relation.cam_id
-
+Order by camps.cam_descripcion
 END'
 		EXEC(@sql)
 		

@@ -1,59 +1,69 @@
 CREATE PROCEDURE [dbo].[ccsp_GalateaGetCampaignOutDialingStats]
-			@Tipo as tinyint=0,
-			@cam_id as smallint = 0,
-			@sup_id as smallint=0
-			AS
-			BEGIN
+@Tipo as tinyint=0,
+@cam_id as smallint = 0,
+@sup_id as smallint=0
+AS
+BEGIN
+declare @dateStart datetime,@dateEnd datetime
+select @dateStart = convert(smalldatetime, convert(varchar(11), getdate() ), 101)  
+set @dateEnd=DATEADD(dd,1,@dateStart)
 
-				DECLARE @table TABLE
-					 (cam_id SMALLINT, 
-					  Calls INT,
-					  Answer INT,
-					  Busy INT,
-					  NoAnswer INT,
-					  Fax INT,
-					  NoService INT,
-					  Other INT,
-					  Canceled INT,
-					  Machine INT,
-					  NoTone INT,
-					  Congestion INT,
-					  Abandon INT
-					  PRIMARY KEY(cam_id)
-					 );
-					 
-			    INSERT INTO @table
-			    	EXEC ccsp_OUTGetCallsInfo_AllCamps @Tipo, @cam_id, @sup_id
+declare @relationCamSup table(cam_id int primary key)
 
-					--select L.*, (L.Attended-L.Xfer) AS Assigned
-					select  L.cam_id, ISNULL(L.Calls, 0) Calls, ISNULL(L.Answer, 0)Answer, ISNULL(L.Busy, 0)Busy, ISNULL(L.NoAnswer, 0)NoAnswer, ISNULL(L.Fax, 0)Fax, ISNULL(L.NoService, 0)NoService,
-										ISNULL(L.Other, 0)Other, ISNULL(L.Canceled, 0)Canceled, ISNULL(L.Machine, 0)Machine, ISNULL(L.NoTone, 0)NoTone, ISNULL(L.Congestion, 0)Congestion,
-										ISNULL(L.Abandon, 0)Abandon, ISNULL(L.Xfer, 0)Xfer, ISNULL(L.AbandonRate, 0)AbandonRate, ISNULL(L.Attended, 0)Attended, ISNULL(L.aggressionFactor, 0)aggressionFactor, ISNULL((L.Attended-L.Xfer), 0) AS Assigned
-					from
-					(
+insert into @relationCamSup
+select distinct cam_id from ccSupervisorCam supCam where user_id=@sup_id
 
-						select A.*, C.Xfer,
-						case when isnull(A.Answer, 0) = 0 then 0 else ((A.Abandon *100.0)/ A.Answer) end as AbandonRate,
-						(A.Answer - A.Abandon - A.Canceled) as Attended,
-                        B.AggressionFactor
-						
-						from @table as A
+;
 
-						left join(
-							select ccC.cam_id, ccC.AggressionFactor
-							from ccCamps as ccC
-						)B ON A.cam_id = B.cam_id
+WITH ResultDial AS (
+select logDials.cam_id, count(*) as Calls,
+		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
+		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
+		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
+		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
+			count(case tipoResDial_id when 5 then 1 else null end) as NoTone,
+			count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other,
+		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
+			count(case tipoResDial_id when 11 then 1 else null end) as Machine,
+			count(case tipoResDial_id when 12 then 1 else null end) as Congestion,
+			count(case tipoResDial_id when 13 then 1 else null end) as Canceled		    
+		    from ccoLogDials logDials with(nolock)
+			inner join @relationCamSup  B ON logDials.cam_id = B.cam_id
+where fecha between @dateStart and @dateEnd
+--and logDials.cam_id in(1,3)
+  group by logDials.cam_id
+  
+  )
+ ,
+  ResultAgent AS (
+select A.cam_id, c.cam_descripcion Name,
+count(case statuscall_id when 1 then 1 else null end) as Initial,
+count(case statuscall_id when 2 then 1 else null end) as [OutofSchedule],
+count(case statuscall_id when 3 then 1 else null end) as [OutofService],
+count(case statuscall_id when 4 then 1 else null end) as [NoAgentsLoggedin],
+count(case statuscall_id when 5 then 1 else null end) as [OnHold],
+count(case statuscall_id when 6 then 1 else null end) as Abandoned,
+count(case statuscall_id when 7 then 1 else null end) as [Timeoverflow],
+count(case statuscall_id when 8 then 1 else null end) as [QueueSizeOverflow],
+count(case statuscall_id when 9 then 1 else null end) as [WithMessage],
+count(case statuscall_id when 10 then 1 else null end) as [Assigned Message],
+count(case when statuscall_id in(11, 12,15,16)  then 1 else null end) as [Assigned],
+count(case statuscall_id when 13 then 1 else null end) as [Answered],
+count(case statuscall_id when 14 then 1 else null end) as [Canceled Message]  
+from ccoCallsOut A
+inner join @relationCamSup  B ON A.cam_id = B.cam_id
+inner join ccCamps c on a.cam_id = c.cam_id
+where cal_Inicio  between @dateStart and @dateEnd
+--and cam_id in(1,3)
+group by A.cam_id, c.cam_descripcion
+)
 
-						left join(
-							select Cco.cam_id, COUNT(CASE WHEN Cco.statusCall_id >= 10 THEN 1 END) AS  Xfer
-							from ccoCallsOut  as cco
-							right join (
-								select distinct supCam.cam_id from ccSupervisorCam supCam where user_id=@sup_id
-							) D ON Cco.cam_id = D.cam_id
-							Where cal_Inicio >  convert(smalldatetime, convert(varchar(11), getdate() ), 101)
-							group by Cco.cam_id
-						)C ON A.cam_id = C.cam_id
-
-					)L
-
-			END
+select  camps.cam_id, isnull(a.Calls, 0)Calls, isnull(a.Answer, 0)Answer, isnull(a.Busy, 0)Busy, isnull(a.NoAnswer, 0)NoAnswer, isnull(a.Fax, 0)Fax, isnull(a.NoService, 0)NoService, isnull(a.Other, 0)Other,
+isnull(a.Canceled, 0)Canceled, isnull(a.Machine, 0)Machine, isnull(a.NoTone, 0) NoTone, isnull(a.Congestion, 0)Congestion,   isnull(B.Answered, 0)  Attended, isnull(B.Abandoned, 0) Abandon,isnull(B.Assigned, 0)Assigned,  
+convert(decimal(5,2), isnull(( B.Abandoned*100.0)/nullif(A.Answer,0),0) )AbandonRate,camps.aggressionFactor
+from ResultDial A
+inner join ResultAgent B on A.cam_id=B.cam_id
+inner JOIN @relationCamSup relation on relation.cam_id = A.cam_id
+INNER join ccCamps camps on camps.cam_id=relation.cam_id
+Order by camps.cam_descripcion
+END

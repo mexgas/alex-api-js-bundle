@@ -1,4 +1,5 @@
 CREATE PROCEDURE [dbo].[ccsp_InsertDNCList]
+ 
 @telephone as varchar(30),
 @ln_id as integer,
 @hashCalKey bigint=null
@@ -13,9 +14,9 @@ CREATE TABLE [dbo].[#mycamps] (
 	)
 
 CREATE UNIQUE INDEX [IX_mycamps] ON [dbo].[#mycamps]([campsid]) 
-
+--En #mycamps se guardan los id de campañas ligadas a la lista negra
 insert #mycamps
-select cam_id from Camplistanegra where idtipolista = @ln_id
+select distinct cam_id from Camplistanegra where idtipolista = @ln_id
 
 CREATE TABLE [dbo].[#myprincipaltemp](
 	[callout_id] [int] NULL, 
@@ -29,257 +30,103 @@ CREATE TABLE [dbo].[#myprincipaltemp](
 	[cal_telefono5] [varchar] (15) NULL
 	)
 
-CREATE UNIQUE INDEX [IX_myprincipaltemp] ON [dbo].[#myprincipaltemp]([callout_id]) 
-CREATE NONCLUSTERED INDEX [IX_myprincipaltemp2] ON [dbo].[#myprincipaltemp]([cal_telefono]) 
-CREATE NONCLUSTERED INDEX [IX_myprincipaltemp3] ON [dbo].[#myprincipaltemp]([cal_telefono2]) 
-CREATE NONCLUSTERED INDEX [IX_myprincipaltemp4] ON [dbo].[#myprincipaltemp]([cal_telefono3]) 
-CREATE NONCLUSTERED INDEX [IX_myprincipaltemp5] ON [dbo].[#myprincipaltemp]([cal_telefono4]) 
-CREATE NONCLUSTERED INDEX [IX_myprincipaltemp6] ON [dbo].[#myprincipaltemp]([cal_telefono5]) 
+CREATE UNIQUE INDEX [IX_myprincipaltemp] ON  [dbo].[#myprincipaltemp]([callout_id]) 
 
-CREATE TABLE [dbo].[#mytemp](
-	[callout_id] [int] NULL, 
-	[telefono] [varchar] (15) NULL ,
-	[cam_id] [smallint] NULL ,
-	[tipomov] [int] NULL,
-	[idtipolista] [int] NULL
-	)
-
-CREATE UNIQUE INDEX [IX_mytemp] ON [dbo].[#mytemp]([callout_id]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp2] 
+ON [dbo].[#myprincipaltemp]([callout_id])
+INCLUDE ([cal_telefono], [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]); 
 
 select @pais = valor from ccSettings with(nolock) where setting_id = 104
 select @ld = valor from ccSettings with(nolock) where setting_id = 17
 select @tel = dbo.completa(@telephone, @pais, @ld)
-
+--select @tel = @telephone
 declare @Sql nvarchar(max)
 
 if @hashCalKey is not null or @hashCalKey > 0
 begin
-	set @Sql = 'insert into [#myprincipaltemp] ' +
-	'SELECT callout_id as callout_id, cam_id,''3'',' + cast(@ln_id as nvarchar) + ' as idtipolista , [cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5] ' +
-	'FROM [ccoCallsOutSource] a with(nolock) inner join #mycamps b on (a.cam_id = b.campsid) ' +
-	'WHERE dbo.hashList(cal_Key) = ' + cast(@hashCalKey as nvarchar) +
-	' and  cal_fechadial > dateadd(dd,-30,getdate())'
+	--Inserta en #myPrincipaltemp los registros que trae ccoCallsOutSource y que estan ligados a las campañas de la lisa negra.
+	--si trae hashcalkey
+	set @Sql = 'insert into [#myprincipaltemp] 
+	SELECT callout_id as callout_id, cam_id,''3'',@lnId as idtipolista , [cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5] 
+	FROM [ccoCallsOutSource] a with(nolock) inner join #mycamps b on a.cam_id = b.campsid 
+	WHERE @telefono IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) and 
+	dbo.hashList(cal_key) = @hashCal and
+	cal_fechadial > dateadd(dd,-30,getdate())'
+
+	EXECUTE sp_executesql  @sql,N'@lnId integer, @telefono varchar(30), @hashCal bigint', @lnId = @ln_id, @hashCal = @hashCalKey, @telefono = @tel;
+
 end
 else begin
-	set @Sql = 'insert into [#myprincipaltemp] ' +
-	'SELECT callout_id as callout_id, cam_id,''3'',' + cast(@ln_id as nvarchar) + ' as idtipolista , [cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5] ' +
-	'FROM [ccoCallsOutSource] a with(nolock) inner join #mycamps b on (a.cam_id = b.campsid) ' +
-	'WHERE (''' + @tel + ''' IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) ' +
-	'or right(''' + @tel + ''',10) IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) ' +
-	'or right(''' + @tel + ''',11) IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5])) ' +
-	'and  cal_fechadial > dateadd(dd,-30,getdate())'
+	--Inserta en #myPrincipaltemp los registros que trae ccoCallsOutSource y que estan ligados a las campañas de la lisa negra.
+	--si NO trae hashcalkey
+	set @Sql = 'insert into [#myprincipaltemp]  
+	SELECT callout_id as callout_id, cam_id,''3'',@lnId as idtipolista , [cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5] 
+	FROM [ccoCallsOutSource] a with(nolock) inner join #mycamps b on a.cam_id = b.campsid
+	WHERE @telefono IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) and
+	cal_fechadial > dateadd(dd,-30,getdate())'
+
+	EXECUTE sp_executesql  @sql,N'@lnId integer, @telefono varchar(30)',@lnId = @ln_id, @telefono = @tel;
+
 end
 
-EXEC(@Sql)
-
-if (select count(*) from #myprincipaltemp with(nolock)) > 0
-	begin
-		/******************/
-		/*** Telefono 1 ***/
-		/******************/
-		insert #mytemp
-		select callout_id,cal_telefono,cam_id,tipomov,idtipolista
-		from [#myprincipaltemp] with(nolock)
-		where (cal_telefono = @tel or cal_telefono = right(@tel, 10) or cal_telefono = right(@tel, 11))
-
-		if (select count(*) from #mytemp with(nolock)) > 0
+		if exists(select * from #myprincipaltemp )
 		begin
-			-- Borramos de WT todos los registros en los que el telefono1 sea el único telefono y este en la lista negra
-			delete ccoWOrkingTable with(rowlock)
-			from ccoWOrkingTable wt 
-			inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
-			inner join #mytemp t on wt.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30 
-			and cs.cal_telefono = wt.cal_telefono
-			and rtrim(left(ltrim(cs.cal_telefono2 + '         '
-								 + cs.cal_telefono3 + '         '
-								 + cs.cal_telefono4 + '         '
-								 + cs.cal_telefono5 + '         '),13)) = ''
 
-			-- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
-			update ccoWOrkingTable with(rowlock)
-			set cal_telefono = rtrim(left(ltrim(cs.cal_telefono2 + '         '
-												+ cs.cal_telefono3 + '         '
-												+ cs.cal_telefono4 + '         '
-												+ cs.cal_telefono5 + '         '),13))
-			from ccoCallsOutSource cs 
-			inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
-			inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30 
-			and cs.cal_telefono= wt.cal_telefono
+			   update pt 
+				set 
+				pt.cal_telefono =  case	when pt.cal_telefono = @tel then '' else pt.cal_telefono  end,
+				pt.cal_telefono2 = CASE when pt.cal_telefono2 = @tel then '' ELSE pt.cal_telefono2 END,			
+				pt.cal_telefono3 = CASE when pt.cal_telefono3 = @tel then '' ELSE pt.cal_telefono3 END,			
+				pt.cal_telefono4 = CASE when pt.cal_telefono4 = @tel then '' ELSE pt.cal_telefono4 END,			
+				pt.cal_telefono5 = CASE when pt.cal_telefono5 = @tel then '' ELSE pt.cal_telefono5 END
+				from #myprincipaltemp pt
+				
+				if exists(select * from #myprincipaltemp cs where cs.cal_telefono = '' and cs.cal_telefono2 = '' and cs.cal_telefono3 = '' and cs.cal_telefono4 = '' and cs.cal_telefono5 = '')
+				begin
+				--Si en callsOut todos los tel están vacíos
 
-			---insertar el historial
-			insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
-			select * from #mytemp
+				--borra el registro de workingTable
+					delete wt with(rowlock)
+					from ccoWOrkingTable wt 					
+					inner join #myprincipaltemp t on wt.callout_id = t.callout_id
+					where t.cal_telefono = '' and t.cal_telefono2 = '' and t.cal_telefono3 = '' and t.cal_telefono4 = '' and t.cal_telefono5 = ''
 
-			-- Eliminamos el telefono1 de CS
-			update ccoCallsOutSource with(rowlock)
-			set cal_telefono = ''
-			from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
+					--borra el registro de callsOut
+					delete cs with(rowlock)
+					from ccoCallsOutSource cs inner join #myprincipaltemp t on cs.callout_id = t.callout_id
+					where t.cal_telefono = '' and t.cal_telefono2 = '' and t.cal_telefono3 = '' and t.cal_telefono4 = '' and t.cal_telefono5 = ''
+					---insertar el historial
+					--insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+					--select callout_id, @tel, cam_id, idtipomov, idtipolista 
+					--from #myprincipaltemp 
+					--where pt.cal_telefono = '' and pt.cal_telefono2 = '' and pt.cal_telefono3 = '' and pt.cal_telefono4 = '' and pt.cal_telefono5 = ''
 
-			truncate table #mytemp
-		end
+					--borra el registro de tabla temporal
+					delete pt from #myprincipaltemp pt where pt.cal_telefono = '' and pt.cal_telefono2 = '' and pt.cal_telefono3 = '' and pt.cal_telefono4 = '' and pt.cal_telefono5 = ''
+				end
+					
+				update ccoWOrkingTable 
+				set cal_telefono = rtrim(left(ltrim(pt.cal_telefono2 + '         '
+												+ pt.cal_telefono3 + '         '
+												+ pt.cal_telefono4 + '         '
+												+ pt.cal_telefono5 + '         '),13))
+				from ccoWorkingTable wt
+				inner join #myprincipaltemp pt on wt.callout_id = pt.callout_id
 
-		/******************/
-		/*** Telefono 2 ***/
-		/******************/
-		insert #mytemp
-		select callout_id,cal_telefono2,cam_id,tipomov,idtipolista
-		from [#myprincipaltemp] with(nolock)
-		where (cal_telefono2 = @tel or cal_telefono2 = right(@tel, 10) or cal_telefono2 = right(@tel, 11))
 
-		if (select count(*) from #mytemp with(nolock)) > 0
-		begin
-			-- Borramos de WT todos los registros en los que el telefono2 sea el único telefono y este en la lista negra
-			delete ccoWOrkingTable with(rowlock)
-			from ccoWOrkingTable wt 
-			inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
-			inner join #mytemp t on wt.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30 
-			and cs.cal_telefono2= wt.cal_telefono 
-			and rtrim(left(ltrim(cs.cal_telefono3 + '         '
-								 + cs.cal_telefono4 + '         '
-								 + cs.cal_telefono5 + '         '),13)) = ''
+				update cs set 
+				cs.cal_telefono =t.cal_telefono,
+				cs.cal_telefono2 =t.cal_telefono2,
+				cs.cal_telefono3= t.cal_telefono3,
+				cs.cal_telefono4= t.cal_telefono4,
+				cs.cal_telefono5= t.cal_telefono5
+				from ccoCallsOutSource cs 
+				inner join #myprincipaltemp t on cs.callout_id = t.callout_id
 
-			-- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
-			update ccoWOrkingTable with(rowlock)
-			set cal_telefono = rtrim(left(ltrim(cs.cal_telefono3 + '         '
-												+ cs.cal_telefono4 + '         '
-												+ cs.cal_telefono5 + '         '),13))
-			from ccoCallsOutSource cs 
-			inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
-			inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30 
-			and cs.cal_telefono2= wt.cal_telefono
 
-			---insertar el historial
-			insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
-			select * from #mytemp
 
-			-- Eliminamos el telefono2 de CS
-			update ccoCallsOutSource with(rowlock)
-			set cal_telefono2 = ''
-			from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
 
-			truncate table #mytemp
-		end
-
-		/******************/
-		/*** Telefono 3 ***/
-		/******************/
-		insert #mytemp
-		select callout_id,cal_telefono3,cam_id,tipomov,idtipolista
-		from [#myprincipaltemp] with(nolock)
-		where (cal_telefono3 = @tel or cal_telefono3 = right(@tel, 10) or cal_telefono3 = right(@tel, 11))
-
-		if (select count(*) from #mytemp with(nolock)) > 0
-		begin
-			-- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
-			delete ccoWOrkingTable with(rowlock)
-			from ccoWOrkingTable wt 
-			inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
-			inner join #mytemp t on wt.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-			and cs.cal_telefono3= wt.cal_telefono  
-			and  rtrim(left(ltrim(cs.cal_telefono4 + '         '
-								  + cs.cal_telefono5 + '         '),13)) = ''
-
-			-- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
-			update ccoWOrkingTable with(rowlock)
-			set cal_telefono = rtrim(left(ltrim(cs.cal_telefono4 + '         '
-												+ cs.cal_telefono5 + '         '),13))
-			from ccoCallsOutSource cs 
-			inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
-			inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-			and cs.cal_telefono3= wt.cal_telefono
-
-			---insertar el historial
-			insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
-			select * from #mytemp
-
-			-- Eliminamos el telefono3 de CS
-			update ccoCallsOutSource with(rowlock)
-			set cal_telefono3 = ''
-			from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-
-			truncate table #mytemp
-		end
-
-		/******************/
-		/*** Telefono 4 ***/
-		/******************/
-		insert #mytemp
-		select callout_id,cal_telefono4,cam_id,tipomov,idtipolista
-		from [#myprincipaltemp] with(nolock)
-		where (cal_telefono4 = @tel or cal_telefono4 = right(@tel, 10) or cal_telefono4 = right(@tel, 11))
-
-		if (select count(*) from #mytemp with(nolock)) > 0
-		begin
-			-- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
-			delete ccoWOrkingTable with(rowlock)
-			from ccoWOrkingTable wt 
-			inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
-			inner join #mytemp t on wt.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-			and cs.cal_telefono4= wt.cal_telefono 
-			and rtrim(left(ltrim(cs.cal_telefono5 + '         '),13)) = ''
-
-			-- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
-			update ccoWOrkingTable with(rowlock)
-			set cal_telefono = rtrim(left(ltrim(cs.cal_telefono5 + '         '),13))
-			from ccoCallsOutSource cs 
-			inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
-			inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30 
-			and cs.cal_telefono4= wt.cal_telefono
-
-			---insertar el historial
-			insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
-			select * from #mytemp
-
-			-- Eliminamos el telefono4 de CS
-			update ccoCallsOutSource with(rowlock)
-			set cal_telefono4 = ''
-			from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-
-			truncate table #mytemp
-		end
-
-		/******************/
-		/*** Telefono 5 ***/
-		/******************/
-		insert #mytemp
-		select callout_id,cal_telefono5,cam_id,tipomov,idtipolista
-		from [#myprincipaltemp] with(nolock)
-		where (cal_telefono5 = @tel or cal_telefono5 = right(@tel, 10) or cal_telefono5 = right(@tel, 11))
-
-		if (select count(*) from #mytemp with(nolock)) > 0
-		begin
-			-- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
-			delete ccoWOrkingTable with(rowlock)
-			from ccoWOrkingTable wt 
-			inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
-			inner join #mytemp t on wt.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-			and cs.cal_telefono5= wt.cal_telefono
-
-			---insertar el historial
-			insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
-			select * from #mytemp
-
-			-- Eliminamos el telefono5 de CS
-			update ccoCallsOutSource with(rowlock)
-			set cal_telefono5 = ''
-			from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
-			where cs.cal_fechadial > getdate()-30
-		end
-	end
+		End
 
 drop table [#myprincipaltemp]
-drop table [#mytemp]
 drop table [#mycamps]

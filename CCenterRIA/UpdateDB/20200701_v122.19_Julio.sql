@@ -336,19 +336,46 @@ Order by camps.cam_descripcion
 END'
 		EXEC(@sql)
 		
-		set @process = ''
-		set @sql=''
+		set @process = 'Hunaku drop sp ccspHunaku_getAcdDefaultById'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_getAcdDefaultById'')
+	    begin
+	        DROP PROCEDURE ccspHunaku_getAcdDefaultById;
+	    end'
 		EXEC(@sql)
 
-		set @process = ''
-		set @sql = ''
+		set @process = 'Hunaku sp que obtiene acd default  ccspHunaku_getAcdDefaultById'
+		set @sql = 'create procedure ccspHunaku_getAcdDefaultById
+				 @inbound_id integer
+				 AS
+					declare @nMaxQue smallint
+
+					select @nMaxQue = nMaxQue from ccInbound where Inbound_id =@inbound_id
+
+					if @nMaxQue is null 
+					begin
+						set @nMaxQue=0
+						set @inbound_id=0
+					end
+					
+					select @inbound_id  as inbound_id, 0 ''is900'', @nMaxQue as nMaxQue'
 		EXEC(@sql)
-		
-		
-		set @process = ''
-		set @sql = ''
+
+		set @process = 'Hunaku drop sp ccspHunaku_update_cal_twait_callsOut'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_update_cal_twait_callsOut'')
+		    begin
+		        DROP PROCEDURE ccspHunaku_update_cal_twait_callsOut;
+		    end'
+		EXEC(@sql)
+
+		set @process = 'Hunaku sp que calcula tiempo de espera en cola  ccspHunaku_update_cal_twait_callsOut'
+		set @sql = 'create procedure ccspHunaku_update_cal_twait_callsOut
+			@cal_id int,
+			@time_Wait int
+			as
+			update ccoCallsOut set cal_twait=@time_Wait where cal_id =@cal_id'
 		EXEC(@sql)
         
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

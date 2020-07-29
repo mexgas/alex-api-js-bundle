@@ -374,8 +374,383 @@ END'
 			as
 			update ccoCallsOut set cal_twait=@time_Wait where cal_id =@cal_id'
 		EXEC(@sql)
-        
+   
+   		set @process = 'Twitter drop sp ccsp_Multimedia'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multimedia'')
+		    begin
+		        DROP PROCEDURE ccsp_Multimedia;
+		    end'
+		EXEC(@sql)
 
+        set @process = 'Modificación a sp ccsp_Multimedia para regresar nombres correctos'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Multimedia]
+		@action int,@inboundId tinyint=0,@userId int =0,@meanContactTypeId tinyint = 1
+		AS
+		BEGIN
+
+		SET NOCOUNT ON;
+
+		if @action = 1 begin --Cuentas acd por tipo
+
+			if @inboundId=0 begin
+				select distinct A.inbound_id as Id,A.chat as mode,cast(A.status as bit) [Status],cast(isnull(b.isActive,0) as bit) IsActive,cast(isnull(B.numMessages,3) as int) MessageLimit,
+					case A.chat when 0 then ''call'' when 1 then ''chat'' when 2 then ''call and chat'' when 3 then ''mail'' when 4 then ''twitter'' else ''multimedia'' end  as typeMedia
+					,A.IDArea as AreaId
+					from ccInbound A
+					left join ContactMeanIn B on B.inboundId =  A.inbound_id and A.chat = case when @meanContactTypeId =1 then 3 when  @meanContactTypeId =2 then 4 else -1 end
+					where isnull(A.IDArea,0)> 0 and B.meanContactTypeId=@meanContactTypeId
+			end
+			else begin
+				select A.inbound_id as Id,A.chat as mode,cast(A.status as bit) [Status],cast(isnull(b.isActive,0) as bit) IsActive,cast(isnull(B.numMessages,3) as int) MessageLimit,
+					case A.chat when 0 then ''call'' when 1 then ''chat'' when 2 then ''call and chat'' when 3 then ''mail'' when 4 then ''twitter'' else ''multimedia'' end  as typeMedia,
+					A.IDArea as AreaId
+					from ccInbound A
+					left join ContactMeanIn B on B.inboundId =  A.inbound_id and A.chat = case when @meanContactTypeId =1 then 3 when  @meanContactTypeId =2 then 4 else -1 end
+					where A.inbound_id = @inboundId and B.meanContactTypeId=@meanContactTypeId
+
+			end
+		end
+		else if @action = 2 begin --Relacion entre agenetes y acd
+			if @inboundId=0 and @userId = 0 begin --- Carga todas las relaciones
+				select A.User_id as [userId],C.idCampEsp inboundId,isnull(skill,1) skill,D.chat mode
+				from ccRIAWorkGroupUsers A
+				inner join ccusers B on A.User_id=B.User_id
+				inner join ccRIACampEspWG C on C.IDWG = A.IDWG and C.Tipo=0
+				inner join ccInbound D on C.idCampEsp = D.inbound_id
+				left join ccskills S on S.inbound_id=D.inbound_id and S.user_id=B.user_id
+				where B.TipoUser_id=1 and D.chat = case when @meanContactTypeId = 1 then 3 when @meanContactTypeId = 2 then 4 else -1 end
+				order by  C.idCampEsp
+			end
+			else if @inboundId>0 and @userId = 0 begin
+				select A.User_id as [userId],C.idCampEsp inboundId,isnull(skill,1) skill,D.chat mode
+				from ccRIAWorkGroupUsers A
+				inner join ccusers B on A.User_id=B.User_id
+				inner join ccRIACampEspWG C on C.IDWG = A.IDWG and C.Tipo=0
+				inner join ccInbound D on C.idCampEsp = D.inbound_id
+				left join ccskills S on S.inbound_id=D.inbound_id and S.user_id=B.user_id
+				where B.TipoUser_id=1 and D.Inbound_id=@inboundId and D.chat = case when @meanContactTypeId = 1 then 3 when @meanContactTypeId = 2 then 4 else -1 end
+				order by  C.idCampEsp
+			end
+			else if @inboundId=0 and @userId > 0 begin
+				select A.User_id as [userId],C.idCampEsp inboundId,isnull(skill,1) skill,D.chat mode
+				from ccRIAWorkGroupUsers A
+				inner join ccusers B on A.User_id=B.User_id
+				inner join ccRIACampEspWG C on C.IDWG = A.IDWG and C.Tipo=0
+				inner join ccInbound D on C.idCampEsp = D.inbound_id
+				left join ccskills S on S.inbound_id=D.inbound_id and S.user_id=B.user_id
+				where B.TipoUser_id=1 and B.User_id=@userId and D.chat = case when @meanContactTypeId = 1 then 3 when @meanContactTypeId = 2 then 4 else -1 end
+				order by  C.idCampEsp
+			end
+		end
+		else if @action =3 begin -- Cargar relacion de agentes
+			if	@userId is null or @userId=0 begin
+				select user_id,Login,isnull(maxmails,3) maxMails from ccusers us (nolock)
+					left join ccriacat_areas area (nolock) on area.idarea=us.idarea where TipoUser_id=1
+			end
+			else begin
+			select user_id,Login,isnull(maxmails,3) maxMails from ccusers us (nolock)
+					left join ccriacat_areas area (nolock) on area.idarea=us.idarea
+					where TipoUser_id=1 and  us.User_id=@userId
+			end
+		end
+		END'
+		EXEC(@sql)
+
+		set @process = 'Twitter drop sp ccsp_NetworkSocialAdminAccount'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_NetworkSocialAdminAccount'')
+		    begin
+		        DROP PROCEDURE ccsp_NetworkSocialAdminAccount;
+		    end'
+		EXEC(@sql)
+
+		set @process = 'Modificación a sp ccsp_NetworkSocialAdminAccount para regresar nombres correctos'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_NetworkSocialAdminAccount]
+		@action int,
+		@meanContactTypeId smallint = 2,
+		@contactMeanId int=0,
+		@name	varchar(30)=null,
+		@conexionInfo	varchar(255)=null,
+		@inboundId	int=0,
+		@connUser	varchar(60)=null,
+		@ConnPass	varchar(30)=null,
+		@numMessages	tinyint=null,
+		@timeAlertMessage	tinyint=null,
+		@isActive bit =null,
+		@UserId int =null,
+		@idArea smallint =null,
+		@maxMails tinyint =3,
+		@answerTimeOut tinyint=null,
+		@revisionTime varchar(10)=null,
+		@daysTwitterRecord varchar(10)=null,
+		@closeConversationTime varchar(10)=null
+		AS
+		BEGIN
+		-- SET NOCOUNT ON added to prevent extra result sets from
+		-- interfering with SELECT statements.
+		SET NOCOUNT ON;
+
+		declare @isActiveMail bit
+		set @isActiveMail=0
+
+		if @action = 1 begin--insert account twitter account
+			DECLARE @tableConexionInfo TABLE(  id int, value varchar(255))
+			if exists(select * from ContactMeanIn where conexionInfo = @conexionInfo and meanContactTypeId=@meanContactTypeId and inboundId<>@inboundId) begin
+				select 0, ''Error: acount already exists''
+				return -1
+			end
+			if not exists(select * from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId) begin
+			if @name is null set @name=''''
+				--if @conexionInfo is null set @conexionInfo=''''
+				if @connUser is null set @connUser=''''
+				if @connPass is null set @connPass=''''
+				if @numMessages is null set @numMessages=3
+				if @timeAlertMessage is null set @timeAlertMessage=5
+				if @isActive is null set @isActive=0
+				if @answerTimeOut is null set @answerTimeOut=0
+				if @closeConversationTime is null set @closeConversationTime=3
+
+				--Twitter deja los token
+				--conexion Info usuarioID|token|tokenSecret|time|daysTwitterRecord
+				if @meanContactTypeId= 2 begin
+
+					if @conexionInfo is null begin
+						set @conexionInfo=''usuarioID|token|tokenSecret''
+						set @revisionTime=isnull(@revisionTime,''1'')
+						set @daysTwitterRecord=isnull(@daysTwitterRecord,''0'')
+					end
+					else begin
+						insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+						set @conexionInfo=null
+
+						SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+						SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+						SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+						SELECT @closeConversationTime=  isnull(@closeConversationTime,isnull(max(value),''3'')) FROM @tableConexionInfo where id=6
+					end
+					set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+				end
+
+
+				insert into ContactMeanIn (meanContactTypeId,name,conexionInfo,inboundId,connUser,ConnPass,numMessages,timeAlertMessage,isActive,answerTimeOut,closeConversationTime)
+						values (@meanContactTypeId,@name,@conexionInfo,@inboundId,@connUser,@connPass,@numMessages,@timeAlertMessage,@isActive,@answerTimeOut,@closeConversationTime)
+				select 1,''insert''
+			end
+			else begin
+				select @conexionInfo = isnull(@conexionInfo,conexionInfo),@connUser= isnull(@connUser,connUser),@connPass= isnull(@connPass,ConnPass),
+						@numMessages= isnull(@numMessages,numMessages),@timeAlertMessage= isnull(@timeAlertMessage,timeAlertMessage),@isActive= isnull(@isActive,isActive),
+						@answerTimeOut= isnull(@answerTimeOut,answerTimeOut),@name=isnull(@name,name),@closeConversationTime=isnull(@closeConversationTime,closeConversationTime)
+						from ContactMeanIn where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+
+				--Twitter deja los token
+				if @meanContactTypeId= 2 begin
+					--usuarioID|token|tokenSecret|time|daysTwitterRecord|closeConversation
+					insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+					set @conexionInfo=null
+
+					SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+					SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+					SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+
+					set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+				end
+
+
+
+				update ContactMeanIn set name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,
+					numMessages=@numMessages,timeAlertMessage=@timeAlertMessage,isActive=@isActive,answerTimeOut=@answerTimeOut,
+					closeConversationTime=@closeConversationTime
+					where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+				select 1,''update''
+			end
+		end
+		else if @action = 2 begin
+			if @inboundId=0
+				select cast(A.inboundId as smallint) as Id, A.conexionInfo as Credentials, A.connUser as AccountName, 
+				A.ConnPass as Password, A.isActive as IsActive, A.name as Username from contactMeanIn A
+				inner join ccInbound B on A.inboundId=B.Inbound_id
+				and B.chat = case when A.meanContactTypeId=1 then 3 when A.meanContactTypeId=2 then 4 else -1 end
+				where meanContactTypeId=@meanContactTypeId and isActive=1
+			else
+				select cast(A.inboundId as smallint) as Id, A.conexionInfo as Credentials, A.connUser as AccountName, 
+				A.ConnPass as Password, A.isActive as IsActive, A.name as Username from contactMeanIn A
+				inner join ccInbound B on A.inboundId=B.Inbound_id
+				and B.chat = case when A.meanContactTypeId=1 then 3 when A.meanContactTypeId=2 then 4 else -1 end
+
+				where meanContactTypeId=@meanContactTypeId and isActive=1 and inboundId=@inboundId
+		end
+		else if @action = 3 begin
+			select A.name,A.connUser,A.numMessages,A.timeAlertMessage,A.answerTimeOut ,B.tNotas,B.descripcion,C.graphic_id,D.frame
+			from ContactMeanIn A
+			inner join ccinbound B on A.inboundId=B.Inbound_id
+			inner join ccRIAinboundGraph C on C.Inbound_id=B.Inbound_id
+			inner join ccRIAGraphics D on D.graphic_id=C.graphic_id
+			where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+		end
+		else if @action=4 begin
+			--Estos es para Twitter
+			--usuarioID|token|tokenSecret|time|daysTwitterRecord
+			select isnull(max(conexionInfo),''usuarioID|token|tokenSecret|1|0'') from contactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+		end
+		END'
+		EXEC(@sql)
+
+		set @process = 'Twitter drop sp ccspADMaddConversationTweet'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspADMaddConversationTweet'')
+		    begin
+		        DROP PROCEDURE ccspADMaddConversationTweet;
+		    end'
+		EXEC(@sql)
+
+		set @process = 'Modificación a sp ccspADMaddConversationTweet para regresar nombres correctos'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccspADMaddConversationTweet]
+		@action int,
+		@inboundId int = null,
+		@clientId varchar(255)= null,
+		@isFinished bit = 0,
+		@screenNameClient varchar(100) = null,
+		@screenNameInbound varchar(100) = null,
+		@meanContactTypeId smallint = null,
+		@twitId varchar(255) = null,
+		@conversationId bigint = null,
+		@date datetime=null,
+		@replayId varchar(255)=null,
+		@tipoTwitId tinyint=1,
+		@messageId bigint = null,
+		@dispositionId smallint=0,
+		@subDispositionId smallint=0,
+		@tWrapUp int =0
+
+		as
+		set nocount on
+
+		declare @ninteration int ,@messageOutTwitterId bigint
+		declare @userId int
+		declare @isEndConversation bit
+
+
+		if @action = 1 begin --Revisa que exista la conversacion
+			select @conversationId =  isnull(max(conversationTwitterId),0) from conversationTwitter where isFinished = 0 and meanContactTypeId = 2 and ClientId = @clientId and inboundId=@inboundId
+			if @conversationId = 0
+				select cast(0 as bigint) as Id
+			else begin
+				declare @closeConversation tinyint
+				declare @tRsponse datetime
+				select @tRsponse = isnull(max(tSend),getdate()) from messageOutTwitter where conversationTwitterId = @conversationId
+				select @closeConversation = closeConversationTime from contactMeanIn where inboundId=@inboundId
+				 if datediff(dd,getdate(),@tRsponse ) > @closeConversation
+					select  cast(0 as bigint)  as Id
+				else
+					select @conversationId as Id
+			end
+		    return 0
+		end
+		else if @action = 2 begin --Nueva conversacion y mensaje entrada y salida
+		    --agregar tabla de messagetwit fecha de descarga
+			if @replayId is null or @replayId=''''
+				set @replayId= ''0''
+		    insert into conversationTwitter (inboundId,ClientId,isFinished,screenNameClient,screenNameInbound,meanContactTypeId,replayId)
+		    values(@inboundId,@clientId,@isFinished,@screenNameClient,@screenNameInbound,@meanContactTypeId,@replayId)
+		    set  @conversationId  = SCOPE_IDENTITY()
+			insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+			set @messageId=SCOPE_IDENTITY()
+			insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+			values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+		    select 0 as LastUserId,@conversationId as Id, @messageId as MessageId
+		    return 0
+		end
+		else if @action = 3 begin --Nuevo mensaje Entrada
+			---Revisa que no se contesto el twitt
+			select @messageOutTwitterId=max(A.messageOutTwitterId),@ninteration= count(B.messageInTwitterId)
+			from messageOutTwitter A inner join messageInTwitter B on A.conversationTwitterId=B.conversationTwitterId
+			where A.conversationTwitterId=@conversationId and A.messageStatusId not in (5,6,7,8,9,10,11)
+
+			insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+			set @messageId=SCOPE_IDENTITY()
+
+			if  @messageOutTwitterId is null begin
+				insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+				values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+				set @messageOutTwitterId=SCOPE_IDENTITY()
+			end
+			else begin
+				update messageOutTwitter set messageInTwitterIdEnd=@messageId,[date]=@date,ninteration=@ninteration
+				where messageOutTwitterId=@messageOutTwitterId
+			end
+			select @userId = userId  from messageOutTwitter with(nolock) where messageOutTwitterId=@messageOutTwitterId
+			select @userId as LastUserId,@conversationId as Id, @messageId as MessageId
+			return 0
+		end
+		else if @action = 4 begin --Obtiene el maximo messageOutTwitterId por conversacion
+		    select @messageOutTwitterId=max(messageOutTwitterId) from [messageOutTwitter] with(nolock) where conversationTwitterId=@conversationId
+			select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId
+			select @messageOutTwitterId as messageOutTwitterId,@replayId as replayId
+			return 0
+		end
+		else if @action = 5 begin --Ultimo mensaje en por ACD
+		    select cast(isnull(max(twitId),0)as bigint) as Id, max(date) as Date from messageInTwitter as A
+			inner join conversationTwitter as B on A.conversationTwitterId=B.conversationTwitterId
+			where B.inboundId=@inboundId
+			return 0
+		end
+		else if @action = 6 begin --Obtiene conversación dependiendo del replayId
+			select @conversationId=conversationTwitterId  from messageOutTwitter where twitId=@replayId
+			if @conversationId is not null begin
+				select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId
+			end
+			else begin
+				select 0 as conversationId,''0'' as replayId
+			end
+			select @conversationId as conversationId,@replayId as replayId
+			return 0
+		end
+
+		set nocount off'
+		EXEC(@sql)
+
+		set @process = 'Twitter drop sp ccspTwitterConfiguration'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspTwitterConfiguration'')
+		    begin
+		        DROP PROCEDURE ccspTwitterConfiguration;
+		    end'
+		EXEC(@sql)
+
+		set @process = 'Modificación a sp ccspTwitterConfiguration para regresar nombres correctos'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccspTwitterConfiguration]     @Option AS SMALLINT,
+												   @InboundId as INT
+		AS
+		BEGIN
+			set nocount on
+			IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
+			BEGIN
+				IF @InboundId IS NOT NULL
+					BEGIN
+						SELECT maxDownloadTweetsNumber AS maxDownloadTweetsNumber FROM ccInbound WHERE Inbound_id = @InboundId 
+					END
+				ELSE
+					BEGIN
+						raiserror(''ERROR. No existe una campa?a de salida con el id especificado'', 18, 1)
+					END	
+			END
+		END'
+		EXEC(@sql)
+
+		set @process = 'Twitter drop column maxDownloadTweetsNumber to ccInbound'
+		set @sql = 'if exists (select * from sys.columns where name = N'maxDownloadTweetsNumber' and Object_ID = Object_ID(N'ccInbound'))
+	    begin
+	        alter table ccInbound drop constraint [DF__ccInbound__maxDo__3C5683AE];
+			alter table ccInbound drop column [maxDownloadTweetsNumber];
+	    end'
+		EXEC(@sql)
+
+		set @process = 'Twitter add column maxDownloadTweetsNumber to ccInbound'
+		set @sql = 'if not exists (select * from sys.columns where name = N'maxDownloadTweetsNumber' and Object_ID = Object_ID(N'ccInbound'))
+	    begin
+	        ALTER TABLE ccInbound ADD maxDownloadTweetsNumber INT DEFAULT 20;
+			update ccInbound set maxDownloadTweetsNumber = 20  where addDataCallBackReminder = 0d
+	    end'
+		EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

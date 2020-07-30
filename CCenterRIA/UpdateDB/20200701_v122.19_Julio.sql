@@ -709,15 +709,8 @@ END'
 		set nocount off'
 		EXEC(@sql)
 
-		set @process = 'Twitter drop sp ccspTwitterConfiguration'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccspTwitterConfiguration'')
-		    begin
-		        DROP PROCEDURE ccspTwitterConfiguration;
-		    end'
-		EXEC(@sql)
-
 		set @process = 'Twitter drop column maxDownloadTweetsNumber to ccInbound'
-		set @sql = 'if exists (select * from sys.columns where name = N'maxDownloadTweetsNumber' and Object_ID = Object_ID(N'ccInbound'))
+		set @sql = 'if exists (select * from sys.columns where name = N''maxDownloadTweetsNumber'' and Object_ID = Object_ID(N''ccInbound''))
 	    begin
 	        alter table ccInbound drop constraint [DF__ccInbound__maxDo__3C5683AE];
 			alter table ccInbound drop column [maxDownloadTweetsNumber];
@@ -725,11 +718,18 @@ END'
 		EXEC(@sql)
 
 		set @process = 'Twitter add column maxDownloadTweetsNumber to ccInbound'
-		set @sql = 'if not exists (select * from sys.columns where name = N'maxDownloadTweetsNumber' and Object_ID = Object_ID(N'ccInbound'))
+		set @sql = 'if not exists (select * from sys.columns where name = N''maxDownloadTweetsNumber'' and Object_ID = Object_ID(N''ccInbound''))
 	    begin
 	        ALTER TABLE ccInbound ADD maxDownloadTweetsNumber INT DEFAULT 20;
-			update ccInbound set maxDownloadTweetsNumber = 20  where addDataCallBackReminder = 0d
+			update ccInbound set maxDownloadTweetsNumber = 20  where addDataCallBackReminder = 0
 	    end'
+		EXEC(@sql)
+
+		set @process = 'Twitter drop sp ccspTwitterConfiguration'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccspTwitterConfiguration'')
+		    begin
+		        DROP PROCEDURE ccspTwitterConfiguration;
+		    end'
 		EXEC(@sql)
 
 		set @process = 'Modificación a sp ccspTwitterConfiguration para regresar nombres correctos'

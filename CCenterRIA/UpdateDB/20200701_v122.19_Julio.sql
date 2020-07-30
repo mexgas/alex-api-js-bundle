@@ -709,48 +709,7 @@ END'
 		set nocount off'
 		EXEC(@sql)
 
-		set @process = 'Twitter drop column maxDownloadTweetsNumber to ccInbound'
-		set @sql = 'if exists (select * from sys.columns where name = N''maxDownloadTweetsNumber'' and Object_ID = Object_ID(N''ccInbound''))
-	    begin
-	        alter table ccInbound drop constraint [DF__ccInbound__maxDo__3C5683AE];
-			alter table ccInbound drop column [maxDownloadTweetsNumber];
-	    end'
-		EXEC(@sql)
-
-		set @process = 'Twitter add column maxDownloadTweetsNumber to ccInbound'
-		set @sql = 'if not exists (select * from sys.columns where name = N''maxDownloadTweetsNumber'' and Object_ID = Object_ID(N''ccInbound''))
-	    begin
-	        ALTER TABLE ccInbound ADD maxDownloadTweetsNumber INT DEFAULT 20;
-			update ccInbound set maxDownloadTweetsNumber = 20  where addDataCallBackReminder = 0
-	    end'
-		EXEC(@sql)
-
-		set @process = 'Twitter drop sp ccspTwitterConfiguration'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccspTwitterConfiguration'')
-		    begin
-		        DROP PROCEDURE ccspTwitterConfiguration;
-		    end'
-		EXEC(@sql)
-
-		set @process = 'Modificación a sp ccspTwitterConfiguration para regresar nombres correctos'
-		set @sql = 'CREATE PROCEDURE [dbo].[ccspTwitterConfiguration]     @Option AS SMALLINT,
-												   @InboundId as INT
-		AS
-		BEGIN
-			set nocount on
-			IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
-			BEGIN
-				IF @InboundId IS NOT NULL
-					BEGIN
-						SELECT maxDownloadTweetsNumber AS maxDownloadTweetsNumber FROM ccInbound WHERE Inbound_id = @InboundId 
-					END
-				ELSE
-					BEGIN
-						raiserror(''ERROR. No existe una campa?a de salida con el id especificado'', 18, 1)
-					END	
-			END
-		END'
-		EXEC(@sql)
+		
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

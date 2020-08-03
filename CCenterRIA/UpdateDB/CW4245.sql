@@ -149,6 +149,10 @@ BEGIN
 	SET NOCOUNT OFF;
 END;'
 		EXEC(@sql)
+
+		set @process = 'CW-4297 -- '
+		set @sql = ''
+		EXEC(@sql)
 		
 		
 		/* End script release */

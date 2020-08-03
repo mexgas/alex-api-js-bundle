@@ -9,7 +9,7 @@ Date: 2020/05/06
 Description:
 
 Database: CCenterRia
-Required version: 122.18
+Required version: 122.19
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -28,7 +28,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 122 --**********actualizar a 122 sin fix
-SET @versionfix = 19
+SET @versionfix = 21
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD' 
 
@@ -42,123 +42,13 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 18
+IF @actualVersion = @version AND @actualVersionFix >= 19
 BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
 
-		set @process = 'Borra tabla de series que existia para el servicio viejo'
-		set @sql = 'IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = ''BASE TABLE'' AND TABLE_NAME = ''SeriesCOfetel'' )
-		BEGIN
-			drop table SeriesCOfetel
-		END'
-		EXEC(@sql)
-
-		set @process = 'crea nueva tabla de cofeteltmp'
-		set @sql = 'IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = ''BASE TABLE'' AND TABLE_NAME = ''SeriesTmp'' )
-		BEGIN
-			CREATE TABLE [dbo].[SeriesTmp](
-				[CLAVE CENSAL] [varchar](255) NULL,
-				[POBLACION] [varchar](255) NULL,
-				[MUNICIPIO] [varchar](255) NULL,
-				[ESTADO] [varchar](255) NULL,
-				[PRESUSCRIPCION] [varchar](255) NULL,
-				[REGION] [varchar](255) NULL,
-				[ASL] [varchar](255) NULL,
-				[CLD] [varchar](255) NULL,
-				[SERIE] [varchar](255) NULL,
-				[NUMERACION INICIAL] [int] NULL,
-				[NUMERACION FINAL] [int] NULL,
-				[OCUPACION] [varchar](255) NULL,
-				[TIPO DE RED] [varchar](255) NULL,
-				[MODALIDAD] [varchar](255) NULL,
-				[RAZON SOCIAL] [varchar](255) NULL,
-				[FECHA ASIGNACION] [varchar](255) NULL,
-				[FECHA CONSOLIDACION] [varchar](255) NULL,
-				[FECHA MIGRACION] [varchar](255) NULL,
-				[CLD ANTERIOR] [varchar](255) NULL
-			) ON [PRIMARY]
-		END'
-		EXEC(@sql)	
-
-		set @process = 'crea nuevo sp para las acciones del servicio de cofetel drop'
-		set @sql = 'if exists (select * from sys.procedures where name = N''CofetelActions'')
-	    begin
-	        DROP PROCEDURE CofetelActions;
-	    end'
-		EXEC(@sql)
-
-		set @process = 'crea nuevo sp para las acciones del servicio de cofetel'
-		set @sql='
-	        CREATE PROCEDURE [dbo].[CofetelActions]
-		@type tinyint
-		as
-		if @type = 1
-		begin
-			truncate table SeriesTmp
-		end
-		
-		if @type = 2
-		begin
-			truncate table Series
-		end
-		
-		declare @ret bit
-		set @ret = 1
-		
-select @ret'
-		EXEC(@sql)
-		
-		set @process = 'crea SP para pasar la info a tabla de series drop'
-				set @sql = 'if exists (select * from sys.procedures where name = N''CofetelUpdateData'')
-			    begin
-			        DROP PROCEDURE CofetelUpdateData;
-			    end'
-		EXEC(@sql)
-
-		set @process = 'crea SP para pasar la info a tabla de series'
-		set @sql='
-	        CREATE PROCEDURE [dbo].[CofetelUpdateData]
-		@type tinyint
-		as
-		if @type = 1
-		begin
-			insert into Series
-				select * from SeriesTmp
-		end
-		
-		declare @ret bit
-		set @ret = 1
-		
-		select @ret'
-		EXEC(@sql)
-		
-		set @process = 'crea SP para pasar la info a tabla de series drop'
-				set @sql = 'if exists (select * from sys.procedures where name = N''CofetelSettingsData'')
-			    begin
-				DROP PROCEDURE CofetelSettingsData;
-			    end'
-		EXEC(@sql)
-
-		set @process = 'crea sp para leer parametros del servicio'
-		set @sql = '
-		CREATE PROCEDURE [dbo].[CofetelSettingsData]
-		@type tinyint
-		as
-		if @type = 1
-		begin
-			select valor from ccsettings where setting_id = 172
-		end
-		
-		'
-		EXEC(@sql)
-
-		set @process = 'actualiza datos para que corra el servicio'
-		set @sql='update ccsettings set valor = ''2|4|0|01:00|vpn.nuxiba.com;22;cofeteluser;.BaY1voyT1'', detalle = ''Activo(0:apagado,1:Mensual,2:semanal,3:diario)|# Semana Ejecucion|Dia Ejecucion(1:LU,2:Ma,3:Mi,4:Ju,5:Vi,6:Sa,0:Do)|Hora Inicio(00:00)|credenciales FTP'' where setting_id = 172'
-		EXEC(@sql)
-        
-		set @process = 'actualiza SP ccsp_DLRSaveDialResult'
+		set @process = 'CW-4245 -- actualiza SP ccsp_DLRSaveDialResult'
 		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
 				@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
 				@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
@@ -259,127 +149,8 @@ BEGIN
 	SET NOCOUNT OFF;
 END;'
 		EXEC(@sql)
-		set @process = 'CW-4235 Galatea Valores negativos en columna de Asignadas'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetCampaignOutDialingStats'')
-	    begin
-	        DROP PROCEDURE ccsp_GalateaGetCampaignOutDialingStats;
-	    end'
-		EXEC(@sql)
-
-		set @process = 'CW-4235 Galatea Valores negativos en columna de Asignadas'
-		set @sql='
-	       CREATE PROCEDURE [dbo].[ccsp_GalateaGetCampaignOutDialingStats]
-@Tipo as tinyint=0,
-@cam_id as smallint = 0,
-@sup_id as smallint=0
-AS
-BEGIN
-declare @dateStart datetime,@dateEnd datetime
-select @dateStart = convert(smalldatetime, convert(varchar(11), getdate() ), 101)  
-set @dateEnd=DATEADD(dd,1,@dateStart)
-
-declare @relationCamSup table(cam_id int primary key)
-
-insert into @relationCamSup
-select distinct cam_id from ccSupervisorCam supCam where user_id=@sup_id
-
-;
-
-WITH ResultDial AS (
-select logDials.cam_id, count(*) as Calls,
-		    count(case tipoResDial_id when 1 then 1 else null end) as Answer,
-		    count(case tipoResDial_id when 2 then 1 else null end) as Busy,
-		    count(case tipoResDial_id when 3 then 1 else null end) as NoAnswer,
-		    count(case tipoResDial_id when 4 then 1 else null end) as Fax,
-			count(case tipoResDial_id when 5 then 1 else null end) as NoTone,
-			count(case when tipoResDial_id= 8  or tipoResDial_id> 13 then 1   else null end) as Other,
-		    count(case tipoResDial_id when 10 then 1 else null end) as NoService,
-			count(case tipoResDial_id when 11 then 1 else null end) as Machine,
-			count(case tipoResDial_id when 12 then 1 else null end) as Congestion,
-			count(case tipoResDial_id when 13 then 1 else null end) as Canceled		    
-		    from ccoLogDials logDials with(nolock)
-			inner join @relationCamSup  B ON logDials.cam_id = B.cam_id
-where fecha between @dateStart and @dateEnd
---and logDials.cam_id in(1,3)
-  group by logDials.cam_id
-  
-  )
- ,
-  ResultAgent AS (
-select A.cam_id, c.cam_descripcion Name,
-count(case statuscall_id when 1 then 1 else null end) as Initial,
-count(case statuscall_id when 2 then 1 else null end) as [OutofSchedule],
-count(case statuscall_id when 3 then 1 else null end) as [OutofService],
-count(case statuscall_id when 4 then 1 else null end) as [NoAgentsLoggedin],
-count(case statuscall_id when 5 then 1 else null end) as [OnHold],
-count(case statuscall_id when 6 then 1 else null end) as Abandoned,
-count(case statuscall_id when 7 then 1 else null end) as [Timeoverflow],
-count(case statuscall_id when 8 then 1 else null end) as [QueueSizeOverflow],
-count(case statuscall_id when 9 then 1 else null end) as [WithMessage],
-count(case statuscall_id when 10 then 1 else null end) as [Assigned Message],
-count(case when statuscall_id in(11, 12,15,16)  then 1 else null end) as [Assigned],
-count(case statuscall_id when 13 then 1 else null end) as [Answered],
-count(case statuscall_id when 14 then 1 else null end) as [Canceled Message]  
-from ccoCallsOut A
-inner join @relationCamSup  B ON A.cam_id = B.cam_id
-inner join ccCamps c on a.cam_id = c.cam_id
-where cal_Inicio  between @dateStart and @dateEnd
---and cam_id in(1,3)
-group by A.cam_id, c.cam_descripcion
-)
-
-select  camps.cam_id, isnull(a.Calls, 0)Calls, isnull(a.Answer, 0)Answer, isnull(a.Busy, 0)Busy, isnull(a.NoAnswer, 0)NoAnswer, isnull(a.Fax, 0)Fax, isnull(a.NoService, 0)NoService, isnull(a.Other, 0)Other,
-isnull(a.Canceled, 0)Canceled, isnull(a.Machine, 0)Machine, isnull(a.NoTone, 0) NoTone, isnull(a.Congestion, 0)Congestion,   isnull(B.Answered, 0)  Attended, isnull(B.Abandoned, 0) Abandon,isnull(B.Assigned, 0)Assigned,  
-convert(decimal(5,2), isnull(( B.Abandoned*100.0)/nullif(A.Answer,0),0) )AbandonRate,camps.aggressionFactor
-from ResultDial A
-inner join ResultAgent B on A.cam_id=B.cam_id
-inner JOIN @relationCamSup relation on relation.cam_id = A.cam_id
-INNER join ccCamps camps on camps.cam_id=relation.cam_id
-Order by camps.cam_descripcion
-END'
-		EXEC(@sql)
 		
-		set @process = 'Hunaku drop sp ccspHunaku_getAcdDefaultById'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_getAcdDefaultById'')
-	    begin
-	        DROP PROCEDURE ccspHunaku_getAcdDefaultById;
-	    end'
-		EXEC(@sql)
-
-		set @process = 'Hunaku sp que obtiene acd default  ccspHunaku_getAcdDefaultById'
-		set @sql = 'create procedure ccspHunaku_getAcdDefaultById
-				 @inbound_id integer
-				 AS
-					declare @nMaxQue smallint
-
-					select @nMaxQue = nMaxQue from ccInbound where Inbound_id =@inbound_id
-
-					if @nMaxQue is null 
-					begin
-						set @nMaxQue=0
-						set @inbound_id=0
-					end
-					
-					select @inbound_id  as inbound_id, 0 ''is900'', @nMaxQue as nMaxQue'
-		EXEC(@sql)
-
-		set @process = 'Hunaku drop sp ccspHunaku_update_cal_twait_callsOut'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_update_cal_twait_callsOut'')
-		    begin
-		        DROP PROCEDURE ccspHunaku_update_cal_twait_callsOut;
-		    end'
-		EXEC(@sql)
-
-		set @process = 'Hunaku sp que calcula tiempo de espera en cola  ccspHunaku_update_cal_twait_callsOut'
-		set @sql = 'create procedure ccspHunaku_update_cal_twait_callsOut
-			@cal_id int,
-			@time_Wait int
-			as
-			update ccoCallsOut set cal_twait=@time_Wait where cal_id =@cal_id'
-		EXEC(@sql)
-        
-
-
+		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		-- exec ccsp_getVersion 'BD', @version

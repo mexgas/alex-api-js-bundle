@@ -1,4 +1,4 @@
-CREATE PROCEDURE dbo.ccsp_GetCampsNvosCB
+CREATE PROCEDURE [dbo].[ccsp_GetCampsNvosCB]
 @cam_id integer = 0,
 @Tipo tinyint=0,
 @user_id int=0
@@ -88,7 +88,7 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 					group by cam_id)Pends
 			On Camps.cam_id=Pends.cam_id
 			Where U.user_id='+cast(isnull(@user_id,0) as varchar(10))+' and tipo=1
-			Order by cam_procesando desc,cam_descripcion
+			Order by Camps.cam_id desc,cam_descripcion
 		end
 	end
 
@@ -114,7 +114,7 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 		end
 		select ID,Campaña,St as cam_procesando,Job as cam_tipoJobs,New,CB,Pro'+case when @sFin=1 then ',Fin' else '' end+'
 		from ccCampsNvosCB (nolock)
-		Order by 2
+		Order by ID
 	end'
 
 exec(@sql)

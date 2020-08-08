@@ -114,7 +114,7 @@ CREATE procedure [dbo].[ccsp_OUTGetNewJobs]
 					)
 					and isnull(R.status,2) = 2
 					order by prioridad_cb desc, W.cal_fechaDial ' -- + @Order_Asc_Desc -- Solo se aplica el order en registros Nuevos (cal_status=0)
-
+					
 					--select @sql
 		end -- TOMA EN CUENTA LOS CALLBACKS
 
@@ -184,7 +184,7 @@ CREATE procedure [dbo].[ccsp_OUTGetNewJobs]
 		---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
 		declare @regval int
 		SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
-		exec ccsp_RIAGetCampsNvosCB @cam_id=1,@Tipo=2,@user_id =0,@regval=@regval
+		exec ccsp_GetCampsNvosCB @cam_id=1,@Tipo=0,@user_id =0
 		'
 		end
 

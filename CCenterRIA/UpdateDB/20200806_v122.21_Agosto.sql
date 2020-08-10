@@ -49,9 +49,11 @@ BEGIN
 	BEGIN TRY
 
 		set @process = 'CW-4303-Crear nuevo setting globar con id 222 para hunaku'
-		set @sql = 'insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+		set @sql = 'if not exists(select * from ccSettings where setting_id=222) begin
+		insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
  values(222,''1'',''Lugar donde hunaku guarda grabaciones'',1,''X'',''Lugar donde los hunakus guardan las grabaciones. Este setting afecta a todos los hunakus. 0=GUARDA EN LOCAL. 1=GUARDA EN REMOTO'',
- ''Place where hunaku keeps recordings'',0,''/^[0-1]$/'')'
+ ''Place where hunaku keeps recordings'',0,''/^[0-1]$/'')
+ end'
 		EXEC(@sql)
 
 		set @process = 'CW-4303 drop sp para cambiar a grabacion local en hunaku'

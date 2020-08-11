@@ -7,7 +7,7 @@ DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 
 /* Version to release (use the version of your own databse)*/
-SET @version = 84
+SET @version = 85
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'

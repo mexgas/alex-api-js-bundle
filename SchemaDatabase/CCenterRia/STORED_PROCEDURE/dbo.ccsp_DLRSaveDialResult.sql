@@ -10,10 +10,13 @@ BEGIN
 	DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
 	DECLARE @logDial_id INT;
 	DECLARE @tAnswerBitFinal AS DATETIME;
+	DECLARE @tTotal SMALLINT;
 
 	SELECT @RecicleSIC = ISNULL(valor, 0)
 	FROM ccSettings
 	WHERE setting_id = 60;
+
+	SELECT @tTotal = @tDialing + @tAnswerBit;
 
 	SELECT @tNow = GETDATE();
 
@@ -24,7 +27,7 @@ BEGIN
 	BEGIN
 		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
 		TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
-			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
 			   '00000000', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.
 			   fnGetTipoLlamada( @Telefono );
 	END;
@@ -32,7 +35,7 @@ BEGIN
 	BEGIN
 		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
 		TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
-			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tDialing, @tNow, @answerbit, @tBusy,
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
 			   '00000000', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(
 			   @Telefono );
 	END;

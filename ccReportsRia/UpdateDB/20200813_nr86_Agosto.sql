@@ -18,7 +18,10 @@ BEGIN
 
 	BEGIN TRY
 		SET @process = 'CW-4263 Agregar columna nueva'
-		SET @sql = 'ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec smallint'
+		SET @sql = 'if not exists (select * from sys.columns where name = N''dialTimeSec'' and Object_ID = Object_ID(N''RepOutAnswAndXferCalls''))
+					begin
+					ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec smallint
+					end'
 		EXEC(@sql)
 
 		SET @process = 'CW-4263 Alter ccspRepOutAnswAndXferCalls '

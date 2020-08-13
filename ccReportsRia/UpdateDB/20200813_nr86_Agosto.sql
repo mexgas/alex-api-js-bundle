@@ -17,6 +17,9 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+		SET @process = 'CW-4263 Agregar columna nueva'
+		SET @sql = 'ALTER TABLE RepOutAnswAndXferCalls ADD dialTimeSec smallint'
+		EXEC(@sql)
 
 		SET @process = 'CW-4263 Alter ccspRepOutAnswAndXferCalls '
 		SET @sql = '

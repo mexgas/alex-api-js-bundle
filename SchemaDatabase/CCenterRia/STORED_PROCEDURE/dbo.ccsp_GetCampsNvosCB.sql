@@ -12,7 +12,7 @@ select @sql='declare @ultimo as datetime
 if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 	begin
 		if '+cast(isnull(@cam_id,0) as varchar(10))+'=0 begin
-			select Camps.cam_id as ID,cam_descripcion as ''CampaÃ±a'',
+			select Camps.cam_id as ID,cam_descripcion as ''Campaña'',
 				IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
 				IsNull(Pends.pend,0)as Pen,'+case when @sFin=1 then 'IsNull(Jobs.Fin,0)as Fin,' else '' end+'
 				case cam_procesando when 1 then ''Pro''	when 0 then '''' end as St,
@@ -47,7 +47,7 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 	begin
 		if('+cast(isnull(@cam_id,0) as varchar(10))+'>0)
 			begin
-			select Camps.cam_id as ID,cam_descripcion as ''CampaÃ±a'',
+			select Camps.cam_id as ID,cam_descripcion as ''Campaña'',
 				IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
 				IsNull(Pends.pend,0)as Pen,'+case when @sFin=1 then 'IsNull(Jobs.Fin,0)as Fin,' else '' end+'
 				case cam_procesando when 1 then ''Pro'' when 0 then '''' end as St,
@@ -74,7 +74,7 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 	begin
 		if('+cast(isnull(@user_id,0) as varchar(10))+'>0)
 			begin
-			select distinct Camps.cam_id as ID,cam_descripcion as ''CampaÃ±a'',
+			select distinct Camps.cam_id as ID,cam_descripcion as ''Campaña'',
 				IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
 				isnull(Pends.Pend,0)Pen,'+case when @sFin=1 then 'IsNull(Jobs.Fin,0)as Fin,' else '' end+'
 				case cam_procesando when 1 then ''Pro'' when 0 then '''' end as St,			
@@ -99,8 +99,8 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 		if datediff(mi,@ultimo,getdate())>=1 begin
 			update ccsettings set valor=convert(varchar(25),getdate(),121)where setting_id=21
 			delete ccCampsNvosCB
-			insert ccCampsNvosCB(ID,CampaÃ±a,new,cb,pen,pro,'+case when @sFin=1 then 'fin,' else '' end+'st,job)
-			select Camps.cam_id as ID,cam_descripcion as ''CampaÃ±a'',
+			insert ccCampsNvosCB(ID,Campaña,new,cb,pen,pro,'+case when @sFin=1 then 'fin,' else '' end+'st,job)
+			select Camps.cam_id as ID,cam_descripcion as ''Campaña'',
 				IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,0 as pen,IsNull(Jobs.Pro,0)as Pro,'+case when @sFin=1 then 'IsNull(Jobs.Fin,0)as Fin,' else '' end+'cam_procesando as st,cam_TipoJobs as Job
 				from ccCamps Camps(nolock)Left Join 
 				(	select cam_id,
@@ -112,7 +112,7 @@ if '+cast(isnull(@Tipo,0) as varchar(10))+'=0
 					group by cam_id
 				)Jobs on Camps.cam_id=Jobs.cam_id
 		end
-		select ID,CampaÃ±a,St as cam_procesando,Job as cam_tipoJobs,New,CB,Pro'+case when @sFin=1 then ',Fin' else '' end+'
+		select ID,Campaña,St as cam_procesando,Job as cam_tipoJobs,New,CB,Pro'+case when @sFin=1 then ',Fin' else '' end+'
 		from ccCampsNvosCB (nolock)
 		Order by ID
 	end'

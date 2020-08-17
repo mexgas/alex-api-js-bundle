@@ -25,7 +25,7 @@ BEGIN
                     end'
         EXEC(@sql)
 		SET @process = 'CW-4263 Borrar funcion tDialog'
-        SET @sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''timeDialog''))
+        SET @sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''tDialog''))
 					begin
 						drop function tDialog
 					end'
@@ -147,13 +147,13 @@ BEGIN
 			ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
 			CASE 
 				WHEN tarifa.provedor_id IS NOT NULL THEN ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
-					dbo.timeDialog(clt.tAntesXfer,clt.tDespuesXfer,0) ,@country), 0) 
+					dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0) ,@country), 0) 
 				ELSE cCall.cost_per_min + (CEILING((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0) + 1) / 60) * cCall.additional_min)
 			END AS [ncost],
 			@IVA AS iva,
 			CASE 
 				WHEN tarifa.provedor_id IS NOT NULL THEN CONVERT(DECIMAL(10,2),ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
-					dbo.timeDialog(clt.tAntesXfer,clt.tDespuesXfer,0)
+					dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0)
 					,@country),0.00) * (1 + (@IVA / 100.00))) 
 				ELSE (cCall.cost_per_min + (CEILING((ISNULL(clt.tAntesXfer,0) + ISNULL(clt.tDespuesXfer,0) + 1) / 60) * cCall.additional_min)) * (1 + (@IVA / 100.00))
 			END AS [total],

@@ -10,6 +10,14 @@ Conexion Info Email Out
 Conexion Info Twitter
   usuarioID|token|tokenSecret|time|daysTwitterRecord
 ***/
+declare @tableExistsRec table (camId int primary key,existRec bit)
+
+insert into @tableExistsRec
+select I.cam_id,case when count(O.cal_id) >0 then 1 else 0 end as existRec 
+from dbo.fGet_CampAcd_Area (@User_id, 4) I
+left join ccCallsIn O on I.cam_id=O.inbound_id
+group by I.cam_id
+
 select  A.inbound_id, A.Descripcion, A.Status, A.tNotas,
 A.tMaxWaitCall, A.nMaxQue,tel_maxwait, A.tel_MaxQueue, A.tel_outservice, A.tel_noct, A.ShowCalifWnd,
 A.StartTimerOnHangUp, A.editableCallKey, A.queuePosition, A.tMaxQueueCallBack, A.stopRecording, A.dialPrefixOverflow,
@@ -32,6 +40,7 @@ isnull(conexionInfoTwitter,'usuarioID|token|tokenSecret|1|0') conexionInfoTwitte
 ,isnull(A.prefijo,'') as prefijo
 ,isnull(A.addDataCallBackReminder,0) as addDataCallBackReminder
 ,isnull(Conv.hasMessage,0) as hasMessageMail
+, enbleprefix = case when R.existRec = 0 then 1 else 0 end
 from ccInbound A
 left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
 left join ContactMeanIn B on A.inbound_id=B.inboundId and B.meanContactTypeId=1
@@ -57,6 +66,7 @@ D.IsActive as ActiveTwitter, D.answerTimeOut as answerTimeOutTwitter,D.conexionI
 closeConversationTime as  closeConversationTimeTwitter
 from ContactMeanIn D
 where D.meanContactTypeId=2) D on A.Inbound_id=D.inboundId
-where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
+inner join @tableExistsRec R on A.inbound_id=R.camId
+--where A.inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 4))
 return(0)
 set nocount off

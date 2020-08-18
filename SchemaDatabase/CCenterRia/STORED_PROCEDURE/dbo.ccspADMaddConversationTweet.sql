@@ -44,13 +44,19 @@ CREATE PROCEDURE [dbo].[ccspADMaddConversationTweet]
 		    --agregar tabla de messagetwit fecha de descarga
 			if @replayId is null or @replayId=''
 				set @replayId= '0'
-		    insert into conversationTwitter (inboundId,ClientId,isFinished,screenNameClient,screenNameInbound,meanContactTypeId,replayId)
-		    values(@inboundId,@clientId,@isFinished,@screenNameClient,@screenNameInbound,@meanContactTypeId,@replayId)
-		    set  @conversationId  = SCOPE_IDENTITY()
-			insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
-			set @messageId=SCOPE_IDENTITY()
-			insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
-			values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+		    if NOT EXISTS (select * from messageInTwitter where twitId = @twitId) 
+			BEGIN
+				insert into conversationTwitter (inboundId,ClientId,isFinished,screenNameClient,screenNameInbound,meanContactTypeId,replayId)
+				values(@inboundId,@clientId,@isFinished,@screenNameClient,@screenNameInbound,@meanContactTypeId,@replayId)
+				set  @conversationId  = SCOPE_IDENTITY()
+			
+					insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+					set @messageId=SCOPE_IDENTITY()
+			
+				insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+				values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+
+			END
 		    select 0 as LastUserId,@conversationId as Id, @messageId as MessageId
 		    return 0
 		end
@@ -59,18 +65,23 @@ CREATE PROCEDURE [dbo].[ccspADMaddConversationTweet]
 			select @messageOutTwitterId=max(A.messageOutTwitterId),@ninteration= count(B.messageInTwitterId)
 			from messageOutTwitter A inner join messageInTwitter B on A.conversationTwitterId=B.conversationTwitterId
 			where A.conversationTwitterId=@conversationId and A.messageStatusId not in (5,6,7,8,9,10,11)
+			
+			SELECT TOP 1  @messageId=messageInTwitterId from messageInTwitter where twitId = @twitId
 
-			insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
-			set @messageId=SCOPE_IDENTITY()
+			IF @messageId is null 
+			BEGIN
+				insert into messageInTwitter(conversationTwitterId,tipoTwitId,twitId,[date]) values(@conversationId,@tipoTwitId,@twitId,@date)
+				set @messageId=SCOPE_IDENTITY()
 
-			if  @messageOutTwitterId is null begin
-				insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
-				values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
-				set @messageOutTwitterId=SCOPE_IDENTITY()
-			end
-			else begin
-				update messageOutTwitter set messageInTwitterIdEnd=@messageId,[date]=@date,ninteration=@ninteration
-				where messageOutTwitterId=@messageOutTwitterId
+				if  @messageOutTwitterId is null begin
+					insert into messageOutTwitter(conversationTwitterId,messageStatusId,tipoTwitId,userId,[date],ninteration,messageInTwitterIdIni,messageInTwitterIdEnd)
+					values(@conversationId,1,@tipoTwitId,0,@date,1,@messageId,@messageId)
+					set @messageOutTwitterId=SCOPE_IDENTITY()
+				end
+				else begin
+					update messageOutTwitter set messageInTwitterIdEnd=@messageId,[date]=@date,ninteration=@ninteration
+					where messageOutTwitterId=@messageOutTwitterId
+				end
 			end
 			select @userId = userId  from messageOutTwitter with(nolock) where messageOutTwitterId=@messageOutTwitterId
 			select @userId as LastUserId,@conversationId as Id, @messageId as MessageId
@@ -88,7 +99,7 @@ CREATE PROCEDURE [dbo].[ccspADMaddConversationTweet]
 			where B.inboundId=@inboundId
 			return 0
 		end
-		else if @action = 6 begin --Obtiene conversación dependiendo del replayId
+		else if @action = 6 begin --Obtiene conversaciÃ³n dependiendo del replayId
 			select @conversationId=conversationTwitterId  from messageOutTwitter where twitId=@replayId
 			if @conversationId is not null begin
 				select @replayId=replayId from conversationTwitter where conversationTwitterId=@conversationId

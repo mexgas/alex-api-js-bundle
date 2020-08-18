@@ -61,8 +61,8 @@ BEGIN
 			ELSE 'systemTranslated_Manual' 
 		END AS [dialType], 
 		CASE 
-			WHEN cal_whoHung = 0 THEN 'systemTranslated_Client' 
-			WHEN cal_whoHung = 1 THEN 'systemTranslated_Agent' 
+			WHEN Call.cal_whoHung = 0 THEN 'systemTranslated_Client' 
+			WHEN Call.cal_whoHung = 1 THEN 'systemTranslated_Agent' 
 			ELSE 'systemTranslated_AgentSurvey' 
 		END [whoHangUp], 
 		CASE 
@@ -82,7 +82,8 @@ BEGIN
 		ISNULL(cs.Dato3, '') AS [data3],
 		ISNULL(cs.Dato4, '') AS [data4],
 		ISNULL(cs.Dato5, '') AS [data5],
-		ISNULL(Call.cal_tMsg, 0) AS [MessageTime]
+		ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
+		ISNULL(rc.cal_id, 0) as grabId
 	FROM ccoCallsOut Call
 		LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id = Tipo.calif_id
 		LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
@@ -94,6 +95,7 @@ BEGIN
 		LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
 		LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
 		LEFT JOIN ccCallCost_RIA cc ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
-	WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND cal_manual IN (0, 2)
+		LEFT JOIN Ria_grabacion rc on rc.cal_id = Call.cal_id
+	WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND Call.cal_manual IN (0, 2)
 	ORDER BY DATE
 END

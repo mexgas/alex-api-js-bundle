@@ -5,8 +5,7 @@ CREATE PROCEDURE [dbo].[ccspRepCatalogos]
 
 AS
 declare @tablatemp table (id int, description varchar(100) null)
-declare @tempwork table
-(idwg int)
+declare @tempwork table (idwg int)
 
 if @action = 0
 begin
@@ -46,14 +45,14 @@ end
 	-- WORKGROUPS
 if @type = 3 begin
 	if @userId <> 0 begin
+	
+		--insert into @tempwork
+		--select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
 
-		insert into @tempwork
-		select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
-
-		select distinct catwor.IDWG as id,catwor.WGName as description,'workgroupId' as dbColumn from ccRIAWorkGroupUsers wgu
-		inner join ccRIACat_WorkGroup catwor on wgu.IDWG = catwor.IDWG
-		left join @tempwork temp on wgu.IDWG = temp.idwg
-		where catwor.StatusWorkGroup = 1
+		select v.IDWG as id, c.WGName as description, 'workgroupId' as dbColumn
+		from ccWgByAcdView v 
+		inner join ccriacat_workgroup c on c.IDWG=v.IDWG  
+		where USER_ID= @userId
 		return
 	end
 	else  begin
@@ -70,12 +69,11 @@ if @type = 4 begin
 if @userId <> 0 begin
 
 	insert into @tablatemp
-	select distinct wgu.User_id,caesp.IDArea  from ccUserView us
+	select distinct isnull(us.IDArea,0) as IDArea, wgu.User_id from ccUserView us
 	inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
-	left join ccUserView caesp on wgu.IDWG = caesp.User_id
 	where us.[User_id] = @userId
 
-	select distinct idArea as id, AreaName as description, 'areaId' as dbColumn
+	select distinct idArea as id, isnull(AreaName,'S/AREA') as description, 'areaId' as dbColumn
 	from ccRIACat_Areas area inner join @tablatemp tem on area.IDArea = tem.id
 	return
 end
@@ -95,7 +93,7 @@ if @type = 5 begin
 	order by [description]
 end
 
-	-- USE
+	-- USER
 if @type = 6 	begin
 	if @userId <> 0 begin
 
@@ -122,6 +120,7 @@ end
 	-- ACDS**************
 if @type = 7 begin
 	if @userId <> 0 begin
+
 			insert into @tablatemp
 			select distinct caesp.IdCampEsp,'' as description  from ccUserView us
 			inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
@@ -142,6 +141,8 @@ end
 
 	-- DIDS
 if @type = 8 	begin
+	select 0 as id, 'S/DNIS'  as description, 'dnisId' as dbColumn
+	union
 	select dni_id as id, CASE WHEN dni_Descripcion = '' then convert(varchar,dni_numero) else dni_Descripcion end  as description, 'dnisId' as dbColumn
 	from ccdnis
 end

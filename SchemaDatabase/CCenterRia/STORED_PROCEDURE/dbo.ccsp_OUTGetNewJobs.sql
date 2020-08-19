@@ -31,7 +31,7 @@ CREATE procedure [dbo].[ccsp_OUTGetNewJobs]
 
 			  INSERT INTO @iZonasTable exec ccsp_OUTcheckTimeZone @cam_id=@campid
 			  select @iZonas=value from @iZonasTable
-		--Checamos si la campaña tiene horarios configurados
+		--Checamos si la campaÃ±a tiene horarios configurados
 			  if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
 			  begin
 						  if @iZonas = 0 begin

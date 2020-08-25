@@ -427,9 +427,9 @@ delete from [RepInCalls] with(rowlock)
 where date >= @from AND date < @to
 
 insert into [RepInCalls]
-SELECT	timegroup as [date], ccInbound.inbound_id as inboundId, descripcion as inbound,xDetail.dni_id,
-isnull(ccDnis.dni_descripcion,'') as dnis, 0 as [workgroupId], '' as [workgroup], 0 as [areaId],
-'' as [area],
+SELECT	timegroup as [date], ccInbound.inbound_id as inboundId, ccInbound.descripcion as inbound,isnull(xDetail.dni_id,0),
+isnull(ccDnis.dni_descripcion,'S/DNIS') as dnis, A.IDWG as workgroupId, C.WGName as workgroup, B.IDArea as areaId,
+D.AreaName as area,
 ntotal, nxfer,
 nabnd_que, nxfer_que, nno_xfer, tque_max ,
 tque, nque, nanswer, nno_answer, nlost, nabnd_xfer, nabnd_ring, nabnd_dialog, pos_tot, pos_time, SL_P_1, SL_P_2 , avg, SL,nMoh,
@@ -460,26 +460,14 @@ FULL OUTER JOIN (SELECT  timegroup as tg, inbound_id, pos_tot, pos_time
 			FROM #ccGenInSpec
 			WHERE timegroup >= @from AND timegroup < @to) xDetSpec
 ON xDetCall.tg = xDetSpec.tg  AND xDetCall.inbound_id = xDetSpec.inbound_id ) xDetail
-INNER JOIN ccInbound ON (xDetail.inbound_id = ccInbound.inbound_id)
+INNER JOIN ccInbound ON (xDetail.inbound_id = ccInbound.inbound_id) --and ccInbound.chat=0
 LEFT OUTER JOIN ccDnis ON (xDetail.dni_id = ccDnis.dni_id)
-where ccInbound.inbound_id is not null
-order by descripcion, timegroup
-
-update [RepInCalls] set
-[workgroupId] = b.idwg
-from [RepInCalls] a, ccInboundAgentes b
-where a.inboundId = b.inbound_id and date>=@from and date <@to
-
-update [RepInCalls] set
-areaId = b.idarea
-from [RepInCalls] a, ccRIAAreaWorkGroup b
-where a.[workgroupId] = b.idwg and date>=@from and date <@to
-
-update [RepInCalls]
-set workgroup = wgname, area = areaname
-from [RepInCalls] a, ccriacat_workgroup b, ccriacat_areas c
-where a.[workgroupId] = b.idwg
-and a.areaId = c.idarea and date>=@from and date <@to
+INNER JOIN ccWgByAcdView A ON (A.Inbound_id = xDetail.inbound_id)
+INNER JOIN ccRIAAreaWorkGroup B ON (B.IDWG = A.IDWG)
+INNER JOIN ccriacat_workgroup C ON (C.IDWG = A.IDWG)
+INNER JOIN ccriacat_areas D ON (D.IDArea = B.IDArea)
+where ccInbound.inbound_id is not null 
+order by ccInbound.descripcion, timegroup
 
 drop table #times
 drop table #callsin

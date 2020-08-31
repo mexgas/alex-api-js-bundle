@@ -1,4 +1,6 @@
-select CONVERT(date,A.dateStart) dateStart, A.nameProcess,B.nameProcess,C.nameProcess, A.IndividualQuery,A.ParentQuery,A.DatabaseName
+use NuxibaPerformance;
+
+select distinct CONVERT(date,A.dateStart) dateStart, A.nameProcess,B.nameProcess,C.nameProcess, A.IndividualQuery,A.ParentQuery,A.DatabaseName
 from Performance A 
 left join (select nameProcess,IndividualQuery,ParentQuery,DatabaseName from Performance where nameProcess='E/S') B
 on A.ParentQuery=B.ParentQuery

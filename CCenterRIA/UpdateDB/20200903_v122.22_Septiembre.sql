@@ -786,8 +786,105 @@ BEGIN
 END;'
 		EXEC(@sql)
 
+		set @process = 'CW-4255 Cambiar Rol a permiso'
+		set @sql = 'IF NOT EXISTS
+(
+    SELECT Permissions_id
+    FROM ccPermissions
+    WHERE Description LIKE ''%Roles%''
+)
+    BEGIN
+        INSERT INTO ccPermissions
+        VALUES (10004,''Roles'',''RolesPermissionRoles'',0,0,0,''N/A'',1)
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Root'')
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''Root''), 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Admin'')
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''Admin''), 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''It Manager'')
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''It Manager''), 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Manager'')
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''Manager''), 
+         10004
+        )
+END'
+		EXEC(@sql)
 
-
+		set @process = 'CW-4258 Pre-asignar roles'
+		set @sql = 'IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Manager'')
+          AND Permissions_id = 10003
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''Manager''), 
+         10003
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Supervisor'')
+          AND Permissions_id = 10003
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        ((select Rol_id from ccRoles where description = ''Supervisor''), 
+         10003
+        )
+END'
+		EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

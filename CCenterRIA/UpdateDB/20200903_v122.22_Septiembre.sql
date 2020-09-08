@@ -786,7 +786,105 @@ BEGIN
 END;'
 		EXEC(@sql)
 
+		set @process = 'CW-4255 Cambiar Rol a permiso'
+		set @sql = 'IF NOT EXISTS
+(
+    SELECT Permissions_id
+    FROM ccPermissions
+    WHERE Description LIKE ''%Roles%''
+)
+    BEGIN
+        INSERT INTO ccPermissions
+        VALUES (10004,''Roles'',''RolesPermissionRoles'',0,0,0,''N/A'',1)
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 1
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (1, 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 2
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (2, 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 4
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (4, 
+         10004
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 5
+          AND Permissions_id = 10004
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (5, 
+         10004
+        )
+END'
+		EXEC(@sql)
 
+		set @process = 'CW-4258 Pre-asignar roles'
+		set @sql = 'IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 5
+          AND Permissions_id = 10003
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (5, 
+         10003
+        )
+END
+IF NOT EXISTS
+(
+    SELECT rol_id
+    FROM ccRoles_Permissions
+    WHERE Rol_Id = 7
+          AND Permissions_id = 10003
+)
+    BEGIN
+        INSERT INTO ccRoles_Permissions
+        VALUES
+        (7, 
+         10003
+        )
+END'
+		EXEC(@sql)
 
 
 		/* End script release */

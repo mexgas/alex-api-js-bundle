@@ -854,7 +854,6 @@ IF NOT EXISTS
         )
 END'
 		EXEC(@sql)
-		select * from ccRoles
 
 		set @process = 'CW-4258 Pre-asignar roles'
 		set @sql = 'IF NOT EXISTS

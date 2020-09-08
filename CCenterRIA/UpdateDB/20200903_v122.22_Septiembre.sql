@@ -860,7 +860,7 @@ END'
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 5
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Manager'')
           AND Permissions_id = 10003
 )
     BEGIN
@@ -874,7 +874,7 @@ IF NOT EXISTS
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 7
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Supervisor'')
           AND Permissions_id = 10003
 )
     BEGIN

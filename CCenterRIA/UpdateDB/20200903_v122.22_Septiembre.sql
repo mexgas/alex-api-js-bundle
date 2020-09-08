@@ -866,7 +866,7 @@ END'
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (5, 
+        ((select Rol_id from ccRoles where description = ''Manager''), 
          10003
         )
 END
@@ -880,12 +880,11 @@ IF NOT EXISTS
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (7, 
+        ((select Rol_id from ccRoles where description = ''Supervisor''), 
          10003
         )
 END'
 		EXEC(@sql)
-
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

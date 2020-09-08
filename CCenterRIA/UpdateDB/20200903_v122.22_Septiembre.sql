@@ -801,13 +801,13 @@ IF NOT EXISTS
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 1
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Root'')
           AND Permissions_id = 10004
 )
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (1, 
+        ((select Rol_id from ccRoles where description = ''Root''), 
          10004
         )
 END
@@ -815,13 +815,13 @@ IF NOT EXISTS
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 2
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Admin'')
           AND Permissions_id = 10004
 )
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (2, 
+        ((select Rol_id from ccRoles where description = ''Admin''), 
          10004
         )
 END
@@ -829,13 +829,13 @@ IF NOT EXISTS
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 4
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''It Manager'')
           AND Permissions_id = 10004
 )
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (4, 
+        ((select Rol_id from ccRoles where description = ''It Manager''), 
          10004
         )
 END
@@ -843,17 +843,18 @@ IF NOT EXISTS
 (
     SELECT rol_id
     FROM ccRoles_Permissions
-    WHERE Rol_Id = 5
+    WHERE Rol_Id = (select Rol_id from ccRoles where description = ''Manager'')
           AND Permissions_id = 10004
 )
     BEGIN
         INSERT INTO ccRoles_Permissions
         VALUES
-        (5, 
+        ((select Rol_id from ccRoles where description = ''Manager''), 
          10004
         )
 END'
 		EXEC(@sql)
+		select * from ccRoles
 
 		set @process = 'CW-4258 Pre-asignar roles'
 		set @sql = 'IF NOT EXISTS

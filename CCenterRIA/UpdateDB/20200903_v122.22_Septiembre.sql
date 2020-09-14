@@ -887,8 +887,7 @@ END'
 		EXEC(@sql)
 
 		set @process = 'CW-4290 Cambia tamaño de columna'
-		set @sql = 'alter table ccSettings alter column descripcion varchar(150) not null 
-		end'
+		set @sql = 'alter table ccSettings alter column descripcion varchar(150) not null'
 		EXEC(@sql)
 
 		set @process = 'CW-4290 Crear nuevo setting 224'

@@ -886,6 +886,19 @@ IF NOT EXISTS
 END'
 		EXEC(@sql)
 
+		set @process = 'CW-4290 Cambia tamaño de columna'
+		set @sql = 'alter table ccSettings alter column descripcion varchar(150) not null'
+		EXEC(@sql)
+
+		set @process = 'CW-4290 Crear nuevo setting 224'
+		set @sql = 'if not exists(select * from ccSettings where setting_id=224) begin
+		insert into ccsettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
+values(224,''0'',''Ocultar las opciones no detectar y desactivar CPA en el menú de configuración para máquina contestadora.'',1,''X'',
+	''Setting para ocultar opciones de máquina contestadora (0-Muestra opciones / 1-Oculta opciones)'',
+	''Hide the no detection and disable CPA options in the answering machine configuration menu.'',1,''^[0-1]$'')
+ end'
+		EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		-- exec ccsp_getVersion 'BD', @version

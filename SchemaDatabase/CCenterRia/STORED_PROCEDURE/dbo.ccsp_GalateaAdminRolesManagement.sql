@@ -1,8 +1,3 @@
----- =============================================
----- Author:		ulises Espinosa
----- Create date: 15/05/2020
----- Description:	Role management and permissions in galatea Admin
----- =============================================
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
 	@action SMALLINT,
 	@User_id VARCHAR(MAX)= '',
@@ -84,7 +79,7 @@ BEGIN TRY
 							1,2,'')As Permissions_ids
                 FROM ccRoles r
                      LEFT JOIN ccUsers_Roles ur WITH(NOLOCK) ON r.Rol_id = ur.Rol_id
-                                                                AND ur.User_id = @User_id
+                                                                AND ur.User_id = @User_id AND ur.User_id = @User_id where r.Active=1
         END;
         IF @subaction = 'Users'
             BEGIN

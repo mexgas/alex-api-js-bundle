@@ -11,8 +11,12 @@ CREATE procEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
 AS
 set nocount on
 
+
+
 Update ccCallsIn SET statusCall_id = case when @statuscal_id in (2, 3, 4, 7, 8) then @statuscal_id else case when statusCall_id = 5 then 6 else statuscall_id end end, 
- user_id=@User_id, cal_extension=@cal_extension, cal_tWait=@tWait where cal_id=@cal_id
+ user_id= case when user_id=0 and @User_id>0 then @User_id else user_id end, cal_extension= case when cal_extension=0 and @cal_extension>0 then @cal_extension else cal_extension end, cal_tWait=@tWait where cal_id=@cal_id
+
+ 
 
 exec ccsp_RIAUpdateCallBack_Abandon @cal_id, @statuscal_id
 

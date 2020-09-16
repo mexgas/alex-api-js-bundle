@@ -45,8 +45,8 @@ AS
                              UPDATE ccoCallsOUT WITH(ROWLOCK)
                                SET statusCall_id = 13, 
                                    cal_tRing = @cal_tring, 
-                                   user_id = @user_id, 
-                                   cal_extension = @extension
+                                   user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                                   cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
                              WHERE cal_id = @cal_id
                      IF @RecicleSIC = 0
                          BEGIN
@@ -82,8 +82,8 @@ AS
                      UPDATE ccCallsIN WITH(ROWLOCK)
                        SET statusCall_id = 13, 
                            cal_tRing = @cal_tring, 
-                           user_id = @user_id, 
-                           cal_extension = @extension
+                           user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                           cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
                      WHERE cal_id = @cal_id
 
              -- Elimina callback generado por abandono

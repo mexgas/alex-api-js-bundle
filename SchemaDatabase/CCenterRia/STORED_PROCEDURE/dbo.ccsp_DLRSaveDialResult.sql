@@ -49,7 +49,7 @@ BEGIN
 		WHERE callout_id = @callout_id;
 	END;
 
-	SELECT @logDial_id;
+		SELECT @logDial_id as LogDialId
 
 	-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 	IF @call_id > 0 AND 

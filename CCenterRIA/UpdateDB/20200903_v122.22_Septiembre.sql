@@ -899,6 +899,683 @@ values(224,''0'',''Ocultar las opciones no detectar y desactivar CPA en el menú
  end'
 		EXEC(@sql)
 
+		set @process = 'CW-4387 hunaku marcacion Manual'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
+				@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+				@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+				@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(20)= '''', @call_TS VARCHAR(15)=
+				''''
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+	DECLARE @logDial_id INT;
+	DECLARE @tAnswerBitFinal AS DATETIME;
+	DECLARE @tTotal SMALLINT;
+
+	SELECT @RecicleSIC = ISNULL(valor, 0)
+	FROM ccSettings
+	WHERE setting_id = 60;
+
+	SELECT @tTotal = @tDialing + @tAnswerBit;
+
+	SELECT @tNow = GETDATE();
+
+	SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+			   ''00000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.
+			   fnGetTipoLlamada( @Telefono );
+	END;
+		 ELSE
+	BEGIN
+		INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+		TipoDialingMode, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id )
+			   SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+			   ''00000000'', @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(
+			   @Telefono );
+	END;
+
+	SELECT @logDial_id = SCOPE_IDENTITY();
+
+	IF @RecicleSIC = 1
+	BEGIN
+		UPDATE ccoWorkingTable WITH(ROWLOCK)
+		  SET tipoResDial_id = @tipoResDial_id
+		WHERE callout_id = @callout_id;
+	END;
+
+	-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+	IF @call_id > 0 AND 
+	   @tipoResDial_id = 1
+	BEGIN
+		UPDATE ccoCallsOut WITH(ROWLOCK)
+		  SET cal_puerto = @Puerto, cal_manual = CASE
+												 WHEN cal_manual = 1 THEN 2
+													  ELSE cal_manual
+												 END
+		WHERE cal_id = @call_id AND 
+			  cal_puerto = 0;
+
+		EXEC ccsp_CstoCalculaCosto @call_id;
+
+		IF @cal_key = ''''
+		BEGIN
+			SELECT @cal_key = cal_key
+			FROM ccoCallsOutSource WITH(NOLOCK)
+			WHERE @callout_id = callout_id;
+
+			UPDATE ccologdials WITH(ROWLOCK)
+			  SET cal_key = @cal_key
+			WHERE logDial_id = @logDial_id;
+		END;
+	END;
+
+
+	--2020-06-04 para marcaciones manuales no efectivas guarda el cal_id
+					if @call_id > 0 and @tipoResDial_id != 1
+					begin
+						update ccologdials with(rowlock) set cal_id=@call_id where logDial_id=@logDial_id
+					end
+
+	-- inserta informacion para reportes de workgroup
+	INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )
+		   SELECT IDWG, @logDial_id, IdCampEsp, GETDATE()
+		   FROM ccRIACampEspWG
+		   WHERE tipo = 1 AND 
+				 IdCampEsp = @cam_id;
+
+	-- Guarda configuracion de TipoDialingMode
+	UPDATE ccoLogDials WITH(ROWLOCK)
+	  SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+	WHERE logDial_id = @logDial_id;
+	SET NOCOUNT OFF;
+END;
+
+	SELECT @logDial_id as LogDialId'
+		EXEC(@sql)
+
+
+SET @process = 'CW-4282 Se modifica sp ccsp_GalateaAdminRolesManagement'
+        set @sql='
+ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
+	@action SMALLINT,
+	@User_id VARCHAR(MAX)= '''',
+	@subaction VARCHAR(50)= '''',
+	@description VARCHAR(250)= '''',
+	@keyJson VARCHAR(250)= '''',
+	@active BIT= 1,
+	@Roles_id VARCHAR(MAX)= '''',
+	@Permissions_Id VARCHAR(MAX)= '''',
+	@menus_id VARCHAR(250)= ''''
+AS
+--DECLARE
+--	@action SMALLINT = 4,
+--	@User_id VARCHAR(MAX) = ''2'',
+--	@subaction VARCHAR(50)= '''',
+--	@description VARCHAR(250)= ''aa'',
+--	@keyJson VARCHAR(250)= '''',
+--	@active BIT= 1,
+--	@Roles_id VARCHAR(50)= ''1051'',
+--	@Permissions_Id VARCHAR(MAX)= ''1,2'',
+--	@menus_id VARCHAR(250)= '''';
+BEGIN TRY
+    BEGIN TRANSACTION;-- Inicia el bloque de la transaccion
+	DECLARE @resultado varchar(50) = '''';
+	DECLARE @returnValue SMALLINT;
+    BEGIN
+	 IF @action = 1
+        BEGIN
+        IF @subaction = ''Permissions''
+            BEGIN
+                IF OBJECT_ID(''tempdb..#Permissions'') IS NOT NULL DROP TABLE #Permissions;
+
+				SELECT DISTINCT
+					   (rp.Permissions_id)
+				INTO #Permissions
+				FROM ccUsers_Roles ur
+					 INNER JOIN ccRoles_Permissions rp WITH(NOLOCK) ON rp.Rol_id = ur.Rol_id
+				WHERE User_id = @User_id;
+				SELECT p.Permissions_Id, 
+					   p.KeyJson, 
+					   p.Parent, 
+					   p.Type, 
+					   p.OrderGrl,
+					   CASE
+						   WHEN tp.Permissions_Id IS NOT NULL
+						   THEN 1
+						   ELSE 0
+					   END AS State
+				FROM ccPermissions p
+					 LEFT JOIN #Permissions tp WITH(NOLOCK) ON tp.Permissions_Id = p.Permissions_Id
+				ORDER BY OrderGrl, 
+						 Parent;
+        END;
+        IF @subaction = ''Roles''
+            BEGIN
+                SELECT r.Rol_id AS RolId, 
+                       r.KeyJson, 
+                       r.Description,
+					   r.Level,
+                       CONVERT(VARCHAR(10), r.CreateDate, 103) AS CreateDate,
+                       CASE
+                           WHEN ur.Rol_id IS NOT NULL
+                           THEN 1
+                           ELSE 0
+                       END AS State,
+					   STUFF(
+								(SELECT '', '' + CAST(ur.User_id AS varchar)
+								FROM ccUsers_Roles ur
+								INNER JOIN ccRoles C ON ur.Rol_id = C.Rol_id
+								WHERE c.Rol_id = r.Rol_id
+								FOR XML PATH ('''')),
+							1,2,'''')As Users_Ids,
+						STUFF(
+								(SELECT '', '' + CAST(pr.Permissions_Id AS varchar)
+								FROM ccRoles_Permissions pr
+								INNER JOIN ccRoles C ON pr.Rol_id = C.Rol_id
+								WHERE c.Rol_id = r.Rol_id
+								FOR XML PATH ('''')),
+							1,2,'''')As Permissions_ids
+                FROM ccRoles r
+                     LEFT JOIN ccUsers_Roles ur WITH(NOLOCK) ON r.Rol_id = ur.Rol_id
+                                                                AND ur.User_id = @User_id AND ur.User_id = @User_id where r.Active=1
+        END;
+        IF @subaction = ''Users''
+            BEGIN
+                SELECT User_id, 
+                       Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno AS Names
+                FROM ccUsers
+                WHERE TipoUser_id = 2 AND User_id > 1;
+        END;
+    END;
+	END;
+    IF @action = 2
+        BEGIN
+            SELECT p.Permissions_id, 
+                   Parent, 
+                   Type, 
+                   OrderGrl
+            FROM ccUsers_Roles ur
+                 INNER JOIN ccRoles r WITH(NOLOCK) ON r.Rol_id = ur.Rol_id
+                 INNER JOIN ccRoles_Permissions rp WITH(NOLOCK) ON rp.Rol_Id = ur.Rol_id
+                 INNER JOIN ccPermissions p WITH(NOLOCK) ON p.Permissions_id = rp.Permissions_id
+            WHERE ur.User_Id = @User_id
+                  AND r.Active = 1
+                  AND p.Active = 1;
+    END;
+    IF @action = 3 -- assign roles to user
+        BEGIN
+            IF OBJECT_ID(''tempdb..#Users_Ids'') IS NOT NULL DROP TABLE #Users_Ids
+			IF OBJECT_ID(''tempdb..#Users_split'') IS NOT NULL DROP TABLE #Users_split
+			IF OBJECT_ID(''tempdb..#Roles_split'') IS NOT NULL DROP TABLE #Roles_split
+			
+			SELECT value
+			INTO #Users_split
+			FROM fn_RIASplitDelimited(@User_id, '','')
+
+			SELECT value
+			INTO #Roles_split
+			FROM fn_RIASplitDelimited(@Roles_id, '','')
+
+			SELECT DISTINCT(User_id)
+			INTO #Users_Ids
+			FROM ccUsers_Roles
+			WHERE User_id in (SELECT value FROM #Users_split)
+
+			IF @subaction = ''NewRelate''
+			BEGIN
+				IF EXISTS( select top 1 * from #Users_Ids)
+					BEGIN
+						DELETE ccUsers_Roles
+						WHERE User_id IN (select * from #Users_Ids);
+					END
+				END
+			IF @Roles_id <> ''''
+			BEGIN
+				INSERT INTO ccUsers_Roles
+				select a.value User_id,b.value as Rol_id from #Users_split a
+				CROSS JOIN #Roles_split b
+
+			END
+			SET @returnValue = (select top 1 * from  #Users_split)
+    END;
+    IF @action = 4 -- Delete Roles
+        BEGIN
+			IF OBJECT_ID(''tempdb..#UsersIds'') IS NOT NULL DROP TABLE #UsersIds
+			SET @resultado = STUFF(
+					(SELECT Distinct('', '' + CAST(ur.User_id AS varchar))
+					FROM ccUsers_Roles ur
+					INNER JOIN ccRoles C ON ur.Rol_id = C.Rol_id
+					WHERE c.Rol_id in (SELECT value FROM fn_RIASplitDelimited(@Roles_id, '',''))
+					FOR XML PATH ('''')),
+				1,2,'''')
+            IF OBJECT_ID(''tempdb..#roles_permissions'') IS NOT NULL DROP TABLE #roles_permissions
+			IF OBJECT_ID(''tempdb..#Users_Roles'') IS NOT NULL DROP TABLE #Users_Roles
+
+			SELECT DISTINCT(Rol_id)
+			INTO #roles_permissions
+				FROM ccroles_permissions a
+						INNER JOIN
+				(
+					SELECT value
+					FROM fn_RIASplitDelimited(@Roles_id, '','')
+				) b ON b.value = a.Rol_Id
+
+			SELECT  DISTINCT(value) AS Rol_id
+			INTO #Users_Roles
+			FROM fn_RIASplitDelimited(@Roles_id, '','') a
+					INNER JOIN ccUsers_Roles b ON b.Rol_id = a.Value
+			WHERE b.Rol_id IS NOT NULL
+			IF EXISTS(SELECT TOP 1 * FROM #roles_permissions)
+			BEGIN
+				--select * from #roles_permissions
+				DELETE ccroles_permissions WHERE Rol_id in (select Rol_id from #roles_permissions )
+			END
+			IF EXISTS(SELECT TOP 1 * FROM #Users_Roles)
+			BEGIN
+				--select * from #Users_Roles
+				DELETE ccUsers_Roles WHERE Rol_id in (select Rol_id from #Users_Roles )
+			END
+			IF EXISTS(select top 1 Rol_id from ccRoles where Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '','')))
+			BEGIN
+				--select * from ccRoles where Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '',''))
+				DELETE ccRoles WHERE Rol_id in (SELECT  DISTINCT(value) FROM fn_RIASplitDelimited(@Roles_id, '',''))
+				IF(@resultado IS NULL OR @resultado = '''') SET @resultado = ''1''
+			END
+		END;
+    IF @action = 5 -- New Role
+        BEGIN
+            IF @menus_id <> ''''
+               OR @Permissions_Id <> ''''
+                BEGIN
+                    DECLARE @exists BIT;
+                    SET @returnValue = 0;
+                    SET @exists = 1;
+
+					/*IF @menus_id <> '''' --Check if role with same menus exists
+						BEGIN
+							Para cuando esten los menus
+						END*/
+
+                    IF @Permissions_Id <> ''''
+                       AND @exists = 1 --Check if role with same permissions exists
+                        BEGIN
+                            IF NOT EXISTS
+                            (
+                                SELECT c.Rol_Id
+                                FROM ccroles_permissions a
+                                     INNER JOIN
+                                (
+                                    SELECT value
+                                    FROM fn_RIASplitDelimited(@Permissions_Id, '','')
+                                ) b ON b.value = a.Permissions_Id
+                                     INNER JOIN
+                                (
+                                    SELECT Rol_id, 
+                                           COUNT(*) AS contador
+                                    FROM ccRoles_Permissions
+                                    GROUP BY Rol_Id
+                                ) AS c ON c.Rol_id = a.Rol_id
+                                     INNER JOIN
+                                (
+                                    SELECT COUNT(*) AS contador
+                                    FROM fn_RIASplitDelimited(@Permissions_Id, '','')
+                                ) d ON d.contador = c.contador
+                                GROUP BY c.Rol_Id
+                                HAVING COUNT(*) =
+                                (
+                                    SELECT COUNT(*) AS contador
+                                    FROM fn_RIASplitDelimited(@Permissions_Id, '','')
+                                )
+                            )
+                                SET @exists = 0;
+                    END;
+                    IF @exists = 0 -- IF not exist role with same menus and permissions create
+                        BEGIN
+                            SELECT @exists = COUNT(*)
+                            FROM ccRoles
+                            WHERE Description = @description;
+                            IF @exists = 0
+                                BEGIN
+                                    DECLARE @newRoleId INT;
+                                    INSERT INTO ccroles
+                                    (Description, 
+                                     KeyJson, 
+                                     CreateDate, 
+                                     Active,
+									 Level
+                                    )
+                                    VALUES
+                                    (@description, 
+                                     @keyJson, 
+                                     GETDATE(), 
+                                     @active,
+									 1001
+                                    );
+                                    SELECT @newRoleId = SCOPE_IDENTITY();
+                                    IF @Permissions_Id <> ''''
+                                        BEGIN
+                                            INSERT INTO ccroles_permissions
+                                                   SELECT @newRoleId, 
+                                                          value
+                                                   FROM fn_RIASplitDelimited(@Permissions_Id, '','') AS a
+                                                        INNER JOIN ccPermissions b ON a.value = b.Permissions_Id
+                                                   GROUP BY value;
+                                    END;
+                                    SET @returnValue = @newRoleId; --  if new role was created return Role_id
+                            END;
+                                ELSE
+                                BEGIN
+                                    SET @returnValue = -1;
+                            END;-- else if role name exists, return -1
+                    END;
+                    --SELECT @returnValue; --  else if exists role with same menus & permissions, return 0
+            END;
+    END;
+    COMMIT TRANSACTION;
+	if @resultado <>''''
+	begin
+		select @resultado
+	end
+	else
+	begin
+    -- Indica que la operación se efectuo correctamente
+		SELECT @returnValue
+	end
+END TRY
+
+/* Manejo de error de la transacción */
+
+BEGIN CATCH
+	SET @returnValue = -1;
+    SELECT @returnValue
+    ROLLBACK TRANSACTION;
+END CATCH;'
+		EXEC(@sql)
+
+set @process = 'CW-4372 se modifica sp ccsp_IVRUpdateCallEndNew'
+		set @sql = 'ALTER procEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
+@cal_id int,
+@cal_tIVRCallDuration smallint,
+@statuscal_id tinyint, 
+-- Aqui solo se Aceptan Edos Terminales 2(Fuera de Horario), 3(Fuera de Servicio), 4(NoAgentesFirmados), 7(TimeOut), 8(DesbordeQue),
+@cal_opciones varchar(10),
+@cal_colgada tinyint,
+@User_id smallint,
+@cal_extension varchar(7),
+@tWait smallint
+AS
+set nocount on
+
+
+
+Update ccCallsIn SET statusCall_id = case when @statuscal_id in (2, 3, 4, 7, 8) then @statuscal_id else case when statusCall_id = 5 then 6 else statuscall_id end end, 
+ user_id= case when user_id=0 and @User_id>0 then @User_id else user_id end, cal_extension= case when cal_extension=0 and @cal_extension>0 then @cal_extension else cal_extension end, cal_tWait=@tWait where cal_id=@cal_id
+
+ 
+
+exec ccsp_RIAUpdateCallBack_Abandon @cal_id, @statuscal_id
+
+--Actualizar tiempo total de llamada
+exec ccsp_EngineLogTransfers 2, @cal_id, 2, 2, null, @tWait, @cal_tIVRCallDuration
+
+set nocount off'
+		EXEC(@sql)
+
+
+set @process = 'CW-4372 Se modifica sp ccsp_IVRAfterXferAge'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_IVRAfterXferAge]
+@cal_id int,
+@User_id smallint,
+@cal_extension varchar(7),
+@tWait smallint
+AS
+set nocount on
+-- 2005-11-15 por ODC
+-- colocar como asignada despues de transferir
+Update ccCallsIn SET user_id= case when user_id=0 and @User_id>0 then @User_id else user_id end, cal_extension= case when cal_extension=0 and @cal_extension>0 then @cal_extension else cal_extension end,-- cal_tWait=@tWait,
+cal_xfer=getdate(), statusCall_id=11  -- 11=Asignada
+where cal_id=@cal_id
+
+update ccRIAWorkGroup_Calid set user_id=@User_id where cal_id = @cal_id and tipo = 0
+
+return(0)
+set nocount off'
+		EXEC(@sql)
+
+
+set @process = 'CW-4372 se modifica sp ccsp_AgentSetCallStatus'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentSetCallStatus] 
+	@callout_id INT, 
+    @cal_id     INT, 
+    @TipoCall   TINYINT, -- 1= IN,  2=Out
+    @TipoMov    TINYINT, -- 4 OnDialog, 7=OFFHook_OnXfer, 9=CallNoAnswered
+    @cal_tXfer  TINYINT    = 0, 
+    @cal_tring  SMALLINT   = 0, 
+    @user_id    SMALLINT   = 0, 
+    @extension  VARCHAR(5) = '''', 
+    @isChatCall BIT        = 0
+AS
+     SET NOCOUNT ON
+     DECLARE @RecicleSIC TINYINT
+
+     SELECT @RecicleSIC = ISNULL(valor, 0)
+     FROM ccSettings
+     WHERE setting_id = 60
+
+     DECLARE @ANI_x VARCHAR(19)
+     DECLARE @cal_inicio DATETIME
+     DECLARE @callout_id_IN INT
+     DECLARE @cal_key VARCHAR(20)
+     DECLARE @cam_id INT
+     DECLARE @cal_telefono VARCHAR(30)
+     DECLARE @surveycamid INT
+     DECLARE @inbound_id INT
+     IF @TipoMov = 4 OR @TipoMov = 14 -- DIALOG OnDialog
+         BEGIN
+             IF @TipoCall = 2
+                 BEGIN
+                     IF @TipoMov = 4
+                         BEGIN
+                             UPDATE ccoCallsOUT WITH(ROWLOCK)
+                               SET cal_Inicio = GETDATE(), 
+                                   statusCall_id = 13, 
+                                   cal_manual = CASE
+                                                    WHEN @isChatCall = 1
+                                                    THEN 3
+                                                    ELSE cal_manual
+                                                END
+                             WHERE cal_id = @cal_id
+                     END
+                         ELSE
+                         IF @TipoMov = 14
+                             UPDATE ccoCallsOUT WITH(ROWLOCK)
+                               SET statusCall_id = 13, 
+                                   cal_tRing = @cal_tring, 
+                                   user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                                   cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
+                             WHERE cal_id = @cal_id
+                     IF @RecicleSIC = 0
+                         BEGIN
+                             DELETE ccoWorkingTable WITH(ROWLOCK)
+                             WHERE callout_id = @callout_id
+
+                             DELETE ccoCallPriorityOrder WITH(ROWLOCK)
+                             WHERE callout_id = @callout_id
+                     END
+                     UPDATE ccoCallBacks
+                       SET [status] = 1, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 13
+
+                     -- calcula el costo de la llamada
+                     EXEC ccsp_CstoCalculaCosto @cal_id
+
+                     RETURN(0)
+             END
+             IF @TipoMov = 4
+                 UPDATE ccCallsIN WITH(ROWLOCK)
+                   SET statusCall_id = 13
+                 WHERE cal_id = @cal_id
+
+                 ELSE
+                 IF @TipoMov = 14
+                     UPDATE ccCallsIN WITH(ROWLOCK)
+                       SET statusCall_id = 13, 
+                           cal_tRing = @cal_tring, 
+                           user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                           cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
+                     WHERE cal_id = @cal_id
+
+             -- Elimina callback generado por abandono
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN = callout_id
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 1, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             DELETE ccoWorkingTable WITH(ROWLOCK)
+             WHERE callout_id IN
+             (
+                 SELECT DISTINCT
+                        (callout_id)
+                 FROM ccRIAUpdateCallBack_Abandon WITH(ROWLOCK)
+                 WHERE cal_ani = @ANI_x
+             )
+
+             DELETE ccRIAUpdateCallBack_Abandon WITH(ROWLOCK)
+             WHERE cal_ANI = @ANI_x
+
+             RETURN(0)
+     END
+     IF @TipoMov = 7 --OTHER OFFHook_OnXfer
+         BEGIN
+             IF @cal_id <= 0
+                 RETURN(0)
+             IF @TipoCall = 2
+                 BEGIN
+                     UPDATE ccoCallsOUT WITH(ROWLOCK)
+                       SET statusCall_id = 16
+                     WHERE cal_id = @cal_id
+                     -- calcula el costo de la llamada
+
+                     UPDATE ccoCallBacks
+                       SET [status] = 2, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 16
+
+                     EXEC ccsp_CstoCalculaCosto 
+                          @cal_id
+
+                     RETURN(0)
+             END
+             UPDATE ccCallsIN WITH(ROWLOCK)
+               SET statusCall_id = 16
+             WHERE cal_id = @cal_id
+
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 2, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             RETURN(0)
+     END
+     IF @TipoMov = 9 --RING CallNoAnswered
+         BEGIN
+             IF @TipoCall = 2
+                 BEGIN
+                     UPDATE ccoCallsOUT WITH(ROWLOCK)
+                       SET statusCall_id = 15, 
+                           cal_tXFer = @cal_txFer, 
+                           cal_tRing = @cal_tring
+                     WHERE cal_id = @cal_id
+
+                     -- calcula el costo de la llamada
+
+                     UPDATE ccoCallBacks
+                       SET [status] = 2, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 15
+
+                     EXEC ccsp_CstoCalculaCosto @cal_id
+             END
+
+             UPDATE ccCallsIN WITH(ROWLOCK)
+               SET statusCall_id = 15, 
+                   cal_tXFer = @cal_txFer, 
+                   cal_tRing = @cal_tring
+             WHERE cal_id = @cal_id
+
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 2, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             RETURN(0)
+     END
+     SET NOCOUNT OFF'
+		EXEC(@sql)
+
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		-- exec ccsp_getVersion 'BD', @version

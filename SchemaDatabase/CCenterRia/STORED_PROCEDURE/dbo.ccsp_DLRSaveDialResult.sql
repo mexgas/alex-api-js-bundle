@@ -49,8 +49,6 @@ BEGIN
 		WHERE callout_id = @callout_id;
 	END;
 
-		SELECT @logDial_id as LogDialId
-
 	-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
 	IF @call_id > 0 AND 
 	   @tipoResDial_id = 1
@@ -97,3 +95,5 @@ BEGIN
 	WHERE logDial_id = @logDial_id;
 	SET NOCOUNT OFF;
 END;
+
+	SELECT @logDial_id as LogDialId

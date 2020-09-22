@@ -150,11 +150,12 @@ BEGIN
 
 		else if @acdType= 1 begin
 
-		declare @CC int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
+		declare @CC int,@CCAb int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
 		select @CC=0,@ccme=0,@ccma=0,@cAs=0,@cs=0,@cAb=1,@cDt=0,@cDe=0,@DlgsAveTime=0
 
 		select
 		@CC = count(case when chatStatus=4 then 1 else null end) ,
+		@CCAb = count(case when chatStatus=9 and tQueue<@tresDialog then 1 else null end) ,
 		@DlgsAveTime = isnull(sum(case when chatStatus=4 then tChatting+tWrapUp else null end),0) ,
 		@ccme = count(case when chatStatus=4 and tChatting<@tresDialog and finishedBy=0 then 1 else null end),
 		@ccma = count(case when chatStatus=4 and tChatting>@tresDialog then 1 else null end) ,
@@ -175,10 +176,10 @@ BEGIN
 			@CveCamp as ID, 
 			isnull(@DlgsAveTime/ (@CC+1),0) as DlgsAveTime, 
 			isnull(@QueueAveTime / (@Que +1),0) as QueueAveTime,
-			case when @SL2>0 then @CC*100/(@SL2) else 0 end as SL,
-			isnull(@CC*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
+			case when @SL2>0 then (@CC+@CCAb)*100/(@SL2) else 0 end as SL,
+			isnull((@CC+@CCAb)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
 			@acdType as acdType,
-			@CC as CC,
+			@CC+@CCAb as CC,
 			@SL2 as SumSL
 		end
 		'

@@ -55,6 +55,18 @@ BEGIN
  ''Place where hunaku keeps recordings'',0,''/^[0-1]$/'')
  end'
 		EXEC(@sql)
+		
+		set @process = 'agrega setting para ocultar telefonos'
+		set @sql = 'if not exists(select * from ccSettings where setting_id=223) begin
+			insert into ccsettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(223,''1'',''ocultar telefono en ventanas del agente'',1,''AGT'',''setting para ocultar el telefono en el agente (0 lo muestra, 1 lo oculta)'',''Hide telephone number on CW agent'',1,''^[0-1]$'')
+		end'
+		EXEC(@sql)
+
+		set @process = 'agrega setting para integracion ISAT'
+		set @sql = 'if not exists(select * from ccSettings where setting_id=218) begin
+			insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values (218, ''4747|20|12345'', ''Configuracion integracion Munoz-ISAT'', 1, ''AGT'', ''Parametros para integracion port|secsLookForConf|troncalID'', ''Configuration for Munoz-ISAT integration'', 0, ''.*'')
+		end'
+		EXEC(@sql)
 
 		set @process = 'CW-4303 drop sp para cambiar a grabacion local en hunaku'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_record_locally'')
@@ -2062,6 +2074,11 @@ END'
 		EXEC(@sql)
 
 
+		set @process = 'modifico setting para integracion ISAT'
+		set @sql = 'if exists(select * from ccSettings where setting_id=172) begin
+			update ccSettings set valor = ''2|4|1|14:26|home289550584.1and1-data.host;22;u53828902-cofetel;$f:LV7YAvk68'' where setting_id = 172
+		end'
+		EXEC(@sql)
 
 
 		/* End script release */

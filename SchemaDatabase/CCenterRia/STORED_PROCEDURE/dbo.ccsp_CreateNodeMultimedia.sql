@@ -17,10 +17,12 @@ declare @existAttached bit,@numInteracion smallint
 if @type=0 begin--CHAT
 
     select @xml = convert(xml,'<R01 CDATE="'+rtrim(ltrim(convert(varchar(23), isNull(chatDate,requestDate), 126))) +
+	'" CID="'+convert(varchar(max),ccRIAChats.inboundid) +
+	'" CType="1'+
     '" C01="'+convert(varchar(max),chatId) +
     '" C02="'+convert(varchar(max),isnull(ccinbound.descripcion,'')) +
     '" C03="'+convert(varchar(max),domain) +
-    '" C04="'+convert(varchar(max), Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno ) +
+    '" C04="'+convert(varchar(max), isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno,'N/A') ) +
     '" C05="'+convert(varchar(max),tchatting) +
     '" C06="'+convert(varchar(max),isnull(cctipocalif.[Description],'N/A')) +
     '" C07="'+convert(varchar(max),isnull(cctipocalifsub.califSubdesc,'N/A')) +
@@ -49,6 +51,8 @@ else if @type=1 begin--EMAIL
 
 
     select @xml = convert(xml,'<R03 CDATE="'+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
+	'" CID="'+convert(varchar(max),a.inboundid) +
+	'" CType="1'+
     '" C01="'+ convert(varchar(max),a.conversationId) +
     '" C02="'+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
     '" C03="'+ convert(varchar(max),max(c.descripcion)) +
@@ -77,6 +81,8 @@ else if @type=2 begin--Twitter
     select @numInteracion = sum(ninteration) from messageOutTwitter where conversationTwitterId=@conversationId
 
     select @xml = convert(xml,'<R04 CDATE="'+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
+	'" CID="'+convert(varchar(max),a.inboundid) +
+	'" CType="1'+
     '" C01="'+convert(varchar(max),a.conversationTwitterId) +
     '" C02="'+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
     '" C03="'+convert(varchar(max),max(c.descripcion)) +

@@ -55,6 +55,18 @@ BEGIN
  ''Place where hunaku keeps recordings'',0,''/^[0-1]$/'')
  end'
 		EXEC(@sql)
+		
+		set @process = 'agrega setting para ocultar telefonos'
+		set @sql = 'if not exists(select * from ccSettings where setting_id=223) begin
+			insert into ccsettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values(223,''1'',''ocultar telefono en ventanas del agente'',1,''AGT'',''setting para ocultar el telefono en el agente (0 lo muestra, 1 lo oculta)'',''Hide telephone number on CW agent'',1,''^[0-1]$'')
+		end'
+		EXEC(@sql)
+
+		set @process = 'agrega setting para integracion ISAT'
+		set @sql = 'if not exists(select * from ccSettings where setting_id=218) begin
+			insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values (218, ''4747|20|12345'', ''Configuracion integracion Munoz-ISAT'', 1, ''AGT'', ''Parametros para integracion port|secsLookForConf|troncalID'', ''Configuration for Munoz-ISAT integration'', 0, ''.*'')
+		end'
+		EXEC(@sql)
 
 		set @process = 'CW-4303 drop sp para cambiar a grabacion local en hunaku'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccspHunaku_record_locally'')
@@ -1574,6 +1586,499 @@ AS
 		EXEC(@sql)
 
 
+		set @process = 'CW-4244 Modificar sp ccsp_RIAGetAveTimeEspec'
+		set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_RIAGetAveTimeEspec]
+@CveCamp int
+AS
+
+declare @fechaI as datetime, @fechaF as datetime
+declare @Dlgs as int
+declare @DlgsAveTime as int
+declare @Que as int
+declare @QueueAveTime as int
+declare @CallsLost as int
+declare @SL1 as int
+declare @SL2 as int
+declare @answ_tres as smallint
+declare @abnd_tres as smallint
+
+declare @nanswer as smallint
+declare @nno_answer as smallint
+declare @nlost as smallint
+declare @nabnd as smallint
+declare @ntimeout as smallint
+declare @noverflow as smallint
+declare @nno_agent as smallint
+declare @total as int
+declare @setting as tinyint
+
+declare @dia as varchar(11)
+
+declare @tresRing as smallint
+declare @tresDialog as smallint
+declare @tresDelayIn as smallint
+
+exec @tresRing = ccspConfigTresRing
+exec @tresDialog = ccspConfigTresDialog
+exec @tresDelayIn = ccspConfigtresDelayIn
+
+--select @dia = ''2003/01/22'' --, @CveCamp=5
+select @dia=CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
+
+select @fechaI = convert(datetime, @dia, 101)
+select @fechaF = dateadd( d, 1, @fechaI )
+select @setting = valor from ccsettings where setting_id = 127
+
+
+declare @acdType tinyint 
+
+select @acdType= chat from ccInbound where Inbound_id = @CveCamp
+
+if @acdType= 0 begin --call
+SELECT 
+@Dlgs = count(case when statuscall_id = 13 then 1 else null end), 
+@DlgsAveTime = ISNULL(sum( case when statuscall_id = 13 then cal_tDialog + cal_tNotas else null end), 0),
+
+@Que = count(case when cal_que> 0 then 1 else null end), 
+@QueueAveTime = ISNULL(sum( case when cal_que > 0 then cal_tWait else null end), 0),
+
+@CallsLost= isnull(COUNT(CASE WHEN (statuscall_id IN (5,6) AND (cal_que > 0) AND (cal_xfer IS NULL))  THEN 1 ELSE NULL END), 0), -- ODC
+
+@abnd_tres = COUNT(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer IS NULL)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),
+@answ_tres =  case when @setting = 0 then COUNT(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END) else Count(case when (statuscall_id = 13 and (cal_twait + cal_txfer + cal_tring<@tresDelayIn)) then 1 else null end) end,
+
+@SL1 = case when @setting = 0 then @abnd_tres + @answ_tres else @answ_tres end,
+
+@nanswer = COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END),
+@nno_answer = COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END),
+@nlost = COUNT(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END),
+@nabnd = COUNT(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer IS NULL))THEN 1 ELSE NULL END),
+@ntimeout = COUNT(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END),
+@noverflow = COUNT(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END),
+@nno_agent = COUNT(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END),
+@total = count(*),
+
+@SL2 = case when @setting = 0 then @nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent else @total end
+FROM ccCallsIN
+WHERE cal_Inicio between @fechaI AND @fechaF
+AND Inbound_id = @CveCamp
+
+select 
+	''ID''=@CveCamp, 
+	''DlgsAveTime''=@DlgsAveTime/ (@Dlgs+1), 
+	''QueueAveTime''=@QueueAveTime / (@Que +1),
+	''SL'' = case 
+		when @SL2 > 0 
+		then 100 * @SL1 / @SL2 
+		else 0 end, 
+	''sl2'' = case 
+		when @setting = 0 
+		then 
+			case 
+				when (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent) > 0 
+				then 100 * (@abnd_tres + @answ_tres) / (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent)
+				else 0 end 
+		else case 
+			when @total > 0 
+			then 100 * @answ_tres/@total 
+			else 0 end end
+	 ,@acdType as acdType
+end
+
+else if @acdType= 1 begin
+
+declare @CC int,@CCAb int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
+select @CC=0,@ccme=0,@ccma=0,@cAs=0,@cs=0,@cAb=1,@cDt=0,@cDe=0,@DlgsAveTime=0
+
+select
+@CC = count(case when chatStatus=4 then 1 else null end) ,
+@CCAb = count(case when chatStatus=9 and tQueue<@tresDialog then 1 else null end) ,
+@DlgsAveTime = isnull(sum(case when chatStatus=4 then tChatting+tWrapUp else null end),0) ,
+@ccme = count(case when chatStatus=4 and tChatting<@tresDialog and finishedBy=0 then 1 else null end),
+@ccma = count(case when chatStatus=4 and tChatting>@tresDialog then 1 else null end) ,
+@cAs= count(case when chatStatus=3 then 1 else null end) ,
+@cs = count(case when chatStatus=7 then 1 else null end) ,
+@cAb = count(case when chatStatus=9 and tQueue>=@tresDialog then 1 else null end) ,
+@cDt = count(case when chatStatus=11 then 1 else null end) ,
+@cDe = count(case when chatStatus=10 then 1 else null end),
+@Que = count(case when onQueue > 0 then 1 else null end), 
+@QueueAveTime = ISNULL(sum( case when onQueue > 0 then tQueue else null end), 0),
+@SL2 = @ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe
+from ccRIAChats 
+where requestDate between @fechaI AND @fechaF
+and inboundId=@CveCamp 
+group by inboundId 
+
+select 
+	@CveCamp as ID, 
+	isnull(@DlgsAveTime/ (@CC+1),0) as DlgsAveTime, 
+	isnull(@QueueAveTime / (@Que +1),0) as QueueAveTime,
+	case when @SL2>0 then (@CC+@CCAb)*100/(@SL2) else 0 end as SL,
+	isnull((@CC+@CCAb)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
+	@acdType as acdType,
+	@CC+@CCAb as CC,
+	@SL2 as SumSL
+end
+		'
+		EXEC(@sql)
+
+
+		set @process = 'CW-4373 Se Modifica sp ccsp_RIAInsertChat'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
+@action int,
+@inboundId smallint = 0,
+@domain varchar(50) = '''',
+@session varchar(50) = '''',
+@tTimeout smallint = 0,
+@chatId int = 0,
+@status tinyInt = 0,
+@userId smallint = 0,
+@finished tinyInt = 0,
+@chattingTime int = 0,
+@startTime datetime = null,
+@clientName varchar(50) = '''',
+@firstMessage int = 0,
+@firstMessageTime datetime = null,
+@crmNode xml = null,
+@supervisor varchar(100) =null,
+@template varchar (100)= null,
+@ScoreTemplate int = null
+AS
+
+declare @xml xml
+declare @sql nvarchar(2000)
+
+if @action = 1 begin -- Inserta nuevo chat request /*comentario: se recomienda hacer la busqueda del userid del CRM en esta action*/
+       insert into ccRIAChats (domain,session,chatStatus,requestDate,inboundId,clientName)
+       values(@domain,@session,@status,getDate(),0,@clientName)
+       set @chatId = scope_identity()
+       select @chatId
+end
+
+else if @action = 2 begin -- Save Initial Info
+update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = @userId, tTimeout = @tTimeout where chatId = @chatId
+end
+
+else if @action = 3 begin -- Update Status
+update ccRIAChats set chatStatus = @status where chatId = @chatId
+end
+
+else if @action = 4 begin -- Save Final Status
+if @firstMessage = 0
+       begin
+             update ccRIAChats set finishedBy = @finished where chatId = @chatId
+       end
+else
+       begin
+             update ccRIAChats set finishedBy = @finished, firstMessageTime  = @firstMessageTime where chatId = @chatId
+       end
+end
+
+else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion del nodo (registro final para el finder) se recomiendo en esta action, no olvidar validar status = 4, finishedby != null y validar los tiempos para garantizar el dato final */
+       if @action = 5 begin
+             update ccRIAChats set tChatting = @chattingTime, chatDate = @startTime where chatId = @chatId
+       end
+
+	   if @action = 6 begin
+			update ccRIAChats set userId = @userId where chatId = @chatId
+	   end
+
+	   set @crmNode = null
+
+	   exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=0,@xml=@xml OUTPUT,@supervisor=@supervisor,@template =@template,@ScoreTemplate=@ScoreTemplate
+
+       if @xml is not null
+       begin
+             select @crmNode = node from ccCRMNodes where chatId = @chatId
+             if @crmNode is not null
+             begin
+                    set @sql = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R01)[1]'''') ''
+                    execute sp_executesql @sql,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
+             end
+
+             if not exists(select * from ccChatsNode where chatId=@chatId) begin ---insert finder
+                insert into ccChatsNode (chatId,node, dateIn,[status]) values (@chatId,@xml, getdate(),0)
+             end
+             else begin ---update finder
+				update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId
+                --select @chatId
+             end
+       end
+end'
+		EXEC(@sql)
+
+		set @process = 'CW-XXXX Se Modifica sp ccsp_BaseXmngr'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
+@action int,
+@option tinyint = 0,
+@ids varchar(max)=null,
+@name varchar(25) = NULL,
+@top int = 0,
+@dateIni datetime =null,
+@dateEnd datetime =null,
+@dateStart dateTime= null,
+@userId int = 0
+AS
+
+declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max),@tableNameHistory nvarchar(max)
+declare @parameterDefinition nvarchar(max)
+declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
+declare @status tinyint
+set @sql = ''''
+
+
+if @action in (1,2,6,7) begin
+	if @option = 1 begin
+		set @tableName=''ccChatsNode''
+		set @columnId=''chatId''
+		set @tableNameHistory = ''ccChatsNodeHistory''
+	end
+	else if @option = 3 begin
+		set @tableName=''ccEmailNode''
+		set @columnId=''emailId''
+		set @tableNameHistory = ''ccEmailNodeHistory''
+		end
+	else if @option = 4 begin
+		set @tableName=''ccTwitterNode''
+		set @columnId=''conversationTwitterId''
+		set @tableNameHistory = ''ccTwitterNodeHistory''
+	end
+end
+
+
+
+if @action in (1,6) begin --obtiene los nodos a insertar en BX
+	if @action = 1 set @status =0
+	else if @action = 6 set @status = 2
+
+	if @option in (1,3,4) begin
+
+	declare @auxTag nvarchar(4)
+	
+	select @auxTag =case when @option = 1 then ''@C09'' when @option in (3,4) then ''@C02'' end
+	set @parameterDefinition =N''@status int, @top int,@option int''
+	set @sql=''declare @basexName varchar(max)
+select @basexName=Xname from ccBaseXDB where serviceId=@option and isFull=0;
+	with node ( ''+@columnId+ '',xmlString,dateNode)
+	AS(
+		select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+		,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+		from ''+ @tableName + '' A with(rowlock)
+		where A.status =@status
+		union
+		select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+		,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+		from ''+ @tableNameHistory + '' A with(rowlock)
+		where A.status =@status  
+	)
+
+	select node.''+@columnId+ '',node.xmlString,isnull(baseX.Xname,@basexName) Xname from node
+	left join ccBaseXDB baseX on baseX.serviceId= @option and node.dateNode between baseX.dateStart and isnull(baseX.dateEnd,getdate())
+	order by baseX.Xname''
+
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status,@top=@top,@option=@option
+	end
+end
+else if @action in (2,7) begin--actualiza los nodos insertados en BX
+	if @action = 2 set @status =0
+	else if @action = 7 set @status = 2
+
+	set @parameterDefinition =N''@status int''
+
+	set @sql = ''update ''+@tableName+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+	select @tableName,@columnId,@ids,@sql
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+	set @sql = ''update ''+@tableNameHistory+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+	print(@sql)
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+
+end
+else if @action = 3 --trae el nombre de la base de datos en BX
+begin
+	select Xname from ccBaseXDB where serviceId = @option and isFull=0
+end
+else if @action = 4 --inserta el nombre del xml en BX
+begin
+	insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option,@dateStart, @name,0)
+end
+else if @action = 5 begin --obtener servicios disponibles
+	select @chat= 0,@rec= 2,@email= 0,@twitter=0
+	select @chat = case when valor >= 1 then 1 else 0 end from ccSettings where setting_id = 145
+	select @email = case when valor = 1 then 3 else 0 end from ccSettings where setting_id = 155
+	select @twitter = case when valor = 1 then 4 else 0 end from ccSettings where setting_id = 173
+	select id, ref  from ccFinderServices where id in (@chat, @rec, @email,@twitter)	
+end
+else if @action = 8 begin--trae la lista de las bases para la busqueda
+	select Xname from ccBaseXDB where serviceId = @option
+	and (
+
+	@dateIni between dateStart and dateEnd
+	or @dateEnd between dateStart and dateEnd
+	or dateStart between @dateIni and @dateEnd
+	)
+	union
+	select Xname from ccBaseXDB where serviceId = @option and isFull=0
+	and (
+		dateStart between @dateIni and @dateEnd
+		or @dateIni>=dateStart
+
+	)
+end
+else if @action = 9 begin--Cierra la base datos
+	update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()) where serviceId= @option and  isfull = 0 and dateEnd is null
+end
+
+else if @action = 10 begin
+	declare @filterWg varchar(max)
+	declare @len int
+	set @filterWg=''''
+		 
+		select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+convert(varchar(max), WGCam.Tipo+1)+'') or '' from ccRIAWorkGroupUsers Wguser
+		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+		where Wguser.User_id=@userId
+		 
+		set @len=len(@filterWg)- CHARINDEX(''ro )'', REVERSE(@filterWg))
+		select SUBSTRING(@filterWg,0, @len)
+end
+
+
+else if @action = 11 begin--trae el nombre de la base de datos en BX
+
+	if @option =1 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R01/@CDATE)[1]'',''datetime'')),min(node.value(''(/R01/@C09)[1]'',''datetime''))),GETDATE()) as node FROM ccChatsNode where status = 0
+	end
+	if @option =3 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R03/@CDATE)[1]'',''datetime'')),min(node.value(''(/R03/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccEmailNode where status = 0
+	end
+	if @option =4  begin
+	SELECT isnull(ISNULL(min(node.value(''(/R04/@CDATE)[1]'',''datetime'')),min(node.value(''(/R04/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccTwitterNode where status = 0
+	end
+
+end'
+		EXEC(@sql)
+
+		set @process = 'CW-XXXX Se Modifica sp ccsp_CreateNodeMultimedia'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_CreateNodeMultimedia]
+@conversationId bigint,
+@xml xml OUTPUT,
+@supervisor varchar(255)='''',
+@template varchar (255)='''',
+@ScoreTemplate int=0,
+@type int =1--1 EMAIL , 2 Twitter
+AS
+BEGIN
+declare @info varchar(255)
+declare @infoEscape varchar(max)
+declare @charEscape varchar(255),@charReplace varchar(max)
+set @charEscape=''"|''''''''|<|>|&''
+set @charReplace=''&quot;|&apos;|&lt;|&gt;|&amp;''
+
+declare @existAttached bit,@numInteracion smallint
+if @type=0 begin--CHAT
+
+    select @xml = convert(xml,''<R01 CDATE="''+rtrim(ltrim(convert(varchar(23), isNull(chatDate,requestDate), 126))) +
+	''" CID="''+convert(varchar(max),ccRIAChats.inboundid) +
+	''" CType="1''+
+    ''" C01="''+convert(varchar(max),chatId) +
+    ''" C02="''+convert(varchar(max),isnull(ccinbound.descripcion,'''')) +
+    ''" C03="''+convert(varchar(max),domain) +
+    ''" C04="''+convert(varchar(max), isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno,''N/A'') ) +
+    ''" C05="''+convert(varchar(max),tchatting) +
+    ''" C06="''+convert(varchar(max),isnull(cctipocalif.[Description],''N/A'')) +
+    ''" C07="''+convert(varchar(max),isnull(cctipocalifsub.califSubdesc,''N/A'')) +
+    ''" C08="''+convert(varchar(max),clientname) +
+    ''" C09="''+rtrim(ltrim(convert(varchar(23), chatDate, 126))) +
+    ''" C10="''+convert(varchar(max),isnull(@supervisor,'''') ) +
+    ''" C11="''+convert(varchar(max),isnull(@template,'''') )  +
+    ''" C12="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +
+    ''" C13="''+convert(varchar(max),isnull(ccusers.[Login],'''')) + ''"/>'')
+    from ccRIAChats
+    left outer join ccinbound on ccinbound.inbound_id = ccRIAChats.inboundid
+    left outer join ccusers on ccusers.user_id = ccRIAChats.userid
+    left outer join cctipocalif on cctipocalif.calif_id = ccRIAChats.disposition
+    left outer join cctipocalifsub on cctipocalifsub.califsub_id = ccRIAChats.subdisposition and ccRIAChats.subdisposition <> 0
+    where chatId = @conversationId and chatStatus = 4 and requestDate is not null and chatDate is not null
+
+end
+else if @type=1 begin--EMAIL
+    SELECT @existAttached = case when count(*)>0 then 1 else 0 end
+    from attached where messageId in (select messageId from message where conversationId=@conversationId)
+    select @numInteracion = count(*) from message where conversationId=@conversationId
+    --Replaza los caracteres por los comunes
+    select @info=info from conversation where conversationId=@conversationId
+    select @info=replace(@info,A.Value,B.Value) from dbo.fn_RIASplitDelimited(@charEscape,''|'') A
+    inner join dbo.fn_RIASplitDelimited(@charReplace,''|'') B on A.Id=B.Id
+
+
+    select @xml = convert(xml,''<R03 CDATE="''+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
+	''" CID="''+convert(varchar(max),a.inboundid) +
+	''" CType="1''+
+    ''" C01="''+ convert(varchar(max),a.conversationId) +
+    ''" C02="''+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
+    ''" C03="''+ convert(varchar(max),max(c.descripcion)) +
+    ''" C04="''+ convert(varchar,max(isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno,''''))) +
+    ''" C05="''+ convert(varchar,max(isnull(cctipocalif.[Description],''N/A''))) +
+    ''" C06="''+ convert(varchar,max(replace(replace(a.mailClient,''<'','' ''),''>'','' ''))) +
+    ''" C07="''+ convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +
+    ''" C08="''+ convert(varchar(max),min(isnull(@info,''''))) +
+    ''" C09="''+ convert(varchar(max),max(b.messageStatusid) ) +''" C10="''+  convert(varchar(max), isnull(@numInteracion,0)) +
+    ''" C11="''+ convert(varchar(max),@existAttached) +''" C12="''+ convert(varchar(max),isnull(@supervisor,'''') ) +
+    ''" C13="''+ convert(varchar(max),isnull(@template,'''') )  +''" C14="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +
+    ''" C15="''+ convert(varchar,max(isnull(cctipocalifsub.califSubdesc,''N/A''))) +
+    ''" C16="''+ convert(varchar(max),isnull(max(d.[Login]),'''')) + ''"/>'')
+    from conversation a
+    inner join message b on a.conversationid=b.conversationid
+    left outer join ccinbound c on c.inbound_id = a.inboundid
+    left outer join ccusers d on d.user_id = b.userid
+    left outer join relationmessageDisposition e on e.messageId=b.messageId
+    left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
+    left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
+    where a.conversationId=@conversationId
+    group by a.conversationId,a.inboundid
+
+end
+else if @type=2 begin--Twitter
+    select @numInteracion = sum(ninteration) from messageOutTwitter where conversationTwitterId=@conversationId
+
+    select @xml = convert(xml,''<R04 CDATE="''+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
+	''" CID="''+convert(varchar(max),a.inboundid) +
+	''" CType="1''+
+    ''" C01="''+convert(varchar(max),a.conversationTwitterId) +
+    ''" C02="''+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
+    ''" C03="''+convert(varchar(max),max(c.descripcion)) +
+    ''" C04="''+ convert(varchar,max(isnull(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno,''''))) +
+    ''" C05="''+convert(varchar,max(isnull(cctipocalif.[Description],''N/A''))) +
+    ''" C06="''+ max(a.screenNameClient) +
+    ''" C07="''+convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +
+    ''" C08="''+ max(a.screenNameInbound) +
+    ''" C09="''+convert(varchar(max),max(b.messageStatusid) ) +
+    ''" C10="''+  convert(varchar(max), isnull(@numInteracion,0)) +
+    ''" C11="''+ convert(varchar(max),isnull(@supervisor,'''') ) +
+    ''" C12="''+convert(varchar(max),isnull(@template,''''))  +
+    ''" C13="''+convert(varchar(max),isnull(@ScoreTemplate,0)) +
+    ''" C14="''+ convert(varchar,max(isnull(cctipocalifsub.califSubdesc,''N/A''))) +
+    ''" C15="''+convert(varchar(max),isnull(max(d.[Login]),'''')) + ''"/>'')
+    from conversationTwitter a
+    inner join messageOutTwitter b on a.conversationTwitterId=b.conversationTwitterId
+    left outer join ccinbound c on c.inbound_id = a.inboundid
+    left outer join ccusers d on d.user_id = b.userid
+    left outer join relationMessageDispositionTwit e on e.messageOutTwitterId=b.messageOutTwitterId
+    left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
+    left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
+    where a.conversationTwitterId=@conversationId
+    group by a.conversationTwitterId,a.inboundid
+end
+
+END'
+		EXEC(@sql)
+
+
+		set @process = 'modifico setting para integracion ISAT'
+		set @sql = 'if exists(select * from ccSettings where setting_id=172) begin
+			update ccSettings set valor = ''2|4|1|14:26|home289550584.1and1-data.host;22;u53828902-cofetel;$f:LV7YAvk68'' where setting_id = 172
+		end'
+		EXEC(@sql)
 
 
 		/* End script release */

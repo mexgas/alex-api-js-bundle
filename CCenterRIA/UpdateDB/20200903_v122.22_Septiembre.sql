@@ -9,7 +9,7 @@ Date: 2020/05/06
 Description:
 
 Database: CCenterRia
-Required version: 122.19
+Required version: 122.21
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -42,7 +42,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version AND @actualVersionFix >= 19
+IF @actualVersion = @version AND @actualVersionFix >= 21
 BEGIN
 	BEGIN TRAN
 

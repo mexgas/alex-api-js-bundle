@@ -295,7 +295,6 @@ else if @action = 21 begin
     select @isFinished=isFinished from conversation where conversationId=@conversationId
     select @isFinished
 end
-
 else if @action = 22 begin
    
    declare @correo varchar(255)
@@ -309,7 +308,6 @@ else if @action = 22 begin
    select distinct conversationId as ConversationId,inboundId as AcdId from emailSpam where correo = @correo
 
 end
-
 else if @action = 23 begin      
    if exists (select  * from emailSpam where correo like '%'+@email+'%') begin
         select 1
@@ -318,20 +316,21 @@ else if @action = 23 begin
         select 0 
    end
 end
-
 else if @action = 24 begin      
 	select count(*) as [Amount] from attached A inner join message B on A.messageId=B.messageId 
 	where A.messageId = @messageId and isEmbedded = 1
 end
-
 else if @action = 25 begin      
 	select pathFile as NameFile from attached A inner join message B on A.messageId=B.messageId 
 	where A.messageId = @messageId and contentId = @contentId and isEmbedded = 1
 end
-
 else if @action = 26 begin      -- Discard Email
 	update conversation set isFinished = 1 where conversationId = @conversationId
 	update message set messageStatusId = 14, userId = @userId where messageId = @messageId
+end
+else if @action = 27 begin
+	select count(*) as [Amount] 
+	from attached nolock where messageId in (select messageId from message nolock where conversationId=@conversationId)
 end
 
 END

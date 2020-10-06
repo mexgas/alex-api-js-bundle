@@ -56,6 +56,8 @@ BEGIN
 					WITH VALUES
 				'
 
+		EXEC(@sql)
+
 set @process = 'CW-4320 CREATE PROCEDURE ccsp_GalateaUserInfoManagement'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUserInfoManagement] @Option AS SMALLINT,  
 											  @UserId AS INT = 0, 
@@ -78,6 +80,8 @@ BEGIN
 		END
 END		
 '
+EXEC(@sql)
+
 
 set @process = 'CW-4320 ALTER SP ccsp_GalateaAdminLogin'
 		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(20) = '''', 

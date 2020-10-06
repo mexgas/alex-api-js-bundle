@@ -52,6 +52,11 @@ else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion 
        if @action = 5 begin
              update ccRIAChats set tChatting = @chattingTime, chatDate = @startTime where chatId = @chatId
        end
+
+	   if @action = 6 begin
+			update ccRIAChats set userId = @userId where chatId = @chatId
+	   end
+
 	   set @crmNode = null
 
 	   exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=0,@xml=@xml OUTPUT,@supervisor=@supervisor,@template =@template,@ScoreTemplate=@ScoreTemplate

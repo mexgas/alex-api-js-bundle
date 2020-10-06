@@ -93,7 +93,7 @@ begin
 end
 else if @action = 5 begin --obtener servicios disponibles
 	select @chat= 0,@rec= 2,@email= 0,@twitter=0
-	select @chat = case when valor > 1 then 1 else 0 end from ccSettings where setting_id = 145
+	select @chat = case when valor >= 1 then 1 else 0 end from ccSettings where setting_id = 145
 	select @email = case when valor = 1 then 3 else 0 end from ccSettings where setting_id = 155
 	select @twitter = case when valor = 1 then 4 else 0 end from ccSettings where setting_id = 173
 	select id, ref  from ccFinderServices where id in (@chat, @rec, @email,@twitter)	

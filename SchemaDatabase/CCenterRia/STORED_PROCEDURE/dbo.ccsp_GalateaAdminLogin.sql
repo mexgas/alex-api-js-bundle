@@ -6,7 +6,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(20) = '',
 AS
     BEGIN
         SET NOCOUNT ON;
-        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0;
+        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme smallint = 0;
         CREATE TABLE #temp
         (LoginOK              INT, 
          PswdOK               INT, 
@@ -36,7 +36,8 @@ AS
         IF @LoginOK = 1
             BEGIN
                 SELECT @User_id = User_id, 
-                       @ViewAgents = viewAgents
+                       @ViewAgents = viewAgents,
+					   @Theme = theme
                 FROM ccUsers
                 WHERE Login = @Login;
                 DECLARE @LastLoginAttempt DATETIME, @LoginAttempts INT, @MaxAttemptsAllow INT, @TimeBloqued INT, @TimeFromLastAttempt INT;
@@ -135,5 +136,6 @@ AS
                @changeRecDisposition ChangeRecDisposition, 
                @Ext Ext, 
                isnull(@ViewAgents,0) ViewAgents,
-			   ISNULL(@WorkGroup, 0) WorkGroup;
+			   ISNULL(@WorkGroup, 0) WorkGroup,
+			   ISNULL(@Theme, 0) Theme;
     END;

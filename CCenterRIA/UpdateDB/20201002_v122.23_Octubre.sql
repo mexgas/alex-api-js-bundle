@@ -49,13 +49,21 @@ BEGIN
 	BEGIN TRY
 
 		set @process = 'CW-4320 ADD COLUMN THEME'
-		set @sql = 'ALTER TABLE ccUsers
+		set @sql = 'if not exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''theme'' and TABLE_NAME = ''ccUsers'') begin
+					ALTER TABLE ccUsers
         			ADD theme SMALLINT NULL
  					CONSTRAINT C_ccusers_theme
     				DEFAULT (0)
 					WITH VALUES
-				'
+		end
+		'
+		EXEC(@sql)
 
+		set @process = 'CW-4320 CREATE PROCEDURE ccsp_GalateaUserInfoManagemen'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUserInfoManagement'')
+			    begin
+			        DROP PROCEDURE ccsp_GalateaUserInfoManagement;
+			    end'
 		EXEC(@sql)
 
 set @process = 'CW-4320 CREATE PROCEDURE ccsp_GalateaUserInfoManagement'

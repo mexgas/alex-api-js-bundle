@@ -51,7 +51,7 @@ BEGIN
 		set @process = 'CW-4458 setting cola espera'
 		set @sql = 'if not exists(select setting_id from ccsettings where setting_id=225)
 			begin
-			insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (225, 1, ''Configuración de reproducción de la cola de espera'', 1, ''GRL'', ''0:Reproducir sólo callback, 1:Reproducir tiempo de espera y callback'', ''0:Play callback message only 1:Play EWT and callback message'', 1, ''^[0-1]$'')
+			insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values (225, 1, ''Configuracion de reproduccion de la cola de espera'', 1, ''GRL'', ''0:Reproducir solo callback, 1:Reproducir tiempo de espera y callback'', ''0:Play callback message only 1:Play EWT and callback message'', 1, ''^[0-1]$'')
 			end
 		'
 		EXEC(@sql)

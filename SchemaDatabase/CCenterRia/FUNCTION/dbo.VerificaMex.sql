@@ -8,6 +8,7 @@ BEGIN
 	DECLARE @mod VARCHAR(10)
 	DECLARE @Cadena VARCHAR(32)
 	DECLARE @isLocal BIT
+	declare @serie varchar(10)
 
 	SELECT @lon = len(@tel), @mod = ''
 
@@ -27,23 +28,26 @@ BEGIN
 	IF @lon = 10
 	BEGIN
 		IF EXISTS (
-				SELECT TOP 1 cld
-				FROM series NOLOCK
-				WHERE cld = left(@tel, 2)
-				)
-			SELECT @ld = left(@tel, 2)
-		ELSE IF EXISTS (
-				SELECT TOP 1 cld
-				FROM series NOLOCK
-				WHERE cld = left(@tel, 3)
-				)
-			SELECT @ld = left(@tel, 3)
-		ELSE
-			RETURN 'E_' + @tel
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 3)
+					and serie=SUBSTRING(@tel,4,3)
+					)
+				SELECT @ld = left(@tel, 3),@serie=SUBSTRING(@tel,4,3)
+			ELSE IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 2)
+					and serie=SUBSTRING(@tel,3,4)
+					)
+				SELECT @ld = left(@tel, 2),@serie=SUBSTRING(@tel,3,4)
+			ELSE
+				RETURN 'E_' + @tel
+
 
 		SELECT TOP 1 @mod = modalidad
 		FROM series NOLOCK
-		WHERE cld = @ld AND serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) AND right(@tel, 4) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+		WHERE cld = @ld AND serie = @serie AND right(@tel, 4) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
 
 		IF @mod NOT IN ('FIJO', 'MPP', 'CPP')
 		BEGIN

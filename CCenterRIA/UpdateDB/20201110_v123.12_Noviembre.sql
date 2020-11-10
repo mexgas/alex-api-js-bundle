@@ -9,7 +9,7 @@ Date: 2020/10/02
 Description:
 
 Database: CCenterRia
-Required version: 122.22
+Required version: 123.12
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

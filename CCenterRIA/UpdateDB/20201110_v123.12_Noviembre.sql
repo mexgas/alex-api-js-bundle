@@ -42,14 +42,14 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version and @actualVersionFix=>11
+IF @actualVersion = @version and @actualVersionFix >= versionfix - 1
 BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
 
 				set @process = 'se quita sp si existe'
-				set @sql = 'if exists (select * from sys.procedures where name = N'ccsp_OUTgetTimeZone')
+				set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OUTgetTimeZone'')
 				    begin
 					DROP PROCEDURE ccsp_OUTgetTimeZone;
 				    end'

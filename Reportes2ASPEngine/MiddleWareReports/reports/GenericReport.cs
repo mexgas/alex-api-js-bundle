@@ -264,10 +264,10 @@ namespace MiddleWareReports
             dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
-        
+
             DataTable detailTableConvert = GetConvertColumnTime(detailTable);
             DataTable totalsTableConvert = GetConvertColumnTime(totalsTable);
-            
+
             DataTable union = new DataTable();
             DataColumn[] newcolumns = new DataColumn[detailTableConvert.Columns.Count];
 
@@ -327,7 +327,7 @@ namespace MiddleWareReports
                             (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time"))
                             && value != "")
                         {
-                            
+
                             if (dataRow[column.ColumnName] is DateTime)
                             {
                                 value = TranslatorHelper.formatTime((DateTime)dataRow[column.ColumnName]);
@@ -1166,7 +1166,14 @@ namespace MiddleWareReports
                 }
                 else
                 {
-                    totalColumns += String.Format("isnull({0}({1}),0) as {1},", function, column);
+                    if (function.Equals("sum"))
+                    {
+                        totalColumns += String.Format("isnull({0}(cast({1} as bigint)),0) as {1},", function, column);
+                    }
+                    else
+                    {
+                        totalColumns += String.Format("isnull({0}({1}),0) as {1},", function, column);
+                    }
                 }
             }
             table = new DataTable();

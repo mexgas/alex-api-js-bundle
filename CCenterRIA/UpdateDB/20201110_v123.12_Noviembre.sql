@@ -48,6 +48,27 @@ BEGIN
 
 	BEGIN TRY
 
+				set @process = 'se quita sp si existe'
+				set @sql = 'if exists (select * from sys.procedures where name = N'ccsp_OUTgetTimeZone')
+				    begin
+					DROP PROCEDURE ccsp_OUTgetTimeZone;
+				    end'
+				EXEC(@sql)
+		
+				set @process = 'se agrega sp ccsp_OUTgetTimeZone'
+				set @sql = '
+					        create procedure [dbo].[ccsp_OUTgetTimeZone]
+						@phone varchar(20)
+						AS
+						set nocount on
+						declare @bIsDaylight int, @country_id int
+						
+						SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
+						select @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+						select dbo.fnGetTimeZone(@phone,@bIsDaylight)
+		'
+				EXEC(@sql)
+
 		set @process = 'CW-4506 Función Series alter fnGetTimeZone'
 		set @sql = 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
@@ -514,9 +535,178 @@ end --Termina Mexico
 end'
 
 		EXEC(@sql)
+		
+		set @process = 'actualizacion de funcion limpiaUSA para contemplar 911'
+		set @sql = 'ALTER procedure [dbo].[ccsp_LimpiaUsa]
+		@tel varchar(20),
+		@Camp int = 0,
+		@calKey varchar(20) = ''''
+		as
+		set nocount on
+		declare @lon tinyint
+		
+		select @tel = dbo.limpia(@tel)
+		select @lon = len(@tel)
+		
+		if @lon not in (7, 10, 11) and @tel <> ''911''
+		 begin
+			select 1 as res, @tel as tel --Longitud invalida
+			return(0)
+		 end
+		
+		if @tel = ''911''
+		 begin
+		 	select 4 as res, @tel as tel -- not ok, block 911
+		 	return(0)
+		 end
+		
+		declare @ld varchar(4)
+		select @ld = valor from ccsettings where setting_id = 17
+		
+		declare @len tinyint, @plans tinyint, @hl tinyint, @ht tinyint, @fl tinyint, @ft tinyint
+		declare @plan varchar(15), @tel10 varchar(10)
+		select @plan = valor from ccSettings where setting_id = 149
+		select @plans = COUNT(*) from dbo.fn_RIASplitDelimited(@plan,''|'')
+		if @plans = 4
+		begin
+			select 
+			 @hl = case when id = 1 then cast(value as tinyint) else @hl end,
+			 @ht = case when id = 2 then cast(value as tinyint) else @ht end,
+			 @fl = case when id = 3 then cast(value as tinyint) else @fl end,
+			 @ft = case when id = 4 then cast(value as tinyint) else @ft end from dbo.fn_RIASplitDelimited(@plan,''|'')
+			 print @hl
+		end
+		else if @plans = 2
+		begin
+			select 
+			 @hl = case when id = 1 then cast(value as tinyint) else @hl end,
+			 @ft = case when id = 2 then cast(value as tinyint) else @ft end from dbo.fn_RIASplitDelimited(@plan,''|'')
+			 select @ht = @hl, @fl = @ft
+		end
+		select @tel10 = RIGHT(@ld + @tel, 10)
+		if SUBSTRING(@tel10, 1, LEN(@ld)) = @ld
+		begin --HNPA
+			set @len = @hl
+			if @hl <> @ht and (select COUNT(*) from ccNPALocalPrefixes) > 0 and not exists(select * from ccNPALocalPrefixes where NPA+NXX = SUBSTRING(@tel10, 1, 6))
+				set @len = @ht
+		end
+		else --FNPA
+		begin
+			set @len = @ft
+			if @fl <> @ft and (select COUNT(*) from ccNPALocalPrefixes) > 0 and exists(select * from ccNPALocalPrefixes where NPA+NXX = SUBSTRING(@tel10, 1, 6))
+				set @len = @fl
+		end
+		
+		select @tel = case @len when 7 then SUBSTRING(@tel10, 4, 7) when 10 then @tel10 when 11 then ''1'' + @tel10 end
+		
+		-- lista negra
+		if (select dbo.ValidateBlackListPhone(@tel,@Camp,@calKey))=1 begin
+			select 4 as res, @tel as tel --blackList
+			return(0)
+		end	
+		
+		select 0 as res, @tel as tel
+		
+		set nocount off'
+				EXEC(@sql)
+				
 
+				set @process = 'se cambia sp de login xion para que no haga update de contraseña'
+				set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
+		@Login varchar(20),
+		@Password varchar(40),
+		@Computer varchar(20),
+		@PasswordLwC varchar(40) = null
+		AS
+		declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
+		declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
+		
+		--Para posiciones ip, by ODC
+		declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
+		
+		-- Para live connected
+		-- Tipo de conexion: 0 normal, 1 liveconnected
+		declare @tipoConexion smallint
+		
+		SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
+		 @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
+		SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
+		
+		IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
+		  GOTO Mostrar
+		else
+		  set @LoginOK=1
+		
+		IF not exists(select Login from ccUsers Where Login = @Login
+		 AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
+		 or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
+		 and status > 0 and tipoUser_id = 1)
+		  GOTO Mostrar
+		else
+		  set @PswdOK=1
+		
+		-- Se actualiza a Lower Case
+		--update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
+		
+		if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
+		  insert ccposicion (computer, ext_id) select @Computer, 0
+		
+		set @CompuOK = 1
+		
+		if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
+		 Where p.Status=1 and M.Status=1 and Computer=@Computer)
+		  GOTO Mostrar
+		else
+		  set @ExtenOK=1
+		
+		select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
+		from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
+		Where Computer = @Computer
+		
+		select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
+		
+		select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents
+		from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
+		
+		Mostrar:
+		--Para posiciones ip, by ODC
+		-- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+		-- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+		IF @ext_id=0
+		 BEGIN
+		  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
+		 END
+		
+		---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+		IF(@ext_id > 0  and @isIP=1)
+		 BEGIN
+		  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
+		 END
+		-----------
+		
+		IF @tipoConexion = 1
+		  select @TeclaOK =1
+		
+		--  CRMx
+		DECLARE @crmxActive TINYINT
+		SET @crmxActive = 0
+		IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
+		  BEGIN
+		    SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
+		  END
 		
 		
+		declare @passSecure int
+		select @passSecure= valor from ccSettings where setting_id=207
+		
+		
+		SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
+		@UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
+		@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure]
+		'
+		EXEC(@sql)
+
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

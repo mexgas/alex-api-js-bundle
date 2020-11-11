@@ -95,7 +95,7 @@ BEGIN
 		LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
 		LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
 		LEFT JOIN ccCallCost_RIA cc ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
-		LEFT JOIN Ria_grabacion rc on rc.cal_id = Call.cal_id
+		LEFT JOIN Ria_grabacion rc on (rc.cal_id = Call.cal_id and rc.tipo_llamada = 2)
 	WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND Call.cal_manual IN (0, 2)
 	ORDER BY DATE
 END

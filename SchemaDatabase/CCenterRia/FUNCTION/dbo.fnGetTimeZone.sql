@@ -34,17 +34,27 @@ AS
 		end      
 
       if @len = 10
-        begin
-          if(exists(select top 1 cld from series with(index(IX_CLD),nolock) where cld=left(@phone,2)))
-            select @ld =  left(@phone,2)
-          else if(exists(select top 1 cld from series with(index(IX_CLD),nolock) where cld=left(@phone,3)))
-            select @ld = left(@phone,3)
+        begin         
+			IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@phone, 3)
+					and serie=SUBSTRING(@phone,4,3)
+					)
+				SELECT @ld = left(@phone, 3),@serie=SUBSTRING(@phone,4,3)
+			ELSE IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@phone, 2)
+					and serie=SUBSTRING(@phone,3,4)
+					)
+				SELECT @ld = left(@phone, 2),@serie=SUBSTRING(@phone,3,4)
+
+
         end    	
 
       if @ld <> ''
-        begin
-
-			set @serie=substring(@phone, len(@ld) + 1, 6 - len(@ld))
+        begin			
 		    set @rank=right(@phone, 4)
 
           select top 1 @location = estado, @locality = MUNICIPIO from series 

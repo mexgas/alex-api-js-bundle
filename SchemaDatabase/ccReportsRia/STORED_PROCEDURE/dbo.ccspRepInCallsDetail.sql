@@ -44,7 +44,7 @@ BEGIN
 	LEFT JOIN ccoDialers di ON di.dialer_id = a.cal_puerto
 	LEFT JOIN cstoProvedor prov ON di.provedor_id = prov.provedor_id
 	LEFT JOIN @tab tab ON tab.callId = a.cal_id
-	LEFT JOIN Ria_grabacion rc on rc.cal_id = a.cal_id 
+	LEFT JOIN Ria_grabacion rc on (rc.cal_id = a.cal_id and tipo_llamada = 1)
 	WHERE cal_inicio >= @from AND cal_inicio < @to
 
 	UPDATE a

@@ -37,18 +37,20 @@ BEGIN
 					SELECT TOP 1 cld
 					FROM series NOLOCK
 					WHERE cld = left(@tel, 3)
+					and serie=SUBSTRING(@tel,4,3)
 					)
-				SELECT @ld = left(@tel, 3)
+				SELECT @ld = left(@tel, 3),@serie=SUBSTRING(@tel,4,3)
 			ELSE IF EXISTS (
 					SELECT TOP 1 cld
 					FROM series NOLOCK
 					WHERE cld = left(@tel, 2)
+					and serie=SUBSTRING(@tel,3,4)
 					)
-				SELECT @ld = left(@tel, 2)
+				SELECT @ld = left(@tel, 2),@serie=SUBSTRING(@tel,3,4)
 			ELSE
 				RETURN 'E_' + @tel
 
-			set @serie= substring(@tel, len(@ld) + 1, 6 - len(@ld))
+			--set @serie= substring(@tel, len(@ld) + 1, 6 - len(@ld))
 			set @rank= right(@tel, 4)
 			set @rankNum=cast(@rank as int)
 

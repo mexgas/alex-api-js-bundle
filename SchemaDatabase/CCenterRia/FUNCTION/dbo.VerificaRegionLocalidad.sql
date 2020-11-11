@@ -11,7 +11,7 @@ RETURNS @retVRL TABLE
  declare @lonLd tinyint 
  declare @region varchar(20)
  declare @localidad varchar(20) 
- declare @serie varchar(4)
+ declare @serie varchar(10)
  
  select @region='',@localidad=''
 
@@ -31,20 +31,27 @@ if @pais = 1 begin --Empieza Mexico
 	
 	select @tel = right(@tel, 10)
 	select @lon = len(@tel)	
-  if @lon = 10 begin		
-	
-		if @ld is null begin
-			if(exists(select top 1 cld from series nolock where cld=left(@tel,2)))begin
-				select @ld = left(@tel,2)			
-			end
-			else if(exists(select top 1 cld from series nolock where cld=left(@tel,3)))  begin
-				select @ld = left(@tel,3)			
-			end
-		end
+  if @lon = 10 begin
 
-		if @ld is not null begin
-			set @lonLd=len(@ld)		
-			set @serie=substring(@tel,len(@ld)+1,case @lonLd when 2 then 4 else 3 end)		
+		IF EXISTS (
+				SELECT TOP 1 cld
+				FROM series NOLOCK
+				WHERE cld = left(@tel, 3)
+				and serie=SUBSTRING(@tel,4,3)
+				)
+			SELECT @ld = left(@tel, 3),@serie=SUBSTRING(@tel,4,3)
+		ELSE IF EXISTS (
+				SELECT TOP 1 cld
+				FROM series NOLOCK
+				WHERE cld = left(@tel, 2)
+				and serie=SUBSTRING(@tel,3,4)
+				)
+			SELECT @ld = left(@tel, 2),@serie=SUBSTRING(@tel,3,4)
+
+		
+
+		if @serie is not null begin
+			set @lonLd=len(@ld)
 			select top 1 @region = estado, @localidad = municipio from series nolock where cld=@ld and SERIE=@serie
 		end
 		else begin

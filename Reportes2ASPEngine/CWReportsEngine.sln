@@ -28,8 +28,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestReport", "TestReport\TestReport.csproj", "{FC139DB6-E725-4A2A-B943-BB732A42E91C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServicesAlertReport", "ServicesAlertReport\ServicesAlertReport.csproj", "{677269B6-9D5F-4C9B-BA18-9A48325994A7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|.NET = Debug|.NET
@@ -78,18 +76,6 @@ Global
 		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{FC139DB6-E725-4A2A-B943-BB732A42E91C}.Release|x86.ActiveCfg = Release|Any CPU
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|.NET.ActiveCfg = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|x86.ActiveCfg = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Debug|x86.Build.0 = Debug|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|.NET.ActiveCfg = Release|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|Any CPU.ActiveCfg = Release|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|Mixed Platforms.Build.0 = Release|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|x86.ActiveCfg = Release|x86
-		{677269B6-9D5F-4C9B-BA18-9A48325994A7}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

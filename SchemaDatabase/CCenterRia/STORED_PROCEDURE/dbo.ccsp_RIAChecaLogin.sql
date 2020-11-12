@@ -32,7 +32,7 @@ else
   set @PswdOK=1
 
 -- Se actualiza a Lower Case
---update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
+update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
 
 if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
   insert ccposicion (computer, ext_id) select @Computer, 0

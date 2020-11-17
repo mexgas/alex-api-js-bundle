@@ -69,7 +69,7 @@ BEGIN
 		'
 				EXEC(@sql)
 
-		set @process = 'CW-4506 Función Series alter fnGetTimeZone'
+		set @process = 'CW-4506 FunciÃ³n Series alter fnGetTimeZone'
 		set @sql = 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
 AS
@@ -338,7 +338,7 @@ AS
 
 		EXEC(@sql)
 
-		set @process = 'CW-4506 Función Series alter GetDataPhone'
+		set @process = 'CW-4506 FunciÃ³n Series alter GetDataPhone'
 		set @sql = 'ALTER FUNCTION [dbo].[GetDataPhone] (@tel VARCHAR(32), @pais TINYINT = 1, @cldLocal VARCHAR(7) = ''55'')
 RETURNS VARCHAR(100)
 AS
@@ -459,7 +459,7 @@ END
 
 		EXEC(@sql)
 
-		set @process = 'CW-4506 Función Series alter VerificaRegionLocalidad'
+		set @process = 'CW-4506 FunciÃ³n Series alter VerificaRegionLocalidad'
 		set @sql = 'ALTER FUNCTION [dbo].[VerificaRegionLocalidad](@tel varchar(32),@pais tinyint = 0, @cldLocal varchar(7) = '''')
 RETURNS @retVRL TABLE
 (
@@ -611,7 +611,7 @@ end'
 				EXEC(@sql)
 				
 
-				set @process = 'se cambia sp de login xion para que no haga update de contraseña'
+				set @process = 'se cambia sp de login xion para que no haga update de contraseÃ±a'
 				set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
 		@Login varchar(20),
 		@Password varchar(40),
@@ -677,7 +677,7 @@ end'
 		  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
 		 END
 		
-		---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+		---Por OAYC IPExtension, extension, para cuando es posiciÃ³n IP con alguna extension asignada
 		IF(@ext_id > 0  and @isIP=1)
 		 BEGIN
 		  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
@@ -919,11 +919,11 @@ return(0)
 set nocount off'
         EXEC(@sql)
 
-        set @process = 'CW-4512 Coperva ALTER SP configuraIdiomaCatalogosEspañol'
-        set @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
+        set @process = 'CW-4512 Coperva ALTER SP configuraIdiomaCatalogosEspaÃ±ol'
+        set @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspaÃ±ol]
 AS
 
-Print ''Iniciando proceso de configuracion en Español''
+Print ''Iniciando proceso de configuracion en EspaÃ±ol''
 
 Print ''Estableciendo Horarios''
 Delete [dbo].[ccHorarios]
@@ -1100,12 +1100,12 @@ INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,9,''Off Net'',''10'',''%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,10,''On Ring'',''10'',''%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,11,''Triangle'',''10'',''%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,1,''LADA local 2 dígitos'',''8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,1,''LADA local 2 dÃ­gitos'',''8'',''%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,2,''Local lada 3 digitos'',''7'',''%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,3,''Local lada 4 digitos'',''6'',''%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,4,''Cel LADA local 2 dígitos'',''10'',''15%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,5,''Cel LADA local 3 dígitos'',''9'',''15%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,6,''Cel LADA local 4 dígitos'',''8'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,4,''Cel LADA local 2 dÃ­gitos'',''10'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,5,''Cel LADA local 3 dÃ­gitos'',''9'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,6,''Cel LADA local 4 dÃ­gitos'',''8'',''15%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,7,''Larga distancia'',''11'',''0%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,8,''Cel larga distancia'',''13'',''0%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,1,''Local'',''7'',''%'')
@@ -1132,18 +1132,18 @@ INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,3,''Cel'',''10'',''04%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,1,''Local'',''8'',''2%|3%|4%|5%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,2,''Movil '',''8'',''6%|7%|8%|9%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,3,''Celular 9 dígitos '',''9'',''9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,3,''Celular 9 dÃ­gitos '',''9'',''9%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,4,''LD Nacional'',''10'',''02%|03%|04%|05%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,5,''Cel LD nacional'',''10'',''06%|07%|08%|09%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,6,''Cel LD nacional 9 dígitos'',''11'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,6,''Cel LD nacional 9 dÃ­gitos'',''11'',''%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,7,''LD internacional'',''19'',''00%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,1,''Local'',''8'',''2%|6%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,2,''Movil'',''8'',''3%|4%|5%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,3,''LD Nacional'',''8'',''7%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,4,''LD internacional'',''8'',''00%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,1,''Local'',''8'',''2%|3%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,2,''Telefonía SIP'',''8'',''4%'')
-INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,3,''Telefonía móvil'',''8'',''5%|6%|7%|8%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,2,''TelefonÃ­a SIP'',''8'',''4%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,3,''TelefonÃ­a mÃ³vil'',''8'',''5%|6%|7%|8%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,4,''LD internacional'',''0'',''00%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,5,''Cobro Revertido'',''10'',''800%'')
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,6,''Tarifa Prima'',''10'',''90%'')
@@ -1173,13 +1173,13 @@ SET IDENTITY_INSERT [ccTipoMovsListaNegra] OFF
 
 Print ''Estableciendo los tipos de calificacion''
 Delete [dbo].[ccTipoCalif]
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, convert(text, N''Solicita información general'' collate SQL_Latin1_General_CP1_CI_AS), 0)
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, convert(text, N''Se cortó la llamada'' collate SQL_Latin1_General_CP1_CI_AS), 0)
-INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, convert(text, N''Número equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, convert(text, N''Solicita informaciÃ³n general'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, convert(text, N''Se cortÃ³ la llamada'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, convert(text, N''NÃºmero equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0)
 
 Print ''Estableciendo los tipos de calificacion de salida''
 Delete [dbo].[ccTipoCalifOUT]
-INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, convert(text, N''Gestión Efectiva'' collate SQL_Latin1_General_CP1_CI_AS), 0, 0, 1)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, convert(text, N''GestiÃ³n Efectiva'' collate SQL_Latin1_General_CP1_CI_AS), 0, 0, 1)
 INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, convert(text, N''Se deja recado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 2)
 INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, convert(text, N''Numero Equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 3)
 
@@ -1212,12 +1212,12 @@ Print ''Mensajes default chat''
 DELETE [dbo].[ccRIAChatInboundMsgs]
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default5'', ''!Bienvenido!'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default3'', ''El servicio no se encuentra disponible'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default2'', ''Nuestro horario de atención ha terminado'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default2'', ''Nuestro horario de atenciÃ³n ha terminado'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default1'', ''Por favor espere mientras uno de nuestros agentes se encuentra disponible'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default7'', ''No hay agentes disponibles'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default10'', ''No podemos tomar su solicitud'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesión de chat ha estado inactiva mucho tiempo'')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesión de chat ha concluido'')'
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesiÃ³n de chat ha estado inactiva mucho tiempo'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesiÃ³n de chat ha concluido'')'
         EXEC(@sql)
 
         set @process = 'CW-4512 Coperva Alter SP configuraIdiomaCatalogosEnglish'
@@ -1523,7 +1523,7 @@ INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default12'', ''Chat 
 INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default13'', ''Chat session has finished'')'
         EXEC(@sql)
 
-        set @process = 'CW-4512 Coperva ALTER SP ccsp_GetCampsNvosCB Correcion ñ'
+        set @process = 'CW-4512 Coperva ALTER SP ccsp_GetCampsNvosCB Correcion Ã±'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GetCampsNvosCB]
 @cam_id integer = 0,
 @Tipo tinyint=0,
@@ -1538,7 +1538,7 @@ select @sql=''declare @ultimo as datetime
 if ''+cast(isnull(@Tipo,0) as varchar(10))+''=0
   begin
     if ''+cast(isnull(@cam_id,0) as varchar(10))+''=0 begin
-      select Camps.cam_id as ID,cam_descripcion as ''''Campaña'''',
+      select Camps.cam_id as ID,cam_descripcion as ''''CampaÃ±a'''',
         IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
         IsNull(Pends.pend,0)as Pen,''+case when @sFin=1 then ''IsNull(Jobs.Fin,0)as Fin,'' else '''' end+''
         case cam_procesando when 1 then ''''Pro'''' when 0 then '''''''' end as St,
@@ -1573,7 +1573,7 @@ if ''+cast(isnull(@Tipo,0) as varchar(10))+''=0
   begin
     if(''+cast(isnull(@cam_id,0) as varchar(10))+''>0)
       begin
-      select Camps.cam_id as ID,cam_descripcion as ''''Campaña'''',
+      select Camps.cam_id as ID,cam_descripcion as ''''CampaÃ±a'''',
         IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
         IsNull(Pends.pend,0)as Pen,''+case when @sFin=1 then ''IsNull(Jobs.Fin,0)as Fin,'' else '''' end+''
         case cam_procesando when 1 then ''''Pro'''' when 0 then '''''''' end as St,
@@ -1600,7 +1600,7 @@ if ''+cast(isnull(@Tipo,0) as varchar(10))+''=0
   begin
     if(''+cast(isnull(@user_id,0) as varchar(10))+''>0)
       begin
-      select distinct Camps.cam_id as ID,cam_descripcion as ''''Campaña'''',
+      select distinct Camps.cam_id as ID,cam_descripcion as ''''CampaÃ±a'''',
         IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,IsNull(Jobs.Pro,0)as Pro,
         isnull(Pends.Pend,0)Pen,''+case when @sFin=1 then ''IsNull(Jobs.Fin,0)as Fin,'' else '''' end+''
         case cam_procesando when 1 then ''''Pro'''' when 0 then '''''''' end as St,     
@@ -1625,8 +1625,8 @@ if ''+cast(isnull(@Tipo,0) as varchar(10))+''=0
     if datediff(mi,@ultimo,getdate())>=1 begin
       update ccsettings set valor=convert(varchar(25),getdate(),121)where setting_id=21
       delete ccCampsNvosCB
-      insert ccCampsNvosCB(ID,Campaña,new,cb,pen,pro,''+case when @sFin=1 then ''fin,'' else '''' end+''st,job)
-      select Camps.cam_id as ID,cam_descripcion as ''''Campaña'''',
+      insert ccCampsNvosCB(ID,CampaÃ±a,new,cb,pen,pro,''+case when @sFin=1 then ''fin,'' else '''' end+''st,job)
+      select Camps.cam_id as ID,cam_descripcion as ''''CampaÃ±a'''',
         IsNull(Jobs.New,0)as New,IsNull(Jobs.CB,0)as CB,0 as pen,IsNull(Jobs.Pro,0)as Pro,''+case when @sFin=1 then ''IsNull(Jobs.Fin,0)as Fin,'' else '''' end+''cam_procesando as st,cam_TipoJobs as Job
         from ccCamps Camps(nolock)Left Join 
         ( select cam_id,
@@ -1638,7 +1638,7 @@ if ''+cast(isnull(@Tipo,0) as varchar(10))+''=0
           group by cam_id
         )Jobs on Camps.cam_id=Jobs.cam_id
     end
-    select ID,Campaña,St as cam_procesando,Job as cam_tipoJobs,New,CB,Pro''+case when @sFin=1 then '',Fin'' else '''' end+''
+    select ID,CampaÃ±a,St as cam_procesando,Job as cam_tipoJobs,New,CB,Pro''+case when @sFin=1 then '',Fin'' else '''' end+''
     from ccCampsNvosCB (nolock)
     Order by ID
   end''

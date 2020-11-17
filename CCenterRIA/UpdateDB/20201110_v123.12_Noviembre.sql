@@ -1648,8 +1648,17 @@ set nocount off
 '
         EXEC(@sql)
 
+		set @process = 'Se registra rol Superusuario en base de datos'
+		set @sql = 'if not exists(select * from ccRoles where Level = 7) begin
+						insert into ccRoles (Description, KeyJson, CreateDate, Active, Level) values (''Superusuario'', ''translate_superusuario'',GETDATE(), 1, 7)
+					end'
+		EXEC(@sql)
 
-
+		set @process = 'Se agrega rol superusuario a primer usuario en bd (user_id = 1)'
+		set @sql = 'if not exists(select * from ccUsers_Roles where User_id = 1 and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+						insert into ccUsers_Roles (User_id, Rol_id) values (1, (select Rol_id from ccRoles where Level = 7)) 
+					end'
+		EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -1,6 +1,6 @@
 CREATE FUNCTION [dbo].[tDialog](
 		@totalCall_Time int,
-		@tdialing tinyint, 
+		@tdialing int, 
 		@cal_tMsg int)
 RETURNS INT 
 AS

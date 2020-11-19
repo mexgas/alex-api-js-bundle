@@ -3,31 +3,31 @@ AS
 Print 'Iniciando proceso de configuracion en Ingles'
 
 Print 'Estableciendo Horarios'
-Delete [dbo].[ccHorarios]
+Delete [ccHorarios]
 DBCC CHECKIDENT ('[ccHorarios]', RESEED, 0)
-INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Week', 7, 0, 21, 0, 1, 1, 1, 1, 1, 0, 0)
-INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Night shift', 21, 0, 23, 0, 1, 1, 1, 1, 1, 0, 0)
-INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Saturday', 8, 0, 20, 0, 0, 0, 0, 0, 0, 1, 0)
-INSERT [dbo].[ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Sunday', 8, 0, 14, 0, 0, 0, 0, 0, 0, 0, 1)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Week', 7, 0, 21, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Night shift', 21, 0, 23, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Saturday', 8, 0, 20, 0, 0, 0, 0, 0, 0, 1, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES ('Sunday', 8, 0, 14, 0, 0, 0, 0, 0, 0, 0, 1)
 
 Print 'Estableciendo Not Ready y graficas'
 Delete [ccRIANotReadyGraph]
-Delete [dbo].[ccTipoNotReady]
+Delete [ccTipoNotReady]
 Delete [ccRIAGraphics]
 
 DBCC CHECKIDENT ('[ccTipoNotReady]', RESEED, 0)
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Not Clasified')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Break')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Bathroom')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('With client')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Supervisor')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Clarification')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Meeting')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Lunch')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Systems')
-INSERT [dbo].[ccTipoNotReady] ([Descripcion]) VALUES ('Other')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Not Clasified')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Break')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Bathroom')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('With client')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Supervisor')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Clarification')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Meeting')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Lunch')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Systems')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES ('Other')
 
---EXEC sp_generate_inserts 'ccRIANotReadyGraph'
+
 DBCC CHECKIDENT ('[ccRIAGraphics]', RESEED, 0)
 INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(1,1)
 INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(2,1)
@@ -81,88 +81,91 @@ INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(9,33)
 INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(10,36)
 
 Print 'Estableciendo Status de llamadas'
-TRUNCATE TABLE [dbo].[ccStatusLLamada]
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (1, 'Initial')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (2, 'Out of Schedule')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (3, 'Out of Service')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (4, 'No Agents Logged in')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (5, 'On Hold')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (6, 'Abandoned')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (7, 'Time overflow')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (8, 'Queue size overflow')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (9, 'With Message')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (10, 'Assigned Message')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (11, 'Assigned')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (12, 'Attended Message')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (13, 'Answered')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14, 'Canceled Message')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (15, 'Assigned and Not Answered')
-INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16, 'Assigned and took line')
+delete from [ccStatusLLamada]
+
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (1, 'Initial')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (2, 'Out of Schedule')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (3, 'Out of Service')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (4, 'No Agents Logged in')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (5, 'On Hold')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (6, 'Abandoned')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (7, 'Time overflow')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (8, 'Queue size overflow')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (9, 'With Message')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (10, 'Assigned Message')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (11, 'Assigned')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (12, 'Attended Message')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (13, 'Answered')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14, 'Canceled Message')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (15, 'Assigned and Not Answered')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16, 'Assigned and took line')
 update ccStatusLLamada set inAbandonConfig=1 where statusCall_id in (2, 3, 4, 6, 7, 8 )
 
 Print 'Estableciendo los tipos de dias'
-TRUNCATE TABLE [dbo].[ccTipoDias]
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (1, 'Monday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (2, 'Tuesday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (3, 'Wednesday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (4, 'Thursday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (5, 'Friday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (6, 'Saturday')
-INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (7, 'Sunday')
+TRUNCATE TABLE [ccTipoDias]
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (1, 'Monday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (2, 'Tuesday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (3, 'Wednesday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (4, 'Thursday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (5, 'Friday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (6, 'Saturday')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, 'Sunday')
 
 Print 'Estableciendo resultados de marcacion'
-TRUNCATE TABLE [dbo].[ccTipoResultadoDial]
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, 'Answer')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, 'Busy')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, 'Not Answer')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, 'Fax/Modem')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, 'NoDialTone')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, 'Other')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, 'NoService')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, 'VoiceMail/Machine')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, 'Circuit busy')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, 'Cancelled')
+delete from [ccTipoResultadoDial]
+
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, 'Answer')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, 'Busy')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, 'Not Answer')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, 'Fax/Modem')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, 'NoDialTone')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, 'Other')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, 'NoService')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, 'VoiceMail/Machine')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, 'Circuit busy')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, 'Cancelled')
 
 Print 'Estableciendo los tipos de estado de los agentes'
-DELETE [dbo].[ccTipoStatusAgente]
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (0, 'LogOut')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (1, 'Unknown')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (2, 'Not Ready')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (3, 'Ready')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (4, 'Talking')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (5, 'Transfer')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (6, 'Wrapup')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (7, 'Other')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (8, 'Client')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (9, 'Ringing')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (11, 'Problem')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (21, 'Wait for manual call')
+DELETE [ccTipoStatusAgente]
+
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (0, 'LogOut')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (1, 'Unknown')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (2, 'Not Ready')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (3, 'Ready')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (4, 'Talking')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (5, 'Transfer')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (6, 'Wrapup')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (7, 'Other')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (8, 'Client')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (9, 'Ringing')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (11, 'Problem')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (21, 'Wait for manual call')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, convert(text, N'ChatReq' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N'Chatting' collate SQL_Latin1_General_CP1_CI_AS))
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, 'Xfer Fail')
-INSERT [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, 'Ringing Fail')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, 'Xfer Fail')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, 'Ringing Fail')
 
 Print 'Estableciendo los tipos de usuario'
-Delete [dbo].[ccTipoUsers]
-INSERT [dbo].[ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (1, 'Agent')
-INSERT [dbo].[ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (2, 'Supervisor')
-INSERT [dbo].[ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (6, 'AVRS Access')
+Delete [ccTipoUsers]
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (1, 'Agent')
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (2, 'Supervisor')
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (6, 'AVRS Access')
 
 Print 'Estableciendo los dias'
-Delete [dbo].[ccDias]
-SET IDENTITY_INSERT [dbo].[ccDias] ON
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (1, 'Sunday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (2, 'Monday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (3, 'Tuesday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (4, 'Wednesday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (5, 'Thursday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (6, 'Friday')
-INSERT [dbo].[ccDias] ([dia_id], [Name]) VALUES (7, 'Saturday')
-SET IDENTITY_INSERT [dbo].[ccDias] OFF
-
-truncate table cstoTarifa
+Delete [ccDias]
+DBCC CHECKIDENT ('[ccDias]', RESEED, 0)
+SET IDENTITY_INSERT [ccDias] ON
+INSERT [ccDias] ([dia_id], [Name]) VALUES (1, 'Sunday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (2, 'Monday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (3, 'Tuesday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (4, 'Wednesday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (5, 'Thursday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (6, 'Friday')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (7, 'Saturday')
+SET IDENTITY_INSERT [ccDias] OFF
 
 Print 'Estableciendo los tipos de llamada'
+delete from cstoTarifa
 delete cstoTipoLlamada
 
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,1,'Local','7|8','%')
@@ -238,34 +241,34 @@ INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,4,'Inter LD','0','00%')
 
 Print 'Estableciendo los movimientos de lista negra'
-Delete [dbo].[ccTipoMovsListaNegra]
-SET IDENTITY_INSERT [dbo].[ccTipoMovsListaNegra] ON
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, 'Added to black list')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, 'Blocked on loading')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, 'Removed from campaign')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, 'Replaced from black list')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, 'Deleted from black list')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, 'Added by Disposition')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, 'Load black list')
-INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, 'Load customer black list')
-SET IDENTITY_INSERT [dbo].[ccTipoMovsListaNegra] OFF
+Delete [ccTipoMovsListaNegra]
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] ON
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, 'Added to black list')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, 'Blocked on loading')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, 'Removed from campaign')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, 'Replaced from black list')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, 'Deleted from black list')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, 'Added by Disposition')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, 'Load black list')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, 'Load customer black list')
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] OFF
 
 Print 'Estableciendo los tipos de calificacion'
-Delete [dbo].[ccTipoCalif]
-INSERT [dbo].[ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, 'Wrong area', 0)
-INSERT [dbo].[ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, 'Disconnected call', 0)
-INSERT [dbo].[ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, 'Wrong number', 0)
+Delete [ccTipoCalif]
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, 'Wrong area', 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, 'Disconnected call', 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, 'Wrong number', 0)
 
 Print 'Estableciendo los tipos de calificacion de salida'
-Delete [dbo].[ccTipoCalifOUT]
-INSERT [dbo].[ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, 'Effective call', 0, 0, 1)
-INSERT [dbo].[ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, 'Leave a message', 0, 1, 2)
-INSERT [dbo].[ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, 'Wrong number', 0, 1, 3)
+Delete [ccTipoCalifOUT]
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, 'Effective call', 0, 0, 1)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, 'Leave a message', 0, 1, 2)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, 'Wrong number', 0, 1, 3)
 
 Print 'Estableciendo proveedores'
-Delete [dbo].[cstoProvedor]
+Delete [cstoProvedor]
 DBCC CHECKIDENT ('[cstoProvedor]', RESEED, 0)
-INSERT [dbo].[cstoProvedor] ([descrip]) VALUES ('Carrier 1')
+INSERT [cstoProvedor] ([descrip]) VALUES ('Carrier 1')
 
 Print 'Tipo Msg ChatLog' -- No se hace delete ni truncate ya que se perderia la integridad si ya hay registros, los id ya deberian estar creados por lo cual se genera el update
 Update ccRIAChat_TipoMsg set MsgDetalle='Administrator writes an individual message to agent' where TipoMsgChat=1
@@ -273,24 +276,25 @@ Update ccRIAChat_TipoMsg set MsgDetalle='Agent writes a message to Administrator
 Update ccRIAChat_TipoMsg set MsgDetalle='Administrator writes a global message' where TipoMsgChat=3
 
 Print 'Mensajes defualt'
-DELETE [dbo].[ccMsgFiles]
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default5', 'Welcome message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default4', 'Transfer message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default3', 'Out of service message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default2', 'After hours message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default1', 'In queue message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default7', 'No agents signed in message' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default9', 'VoiceMail message')
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default10', 'Overflow message')
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default11', 'DNC list')
+DELETE [ccMsgFiles]
+DBCC CHECKIDENT ('[ccMsgFiles]', RESEED, 0)
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default5', 'Welcome message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default4', 'Transfer message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default3', 'Out of service message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default2', 'After hours message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default1', 'In queue message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default7', 'No agents signed in message' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default9', 'VoiceMail message')
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default10', 'Overflow message')
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_En\Default11', 'DNC list')
 
 Print 'Mensajes default chat'
-DELETE [dbo].[ccRIAChatInboundMsgs]
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default5', 'Welcome!')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default3', 'Service currently unavailable')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default2', 'Our schedule service has finished')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default1', 'Please hold while one of our agents is available')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default7', 'There are not available agents')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default10', 'Your request can not be processed')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default12', 'Chat session has been inactive for too long')
-INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values('Default_En\Default13', 'Chat session has finished')
+DELETE [ccRIAChatInboundMsgs]
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default5', 'Welcome!')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default3', 'Service currently unavailable')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default2', 'Our schedule service has finished')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default1', 'Please hold while one of our agents is available')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default7', 'There are not available agents')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default10', 'Your request can not be processed')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default12', 'Chat session has been inactive for too long')
+INSERT [ccRIAChatMsg](descripcion, msg) values('Default_En\Default13', 'Chat session has finished')

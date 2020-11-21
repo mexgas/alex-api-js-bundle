@@ -9,9 +9,8 @@ set ansi_nulls off
 set ANSI_WARNINGS off  
   
 if @from is null  
-	select @from = convert(datetime,convert(varchar(11),getdate()))  
-if @to is null
-	select @to = getdate()  
+ select @from = convert(datetime,convert(varchar(11),getdate()))  
+select @to = getdate()  
   
 DECLARE @HourExtend AS smallint,@fromExtended AS smalldatetime  
 SELECT @HourExtend=2,@fromExtended=DATEADD(hh,-@HourExtend,@from)  

@@ -5,34 +5,20 @@ CREATE PROCEDURE [dbo].[ccspRepMKTTiemposTotales]
 
 AS
 
-SET NOCOUNT ON
-
 if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
+select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-	select @to = getdate()
+select @to = getdate()
 
 if @action = 1
 begin
+	delete from [RepMKTTiemposTotales] with(rowlock) 
+	where date >= @from AND date <= @to
 
-	IF OBJECT_ID('tempdb..#sessionTimeGroup') IS NOT NULL drop table #sessionTimeGroup;			
-	IF OBJECT_ID('tempdb..#inbound') IS NOT NULL drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores') IS NOT NULL drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#holdTime') IS NOT NULL drop table #holdTime
-	IF OBJECT_ID('tempdb..#hold') IS NOT NULL DROP TABLE #hold
-	IF OBJECT_ID('tempdb..#tempccHoldSession') IS NOT NULL DROP TABLE #tempccHoldSession
-	IF OBJECT_ID('tempdb..#tiempoHold') IS NOT NULL DROP TABLE #tiempoHold
-	IF OBJECT_ID('tempdb..#holdMayores2') IS NOT NULL DROP TABLE #holdMayores2
-	IF OBJECT_ID('tempdb..#timeHoldInterval') IS NOT NULL DROP TABLE #timeHoldInterval
-	IF OBJECT_ID('tempdb..#IntervalosInbound') IS NOT NULL DROP TABLE #IntervalosInbound
-	IF OBJECT_ID('tempdb..#ccLogAgentesDia') IS NOT NULL DROP TABLE #ccLogAgentesDia
-	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores') IS NOT NULL DROP TABLE #ccLogAgentesDiaMayores
-	IF OBJECT_ID('tempdb..#HoldDisp') IS NOT NULL drop table #HoldDisp
-	IF OBJECT_ID('tempdb..#groupLog') IS NOT NULL drop table #groupLog	
-
+	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
 	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
-	
-	--CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
+	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
 	CREATE TABLE #inbound([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,ncalls int,nacd int,tresp int,nabnd int,
 	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
 	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
@@ -40,18 +26,34 @@ begin
 	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
 	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
 	CREATE TABLE #holdTime([userId] int not null,inbound_id int not null,tiempohold int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
-	
+	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
+	create nonclustered index ix_times2 on #times([Start] DESC)
 	create table #ccLogAgentesDia(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null,dateIni datetime not null,dateEnd datetime not null,
 	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
 	create table #ccLogAgentesDiaMayores(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null, dateIni datetime not null,dateEnd datetime not null,
 	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+
+	insert into #times
+	exec ccspTimesReports @from=@from,@to=@to,@interval=15
 	
+	INSERT INTO #sessionTime
+	exec ccspGenSession @from, @to	
+
 	INSERT INTO #sessionTimeGroup
-	select st.[user_id],[login],logout,timegroup as timeGroup,timegroup_next as timeGroupNext,tlog as tlog, wg.IdCampEsp 
-	from TmpSessionTimeGroup st
+	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
 		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
 		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
-	where wg.Tipo = 0 			
+	where wg.Tipo = 0 		
+
+	INSERT into #sessionTimeMayores SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+		
+	insert into #sessionTimeGroup
+	select [User_id],[login],logout, th.[start] as timegroup,th.[stop] as timegroup_next,
+		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
+	from #sessionTimeMayores t
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	where  datediff(ss,th.start,timegroup_next)>0	
 	
 	insert into #inbound
 	select 
@@ -105,8 +107,7 @@ begin
 		,UserId
 		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ntotal) as ntotal
 	from #inboundTimeMayores t
-	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next	
-	and th.Start between @from and @to
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next	
 
 	insert into #ccLogAgentesDia
 	select [User_id]
@@ -136,10 +137,9 @@ begin
 	,th.[start] as timegroup
 	,th.[stop] as timegroup_next
 	from #ccLogAgentesDiaMayores A 
-	inner join TmpTimesInterval th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
+	inner join #times th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
 	WHERE dateIni>=@from AND dateIni<@to
 	and TipoStatusAge_id = 3
-	and th.Start between @from and @to
 
 	select User_id,IdCampEsp
 		,TipoStatusAge_id
@@ -218,9 +218,8 @@ begin
 		ths.timegroup_next
 		into #tiempoHold
 	 from #tempccHoldSession ths
-	 inner join TmpTimesInterval th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
+	 inner join #times th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
 	 where [dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold)>0 and Tipo_marca=1	
-	 and th.Start between @from and @to
 	
 	INSERT into #holdMayores2 
 	SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15 
@@ -237,9 +236,8 @@ begin
 		th.[start] as timegroup,
 		th.[stop] as timegroup_next
 	from #holdMayores2 t
-	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
 	where [dbo].TimeInterval( th.[start],th.[stop],hold ,unhold)>0 
-	and th.Start between @from and @to
 
 	select 
 	inbound_id,
@@ -301,8 +299,6 @@ begin
 	left JOIN #groupLog lo on i.date = lo.timegroup and i.inboundId = lo.IdCampEsp and i.userId = lo.user_id
 	left JOIN #timeHoldInterval h on h.inbound_id = i.inboundId and i.date = h.timegroup and i.userId = h.userId
 
-	delete from [RepMKTTiemposTotales]	where date >= @from AND date <= @to
-
 	INSERT INTO [RepMKTTiemposTotales]
 	select 
 		[date] as [date]
@@ -340,21 +336,25 @@ begin
 		from #HoldDisp
 		Left join ccinbound  inb ON inb.Inbound_id = inboundId
 		group by[date],inboundId, userId, inb.descripcion
-		order by date		
+		order by date
+		--having sum(nacd)>0 --or sum(nabnd)>0 or sum(tlog) >0	
 
-	IF OBJECT_ID('tempdb..#sessionTimeGroup') IS NOT NULL drop table #sessionTimeGroup;			
-	IF OBJECT_ID('tempdb..#inbound') IS NOT NULL drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores') IS NOT NULL drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#holdTime') IS NOT NULL drop table #holdTime
-	IF OBJECT_ID('tempdb..#hold') IS NOT NULL DROP TABLE #hold
-	IF OBJECT_ID('tempdb..#tempccHoldSession') IS NOT NULL DROP TABLE #tempccHoldSession
-	IF OBJECT_ID('tempdb..#tiempoHold') IS NOT NULL DROP TABLE #tiempoHold
-	IF OBJECT_ID('tempdb..#holdMayores2') IS NOT NULL DROP TABLE #holdMayores2
-	IF OBJECT_ID('tempdb..#timeHoldInterval') IS NOT NULL DROP TABLE #timeHoldInterval
-	IF OBJECT_ID('tempdb..#IntervalosInbound') IS NOT NULL DROP TABLE #IntervalosInbound
-	IF OBJECT_ID('tempdb..#ccLogAgentesDia') IS NOT NULL DROP TABLE #ccLogAgentesDia
-	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores') IS NOT NULL DROP TABLE #ccLogAgentesDiaMayores
-	IF OBJECT_ID('tempdb..#HoldDisp') IS NOT NULL drop table #HoldDisp
-	IF OBJECT_ID('tempdb..#groupLog') IS NOT NULL drop table #groupLog	
+	drop table #sessionTimeGroup;
+	drop table #sessionTimeMayores;
+	drop table #times;
+	drop table #sessionTime;
+	drop table #inbound
+	drop table #inboundTimeMayores
+	drop table #holdTime
+	DROP TABLE #hold
+	DROP TABLE #tempccHoldSession
+	DROP TABLE #tiempoHold
+	DROP TABLE #holdMayores2
+	DROP TABLE #timeHoldInterval
+	DROP TABLE #IntervalosInbound
+	DROP TABLE #ccLogAgentesDia
+	DROP TABLE #ccLogAgentesDiaMayores
+	drop table #HoldDisp
+	drop table #groupLog
 
 END

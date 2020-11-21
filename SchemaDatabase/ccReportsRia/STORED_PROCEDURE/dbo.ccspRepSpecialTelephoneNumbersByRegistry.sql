@@ -3,9 +3,6 @@ CREATE PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
 @from as datetime = null,
 @to as datetime = null
 AS
-
-SET NOCOUNT ON
-
 create table #tempPhone(
 [date] datetime,camId int,
 tel1 int,tel2 int,tel3 int,tel4 int,tel5 int,
@@ -25,7 +22,7 @@ if @to is null
 
 if @action = 1
 begin
-	delete from RepSpecialTelephoneNumbersByRegistry where date >= @from and date < @to
+	delete from RepSpecialTelephoneNumbersByRegistry with(rowlock) where date >= @from and date < @to
 
 	insert into #tempPhone
 		select
@@ -37,7 +34,7 @@ begin
 		sum(case when cal_telefono4 <> '' then 1 else 0 end),
 		sum(case when cal_telefono5 <> '' then 1 else 0 end),
 		list_id
-	from ccoCallsOutSource --with(index(IX_ccoCallsOutSource_19),nolock)
+	from ccoCallsOutSource with(index(IX_ccoCallsOutSource_19),nolock)
 	where cal_fechaDial >= @from and cal_fechaDial < @to
 	group by cam_id,list_id
 

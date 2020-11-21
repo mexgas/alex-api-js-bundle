@@ -1,6 +1,5 @@
 CREATE PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
 AS
-
 Print 'Iniciando proceso de configuracion en Español'
 
 Print 'Estableciendo Horarios'
@@ -81,8 +80,7 @@ INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(9,33)
 INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(10,36)
 
 Print 'Estableciendo Status de llamadas'
-delete from [dbo].[ccStatusLLamada]
-
+TRUNCATE TABLE [dbo].[ccStatusLLamada]
 INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (1, convert(text, N'Inicial' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (2, convert(text, N'Fuera de Horario' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (3, convert(text, N'Fuera de Servicio' collate SQL_Latin1_General_CP1_CI_AS))
@@ -102,7 +100,7 @@ INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16, convert(te
 update ccStatusLLamada set inAbandonConfig=1 where statusCall_id in (2, 3, 4, 6, 7, 8 )
 
 Print 'Estableciendo los tipos de dias'
-truncate table [dbo].[ccTipoDias]
+TRUNCATE TABLE [dbo].[ccTipoDias]
 INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (1, convert(text, N'Lunes' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (2, convert(text, N'Martes' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (3, convert(text, N'Miercoles' collate SQL_Latin1_General_CP1_CI_AS))
@@ -112,8 +110,7 @@ INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (6, convert(text, N'Sabado'
 INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, convert(text, N'Domingo' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print 'Estableciendo resultados de marcacion'
-delete from [dbo].[ccTipoResultadoDial]
-
+TRUNCATE TABLE [dbo].[ccTipoResultadoDial]
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, convert(text, N'Contestan' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, convert(text, N'Ocupado' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, convert(text, N'No Contesta' collate SQL_Latin1_General_CP1_CI_AS))
@@ -126,7 +123,6 @@ INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, conve
 
 Print 'Estableciendo los tipos de estado de los agentes'
 Delete [dbo].[ccTipoStatusAgente]
-
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (0, convert(text, N'LogOut' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (1, convert(text, N'Desconocido' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (2, convert(text, N'No Disponible' collate SQL_Latin1_General_CP1_CI_AS))
@@ -152,7 +148,6 @@ INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (6, convert(text, N'A
 
 Print 'Estableciendo los dias'
 Delete [dbo].[ccDias]
-DBCC CHECKIDENT ('[ccDias]', RESEED, 0)
 SET IDENTITY_INSERT [ccDias] ON
 INSERT [ccDias] ([dia_id], [Name]) VALUES (1, convert(text, N'Domingo' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccDias] ([dia_id], [Name]) VALUES (2, convert(text, N'Lunes' collate SQL_Latin1_General_CP1_CI_AS))
@@ -164,7 +159,7 @@ INSERT [ccDias] ([dia_id], [Name]) VALUES (7, convert(text, N'Sabado' collate SQ
 SET IDENTITY_INSERT [ccDias] OFF
 
 Print 'Estableciendo los tipos de llamada'
-delete from [dbo].cstoTarifa
+truncate table cstoTarifa
 delete cstoTipoLlamada
 
 INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,1,'Local','7|8','%')
@@ -271,20 +266,6 @@ INSERT [dbo].[cstoProvedor] ([descrip]) VALUES ('AT&T')
 INSERT [dbo].[cstoProvedor] ([descrip]) VALUES ('Telnor')
 INSERT [dbo].[cstoProvedor] ([descrip]) VALUES ('Axtel')
 INSERT [dbo].[cstoProvedor] ([descrip]) VALUES ('Telular')
-
-Print 'Mensajes voz defualt'
-DELETE [dbo].[ccMsgFiles]
-DBCC CHECKIDENT ('[ccMsgFiles]', RESEED, 0)
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default5', 'Mensaje Bienvenida' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default4', 'Mensaje Transferencia' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default3', 'Mensaje Fuera de servicio' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default2', 'Mensaje Fuera de horario' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default1', 'Mensaje En espera' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default7', 'Mensaje Sin agentes firmados' )
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default9', 'Mensaje VoiceMail')
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default10', 'Mensaje Desborde')
-INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( 'Default_Sp\Default11', 'Lista Negra')
-
 
 Print 'Mensajes default chat'
 DELETE [dbo].[ccRIAChatInboundMsgs]

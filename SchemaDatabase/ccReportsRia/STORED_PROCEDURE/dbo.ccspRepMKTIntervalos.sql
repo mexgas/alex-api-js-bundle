@@ -2,12 +2,8 @@ CREATE PROCEDURE [dbo].[ccspRepMKTIntervalos]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
+
 AS
-
-set nocount on
-set ansi_nulls off
-set ANSI_WARNINGS off
-
 
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
@@ -16,13 +12,14 @@ select @to = getdate()
 
 if @action = 1
 begin
-	
-	IF OBJECT_ID('tempdb..#sessionTimeGroup')  IS NOT NULL  drop table #sessionTimeGroup
-	IF OBJECT_ID('tempdb..#inbound')  IS NOT NULL  drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores')  IS NOT NULL  drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#RepMKTIntervalosTemp')  IS NOT NULL  drop table #RepMKTIntervalosTemp
-	
-	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog] [INT] NULL, [inb_id] [int] NOT NULL)	
+	delete from [RepMKTIntervalos] with(rowlock) 
+	where date >= @from AND date <= @to
+
+	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
+	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
+	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+
 	CREATE TABLE #inbound([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,nacd int,tresp int,nabnd int,
 	tAbnd int,tacd int,nacw int,tacw int,maxdem int,ncalque int,tcalque int,fent int,fsal int,SalExt int,tprosalext int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
 	,[dateTWait] datetime,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int, ntotal int
@@ -33,12 +30,31 @@ begin
 	,[dateTWait] datetime,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int, ntotal int
 	)
 
+	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
+	create nonclustered index ix_times2 on #times([Start] DESC)
+
+	insert into #times
+	exec ccspTimesReports @from=@from,@to=@to,@interval=15
+	
+	INSERT INTO #sessionTime
+	exec ccspGenSession @from, @to	
+
 	INSERT INTO #sessionTimeGroup
-	select st.[user_id],[login],logout,timegroup,timegroup_next timeGroupNext,tlog, wg.IdCampEsp from TmpSessionTimeGroup st
+	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
 		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
 		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
-	where wg.Tipo = 0
-	
+	where wg.Tipo = 0 		
+
+	INSERT into #sessionTimeMayores SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
+		
+	insert into #sessionTimeGroup
+	select [User_id],[login],logout, th.[start] as timegroup,th.[stop] as timegroup_next,
+		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
+	from #sessionTimeMayores t
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	where  datediff(ss,th.start,timegroup_next)>0		
+
 	insert into #inbound
 	select 
 		cal_Inicio as [dateStart],
@@ -95,8 +111,8 @@ begin
 		,UserId
 		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ntotal) as ntotal
 	from #inboundTimeMayores t
-	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-	and th.Start between @from and @to		
+	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+		
 	
 	select case when c.timegroup is not null then c.timegroup else G.timegroup end  as [date]
 		,isnull(c.inboundId,inb_id) as inboundId
@@ -107,7 +123,7 @@ begin
 		,isnull(c.fent,0)  fent, isnull(c.fsal,0) fsal,isnull(c.SalExt,0)  SalExt,isnull(c.tprosalext,0)  tprosalext		
 		,isnull(c.ncalque,0) ncalque,isnull(c.tcalque,0) tcalque
 		,G.userId 
-		,isnull(G.[tlog],0) as tlog
+		,isnull(G.[tlog seg],0) as tlog
 		,isnull(c.ntotal, 0) AS ntotal
 	INTO #RepMKTIntervalosTemp 				
 	 from (
@@ -130,11 +146,8 @@ begin
 		from #inbound as c 
 		group by [timegroup],inboundId,userId) c		
 		full join 
-		(select [user_id] as userId, timegroup, inb_id,sum([tlog] ) as [tlog] from  #sessionTimeGroup group by [user_id] ,timegroup,inb_id ) G
+		(select [user_id] as userId, timegroup, inb_id,sum([tlog seg] ) as [tlog seg] from  #sessionTimeGroup group by [user_id] ,timegroup,inb_id ) G
 		on G.timegroup=c.[timegroup] and c.inboundId = G.inb_id and G.userId=c.userId		
-		order by date
-	
-	delete from [RepMKTIntervalos] 	where date >= @from AND date <= @to
 		
 	INSERT INTO [RepMKTIntervalos]
 	select 
@@ -180,8 +193,11 @@ begin
 		group by[date],inboundId, userId, inb.descripcion
 		having sum(nacd)>0 or sum(nabnd)>0 or sum(tlog) >0	
 
-	IF OBJECT_ID('tempdb..#sessionTimeGroup')  IS NOT NULL  drop table #sessionTimeGroup	
-	IF OBJECT_ID('tempdb..#inbound')  IS NOT NULL  drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores')  IS NOT NULL  drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#RepMKTIntervalosTemp')  IS NOT NULL  drop table #RepMKTIntervalosTemp
+	drop table #sessionTimeGroup;
+	drop table #sessionTimeMayores;
+	drop table #times;
+	drop table #sessionTime;
+	drop table #inbound
+	drop table #inboundTimeMayores
+	drop table #RepMKTIntervalosTemp
 end

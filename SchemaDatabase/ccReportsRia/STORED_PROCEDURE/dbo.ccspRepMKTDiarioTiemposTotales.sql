@@ -5,8 +5,6 @@ CREATE PROCEDURE [dbo].[ccspRepMKTDiarioTiemposTotales]
 
 AS
 
-SET NOCOUNT ON
-
 if @from is null
 	select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
@@ -16,15 +14,26 @@ declare @dateNow datetime,@maxLogout datetime
 
 if @action = 1
 begin
+delete from [RepMKTDiarioTiemposTotales] with(rowlock) 
+	where date >= @from AND date <= @to 
 
-
+CREATE TABLE #sessionAgent 
+	(
+		[user_id] [smallint] NOT NULL,
+		[login] [datetime] NOT NULL,
+		[logout] [datetime] NOT NULL,
+		[extension] [varchar](7) NOT NULL,
+	);
+INSERT INTO #sessionAgent
+	exec ccspGenSession @from, @to
+	select '#sessionAgent'
 
 select 
 	convert(datetime,convert(date,login)) fecha,
 	SUM(DATEDIFF(ss, login, logout)) t_ses,
 	count(distinct user_id) user_id
 into #infoSession
-from TmpSessionGeneral
+from #sessionAgent
 GROUP BY convert(datetime,convert(date,login))
 
 SELECT 
@@ -49,12 +58,10 @@ SELECT user_id AS agtuser_id,
 	into #users
 	FROM ccUserView (NOLOCK)
 
-	delete from [RepMKTDiarioTiemposTotales] with(rowlock) 	where date >= @from AND date <= @to 
-
-	insert RepMKTDiarioTiemposTotales 
+insert RepMKTDiarioTiemposTotales 
 	select c.[date]	--
-		,isnull(l.agtlogin,'N/A') as [OpaId]
-		,isnull(l.agt_name,'') [NombreDeOperadora]
+		,l.agtlogin as [OpaId]
+		,l.agt_name [NombreDeOperadora]
 		,[InboundID]--
 		,[TiempoPromACD]--
 		,[TiempoPromACW]--
@@ -81,12 +88,13 @@ SELECT user_id AS agtuser_id,
 		group by convert(datetime,convert(date,[date])),inboundId,acduser
 	) c
 	LEFT JOIN #infoSession G on G.fecha = c.date
-	left join #users l on [user]=l.agtuser_id	
+	left join #users l on [user]=l.agtuser_id --and c.date=l.date
+	--INNER JOIN ccinbound i on [ACD] = i.Inbound_id
 	WHERE @from <= C.[date] AND @to >= c.[date] and [LlamadasAtendidas]>0
 	order by [date]
 
 drop table #inboundData2
+drop table #sessionAgent
 drop table #infoSession 
 drop table #users
-
 end

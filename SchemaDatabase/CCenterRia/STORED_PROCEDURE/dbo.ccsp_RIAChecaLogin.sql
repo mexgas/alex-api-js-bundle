@@ -63,7 +63,7 @@ CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
 		  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
 		 END
 		
-		---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+		---Por OAYC IPExtension, extension, para cuando es posici?n IP con alguna extension asignada
 		IF(@ext_id > 0  and @isIP=1)
 		 BEGIN
 		  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))

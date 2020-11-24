@@ -3,6 +3,9 @@ CREATE PROCEDURE [dbo].[ccspRepOutManagementBase]
 @from AS DATETIME = null,
 @to AS DATETIME = null
 AS
+
+SET NOCOUNT ON
+
 IF @from IS NULL
 	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
 
@@ -14,59 +17,58 @@ BEGIN
 
 	IF OBJECT_ID('tempdb..#TempRepOutManagementBase') IS NOT NULL DROP TABLE #TempRepOutManagementBase
 
-	SELECT fecha AS DATE, 
+	create table #TempRepOutManagementBase(date datetime, dialResultCode int,dialResultId int,dialResult varchar(50),dispositionId int,
+	disposition varchar(50),subDispositionId int,subDisposition varchar(50),total int,Agent varchar(100),Campaigns varchar(100)
+	,[year] int,[month] int, [day] int ,[hour] int,[minutes] int
+	,cal_id int, cal_telefono varchar(50),cal_key varchar(30)
+	)
+
+	create index IX_#TempRepOutManagementBase_I ON #TempRepOutManagementBase(cal_id)
+	
+	insert INTO #TempRepOutManagementBase
+	SELECT fecha AS [date], 
        logdial.callout_id AS dialResultCode, 
        logdial.tipoResDial_id AS dialResultId, 
-       ISNULL(resdial.descripcion, '') AS dialResult
-       ,-- 
+       ISNULL(resdial.descripcion, '') AS dialResult,       
        ISNULL(tipocal.calif_id, 0) AS dispositionId, 
        ISNULL(tipocal.Description, '') AS disposition, 
-       ISNULL(tiposubcal.califSub_id, 0) AS subDispositionId
-       ,-- 
+       ISNULL(tiposubcal.califSub_id, 0) AS subDispositionId,       
        ISNULL(tiposubcal.califSubDesc, '') AS subDisposition, 
        1 AS Total, 
        ISNULL(cUser.LOGIN, '') AS Agent, 
        ISNULL(ccCamps.cam_descripcion, '') AS Campaigns
-       ,-- 
-       DATEPART(yyyy, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [year]
-       , -- 
-       DATEPART(mm, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [month]
-       ,-- 
-       DATEPART(dd, CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), fecha, 121) + ':00', 121)) AS [day]
-       ,-- 
-       DATEPART(hh, fecha) AS [hour], 
-       DATEPART(mi, fecha) AS [minutes], 
-       logDial.cal_id,
+       ,DATEPART(yyyy,fecha) AS [year]
+       ,DATEPART(mm, fecha) AS [month]
+       ,DATEPART(dd, fecha) AS [day]
+       ,DATEPART(hh, fecha) AS [hour]
+       ,DATEPART(mi, fecha) AS [minutes]
+       ,logDial.cal_id,
 	   ISNULL(logdial.Telefono,'') AS cal_telefono,
-	   ISNULL(logdial.cal_Key,'') AS cal_key
-INTO #TempRepOutManagementBase
-FROM ccoLogDials logdial
+	   ISNULL(logdial.cal_Key,'') AS cal_key	   	   
+FROM ccoLogDials logdial with(nolock)
      LEFT JOIN cctipoResultadodial resdial ON logdial.tipoResDial_id = resdial.tipoResDial_id
      LEFT JOIN ccoCallsOut cout ON cout.cal_id = logdial.cal_id
      LEFT JOIN cctipocalifout tipocal ON cout.calif_id = tipocal.calif_id
      LEFT JOIN cctipocalifsubout tiposubcal ON cout.califSub_id = tiposubcal.califSub_id
      LEFT JOIN ccUsers cUser ON cUser.User_id = cout.User_id
      LEFT JOIN ccCamps ON ccCamps.cam_id = logdial.cam_id
-WHERE fecha BETWEEN @from AND @to
+	 WHERE fecha BETWEEN @from AND @to
+
 
 	UPDATE A
-	SET A.Agent = isnull(cUser.LOGIN, ''), A.cal_id = cout.cal_id
+	SET A.Agent = isnull(cUser.LOGIN, ''), A.cal_id = cout.cal_id		
 	FROM #TempRepOutManagementBase A
 	INNER JOIN (
-		SELECT A.cal_inicio, A.cal_id, callout_id, User_id
+		SELECT A.cal_id, callout_id, User_id
 		FROM ccoCallsOut A
 		LEFT JOIN #TempRepOutManagementBase B ON A.cal_id = B.cal_id
 		WHERE cal_Inicio BETWEEN @from
 				AND @to AND B.cal_id IS NULL
 		) cout ON A.dialResultCode = cout.callout_id
-	LEFT JOIN ccUsers cUser ON cUser.User_id = cout.User_id
-	WHERE A.cal_id IS NULL AND cal_Inicio BETWEEN @from
-			AND @to
+	inner JOIN ccUsers cUser ON cUser.User_id = cout.User_id
+	WHERE A.cal_id IS NULL
 
-	DELETE
-	FROM RepOutManagementBase 
-	WHERE [date] >= @from AND [date] < @to
-
+	DELETE	FROM RepOutManagementBase WHERE [date] >= @from AND [date] < @to
 
 	INSERT INTO RepOutManagementBase
 							(DATE, 
@@ -108,5 +110,5 @@ WHERE fecha BETWEEN @from AND @to
 			  cal_telefono
        FROM #TempRepOutManagementBase
 
-	DROP TABLE #TempRepOutManagementBase
+	IF OBJECT_ID('tempdb..#TempRepOutManagementBase') IS NOT NULL DROP TABLE #TempRepOutManagementBase
 END

@@ -9,9 +9,14 @@ set ansi_nulls off
 set ANSI_WARNINGS off
 
 if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
+	select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+	select @to = getdate()
 
+
+
+if @action = 1
+begin
 
 DECLARE @HourExtend AS smallint,@fromExtended AS smalldatetime
 SELECT @HourExtend=2,@fromExtended=DATEADD(hh,-@HourExtend,@from)
@@ -21,13 +26,12 @@ EXEC @tresRing=ccspConfigTresRing
 EXEC @tresDialog=ccspConfigTresDialog
 EXEC @tresDelayIn=ccspConfigtresDelayIn
 
-if @action = 1
-begin
-
-declare @starttime datetime
-declare @number int
-set @starttime = @from
-set @number = 0
+IF OBJECT_ID('tempdb..#callsin') IS NOT NULL drop table #callsin
+IF OBJECT_ID('tempdb..#callsin2') IS NOT NULL drop table #callsin2
+IF OBJECT_ID('tempdb..#agentInformation') IS NOT NULL drop table #agentInformation
+IF OBJECT_ID('tempdb..#ccGenInSpec') IS NOT NULL drop table #ccGenInSpec
+IF OBJECT_ID('tempdb..#timeDetailAgent') IS NOT NULL drop table #timeDetailAgent
+IF OBJECT_ID('tempdb..#timeDetailAgent2') IS NOT NULL drop table #timeDetailAgent2
 
 create table [#callsin](
 row int identity,
@@ -77,131 +81,53 @@ nWHag int,
 nWHcl int)
 
 CREATE TABLE [dbo].[#ccGenInSpec](
-[timegroup] [smalldatetime] NOT NULL,
+[timegroup] [datetime] NOT NULL,
 [inbound_id] [smallint] NOT NULL,
 [pos_tot] [smallint] NOT NULL,
 [pos_time] [int] NOT NULL,
 [pos_efect] [smallint] NOT NULL
 ) ON [PRIMARY]
 
-CREATE TABLE [dbo].[#ccGenSession](
-[user_id] [smallint] NOT NULL,
-[login] [datetime] NOT NULL,
-[logout] [datetime] NULL default(getdate()),
-[extension] [varchar](7) NOT NULL
-) ON [PRIMARY]
-
-CREATE TABLE [dbo].[#ccGenInCall](
-[timegroup] [smalldatetime] NOT NULL,
-[inbound_id] [smallint] NOT NULL,
-[dni_id] [smallint] NOT NULL,
-[user_id] [smallint] NOT NULL,
-[ntotal] [smallint] NOT NULL,
-[ninitial] [smallint] NOT NULL,
-[nout_hour] [smallint] NOT NULL,
-[nout_service] [smallint] NOT NULL,
-[nabnd] [smallint] NOT NULL,
-[nno_agent] [smallint] NOT NULL,
-[nque] [smallint] NOT NULL,
-[ntimeout] [smallint] NOT NULL,
-[noverflow] [smallint] NOT NULL,
-[nxfer] [smallint] NOT NULL,
-[nxfer_que] [smallint] NOT NULL,
-[nabnd_xfer] [smallint] NOT NULL,
-[nabnd_ring] [smallint] NOT NULL,
-[nno_answer] [smallint] NOT NULL,
-[nabnd_dialog] [smallint] NOT NULL,
-[nanswer] [smallint] NOT NULL,
-[nlost] [smallint] NOT NULL,
-[nmsg] [smallint] NOT NULL,
-[nabnd_tres] [smallint] NOT NULL,
-[nansw_tres] [smallint] NOT NULL,
-[tque_max] [smallint] NOT NULL,
-[tque] [int] NOT NULL,
-[txfer] [int] NOT NULL,
-[tdialog] [int] NOT NULL,
-[tnotes] [int] NOT NULL,
-[tring] [int] NOT NULL,
-[tresp] [int] NOT NULL,
-[nMoh] [smallint] NOT NULL DEFAULT ((0)),
-[nWHag] [smallint] NOT NULL DEFAULT ((0)),
-[nWHcl] [smallint] NOT NULL DEFAULT ((0))
-) ON [PRIMARY]
-
-
-CREATE TABLE #times(
-[ID] INT primary key,
-[Start] DATETIME,
-[Stop] DATETIME
-)
-
-create nonclustered index ix_times on #times(
-[Start] DESC,
-[Stop] DESC
-)
-create nonclustered index ix_times2 on #times([Start] DESC)
-
-while @number <= (datediff(mi,@starttime,@to)/15)
-begin
-	insert into #times
-	SELECT [Hour] = @number,
-	StartTime = DATEADD(mi, @number*15, @starttime),
-	EndTime = DATEADD(mi, (@number+1)*15, @StartTime)
-
-	set @number = @number +1
-end
-
+------ Time Agent In ----------
 insert into #callsin(dateStartDetail,dateEndDetail,timegroup,timegroup_next,time_endque,time_ring,time_dialog,time_notes,time_end_call,phone_in,cal_id,dni_id,Inbound_id,User_id,ntotal,ninitial,nout_hour,nout_service,nabnd,nno_agent,nque,ntimeout,noverflow,nxfer,nxfer_que,nabnd_xfer,nabnd_ring,nno_answer,nabnd_dialog,nanswer,nlost,nmsg,nabnd_tres,nansw_tres,tque_max,tque,txfer,tdialog,tnotes,tring,tresp,nMoh,nWHag,nWHcl)
-SELECT      cal_inicio as dateStartDetail,
-	dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio) as dateEndDetail,
-	case when datepart(mi,cal_inicio) between 0 and 14 then convert(varchar(13),cal_inicio,121) + ':00:00.000'
-			when datepart(mi,cal_inicio) between 15 and 29 then convert(varchar(13),cal_inicio,121) + ':15:00.000'
-		when datepart(mi,cal_inicio) between 30 and 44 then convert(varchar(13),cal_inicio,121) + ':30:00.000'
-		when datepart(mi,cal_inicio) between 45 and 59 then convert(varchar(13),cal_inicio,121) + ':45:00.000' end as timegroup,
-	case when datepart(mi,dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio))
-		between 0 and 14 then convert(varchar(13),dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio),121) + ':15:00.000'
-	when datepart(mi,dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio))
-		between 15 and 29 then convert(varchar(13),dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio),121) + ':30:00.000'
-	when datepart(mi,dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio))
-		between 30 and 44 then convert(varchar(13),dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio),121) + ':45:00.000'
-	when datepart(mi,dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio))
-		between 45 and 59 then  convert(varchar(13),dateadd(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas+60),0),cal_inicio) ,121) + ':00:00.000' end as timegroup_next
-	,DATEADD(ss,isnull(sum(cal_twait),0),cal_inicio) as time_endque
-	,DATEADD(ss,isnull(sum(cal_twait + cal_txfer),0),cal_inicio) as time_ring
-	,DATEADD(ss,isnull(sum(cal_twait + cal_txfer + cal_tring),0),cal_inicio) as time_dialog
-	,DATEADD(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog),0),cal_inicio) as time_notes
-	,DATEADD(ss,isnull(sum(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas),0),cal_inicio) as time_end_call
-	,isnull(max(cal_Ani),0) as phone_in,cal_id,cin.dni_id,Inbound_id,[User_id]
-	,COUNT(cal_id)AS ntotal
-	,ISNULL(COUNT(CASE WHEN statuscall_id=1 THEN 1 ELSE NULL END),0) AS ninitial
-	,ISNULL(COUNT(CASE WHEN statuscall_id=2 THEN 1 ELSE NULL END),0) AS nout_hour
-	,ISNULL(COUNT(CASE WHEN statuscall_id=3 THEN 1 ELSE NULL END),0) AS nout_service
-	,ISNULL(COUNT(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer = '1900-01-01 00:00:00'))THEN 1 ELSE NULL END),0) AS nabnd
-	,ISNULL(COUNT(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END),0) AS nno_agent
-	,ISNULL(COUNT(CASE WHEN(cal_que>0)THEN 1 ELSE NULL END),0) AS nque
-	,ISNULL(COUNT(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END),0) AS ntimeout
-	,ISNULL(COUNT(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END),0) AS noverflow
-	,ISNULL(COUNT(CASE WHEN((statuscall_id in(11,15,13,16))OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE NULL END),0) AS nxfer
-	,ISNULL(COUNT(CASE WHEN((cal_que>0)and(statuscall_id in(11,15,13,16)OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00')))THEN cal_xfer ELSE NULL END),0) AS nxfer_que
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=11)OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE NULL END),0) AS nabnd_xfer
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring<=@tresRing))THEN 1 ELSE NULL END),0) AS nabnd_ring
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END),0) AS nno_answer
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog<=@tresDialog))THEN 1 ELSE NULL END),0) AS nabnd_dialog
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END),0) AS nanswer
-	,ISNULL(COUNT(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END),0) AS nlost
-	,ISNULL(COUNT(CASE WHEN(statuscall_id IN(9,10,12,14))THEN 1 ELSE NULL END),0) AS nmsg
-	,ISNULL(COUNT(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer = '1900-01-01 00:00:00')AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),0) AS nabnd_tres
-	,ISNULL(COUNT(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),0) AS nansw_tres
-	,ISNULL(MAX(cal_twait),0)AS tque_max,ISNULL(SUM(cal_twait),0)AS tque,ISNULL(SUM(cal_txfer),0)AS txfer
-	,ISNULL(SUM(cal_tdialog),0)AS tdialog,ISNULL(SUM(cal_tnotas),0)AS tnotes,ISNULL(SUM(cal_tring),0)AS tring
-	,ISNULL(SUM(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN(cal_twait + cal_txfer + cal_tring)ELSE NULL END),0)AS tresp
-	,ISNULL(sum(case when cal_tMoh>0 then 1 else 0 end),0)as nMoh
-	,ISNULL(SUM(CASE WHEN cal_whoHung>0 THEN 1 ELSE 0 END),0)as nWHag,ISNULL(SUM(CASE WHEN cal_whoHung=0 THEN 1 ELSE 0 END),0)as nWHcl
+SELECT cal_inicio as dateStartDetail
+	,dateadd(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas,0),cal_inicio) as dateEndDetail
+	,dbo.GetTimeGroup(cal_inicio,0)	 as timegroup
+	,dbo.GetTimeGroup(dateadd(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas,0),cal_inicio),1)	 as timegroup_next	
+	,DATEADD(ss,isnull(cal_twait,0),cal_inicio) as time_endque
+	,DATEADD(ss,isnull(cal_twait + cal_txfer,0),cal_inicio) as time_ring
+	,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring,0),cal_inicio) as time_dialog
+	,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog,0),cal_inicio) as time_notes
+	,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog + cal_tnotas,0),cal_inicio) as time_end_call
+	,isnull(cal_Ani,0) as phone_in,cal_id,cin.dni_id,Inbound_id,[User_id]
+	,1 AS ntotal
+	,ISNULL(CASE WHEN statuscall_id=1 THEN 1 ELSE NULL END,0) AS ninitial
+	,ISNULL(CASE WHEN statuscall_id=2 THEN 1 ELSE NULL END,0) AS nout_hour
+	,ISNULL(CASE WHEN statuscall_id=3 THEN 1 ELSE NULL END,0) AS nout_service
+	,ISNULL(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer = '1900-01-01 00:00:00'))THEN 1 ELSE NULL END,0) AS nabnd
+	,ISNULL(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END,0) AS nno_agent
+	,ISNULL(CASE WHEN(cal_que>0)THEN 1 ELSE NULL END,0) AS nque
+	,ISNULL(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END,0) AS ntimeout
+	,ISNULL(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END,0) AS noverflow
+	,ISNULL(CASE WHEN((statuscall_id in(11,15,13,16))OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE NULL END,0) AS nxfer
+	,ISNULL(CASE WHEN(cal_que>0 and statuscall_id in(11,15,13,16) ) OR (statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00')	THEN 1 ELSE NULL END,0) AS nxfer_que
+	,ISNULL(CASE WHEN((statuscall_id=11)OR(statuscall_id=6 AND cal_xfer <> '1900-01-01 00:00:00'))THEN 1 ELSE NULL END,0) AS nabnd_xfer
+	,ISNULL(CASE WHEN((statuscall_id=15)AND(cal_tring<=@tresRing))THEN 1 ELSE NULL END,0) AS nabnd_ring
+	,ISNULL(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END,0) AS nno_answer
+	,ISNULL(CASE WHEN((statuscall_id=13)AND(cal_tdialog<=@tresDialog))THEN 1 ELSE NULL END,0) AS nabnd_dialog
+	,ISNULL(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END,0) AS nanswer
+	,ISNULL(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END,0) AS nlost
+	,ISNULL(CASE WHEN(statuscall_id IN(9,10,12,14))THEN 1 ELSE NULL END,0) AS nmsg
+	,ISNULL(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer = '1900-01-01 00:00:00')AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END,0) AS nabnd_tres
+	,ISNULL(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END,0) AS nansw_tres
+	,ISNULL(cal_twait,0)AS tque_max,ISNULL(cal_twait,0)AS tque,ISNULL(cal_txfer,0)AS txfer
+	,ISNULL(cal_tdialog,0)AS tdialog,ISNULL(cal_tnotas,0)AS tnotes,ISNULL(cal_tring,0)AS tring
+	,ISNULL(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN(cal_twait + cal_txfer + cal_tring)ELSE NULL END,0)AS tresp
+	,ISNULL(case when cal_tMoh>0 then 1 else 0 end,0)as nMoh
+	,ISNULL(CASE WHEN cal_whoHung>0 THEN 1 ELSE 0 END,0)as nWHag,ISNULL(CASE WHEN cal_whoHung=0 THEN 1 ELSE 0 END,0)as nWHcl
 	FROM ccCallsIn cin with (nolock, index(IX_ccCallsIn))
 	left join ccdnis dnis on dnis.dni_id = cin.dni_id
-	WHERE cal_inicio>=@fromExtended AND cal_inicio<@to AND INBOUND_ID>0
-	group by cal_id,[User_id],Inbound_id,cal_inicio,cin.dni_id
-
+	WHERE cal_inicio>=@fromExtended AND cal_inicio<@to AND INBOUND_ID>0	
 
 delete #callsin WHERE timegroup>=@from AND timegroup<@to AND INBOUND_ID>0
 AND ntotal=0 AND nout_hour=0 AND nout_service=0 AND nabnd=0 AND nno_agent=0 AND nque=0
@@ -211,12 +137,12 @@ AND nansw_tres=0 AND tque_max=0 AND tque=0 AND txfer=0 AND tring=0 AND tdialog=0
 
 select * into #callsin2 from #callsin where datediff(mi,timegroup,timegroup_next)>15
 
-
 delete #callsin where datediff(mi,timegroup,timegroup_next) > 15
 
 insert into #callsin(dateStartDetail,dateEndDetail,timegroup,timegroup_next,time_endque,time_ring,time_dialog,time_notes,time_end_call,phone_in,cal_id,dni_id,Inbound_id,[User_id],ntotal,ninitial,nout_hour,nout_service,nabnd,nno_agent,nque,ntimeout,noverflow,nxfer,nxfer_que,nabnd_xfer,nabnd_ring,nno_answer,nabnd_dialog,nanswer,nlost,nmsg,nabnd_tres,nansw_tres,tque_max,tque,txfer,tdialog,tnotes,tring,tresp,nMoh,nWHag,nWHcl)
 select
-	dateStartDetail,dateEndDetail,convert(varchar,th.start,121) as timegroup,convert(varchar, th.stop,121) as timegroup_next,time_endque,time_ring,time_dialog,time_notes,time_end_call
+	dateStartDetail,dateEndDetail,convert(varchar,th.start,121) as timegroup,convert(varchar, th.stop,121) as timegroup_next
+	,time_endque,time_ring,time_dialog,time_notes,time_end_call
 	,phone_in,cal_id,t.dni_id,Inbound_id,[User_id]
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then ntotal else 0 end as ntotal
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then ninitial else 0 end as ninitial
@@ -239,75 +165,30 @@ select
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then nabnd_tres else 0 end as nabnd_tres
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then nansw_tres else 0 end as nansw_tres
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then tque_max else 0 end as tque_max
-	,case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= time_endque and  th.stop > time_endque then datediff(ss,dateStartDetail,time_endque)
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < time_endque then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= time_endque and  th.stop > time_endque then datediff(ss,th.start,time_endque)
-			when th.start > dateStartDetail and th.stop < time_endque then datediff(ss,th.start,th.stop) else  0 end as tque
-	,case when th.start <= time_endque and  th.stop > time_endque and th.start <= time_ring and  th.stop > time_ring then datediff(ss,time_endque,time_ring)
-			when th.start <= time_endque and  th.stop > time_endque and th.stop < time_ring then datediff(ss,time_endque,th.stop)
-			when th.start > time_endque and th.start <= time_ring and  th.stop > time_ring then datediff(ss,th.start,time_ring)
-			when th.start > time_endque and th.stop < time_ring then datediff(ss,th.start,th.stop) else  0 end as txfer               ,case when th.start <= time_dialog and  th.stop > time_dialog and th.start <= time_notes and  th.stop > time_notes then datediff(ss,time_dialog,time_notes)
-			when th.start <= time_dialog and  th.stop > time_dialog and th.stop < time_notes then datediff(ss,time_dialog,th.stop)
-			when th.start > time_dialog and th.start <= time_notes and  th.stop > time_notes then datediff(ss,th.start,time_notes)
-			when th.start > time_dialog and th.stop < time_notes then datediff(ss,th.start,th.stop) else  0 end as tdialog
-	,case when th.start <= time_notes and  th.stop > time_notes and th.start <= time_end_call and  th.stop > time_end_call then datediff(ss,time_notes,time_end_call)
-			when th.start <= time_notes and  th.stop > time_notes and th.stop < time_end_call then datediff(ss,time_notes,th.stop)
-			when th.start > time_notes and th.start <= time_end_call and  th.stop > time_end_call then datediff(ss,th.start,time_end_call)
-			when th.start > time_notes and th.stop < time_end_call then datediff(ss,th.start,th.stop) else  0 end as tnotes
-	,case when th.start <= time_ring and  th.stop > time_ring and th.start <= time_dialog and  th.stop > time_dialog then datediff(ss,time_ring,time_dialog)
-			when th.start <= time_ring and  th.stop > time_ring and th.stop < time_dialog then datediff(ss,time_ring,th.stop)
-			when th.start > time_ring and th.start <= time_dialog and  th.stop > time_dialog then datediff(ss,th.start,time_dialog)
-			when th.start > time_ring and th.stop < time_dialog then datediff(ss,th.start,th.stop) else  0 end as tring
-	,case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tresp,dateStartDetail) and  th.stop > dateadd(ss,tresp,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tresp,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tresp,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tresp,dateStartDetail) and  th.stop > dateadd(ss,tresp,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tresp,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tresp,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end as tresp
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,time_endque) as tque
+	,dbo.TimeInterval(th.start ,th.stop, time_endque,time_ring) as txfer
+	,dbo.TimeInterval(th.start ,th.stop, time_dialog,time_notes) as tdialog
+	,dbo.TimeInterval(th.start ,th.stop, time_notes,time_end_call) as tnotes
+	,dbo.TimeInterval(th.start ,th.stop, time_ring,time_dialog) as tring
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tresp,dateStartDetail)) as tresp	
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then nMoh else 0 end as nMoh
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then nWHag else 0 end as nWHag
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then nWHcl else 0 end as nWHcl
 	from #callsin2 t
-	join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
 	left join ccdnis dnis on dnis.dni_id = t.dni_id
 	where  datediff(ss,th.start,timegroup_next)>0
+	and th.start between @from and @to
 	order by cal_id
 
-drop table #callsin2
+------------ Session Time Start ----------------
 
 
--- Session Time
-insert into #ccGenSession
-select [user_id], [login], logout,extension
-from(select a.extension, a.user_id, a.fecha as 'login',
-(select max(Fecha)
-from ccLogLogin b with(nolock)
-where b.user_id = a.user_id and
-b.tipomov = 0 and
-b.fecha >= a.fecha and
-b.fecha <= (select isnull(min(fecha),'99991231 23:59:59.998')
-	from ccLogLogin with(nolock)
-	where user_id = b.user_id and
-	tipomov = 1 and
-	fecha > a.fecha)) as 'logout'
-from ccLogLogin a
-where a.tipomov=1
-and fecha >= @from
-and fecha <= @to) as sessiontime
-order by user_id, login
-
-update s
-set s.logout = (select dateadd(ss,-1,isnull(min(login),getdate())) from #ccGenSession where [login]>s.[login] and [user_id] = s.[user_id])
-from #ccGenSession s
-where logout is null
+------ Time Agent Common ----------
 
 select DATEADD(ss,-sum(tStatus),min(fecha)) as dateStartDetail,min(fecha) as dateEndDetail,
-	convert(smalldatetime,case when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 0 and 14 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':00:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 15 and 29 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':15:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 30 and 44 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':30:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 45 and 59 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':45:00.000' end) AS timegroup
-	,convert(smalldatetime,case when datepart(mi,fecha) between 0 and 14 then convert(varchar(13),fecha,121) + ':15:00.000'
-		when datepart(mi,fecha) between 15 and 29 then convert(varchar(13),fecha,121) + ':30:00.000'
-		when datepart(mi,fecha) between 30 and 44 then convert(varchar(13),fecha,121) + ':45:00.000'
-		when datepart(mi,fecha) between 45 and 59 then convert(varchar(13),dateadd(hh,1,fecha),121) + ':00:00.000' end) as timegroup_next
+dbo.GetTimeGroup(DATEADD(ss,-tStatus,fecha),0) AS timegroup,
+dbo.GetTimeGroup(fecha,1) as timegroup_next
 		,[User_id]
 		,ISNULL(SUM(CASE WHEN(tipostatusage_id=1)THEN tStatus ELSE 0 END),0) AS tunknown
 		,ISNULL(SUM(CASE WHEN(tipostatusage_id=2)THEN tStatus ELSE 0 END),0) AS tnot_av
@@ -319,161 +200,127 @@ select DATEADD(ss,-sum(tStatus),min(fecha)) as dateStartDetail,min(fecha) as dat
 	from ccLogAgentesDia
 	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
 	GROUP BY
-	convert(smalldatetime,case when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 0 and 14 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':00:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 15 and 29 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':15:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 30 and 44 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':30:00.000'
-		when datepart(mi,DATEADD(ss,-tStatus,fecha)) between 45 and 59 then convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':45:00.000' end)
-	,convert(smalldatetime,case when datepart(mi,fecha) between 0 and 14 then convert(varchar(13),fecha,121) + ':15:00.000'
-		when datepart(mi,fecha) between 15 and 29 then convert(varchar(13),fecha,121) + ':30:00.000'
-		when datepart(mi,fecha) between 30 and 44 then convert(varchar(13),fecha,121) + ':45:00.000'
-		when datepart(mi,fecha) between 45 and 59 then convert(varchar(13),dateadd(hh,1,fecha),121) + ':00:00.000' end), [User_id]
-
-
+	dbo.GetTimeGroup(DATEADD(ss,-tStatus,fecha),0),	
+	dbo.GetTimeGroup(fecha,1), [User_id]	
+		
 select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegroup,timegroup_next)>15
 
 delete #timeDetailAgent where datediff(mi,timegroup,timegroup_next) > 15
 
 insert into #timeDetailAgent (dateStartDetail,dateEndDetail,timegroup,timegroup_next,User_id,tunknown,tnot_av,tav,tprob,tother,nother)
 select
-	min(dateStartDetail),min(dateEndDetail),convert(varchar,th.start,121) as timegroup,convert(varchar, th.stop,121) as timegroup_next,[User_id]
-	,isnull(sum(case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tunknown,dateStartDetail) and  th.stop > dateadd(ss,tunknown,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tunknown,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tunknown,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tunknown,dateStartDetail) and  th.stop > dateadd(ss,tunknown,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tunknown,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tunknown,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tunknown
-	,isnull(sum(case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tnot_av,dateStartDetail) and  th.stop > dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tnot_av,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tnot_av,dateStartDetail) and  th.stop > dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tnot_av,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tnot_av
-	,isnull(sum(case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tav,dateStartDetail) and  th.stop > dateadd(ss,tav,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tav,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tav,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tav,dateStartDetail) and  th.stop > dateadd(ss,tav,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tav,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tav,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tav
-	,isnull(sum(case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tprob,dateStartDetail) and  th.stop > dateadd(ss,tprob,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tprob,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tprob,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tprob,dateStartDetail) and  th.stop > dateadd(ss,tprob,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tprob,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tprob,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tprob
-	,isnull(sum(case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tother,dateStartDetail) and  th.stop > dateadd(ss,tother,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tother,dateStartDetail))
-			when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tother,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-			when th.start > dateStartDetail and th.start <= dateadd(ss,tother,dateStartDetail) and  th.stop > dateadd(ss,tother,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tother,dateStartDetail))
-			when th.start > dateStartDetail and th.stop < dateadd(ss,tother,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tother
-	,isnull(sum(case when th.start > dateStartDetail and th.stop > dateEndDetail then nother else 0 end),0) as nother
+	dateStartDetail, dateEndDetail,th.start as timegroup,th.stop as timegroup_next, [User_id]
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tunknown,dateStartDetail)) as tunknown
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tnot_av,dateStartDetail)) as tnot_av
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tav,dateStartDetail)) as tav2	
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tprob,dateStartDetail)) as tprob
+	,dbo.TimeInterval(th.start ,th.stop, dateStartDetail,dateadd(ss,tother,dateStartDetail)) as tother2	
+	,isnull(case when th.start > dateStartDetail and th.stop > dateEndDetail then nother else 0 end,0) as nother
 from #timeDetailAgent2 t
-inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
 where  datediff(ss,th.start,timegroup_next)>0
-group by th.start,th.stop,[User_id]
+and th.start between @from and @to
 
-drop table #timeDetailAgent2
+;
+with sessionTimeGroup as (
 
-select ROW_NUMBER() OVER(ORDER BY xTimeDetail.timegroup,xTimeDetail.[user_id] ) AS Row,
-	xTimeDetail.timegroup,xTimeDetail.[user_id],tnot_av,tav,tprob,tother,tunknown,nother
-	,ISNULL(calls.txfer,0) as txfer,ISNULL(tdialog,0) as tdialog,ISNULL(tnotes,0) as tnotes,ISNULL(tring,0) as tring
-	,ISNULL(nMoh,0) as nMoh,ISNULL(nWHag,0) as nWHag,ISNULL(nWHcl,0) as nWHcl
-	,ISNULL((SELECT top 1 DATEDIFF(s,xTimeDetail.timegroup,logout)
-				FROM #ccGenSession
-				WHERE [user_id]=xTimeDetail.[user_id]
-					AND login<xTimeDetail.timegroup AND logout>xTimeDetail.timegroup AND logout<DATEADD(mi,15,xTimeDetail.timegroup)
-	),0)AS t1
-	,ISNULL((SELECT top 1 900
-					FROM #ccGenSession
-					WHERE [user_id]=xTimeDetail.[user_id]
-							AND login<=xTimeDetail.timegroup AND logout>DATEADD(mi,15,xTimeDetail.timegroup)
-		),0)AS t2
-	,ISNULL((SELECT SUM(DATEDIFF(s,login,logout))
-					FROM #ccGenSession
-					WHERE [user_id]=xTimeDetail.[user_id]
-							AND login>xTimeDetail.timegroup AND logout<DATEADD(mi,15,xTimeDetail.timegroup)
-		),0)AS t3
-	,ISNULL((SELECT top 1 DATEDIFF(s,login,DATEADD(mi,15,xTimeDetail.timegroup))
-					FROM #ccGenSession
-					WHERE [user_id]=xTimeDetail.[user_id]
-							AND login>xTimeDetail.timegroup AND login<DATEADD(mi,15,xTimeDetail.timegroup)AND logout>DATEADD(mi,15,xTimeDetail.timegroup)
-		),0)AS t4
-	into #agentInformation
-	from (select min(dateStartDetail) as dateStartDetail,min(dateEndDetail) as dateEndDetail,timegroup,timegroup_next,[User_id]
-		,sum(tunknown) as tunknown,sum(tnot_av) as tnot_av,sum(tav) as tav,sum(tprob) as tprob,sum(tother) as tother,sum(nother) as nother
-		from #timeDetailAgent
-		group by timegroup,timegroup_next,user_id
-		)xTimeDetail
-right join
-(select #callsin.timegroup as timegroup,
-	#callsin.[user_id] as [user_id]
-	,ISNULL(SUM(#callsin.txfer),0) as txfer
-	,ISNULL(SUM(#callsin.tdialog),0) as tdialog
-	,ISNULL(SUM(#callsin.tnotes),0) as tnotes
-	,ISNULL(SUM(#callsin.tring),0) as tring
-	,ISNULL(SUM(#callsin.nMoh),0) as nMoh
-	,ISNULL(SUM(#callsin.nWHag),0) as nWHag
-	,ISNULL(SUM(#callsin.nWHcl),0) as nWHcl
-from #callsin
-group by
-	#callsin.timegroup, #callsin.[user_id]
-) as calls on calls.timegroup = xTimeDetail.timegroup and xTimeDetail.[user_id]=calls.[user_id]
-where xTimeDetail.timegroup is not null
+select session.timegroup, session.user_id
+,isnull(sum(session.tlog),0) as tlog
+from TmpSessionTimeGroup as session 
+where login between @from and @to
+group by session.timegroup,session.user_id
+),
+callin as (
+select 
+callin.timegroup,callin.user_id
+,isnull(sum(callin.txfer),0) txfer,isnull(sum(callin.tdialog),0) tdialog,isnull(sum(callin.tnotes),0) tnotes
+,isnull(sum(callin.tring),0) tring,isnull(sum(callin.nMoh),0) nMoh,isnull(sum(callin.nWHag),0) nWHag,isnull(sum(callin.nWHcl),0) nWHcl
+from #callsin callin
+group by callin.timegroup,callin.user_id
+), timeAgent as(
+select timeAgent.timegroup,timeAgent.user_id,isnull(sum(timeAgent.tnot_av),0) as tnot_av,isnull(sum(timeAgent.tav),0) tav
+,isnull(sum(timeAgent.tprob),0) tprob, isnull(sum(timeAgent.tother),0) tother,isnull(sum(timeAgent.tunknown),0) tunknown
+,isnull(sum(timeAgent.nother),0) nother
+from #timeDetailAgent timeAgent
+group by timeAgent.timegroup,timeAgent.user_id
+)
 
-drop table #timeDetailAgent
+select ROW_NUMBER() OVER(ORDER BY session.timegroup,session.[user_id] ) AS Row,
+session.timegroup, session.user_id
+,isnull(timeAgent.tnot_av,0) as tnot_av,isnull(timeAgent.tav,0) tav,isnull(timeAgent.tprob,0) tprob
+,isnull(timeAgent.tother,0) tother,isnull(timeAgent.tunknown,0) tunknown,isnull(timeAgent.nother,0) nother
+,isnull(callin.txfer,0) txfer,isnull(callin.tdialog,0) tdialog,isnull(callin.tnotes,0) tnotes
+,isnull(callin.tring,0) tring,isnull(callin.nMoh,0) nMoh,isnull(callin.nWHag,0) nWHag,isnull(callin.nWHcl,0) nWHcl
+,isnull(session.tlog,0) as tlog
+into #agentInformation
+from sessionTimeGroup as session 
+left join timeAgent on timeAgent.User_id=session.user_id and timeAgent.timegroup=session.timegroup
+left join callin on callin.User_id=session.user_id and session.timegroup=callin.timegroup
+order by session.timegroup
 
 INSERT INTO #ccGenInSpec (timegroup, inbound_id, pos_tot, pos_time, pos_efect)
-SELECT timegroup, ccInboundAgentes.inbound_id
-	, COUNT(DISTINCT #agentInformation.[user_id]) AS pos_max -- pos_tot
-	, SUM((t1+t2+t3+t4) - (tnot_av + tprob + tother)) AS pos_time
-	, COUNT(CASE WHEN ((t1+t2+t3+t4)- (tnot_av + tprob + tother)) > 2000 THEN 1 ELSE NULL END) AS tresPos
-	FROM #agentInformation
-	INNER JOIN ccInboundAgentes ON (#agentInformation.[user_id] = ccInboundAgentes.[user_id])
-	WHERE timegroup >= @from AND timegroup < @to  AND INBOUND_ID > 0
-	GROUP BY timegroup, ccInboundAgentes.inbound_id
+select timegroup, B.inbound_id
+, COUNT(DISTINCT B.[user_id]) AS pos_max -- pos_tot
+	,SUM (tlog - (tnot_av + tprob + tother)) AS pos_time
+	, COUNT(CASE WHEN (tlog- (tnot_av + tprob + tother)) > 2000 THEN 1 ELSE NULL END) AS tresPos
+from #agentInformation X
+INNER JOIN ccInboundAgentes B ON X.[user_id] = B.[user_id]
+WHERE timegroup >= @from AND timegroup < @to  
+group by timegroup, B.inbound_id
 
 --Borrar lo que esta para no repetir
-delete from [RepInCalls] with(rowlock)
-where date >= @from AND date < @to
+delete from [RepInCalls] where date >= @from AND date < @to
+
+;
+with callsin as(
+select timegroup as tg
+	,inbound_id as inboundId,	dni_id	
+	,ntotal, nxfer, nabnd as nabnd_que, nxfer_que,
+	(ninitial + nout_service + nout_hour + nno_agent + ntimeout + noverflow ) nno_xfer , tque_max,
+	tque, NULLIF(nque, 0) nque , nanswer, nno_answer , nlost,
+		(nabnd_xfer) nabnd_xfer , nabnd_ring, nabnd_dialog
+		--,0 as pos_tot, 0 as pos_time --completar		
+		, (nansw_tres + nabnd_tres) AS SL_P_1 ,
+		(nanswer + nabnd + nno_agent + ntimeout + noverflow + nno_answer + nlost) AS SL_P_2
+		,ISNULL(tque/ NULLIF(nque, 0), 0) as [avg]
+		--,ISNULL(SL_P_1 * 100/ NULLIF(SL_P_2, 0), 0) SL
+		,nMoh,  nWHag	,nWHcl
+		,DATEPART(yyyy,timegroup) as [year]
+		,DATEPART(mm,timegroup) as [mounth]
+		,DATEPART(dd,timegroup) as [day]
+		,DATEPART(hh,timegroup) as [hour]
+		,DATEPART(mi,timegroup) as [minute]
+		,cal_id,phone_in	,dateStartDetail
+		FROM #callsin		
+),
+wgByAcd as(
+	select max(IDWG) as IDWG,Inbound_id,descripcion from ccWgByAcdView
+	group by Inbound_id,descripcion
+)
 
 insert into [RepInCalls]
-SELECT	timegroup as [date], ccInbound.inbound_id as inboundId, ccInbound.descripcion as inbound,isnull(xDetail.dni_id,0),
-isnull(ccDnis.dni_descripcion,'S/DNIS') as dnis, A.IDWG as workgroupId, C.WGName as workgroup, B.IDArea as areaId,
-D.AreaName as area,
-ntotal, nxfer,
-nabnd_que, nxfer_que, nno_xfer, tque_max ,
-tque, nque, nanswer, nno_answer, nlost, nabnd_xfer, nabnd_ring, nabnd_dialog, pos_tot, pos_time, SL_P_1, SL_P_2 , avg, SL,nMoh,
-nWHag, nWHcl, datepart(yyyy,CONVERT(varchar(20), timegroup, 120)) as [year]
-, datepart(mm,CONVERT(varchar(20), timegroup, 120)) as [month]
-, datepart(dd,CONVERT(varchar(20), timegroup, 120)) as [day]
-, datepart(hh,CONVERT(varchar(20), timegroup, 120)) as [hour]
-, datepart(mi,CONVERT(varchar(20), timegroup, 120)) as [minutes]
-,cal_id,phone_in,dateStartDetail,isnull(dni_numero,'') as DniNumber
-FROM (
-SELECT cal_id,phone_in,isnull(dateStartDetail,'') as dateStartDetail,
-	ISNULL(xDetCall.tg, xDetSpec.tg ) as timegroup , ISNULL(xDetCall.inbound_id, xDetSpec.inbound_id) inbound_id,xDetCall.dni_id as dni_id,
-	ISNULL(ntotal, 0) ntotal, ISNULL(nxfer, 0) nxfer, ISNULL(nabnd_que, 0) nabnd_que , ISNULL(nxfer_que, 0) nxfer_que,
-	ISNULL(nno_xfer, 0) nno_xfer, ISNULL(tque_max, 0) tque_max , ISNULL(tque, 0) tque, ISNULL(nque, 0) nque,
-	ISNULL(nanswer, 0) nanswer , ISNULL(nno_answer, 0) nno_answer, ISNULL(nlost, 0) nlost, ISNULL(nabnd_xfer, 0) nabnd_xfer ,
-	ISNULL(nabnd_ring, 0) nabnd_ring, ISNULL(nabnd_dialog, 0) nabnd_dialog, ISNULL(pos_tot, 0) pos_tot , ISNULL(pos_time, 0) pos_time,
-	ISNULL(SL_P_1, 0) SL_P_1, ISNULL(SL_P_2, 0) SL_P_2 , ISNULL(tque/ NULLIF(nque, 0), 0) avg,
-	ISNULL(SL_P_1 * 100/ NULLIF(SL_P_2, 0), 0) SL, ISNULL(nMoh, 0) nMoh, ISNULL(nWHag,0) nWHag, ISNULL(nWHcl,0) nWHcl
-	FROM (SELECT cal_id,phone_in,dateStartDetail,timegroup as tg, inbound_id,dni_id, ntotal , nxfer, nabnd as nabnd_que, nxfer_que,
-		(ninitial + nout_service + nout_hour + nno_agent + ntimeout + noverflow ) nno_xfer , tque_max,
-		tque, NULLIF(nque, 0) nque , nanswer, nno_answer , nlost,
-		(nabnd_xfer) nabnd_xfer , nabnd_ring, nabnd_dialog, nMoh, nWHag,
-		nWHcl , (nansw_tres + nabnd_tres) AS SL_P_1 ,
-		(nanswer + nabnd + nno_agent + ntimeout + noverflow + nno_answer + nlost) AS SL_P_2
-		FROM #callsin
-		WHERE timegroup >= @from AND timegroup < @to) xDetCall
-FULL OUTER JOIN (SELECT  timegroup as tg, inbound_id, pos_tot, pos_time
-			FROM #ccGenInSpec
-			WHERE timegroup >= @from AND timegroup < @to) xDetSpec
-ON xDetCall.tg = xDetSpec.tg  AND xDetCall.inbound_id = xDetSpec.inbound_id ) xDetail
-INNER JOIN ccInbound ON (xDetail.inbound_id = ccInbound.inbound_id) --and ccInbound.chat=0
-LEFT OUTER JOIN ccDnis ON (xDetail.dni_id = ccDnis.dni_id)
-INNER JOIN ccWgByAcdView A ON (A.Inbound_id = xDetail.inbound_id)
-INNER JOIN ccRIAAreaWorkGroup B ON (B.IDWG = A.IDWG)
-INNER JOIN ccriacat_workgroup C ON (C.IDWG = A.IDWG)
-INNER JOIN ccriacat_areas D ON (D.IDArea = B.IDArea)
-where ccInbound.inbound_id is not null 
-order by ccInbound.descripcion, timegroup
+select tg as date,inboundId,ccInbound.descripcion as  inbound
+,xDetail.dni_id,isnull(ccDnis.dni_Descripcion,'S/DNIS') as dnis
+,wgByAcd.IDWG workgroupId,isnull(wgByAcd.descripcion,'') workgroup,ccInbound.IDArea areaID,D.AreaName area
+,ntotal,nxfer,nabnd_que,nxfer_que,nno_xfer,tque_max,tque,isnull(nque,0) as nque,nanswer
+,nno_answer,nlost,nabnd_xfer,nabnd_ring,nabnd_dialog
+,spec.pos_tot pos_tot,spec.pos_tot pos_time
+,SL_P_1,SL_P_2,avg,ISNULL(SL_P_1 * 100/ NULLIF(SL_P_2, 0), 0) SL
+,nMoh,nWHag,nWHcl
+,year,mounth,day,hour,minute,cal_id,phone_in,dateStartDetail,isnull(dni_numero,'') as DniNumber
+ from callsin xDetail
+ INNER JOIN ccInbound ON xDetail.inboundId = ccInbound.inbound_id
+ LEFT JOIN ccDnis ON xDetail.dni_id = ccDnis.dni_id
+ INNER join wgByAcd on wgByAcd.Inbound_id=ccinbound.Inbound_id
+ INNER JOIN ccriacat_areas D ON D.IDArea = ccInbound.IDArea
+ inner join #ccGenInSpec spec on spec.timegroup=xDetail.tg and spec.inbound_id=xDetail.inboundId
+ --order by tg
 
-drop table #times
-drop table #callsin
-drop table #agentInformation
-drop table #ccGenInSpec
-drop table #ccGenSession
-drop table #ccGenInCall
 
+IF OBJECT_ID('tempdb..#callsin') IS NOT NULL drop table #callsin
+IF OBJECT_ID('tempdb..#callsin2') IS NOT NULL drop table #callsin2
+IF OBJECT_ID('tempdb..#agentInformation') IS NOT NULL drop table #agentInformation
+IF OBJECT_ID('tempdb..#ccGenInSpec') IS NOT NULL drop table #ccGenInSpec
+IF OBJECT_ID('tempdb..#timeDetailAgent') IS NOT NULL drop table #timeDetailAgent
+IF OBJECT_ID('tempdb..#timeDetailAgent2') IS NOT NULL drop table #timeDetailAgent2
 end

@@ -61,7 +61,9 @@ begin
 
     create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
     create nonclustered index ix_times2 on #times([Start] DESC)
-	CREATE TABLE #sessionTime([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
+	CREATE TABLE #sessionTime([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL,
+	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL,tlog int 
+	)
 
 
 	insert into #times

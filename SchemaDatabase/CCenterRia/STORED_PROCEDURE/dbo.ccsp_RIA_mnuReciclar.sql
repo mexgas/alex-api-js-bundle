@@ -42,14 +42,14 @@ if @type=0
         create table #allReciycled(callout_id int not null primary key)
 
         insert into #allReciycled
-        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock) where cam_id = @cam_id and cal_status = 1       
+        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_8),nolock) where cam_id = @cam_id and cal_status = 1       
 
-        update ccoCallBacks with(rowlock)
+        update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
         from ccoCallBacks a with(index([IX_ccoCallBacks6])) join #allReciycled b on (a.callout_id = b.callout_id)
         where [status] = 0
 
-        update ccoWorkingTable with(rowlock) 
+        update ccoWorkingTable 
         set cal_status = 0 
         from ccoWorkingTable a join #allReciycled b on (a.callout_id = b.callout_id)
 
@@ -61,12 +61,12 @@ if @type=0
         insert into #allListReciycled
         select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_10),nolock) where cam_id = @cam_id and cal_status = 1 and list_id = @list_id       
 
-        update ccoCallBacks with(rowlock)
+        update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
         from ccoCallBacks a with(index([IX_ccoCallBacks6])) join #allListReciycled b on (a.callout_id = b.callout_id)
         where [status] = 0
 
-        update ccoWorkingTable with(rowlock) 
+        update ccoWorkingTable
         set cal_status = 0 
         from ccoWorkingTable a join #allListReciycled b on (a.callout_id = b.callout_id)
 
@@ -79,7 +79,7 @@ if @type=0
 if @type in(1,3)
  begin
     
-    update ccoCallBacks with(rowlock)
+    update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
                          from ccoWorkingTable with(index(IX_ccoWorkingTable_12),nolock)
@@ -95,7 +95,7 @@ if @type in(1,3)
                                                 and calif_id is not null))
     and [status] = 0
 
-    update ccoWorkingTable with(rowlock)
+    update ccoWorkingTable
     set cal_status = 0, tiporesdial_id = 0 
     where cam_id = @cam_id 
     and cal_status = 1 
@@ -121,7 +121,7 @@ if @type in(2,3)
 
     exec(@SQL)
 
-    Set @SQL = 'update ccoWorkingTable with(rowlock) set cal_status = 0, tiporesdial_id = 0, calif_id = 0 ' +
+    Set @SQL = 'update ccoWorkingTable set cal_status = 0, tiporesdial_id = 0, calif_id = 0 ' +
      'where cam_id = ' + cast(@cam_id as varchar(10)) + ' and cal_status = 1 '
      + -- and tiporesdial_id = 1 ' +
      'and calif_id in (' + @calif_id + ')'
@@ -132,14 +132,15 @@ if @type in(2,3)
 if @type = 4
  begin  
 
-    update ccoCallBacks with(rowlock) 
+    update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
                          from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock) 
                          where cam_id = @cam_id and cal_status = 3)
     and [status] = 0
 
-    update ccoWorkingTable with(rowlock) set cal_status = 0, tiporesdial_id = 0 
+    update ccoWorkingTable 
+  set cal_status = 0, tiporesdial_id = 0 
     where cam_id = @cam_id and cal_status = 3
  end
 

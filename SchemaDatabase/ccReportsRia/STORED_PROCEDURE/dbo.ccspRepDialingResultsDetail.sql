@@ -4,21 +4,22 @@ CREATE PROCEDURE [dbo].[ccspRepDialingResultsDetail]
 @to as datetime=null
 AS
 
+SET NOCOUNT ON
+
 if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
+	select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
-select @to = getdate()
+	select @to = getdate()
 
 if @action = 1
 begin
-
 
 delete from  RepDialingResultsDetail where [date] between @from and @to
 
 insert into RepDialingResultsDetail(date,telephone,dialResultId,dialResult,userId,login,campaignId,campaign,year,month,day,hour,minutes)
 select dial.fecha as [date],dial.Telefono as [telephone],dial.tipoResDial_id as dialResultId,isnull(tr.descripcion,dial.disconnectCause) as dialResult,
 isnull(co.User_id,0) as userId,isnull(cast(u.Login  as varchar(50)),'systemTranslated_NoUserName') as [Login],
-dial.cam_id as campaignId,camp.cam_descripcion as campaign
+dial.cam_id as campaignId,isnull(camp.cam_descripcion,'N/A') as campaign
 ,datepart(yyyy,dial.fecha) as [year]
 ,datepart(mm,dial.fecha) as [month]
 ,datepart(dd,dial.fecha) as [day]

@@ -2039,7 +2039,7 @@ SET NOCOUNT ON;
 		EXEC(@sql)
 
 		set @process = 'CW-4439'
-		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
 		@option smallint,
 		@IDArea smallint,
 		@Descripcion varchar(40),

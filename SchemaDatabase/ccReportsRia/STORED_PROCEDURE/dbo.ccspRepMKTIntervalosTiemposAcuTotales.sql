@@ -5,22 +5,39 @@ CREATE PROCEDURE [dbo].[ccspRepMKTIntervalosTiemposAcuTotales]
 
 AS
 
+SET NOCOUNT ON
+
 if @from is null
 select @from = convert(datetime,convert(varchar(11),getdate()))
 if @to is null
 	select @to = getdate()
+
 declare @dateNow datetime,@maxLogout datetime
 
 if @action = 1
 begin
-delete from [RepMKTIntervalosTiemposAcuTotales] with(rowlock) 
-	where date >= @from AND date <= @to 	
 
-
-	CREATE TABLE #sessionTime(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[extension] [varchar](7) NOT NULL)
-	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
-	CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
-	CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	IF OBJECT_ID('tempdb..#sessionTimeGroup')  IS NOT NULL  drop table #sessionTimeGroup;		
+	IF OBJECT_ID('tempdb..#inbound')  IS NOT NULL  drop table #inbound
+	IF OBJECT_ID('tempdb..#inboundTimeMayores')  IS NOT NULL  drop table #inboundTimeMayores
+	IF OBJECT_ID('tempdb..#RepMKTIntervalosTiemposAcuTotalesTemp')  IS NOT NULL  drop table #RepMKTIntervalosTiemposAcuTotalesTemp 
+	IF OBJECT_ID('tempdb..#hold')  IS NOT NULL  drop table #hold
+	IF OBJECT_ID('tempdb..#tempccHoldSession')  IS NOT NULL  drop table #tempccHoldSession
+	IF OBJECT_ID('tempdb..#holdMayores2')  IS NOT NULL  drop table #holdMayores2
+	IF OBJECT_ID('tempdb..#tiempoHold')  IS NOT NULL  drop table #tiempoHold
+	IF OBJECT_ID('tempdb..#timeHoldInterval')  IS NOT NULL  drop table #timeHoldInterval
+	IF OBJECT_ID('tempdb..#tempccLogAgentesDia')  IS NOT NULL  drop table #tempccLogAgentesDia
+	IF OBJECT_ID('tempdb..#tempccLogAgentesDia2')  IS NOT NULL  drop table #tempccLogAgentesDia2
+	IF OBJECT_ID('tempdb..#timeDetailAgent')  IS NOT NULL  drop table #timeDetailAgent
+	IF OBJECT_ID('tempdb..#timeDetailAgent2')  IS NOT NULL  drop table #timeDetailAgent2
+	IF OBJECT_ID('tempdb..#tempAgentLastStatus')  IS NOT NULL  drop table #tempAgentLastStatus
+	IF OBJECT_ID('tempdb..#timeDetailAgentFinal')  IS NOT NULL  drop table #timeDetailAgentFinal
+	IF OBJECT_ID('tempdb..#ccLogAgentesDia')  IS NOT NULL  drop table #ccLogAgentesDia
+	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores')  IS NOT NULL  drop table #ccLogAgentesDiaMayores
+	IF OBJECT_ID('tempdb..#groupLog')  IS NOT NULL  drop table #groupLog
+	
+	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)	
+	
 	CREATE TABLE #hold ([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,call_id int not null,inbound_id int not null,  marca int not null, Tipo_marca int not null,
 					Tipo_llamada int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL, [time_dialog] [datetime] not null,[time_notes] [datetime] not null
 					,[time_hold] [datetime] not null)
@@ -48,31 +65,13 @@ delete from [RepMKTIntervalosTiemposAcuTotales] with(rowlock)
 	create table #ccLogAgentesDiaMayores(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null, dateIni datetime not null,dateEnd datetime not null,
 	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
 
-	create nonclustered index ix_times on #times([Start] DESC,[Stop] DESC)
-	create nonclustered index ix_times2 on #times([Start] DESC)
-
-	insert into #times
-	exec ccspTimesReports @from=@from,@to=@to,@interval=15
-
-	INSERT INTO #sessionTime
-	exec ccspGenSession @from, @to
-
+	
 	INSERT INTO #sessionTimeGroup
-	select st.[user_id],[login],logout,dbo.GetTimeGroup([login],0) as timeGroup,dbo.GetTimeGroup(logout,1) as timeGroupNext,DATEDIFF(ss,[login],logout) as tlog, wg.IdCampEsp from #sessionTime st
+	select st.[user_id],[login],logout,timegroup as timeGroup,timegroup_next as timeGroupNext,tlog, wg.IdCampEsp from TmpSessionTimeGroup st
 		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
 		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
 	where wg.Tipo = 0 
-
-	INSERT into #sessionTimeMayores 
-	SELECT * from #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
-	delete #sessionTimeGroup where datediff(mi,timegroup,timegroup_next)>15
-		
-	insert into #sessionTimeGroup
-	select [User_id],[login],logout, th.[start] as timegroup,th.[stop] as timegroup_next,
-		[dbo].TimeInterval( th.[start],th.[stop] ,[login],logout) as [tlog seg],inb_id
-	from #sessionTimeMayores t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-	where  datediff(ss,th.start,timegroup_next)>0	
+	
 
 -------------------HOLD PROCESS-------------------
 insert into #hold
@@ -124,10 +123,12 @@ select
 	ths.timegroup_next
 	into #tiempoHold
  from #tempccHoldSession ths
- inner join #times th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
+ inner join TmpTimesInterval th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
  where [dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold)>0 and Tipo_marca=1
- INSERT into #holdMayores2 SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15
-	delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15
+ and th.start between @from and @to
+
+INSERT into #holdMayores2 SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15
+delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15
 
 insert into #tiempoHold
 	select DISTINCT  call_id,
@@ -139,8 +140,10 @@ insert into #tiempoHold
 		th.[start] as timegroup,
 		th.[stop] as timegroup_next
 	from #holdMayores2 t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
+	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
 	where [dbo].TimeInterval( th.[start],th.[stop],hold ,unhold)>0 
+	and th.start between @from and @to
+
 select 
 inbound_id,
 sum(tiempohold) tiempohold,
@@ -221,47 +224,23 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 
 	select
 	dateStartDetail,dateEndDetail,th.start as timegroup,th.stop as timegroup_next,[User_id],IdCampEsp,callId
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tunknown,dateStartDetail) and  th.stop > dateadd(ss,tunknown,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tunknown,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tunknown,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tunknown,dateStartDetail) and  th.stop > dateadd(ss,tunknown,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tunknown,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tunknown,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tunknown
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tnot_av,dateStartDetail) and  th.stop > dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tnot_av,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tnot_av,dateStartDetail) and  th.stop > dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tnot_av,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tnot_av,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tnot_av
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tav,dateStartDetail) and  th.stop > dateadd(ss,tav,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tav,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tav,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tav,dateStartDetail) and  th.stop > dateadd(ss,tav,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tav,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tav,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tav
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tprob,dateStartDetail) and  th.stop > dateadd(ss,tprob,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tprob,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tprob,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tprob,dateStartDetail) and  th.stop > dateadd(ss,tprob,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tprob,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tprob,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tprob
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tother,dateStartDetail) and  th.stop > dateadd(ss,tother,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tother,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tother,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tother,dateStartDetail) and  th.stop > dateadd(ss,tother,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tother,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tother,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tother
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tunknown,dateStartDetail) ) as tunknown
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tnot_av,dateStartDetail) ) as tnot_av
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tav,dateStartDetail) ) as tav
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tprob,dateStartDetail) ) as tprob
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tother,dateStartDetail) ) as tother
+	
 	,isnull((case when th.start > dateStartDetail and th.stop > dateEndDetail then nother else 0 end),0) as nother
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tmanualCall,dateStartDetail) and  th.stop > dateadd(ss,tmanualCall,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tmanualCall,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tmanualCall,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tmanualCall,dateStartDetail) and  th.stop > dateadd(ss,tmanualCall,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tmanualCall,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tmanualCall,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tmanualCall
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tmanualCall,dateStartDetail) ) as tmanualCall		
 	,case when th.start > dateStartDetail and th.stop > dateEndDetail then tunknown2 else 0 end as tunknown2
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tlogout,dateStartDetail) and  th.stop > dateadd(ss,tlogout,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tlogout,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tlogout,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tlogout,dateStartDetail) and  th.stop > dateadd(ss,tlogout,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tlogout,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tlogout,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tlogout
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tcliente,dateStartDetail) and  th.stop > dateadd(ss,tcliente,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tcliente,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tcliente,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tcliente,dateStartDetail) and  th.stop > dateadd(ss,tcliente,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tcliente,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tcliente,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tcliente
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,tchatting,dateStartDetail) and  th.stop > dateadd(ss,tchatting,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,tchatting,dateStartDetail))
-				when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,tchatting,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-				when th.start > dateStartDetail and th.start <= dateadd(ss,tchatting,dateStartDetail) and  th.stop > dateadd(ss,tchatting,dateStartDetail) then datediff(ss,th.start,dateadd(ss,tchatting,dateStartDetail))
-				when th.start > dateStartDetail and th.stop < dateadd(ss,tchatting,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as tchatting
+
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tlogout,dateStartDetail) ) as tlogout
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tcliente,dateStartDetail) ) as tcliente
+	,dbo.TimeInterval(th.Start,th.Stop,dateStartDetail,dateadd(ss,tchatting,dateStartDetail) ) as tchatting
 	from #timeDetailAgent2 t
-	inner join #times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
 	where  datediff(ss,th.start,timegroup_next)>0
+	and th.start between @from and @to
 
   select distinct
 		isnull(c.IdCampEsp,0) as IdCampEsp
@@ -356,7 +335,9 @@ select * into #timeDetailAgent2 from #timeDetailAgent where datediff(mi,timegrou
 		,time_notes
 		, dateEndDetail
 	from #inboundTimeMayores t 
-	inner join #times th on (t.timegroup> th.Start and t.timegroup < th.stop) OR th.Stop between t.timegroup and t.timegroup_next
+	inner join TmpTimesInterval th on (t.timegroup> th.Start and t.timegroup < th.stop) OR th.Stop between t.timegroup and t.timegroup_next
+	and th.start between @from and @to
+
 -----------------------------------------------------------------------------------
 insert into #ccLogAgentesDia
 	select [User_id]
@@ -386,9 +367,10 @@ insert into #ccLogAgentesDia
 	,th.[start] as timegroup
 	,th.[stop] as timegroup_next
 	from #ccLogAgentesDiaMayores A 
-	inner join #times th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
+	inner join TmpTimesInterval th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
 	WHERE dateIni>=@from AND dateIni<@to
 	and TipoStatusAge_id = 3
+	and th.start between @from and @to
 
 	select User_id,IdCampEsp
 		,TipoStatusAge_id
@@ -456,6 +438,7 @@ insert into #ccLogAgentesDia
 		left join #timeDetailAgentFinal d (nolock) on d.IdCampEsp=ci.Inbound_id AND d.timegroup=C.timegroup
 		left JOIN #groupLog lo on c.timegroup = lo.timegroup and c.inboundId = lo.IdCampEsp and c.userId = lo.user_id
 	
+	delete from [RepMKTIntervalosTiemposAcuTotales]	where date >= @from AND date <= @to 	
 	
 insert INTO [RepMKTIntervalosTiemposAcuTotales]	
 	select 
@@ -498,25 +481,22 @@ insert INTO [RepMKTIntervalosTiemposAcuTotales]
 		group by[date],inboundId,  inb.descripcion
 		having sum(nacd)>0 or sum(nabnd)>0 or sum(tlog) >0
 
-	drop table #sessionTimeGroup;
-	drop table #sessionTimeMayores;
-	drop table #times;
-	drop table #sessionTime;
-	drop table #inbound
-	drop table #inboundTimeMayores
-	drop table #RepMKTIntervalosTiemposAcuTotalesTemp 
-	drop table #hold
-	drop table #tempccHoldSession
-	drop table #holdMayores2
-	drop table #tiempoHold
-	drop table #timeHoldInterval
-	drop table #tempccLogAgentesDia
-	drop table #tempccLogAgentesDia2
-	drop table #timeDetailAgent
-	drop table #timeDetailAgent2
-	drop table #tempAgentLastStatus
-	drop table #timeDetailAgentFinal
-	drop table #ccLogAgentesDia
-	drop table #ccLogAgentesDiaMayores
-	drop table #groupLog
+	IF OBJECT_ID('tempdb..#sessionTimeGroup')  IS NOT NULL  drop table #sessionTimeGroup;		
+	IF OBJECT_ID('tempdb..#inbound')  IS NOT NULL  drop table #inbound
+	IF OBJECT_ID('tempdb..#inboundTimeMayores')  IS NOT NULL  drop table #inboundTimeMayores
+	IF OBJECT_ID('tempdb..#RepMKTIntervalosTiemposAcuTotalesTemp')  IS NOT NULL  drop table #RepMKTIntervalosTiemposAcuTotalesTemp 
+	IF OBJECT_ID('tempdb..#hold')  IS NOT NULL  drop table #hold
+	IF OBJECT_ID('tempdb..#tempccHoldSession')  IS NOT NULL  drop table #tempccHoldSession
+	IF OBJECT_ID('tempdb..#holdMayores2')  IS NOT NULL  drop table #holdMayores2
+	IF OBJECT_ID('tempdb..#tiempoHold')  IS NOT NULL  drop table #tiempoHold
+	IF OBJECT_ID('tempdb..#timeHoldInterval')  IS NOT NULL  drop table #timeHoldInterval
+	IF OBJECT_ID('tempdb..#tempccLogAgentesDia')  IS NOT NULL  drop table #tempccLogAgentesDia
+	IF OBJECT_ID('tempdb..#tempccLogAgentesDia2')  IS NOT NULL  drop table #tempccLogAgentesDia2
+	IF OBJECT_ID('tempdb..#timeDetailAgent')  IS NOT NULL  drop table #timeDetailAgent
+	IF OBJECT_ID('tempdb..#timeDetailAgent2')  IS NOT NULL  drop table #timeDetailAgent2
+	IF OBJECT_ID('tempdb..#tempAgentLastStatus')  IS NOT NULL  drop table #tempAgentLastStatus
+	IF OBJECT_ID('tempdb..#timeDetailAgentFinal')  IS NOT NULL  drop table #timeDetailAgentFinal
+	IF OBJECT_ID('tempdb..#ccLogAgentesDia')  IS NOT NULL  drop table #ccLogAgentesDia
+	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores')  IS NOT NULL  drop table #ccLogAgentesDiaMayores
+	IF OBJECT_ID('tempdb..#groupLog')  IS NOT NULL  drop table #groupLog
  end

@@ -41,13 +41,13 @@ select @versionALL = valor from ccsettings where setting_id=77;
 select @actualVersionFix=cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@versionALL,'.') where id=4;
 
 if  @actualVersion = @version and  @actualVersionFix in (@versionfix-1,@versionfix)
-	begin
-		begin tran
-		begin try
+  begin
+    begin tran
+    begin try
 
 
-		set @process = 'CW-1340 -- ALTER SP ccsp_OUTGetCallsInfo_AllCamps'
-    	set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
+    set @process = 'CW-1340 -- ALTER SP ccsp_OUTGetCallsInfo_AllCamps'
+      set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_OUTGetCallsInfo_AllCamps]
 @Tipo as tinyint=0
 AS
 
@@ -121,25 +121,25 @@ begin
   ) L order by Campana
 end
 '
-    	EXEC(@Sql)
+      EXEC(@Sql)
 
-		
+    
 
-	/* End script release */
+  /* End script release */
 
-		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		exec ccsp_getVersion 'BDF', @versionFix
+    /* Upgrade database version (use your own script to do it) */
+    --exec ccsp_getVersion 'BD', @version
+    exec ccsp_getVersion 'BDF', @versionFix
 
-		commit tran
-		end try
+    commit tran
+    end try
 
-		begin catch
+    begin catch
 
-			/* Error generated based on sintax */
-			select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + '''.''' + cast(@versionfix as nvarchar) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() as nvarchar) + ''' Number: ''' + cast(@@error as nvarchar) + ''' Message: '''+ error_message()
-			RAISERROR(@errorGenerated, 11, 1)
+      /* Error generated based on sintax */
+      select @errorGenerated = 'DB script version: ' + cast(@version as nvarchar) + '''.''' + cast(@versionfix as nvarchar) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() as nvarchar) + ''' Number: ''' + cast(@@error as nvarchar) + ''' Message: '''+ error_message()
+      RAISERROR(@errorGenerated, 11, 1)
 
-		rollback tran
-		end catch
-	end
+    rollback tran
+    end catch
+  end

@@ -2155,6 +2155,41 @@ SET NOCOUNT ON;
 	    '
 		EXEC(@sql)
 
+		set @process = 'CW-4439 Agregar permisos'
+		set @sql = 'if not exists (select Permissions_Id from ccPermissions where Permissions_Id = 10008 )
+Begin
+	INSERT INTO [CCenterRia].[dbo].[ccPermissions] (Permissions_Id,Description, KeyJson, Parent,Type, OrderGrl, Release, active) values(10008,''Crear y editar area'',''RolesPermissionAreasCU'', 0,0,0,''N/A'', 1);
+End
+if not exists (select Permissions_Id from ccPermissions where Permissions_Id = 10009 )
+Begin
+	INSERT INTO [CCenterRia].[dbo].[ccPermissions] (Permissions_Id,Description, KeyJson, Parent,Type, OrderGrl, Release, active) values(10009,''Eliminar area'',''RolesPermissionAreasD'', 0,0,0,''N/A'', 1);  
+End
+if not exists (select Permissions_Id from ccPermissions where Permissions_Id = 10010 )
+Begin
+	INSERT INTO [CCenterRia].[dbo].[ccPermissions] (Permissions_Id,Description, KeyJson, Parent,Type, OrderGrl, Release, active) values(10010,''Cambiar usuario de area'',''RolesPermissionAreasChange'', 0,0,0,''N/A'', 1);
+End
+if not exists (select Permissions_Id from ccPermissions where Permissions_Id = 10011 )
+Begin
+	INSERT INTO [CCenterRia].[dbo].[ccPermissions] (Permissions_Id,Description, KeyJson, Parent,Type, OrderGrl, Release, active) values(10011,''Gestionar elementos de area'',''RolesPermissionAreasManage'', 0,0,0,''N/A'', 1);
+End
+iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10008 AND Rol_id = 1)
+BEGIN
+	INSERT INTO CCROLES_PERMISSIONS Values (1,10008)
+END
+iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10009 AND Rol_id = 1)
+BEGIN
+	INSERT INTO CCROLES_PERMISSIONS Values (1,10009)
+END
+iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10010 AND Rol_id = 1)
+BEGIN
+	INSERT INTO CCROLES_PERMISSIONS Values (1,10010)
+END
+iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10011 AND Rol_id = 1)
+BEGIN
+	INSERT INTO CCROLES_PERMISSIONS Values (1,10011)
+END'
+		EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

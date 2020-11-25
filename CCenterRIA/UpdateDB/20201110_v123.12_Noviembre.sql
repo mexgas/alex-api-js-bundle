@@ -2187,6 +2187,16 @@ END
 iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10011 AND Rol_id = 1)
 BEGIN
 	INSERT INTO CCROLES_PERMISSIONS Values (1,10011)
+END
+
+IF NOT EXISTS (select Permissions_Id from ccPermissions where Permissions_Id = 10007 )
+Begin
+	INSERT INTO [CCenterRia].[dbo].[ccPermissions] (Permissions_Id,Description, KeyJson, Parent,Type, OrderGrl, Release, active) values(10007,''Areas|Areas'',''RolesPermissionAreas'', 0,0,0,''N/A'', 1);
+End
+
+iF NOT EXISTS (SELECT * FROM CCROLES_PERMISSIONS WHERE Permissions_Id = 10007 AND Rol_id = 1)
+BEGIN
+	INSERT INTO CCROLES_PERMISSIONS Values (1,10007)
 END'
 		EXEC(@sql)
 

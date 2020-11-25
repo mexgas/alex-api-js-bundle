@@ -122,6 +122,14 @@ AS
                 SELECT @WorkGroup = COALESCE(@WorkGroup + '|' + CAST(IDWG AS VARCHAR(MAX)), CAST(IDWG AS VARCHAR(MAX)))
                 FROM ccRIAWorkGroupUsers
                 WHERE User_id = @User_id;
+
+				DECLARE @Roles Varchar(MAX);
+				SELECT @Roles = STUFF(
+								(SELECT ', ' + CAST(ur.Rol_id AS varchar)
+								FROM ccUsers_Roles ur
+								WHERE User_id = @User_id
+								FOR XML PATH ('')),
+							1,2,'')
         END;
         SELECT @LoginOK UserExists, 
                @UserBlocked UserBlocked, 
@@ -137,5 +145,6 @@ AS
                @Ext Ext, 
                isnull(@ViewAgents,0) ViewAgents,
 			   ISNULL(@WorkGroup, 0) WorkGroup,
-			   ISNULL(@Theme, 0) Theme;
+			   ISNULL(@Theme, 0) Theme,
+			   ISNULL(@Roles,0) Roles
     END;

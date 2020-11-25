@@ -2,7 +2,7 @@ CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
 		@option smallint,
 		@IDArea smallint,
 		@Descripcion varchar(40),
-		@maxMails smallint = 3,
+		@maxMails smallint = 3, 
 		@maxChats smallint = 3,
 		@maxTweets smallint = 3,
 		@defCampaing smallint = NULL
@@ -28,11 +28,11 @@ CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
 		end
 		else if @option=2 begin --Insert Area
 			 if exists(select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion) begin
-			  select -1--, Nombre en Uso
+			  select -1 as result,-1 as idAreas--, Nombre en Uso
 			  return(0)
 			 end
-			Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,defCampaing) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@defCampaing)
-			select 1, scope_identity()--, Area Insertada
+			Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,defCampaing,CreateDate) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@defCampaing,Getdate())
+			select 1 as result, scope_identity() as idAreas--, Area Insertada
 			return(0)
 		end
 		else if @option=3 begin--Update Area

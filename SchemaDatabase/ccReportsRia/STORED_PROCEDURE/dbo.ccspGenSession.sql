@@ -70,46 +70,22 @@ group by user_id,convert(varchar(19),[login],121),convert(varchar(19),logout,121
 ) B
 on A.user_id=B.user_id and convert(varchar(19), A.login,121) =B.login and convert(varchar(19), A.logout,121)=B.logout
 
-
-
-SELECT TOP 0 * INTO #temp_ccGenSession FROM #tempccGenSession
-
-INSERT INTO #temp_ccGenSession (Fila,[user_id], extension, login, logout)
-select ROW_NUMBER() OVER(ORDER BY login)+1000 Fila,
-user_id, ext, login, logout
-from(select a.user_id, max(Extension) as ext, a.fecha as 'logout',
-		(select isnull(max(Fecha),getdate())
-			from ccLogLogin b with(nolock)
-			where b.user_id = a.user_id and
-			b.tipomov = 1 and
-			b.fecha <= a.fecha and
-			b.fecha >= (select isnull(max(fecha),b.fecha)
-						from ccLogLogin with(nolock)
-						where user_id = b.user_id and
-						tipomov = 0 and
-						fecha < a.fecha)
-		) as 'login'
-		from ccLogLogin a
-		where a.tipomov=0
-		and fecha >= @from
-		and fecha <= @to
-		group by a.user_id, a.fecha) as sessiontime
-		where datediff(day,login,logout) >= 1
-order by user_id, login
-
 UPDATE a with (ROWLOCK)
 SET a.logout = b.logout
 FROM #tempccGenSession b
 INNER JOIN #tempccGenSession a on a.user_id = b.user_id and a.login = b.login and a.logout <> b.logout
 
+;
+--select *,datediff(ss,login,logout) as tlog from(
+with tmpccGenSession as(
+select user_id, dateadd(ss,-1,[login]) as [login],convert(varchar(19),dateadd(ss,1,[logout]),121) as [logout],extension,
+dbo.GetTimeGroup(dateadd(ss,-1,[login]),0) as timeGroup,dbo.GetTimeGroup(dateadd(ss,1,[logout]),1) as timeGroupNext from #tempccGenSession
+)
 
-select user_id, [login],[logout],extension from #tempccGenSession
+select A.*,datediff(ss,[login],[logout]) as tlog from tmpccGenSession A
 
-DROP TABLE #temp_ccGenSession
 drop table #tempccGenSession
 drop table #temUserIdLogoutNull
 drop table #temIdMaxLogoutNull
 
-
-return(0)
 set nocount off

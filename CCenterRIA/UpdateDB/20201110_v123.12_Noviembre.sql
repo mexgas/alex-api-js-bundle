@@ -2247,8 +2247,7 @@ ORDER BY Hour
 
 		set @process = 'CW-4556 Se agrega validación para mostrar admin por areas'
 		set @sql = '
-		
-	ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
+		ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRolesManagement]
 	@action SMALLINT,
 	@User_id VARCHAR(MAX)= '''',
 	@subaction VARCHAR(50)= '''',
@@ -2536,7 +2535,7 @@ BEGIN TRY
     END;
     COMMIT TRANSACTION;
 	if @resultado <>''''
-	begina
+	begin
 		select @resultado
 	end
 	else
@@ -2553,7 +2552,7 @@ BEGIN CATCH
     SELECT @returnValue
     ROLLBACK TRANSACTION;
 END CATCH;
-'
+		'
 		EXEC(@sql)
 
 		/* End script release */

@@ -83,10 +83,21 @@ BEGIN TRY
         END;
         IF @subaction = 'Users'
             BEGIN
-                SELECT User_id, 
-                       Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno AS Names
-                FROM ccUsers
-                WHERE TipoUser_id = 2 AND User_id > 1;
+                if exists (select * from ccUsers_Roles where User_id = @user_id and Rol_id = (select Rol_id from ccRoles where Level = 7)) --User super root
+				begin
+					SELECT User_id, Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno AS Names
+					FROM ccUsers
+					WHERE TipoUser_id = 2 AND User_id > 1;
+				end
+				else
+				begin 
+					declare @idArea int
+					set @idArea = (select IDArea from ccUsers where User_id = @User_id)
+					
+					SELECT User_id, Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno AS Names
+					FROM ccUsers
+					WHERE TipoUser_id = 2 AND User_id > 1 AND IDArea = @idArea
+				end
         END;
     END;
 	END;

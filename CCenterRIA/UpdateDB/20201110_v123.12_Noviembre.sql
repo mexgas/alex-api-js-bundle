@@ -2599,7 +2599,8 @@ BEGIN
 	BEGIN 
 	
 		SELECT cast(IDWG as int) IDWG,WGName
-		FROM ccRIACat_WorkGroup 
+		FROM ccRIACat_WorkGroup
+		WHERE StatusWorkGroup =1		
 					
 	END
 

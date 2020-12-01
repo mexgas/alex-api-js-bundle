@@ -2812,17 +2812,17 @@ END'
 
 		EXEC(@sql)
 
-		set @process = 'CW-4550-Pin_de_campañas se quita columna si existe'
-				set @sql = 'if exists (select * from sys.columns where name = N''Type'' and Object_ID = Object_ID(N''PinedCampaigns''))
+		set @process = 'CW-4550-Pin_de_campañas se quita tabla si existe'
+				set @sql = 'if exists (select * from sys.tables where name = N''PinedCampaigns'')
 						    begin
-						       ALTER TABLE PinedCampaigns DROP COLUMN Type;
+						       DROP TABLE PinedCampaigns
 						    end'
 		EXEC(@sql)
 
-		set @process = 'se agrega columna si existe CW-4550-Pin_de_campañas'
-				set @sql = 'if not exists (select * from sys.columns where name = N''Type'' and Object_ID = Object_ID(N''PinedCampaigns''))
+		set @process = 'se agrega tabla si no existe CW-4550-Pin_de_campañas'
+				set @sql = 'if not exists (select * from sys.tables where name = N''yourTableName'')
 						    begin
-								ALTER TABLE PinedCampaigns ADD Type SMALLINT NOT NULL;
+								 CREATE TABLE PinedCampaigns (CampId INT, AdminId INT, Type SMALLINT, PRIMARY KEY (CampId))
 						    end'
 		EXEC(@sql)
 

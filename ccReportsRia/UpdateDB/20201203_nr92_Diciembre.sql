@@ -601,7 +601,7 @@ set nocount off'
 		set @process = 'CW-4488 Alter Table - RepAgentSummary'
 		set @sql = '
 			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''userID'' and TABLE_NAME = ''RepAgentSummary'') begin
-				ALTER TABLE RepAgentSummary ALTER COLUMN login VARCHAR (40) NULL
+				ALTER TABLE RepAgentSummary ALTER COLUMN userID VARCHAR (40) NULL
 			end
 		'
 		EXEC(@sql)

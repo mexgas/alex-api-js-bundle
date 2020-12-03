@@ -556,6 +556,87 @@ set nocount off'
 							drop table #callsin
 						end'
 		EXEC(@sql)
+
+
+		set @process = 'CW-4488 Alter Table - RepAgentNotReady'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentNotReady'') begin
+				ALTER TABLE RepAgentNotReady ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepAgentSession'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentSession'') begin
+				ALTER TABLE RepAgentSession ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepAgentKPI'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentKPI'') begin
+				ALTER TABLE RepAgentKPI ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepAgentSessionByInterval'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentSessionByInterval'') begin
+				ALTER TABLE RepAgentSessionByInterval ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepAgentGI'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentGI'') begin
+				ALTER TABLE RepAgentGI ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepAgentSummary'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''userID'' and TABLE_NAME = ''RepAgentSummary'') begin
+				ALTER TABLE RepAgentSummary ALTER COLUMN login VARCHAR (40) NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepOutManagementBase'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''Agent'' and TABLE_NAME = ''RepOutManagementBase'') begin
+				ALTER TABLE RepOutManagementBase ALTER COLUMN Agent VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepSpececialAgtPerformance'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepSpececialAgtPerformance'') begin
+				ALTER TABLE RepSpececialAgtPerformance ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepSpececialAgent'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepSpececialAgent'') begin
+				ALTER TABLE RepSpececialAgent ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+		set @process = 'CW-4488 Alter Table - RepIVRSurveys'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepIVRSurveys'') begin
+				ALTER TABLE RepIVRSurveys ALTER COLUMN login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
 		
 
 		SET @process = ''

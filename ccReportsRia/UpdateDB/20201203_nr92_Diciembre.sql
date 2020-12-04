@@ -558,6 +558,35 @@ set nocount off'
 		EXEC(@sql)
 
 
+		set @process = 'CW-4488 DISABLE TRIGGER MSmerge_tr_altertable'
+		set @sql='
+			if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end
+		'
+		EXEC(@sql)
+
+
+
+		set @process = 'CW-4488 Alter Table - ccUsers_Consulta'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''Login'' and TABLE_NAME = ''ccUsers_Consulta'') begin
+				ALTER TABLE ccUsers_Consulta ALTER COLUMN Login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
+
+
+		set @process = 'CW-4488 ENABLE TRIGGER MSmerge_tr_altertable'
+		set @sql='
+			if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end
+		'
+		EXEC(@sql)
+
 		set @process = 'CW-4488 Alter Table - RepAgentNotReady'
 		set @sql = '
 			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''login'' and TABLE_NAME = ''RepAgentNotReady'') begin

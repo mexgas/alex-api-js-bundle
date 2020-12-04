@@ -568,6 +568,13 @@ set nocount off'
 		EXEC(@sql)
 
 
+		set @process = 'CW-4488 Alter Table - ccUsers'
+		set @sql = '
+			if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''Login'' and TABLE_NAME = ''ccUsers'') begin
+				ALTER TABLE ccUsers ALTER COLUMN Login VARCHAR (40) NOT NULL
+			end
+		'
+		EXEC(@sql)
 
 		set @process = 'CW-4488 Alter Table - ccUsers_Consulta'
 		set @sql = '

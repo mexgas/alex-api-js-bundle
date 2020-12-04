@@ -784,6 +784,14 @@ BEGIN
           end
         '
         EXEC(@sql)
+
+        set @process = 'CW-4488 Alter Table - ccUsers_Consulta'
+        set @sql = '
+          if exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''Login'' and TABLE_NAME = ''ccUsers_Consulta'') begin
+            ALTER TABLE ccUsers_Consulta ALTER COLUMN Login VARCHAR (40) NOT NULL
+          end
+        '
+        EXEC(@sql)
     
         
 

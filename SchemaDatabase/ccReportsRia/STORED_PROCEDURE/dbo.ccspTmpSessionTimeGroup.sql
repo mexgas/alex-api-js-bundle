@@ -42,6 +42,10 @@ from #sessionTimeMayores t
 inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
 where  datediff(ss,th.start,timegroup_next)>0;
 
+delete from #sessionTimeGroup where tlog=0 and DATEPART(MS,logout)<=700
+	
+update  #sessionTimeGroup set tlog=1 where tlog=0 and DATEPART(MS,logout)>700
+
 
 insert into tmpSessionTimeGroup
 select user_id,min([login]) as [login],max([logout]) as [logout],min(extension) as extension,timegroup,timegroup_next,sum(tlog) as tlog from #sessionTimeGroup	

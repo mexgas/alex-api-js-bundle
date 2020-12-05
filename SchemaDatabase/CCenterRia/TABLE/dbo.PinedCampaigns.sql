@@ -1,1 +1,1 @@
-CREATE TABLE [dbo].[PinedCampaigns](	  [CampId] INT NOT NULL	, [AdminId] INT NULL	, [Type] SMALLINT NULL	, CONSTRAINT [PK__PinedCam__7A1FD243337DEC84] PRIMARY KEY ([CampId] ASC))
+CREATE TABLE [dbo].[PinedCampaigns](	  [CampId] INT NOT NULL	, [AdminId] INT NULL	, [Type] SMALLINT NULL	, CONSTRAINT [PK__PinedCam__7A1FD24380969680] PRIMARY KEY ([CampId] ASC))

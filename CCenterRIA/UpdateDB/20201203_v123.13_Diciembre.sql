@@ -793,7 +793,7 @@ BEGIN
         '
         EXEC(@sql)
     
-		set @process = 'CW-4559 modificar sp ccsp_GalateaAdminWorkgroups para validacion superusuario'
+		set @process = 'CW-4599 modificar sp ccsp_GalateaAdminWorkgroups para validacion superusuario'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
 	@Option AS SMALLINT,
 	@AdminId AS INT = 0,
@@ -915,10 +915,6 @@ BEGIN
 
 END'
         EXEC(@sql)
-
-
-		DECLARE @sql VARCHAR(max)
-DECLARE @process VARCHAR(max)
 
 		set @process = 'CW-4600 Permisos'
 		set @sql = 'If exists(select * from ccPermissions 

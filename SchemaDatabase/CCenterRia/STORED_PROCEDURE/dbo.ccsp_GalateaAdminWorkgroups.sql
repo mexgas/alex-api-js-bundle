@@ -31,7 +31,7 @@ BEGIN
 	IF @Option = 3 --Lista de wg 
 	BEGIN 
 	
-		SELECT cast(IDWG as int) IDWG,WGName
+		SELECT cast(IDWG as int) Id, WGName as Name
 		FROM ccRIACat_WorkGroup
 		WHERE StatusWorkGroup =1		
 					

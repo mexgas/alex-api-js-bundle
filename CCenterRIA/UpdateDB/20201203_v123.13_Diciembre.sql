@@ -48,6 +48,74 @@ BEGIN
 
 	BEGIN TRY
 
+        set @process = 'se quita sp ccsp_GalateaUpdateUser si existe CW-4593-EOMC-Editar_Agentes_en_Admin_Kolob'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateUser'')
+            begin
+          DROP PROCEDURE ccsp_GalateaUpdateUser;
+            end'
+        EXEC(@sql)
+    
+        set @process = 'se agrega sp ccsp_GalateaUpdateUser CW-4593-EOMC-Editar_Agentes_en_Admin_Kolob'
+        set @sql ='Create PROCEDURE ccsp_GalateaUpdateUser
+@UserId int,
+@Login varchar(40),
+@Nombres varchar(45),
+@LastName varchar(45),
+@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+@Password varchar(200),
+@Sexo bit,
+@canChangeStatus bit
+as
+
+Declare @ApellidoMaterno varchar(45)
+Declare @ApellidoPaterno varchar(45)
+Declare @CurrentPass varchar(200)
+--Obtiene el idioma de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+--se acondiciona los apellidos con el nombre opcional dependiendo del idioma
+	if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para español y portugues
+		begin
+			set @ApellidoPaterno = @LastName
+			set @ApellidoMaterno = @NombreOpcionalExtra
+		end
+	else-- es idioma ingles
+		begin
+			set @ApellidoPaterno = @NombreOpcionalExtra 
+			set @ApellidoMaterno = @LastName
+		end
+
+-- validaciones	
+	if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+		begin
+		select -5 as ResponseCode--,''el usuario no existe''
+		return(0)
+		end
+
+--verificamos si la constrasena ha cambiado
+	select @CurrentPass= Password from ccUsers where User_id=@UserId and Login=@Login
+
+	if @Password <> '''' and @Password <> null and @Password <> @CurrentPass -- si la contraseña si cambio actualizamos en base el fecha de actualizacion de pass
+		begin 
+		Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId
+		end
+
+--update
+	Update ccUsers set 
+	Nombres=@Nombres,
+	ApellidoPaterno=@ApellidoPaterno,
+	ApellidoMaterno=@ApellidoMaterno,
+	Password=case when @Password <> '''' then @Password else Password end,
+	Sexo=@Sexo,
+	canChangeStatus=@canChangeStatus
+	where User_id=@UserId
+
+select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+
+'
+        EXEC(@sql)
+
 
         set @process = 'CW-4505 Alter sp ccsp_RIAGetAveTimeEspec'
         set @sql = '
@@ -793,6 +861,557 @@ BEGIN
         '
         EXEC(@sql)
     
+		set @process = 'CW-4599 modificar sp ccsp_GalateaAdminWorkgroups para validacion superusuario'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+	@Option AS SMALLINT,
+	@AdminId AS INT = 0,
+	@WorkgroupId AS INT = 0,
+	@idArea AS INT = NULL,
+	@Descripcion AS varchar(40) = null
+AS
+declare @users as int
+declare @camps as int
+
+BEGIN
+	IF @Option = 1
+	BEGIN 
+		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+		BEGIN
+			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+			from ccRIACat_WorkGroup wg
+			where StatusWorkGroup = 1
+		END
+
+		ELSE
+		BEGIN
+			SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+			WHERE User_id = @AdminId
+		END			
+	END
+	IF @Option = 2
+	BEGIN 
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id,
+				WGName Name,
+				StatusWorkGroup Status  
+		FROM 
+		ccRIACat_WorkGroup wg 
+		WHERE IDWG = @WorkgroupId
+					
+	END
+
+	IF @Option = 3 --Lista de wg 
+	BEGIN 
+	
+		SELECT cast(IDWG as int) Id, WGName as Name
+		FROM ccRIACat_WorkGroup 
+					
+	END
+
+	IF @Option = 4 --Lista de wg por area
+	BEGIN 
+		SELECT @idArea = ISNULL(@idArea, 0)	
+
+		SELECT CAST(IDWG as int) IDWG 
+		FROM 
+		ccRIAAreaWorkGroup
+		WHERE IDArea = @idArea
+					
+	END
+
+	IF @Option = 5 --Delete WG
+	BEGIN
+		--revisar tablas con relacion de grupos de trabajo
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)
+		if  @WorkgroupId = 0
+		begin
+			SELECT 0
+			return (0)
+		end
+
+		SELECT @users=count(IdCampEsp) 
+		FROM ccRIACampEspWG 
+		where IDWG= @WorkgroupId
+
+		SELECT @users=count(User_id) 
+		FROM ccRIAWorkGroupUsers 
+		where IDWG= @WorkgroupId
+
+		if @users>0 or @camps >0 
+		begin
+			select -1
+		end
+		else
+		begin
+			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG =@WorkgroupId 
+			select 1
+		end
+		
+
+	END
+
+	if @option = 6 -- Verifica si existe el grupo
+		 begin
+		  	select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+			 then 1 else 0 end
+		 
+		 	if isnull(@IDArea,0)=0
+			 begin
+				select @WorkgroupId
+				return(0)
+			 end
+
+		 	if @WorkgroupId=1
+			 begin
+			 set @WorkgroupId = -1
+				select @WorkgroupId
+				return(0)
+			 end
+
+			insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+			if @@rowcount = 1
+				select @WorkgroupId = scope_identity()
+
+			insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+			select @WorkgroupId
+			return(0)
+		 end
+
+END'
+        EXEC(@sql)
+
+		set @process = 'CW-4600 Permisos'
+		set @sql = 'If exists(select * from ccPermissions 
+where KeyJson in (''RolesPermissionAreasCU'',
+''RolesPermissionAreasD'',
+''RolesPermissionAreasChange'')
+)
+	BEGIN
+		declare @id int 
+		IF OBJECT_ID(''tempdb..#Permisos_id'') IS NOT NULL DROP TABLE #Permisos_id
+		select Permissions_id 
+		into #Permisos_id
+		from ccPermissions 
+		where KeyJson in (''RolesPermissionAreasCU'',
+		''RolesPermissionAreasD'',
+		''RolesPermissionAreasChange'',
+		''RolesPermissionAreasManage'')
+
+		IF OBJECT_ID(''tempdb..#Roles_id'') IS NOT NULL DROP TABLE #Roles_id
+		SELECT Distinct(Rol_id)
+		INTO #ROLES_ID
+		FROM ccRoles_Permissions
+		WHERE Permissions_id in (select * from #Permisos_id)
+
+		Delete ccRoles_Permissions where Permissions_id in (select * from #Permisos_id)
+		Delete ccPermissions where Permissions_id in (select * from #Permisos_id)
+		If not exists(select * from ccPermissions where Permissions_id = 10008 )
+			Begin
+				INSERT INTO ccPermissions 
+					(Permissions_Id,Description,KeyJson,Parent,Type,OrderGrl,Release,Active)
+				VALUES 
+					(10008,''Gestionar de areas'',''RolesPermissionAreasManage'',0,0,0,''N/A'',1)
+				Insert into ccPermissions values (10009,''Menu grupos de trabajo'',''RolesPermissionWorkGroup'',0,0,0,''N/A'',1)
+				Insert into ccPermissions values (10010,''Gestionar grupos de trabajo'',''RolesPermissionWGManagment'',0,0,0,''N/A'',1)
+
+				insert into ccRoles_permissions values	(1,10009)
+				insert into ccRoles_permissions	values (1,10010)
+
+				Insert into ccRoles_Permissions 
+				Select *,10008 from #Roles_id
+		End
+		ElSE
+			BEGIN
+				SET @id = (select TOP 1 Permissions_Id FROM ccPermissions ORDER BY Permissions_Id DESC)
+				Insert into ccPermissions values (@id+1,''Gestionar de areas'',''RolesPermissionAreasManage'',0,0,0,''N/A'',1)
+
+				Insert into ccPermissions values (@id+2,''Menu grupos de trabajo'',''RolesPermissionWorkGroup'',0,0,0,''N/A'',1)
+				Insert into ccPermissions values (@id+3,''Gestionar grupos de trabajo'',''RolesPermissionWGManagment'',0,0,0,''N/A'',1)
+
+				Insert into ccRoles_Permissions 
+				Select *,SCOPE_IDENTITY() from #Roles_id
+			END
+end
+
+If exists(select * from ccRoles_permissions where rol_id = 7)
+Delete ccRoles_permissions where rol_id = 7'
+		EXEC(@sql)
+
+		set @process = 'CW-4574 Delete sp ccsp_GalateaAreas'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAreas'')
+				    begin
+						DROP PROCEDURE ccsp_GalateaAreas;
+				    end'
+		EXEC(@sql)
+
+
+		set @process = 'CW-4574 Campañas en areas'
+		set @sql = 'CREATE procedure [dbo].[ccsp_GalateaAreas] 
+	@option int = 2,
+	@IDArea smallint = 0,
+	@Descripcion varchar(40) = NULL,
+	@maxMails smallint = 3,
+	@maxChats smallint = 3,
+	@maxTweets smallint = 3,
+	@defCampaing smallint = 0,
+	@movesfromArea bit = 0,
+	@userId int = NULL,
+	@groupAreas varchar (MAX) = NULL
+AS
+
+SET NOCOUNT ON;
+	
+	declare @opt int = @option -1
+	if @option = 1 --Superuser info
+	begin
+		create table #campsIds(
+			id int,
+			cadena varchar(max)
+		)
+			
+		declare @sql varchar(max),@idPivots varchar(max),@idConcat varchar(max)
+			
+		set @idPivots =''''
+		set @idConcat=''''
+			
+		select @idPivots=@idPivots+Id+'','',
+			@idConcat=@idConcat+''case when ''+id+'' is not null then convert(varchar(max),''+ id+'') + '''','''' else '''''''' end + 
+			''
+			from (
+			select distinct ''[''+convert(varchar(max),cam_id)+'']'' as Id from ccCamps   
+			)x
+			
+		set @idPivots =SUBSTRING(@idPivots,0,len(@idPivots))
+		set @idConcat =SUBSTRING(@idConcat,0,len(@idConcat)-7)
+			
+		set @sql=''
+			select IDArea,''+@idConcat+'' from 
+			(	select IDArea, cam_id from ccCamps) as T
+			PIVOT (
+			max(cam_id) for cam_id in (''+@idPivots+'') ) as P''
+
+		insert into #campsIds
+		exec(@sql)
+			
+		select a.IDArea Id, 
+			a.AreaName Name, 
+			a.StatusArea Status, 
+			a.maxMails Mails, 
+			a.maxChats Chats, 
+			a.maxTweets Tweets, 
+			a.CreateDate as CreateDate,			
+			ISNULL(b.cadena, 0) as CampaignIds  
+		from ccRIACat_Areas a --Falta el datetime 
+		left join #campsIds b on a.IDArea = b.id
+
+		drop table #campsIds
+	end
+	if @option = 2 -- Select de las areas
+	begin
+		IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
+		Create table #Areas(
+			IDArea smallint,
+			AreaName varchar(MAX),
+			maxChats tinyint ,
+			maxMails tinyint ,
+			users int,
+			admins int,
+			camps int,
+			acds int,
+			maxTweets tinyint
+		)
+		insert into #Areas
+		EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@defCampaing=@defCampaing
+		select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
+		from #Areas a
+		inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
+	end
+	if @option = 3 -- Insert new area
+	begin
+	IF OBJECT_ID(''tempdb..#InsertAreas'') IS NOT NULL DROP TABLE #InsertAreas;
+		Create table #InsertAreas(
+			result int,
+			idAreas decimal
+		)
+		insert into #InsertAreas
+		EXEC ccsp_RIA_ABCAreas 
+			@option = @opt,
+			@IDArea=@IDArea,
+			@Descripcion=@Descripcion,
+			@maxMails=@maxMails,
+			@maxChats=@maxChats,
+			@maxTweets=@maxTweets,
+			@defCampaing=@defCampaing
+		if (select result from #InsertAreas) = 1 and @movesfromArea = 1
+			begin
+				Update ccUsers set IDArea = (select idAreas from #InsertAreas), status = 1 where User_id = @userId
+			end
+		Select * from #InsertAreas
+	end
+	if @option = 4 -- Delete Areas
+	begin
+		IF OBJECT_ID(''tempdb..#AreasDelete'') IS NOT NULL DROP TABLE #AreasDelete;
+		SELECT value As IDArea into #AreasDelete FROM fn_RIASplitDelimited(@groupAreas, '','')
+		
+		
+		if (exists(select IDArea from ccUsers where IDArea=(Select top 1 IDArea from #AreasDelete)) or exists(select IDArea from ccCamps where IDArea = (Select top 1 IDArea from #AreasDelete))
+		  or exists(select IDArea from ccInbound where IDArea=(Select top 1 IDArea from #AreasDelete))) and (select valor from ccSettings where setting_id=95)<>1
+		BEGIN
+			Select -1 as result
+		END
+		ELSE
+		BEGIN
+			declare @DWorkGroups as varchar(500)
+			insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+			select user_id,cam_id,prioridad,skill,rel_id,IDWG
+			from ccCampsAgente
+			where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+
+			insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+			select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
+			from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+
+			Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+			Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+
+			insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+			select user_id,cam_id,tipo,IDWG,monitored
+			from ccSupervisorCam
+			where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+
+			Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+
+			delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+			delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+			delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
+			where cam_id in (select cam_id from ccCamps where IDArea in (Select IDArea from #AreasDelete)))
+
+			Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+			Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+
+			Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+			Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+			Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+
+			select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+			Delete from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+
+			if (select valor from ccSettings where setting_id=95)=1
+			begin
+			Update ccInbound set IDArea=NULL, status=0 where IDArea in (Select IDArea from #AreasDelete)
+			Update ccCamps set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+			Update ccUsers set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+			end
+
+			Update ccRIACat_Areas set StatusArea=0 where IDArea in (Select IDArea from #AreasDelete)
+
+			select 1 as result
+		END
+	end
+	if @option = 5 -- update Areas
+	begin
+		if(@Descripcion is null)
+		begin
+			Update ccRIACat_Areas set maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),defCampaing=@defCampaing where IDArea=@IDArea
+		end
+		else 
+		if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
+			begin
+				select -1 as result
+				return
+			end
+		else
+			begin
+				update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),defCampaing=@defCampaing where IDArea=@IDArea	
+			end
+		if @maxChats is not null
+			begin
+				Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
+			end
+		if @movesfromArea = 1
+		Begin
+			Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
+		End
+		select 1 as result
+	end
+SET NOCOUNT ON;
+'
+		EXEC(@sql)
+
+		set @process = 'CW-4601 Finder Admin Kolob'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
+@action int,
+@option tinyint = 0,
+@ids varchar(max)=null,
+@name varchar(25) = NULL,
+@top int = 0,
+@dateIni datetime =null,
+@dateEnd datetime =null,
+@dateStart dateTime= null,
+@userId int = 0
+AS
+
+declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max),@tableNameHistory nvarchar(max)
+declare @parameterDefinition nvarchar(max)
+declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
+declare @status tinyint
+set @sql = ''''
+
+
+if @action in (1,2,6,7) begin
+	if @option = 1 begin
+		set @tableName=''ccChatsNode''
+		set @columnId=''chatId''
+		set @tableNameHistory = ''ccChatsNodeHistory''
+	end
+	else if @option = 3 begin
+		set @tableName=''ccEmailNode''
+		set @columnId=''emailId''
+		set @tableNameHistory = ''ccEmailNodeHistory''
+		end
+	else if @option = 4 begin
+		set @tableName=''ccTwitterNode''
+		set @columnId=''conversationTwitterId''
+		set @tableNameHistory = ''ccTwitterNodeHistory''
+	end
+end
+
+
+
+if @action in (1,6) begin --obtiene los nodos a insertar en BX
+	if @action = 1 set @status =0
+	else if @action = 6 set @status = 2
+
+	if @option in (1,3,4) begin
+
+	declare @auxTag nvarchar(4)
+	
+	select @auxTag =case when @option = 1 then ''@C09'' when @option in (3,4) then ''@C02'' end
+	set @parameterDefinition =N''@status int, @top int,@option int''
+	set @sql=''declare @basexName varchar(max)
+select @basexName=Xname from ccBaseXDB where serviceId=@option and isFull=0;
+	with node ( ''+@columnId+ '',xmlString,dateNode)
+	AS(
+		select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+		,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+		from ''+ @tableName + '' A with(rowlock)
+		where A.status =@status
+		union
+		select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+		,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+		from ''+ @tableNameHistory + '' A with(rowlock)
+		where A.status =@status  
+	)
+
+	select node.''+@columnId+ '',node.xmlString,isnull(baseX.Xname,@basexName) Xname from node
+	left join ccBaseXDB baseX on baseX.serviceId= @option and node.dateNode between baseX.dateStart and isnull(baseX.dateEnd,getdate())
+	order by baseX.Xname''
+
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status,@top=@top,@option=@option
+	end
+end
+else if @action in (2,7) begin--actualiza los nodos insertados en BX
+	if @action = 2 set @status =0
+	else if @action = 7 set @status = 2
+
+	set @parameterDefinition =N''@status int''
+
+	set @sql = ''update ''+@tableName+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+	select @tableName,@columnId,@ids,@sql
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+	set @sql = ''update ''+@tableNameHistory+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+	print(@sql)
+	EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+
+end
+else if @action = 3 --trae el nombre de la base de datos en BX
+begin
+	select Xname from ccBaseXDB where serviceId = @option and isFull=0
+end
+else if @action = 4 --inserta el nombre del xml en BX
+begin
+	insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option,@dateStart, @name,0)
+end
+else if @action = 5 begin --obtener servicios disponibles
+	select @chat= 0,@rec= 2,@email= 0,@twitter=0
+	select @chat = case when valor >= 1 then 1 else 0 end from ccSettings where setting_id = 145
+	select @email = case when valor = 1 then 3 else 0 end from ccSettings where setting_id = 155
+	select @twitter = case when valor = 1 then 4 else 0 end from ccSettings where setting_id = 173
+	select id, ref  from ccFinderServices where id in (@chat, @rec, @email,@twitter)	
+end
+else if @action = 8 begin--trae la lista de las bases para la busqueda
+	select Xname from ccBaseXDB where serviceId = @option
+	and (
+
+	@dateIni between dateStart and dateEnd
+	or @dateEnd between dateStart and dateEnd
+	or dateStart between @dateIni and @dateEnd
+	)
+	union
+	select Xname from ccBaseXDB where serviceId = @option and isFull=0
+	and (
+		dateStart between @dateIni and @dateEnd
+		or @dateIni>=dateStart
+
+	)
+end
+else if @action = 9 begin--Cierra la base datos
+	update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()) where serviceId= @option and  isfull = 0 and dateEnd is null
+end
+
+else if @action = 10 begin
+	declare @filterWg varchar(max)
+	declare @len int
+	set @filterWg=''''
+		 
+		select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+convert(varchar(max), WGCam.Tipo+1)+'') or '' from ccRIAWorkGroupUsers Wguser
+		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+		where Wguser.User_id=@userId
+		 
+		set @len=len(@filterWg)- CHARINDEX(''ro )'', REVERSE(@filterWg))
+		select SUBSTRING(@filterWg,0, @len)
+end
+
+
+else if @action = 11 begin--trae el nombre de la base de datos en BX
+
+	if @option =1 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R01/@CDATE)[1]'',''datetime'')),min(node.value(''(/R01/@C09)[1]'',''datetime''))),GETDATE()) as node FROM ccChatsNode where status = 0
+	end
+	if @option =3 begin
+	SELECT isnull(ISNULL(min(node.value(''(/R03/@CDATE)[1]'',''datetime'')),min(node.value(''(/R03/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccEmailNode where status = 0
+	end
+	if @option =4  begin
+	SELECT isnull(ISNULL(min(node.value(''(/R04/@CDATE)[1]'',''datetime'')),min(node.value(''(/R04/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccTwitterNode where status = 0
+	end
+
+end
+else if @action = 12 begin--trae el nombre de la base de datos en BX
+	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int) as callType, c.cam_descripcion as label
+		from ccRIAWorkGroupUsers Wguser
+		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+		inner join ccCamps c on  WGCam.IdCampEsp=c.cam_id and WGCam.Tipo=1		
+		where Wguser.User_id=@userId
+	union
+	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int) as callType, inb.descripcion as label
+		from ccRIAWorkGroupUsers Wguser
+		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+		inner join ccInbound inb on  WGCam.IdCampEsp=inb.Inbound_id and WGCam.Tipo=0
+		where Wguser.User_id=@userId
+end
+else if @action = 13 begin--trae el nombre de la base de datos en BX
+	;
+	with WgId as(select IDWG from ccRIAWorkGroupUsers Wguser where Wguser.User_id=@userId)
+
+	select distinct cast(Wguser.User_id as int) as [Value],ccUsers.Login as label from ccRIAWorkGroupUsers  Wguser
+	inner join WgId on Wguser.IDWG=WgId.IDWG
+	inner join ccUsers on ccUsers.User_id =Wguser.User_id and TipoUser_id=1
+end'
+		EXEC(@sql)
         
 
 		/* End script release */

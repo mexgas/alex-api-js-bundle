@@ -103,6 +103,13 @@ end
 
 drop table #tmpProcedureReports'
 	EXEC(@sql)
+
+	set @process = 'CW-4606 ReportsMasterProcess'
+    set @sql = '
+      EXEC [msdb].[dbo].[sp_update_job] @job_name = ''ReportsMasterProcess'' 
+		, @owner_login_name = ''sa''
+    '
+    EXEC(@sql)
 		
 						
 		

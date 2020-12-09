@@ -1662,13 +1662,6 @@ SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @Exten
         '
         EXEC(@sql)
 
-	set @process = 'CW-4606 ReportsMasterProcess'
-        set @sql = '
-          EXEC [msdb].[dbo].[sp_update_job] @job_name = ''ReportsMasterProcess'' 
-			, @owner_login_name = ''sa''
-        '
-        EXEC(@sql)
-
 	set @process = 'CW-4612 modificar sp ccsp_GalateaAdminWorkgroups para quitar validacion superusuario'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
 			@Option AS SMALLINT,

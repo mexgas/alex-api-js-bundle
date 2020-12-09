@@ -1655,6 +1655,19 @@ SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @Exten
 	  '
 	EXEC(@sql)
 
+
+	 set @process = 'CW-4584 update CCmenus '
+        set @sql = '
+          update ccMenus set release = ''9e0dc47226f51e50c8da24c1bdf9c28b7791c2539e6df0ef6e1e73f3f035af387c2638cf61c14718f87c94241af6ea9b'' where menu_id = 2100;
+        '
+        EXEC(@sql)
+
+	set @process = 'CW-4606 ReportsMasterProcess'
+        set @sql = '
+          EXEC [msdb].[dbo].[sp_update_job] @job_name = ''ReportsMasterProcess'' 
+			, @owner_login_name = ''sa''
+        '
+        EXEC(@sql)
         
 
 		/* End script release */

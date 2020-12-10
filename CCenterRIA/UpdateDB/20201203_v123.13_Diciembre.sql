@@ -2130,6 +2130,82 @@ AS
         '
 		EXEC(@sql)
 
+		
+		set @process = 'CW-4622 Se elimina si existe sp ccsp_GalateaAdminPortsManagement'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminPortsManagement'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminPortsManagement;
+            end'
+		exec (@sql)
+		set @process = 'CW-4622 Se agrega sp ccsp_GalateaAdminPortsManagement'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminPortsManagement]
+			@action SMALLINT,
+			@dialer_id INT = 0,
+			@cam_id SMALLINT = 0
+			AS
+			SET NOCOUNT ON;
+			DECLARE @transtate BIT
+			IF @@TRANCOUNT = 0
+			BEGIN
+				SET @transtate = 1
+			BEGIN TRANSACTION transtate
+			END
+			BEGIN TRY
+				IF @action = 1 --return all ports
+				BEGIN
+					SELECT Dialers.dialer_id AS DialerId, Dialers.Descripcion AS PortDescription, Provedor.Descrip AS ProviderDescription, Dialers.Puerto
+					FROM [CCenterRia].[dbo].[ccoDialers] AS Dialers INNER JOIN [CCenterRia].[dbo].[cstoProvedor] AS Provedor 
+					ON Dialers.provedor_id = Provedor.provedor_id
+				END;
+				IF @action = 2 --return ports for camp
+				BEGIN
+					SELECT dialer_id AS DialerId, cam_id AS CampId FROM [CCenterRia].[dbo].[ccoDialerCamp] ORDER BY cam_id
+				END;
+				IF @action = 3 --insert port
+				BEGIN
+					IF NOT EXISTS (SELECT dialer_id, cam_id FROM [CCenterRia].[dbo].[ccoDialerCamp]
+						WHERE dialer_id=@dialer_id AND cam_id=@cam_id)
+					BEGIN
+						INSERT INTO [CCenterRia].[dbo].[ccoDialerCamp](dialer_id, cam_id) VALUES (@dialer_id, @cam_id)
+					END;
+				END;
+				IF @action = 4 --delete port
+				BEGIN
+					DELETE FROM [CCenterRia].[dbo].[ccoDialerCamp] WITH(ROWLOCK) WHERE cam_id = @cam_id AND dialer_id = @dialer_id
+				END;
+				IF @transtate = 1 AND XACT_STATE() = 1
+				BEGIN
+					COMMIT TRANSACTION transtate
+				END;
+			END TRY
+			BEGIN CATCH
+			DECLARE @error INT, @message VARCHAR(4000), @xstate INT;
+			SELECT @error = ERROR_NUMBER(), @message = ERROR_MESSAGE(), @xstate = XACT_STATE();
+			IF @xstate = -1
+				ROLLBACK;
+			IF @xstate = 1
+				ROLLBACK
+			IF @xstate = 1
+				ROLLBACK TRANSACTION ccsp_GalateaAdminPortsManagement;
+			RAISERROR (''ccsp_GalateaAdminPortsManagement: %d: %s'', 16, 1, @error, @message) ;
+			END CATCH;'
+	exec (@sql)
+
+	set @process = 'CW-4622 Se insertan permisos en ccPermissions'
+	set @sql = 'if not exists (select * from  [CCenterRia].[dbo].[ccPermissions] where Permissions_Id = 10011) 
+		begin
+			INSERT INTO [CCenterRia].[dbo].[ccPermissions]([Permissions_Id], [Description], [KeyJson], [Parent], [Type], [OrderGrl] ,[Release] ,[Active])
+			VALUES	(10011,''Gestionar campañas'',''RolesPermissionCampManagment'',0,0,0,''N/A'',1), 
+			(10012,''Gestionar asignacion de puertos'',''RolesPermissionPortsManagment'',0,0,0,''N/A'',1)
+		end'
+	exec(@sql)
+	set @process = 'CW-4622 Se insertan permisos en super usuario'
+	set @sql = ' if not exists ( select * from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = 10011)
+				begin
+					INSERT INTO [CCenterRia].[dbo].[ccRoles_Permissions]([Rol_Id], [Permissions_Id]) VALUES	(1,10011),(1,10012)
+				end'
+	exec(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

@@ -1,4 +1,5 @@
 CREATE procedure [dbo].[ReportsMasterProcessWIthOnlyGenerate] 
+
 @from as datetime=null,@to as datetime=null,@scheduleTime int=10,@dateStart datetime =null
 as
 
@@ -19,6 +20,9 @@ if @to is null begin
 	set @to=getdate()
 end
 
+if @dateStart is null begin
+	set @dateStart =getdate()
+end
 exec ccspTmpSessionGeneral @from= @from,@to=@to
 exec ccspTmpTimesInterval @from= @from,@to=@to,@interval=15
 exec ccspTmpSessionTimeGroup @from= @from,@to=@to
@@ -65,8 +69,11 @@ begin
 		update [logsReportsMaster] set status=1,dateStart=@dateSP,dateEnd=getdate() where name =@name and status=0 and dateStart='19000101' and dateEnd='19000101'
 	end try
 	begin catch
+	    
 		select @descError = 'Line: ' + cast(error_line() as nvarchar) + ' Number: ' + cast(@@error as nvarchar) + ' Message: ' + error_message()
+		select @descError,@name
 		update [logsReportsMaster] set status=3,dateStart=@dateSP,dateEnd=getdate(),error=@descError where name =@name and status=0 and dateStart='19000101' and dateEnd='19000101'		
+		
 	end catch
 
 	set @i = @i+1

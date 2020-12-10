@@ -1412,6 +1412,368 @@ else if @action = 13 begin--trae el nombre de la base de datos en BX
 	inner join ccUsers on ccUsers.User_id =Wguser.User_id and TipoUser_id=1
 end'
 		EXEC(@sql)
+		 set @process = 'cw-4535 ALTER PROCEDURE ccsp_RIAChecaLogin '
+    set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
+@Login varchar(20),
+@Password varchar(40),
+@Computer varchar(20),
+@PasswordLwC varchar(40) = null
+AS
+declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
+declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
+
+--Para posiciones ip, by ODC
+declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
+
+-- Para live connected
+-- Tipo de conexion: 0 normal, 1 liveconnected
+declare @tipoConexion smallint
+
+SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
+ @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
+SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
+
+IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
+  GOTO Mostrar
+else
+  set @LoginOK=1
+
+IF not exists(select Login from ccUsers Where Login = @Login
+ AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
+ or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
+ and status > 0 and tipoUser_id = 1)
+  GOTO Mostrar
+else
+  set @PswdOK=1
+
+-- Se actualiza a Lower Case
+--update ccUsers with(rowlock) set Password=isnull(@Password, Password) where Login=@Login and status>0 and tipoUser_id=1
+
+if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
+  insert ccposicion (computer, ext_id) select @Computer, 0
+
+set @CompuOK = 1
+
+if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
+ Where p.Status=1 and M.Status=1 and Computer=@Computer)
+  GOTO Mostrar
+else
+  set @ExtenOK=1
+
+select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
+from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
+Where Computer = @Computer
+
+select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
+
+select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents
+from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
+
+Mostrar:
+--Para posiciones ip, by ODC
+-- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+-- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+IF @ext_id=0
+ BEGIN
+  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
+ END
+
+---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+IF(@ext_id > 0  and @isIP=1)
+ BEGIN
+  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
+ END
+-----------
+
+IF @tipoConexion = 1
+  select @TeclaOK =1
+
+--  CRMx
+DECLARE @crmxActive TINYINT
+SET @crmxActive = 0
+IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
+  BEGIN
+    SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
+  END
+
+
+declare @passSecure int
+select @passSecure= valor from ccSettings where setting_id=207
+
+
+SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
+@UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
+@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure]
+    
+    '
+    exec (@sql)
+
+    set @process = 'CW-4604 Alter sp ccsp_GalateaAdminLogin'
+	set @sql = '
+	  ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
+	                                                 @Password    VARCHAR(40) = '''', 
+	                                                 @PasswordLwC VARCHAR(40) = NULL, 
+	                                                 @IPAddress   VARCHAR(20) = '''', 
+	                                                 @adminId     INT         = 0
+	  AS
+	      BEGIN
+	          SET NOCOUNT ON;
+	          DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme smallint = 0;
+	          CREATE TABLE #temp
+	          (LoginOK              INT, 
+	           PswdOK               INT, 
+	           User_id              SMALLINT, 
+	           Nombre               VARCHAR(100), 
+	           ADMServer            VARCHAR(300), 
+	           AreaId               SMALLINT, 
+	           ViewAvrs             INT, 
+	           changeRecDisposition INT, 
+	           LastPasswordchange   INT
+	          );
+	          INSERT INTO #temp
+	          EXEC ccsp_RIAADMChecaLogin 
+	               @Login, 
+	               @Password, 
+	               @PasswordLwC, 
+	               @adminId;
+	          SELECT @LoginOK = LoginOK, 
+	                 @PswdOK = PswdOK, 
+	                 @Nombre = Nombre, 
+	                 @ADMServer = ADMServer, 
+	                 @AreaId = AreaId, 
+	                 @ViewAvrs = ViewAvrs, 
+	                 @changeRecDisposition = changeRecDisposition, 
+	                 @PasswordExpired = LastPasswordchange
+	          FROM #temp;
+	          IF @LoginOK = 1
+	              BEGIN
+	                  SELECT @User_id = User_id, 
+	                         @ViewAgents = viewAgents,
+	  					   @Theme = theme
+	                  FROM ccUsers
+	                  WHERE Login = @Login;
+	                  DECLARE @LastLoginAttempt DATETIME, @LoginAttempts INT, @MaxAttemptsAllow INT, @TimeBloqued INT, @TimeFromLastAttempt INT;
+	                  SELECT @LastLoginAttempt = LastLoginAttempt, 
+	                         @LoginAttempts = LoginAttempts, 
+	                         @LastPasswordChange = LastPasswordChange
+	                  FROM ccUsers
+	                  WHERE User_id = @User_id;
+	                  SELECT @MaxAttemptsAllow = valor
+	                  FROM ccSettings
+	                  WHERE setting_id = 198;
+	                  SELECT @TimeBloqued = valor
+	                  FROM ccSettings
+	                  WHERE setting_id = 197;
+	                  SELECT @TimeFromLastAttempt = DATEDIFF(MINUTE, @LastLoginAttempt, GETDATE());
+	                  IF @LoginAttempts > @MaxAttemptsAllow
+	                      BEGIN
+	                          SET @LoginAttempts = 0;
+	                          UPDATE ccUsers
+	                            SET 
+	                                LoginAttempts = 0, 
+	                                LastLoginAttempt = GETDATE()
+	                          WHERE User_id = @User_id;
+	                  END;
+	                  IF(@LoginAttempts >= @MaxAttemptsAllow
+	                     AND @TimeFromLastAttempt < @TimeBloqued)
+	                      BEGIN
+	                          SET @UserBlocked = 1;
+	                  END;
+
+	                  --Checks Username match case sensitive    
+	                  IF CAST(@Login AS VARBINARY(200)) <>
+	                  (
+	                      SELECT CAST(LOGIN AS VARBINARY(200))
+	                      FROM ccUsers
+	                      WHERE User_id = @User_id
+	                  )
+	                      BEGIN
+	                          SET @UsernameMatch = 0;
+	                  END;
+
+	                  --Increments attemps if error
+	                  IF @UserBlocked = 0
+	                     AND (@UsernameMatch = 0
+	                          OR @PswdOK = 0)
+	                      BEGIN
+	                          UPDATE ccUsers
+	                            SET 
+	                                LoginAttempts = @LoginAttempts + 1, 
+	                                LastLoginAttempt = GETDATE(), 
+	                                onLine = 0
+	                          WHERE User_id = @User_id;
+	                  END;
+
+	                  --Sets to default to try another attempt
+	                  DECLARE @ExpirationTime INT;
+	                  SELECT @ExpirationTime = valor
+	                  FROM ccSettings
+	                  WHERE setting_id = 29;
+	                  SELECT @PasswordExpired = (CASE
+	                                                 WHEN DATEDIFF(DAY, LastPasswordChange, GETDATE()) > @ExpirationTime
+	                                                      AND @ExpirationTime > 0
+	                                                 THEN 1
+	                                                 ELSE 0
+	                                             END)
+	                  FROM ccUsers;
+	                  IF @UserBlocked = 0
+	                     AND @UsernameMatch = 1
+	                     AND @PswdOK = 1
+	                     AND @PasswordExpired = 0
+	                      BEGIN
+	                          UPDATE ccUsers
+	                            SET 
+	                                LoginAttempts = 0, 
+	                                LastLoginAttempt = GETDATE(), 
+	                                onLine = 1
+	                          WHERE User_id = @User_id;
+	                  END;
+	                  SELECT @Ext = dbo.fn_Ext_X_ip(@IPAddress);
+	                  
+	  				DECLARE @WorkGroup VARCHAR(MAX);
+	                  SELECT @WorkGroup = COALESCE(@WorkGroup + ''|'' + CAST(IDWG AS VARCHAR(MAX)), CAST(IDWG AS VARCHAR(MAX)))
+	                  FROM ccRIAWorkGroupUsers
+	                  WHERE User_id = @User_id;
+	          END;
+	          SELECT @LoginOK UserExists, 
+	                 @UserBlocked UserBlocked, 
+	                 @UsernameMatch UsernameMatch, 
+	                 @PswdOK PasswordMatch, 
+	                 CAST(@PasswordExpired AS BIT) PasswordExpired, 
+	                 @User_id UserID, 
+	                 @Nombre Name, 
+	                 @ADMServer ADMServer, 
+	                 @AreaId AreaId, 
+	                 @ViewAvrs ViewAvrs, 
+	                 @changeRecDisposition ChangeRecDisposition, 
+	                 @Ext Ext, 
+	                 isnull(@ViewAgents,0) ViewAgents,
+	  			   ISNULL(@WorkGroup, 0) WorkGroup,
+	  			   ISNULL(@Theme, 0) Theme;
+	      END;
+	  '
+	EXEC(@sql)
+
+
+	 set @process = 'CW-4584 update CCmenus '
+        set @sql = '
+          update ccMenus set release = ''9e0dc47226f51e50c8da24c1bdf9c28b7791c2539e6df0ef6e1e73f3f035af387c2638cf61c14718f87c94241af6ea9b'' where menu_id = 2100;
+        '
+        EXEC(@sql)
+
+	set @process = 'CW-4612 modificar sp ccsp_GalateaAdminWorkgroups para quitar validacion superusuario'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+			@Option AS SMALLINT,
+			@AdminId AS INT = 0,
+			@WorkgroupId AS INT = 0,
+			@idArea AS INT = NULL,
+			@Descripcion AS varchar(40) = null
+		AS
+		declare @users as int
+		declare @camps as int
+
+		BEGIN
+			IF @Option = 1
+			BEGIN 
+				SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+				SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+				JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+				WHERE User_id = @AdminId		
+			END
+			IF @Option = 2
+			BEGIN 
+				SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+				SELECT CAST(wg.IDWG AS INT) AS Id,
+						WGName Name,
+						StatusWorkGroup Status  
+				FROM 
+				ccRIACat_WorkGroup wg 
+				WHERE IDWG = @WorkgroupId
+					
+			END
+
+			IF @Option = 3 --Lista de wg 
+			BEGIN 
+	
+				SELECT cast(IDWG as int) Id, WGName as Name
+				FROM ccRIACat_WorkGroup 
+					
+			END
+
+			IF @Option = 4 --Lista de wg por area
+			BEGIN 
+				SELECT @idArea = ISNULL(@idArea, 0)	
+
+				SELECT CAST(IDWG as int) IDWG 
+				FROM 
+				ccRIAAreaWorkGroup
+				WHERE IDArea = @idArea
+					
+			END
+
+			IF @Option = 5 --Delete WG
+			BEGIN
+				--revisar tablas con relacion de grupos de trabajo
+				SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)
+				if  @WorkgroupId = 0
+				begin
+					SELECT 0
+					return (0)
+				end
+
+				SELECT @users=count(IdCampEsp) 
+				FROM ccRIACampEspWG 
+				where IDWG= @WorkgroupId
+
+				SELECT @users=count(User_id) 
+				FROM ccRIAWorkGroupUsers 
+				where IDWG= @WorkgroupId
+
+				if @users>0 or @camps >0 
+				begin
+					select -1
+				end
+				else
+				begin
+					Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG =@WorkgroupId 
+					select 1
+				end
+		
+
+			END
+
+			if @option = 6 -- Verifica si existe el grupo
+				 begin
+		  			select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+					 then 1 else 0 end
+		 
+		 			if isnull(@IDArea,0)=0
+					 begin
+						select @WorkgroupId
+						return(0)
+					 end
+
+		 			if @WorkgroupId=1
+					 begin
+					 set @WorkgroupId = -1
+						select @WorkgroupId
+						return(0)
+					 end
+
+					insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+					if @@rowcount = 1
+						select @WorkgroupId = scope_identity()
+
+					insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+					select @WorkgroupId
+					return(0)
+				 end
+
+		END'
+        EXEC(@sql)
         
 
 		/* End script release */

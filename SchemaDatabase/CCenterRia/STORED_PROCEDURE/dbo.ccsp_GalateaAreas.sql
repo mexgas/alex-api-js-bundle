@@ -1,11 +1,11 @@
 CREATE procedure [dbo].[ccsp_GalateaAreas] 
-	@option int = NULL,
-	@IDArea smallint = NULL,
+	@option int = 2,
+	@IDArea smallint = 0,
 	@Descripcion varchar(40) = NULL,
 	@maxMails smallint = 3,
 	@maxChats smallint = 3,
 	@maxTweets smallint = 3,
-	@defCampaing smallint = NULL,
+	@defCampaing smallint = 0,
 	@movesfromArea bit = 0,
 	@userId int = NULL,
 	@groupAreas varchar (MAX) = NULL
@@ -74,7 +74,7 @@ SET NOCOUNT ON;
 		)
 		insert into #Areas
 		EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@defCampaing=@defCampaing
-		select a.*,rca.CreateDate 
+		select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
 		from #Areas a
 		inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
 	end

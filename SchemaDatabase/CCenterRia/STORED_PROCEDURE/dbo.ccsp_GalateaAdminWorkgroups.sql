@@ -5,15 +5,27 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups]
 	@idArea AS INT = NULL,
 	@Descripcion AS varchar(40) = null
 AS
+declare @users as int
+declare @camps as int
+
 BEGIN
 	IF @Option = 1
 	BEGIN 
-		SELECT @AdminId = ISNULL(@AdminId, 0)			
+		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+		BEGIN
+			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+			from ccRIACat_WorkGroup wg
+			where StatusWorkGroup = 1
+		END
+
+		ELSE
+		BEGIN
+			SELECT @AdminId = ISNULL(@AdminId, 0)			
 		
-		SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
-		JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
-		WHERE User_id = @AdminId
-					
+			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+			WHERE User_id = @AdminId
+		END			
 	END
 	IF @Option = 2
 	BEGIN 
@@ -32,8 +44,7 @@ BEGIN
 	BEGIN 
 	
 		SELECT cast(IDWG as int) Id, WGName as Name
-		FROM ccRIACat_WorkGroup
-		WHERE StatusWorkGroup =1		
+		FROM ccRIACat_WorkGroup 
 					
 	END
 
@@ -46,6 +57,37 @@ BEGIN
 		ccRIAAreaWorkGroup
 		WHERE IDArea = @idArea
 					
+	END
+
+	IF @Option = 5 --Delete WG
+	BEGIN
+		--revisar tablas con relacion de grupos de trabajo
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)
+		if  @WorkgroupId = 0
+		begin
+			SELECT 0
+			return (0)
+		end
+
+		SELECT @users=count(IdCampEsp) 
+		FROM ccRIACampEspWG 
+		where IDWG= @WorkgroupId
+
+		SELECT @users=count(User_id) 
+		FROM ccRIAWorkGroupUsers 
+		where IDWG= @WorkgroupId
+
+		if @users>0 or @camps >0 
+		begin
+			select -1
+		end
+		else
+		begin
+			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG =@WorkgroupId 
+			select 1
+		end
+		
+
 	END
 
 	if @option = 6 -- Verifica si existe el grupo

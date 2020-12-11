@@ -1774,7 +1774,437 @@ SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @Exten
 
 		END'
         EXEC(@sql)
-        
+		
+		
+        set @process = 'se quita sp ccsp_GalateaAdminWorkgroups si existe CW-4597'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminWorkgroups'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminWorkgroups;
+            end'
+        EXEC(@sql)
+    
+        set @process = 'se agrega sp ccsp_GalateaAdminWorkgroups CW-4597'
+        set @sql ='
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+	@Option AS SMALLINT,
+	@AdminId AS INT = 0,
+	@WorkgroupId AS INT = 0,
+	@idArea AS INT = NULL,
+	@Descripcion AS varchar(40) = null,
+	@groupList as varchar (MAX) = NULL
+
+AS
+declare @users as int
+declare @camps as int
+declare @sql as varchar(max)
+
+BEGIN
+	IF @Option = 1
+	BEGIN 
+		SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+		JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+		WHERE User_id = @AdminId
+					
+	END
+	IF @Option = 2
+	BEGIN 
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id,
+				WGName Name,
+				StatusWorkGroup Status  
+		FROM 
+		ccRIACat_WorkGroup wg 
+		WHERE IDWG = @WorkgroupId
+					
+	END
+
+	IF @Option = 3 --Lista de wg 
+	BEGIN 
+	
+		SELECT cast(IDWG as int) Id, WGName as Name
+		FROM ccRIACat_WorkGroup
+		WHERE StatusWorkGroup =1
+					
+	END
+
+	IF @Option = 4 --Lista de wg por area
+	BEGIN 
+		SELECT @idArea = ISNULL(@idArea, 0)	
+
+		SELECT CAST(IDWG as int) IDWG 
+		FROM 
+		ccRIAAreaWorkGroup
+		WHERE IDArea = @idArea
+					
+	END
+
+	IF @Option = 5 --Delete WG
+	BEGIN
+		--revisar tablas con relacion de grupos de trabajo
+		IF OBJECT_ID(''tempdb..#WGDelete'') IS NOT NULL DROP TABLE #WGDelete;
+		SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, '','')
+
+		SELECT @camps=count(IdCampEsp) 
+		FROM ccRIACampEspWG 
+		where IDWG in  (select IDwg from #WGDelete)
+
+		SELECT @users=count(User_id) 
+		FROM ccRIAWorkGroupUsers 
+		where IDWG in (select IDwg from #WGDelete)
+
+		if @users>0 or @camps >0 
+		begin
+			select -1
+		end
+		else
+		begin
+			Delete from ccRIAAreaWorkGroup where IDWG in (select IDwg from #WGDelete)
+			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG in (select IDwg from #WGDelete)
+			select 1
+		end
+		
+
+	END
+
+	if @option = 6 -- Verifica si existe el grupo
+		 begin
+		  	select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+			 then 1 else 0 end
+		 
+		 	if isnull(@IDArea,0)=0
+			 begin
+				select @WorkgroupId
+				return(0)
+			 end
+
+		 	if @WorkgroupId=1
+			 begin
+			 set @WorkgroupId = -1
+				select @WorkgroupId
+				return(0)
+			 end
+
+			insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+			if @@rowcount = 1
+				select @WorkgroupId = scope_identity()
+
+			insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+			select @WorkgroupId
+			return(0)
+		 end
+
+END
+
+'
+        EXEC(@sql)
+
+		set @process = 'CW-4588 eliminar sp ccsp_GalateacampaingManager'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateacampaingManager'')
+				    begin
+						DROP PROCEDURE ccsp_GalateacampaingManager;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4588 Crear sp ccsp_GalateacampaingManager'
+		set @sql = '-- =============================================
+-- Author:		UEspinosa
+-- Create date: 26/11/20
+-- Description:	<Description,,>
+-- =============================================
+CREATE PROCEDURE [dbo].[ccsp_GalateacampaingManager] 
+--declare
+@option           SMALLINT, 
+@Activa           SMALLINT     = NULL, 
+@Descripcion      VARCHAR(40) = '''', 
+@IDArea           SMALLINT, 
+@MirrorInbound_Id SMALLINT    = NULL, 
+@frame            SMALLINT, 
+@Prefijo          VARCHAR(40) = '''', 
+@Type             SMALLINT, 
+@userId           SMALLINT, 
+@moduleId         SMALLINT    = 49
+AS
+    BEGIN
+        IF(@option = 2)
+            BEGIN
+				IF EXISTS(select top 1 cam_id from ccCamps where cam_descripcion = @Descripcion)
+				BEGIN
+					Select -1
+					return
+				END
+                IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
+                CREATE TABLE #Campaing(IdCampaing INT)
+                IF @type = 1
+                    BEGIN
+                        INSERT INTO #Campaing
+                        EXEC ccsp_RIA_ABCCamps 
+                             @option = @option, 
+                             @Descripcion = @Descripcion, 
+                             @Cam_id = ''0'', 
+                             @Activa = 1, 
+                             @IDArea = @IDArea, 
+                             @frame = @frame, 
+                             @Prefijo = @Prefijo
+                END
+                    ELSE
+                    IF @type = 0
+                        BEGIN
+                            INSERT INTO #Campaing
+                            EXEC ccsp_RIA_ABCACDGroups 
+                                 @option = @option, 
+                                 @Descripcion = @Descripcion, 
+                                 @Inbound_id = ''0'', 
+                                 @IDArea = @IDArea, 
+                                 @frame = @frame, 
+                                 @Prefijo = @Prefijo
+                    END
+                IF((SELECT TOP 1 IdCampaing FROM #Campaing ) > 0)
+                    BEGIN
+                        INSERT INTO ccRIALog
+                        VALUES(
+                        (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @IDArea), 
+                        GETDATE(),
+                        CASE
+                            WHEN @type = 1
+                            THEN 25
+                            ELSE 26
+                        END, 
+                        (SELECT Login FROM ccUsers WHERE User_Id = @userId), 
+                        @moduleId, 
+                        '''', 
+                        @Descripcion
+                        )
+                END
+				SELECT TOP 1 IdCampaing FROM #Campaing
+				IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
+        END
+    END
+'
+		EXEC(@sql)
+
+		set @process = 'CW-4588 eliminar sp ccsp_RIAUpdateCamConfig'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateCamConfig'')
+				    begin
+						DROP PROCEDURE ccsp_RIAUpdateCamConfig;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4588 crear sp ccsp_RIAUpdateCamConfig'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+				@cam_id smallint,
+				@cam_descripcion varchar(40) = null,
+				@cam_tnotas smallint = null,
+				@cam_ocupado tinyint = null,
+				@cam_NoInt_ocupado tinyint = null,
+				@cam_inter_ocupado smallint = null,
+				@cam_nocontesto tinyint = null,
+				@cam_NoInt_nocontesto tinyint = null,
+				@cam_inter_nocontesto smallint = null,
+				@cam_fax tinyint = null,
+				@cam_NoInt_fax tinyint = null,
+				@cam_inter_fax smallint = null,
+				@cam_ModoManual tinyint= null,
+				@ANI varchar(15) = null,
+				@cam_ShowCalifWnd bit = null,
+				@cam_StartTimerOnHangUp bit = null,
+				@editableCallKey bit = null,
+				@cam_tNoContesta tinyint = null,
+				@cam_intensive_dialing tinyint = null,
+				@detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+				@detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+				@compliance TinyInt = null,
+				@cam_inter_graba smallint = null,
+				@cam_NoInt_graba tinyint = null,
+				@progDial smallint = null,
+				@excCallBack Tinyint = null,
+				@dialOrder Tinyint = null,
+				@dialPrefix varchar(10) = null,
+				@dialPrefixMan varchar(10) = null,
+				@dialPrefixXfe varchar(10) = null,
+				@listenManualCall bit = null,
+				@stopRecording bit = null,
+				@abandonCallback bit = null,
+				@autoCB smallint = null,
+				@id_listAni int = null,
+				@tDialonWrapUp smallint = null,
+				@quesize smallint=null,
+				@DNCScrub int=null,
+				@callerIdDesc varchar(15)=null,
+				@timeZoneRule int=null,
+				@callsBySurvey int=null,
+				@ivrScript int=null,
+				@surveyPctg int=null,
+				@call_record tinyint=null,
+				@dRestrictPlay bit = null,
+				@leaveRecMessage bit = null,
+				@manualCallOnChat bit = null,
+				@callBackSurveyClient bit = null,
+				@callBackSurveyAgent bit = null,
+				@funcEspDtmf int =null,
+				@sipHdrsCfg varchar(255) = null,
+				@cam_inter_cancelled smallint = null,
+				@prefijo varchar(max) = null
+				as
+				set nocount on
+				UPDATE ccCamps SET
+				 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+				 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+				 cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+				 cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+				 cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+				 cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+				 cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+				 cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+				 cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+				 cam_fax = isnull(@cam_fax,cam_fax),
+				 cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+				 cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+				 cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+				 ANI = isnull(@ANI,ANI),
+				 cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+				 editableCallKey = isnull(@editableCallKey, editableCallKey),
+				 cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+				 iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+				 detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+				 detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+				 compliance = isnull(@compliance, compliance),
+				 cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+				 cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+				 cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+				 progDial = isnull(@progDial, progDial),
+				 excCallBack = isnull(@excCallBack,excCallBack),
+				 dialOrder = isnull(@dialOrder, dialOrder),
+				 dialPrefix = isnull(@dialPrefix, dialPrefix),
+				 dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+				 dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+				 listenManualCall = isnull(@listenManualCall, listenManualCall),
+				 stopRecording = isnull(@stopRecording, stopRecording),
+				 abandonCallback = isnull(@abandonCallback, abandonCallback),
+				 t_autoCB = isnull(@autoCB,t_autoCB),
+				 id_anilist = isnull(@id_listAni,id_anilist),
+				 tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+				 cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+				 cam_maxqueue = isnull(@quesize,cam_maxqueue),
+				 DNCScrub = isnull(@DNCScrub,DNCScrub),
+				 callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+				 timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+				 callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+				 ivrScript = isnull(@ivrScript,ivrScript),
+				 surveyPctg = isnull(@surveyPctg,surveyPctg),
+				 call_record = isnull(@call_record,call_record),
+				 startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+				 leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+				 manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+				 callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+				 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+				 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+				 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+				 prefijo = isnull(@prefijo, prefijo)
+				Where cam_id = @cam_id
+
+				if @cam_ShowCalifWnd = 1
+				 begin
+				 If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+				  begin
+				  select 0
+				  return(0)
+				  end
+
+				 UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+				 where cam_id = @cam_id
+				 select 1
+				 return(0)
+				  end
+
+				--else
+				UPDATE ccCamps SET
+				cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+				where cam_id = @cam_id
+				select 2
+				return(0)
+				set nocount off
+
+        '
+		EXEC(@sql)
+
+		
+		set @process = 'CW-4622 Se elimina si existe sp ccsp_GalateaAdminPortsManagement'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminPortsManagement'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminPortsManagement;
+            end'
+		exec (@sql)
+		set @process = 'CW-4622 Se agrega sp ccsp_GalateaAdminPortsManagement'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminPortsManagement]
+			@action SMALLINT,
+			@dialer_id INT = 0,
+			@cam_id SMALLINT = 0
+			AS
+			SET NOCOUNT ON;
+			DECLARE @transtate BIT
+			IF @@TRANCOUNT = 0
+			BEGIN
+				SET @transtate = 1
+			BEGIN TRANSACTION transtate
+			END
+			BEGIN TRY
+				IF @action = 1 --return all ports
+				BEGIN
+					SELECT Dialers.dialer_id AS DialerId, Dialers.Descripcion AS PortDescription, Provedor.Descrip AS ProviderDescription, Dialers.Puerto
+					FROM [CCenterRia].[dbo].[ccoDialers] AS Dialers INNER JOIN [CCenterRia].[dbo].[cstoProvedor] AS Provedor 
+					ON Dialers.provedor_id = Provedor.provedor_id
+				END;
+				IF @action = 2 --return ports for camp
+				BEGIN
+					SELECT dialer_id AS DialerId, cam_id AS CampId FROM [CCenterRia].[dbo].[ccoDialerCamp] ORDER BY cam_id
+				END;
+				IF @action = 3 --insert port
+				BEGIN
+					IF NOT EXISTS (SELECT dialer_id, cam_id FROM [CCenterRia].[dbo].[ccoDialerCamp]
+						WHERE dialer_id=@dialer_id AND cam_id=@cam_id)
+					BEGIN
+						INSERT INTO [CCenterRia].[dbo].[ccoDialerCamp](dialer_id, cam_id) VALUES (@dialer_id, @cam_id)
+					END;
+				END;
+				IF @action = 4 --delete port
+				BEGIN
+					DELETE FROM [CCenterRia].[dbo].[ccoDialerCamp] WITH(ROWLOCK) WHERE cam_id = @cam_id AND dialer_id = @dialer_id
+				END;
+				IF @transtate = 1 AND XACT_STATE() = 1
+				BEGIN
+					COMMIT TRANSACTION transtate
+				END;
+			END TRY
+			BEGIN CATCH
+			DECLARE @error INT, @message VARCHAR(4000), @xstate INT;
+			SELECT @error = ERROR_NUMBER(), @message = ERROR_MESSAGE(), @xstate = XACT_STATE();
+			IF @xstate = -1
+				ROLLBACK;
+			IF @xstate = 1
+				ROLLBACK
+			IF @xstate = 1
+				ROLLBACK TRANSACTION ccsp_GalateaAdminPortsManagement;
+			RAISERROR (''ccsp_GalateaAdminPortsManagement: %d: %s'', 16, 1, @error, @message) ;
+			END CATCH;'
+	exec (@sql)
+
+	set @process = 'CW-4622 Se insertan permisos en ccPermissions'
+	set @sql = 'if not exists (select * from  [CCenterRia].[dbo].[ccPermissions] where Permissions_Id = 10011) 
+		begin
+			INSERT INTO [CCenterRia].[dbo].[ccPermissions]([Permissions_Id], [Description], [KeyJson], [Parent], [Type], [OrderGrl] ,[Release] ,[Active])
+			VALUES	(10011,''Gestionar campañas'',''RolesPermissionCampManagment'',0,0,0,''N/A'',1), 
+			(10012,''Gestionar asignacion de puertos'',''RolesPermissionPortsManagment'',0,0,0,''N/A'',1)
+		end'
+	exec(@sql)
+	set @process = 'CW-4622 Se insertan permisos en super usuario'
+	set @sql = ' if not exists ( select * from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = 10011)
+				begin
+					INSERT INTO [CCenterRia].[dbo].[ccRoles_Permissions]([Rol_Id], [Permissions_Id]) VALUES	(1,10011),(1,10012)
+				end'
+	exec(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

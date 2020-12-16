@@ -14,11 +14,21 @@ declare @sql as varchar(max)
 BEGIN
 	IF @Option = 1
 	BEGIN 
-		SELECT @AdminId = ISNULL(@AdminId, 0)			
+		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+		BEGIN
+			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+			from ccRIACat_WorkGroup wg
+			where StatusWorkGroup = 1
+		END
+
+		ELSE
+		BEGIN
+			SELECT @AdminId = ISNULL(@AdminId, 0)			
 		
-		SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
-		JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
-		WHERE User_id = @AdminId
+			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+			WHERE User_id = @AdminId
+		END		
 					
 	END
 	IF @Option = 2

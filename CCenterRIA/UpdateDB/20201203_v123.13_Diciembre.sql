@@ -683,103 +683,6 @@ select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
 
         set @process = 'CW-4488 Alter SP - ccsp_RIA_ABCAgents'
         set @Sql= '
-          ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
-          @Login varchar(40),
-          @Password varchar(40),
-          @Computer varchar(20),
-          @PasswordLwC varchar(40) = null
-          AS
-          declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
-          declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
-
-          --Para posiciones ip, by ODC
-          declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
-
-          -- Para live connected
-          -- Tipo de conexion: 0 normal, 1 liveconnected
-          declare @tipoConexion smallint
-
-          SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
-           @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
-          SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
-
-          IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
-            GOTO Mostrar
-          else
-            set @LoginOK=1
-
-          IF not exists(select Login from ccUsers Where Login = @Login
-           AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
-           or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
-           and status > 0 and tipoUser_id = 1)
-            GOTO Mostrar
-          else
-            set @PswdOK=1
-
-          -- Se actualiza a Lower Case
-          update ccUsers with(rowlock) set Password=isnull(@PasswordLwC, Password) where Login=@Login and status>0 and tipoUser_id=1
-
-          if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
-            insert ccposicion (computer, ext_id) select @Computer, 0
-
-          set @CompuOK = 1
-
-          if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
-           Where p.Status=1 and M.Status=1 and Computer=@Computer)
-            GOTO Mostrar
-          else
-            set @ExtenOK=1
-
-          select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
-          from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
-          Where Computer = @Computer
-
-          select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
-
-          select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents
-          from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
-
-          Mostrar:
-          --Para posiciones ip, by ODC
-          -- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
-          -- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
-          IF @ext_id=0
-           BEGIN
-            select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
-           END
-
-          ---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
-          IF(@ext_id > 0  and @isIP=1)
-           BEGIN
-            select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
-           END
-          -----------
-
-          IF @tipoConexion = 1
-            select @TeclaOK =1
-
-          --  CRMx
-          DECLARE @crmxActive TINYINT
-          SET @crmxActive = 0
-          IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
-            BEGIN
-              SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
-            END
-
-
-          declare @passSecure int
-          select @passSecure= valor from ccSettings where setting_id=207
-
-
-          SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
-          @UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
-          @XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure]
-          '
-        EXEC(@Sql)
-
-
-        set @process = 'CW-4488 Alter SP - ccsp_RIA_ABCAgents'
-        set @Sql= '
           ALTER PROCEDURE [dbo].[ccsp_RIAADMChecaLogin]
           @Login varchar(40) = '''',
           @Password varchar(40) = '''',
@@ -1415,7 +1318,7 @@ end'
 		 set @process = 'cw-4535 ALTER PROCEDURE ccsp_RIAChecaLogin '
     set @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAChecaLogin]
-@Login varchar(20),
+@Login varchar(40),
 @Password varchar(40),
 @Computer varchar(20),
 @PasswordLwC varchar(40) = null
@@ -2205,6 +2108,479 @@ AS
 					INSERT INTO [CCenterRia].[dbo].[ccRoles_Permissions]([Rol_Id], [Permissions_Id]) VALUES	(1,10011),(1,10012)
 				end'
 	exec(@sql)
+
+	set @process = 'CW-4630 Se modifica sp ccsp_GalateaAdminWorkgroups para validación superusuario'
+	set @sql = '
+	
+	ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+	@Option AS SMALLINT,
+	@AdminId AS INT = 0,
+	@WorkgroupId AS INT = 0,
+	@idArea AS INT = NULL,
+	@Descripcion AS varchar(40) = null
+AS
+declare @users as int
+declare @camps as int
+
+BEGIN
+	IF @Option = 1
+	BEGIN 
+		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+		BEGIN
+			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+			from ccRIACat_WorkGroup wg
+			where StatusWorkGroup = 1
+		END
+
+		ELSE
+		BEGIN
+			SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+			WHERE User_id = @AdminId
+		END			
+	END
+	IF @Option = 2
+	BEGIN 
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id,
+				WGName Name,
+				StatusWorkGroup Status  
+		FROM 
+		ccRIACat_WorkGroup wg 
+		WHERE IDWG = @WorkgroupId
+					
+	END
+
+	IF @Option = 3 --Lista de wg 
+	BEGIN 
+	
+		SELECT cast(IDWG as int) Id, WGName as Name
+		FROM ccRIACat_WorkGroup 
+					
+	END
+
+	IF @Option = 4 --Lista de wg por area
+	BEGIN 
+		SELECT @idArea = ISNULL(@idArea, 0)	
+
+		SELECT CAST(IDWG as int) IDWG 
+		FROM 
+		ccRIAAreaWorkGroup
+		WHERE IDArea = @idArea
+					
+	END
+
+	IF @Option = 5 --Delete WG
+	BEGIN
+		--revisar tablas con relacion de grupos de trabajo
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)
+		if  @WorkgroupId = 0
+		begin
+			SELECT 0
+			return (0)
+		end
+
+		SELECT @users=count(IdCampEsp) 
+		FROM ccRIACampEspWG 
+		where IDWG= @WorkgroupId
+
+		SELECT @users=count(User_id) 
+		FROM ccRIAWorkGroupUsers 
+		where IDWG= @WorkgroupId
+
+		if @users>0 or @camps >0 
+		begin
+			select -1
+		end
+		else
+		begin
+			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG =@WorkgroupId 
+			select 1
+		end
+		
+
+	END
+
+	if @option = 6 -- Verifica si existe el grupo
+		 begin
+		  	select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+			 then 1 else 0 end
+		 
+		 	if isnull(@IDArea,0)=0
+			 begin
+				select @WorkgroupId
+				return(0)
+			 end
+
+		 	if @WorkgroupId=1
+			 begin
+			 set @WorkgroupId = -1
+				select @WorkgroupId
+				return(0)
+			 end
+
+			insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+			if @@rowcount = 1
+				select @WorkgroupId = scope_identity()
+
+			insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+			select @WorkgroupId
+			return(0)
+		 end
+
+END
+	'
+	exec(@sql)
+
+	set @process = 'CW-4630 Se modifica sp ccsp_GalateaAdminCampaigns para validación superusuario'
+	set @sql = ' 
+	
+	ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
+												   @CampType AS SMALLINT = 0, 
+												   @WorkgroupId AS INT = 0, 
+												   @Id AS INT = 0,
+												   @AdminId AS SMALLINT = 0, 
+												   @PinUpdate AS SMALLINT = 0, 
+												   @LoadId AS INT = 0,
+												   @Type AS SMALLINT = 0
+		AS
+		BEGIN
+			set nocount on
+			IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
+			BEGIN
+				IF @CampType = 1 -- Campaigns Out 
+				BEGIN
+					IF @WorkgroupId IS NOT NULL
+					BEGIN
+						SELECT CAST(IdCampEsp AS INT) AS Id 
+						FROM ccRIACampEspWG 
+						WHERE IDWG = @WorkgroupId AND Tipo=1
+						ORDER BY IdCampEsp ASC
+					END
+					ELSE
+					BEGIN
+						raiserror(''ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado'', 18, 1)
+					END	
+				END
+				IF @CampType = 0 -- Campaigns In (ACD)
+				BEGIN
+					IF @WorkgroupId IS NOT NULL
+					BEGIN
+						SELECT CAST(IdCampEsp AS INT) AS Id 
+						FROM ccRIACampEspWG 
+						WHERE IDWG = @WorkgroupId AND Tipo=0
+						ORDER BY IdCampEsp ASC
+					END
+					ELSE
+					BEGIN
+						raiserror(''ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado'', 18, 1)
+					END	
+				END
+			END
+			
+			IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id 
+				BEGIN
+					IF @CampType = 1 -- Campaigns Out 
+						BEGIN
+							IF @Id IS NOT NULL
+								BEGIN
+									SELECT DISTINCT 
+										camps.cam_id AS Id, 
+										camps.cam_descripcion AS Name, 
+										CAST(graph.graphic_id AS INT) AS Frame, 
+										1 AS Type,
+										camps.cam_procesando IsStarted
+									FROM ccCamps camps 
+									LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+									WHERE camps.cam_id = @Id 
+									ORDER BY camps.cam_descripcion ASC;
+								END
+							ELSE
+							BEGIN
+								raiserror(''ERROR. No existe campa?as de salida con el id especificado'', 18, 1)
+							END	
+						END
+					IF @CampType = 0 -- Campaigns In (ACD)
+						BEGIN
+							IF @Id IS NOT NULL
+								BEGIN
+									SELECT DISTINCT 
+										inb.Inbound_id AS Id, 
+										inb.descripcion AS Name, 
+										CAST(graph.graphic_id AS INT) AS Frame,
+										0 Pin, 
+										0 AS Type,
+										CAST(0 AS BIT) IsStarted
+									FROM ccInbound inb
+									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
+									WHERE inb.Inbound_id = @Id 
+									ORDER BY inb.descripcion ASC;
+								END
+							ELSE
+								BEGIN
+									raiserror(''ERROR. No existe campa?as de entrada con el id especificado'', 18, 1)
+								END	
+						END
+				END
+
+			IF @Option = 3   -- Update OverallTotalNew By Campaign 
+				BEGIN
+					IF @Id IS NOT NULL
+						BEGIN
+							UPDATE ccCampsNvosCB SET OverallTotalNew = ccCampsNvosCB.new WHERE id = @Id
+						END
+					ELSE
+						BEGIN
+							raiserror(''ERROR. No existe la campa?as de entrada con el id especificado'', 18, 1)
+						END	
+				END
+
+			IF @Option = 4	 -- Update Pin from Campaign per Admin
+				BEGIN
+					IF @Id IS NOT NULL AND @AdminId IS NOT NULL
+						BEGIN
+							IF @PinUpdate = 1
+								BEGIN
+									INSERT INTO PinedCampaigns (CampId, AdminId, Type)
+										   VALUES (@Id, @AdminId, @Type);
+								END;
+							IF @PinUpdate = 0
+								BEGIN
+									DELETE FROM PinedCampaigns
+									WHERE CampId = @Id AND AdminId = @AdminId AND Type = @Type;
+								END;
+						END
+					ELSE
+						BEGIN
+							raiserror(''ERROR. La campa?as o administrador no existen'', 18, 1)
+						END	
+				END
+			
+			IF @Option = 5	 -- Get Pin from Campaign Ids per Admin
+				BEGIN
+					IF @AdminId IS NOT NULL
+						BEGIN
+							SELECT CampId AS Id FROM PinedCampaigns WHERE AdminId = @AdminId AND Type = @Type
+							ORDER BY Id ASC
+						END
+					ELSE
+						BEGIN
+							raiserror(''ERROR. El administrador con el id seleccionado no existe'', 18, 1)
+						END	
+				END
+
+			IF @Option = 6	 -- Get Blacklist Ids by Campaign Id
+			BEGIN
+				IF @Id IS NOT NULL
+					BEGIN
+			            DECLARE @BlackListIds VARCHAR(MAX);
+			            SELECT @BlackListIds = COALESCE(@BlackListIds + ''|'' + CAST(idtipolista AS VARCHAR(MAX)), CAST(idtipolista AS VARCHAR(MAX)))
+			            FROM Camplistanegra
+			            WHERE cam_id = @Id AND STATUS = 1;
+			            SELECT isnull(@BlackListIds,''0'') AS BlackListIds;
+					END
+				ELSE
+					BEGIN
+						raiserror(''ERROR. La campa?as con el id seleccionado no existe'', 18, 1)
+					END	
+			END
+
+			IF @Option = 7	 -- Get RegistryListIds Ids by Campaign Id
+			BEGIN
+				IF (@Id IS NOT NULL AND EXISTS(SELECT * FROM cccamps WHERE cam_id = @Id))
+					BEGIN
+						SELECT TOP 1 list_id FROM ccRIARegistryLists WHERE cam_id = @Id AND status = 2 ORDER BY list_id DESC
+					END
+				ELSE
+					BEGIN
+						--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+						raiserror(''ERROR. No existe una campa?a con el id especificado'', 18, 1)			
+					END	
+			END
+
+			IF @Option = 8	 -- Delete RegistryListIds Ids by LoadId
+			BEGIN
+				IF (@LoadId IS NOT NULL AND EXISTS(SELECT * FROM ccRIARegistryLists WHERE list_id = @loadID and status <> 0))
+					BEGIN
+						UPDATE ccoCallsOutSource SET cal_status = ''5'' WHERE list_id = @loadID
+						DELETE FROM ccoWorkingTable WHERE list_id = @LoadId 
+						exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId 
+					END
+				ELSE
+					BEGIN
+						--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+						raiserror(''ERROR. No existe una carga el id especificado'', 18, 1)
+					END		
+			END
+
+			 IF @option = 9 -- Get Campaigns by Supervisor, Wg and type when admin eliminated from wg
+		         BEGIN
+		             DECLARE @table TABLE
+		             (camId    INT, 
+		              campType TINYINT,
+		              PRIMARY KEY(camId, campType)
+		             );
+		             INSERT INTO @table
+		                    SELECT DISTINCT 
+		                           IdCampEsp, 
+		                           Tipo
+		                    FROM ccRIACampEspWG wg
+		                    WHERE wg.IDWG IN
+		                    (
+		                        SELECT IDWG
+		                        FROM ccRIAWorkGroupUsers
+		                        WHERE IDWG <> @WorkgroupId
+		                        AND User_id = @AdminId
+		                    );
+		             SELECT CAST(B.IdCampEsp AS INT) AS Id, 
+		                    B.Tipo AS Type
+		             FROM @table A
+		                  RIGHT JOIN
+		             (
+		                 SELECT wg.IdCampEsp, 
+		                        wg.Tipo
+		                 FROM ccRIACampEspWG wg
+		                 WHERE wg.IDWG = @WorkgroupId
+		             ) B ON A.camId = B.IdCampEsp
+		                    AND A.campType = B.Tipo
+		             WHERE A.camId IS NULL
+		             ORDER BY IdCampEsp;
+		     END;
+		END
+
+	'
+	exec(@sql)
+
+	set @process = 'CW-4630 Se modifica sp ccsp_GalateaAdminWorkgroups para eliminacion de grupos de trabajo'
+set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+	@Option AS SMALLINT,
+	@AdminId AS INT = 0,
+	@WorkgroupId AS INT = 0,
+	@idArea AS INT = NULL,
+	@Descripcion AS varchar(40) = null,
+	@groupList as varchar (MAX) = NULL
+
+AS
+declare @users as int
+declare @camps as int
+declare @sql as varchar(max)
+
+BEGIN
+	IF @Option = 1
+	BEGIN 
+		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+		BEGIN
+			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+			from ccRIACat_WorkGroup wg
+			where StatusWorkGroup = 1
+		END
+
+		ELSE
+		BEGIN
+			SELECT @AdminId = ISNULL(@AdminId, 0)			
+		
+			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+			WHERE User_id = @AdminId
+		END		
+					
+	END
+	IF @Option = 2
+	BEGIN 
+		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
+		
+		SELECT CAST(wg.IDWG AS INT) AS Id,
+				WGName Name,
+				StatusWorkGroup Status  
+		FROM 
+		ccRIACat_WorkGroup wg 
+		WHERE IDWG = @WorkgroupId
+					
+	END
+
+	IF @Option = 3 --Lista de wg 
+	BEGIN 
+	
+		SELECT cast(IDWG as int) Id, WGName as Name
+		FROM ccRIACat_WorkGroup
+		WHERE StatusWorkGroup =1
+					
+	END
+
+	IF @Option = 4 --Lista de wg por area
+	BEGIN 
+		SELECT @idArea = ISNULL(@idArea, 0)	
+
+		SELECT CAST(IDWG as int) IDWG 
+		FROM 
+		ccRIAAreaWorkGroup
+		WHERE IDArea = @idArea
+					
+	END
+
+	IF @Option = 5 --Delete WG
+	BEGIN
+		--revisar tablas con relacion de grupos de trabajo
+		IF OBJECT_ID(''tempdb..#WGDelete'') IS NOT NULL DROP TABLE #WGDelete;
+		SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, '','')
+
+		SELECT @camps=count(IdCampEsp) 
+		FROM ccRIACampEspWG 
+		where IDWG in  (select IDwg from #WGDelete)
+
+		SELECT @users=count(User_id) 
+		FROM ccRIAWorkGroupUsers 
+		where IDWG in (select IDwg from #WGDelete)
+
+		if @users>0 or @camps >0 
+		begin
+			select -1
+		end
+		else
+		begin
+			Delete from ccRIAAreaWorkGroup where IDWG in (select IDwg from #WGDelete)
+			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG in (select IDwg from #WGDelete)
+			select 1
+		end
+		
+
+	END
+
+	if @option = 6 -- Verifica si existe el grupo
+		 begin
+		  	select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+			 then 1 else 0 end
+		 
+		 	if isnull(@IDArea,0)=0
+			 begin
+				select @WorkgroupId
+				return(0)
+			 end
+
+		 	if @WorkgroupId=1
+			 begin
+			 set @WorkgroupId = -1
+				select @WorkgroupId
+				return(0)
+			 end
+
+			insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+			if @@rowcount = 1
+				select @WorkgroupId = scope_identity()
+
+			insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+			select @WorkgroupId
+			return(0)
+		 end
+
+END'
+
+EXEC(@sql)
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -128,5 +128,6 @@ CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				UPDATE ccCamps SET
 				cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
 				where cam_id = @cam_id
+				select 2
 				return(0)
 				set nocount off

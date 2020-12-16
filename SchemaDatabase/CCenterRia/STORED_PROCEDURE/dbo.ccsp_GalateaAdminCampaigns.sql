@@ -48,15 +48,14 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 							IF @Id IS NOT NULL
 								BEGIN
 									SELECT DISTINCT 
-										rel.cam_id AS Id, 
+										camps.cam_id AS Id, 
 										camps.cam_descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame, 
-										CAST(rel.tipo AS SMALLINT) AS Type,
-										cam_procesando IsStarted
-									FROM ccSupervisorCam rel
-										LEFT JOIN ccCamps camps ON camps.cam_id = rel.cam_id
-										LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
-									WHERE rel.cam_id = @Id AND rel.tipo = 1
+										1 AS Type,
+										camps.cam_procesando IsStarted
+									FROM ccCamps camps 
+									LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+									WHERE camps.cam_id = @Id 
 									ORDER BY camps.cam_descripcion ASC;
 								END
 							ELSE
@@ -69,17 +68,16 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 							IF @Id IS NOT NULL
 								BEGIN
 									SELECT DISTINCT 
-										rel.cam_id AS Id, 
-										inbound.descripcion AS Name, 
+										inb.Inbound_id AS Id, 
+										inb.descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame,
 										0 Pin, 
-										CAST(rel.tipo AS SMALLINT) AS Type,
+										0 AS Type,
 										CAST(0 AS BIT) IsStarted
-									FROM ccSupervisorCam rel
-										LEFT JOIN ccInbound inbound ON inbound.Inbound_id = rel.cam_id
-										LEFT JOIN ccRIAInboundGraph graph ON inbound.Inbound_id = graph.Inbound_id
-									WHERE rel.cam_id = @Id AND rel.tipo = 0
-									ORDER BY inbound.descripcion ASC;
+									FROM ccInbound inb
+									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
+									WHERE inb.Inbound_id = @Id 
+									ORDER BY inb.descripcion ASC;
 								END
 							ELSE
 								BEGIN

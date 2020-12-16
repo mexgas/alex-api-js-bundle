@@ -1,5 +1,5 @@
 CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
-@Login varchar(20),
+@Login varchar(40),
 @Password varchar(40),
 @Computer varchar(20),
 @PasswordLwC varchar(40) = null

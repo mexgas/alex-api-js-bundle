@@ -65,7 +65,7 @@ BEGIN
 			WHERE grab_id = @grabId
 			)
 	BEGIN
-		SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = sho.nombre_nivel, @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
+		SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
 		FROM ria_grabacion rec
 		LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
 		LEFT JOIN (
@@ -78,7 +78,7 @@ BEGIN
 	END
 	ELSE
 	BEGIN
-		SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = sho.nombre_nivel, @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
+		SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
 		FROM RIA_GRABACIONCONSULTA rec
 		LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
 		LEFT JOIN (
@@ -91,7 +91,7 @@ BEGIN
 	END
 
 	--Languages 0 spanish 1 english
-	SELECT @shoutlevel = CASE WHEN @language = 0 THEN substring(@shoutlevel, 0, @start) ELSE substring(@shoutlevel, (@start + 1), (LEN(@shoutlevel) - 1)) END
+	--SELECT @shoutlevel = CASE WHEN @language = 0 THEN substring(@shoutlevel, 0, @start) ELSE substring(@shoutlevel, (@start + 1), (LEN(@shoutlevel) - 1)) END
 
 	SELECT @Template = formatos.nombre, @supervisor = (supervisor.Nombres + ' ' + supervisor.ApellidoPaterno + ' ' + supervisor.ApellidoMaterno)
 	FROM RIA_FORMATOS AS formatos
@@ -105,7 +105,7 @@ BEGIN
 		SET @xml = (
 				SELECT *
 				FROM (
-					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Inbound' AS '@C02', inb.descripcion AS '@C03', isnull(@shoutLevel, 0) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
+					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Inbound' AS '@C02', inb.descripcion AS '@C03', isnull(@shoutLevel, -1) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
 					FROM ria_grabacion rec
 					INNER JOIN ccinbound inb ON rec.cam_id = inb.Inbound_id AND rec.tipo_llamada = 1
 					LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
@@ -116,7 +116,7 @@ BEGIN
 					
 					UNION
 					
-					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Outbound' AS '@C02', inb.cam_descripcion AS '@C03', isnull(@shoutLevel, 0) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.Description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
+					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Outbound' AS '@C02', inb.cam_descripcion AS '@C03', isnull(@shoutLevel, -1) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.Description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
 					FROM ria_grabacion rec
 					INNER JOIN cccamps inb ON rec.cam_id = inb.cam_id AND rec.tipo_llamada = 2
 					LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
@@ -133,7 +133,7 @@ BEGIN
 		SET @xml = (
 				SELECT *
 				FROM (
-					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Inbound' AS '@C02', inb.descripcion AS '@C03', isnull(@shoutLevel, 0) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
+					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Inbound' AS '@C02', inb.descripcion AS '@C03', isnull(@shoutLevel, -1) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
 					FROM RIA_GRABACIONCONSULTA rec
 					INNER JOIN ccinbound inb ON rec.cam_id = inb.Inbound_id AND rec.tipo_llamada = 1
 					LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
@@ -144,7 +144,7 @@ BEGIN
 					
 					UNION
 					
-					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Outbound' AS '@C02', inb.cam_descripcion AS '@C03', isnull(@shoutLevel, 0) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.Description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
+					SELECT convert(VARCHAR(23), rec.finicio, 126) AS '@CDATE', rec.grab_id AS '@C01', 'Outbound' AS '@C02', inb.cam_descripcion AS '@C03', isnull(@shoutLevel, -1) AS '@C04', isnull(usr.LOGIN,'N/A') AS '@C05', convert(VARCHAR(23), rec.finicio, 126) AS '@C06', pos.Computer AS '@C07', convert(NVARCHAR(10), rec.duracion) AS '@C08', rec.ani AS '@C09', rec.dni AS '@C10', rec.cal_key AS '@C11', @manual AS '@C12', isnull(usr.[User_id],0) AS '@C13', rec.cal_id AS '@C14', rec.cam_id AS '@C15', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS '@C16', isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS '@C17', isnull(@rating, 0) AS '@C18', rec.id_repositorio AS '@C19', isnull(e.Description, '') AS '@C20', rec.calif_id AS '@C21', rec.video AS '@C22', isnull(usr.Nombres + ' ' + usr.ApellidoPaterno + ' ' + usr.ApellidoMaterno,'N/A') AS '@C23', isnull(@supervisor, '') AS '@C24', isnull(@Template, '') AS '@C25', grap.graphic_id AS '@C26', @Prefijo AS '@C27', rec.cam_id AS '@CID', rec.tipo_llamada AS '@CType'
 					FROM RIA_GRABACIONCONSULTA rec
 					INNER JOIN cccamps inb ON rec.cam_id = inb.cam_id AND rec.tipo_llamada = 2
 					LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id

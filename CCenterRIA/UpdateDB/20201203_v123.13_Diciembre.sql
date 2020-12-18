@@ -114,6 +114,40 @@ BEGIN
 END'
         EXEC(@sql)
 
+        set @process = 'CW-4634-PinedCampaign_RemoveContraints y CW-4550-Pin_de_campañas drop table'
+		set @sql = 'if exists (select * from sys.tables where name = N''PinedCampaigns'')
+	    begin
+	        DROP TABLE PinedCampaigns
+	    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4634-PinedCampaign_RemoveContraints y CW-4550-Pin_de_campañas create table'
+		set @sql = 'if not exists (select * from sys.tables where name = N''PinedCampaigns'')
+	    begin
+	        CREATE TABLE PinedCampaigns (CampId INT, AdminId INT, Type SMALLINT,)
+	    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4634-PinedCampaign_RemoveContraints y CW-4550-Pin_de_campañas remove contraints'
+		set @sql = 'declare @name nvarchar(max),@sql2 nvarchar(max)
+		SELECT 
+		   @name =   A.CONSTRAINT_NAME
+		FROM 
+		   INFORMATION_SCHEMA.TABLE_CONSTRAINTS A, 
+		   INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE B
+		WHERE 
+		      CONSTRAINT_TYPE = ''PRIMARY KEY'' 
+		   AND A.CONSTRAINT_NAME = B.CONSTRAINT_NAME
+		   and A.TABLE_NAME=''PinedCampaigns''
+		ORDER BY 
+		   A.TABLE_NAME  
+
+		 if @name is not null begin
+		set @sql2=''ALTER TABLE PinedCampaigns DROP CONSTRAINT ''+@name
+		    exec (@sql2) 
+		 end'
+		EXEC(@sql)
+
         set @process = 'se quita sp ccsp_GalateaUpdateUser si existe CW-4593-EOMC-Editar_Agentes_en_Admin_Kolob'
         set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateUser'')
             begin
@@ -243,142 +277,146 @@ select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
 '
         EXEC(@sql)
 
+        set @process = 'CW-4505 y CW-4634  Delete sp ccsp_RIAGetAveTimeEspec'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAGetAveTimeEspec'')
+				    begin
+						DROP PROCEDURE ccsp_RIAGetAveTimeEspec;
+				    end'
+		EXEC(@sql)
 
-        set @process = 'CW-4505 Alter sp ccsp_RIAGetAveTimeEspec'
-        set @sql = '
-					ALTER PROCEDURE [dbo].[ccsp_RIAGetAveTimeEspec]
-					@CveCamp int
-					AS
+        set @process = 'CW-4505 Alter sp ccsp_RIAGetAveTimeEspec y CW-4634 Obtener el nivel de servicio de la base'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAGetAveTimeEspec]
+		@CveCamp int
+		AS
 
-					declare @fechaI as datetime, @fechaF as datetime
-					declare @Dlgs as int
-					declare @DlgsAveTime as int
-					declare @Que as int
-					declare @QueueAveTime as int
-					declare @CallsLost as int
-					declare @SL1 as int
-					declare @SL2 as int
-					declare @answ_tres as smallint
-					declare @abnd_tres as smallint
+		declare @fechaI as datetime, @fechaF as datetime
+		declare @Dlgs as int
+		declare @DlgsAveTime as int
+		declare @Que as int
+		declare @QueueAveTime as int
+		declare @CallsLost as int
+		declare @SL1 as int
+		declare @SL2 as int
+		declare @answ_tres as smallint
+		declare @abnd_tres as smallint
 
-					declare @nanswer as smallint
-					declare @nno_answer as smallint
-					declare @nlost as smallint
-					declare @nabnd as smallint
-					declare @ntimeout as smallint
-					declare @noverflow as smallint
-					declare @nno_agent as smallint
-					declare @total as int
-					declare @setting as tinyint
+		declare @nanswer as smallint
+		declare @nno_answer as smallint
+		declare @nlost as smallint
+		declare @nabnd as smallint
+		declare @ntimeout as smallint
+		declare @noverflow as smallint
+		declare @nno_agent as smallint
+		declare @total as int
+		declare @setting as tinyint
 
-					declare @dia as varchar(11)
+		declare @dia as varchar(11)
 
-					declare @tresRing as smallint
-					declare @tresDialog as smallint
-					declare @tresDelayIn as smallint
+		declare @tresRing as smallint
+		declare @tresDialog as smallint
+		declare @tresDelayIn as smallint
 
-					exec @tresRing = ccspConfigTresRing
-					exec @tresDialog = ccspConfigTresDialog
-					exec @tresDelayIn = ccspConfigtresDelayIn
+		exec @tresRing = ccspConfigTresRing
+		exec @tresDialog = ccspConfigTresDialog
+		exec @tresDelayIn = ccspConfigtresDelayIn
 
-					--select @dia = ''2003/01/22'' --, @CveCamp=5
-					select @dia=CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
+		--select @dia = ''2003/01/22'' --, @CveCamp=5
+		select @dia=CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
 
-					select @fechaI = convert(datetime, @dia, 101)
-					select @fechaF = dateadd( d, 1, @fechaI )
-					select @setting = valor from ccsettings where setting_id = 127
+		select @fechaI = convert(datetime, @dia, 101)
+		select @fechaF = dateadd( d, 1, @fechaI )
+		select @setting = valor from ccsettings where setting_id = 127
 
 
-					declare @acdType tinyint 
+		declare @acdType tinyint 
 
-					select @acdType= chat from ccInbound where Inbound_id = @CveCamp
+		select @acdType= chat from ccInbound where Inbound_id = @CveCamp
 
-					if @acdType= 0 begin --call
-					SELECT 
-					@Dlgs = count(case when statuscall_id = 13 then 1 else null end), 
-					@DlgsAveTime = ISNULL(sum( case when statuscall_id = 13 then cal_tDialog + cal_tNotas else null end), 0),
+		if @acdType= 0 begin --call
+		SELECT 
+		@Dlgs = count(case when statuscall_id = 13 then 1 else null end), 
+		@DlgsAveTime = ISNULL(sum( case when statuscall_id = 13 then cal_tDialog + cal_tNotas else null end), 0),
 
-					@Que = count(case when cal_que> 0 then 1 else null end), 
-					@QueueAveTime = ISNULL(sum( case when cal_que > 0 then cal_tWait else null end), 0),
+		@Que = count(case when cal_que> 0 then 1 else null end), 
+		@QueueAveTime = ISNULL(sum( case when cal_que > 0 then cal_tWait else null end), 0),
 
-					@CallsLost= isnull(COUNT(CASE WHEN (statuscall_id IN (5,6) AND (cal_que > 0) AND (cal_xfer IS NULL))  THEN 1 ELSE NULL END), 0), -- ODC
+		@CallsLost= isnull(COUNT(CASE WHEN (statuscall_id IN (5,6) AND (cal_que > 0) AND (cal_xfer IS NULL))  THEN 1 ELSE NULL END), 0), -- ODC
 
-					@abnd_tres = COUNT(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer IS NULL)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),
-					@answ_tres =  case when @setting = 0 then COUNT(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END) else Count(case when (statuscall_id = 13 and (cal_twait + cal_txfer + cal_tring<@tresDelayIn)) then 1 else null end) end,
+		@abnd_tres = COUNT(CASE WHEN((statuscall_id IN(5,6)AND cal_que>0 AND cal_xfer IS NULL)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END),
+		@answ_tres =  case when @setting = 0 then COUNT(CASE WHEN((statuscall_id=13 AND cal_tdialog>@tresDialog)AND(cal_twait + cal_txfer + cal_tring<@tresDelayIn))THEN 1 ELSE NULL END) else Count(case when (statuscall_id = 13 and (cal_twait + cal_txfer + cal_tring<@tresDelayIn)) then 1 else null end) end,
 
-					@SL1 = case when @setting = 0 then @abnd_tres + @answ_tres else @answ_tres end,
+		@SL1 = case when @setting = 0 then @abnd_tres + @answ_tres else @answ_tres end,
 
-					@nanswer = COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END),
-					@nno_answer = COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END),
-					@nlost = COUNT(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END),
-					@nabnd = COUNT(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer IS NULL))THEN 1 ELSE NULL END),
-					@ntimeout = COUNT(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END),
-					@noverflow = COUNT(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END),
-					@nno_agent = COUNT(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END),
-					@total = count(*),
+		@nanswer = COUNT(CASE WHEN((statuscall_id=13)AND(cal_tdialog >@tresDialog))THEN 1 ELSE NULL END),
+		@nno_answer = COUNT(CASE WHEN((statuscall_id=15)AND(cal_tring>@tresRing))THEN 1 ELSE NULL END),
+		@nlost = COUNT(CASE WHEN(statuscall_id=16)THEN 1 ELSE NULL END),
+		@nabnd = COUNT(CASE WHEN(statuscall_id IN(5,6)AND(cal_que>0)AND(cal_xfer IS NULL))THEN 1 ELSE NULL END),
+		@ntimeout = COUNT(CASE WHEN(statuscall_id=7)THEN 1 ELSE NULL END),
+		@noverflow = COUNT(CASE WHEN(statuscall_id=8)THEN 1 ELSE NULL END),
+		@nno_agent = COUNT(CASE WHEN(statuscall_id=4)THEN 1 ELSE NULL END),
+		@total = count(*),
 
-					@SL2 = case when @setting = 0 then @nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent else @total end
-					FROM ccCallsIN
-					WHERE cal_Inicio between @fechaI AND @fechaF
-					AND Inbound_id = @CveCamp
+		@SL2 = case when @setting = 0 then @nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent else @total end
+		FROM ccCallsIN
+		WHERE cal_Inicio between @fechaI AND @fechaF
+		AND Inbound_id = @CveCamp
 
-					select 
-						''ID''=@CveCamp, 
-						''DlgsAveTime''=@DlgsAveTime/ (@Dlgs+1), 
-						''QueueAveTime''=@QueueAveTime / (@Que +1),
-						''SL'' = case 
-							when @SL2 > 0 
-							then 100 * @SL1 / @SL2 
-							else 0 end, 
-						''sl2'' = case 
-							when @setting = 0 
-							then 
-								case 
-									when (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent) > 0 
-									then 100 * (@abnd_tres + @answ_tres) / (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent)
-									else 0 end 
-							else case 
-								when @total > 0 
-								then 100 * @answ_tres/@total 
-								else 0 end end
-						 ,@acdType as acdType
-					end
+		select 
+			''Id''=@CveCamp, 
+			''AverageServiceTime''=@DlgsAveTime/ (@Dlgs+1), 
+			''AverageWaitingTime''=@QueueAveTime / (@Que +1),
+			''ServiceLevel'' = case 
+				when @SL2 > 0 
+				then 100 * @SL1 / @SL2 
+				else 0 end, 
+			''ServiceLevel2'' = case 
+				when @setting = 0 
+				then 
+					case 
+						when (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent) > 0 
+						then 100 * (@abnd_tres + @answ_tres) / (@nanswer + @nno_answer + @nlost + @nabnd + @ntimeout + @noverflow + @nno_agent)
+						else 0 end 
+				else case 
+					when @total > 0 
+					then 100 * @answ_tres/@total 
+					else 0 end end
+			 ,@acdType as Type
+		end
 
-					else if @acdType= 1 begin
+		else if @acdType= 1 begin
 
-					declare @CC int,@CCAb int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
-					select @CC=0,@ccme=0,@ccma=0,@cAs=0,@cs=0,@cAb=1,@cDt=0,@cDe=0,@DlgsAveTime=0
+		declare @CC int,@CCAb int,@ccme int,@ccma int,@cAs int,@cs int,@cAb int,@cDt int,@cDe int
+		select @CC=0,@ccme=0,@ccma=0,@cAs=0,@cs=0,@cAb=1,@cDt=0,@cDe=0,@DlgsAveTime=0
 
-					select
-					@CC = count(case when chatStatus=4 and tChatting>=@tresDialog then 1 else null end) ,
-					@CCAb = count(case when chatStatus=9 and tQueue<@tresDialog then 1 else null end) ,
-					@DlgsAveTime = isnull(sum(case when chatStatus=4 then tChatting+tWrapUp else null end),0) ,
-					@ccme = count(case when chatStatus=4 and tChatting<@tresDialog and finishedBy=0 then 1 else null end),
-					@ccma = count(case when chatStatus=4 and tChatting>@tresDialog then 1 else null end) ,
-					@cAs= count(case when chatStatus=3 then 1 else null end) ,
-					@cs = count(case when chatStatus=7 then 1 else null end) ,
-					@cAb = count(case when chatStatus=9 and tQueue>=@tresDialog then 1 else null end) ,
-					@cDt = count(case when chatStatus=11 then 1 else null end) ,
-					@cDe = count(case when chatStatus=10 then 1 else null end),
-					@Que = count(case when onQueue > 0 then 1 else null end), 
-					@QueueAveTime = ISNULL(sum( case when onQueue > 0 then tQueue else null end), 0),
-					@SL2 = @ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe
-					from ccRIAChats 
-					where requestDate between @fechaI AND @fechaF
-					and inboundId=@CveCamp 
-					group by inboundId 
+		select
+		@CC = count(case when chatStatus=4 and tChatting>=@tresDialog then 1 else null end) ,
+		@CCAb = count(case when chatStatus=9 and tQueue<@tresDialog then 1 else null end) ,
+		@DlgsAveTime = isnull(sum(case when chatStatus=4 then tChatting+tWrapUp else null end),0) ,
+		@ccme = count(case when chatStatus=4 and tChatting<@tresDialog and finishedBy=0 then 1 else null end),
+		@ccma = count(case when chatStatus=4 and tChatting>@tresDialog then 1 else null end) ,
+		@cAs= count(case when chatStatus=3 then 1 else null end) ,
+		@cs = count(case when chatStatus=7 then 1 else null end) ,
+		@cAb = count(case when chatStatus=9 and tQueue>=@tresDialog then 1 else null end) ,
+		@cDt = count(case when chatStatus=11 then 1 else null end) ,
+		@cDe = count(case when chatStatus=10 then 1 else null end),
+		@Que = count(case when onQueue > 0 then 1 else null end), 
+		@QueueAveTime = ISNULL(sum( case when onQueue > 0 then tQueue else null end), 0),
+		@SL2 = @ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe
+		from ccRIAChats 
+		where requestDate between @fechaI AND @fechaF
+		and inboundId=@CveCamp 
+		group by inboundId 
 
-					select 
-						@CveCamp as ID, 
-						isnull(@DlgsAveTime/ (@CC+1),0) as DlgsAveTime, 
-						isnull(@QueueAveTime / (@Que +1),0) as QueueAveTime,
-						case when @SL2>0 then (@CC+@CCAb)*100/(@SL2) else 0 end as SL,
-						isnull((@CC+@CCAb)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
-						@acdType as acdType,
-						ISNULL(@CC+@CCAb,0) as CC,
-						ISNULL(@SL2,0) as SumSL
-					end
-				'
+		select 
+			@CveCamp as ID, 
+			isnull(@DlgsAveTime/ (@CC+1),0) as DlgsAveTime, 
+			isnull(@QueueAveTime / (@Que +1),0) as QueueAveTime,
+			case when @SL2>0 then (@CC+@CCAb)*100/(@SL2) else 0 end as SL,
+			isnull((@CC+@CCAb)*100/nullif(@ccme+@ccma+@cAs+@cs+@cAb+@cDt+@cDe,0),0) as Sl2,
+			@acdType as acdType,
+			ISNULL(@CC+@CCAb,0) as CC,
+			ISNULL(@SL2,0) as SumSL
+		end'
         EXEC(@sql)
 
         set @process = 'CW-4598 Alter sp ccsp_RIALoadCamps'
@@ -2980,7 +3018,8 @@ begin
 end'
 EXEC(@sql)
 
-set @process = 'CW-4657 Se modifica stored ccsp_GalateaAdminCampaigns para agregar nombre de area por campaña'
+set @process = 'CW-4657 Se modifica stored ccsp_GalateaAdminCampaigns para agregar nombre de area por campaña
+				CW-4611 Modificaciones para Status y Pin de campañas de entrada'
 set @sql = '
 	ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
 												   @CampType AS SMALLINT = 0, 
@@ -3015,7 +3054,7 @@ set @sql = '
 					BEGIN
 						SELECT CAST(IdCampEsp AS INT) AS Id 
 						FROM ccRIACampEspWG 
-						WHERE IDWG = @WorkgroupId AND Tipo=0
+						WHERE IDWG = @WorkgroupId AND Tpio=0
 						ORDER BY IdCampEsp ASC
 					END
 					ELSE
@@ -3035,7 +3074,7 @@ set @sql = '
 										camps.cam_id AS Id, 
 										camps.cam_descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame, 
-										1 AS Type,
+										CAST(1 AS SMALLINT) AS Type,
 										camps.cam_procesando IsStarted,
 										a.AreaName as Area
 									FROM ccCamps camps 
@@ -3057,9 +3096,8 @@ set @sql = '
 										inb.Inbound_id AS Id, 
 										inb.descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame,
-										0 Pin, 
-										0 AS Type,
-										CAST(0 AS BIT) IsStarted,
+										CAST(0 AS SMALLINT) AS Type,
+										CAST(inb.Status AS BIT) IsStarted,
 										a.AreaName as Area
 									FROM ccInbound inb
 									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
@@ -3200,6 +3238,378 @@ set @sql = '
 		END
 '
 EXEC(@sql)
+
+		set @process = 'se quita sp ccsp_RIAADMGetCalifDay si existe CW-4628'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMGetCalifDay'')
+            begin
+          DROP PROCEDURE ccsp_RIAADMGetCalifDay;
+            end'
+        EXEC(@sql)
+
+		set @process = 'CW-4628-Obtener_las_calificaciones_y_subcalificaciones_de_la_base-ccsp_RIAADMGetCalifDay cambios de nombre'
+		set @sql = '
+		CREATE Procedure [dbo].[ccsp_RIAADMGetCalifDay]
+		@type smallint = null,
+		@inbound_id smallint = null,
+		@calif_id smallint = null,
+		@cam_id smallint = null
+		AS
+		set nocount on
+		create table #CalifTemp (
+		id int identity,
+		tipo integer,
+		Cam_id varchar(60),
+		Calificacion varchar(60),
+		subCalificacion varchar(60) null,
+		calif_id smallint null,
+		Total int,
+		iTotal4Campaign int null)
+
+		declare @typeACD smallint --= 0
+		declare @today datetime
+		declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+
+		set @today = convert(datetime, convert (varchar(11), getdate(), 101))
+		select @typeACD = chat from ccInbound  where Inbound_id = @inbound_id
+
+
+		select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end,
+		@nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+		from ccsettings where setting_id = 27 -- 0 esp
+
+		---------------OUT ----------------------------
+		if @type=0 begin
+		    insert into #CalifTemp
+		    select 0 as tipo,co.cam_id as cam_id,
+		    case when co.statuscall_id = 13
+			   then case when description is not null
+			   then description else @nIdioma end
+		    else case when sll.descripcion is not null then ''cw:'' + sll.descripcion
+		    else ''cw:'' + @nIdioma
+		    end end as Calificacion
+		    ,0 as subCalificaion,
+		    co.calif_id,count(*) cantidad,0 as iTotal4Campaign
+		    from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+		    left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+		    left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+		    left join ccCamps ci on ci.cam_id = co.cam_id
+		    where co.cal_inicio > @today
+		    group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id
+
+		    select tipo,Cam_id, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end as Calificacion,
+		    case when count(subCalificacion)>0 then 1 else 0 end subCalificacion, calif_id,sum(Total) as Total
+		    from #CalifTemp
+		    group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma then calificacion else @nIdioma end, Cam_id, iTotal4Campaign,calif_id
+
+		end
+		---------------IN ----------------------------
+		else if @type = 1 begin
+
+		    if @typeACD = 0 begin  --Calls
+		    insert into #CalifTemp
+		    select @typeACD as tipo,cci.inbound_id as cam_id, description as Calificacion
+				  ,case when count(ci.califSub_id) >0 then 1 else 0 end as subCalificacion,ci.calif_id
+				  ,count(*) as total,0 as iTotal4Campaign
+				  from ccCallsIn ci with(nolock, index(IX_ccCallsIn))
+				  left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+				  left join ccInbound cci on cci.inbound_id = ci.inbound_id
+				  left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+				  where ci.cal_inicio > @today and statuscall_id = 13	and cci.Inbound_id=@inbound_id
+				  group by description, cci.inbound_id,ci.calif_id
+
+		    if (select valor from ccSettings where setting_id = 78) = 0 begin
+			   update #CalifTemp set iTotal4Campaign = 0
+		    end
+		    else begin
+		    update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign
+			   from (
+				  select cam_id, sum(A.Total) iTotal4Campaign from #CalifTemp A group by cam_id) t
+			   inner join #CalifTemp c on t.cam_id = c.cam_id
+		    end
+		    end
+		    else if @typeACD = 1 begin--Chats
+		    insert into #CalifTemp(tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		    select @typeACD as tipo, inboundId as Cam_id, [description] as Calificacion,
+				  case when sum(case when a.subDisposition = 0 then 0 else 1 end) >0 then 1 else 0 end as subCalificacion,
+				  a.disposition as calif_id, count(disposition) as Total
+				  from ccriachats a
+				  left join ccTipoCalif b on a.disposition=b.calif_id
+			   where a.chatDate > @today and
+			   a.chatStatus=4 and a.inboundId=@inbound_id
+		    group by inboundId, [description],disposition
+		    end
+		    else if @typeACD = 3 begin ---Mail
+		    insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		    select @typeACD as tipo,conver.inboundId, disp.Description as calificacion,
+		    case when sum( case when relmesdis.subDispositionId is null or relmesdis.subDispositionId=0 then 0 else 1 end) >0 then 1 else 0 end as subCalificacion,
+		    relmesdis.dispositionId as calif_id,COUNT(relmesdis.dispositionId) as total
+		    from conversation conver
+		    inner join message mess on mess.conversationId = conver.conversationId
+		    left join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
+		    left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+		    where mess.date > @today and
+		    conver.inboundId=@inbound_id and mess.messageStatusId >= 5
+		    group by conver.inboundId,relmesdis.dispositionId,disp.Description
+
+		    end
+		    else if @typeACD = 4 begin --calif twetter
+		    insert into #CalifTemp (tipo ,Cam_id , Calificacion , subCalificacion ,calif_id,Total)
+		    select @typeACD as tipo,conver.inboundId, disp.Description as calificacion,
+		    case when sum( case when relmesdis.subDispositionId is null or relmesdis.subDispositionId=0 then 0 else 1 end) >0 then 1 else 0 end as subCalificacion,
+		    relmesdis.dispositionId as calif_id,COUNT(relmesdis.dispositionId) as total
+		    from conversationTwitter conver
+		    inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+		    left join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+		    left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+		    where mess.date > @today and
+		    conver.inboundId=@inbound_id and mess.messageStatusId >= 5
+		    group by conver.inboundId,relmesdis.dispositionId,disp.Description
+
+		    end
+		    select camtemp.tipo,camtemp.cam_id,
+		    case when tipcal.Description is not null then tipcal.Description else @nIdioma end as Calificacion,
+		    camtemp.subcalificacion,camtemp.calif_id,camtemp.total
+		    from #CalifTemp camtemp
+		    left join ccTipoCalif tipcal on camtemp.calif_id =  tipcal.calif_id
+		end
+		-------------------SUBCALIFICACIONES IN-------------------
+		else if @type = 2 begin
+		    if @typeACD = 0 begin --Calls
+		    select @typeACD as Type,cci.inbound_id as CampId,  [description] as Calification,
+		    isnull(ctcs.califSubDesc,@nIdiomaSub) as SubCalificationName, count(ctcs.califSubDesc) as Quantity
+		    from ccCallsIn ci with(nolock, index(IX_ccCallsIn))
+		    left join ccTipoCalif ca on ci.calif_id = ca.calif_id
+		    left join ccInbound cci on cci.inbound_id = ci.inbound_id
+		    left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+		    where ci.cal_inicio > @today
+		    and ci.inbound_id = @inbound_id  and statuscall_id = 13  and ci.calif_id = @calif_id
+		    group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id
+		    end
+		    else if @typeACD = 1 begin --Chat
+		    select @typeACD as tipo, inboundId as Cam_id,[description] as Calificacion,
+				  isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(ctcs.califSubDesc) as totales
+				  from ccriachats a
+				  left join ccTipoCalif b on a.disposition=b.calif_id
+				  left join ccTipoCalifSub ctcs on a.subDisposition= ctcs.califSub_id
+				  where a.chatDate > @today and
+				  a.inboundId=@inbound_id and a.chatStatus=4 and  a.disposition=@calif_id
+				  group by inboundId, [description],ctcs.califSubDesc
+		    end
+		    else if @typeACD = 3 begin --Mail
+		    select @typeACD as tipo,conver.inboundId as camid, disp.Description as calificacion,
+		    isnull(subDisp.califSubDesc,@nIdiomaSub) as subCalificacion, count(subDisp.califSubDesc) as totales
+		    from conversation conver
+		    inner join message mess on mess.conversationId = conver.conversationId
+		    left join relationMessageDisposition relmesdis on relmesdis.messageId = mess.messageId
+		    left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+		    left join ccTipoCalifSub subDisp on subDisp.califSub_id=relmesdis.subDispositionId
+		    where mess.date > @today and
+		    mess.messageStatusId >= 5 and conver.inboundId=@inbound_id and disp.calif_id=@calif_id
+		    group by conver.inboundId,disp.Description,subDisp.califSubDesc
+
+
+		    end
+		    else if @typeACD = 4 begin --Twitter
+		    select @typeACD as tipo,conver.inboundId as camid, disp.Description as calificacion,
+		    isnull(subDisp.califSubDesc,@nIdiomaSub) as subCalificacion, count(subDisp.califSubDesc) as totales
+		    from conversationTwitter conver
+		    inner join messageOutTwitter mess on mess.conversationTwitterId = conver.conversationTwitterId
+		    left join relationMessageDispositionTwit relmesdis on relmesdis.messageOutTwitterId = mess.messageOutTwitterId
+		    left join ccTipoCalif disp on disp.calif_id=relmesdis.dispositionId
+		    left join ccTipoCalifSub subDisp on subDisp.califSub_id=relmesdis.subDispositionId
+		    where mess.date > @today and
+		    mess.messageStatusId >= 5 and conver.inboundId=@inbound_id and disp.calif_id=@calif_id
+		    group by conver.inboundId,disp.Description,subDisp.califSubDesc
+		    end
+
+		end
+		-------------------SUBCALIFICACIONES OUT-------------------
+		else if @type = 4 begin
+		    select 0 as Type,co.cam_id as CampId,
+		    case when co.statuscall_id = 13
+		    then case when description is not null
+		    then description else @nIdioma end
+		    else
+		    case when sll.descripcion is not null
+		    then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma
+		    end
+		    end as Calification,
+		    isnull(cso.califSubDesc,@nIdiomaSub) as SubCalificationName ,count(cso.califSub_id) Quantity
+		    from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+		    left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+		    left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id 
+		    left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+		    left join ccCamps ci on ci.cam_id = co.cam_id
+		    where co.cal_inicio > @today
+		    and co.cam_id = @inbound_id
+		    and co.calif_id = @calif_id
+		    group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+		end
+
+
+		drop table #CalifTemp
+		set nocount off'
+		EXEC(@sql)
+
+		set @process = 'se quita sp ccsp_RIAADMGetCalifDayForced si existe CW-4628'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMGetCalifDayForced'')
+            begin
+          DROP PROCEDURE ccsp_RIAADMGetCalifDayForced;
+            end'
+        EXEC(@sql)
+
+		set @process = 'CW-4628-Obtener_las_calificaciones_y_subcalificaciones_de_la_base-ccsp_RIAADMGetCalifDayForced cambios de nombre'
+		set @sql = '
+		CREATE Procedure [dbo].[ccsp_RIAADMGetCalifDayForced]
+		@type smallint,
+		@cam_id smallint,
+		@calif_id smallint = null
+		AS 
+		set nocount on
+		create table #CalifTemp (id int identity,
+		tipo integer, 
+		Cam_id varchar(50), 
+		Calificacion varchar(50), 
+		subCalificacion varchar(50) null,
+		calif_id smallint null,
+		Total int ) 
+
+		declare @today datetime
+		set @today = convert(datetime, convert (varchar(11), getdate(), 101))
+		--set @today =convert(datetime, convert (varchar(11), ''2015-10-01 17:50:20.470'', 101))
+
+		-- Seleccion de idioma -- 
+		declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+		select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end
+		from ccsettings where setting_id = 27 -- 0esp
+
+		select @nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+		from ccsettings where setting_id = 27 -- 0 esp
+
+		if @type=0 
+		insert into #CalifTemp 
+		select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13
+				then case when description is not null 
+							then description 
+							else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+							end
+		else case when sll.descripcion is not null then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end end as Calificacion,
+		case when count(co.califSub_id) > 0 then 1 else 0 end as Subcalificacion,co.calif_id as calif_id,count(*) cantidad
+		from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+		left join ccTipoCalifOut ca on co.calif_id = ca.calif_id 
+		left join ccTipoCalifSubOUT tcsout on co.califSub_id = tcsout.califSub_id
+		left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+		left join ccCamps ci on ci.cam_id = co.cam_id 
+		where co.cal_inicio > @today
+		and co.cam_id = @cam_id
+		group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id
+
+
+
+		if @type=1 
+		insert into #CalifTemp 
+		select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+		else @nIdioma-- substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end as Calificacion,count(ci.califSub_id) as subCalificacion,ci.calif_id,count(*)  as total
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) 
+		left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+		where ci.cal_inicio > @today
+		and ci.inbound_id = @cam_id
+		and statuscall_id = 13 
+		group by description, cci.inbound_id,ci.califSub_id,ci.calif_id
+
+
+
+		-- Se corrigio suma de totales -- 
+		Alter table #CalifTemp add iTotal4Campaign int null
+
+		if (select valor from ccSettings where setting_id = 78) = 0
+		update #CalifTemp set iTotal4Campaign = 0
+
+		else	
+		update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign 
+		from (select cam_id, sum(A.Total) iTotal4Campaign 
+		from #CalifTemp A group by cam_id) t join #CalifTemp c
+		on t.cam_id = c.cam_id
+
+		if @type=1 
+		select tipo as Type, cast(cam_id as varchar) as CampId, calificacion as Calification, cast(subCalificacion as varchar) as SubCalificationQuantity, cast(calif_id as smallint) as CalificationId, sum( total ) as Total from (
+			select 1 as tipo, inboundId as Cam_id, case when description is not null then description 
+			 else @nIdioma --substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			 end as Calificacion,0 as subCalificacion ,0 as calif_id,count(disposition) as Total--,0 as iTotal4Campaign
+			from ccriachats a left join ccTipoCalif b 
+			on a.disposition=b.calif_id 
+			where a.chatDate > @today
+			and a.inboundId = @cam_id
+			group by inboundId, Description
+			
+			union all
+			
+			
+			select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma --substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end as Calificacion,
+			case when count(subCalificacion) > 0 then 1 else 0 end subCalificacion,calif_id,sum(Total) as Total  --iTotal4Campaign -- para ver total por campaña
+			from #CalifTemp 
+			group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end, Cam_id,calif_id, iTotal4Campaign
+		)  as a group by tipo, cam_id, calificacion,subCalificacion,calif_id order by tipo,cam_id 
+		if @type=0 
+
+		select tipo as Type,Cam_id as CampId,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end as Calification,subCalificacion as SubCalificationQuantity, calif_id as CalificationId,sum(Total) as Total -- , iTotal4Campaign -- para ver total por campaña
+		from #CalifTemp 
+		group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end, Cam_id,subCalificacion, calif_id, iTotal4Campaign
+
+
+
+		if @type = 3 begin -----entrada acd''s
+			select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+			else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end as Calificacion,isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(*) as totales 
+			from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+			left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+			left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+			where ci.cal_inicio > @today
+			and ci.inbound_id = @cam_id
+			and statuscall_id = 13 
+			and ci.calif_id = @calif_id
+			group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id 
+		end
+
+		if @type = 4 begin --salida campañas
+				select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13 
+					then case when description is not null 
+								then description 
+								else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+								end
+			else case when sll.descripcion is not null 
+			then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end end as Calificacion,isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad 
+			from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+			left join ccTipoCalifOut ca on co.calif_id = ca.calif_id 
+			left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+			left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+			left join ccCamps ci on ci.cam_id = co.cam_id 
+			where co.cal_inicio > @today
+			and co.cam_id = @cam_id
+			group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+		end 
+		 
+
+		drop table #CalifTemp 
+		set nocount off'
+		EXEC(@sql)
 
 
 		/* End script release */

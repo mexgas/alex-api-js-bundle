@@ -3612,6 +3612,204 @@ EXEC(@sql)
 		EXEC(@sql)
 
 
+set @process = 'CW-4636 Reorder roles ids';
+set @sql = 'if (((select TOP 1 Rol_id from ccRoles where keyjson = ''translate_superusuario'' ORDER BY Rol_id DESC) <> 7) OR (NOT EXISTS(select Rol_id from ccRoles where keyjson = ''translate_superusuario'')))
+				BEGIN
+	                Declare @Description varchar(50) = ''It Manager'',
+					@Id int = 3,
+					@Translate varchar(50) = ''translate_it_manager''
+
+					IF OBJECT_ID(''tempdb..#Perm'') IS NOT NULL DROP TABLE #Perm;
+					select Permissions_id
+					into #Perm
+					from ccRoles_Permissions cp
+					inner join ccRoles c on c.Rol_id = cp.Rol_Id
+					where c.Description = @Description
+
+					IF OBJECT_ID(''tempdb..#User'') IS NOT NULL DROP TABLE #User;
+					Select ur.User_id
+					into #User
+					from ccUsers_Roles ur
+					inner join ccRoles r on r.Rol_id = ur.Rol_id
+					where r.Description = @Description
+
+					Declare @Rol_id int = (select Top 1 Rol_id from ccRoles where Description = @Description)
+
+					Delete ccUsers_Roles where Rol_id = @Rol_id
+					Delete ccRoles_Permissions where Rol_id = @Rol_id
+					Delete ccRoles where KeyJson = @Translate
+
+					SET IDENTITY_INSERT ccRoles ON
+					INSERT INTO ccRoles 
+						(Rol_id, Description, KeyJson,CreateDate,Active,Level)
+					VALUES 
+						(@Id, @Description, @Translate,GETDATE(),1,@Id)
+					SET IDENTITY_INSERT ccRoles OFF
+
+					insert into ccRoles_Permissions 
+					select @Id,* from #Perm
+					insert into ccUsers_Roles
+					select *,@Id from #User
+
+
+	                Declare @Description1 varchar(50) = ''Manager'',
+					@Id1 int = 4,
+					@Translate1 varchar(50) = ''translate_manager''
+
+					IF OBJECT_ID(''tempdb..#Perm1'') IS NOT NULL DROP TABLE #Perm1;
+					select Permissions_id
+					into #Perm1
+					from ccRoles_Permissions cp
+					inner join ccRoles c on c.Rol_id = cp.Rol_Id
+					where c.Description = @Description1
+
+					IF OBJECT_ID(''tempdb..#User1'') IS NOT NULL DROP TABLE #User1;
+					Select ur.User_id
+					into #User1
+					from ccUsers_Roles ur
+					inner join ccRoles r on r.Rol_id = ur.Rol_id
+					where r.Description = @Description1
+
+					Declare @Rol_id1 int = (select Top 1 Rol_id from ccRoles where Description = @Description1)
+
+					Delete ccUsers_Roles where Rol_id = @Rol_id1
+					Delete ccRoles_Permissions where Rol_id = @Rol_id1
+					Delete ccRoles where KeyJson = @Translate1
+
+					SET IDENTITY_INSERT ccRoles ON
+					INSERT INTO ccRoles 
+						(Rol_id, Description, KeyJson,CreateDate,Active,Level)
+					VALUES 
+						(@Id1, @Description1, @Translate1,GETDATE(),1,@Id1)
+					SET IDENTITY_INSERT ccRoles OFF
+
+					insert into ccRoles_Permissions 
+					select @Id1,* from #Perm1
+					insert into ccUsers_Roles
+					select *,@Id1 from #User1
+
+	                Declare @Description2 varchar(50) = ''Room Manager'',
+					@Id2 int = 5,
+					@Translate2 varchar(50) = ''translate_Room_Manager''
+
+					IF OBJECT_ID(''tempdb..#Perm2'') IS NOT NULL DROP TABLE #Perm2;
+					select Permissions_id
+					into #Perm2
+					from ccRoles_Permissions cp
+					inner join ccRoles c on c.Rol_id = cp.Rol_Id
+					where c.Description = @Description2
+
+					IF OBJECT_ID(''tempdb..#User2'') IS NOT NULL DROP TABLE #User2;
+					Select ur.User_id
+					into #User2
+					from ccUsers_Roles ur
+					inner join ccRoles r on r.Rol_id = ur.Rol_id
+					where r.Description = @Description2
+
+					Declare @Rol_id2 int = (select Top 1 Rol_id from ccRoles where Description = @Description2)
+
+					Delete ccUsers_Roles where Rol_id = @Rol_id2
+					Delete ccRoles_Permissions where Rol_id = @Rol_id2
+					Delete ccRoles where KeyJson = @Translate2
+
+					SET IDENTITY_INSERT ccRoles ON
+					INSERT INTO ccRoles 
+						(Rol_id, Description, KeyJson,CreateDate,Active,Level)
+					VALUES 
+						(@Id2, @Description2, @Translate2,GETDATE(),1,@Id2)
+					SET IDENTITY_INSERT ccRoles OFF
+
+					insert into ccRoles_Permissions 
+					select @Id2,* from #Perm2
+					insert into ccUsers_Roles
+					select *,@Id2 from #User2
+
+	                Declare @Description3 varchar(50) = ''Supervisor'',
+					@Id3 int = 6,
+					@Translate3 varchar(50) = ''translate_supervisor''
+
+					IF OBJECT_ID(''tempdb..#Perm3'') IS NOT NULL DROP TABLE #Perm3;
+					select Permissions_id
+					into #Perm3
+					from ccRoles_Permissions cp
+					inner join ccRoles c on c.Rol_id = cp.Rol_Id
+					where c.Description = @Description3
+
+					IF OBJECT_ID(''tempdb..#User3'') IS NOT NULL DROP TABLE #User3;
+					Select ur.User_id
+					into #User3
+					from ccUsers_Roles ur
+					inner join ccRoles r on r.Rol_id = ur.Rol_id
+					where r.Description = @Description3
+
+					Declare @Rol_id3 int = (select Top 1 Rol_id from ccRoles where Description = @Description3)
+
+					Delete ccUsers_Roles where Rol_id = @Rol_id3
+					Delete ccRoles_Permissions where Rol_id = @Rol_id3
+					Delete ccRoles where KeyJson = @Translate3
+
+					SET IDENTITY_INSERT ccRoles ON
+					INSERT INTO ccRoles 
+						(Rol_id, Description, KeyJson,CreateDate,Active,Level)
+					VALUES 
+						(@Id3, @Description3, @Translate3,GETDATE(),1,@Id3)
+					SET IDENTITY_INSERT ccRoles OFF
+
+					insert into ccRoles_Permissions 
+					select @Id3,* from #Perm3
+					insert into ccUsers_Roles
+					select *,@Id3 from #User3
+
+	                Declare @Description4 varchar(50) = ''Superusuario'',
+					@Id4 int = 7,
+					@Translate4 varchar(50) = ''translate_superusuario''
+
+					IF OBJECT_ID(''tempdb..#Perm4'') IS NOT NULL DROP TABLE #Perm4;
+					select Permissions_id
+					into #Perm4
+					from ccRoles_Permissions cp
+					inner join ccRoles c on c.Rol_id = cp.Rol_Id
+					where c.Description = @Description4
+
+					IF OBJECT_ID(''tempdb..#User4'') IS NOT NULL DROP TABLE #User4;
+					Select ur.User_id
+					into #User4
+					from ccUsers_Roles ur
+					inner join ccRoles r on r.Rol_id = ur.Rol_id
+					where r.Description = @Description4
+
+					Declare @Rol_id4 int = (select Top 1 Rol_id from ccRoles where Description = @Description4)
+
+					Delete ccUsers_Roles where Rol_id = @Rol_id4 or rol_id = 7
+					Delete ccRoles_Permissions where Rol_id = @Rol_id4 or Rol_id = 7
+					if exists(select * from ccRoles where Rol_id = 7)
+					begin
+						Delete ccRoles where Rol_id = 7	
+					end
+					Delete ccRoles where KeyJson = @Translate4
+
+					SET IDENTITY_INSERT ccRoles ON
+					INSERT INTO ccRoles 
+						(Rol_id, Description, KeyJson,CreateDate,Active,Level)
+					VALUES 
+						(@Id4, @Description4, @Translate4,GETDATE(),1,@Id4)
+					SET IDENTITY_INSERT ccRoles OFF
+
+					insert into ccRoles_Permissions 
+					select @Id4,* from #Perm4
+					insert into ccUsers_Roles
+					select *,@Id4 from #User4
+
+
+	                declare @elid int 
+	                set @elid = (select TOP 1 Rol_id FROM ccRoles ORDER BY Rol_id DESC)
+	                DBCC CHECKIDENT (ccRoles, RESEED, @elid)
+				END';
+EXEC(@sql);
+
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

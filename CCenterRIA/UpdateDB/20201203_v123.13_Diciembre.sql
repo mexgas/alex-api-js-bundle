@@ -114,17 +114,10 @@ BEGIN
 END'
         EXEC(@sql)
 
-        set @process = 'CW-4634-PinedCampaign_RemoveContraints y CW-4550-Pin_de_campañas drop table'
-		set @sql = 'if exists (select * from sys.tables where name = N''PinedCampaigns'')
-	    begin
-	        DROP TABLE PinedCampaigns
-	    end'
-		EXEC(@sql)
-
 		set @process = 'CW-4634-PinedCampaign_RemoveContraints y CW-4550-Pin_de_campañas create table'
 		set @sql = 'if not exists (select * from sys.tables where name = N''PinedCampaigns'')
 	    begin
-	        CREATE TABLE PinedCampaigns (CampId INT, AdminId INT, Type SMALLINT,)
+	        CREATE TABLE PinedCampaigns (CampId INT, AdminId INT, Type SMALLINT)
 	    end'
 		EXEC(@sql)
 
@@ -3239,16 +3232,9 @@ set @sql = '
 '
 EXEC(@sql)
 
-		set @process = 'se quita sp ccsp_RIAADMGetCalifDay si existe CW-4628'
-        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMGetCalifDay'')
-            begin
-          DROP PROCEDURE ccsp_RIAADMGetCalifDay;
-            end'
-        EXEC(@sql)
-
 		set @process = 'CW-4628-Obtener_las_calificaciones_y_subcalificaciones_de_la_base-ccsp_RIAADMGetCalifDay cambios de nombre'
 		set @sql = '
-		CREATE Procedure [dbo].[ccsp_RIAADMGetCalifDay]
+		ALTER Procedure [dbo].[ccsp_RIAADMGetCalifDay]
 		@type smallint = null,
 		@inbound_id smallint = null,
 		@calif_id smallint = null,
@@ -3451,16 +3437,9 @@ EXEC(@sql)
 		set nocount off'
 		EXEC(@sql)
 
-		set @process = 'se quita sp ccsp_RIAADMGetCalifDayForced si existe CW-4628'
-        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMGetCalifDayForced'')
-            begin
-          DROP PROCEDURE ccsp_RIAADMGetCalifDayForced;
-            end'
-        EXEC(@sql)
-
 		set @process = 'CW-4628-Obtener_las_calificaciones_y_subcalificaciones_de_la_base-ccsp_RIAADMGetCalifDayForced cambios de nombre'
 		set @sql = '
-		CREATE Procedure [dbo].[ccsp_RIAADMGetCalifDayForced]
+		ALTER Procedure [dbo].[ccsp_RIAADMGetCalifDayForced]
 		@type smallint,
 		@cam_id smallint,
 		@calif_id smallint = null

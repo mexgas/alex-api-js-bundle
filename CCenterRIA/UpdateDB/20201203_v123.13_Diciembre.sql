@@ -2663,6 +2663,190 @@ else if @action = 2 begin--trae el nombre de la base de datos en BX
 end'
 EXEC(@sql)
 
+set @process = 'CW-4623 Eliminar sp ccsp_GalateacampaingManager'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateacampaingManager'')
+				    begin
+						DROP PROCEDURE ccsp_GalateacampaingManager;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4623 Creacion del sp ccsp_GalateacampaingManager'
+		set @sql = '-- =============================================
+-- Author:		UEspinosa
+-- Create date: 26/11/20
+-- Description:	<Description,,>
+-- =============================================
+CREATE PROCEDURE [dbo].[ccsp_GalateacampaingManager] 
+--declare
+@option           SMALLINT, 
+@Activa           SMALLINT     = NULL, 
+@Descripcion      VARCHAR(40) = '''', 
+@IDArea           SMALLINT, 
+@MirrorInbound_Id SMALLINT    = NULL, 
+@frame            SMALLINT, 
+@Prefijo          VARCHAR(40) = '''', 
+@Type             SMALLINT, 
+@userId           SMALLINT, 
+@moduleId         SMALLINT    = 49
+AS
+    BEGIN
+        IF(@option = 2)
+            BEGIN
+				IF EXISTS(select top 1 cam_id from ccCamps where cam_descripcion = @Descripcion)
+				BEGIN
+					Select -1
+					return
+				END
+                IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
+                CREATE TABLE #Campaing(IdCampaing INT)
+                IF @type = 1
+                    BEGIN
+                        INSERT INTO #Campaing
+                        EXEC ccsp_RIA_ABCCamps 
+                             @option = @option, 
+                             @Descripcion = @Descripcion, 
+                             @Cam_id = ''0'', 
+                             @Activa = 1, 
+                             @IDArea = @IDArea, 
+                             @frame = @frame, 
+                             @Prefijo = @Prefijo
+                END
+                    ELSE
+                    IF @type = 0
+                        BEGIN
+                            INSERT INTO #Campaing
+                            EXEC ccsp_RIA_ABCACDGroups 
+                                 @option = @option, 
+                                 @descripcion = @Descripcion, 
+                                 @inbound_id = ''0'', 
+                                 @idarea = @IDArea, 
+                                 @frame = @frame, 
+                                 @Prefijo = @Prefijo,
+								 @userid = @userId
+                    END
+                IF((SELECT TOP 1 IdCampaing FROM #Campaing ) > 0)
+                    BEGIN
+                        INSERT INTO ccRIALog
+                        VALUES(
+                        (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @IDArea), 
+                        GETDATE(),
+                        CASE
+                            WHEN @type = 1
+                            THEN 25
+                            ELSE 26
+                        END, 
+                        (SELECT Login FROM ccUsers WHERE User_Id = @userId), 
+                        @moduleId, 
+                        '''', 
+                        @Descripcion
+                        )
+                END
+				SELECT TOP 1 IdCampaing FROM #Campaing
+				IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
+        END
+    END
+'
+		EXEC(@sql)
+
+		set @process = 'CW-4623 Eliminar sp ccsp_GalateaRIALog'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaRIALog'')
+				    begin
+						DROP PROCEDURE ccsp_GalateaRIALog;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4623 creacion del sp ccsp_GalateaRIALog'
+		set @sql = '-- =============================================
+-- Author: UEspinosa
+-- Create date: 16/12/2020
+-- Description:	Sabe to ccRIALog
+-- =============================================
+CREATE PROCEDURE ccsp_GalateaRIALog
+@userId           SMALLINT,
+@OperationType    VARCHAR(MAX)= '''',
+@Value			  VARCHAR(40) = '''',
+@Module			  SMALLINT,
+@target			  VARCHAR(40) = ''''
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF OBJECT_ID(''tempdb..#OperationType'') IS NOT NULL DROP TABLE #OperationType
+	create table #OperationType(
+			id smallint IDENTITY(1,1),
+			operationType varchar(MAX)
+	)
+	insert into #OperationType SELECT value FROM fn_RIASplitDelimited(@OperationType, '','')	
+
+	IF OBJECT_ID(''tempdb..#Value'') IS NOT NULL DROP TABLE #Value
+	create table #Value(
+			id smallint IDENTITY(1,1),
+			value varchar(MAX)
+	)
+	insert into #Value SELECT value FROM fn_RIASplitDelimited(@Value, ''^^'')
+	
+	IF OBJECT_ID(''tempdb..#Params'') IS NOT NULL DROP TABLE #Params
+	select operationType,value 
+	into #Params
+	from #OperationType o
+	inner join #Value v with(nolock) on o.id = v.id
+
+
+	IF OBJECT_ID(''tempdb..#PreLog'') IS NOT NULL DROP TABLE #PreLog
+	create table #PreLog(
+			areaName varchar(40),
+			operatioDate DATETIME,
+			login varchar(40),
+			module_id smallint,
+			target varchar(40)
+	)
+	insert into #PreLog
+	select AreaName, GETDATE() as operatioDate,u.login,@Module module_id,@target as target
+	from ccUsers U
+	INNER JOIN ccRIACat_Areas A with(nolock) on u.IDArea = a.IDArea
+	where U.User_id = @userId
+
+	Insert into ccRIALog
+	select areaName,operatioDate,operationType,login,module_id,value,target
+	from #PreLog,#Params
+
+	IF OBJECT_ID(''tempdb..#OperationType'') IS NOT NULL DROP TABLE #OperationType
+	IF OBJECT_ID(''tempdb..#Value'') IS NOT NULL DROP TABLE #Value
+	IF OBJECT_ID(''tempdb..#Params'') IS NOT NULL DROP TABLE #Params
+	IF OBJECT_ID(''tempdb..#PreLog'') IS NOT NULL DROP TABLE #PreLog
+	Select 1
+	return
+END
+'
+		EXEC(@sql)
+
+		set @process = 'CW-4623 Modificacion de la funcion split para recibir mas de 2 valores como parametro para hecer el split'
+		set @sql = 'ALTER FUNCTION [dbo].[fn_RIASplitDelimited]
+( 
+  @List nvarchar(MAX),
+  @SplitOn varchar(3)
+)
+RETURNS @RtnValue table (
+  Id int identity(1,1),
+  Value nvarchar(255)
+)
+AS
+BEGIN
+  While (Charindex(@SplitOn,@List)>0)
+  Begin 
+    Insert Into @RtnValue (value)
+    Select 
+      Value = ltrim(rtrim(Substring(@List,1,Charindex(@SplitOn,@List)-1))) 
+    Set @List = Substring(@List,Charindex(@SplitOn,@List)+len(@SplitOn),len(@List))
+  End 
+  
+  Insert Into @RtnValue (Value)
+    Select Value = ltrim(rtrim(@List))
+
+    Return
+END'
+		EXEC(@sql)
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

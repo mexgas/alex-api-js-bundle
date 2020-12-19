@@ -3047,7 +3047,7 @@ set @sql = '
 					BEGIN
 						SELECT CAST(IdCampEsp AS INT) AS Id 
 						FROM ccRIACampEspWG 
-						WHERE IDWG = @WorkgroupId AND Tpio=0
+						WHERE IDWG = @WorkgroupId AND Tipo=0
 						ORDER BY IdCampEsp ASC
 					END
 					ELSE

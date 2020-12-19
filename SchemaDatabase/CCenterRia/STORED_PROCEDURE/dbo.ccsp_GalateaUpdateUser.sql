@@ -1,4 +1,4 @@
-Create PROCEDURE ccsp_GalateaUpdateUser
+CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
 @UserId int,
 @Login varchar(40),
 @Nombres varchar(45),
@@ -36,19 +36,19 @@ select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espa�
 		end
 
 --verificamos si la constrasena ha cambiado
-	select @CurrentPass= Password from ccUsers where User_id=@UserId and Login=@Login
+	--select @CurrentPass= Password from ccUsers where User_id=@UserId and Login=@Login
 
-	if @Password <> '' and @Password <> null and @Password <> @CurrentPass -- si la contraseña si cambio actualizamos en base el fecha de actualizacion de pass
-		begin 
-		Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId
-		end
+	--if @Password <> '' and @Password <> null and @Password <> @CurrentPass -- si la contraseña si cambio actualizamos en base el fecha de actualizacion de pass
+	--	begin 
+	--	Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId
+	--	end
 
 --update
 	Update ccUsers set 
 	Nombres=@Nombres,
 	ApellidoPaterno=@ApellidoPaterno,
 	ApellidoMaterno=@ApellidoMaterno,
-	Password=case when @Password <> '' then @Password else Password end,
+	--Password=case when @Password <> '' then @Password else Password end,
 	Sexo=@Sexo,
 	canChangeStatus=@canChangeStatus
 	where User_id=@UserId

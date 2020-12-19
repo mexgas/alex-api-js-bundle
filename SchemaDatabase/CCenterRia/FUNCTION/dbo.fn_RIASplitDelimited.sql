@@ -1,7 +1,7 @@
 CREATE FUNCTION [dbo].[fn_RIASplitDelimited]
 ( 
-  @List nvarchar(2000),
-  @SplitOn nvarchar(1)
+  @List nvarchar(MAX),
+  @SplitOn varchar(3)
 )
 RETURNS @RtnValue table (
   Id int identity(1,1),

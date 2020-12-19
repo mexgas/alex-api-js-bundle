@@ -16,13 +16,13 @@ BEGIN
   LOGIN as Username,
   Nombres as Names,
   CASE 
-    WHEN @lenguageXion='1' THEN isnull(' ' + ApellidoMaterno, '')-- El sistema esta en ingles
-    ELSE isnull(' ' + ApellidoPaterno, '')
+    WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '')
   END as LastName,
 
   CASE 
-    WHEN @lenguageXion='1' THEN isnull(' ' + ApellidoPaterno, '')-- El sistema esta en ingles
-    ELSE isnull(' ' + ApellidoMaterno, '')
+    WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '')
   END as OptionalExtraName,
 
   Password as Password,
@@ -43,13 +43,13 @@ BEGIN
   LOGIN as Username,
   Nombres as Names,
   CASE 
-    WHEN @lenguageXion='1' THEN isnull(' ' + ApellidoMaterno, '')-- El sistema esta en ingles
-    ELSE isnull(' ' + ApellidoPaterno, '')
+    WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '')
   END as LastName,
 
   CASE 
-    WHEN @lenguageXion='1' THEN isnull(' ' + ApellidoPaterno, '')-- El sistema esta en ingles
-    ELSE isnull(' ' + ApellidoMaterno, '')
+    WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '')
   END as OptionalExtraName,
 
   Password as Password,

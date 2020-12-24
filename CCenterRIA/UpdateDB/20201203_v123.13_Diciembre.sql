@@ -3787,7 +3787,202 @@ set @sql = 'if (((select TOP 1 Rol_id from ccRoles where keyjson = ''translate_s
 EXEC(@sql);
 
 
+set @process = 'CW-4692 DROP PROCEDURE [dbo].[ccsp_GalateaManageWG]'
+set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaManageWG'')
+    begin
+        DROP PROCEDURE ccsp_GalateaManageWG;
+    end'
+EXEC(@sql)
 
+set @process = 'CW-4692 CREATE PROCEDURE [dbo].ccsp_GalateaManageWG'
+set @sql = '
+create  PROCedure [dbo].[ccsp_GalateaManageWG]
+@option smallint,
+@IDWG smallint,
+@Type smallint,
+@usersList varchar(max)
+as
+set nocount on
+declare @count int
+declare @id int
+declare @user int
+declare @Assigned  varchar(max)
+
+set @id = 1
+set @Assigned = ''''
+
+
+IF OBJECT_ID(''tempdb..#UsersList'') IS NOT NULL DROP TABLE #UsersList;
+
+select ROW_NUMBER() OVER(ORDER BY value ASC) AS Row,
+	value As user_id
+	into #UsersList
+	FROM fn_RIASplitDelimited(@usersList, '','')
+
+select @count = count(user_id) from #UsersList
+
+if @option = 1 -- Insert Agente-Supervisor in WorkGroup
+ begin
+
+	while @id<=@count
+	begin
+		select @user = user_id from #UsersList where Row= @id
+		select @Type = tipoUser_id from ccUsers where user_id = @user
+
+		if @Type in(1, 2, 6)
+		begin
+
+			if not exists(select IDWG from ccRIAWorkGroupUsers where IDWG = @IDWG AND User_id = @user)
+			begin
+			
+
+				If @Type = 1
+				 begin
+
+						If (select count(User_id) from ccRIAWorkGroupUsers where User_id = @user) < (select valor from ccSettings where setting_id = 63)
+						 begin
+							insert into ccRIAWorkGroupUsers(IDWG, User_id) values(@IDWG,@user)
+							select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+							--insert skill media
+							exec ccsp_Skills @action= 5,@userId=@user
+
+							insert into cccampsAgente (user_id, cam_id, prioridad, skill, IDWG)
+							select @user, idCampEsp, dbo.fn_Calcula_UsrPriority(@user,0), 1, @IDWG
+							from ccRIACampEspWG where tipo = 1 and IDWG = @IDWG and
+							 idCampEsp not in (select cam_id from cccampsAgente where user_id=@user and IDWG=@IDWG)
+
+							insert into ccInboundAgentes(User_id, Inbound_id, cli_id, prioridad, skill, IDWG)
+							select @user, idCampEsp, 0, dbo.fn_Calcula_UsrPriority(@user,0), 1, @IDWG
+							from ccRIACampEspWG where tipo = 0 and IDWG = @IDWG and
+							idCampEsp not in (select inbound_id from ccInboundAgentes where user_id=@user and IDWG=@IDWG)
+
+							if not exists(select * from ccRIAWorkGroupUsersConsulta where IDWG=@IDWG and User_id=@user) begin
+								insert into ccRIAWorkGroupUsersConsulta(IDWG, User_id) values(@IDWG,@user)
+							end
+						end
+				 end
+				 else if @Type in(2, 6)
+				 begin
+					-- -Supervisor	@Type in (2,6)
+					insert into ccRIAWorkGroupUsers(IDWG, User_id) values (@IDWG, @user)
+					select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+					if not exists(select * from ccRIAWorkGroupUsersConsulta where IDWG=@IDWG and User_id=@user) begin
+						insert into ccRIAWorkGroupUsersConsulta(IDWG, User_id) values(@IDWG,@user)
+					end
+
+					insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+					select @user, idCampEsp, 0, @IDWG
+					from ccRIACampEspWG where tipo=0 and IDWG=@IDWG
+					 and idCampEsp not in (select cam_id from ccSupervisorCam where user_id=@user and tipo=0 and IDWG=@IDWG)
+
+					update ccSupervisorCam
+					set monitored = 1
+					where user_id = @user
+					and cam_id in (select cam_id from ccSupervisorCam where user_id=@user and tipo=0 and IDWG=@IDWG)
+					and tipo = 0
+					and IDWG <> @IDWG
+					and monitored = 0
+
+					insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+					select @user, idCampEsp, 1, @IDWG
+					from ccRIACampEspWG where tipo=1 and IDWG=@IDWG
+					 and idCampEsp not in (select cam_id from ccSupervisorCam where user_id=@user and tipo=1 and IDWG=@IDWG)
+
+					update ccSupervisorCam
+					set monitored = 1
+					where user_id = @user
+					and cam_id in (select cam_id from ccSupervisorCam where user_id=@user and tipo=1 and IDWG=@IDWG)
+					and tipo = 1
+					and IDWG <> @IDWG
+					and monitored = 0
+				end
+				
+			end
+		end
+		set @id = @id+1
+	end
+end
+
+
+
+
+if @option = 2 -- Delete Agent-Supervisor from WorkGroup
+ begin
+
+	while @id<=@count
+	begin
+		select @user = user_id from #UsersList where Row= @id
+		select @Type = tipoUser_id from ccUsers where user_id = @user
+		
+		if @Type = 1 --delete skill media
+		exec ccsp_Skills @action= 4,@userId=@user,@idwg=@IDWG
+		
+		if exists(select IDWG from ccRIAWorkGroupUsers where IDWG = @IDWG AND User_id = @user)
+		begin
+		
+			Delete ccRIAWorkGroupUsers where IDWG = @IDWG and User_id = @user
+		
+			if @Type = 1 -- Agente
+			 begin
+				select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+	 			insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG 	from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+				insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+
+	 			delete from cccampsagente where user_id=@user and IDWG=@IDWG
+				delete from ccInboundagentes where user_id=@user and IDWG=@IDWG
+				
+			 end
+			 else if @Type in(2, 6) -- Supervisor
+			 begin
+				select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+				insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+				delete ccSupervisorCam where user_id=@user and IDWG=@IDWG
+				
+			end
+		end
+		set @id = @id+1
+	end
+end
+if LEN(@Assigned) > 0
+		select SUBSTRING(@Assigned,0,Len(@Assigned))
+	else
+		select @Assigned
+
+return(0)
+set nocount off'
+EXEC(@sql)
+
+set @process = 'CW-4663 DROP PROCEDURE ccsp_GalateaUpdatePassword'
+set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdatePassword'')
+    begin
+        DROP PROCEDURE ccsp_GalateaUpdatePassword;
+    end'
+EXEC(@sql)
+
+set @process = 'CW-4663 CREATE PROCEDURE ccsp_GalateaUpdatePassword'
+set @sql = 'CREATE PROCEDURE ccsp_GalateaUpdatePassword
+@UserId int,
+@Login varchar(200),
+@Password varchar(200)
+as
+
+-- validaciones	
+	if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+		begin
+			select -5 as ResponseCode--el usuario no existe
+			return(0)
+		end
+
+	if  @Password <> '''' 
+		begin 
+			Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId	and Login=@Login
+			select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+		end
+	else
+		begin 
+			select -6 as ResponseCode -- la nueva contraseña es vacia
+		end'
+EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

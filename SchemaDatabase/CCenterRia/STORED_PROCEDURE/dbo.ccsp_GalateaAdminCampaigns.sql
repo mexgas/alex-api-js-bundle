@@ -51,10 +51,12 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 										camps.cam_id AS Id, 
 										camps.cam_descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame, 
-										1 AS Type,
-										camps.cam_procesando IsStarted
+										CAST(1 AS SMALLINT) AS Type,
+										camps.cam_procesando IsStarted,
+										a.AreaName as Area
 									FROM ccCamps camps 
 									LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+									left join ccRIACat_Areas a on a.IDArea = camps.IDArea
 									WHERE camps.cam_id = @Id 
 									ORDER BY camps.cam_descripcion ASC;
 								END
@@ -71,11 +73,12 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 										inb.Inbound_id AS Id, 
 										inb.descripcion AS Name, 
 										CAST(graph.graphic_id AS INT) AS Frame,
-										0 Pin, 
-										0 AS Type,
-										CAST(0 AS BIT) IsStarted
+										CAST(0 AS SMALLINT) AS Type,
+										CAST(inb.Status AS BIT) IsStarted,
+										a.AreaName as Area
 									FROM ccInbound inb
 									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
+									left join ccRIACat_Areas a on a.IDArea = inb.IDArea
 									WHERE inb.Inbound_id = @Id 
 									ORDER BY inb.descripcion ASC;
 								END

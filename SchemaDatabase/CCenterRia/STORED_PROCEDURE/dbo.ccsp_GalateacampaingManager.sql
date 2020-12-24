@@ -44,11 +44,12 @@ AS
                             INSERT INTO #Campaing
                             EXEC ccsp_RIA_ABCACDGroups 
                                  @option = @option, 
-                                 @Descripcion = @Descripcion, 
-                                 @Inbound_id = '0', 
-                                 @IDArea = @IDArea, 
+                                 @descripcion = @Descripcion, 
+                                 @inbound_id = '0', 
+                                 @idarea = @IDArea, 
                                  @frame = @frame, 
-                                 @Prefijo = @Prefijo
+                                 @Prefijo = @Prefijo,
+								 @userid = @userId
                     END
                 IF((SELECT TOP 1 IdCampaing FROM #Campaing ) > 0)
                     BEGIN

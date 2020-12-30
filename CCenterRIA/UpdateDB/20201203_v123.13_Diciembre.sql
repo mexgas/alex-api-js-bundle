@@ -3991,6 +3991,40 @@ as
 		end'
 EXEC(@sql)
 
+		SET @process = 'CW-4645 Reordenar los menus de reportes'
+		SET @sql = '
+delete from ccmenus where menu_id=1000 and type=3
+update ccmenus set parent=3130,Nivel=''A'' where type=3 and menu_id=3130 and parent=3000
+update ccmenus set Nivel=''B'' where type=3 and parent=3130 and Nivel=''C'' 
+update ccmenus set ordengral=3 where type=3 and menu_id =4000
+update ccmenus set ordengral=4 where type=3 and menu_id =3130
+update ccmenus set ordengral=5 where type=3 and menu_id =10000
+update ccmenus set ordengral=6 where type=3 and menu_id =11000
+
+update ccmenus set ordengral=7 where type=3 and menu_id =6000
+update ccmenus set ordengral=8 where type=3 and menu_id =8000
+update ccmenus set ordengral=9 where type=3 and menu_id =8050
+update ccmenus set ordengral=10 where type=3 and menu_id =7000
+update ccmenus set ordengral=11 where type=3 and menu_id =9000
+
+update ccmenus set ordengral=3 where type=3 and parent=4000
+update ccmenus set ordengral=4 where type=3 and parent=3130
+update ccmenus set ordengral=5 where type=3 and parent=10000
+update ccmenus set ordengral=6 where type=3 and parent=11000
+
+update ccmenus set ordengral=7 where type=3 and parent=6000
+
+update ccmenus set ordengral=9 where type=3 and parent=8050
+update ccmenus set ordengral=9 where type=3 and parent=8060
+update ccmenus set ordengral=9 where type=3 and parent=8080
+
+update ccmenus set ordengral=10 where type=3 and parent=7000
+
+update ccmenus set ordengral=11 where type=3 and parent=9000
+
+'
+		EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

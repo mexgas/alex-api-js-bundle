@@ -4094,6 +4094,38 @@ select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
 '
         EXEC(@sql)
 
+
+
+
+
+
+
+
+set @process = 'Se agrega setting para asignacion/des de agentes camps acds'
+set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminSettings]
+AS
+BEGIN
+	CREATE TABLE #Settings (setting_id tinyint , valor varchar(300), ip_host tinyint)
+
+	INSERT INTO #Settings 
+	EXEC  ccsp_RIAADMLoadSettings @ip_admin =''''
+
+	INSERT INTO #Settings (setting_id,valor) 
+	SELECT setting_id, valor 
+	FROM ccSettings
+	WHERE setting_id in(160, 199, 53, 63, 64)
+ 
+	SELECT distinct setting_id, valor from #Settings ORDER BY setting_id 
+
+	DROP TABLE #Settings;
+END
+'
+EXEC(@sql)
+
+
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

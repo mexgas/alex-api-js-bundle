@@ -4122,6 +4122,216 @@ END
 '
 EXEC(@sql)
 
+		set @process = 'CW-4732 Eliminar sp ccsp_RIAUpdateEspecConfig'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateEspecConfig'')
+				    begin
+						DROP PROCEDURE ccsp_RIAUpdateEspecConfig;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4732 Creacion del sp ccsp_RIAUpdateEspecConfig'
+		set @sql = '
+CREATE PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALLINT, 
+                                                  @descripcion             VARCHAR(50)  = NULL, 
+                                                  @Status                  TINYINT      = NULL, 
+                                                  @tNotas                  INT          = NULL, 
+                                                  @tMaxWaitCall            INT          = NULL, 
+                                                  @nMaxQue                 INT          = NULL, 
+                                                  @tel_maxwait             VARCHAR(15)  = NULL, 
+                                                  @tel_MaxQueue            VARCHAR(15)  = NULL, 
+                                                  @tel_outservice          VARCHAR(15)  = NULL, 
+                                                  @tel_noct                VARCHAR(15)  = NULL, 
+                                                  @ShowCalifWnd            BIT          = NULL, 
+                                                  @StartTimerOnHangUp      BIT          = NULL, 
+                                                  @editableCallKey         BIT          = NULL, 
+                                                  @queuePosition           BIT          = NULL, 
+                                                  @tMaxQueueCallBack       SMALLINT     = NULL, 
+                                                  @stopRecording           BIT          = NULL, 
+                                                  @dialPrefixOverflow      VARCHAR(10)  = NULL, 
+                                                  @OpriorityT              SMALLINT     = NULL, 
+                                                  @callerIdDesc            VARCHAR(15)  = NULL, 
+                                                  @chat                    TINYINT      = NULL, 
+                                                  @inactiveChatTime        SMALLINT     = NULL, 
+                                                  @maxChats                TINYINT      = NULL, 
+                                                  @chatDomain              VARCHAR(MAX) = NULL, 
+                                                  @chatQueue               SMALLINT     = NULL, 
+                                                  @chatTime                SMALLINT     = NULL, 
+                                                  @dRestrictPlay           BIT          = NULL, 
+                                                  @callBackSurveyAgent     BIT          = NULL, 
+                                                  @callBackSurveyClient    BIT          = NULL, 
+                                                  @agts_notavailable       VARCHAR(15)  = NULL, 
+                                                  @editableDtmf            BIT          = NULL, 
+                                                  @prefijo                 VARCHAR(MAX) = NULL, 
+                                                  @addDataCallBackReminder BIT          = NULL
+AS
+     SET NOCOUNT ON;
+     UPDATE ccInbound
+       SET 
+           descripcion = ISNULL(@descripcion, descripcion), 
+           STATUS = ISNULL(@status, STATUS), 
+           tNotas = ISNULL(@tNotas, tNotas), 
+           tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall), 
+           nMaxQue = ISNULL(@nMaxQue, nMaxQue), 
+           tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait), 
+           tel_MaxQueue = ISNULL(@tel_MaxQueue, tel_MaxQueue), 
+           tel_outservice = ISNULL(@tel_outservice, tel_outservice), 
+           tel_noct = ISNULL(@tel_noct, tel_noct), 
+           bnocturno = CASE
+                           WHEN ISNULL(@tel_noct, 0) = ''0''
+                                OR @tel_noct = ''''
+                           THEN ''0''
+                           ELSE ''1''
+                       END, 
+           StartTimerOnHangUp = ISNULL(@StartTimerOnHangUp, StartTimerOnHangUp), 
+           editableCallKey = ISNULL(@editableCallKey, editableCallKey), 
+           queuePosition = ISNULL(@queuePosition, queuePosition), 
+           tMaxQueueCallBack = ISNULL(@tMaxQueueCallBack, tMaxQueueCallBack), 
+           stopRecording = ISNULL(@stopRecording, stopRecording), 
+           dialPrefixOverflow = ISNULL(@dialPrefixOverflow, dialPrefixOverflow), 
+           OpriorityT = ISNULL(@OpriorityT, OpriorityT), 
+           callerIdDesc = ISNULL(@callerIdDesc, callerIdDesc), 
+           chat = ISNULL(@chat, chat), 
+           inactiveChatTime = ISNULL(@inactiveChatTime, inactiveChatTime), 
+           maxChats = ISNULL(@maxChats, maxChats), 
+           chatQueueOverflow = ISNULL(@chatQueue, ISNULL(chatQueueOverflow, 15)), 
+           chatTimeOverflow = ISNULL(@chatTime, ISNULL(chatTimeOverflow, 300)), 
+           startStopRecording = ISNULL(@dRestrictPlay, startStopRecording), 
+           callBackSurveyAgent = ISNULL(@callBackSurveyAgent, callBackSurveyAgent), 
+           callBackSurveyClient = ISNULL(@callBackSurveyClient, callBackSurveyClient), 
+           agts_notavailable = ISNULL(@agts_notavailable, agts_notavailable), 
+           editableDtmf = ISNULL(@editableDtmf, editableDtmf), 
+           prefijo = ISNULL(@prefijo, prefijo), 
+           addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder)
+     WHERE inbound_id = @inbound_id;
+     IF NOT EXISTS
+     (
+         SELECT inbound_id
+         FROM ccinbound
+         WHERE inbound_id <> @inbound_id
+               AND chatDomain = @chatDomain
+               AND chatDomain <> ''''
+     )
+         BEGIN
+             IF @chatDomain IS NOT NULL
+                 BEGIN
+                     UPDATE ccinbound
+                       SET 
+                           chatDomain = @chatDomain
+                     WHERE inbound_id = @inbound_id;
+             END;
+     END;
+         ELSE
+         BEGIN
+             UPDATE ccinbound
+               SET 
+                   chatDomain = ''''
+             WHERE inbound_id = @inbound_id;
+             RAISERROR(''Domain already in another ACD Group'', 15, 4);
+     END;
+     IF @ShowCalifWnd = 1
+         BEGIN
+             IF EXISTS
+             (
+                 SELECT cam_id
+                 FROM ccCalifCamp
+                 WHERE cam_id = @inbound_id
+                       AND tipo = 0
+             )
+                 BEGIN
+                     UPDATE ccInbound
+                       SET 
+                           ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd)
+                     WHERE inbound_id = @inbound_id;
+                     SELECT 1;
+                     RETURN(0);
+             END;
+             SELECT 0;
+             RETURN(0);
+     END;
+         ELSE
+         UPDATE ccInbound
+           SET 
+               ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd)
+         WHERE inbound_id = @inbound_id;
+
+	 SELECT 2;
+     RETURN(0);
+     SET NOCOUNT OFF;
+	 '
+		EXEC(@sql)
+
+		set @process = 'CW-4732 Eliminar sp ccsp_GalateaRIALog'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaRIALog'')
+				    begin
+						DROP PROCEDURE ccsp_GalateaRIALog;
+				    end'
+		EXEC(@sql)
+
+		set @process = 'CW-4732 Creacion del sp ccsp_GalateaRIALog'
+		set @sql = '-- =============================================
+-- Author: UEspinosa
+-- Create date: 16/12/2020
+-- Description:	Sabe to ccRIALog
+-- =============================================
+CREATE PROCEDURE ccsp_GalateaRIALog
+@userId           SMALLINT,
+@OperationType    VARCHAR(MAX)= '''',
+@Value			  VARCHAR(MAX) = '''',
+@Module			  SMALLINT,
+@target			  VARCHAR(40) = ''''
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF OBJECT_ID(''tempdb..#OperationType'') IS NOT NULL DROP TABLE #OperationType
+	create table #OperationType(
+			id smallint IDENTITY(1,1),
+			operationType varchar(MAX)
+	)
+	insert into #OperationType SELECT value FROM fn_RIASplitDelimited(@OperationType, '','')	
+
+	IF OBJECT_ID(''tempdb..#Value'') IS NOT NULL DROP TABLE #Value
+	create table #Value(
+			id smallint IDENTITY(1,1),
+			value varchar(MAX)
+	)
+	insert into #Value SELECT value FROM fn_RIASplitDelimited(@Value, ''^^'')
+	
+	IF OBJECT_ID(''tempdb..#Params'') IS NOT NULL DROP TABLE #Params
+	select operationType,value 
+	into #Params
+	from #OperationType o
+	inner join #Value v with(nolock) on o.id = v.id
+
+
+	IF OBJECT_ID(''tempdb..#PreLog'') IS NOT NULL DROP TABLE #PreLog
+	create table #PreLog(
+			areaName varchar(40),
+			operatioDate DATETIME,
+			login varchar(40),
+			module_id smallint,
+			target varchar(40)
+	)
+	insert into #PreLog
+	select AreaName, GETDATE() as operatioDate,u.login,@Module module_id,@target as target
+	from ccUsers U
+	INNER JOIN ccRIACat_Areas A with(nolock) on u.IDArea = a.IDArea
+	where U.User_id = @userId
+
+	Insert into ccRIALog
+	select areaName,operatioDate,operationType,login,module_id,value,target
+	from #PreLog,#Params
+
+	IF OBJECT_ID(''tempdb..#OperationType'') IS NOT NULL DROP TABLE #OperationType
+	IF OBJECT_ID(''tempdb..#Value'') IS NOT NULL DROP TABLE #Value
+	IF OBJECT_ID(''tempdb..#Params'') IS NOT NULL DROP TABLE #Params
+	IF OBJECT_ID(''tempdb..#PreLog'') IS NOT NULL DROP TABLE #PreLog
+	Select 1
+	return
+END
+'
+		EXEC(@sql)
+
 
 
 

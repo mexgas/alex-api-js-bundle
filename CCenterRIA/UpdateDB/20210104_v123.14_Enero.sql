@@ -789,7 +789,7 @@ end
 		set @process = 'CW-4739 Se elimina si existe ccsp_GalateaAdminCampaigns'
 		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
             begin		 
-                DROP PROCEDURE ccsp_GalateaAdminCampaigns;
+                DROP PROCEDURE ccsp_GalateaAdminCampaigns; 
 		    end'
 		exec (@sql)
 

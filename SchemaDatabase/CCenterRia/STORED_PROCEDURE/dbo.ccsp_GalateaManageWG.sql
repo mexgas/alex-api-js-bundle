@@ -1,20 +1,40 @@
-create  PROCedure [dbo].[ccsp_GalateaManageWG]
+CREATE PROCedure [dbo].[ccsp_GalateaManageWG]
 @option smallint,
 @IDWG smallint,
-@Type smallint,
-@usersList varchar(max)
+@Type smallint = 0,
+@usersList varchar(max) ='',
+@ListCampsIn varchar(max) = '',
+@ListCampsOut varchar(max) =''
 as
 set nocount on
 declare @count int
 declare @id int
 declare @user int
+declare @IDCampEsp varchar(max)
 declare @Assigned  varchar(max)
+declare @AssignedCampsIn  varchar(max)
+declare @AssignedCampsOut  varchar(max)
 
 set @id = 1
 set @Assigned = ''
+set @AssignedCampsIn = ''
+set @AssignedCampsOut = ''
 
 
 IF OBJECT_ID('tempdb..#UsersList') IS NOT NULL DROP TABLE #UsersList;
+IF OBJECT_ID('tempdb..#CampsInOutList') IS NOT NULL DROP TABLE #CampsInOutList;
+
+select *  into #CampsInOutList from (
+select ROW_NUMBER() OVER(ORDER BY [CampEsp] ASC) AS Row, [CampEsp], [Type] from (
+	select 0 as [Type],
+	[value] As [CampEsp]
+	FROM fn_RIASplitDelimited(@ListCampsIn, ',') where [value] > 0
+	union
+	select 1 as [Type],
+	[value] As [CampEsp]
+	FROM fn_RIASplitDelimited(@ListCampsOut, ',') where [value] > 0
+	) as Camps ) as CampsInOut
+
 
 select ROW_NUMBER() OVER(ORDER BY value ASC) AS Row,
 	value As user_id
@@ -132,23 +152,156 @@ if @option = 2 -- Delete Agent-Supervisor from WorkGroup
 
 	 			delete from cccampsagente where user_id=@user and IDWG=@IDWG
 				delete from ccInboundagentes where user_id=@user and IDWG=@IDWG
-				
+				--select @Type
 			 end
 			 else if @Type in(2, 6) -- Supervisor
 			 begin
 				select @Assigned = @Assigned+ cast(@user as varchar(5))+','
 				insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
 				delete ccSupervisorCam where user_id=@user and IDWG=@IDWG
-				
+				--select @Type
 			end
 		end
 		set @id = @id+1
 	end
 end
-if LEN(@Assigned) > 0
+if @option in (1,2)
+begin
+	if LEN(@Assigned) > 0
 		select SUBSTRING(@Assigned,0,Len(@Assigned))
 	else
 		select @Assigned
 
-return(0)
-set nocount off
+	return(0)
+end
+
+if @option = 3 -- Insert WorkGroup in Camp or ACDGroup	
+  begin
+    select @count = count(CampEsp) from #CampsInOutList
+
+    while @id<=@count
+	begin
+		 select @IDCampEsp = CampEsp, @Type = Type from #CampsInOutList where Row= @id
+		 
+
+		 if (select count(IdCampEsp) from ccRIACampEspWG where IdCampEsp=@IDCampEsp and Tipo=@Type) < (select valor from ccSettings where setting_id=180) -- limit
+			 begin
+
+				if (select count(IDWG) from ccRIACampEspWG where IDWG=@IDWG) < (select valor from ccSettings where setting_id=64) -- limit
+					begin
+
+						if not exists (select IDWG from ccRIACampEspWG where IDWG=@IDWG and Tipo=@Type and IdCampEsp=@IDCampEsp) -- No existe el grupo en el ACD o Especialidad
+						begin
+
+							insert into ccRIACampEspWG (IDWG, Tipo, IdCampEsp, priority) values (@IDWG, @Type, @IDCampEsp, 1)
+							if not exists(select * from ccRIACampEspWGConsulta where IDWG=@IDWG and Tipo=@Type and IdCampEsp=@IDCampEsp) begin
+								insert into ccRIACampEspWGConsulta (IDWG, Tipo, IdCampEsp) values (@IDWG, @Type, @IDCampEsp)
+							end
+				
+
+							exec ccsp_RIACalcula_WGPriority @IDWG, @IDCampEsp, @Type
+							if @Type in (0, 1) -- ACDGroup
+							begin
+
+								if @IDWG is not null or @IDWG = 0
+								begin
+									if @Type=0 --ACDGroup
+									begin
+										select @AssignedCampsIn = @AssignedCampsIn+ cast(@IDCampEsp as varchar(5))+','
+										insert into ccInboundAgentes(User_id, Inbound_id, cli_id, prioridad, skill, idwg)
+										SELECT distinct u.user_id, @IDCampEsp, 0 cli_id, dbo.fn_Calcula_UsrPriority(u.User_id,0), 1 skill, @IDWG 
+										FROM ccRIAWorkGroupUsers u join ccRIACampEspWG c on u.IDWG = c.IDWG
+											join ccusers s on u.user_id = s.user_id
+										WHERE c.tipo=0 and s.tipouser_id=1 and c.idCampEsp=@IDCampEsp and c.IDWG=@IDWG 
+										and u.User_id not in (select User_id from ccInboundAgentes where Inbound_id=@IDCampEsp and IDWG=@IDWG)
+
+										insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+										select b.user_id, @IDCampEsp, 0, @IDWG
+										from ccRIACampEspWG a join ccRIAWorkGroupUsers b on a.idwg = b.idwg
+											join ccusers s on b.user_id = s.user_id
+										where s.tipouser_id <> 1 and a.idcampesp=@IDCampEsp and b.idwg=@IDWG and a.tipo=0
+											and b.User_id not in (select User_id from ccSupervisorCam where cam_id=@IDCampEsp and tipo=0 and IDWG=@IDWG)
+			 
+										--return(0)
+									end
+
+									else if @Type = 1 -- Camp
+									begin
+										select @AssignedCampsOut = @AssignedCampsOut+ cast(@IDCampEsp as varchar(5))+','
+										insert into CCCAMPSAGENTE (user_id, cam_id, prioridad, skill, IDWG)
+										SELECT distinct u.user_id, @IDCampEsp, dbo.fn_Calcula_UsrPriority(u.User_id,0), 1 skill, @IDWG
+										FROM ccRIAWorkGroupUsers u join ccRIACampEspWG c on u.IDWG = c.IDWG
+										join ccusers s on u.user_id = s.user_id
+										WHERE c.tipo=1 and s.tipouser_id=1 and c.idCampEsp=@IDCampEsp and u.IDWG=@IDWG 
+											and u.User_id not in (select User_id from ccCampsAgente where cam_id=@IDCampEsp and IDWG=@IDWG)
+			
+										insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+										select b.user_id, @IDCampEsp, 1, @IDWG
+										from ccRIACampEspWG a join ccRIAWorkGroupUsers b on a.idwg = b.idwg
+											join ccusers s on b.user_id = s.user_id
+										where s.tipouser_id <> 1 and a.idcampesp=@IDCampEsp and b.idwg=@IDWG and a.tipo=1
+											and b.User_id not in (select User_id from ccSupervisorCam where cam_id=@IDCampEsp and tipo=1 and IDWG=@IDWG)
+									end
+							end
+						end
+					end
+				end
+			end
+		set @id = @id + 1
+   end
+end
+
+if @option = 3
+begin
+	
+if LEN(@AssignedCampsIn) > 0 or LEN(@AssignedCampsOut) > 0
+		select SUBSTRING(@AssignedCampsIn,0,Len(@AssignedCampsIn)) as CampsInAssigned, SUBSTRING(@AssignedCampsOut,0,Len(@AssignedCampsOut)) as CampsOutAssigned 
+	else
+		select @AssignedCampsIn as CampsInAssigned, @AssignedCampsOut as CampsOutAssigned
+
+	return(0)
+end
+
+if @option = 4  --Delete relatoion Camp with WG
+begin
+declare @multipleAgents varchar(1000)
+declare @multipleAdmins varchar(2000)
+declare @sql varchar(max)
+
+select @count = count(CampEsp) from #CampsInOutList
+ while @id<=@count
+  begin
+
+		select @IDCampEsp = CampEsp, @Type = Type from #CampsInOutList where Row= @id
+
+		SELECT @multipleAgents = coalesce(@multipleAgents + ',', '') + CAST(A.user_id AS VARCHAR(40))
+		FROM ccRIAWorkGroupUsers A
+		JOIN ccUsers B ON A.user_id = B.user_id
+		WHERE IDWG = @IDWG AND TipoUser_id = 1
+
+		SELECT @multipleAdmins = coalesce(@multipleAdmins + ',', '') + CAST(A.user_id AS VARCHAR(40))
+		FROM ccRIAWorkGroupUsers A
+		JOIN ccUsers B ON A.user_id = B.user_id
+		WHERE IDWG = @IDWG AND TipoUser_id = 2
+
+		--Delete Agent from WorkGroup
+		   set @sql = 'ccsp_RIA_ABCAgents @option=7,@UserId=''0'',@Login='''',@Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,
+					@AreaId=0,@UserType=0,@IDWG='+cast(@IDWG as varchar(4))+',@DeleteUsers=0,@InOut='+cast(@Type as varchar(4))+',@IDCampEsp='+cast(@IDCampEsp as varchar(4))+',@multipleUsers='''+@multipleAgents+''''
+		   exec(@sql)
+
+		 --Delete Supervisor from WorkGroup
+
+		 set @sql = 'ccsp_RIA_ABCAgents @option=8,@UserId=''0'',@Login='''',@Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,
+					@AreaId=0,@UserType=0,@IDWG='+cast(@IDWG as varchar(4))+',@DeleteUsers=0,@InOut='+cast(@Type as varchar(4))+',@IDCampEsp='+cast(@IDCampEsp as varchar(4))+',@multipleUsers='''+@multipleAdmins+''''
+		   exec(@sql)
+
+		--Delete WokGroup from ACD or Camp 
+
+		 set @sql = 'exec ccsp_RIA_ABCWorkGroups @option=7,@IDWG='+cast(@IDWG as varchar(4))+',@IDCampEsp='''+cast(@IDCampEsp as varchar(4))+''',@Type='+cast(@Type as varchar(4))+''
+		 exec(@sql)
+		set @id = @id + 1
+	
+	end
+
+	select 1
+end

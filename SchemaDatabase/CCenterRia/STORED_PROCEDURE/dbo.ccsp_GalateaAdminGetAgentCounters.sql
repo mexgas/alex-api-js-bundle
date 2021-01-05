@@ -3,8 +3,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
                                                     @agent_id AS INT = 0, 
                                                     @WG AS       INT = 0,
 													@campId AS INT = 0
-
-AS
+	 AS
      SET NOCOUNT ON;
      IF @type = 1
          BEGIN
@@ -96,4 +95,16 @@ AS
 		) CurrentState on u.User_id=CurrentState.User_id
 		where u.TipoUser_id=1 and u.User_id = @agent_id
 	 END
+
+	 IF @type = 7 -- Get superuser id's except root
+	 BEGIN
+		declare @superuserId as int
+		set @superuserId = (select Rol_id from ccRoles where Level = 7) -- obtenemos el id del rol superusuario
+
+		select CAST(cr.User_id AS INT) User_id 
+		from ccUsers_Roles cr
+		where Rol_id = @superuserId
+		and cr.User_id not in (1) 
+	 END
+
      SET NOCOUNT ON;

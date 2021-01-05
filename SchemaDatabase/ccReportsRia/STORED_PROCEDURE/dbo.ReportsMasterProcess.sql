@@ -231,6 +231,8 @@ declare @publisher_db_reinit nvarchar(max)
 declare @publication_reinit nvarchar(max)
 declare @upload_first_reinit nvarchar(max)
 
+
+
 set @lastTenMinuteFirst = dateadd(minute,-@scheduleTime*2,getdate())
 
 create table #reinitmergepullsubscription(

@@ -54,12 +54,12 @@ AS
 		from #tempCCMenus a inner join ccMenusUserRec b on a.menu_id=b.parent
 )
 
-select distinct Nivel,menu_descrip,menu_id,ordengral,parent,release into #tempCCMenusUser from ccMenusUserRec order by menu_id
+select distinct Nivel,menu_descrip,menu_id,ordengral,parent,release into #tempCCMenusUser from ccMenusUserRec order by ordengral,menu_id
 
-select distinct A.Nivel, A.menu_descrip, A.menu_id, A.ordengral,5 filtersType,A.release from #tempCCMenusUser A
+select distinct A.Nivel, A.menu_descrip, A.menu_id, A.ordengral,5 filtersType,A.release,parent from #tempCCMenusUser A
 where  menu_id not in
 	(select distinct parent from  #tempCCMenus where Nivel='C' and parent not in (select distinct  A.parent from  #tempCCMenusUser A where A.Nivel='C'))
-order by menu_id
+order by ordengral,menu_id
 
 drop table #tempCCMenus
 drop table #tempCCMenusUser

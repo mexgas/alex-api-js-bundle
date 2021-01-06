@@ -4,14 +4,14 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
 @Nombres varchar(45),
 @LastName varchar(45),
 @NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
-@Password varchar(200),
 @Sexo bit,
 @canChangeStatus bit
 as
 
 Declare @ApellidoMaterno varchar(45)
 Declare @ApellidoPaterno varchar(45)
-Declare @CurrentPass varchar(200)
+Declare @userIdOnDb int
+Declare @LoginOnDb varchar(40)
 --Obtiene el idioma de Centerware
 Declare @lenguageXion varchar
 select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
@@ -35,20 +35,28 @@ select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espa�
 		return(0)
 		end
 
---verificamos si la constrasena ha cambiado
-	--select @CurrentPass= Password from ccUsers where User_id=@UserId and Login=@Login
+  if exists(select Nombres from ccUsers where Nombres=@Nombres
+  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+    begin
 
-	--if @Password <> '' and @Password <> null and @Password <> @CurrentPass -- si la contraseña si cambio actualizamos en base el fecha de actualizacion de pass
-	--	begin 
-	--	Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId
-	--	end
+		select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+	  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+	  	select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+	  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+	  if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+		begin
+			select -2 as ResponseCode--,'Nombre completo en Uso'-- valida todos los campos de nombre para ver que no existan en la base de datos
+			return(0)
+		end
+    end
 
 --update
 	Update ccUsers set 
 	Nombres=@Nombres,
 	ApellidoPaterno=@ApellidoPaterno,
 	ApellidoMaterno=@ApellidoMaterno,
-	--Password=case when @Password <> '' then @Password else Password end,
 	Sexo=@Sexo,
 	canChangeStatus=@canChangeStatus
 	where User_id=@UserId

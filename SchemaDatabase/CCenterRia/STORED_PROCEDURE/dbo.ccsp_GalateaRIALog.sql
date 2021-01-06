@@ -6,7 +6,7 @@
 CREATE PROCEDURE ccsp_GalateaRIALog
 @userId           SMALLINT,
 @OperationType    VARCHAR(MAX)= '',
-@Value			  VARCHAR(40) = '',
+@Value			  VARCHAR(MAX) = '',
 @Module			  SMALLINT,
 @target			  VARCHAR(40) = ''
 AS

@@ -1643,6 +1643,7 @@ namespace MiddleWareReports
             StringBuilder query = DynamicTsqlBuilder.paginate(dynamicQuery);
             DataTable table = db.executeDynamicQuery(query, lastParameters, lastValues);
             int totalPages = 1;
+            int totalRows = 0;
 
             foreach (DataRow row in table.Rows)
             {
@@ -1650,11 +1651,11 @@ namespace MiddleWareReports
                 {
                     if (PAGE_SIZE > 0)
                     {
-                        if (int.TryParse(row[column].ToString(), out totalPages))
+                        if (int.TryParse(row[column].ToString(), out totalRows))
                         {
-                            if (PAGE_SIZE <= totalPages && totalPages > 0)
+                            if (PAGE_SIZE <= totalRows && totalRows > 0)
                             {
-                                double temp = (double)totalPages / (double)PAGE_SIZE;
+                                double temp = (double)totalRows / (double)PAGE_SIZE;
                                 temp = Math.Ceiling(temp);
                                 totalPages = (int)temp;
                             }
@@ -1671,6 +1672,7 @@ namespace MiddleWareReports
             data.SetAttribute("pagesize", PAGE_SIZE.ToString());
             data.SetAttribute("currentpage", currentPageNumber.ToString());
             data.SetAttribute("totalpages", totalPages.ToString());
+            data.SetAttribute("totalrows", totalRows.ToString());
 
             return data;
         }

@@ -19,6 +19,7 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "CWReportsEngine", "CWReport
 		Release.AspNetCompiler.FixedNames = "true"
 		Release.AspNetCompiler.Debug = "False"
 		VWDPort = "51941"
+		VWDVirtualPath = "/ccReportsRia"
 		StartServerOnDebug = "true"
 	EndProjectSection
 EndProject

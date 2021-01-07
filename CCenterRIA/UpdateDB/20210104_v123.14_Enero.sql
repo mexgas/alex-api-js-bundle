@@ -1035,8 +1035,7 @@ BEGIN
 	delete TOP(3000) from ccoWorkingTable where cam_id in (select DeleteCamId from #CampsDelete)
 
 	SELECT COUNT(callout_id) FROM ccoWorkingTable WHERE cam_id in (select DeleteCamId from #CampsDelete)
-END
-GO'
+END'
 		EXEC(@sql)
 
 		set @process = 'CW-4748 Eliminar sp ccsp_GalateaDeleteCampaignAndACD'

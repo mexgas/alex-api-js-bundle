@@ -1025,7 +1025,7 @@ end
 -- Create date: 03/12/20
 -- Description:	Eliminacion de registros de WorkingTable
 -- =============================================
-ALTER PROCEDURE ccsp_GalateaDeleteWorkingTable
+CREATE PROCEDURE ccsp_GalateaDeleteWorkingTable
 	@DeleteCamId	  VARCHAR(MAX) = ''158''
 AS
 BEGIN
@@ -1052,7 +1052,7 @@ GO'
 -- Create date: 03/12/2020
 -- Description:	Eliminacion logica de las campañas y ACD
 -- =============================================
-ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
+CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
 	--declare
 	@userId           SMALLINT,
 	@DeleteCamId	  VARCHAR(MAX),

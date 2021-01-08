@@ -54,6 +54,7 @@ BEGIN
           DROP PROCEDURE ccsp_GalateaAdminSchedulesManagement;
             end'
   exec (@sql)
+
   set @process = 'CW-4739 Se agrega sp ccsp_GalateaAdminSchedulesManagement'
   set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSchedulesManagement]
 	@option smallint = -1,
@@ -1197,6 +1198,10 @@ BEGIN
 END
 '
 		EXEC(@sql)
+
+		 set @process = 'Show Phone Call Agent'
+  		set @sql = 'update ccsettings set valor=''0'' where setting_id=223'
+ 	 exec (@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

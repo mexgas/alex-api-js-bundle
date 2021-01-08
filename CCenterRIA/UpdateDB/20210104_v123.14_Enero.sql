@@ -1202,6 +1202,19 @@ END
 		 set @process = 'Show Phone Call Agent'
   		set @sql = 'update ccsettings set valor=''0'' where setting_id=223'
  	 exec (@sql)
+
+		set @process = 'Agregar permiso para la gestion de campañas'
+		set @sql = 'if not exists(select * from ccPermissions where KeyJson = ''PermissionCampaign'')
+begin
+	insert into ccPermissions values (10013,''Gestion de Campañas eliminar,agregar, etc'',''PermissionCampaignManagement'',0,0,0,''N/A'',1)
+end
+
+if not exists(select * from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = 10013)
+begin
+	insert into ccRoles_Permissions values (1,10013)
+end'
+		EXEC(@sql)
+
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

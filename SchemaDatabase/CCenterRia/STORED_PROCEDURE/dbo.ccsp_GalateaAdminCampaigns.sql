@@ -75,7 +75,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 										CAST(graph.graphic_id AS INT) AS Frame,
 										CAST(0 AS SMALLINT) AS Type,
 										CAST(inb.Status AS BIT) IsStarted,
-										a.AreaName as Area
+										a.AreaName AS Area,
+										inb.chat AS InboundType
 									FROM ccInbound inb
 									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
 									left join ccRIACat_Areas a on a.IDArea = inb.IDArea

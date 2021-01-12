@@ -1214,6 +1214,19 @@ begin
 	insert into ccRoles_Permissions values (1,10013)
 end'
 		EXEC(@sql)
+		set @process = 'CW-4810 Se insertan permisos de horarios en ccPermissions'
+		set @sql = 'if not exists (select * from  [CCenterRia].[dbo].[ccPermissions] where Permissions_Id = 10014) 
+		begin
+			INSERT INTO [CCenterRia].[dbo].[ccPermissions]([Permissions_Id], [Description], [KeyJson], [Parent], [Type], [OrderGrl] ,[Release] ,[Active])
+			VALUES	(10014,''Gestionar horarios'',''RolesPermissionSchedulesManagment'',0,0,0,''N/A'',1)
+		end'
+		exec(@sql)
+		set @process = 'CW-4810 Se inserta permiso en super usuario'
+		set @sql = ' if not exists ( select * from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = 10014)
+				begin
+					INSERT INTO [CCenterRia].[dbo].[ccRoles_Permissions]([Rol_Id], [Permissions_Id]) VALUES	(1,10014)
+				end'
+	exec(@sql)
 
 		
 		/* End script release */

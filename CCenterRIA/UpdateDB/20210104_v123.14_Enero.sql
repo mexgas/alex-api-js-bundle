@@ -1204,7 +1204,7 @@ END
  	 exec (@sql)
 
 		set @process = 'Agregar permiso para la gestion de campañas'
-		set @sql = 'if not exists(select * from ccPermissions where KeyJson = ''PermissionCampaign'')
+		set @sql = 'if not exists(select * from ccPermissions where KeyJson = ''PermissionCampaignManagement'')
 begin
 	insert into ccPermissions values (10013,''Gestion de Campañas eliminar,agregar, etc'',''PermissionCampaignManagement'',0,0,0,''N/A'',1)
 end

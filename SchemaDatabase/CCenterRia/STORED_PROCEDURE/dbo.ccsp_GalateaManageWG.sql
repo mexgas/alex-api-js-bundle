@@ -4,7 +4,8 @@ CREATE PROCedure [dbo].[ccsp_GalateaManageWG]
 @Type smallint = 0,
 @usersList varchar(max) ='',
 @ListCampsIn varchar(max) = '',
-@ListCampsOut varchar(max) =''
+@ListCampsOut varchar(max) ='',
+@idNewArea int = 0
 as
 set nocount on
 declare @count int
@@ -304,4 +305,47 @@ select @count = count(CampEsp) from #CampsInOutList
 	end
 
 	select 1
+	return 0
 end
+
+if @option = 5  --Change Admin Administrator.
+begin
+declare @user_id int
+select @user_id = value FROM fn_RIASplitDelimited(@usersList, ',')
+select @Type = TipoUser_id from ccUsers where User_id = @user_id
+
+		if @Type = 1 -- Agente
+        begin
+
+			if(select count(user_id) from ccCampsAgente where user_id = @user_id) >0 or 
+			(select count(user_id) from ccInboundAgentes where user_id = @user_id) >0 or
+			(select count(user_id) from ccRIAWorkGroupUsers where user_id = @user_id) > 0
+			begin
+				select -1
+				return 0
+			end
+			else
+				update ccUsers set IDArea = @idNewArea where user_id = @user_id
+		end
+
+        
+    if @Type in (2, 6) -- Supervisor
+    begin
+
+        if(select count(user_id) from ccSupervisorCam where user_id = @user_id) > 0 or
+		(select count(user_id) from ccRIAWorkGroupUsers where user_id = @user_id) > 0
+		begin
+			select -1
+			return 0
+		end
+		else
+			update ccUsers set IDArea = @idNewArea where user_id = @user_id
+    end
+
+	update ccPosicion set user_id = 0 where user_id = @user_id
+
+	select 1
+
+end
+
+set nocount off

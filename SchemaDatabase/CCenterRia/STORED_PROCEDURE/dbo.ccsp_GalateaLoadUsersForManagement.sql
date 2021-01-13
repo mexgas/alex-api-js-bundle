@@ -2,7 +2,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaLoadUsersForManagement]
  @option SMALLINT,
  @AreaId SMALLINT,
  @UserType INT,
- @Username VARCHAR(200)=null
+ @Username VARCHAR(200)=null,
+ @userId INT =0
 as
 
 --Obtiene el idioma de de Centerware
@@ -58,6 +59,32 @@ BEGIN
   isnull(IDArea, 0) as AreaId
   FROM ccusers
   WHERE Login=@Username
+
+  RETURN (0)
+END
+
+IF @option = 3 -- obtiene Agente o supervisor en base a su ID de usuario
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  CASE 
+    WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '')
+  END as LastName,
+
+  CASE 
+    WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '')
+  END as OptionalExtraName,
+
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+  isnull(IDArea, 0) as AreaId
+  FROM ccusers
+  WHERE user_id=@userId
 
   RETURN (0)
 END

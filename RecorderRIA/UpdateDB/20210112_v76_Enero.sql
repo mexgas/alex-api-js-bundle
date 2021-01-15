@@ -14,7 +14,7 @@ if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva versi
 	begin tran
 	begin try
 	
-    SET @process = 'CW-XXX agrega dirvirtual_audio en la desencriptar'
+    SET @process = 'CW-4797 agrega dirvirtual_audio en la desencriptar'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccspGalatea_Finder]
 @action int,
 @grabIds varchar(max)=null,
@@ -54,11 +54,11 @@ BEGIN
 	end
 	else if @action =4 begin
 		set @sql=''declare @nameFolder table (callType int,nameFolder varchar(100),prefijo varchar(2))
-	insert into @nameFolder values(1,''INBOUND'',''I_'')
-	insert into @nameFolder values(2,''OUTBOUND'',''O_'')
+	insert into @nameFolder values(1,''''INBOUND'''',''''I_'''')
+	insert into @nameFolder values(2,''''OUTBOUND'''',''''O_'''')
 	declare @ext varchar(30)
 
-	select @ext = case when par_valor=''1'' then ''.wav.enc'' else ''.wav'' end from TREC_PARAMETROS where par_id=15
+	select @ext = case when par_valor=''''1'''' then ''''.wav.enc'''' else ''''.wav'''' end from TREC_PARAMETROS where par_id=15
 		;
 		with grab as (
 		select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACION where grab_id in(''+@grabIds+'')
@@ -67,8 +67,8 @@ BEGIN
 		)
 		
 		select grab.grab_id as grabId,grab.id_repositorio as repositoryId,rep.dirvirtual_audio as virtualAudio
-		,rep.ruta_repositorio+''\''+f.nameFolder+''\''+ cast(cal_id/10000 as varchar(100))+''\'' as pathRep,
-		f.prefijo+cast(cal_id as varchar(100))	+ case when subFijo<>'''' then ''_''+subFijo else '''' end + @ext as [fileAudio]
+		,rep.ruta_repositorio+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as pathRep,
+		f.prefijo+cast(cal_id as varchar(100))	+ case when subFijo<>'''''''' then ''''_''''+subFijo else '''''''' end + @ext as [fileAudio]
 		from grab 
 		inner join TREC_REPOSITORIOS rep on grab.id_repositorio=rep.id_repositorio
 		inner join @nameFolder f on f.callType=grab.tipo_llamada  

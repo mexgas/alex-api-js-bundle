@@ -3,13 +3,13 @@ CREATE PROCEDURE [dbo].[ccspGalatea_Finder]
 @userId int = 0
 AS
 if @action = 1 begin--trae el nombre de la base de datos en BX
-	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int) as callType, c.cam_descripcion as label
+	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int)+1 as callType, c.cam_descripcion as label
 		from ccRIAWorkGroupUsers Wguser
 		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
 		inner join ccCamps c on  WGCam.IdCampEsp=c.cam_id and WGCam.Tipo=1		
 		where Wguser.User_id=@userId
 	union
-	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int) as callType, inb.descripcion as label
+	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int)+1 as callType, inb.descripcion as label
 		from ccRIAWorkGroupUsers Wguser
 		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
 		inner join ccInbound inb on  WGCam.IdCampEsp=inb.Inbound_id and WGCam.Tipo=0

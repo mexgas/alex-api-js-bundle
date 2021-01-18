@@ -1767,7 +1767,7 @@ end'
 
   set @process = 'CW-4815 alter table messageMail'
   set @sql = 'if exists (select column_name from information_schema.columns  
-	where table_name = ''messageMail'' and COLUMN_NAME = ''uid'' and character_maximum_length <> 500)
+	where table_name = ''messageMail'' and COLUMN_NAME = ''uid'' and character_maximum_length < 500)
 begin
 	declare @nSQL varchar(max)
 	declare @PK_Name varchar(500)

@@ -44,7 +44,7 @@ if @action = 1 begin --checha si esta activo el servicio
     select @isActiveMail as isActiveMail
     return (0)
 end
-else if @action = 2 begin -- carga la relacion de especialidades y cuentas de email de entrada
+else if @action = 2 begin --Obsoleto para email - actualizado en case 23
     select A.inboundId as IdIn,A.conexionInfo as ConexionInfo,A.connUser as [Username],A.connPass as [Password], A.isActive as IsActive
         from ContactMeanIn A
             inner join ccInbound B on A.inboundId=B.Inbound_Id
@@ -199,7 +199,7 @@ end
 else if @action = 17 begin  --
     select A.conexionInfo as ConexionInfo,A.connUser as UserName,A.connPass as Password,A.isActive as IsActive,inboundId as IdIn  from ContactMeanIn A where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
 End
-else if @action = 18 begin  --Carga cuentas de salida
+else if @action = 18 begin   --Obsoleto para email - actualizado en case 24
     select A.contactMeanOutId as IdOut,A.conexionInfo as ConexionInfo ,A.connUser as UserName,A.connPass as [Password],isActive as IsActive from contactMeanOut A where isActive=1
 end
 else if @action = 19 begin   --relation MailOut and ACD
@@ -221,5 +221,23 @@ else if @action = 22 begin --Update type
         set @conexionInfo=''
     update ContactMeanIn set name = '', conexionInfo = @conexionInfo, connUser = '', isActive = 0 where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
     select 1,'unAssigned'
+end
+else if @action = 23 begin -- carga la relacion de especialidades y cuentas de email de entrada
+		 select A.inboundId as IdIn,A.conexionInfo as ConexionInfo,A.connUser as [Username],A.connPass as [Password], A.isActive as IsActive,
+		cast(case when A.inboundId = C.inboundId then 1 else 0 end as bit) as IsAzure,
+		tenantId [TenantId], clientId [ClientId], clientSecret [ClientSecret], instance [Instance], apiUrl [ApiUrl]
+        from ContactMeanIn A inner join ccInbound B on A.inboundId=B.Inbound_Id
+		left join contactMeanInAzure C on B.Inbound_id = C.inboundId
+        where meanContactTypeId = @meanContactTypeId and B.Status=1 and A.isActive=1
+end
+else if @action = 24  begin  --Carga cuentas de salida
+ 	select A.contactMeanOutId as IdOut,A.conexionInfo as ConexionInfo ,A.connUser as UserName,A.connPass as [Password],isActive as IsActive, 
+	cast(case when A.contactMeanOutId = B.contactMeanOutId then 1 else 0 end as bit) as IsAzure,
+	tenantId [TenantId], clientId [ClientId], clientSecret [ClientSecret], instance [Instance], apiUrl [ApiUrl]
+	from contactMeanOut A left join contactMeanOutAzure B on A.contactMeanOutId = B.contactMeanOutId
+	where isActive=1
+end
+else if @action = 25 begin
+	select count(*) [ConnectionExists] from contactMeanInAzure where inboundId = @inboundId
 end
 END

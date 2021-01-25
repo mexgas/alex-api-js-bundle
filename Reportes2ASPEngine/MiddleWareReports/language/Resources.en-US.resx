@@ -244,7 +244,7 @@
     <value>Answered</value>
   </data>
   <data name="AnsweredandTransferCalls" xml:space="preserve">
-    <value>Answered and Transferred Calls</value>
+    <value>Answered and transferred calls billing</value>
   </data>
   <data name="AnsweredCalls" xml:space="preserve">
     <value>Answered Calls</value>
@@ -436,7 +436,7 @@
     <value>Callbacks per Campaign by day</value>
   </data>
   <data name="CallBilling" xml:space="preserve">
-    <value>Call Billing</value>
+    <value>Billing by agent</value>
   </data>
   <data name="CallbillingperCampaign" xml:space="preserve">
     <value>Call billing per Campaign</value>

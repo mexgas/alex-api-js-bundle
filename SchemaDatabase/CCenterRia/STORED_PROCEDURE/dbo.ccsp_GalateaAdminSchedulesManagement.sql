@@ -31,7 +31,7 @@ BEGIN
 			END
 			IF(@camType=0)--campañas de entrada
 			BEGIN
-				SELECT Inbound_id as CampId, Horario_id as ScheduleId FROM ccInboundHorarios WHERE Inbound_id = @camId
+				SELECT CONVERT(INT, Inbound_id) as CampId, Horario_id as ScheduleId FROM ccInboundHorarios WHERE Inbound_id = CONVERT(SMALLINT, @camId)
 			END
 		END
 		IF @option =3--agregar la relación de horarios con campañas de salida y entrada

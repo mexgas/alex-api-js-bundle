@@ -244,7 +244,7 @@
     <value>Contestadas</value>
   </data>
   <data name="AnsweredandTransferCalls" xml:space="preserve">
-    <value>Llamadas Contestadas y Transferidas</value>
+    <value>Costos de llamadas contestadas y transferidas</value>
   </data>
   <data name="AnsweredCalls" xml:space="preserve">
     <value>Llamadas General</value>
@@ -436,7 +436,7 @@
     <value>Reprogramaciones por Campaña por dia</value>
   </data>
   <data name="CallBilling" xml:space="preserve">
-    <value>Costos</value>
+    <value>Costos por agente</value>
   </data>
   <data name="CallbillingperCampaign" xml:space="preserve">
     <value>Costo de llamadas por Campaña</value>

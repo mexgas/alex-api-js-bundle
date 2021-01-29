@@ -533,7 +533,7 @@ end
 '
         EXEC(@sql)
 
-	set @process = 'CW-4658 Se modifica sp ccsp_GalateaAdminGetAgentCounters para agregar nueva consulta'
+	set @process = 'CW-4658 Se modifica sp ccsp_GalateaAdminGetAgentCounters para agregar nueva consulta | CW-4804 para agregar consulta de información de agentes por grupo de trabajo y id de administrador'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
                                                     @sup_id AS   INT = 0, 
                                                     @agent_id AS INT = 0, 
@@ -642,6 +642,43 @@ end
 		where Rol_id = @superuserId
 		and cr.User_id not in (1) 
 	 END
+
+	 IF @type = 8 -- Get all Agent''s ID, Login and Full Names related to an Administrator and workgroup
+			 BEGIN
+				DECLARE @table3 TABLE
+					(userId INT
+					PRIMARY KEY NOT NULL
+					);
+				INSERT INTO @table3
+					SELECT DISTINCT 
+							wg.User_id
+					FROM ccRIAWorkGroupUsers wg
+							LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+					WHERE us.TipoUser_id = 1
+							AND wg.IDWG IN
+					(
+						SELECT IDWG
+						FROM ccRIAWorkGroupUsers
+						WHERE User_id = @sup_id
+								AND IDWG <> @WG
+					);
+				SELECT CAST(B.User_id AS int) AS Id,
+				B.username,
+				B.Name
+				FROM @table3 A
+					RIGHT JOIN
+				(
+					SELECT DISTINCT 
+						wg.User_id,
+						us.Login as Username,
+						us.Nombres + '' '' + us.ApellidoPaterno + '' '' + us.ApellidoMaterno Name
+					FROM ccRIAWorkGroupUsers wg
+						LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+					WHERE wg.IDWG = @WG
+						AND us.TipoUser_id = 1
+				) B ON A.userId = B.User_id
+				WHERE A.userId IS NULL;
+			 END
 
      SET NOCOUNT ON;'
 	exec (@sql)
@@ -2236,7 +2273,6 @@ BEGIN
 	END CATCH;'
 
 		EXEC(@sql)
-
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -173,6 +173,9 @@ BEGIN
      SET NOCOUNT ON;'
 	exec (@sql)
 
+  set @process = ''
+  set @sql = ''
+  exec (@sql)
 	
 		
 		/* End script release */

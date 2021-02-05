@@ -33,9 +33,25 @@ CREATE function [dbo].[fnGetCallType](@tel varchar(32))
 				select @serie = convert(smallint,SUBSTRING(@tel,4,3)), @numeracion = RIGHT(@tel,4)
 				select @mod =MODALIDAD from Series nolock where CLD = @ladatemp and SERIE = @serie and @numeracion between [NUMERACION INICIAL] and [NUMERACION FINAL]
 			end
+
+			declare @isLocal bit
+			SET @isLocal = 0
+			IF EXISTS (
+					SELECT *
+					FROM ccRiaArecode
+					WHERE area = @ladatemp
+					)
+			BEGIN
+				SET @isLocal = 1
+			END
+			ELSE IF @ldlocal = @ladatemp
+			BEGIN
+				SET @isLocal = 1
+			END
+
 				
 			if @mod in ('FIJO', 'MPP') begin
-				if @ldlocal = @ladatemp begin
+				if @isLocal = 1 begin
 					set @tipo = 1
 				end
 				else begin
@@ -44,7 +60,7 @@ CREATE function [dbo].[fnGetCallType](@tel varchar(32))
 			end
 				
 			if @mod in ('CPP') begin
-				if @ldlocal = @ladatemp begin
+				if @isLocal = 1 begin
 					set @tipo = 3
 				end
 				else begin

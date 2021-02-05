@@ -107,4 +107,41 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
 		and cr.User_id not in (1) 
 	 END
 
+	 IF @type = 8 -- Get all Agent's ID, Login and Full Names related to an Administrator and workgroup
+			 BEGIN
+				DECLARE @table3 TABLE
+					(userId INT
+					PRIMARY KEY NOT NULL
+					);
+				INSERT INTO @table3
+					SELECT DISTINCT 
+							wg.User_id
+					FROM ccRIAWorkGroupUsers wg
+							LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+					WHERE us.TipoUser_id = 1
+							AND wg.IDWG IN
+					(
+						SELECT IDWG
+						FROM ccRIAWorkGroupUsers
+						WHERE User_id = @sup_id
+								AND IDWG <> @WG
+					);
+				SELECT CAST(B.User_id AS int) AS Id,
+				B.username,
+				B.Name
+				FROM @table3 A
+					RIGHT JOIN
+				(
+					SELECT DISTINCT 
+						wg.User_id,
+						us.Login as Username,
+						us.Nombres + ' ' + us.ApellidoPaterno + ' ' + us.ApellidoMaterno Name
+					FROM ccRIAWorkGroupUsers wg
+						LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+					WHERE wg.IDWG = @WG
+						AND us.TipoUser_id = 1
+				) B ON A.userId = B.User_id
+				WHERE A.userId IS NULL;
+			 END
+
      SET NOCOUNT ON;

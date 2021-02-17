@@ -2239,7 +2239,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo en díalogo (segundos).
+        ///   Busca una cadena traducida similar a Tiempo en díalogo en segundos.
         /// </summary>
         public static string dialTimeSec {
             get {

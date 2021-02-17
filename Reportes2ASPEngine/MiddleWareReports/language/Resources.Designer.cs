@@ -2239,7 +2239,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a Tiempo en díalogo en segundos.
+        ///   Busca una cadena traducida similar a Tiempo en díalogo (segs).
         /// </summary>
         public static string dialTimeSec {
             get {
@@ -8330,9 +8330,7 @@ namespace MiddleWareReports {
                 return ResourceManager.GetString("y", resourceCulture);
             }
         }
-
-      
-
+        
         /// <summary>
         ///   Busca una cadena traducida similar a Año.
         /// </summary>

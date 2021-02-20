@@ -39,23 +39,18 @@ SELECT COALESCE([Call].cal_inicio,ccld.fecha) AS [date],
 	ISNULL(tl.descrip, 'systemTranslated_Indefinite') AS [CallTypes],
 	CASE 
 		WHEN provedor_id IS NOT NULL THEN dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),COALESCE(Call.provedor_id,ccld.proBIDs),
-			CASE 
-				WHEN (COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60) <> 0 
-					THEN COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) + (60 -(COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) % 60)) 
-				ELSE 60 + COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) 
-			END,@country)
-ELSE  CONVERT(DECIMAL(10,2),(CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) / 60) * ccost.additional_min)))
+			dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country)
+		ELSE  CONVERT(DECIMAL(10,2),(CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) / 60) * ccost.additional_min)))
 	END AS [ncost],
 	@IVA AS iva,
 	CASE
-		WHEN provedor_id IS NOT NULL THEN CONVERT(DECIMAL(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),COALESCE(Call.provedor_id,ccld.proBIDs),
-			dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg)
-			,@country),0.00) * (1 + (@IVA / 100.00)))
-		ELSE  CONVERT(DECIMAL(10,2),((CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) / 60) * ccost.additional_min)) * (1 + (@IVA / 100.00))))
+		WHEN provedor_id IS NOT NULL THEN CONVERT(DECIMAL(10,2),ISNULL(dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),
+				COALESCE(Call.provedor_id,ccld.proBIDs), dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country),0.00) * (1 + (@IVA / 100.00)))
+		ELSE  CONVERT(DECIMAL(10,2),((CCost.cost_per_min + ((COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) / 60) * ccost.additional_min)) * (1 + (@IVA / 100.00))))
 	END	AS total,
 	COALESCE(ccld.Puerto, Call.cal_puerto, 0) as [trunk],
 	case when dbo.TelAni(ccld.Telefono, camps.id_anilist) <> '' then dbo.TelAni(ccld.Telefono, camps.id_anilist) else camps.ani end [ANI],
-	COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0), ccld.tdialing) as dialTimeSec
+	COALESCE(Call.totalCall_Time + ISNULL(cal_tMsg,0) + ISNULL(ccld.tdialing,0), ccld.tdialing) as dialTimeSec
 FROM (SELECT *, [dbo].[GetProveedor](Telefono, Puerto,CallType) AS proBIDs 
 		FROM (SELECT *, tipoLlamada_id as CallType 
 				FROM ccologdials WITH(NOLOCK)

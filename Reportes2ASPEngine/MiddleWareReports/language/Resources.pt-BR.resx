@@ -2856,4 +2856,7 @@
   <data name="PromDialogo" xml:space="preserve">
     <value>Tiempo promedio de diálogo</value>
   </data>
+  <data name="dialTimeSec" xml:space="preserve">
+    <value>Tempo em diálogo (s)</value>
+  </data>
 </root>

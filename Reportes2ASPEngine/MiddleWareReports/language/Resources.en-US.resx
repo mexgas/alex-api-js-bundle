@@ -2871,4 +2871,7 @@
   <data name="systemTranslated_CancelledBySystem" xml:space="preserve">
     <value>Cancelled by system</value>
   </data>
+  <data name="dialTimeSec" xml:space="preserve">
+    <value>Talking time (secs)</value>
+  </data>
 </root>

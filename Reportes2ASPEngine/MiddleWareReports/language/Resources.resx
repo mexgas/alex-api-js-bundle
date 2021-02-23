@@ -2871,4 +2871,10 @@
   <data name="systemTranslated_CancelledBySystem" xml:space="preserve">
     <value>Cancelada por sistema</value>
   </data>
+  <data name="dialTimeSec" xml:space="preserve">
+    <value>Tiempo en díalogo en segundos</value>
+  </data>
+  <data name="talkingTime" xml:space="preserve">
+    <value>Tiempo en diálogo</value>
+  </data>
 </root>

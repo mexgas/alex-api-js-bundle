@@ -48,6 +48,22 @@ BEGIN
 
 	BEGIN TRY
 
+	set @process = 'CW-4919 ccLogDials'
+	set @sql = 'IF EXISTS (SELECT * 
+					  FROM sys.default_constraints
+					   WHERE object_id = OBJECT_ID(N''dbo.DF__ccoLogDia__tDial__31D75E8D'')
+					   AND parent_object_id = OBJECT_ID(N''dbo.ccoLogDials'')
+					)
+					BEGIN
+						ALTER TABLE CCoLOGDIALS DROP CONSTRAINT DF__ccoLogDia__tDial__31D75E8D
+
+						ALTER TABLE CCoLOGDIALS
+						   ALTER COLUMN tdialing smallint not null
+
+						ALTER TABLE CCoLOGDIALS ADD CONSTRAINT DF__ccoLogDia__tDial__31D75E8D DEFAULT(0) FOR tdialing
+					END'
+	exec (@sql)
+
 	set @process = 'CW-4804 para corregir consulta de información de agentes por grupo de trabajo'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
                                                     @sup_id AS   INT = 0, 

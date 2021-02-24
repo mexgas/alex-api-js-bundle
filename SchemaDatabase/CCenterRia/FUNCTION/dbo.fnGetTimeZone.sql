@@ -69,9 +69,16 @@ AS
 
 		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
           where id_country = @country and 
-          area = @ld and 
-		  ( @location is null or location=@location)
-
+          area = @ld 
+		  and ( @location is null or location = (IIF(@location = 'DF','CDMX',@location)))
+		
+		if(@timeZone is null or @timeZone = 0)
+		begin
+			select top 1 @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end 
+			from ccTimeZoneArea t
+			where id_country = @country and area = @lada
+		end
+		
 		return isNull(@timeZone,0)
     end
 
@@ -260,6 +267,13 @@ AS
       select @timeZone = 32
     end
   end
+
+  if(@timeZone is null or @timeZone = 0)
+	begin
+		select top 1 @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end 
+		from ccTimeZoneArea t
+		where id_country = @country and area = @lada
+	end 
 
   return isNull(@timeZone,0)
  END

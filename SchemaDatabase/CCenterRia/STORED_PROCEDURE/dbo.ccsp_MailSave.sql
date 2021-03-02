@@ -102,7 +102,6 @@ else if @action = 3 BEGIN --new Messages
 
 END
 else if @action = 4 BEGIN --new attachment
-    --insert into [attached](messageId,pathFile,isUser) values(@messageId,@pathFile,@isUser)
 	insert into [attached](messageId,pathFile,isUser,contentId,isEmbedded) values(@messageId,@pathFile,@isUser,@contentId,@isEmbedded)
     select SCOPE_IDENTITY() as attachedId
 END
@@ -220,7 +219,6 @@ else if @action = 14 begin
  update [message] set @messageStatusId=1,tQueue=null,userId=0,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0  where messageStatusId in(2,3)
 end
 else if @action = 15 begin
-
     SELECT @existAttached = case when count(*)>0 then 1 else 0 end
     from attached where messageId in (select messageId from message where conversationId=@conversationId)
 
@@ -229,16 +227,16 @@ else if @action = 15 begin
         max(B.tSend) as tSend, max(D.Nombres+' '+D.ApellidoPaterno+' '+D.ApellidoMaterno) as NameAgent,
         cast(max(E.timeAlertMessage) as int) tAlertMessage, cast(max(E.answerTimeOut) as int) tAnswerTimeOut, max(C.tNotas) as tWrapUp,
         max(A.mailInbound) as InboundEmail, isnull(max(E.name), '') as SenderName, cast(max(F.graphic_id) as int) as ACDGraphicID,
-		max(B.[date]) MsgTimestamp
+		max(B.[date]) MsgTimestamp, cast(max(case when C.inbound_id = H.inboundId then 1 else 0 end) as bit) as IsAzure
     from conversation A
     inner join message B  on A.conversationId = B.conversationId
     inner join ccinbound C on A.inboundid= C.inbound_id
     left join ccUsers D on B.userId = D.User_id
-    inner join contactMeanIn E on E.inboundId=C.Inbound_id   and E.meanContactTypeId=@meanContactTypeId
+    inner join contactMeanIn E on E.inboundId=C.Inbound_id and E.meanContactTypeId=@meanContactTypeId
 	inner join ccRIAinboundGraph F on C.Inbound_id = F.Inbound_id
 	inner join ccRIAGraphics G on F.graphic_id = g.graphic_id
+	left join contactMeanInAzure H on C.Inbound_id = H.inboundId
     where A.conversationId=@conversationId
-
 end
 else if @action = 16 begin
     select A.inboundid,B.messageid,a.conversationid,c.pathFile
@@ -331,6 +329,16 @@ end
 else if @action = 27 begin
 	select count(*) as [Amount] 
 	from attached nolock where messageId in (select messageId from message nolock where conversationId=@conversationId)
+end
+else if @action = 28 begin --carga adjuntos del ultimo mensaje para cuentas Azure
+    if @conversationId is null or @conversationId=0 begin
+        set @conversationId=0
+        select @conversationId=conversationId from message where messageId=@messageId 
+    end
+    
+    select pathFile as NameFile, contentId [ContentId], isEmbedded [IsEmbedded] from attached A
+    inner join message B on A.messageId=B.messageId and B.conversationId=@conversationId
+    where B.conversationId=@conversationId
 end
 
 END

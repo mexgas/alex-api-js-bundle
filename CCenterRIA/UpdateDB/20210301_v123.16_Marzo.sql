@@ -48,7 +48,6 @@ BEGIN
 
 	BEGIN TRY
 
-
 	set @process = 'CW-4890 Alter procedure ccsp_MailAdminAccount'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MailAdminAccount]
 @action int,
@@ -640,7 +639,140 @@ end
 END'
 	exec (@sql)
 
+	set @process = 'CW-4987 grabacion con cal_tDialog=0'
+	set @sql = 'DECLARE @dateStart DATETIME,@tMinAVRS SMALLINT;
 
+SELECT @tMinAVRS = valor FROM ccSettings WHERE setting_id = 65;
+IF @tMinAVRS IS NULL SET @tMinAVRS = 5;
+
+DECLARE @tmpCallIn TABLE
+(userId      INT, 
+ inboundId   INT, 
+ callId      INT, 
+ calTXfer    INT, 
+ calTRinging INT, 
+ calTDialog  INT, 
+ calTWrapup  INT
+);
+
+select @dateStart=convert(date,min(cal_Inicio)) from cccallsin
+
+INSERT INTO @tmpCallIn
+       SELECT User_id, 
+              IdCampEsp, 
+              callID, 
+              ISNULL([5], 0) AS calXfer, 
+              ISNULL([9], 0) AS calRinging, 
+              ISNULL([4], 0) calDialog, 
+              ISNULL([6], 0) calWrapup
+       FROM
+       (
+           SELECT a.User_id, 
+                  a.TipoStatusAge_id, 
+                  a.tStatus, 
+                  a.IdCampEsp, 
+                  a.callID
+           FROM ccLogAgentesDia a
+                INNER JOIN ccTipoStatusAgente b ON a.TipoStatusAge_id = b.TipoStatusAge_id
+           WHERE a.fecha > @dateStart
+                 AND callID IN
+           (
+               SELECT a.cal_id
+               FROM cccallsin a
+               WHERE cal_tDialog = 0
+                     AND cal_Inicio > @dateStart
+                     AND a.statusCall_id = 13
+           )
+                 AND a.TipoStatusAge_id IN(4, 5, 6, 9)
+                AND a.Tipo = 0
+       ) calldata PIVOT(MAX(tStatus) FOR TipoStatusAge_id IN([5], 
+                                                             [9], 
+                                                             [4], 
+                                                             [6])) piv;
+INSERT INTO ccAVRSTransfer
+(cal_id, 
+ tipo
+)
+       SELECT A.callId, 
+              0 AS callType
+       FROM @tmpCallIn A
+            LEFT JOIN ccAVRSTransfer B ON a.callId = B.cal_id
+                                          AND b.tipo = 0
+       WHERE b.cal_id IS NULL
+             AND A.calTDialog >= @tMinAVRS;
+UPDATE B
+  SET 
+      B.cal_tXfer = A.calTXfer, 
+      B.cal_tRing = A.calTRinging, 
+      B.cal_tDialog = A.calTDialog, 
+      B.cal_tNotas = A.calTWrapup
+FROM @tmpCallIn A
+     INNER JOIN cccallsin B ON A.callId = B.cal_id;
+-------------------------------------------- SALIDA --------------------------------------------
+select @dateStart=convert(date,min(cal_Inicio)) from ccoCallsOut
+
+DECLARE @tmpCallOut TABLE
+(userId      INT, 
+ inboundId   INT, 
+ callId      INT, 
+ calTXfer    INT, 
+ calTRinging INT, 
+ calTDialog  INT, 
+ calTWrapup  INT
+);
+
+insert into @tmpCallOut
+SELECT User_id, 
+       IdCampEsp, 
+       callID, 
+       ISNULL([5], 0) AS calXfer, 
+       ISNULL([9], 0) AS calRinging, 
+       ISNULL([4], 0) calDialog, 
+       ISNULL([6], 0) calWrapup
+FROM
+(
+    SELECT a.User_id, 
+           a.TipoStatusAge_id, 
+           a.tStatus, 
+           a.IdCampEsp, 
+           a.callID
+    FROM ccLogAgentesDia a
+         INNER JOIN ccTipoStatusAgente b ON a.TipoStatusAge_id = b.TipoStatusAge_id
+    WHERE a.fecha > @dateStart
+          AND callID IN
+    (
+        SELECT a.cal_id
+        FROM ccoCallsOut a
+        WHERE cal_tDialog = 0
+              AND cal_Inicio > @dateStart
+              AND a.statusCall_id = 13
+    )
+          AND a.TipoStatusAge_id IN(4, 5, 6, 9)
+         AND a.Tipo = 1
+) calldata PIVOT(MAX(tStatus) FOR TipoStatusAge_id IN([5], 
+                                                      [9], 
+                                                      [4], 
+                                                      [6])) piv;
+
+INSERT INTO ccAVRSTransfer(cal_id,  tipo)
+       SELECT A.callId, 
+              1 AS callType
+       FROM @tmpCallOut A
+            LEFT JOIN ccAVRSTransfer B ON a.callId = B.cal_id AND b.tipo = 1
+       WHERE b.cal_id IS NULL AND A.calTDialog >= @tMinAVRS;
+
+
+UPDATE B
+  SET 
+      B.cal_tXfer = A.calTXfer, 
+      B.cal_tRing = A.calTRinging, 
+      B.cal_tDialog = A.calTDialog, 
+      B.cal_tNotas = A.calTWrapup
+FROM @tmpCallOut A
+     INNER JOIN ccoCallsOut B ON A.callId = B.cal_id;
+
+'
+	exec (@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -773,6 +773,114 @@ FROM @tmpCallOut A
 
 '
 	exec (@sql)
+
+	set @process = 'CW-4936 Agregar nueva columna a tabla cctiposlistanegra'
+	set @sql = 'if not exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''DateCreation'' and TABLE_NAME = ''cctiposlistanegra'') begin
+            ALTER TABLE cctiposlistanegra ADD DateCreation datetime 
+			end'
+	exec (@sql)
+
+	set @process = 'CW-4936 se quita el sp ccsp_GalateaAdminBlacklistCatalog si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminBlacklistCatalog'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminBlacklistCatalog;
+            end'
+        EXEC(@sql)
+
+	set @process = 'CW-4936 se agrega sp ccsp_GalateaAdminBlacklistCatalog'
+	set @sql = '          CREATE PROCEDURE ccsp_GalateaAdminBlacklistCatalog
+@BLID smallint,
+@name varchar(50),
+@Type tinyint 
+AS
+set nocount on
+if @Type=1-- Read black lists
+ begin
+	Select idtipolista AS ID, tipolista AS TIPO , DateCreation as DateCreation 
+	from cctiposlistanegra where idtipolista = case isnull(@BLID,0) when 0 then idtipolista else @BLID end
+	and Status= 1 order by 2
+	return(0)
+ end
+
+If @Type=2 --Create black list
+ begin
+ DECLARE @newBlackListId INT= -1 --Nombre en Uso
+	if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
+			SELECT @newBlackListId = SCOPE_IDENTITY() 
+		end
+	SELECT @newBlackListId as ReturnValue
+	return(0)
+ end
+
+if @Type=4-- update 
+ begin
+ if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			update cctiposlistanegra set tipolista=@name where idtipolista= @BLID
+			SELECT 200 as ReturnValue
+		end
+		else
+			SELECT -1 as ReturnValue --Nombre en uso
+ return(0)
+ end
+
+if @Type=5 --obtiene el id de lista llamada defaultList/General
+	begin
+		declare @dnclid as int
+		set @dnclid = 0;
+
+		select @dnclid = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		select @dnclid
+		return(0)
+	end
+
+set nocount off
+
+'
+	exec (@sql)
+
+		set @process = 'CW-4936 Alter en sp ccsp_RIACATBList que maneja el catalog de listas negras en xion'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIACATBList]
+@BLID smallint,
+@name varchar(50),
+@Type tinyint 
+AS
+set nocount on
+if @Type=1
+ begin
+	Select idtipolista AS ID, tipolista AS TIPO 
+	from cctiposlistanegra where idtipolista = case isnull(@BLID,0) when 0 then idtipolista else @BLID end
+	and Status= 1 order by 2
+	return(0)
+ end
+
+If @Type=2
+ begin
+	if exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		select 1, ''Nombre en Uso''
+	else	
+		insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
+	return(0)
+ end
+
+if @Type=4
+ begin
+	update cctiposlistanegra set tipolista=@name where idtipolista= @BLID
+ end
+
+if @Type=5
+	begin
+		declare @dnclid as int
+		set @dnclid = 0;
+
+		select @dnclid = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		select @dnclid
+		return(0)
+		end
+set nocount off'
+        EXEC(@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

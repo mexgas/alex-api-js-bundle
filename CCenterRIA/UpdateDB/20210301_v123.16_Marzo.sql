@@ -48,7 +48,6 @@ BEGIN
 
 	BEGIN TRY
 
-
 	set @process = 'CW-4890 Alter procedure ccsp_MailAdminAccount'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MailAdminAccount]
 @action int,
@@ -640,7 +639,326 @@ end
 END'
 	exec (@sql)
 
+	set @process = 'CW-4987 grabacion con cal_tDialog=0'
+	set @sql = 'DECLARE @dateStart DATETIME,@tMinAVRS SMALLINT;
 
+SELECT @tMinAVRS = valor FROM ccSettings WHERE setting_id = 65;
+IF @tMinAVRS IS NULL SET @tMinAVRS = 5;
+
+DECLARE @tmpCallIn TABLE
+(userId      INT, 
+ inboundId   INT, 
+ callId      INT, 
+ calTXfer    INT, 
+ calTRinging INT, 
+ calTDialog  INT, 
+ calTWrapup  INT
+);
+
+select @dateStart=convert(date,min(cal_Inicio)) from cccallsin
+
+INSERT INTO @tmpCallIn
+       SELECT User_id, 
+              IdCampEsp, 
+              callID, 
+              ISNULL([5], 0) AS calXfer, 
+              ISNULL([9], 0) AS calRinging, 
+              ISNULL([4], 0) calDialog, 
+              ISNULL([6], 0) calWrapup
+       FROM
+       (
+           SELECT a.User_id, 
+                  a.TipoStatusAge_id, 
+                  a.tStatus, 
+                  a.IdCampEsp, 
+                  a.callID
+           FROM ccLogAgentesDia a
+                INNER JOIN ccTipoStatusAgente b ON a.TipoStatusAge_id = b.TipoStatusAge_id
+           WHERE a.fecha > @dateStart
+                 AND callID IN
+           (
+               SELECT a.cal_id
+               FROM cccallsin a
+               WHERE cal_tDialog = 0
+                     AND cal_Inicio > @dateStart
+                     AND a.statusCall_id = 13
+           )
+                 AND a.TipoStatusAge_id IN(4, 5, 6, 9)
+                AND a.Tipo = 0
+       ) calldata PIVOT(MAX(tStatus) FOR TipoStatusAge_id IN([5], 
+                                                             [9], 
+                                                             [4], 
+                                                             [6])) piv;
+INSERT INTO ccAVRSTransfer
+(cal_id, 
+ tipo
+)
+       SELECT A.callId, 
+              0 AS callType
+       FROM @tmpCallIn A
+            LEFT JOIN ccAVRSTransfer B ON a.callId = B.cal_id
+                                          AND b.tipo = 0
+       WHERE b.cal_id IS NULL
+             AND A.calTDialog >= @tMinAVRS;
+UPDATE B
+  SET 
+      B.cal_tXfer = A.calTXfer, 
+      B.cal_tRing = A.calTRinging, 
+      B.cal_tDialog = A.calTDialog, 
+      B.cal_tNotas = A.calTWrapup
+FROM @tmpCallIn A
+     INNER JOIN cccallsin B ON A.callId = B.cal_id;
+-------------------------------------------- SALIDA --------------------------------------------
+select @dateStart=convert(date,min(cal_Inicio)) from ccoCallsOut
+
+DECLARE @tmpCallOut TABLE
+(userId      INT, 
+ inboundId   INT, 
+ callId      INT, 
+ calTXfer    INT, 
+ calTRinging INT, 
+ calTDialog  INT, 
+ calTWrapup  INT
+);
+
+insert into @tmpCallOut
+SELECT User_id, 
+       IdCampEsp, 
+       callID, 
+       ISNULL([5], 0) AS calXfer, 
+       ISNULL([9], 0) AS calRinging, 
+       ISNULL([4], 0) calDialog, 
+       ISNULL([6], 0) calWrapup
+FROM
+(
+    SELECT a.User_id, 
+           a.TipoStatusAge_id, 
+           a.tStatus, 
+           a.IdCampEsp, 
+           a.callID
+    FROM ccLogAgentesDia a
+         INNER JOIN ccTipoStatusAgente b ON a.TipoStatusAge_id = b.TipoStatusAge_id
+    WHERE a.fecha > @dateStart
+          AND callID IN
+    (
+        SELECT a.cal_id
+        FROM ccoCallsOut a
+        WHERE cal_tDialog = 0
+              AND cal_Inicio > @dateStart
+              AND a.statusCall_id = 13
+    )
+          AND a.TipoStatusAge_id IN(4, 5, 6, 9)
+         AND a.Tipo = 1
+) calldata PIVOT(MAX(tStatus) FOR TipoStatusAge_id IN([5], 
+                                                      [9], 
+                                                      [4], 
+                                                      [6])) piv;
+
+INSERT INTO ccAVRSTransfer(cal_id,  tipo)
+       SELECT A.callId, 
+              1 AS callType
+       FROM @tmpCallOut A
+            LEFT JOIN ccAVRSTransfer B ON a.callId = B.cal_id AND b.tipo = 1
+       WHERE b.cal_id IS NULL AND A.calTDialog >= @tMinAVRS;
+
+
+UPDATE B
+  SET 
+      B.cal_tXfer = A.calTXfer, 
+      B.cal_tRing = A.calTRinging, 
+      B.cal_tDialog = A.calTDialog, 
+      B.cal_tNotas = A.calTWrapup
+FROM @tmpCallOut A
+     INNER JOIN ccoCallsOut B ON A.callId = B.cal_id;
+
+'
+	exec (@sql)
+
+	set @process = 'CW-4936 Agregar nueva columna a tabla cctiposlistanegra'
+	set @sql = 'if not exists (select * from INFORMATION_SCHEMA.COLUMNS where COLUMN_NAME = ''DateCreation'' and TABLE_NAME = ''cctiposlistanegra'') begin
+            ALTER TABLE cctiposlistanegra ADD DateCreation datetime 
+			end'
+	exec (@sql)
+
+	set @process = 'CW-4936 se quita el sp ccsp_GalateaAdminBlacklistCatalog si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminBlacklistCatalog'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminBlacklistCatalog;
+            end'
+        EXEC(@sql)
+
+	set @process = 'CW-4936 se agrega sp ccsp_GalateaAdminBlacklistCatalog'
+	set @sql = '          CREATE PROCEDURE ccsp_GalateaAdminBlacklistCatalog
+@BLID smallint,
+@name varchar(50),
+@Type tinyint 
+AS
+set nocount on
+if @Type=1-- Read black lists
+ begin
+	Select idtipolista AS ID, tipolista AS TIPO , DateCreation as DateCreation 
+	from cctiposlistanegra where idtipolista = case isnull(@BLID,0) when 0 then idtipolista else @BLID end
+	and Status= 1 order by 2
+	return(0)
+ end
+
+If @Type=2 --Create black list
+ begin
+ DECLARE @newBlackListId INT= -1 --Nombre en Uso
+	if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
+			SELECT @newBlackListId = SCOPE_IDENTITY() 
+		end
+	SELECT @newBlackListId as ReturnValue
+	return(0)
+ end
+
+if @Type=4-- update 
+ begin
+ if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			update cctiposlistanegra set tipolista=@name where idtipolista= @BLID
+			SELECT 200 as ReturnValue
+		end
+		else
+			SELECT -1 as ReturnValue --Nombre en uso
+ return(0)
+ end
+
+if @Type=5 --obtiene el id de lista llamada defaultList/General
+	begin
+		declare @dnclid as int
+		set @dnclid = 0;
+
+		select @dnclid = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		select @dnclid
+		return(0)
+	end
+
+set nocount off
+
+'
+	exec (@sql)
+
+		set @process = 'CW-4936 Alter en sp ccsp_RIACATBList que maneja el catalog de listas negras en xion'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIACATBList]
+@BLID smallint,
+@name varchar(50),
+@Type tinyint 
+AS
+set nocount on
+if @Type=1
+ begin
+	Select idtipolista AS ID, tipolista AS TIPO 
+	from cctiposlistanegra where idtipolista = case isnull(@BLID,0) when 0 then idtipolista else @BLID end
+	and Status= 1 order by 2
+	return(0)
+ end
+
+If @Type=2
+ begin
+	if exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		select 1, ''Nombre en Uso''
+	else	
+		insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
+	return(0)
+ end
+
+if @Type=4
+ begin
+	update cctiposlistanegra set tipolista=@name where idtipolista= @BLID
+ end
+
+if @Type=5
+	begin
+		declare @dnclid as int
+		set @dnclid = 0;
+
+		select @dnclid = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		select @dnclid
+		return(0)
+		end
+set nocount off'
+        EXEC(@sql)
+
+        set @process = 'CW-4897 se modifica sp ccsp_GalateaGetRecordsImportStatus'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+                  -- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+                  @action tinyint, 
+                  @loadID int = NULL, 
+                  @userID smallint = NULL
+
+                  AS
+                  declare @today datetime
+                  select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+                  SET nocount ON
+                  if @action not IN (1,2,3)
+                    raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+                  if @action=1 -- Detalle general de carga de registros
+                   BEGIN
+                    if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+                     BEGIN
+                      raiserror(''ERROR. invalid user id'', 18, 1)
+                      return(0)
+                     END
+                    
+                    if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+                        BEGIN
+                            SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+                            FROM ccRIALoading riaLoad
+                            JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+                            WHERE 
+                            loadDate>=@today
+                            ORDER BY riaLoad.loadDate DESC
+                        END
+                    else
+                        BEGIN
+                            SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+                            FROM ccRIALoading riaLoad
+                            JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+                            JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+                            WHERE 
+                            loadDate>=@today AND
+                            superCam.user_id = @userID
+                            AND superCam.tipo = 1
+                            ORDER BY riaLoad.loadDate DESC
+                        END
+
+                    return(0)
+                   END
+
+                  if @action=2 -- Detalle específico de carga de registros
+                   BEGIN
+                    if not exists(SELECT load_id FROM ccRIALoading)
+                     BEGIN
+                      raiserror(''ERROR. invalid template ID'', 18, 1)
+                      return(0)
+                     END
+
+                      SELECT regsLoaded, alreadyLoaded, regsBlocked, regsNotLoaded,
+                             telsLoaded, telsBlocked, telsNotLoaded
+                      FROM ccRIALoading
+                      WHERE load_id  = @loadID
+                   
+                   END
+
+                  if @action=3 -- Porcentaje de carga de registros
+                   BEGIN
+                    if not exists(SELECT load_id FROM ccRIALoading)
+                     BEGIN
+                      raiserror(''ERROR. invalid load ID'', 18, 1)
+                      return(0)
+                     END
+
+                      SELECT state, pctg
+                      FROM ccRIALoading
+                      WHERE load_id  = @loadID
+
+                   END
+                  SET nocount off'
+    exec (@sql)
 		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

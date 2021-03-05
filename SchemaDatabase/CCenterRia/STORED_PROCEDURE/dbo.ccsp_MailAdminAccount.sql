@@ -237,7 +237,4 @@ else if @action = 24  begin  --Carga cuentas de salida
 	from contactMeanOut A left join contactMeanOutAzure B on A.contactMeanOutId = B.contactMeanOutId
 	where isActive=1
 end
-else if @action = 25 begin
-	select count(*) [ConnectionExists] from contactMeanInAzure where inboundId = @inboundId
-end
 END

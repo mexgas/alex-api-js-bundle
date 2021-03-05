@@ -17,7 +17,7 @@ If @Type=2
 	if exists(select tipolista from cctiposlistanegra where tipolista=@name)
 		select 1, 'Nombre en Uso'
 	else	
-		insert into cctiposlistanegra (tipolista) values(@name)
+		insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
 	return(0)
  end
 

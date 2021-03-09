@@ -960,6 +960,16 @@ END
 SET nocount off'
     exec (@sql)
 	
+	set @process = 'CW-4995 Valida si existe campo AllowChangeDialingMode en ccUsers'
+    set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccUsers'' AND COLUMN_NAME = ''AllowChangeDialingMode'')
+	Begin
+	ALTER TABLE ccUsers 
+	ADD AllowChangeDialingMode bit NOT NULL
+	CONSTRAINT DF_ccUsers_ChangeDialingMode DEFAULT 0
+	WITH VALUES
+	End'
+        EXEC(@sql)
+	
 	set @process = 'CW-4995 Valida si existe SP ccsp_GalateaADMPermisos'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaADMPermisos'')
             begin
@@ -994,15 +1004,6 @@ set nocount off
 '
 	exec (@sql)
 	
-	set @process = 'CW-4995 Valida si existe campo AllowChangeDialingMode en ccUsers'
-    set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccUsers'' AND COLUMN_NAME = ''AllowChangeDialingMode'')
-Begin
-ALTER TABLE ccUsers 
-ADD AllowChangeDialingMode bit NOT NULL
-CONSTRAINT DF_ccUsers_ChangeDialingMode DEFAULT 0
-WITH VALUES
-End'
-        EXEC(@sql)
 		
     set @process = 'CW-4897 Se agrega estado de reconexion en el agente'
     set @sql = 'if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=30)

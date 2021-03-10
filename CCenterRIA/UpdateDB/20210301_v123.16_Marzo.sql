@@ -882,84 +882,135 @@ if @Type=5
 set nocount off'
         EXEC(@sql)
 
-        set @process = 'CW-4897 se modifica sp ccsp_GalateaGetRecordsImportStatus'
+    set @process = 'CW-4897 se modifica sp ccsp_GalateaGetRecordsImportStatus'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
-                  -- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
-                  @action tinyint, 
-                  @loadID int = NULL, 
-                  @userID smallint = NULL
+-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+@action tinyint, 
+@loadID int = NULL, 
+@userID smallint = NULL
 
-                  AS
-                  declare @today datetime
-                  select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
-                  SET nocount ON
-                  if @action not IN (1,2,3)
-                    raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+AS
+declare @today datetime
+select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+SET nocount ON
+if @action not IN (1,2,3)
+raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
 
-                  if @action=1 -- Detalle general de carga de registros
-                   BEGIN
-                    if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
-                     BEGIN
-                      raiserror(''ERROR. invalid user id'', 18, 1)
-                      return(0)
-                     END
-                    
-                    if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
-                        BEGIN
-                            SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
-                            FROM ccRIALoading riaLoad
-                            JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
-                            WHERE 
-                            loadDate>=@today
-                            ORDER BY riaLoad.loadDate DESC
-                        END
-                    else
-                        BEGIN
-                            SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
-                            FROM ccRIALoading riaLoad
-                            JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
-                            JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
-                            WHERE 
-                            loadDate>=@today AND
-                            superCam.user_id = @userID
-                            AND superCam.tipo = 1
-                            ORDER BY riaLoad.loadDate DESC
-                        END
+if @action=1 -- Detalle general de carga de registros
+BEGIN
+if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+ BEGIN
+  raiserror(''ERROR. invalid user id'', 18, 1)
+  return(0)
+ END
 
-                    return(0)
-                   END
+if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+    BEGIN
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+        FROM ccRIALoading riaLoad
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today
+        ORDER BY riaLoad.loadDate DESC
+    END
+else
+    BEGIN
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+        FROM ccRIALoading riaLoad
+        JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today AND
+        superCam.user_id = @userID
+        AND superCam.tipo = 1
+        ORDER BY riaLoad.loadDate DESC
+    END
 
-                  if @action=2 -- Detalle específico de carga de registros
-                   BEGIN
-                    if not exists(SELECT load_id FROM ccRIALoading)
-                     BEGIN
-                      raiserror(''ERROR. invalid template ID'', 18, 1)
-                      return(0)
-                     END
+return(0)
+END
 
-                      SELECT regsLoaded, alreadyLoaded, regsBlocked, regsNotLoaded,
-                             telsLoaded, telsBlocked, telsNotLoaded
-                      FROM ccRIALoading
-                      WHERE load_id  = @loadID
-                   
-                   END
+if @action=2 -- Detalle específico de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+ BEGIN
+  raiserror(''ERROR. invalid template ID'', 18, 1)
+  return(0)
+ END
 
-                  if @action=3 -- Porcentaje de carga de registros
-                   BEGIN
-                    if not exists(SELECT load_id FROM ccRIALoading)
-                     BEGIN
-                      raiserror(''ERROR. invalid load ID'', 18, 1)
-                      return(0)
-                     END
+  SELECT regsLoaded, alreadyLoaded, regsBlocked, regsNotLoaded,
+         telsLoaded, telsBlocked, telsNotLoaded
+  FROM ccRIALoading
+  WHERE load_id  = @loadID
 
-                      SELECT state, pctg
-                      FROM ccRIALoading
-                      WHERE load_id  = @loadID
+END
 
-                   END
-                  SET nocount off'
+if @action=3 -- Porcentaje de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+ BEGIN
+  raiserror(''ERROR. invalid load ID'', 18, 1)
+  return(0)
+ END
+
+  SELECT state, pctg
+  FROM ccRIALoading
+  WHERE load_id  = @loadID
+
+END
+SET nocount off'
     exec (@sql)
+	
+	set @process = 'CW-4995 Valida si existe campo AllowChangeDialingMode en ccUsers'
+    set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccUsers'' AND COLUMN_NAME = ''AllowChangeDialingMode'')
+	Begin
+	ALTER TABLE ccUsers 
+	ADD AllowChangeDialingMode bit NOT NULL
+	CONSTRAINT DF_ccUsers_ChangeDialingMode DEFAULT 0
+	WITH VALUES
+	End'
+        EXEC(@sql)
+	
+	set @process = 'CW-4995 Valida si existe SP ccsp_GalateaADMPermisos'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaADMPermisos'')
+            begin
+          DROP PROCEDURE ccsp_GalateaADMPermisos;
+            end'
+        EXEC(@sql)
+
+	set @process = 'CW-4995 se agrega sp ccsp_GalateaADMPermisos'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaADMPermisos]
+@users_id varchar(255),
+@Type int, -- 1.- cambia permiso, 2.- obtiene lista de permisos
+@Permit int, -- 1.- AllowChangeDialingMode
+@isActive int
+AS
+set nocount on
+
+If @Type = 1 --1 Update Permission
+ begin
+	 if @permit = 1   --AllowChangeDialingMode
+	   		UPDATE ccUsers SET AllowChangeDialingMode = @isActive where user_id in (select value from dbo.fn_RIASplitDelimited(@users_id, '',''))
+
+	 return(0)
+ end
+
+if @Type = 2 --Get Permission
+begin
+	return(0)
+end
+
+set nocount off
+
+'
+	exec (@sql)
+	
 		
+    set @process = 'CW-4897 Se agrega estado de reconexion en el agente'
+    set @sql = 'if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=30)
+insert into ccTipoStatusAgente values(30,''ReconnectKolob'')'
+    exec (@sql)
+        
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

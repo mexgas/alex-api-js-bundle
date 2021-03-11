@@ -1,105 +1,109 @@
 CREATE PROCEDURE [dbo].[ccspRepAgentNotReady]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
-AS
+					@action as tinyint,
+					@from as datetime = null,
+					@to as datetime = null
+					AS
 
-SET ANSI_WARNINGS OFF
-SET NOCOUNT ON
 
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-if @to is null
-	select @to = getdate()
 
-if @action = 1
-begin
+					if @from is null
+						select @from = convert(datetime,convert(varchar(11),getdate()))
+					if @to is null
+						select @to = getdate()
+
+					if @action = 1
+					begin
 	
-	IF OBJECT_ID('tempdb..#notReady') IS NOT NULL drop table #notReady	
-	IF OBJECT_ID('tempdb..#notReady2') IS NOT NULL drop table #notReady2	
-	IF OBJECT_ID('tempdb..#tempFechasR') IS NOT NULL drop table #tempFechasR
+						IF OBJECT_ID('tempdb..#notReady') IS NOT NULL drop table #notReady	
+						IF OBJECT_ID('tempdb..#notReady2') IS NOT NULL drop table #notReady2	
+						IF OBJECT_ID('tempdb..#tempFechasR') IS NOT NULL drop table #tempFechasR
 
-	declare @dateNow datetime
+						declare @dateNow datetime
+						set @dateNow=getdate()
+
+						create table #tempFechasR(id int,fecha datetime,tiempo int)	  
+
+						SELECT DATEADD(ss,-(tStatus),(fecha)) as dateStartDetail,(fecha) as dateEndDetail,
+						convert(smalldatetime,convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':00:00.000',121) AS timegroup
+						,dateadd(hh,1,convert(smalldatetime,convert(varchar(13),fecha,121) + ':00:00.000',121)) as timegroup_next, TipoNotReady_id
+						,[User_id],(tStatus) as [timeNotReady],1 as [count], tstatus as [time]
+						into #notReady
+						FROM ccLogAgentesNotReady
+						WHERE DATEADD(ss, -tStatus, fecha) >= @from AND  DATEADD(ss, -tStatus, fecha) < @to
 	
-	set @dateNow=getdate()
+						insert into #tempFechasR   
+						select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia
+						where CONVERT(varchar(11),fecha,121)=CONVERT(varchar(11), @dateNow,121) group by User_id  
+
+						insert into #notReady(dateStartDetail,dateEndDetail,timegroup,timegroup_next,TipoNotReady_id,[User_id],[timeNotReady],[count],[time])
+						select
+						B.fecha as dateStartDetail,
+						@dateNow as dateEndDetail,
+						CONVERT(smalldatetime,CONVERT(varchar(13),B.fecha,121)+ ':00',121) AS timegroup,
+						case when @dateNow=CONVERT(smalldatetime,CONVERT(varchar(13),@dateNow,121)+ ':00',121) then CONVERT(smalldatetime,CONVERT(varchar(13),@dateNow,121)+ ':00',121)
+						else CONVERT(smalldatetime,CONVERT(varchar(13),DATEADD(hh,1,@dateNow),121)+ ':00',121) end AS timegroup_next
+						,0 as TipoNotReady_id,User_id,0 as timeNotReady,1 as [count],tiempo as [time]
+						from ccLogAgentesDia A
+						inner JOIN #tempFechasR B ON A.fecha=B.fecha  and A.User_id=B.id WHERE currentStatus =2
 	
-	create table #tempFechasR(id int,fecha datetime,tiempo int)	  
+						select * into #notReady2 from #notReady where datediff(HH,timegroup,timegroup_next)>1	 
+						delete #notReady where datediff(HH,timegroup,timegroup_next) > 1
+						;
+						with times as(
+						select convert(varchar(13),Start,121)+':00:00' as Start,dateadd(hh,1, convert(varchar(13),Start,121)+':00:00') as Stop 
+						from TmpTimesInterval where start between @from and @to
+						group by convert(varchar(13),Start,121)+':00:00',convert(varchar(13),Stop,121)+':00:00'
+						)	
+						insert into #notReady(dateStartDetail,dateEndDetail,timegroup,timegroup_next, tiponotready_id,User_id,timeNotReady, [count])
+						select (dateStartDetail),(dateEndDetail),convert(varchar,th.start,121) as timegroup,convert(varchar, th.stop,121) as timegroup_next, tiponotready_id,[User_id]
+						,isnull((case 
+						when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) 
+						then datediff(ss,dateStartDetail,dateadd(ss,timeNotReady,dateStartDetail))
+						when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail)
+						then datediff(ss,dateStartDetail,th.stop)
+						when th.start > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) 
+						then datediff(ss,th.start,dateadd(ss,timeNotReady,dateStartDetail))
+						when th.start > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail) 
+						then datediff(ss,th.start,th.stop) else  0 end),0) as timeNotReady,
+						1 as [count]
 
-	SELECT DATEADD(ss,-(tStatus),(fecha)) as dateStartDetail,(fecha) as dateEndDetail,
-	convert(smalldatetime,convert(varchar(13),DATEADD(ss,-tStatus,fecha),121) + ':00:00.000',121) AS timegroup
-	,dateadd(hh,1,convert(smalldatetime,convert(varchar(13),fecha,121) + ':00:00.000',121)) as timegroup_next, TipoNotReady_id
-	,[User_id],(tStatus) as [timeNotReady],1 as [count], tstatus as [time]
-	into #notReady
-	FROM ccLogAgentesNotReady
-	WHERE DATEADD(ss, -tStatus, fecha) >= @from AND  DATEADD(ss, -tStatus, fecha) < @to
+
+						from #notReady2 t
+						inner join times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+						where  datediff(ss,th.start,timegroup_next)>0
 	
-	insert into #tempFechasR   
-	select User_id,MAX(fecha) as maxfecha,DATEDIFF(ss,MAX(fecha),@dateNow) from ccLogAgentesDia
-	where CONVERT(varchar(11),fecha,121)=CONVERT(varchar(11), @dateNow,121) group by User_id  
+						--Delete tepetidos
+						delete from RepAgentNotReady with(rowlock) 	where date >= @from AND date < @to
+						;
+						with tmpSession as(
+							select user_id,convert(varchar(14),timegroup,121)+'00:00' as timegroup 	
+							,sum(tlog) as tlog
+							from TmpSessionTimeGroup where login between @from and @to
+							group by user_id,  convert(varchar(14),timegroup,121)+'00:00'
+						),
+						timeNotReady as(
+							select timegroup,User_id,TipoNotReady_id,timeNotReady [time],sum([count]) [count] from #notReady 
+							group by User_id,timegroup,TipoNotReady_id,timeNotReady
+						)
 
-	insert into #notReady(dateStartDetail,dateEndDetail,timegroup,timegroup_next,TipoNotReady_id,[User_id],[timeNotReady],[count],[time])
-	select
-	B.fecha as dateStartDetail,
-	@dateNow as dateEndDetail,
-	CONVERT(smalldatetime,CONVERT(varchar(13),B.fecha,121)+ ':00',121) AS timegroup,
-	case when @dateNow=CONVERT(smalldatetime,CONVERT(varchar(13),@dateNow,121)+ ':00',121) then CONVERT(smalldatetime,CONVERT(varchar(13),@dateNow,121)+ ':00',121)
-	else CONVERT(smalldatetime,CONVERT(varchar(13),DATEADD(hh,1,@dateNow),121)+ ':00',121) end AS timegroup_next
-	,0 as TipoNotReady_id,User_id,0 as timeNotReady,1 as [count],tiempo as [time]
-	from ccLogAgentesDia A
-	inner JOIN #tempFechasR B ON A.fecha=B.fecha  and A.User_id=B.id WHERE currentStatus =2
-
-	select * into #notReady2 from #notReady where datediff(HH,timegroup,timegroup_next)>1
-	delete #notReady where datediff(HH,timegroup,timegroup_next) > 1
-
-	;
-	with times as(
-	select convert(varchar(13),Start,121)+':00:00' as Start,dateadd(hh,1, convert(varchar(13),Stop,121)+':00:00') as Stop 
-	from TmpTimesInterval where start between @from and @to
-	group by convert(varchar(13),Start,121)+':00:00',convert(varchar(13),Stop,121)+':00:00'
-	)
-
-	insert into #notReady(dateStartDetail,dateEndDetail,timegroup,timegroup_next, tiponotready_id,User_id,timeNotReady, [count], [time])
-	select (dateStartDetail),(dateEndDetail),convert(varchar,th.start,121) as timegroup,convert(varchar, th.stop,121) as timegroup_next, tiponotready_id,[User_id]
-	,isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,timeNotReady,dateStartDetail))
-	when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-	when th.start > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,th.start,dateadd(ss,timeNotReady,dateStartDetail))
-	when th.start > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as timeNotReady,1 as [count], isnull((case when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,dateStartDetail,dateadd(ss,timeNotReady,dateStartDetail))
-	when th.start <= dateStartDetail and  th.stop > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,dateStartDetail,th.stop)
-	when th.start > dateStartDetail and th.start <= dateadd(ss,timeNotReady,dateStartDetail) and  th.stop > dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,th.start,dateadd(ss,timeNotReady,dateStartDetail))
-	when th.start > dateStartDetail and th.stop < dateadd(ss,timeNotReady,dateStartDetail) then datediff(ss,th.start,th.stop) else  0 end),0) as [time]
-	from #notReady2 t
-	inner join times th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
-	where  datediff(ss,th.start,timegroup_next)>0
-	
-	--Delete tepetidos
-	delete from RepAgentNotReady with(rowlock) 	where date >= @from AND date < @to
-	;
-	with tmpSession as(
-		select user_id,convert(varchar(14),timegroup,121)+'00:00' as timegroup 	
-		,sum(tlog) as tlog
-		from TmpSessionTimeGroup where login between @from and @to
-		group by user_id,  convert(varchar(14),timegroup,121)+'00:00'
-	),
-	timeNotReady as(
-		select timegroup,User_id,TipoNotReady_id,sum(timeNotReady) [time],sum([count]) [count] from #notReady 
-		group by User_id,timegroup,TipoNotReady_id
-	)
-
-	insert into RepAgentNotReady
-	select A.timegroup as date,userView.Login,A.user_id, userView.apellidopaterno + ' ' + userView.apellidomaterno + ' ' + userView.nombres as [user]
-	,a.tlog as sessionTime
-	,isnull(d.tiponotready_id,0) tiponotready_id, isnull(d.descripcion,'') descripcion
-	, isnull(d.descripcion,'') + '_Count' as descripcion_count, isnull([count],0) count, isnull(d.descripcion,'') + '_Time' as descripcion_time
-	,isnull(timeNotReady.time,0) as [time],isnull(timeNotReady.time,0) as timeSeconds
-	,datepart(yyyy,a.timegroup) year, datepart(mm,a.timegroup) [mounth], datepart(dd,a.timegroup) [day], datepart(hh,a.timegroup) [hour]
-	,0 as [minute]
-	from tmpSession A
-	inner join ccUserView userView on A.user_id=userView.User_id
-	left join timeNotReady on timeNotReady.User_id=A.user_id and A.timegroup=timeNotReady.timegroup
-	left join ccTipoNotReady d on timeNotReady.TipoNotReady_id=d.TipoNotReady_id	
+						insert into RepAgentNotReady
+						select A.timegroup as date,userView.Login,A.user_id, userView.apellidopaterno + ' ' + userView.apellidomaterno + ' ' + userView.nombres as [user]
+						,a.tlog as sessionTime
+						,isnull(d.tiponotready_id,0) tiponotready_id, 
+						isnull(d.descripcion,'') descripcion
+						,isnull(d.descripcion,'') + '_Count' as descripcion_count, isnull([count],0) count,
+						isnull(d.descripcion,'') + '_Time' as descripcion_time
+						,isnull(timeNotReady.time,0) as [time],
+						isnull(timeNotReady.time,0) as timeSeconds
+						,datepart(yyyy,a.timegroup) year, datepart(mm,a.timegroup) [mounth], datepart(dd,a.timegroup) [day], datepart(hh,a.timegroup) [hour]
+						,0 as [minute]
+						from tmpSession A
+						inner join ccUserView userView on A.user_id=userView.User_id
+						left join timeNotReady on timeNotReady.User_id=A.user_id and A.timegroup=timeNotReady.timegroup
+						left join ccTipoNotReady d on timeNotReady.TipoNotReady_id=d.TipoNotReady_id	
 		
-	IF OBJECT_ID('tempdb..#notReady') IS NOT NULL drop table #notReady	
-	IF OBJECT_ID('tempdb..#notReady2') IS NOT NULL drop table #notReady2	
-	IF OBJECT_ID('tempdb..#tempFechasR') IS NOT NULL drop table #tempFechasR
-
-end
+						IF OBJECT_ID('tempdb..#notReady') IS NOT NULL drop table #notReady	
+						IF OBJECT_ID('tempdb..#notReady2') IS NOT NULL drop table #notReady2	
+						IF OBJECT_ID('tempdb..#tempFechasR') IS NOT NULL drop table #tempFechasR
+	
+					end

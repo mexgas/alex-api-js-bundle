@@ -1009,7 +1009,7 @@ set nocount off
     set @sql = 'if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=30)
 insert into ccTipoStatusAgente values(30,''ReconnectKolob'')'
     exec (@sql)
-        
+  
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

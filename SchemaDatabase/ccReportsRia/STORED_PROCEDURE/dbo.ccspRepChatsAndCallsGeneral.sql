@@ -5,8 +5,13 @@ CREATE PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 					AS
 
 					if @from is null
+					begin
 						select @from = convert(datetime,convert(varchar(11),getdate()))
-					select @to = getdate()
+					end
+					if @from is null
+					begin
+						select @to = convert(datetime,convert(varchar(11),getdate()))
+					end
 
 					DECLARE @HourExtend AS smallint,@fromExtended AS smalldatetime
 					SELECT @HourExtend=2,@fromExtended=DATEADD(hh,-@HourExtend,@from)
@@ -15,6 +20,9 @@ CREATE PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 					EXEC @tresRing=ccspConfigTresRing
 					EXEC @tresDialog=ccspConfigTresDialog
 					EXEC @tresDelayIn=ccspConfigtresDelayIn
+					
+					declare @DTChat as int
+					select @DTChat = valor from ccsettings where setting_id = 33
 
 					if @action = 1
 						begin
@@ -167,9 +175,9 @@ CREATE PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 							max([totalChats]) as [totalChats],
 							sum([waitingAbandoned]) as [waitingAbandoned],
 							max(maxTQueue) as maxTQueue,
-							sum([UnavailableAgents] + [OutOfService] + [OutOfSchedule] + [NoSignedAgents] + [waitingAbandoned] + [QueueOverflow] + [TimeOverflow]) as [notConnected],
+							sum([UnavailableAgents] + [OutOfService] + [OutOfSchedule] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [Assigned] + [Connected<DT]) as [notConnected],
 							sum([Connected]) as [Connected],
-							'0.00' as SL,
+							'000.00' as SL,
 							max(avgTQueue) as avgTQueue
 							into #partialChats
 							from(
@@ -178,8 +186,10 @@ CREATE PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 								count(*) as [totalChats],
 								domain,
 								ISNULL(count(CASE WHEN (chatstatus = 9and tQueue>=@tresDialog) THEN 1 ELSE NULL END),0)AS [waitingAbandoned],
-								ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting >= @tresDialog) THEN 1 ELSE NULL END),0)AS [Connected],
+								ISNULL(count(CASE WHEN (chatstatus = 4 and tChatting >= @DTChat) THEN 1 ELSE NULL END),0)AS [Connected],
+								ISNULL(count(CASE WHEN(chatstatus = 4 and tChatting < @DTChat) THEN 1 ELSE NULL END),0)AS [Connected<DT],
 								ISNULL(count(CASE WHEN(chatstatus = 2)THEN 1 ELSE NULL END),0)AS [UnavailableAgents],
+								ISNULL(count(CASE WHEN (chatstatus = 3)THEN 1 ELSE NULL END),0)AS [Assigned],
 								ISNULL(count(CASE WHEN(chatstatus = 5)THEN 1 ELSE NULL END),0)AS [OutOfService],
 								ISNULL(count(CASE WHEN(chatstatus = 6)THEN 1 ELSE NULL END),0)AS [OutOfSchedule],
 								ISNULL(count(CASE WHEN(chatstatus = 7)THEN 1 ELSE NULL END),0)AS [NoSignedAgents],
@@ -190,38 +200,40 @@ CREATE PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 								avg(tqueue) as avgTQueue
 								from ccRIAChats a
 								where
-								chatStatus in (2,5,4,7,9,10,11)
+								chatStatus in (2,3,5,6,4,7,9,10,11)
 								group by inboundId, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ ':00',121), domain
 			
 							) as ChatDetail
 							left join ccInbound b on (b.inbound_id = ChatDetail.inboundId)
 							where fecha >= @from and fecha < @to
 							group by inboundId, fecha, b.descripcion
-
-							declare @DTChat as int
-							select @DTChat = valor from ccsettings where setting_id = 33
+							
 
 							select inboundId, descripcion, date,
-							isnull(([Connected]*100/NULLIF(Total,0)),0) as NS
+							convert(decimal(10,2),ISNULL(convert(float,[Connected]) * 100 / NULLIF(convert(float,Total),0), 0)) as NS
 							into #tmpns
 							from
 							(select inboundId, descripcion, Date,
 							sum([Connected>DT] + [AbandonValid]) as [Connected], 
-							sum([Connected<DT] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow]) as NotConnected,
-							sum([Connected>DT] + [Connected<DT] + [Assigned] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow]) as Total
+							sum([Connected<DT] + [Assigned] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [UnavailableAgents] + [OutOfService] + [OutOfSchedule]) as NotConnected,
+							sum([Connected>DT] + [Connected<DT] + [Assigned] + [NoSignedAgents] + [Abandon] + [QueueOverflow] + [TimeOverflow] + [UnavailableAgents] + [OutOfService] + [OutOfSchedule]) as Total
 							from (
 							select inboundId, descripcion, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ ':00',121) as Date,
-							ISNULL(count(CASE WHEN chatstatus = 4 and tChatting >= @tresDialog THEN 1 ELSE NULL END),0)AS [Connected>DT],
-							ISNULL(count(CASE WHEN chatstatus = 4 and tChatting < @tresDialog THEN 1 ELSE NULL END),0)AS [Connected<DT],
+							ISNULL(count(CASE WHEN(chatstatus = 4 and tChatting >= @DTChat) THEN 1 ELSE NULL END),0)AS [Connected>DT],
+							ISNULL(count(CASE WHEN(chatstatus = 4 and tChatting < @DTChat) THEN 1 ELSE NULL END),0)AS [Connected<DT],
 							ISNULL(count(CASE WHEN(chatstatus = 3)THEN 1 ELSE NULL END),0)AS [Assigned],
+							ISNULL(count(CASE WHEN(chatstatus = 2)THEN 1 ELSE NULL END),0)AS [UnavailableAgents],
+							ISNULL(count(CASE WHEN(chatstatus = 5)THEN 1 ELSE NULL END),0)AS [OutOfService],
+							ISNULL(count(CASE WHEN(chatstatus = 6)THEN 1 ELSE NULL END),0)AS [OutOfSchedule],
 							ISNULL(count(CASE WHEN(chatstatus = 7)THEN 1 ELSE NULL END),0)AS [NoSignedAgents],
 							ISNULL(count(CASE WHEN(chatstatus = 9 and tQueue<@tresDialog)THEN 1 ELSE NULL END),0)AS [AbandonValid],
-							ISNULL(count(CASE WHEN(chatstatus = 9 and tQueue>=@tresDialog)THEN 1 ELSE NULL END),0)AS [Abandon],
+							ISNULL(count(CASE WHEN(chatstatus = 9)THEN 1 ELSE NULL END),0)AS [Abandon],
 							ISNULL(count(CASE WHEN(chatstatus = 10)THEN 1 ELSE NULL END),0)AS [QueueOverflow],
 							ISNULL(count(CASE WHEN(chatstatus = 11)THEN 1 ELSE NULL END),0)AS [TimeOverflow]
 							from ccRIAChats a
 							left outer join ccInbound c on (inboundId = inbound_id)
-							where chatStatus in (3,4,7,9,10,11)
+							where chatStatus in (2,3,4,5,6,7,9,10,11)
+							and requestDate  >= @from and requestDate < @to
 							group by inboundId, descripcion, CONVERT(smalldatetime,CONVERT(varchar(13),requestDate,121)+ ':00',121)) as ChatDetail
 							group by inboundId, descripcion, Date) as ChatSummary order by date, inboundid
 		

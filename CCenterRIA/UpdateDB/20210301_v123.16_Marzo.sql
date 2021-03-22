@@ -1009,6 +1009,282 @@ set nocount off
     set @sql = 'if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id=30)
 insert into ccTipoStatusAgente values(30,''ReconnectKolob'')'
     exec (@sql)
+
+	
+   set @process = 'CW-5007 ST_2021_02_585 cuando se tiene mas de una LN asociada a una calificacion solo lo guarda en una de las listas'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentUpdateCallCALIF] @IDCall INT, @calif_id SMALLINT, @TipoCall SMALLINT, @Origin INT = 0, @cal_key VARCHAR(20) = NULL, @callOutId INT = 0, @subId SMALLINT = 0
+AS
+SET NOCOUNT ON
+
+DECLARE @RecicleSIC TINYINT, @Reprogram TINYINT, @DateNewDial SMALLDATETIME, @idTipoLista INT, @autoCB TINYINT, @tel VARCHAR(30), @camp INT, @iddncList AS INT
+DECLARE @userid INT
+
+SELECT @RecicleSIC = valor
+FROM ccSettings
+WHERE setting_id = 60
+
+SELECT @RecicleSIC = IsNull(@RecicleSIC, 0)
+
+DECLARE @hashTel INT
+DECLARE @killListID INT = (
+		SELECT idtipolista
+		FROM ccTiposListaNegra
+		WHERE Tipolista = ''default/KillList''
+		)
+DECLARE @killListSetting INT = (
+		SELECT STATUS
+		FROM ccSettings
+		WHERE setting_id = 215
+		)
+
+IF @TipoCall = 1
+BEGIN
+	UPDATE ccCallsIN
+	SET calif_id = @calif_id, cal_origin_id = @Origin, cal_key = isnull(@cal_key, cal_key), califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
+
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 0 AND calif_id = @calif_id
+			)
+	BEGIN
+		SELECT @tel = dbo.Completa_ListaNegra(ci.cal_ANI), @iddncList = cbl.idTipoLista
+		FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+		JOIN cccalifblacklist AS cbl ON ci.calif_id = cbl.calif_id
+		WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+
+		IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+		BEGIN
+			--insert ccListaNegra
+			INSERT INTO cclistanegra (telefono, idtipolista)
+			VALUES (@tel, @iddncList)
+
+			--insert cc_killlist
+			IF (@killListSetting = 1 AND @iddncList = @killListID) -- verifies if kill list setting is active and if the list_id matches killList id
+			BEGIN
+				select @hashTel = dbo.hashPhone(@tel)
+
+				IF NOT EXISTS (
+						SELECT hashtel
+						FROM cc_KillList
+						WHERE hashTel = @hashTel
+						)
+				BEGIN
+					INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+					VALUES (@hashTel, @iddncList, GETDATE())
+				END
+			END
+
+			INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+			SELECT dbo.Completa_ListaNegra(ci.cal_ANI), cbl.idTipoLista, ci.Inbound_id, getdate(), ci.dni_id, 6
+			FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+			JOIN cccalifblacklist cbl ON ci.calif_id = cbl.calif_id
+			WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+		END
+	END
+
+	RETURN (0)
+END
+
+IF @TipoCall = 2
+BEGIN
+	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	SELECT @autoCB = autocallback
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
+
+	-- Si no tiene subcalificacion toma la de la calificacion
+	IF @autoCB IS NULL
+	BEGIN
+		SELECT @autoCB = autocallback
+		FROM cctipocalifout
+		WHERE calif_id = @calif_id
+	END
+
+	IF @autoCB = 1
+	BEGIN
+		SELECT @callOutId = callout_id, @camp = cam_id, @userid = user_id
+		FROM ccocallsout
+		WHERE Cal_id = @IDCall
+
+		SELECT @DateNewDial = dateadd(mi, t_autoCB, getdate())
+		FROM cccamps cam
+		WHERE cam.cam_id = @camp
+
+		EXEC ccsp_OUTInsertaCallBack @IDCall, '''', @camp, @DateNewDial, @callOutId, 1, @userid, '''', 1
+	END
+
+	UPDATE ccoCallsOUT
+	SET calif_id = @calif_id, califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
+
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 1 AND calif_id = @calif_id
+			) AND NOT EXISTS (
+			SELECT co.cal_telefono
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			JOIN ccListaNegra bl ON dbo.Completa_ListaNegra(co.cal_telefono) = bl.telefono OR co.cal_telefono = bl.telefono
+			WHERE co.cal_id = @idCall AND bl.idtipolista IN (
+					SELECT idTipoLista
+					FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+					WHERE tipo = 1 AND calif_id = @calif_id
+					)
+			)
+	BEGIN --IF
+
+		CREATE TABLE #NUMANDBL (id int identity,  iddncList int)
+
+		SELECT @tel= co.cal_telefono
+		FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+		WHERE co.cal_id = @idCall 
+
+		SET @tel=dbo.Completa_ListaNegra(@tel)
+
+		IF(LEFT(@tel, 1) <> ''E'') begin
+			INSERT INTO #NUMANDBL (iddncList) 
+			select cbl.idTipoLista from cccalifblacklist cbl  where cbl.calif_id=@calif_id and cbl.tipo = 1
+		END
+
+		DECLARE @Count int		
+		WHILE (SELECT count(id) from #NUMANDBL) > 0
+		BEGIN  --WHILE
+			select @Count = count(id) from #NUMANDBL
+			SELECT @iddncList = iddncList from #NUMANDBL where id = @Count
+			IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+			BEGIN--Tel adn iddnclist
+				EXEC ccsp_InsertDNCList @tel, @iddncList
+
+				IF (@killListSetting = 1 AND @iddncList = @killListID)
+				BEGIN
+					select @hashTel = dbo.hashPhone(@tel)
+
+					IF NOT EXISTS (SELECT hashtel FROM cc_KillList WHERE hashTel = @hashTel)
+					BEGIN
+						INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+						VALUES (@hashTel, @iddncList, GETDATE())
+					END
+				END
+
+				INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+				SELECT dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
+				FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+				JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+				WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> ''E'' AND cbl.tipo = 1
+			END --Tel adn iddnclist
+			delete from #NUMANDBL where id = @Count
+		END --WHILE
+		DROP TABLE #NUMANDBL
+	END --IF
+	IF @RecicleSIC = 1
+	BEGIN
+		-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+		SELECT @Reprogram = CanReprogram
+		FROM ccTipoCalifSubout
+		WHERE califSub_Id = @subId
+
+		-- Si no tiene subcalificacion toma la de la calificacion
+		IF @Reprogram IS NULL
+		BEGIN
+			SELECT @Reprogram = CanReprogram
+			FROM ccTipoCalifOUT
+			WHERE calif_id = @calif_id
+		END
+
+		IF @callOutId = 0
+			SELECT @callOutId = callout_id
+			FROM ccocallsout
+			WHERE Cal_id = @IDCall
+
+		UPDATE ccoWorkingTable
+		SET calif_id = @calif_id, cal_status = CASE @Reprogram WHEN 0 THEN 3 ELSE cal_status END
+		WHERE callout_id = @callOutId
+	END
+
+	DECLARE @keepDial BIT
+	DECLARE @finishPreview SMALLINT
+
+	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	SELECT @keepDial = keepDial
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
+
+	-- Si no tiene subcalificacion toma la de la calificacion
+	IF @keepDial IS NULL
+	BEGIN
+		SELECT @keepDial = keepDial
+		FROM ccTipoCalifout
+		WHERE calif_id = @calif_id
+	END
+
+	SELECT @finishPreview = isnull(finishPreview, 0)
+	FROM ccTipoCalifout
+	WHERE calif_id = @calif_id
+
+	IF @keepDial = 1
+	BEGIN
+		UPDATE ccologdials
+		SET TipoDialingMode = dbo.fn_getDialingMode(@IDCall, 3, 0, @camp)
+		WHERE logDial_id IN (
+				SELECT TOP 1 L.logDial_id
+				FROM ccoLogDials L WITH (INDEX (IX_ccoLogDials_2), NOLOCK)
+				JOIN ccoCallsOut O WITH (INDEX (PK_ccoCallsOut), NOLOCK) ON L.callout_id = O.callout_id
+				WHERE O.cal_id = @IDCall
+				ORDER BY L.logDial_id DESC
+				)
+	END
+
+	SELECT @keepDial, @finishPreview
+
+	RETURN (0)
+END
+
+SET NOCOUNT OFF
+'
+    exec (@sql)
+    
+        set @process = 'Se agregan horarios de verano hasta 2029 -1'
+        set @sql = 'delete ccHorarioVerano where country_id = 1 and inicio > ''20210101'''
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -3'
+	set @sql = 'delete ccHorarioVerano where country_id = 4 and inicio > ''20240101'''
+    	exec (@sql)
+  
+  	set @process = 'Se agregan horarios de verano hasta 2029 -2'
+        set @sql = 'insert into [ccHorarioVerano] ([inicio],[fin],[country_id]) values
+(''20210404'', ''20211031'', 1),
+(''20220403'', ''20221030'', 1),
+(''20230402'', ''20231029'', 1),
+(''20240407'', ''20241027'', 1),
+(''20250406'', ''20251026'', 1),
+(''20260405'', ''20261025'', 1),
+(''20270404'', ''20271031'', 1),
+(''20280402'', ''20281029'', 1),
+(''20290401'', ''20291028'', 1),
+(''20240310'', ''20241103'', 4),
+(''20250309'', ''20251105'', 4),
+(''20260308'', ''20261101'', 4),
+(''20270307'', ''20271107'', 4),
+(''20280305'', ''20281105'', 4),
+(''20290304'', ''20291104'', 4);'
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -3'
+	set @sql = 'delete ccHorarioVeranoUSA where inicio > ''20240101'''
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -4'
+	set @sql = 'insert into [ccHorarioVeranoUSA] ([inicio],[fin]) values
+(''20240310'', ''20241103''),
+(''20250309'', ''20251105''),
+(''20260308'', ''20261101''),
+(''20270307'', ''20271107''),
+(''20280305'', ''20281105''),
+(''20290304'', ''20291104'');'
+    	exec (@sql)
   
 
 		/* End script release */

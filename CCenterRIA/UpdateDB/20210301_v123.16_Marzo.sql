@@ -1244,7 +1244,47 @@ END
 SET NOCOUNT OFF
 '
     exec (@sql)
+    
+        set @process = 'Se agregan horarios de verano hasta 2029 -1'
+        set @sql = 'delete ccHorarioVerano where country_id = 1 and inicio > ''20210101'''
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -3'
+	set @sql = 'delete ccHorarioVerano where country_id = 4 and inicio > ''20240101'''
+    	exec (@sql)
   
+  	set @process = 'Se agregan horarios de verano hasta 2029 -2'
+        set @sql = 'insert into [ccHorarioVerano] ([inicio],[fin],[country_id]) values
+(''20210404'', ''20211031'', 1),
+(''20220403'', ''20221030'', 1),
+(''20230402'', ''20231029'', 1),
+(''20240407'', ''20241027'', 1),
+(''20250406'', ''20251026'', 1),
+(''20260405'', ''20261025'', 1),
+(''20270404'', ''20271031'', 1),
+(''20280402'', ''20281029'', 1),
+(''20290401'', ''20291028'', 1),
+(''20240310'', ''20241103'', 4),
+(''20250309'', ''20251105'', 4),
+(''20260308'', ''20261101'', 4),
+(''20270307'', ''20271107'', 4),
+(''20280305'', ''20281105'', 4),
+(''20290304'', ''20291104'', 4);'
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -3'
+	set @sql = 'delete ccHorarioVeranoUSA where inicio > ''20240101'''
+    	exec (@sql)
+    	
+    	set @process = 'Se agregan horarios de verano hasta 2029 -4'
+	set @sql = 'insert into [ccHorarioVeranoUSA] ([inicio],[fin]) values
+(''20240310'', ''20241103''),
+(''20250309'', ''20251105''),
+(''20260308'', ''20261101''),
+(''20270307'', ''20271107''),
+(''20280305'', ''20281105''),
+(''20290304'', ''20291104'');'
+    	exec (@sql)
   
 
 		/* End script release */

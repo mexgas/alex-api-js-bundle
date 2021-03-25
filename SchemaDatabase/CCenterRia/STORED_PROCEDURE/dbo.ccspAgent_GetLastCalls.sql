@@ -17,7 +17,7 @@ AS
 	  HidePhone	   bit
      )
      INSERT INTO @lastCallAgt
-            SELECT TOP 10 c.cal_id AS id, 
+            SELECT c.cal_id AS id, 
                           'IN' AS Tipo, 
                           CONVERT(VARCHAR(10), cal_inicio, 108) AS Hora, 
                           cal_ani AS Telefono, 
@@ -50,10 +50,10 @@ AS
                          tipo
             ) AS t ON c.cal_id = t.cal_id
             WHERE user_id = @user_id
-                  AND cal_inicio > DATEADD(hh, -3, GETDATE())
+                  AND cal_inicio > DATEADD(dd, -1, GETDATE())
             ORDER BY c.cal_inicio DESC
      INSERT INTO @lastCallAgt
-            SELECT TOP 10 c.cal_id AS id, 
+            SELECT c.cal_id AS id, 
                           'OUT' AS Tipo, 
                           CONVERT(VARCHAR(10), cal_inicio, 108) AS Hora, 
                           cal_telefono AS Telefono, 
@@ -86,7 +86,7 @@ AS
                          tipo
             ) AS t ON c.cal_id = t.cal_id
             WHERE user_id = @user_id
-                  AND cal_inicio > DATEADD(hh, -3, GETDATE())
+                  AND cal_inicio > DATEADD(dd, -1, GETDATE())
             ORDER BY c.cal_inicio DESC
      SELECT *
      FROM @lastCallAgt

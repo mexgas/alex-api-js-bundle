@@ -1851,6 +1851,227 @@ AS
 
            SET NOCOUNT ON;'
         EXEC(@sql)
+
+        set @process = 'CW-5028-Se borra sp ccsp_GalateaAdminBlackListCampout si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminBlackListCampout'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminBlackListCampout;
+            end'
+        EXEC(@sql)
+
+
+set @process = 'CW-5028-Se Crea el nuevo sp ccsp_GalateaAdminBlackListCampout'
+        set @sql = 'CREATE PROCEDURE ccsp_GalateaAdminBlackListCampout-- basandose del sp ccsp_RIABlackListCamp
+@Option smallint,
+@IDArea smallint = 0,
+@CamID SmallInt = 0,
+@InsertSchedule_id varchar(max) = ''0'',
+@DeleteSchedule_id varchar(max) = ''0''
+as
+
+if @Option = 1 -- Asignar listas negras a una campaña de salida
+ begin
+
+  if @CamID = 0
+   begin
+    update Camplistanegra set status = 1 where idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+
+    insert into Camplistanegra (idtipolista, cam_id, status)
+    select FN.value, C.cam_id, 1 from ccCamps C, dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','') FN where C.IDArea = @IDArea
+    and C.cam_id not in (select CL.cam_id from Camplistanegra CL join dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','') FN
+    on CL.idtipolista = FN.value where CL.status = 1)
+    return(0)
+   end
+
+  update Camplistanegra set status = 1 where cam_id = @CamID
+  and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+
+  insert into Camplistanegra (idtipolista, cam_id, status)
+  select value, @CamID, 1 from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')
+    where value not in (select idtipolista from Camplistanegra where cam_id = @CamID and status = 1
+    and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')))
+
+  Insert Into ccAgendaListaNegra (campsid,fecharegs,fechaaplicar) values (@CamID,''20100101'',getDate()) -- El 2010 es para que quite registros viejos con base en el cal fecha dial de ccocallsoutsource, principalmente para quitar callbacks de numeros cargados hace mucho tiempo
+
+  declare @idAgenda as int
+  select @idAgenda = SCOPE_IDENTITY()
+
+  insert into ccAgenda_TipoListaNegra(idAgenda,idtipolista)
+  select @idAgenda, value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')
+
+  select DISTINCT idtipolista as BlacklistIdAssigned from Camplistanegra 
+  where cam_id=@IDArea and status=1 and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+ end
+
+if @Option = 2 -- Desasignar listas negras de la campaña de salida @CamID
+ begin
+  update Camplistanegra set status = 0 where cam_id = @CamID  and idtipolista in (select value from dbo.fn_RIASplitDelimited(@DeleteSchedule_id, '',''))
+  return(0)
+ end
+
+if @Option = 3 -- Desasignar listas negras de todas las campañas de salida a las que esten asignadas
+ begin
+ update Camplistanegra set status = 0 where idtipolista in (select value from dbo.fn_RIASplitDelimited(@DeleteSchedule_id, '',''))
+  return(0)
+ end
+
+ if @Option = 4 -- trae las listas negras de la campaña de salida indicada en @CamID
+ begin
+  select cl.cam_id as CampId, ca.cam_descripcion as CampName, cl.idtipolista as BlacklistId, tl.Tipolista as BlacklistName
+  from Camplistanegra cl join ccCamps ca on cl.cam_id = ca.cam_id
+   join cctiposlistanegra tl on cl.idtipolista = tl.idtipolista
+  where cl.status = 1 and cl.cam_id = @CamID
+  order by 1, 3
+  return(0)
+ end
+
+set nocount off
+'
+EXEC(@sql)        
+
+set @process = 'CW-5028-Se borra sp ccsp_GalateaAdminUploadBLst si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminUploadBLst'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminUploadBLst;
+            end'
+        EXEC(@sql)
+
+set @process = 'CW-5028-Se Crea sp ccsp_GalateaAdminUploadBLst para asignar una numero a una lista negra'
+    set @sql = '--GUIANDOSE DEL SP ccsp_RIAUploadBLst
+CREATE PROCEDURE ccsp_GalateaAdminUploadBLst  @command TINYINT, @telephone VARCHAR(20) = 0, @idtipolista INT, @calKey AS VARCHAR(20) = NULL
+AS
+
+DECLARE @hashCalKey INT, @hashPhone BIGINT
+
+SELECT @hashPhone = dbo.hashPhone(@telephone)
+
+IF @calKey IS NOT NULL
+BEGIN
+  SELECT @hashCalKey = dbo.hashList(@calKey)
+END
+
+IF @hashCalKey IS NULL
+BEGIN
+  IF @command IN (1, 4) --LookForNumber 
+    AND EXISTS (
+      SELECT idtipolista
+      FROM cclistanegra
+      WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT 1
+
+    RETURN (0)
+  END
+END
+ELSE
+BEGIN
+  IF @command IN (1, 4) --LookForNumber 
+    AND EXISTS (
+      SELECT idtipolista
+      FROM cclistanegra
+      WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT 1
+
+    RETURN (0)
+  END
+END
+
+IF @command = 1 --Insert Number
+BEGIN
+  EXEC ccsp_InsertDNCList @telephone, @idtipolista, @hashCalKey
+
+  INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  VALUES (@telephone, 1, @idtipolista)
+
+  SELECT 200
+END
+
+IF @command = 2 --Delete Number
+BEGIN
+  INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  VALUES (@telephone, 5, @idtipolista)
+
+  IF @hashCalKey IS NULL
+  BEGIN
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND HashKey IS NULL
+  END
+  ELSE
+  BEGIN
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey
+  END
+
+  RETURN (0)
+END
+
+IF @command = 3 --Reemplaza
+BEGIN
+  INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  SELECT telefono, 4, @idtipolista
+  FROM cclistanegra
+  WHERE idtipolista = @idtipolista
+
+  DELETE
+  FROM cclistanegra
+  WHERE idtipolista = @idtipolista
+
+  RETURN (0)
+END
+
+IF @command = 5 --Delete by idtipolista
+BEGIN
+  UPDATE ccTiposListaNegra
+  SET STATUS = 0
+  WHERE idtipolista = @idtipolista
+
+  DELETE ccAgendaListaNegra
+  WHERE idagenda IN (
+      SELECT idagenda
+      FROM ccAgenda_TipolistaNegra
+      WHERE idtipolista = @idtipolista
+      )
+
+  DELETE ccAgenda_TipolistaNegra
+  WHERE idtipolista = @idtipolista
+
+  DELETE cccalifblacklist
+  WHERE idtipolista = @idtipolista
+
+  DELETE Camplistanegra
+  WHERE idtipolista = @idtipolista
+
+  DECLARE @telefono VARCHAR(10)
+
+  WHILE EXISTS (
+      SELECT telefono
+      FROM ccListaNegra
+      WHERE idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT TOP 1 @hashPhone = Hashtel, @telefono = telefono
+    FROM ccListaNegra
+    WHERE idtipolista = @idtipolista
+
+    INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+    VALUES (@telefono, 5, @idtipolista)
+
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND idtipolista = @idtipolista
+  END
+
+  RETURN (0)
+END
+
+SET NOCOUNT OFF
+'
+        EXEC(@sql)  
   
 
 		/* End script release */

@@ -1900,7 +1900,7 @@ if @Option = 1 -- Asignar listas negras a una campaña de salida
   select @idAgenda, value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')
 
   select DISTINCT idtipolista as BlacklistIdAssigned from Camplistanegra 
-  where cam_id=@IDArea and status=1 and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+  where cam_id=@CamID and status=1 and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
  end
 
 if @Option = 2 -- Desasignar listas negras de la campaña de salida @CamID

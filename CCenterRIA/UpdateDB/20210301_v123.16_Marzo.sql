@@ -1397,10 +1397,9 @@ AS
                 begin
                     select 
                         ISNULL(count (*), 0) as Calls,
-                        ISNULL(count (case when statusCall_id = 13 then 1 else null end), 0) as Answer,
+                        ISNULL(count (case when statusCall_id = 13 and (cal_tDialog >= 5) then 1 else null end), 0) as Answer,
                         ISNULL(count (CASE WHEN (statuscall_id = 6 AND (cal_que > 0) AND (cal_xfer IS NULL)) THEN 1 ELSE NULL END), 0) as Abandon,
-                        ISNULL(count (case when statusCall_id = 7 then 1 else null end), 0) as OverflowedByTime,
-                        ISNULL(count (case when statusCall_id = 8 then 1 else null end), 0) as OverflowedBySize,
+                        ISNULL(count (case when statusCall_id in (7,8) then 1 else null end), 0) as OverflowedCalls,
                         ISNULL(count (case when statusCall_id = 2 then 1 else null end), 0) as OutOfScheduleCalls,
                         ISNULL(count (case when statusCall_id = 3 then 1 else null end), 0) as OutOfServiceCalls,
                         ISNULL(count (case when statusCall_id = 4 then 1 else null end), 0) as NoAgentsCalls, -- sin agentes firmados

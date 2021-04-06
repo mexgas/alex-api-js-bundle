@@ -19,7 +19,7 @@ BEGIN
 	BEGIN TRY
 
 		SET @process = 'CW-4991 Se agrega un nuevo Store Procedure llamado ReportsMasterSubProcess para la generaci�n exclusiva de los reportes'
-		SET @sql = '''
+		SET @sql = '
 			CREATE PROCEDURE [dbo].[ReportsMasterSubProcess]
 				--@from as DATETIME=NULL,
 				--@to as DATETIME=NULL,
@@ -87,13 +87,13 @@ BEGIN
 				EXEC ReportsMasterProcessWIthOnlyGenerate @from=@from,@to=@to,@scheduleTime=@scheduleTime,@dateStart=@dateStart	
 
 			END
-		'''	
+		'
 		EXEC(@sql)
 
 
 
 		SET @process = 'CW-4991 Se modifica el StoreProcedure de ReportsMasterProcess'
-		SET @sql = '''
+		SET @sql = '
 			ALTER procedure [dbo].[ReportsMasterProcess] 
 
 			as
@@ -102,7 +102,7 @@ BEGIN
 
 			declare @replicationName varchar(max)
 			declare @SubProcessNameReports varchar(max)
-			declare @dateStart datetime,@dateSP datetime
+			declare @dateStart datetime, @dateSP datetime
 			declare @schedule_id int,@scheduleTime int
 			declare @isSunday tinyint,  @hourSunday tinyint,@minSunday tinyint
 
@@ -346,11 +346,11 @@ BEGIN
 					EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
 				end	
 			end
-		'''
+		'
 		EXEC(@sql)
 
 		SET @process = 'CW-4991 Se genera un bueno Job llamado ReportsMasterSubProcess para la generaci�n de los reportes.'
-		SET @sql = '''
+		SET @sql = '
 			USE [msdb]
 
 			/****** Object:  Job [ReportsMasterSubProcess]    Script Date: 26/03/2021 11:56:55 a. m. ******/
@@ -406,7 +406,7 @@ BEGIN
 				IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 			EndSave:		
 			
-		'''
+		'
 		EXEC(@sql)
 
 		IF @actualVersion = @version - 1

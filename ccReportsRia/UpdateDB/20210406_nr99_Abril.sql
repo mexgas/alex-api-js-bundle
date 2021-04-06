@@ -309,7 +309,7 @@ BEGIN
 			)
 
 			insert into #reinitmergepullsubscription
-			select distinct s.name, ma.publisher_db, ma.publication, 'false', 0
+			select distinct s.name, ma.publisher_db, ma.publication, ''false'', 0
 			from distribution.dbo.MSmerge_history mh
 			left outer join distribution.dbo.MSrepl_errors me
 			on (mh.error_id = me.id)

@@ -119,39 +119,51 @@ BEGIN
 					WHERE tipo = 1 AND calif_id = @calif_id
 					)
 			)
-	BEGIN
-		SELECT @tel = dbo.Completa_ListaNegra(co.cal_telefono), @iddncList = cbl.idTipoLista
+	BEGIN --IF
+
+		CREATE TABLE #NUMANDBL (id int identity,  iddncList int)
+
+		SELECT @tel= co.cal_telefono
 		FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
-		JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
-		WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> 'E' AND cbl.tipo = 1
+		WHERE co.cal_id = @idCall 
 
-		IF @tel IS NOT NULL AND @iddncList IS NOT NULL
-		BEGIN
-			EXEC ccsp_InsertDNCList @tel, @iddncList
+		SET @tel=dbo.Completa_ListaNegra(@tel)
 
-			IF (@killListSetting = 1 AND @iddncList = @killListID)
-			BEGIN
-				select @hashTel = dbo.hashPhone(@tel)
-
-				IF NOT EXISTS (
-						SELECT hashtel
-						FROM cc_KillList
-						WHERE hashTel = @hashTel
-						)
-				BEGIN
-					INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
-					VALUES (@hashTel, @iddncList, GETDATE())
-				END
-			END
-
-			INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
-			SELECT dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
-			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
-			JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
-			WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> 'E' AND cbl.tipo = 1
+		IF(LEFT(@tel, 1) <> 'E') begin
+			INSERT INTO #NUMANDBL (iddncList) 
+			select cbl.idTipoLista from cccalifblacklist cbl  where cbl.calif_id=@calif_id and cbl.tipo = 1
 		END
-	END
 
+		DECLARE @Count int		
+		WHILE (SELECT count(id) from #NUMANDBL) > 0
+		BEGIN  --WHILE
+			select @Count = count(id) from #NUMANDBL
+			SELECT @iddncList = iddncList from #NUMANDBL where id = @Count
+			IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+			BEGIN--Tel adn iddnclist
+				EXEC ccsp_InsertDNCList @tel, @iddncList
+
+				IF (@killListSetting = 1 AND @iddncList = @killListID)
+				BEGIN
+					select @hashTel = dbo.hashPhone(@tel)
+
+					IF NOT EXISTS (SELECT hashtel FROM cc_KillList WHERE hashTel = @hashTel)
+					BEGIN
+						INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+						VALUES (@hashTel, @iddncList, GETDATE())
+					END
+				END
+
+				INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+				SELECT dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
+				FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+				JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+				WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> 'E' AND cbl.tipo = 1
+			END --Tel adn iddnclist
+			delete from #NUMANDBL where id = @Count
+		END --WHILE
+		DROP TABLE #NUMANDBL
+	END --IF
 	IF @RecicleSIC = 1
 	BEGIN
 		-- Toma como prioridad la configuración de la subcalificación (en caso de existir)

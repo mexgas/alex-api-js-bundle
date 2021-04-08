@@ -18,6 +18,16 @@ BEGIN
 
 	BEGIN TRY
 
+		SET @process = 'CW-4991 Verifica que el stored procedure no exista (ReportsMasterSubProcess)'
+		SET @sql = '
+			IF EXISTS (SELECT * FROM sys.procedures WHERE NAME = N''ReportsMasterSubProcess'')
+			BEGIN
+				DROP PROCEDURE ReportsMasterSubProcess
+			END
+		'
+		EXEC(@sql)
+
+
 		SET @process = 'CW-4991 Se agrega un nuevo Store Procedure llamado ReportsMasterSubProcess para la generaci�n exclusiva de los reportes'
 		SET @sql = '
 			CREATE PROCEDURE [dbo].[ReportsMasterSubProcess]

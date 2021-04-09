@@ -230,6 +230,106 @@ end
 
 set nocount off'
 	exec (@sql)
+	
+	 set @process = 'CW-5008 Valida si existe campo DialingMode en ccUsers'
+		set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccUsers'' AND COLUMN_NAME = ''DialingMode'')
+				Begin
+				ALTER TABLE ccUsers 
+				ADD DialingMode bit NOT NULL
+				CONSTRAINT DF_ccUsers_DialingMode DEFAULT 0
+				WITH VALUES
+				End'
+        EXEC(@sql)
+
+set @process = 'CW-5008 se quita el sp ccsp_GalateaADMPermisos si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaADMPermisos'')
+            begin
+          DROP PROCEDURE ccsp_GalateaADMPermisos;
+            end'
+        EXEC(@sql)
+
+
+	set @process = 'CW-5008 se crea sp ccsp_GalateaADMPermisos'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaADMPermisos]
+@users_id varchar(255),
+@Type int, -- 1.- cambia permiso, 2.- obtiene lista de permisos
+@Permit int, -- 1.- Permiso de marcacion
+@Value int --Valor para permiso tipo de marcacion
+AS
+set nocount on
+
+If @Type = 1 --1 Update Permission DialingMode
+ begin
+	 if @permit = 1 --DialingMode/PreviewPro
+	 begin
+		 if @Value = 0
+		 begin
+	   			UPDATE ccUsers SET DialingMode = @Value
+				where user_id in (select value from dbo.fn_RIASplitDelimited(@users_id, '',''))
+				return(0)
+		 end
+		 if @Value = 1
+		 begin
+	   			UPDATE ccUsers SET  DialingMode = @Value
+				where user_id in (select value from dbo.fn_RIASplitDelimited(@users_id, '',''))
+				return(0)
+		 end
+		 if @Value = 2
+		 begin
+	   			UPDATE ccUsers SET AllowChangeDialingMode = 1
+				where user_id in (select value from dbo.fn_RIASplitDelimited(@users_id, '',''))
+				return(0)
+		 end
+		 if @Value = 3
+		 begin
+	   			UPDATE ccUsers SET AllowChangeDialingMode = 0
+				where user_id in (select value from dbo.fn_RIASplitDelimited(@users_id, '',''))
+				return(0)
+		 end
+	end
+ end
+
+if @Type = 2 --Get Permission
+begin
+	return(0)
+end
+
+set nocount off
+
+'
+	exec (@sql)
+	
+	set @process = 'CW-5060 Check if exist ccsp_GalateaDispositionRelations'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDispositionRelations'')
+            begin
+          DROP PROCEDURE ccsp_GalateaDispositionRelations;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5060 Create sp ccsp_GalateaDispositionRelations'	
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaDispositionRelations]
+@command int
+AS
+set nocount on
+If @command = 1
+begin
+	select 
+		cast (0 as int) [type], 
+		i.inbound_id as cam_id, 
+		c.calif_id 
+	from ccInbound i inner join ccCalifCamp c on i.inbound_id = c.cam_id and c.tipo = 0
+	inner join ccTipoCalif t on c.calif_id = t.calif_id
+	UNION
+	select 
+		cast (1 as int) [type], 
+		o.cam_id, 
+		c.calif_id 
+	from ccCamps o inner join ccCalifCamp c on o.cam_id = c.cam_id and c.tipo = 1
+	inner join ccTipoCalifOUT co on c.calif_id = co.calif_id
+	order by [type], cam_id, calif_id
+end
+set nocount off'
+    EXEC(@sql)
 
 
 

@@ -28,7 +28,7 @@ BEGIN
 		EXEC(@sql)
 
 
-		SET @process = 'CW-4991 Se agrega un nuevo Store Procedure llamado ReportsMasterSubProcess para la generaci�n exclusiva de los reportes'
+		SET @process = 'CW-4991 Se agrega un nuevo Store Procedure llamado ReportsMasterSubProcess para la generacion exclusiva de los reportes'
 		SET @sql = '
 			CREATE PROCEDURE [dbo].[ReportsMasterSubProcess]
 				--@from as DATETIME=NULL,
@@ -359,13 +359,15 @@ BEGIN
 		'
 		EXEC(@sql)
 
-		SET @process = 'CW-4991 Se genera un bueno Job llamado ReportsMasterSubProcess para la generaci�n de los reportes.'
+		SET @process = 'CW-4991 Se genera un bueno Job llamado ReportsMasterSubProcess para la generacion de los reportes.'
 		SET @sql = '
 			USE [msdb]
 
 			/****** Object:  Job [ReportsMasterSubProcess]    Script Date: 26/03/2021 11:56:55 a. m. ******/
-			if exists( select * from msdb.dbo.sysjobs where name=''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'')
-			EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
+			IF EXISTS(SELECT * FROM  [msdb].[dbo].[sysjobs] AS [sJOB] WHERE [name]=N''ReportsMasterSubProcess'') 
+			BEGIN
+				EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterSubProcess'', @delete_unused_schedule=1
+			END
 
 			/****** Object:  Job [ReportsMasterSubProcess]    Script Date: 26/03/2021 11:56:56 a. m. ******/
 			BEGIN TRANSACTION

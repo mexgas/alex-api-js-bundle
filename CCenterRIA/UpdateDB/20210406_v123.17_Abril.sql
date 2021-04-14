@@ -57,6 +57,12 @@ BEGIN
 	end'
 	exec (@sql)
 
+	set @process = 'CW-5082 Se actualiza el detalle del setting por que se agrego una opcion nueva'
+	set @sql = '
+	update ccsettings set detalle=''setting para ocultar el telefono en el agente (0 lo muestra, -1 lo oculta, > 0 Es el numero de digitos que se mostraran de derecha a izquierda )'', description=''Setting to hide telephone number, 0 Show the number, -1 Hide the number, >0 Number of digits that will be show from right to left'', validate=''*'' where setting_id=223
+	'
+	exec (@sql)
+
 	set @process = 'CW-4870 se quita el sp ccsp_GalateaGetCampsNvosCB si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetCampsNvosCB'')
             begin

@@ -52,7 +52,7 @@ BEGIN
 
 
 
-	set @process = 'CW-5008 agrega la columna list_id a ccRiaLoading'
+	set @process = 'CW-4990 agrega la columna list_id a ccRiaLoading'
 	set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccRiaLoading'' AND COLUMN_NAME = ''list_id'')
 				Begin
 				alter table ccRIALoading add list_id int;

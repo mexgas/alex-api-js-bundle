@@ -20,7 +20,7 @@ BEGIN
 	INSERT INTO @table
 	SELECT TOP (@top) A.grab_id, A.node, A.dateIn, STATUS
 	FROM ria_RecNode A WITH (NOLOCK)
-	WHERE A.STATUS IN (1, 3)
+	WHERE A.STATUS IN (1, 3) and node is not null
 	ORDER BY grab_id
 
 	INSERT INTO @tableNotExists

@@ -23,83 +23,89 @@ BEGIN
           		DROP PROCEDURE ccspGetReportCooperva;
             end'
     		EXEC(@sql)
+    		
 			SET @process = 'CW-4490 SP que genera el reporte automático de cargas del día'
 			SET @sql = '
-			CREATE PROCEDURE [dbo].[ccspGetReportCooperva]
-			AS
+			
+CREATE PROCEDURE [dbo].[ccspGetReportCooperva]
 
-			declare @from datetime,@to datetime
-			select  @to=convert(varchar(10),getdate(),121)+" 22:30:00"
+AS
 
-			select  @from= convert(varchar(10),getdate(),121)
+declare @from datetime,@to datetime
+select  @to=convert(varchar(10),getdate(),121)+'' 22:30:00''
 
-
-			declare @fileName varchar(200)
-			select @fileName="Reporte_"+replace(convert(varchar, getdate(),3),"/","")
-
-			/***RUTA DONDE SE GUARDARA EL REPORTE***/
-			declare @pathFile varchar(100)
-			set @pathFile="C:\ReportsCooperva"
+select  @from= convert(varchar(10),getdate(),121)
 
 
-			select 
+declare @fileName varchar(200)
+select @fileName=''Reporte_''+replace(convert(varchar, getdate(),3),''/'','''')
 
-			convert(varchar,loads.loadDate,5) [Fecha],
-			loads.camName [CamNombre],
-			isnull(lists.name,"") [Lista],
-			loads.regsLoaded [Cargados],
-			loads.regsNotLoaded [Rechazados]
-			into reportCooperva_out --Tabla a escribir..
-			from ccRIALoading loads with(nolock) 
-			left join ccriaregistrylists lists on lists.list_id=loads.list_id
-			where loads.loadDate>=@from and loads.loadDate<=@to
+/***RUTA DONDE SE GUARDARA EL REPORTE***/
+declare @pathFile varchar(100)
+set @pathFile=''C:\ReportsCooperva''
 
 
-			--alter procedure proc_generate_excel_with_columns
-			--(
-			declare 
-				@db_name	varchar(100),
-				@table_name	varchar(100),	
-				@file_name	varchar(100)
-			--)
-			--as
+select 
 
-			select @db_name="CCenterRIA", @table_name="reportCooperva_out",@file_name=@pathFile+"\"+@fileName+".csv"
-			--Generate column names as a recordset
-			declare @columns varchar(8000), @sql varchar(8000), @data_file varchar(100)
-			select 
-				@columns=coalesce(@columns+",","")+column_name+" as "+column_name 
-			from 
-				information_schema.columns
-			where 
-				table_name=@table_name
-			order by ORDINAL_POSITION
-
-			select @columns=""""""+replace(replace(@columns," as ",""""" as "),",",",""""")
-
-			--Create a dummy file to have actual data
-			select @data_file=substring(@file_name,1,len(@file_name)-charindex("\",reverse(@file_name)))+"\data_file.csv"
-
-			----Generate column names in the passed EXCEL file
-			set @sql="exec master..xp_cmdshell ""bcp " select * from (select "+@columns+") as t" queryout ""+@file_name+"" -c -t, -T -S -U sa -P nuxiba"""
-			print @sql
-			exec(@sql)
+convert(varchar,loads.loadDate,5) [Fecha],
+loads.camName [CamNombre],
+isnull(lists.name,'''') [Lista],
+loads.regsLoaded [Cargados],
+loads.regsNotLoaded [Rechazados]
+into reportCooperva_out --Tabla a escribir..
+from ccRIALoading loads with(nolock) 
+left join ccriaregistrylists lists on lists.list_id=loads.list_id
+where loads.loadDate>=@from and loads.loadDate<=@to
 
 
-			--Generate data in the dummy file
-			set @sql="exec master..xp_cmdshell ""bcp "select * from "+@db_name+".."+@table_name+"" queryout ""+@data_file+"" -c -t, -T -S -U sa -P nuxiba"""
-			print @sql
-			exec(@sql)
+--alter procedure proc_generate_excel_with_columns
+--(
+declare 
+	@db_name	varchar(100),
+	@table_name	varchar(100),	
+	@file_name	varchar(100)
+--)
+--as
 
-			--Copy dummy file to passed EXCEL file
-			set @sql= "exec master..xp_cmdshell ""type "+@data_file+" >> ""+@file_name+"""""
-			exec(@sql)
+select @db_name=''CCenterRIA'', @table_name=''reportCooperva_out'',@file_name=@pathFile+''\''+@fileName+''.csv''
+--Generate column names as a recordset
+declare @columns varchar(8000), @sql varchar(8000), @data_file varchar(100)
+select 
+	@columns=coalesce(@columns+'','','''')+column_name+'' as ''+column_name 
+from 
+	information_schema.columns
+where 
+	table_name=@table_name
+order by ORDINAL_POSITION
 
-			--Delete dummy file 
-			set @sql= "exec master..xp_cmdshell ""del "+@data_file+""""
-			exec(@sql)
+select @columns=''''''''''''+replace(replace(@columns,'' as '','''''''''' as ''),'','','','''''''''')
 
-			drop table reportCooperva_out'
+--Create a dummy file to have actual data
+select @data_file=substring(@file_name,1,len(@file_name)-charindex(''\'',reverse(@file_name)))+''\data_file..csv''
+
+----Generate column names in the passed EXCEL file
+set @sql=''exec master..xp_cmdshell ''''bcp " select * from (select ''+@columns+'') as t" queryout "''+@file_name+''"  -c -t, -T -S -U -P nuxiba''''''
+print @sql
+exec(@sql)
+
+
+--Generate data in the dummy file
+set @sql=''exec master..xp_cmdshell ''''bcp "select * from ''+@db_name+''..''+@table_name+''" queryout "''+@data_file+''"  -c -t, -T -S -U sa -P nuxiba''''''
+print @sql
+exec(@sql)
+
+--Copy dummy file to passed EXCEL file
+set @sql= ''exec master..xp_cmdshell ''''type ''+@data_file+'' >> "''+@file_name+''"''''''
+exec(@sql)
+
+--Delete dummy file 
+set @sql= ''exec master..xp_cmdshell ''''del ''+@data_file+''''''''
+exec(@sql)
+
+drop table reportCooperva_out
+
+
+			'
 			EXEC(@sql)
 
 			SET @process = 'CW-4490 Genera reporte de la carga de registros con el nombre de la lista de carga'

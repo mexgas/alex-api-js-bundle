@@ -52,12 +52,13 @@ BEGIN
 
 
 
-	set @process = 'CW-4990 agrega la columna list_id a ccRiaLoading'
-	set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccRiaLoading'' AND COLUMN_NAME = ''list_id'')
-				Begin
-				alter table ccRIALoading add list_id int;
-				End'
-    EXEC(@sql)
+	set @process = 'CW-4990 Agregar nueva columna a tabla ccRIALoading'
+	set @sql = 'if not exists (select * from sys.columns where name = N''list_id'' and Object_ID = Object_ID(N''ccRIALoading''))
+    begin
+        ALTER TABLE ccRIALoading 
+		ADD list_id int
+    end'
+	exec (@sql)
 
 
 	set @process = 'CW-4990 Verificar si existe el ccsp_RIARegistryLists'
@@ -73,7 +74,7 @@ BEGIN
 		@action tinyint = 0, 
 		@list_id int = 0,
 		@cam_id smallint = 0,
-		@name varchar(80) = "",
+		@name varchar(80) = '''',
 		@status tinyint = 0,
 		@sequence smallint = 0,
 		@load_id int = 0

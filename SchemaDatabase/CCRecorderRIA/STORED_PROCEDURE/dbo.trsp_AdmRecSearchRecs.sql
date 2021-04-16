@@ -15,7 +15,7 @@ CREATE PROCEDURE [dbo].[trsp_AdmRecSearchRecs]
 					select id_repositorio, ruta_repositorio
 					into #tmpRepositorios
 					from TREC_REPOSITORIOS
-					where id_repositorio = (select id_repository from TREC_REPO_NWCREDENTIALS where TREC_REPO_NWCREDENTIALS.id_nwCredential =
+					where id_repositorio in (select id_repository from TREC_REPO_NWCREDENTIALS where TREC_REPO_NWCREDENTIALS.id_nwCredential in
 						(select id from RIA_NETWORKCREDENTIALS where RIA_NETWORKCREDENTIALS.type = 1)) order by id_repositorio
 
 

@@ -4,7 +4,8 @@ CREATE Procedure [dbo].[ccsp_RIARegistryLists]
 @cam_id smallint = 0,
 @name varchar(80) = '',
 @status tinyint = 0,
-@sequence smallint = 0
+@sequence smallint = 0,
+@load_id int = 0
 AS
 
 --Status lista 0: inactiva, 1:pausa, 2:procesar
@@ -147,7 +148,7 @@ IF @action = 9 begin
 
 	select @list_id= list_id from ccRIARegistryLists where sequence =(
 	select  max(sequence) as sequence from ccRIARegistryLists where  cam_id = @cam_id and status > 0 ) and cam_id = @cam_id
-
+	update ccRIALoading set list_id = @list_id where load_id=@load_id
 	exec ccsp_RIARegistryLists @action=2,@list_id=@list_id,@sequence=@sequence
 
-end
+	end

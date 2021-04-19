@@ -52,6 +52,19 @@ BEGIN
 END
 		'
 		EXEC(@sql)
+
+
+		SET @process = 'CW-4905 se modifican valores para reporte 8082'
+		SET @sql = '
+			update ReportsFiltersMenus set showFilter=''0'', defaultValue=''PE'' where idReport=8082 and filterMenuName=''groupBy''
+		'
+		EXEC(@sql)
+
+		SET @process = 'CW-4905 se modifican valores para reporte 8064'
+		SET @sql = '
+			update ReportsFiltersMenus set showFilter=''0'', defaultValue=''PE'' where idReport=8064 and filterMenuName=''groupBy''
+		'
+		EXEC(@sql)
 		
 
 		IF @actualVersion = @version - 1

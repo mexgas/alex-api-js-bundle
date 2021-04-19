@@ -513,6 +513,50 @@ set nocount off'
     EXEC(@sql)
 
 
+	set @process = 'CW-5157 Crear un nuevo setting para posicion de engines locales'
+	set @sql = '
+	if not exists(select * from ccsettings where setting_id=227)
+	begin
+		insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+		values (227,'''',''Posición de engine(s) locales'',1,''ADM'',''pbxId|IP de los engine(s) locales separados por comas y pipe 1|127.0.0.1:5060,2|127.0.0.2::5060. Corresponde a los engines para llamadas internas.'',''Local Engine location'',1,''^((([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}(25[0-5]|[01]?\d\d?|2[0-4]\d),?)+$'')
+
+		update ccsettings set valor=(select valor from ccsettings where setting_id=143) where setting_id=227
+
+		update ccsettings set descripcion=''Posición de engine(s) remotos'',detalle=''pbxId|IP de los engine(s) remotos separados por comas y pipe 1|127.0.0.1:5060,2|127.0.0.2::5060. Corresponde a los engines para llamadas remotas.'',description=''Remote Engine location'' where setting_id=143
+	end'
+	exec (@sql)
+
+	set @process = 'CW-5157 Check if exist ccsp_DLRGetPBXInfo'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRGetPBXInfo'')
+            begin
+          DROP PROCEDURE ccsp_DLRGetPBXInfo;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5157 Crear SP para posicion de engines locales'
+	set @sql = '
+	CREATE procedure [dbo].[ccsp_DLRGetPBXInfo]
+	@pbx_id int
+	AS
+	set nocount on
+
+	declare @port varchar(5), @remotes varchar(300)
+	select @port = valor from ccsettings where setting_id=119
+	select @remotes = valor from ccsettings where setting_id=227
+	select 
+	case when charindex('':'',pbxIp)>0 then substring(pbxIp, 0, charindex('':'',pbxIp)) else pbxIp end pbxUri, 
+	case when charindex('':'',pbxIp)>0 then substring(pbxIp, charindex('':'',pbxIp)+1, 5) else @port end port
+	from
+	(select
+	substring(value,0,charindex(''|'',value)) pbxId,
+	substring(value,charindex(''|'',value)+1,len(value)) pbxIp
+	from dbo.fn_RIASplitDelimited(@remotes, '','')
+	where cast(substring(value,0,charindex(''|'',value)) as int)=@pbx_id) x
+
+	set nocount off'
+	exec (@sql)
+
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

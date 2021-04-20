@@ -2206,7 +2206,7 @@
     <value>On Ring IVA</value>
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
-    <value>Lamadas de salida</value>
+    <value>Llamadas de salida</value>
   </data>
   <data name="systemTranslated_outbound" xml:space="preserve">
     <value>Outbound</value>

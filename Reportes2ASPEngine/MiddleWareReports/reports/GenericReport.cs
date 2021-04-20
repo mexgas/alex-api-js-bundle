@@ -746,9 +746,13 @@ namespace MiddleWareReports
             {
                 string name = filterRow["name"].ToString();
                 string id = filterRow["id"].ToString();
+                string showFilter = filterRow["showFilter"].ToString();
+                string defaultValue = filterRow["defaultValue"].ToString();
                 XmlElement element = xml.CreateElement("", "FilterMenu", "");
                 element.SetAttribute("description", name);
                 element.SetAttribute("id", id);
+                element.SetAttribute("showFilter", showFilter);
+                element.SetAttribute("defaultValue", defaultValue);
                 filtersMenus.AppendChild(element);
             }
 

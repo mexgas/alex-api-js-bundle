@@ -2,7 +2,7 @@ CREATE PROCEDURE [dbo].[GetReportFiltersMenus]
 	@id int
 AS
 BEGIN
-	SELECT id,name
+	SELECT id,name,showFilter,defaultValue
 	FROM dbo.FiltersMenus as f, dbo.ReportsFiltersMenus fm
 	WHERE f.name = fm.filterMenuName
 	AND fm.idReport = @id

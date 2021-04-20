@@ -2206,7 +2206,7 @@
     <value>On Ring IVA</value>
   </data>
   <data name="systemTranslated_Out" xml:space="preserve">
-    <value>Lamadas de salida</value>
+    <value>Llamadas de salida</value>
   </data>
   <data name="systemTranslated_outbound" xml:space="preserve">
     <value>Outbound</value>
@@ -2870,5 +2870,11 @@
   </data>
   <data name="systemTranslated_CancelledBySystem" xml:space="preserve">
     <value>Cancelada por sistema</value>
+  </data>
+  <data name="dialTimeSec" xml:space="preserve">
+    <value>Tiempo en díalogo en segundos</value>
+  </data>
+  <data name="talkingTime" xml:space="preserve">
+    <value>Tiempo en diálogo</value>
   </data>
 </root>

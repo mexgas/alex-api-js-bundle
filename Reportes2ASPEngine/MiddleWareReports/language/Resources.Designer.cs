@@ -2239,6 +2239,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tiempo en díalogo en segundos.
+        /// </summary>
+        public static string dialTimeSec {
+            get {
+                return ResourceManager.GetString("dialTimeSec", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tipo de marcación.
         /// </summary>
         public static string dialType {
@@ -6757,7 +6766,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Lamadas de salida.
+        ///   Looks up a localized string similar to Llamadas de salida.
         /// </summary>
         public static string systemTranslated_Out {
             get {
@@ -7032,6 +7041,15 @@ namespace MiddleWareReports {
         public static string talkingPercent {
             get {
                 return ResourceManager.GetString("talkingPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo en diálogo.
+        /// </summary>
+        public static string talkingTime {
+            get {
+                return ResourceManager.GetString("talkingTime", resourceCulture);
             }
         }
         

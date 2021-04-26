@@ -701,6 +701,68 @@ If @command=2  --Asignar calificacion(es) a una campaña de entrada o salida
 set nocount off'
     EXEC(@sql)
 
+    	set @process = 'CW-5158 Check if exists ccsp_GalateaGetBlacklistImportStatus'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetBlacklistImportStatus'')
+            begin
+          DROP PROCEDURE ccsp_GalateaGetBlacklistImportStatus;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5158 Create sp ccsp_GalateaGetBlacklistImportStatus'	
+	set @sql = 'CREATE PROCEDURE ccsp_GalateaGetBlacklistImportStatus -- guiandose del sp ccsp_GalateaGetRecordsImportStatus(carga a campañas)
+@action tinyint,
+@loadID int = NULL
+
+AS
+declare @today datetime
+select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+
+SET nocount ON
+if @action not IN (1,2)
+	BEGIN
+		raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+		return (0)
+	END
+
+if @action=1 -- Detalle general de carga de registros a listas Negras
+BEGIN
+     SELECT DISTINCT load_id as LoadId, camName as BlacklistName, cam_id as BlacklistId, pctg as ProgressPercentage , regsNotLoaded+regsBlocked as PhonesNotLoaded,
+		regsLoaded as PhonesLoaded, state as LoadState, loadDate as StartLoadDate
+        FROM ccRIALoading riaLoad
+        WHERE 
+        loadDate>=@today
+        ORDER BY riaLoad.loadDate DESC
+END
+
+if @action=2 -- obtiene datos especificos de una carga a listas Negras a partir del id de carga
+BEGIN
+     SELECT DISTINCT load_id as LoadId, camName as BlacklistName, cam_id as BlacklistId, pctg as ProgressPercentage , regsNotLoaded+regsBlocked as PhonesNotLoaded,
+		regsLoaded as PhonesLoaded, state as LoadState, loadDate as StartLoadDate
+        FROM ccRIALoading riaLoad
+        WHERE 
+        load_id=@loadID
+END'
+    EXEC(@sql)
+
+
+    set @process = 'CW-5158 Check if exists ccsp_GalateaValidateAccessMonitoringBlacklistLoads'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaValidateAccessMonitoringBlacklistLoads'')
+            begin
+          DROP PROCEDURE ccsp_GalateaValidateAccessMonitoringBlacklistLoads;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5158 Create sp ccsp_GalateaValidateAccessMonitoringBlacklistLoads'	
+	set @sql = 'CREATE PROCEDURE ccsp_GalateaValidateAccessMonitoringBlacklistLoads 
+@userID smallint 
+AS
+
+if exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+	SELECT 200 AS Result
+ELSE
+	SELECT -1 AS Result'
+    EXEC(@sql)
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -865,6 +865,22 @@ ELSE
 	END
 	'
 	exec (@sql)
+
+	set @process = 'CW-5209 Se verifica si existe el SP ccsp_GalateaAdminBlackLFindNumber'
+	set @sql = 'IF EXISTS (select * from sys.all_objects where name = ''ccsp_GalateaAdminBlackLFindNumber'')
+		DROP PROCEDURE ccsp_GalateaAdminBlackLFindNumber;
+	'
+	exec (@sql)
+
+
+	set @process = 'CW-5209 Se crea el sp ccsp_GalateaAdminBlackLFindNumber'
+	set @sql = 'CREATE PROCEDURE ccsp_GalateaAdminBlackLFindNumber--guiandose del sp de xion ccsp_RIAFindNumber
+@number varchar(10)
+
+AS
+	select distinct a1.idtipolista as BlackListId,tipolista as BlackListName from cclistanegra a1 
+	inner join cctiposlistanegra a2 on (a1.idtipolista=a2.idtipolista) where telefono = @number'
+	exec (@sql)
 	
 
 

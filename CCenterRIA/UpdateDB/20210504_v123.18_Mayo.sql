@@ -50,7 +50,6 @@ BEGIN
 
 	BEGIN TRY
 
-
 	set @process = 'CW-5216 Check if exists ccsp_GalateaAdminSubdispositions'	
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSubdispositions'')
             begin
@@ -90,6 +89,7 @@ end
 
 set nocount off'
     EXEC(@sql)
+
 	
 	
 

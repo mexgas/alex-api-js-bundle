@@ -37,6 +37,20 @@ SELECT @checkLd_In_ANILst = valor FROM ccsettings WITH (NOLOCK) WHERE setting_id
 
 IF @lon > 1
 BEGIN
+
+	IF @validateTel = 2
+		BEGIN --Setting 206 only validates blacklist
+		
+			IF (SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)) = 1
+			BEGIN
+				SELECT 4 AS res, @tel AS tel --blackList
+				RETURN (0)
+			END
+			SELECT 0 AS res, @tel AS tel
+
+			RETURN (0)
+	
+	END
 	IF @validateTel = 1
 	BEGIN --Setting 206 para no validar longitud ni listas negras
 		SELECT 0 AS res, @tel AS tel
@@ -45,7 +59,7 @@ BEGIN
 	END
 
 	IF @extLen = @lon
-	BEGIN -- Setting 108 validar el tamaño longitud del telefono
+	BEGIN -- Setting 108 validar el tama?o longitud del telefono
 		IF (
 				SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
 				) = 1
@@ -353,7 +367,7 @@ BEGIN --Arabia saudita
 	RETURN (0)
 END
 ELSE IF @pais IN (9, 10, 11, 12, 13, 14, 15, 16)
-BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España 15:Peru, 16: Panama 
+BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:Espa?a 15:Peru, 16: Panama 
 	SELECT @tel = dbo.Completa_ListaNegra(@tel)
 
 	IF left(@tel, 1) = 'E'

@@ -546,8 +546,6 @@ END
 
 
 
-	    EXEC(@sql)
-
 
 	set @process = 'CW-5150 Configuracion en historial de llamadas se modifica SP getLastCalls'	
 	set @sql = '

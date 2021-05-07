@@ -754,7 +754,7 @@ AS
 
     set @process = 'CW-5189 Se elimina sp si existe'	
 	set @sql = '
-	if exists (select * from sys.procedures where name = N'ccsp_GalateaAdminInbound')
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminInbound'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminInbound;
     end

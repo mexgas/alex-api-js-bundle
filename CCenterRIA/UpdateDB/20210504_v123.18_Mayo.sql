@@ -123,18 +123,18 @@ set nocount off'
     EXEC(@sql)
 
 
-	set @process = 'CW-5084 Desactivar la validación de teléfono en llamada manual'	
+	set @process = 'CW-5084 Desactivar la validaciï¿½n de telï¿½fono en llamada manual'	
 	set @sql = 'UPDATE CCSETTINGs SET detalle =  ''0 - Realiza las validaciones de marcacion normalmente / 1 - marca el numero sin validarlo / 2 Valida solo lista negra'' WHERE SETTING_id = 206'
     EXEC(@sql)
 
-	set @process = 'CW-5084 Desactivar la validación de teléfono en llamada manual'	
+	set @process = 'CW-5084 Desactivar la validaciï¿½n de telï¿½fono en llamada manual'	
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Limpia'')
             begin
           DROP PROCEDURE ccsp_Limpia;
             end'
     EXEC(@sql)
 	
-	set @process = 'CW-5084 Desactivar la validación de teléfono en llamada manual'	
+	set @process = 'CW-5084 Desactivar la validaciï¿½n de telï¿½fono en llamada manual'	
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Limpia] @tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = ''''
 AS
 SET NOCOUNT ON
@@ -196,7 +196,7 @@ BEGIN
 	END
 
 	IF @extLen = @lon
-	BEGIN -- Setting 108 validar el tamaño longitud del telefono
+	BEGIN -- Setting 108 validar el tamaï¿½o longitud del telefono
 		IF (
 				SELECT dbo.ValidateBlackListPhone(@tel, @Camp, @calKey)
 				) = 1
@@ -504,7 +504,7 @@ BEGIN --Arabia saudita
 	RETURN (0)
 END
 ELSE IF @pais IN (9, 10, 11, 12, 13, 14, 15, 16)
-BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:España 15:Peru, 16: Panama 
+BEGIN --9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador, 14:Espaï¿½a 15:Peru, 16: Panama 
 	SELECT @tel = dbo.Completa_ListaNegra(@tel)
 
 	IF left(@tel, 1) = ''E''
@@ -534,7 +534,222 @@ END
 
 '
     EXEC(@sql)
-	
+
+
+	set @process = 'CW-5150 Configuracion en historial de llamadas se agrega setting 255'	
+	set @sql = '
+	if not exists(select * from [CCenterRIA].[dbo].[ccSettings] where setting_id=255) begin
+        insert into [CCenterRIA].[dbo].[ccSettings](setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(255,''3|200'',''Tiempo para historial de llamadas | maximo numero de llamadas'',''1'',''AGT'',''Para el historial de llamadas, primer valor es el tiempo para buscar el historial, default 3 hrs, maximo 24 | segundo valor top de llamadas a mostrar 0=Muestra todas las llamadas. 100 o 300'',''For call history first value is the time max its going to fetch records from, default 3 hours, max 24 hours, second value is the top records its going to fetch. 0=shows all calls, 100 or 300 '', 0,''\b(0?[1-9]?|1[0-9]|2[0-4])(\|)([0-9]?[0-9]?[0-9])\b'');
+  	end
+	'
+    EXEC(@sql)
+
+
+
+
+	set @process = 'CW-5150 Configuracion en historial de llamadas se modifica SP getLastCalls'	
+	set @sql = '
+	ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id INT
+AS
+     SET NOCOUNT ON
+     DECLARE @lastCallAgt TABLE
+     (id           INT NOT NULL, 
+      tipo         VARCHAR(10) NOT NULL, 
+      Hora         VARCHAR(19) NOT NULL, 
+      Telefono     VARCHAR(55) NOT NULL, 
+      EspCamp      VARCHAR(55) NOT NULL, 
+      Calificacion VARCHAR(60), 
+      Duracion     VARCHAR(10) NOT NULL, 
+      CallBack     VARCHAR(60), 
+      cal_key      VARCHAR(20), 
+      IDCampEsp    SMALLINT NOT NULL, 
+      prefijo      VARCHAR(MAX) NULL, 
+      GraphicID    INT,
+	  HidePhone	   bit
+     )
+
+	 declare @pais tinyint;
+	 set @pais = (select valor from ccSettings where setting_id = 104);
+	 
+	 declare @maxHours SMALLINT;
+	 declare @topRows SMALLINT;
+	 declare @setting varchar(6);
+	 set @setting = (select valor from ccSettings where setting_id = 255)
+	 
+	 set @maxHours = CAST(SUBSTRING(@setting, 1,  (SELECT PATINDEX(''%|%'', @setting))-1) AS SMALLINT);
+	 set @topRows = CAST(SUBSTRING(@setting, (SELECT PATINDEX(''%|%'', @setting))+1, LEN(@setting))AS SMALLINT);
+
+	 IF @maxHours = 0
+	 BEGIN
+	     SELECT *
+		 FROM @lastCallAgt
+		 ORDER BY hora DESC
+		 SET NOCOUNT OFF
+		 END
+
+	 ELSE
+
+	 BEGIN 
+
+			 if @topRows = 0
+			 begin
+				 INSERT INTO @lastCallAgt
+						SELECT c.cal_id AS id, 
+									  ''IN'' AS Tipo, 
+									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
+									  cal_ani AS Telefono, 
+									  descripcion AS EspCamp, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
+									  CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - cal_tMoh + CASE
+																										WHEN stopRecording = 0
+																										THEN ISNULL(t.tDespuesXfer, 0)
+																										ELSE 0
+																									END, 0), 108) Duracion, 
+									  '''' AS CallBack, 
+									  cal_key, 
+									  c.inbound_id AS IDCampEsp, 
+									  ISNULL(ccInbound.prefijo, '''') Prefijo, 
+									  graph.graphic_id GraphicID,
+									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
+						FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
+							 JOIN ccRIAInboundGraph graph ON graph.Inbound_id = c.Inbound_id
+							 INNER JOIN ccInbound ON ccInbound.Inbound_id = c.Inbound_id
+							 LEFT JOIN ccTipoCalif cal ON c.calif_id = cal.calif_id
+							 LEFT JOIN
+						(
+							SELECT cal_id, 
+								   tipo, 
+								   SUM(tAntesXfer) AS tAntesXfer, 
+								   SUM(tDespuesXfer) AS tDespuesXfer
+							FROM ccLogTransfers
+							WHERE tipo = 1
+							GROUP BY cal_id, 
+									 tipo
+						) AS t ON c.cal_id = t.cal_id
+						WHERE user_id = @user_id
+							  AND cal_inicio > DATEADD(hh, -@maxHours, GETDATE())
+						ORDER BY c.cal_inicio DESC
+				 INSERT INTO @lastCallAgt
+						SELECT c.cal_id AS id, 
+									  ''OUT'' AS Tipo, 
+									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10),cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
+									  cal_telefono AS Telefono, 
+									  cam_descripcion AS EspCamp, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
+									  CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - cal_tMoh + CASE
+																								   WHEN stopRecording = 0
+																								   THEN ISNULL(t.tDespuesXfer, 0)
+																								   ELSE 0
+																							   END, 0), 114) AS Duracion, 
+									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '''') AS CallBack, 
+									  cal_key, 
+									  c.cam_id AS IDCampEsp, 
+									  ISNULL(ccCamps.prefijo, '''') Prefijo, 
+									  graph.graphic_id GraphicID,
+									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
+						FROM ccoCallsOut c
+							 INNER JOIN ccCamps ON ccCamps.cam_id = c.cam_id
+							 LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = c.cam_id
+							 LEFT JOIN ccTipoCalifOut cal ON c.calif_id = cal.calif_id
+							 LEFT JOIN
+						(
+							SELECT cal_id, 
+								   tipo, 
+								   SUM(tAntesXfer) AS tAntesXfer, 
+								   SUM(tDespuesXfer) AS tDespuesXfer
+							FROM ccLogTransfers
+							WHERE tipo = 2
+							GROUP BY cal_id, 
+									 tipo
+						) AS t ON c.cal_id = t.cal_id
+						WHERE user_id = @user_id
+							  AND cal_inicio > DATEADD(hh, -@maxHours, GETDATE())
+						ORDER BY c.cal_inicio DESC
+			 end
+
+			 ELSE
+
+			 begin
+				 INSERT INTO @lastCallAgt
+						SELECT top (CAST(@topRows AS INT)) c.cal_id AS id, 
+									  ''IN'' AS Tipo, 
+									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
+									  cal_ani AS Telefono, 
+									  descripcion AS EspCamp, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
+									  CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - cal_tMoh + CASE
+																										WHEN stopRecording = 0
+																										THEN ISNULL(t.tDespuesXfer, 0)
+																										ELSE 0
+																									END, 0), 108) Duracion, 
+									  '''' AS CallBack, 
+									  cal_key, 
+									  c.inbound_id AS IDCampEsp, 
+									  ISNULL(ccInbound.prefijo, '''') Prefijo, 
+									  graph.graphic_id GraphicID,
+									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
+						FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
+							 JOIN ccRIAInboundGraph graph ON graph.Inbound_id = c.Inbound_id
+							 INNER JOIN ccInbound ON ccInbound.Inbound_id = c.Inbound_id
+							 LEFT JOIN ccTipoCalif cal ON c.calif_id = cal.calif_id
+							 LEFT JOIN
+						(
+							SELECT cal_id, 
+								   tipo, 
+								   SUM(tAntesXfer) AS tAntesXfer, 
+								   SUM(tDespuesXfer) AS tDespuesXfer
+							FROM ccLogTransfers
+							WHERE tipo = 1
+							GROUP BY cal_id, 
+									 tipo
+						) AS t ON c.cal_id = t.cal_id
+						WHERE user_id = @user_id
+							  AND cal_inicio > DATEADD(hh, -@maxHours, GETDATE())
+						ORDER BY c.cal_inicio DESC
+				 INSERT INTO @lastCallAgt
+						SELECT top (CAST(@topRows AS INT)) c.cal_id AS id, 
+									  ''OUT'' AS Tipo, 
+									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
+									  cal_telefono AS Telefono, 
+									  cam_descripcion AS EspCamp, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
+									  CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - cal_tMoh + CASE
+																								   WHEN stopRecording = 0
+																								   THEN ISNULL(t.tDespuesXfer, 0)
+																								   ELSE 0
+																							   END, 0), 114) AS Duracion, 
+									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '''') AS CallBack, 
+									  cal_key, 
+									  c.cam_id AS IDCampEsp, 
+									  ISNULL(ccCamps.prefijo, '''') Prefijo, 
+									  graph.graphic_id GraphicID,
+									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
+						FROM ccoCallsOut c
+							 INNER JOIN ccCamps ON ccCamps.cam_id = c.cam_id
+							 LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = c.cam_id
+							 LEFT JOIN ccTipoCalifOut cal ON c.calif_id = cal.calif_id
+							 LEFT JOIN
+						(
+							SELECT cal_id, 
+								   tipo, 
+								   SUM(tAntesXfer) AS tAntesXfer, 
+								   SUM(tDespuesXfer) AS tDespuesXfer
+							FROM ccLogTransfers
+							WHERE tipo = 2
+							GROUP BY cal_id, 
+									 tipo
+						) AS t ON c.cal_id = t.cal_id
+						WHERE user_id = @user_id
+							  AND cal_inicio > DATEADD(hh, -@maxHours, GETDATE())
+						ORDER BY c.cal_inicio DESC
+			 end
+		SELECT *
+		 FROM @lastCallAgt
+		 ORDER BY hora DESC
+		 SET NOCOUNT OFF
+		END
+	'
+    EXEC(@sql)
 
 
 		/* End script release */

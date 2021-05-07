@@ -539,14 +539,12 @@ END
 	set @process = 'CW-5150 Configuracion en historial de llamadas se agrega setting 255'	
 	set @sql = '
 	if not exists(select * from [CCenterRIA].[dbo].[ccSettings] where setting_id=255) begin
-        insert into [CCenterRIA].[dbo].[ccSettings](setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(255,''3|200'',''Tiempo para historial de llamadas | maximo numero de llamadas'',''1'',''AGT'',''Para el historial de llamadas, primer valor es el tiempo para buscar el historial, default 3 hrs, maximo 24 | segundo valor top de llamadas a mostrar 0=Muestra todas las llamadas. 100 o 300'',''For call history first value is the time max its going to fetch records from, default 3 hours, max 24 hours, second value is the top records its going to fetch. 0=shows all calls, 100 or 300 '', ''\b(0?[1-9]?|1[0-9]|2[0-4])(\|)([0-9]?[0-9]?[0-9])\b'');
+        insert into [CCenterRIA].[dbo].[ccSettings](setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values(255,''3|200'',''Tiempo para historial de llamadas | maximo numero de llamadas'',''1'',''AGT'',''Para el historial de llamadas, primer valor es el tiempo para buscar el historial, default 3 hrs, maximo 24 | segundo valor top de llamadas a mostrar 0=Muestra todas las llamadas. 100 o 300'',''For call history first value is the time max its going to fetch records from, default 3 hours, max 24 hours, second value is the top records its going to fetch. 0=shows all calls, 100 or 300 '', 0,''\b(0?[1-9]?|1[0-9]|2[0-4])(\|)([0-9]?[0-9]?[0-9])\b'');
   	end
 	'
     EXEC(@sql)
 
 
-
-	    EXEC(@sql)
 
 
 	set @process = 'CW-5150 Configuracion en historial de llamadas se modifica SP getLastCalls'	
@@ -601,16 +599,16 @@ AS
 									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
 									  cal_ani AS Telefono, 
 									  descripcion AS EspCamp, 
-									  ISNULL(cal.Description, '') AS Calificacion, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
 									  CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - cal_tMoh + CASE
 																										WHEN stopRecording = 0
 																										THEN ISNULL(t.tDespuesXfer, 0)
 																										ELSE 0
 																									END, 0), 108) Duracion, 
-									  '' AS CallBack, 
+									  '''' AS CallBack, 
 									  cal_key, 
 									  c.inbound_id AS IDCampEsp, 
-									  ISNULL(ccInbound.prefijo, '') Prefijo, 
+									  ISNULL(ccInbound.prefijo, '''') Prefijo, 
 									  graph.graphic_id GraphicID,
 									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
 						FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
@@ -637,16 +635,16 @@ AS
 									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10),cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
 									  cal_telefono AS Telefono, 
 									  cam_descripcion AS EspCamp, 
-									  ISNULL(cal.Description, '') AS Calificacion, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
 									  CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - cal_tMoh + CASE
 																								   WHEN stopRecording = 0
 																								   THEN ISNULL(t.tDespuesXfer, 0)
 																								   ELSE 0
 																							   END, 0), 114) AS Duracion, 
-									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '') AS CallBack, 
+									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '''') AS CallBack, 
 									  cal_key, 
 									  c.cam_id AS IDCampEsp, 
-									  ISNULL(ccCamps.prefijo, '') Prefijo, 
+									  ISNULL(ccCamps.prefijo, '''') Prefijo, 
 									  graph.graphic_id GraphicID,
 									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
 						FROM ccoCallsOut c
@@ -678,16 +676,16 @@ AS
 									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
 									  cal_ani AS Telefono, 
 									  descripcion AS EspCamp, 
-									  ISNULL(cal.Description, '') AS Calificacion, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
 									  CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - cal_tMoh + CASE
 																										WHEN stopRecording = 0
 																										THEN ISNULL(t.tDespuesXfer, 0)
 																										ELSE 0
 																									END, 0), 108) Duracion, 
-									  '' AS CallBack, 
+									  '''' AS CallBack, 
 									  cal_key, 
 									  c.inbound_id AS IDCampEsp, 
-									  ISNULL(ccInbound.prefijo, '') Prefijo, 
+									  ISNULL(ccInbound.prefijo, '''') Prefijo, 
 									  graph.graphic_id GraphicID,
 									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
 						FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
@@ -714,16 +712,16 @@ AS
 									  CASE WHEN @pais = 4 THEN (CONVERT(VARCHAR(10), cal_inicio, 101) + '' '' + CONVERT(VARCHAR(8), cal_inicio, 108)) ELSE (CONVERT(VARCHAR(10), cal_Inicio, 103) + '' ''  + convert(VARCHAR(8), cal_Inicio, 14))  END AS Hora, 
 									  cal_telefono AS Telefono, 
 									  cam_descripcion AS EspCamp, 
-									  ISNULL(cal.Description, '') AS Calificacion, 
+									  ISNULL(cal.Description, '''') AS Calificacion, 
 									  CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - cal_tMoh + CASE
 																								   WHEN stopRecording = 0
 																								   THEN ISNULL(t.tDespuesXfer, 0)
 																								   ELSE 0
 																							   END, 0), 114) AS Duracion, 
-									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '') AS CallBack, 
+									  ISNULL(CONVERT(VARCHAR(16), cal_fcallback, 121), '''') AS CallBack, 
 									  cal_key, 
 									  c.cam_id AS IDCampEsp, 
-									  ISNULL(ccCamps.prefijo, '') Prefijo, 
+									  ISNULL(ccCamps.prefijo, '''') Prefijo, 
 									  graph.graphic_id GraphicID,
 									  case when (select valor from ccSettings where setting_id = 223) = ''0'' then 0 else 1 end as HidePhone
 						FROM ccoCallsOut c

@@ -3047,8 +3047,95 @@ AS
 		 SELECT @calloutid;'
 	EXEC(@sql)
 
-	set @process = 'CW-4384 Create SP'
-	set @sql = ''
+	set @process = 'CW-4384 Alter colum Database '
+	set @sql = 'if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccoCallsOutSource'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccoCallsOutSource ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccoWorkingTable'' and COL.name = ''cal_Keyw'') < 40
+	Begin
+		ALTER TABLE ccoWorkingTable ALTER COLUMN cal_Keyw VARCHAR (40) NOT NULL
+	End
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccBorrardasReciclaje'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccBorrardasReciclaje ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccCallsIn'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccCallsIn ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccgenTelMarcados'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccgenTelMarcados ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccoCallBacks'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccoCallBacks ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccoCallsOut'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccoCallsOut ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccoLogDials'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccoLogDials ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccRIAClienteCarga'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccRIAClienteCarga ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccUploadTemporal'' and COL.name = ''cal_Key'') < 40
+	BEGIN
+		ALTER TABLE ccUploadTemporal ALTER COLUMN cal_Key VARCHAR (40) NOT NULL
+	END
+
+	if (SELECT COL.max_length 
+			From sys.columns COL 
+				INNER JOIN sys.tables TAB On COL.object_id = TAB.object_id 
+			where TAB.name = ''ccTideWater_Templates'' and COL.name = ''cal_Key_col'') < 40
+	BEGIN
+		ALTER TABLE ccTideWater_Templates ALTER COLUMN cal_Key_col VARCHAR (40) NOT NULL
+	END'
 	EXEC(@sql)
 
 	set @process = 'CW-5225 EOMC Check if exists ccsp_GalateaAdminBlackListDispositions'	

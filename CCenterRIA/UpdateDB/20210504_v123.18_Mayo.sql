@@ -2981,7 +2981,7 @@ AS
 		end'
 	EXEC(@sql)
 
-	set @process = 'CW-4384 Create SP'
+	set @process = 'CW-4384 Create SP xx_Inserta_old'
 	set @sql = 'CREATE PROCEDURE [dbo].[xx_Inserta_old] @cal_key       VARCHAR(40), 
 											@cal_telefono  VARCHAR(19), 
 											@cal_telefono2 VARCHAR(19), 
@@ -3047,6 +3047,9 @@ AS
 		 SELECT @calloutid;'
 	EXEC(@sql)
 
+	set @process = 'CW-4384 Create SP'
+	set @sql = ''
+	EXEC(@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

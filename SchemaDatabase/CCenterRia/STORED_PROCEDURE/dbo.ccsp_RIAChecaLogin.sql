@@ -5,7 +5,7 @@ CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
 @PasswordLwC varchar(40) = null
 AS
 declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
-declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20)
+declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20), @dialingMode int
 
 --Para posiciones ip, by ODC
 declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
@@ -51,7 +51,7 @@ Where Computer = @Computer
 
 select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
 
-select @UserID=user_id, @Nombre=Nombres + ' ' + isnull(ApellidoPaterno,'') + ' ' +isnull(ApellidoMaterno,''), @XferAgents=XferAgents
+select @UserID=user_id, @Nombre=Nombres + ' ' + isnull(ApellidoPaterno,'') + ' ' +isnull(ApellidoMaterno,''), @XferAgents=XferAgents, @dialingMode = DialingMode
 from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
 
 Mostrar:
@@ -88,4 +88,4 @@ select @passSecure= valor from ccSettings where setting_id=207
 
 SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
 @UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
-@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure]
+@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure], @dialingMode  as dialingMode

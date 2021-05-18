@@ -1162,13 +1162,13 @@ END
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
     begin
-        DROP PROCEDURE ccsp_GalateaAdminInbound;
+        DROP PROCEDURE ccsp_GalateaAdminCampaigns;
     end
 	'
 	EXEC(@sql)
 
 
-    set @process = 'CW-5239 Se creo la consulta para obtener los datos de los agentes por campaña'	
+    set @process = 'CW-5268 Se creo la consulta para obtener los datos de los agentes por campaña'	
 	set @sql = '
     CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
                                                 @CampType AS SMALLINT = 0, 

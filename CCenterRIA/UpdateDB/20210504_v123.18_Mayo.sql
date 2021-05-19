@@ -4305,7 +4305,6 @@ INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', '
 	'
     EXEC(@sql)
 	
-	 EXEC(@sql)
 	
 	set @process = 'Check if exists configuraIdiomaCatalogosEnglish'	
 	set @sql = 'if exists (select * from sys.procedures where name = N''configuraIdiomaCatalogosEnglish'')

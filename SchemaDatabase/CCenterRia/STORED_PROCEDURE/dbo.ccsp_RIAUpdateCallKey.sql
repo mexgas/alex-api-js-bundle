@@ -1,16 +1,18 @@
-CREATE procedure [dbo].[ccsp_RIAUpdateCallKey]
-@type Tinyint,
-@callid int,
-@callkey varchar(20)
-
-AS
-
-if @type = 1 --Inbound 
-begin
-	Update ccCallsIn set cal_key=@callkey where cal_id=@callid
-end
-	
-if @type = 2 --Outbound 
-begin
-	Update ccoCallsOut set cal_key=@callkey where cal_id=@callid
-end
+CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCallKey] @type    TINYINT, 
+												   @callid  INT, 
+												   @callkey VARCHAR(40)
+	AS
+		 IF @type = 1 --Inbound 
+			 BEGIN
+				 UPDATE ccCallsIn
+				   SET 
+					   cal_key = @callkey
+				 WHERE cal_id = @callid;
+		 END;
+		 IF @type = 2 --Outbound 
+			 BEGIN
+				 UPDATE ccoCallsOut
+				   SET 
+					   cal_key = @callkey
+				 WHERE cal_id = @callid;
+		 END;

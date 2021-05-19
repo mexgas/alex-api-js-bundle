@@ -1,18 +1,26 @@
-CREATE PROCEDURE dbo.ccsp_IVRInsertCallback
-@ani varchar(20),
-@cam_id smallint
-AS
-declare @tel varchar(20)
-declare @ld varchar(4)
-declare @lon tinyint
+CREATE PROCEDURE [dbo].[ccsp_IVRInsertCallback] @ani    VARCHAR(40), 
+													@cam_id SMALLINT
+	AS
+		 DECLARE @tel VARCHAR(20);
+		 DECLARE @ld VARCHAR(4);
+		 DECLARE @lon TINYINT;
 
---declare @result tinyint
-select @tel = rtrim(ltrim(@ani))
-
-select @tel = dbo.verifica(@tel)
-
-if left(@tel,1) <> 'E'
-begin
-	insert into ccoCallsOutSource ( cal_key, cal_telefono, cam_id ) values ( @ani, @tel, @cam_id )
-	exec ccsp_RIAOUTInsertNewJOBS_WT_Camp @cam_id, 0
-end
+		 --declare @result tinyint
+		 SELECT @tel = RTRIM(LTRIM(@ani));
+		 SELECT @tel = dbo.verifica(@tel);
+		 IF LEFT(@tel, 1) <> 'E'
+			 BEGIN
+				 INSERT INTO ccoCallsOutSource
+				 (cal_key, 
+				  cal_telefono, 
+				  cam_id
+				 )
+				 VALUES
+				 (@ani, 
+				  @tel, 
+				  @cam_id
+				 );
+				 EXEC ccsp_RIAOUTInsertNewJOBS_WT_Camp 
+					  @cam_id, 
+					  0;
+		 END;

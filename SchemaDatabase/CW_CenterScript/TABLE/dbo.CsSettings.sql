@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[CsSettings](	  [Id] INT NOT NULL	, [Value] VARCHAR(255) COLLATE Modern_Spanish_CI_AS NOT NULL	, [Description] TEXT(16) COLLATE Modern_Spanish_CI_AS NOT NULL)

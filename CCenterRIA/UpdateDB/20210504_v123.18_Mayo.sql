@@ -3187,6 +3187,307 @@ begin
  end
 '
     EXEC(@sql)
+
+	set @process = 'CW-5229 Insert new Agent Status'	
+	set @sql = 'if not exists (select * from ccTipoStatusAgente where TipoStatusAge_id =31)
+begin
+	insert into ccTipoStatusAgente values (31,''Ready PreviewPro'')
+end'
+    EXEC(@sql)
+	
+
+	set @process = 'CW-5229 Check if exists ccsp_RIAChecaLogin'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAChecaLogin'')
+            begin
+          DROP PROCEDURE ccsp_RIAChecaLogin;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5229 Create Procedure ccsp_RIAChecaLogin'	
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
+@Login varchar(40),
+@Password varchar(40),
+@Computer varchar(20),
+@PasswordLwC varchar(40) = null
+AS
+declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
+declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20), @dialingMode int
+
+--Para posiciones ip, by ODC
+declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
+
+-- Para live connected
+-- Tipo de conexion: 0 normal, 1 liveconnected
+declare @tipoConexion smallint
+
+SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
+ @Extension='' '', @UserID='' '', @Nombre='' '', @tipoConexion = 0, @ipExtension='''', @isIP=0
+SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
+
+IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
+  GOTO Mostrar
+else
+  set @LoginOK=1
+
+IF not exists(select Login from ccUsers Where Login = @Login
+ AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
+ or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
+ and status > 0 and tipoUser_id = 1)
+  GOTO Mostrar
+else
+  set @PswdOK=1
+
+-- Se actualiza a Lower Case
+--update ccUsers with(rowlock) set Password=isnull(@Password, Password) where Login=@Login and status>0 and tipoUser_id=1
+
+if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
+  insert ccposicion (computer, ext_id) select @Computer, 0
+
+set @CompuOK = 1
+
+if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
+ Where p.Status=1 and M.Status=1 and Computer=@Computer)
+  GOTO Mostrar
+else
+  set @ExtenOK=1
+
+select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
+from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
+Where Computer = @Computer
+
+select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
+
+select @UserID=user_id, @Nombre=Nombres + '' '' + isnull(ApellidoPaterno,'''') + '' '' +isnull(ApellidoMaterno,''''), @XferAgents=XferAgents, @dialingMode = DialingMode
+from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
+
+Mostrar:
+--Para posiciones ip, by ODC
+-- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+-- Regresa un etension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+IF @ext_id=0
+ BEGIN
+  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
+ END
+
+---Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+IF(@ext_id > 0  and @isIP=1)
+ BEGIN
+  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
+ END
+-----------
+
+IF @tipoConexion = 1
+  select @TeclaOK =1
+
+--  CRMx
+DECLARE @crmxActive TINYINT
+SET @crmxActive = 0
+IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
+  BEGIN
+    SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
+  END
+
+
+declare @passSecure int
+select @passSecure= valor from ccSettings where setting_id=207
+
+
+SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
+@UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
+@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure], @dialingMode  as dialingMode
+    '
+    EXEC(@sql)
+	
+	set @process = 'CW-5248 Valida si existe campo GraphColor en ccTipoCalif'
+    set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccTipoCalif'' AND COLUMN_NAME = ''GraphColor'')
+Begin
+ALTER TABLE ccTipoCalif 
+ADD GraphColor varchar(15) NOT NULL
+CONSTRAINT DF_ccTipoCalif_GraphColor DEFAULT ''1DB4E2''
+WITH VALUES
+End'
+    EXEC(@sql)
+		
+	set @process = 'CW-5248 Valida si existe campo GraphColor en ccTipoCalifOUT'
+	set @sql = 'IF NOT EXISTS(SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccTipoCalifOUT'' AND COLUMN_NAME = ''GraphColor'')
+Begin
+ALTER TABLE ccTipoCalifOUT 
+ADD GraphColor varchar(15) NOT NULL
+CONSTRAINT DF_ccTipoCalifOUT_GraphColor DEFAULT ''1DB4E2''
+WITH VALUES
+End'
+    EXEC(@sql)
+
+	set @process = 'CW-5248 Check if exists ccsp_GalateaAdminDispositions'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositions'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminDispositions;
+            end'
+    EXEC(@sql)
+
+
+	set @process = 'CW-5248 Se crea sp ccsp_GalateaAdminDispositions'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
+@command int,
+@califIdLst varchar(8000) = null,
+@description varchar(60)=null,
+@order tinyint=null,
+@canReprogram bit = null,
+@graphColor varchar(15) = null,
+@endConversation bit=null,
+@keepDial bit=null,
+@autoCB bit=null,
+@contactOwner bit=null,
+@finishPreview bit = 0
+AS
+set nocount on
+
+if @command=1 -- Load Inbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd
+  from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
+  where C.Calif_Status=1
+  group by C.calif_id, C.Description, C.orden, C.canReprogram, C.EndConversation
+  order by 2
+  return(0)
+end
+
+If @command=2 -- Load Outbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+  IsNull(C.finishPreview,0) as finishPreview
+  from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
+  where C.CalifOut_Status=1
+  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+  C.contactOwner, C.finishPreview
+  order by 2
+  return(0)
+end
+
+If @command=3 -- New ccTipoCalif
+begin
+  If exists(select description from ccTipoCalif where Calif_Status=1 and description=@description)
+    begin
+      select cast(3 as int) [result]
+      return(0)
+    end
+
+  If exists(select description from ccTipoCalif where Calif_Status=0 and description=@description)
+  begin
+      update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+	  GraphColor=isnull(@graphColor, ''1DB4E2''), Calif_Status=1
+      where description=@description
+	  select cast(2 as int) [result]
+      return(0)
+  end
+
+  insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation , GraphColor)
+  select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), isnull(@canReprogram,0), isnull(@endConversation,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalif
+  select cast(1 as int) [result]
+  return(0)
+end
+
+If @command=4 -- New ccTipoCalifOUT
+begin
+  If exists(select description from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
+  begin
+  select cast(3 as int) [result]
+  return(0)
+  end
+
+ If exists(select description from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
+ begin
+  update ccTipoCalifOut set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0),
+  Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+  finishPreview=isnull(@finishPreview,0), GraphColor=isnull(@graphColor, ''1DB4E2'')
+  where description=@description
+  select cast(2 as int) [result]
+  return(0)
+ end
+
+ insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, GraphColor)
+ select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, @canReprogram, isnull(@keepDial,0), 
+ isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalifOut
+ select cast(1 as int) [result]
+ return(0)
+end
+
+
+set nocount off'
+    EXEC(@sql)
+
+	set @process = 'CW-3996 Habilitar captura de los 5 datos en ACD con reprogramación'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_LoadGraphics'')
+            begin
+          DROP PROCEDURE ccsp_LoadGraphics;
+            end'
+    EXEC(@sql)	
+	
+	set @process = 'CW-3996 Habilitar captura de los 5 datos en ACD con reprogramación'	
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_LoadGraphics]
+@Id as smallint,
+@callType as smallint,
+@UserId as smallint
+AS
+BEGIN
+	
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON
+	DECLARE @AuthorizationPlayStopRec TABLE(value bit)
+	DECLARE @realValue bit
+
+	INSERT INTO @AuthorizationPlayStopRec 
+	exec ccsp_AgentGetStartStopPermission @age_id=@UserId, @cam_id=@Id, @call_type=@callType
+
+	select @realValue=value from @AuthorizationPlayStopRec
+
+	
+	if (@callType=1)
+	begin
+		DECLARE @canReprogram bit  
+		create table #canReprogram (canReprogram bit)
+		insert into #canReprogram
+		exec ccsp_AgentGetCampReprogramData @Id, @callType
+		select @canReprogram = canReprogram from #canReprogram
+		drop table #canReprogram
+
+		select a1.Inbound_id id, a2.descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey, 0 as leaveRecMessage ,
+		case when isnull(a4.callsBySurvey,0) > 0 then 1 else 0 end isRelationSurvey ,
+		isnull(a2.callBackSurveyAgent,1) callBackSurveyAgent,isnull(a2.callBackSurveyClient,1) callBackSurveyClient,
+		a2.ShowCalifWnd as ShowDisposition,
+		isnull(a2.startStopRecording,0) as StartStopRecording,
+		@realValue as IsStartStopRecording,
+		isnull(a2.editableDtmf, 0) as isEditDtmf,
+		@canReprogram  CanReprogram
+		from ccRIAInboundGraph a1 
+		inner join ccInbound a2 on (a1.inbound_id=a2.inbound_id)
+		 inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id) 
+		 left join ccCamps a4 on a4.cam_id=a2.cam_id  where a1.inbound_id=@Id and type_id in(1,2,3) order by type_id		
+	 end	
+	 else
+	 begin
+		select a1.cam_id Id, a2.cam_descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey,
+		case when msgFile <> '''' and leaveRecMessage = 1 then 1 else 0 end as leaveRecMessage, 
+		case when isnull(a2.surveyCamId,0) >0 then 1 else 0 end isRelationSurvey ,
+		a2.cam_ShowCalifWnd as ShowDisposition,
+		a2.callBackSurveyAgent,a2.callBackSurveyClient,
+		isnull(a2.startStopRecording,0) as StartStopRecording,
+		@realValue as IsStartStopRecording
+		from ccRIACampsGraph a1 
+		inner join ccCamps a2 on (a1.cam_id=a2.cam_id)
+		inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id)
+		left outer join (select top 1 M.cam_id, coalesce(msgFile+'''','''','''') as msgFile 
+		from ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id 
+		where M.cam_id = @Id and type = 8) b 
+		on (a2.cam_id = b.cam_id) 
+		where a1.cam_id=@Id and type_id in(1,2,3) order by type_id
+	 end	
+END
+'
+    EXEC(@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

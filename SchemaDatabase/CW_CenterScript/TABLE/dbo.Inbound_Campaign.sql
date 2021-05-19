@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[Inbound_Campaign](	  [inbound_id] INT NOT NULL	, [Template_id] INT NOT NULL)

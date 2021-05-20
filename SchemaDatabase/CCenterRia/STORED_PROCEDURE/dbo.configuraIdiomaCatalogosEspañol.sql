@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
+Create PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
 AS
 
 Print 'Iniciando proceso de configuracion en Español'
@@ -143,6 +143,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, conv
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N'Chatting' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, convert(text, N'Transferencia Fallida' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, convert(text, N'Ringing Fallida' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, convert(text, N'ReconnectKolob' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, convert(text, N'Ready PreviewPro' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print 'Estableciendo los tipos de usuario'
 Delete [dbo].[ccTipoUsers]

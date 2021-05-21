@@ -144,6 +144,9 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, conv
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N'Chatting' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, 'Xfer Fail')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, 'Ringing Fail')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, 'ReconnectKolob')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, 'Ready PreviewPro')
+
 
 Print 'Estableciendo los tipos de usuario'
 Delete [ccTipoUsers]

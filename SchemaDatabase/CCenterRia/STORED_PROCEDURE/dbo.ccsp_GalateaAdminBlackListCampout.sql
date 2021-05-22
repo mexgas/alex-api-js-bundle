@@ -1,9 +1,10 @@
-CREATE PROCEDURE ccsp_GalateaAdminBlackListCampout-- basandose del sp ccsp_RIABlackListCamp
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminBlackListCampout]-- basandose del sp ccsp_RIABlackListCamp
 @Option smallint,
 @IDArea smallint = 0,
 @CamID SmallInt = 0,
 @InsertSchedule_id varchar(max) = '0',
-@DeleteSchedule_id varchar(max) = '0'
+@DeleteSchedule_id varchar(max) = '0',
+@ManyOutboundIDs varchar(max)=''
 as
 
 if @Option = 1 -- Asignar listas negras a una campaña de salida
@@ -62,4 +63,12 @@ if @Option = 3 -- Desasignar listas negras de todas las campañas de salida a la
   return(0)
  end
 
-set nocount off
+  if @Option = 5 -- trae las relaciones entre listas negras y las campaña de salida indicadas en @ManyOutboundIDs
+ begin
+  select cl.cam_id as CampId, ca.cam_descripcion as CampName, cl.idtipolista as BlacklistId, tl.Tipolista as BlacklistName
+  from Camplistanegra cl join ccCamps ca on cl.cam_id = ca.cam_id
+   join cctiposlistanegra tl on cl.idtipolista = tl.idtipolista
+  where cl.status = 1 and cl.cam_id in(select value from dbo.fn_RIASplitDelimited(@ManyOutboundIDs, ','))
+  order by 1, 3
+  return(0)
+ end

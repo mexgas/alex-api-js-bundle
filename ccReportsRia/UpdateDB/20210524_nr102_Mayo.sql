@@ -18,6 +18,18 @@ BEGIN
 
 	BEGIN TRY
 
+		SET @process = 'CW-5178 Create Table ccRIACampEspWGConsulta'
+		SET @sql = 'if not exists(select * from sys.tables where name=''ccRIACampEspWGConsulta'')begin
+
+CREATE TABLE [dbo].[ccRIACampEspWGConsulta](
+	[IDWG] [smallint] NOT NULL,
+	[Tipo] [smallint] NOT NULL,
+	[IdCampEsp] [smallint] NOT NULL	
+)
+
+end'
+		EXEC(@sql)
+
 		SET @process = 'CW-5178 DROP Create View'
 		SET @sql = 'if exists (select * FROM sys.views where name = N''ccRIACampEspWGView'')
     begin

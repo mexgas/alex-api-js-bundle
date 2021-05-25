@@ -298,7 +298,7 @@ namespace MiddleWareReports
                         t = (TimePeriod)Enum.Parse(typeof(TimePeriod), timePeriod, true);
                     }
                 }
-                dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
+                dynamicQuery.TotalColumns = GetTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
                 totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
                 totalsTable = getGrandTotalTable(detailTable, totalsTable);
             }
@@ -501,7 +501,7 @@ namespace MiddleWareReports
 
             DynamicQuery dynamicQuery = new DynamicQuery(process);
             DataTable detailTable = executeReader(parameters, false, false, dynamicQuery, process);
-            dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
+            dynamicQuery.TotalColumns = GetTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
 

@@ -69,7 +69,7 @@ namespace MiddleWareReports
         public static StringBuilder whereDateStatement(DateTime dateStart, DateTime dateEnd)
         {
             StringBuilder statement = new StringBuilder();
-            statement.Append(string.Format(" WHERE {0} >= '{1}' AND {0} <= '{2}'  ", "date", dateStart.ToString("yyyy-MM-dd HH:mm:ss"), dateEnd.ToString("yyyy-MM-dd HH:mm:ss")));
+            statement.AppendLine(string.Format("\t WHERE {0} >= '{1}' AND {0} <= '{2}'  ", "date", dateStart.ToString("yyyy-MM-dd HH:mm:ss"), dateEnd.ToString("yyyy-MM-dd HH:mm:ss")));
             return statement;
         }
 
@@ -105,7 +105,7 @@ namespace MiddleWareReports
                 {
                     columns = dynamicQuery.TotalColumns;
                 }
-                statement.Append(string.Format(" SELECT {0} FROM ({1}) AS C_GROUP", columns, queryWithRowNum));
+                statement.AppendLine(string.Format(" SELECT {0} FROM ({1} {2}) AS C_GROUP", columns, queryWithRowNum, Environment.NewLine));
             }
 
             if (dynamicQuery.SqlPaginate.Length == 0 && !dynamicQuery.IsTotals)
@@ -113,7 +113,7 @@ namespace MiddleWareReports
                 dynamicQuery.SqlPaginate = statement.ToString().Trim();
             }
 
-            string pageInfo = string.Format(" WHERE {0} > {1} AND {0} <= {2} ", ROWNUM, pageSize * pageNumber, pageSize * (pageNumber + 1));
+            string pageInfo = string.Format("\r\n WHERE {0} > {1} AND {0} <= {2} ", ROWNUM, pageSize * pageNumber, pageSize * (pageNumber + 1));
 
             if (!dynamicQuery.IsTotals)
             {
@@ -441,7 +441,7 @@ namespace MiddleWareReports
 
             if (pivotFunction != "")
             {
-                pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
+                pivot.AppendLine(" declare @out nvarchar(max) exec sp_executesql N'");
 
                 if (addRowNum)
                 {
@@ -461,21 +461,21 @@ namespace MiddleWareReports
 
                 foreach (string pivotColumn in pivotColumns)
                 {
-                    pivot.Append(string.Format(" declare @pivot1_{0} nvarchar(max)", pivotColumn));
-                    pivot.Append(string.Format(" declare @pivot2_{0} nvarchar(max)", pivotColumn));
+                    pivot.AppendLine(string.Format(" declare @pivot1_{0} nvarchar(max)", pivotColumn));
+                    pivot.AppendLine(string.Format(" declare @pivot2_{0} nvarchar(max)", pivotColumn));
                     if (dynamicQuery.IsTotals)
                     {
-                        pivot.Append(string.Format(" declare @pivot3_{0} nvarchar(max)", pivotColumn));
+                        pivot.AppendLine(string.Format(" declare @pivot3_{0} nvarchar(max)", pivotColumn));
                     }
                     pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
                     if (dynamicQuery.IsTotals || isGroupPivot)
                     {
-                        pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
+                        pivot.AppendLine(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
                     }
                     else
                     {
-                        pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
+                        pivot.AppendLine(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
                     }
 
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
@@ -502,7 +502,7 @@ namespace MiddleWareReports
                         pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
                     }
                 }
-                pivot.Append(" declare @query nvarchar(max)");
+                pivot.AppendLine(" declare @query nvarchar(max)");
 
                 foreach (string complementColumn in complementColumns)
                 {
@@ -587,7 +587,7 @@ namespace MiddleWareReports
             }
             else
             {
-                pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
+                pivot.AppendLine(" declare @out nvarchar(max) exec sp_executesql N'");
             }
             return pivot;
         }

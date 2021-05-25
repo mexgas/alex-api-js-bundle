@@ -146,7 +146,7 @@ namespace MiddleWareReports
                         t = (TimePeriod)Enum.Parse(typeof(TimePeriod), timePeriod, true);
                     }
                 }
-                dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
+                dynamicQuery.TotalColumns = GetTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
                 totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
                 totalsTable = getGrandTotalTable(detailTable, totalsTable);
             }
@@ -262,7 +262,7 @@ namespace MiddleWareReports
 
             DynamicQuery dynamicQuery = new DynamicQuery(process);
             DataTable detailTable = executeReader(parameters, false, false, dynamicQuery, process);
-            dynamicQuery.TotalColumns = getTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
+            dynamicQuery.TotalColumns = GetTotalColumns(dynamicQuery, detailTable, isTimePeriod, t, parametersTotals);
             DataTable totalsTable = executeReader(parametersTotals, false, false, dynamicQuery, process);
             totalsTable = getGrandTotalTable(detailTable, totalsTable);
 
@@ -1119,12 +1119,12 @@ namespace MiddleWareReports
         /// <param name="dynamicQuery">The created dynamic query to be used</param>
         /// <param name="detailTable">The table containing the columns with the detailed information of the report</param>
         /// <returns>A text indicating the columns to be used for the totals query</returns>
-        protected string getTotalColumns(DynamicQuery dynamicQuery, DataTable detailTable, bool isTimePeriod, TimePeriod t, NameValueCollection parametersTotals)
+        protected string GetTotalColumns(DynamicQuery dynamicQuery, DataTable detailTable, bool isTimePeriod, TimePeriod t, NameValueCollection parametersTotals)
         {
             StringBuilder query = new StringBuilder();
             query.Append(DynamicTsqlBuilder.getTotalColumns(dynamicQuery.Process));
             DataTable table = db.executeDynamicQuery(query);
-            string totalColumns = table.Rows[0][0].ToString().Trim();
+            string totalColumns = table.Rows.Count == 0 ? string.Empty : table.Rows[0][0].ToString().Trim();
 
             if (totalColumns.Length == 0)
             {
@@ -1316,7 +1316,7 @@ namespace MiddleWareReports
             if (paramValueList["dateStart"] != null && paramValueList["dateStart"].Length > 0
                 && paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
             {
-                whereStatement.Append(string.Format(" WHERE {0} >= {1} AND {0} < {2}  ", dateColumnName, "@dateStart", "@dateEnd"));
+                whereStatement.AppendLine(string.Format("\t WHERE {0} >= {1} AND {0} < {2}  ", dateColumnName, "@dateStart", "@dateEnd"));
 
                 parameters.Append(string.Format("@dateStart " + DBSchema.getDataType("dateStart").ToString()));
                 values.Add("@dateStart", paramValueList["dateStart"].ToString());
@@ -1529,7 +1529,7 @@ namespace MiddleWareReports
                         dateEnd = dateStart.AddMinutes(timeMinutes);
                     }
 
-                    whereStatement.Append(string.Format(" WHERE {0} >= {1} AND {0} < {2}  ", "date", "@dateStart", "@dateEnd"));
+                    whereStatement.AppendLine(string.Format("\t WHERE {0} >= {1} AND {0} < {2}  ", "date", "@dateStart", "@dateEnd"));
 
                     parameters.Append(string.Format("@dateStart " + DBSchema.getDataType("dateStart").ToString()));
                     values.Add("@dateStart", dateStart.ToString("yyyy-MM-dd HH:mm"));
@@ -1668,7 +1668,7 @@ namespace MiddleWareReports
                     paramsValue = paramsValue.Substring(0, paramsValue.Length - 1);
                 }
                 tsql.Append(string.Format(", {0}', @out output, {1} ", paramsType, paramsValue));
-                tsql.Append(string.Format(" exec sp_executesql @stmt = @out, @params=N'{0}',{1}", paramsType, paramsValue));
+                tsql.AppendLine(string.Format(" exec sp_executesql @stmt = @out,{0} @params=N'{1}',{2}", Environment.NewLine, paramsType, paramsValue));
             }
 
             dynamicQuery.Stmt = tsql;

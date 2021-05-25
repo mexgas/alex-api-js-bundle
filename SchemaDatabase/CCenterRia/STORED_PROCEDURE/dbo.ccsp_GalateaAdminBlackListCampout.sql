@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[ccsp_GalateaAdminBlackListCampout]-- basandose del sp ccsp_RIABlackListCamp
+CREATE PROCEDURE ccsp_GalateaAdminBlackListCampout-- basandose del sp ccsp_RIABlackListCamp
 @Option smallint,
 @IDArea smallint = 0,
 @CamID SmallInt = 0,

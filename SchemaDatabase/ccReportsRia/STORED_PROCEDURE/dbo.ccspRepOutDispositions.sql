@@ -19,61 +19,48 @@ if @action = 1
 begin
 
 	insert into #detailWorkGroup
-	select A.IDWG,B.IdCampEsp,A.WGName from ccriacat_workgroup A 
-	inner join ccRIACampEspWG B on A.IDWG=B.IDWG 
-	where Tipo=1 
+	SELECT IDWG, IdCampEsp, WGName from ccRIACampEspWGView where Tipo = 1
 	 
 	--Borrar lo que esta para no repetir
-	delete from RepOutDispositions with(rowlock)
-	where date >= @from AND date < @to
+	delete from RepOutDispositions with(rowlock) 	where date >= @from AND date < @to
 
-	insert into  RepOutDispositions
-	select CONVERT(smalldatetime,CONVERT(varchar(13),a.cal_inicio,121)+ ':00',121) as dateHour, a.cam_id, '' as Campaign, a.calif_id, '' as DispName, '', count(calif_id) DispAmount, user_id, '' as login
-	, '' as username, b.IDArea, '' as areaName, 1 as wgId, 'systemTranslated_WorkGroup' as wg,
-	datepart(yyyy,max(cal_inicio)) as year, datepart(mm,max(cal_inicio)), datepart(dd,max(cal_inicio)),
-	datepart(hh,max(cal_inicio)), datepart(mi,max(cal_inicio))
-	from ccocallsout a 		
-	left join cccamps b
-	on	b.cam_id = a.cam_id		
-	where cal_inicio >= @from AND cal_inicio < @to and a.statuscall_id = 13 and cal_manual in (0,2)
-	and b.idArea is not null
-	group by CONVERT(smalldatetime,CONVERT(varchar(13),a.cal_inicio,121)+ ':00',121),a.cam_id, a.calif_id, user_id,b.IDArea
+	--CTE
+	;with callOut as(
+	select CONVERT(smalldatetime, CONVERT(varchar(13), a.cal_inicio,121) + ':00', 121) as date, 
+		a.cam_id, a.calif_id, count(calif_id) DispAmount, user_id	
+		from ccocallsout a 			
+		where cal_inicio >= @from AND cal_inicio < @to and 
+		a.statuscall_id = 13 and cal_manual in (0,2)	
+		group by CONVERT(smalldatetime, CONVERT(varchar(13), a.cal_inicio,121) + ':00', 121), a.cam_id, a.calif_id, user_id
+		)
 
-	update a set campaign = isnull(cam_descripcion,'')
+insert into  RepOutDispositions
+	select A.date,a.cam_id, ISNULL(b.cam_descripcion,'') as Campaign,
+	a.calif_id, isnull(c.Description,'systemTranslated_Dispositionless') as DispName, 
+	isnull(c.Description,'systemTranslated_Dispositionless')+'_Count' as disposition_count,
+    a.DispAmount as [count], A.user_id, ISNULL(d.login,'') [login],
+    isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno,'') as username, 
+	isnull(b.IDArea,0) as IDArea, isnull(e.AreaName,'') as areaName, 1 as wgId, 'systemTranslated_WorkGroup' as wg,
+	datepart(yyyy,date) as year, datepart(mm,date) as mounth, datepart(dd,date) as day,
+	datepart(hh,date) as hour, datepart(mi,date) as min
+	from callOut A
+	left join cccamps b on a.cam_id = b.cam_id
+	left join cctipocalifout c on A.calif_id = c.calif_id
+	left join ccUserView d on a.User_id = d.User_id
+	left join ccRIACat_Areas e on b.IDArea = e.IDArea
+
+	update A set A.areaId = B.IDArea, A.area = C.AreaName
+    from RepOutDispositions A
+    inner join ccRIAAreaWorkGroup B on A.workgroupId = B.IDWG
+    inner join ccRIACat_Areas C on C.IDArea = B.IDArea
+    where [date] >= @from AND [date] < @to and areaId=0 
+    
+    update a set a.workgroupId = isnull(b.IDWG,0), a.wg = isnull(b.WGName, '-')
 	from RepOutDispositions a
-	left join cccamps b 
-	on a.campaignId = b.cam_id
+	left join #detailWorkGroup b	
+    on a.campaignId = b.idCampaing
 	where [date] >= @from AND [date] < @to
 
-	update a set disposition = isnull(description,'systemTranslated_Dispositionless'), disposition_count = isnull(description,'systemTranslated_Dispositionless') + '_Count'
-	from RepOutDispositions a
-	left join cctipocalifout b 
-	on a.dispositionId = b.calif_id
-	where [date] >= @from AND [date] < @to
-
-	update a set username = isnull(login,'')
-	from RepOutDispositions a
-	left join ccUserView b 
-	on a.userId = b.user_id
-	where [date] >= @from AND [date] < @to
-
-	update a set agentName = isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno,'')
-	from RepOutDispositions a
-	left join ccUserView b 
-	on a.userId = b.user_id
-	where [date] >= @from AND [date] < @to
-
-	update a set area = isnull(AreaName,'')
-	from RepOutDispositions a
-	left join ccRIACat_Areas b 
-	on a.areaId = b.IDArea
-	where [date] >= @from AND [date] < @to
-
-	update a set a.workgroupId = isnull(b.IDWG,0), a.wg = isnull(b.WGName, '-')
-	from RepOutDispositions a
-	left join #detailWorkGroup b
-	on a.campaignId = b.idCampaing
-	
 	drop table #detailWorkGroup
 
 end

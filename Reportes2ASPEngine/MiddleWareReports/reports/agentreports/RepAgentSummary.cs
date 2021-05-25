@@ -1,6 +1,6 @@
 ﻿namespace MiddleWareReports.reports.agentreports
 {
-    class RepAgentSummary : GenericReport
+    internal class RepAgentSummary : GenericReport
     {
     }
 }

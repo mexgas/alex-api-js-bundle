@@ -69,7 +69,11 @@ namespace MiddleWareReports
         /// <returns>-1 if the object is smaller, 0 if it is equal, or 1 if it is greater</returns>
         public int CompareTo(ChartItem other)
         {
-            if (ReferenceEquals(null, other)) return 1;
+            if (ReferenceEquals(null, other))
+            {
+                return 1;
+            }
+
             return sortValue.CompareTo(other.sortValue);
         }
 
@@ -80,8 +84,16 @@ namespace MiddleWareReports
         /// <returns>true if it is equal, false if it is different</returns>
         public bool Equals(ChartItem other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return sortValue.Equals(other.sortValue);
         }
     }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
     public class RepInDispositions : GenericReport
     {

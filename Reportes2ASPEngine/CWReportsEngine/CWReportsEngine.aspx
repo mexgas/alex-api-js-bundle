@@ -1,1 +1,1 @@
-﻿<%@ page language="C#" contenttype="text/xml" CodeFile="CWReportsEngine.aspx.cs" inherits="CWReportsEngine" %>
+﻿<%@ Page Language="C#" ContentType="text/xml" CodeFile="CWReportsEngine.aspx.cs" Inherits="CWReportsEngine" %>

@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
-    class RepSpecialCallKeyHistory : GenericReport
+    internal class RepSpecialCallKeyHistory : GenericReport
     {
     }
 }

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
-    class RepSpececialAbndPercentage : GenericReport
+    internal class RepSpececialAbndPercentage : GenericReport
     {
     }
 }

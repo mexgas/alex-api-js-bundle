@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
-    class RepAVRSRateDetail : GenericReport
+    internal class RepAVRSRateDetail : GenericReport
     {
     }
 }

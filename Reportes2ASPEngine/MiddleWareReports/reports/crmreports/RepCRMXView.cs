@@ -3,24 +3,23 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml;
-using System.Xml.Linq;
-using System.Globalization;
 
 namespace MiddleWareReports
 {
     public class CRMxView : GenericReport
     {
         private CRMxDatabase crmDb;
+
         //public static int numColums = 0;
         //public static System.Collections.Hashtable nombColums = new System.Collections.Hashtable();
         public CRMxView()
             : base()
         {
             crmDb = new CRMxDatabase();
-
         }
 
         protected override XmlElement getCRMFields(System.Xml.XmlDocument xml, System.Collections.Specialized.NameValueCollection parameters, short process)
@@ -31,7 +30,6 @@ namespace MiddleWareReports
             reportParams.Add("id", process.ToString());
 
             //DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
-
 
             string crmTemplateId = parameters["crmtemplateId"];
             parameters.Remove("crmtemplateId");
@@ -86,9 +84,14 @@ namespace MiddleWareReports
             //parameters.Remove("TemplateId");
             getCRMTemplates(xml, mainElement, process);
             if (columns.HasChildNodes)
+            {
                 crmFields.AppendChild(columns);
+            }
+
             if (crmFields.HasChildNodes)
+            {
                 mainElement.AppendChild(crmFields);
+            }
 
             return mainElement;
         }
@@ -97,7 +100,6 @@ namespace MiddleWareReports
         {
             NameValueCollection reportParams = new NameValueCollection();
             reportParams.Add("id", process.ToString());
-
 
             DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
 
@@ -123,15 +125,13 @@ namespace MiddleWareReports
                 }
             }
             if (element != null && element.HasChildNodes)
+            {
                 mainElement.AppendChild(element);
-
-
+            }
         }
-
 
         protected override XmlElement getFiltersByCRMTemplate(XmlDocument xml, string templateId)
         {
-
             NameValueCollection reportParams = new NameValueCollection(); // Get Campaign Info
             reportParams.Add("action", "0");
             reportParams.Add("type", "1");
@@ -142,7 +142,6 @@ namespace MiddleWareReports
             {
                 campaings.Add(new Abs_Element() { id = row["id"].ToString(), name = row["description"].ToString() });
             }
-
 
             List<Abs_Element> acds = new List<Abs_Element>(); //Get ACD Info
             reportParams.Clear();
@@ -159,7 +158,6 @@ namespace MiddleWareReports
             reportParams.Add("action", "2");
             DataTable crmInfo = crmDb.executeSP("dbo.GetCRMInfo", reportParams);
 
-
             XmlElement crmxFilters = xml.CreateElement("", "CRMxFilters", "");
             string dbColumn = "crmxSource";
             XmlElement campaingsRoot = xml.CreateElement("", "Campaigns", "");  //Create a root for campaigns
@@ -170,7 +168,7 @@ namespace MiddleWareReports
             acdsRoot.SetAttribute("description", TranslatorHelper.getResource("Acds"));
             acdsRoot.SetAttribute("dbColumn", dbColumn);
 
-            Dictionary<String, XmlElement> acdXmls = new Dictionary<string, XmlElement>(); //dictionary to store acd xml element 
+            Dictionary<String, XmlElement> acdXmls = new Dictionary<string, XmlElement>(); //dictionary to store acd xml element
 
             foreach (DataRow serviceRow in crmInfo.Rows)
             {
@@ -205,7 +203,6 @@ namespace MiddleWareReports
                 {
                     string id = currentValue.Split(':')[2];
 
-
                     IEnumerable<Abs_Element> campaignQuery =
                             from camp in campaings
                             where camp.id == id
@@ -219,18 +216,19 @@ namespace MiddleWareReports
                         campaingsRoot.AppendChild(campTemp);
                     }
                 }
-
-
             }
 
             if (acdsRoot.HasChildNodes)
+            {
                 crmxFilters.AppendChild(acdsRoot);
+            }
+
             if (campaingsRoot.HasChildNodes)
+            {
                 crmxFilters.AppendChild(campaingsRoot);
+            }
 
             return crmxFilters;
-
-
         }
 
         protected override DataTable getTableColumns()
@@ -246,7 +244,10 @@ namespace MiddleWareReports
             DateTime dateEndParam = DateTime.Now;
             DateTime dateNow = DateTime.Now;
             if (parameters[""] != null && parameters[""].Length > 0)
+            {
                 dateEndParam = DateTime.Parse(parameters["dateEnd"].ToString(), CultureInfo.CurrentCulture);
+            }
+
             string isDay = "0";
             if (dateEndParam.Year == dateEndParam.Year && dateEndParam.Month == dateEndParam.Month && dateEndParam.Day == dateEndParam.Day)
             {
@@ -259,7 +260,6 @@ namespace MiddleWareReports
             XmlDocument xmlAddFilters = new XmlDocument();
             bool calculateTotals = true;
 
-
             //Add Filrters used by report selected (Note: Fill DBSchema)
             if (addFilters.Length > 0)
             {
@@ -269,14 +269,16 @@ namespace MiddleWareReports
                     case 9010:
                         xmlAddFilters = getCRMFields(parameters, process);
                         break;
+
                     default:
                         xmlAddFilters = getReportFilters(parametersAddFilter, process);
                         break;
                 }
-
             }
             if (parameters["TemplateId"] != null)
+            {
                 parameters.Remove("TemplateId");
+            }
 
             //Get report data (details and totals) via a DB query
             DynamicQuery dynamicQuery = new DynamicQuery(process);
@@ -318,7 +320,6 @@ namespace MiddleWareReports
 
             report.AppendChild(getXmlRows(xmlReport, detailTable, "Rows"));
 
-
             if (calculateTotals)
             {
                 report.AppendChild(getXmlRows(xmlReport, totalsTable, "TotalsRows"));
@@ -348,11 +349,11 @@ namespace MiddleWareReports
                         element.SetAttribute("id", "8");
                         menus.AppendChild(element);
                         break;
-
                 }
                 if (menus.HasChildNodes)
+                {
                     catalogs.AppendChild(menus);
-
+                }
 
                 foreach (XmlNode node in xmlAddFilters.DocumentElement.ChildNodes)
                 {
@@ -363,8 +364,6 @@ namespace MiddleWareReports
                 report.AppendChild(catalogs);
             }
 
-
-
             //Save recent report in DB after xmlReport build
             if (savetemplate.Length > 0)
             {
@@ -372,9 +371,7 @@ namespace MiddleWareReports
             }
 
             return xmlReport;
-
         }
-
 
         protected override XmlElement getXmlRows(XmlDocument xmlReport, DataTable table, string nodeName)
         {
@@ -400,7 +397,6 @@ namespace MiddleWareReports
                             }
                             else
                             {
-
                                 value = TranslatorHelper.formatTime(Convert.ToInt64(value));
                             }
                         }
@@ -421,7 +417,6 @@ namespace MiddleWareReports
                         //if(!string.IsNullOrEmpty(campName))
                         row.AppendChild(el);
                         value = translatedColumns[column.ColumnName];
-
                     }
                 }
                 rows.AppendChild(row);
@@ -437,16 +432,19 @@ namespace MiddleWareReports
             if (value.StartsWith("call:i:"))//Acd
             {
                 if (acds.ContainsKey(split[2]))
+                {
                     campName = acds[split[2]] + "(" + split[3] + ")";
+                }
             }
             else if (value.StartsWith("call:o:"))//Campaign
             {
                 if (campaigns.ContainsKey(split[2]))
+                {
                     campName = campaigns[split[2]];
+                }
             }
             return campName;
         }
-
 
         private Dictionary<string, string> getAcds()
         {
@@ -482,7 +480,6 @@ namespace MiddleWareReports
 
             return res;
         }
-
 
         public override DataTable getDataReport(NameValueCollection parameters, short process)
         {
@@ -521,15 +518,18 @@ namespace MiddleWareReports
                 {
                     string[] split = rowValue.Split(':');
                     if (acds.ContainsKey(split[2]) && split[3] != null)
+                    {
                         row["crmxSource"] = acds[split[2]] + "(" + split[3] + ")";
+                    }
                 }
                 else if (!String.IsNullOrEmpty(rowValue) && rowValue.StartsWith("call:o:"))
                 {
                     string[] split = rowValue.Split(':');
                     if (campaigns.ContainsKey(split[2]))
+                    {
                         row["crmxSource"] = campaigns[split[2]];
+                    }
                 }
-
             }
 
             List<String> repeatedColumns = new List<string>();
@@ -575,7 +575,6 @@ namespace MiddleWareReports
             object[] systemColumns = new object[repeatedColumns.Count];
             foreach (DataRow row in detailTable.Rows)
             {
-
                 for (int i = 0; i < detailTable.Columns.Count; i++)
                 {
                     if (!string.IsNullOrEmpty(totalsTable.Columns[i].ColumnName))
@@ -591,7 +590,6 @@ namespace MiddleWareReports
                             i--;
                         }
                     }
-
                 }
                 union.LoadDataRow(systemColumns, true);
             }
@@ -609,7 +607,11 @@ namespace MiddleWareReports
 
         protected override DataTable executeReader(NameValueCollection parameters, bool addPaging, bool isDetail, DynamicQuery dynamicQuery, short process)
         {
-            if (dynamicQuery.IsTotals && dynamicQuery.TotalColumns.Length == 0 && !dynamicQuery.IsPivotReport) return null;
+            if (dynamicQuery.IsTotals && dynamicQuery.TotalColumns.Length == 0 && !dynamicQuery.IsPivotReport)
+            {
+                return null;
+            }
+
             statementBuilder(parameters, true, addPaging, false, isDetail, dynamicQuery, process, "crmx_Date");
             return crmDb.executeDynamicQuery(dynamicQuery.Stmt, dynamicQuery.Parameters, dynamicQuery.Values);
         }
@@ -630,7 +632,7 @@ namespace MiddleWareReports
                         {
                             if (PAGE_SIZE <= totalPages && totalPages > 0)
                             {
-                                double temp = (double)totalPages / (double)PAGE_SIZE;
+                                double temp = totalPages / (double)PAGE_SIZE;
                                 temp = Math.Ceiling(temp);
                                 totalPages = (int)temp;
                             }

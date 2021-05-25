@@ -1,22 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.IO;
-using System.Text;
-using System.Collections.Specialized;
-using System.Reflection;
 
 namespace MiddleWareReports
 {
     #region PdfReport
+
     /// <summary>
     /// Class that transforms the information of a DataTable into a pdf and returns its output as bytes
     /// </summary>
     public class PdfReport : ReportFormat
     {
         private string reportName;
-       
+
         /// <summary>
         /// Transforms the data of a DataTable into a pdf that has the passed report name paramater as a header
         /// </summary>
@@ -29,8 +24,11 @@ namespace MiddleWareReports
             EmptyResultException.dataTableIsEmpty(data);
             int nRows = 0;
             this.reportName = reportName;
-            if(translate)
+            if (translate)
+            {
                 TranslatorHelper.removeUntranslatedTableColumns(data, process);
+            }
+
             for (int i = 0; i < data.Columns.Count; i++)
             {
                 string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
@@ -44,7 +42,7 @@ namespace MiddleWareReports
                     data.Columns[i].ColumnName = nameTranslated + i;
                 }
             }
-            
+
             DataTable dataClone = data.Clone();
             for (int i = 0; i < data.Columns.Count; i++)
             {
@@ -73,18 +71,19 @@ namespace MiddleWareReports
                         }
                     }
                 }
-
             }
 
             foreach (DataRow row in data.Rows)
-                dataClone.ImportRow(row);           
+            {
+                dataClone.ImportRow(row);
+            }
             /**/
 
             return generatePDF(dataClone, reportName, logoFileName, nRows, process);
         }
 
         /// <summary>
-        /// Creates a PDF file that is first streamed into a buffer and then the contents of this 
+        /// Creates a PDF file that is first streamed into a buffer and then the contents of this
         /// buffer are retrieved into an array of bytes.
         /// </summary>
         /// <param name="data">The DataTable that provides the information</param>
@@ -96,6 +95,6 @@ namespace MiddleWareReports
             return renderer.getPdfRenderBytes(data, reportName, logoFileName, nRows, process);
         }
 
-    #endregion
+        #endregion PdfReport
     }
 }

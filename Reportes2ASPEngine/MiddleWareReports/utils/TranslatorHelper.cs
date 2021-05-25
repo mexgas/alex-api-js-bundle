@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Globalization;
-using System.Data;
 using System.Collections.Specialized;
-using System.Xml;
-using System.Resources;
+using System.Data;
+using System.Globalization;
 using System.Reflection;
-using System.IO;
+using System.Threading;
 
 namespace MiddleWareReports
 {
@@ -58,7 +54,7 @@ namespace MiddleWareReports
             foreach (DataColumn column in tableColumns)
             {
                 string property = getResourceProperty(column.ColumnName, out isTranslated, isDetail);
-                //Only add columns that can be viewable in the interface 
+                //Only add columns that can be viewable in the interface
                 if (((!property.Contains("_")) || (isPivotColumn(property) && !property.StartsWith("systemTranslated_"))) && !(process < 10000 && process >= 9000)) //Don't show not translated columns
                 {
                     translatedColumns.Add(column.ColumnName, getResourceProperty(column.ColumnName, out isTranslated, isDetail));
@@ -70,10 +66,14 @@ namespace MiddleWareReports
                         string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
                         property = getResourceProperty(column_name, out isTranslated, isDetail);
                         if (!property.Contains("_")) //Don't show not translated columns
+                        {
                             translatedColumns.Add(column.ColumnName, property);
+                        }
                     }
                     else if (column.ColumnName != "rownum")
+                    {
                         translatedColumns.Add(column.ColumnName, column.ColumnName);
+                    }
                 }
             }
             return translatedColumns;
@@ -119,7 +119,7 @@ namespace MiddleWareReports
         public static string formatDate(DateTime date)
         {
             return string.Format(Thread.CurrentThread.CurrentCulture.DateTimeFormat.FullDateTimePattern, date);
-        }       
+        }
 
         public static string formatTime(long seconds)
         {
@@ -134,7 +134,7 @@ namespace MiddleWareReports
         /// <summary>
         /// Parses database values to current culture format if necessary.
         /// </summary>
-        /// <param name="dbValue">The value that must be parsed</param>       
+        /// <param name="dbValue">The value that must be parsed</param>
         /// <returns>The value of the object in the current culture format</returns>
         public static string parseDbValue(object dbValue)
         {
@@ -158,8 +158,6 @@ namespace MiddleWareReports
             }
             return value;
         }
-
-
 
         /// <summary>
         /// Tries to get the specified property from the current culture resources file
@@ -202,7 +200,6 @@ namespace MiddleWareReports
                 {
                     value = propertyName.Trim();
                 }
-
             }
             catch (Exception) { }
             return value;
@@ -263,7 +260,7 @@ namespace MiddleWareReports
             {
                 bool isTranslated;
                 string property = getResourceProperty(column.ColumnName, out isTranslated);
-                //Only add columns that can be viewable in the interface 
+                //Only add columns that can be viewable in the interface
                 if ((!property.Contains("_")) || isPivotColumn(property))
                 {
                     continue;
@@ -275,10 +272,14 @@ namespace MiddleWareReports
                         string column_name = column.ColumnName != "crmx_Date" && column.ColumnName.StartsWith("crmx_") ? column.ColumnName.Replace("crmx_", "") : column.ColumnName;
                         property = getResourceProperty(column_name, out isTranslated);
                         if (!property.Contains("_")) //Don't show not translated columns
+                        {
                             continue;
+                        }
                     }
                     else if (column.ColumnName != "rownum")
+                    {
                         continue;
+                    }
                 }
                 else
                 {
@@ -290,14 +291,13 @@ namespace MiddleWareReports
             {
                 table.Columns.Remove(column);
             }
-
         }
 
         /// <summary>
         /// Gets the translation of column in case pivot
         /// </summary>
-        /// <param name="column">The column name to evaluate</param>  
-        /// <returns>The value translated in case necessary or the original one</returns> 
+        /// <param name="column">The column name to evaluate</param>
+        /// <returns>The value translated in case necessary or the original one</returns>
         public static string getPivotTranslatedColumns(string columnName)
         {
             bool isTranslated;
@@ -309,13 +309,10 @@ namespace MiddleWareReports
 
             if (isTranslated)
             {
-
                 columnName = partTraslated;
             }
-
             else
             {
-
                 if (columnName.EndsWith("_Count") || columnName.EndsWith("_Time") || columnName.EndsWith("_Avg") || columnName.EndsWith("_UnCount"))
                 {
                     partNotToTranslate = columnName.Substring(0, columnName.LastIndexOf("_"));
@@ -323,13 +320,14 @@ namespace MiddleWareReports
 
                     partTraslated = TranslatorHelper.getResourceProperty(partToTranslate, out isTranslated, false);
                     if (isTranslated)
+                    {
                         columnName = partNotToTranslate + partTraslated.Replace('_', ' ');
+                    }
                 }
             }
 
             return columnName;
         }
-
 
         /// <summary>
         /// Indicates if the specified column is a pivot column

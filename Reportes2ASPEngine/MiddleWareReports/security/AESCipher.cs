@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Text;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace MiddleWareReports
 {
@@ -13,21 +13,38 @@ namespace MiddleWareReports
         private static byte getByte(int a, int b)
         {
             if (a >= 48 && a <= 57)
+            {
                 a = a - 48;
+            }
+
             if (a >= 65 && a <= 70)
+            {
                 a = a - 55;
+            }
+
             if (a >= 97 && a <= 102)
+            {
                 a = a - 87;
+            }
 
             if (b >= 48 && b <= 57)
+            {
                 b = b - 48;
+            }
+
             if (b >= 65 && b <= 70)
+            {
                 b = b - 55;
+            }
+
             if (b >= 97 && b <= 102)
+            {
                 b = b - 87;
+            }
 
             return (byte)((a << 4) + b);
         }
+
         public static string transform(string dato, string llave, bool bEncripta)
         {
             String resultado;
@@ -46,11 +63,15 @@ namespace MiddleWareReports
             textConverter = new UTF8Encoding();
             bKey = textConverter.GetBytes(llave);
             if (bKey.Length != KEY_LEN)
+            {
                 Array.Resize(ref bKey, KEY_LEN);
+            }
 
             //Convert data in array of bytes
             if (bEncripta)
+            {
                 bInput = textConverter.GetBytes(dato);
+            }
             else
             {
                 char[] ss;
@@ -59,10 +80,14 @@ namespace MiddleWareReports
 
                 //Invalid length
                 if (bInput.Length % BLOCK_LEN != 0)
+                {
                     return "";
+                }
 
                 for (int i = 0; i < ss.Length - 1; i = i + 2)
+                {
                     bInput[i / 2] = getByte(ss[i], ss[i + 1]);
+                }
             }
 
             //Objects created
@@ -84,7 +109,9 @@ namespace MiddleWareReports
                 bOutput = myMemoryStream.ToArray();
                 StringBuilder b = new StringBuilder((int)myMemoryStream.Length);
                 for (int j = 0; j < bOutput.Length; j++)
+                {
                     b.Append(bOutput[j].ToString("x2"));
+                }
 
                 resultado = b.ToString();
             }

@@ -1,67 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MiddleWareReports.db;
 using System.Collections.Specialized;
 using System.Data;
-using System.Linq;
-using System.Text;
 using System.Xml;
-using MiddleWareReports.db;
-using System.Xml.Linq;
-
 
 namespace MiddleWareReports
 {
     public class RepCRMXTemplates : GenericReport
     {
         private CRMxDatabase crmDb;
+
         public RepCRMXTemplates() : base()
         {
             crmDb = new CRMxDatabase();
-
         }
 
         protected override XmlElement getCRMFields(XmlDocument xml, NameValueCollection parameters, short process)
         {
             XmlElement mainElement = xml.CreateElement("", "Filters", "");
             NameValueCollection reportParams = new NameValueCollection();
-           
-                reportParams.Add("id", process.ToString());
 
-                DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
+            reportParams.Add("id", process.ToString());
 
+            DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
 
+            foreach (DataRow filterRow in filters.Rows)
+            {
+                string xmlParentName = filterRow["xmlParentNode"].ToString();
+                string xmlChildName = filterRow["xmlChildNode"].ToString();
+                XmlElement element = xml.CreateElement("", xmlParentName, "");
+                element.SetAttribute("description", xmlParentName);
 
-                foreach (DataRow filterRow in filters.Rows)
+                reportParams.Clear();
+                reportParams.Add("action", "0");
+                DataTable catalog = crmDb.executeSP("dbo.getCRMInfo", reportParams);
+                foreach (DataRow filterDataRow in catalog.Rows)
                 {
-                    string xmlParentName = filterRow["xmlParentNode"].ToString();
-                    string xmlChildName = filterRow["xmlChildNode"].ToString();
-                    XmlElement element = xml.CreateElement("", xmlParentName, "");
-                    element.SetAttribute("description",xmlParentName);
+                    XmlElement childElement = xml.CreateElement("", xmlChildName, "");
 
-                    reportParams.Clear();
-                    reportParams.Add("action", "0");
-                    DataTable catalog = crmDb.executeSP("dbo.getCRMInfo", reportParams);
-                    foreach (DataRow filterDataRow in catalog.Rows)
-                    {
-                        XmlElement childElement = xml.CreateElement("", xmlChildName, "");
-                        
-                        childElement.SetAttribute("description", filterDataRow["description"].ToString());
-                        childElement.SetAttribute("id", filterDataRow["id"].ToString());
-                        dbColumn = filterDataRow["dbColumn"].ToString();
-                        element.AppendChild(childElement);
-                    }
-                    element.SetAttribute("dbColumn", dbColumn);
-                    if (catalog.Rows.Count > 0)
-                       mainElement.AppendChild(element);
+                    childElement.SetAttribute("description", filterDataRow["description"].ToString());
+                    childElement.SetAttribute("id", filterDataRow["id"].ToString());
+                    dbColumn = filterDataRow["dbColumn"].ToString();
+                    element.AppendChild(childElement);
                 }
-
+                element.SetAttribute("dbColumn", dbColumn);
+                if (catalog.Rows.Count > 0)
+                {
+                    mainElement.AppendChild(element);
+                }
+            }
 
             return mainElement;
         }
-
-
-        
-
 
         ///// <summary>
         ///// Obtains the report´s filter menus used to display the search options of the report
@@ -90,7 +79,6 @@ namespace MiddleWareReports
         //    return filtersMenus;
         //}
 
-
         ///// <summary>
         ///// Obtains report´s filters used for search queries
         ///// </summary>
@@ -99,7 +87,6 @@ namespace MiddleWareReports
         ///// <returns>A xml list containing the filters and the values that can be used in the report´s search queries</returns>
         //public override XmlDocument getReportFilters(NameValueCollection parameters, short process)
         //{
-
         //    string complementColumns = "";
         //    changeCulture();
 
@@ -107,7 +94,6 @@ namespace MiddleWareReports
         //    xml.AppendChild(xml.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
         //    XmlElement catalogs = xml.CreateElement("", "Catalogs", "");
         //    xml.AppendChild(catalogs);
-
 
         //    XmlElement filters = getFilters(xml, parameters, process, complementColumns);
         //    XmlElement menus = getFiltersMenus(xml, parameters, process);
@@ -119,11 +105,8 @@ namespace MiddleWareReports
         //    xml.ChildNodes.Item(1).AppendChild(menus);
         //    // xml.ChildNodes.Item(1).AppendChild(CRMTemplates);
 
-
         //    return xml;
 
         //}
-
-
     }
 }

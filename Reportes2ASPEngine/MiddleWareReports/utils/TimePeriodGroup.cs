@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace MiddleWareReports
 {
@@ -13,7 +12,6 @@ namespace MiddleWareReports
     /// </summary>
     public static class TimePeriodGroup
     {
-
         /// <summary>
         /// Test if the column is part of the TimePeriod Enum
         /// </summary>
@@ -57,13 +55,18 @@ namespace MiddleWareReports
             if (t <= TimePeriod.H)
             {
                 if (isPivotReport)
+                {
                     return " convert(smalldatetime,convert(varchar(14),min([date]),121) + '' + ''cast(" + GetStringValue(timeDate).Replace("'", "") + " as varchar)'' + '') as [date]";
+                }
 
                 return " convert(smalldatetime,convert(varchar(14),min([date]),121) + " + GetStringValue(timeDate) + ") as [date]";
             }
 
             if (t == TimePeriod.D)
+            {
                 return GetStringValue(timeDate) + " as [date]";
+            }
+
             if (t == TimePeriod.PE)
             {
                 string dateStart = DateTime.Parse(values["@dateStart"]).ToString(currentCulture);
@@ -71,9 +74,11 @@ namespace MiddleWareReports
                 return String.Format("'{0} - {1}' as [date]", dateStart, dateEnd);
             }
             if (t == TimePeriod.M)
+            {
                 return GetStringValue(timeDate) + " as [date]";
-            return "min(date) as [date]";
+            }
 
+            return "min(date) as [date]";
         }
 
         /// <summary>
@@ -147,16 +152,19 @@ namespace MiddleWareReports
                 TimePeriodSelectValue timePeriodSelect = (TimePeriodSelectValue)Enum.Parse(typeof(TimePeriodSelectValue), GetStringValue(t), true);
                 groupby += ", [hour], " + GetStringValue(timePeriodSelect);
             }
-            else if (t == TimePeriod.M) {
+            else if (t == TimePeriod.M)
+            {
                 groupby += ",CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + '-01', 121)";
             }
-            else if (t == TimePeriod.H) groupby += ", [hour]";
+            else if (t == TimePeriod.H)
+            {
+                groupby += ", [hour]";
+            }
 
             groupby += ", " + groupByColumns;
 
             return groupby;
         }
-
 
         public static LinkedList<string> columnsTimePeriod(LinkedList<string> columns, string originalTimePeriodCol, string complementGroupBy, bool isPivotReport, NameValueCollection values, CultureInfo currentCulture)
         {
@@ -216,7 +224,9 @@ namespace MiddleWareReports
                 if (isFilterColumn)
                 {
                     if (columns.Contains(pair.Key) || columns.Contains("_"))
+                    {
                         columnsAux.AddLast(pair.Value);
+                    }
                 }
                 else
                 {
@@ -225,7 +235,6 @@ namespace MiddleWareReports
             }
             return columnsAux;
         }
-
 
         /// <summary>
         /// Searches the languages resources for the translation of the time period keyword
@@ -276,20 +285,28 @@ namespace MiddleWareReports
     {
         [StringValue("qh")]
         QH = 1,  //Quarter hour
+
         [StringValue("hh")]
-        HH = 2,   //Half hour  
+        HH = 2,   //Half hour
+
         [StringValue("h")]
         H = 3,   //Hour
+
         [StringValue("d")]
         D = 4,   //Day
+
         [StringValue("m")]
-        M = 5,   //Month 
+        M = 5,   //Month
+
         [StringValue("y")]
         Y = 6,   //Year
+
         [StringValue("tr")]
         TR = 7,   //Trimester
+
         [StringValue("se")]
-        SE = 8,   //Semester   
+        SE = 8,   //Semester
+
         [StringValue("pe")]
         PE = 9   //Period
     }
@@ -301,34 +318,43 @@ namespace MiddleWareReports
     {
         [StringValue("(CASE WHEN minutes < 15 THEN 1 WHEN minutes <30 THEN 2 WHEN minutes <45 THEN 3 ELSE 4 END)")]
         QH,
+
         [StringValue("(CASE WHEN minutes < 30 THEN 1 ELSE 2 END)")]
         HH,
+
         [StringValue("hour")]
         H,
+
         [StringValue("day")]
         D,
+
         [StringValue("month")]
         M,
+
         [StringValue("year")]
         Y,
+
         [StringValue("(CASE WHEN month <= 3 THEN 1 WHEN month <=6 THEN 2 WHEN month <= 9 THEN 3 ELSE 4 END)")]
         TR
     }
-
-
 
     public enum TimePeriodDateValue
     {
         [StringValue("(CASE WHEN min(minutes) < 15 THEN '00' WHEN min(minutes) < 30 THEN '15' WHEN min(minutes) < 45 THEN '30' ELSE '45' END)")]
         QH,
+
         [StringValue("(CASE WHEN min(minutes) < 30 THEN '00' ELSE '30' END)")]
         HH,
+
         [StringValue("'00'")]
         H,
+
         [StringValue("convert(datetime,convert(varchar(11),min(date)))")]
         D,
+
         [StringValue("")]
         PE,
+
         [StringValue("CONVERT(smalldatetime, CONVERT(varchar(7), [date], 121) + '-01', 121)")]
         M
     }

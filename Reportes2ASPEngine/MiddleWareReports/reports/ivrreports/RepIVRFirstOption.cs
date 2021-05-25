@@ -1,11 +1,9 @@
-﻿using System;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
     /// <summary>
     /// Represents the Table RepIVRFirstOption in the reports application
     /// </summary>
-    class RepIVRFirstOption : GenericReport
+    internal class RepIVRFirstOption : GenericReport
     {
     }
 }

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Text;
-using System.Collections;
+﻿using System.Collections;
 using System.Data;
 
 namespace MiddleWareReports
 {
-    static class DBSchema
+    internal static class DBSchema
     {
         private static Hashtable dataType = new Hashtable();
 

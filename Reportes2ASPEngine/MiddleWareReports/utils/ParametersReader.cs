@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Specialized;
 
 namespace MiddleWareReports
@@ -22,7 +19,7 @@ namespace MiddleWareReports
             paramReader.Clear();
             foreach (string param in parameters)
             {
-                paramReader.Add(param,parameters[param]);
+                paramReader.Add(param, parameters[param]);
             }
         }
 
@@ -38,8 +35,10 @@ namespace MiddleWareReports
             if (paramReader.ContainsKey(parameter))
             {
                 param = (string)paramReader[parameter];
-                if(remove)
+                if (remove)
+                {
                     paramReader.Remove(parameter);
+                }
             }
             return param;
         }
@@ -51,7 +50,7 @@ namespace MiddleWareReports
         public static NameValueCollection getAllParameters()
         {
             NameValueCollection allParams = new NameValueCollection();
-            foreach(DictionaryEntry param in paramReader)
+            foreach (DictionaryEntry param in paramReader)
             {
                 allParams.Add(param.Key.ToString(), param.Value.ToString());
             }

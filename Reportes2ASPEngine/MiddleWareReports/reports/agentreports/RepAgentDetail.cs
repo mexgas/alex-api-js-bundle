@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
     public class RepAgentDetail : GenericReport
     {

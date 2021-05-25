@@ -1,33 +1,31 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections.Specialized;
 using System.Data;
+using System.Text;
 using System.Xml;
 
 namespace MiddleWareReports
 {
     /// <summary>
-    /// Class that helps to transform a DataTable into XMLs 
+    /// Class that helps to transform a DataTable into XMLs
     /// that can be consumed to create charts.
     /// </summary>
     public static class Chart
     {
-
-        const string YEAR = "year";
-        const string MONTH = "month";
-        const string DAY = "day";
-        const string HOUR = "hour";
-        const string MINUTES = "minutes";
-        const string GROUPBYYEAR = "year";
-        const string GROUPBYMONTH = "year,month";
-        const string GROUPBYDAY = "year,month,day";
-        const string GROUPBYHOUR = "year,month,day,hour";
-        const string GROUPBYMINUTES = "year,month,day,hour,minutes";
+        private const string YEAR = "year";
+        private const string MONTH = "month";
+        private const string DAY = "day";
+        private const string HOUR = "hour";
+        private const string MINUTES = "minutes";
+        private const string GROUPBYYEAR = "year";
+        private const string GROUPBYMONTH = "year,month";
+        private const string GROUPBYDAY = "year,month,day";
+        private const string GROUPBYHOUR = "year,month,day,hour";
+        private const string GROUPBYMINUTES = "year,month,day,hour,minutes";
 
         /// <summary>
-        /// Transforms a DataTable into a chartXml that has multiple series. The first column is considered 
+        /// Transforms a DataTable into a chartXml that has multiple series. The first column is considered
         /// the x-axis while the last column is intended to be the y-axis value of the inner columns that act as a group.
         /// </summary>
         /// <param name="tableData">The DataTable to be transformed into a chart xml with multiple series.</param>
@@ -67,8 +65,11 @@ namespace MiddleWareReports
 
                 LinkedList<string> groupByDates = new LinkedList<string>();
                 if (chartype != 3)
+                {
                     checkIfDateGroupBy(columns); //Determines if the table is ordered on a certain date group
-                string xAxisGroupByValue = transformToGroupByColumn(xAxis, groupByDates); // x-axis value 
+                }
+
+                string xAxisGroupByValue = transformToGroupByColumn(xAxis, groupByDates); // x-axis value
                 XmlElement xfieldXml = null;
 
                 StringBuilder yFieldBuilder = new StringBuilder();
@@ -101,13 +102,11 @@ namespace MiddleWareReports
 
                 foreach (DataRow row in tableData.Rows)
                 {
-
                     StringBuilder yValueBuilder = new StringBuilder();
                     int countSum = -1;
 
                     foreach (string col in columns)
                     {
-
                         string tempColumn = valueOfGroupByColumn(xAxis, groupByDates, row);
 
                         //We have move into the x-axis to another point
@@ -152,7 +151,6 @@ namespace MiddleWareReports
                                 {
                                     countSum = i;
                                 }
-
                             }
                         }
                     }
@@ -201,7 +199,6 @@ namespace MiddleWareReports
                 {
                     xml.ChildNodes.Item(1).AppendChild(seriesNode);
                 }
-
             }
             return xml;
         }
@@ -211,7 +208,7 @@ namespace MiddleWareReports
         /// the x-axis while the last column is considered to be its value in the y-axis.
         /// </summary>
         /// <remarks>
-        /// The following columns: year,month,day,hour and minutes are grouped automatically and considered as 
+        /// The following columns: year,month,day,hour and minutes are grouped automatically and considered as
         /// only one single column.
         /// </remarks>
         /// <param name="tableData">The DataTable to be transformed into a chart xml with only one serie</param>
@@ -262,7 +259,6 @@ namespace MiddleWareReports
 
                 foreach (DataRow row in tableData.Rows)
                 {
-
                     StringBuilder xValue = new StringBuilder();
 
                     //All the columns except the last one are combined into the x-axis
@@ -277,7 +273,9 @@ namespace MiddleWareReports
                                 string valueTranslated;
                                 valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
                                 if (isTranslated)
+                                {
                                     value = valueTranslated;
+                                }
                             }
                             xValue.Append(string.Format("{0}-", value));
                         }
@@ -318,7 +316,7 @@ namespace MiddleWareReports
         /// If the xAxis column is part of the date columns, it is only considered once in the final value
         /// </remarks>
         /// <param name="xAxis">Column considered the x-axis</param>
-        /// <param name="dateColumns">Group of columns forming a date</param>        
+        /// <param name="dateColumns">Group of columns forming a date</param>
         /// <returns>The value of appending all the columns with a '-'</returns>
         private static string transformToGroupByColumn(string xAxis, LinkedList<string> dateColumns)
         {
@@ -346,7 +344,7 @@ namespace MiddleWareReports
         }
 
         /// <summary>
-        /// Method that gets the value of the group by clause as if there was a column named after it. 
+        /// Method that gets the value of the group by clause as if there was a column named after it.
         /// If a time period column is part of the xAxis, its value is only place once.
         /// </summary>
         /// <param name="xAxis">Value of the xAxis</param>
@@ -385,7 +383,7 @@ namespace MiddleWareReports
         }
 
         /// <summary>
-        /// Method that checks if a table contains some key columns that define a time group as specified in the 
+        /// Method that checks if a table contains some key columns that define a time group as specified in the
         /// reports database schema.
         /// </summary>
         /// <remarks>

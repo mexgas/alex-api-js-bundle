@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
     /// <summary>
     /// Represents the Table RepInChangeFlow in the reports application

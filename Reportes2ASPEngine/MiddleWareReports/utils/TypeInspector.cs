@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Text.RegularExpressions;
-using System.Text;
 using System.Collections;
 using System.Data;
+using System.Text.RegularExpressions;
 
 namespace MiddleWareReports
 {
     /// <summary>
     /// Class that helps to infer the type of a passed value as a string
     /// </summary>
-    static class TypeInspector
+    internal static class TypeInspector
     {
         private static Hashtable dbTypeTable;
 

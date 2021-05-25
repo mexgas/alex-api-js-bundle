@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Data;
-using System.Data.SqlClient;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections.Specialized;
+using System.Data;
+using System.Text;
 
 namespace MiddleWareReports
 {
@@ -18,7 +17,7 @@ namespace MiddleWareReports
         public bool UseSignFormat { get; set; }
 
         /// <summary>
-        /// Given a datatable and a reportname, it transforms the contents of the DataTable into 
+        /// Given a datatable and a reportname, it transforms the contents of the DataTable into
         /// an csv file and gives its output as bytes.
         /// </summary>
         /// <param name="data">The DataTable to be transformed</param>
@@ -40,7 +39,7 @@ namespace MiddleWareReports
                 LinkedList<string> columnsNames = new LinkedList<string>();
                 LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
 
-                //Retrieve column schema into a DataTable.                
+                //Retrieve column schema into a DataTable.
                 foreach (DataColumn column in data.Columns)
                 {
                     //Save column name if its viewable
@@ -81,8 +80,8 @@ namespace MiddleWareReports
                 String temp = e.Message;
             }
 
-            //Add BOM byte to display correctly foreign characters in UTF-8 
-            //Source: https://en.wikipedia.org/wiki/Byte_order_mark 
+            //Add BOM byte to display correctly foreign characters in UTF-8
+            //Source: https://en.wikipedia.org/wiki/Byte_order_mark
             byte[] bBOM = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] bContent = System.Text.Encoding.UTF8.GetBytes(output.ToString());
             byte[] bToWrite = new byte[bBOM.Length + bContent.Length];
@@ -128,21 +127,19 @@ namespace MiddleWareReports
                         }
                     }
                 }
-
             }
             csv.AppendLine();
-            csv.AppendLine();                              
+            csv.AppendLine();
             foreach (string header in headers)
             {
-
                 if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
                 {
                     csv.Append(string.Format("{0},", translatedColumns[header]));
                 }
                 else
-                {                    
+                {
                     csv.Append(string.Format("{0},", header));
-                }                
+                }
             }
 
             //Place Rows
@@ -159,9 +156,13 @@ namespace MiddleWareReports
                         value = TranslatorHelper.parseDbValue(value);
 
                         if (i == 0)
+                        {
                             csv.Append(string.Format("{0}\"{1}\"", UseSignFormat ? "=" : "", value));
+                        }
                         else
+                        {
                             csv.Append(string.Format(",{0}\"{1}\"", UseSignFormat ? "=" : "", value));
+                        }
                     }
                     i++;
                 }

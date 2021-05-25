@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Web;
 
 namespace MiddleWareReports
@@ -8,7 +7,7 @@ namespace MiddleWareReports
     /// Class that helps into managing some variables of a HttpRequest
     /// </summary>
     public static class RequestHelper
-    {       
+    {
         /// <summary>
         /// Creates a deep copy of the query parameters of a HttpRequest
         /// </summary>
@@ -23,10 +22,9 @@ namespace MiddleWareReports
                 foreach (string key in paramsCollection)
                 {
                     newCollection.Add(key, paramsCollection[key]);
-                }              
+                }
             }
             return newCollection;
-          
         }
     }
 }

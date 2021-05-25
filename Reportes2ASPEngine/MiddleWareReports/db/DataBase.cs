@@ -1,9 +1,9 @@
-﻿using System;
-using System.Data.SqlClient;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Specialized;
 using System.Data;
+using System.Data.SqlClient;
 using System.Text;
-using Microsoft.Win32;
 
 namespace MiddleWareReports
 {
@@ -11,19 +11,17 @@ namespace MiddleWareReports
     {
         protected string connectionString;
         private static SqlConnectionStringBuilder csb = null;
-   
+
         public DataBase()
         {
-                if (csb == null)
-                {
-                    BuildConnectionString();
-                }
+            if (csb == null)
+            {
+                BuildConnectionString();
+            }
 
-                this.connectionString = csb.ConnectionString;
-
+            this.connectionString = csb.ConnectionString;
         }
 
-        
         public DataBase(bool test)
         {
             this.connectionString = DbTest();
@@ -74,7 +72,6 @@ namespace MiddleWareReports
 
                 foreach (string key in parameters.Keys)
                 {
-
                     string value = parameters[key];
                     Type type = TypeInspector.getType(value);
 
@@ -96,7 +93,6 @@ namespace MiddleWareReports
                     }
 
                     command.Parameters.AddWithValue("@" + key, obj);
-
                 }
 
                 SqlConnection connection = null;
@@ -130,7 +126,6 @@ namespace MiddleWareReports
 
             return table;
         }
-
 
         /// <summary>
         /// Executes the passed query and returns its results as a DataTable
@@ -186,7 +181,6 @@ namespace MiddleWareReports
                         connection.Close();
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -196,10 +190,9 @@ namespace MiddleWareReports
             return table;
         }
 
-
         /// <summary>
-        /// Build the connection string to the report DB 
-        /// </summary>      
+        /// Build the connection string to the report DB
+        /// </summary>
         protected virtual void BuildConnectionString()
         {
             string database = "";
@@ -211,22 +204,29 @@ namespace MiddleWareReports
 
             if (rKey != null)
             {
-
                 object key = rKey.GetValue("DataBase");
                 if (key != null)
+                {
                     database = key.ToString();
+                }
 
                 key = rKey.GetValue("PassWord");
                 if (key != null)
+                {
                     password = key.ToString();
+                }
 
                 key = rKey.GetValue("Server");
                 if (key != null)
+                {
                     server = key.ToString();
+                }
 
                 key = rKey.GetValue("User");
                 if (key != null)
+                {
                     user = key.ToString();
+                }
 
                 rKey.Close();
             }
@@ -245,7 +245,6 @@ namespace MiddleWareReports
             csb.MinPoolSize = 0;
             csb.MaxPoolSize = 10;
             csb.ApplicationName = "NuxibaReportsV2";
-
         }
 
         /// Test connection to the database

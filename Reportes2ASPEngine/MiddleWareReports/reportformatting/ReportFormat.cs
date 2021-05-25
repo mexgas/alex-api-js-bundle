@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data;
-using System.Collections.Specialized;
+﻿using System.Data;
 
 namespace MiddleWareReports
 {
@@ -17,5 +15,4 @@ namespace MiddleWareReports
         /// <returns>The report in a certain format as an array of bytes</returns>
         byte[] getOutPut(DataTable data, string reportName, string logoFileName = "", string filterSummaryData = "", bool translate = true, short process = 0);
     }
-
 }

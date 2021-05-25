@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Specialized ;
+using System.Collections.Specialized;
 using System.Data;
-using System.Data.SqlClient;
 using System.Xml;
 
 namespace MiddleWareReports
@@ -11,8 +10,8 @@ namespace MiddleWareReports
     /// </summary>
     public class Template
     {
-        DataBase db = new DataBase();
-       
+        private DataBase db = new DataBase();
+
         /// <summary>
         /// Executes and SP depending of the action specified
         /// </summary>
@@ -25,19 +24,23 @@ namespace MiddleWareReports
                 case 'I':  //Insert
                     db.executeSP("dbo.SaveUserTemplate", parameters);
                     break;
+
                 case 'U':  //Update
                     db.executeSP("dbo.UpdateUserTemplate", parameters);
                     break;
+
                 case 'D':  //Delete
                     db.executeSP("dbo.DeleteUserTemplate", parameters);
                     break;
+
                 case 'G': //Get
                     break;
+
                 default:
                     throw new Exception("Template operation not supported");
             }
         }
-      
+
         /// <summary>
         /// Executes an favoriteTemplates SP and then returns the user favorite templates as a XML document
         /// </summary>
@@ -55,37 +58,36 @@ namespace MiddleWareReports
             templateAction(action, parameters);
             XmlDocument xml = new XmlDocument();
             xml.AppendChild(xml.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
-            XmlElement top = xml.CreateElement("", "ReportsTemplates", "");    
+            XmlElement top = xml.CreateElement("", "ReportsTemplates", "");
             top.AppendChild(Get(xml, userId));
-            xml.AppendChild(top); 
+            xml.AppendChild(top);
             return xml;
         }
-        
-        /// <summary>        
-        /// Get the user´s favorite templates as a XML        
+
+        /// <summary>
+        /// Get the user´s favorite templates as a XML
         /// </summary>
         /// <param name="xml">XML to which the element is going to be appended</param>
         /// <param name="userId">User who originates the petition</param>
         /// <returns>A XML element that contains the favorite templates of the user</returns>
-        public XmlElement Get(XmlDocument xml,int userId)
-        {         
-            XmlElement userTemplates = xml.CreateElement("", "UserTemplates", "");            
+        public XmlElement Get(XmlDocument xml, int userId)
+        {
+            XmlElement userTemplates = xml.CreateElement("", "UserTemplates", "");
             NameValueCollection parameters = new NameValueCollection();
             parameters.Add("userId", userId.ToString());
             DataTable favoriteTemplates = db.executeSP("dbo.GetUserTemplates", parameters);
-          
+
             foreach (DataRow row in favoriteTemplates.Rows)
             {
-                XmlElement element = xml.CreateElement("UserTemplate");                
+                XmlElement element = xml.CreateElement("UserTemplate");
                 foreach (DataColumn col in favoriteTemplates.Columns)
                 {
-                    element.SetAttribute(col.ColumnName, row[col.ColumnName].ToString());                    
+                    element.SetAttribute(col.ColumnName, row[col.ColumnName].ToString());
                 }
                 userTemplates.AppendChild(element);
             }
 
-            return userTemplates ;
+            return userTemplates;
         }
-
     }
 }

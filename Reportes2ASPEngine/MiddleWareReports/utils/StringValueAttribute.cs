@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MiddleWareReports
 {
@@ -10,7 +8,6 @@ namespace MiddleWareReports
     /// </summary>
     public class StringValueAttribute : Attribute
     {
-
         #region Properties
 
         /// <summary>
@@ -18,7 +15,7 @@ namespace MiddleWareReports
         /// </summary>
         public string StringValue { get; protected set; }
 
-        #endregion
+        #endregion Properties
 
         #region Constructor
 
@@ -31,7 +28,6 @@ namespace MiddleWareReports
             this.StringValue = value;
         }
 
-        #endregion
-
+        #endregion Constructor
     }
 }

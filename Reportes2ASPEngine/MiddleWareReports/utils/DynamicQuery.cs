@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Text;
 
 namespace MiddleWareReports
@@ -9,14 +8,14 @@ namespace MiddleWareReports
     /// </summary>
     public class DynamicQuery
     {
-        short process;
-        bool isTotals;
-        StringBuilder stmt;
-        StringBuilder parameters;
-        NameValueCollection values;
-        string sqlPaginate = "";
-        bool isPivotReport;
-        string totalColumns;
+        private short process;
+        private bool isTotals;
+        private StringBuilder stmt;
+        private StringBuilder parameters;
+        private NameValueCollection values;
+        private string sqlPaginate = "";
+        private bool isPivotReport;
+        private string totalColumns;
 
         public short Process
         {
@@ -32,7 +31,8 @@ namespace MiddleWareReports
         public string TotalColumns
         {
             get { return totalColumns; }
-            set {
+            set
+            {
                 totalColumns = value;
                 isTotals = true;
             }
@@ -72,6 +72,5 @@ namespace MiddleWareReports
         {
             this.process = process;
         }
-
     }
 }

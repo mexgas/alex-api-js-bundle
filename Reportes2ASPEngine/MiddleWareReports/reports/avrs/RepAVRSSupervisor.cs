@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
-    class RepAVRSSupervisor : GenericReport
+    internal class RepAVRSSupervisor : GenericReport
     {
     }
 }

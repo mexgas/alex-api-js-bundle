@@ -4,11 +4,11 @@ using System.Data;
 namespace MiddleWareReports
 {
     /// <summary>
-    /// Helper class that checks if a DataTable does not contains any rows 
+    /// Helper class that checks if a DataTable does not contains any rows
     /// or if it is null.
     /// </summary>
     public class EmptyResultException : Exception
-    {        
+    {
         public EmptyResultException(string message)
             : base(message)
         {

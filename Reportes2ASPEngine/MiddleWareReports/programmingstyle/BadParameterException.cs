@@ -32,7 +32,6 @@ namespace MiddleWareReports
             {
                 throw new BadParameterException("Parameter " + parameter + " contains non letters characters");
             }
-
         }
     }
 }

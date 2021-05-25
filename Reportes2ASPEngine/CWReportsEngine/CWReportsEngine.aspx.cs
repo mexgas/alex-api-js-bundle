@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MiddleWareReports;
+using System;
 using System.Collections.Specialized;
-using System.Web;
-using System.Configuration;
 using System.Data.SqlClient;
-using System.Threading;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Xml;
-using System.IO;
-using MiddleWareReports;
 
 public partial class CWReportsEngine : System.Web.UI.Page
 {
@@ -36,7 +32,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
     private string crmTemplateId;
     private string templateId;
     private string chartFields;
-    
+
     protected void Page_Load(object sender, EventArgs e)
     {
         short process;
@@ -51,17 +47,20 @@ public partial class CWReportsEngine : System.Web.UI.Page
         }
 
         #region CacheControl
+
         Response.Expires = 0;
         Response.ExpiresAbsolute = DateTime.Now.AddDays(-1);
         Response.AddHeader("pragma", "no-cache");
         Response.AddHeader("cache-control", "private");
         Response.CacheControl = "no-cache";
-        #endregion
+
+        #endregion CacheControl
 
         UseSession(process);
     }
 
     #region Usar Sesion
+
     public void UseSession(short process)
     {
         int sourceUserId = 0;
@@ -76,7 +75,9 @@ public partial class CWReportsEngine : System.Web.UI.Page
 
         //Build HashTable for Parameters Reader
         ParametersReader.setParameters(RequestHelper.copyRequestQueryParameters(Page.Request));
+
         #region ReadParametrs
+
         //Set user id session
         if (ParametersReader.getParameters("sourceUserId", false) != "")
         {
@@ -152,8 +153,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
         }
 
-
-
         //Set active crm session
         if (ParametersReader.getParameters("activeCRM", false) != "")
         {
@@ -178,7 +177,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
         }
 
-
         //Set active AVRS session
         if (ParametersReader.getParameters("activeAVRS", false) != "")
         {
@@ -202,7 +200,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 int.TryParse(Session["activeAVRS"].ToString(), out activeAVRS);
             }
         }
-
 
         //Set active crm session
         if (ParametersReader.getParameters("activeEmail", false) != "")
@@ -251,7 +248,8 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 int.TryParse(ParametersReader.getParameters("activeTwitter", true), out activeTwitter);
             }
         }
-        #endregion
+
+        #endregion ReadParametrs
 
         try
         {
@@ -286,14 +284,12 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 processNew++;
             }
 
-            reportName = MiddleWareReports.ReportFactory.getReportName(processNew).GetType().ToString();            
+            reportName = MiddleWareReports.ReportFactory.getReportName(processNew).GetType().ToString();
 
-
-            //Create generic report   
+            //Create generic report
             MiddleWareReports.GenericReport report;
             report = MiddleWareReports.GenericReport.createReport(reportName);
             report.ReportName += processNew != process ? crmTemplateId + templateId : "";
-
 
             //Set app culture
             if (lang == "es")
@@ -346,7 +342,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 {
                     Response.Write(report.getCRMReportFilters(parameters, process, true).OuterXml);
                 }
-
             }
             else if (crmTemplateId.Length > 0)
             {
@@ -360,12 +355,18 @@ public partial class CWReportsEngine : System.Web.UI.Page
             else if (format.Equals(""))//Get xmlReport
             {
                 if (addFilters.Length > 0)
+                {
                     parameters["crmtemplateId"] = templateId;
+                }
+
                 if (!string.IsNullOrEmpty(templateId))
+                {
                     parameters["templateId"] = templateId;
+                }
+
                 Response.Write(report.getXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals).OuterXml);
             }
-            else //Get report in format X 
+            else //Get report in format X
             {
                 DataBase db;
                 string logoFileName = "";
@@ -397,14 +398,16 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 {
                     Response.ContentType = "text/plain";
                 }
-                
+
                 byte[] output;
                 if (process >= 9000 && process < 10000)
                 {
                     output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true, process);
                 }
                 else
+                {
                     output = exportFormat.getOutPut(report.getDataReport(parameters, process), title, logoFileName, filtersSummaryData, true, 0);
+                }
 
                 Response.Clear();
                 Response.Charset = "UTF-8";
@@ -460,7 +463,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
             errorMessage = secEx.Message;
             errorType = "SecurityException";
         }
-
         catch (CRMFieldsNotFoundException crmEx)
         {
             hadException = true;
@@ -470,8 +472,6 @@ public partial class CWReportsEngine : System.Web.UI.Page
             errorMessage = crmEx.Message;
             errorType = "CRMFieldsNotFoundException";
         }
-
-
         catch (Exception e)
         {
             hadException = true;
@@ -557,5 +557,5 @@ public partial class CWReportsEngine : System.Web.UI.Page
         crmTemplateId = ParametersReader.getParameters("crmTemplateId", true);
     }
 
-    #endregion
+    #endregion Usar Sesion
 }

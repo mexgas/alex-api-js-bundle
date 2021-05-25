@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace MiddleWareReports.reports.specialreports
+﻿namespace MiddleWareReports.reports.specialreports
 {
-    class RepViewMKTDiario : GenericReport
+    internal class RepViewMKTDiario : GenericReport
     {
     }
 }

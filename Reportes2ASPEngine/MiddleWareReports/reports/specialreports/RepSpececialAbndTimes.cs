@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
-    class RepSpececialAbndTimes : GenericReport
+    internal class RepSpececialAbndTimes : GenericReport
     {
     }
 }

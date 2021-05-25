@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Xml;
 using System.Collections.Specialized;
 using System.Data;
-using System.Data.SqlClient;
-using System.Threading;
 using System.Globalization;
-using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Linq;
+using System.Threading;
+using System.Xml;
 
 namespace MiddleWareReports
 {
@@ -21,7 +18,7 @@ namespace MiddleWareReports
     {
         protected string reportName;
         protected NameValueCollection translatedColumns;
-        Dictionary<string, string> translatedSpecialColumns = new Dictionary<string, string>();
+        private Dictionary<string, string> translatedSpecialColumns = new Dictionary<string, string>();
         protected NameValueCollection convertedColumns;
         private CultureInfo currentCulture;
         protected const int PAGE_SIZE = 50;
@@ -50,7 +47,6 @@ namespace MiddleWareReports
             this.db = new DataBase();
         }
 
-
         /// <summary>
         /// Name of the report
         /// </summary>
@@ -77,7 +73,10 @@ namespace MiddleWareReports
             }
         }
 
-        protected virtual DataTable GetDefaultFilters(int type, DataTable catalog) { return catalog; }
+        protected virtual DataTable GetDefaultFilters(int type, DataTable catalog)
+        {
+            return catalog;
+        }
 
         /// <summary>
         /// Gets the report data as a XML document
@@ -93,7 +92,10 @@ namespace MiddleWareReports
             DateTime dateEndParam = DateTime.Now;
             DateTime dateNow = DateTime.Now;
             if (parameters["dateEnd"] != null && parameters["dateEnd"].Length > 0)
+            {
                 dateEndParam = DateTime.Parse(parameters["dateEnd"].ToString(), CultureInfo.CurrentCulture);
+            }
+
             string isDay = "0";
             if (dateEndParam.Year == dateNow.Year && dateEndParam.Month == dateNow.Month && dateEndParam.Day == dateNow.Day)
             {
@@ -127,9 +129,11 @@ namespace MiddleWareReports
                     case 7150:
                         parametersTotals["timePeriod"] = "M";
                         break;
+
                     case 7130:
                         parametersTotals["timePeriod"] = "D";
                         break;
+
                     default:
                         break;
                 }
@@ -167,7 +171,6 @@ namespace MiddleWareReports
             {
                 report.AppendChild(getXmlRows(xmlReport, totalsTable, "TotalsRows"));
             }
-
 
             //Get DB table paging
             XmlElement pageNode = innerPaginate(xmlReport, dynamicQuery);
@@ -215,7 +218,6 @@ namespace MiddleWareReports
             DynamicQuery dynamicQuery = new DynamicQuery(process);
             DataTable detailTable = executeReader(parameters, false, true, dynamicQuery, process);
 
-
             //Generate XML
             XmlDocument xmlReport = new XmlDocument();
             xmlReport.AppendChild(xmlReport.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
@@ -233,7 +235,6 @@ namespace MiddleWareReports
 
             return xmlReport;
         }
-
 
         /// <summary>
         /// Gets the results of executing a query with the given parameters in the report´s db table
@@ -327,7 +328,6 @@ namespace MiddleWareReports
                             (convertedColumns[column.ColumnName] != null || column.ColumnName.EndsWith("_Time"))
                             && value != "")
                         {
-
                             if (dataRow[column.ColumnName] is DateTime)
                             {
                                 value = TranslatorHelper.formatTime((DateTime)dataRow[column.ColumnName]);
@@ -358,7 +358,6 @@ namespace MiddleWareReports
         /// <returns>A xml list containing the filters and the values that can be used in the report´s search queries</returns>
         public XmlDocument getReportFilters(NameValueCollection parameters, short process)
         {
-
             string complementColumns = "";
             changeCulture();
 
@@ -386,9 +385,7 @@ namespace MiddleWareReports
             xml.ChildNodes.Item(1).AppendChild(translates);
 
             return xml;
-
         }
-
 
         /// <summary>
         /// Obtains report´s filters used for search queries
@@ -399,14 +396,12 @@ namespace MiddleWareReports
 
         public XmlDocument getCRMReportFilters(NameValueCollection parameters, short process, bool getMenus)
         {
-
             changeCulture();
 
             XmlDocument xml = new XmlDocument();
             xml.AppendChild(xml.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
             XmlElement catalogs = xml.CreateElement("", "Catalogs", "");
             xml.AppendChild(catalogs);
-
 
             XmlElement filters = getCRMFields(xml, parameters, process);
             xml.ChildNodes.Item(1).AppendChild(filters);
@@ -424,14 +419,9 @@ namespace MiddleWareReports
                 element.SetAttribute("id", "8");
                 filtersMenus.AppendChild(element);
                 xml.ChildNodes.Item(1).AppendChild(filtersMenus);
-
             }
             return xml;
-
         }
-
-
-
 
         /// <summary>
         /// Obtains fields reportables by the crm template
@@ -455,13 +445,12 @@ namespace MiddleWareReports
                 DBSchema.setDataType(column.ColumnName, TypeInspector.ConvertToDbType(column.DataType));
             }
             if (CRMTemplates.HasChildNodes)
+            {
                 xml.AppendChild(CRMTemplates);
+            }
 
             return xml;
-
         }
-
-
 
         /// <summary>
         /// Gets the rows
@@ -490,16 +479,13 @@ namespace MiddleWareReports
                             }
                             else
                             {
-
                                 value = TranslatorHelper.formatTime(Convert.ToInt64(value));
                             }
                         }
                         XmlElement el = xmlReport.CreateElement("", "Cell", "");
 
-
                         el.SetAttribute("value", getSystemTranslatedColumns(column.ColumnName, value));
                         el.SetAttribute("name", getPivotTranslatedColumns(translatedColumns[column.ColumnName]));
-
 
                         row.AppendChild(el);
 
@@ -516,11 +502,10 @@ namespace MiddleWareReports
         /// Gets the translation of value in case necessary
         /// </summary>
         /// <param name="column">The column to evaluate</param>
-        /// <param name="value">The value to translate</param>        
-        /// <returns>The value translated in case necessary or the original one</returns> 
+        /// <param name="value">The value to translate</param>
+        /// <returns>The value translated in case necessary or the original one</returns>
         protected string getSystemTranslatedColumns(string column, string value)
         {
-
             bool isTranslated;
             string valueTranslated;
             ///SOlo cuando se utiliza pivote no agrupado esta solo para la opcion Count homologar nuevo _SubFijo
@@ -530,7 +515,9 @@ namespace MiddleWareReports
                 {
                     valueTranslated = TranslatorHelper.getResourceProperty(value, out isTranslated, false);
                     if (isTranslated)
+                    {
                         value = valueTranslated;
+                    }
                 }
             }
 
@@ -540,8 +527,8 @@ namespace MiddleWareReports
         /// <summary>
         /// Gets the translation of column in case pivot
         /// </summary>
-        /// <param name="column">The column name to evaluate</param>  
-        /// <returns>The value translated in case necessary or the original one</returns> 
+        /// <param name="column">The column name to evaluate</param>
+        /// <returns>The value translated in case necessary or the original one</returns>
         protected string getPivotTranslatedColumns(string columnName)
         {
             bool isTranslated;
@@ -556,7 +543,9 @@ namespace MiddleWareReports
 
                 partTraslated = TranslatorHelper.getResourceProperty(partToTranslate, out isTranslated, false);
                 if (isTranslated)
+                {
                     columnName = partNotToTranslate + partTraslated.Replace('_', ' ');
+                }
             }
 
             return columnName;
@@ -566,8 +555,8 @@ namespace MiddleWareReports
         /// Gets the list columns for detail reports when clicking on the selected column
         /// </summary>
         /// <param name="xml">The XML document</param>
-        /// <param name="process">Return num process de reports</param>        
-        /// <returns>The data rows of the detail report as a XML element</returns>        
+        /// <param name="process">Return num process de reports</param>
+        /// <returns>The data rows of the detail report as a XML element</returns>
         protected XmlElement getXmlDetailReports(XmlDocument xml, short process)
         {
             NameValueCollection reportParams = new NameValueCollection();
@@ -619,8 +608,8 @@ namespace MiddleWareReports
         /// Gets the list columns to create the filter to detail report
         /// </summary>
         /// <param name="xml">The XML document</param>
-        /// <param name="process">Return num process de reports</param>        
-        /// <returns>The data rows of the detail report as a XML element</returns>        
+        /// <param name="process">Return num process de reports</param>
+        /// <returns>The data rows of the detail report as a XML element</returns>
         private XmlElement getDetailReports(XmlDocument xml, short process)
         {
             NameValueCollection reportParams = new NameValueCollection();
@@ -639,7 +628,6 @@ namespace MiddleWareReports
                     element.SetAttribute("showColumnsDetail", showColumnsDetail);
                     detailReportsXml.AppendChild(element);
                 }
-
             }
             return detailReportsXml;
         }
@@ -648,8 +636,8 @@ namespace MiddleWareReports
         /// Gets the columns list to be filled and translated
         /// </summary>
         /// <param name="xml">The XML document</param>
-        /// <param name="process">The report number</param>        
-        /// <returns>The data rows of the columns to be filled and translated as a XML element</returns>        
+        /// <param name="process">The report number</param>
+        /// <returns>The data rows of the columns to be filled and translated as a XML element</returns>
         private XmlElement getTranslatedColumns(XmlDocument xml, short process)
         {
             NameValueCollection reportParams = new NameValueCollection();
@@ -665,7 +653,6 @@ namespace MiddleWareReports
                     element.SetAttribute("specialColumns", columnsTranslated);
                     translatedReportsXml.AppendChild(element);
                 }
-
             }
             return translatedReportsXml;
         }
@@ -758,6 +745,7 @@ namespace MiddleWareReports
 
             return filtersMenus;
         }
+
         /// <summary>
         /// Obtains the report´s CRM Templates menus used to display the search options of the report
         /// </summary>
@@ -775,9 +763,6 @@ namespace MiddleWareReports
         {
             throw new NotImplementedException();
             //Look up for the RepCRMxTemplates class
-
-
-
         }
 
         /// <summary>
@@ -790,7 +775,6 @@ namespace MiddleWareReports
             NameValueCollection reportParams = new NameValueCollection();
             reportParams.Add("id", process.ToString());
             DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
-
 
             if (parameters["type"] == null)
             {
@@ -826,7 +810,9 @@ namespace MiddleWareReports
                 }
                 element.SetAttribute("dbColumn", dbColumn);
                 if (catalog.Rows.Count > 0)
+                {
                     filtersRoot.AppendChild(element);
+                }
             }
 
             //Add table columns
@@ -876,7 +862,6 @@ namespace MiddleWareReports
             reportParams.Add("action ", "1");
             DataTable filters = db.executeSP("dbo.GetReportFilters", reportParams);
 
-
             if (parameters["type"] == null)
             {
                 parameters.Add("type", "");
@@ -902,7 +887,6 @@ namespace MiddleWareReports
                     element.SetAttribute("description", description);
                     RangesRoot.AppendChild(element);
                 }
-
             }
             return RangesRoot;
         }
@@ -1038,7 +1022,6 @@ namespace MiddleWareReports
                             query.Append("SELECT * FROM ( SELECT * FROM (  SELECT  [question], AVG([avgDisposition]) as avgDisposition,  AVG(Dispositions) as totalCount FROM RepAVRSQuestion WITH(NOLOCK)  WHERE date >= @dateStart AND date < @dateEnd  AND ( avgDisposition BETWEEN @avgDispositionMin AND @avgDispositionMax  )  GROUP BY [question] ) AS H_GROUP ) AS B_GROUP");
                         }
                         break;
-
                 }
 
                 //Execute dynamic query
@@ -1083,7 +1066,11 @@ namespace MiddleWareReports
                 //Column DB Type for schema
                 DBSchema.setDataType(column.ColumnName, TypeInspector.ConvertToDbType(column.DataType));
 
-                if (isPivot && !listColums.Contains(column.ColumnName)) continue;
+                if (isPivot && !listColums.Contains(column.ColumnName))
+                {
+                    continue;
+                }
+
                 XmlElement element = xml.CreateElement("", "Field", "");
                 element.SetAttribute("id", column.ColumnName);
                 string description = TranslatorHelper.getResource(column.ColumnName);
@@ -1092,7 +1079,6 @@ namespace MiddleWareReports
                 {
                     columns.AppendChild(element);
                 }
-
             }
             return columns;
         }
@@ -1107,7 +1093,11 @@ namespace MiddleWareReports
         /// <remarks>Parameters must be named after the columns of the report table</remarks>
         protected virtual DataTable executeReader(NameValueCollection parameters, bool addPaging, bool isDetail, DynamicQuery dynamicQuery, short process)
         {
-            if (dynamicQuery.IsTotals && dynamicQuery.TotalColumns.Length == 0 && !dynamicQuery.IsPivotReport) return null;
+            if (dynamicQuery.IsTotals && dynamicQuery.TotalColumns.Length == 0 && !dynamicQuery.IsPivotReport)
+            {
+                return null;
+            }
+
             statementBuilder(parameters, true, addPaging, false, isDetail, dynamicQuery, process, "date");
             return db.executeDynamicQuery(dynamicQuery.Stmt, dynamicQuery.Parameters, dynamicQuery.Values);
         }
@@ -1136,8 +1126,10 @@ namespace MiddleWareReports
             DataTable table = db.executeDynamicQuery(query);
             string totalColumns = table.Rows[0][0].ToString().Trim();
 
-
-            if (totalColumns.Length == 0) return totalColumns;
+            if (totalColumns.Length == 0)
+            {
+                return totalColumns;
+            }
 
             if (totalColumns.Contains("_TIMEGROUP"))
             {
@@ -1147,12 +1139,23 @@ namespace MiddleWareReports
                     DateTime dateEnd = DateTime.Parse(parametersTotals["dateEnd"].ToString());
                     totalColumns = totalColumns.Replace("_TIMEGROUP", "," + dateEnd.Subtract(dateStart).TotalSeconds.ToString());
                 }
-                else if (t == TimePeriod.D) totalColumns = totalColumns.Replace("_TIMEGROUP", ",86400");
-                else if (t == TimePeriod.H) totalColumns = totalColumns.Replace("_TIMEGROUP", ",3600");
-                else if (t == TimePeriod.HH) totalColumns = totalColumns.Replace("_TIMEGROUP", ",1800");
-                else totalColumns = totalColumns.Replace("_TIMEGROUP", ",900");
+                else if (t == TimePeriod.D)
+                {
+                    totalColumns = totalColumns.Replace("_TIMEGROUP", ",86400");
+                }
+                else if (t == TimePeriod.H)
+                {
+                    totalColumns = totalColumns.Replace("_TIMEGROUP", ",3600");
+                }
+                else if (t == TimePeriod.HH)
+                {
+                    totalColumns = totalColumns.Replace("_TIMEGROUP", ",1800");
+                }
+                else
+                {
+                    totalColumns = totalColumns.Replace("_TIMEGROUP", ",900");
+                }
             }
-
 
             string[] pairs = totalColumns.Split('|');
             totalColumns = "";
@@ -1161,7 +1164,11 @@ namespace MiddleWareReports
                 string[] columnPair = pair.Split(':');
                 string function = columnPair[0];
                 string column = columnPair[1];
-                if (!detailTable.Columns.Contains(column)) continue;
+                if (!detailTable.Columns.Contains(column))
+                {
+                    continue;
+                }
+
                 column = String.Format("[{0}]", column);
                 if (columnPair.Length == 3)
                 {
@@ -1205,7 +1212,7 @@ namespace MiddleWareReports
             NameValueCollection values = new NameValueCollection();
             TimePeriod t = TimePeriod.H;
             DateTime dateStart, dateEnd = DateTime.Now;
-            //Add time period column            
+            //Add time period column
             string originalTimePeriodCol = "";
             bool isTimePeriod = false;
             int timeMinutes;
@@ -1214,9 +1221,11 @@ namespace MiddleWareReports
                 case 7150:
                     paramValueList["timePeriod"] = "M";
                     break;
+
                 case 7130:
                     paramValueList["timePeriod"] = "D";
                     break;
+
                 default:
                     break;
             }
@@ -1230,15 +1239,16 @@ namespace MiddleWareReports
             }
             paramValueList.Remove("timePeriod");
 
-
-
-
             if (paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
             {
                 String dateEndString = paramValueList["dateEnd"].ToString();
                 dateEnd = DateTime.Parse(dateEndString, CultureInfo.CurrentCulture);
 
-                if (isTimePeriod) t = (TimePeriod)Enum.Parse(typeof(TimePeriod), originalTimePeriodCol, true);
+                if (isTimePeriod)
+                {
+                    t = (TimePeriod)Enum.Parse(typeof(TimePeriod), originalTimePeriodCol, true);
+                }
+
                 timeMinutes = dateEnd.Minute;
 
                 dateEnd = new DateTime(dateEnd.Year, dateEnd.Month, dateEnd.Day, dateEnd.Hour, 0, 0);
@@ -1247,27 +1257,61 @@ namespace MiddleWareReports
                     case TimePeriod.H:
                     case TimePeriod.D:
                     case TimePeriod.PE:
-                        if (timeMinutes >= 1) timeMinutes = 59;
-                        else timeMinutes = 0;
+                        if (timeMinutes >= 1)
+                        {
+                            timeMinutes = 59;
+                        }
+                        else
+                        {
+                            timeMinutes = 0;
+                        }
+
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
                         break;
+
                     case TimePeriod.HH:
-                        if (timeMinutes > 30) timeMinutes = 59;
-                        else if (timeMinutes >= 1) timeMinutes = 29;
-                        else timeMinutes = 0;
+                        if (timeMinutes > 30)
+                        {
+                            timeMinutes = 59;
+                        }
+                        else if (timeMinutes >= 1)
+                        {
+                            timeMinutes = 29;
+                        }
+                        else
+                        {
+                            timeMinutes = 0;
+                        }
+
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
                         break;
+
                     case TimePeriod.QH:
-                        if (timeMinutes > 45) timeMinutes = 59;
-                        else if (timeMinutes > 30) timeMinutes = 44;
-                        else if (timeMinutes > 15) timeMinutes = 29;
-                        else if (timeMinutes >= 1) timeMinutes = 14;
-                        else timeMinutes = 0;
+                        if (timeMinutes > 45)
+                        {
+                            timeMinutes = 59;
+                        }
+                        else if (timeMinutes > 30)
+                        {
+                            timeMinutes = 44;
+                        }
+                        else if (timeMinutes > 15)
+                        {
+                            timeMinutes = 29;
+                        }
+                        else if (timeMinutes >= 1)
+                        {
+                            timeMinutes = 14;
+                        }
+                        else
+                        {
+                            timeMinutes = 0;
+                        }
+
                         dateEnd = dateEnd.AddMinutes(timeMinutes);
                         break;
                 }
             }
-
 
             if (paramValueList["dateStart"] != null && paramValueList["dateStart"].Length > 0
                 && paramValueList["dateEnd"] != null && paramValueList["dateEnd"].Length > 0)
@@ -1299,7 +1343,7 @@ namespace MiddleWareReports
 
             LinkedList<string> columns = new LinkedList<string>();
 
-            //Read columns           
+            //Read columns
             if (paramValueList["columns"] != null && paramValueList["columns"].Length > 0 && !dynamicQuery.IsTotals)
             {
                 string[] cols = paramValueList["columns"].Split('|');
@@ -1353,8 +1397,6 @@ namespace MiddleWareReports
 
             bool isPivotReport = (pivotColumns != "" && complementColumns != "" && pivotFunction != "");
 
-
-
             string groupByColumns = "";
             if (paramValueList["groupByColumns"] != null && paramValueList["groupByColumns"].Length > 0)
             {
@@ -1375,7 +1417,6 @@ namespace MiddleWareReports
                 {
                     translatedSpecialColumns.Add(specialColumnToAdd, specialColumnToAdd);
                 }
-
             }
             paramValueList.Remove("translatedSpecialColumns");
 
@@ -1402,14 +1443,25 @@ namespace MiddleWareReports
                         dateEnd = DateTime.Parse(values["@dateEnd"].ToString());
                         complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", "," + dateEnd.Subtract(dateStart).TotalSeconds.ToString());
                     }
-                    else if (t == TimePeriod.D) complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",86400");
-                    else if (t == TimePeriod.H) complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",3600");
-                    else if (t == TimePeriod.HH) complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",1800");
-                    else complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",900");
+                    else if (t == TimePeriod.D)
+                    {
+                        complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",86400");
+                    }
+                    else if (t == TimePeriod.H)
+                    {
+                        complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",3600");
+                    }
+                    else if (t == TimePeriod.HH)
+                    {
+                        complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",1800");
+                    }
+                    else
+                    {
+                        complementGroupBy = complementGroupBy.Replace("_TIMEGROUP", ",900");
+                    }
                 }
                 columns = TimePeriodGroup.columnsTimePeriod(columns, originalTimePeriodCol, complementGroupBy, isPivotReport, values, currentCulture);
             }
-
 
             if (paramValueList["range"] != null && paramValueList["range"].Length > 0)
             {
@@ -1424,9 +1476,7 @@ namespace MiddleWareReports
 
                     parameters.Append(string.Format(", @" + aux[0] + "Max" + " " + DBSchema.getDataType(aux[0]).ToString()));
                     values.Add("@" + aux[0] + "Max", aux[2]);
-
                 }
-
             }
             paramValueList.Remove("range");
 
@@ -1450,12 +1500,15 @@ namespace MiddleWareReports
                     case TimePeriod.D:
                         timeMinutes = 1440;
                         break;
+
                     case TimePeriod.H:
                         timeMinutes = 60;
                         break;
+
                     case TimePeriod.HH:
                         timeMinutes = 30;
                         break;
+
                     default:
                         timeMinutes = 15;
                         break;
@@ -1500,7 +1553,6 @@ namespace MiddleWareReports
                         parameters.Append(string.Format(", @" + columnId[i] + "1 " + DBSchema.getDataType(columnId[i]).ToString()));
                         values.Add("@" + columnId[i] + "1", id[i]);
                     }
-
                 }
                 paramValueList.Remove("columnId");
                 paramValueList.Remove("id");
@@ -1528,7 +1580,6 @@ namespace MiddleWareReports
                 paramValueList.Remove("column");
             }
 
-
             NameValueCollection valuesPivot = new NameValueCollection();
             StringBuilder parametersPivot = new StringBuilder();
             foreach (string parameter in paramValueList)
@@ -1552,7 +1603,6 @@ namespace MiddleWareReports
                 }
             }
             dateColumnName = "[" + dateColumnName + "]";
-
 
             tsql.Append(DynamicTsqlBuilder.selectFromStatement(columns, reportName, addRowNumber, addCountColumn, countColumn, pivotColumns, complementColumns, whereStatement.ToString(), pivotFunction, isTimePeriod, groupByColumns, dynamicQuery, dateColumnName, isGroupPivot));
 
@@ -1601,12 +1651,14 @@ namespace MiddleWareReports
                             case SqlDbType.Int:
                                 paramsValue += parameter + "=" + values[parameter] + ",";
                                 break;
+
                             case SqlDbType.DateTime:
                                 var dateTime = DateTime.Parse(values[parameter]);
                                 var hour = dateTime.TimeOfDay.ToString();
                                 var date = values[parameter].ToString().Split(' ')[0];
                                 paramsValue += parameter + "='" + date + " " + hour + "',";
                                 break;
+
                             default:
                                 paramsValue += parameter + "='" + values[parameter] + "',";
                                 break;
@@ -1634,7 +1686,6 @@ namespace MiddleWareReports
             }
         }
 
-
         /// <summary>
         /// Returns a paging XmlElement indicating how many pages exist for the table, with the current PAGE_SIZE
         /// using the last where statement that was formed
@@ -1659,7 +1710,7 @@ namespace MiddleWareReports
                         {
                             if (PAGE_SIZE <= totalRows && totalRows > 0)
                             {
-                                double temp = (double)totalRows / (double)PAGE_SIZE;
+                                double temp = totalRows / (double)PAGE_SIZE;
                                 temp = Math.Ceiling(temp);
                                 totalPages = (int)temp;
                             }
@@ -1748,7 +1799,9 @@ namespace MiddleWareReports
                     }
 
                     if (element == null)
+                    {
                         element = xml.CreateElement("", "MenuType", "");
+                    }
 
                     element.SetAttribute("label", xmlMenuDescription);
                     element.SetAttribute("element", MenuDecripter);
@@ -1758,7 +1811,9 @@ namespace MiddleWareReports
                 else if (xmlMenuNivel == "B")
                 {
                     if (element2 != null)
+                    {
                         element.AppendChild(element2);
+                    }
 
                     element2 = xml.CreateElement("", "MenuItem", "");
                     element2.SetAttribute("label", xmlMenuDescription);
@@ -1777,10 +1832,14 @@ namespace MiddleWareReports
                 }
             }
             if (element2 != null && element != null)
+            {
                 element.AppendChild(element2);
+            }
 
             if (element != null)
+            {
                 menusRoot.AppendChild(element);
+            }
 
             xml.ChildNodes.Item(1).AppendChild(menusRoot);
 
@@ -1927,10 +1986,13 @@ namespace MiddleWareReports
             {
                 DataColumn newCol = new DataColumn(col.ColumnName);
                 newTable.Columns.Add(newCol);
-                if (totalsTable == null) continue;
+                if (totalsTable == null)
+                {
+                    continue;
+                }
+
                 if (totalsTable.Columns.Contains(col.ColumnName))
                 {
-
                     newTable.Rows[0][newCol] = totalsTable.Rows[0][col.ColumnName];
                 }
             }

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.Text;
 using System.Collections.Specialized;
+using System.Data;
+using System.Text;
 using System.Web;
 
 namespace MiddleWareReports
@@ -47,10 +46,10 @@ namespace MiddleWareReports
                 LinkedList<string> columnsNamesTransalet = new LinkedList<string>();
                 LinkedList<string> dataTranslate = new LinkedList<string>();
 
-                //Retrieve column schema into a DataTable.                
+                //Retrieve column schema into a DataTable.
                 foreach (DataColumn column in data.Columns)
                 {
-                    //Save column name if its viewable                    
+                    //Save column name if its viewable
                     if (!translate)
                     {
                         columnsNames.AddLast(column.ColumnName);
@@ -63,7 +62,6 @@ namespace MiddleWareReports
 
                 for (int i = 0; i < data.Columns.Count; i++)
                 {
-
                     string nameTranslated = TranslatorHelper.getPivotTranslatedColumns(data.Columns[i].ColumnName);
 
                     try
@@ -74,15 +72,12 @@ namespace MiddleWareReports
                     {
                         data.Columns[i].ColumnName = nameTranslated + i;
                     }
-
-
                 }
 
                 foreach (string col in columnsNames)
                 {
                     columnsNamesTransalet.AddLast(TranslatorHelper.getPivotTranslatedColumns(col));
                 }
-
 
                 //Generate html table
                 output = generateHtml(columnsNamesTransalet, data, filterSummaryData, translate);
@@ -92,8 +87,8 @@ namespace MiddleWareReports
                 String temp = e.Message;
             }
 
-            //Add BOM byte to display correctly foreign characters in UTF-8 
-            //Source: https://en.wikipedia.org/wiki/Byte_order_mark 
+            //Add BOM byte to display correctly foreign characters in UTF-8
+            //Source: https://en.wikipedia.org/wiki/Byte_order_mark
             byte[] bBOM = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] bContent = System.Text.Encoding.UTF8.GetBytes(output.ToString());
             byte[] bToWrite = new byte[bBOM.Length + bContent.Length];
@@ -140,7 +135,6 @@ namespace MiddleWareReports
                         }
                     }
                 }
-
             }
 
             html.AppendLine("<tr>");
@@ -151,10 +145,13 @@ namespace MiddleWareReports
             foreach (string header in headers)
             {
                 if (translate && !string.IsNullOrEmpty(translatedColumns[header]))
+                {
                     html.AppendLine(string.Format("<td class=\"a\">{0}</td>", translatedColumns[header]));
+                }
                 else
+                {
                     html.AppendLine(string.Format("<td class=\"a\">{0}</td>", header));
-
+                }
             }
             html.AppendLine("</tr>");
             //Place Rows
@@ -170,8 +167,6 @@ namespace MiddleWareReports
                 }
                 html.AppendLine("</tr>");
             }
-
-
 
             html.AppendLine("</table></body></html>");
             return html;

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MiddleWareReports
+﻿namespace MiddleWareReports
 {
     /// <summary>
     /// Represents the Table RepInDIDResume in the reports application
     /// </summary>
-    class RepInDIDResume :  GenericReport
+    internal class RepInDIDResume : GenericReport
     {
     }
 }

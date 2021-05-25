@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text.RegularExpressions;
 
 namespace MiddleWareReports
 {
@@ -13,8 +12,5 @@ namespace MiddleWareReports
             : base(message)
         {
         }
-
-       
     }
 }
-

@@ -1,46 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Data;
-using System.Data.SqlClient;
+﻿using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
-using MigraDoc.DocumentObjectModel;
 using MigraDoc.Rendering;
 using PdfSharp;
-using System.Collections.Specialized;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Data;
 using System.Linq;
 
 namespace MiddleWareReports
 {
     public class Migradoc
     {
-        const int COLSPERPAGE = 8;
-        const int ROWSPERPAGE = 40;
+        private const int COLSPERPAGE = 8;
+        private const int ROWSPERPAGE = 40;
 
-        const double PAGE_LEFT_MARGIN = 1.0;
-        const double PAGE_TOP_MARGIN = 1.5;
-        const double PAGE_BOTTOM_MARGIN = 0.7;
-        const double HEADER_LEFT_MARGIN = 8.5;
-        const double HEADER_MAX_WIDTH = 10.5;
-        const double FOOTER_LEFT_MARGIN = 10.0;
-        const double TABLE_TOP_MARGIN = 6.0;
-        const double TABLE_MAX_WIDTH = 26.0;
+        private const double PAGE_LEFT_MARGIN = 1.0;
+        private const double PAGE_TOP_MARGIN = 1.5;
+        private const double PAGE_BOTTOM_MARGIN = 0.7;
+        private const double HEADER_LEFT_MARGIN = 8.5;
+        private const double HEADER_MAX_WIDTH = 10.5;
+        private const double FOOTER_LEFT_MARGIN = 10.0;
+        private const double TABLE_TOP_MARGIN = 6.0;
+        private const double TABLE_MAX_WIDTH = 26.0;
 
-        const string HEADER_STYLE = "headerStyle";
-        const string FOOTER_STYLE = "footerStyle";
-        const string TABLE_STYLE = "tableStyle";
+        private const string HEADER_STYLE = "headerStyle";
+        private const string FOOTER_STYLE = "footerStyle";
+        private const string TABLE_STYLE = "tableStyle";
 
-        const string headerArgbColor = "0xFF4E4E4E";
-        const string totalsArgbColor = "0xFF808080";
+        private const string headerArgbColor = "0xFF4E4E4E";
+        private const string totalsArgbColor = "0xFF808080";
 
-        Color headerColor;
-        Color totalsColor;
-
+        private Color headerColor;
+        private Color totalsColor;
 
         private int nTables = 0;
         private int start = 0;
+
         public Migradoc()
         {
             headerColor = Color.Parse(headerArgbColor);
@@ -158,10 +156,14 @@ namespace MiddleWareReports
                     return TranslatorHelper.getResource(column_name, true);
                 }
                 else
+                {
                     return data;
+                }
             }
             else
+            {
                 return TranslatorHelper.getResource(data, true);
+            }
         }
 
         public Dictionary<int, LinkedList<Table>> tablesToPdfTables(DataTable data, int nRows, short process = 0)
@@ -186,7 +188,6 @@ namespace MiddleWareReports
                 {
                     maximunLengthForColumns[i] = 10;
                 }
-
             }
 
             Dictionary<int, LinkedList<Table>> tables = new Dictionary<int, LinkedList<Table>>();
@@ -213,7 +214,6 @@ namespace MiddleWareReports
                 }
 
                 tempWidth += tempWidth2;
-
             }
             generaPagesPDF(data, tables, convertedColumns, maximunLengthForColumns, nRows, maximunLengthForColumns.Count, process);
             return tables;
@@ -222,7 +222,6 @@ namespace MiddleWareReports
         private void generaPagesPDF(DataTable data, Dictionary<int, LinkedList<Table>> tables, NameValueCollection convertedColumns,
             List<int> maximunLengthForColumns, int nRows, int numColum, short process)
         {
-
             int end = 0;
 
             int currentRow = 0;
@@ -243,11 +242,17 @@ namespace MiddleWareReports
                     for (int nColumns = start; nColumns <= end; nColumns++)
                     {
                         double widthColum = (maximunLengthForColumns[nColumns] * 0.1666);
-                        if (widthColum > TABLE_MAX_WIDTH) widthColum = TABLE_MAX_WIDTH;
+                        if (widthColum > TABLE_MAX_WIDTH)
+                        {
+                            widthColum = TABLE_MAX_WIDTH;
+                        }
+
                         widthColumAll += widthColum;
                         Column col = temp.AddColumn(widthColum.ToString() + "cm");
                         if (widthColum <= TABLE_MAX_WIDTH && widthColumAll < TABLE_MAX_WIDTH)
+                        {
                             col.Format.Alignment = ParagraphAlignment.Center;
+                        }
                         else
                         {
                             col.Format.Alignment = ParagraphAlignment.Justify;
@@ -267,7 +272,6 @@ namespace MiddleWareReports
                     row.Shading.Color = Colors.Red;
                     row.Format.Font.Color = Colors.White;
 
-
                     Cell cell = null;
 
                     for (int nColumn = 0; nColumn <= end - start; nColumn++)
@@ -275,7 +279,6 @@ namespace MiddleWareReports
                         cell = row.Cells[nColumn];
                         cell.AddParagraph(getTranslation(data.Columns[nColumn + start].ColumnName, process));
                     }
-
                 }
 
                 fRow++;
@@ -295,10 +298,8 @@ namespace MiddleWareReports
                         rowx.Shading.Color = Colors.White;
                     }
 
-
                     for (int nColumn = 0; nColumn <= end - start; nColumn++) // inserta el valor de la fila delimitada por el inicio y el fin de las columnas
                     {
-
                         value = dRow[nColumn + start].ToString();
                         value = TranslatorHelper.parseDbValue(value);
 
@@ -312,12 +313,9 @@ namespace MiddleWareReports
                     flag = true;
                     fRow = nRows;
                 }
-
             }
 
             start = numColum;
         }
     }
-
-
 }

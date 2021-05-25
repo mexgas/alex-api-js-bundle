@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,6 +10,7 @@ namespace MiddleWareReports
     public static class DynamicTsqlBuilder
     {
         #region SQL Clauses
+
         private const string AND = "AND";
         private const string OR = "OR";
         private const string BETWEEN = "BETWEEN";
@@ -27,10 +27,11 @@ namespace MiddleWareReports
         private const string ROWNUM = "rownum";
         private const string CONCAT = "+";
         private const string COMMA = ",";
-        const int REPORTSELECT = 0;
-        const int PIECHARTSELECT = 1;
-        const int SERIESCHARTSELECT = 2;
-        #endregion
+        private const int REPORTSELECT = 0;
+        private const int PIECHARTSELECT = 1;
+        private const int SERIESCHARTSELECT = 2;
+
+        #endregion SQL Clauses
 
         #region SQL Clauses Methods
 
@@ -54,7 +55,7 @@ namespace MiddleWareReports
             }
             else
             {
-                return selectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery,dateColumnName);
+                return selectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery, dateColumnName);
             }
         }
 
@@ -84,7 +85,9 @@ namespace MiddleWareReports
         public static StringBuilder addPaging(StringBuilder queryWithRowNum, string reportName, int pageSize, int pageNumber, bool isPivot, bool isTimePeriod, DynamicQuery dynamicQuery)
         {
             if (pageNumber > 0)
+            {
                 pageNumber--;
+            }
 
             StringBuilder statement = new StringBuilder();
             if (isPivot)
@@ -124,8 +127,6 @@ namespace MiddleWareReports
             return statement;
         }
 
-
-
         /// <summary>
         /// Prepends a statement with an AND and encloses it in parentheses
         /// </summary>
@@ -147,8 +148,8 @@ namespace MiddleWareReports
         }
 
         /// <summary>
-        /// Given a collection of values, separated by | , creates various equality statements concatenated 
-        /// by AND statements.        
+        /// Given a collection of values, separated by | , creates various equality statements concatenated
+        /// by AND statements.
         /// </summary>
         /// <param name="parameter">The parameter to be used in the equality statement</param>
         /// <param name="value">A serie of values separated by | that will be used to create equality statements</param>
@@ -163,10 +164,9 @@ namespace MiddleWareReports
             return booleanStatement(AND, parameter, value);
         }
 
-
         /// <summary>
-        /// Given a collection of values, separated by | , creates various equality statements concatenated 
-        /// by AND statements.        
+        /// Given a collection of values, separated by | , creates various equality statements concatenated
+        /// by AND statements.
         /// </summary>
         /// <param name="parameter">The parameter to be used in the equality statement</param>
         /// <param name="value">A serie of values separated by | that will be used to create equality statements</param>
@@ -181,12 +181,12 @@ namespace MiddleWareReports
             StringBuilder stament = new StringBuilder();
             stament.Append(string.Format("{0} {1} {2}", parameter, translateOperator(op), value));
 
-            return conjunctionStatement(AND,stament);
+            return conjunctionStatement(AND, stament);
         }
 
         /// <summary>
-        /// Given a collection of values, separated by | , creates various equality statements concatenated 
-        /// by OR statements.        
+        /// Given a collection of values, separated by | , creates various equality statements concatenated
+        /// by OR statements.
         /// </summary>
         /// <param name="parameter">The parameter to be used in the equality statement</param>
         /// <param name="value">A serie of values separated by | that will be used to create equality statements</param>
@@ -204,10 +204,10 @@ namespace MiddleWareReports
         /// <summary>
         /// Create operator between with parameter min and max
         /// </summary>
-        /// <param name="parameter">The parameter to be used in the equality statement</param>        
+        /// <param name="parameter">The parameter to be used in the equality statement</param>
         /// <returns>
-        /// Statement the operator BETWEEN parameter 
-        /// </returns>                
+        /// Statement the operator BETWEEN parameter
+        /// </returns>
         public static StringBuilder betweenStatement(string parameter)
         {
             return new StringBuilder().Append(string.Format(" {0} {1} {3} {2} {4} ", parameter, BETWEEN, AND, "@" + parameter + "Min", "@" + parameter + "Max"));
@@ -227,7 +227,7 @@ namespace MiddleWareReports
         /// Creates an ORDER BY statement with the given columns in ascending order
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
-        /// <returns>An ORDER BY statement using the columns passed in the parameter in ascending order</returns>       
+        /// <returns>An ORDER BY statement using the columns passed in the parameter in ascending order</returns>
         public static StringBuilder orderByAscStatement(LinkedList<string> columns)
         {
             return orderByStatementPrivate(columns, ASCENDING);
@@ -237,7 +237,7 @@ namespace MiddleWareReports
         /// Creates an ORDER BY statement with the given columns in descending order
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
-        /// <returns>An ORDER BY statement using the columns passed in the parameter in descending order</returns>       
+        /// <returns>An ORDER BY statement using the columns passed in the parameter in descending order</returns>
         public static StringBuilder orderByDescStatement(LinkedList<string> columns)
         {
             return orderByStatementPrivate(columns, DESCENDING);
@@ -247,7 +247,7 @@ namespace MiddleWareReports
         /// Creates an ORDER BY statement with the given columns with no specific order
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
-        /// <returns>An ORDER BY statement using the columns passed in the parameter with no specific order</returns>       
+        /// <returns>An ORDER BY statement using the columns passed in the parameter with no specific order</returns>
         public static StringBuilder orderByStatement(LinkedList<string> columns)
         {
             return orderByStatementPrivate(columns);
@@ -289,8 +289,8 @@ namespace MiddleWareReports
         /// <param name="havingOp">Operator to be used in the statement</param>
         /// <param name="havingVal">Value to be compared with the COUNT(*)</param>
         /// <remarks>
-        /// Accepted operators: e = '=' , ne = '&lt;&gt;' l = '&lt;' , g = '&gt;' , le = '&lt;=' , ge= '&gt;=' 
-        /// </remarks>        
+        /// Accepted operators: e = '=' , ne = '&lt;&gt;' l = '&lt;' , g = '&gt;' , le = '&lt;=' , ge= '&gt;='
+        /// </remarks>
         ///<example><code></code> having("ge", 5) ; // HAVING COUNT(*) >= 5  </example>
         /// <returns>A HAVING  statement with  the passed operator and value</returns>
         public static StringBuilder having(string havingOp, int havingVal)
@@ -307,7 +307,7 @@ namespace MiddleWareReports
             return statement;
         }
 
-        #endregion
+        #endregion SQL Clauses Methods
 
         #region Private Methods
 
@@ -397,7 +397,6 @@ namespace MiddleWareReports
                 statement.Append(rowNumExpression + " * ");
             }
 
-
             statement.Append(string.Format(" FROM {0} WITH(NOLOCK) ", tableName));
 
             return statement;
@@ -407,24 +406,28 @@ namespace MiddleWareReports
         /// Creates a selec statement for the given columns
         /// </summary>
         /// <param name="parameters">Table´s columns to be used in the query</param>
-        /// <param name="complementColumns">Table to be used in the select statement</param>        
+        /// <param name="complementColumns">Table to be used in the select statement</param>
         /// <returns>Array columns selected</returns>
         private static string[] getFilterColumnsPivot(LinkedList<string> parameters, string[] complementColumns)
         {
             if (parameters.Count == 0)
+            {
                 return complementColumns;
+            }
+
             LinkedList<string> columns = new LinkedList<string>();
             string[] arrayColumns;
             foreach (string column in complementColumns)
             {
                 if (parameters.Contains("[" + column + "]") || column == "date")
+                {
                     columns.AddLast(column);
+                }
             }
             arrayColumns = new string[columns.Count];
             columns.CopyTo(arrayColumns, 0);
             return arrayColumns;
         }
-
 
         private static StringBuilder getPivotColumns(string[] pivotColumns, string reportName, string[] complementColumns, bool addRowNum, string where, string pivotFunction, bool isTimePeriod, LinkedList<string> parameters, string groupByColumns, DynamicQuery dynamicQuery, bool isGroupPivot)
         {
@@ -440,17 +443,21 @@ namespace MiddleWareReports
             {
                 pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
 
-            if (addRowNum)
-            {
-                string orderBy = complementColumns[0];
-                for (int i = 0; i < complementColumns.Length; i++)
+                if (addRowNum)
                 {
-                    if (complementColumns[i] != "date") continue;
-                    orderBy = complementColumns[i];
-                    break;
+                    string orderBy = complementColumns[0];
+                    for (int i = 0; i < complementColumns.Length; i++)
+                    {
+                        if (complementColumns[i] != "date")
+                        {
+                            continue;
+                        }
+
+                        orderBy = complementColumns[i];
+                        break;
+                    }
+                    rowNumExpression = string.Format(" ROW_NUMBER() OVER(ORDER BY {0}) AS {1} ,", "[" + orderBy + "]", ROWNUM);
                 }
-                rowNumExpression = string.Format(" ROW_NUMBER() OVER(ORDER BY {0}) AS {1} ,", "[" + orderBy + "]", ROWNUM);
-            }
 
                 foreach (string pivotColumn in pivotColumns)
                 {
@@ -462,87 +469,107 @@ namespace MiddleWareReports
                     }
                     pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
-                    if (dynamicQuery.IsTotals||isGroupPivot)
+                    if (dynamicQuery.IsTotals || isGroupPivot)
+                    {
                         pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
+                    }
                     else
+                    {
                         pivot.Append(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
+                    }
+
                     pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
                     if (dynamicQuery.IsTotals)
                     {
-                        if (isGroupPivot) pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
-                        else pivotFunctionTotal = "max";
-                       
                         if (isGroupPivot)
-                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                        {
+                            pivotFunctionTotal = (pivotColumn.EndsWith("_Avg") ? "avg" : "sum");
+                        }
                         else
+                        {
+                            pivotFunctionTotal = "max";
+                        }
+
+                        if (isGroupPivot)
+                        {
+                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                        }
+                        else
+                        {
                             pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + '' {1}('''''''') AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                        }
+
                         pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
                     }
                 }
                 pivot.Append(" declare @query nvarchar(max)");
 
-            foreach (string complementColumn in complementColumns)
-            {
-                tempC += string.Format(" [{0}],", complementColumn);
-            }
-
-            foreach (string pivotV in pivotColumns)
-            {
-                tempP += string.Format(" '' + @pivot2_{0} + '',", pivotV);
-                tempT += string.Format(" '' + @pivot3_{0} + '',", pivotV);
-            }
-
-            tempP = tempP.Substring(0, tempP.Length - 1);
-            tempT = tempT.Substring(0, tempT.Length - 1);
-
-            string mainColumns = "*";
-            if (dynamicQuery.IsTotals)
-            {
-                mainColumns = tempT;
-                if (dynamicQuery.TotalColumns.Length > 0)
+                foreach (string complementColumn in complementColumns)
                 {
-                    mainColumns += "," + dynamicQuery.TotalColumns;
+                    tempC += string.Format(" [{0}],", complementColumn);
                 }
-            }
 
-            pivot.Append(string.Format(" set @query = '' SELECT {0} FROM (SELECT {1} * FROM (", mainColumns, rowNumExpression));
-            pivot.Append(" select ");
-
-            pivot.Append(tempC + tempP);
-
-            pivot.Append(string.Format(" from (select "));
-
-            tempP = "";
-            foreach (string pivotColumn in pivotColumns)
-            {
-                tempP += string.Format("[{0}], [{1}],", pivotColumn, pivotColumn.Split('_')[1]);
-            }
-            tempP = tempP.Substring(0, tempP.Length - 1);
-
-            if (isTimePeriod && !dynamicQuery.IsTotals)
-            {
-                foreach (string column in parameters)
+                foreach (string pivotV in pivotColumns)
                 {
-                    columnstoGroup += column + ",";
+                    tempP += string.Format(" '' + @pivot2_{0} + '',", pivotV);
+                    tempT += string.Format(" '' + @pivot3_{0} + '',", pivotV);
                 }
-                columnstoGroup = columnstoGroup.Substring(0, columnstoGroup.Length - 1);
-                pivot.Append(string.Format(" {0} from {1} {2} {3}) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns));
-            }
-            else
-            {
-                pivot.Append(string.Format(" {0} from {1} {2}) AS E_GROUP", tempC + tempP, reportName, where));
-            }
 
-            foreach (string pivotColumn in pivotColumns)
-            {
-                pivot.Append(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
-            }
+                tempP = tempP.Substring(0, tempP.Length - 1);
+                tempT = tempT.Substring(0, tempT.Length - 1);
+
+                string mainColumns = "*";
+                if (dynamicQuery.IsTotals)
+                {
+                    mainColumns = tempT;
+                    if (dynamicQuery.TotalColumns.Length > 0)
+                    {
+                        mainColumns += "," + dynamicQuery.TotalColumns;
+                    }
+                }
+
+                pivot.Append(string.Format(" set @query = '' SELECT {0} FROM (SELECT {1} * FROM (", mainColumns, rowNumExpression));
+                pivot.Append(" select ");
+
+                pivot.Append(tempC + tempP);
+
+                pivot.Append(string.Format(" from (select "));
+
+                tempP = "";
+                foreach (string pivotColumn in pivotColumns)
+                {
+                    tempP += string.Format("[{0}], [{1}],", pivotColumn, pivotColumn.Split('_')[1]);
+                }
+                tempP = tempP.Substring(0, tempP.Length - 1);
+
+                if (isTimePeriod && !dynamicQuery.IsTotals)
+                {
+                    foreach (string column in parameters)
+                    {
+                        columnstoGroup += column + ",";
+                    }
+                    columnstoGroup = columnstoGroup.Substring(0, columnstoGroup.Length - 1);
+                    pivot.Append(string.Format(" {0} from {1} {2} {3}) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns));
+                }
+                else
+                {
+                    pivot.Append(string.Format(" {0} from {1} {2}) AS E_GROUP", tempC + tempP, reportName, where));
+                }
+
+                foreach (string pivotColumn in pivotColumns)
+                {
+                    pivot.Append(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
+                }
 
                 tempC = tempC.Substring(0, tempC.Length - 1);
                 if (dynamicQuery.IsTotals || isGroupPivot)
+                {
                     pivot.Append(string.Format(" group by {0}) AS F_GROUP ", tempC));
+                }
                 else
+                {
                     pivot.Append(" ) AS F_GROUP ");
+                }
 
                 if (!dynamicQuery.IsTotals)
                 {
@@ -558,7 +585,6 @@ namespace MiddleWareReports
                     dynamicQuery.SqlPaginate = String.Format("select * from ({0}) AS G_GROUP", dynamicQuery.SqlPaginate);
                 }
             }
-
             else
             {
                 pivot.Append(" declare @out nvarchar(max) exec sp_executesql N'");
@@ -594,10 +620,10 @@ namespace MiddleWareReports
         }
 
         /// <summary>
-        /// Given a collection of values, separated by | , creates various equality statements concatenated 
-        /// by the conjunction type value.        
+        /// Given a collection of values, separated by | , creates various equality statements concatenated
+        /// by the conjunction type value.
         /// </summary>
-        /// <param name="conjunctionType">The operator to be used in the conjunctions</param> 
+        /// <param name="conjunctionType">The operator to be used in the conjunctions</param>
         /// <param name="parameter">The parameter to be used in the equality statement</param>
         /// <param name="value">A serie of values separated by | that will be used to create equality statements</param>
         /// <returns>
@@ -671,6 +697,7 @@ namespace MiddleWareReports
                 return "";
             }
         }
-        #endregion
+
+        #endregion Private Methods
     }
 }

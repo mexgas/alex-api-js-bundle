@@ -4700,6 +4700,130 @@ return(0)
 '
 	EXEC(@sql)	
 
+	set @process = 'CW-5333 EOMC Alter sp ccsp_GalateaAdminBlackListCampout'	
+	set @sql = '
+ALTER PROCEDURE ccsp_GalateaAdminBlackListCampout-- basandose del sp ccsp_RIABlackListCamp
+@Option smallint,
+@IDArea smallint = 0,
+@CamID SmallInt = 0,
+@InsertSchedule_id varchar(max) = ''0'',
+@DeleteSchedule_id varchar(max) = ''0'',
+@ManyOutboundIDs varchar(max)=''''
+as
+
+if @Option = 1 -- Asignar listas negras a una campaña de salida
+ begin
+
+  if @CamID = 0
+   begin
+    update Camplistanegra set status = 1 where idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+
+    insert into Camplistanegra (idtipolista, cam_id, status)
+    select FN.value, C.cam_id, 1 from ccCamps C, dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','') FN where C.IDArea = @IDArea
+    and C.cam_id not in (select CL.cam_id from Camplistanegra CL join dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','') FN
+    on CL.idtipolista = FN.value where CL.status = 1)
+    return(0)
+   end
+
+  update Camplistanegra set status = 1 where cam_id = @CamID
+  and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+
+  insert into Camplistanegra (idtipolista, cam_id, status)
+  select value, @CamID, 1 from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')
+    where value not in (select idtipolista from Camplistanegra where cam_id = @CamID and status = 1
+    and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')))
+
+  Insert Into ccAgendaListaNegra (campsid,fecharegs,fechaaplicar) values (@CamID,''20100101'',getDate()) -- El 2010 es para que quite registros viejos con base en el cal fecha dial de ccocallsoutsource, principalmente para quitar callbacks de numeros cargados hace mucho tiempo
+
+  declare @idAgenda as int
+  select @idAgenda = SCOPE_IDENTITY()
+
+  insert into ccAgenda_TipoListaNegra(idAgenda,idtipolista)
+  select @idAgenda, value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '','')
+
+  select DISTINCT idtipolista as BlacklistIdAssigned from Camplistanegra 
+  where cam_id=@CamID and status=1 and idtipolista in (select value from dbo.fn_RIASplitDelimited(@InsertSchedule_id, '',''))
+ end
+
+if @Option = 2 -- Desasignar listas negras de la campaña de salida @CamID
+ begin
+  update Camplistanegra set status = 0 where cam_id = @CamID  and idtipolista in (select value from dbo.fn_RIASplitDelimited(@DeleteSchedule_id, '',''))
+  return(0)
+ end
+
+if @Option = 3 -- Desasignar listas negras de todas las campañas de salida a las que esten asignadas
+ begin
+ update Camplistanegra set status = 0 where idtipolista in (select value from dbo.fn_RIASplitDelimited(@DeleteSchedule_id, '',''))
+  return(0)
+ end
+
+ if @Option = 4 -- trae las listas negras de la campaña de salida indicada en @CamID
+ begin
+  select cl.cam_id as CampId, ca.cam_descripcion as CampName, cl.idtipolista as BlacklistId, tl.Tipolista as BlacklistName
+  from Camplistanegra cl join ccCamps ca on cl.cam_id = ca.cam_id
+   join cctiposlistanegra tl on cl.idtipolista = tl.idtipolista
+  where cl.status = 1 and cl.cam_id = @CamID
+  order by 1, 3
+  return(0)
+ end
+
+  if @Option = 5 -- trae las relaciones entre listas negras y las campaña de salida indicadas en @ManyOutboundIDs
+ begin
+  select cl.cam_id as CampId, ca.cam_descripcion as CampName, cl.idtipolista as BlacklistId, tl.Tipolista as BlacklistName
+  from Camplistanegra cl join ccCamps ca on cl.cam_id = ca.cam_id
+   join cctiposlistanegra tl on cl.idtipolista = tl.idtipolista
+  where cl.status = 1 and cl.cam_id in(select value from dbo.fn_RIASplitDelimited(@ManyOutboundIDs, '',''))
+  order by 1, 3
+  return(0)
+ end
+'
+    EXEC(@sql)
+	
+
+set @process = 'CW-5321 Servicio para recuperar la información de la campaña'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
+            begin
+          DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+            end'
+    EXEC(@sql)
+
+	
+set @process = 'CW-5321 Servicio para recuperar la información de la campaña'	
+	set @sql = 'CREATE PROCEDURE ccsp_GalateaGetOutboundConfiguration
+@adminID int,
+@campID int
+AS
+BEGIN
+
+	declare @AllCampaigns table 
+	(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
+	cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
+	cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
+	detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
+	dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
+	t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
+	callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
+	callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+	prefijo varchar(40),enbleprefix bit )
+	 
+	 INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID
+
+	 SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
+	 t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
+	 ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
+	 callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
+	 prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
+	 cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, cam_inter_cancelled CamInterCancelled,
+	 cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
+	 editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+	 compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd
+	 from @AllCampaigns WHERE cam_id = @campID
+END
+'
+    EXEC(@sql)
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

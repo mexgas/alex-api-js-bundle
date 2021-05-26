@@ -1,12 +1,11 @@
 ﻿using MiddleWareReports;
+using NLog;
 using System;
 using System.Collections.Specialized;
 using System.Data.SqlClient;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Xml;
-using NLog;
 
 public partial class CWReportsEngine : System.Web.UI.Page
 {
@@ -269,7 +268,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             }
 
             //Get URL parameters through HashTable
-            getParameters();
+            GetParameters();
 
             //Get collection of parameters after being processed
             parameters.Clear();
@@ -366,7 +365,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
                     parameters["templateId"] = templateId;
                 }
 
-                Response.Write(report.getXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals).OuterXml);
+                Response.Write(report.GetXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals).OuterXml);
             }
             else //Get report in format X
             {
@@ -377,7 +376,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
                 Response.ClearContent();
                 Response.ClearHeaders();
 
-                MiddleWareReports.ReportFormat exportFormat = MiddleWareReports.ExportReportFactory.GenerateReport(format);
+                ReportFormat exportFormat = ExportReportFactory.GenerateReport(format);
 
                 if (format.Equals("csv"))
                 {
@@ -516,7 +515,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
         }
     }
 
-    private void getParameters()
+    private void GetParameters()
     {
         //Get Parameters and remove after use
         format = ParametersReader.getParameters("format", true);

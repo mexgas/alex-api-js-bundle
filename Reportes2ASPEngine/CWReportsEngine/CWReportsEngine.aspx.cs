@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml;
+using NLog;
 
 public partial class CWReportsEngine : System.Web.UI.Page
 {
@@ -32,6 +33,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
     private string crmTemplateId;
     private string templateId;
     private string chartFields;
+    private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -487,28 +489,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
             {
                 if (type == "1")
                 {
-                    //Genera Log de Error
-                    string logFolder = "C:\\logReports";
-                    string logPath = logFolder + "\\logReports" + DateTime.Now.ToString("dd") + DateTime.Now.ToString("MM") + DateTime.Now.ToString("yyyy") + ".txt";
-                    StreamWriter log;
-                    string strLogText = "..::Error " + DateTime.Now.ToString() + "::.. Code:" + code + ", Type:" + errorType + ", Message:" + errorMessage + ", Number:" + errorNumber;
-
-                    if (!(Directory.Exists(logFolder)))
-                    {
-                        Directory.CreateDirectory(logFolder);
-                    }
-
-                    if (!File.Exists(logPath))
-                    {
-                        log = new StreamWriter(logPath);
-                    }
-                    else
-                    {
-                        log = File.AppendText(logPath);
-                    }
-
-                    log.WriteLine(strLogText);
-                    log.Close();
+                    Logger.Warn("::.. Code:" + code + ", Type:" + errorType + ", Message:" + errorMessage + ", Number:" + errorNumber);
                 }
 
                 //Genera XML de Error o Alerta

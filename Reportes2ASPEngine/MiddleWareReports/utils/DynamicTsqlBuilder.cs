@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,6 +10,8 @@ namespace MiddleWareReports
     /// </summary>
     public static class DynamicTsqlBuilder
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         #region SQL Clauses
 
         private const string AND = "AND";
@@ -27,9 +30,7 @@ namespace MiddleWareReports
         private const string ROWNUM = "rownum";
         private const string CONCAT = "+";
         private const string COMMA = ",";
-        private const int REPORTSELECT = 0;
-        private const int PIECHARTSELECT = 1;
-        private const int SERIESCHARTSELECT = 2;
+
 
         #endregion SQL Clauses
 
@@ -132,7 +133,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="statement">The statement to be enclosed and prepended with an AND</param>
         /// <returns>The statement between parentheses and prepended by an AND</returns>
-        public static StringBuilder andConjunction(StringBuilder statement)
+        public static StringBuilder AndConjunction(StringBuilder statement)
         {
             return conjunctionStatement(AND, statement);
         }
@@ -196,7 +197,7 @@ namespace MiddleWareReports
         /// </returns>
         /// /// <example><code>orStatement("name","john|ana|ron"); // name = 'john' OR name = 'ana' OR name = 'ron'</code></example>
         ///  <seealso cref="DynamicTsqlBuilder.booleanStatement"/>
-        public static StringBuilder orStatement(string parameter, string value)
+        public static StringBuilder OrStatement(string parameter, string value)
         {
             return booleanStatement(OR, parameter, value);
         }
@@ -330,7 +331,7 @@ namespace MiddleWareReports
         /// <returns>A conjunction of the statement and the passed operator</returns>
         private static StringBuilder conjunctionStatement(string conjunction, StringBuilder statement)
         {
-            return new StringBuilder().Append(string.Format(" {0} ({1})", conjunction, statement));
+            return new StringBuilder().AppendLine(string.Format(" {0} ({1})", conjunction, statement));
         }
 
         /// <summary>
@@ -468,7 +469,7 @@ namespace MiddleWareReports
                         pivot.AppendLine(string.Format(" declare @pivot3_{0} nvarchar(max)", pivotColumn));
                     }
                     pivot.Append(string.Format(" select @pivot1_{0} = coalesce(@pivot1_{0} + '','','''') + QuoteName({0})", pivotColumn));
-                    pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T1_{0}", pivotColumn, reportName, where));
+                    pivot.Append(string.Format(" from (\r\nselect distinct {0} from {1} {3} \t{2} ) T1_{0} {3}", pivotColumn, reportName, where, Environment.NewLine));
                     if (dynamicQuery.IsTotals || isGroupPivot)
                     {
                         pivot.AppendLine(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunction));
@@ -478,7 +479,7 @@ namespace MiddleWareReports
                         pivot.AppendLine(string.Format(" select @pivot2_{0} = coalesce(@pivot2_{0} + '','', '''') + ''isnull('' + QuoteName({0}) + '',0) AS'' + QuoteName({0})", pivotColumn));
                     }
 
-                    pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T2_{0}", pivotColumn, reportName, where));
+                    pivot.AppendLine(string.Format(" from (select distinct {0} from {1} {3}\t {2} ) T2_{0} {3}", pivotColumn, reportName, where, Environment.NewLine));
                     if (dynamicQuery.IsTotals)
                     {
                         if (isGroupPivot)
@@ -492,14 +493,14 @@ namespace MiddleWareReports
 
                         if (isGroupPivot)
                         {
-                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                            pivot.AppendLine(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + ''isnull({1}('' + QuoteName({0}) + ''),0) AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
                         }
                         else
                         {
-                            pivot.Append(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + '' {1}('''''''') AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
+                            pivot.AppendLine(string.Format(" select @pivot3_{0} = coalesce(@pivot3_{0} + '','', '''') + '' {1}('''''''') AS'' + QuoteName({0})", pivotColumn, pivotFunctionTotal));
                         }
 
-                        pivot.Append(string.Format(" from (select distinct {0} from {1} {2} ) T3_{0}", pivotColumn, reportName, where));
+                        pivot.Append(string.Format(" from (select distinct {0} from {1} {3} \t{2} ) T3_{0} {3}", pivotColumn, reportName, where, Environment.NewLine));
                     }
                 }
                 pivot.AppendLine(" declare @query nvarchar(max)");
@@ -549,26 +550,26 @@ namespace MiddleWareReports
                         columnstoGroup += column + ",";
                     }
                     columnstoGroup = columnstoGroup.Substring(0, columnstoGroup.Length - 1);
-                    pivot.Append(string.Format(" {0} from {1} {2} {3}) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns));
+                    pivot.Append(string.Format(" {0} from {1} {2} {4} \t{3} {4} \t) AS D_GROUP", columnstoGroup, reportName, where, groupByColumns, Environment.NewLine));
                 }
                 else
                 {
-                    pivot.Append(string.Format(" {0} from {1} {2}) AS E_GROUP", tempC + tempP, reportName, where));
+                    pivot.Append(string.Format(" {0} from {1} {3} \t {2} {3} \t) AS E_GROUP", tempC + tempP, reportName, where, Environment.NewLine));
                 }
 
                 foreach (string pivotColumn in pivotColumns)
                 {
-                    pivot.Append(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
+                    pivot.AppendLine(string.Format(" pivot ({0}({1}) for {2} in ('' + @pivot1_{2} + '')) as PV_{2}", pivotFunction, pivotColumn.Split('_')[1], pivotColumn));
                 }
 
                 tempC = tempC.Substring(0, tempC.Length - 1);
                 if (dynamicQuery.IsTotals || isGroupPivot)
                 {
-                    pivot.Append(string.Format(" group by {0}) AS F_GROUP ", tempC));
+                    pivot.Append(string.Format(" group by {0} {1}) AS F_GROUP ", tempC, Environment.NewLine));
                 }
                 else
                 {
-                    pivot.Append(" ) AS F_GROUP ");
+                    pivot.AppendLine(" ) AS F_GROUP ");
                 }
 
                 if (!dynamicQuery.IsTotals)
@@ -633,29 +634,37 @@ namespace MiddleWareReports
         private static StringBuilder booleanStatement(string conjunctionType, string parameter, string value)
         {
             StringBuilder statement = new StringBuilder();
-            bool first = true;
             int i = 1;
 
-            if (parameter != null && parameter.Length > 0
-                && value != null && value.Length > 0)
+            if (!string.IsNullOrEmpty(parameter) && !string.IsNullOrEmpty(value))
             {
                 value = value.Replace('|', ',');
                 string[] elements = value.Split(',');
-                foreach (string element in elements)
+
+                if (conjunctionType.Equals(OR))
                 {
-                    if (first)
+                    Logger.Trace("Change OR for in {0}:{1}", parameter, value);
+                    statement.AppendFormat(" {1} in( ", conjunctionType, parameter);
+
+                    for (i = 1; i <= elements.Length; i++)
                     {
-                        statement.Append(string.Format(" {0} {1} = {2} ", "", parameter, "@" + parameter + i.ToString()));
-                        first = false;
+                        statement.AppendFormat("@{0}{1},", parameter, i);
                     }
-                    else
+
+                    statement.Length--;
+                    statement.Append(")");
+
+                }
+                else
+                {
+                    statement.AppendFormat(" {0} @{1}1 = {2} ", "", parameter, parameter);
+                    for (i = 2; i < elements.Length; i++)
                     {
-                        statement.Append(string.Format(" {0} {1} = {2} ", conjunctionType, parameter, "@" + parameter + i.ToString()));
+                        statement.AppendFormat(" {0} {1}} = @{1}{2} ", conjunctionType, parameter, i);
                     }
-                    i++;
                 }
             }
-
+            Logger.Trace(statement);
             return statement;
         }
 

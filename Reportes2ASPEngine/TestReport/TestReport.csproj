@@ -33,6 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="MigraDoc.DocumentObjectModel">
       <HintPath>..\MiddleWareReports\Migradocs\MigraDoc.DocumentObjectModel.dll</HintPath>
@@ -43,6 +44,9 @@
     <Reference Include="MigraDoc.RtfRendering">
       <HintPath>..\MiddleWareReports\Migradocs\MigraDoc.RtfRendering.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.7.10\lib\net40-client\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="PdfSharp">
       <HintPath>..\MiddleWareReports\Migradocs\PdfSharp.dll</HintPath>
     </Reference>
@@ -50,12 +54,16 @@
       <HintPath>..\MiddleWareReports\Migradocs\PdfSharp.Charting.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -74,6 +82,9 @@
       <Project>{3417E82C-3907-4110-BE0F-278F97CF51D8}</Project>
       <Name>MiddleWareReports</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

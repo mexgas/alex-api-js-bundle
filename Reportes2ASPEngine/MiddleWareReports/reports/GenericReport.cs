@@ -1469,7 +1469,7 @@ namespace MiddleWareReports
                 foreach (string r in ranges)
                 {
                     string[] aux = r.Split(':');
-                    whereStatement.Append(DynamicTsqlBuilder.andConjunction(DynamicTsqlBuilder.betweenStatement(aux[0])));
+                    whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.betweenStatement(aux[0])));
 
                     parameters.Append(string.Format(", @" + aux[0] + "Min" + " " + DBSchema.getDataType(aux[0]).ToString()));
                     values.Add("@" + aux[0] + "Min", aux[1]);
@@ -1548,7 +1548,7 @@ namespace MiddleWareReports
 
                     for (int i = 0; i < columnLength; i++)
                     {
-                        whereStatement.Append(DynamicTsqlBuilder.andConjunction(DynamicTsqlBuilder.orStatement(columnId[i], id[i])));
+                        whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.OrStatement(columnId[i], id[i])));
 
                         parameters.Append(string.Format(", @" + columnId[i] + "1 " + DBSchema.getDataType(columnId[i]).ToString()));
                         values.Add("@" + columnId[i] + "1", id[i]);
@@ -1558,13 +1558,14 @@ namespace MiddleWareReports
                 paramValueList.Remove("id");
 
                 string columnDetail = "";
-                if (paramValueList["column"] != null && paramValueList["column"].Length > 0)
+                string columnData = paramValueList["column"];
+                if (!string.IsNullOrEmpty(columnData))
                 {
-                    columnDetail = paramValueList["column"];
+                    columnDetail = columnData;
                     if (columnDetail.Contains("|"))
                     {
                         string[] colPivot = columnDetail.Split('|');
-                        whereStatement.Append(DynamicTsqlBuilder.andConjunction(DynamicTsqlBuilder.orStatement(colPivot[0], colPivot[1])));
+                        whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.OrStatement(colPivot[0], colPivot[1])));
 
                         parameters.Append(string.Format(", @" + colPivot[0] + "1 " + DBSchema.getDataType(colPivot[0]).ToString()));
                         values.Add("@" + colPivot[0] + "1", colPivot[1]);
@@ -1589,7 +1590,8 @@ namespace MiddleWareReports
                 int i = 1;
                 if (paramValueList[parameter].ToString() != "")
                 {
-                    whereStatement.Append(DynamicTsqlBuilder.andConjunction(DynamicTsqlBuilder.orStatement(parameter, paramValueList[parameter])));
+
+                    whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.OrStatement(parameter, paramValueList[parameter])));
 
                     value = paramValueList[parameter].Replace('|', ',');
 

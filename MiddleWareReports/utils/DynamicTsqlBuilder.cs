@@ -17,19 +17,11 @@ namespace MiddleWareReports
         private const string AND = "AND";
         private const string OR = "OR";
         private const string BETWEEN = "BETWEEN";
-        private const string UNION = "UNION";
         private const string GROUPBY = "GROUP BY";
         private const string ORDERBY = "ORDER BY";
         private const string ASCENDING = "ASC";
         private const string DESCENDING = "DESC";
-        private const string SELECT = "SELECT";
-        private const string FROM = "FROM";
-        private const string WHERE = "WHERE";
-        private const string IN = "IN";
-        private const string TOP = "TOP";
         private const string ROWNUM = "rownum";
-        private const string CONCAT = "+";
-        private const string COMMA = ",";
 
 
         #endregion SQL Clauses
@@ -50,13 +42,13 @@ namespace MiddleWareReports
             if (pivotColumns != "" && complementColumns != "" && !addCountColumn)
             {
                 string[] pivotColumnsArray = pivotColumns.Split('|');
-                string[] complementColumnsArray = getFilterColumnsPivot(parameters, complementColumns.Split('|'));
+                string[] complementColumnsArray = GetFilterColumnsPivot(parameters, complementColumns.Split('|'));
 
-                return getPivotColumns(pivotColumnsArray, tableName, complementColumnsArray, addRowNum, where, pivotFunction, isTimePeriod, parameters, groupByColumns, dynamicQuery, isGroupPivot);
+                return GetPivotColumns(pivotColumnsArray, tableName, complementColumnsArray, addRowNum, where, pivotFunction, isTimePeriod, parameters, groupByColumns, dynamicQuery, isGroupPivot);
             }
             else
             {
-                return selectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery, dateColumnName);
+                return SelectReportFromStatement(parameters, tableName, addRowNum, addCountColumn, countColumn, isTimePeriod, dynamicQuery, dateColumnName);
             }
         }
 
@@ -67,7 +59,7 @@ namespace MiddleWareReports
         /// <param name="dateEnd">Records must be lesser or equal to this date</param>
         /// <returns>A where statement that searches for rows between a start date and an end date</returns>
         /// <remarks>Example: WHERE date >= @dateStart AND date &gt; @dateEnd </remarks>
-        public static StringBuilder whereDateStatement(DateTime dateStart, DateTime dateEnd)
+        public static StringBuilder WhereDateStatement(DateTime dateStart, DateTime dateEnd)
         {
             StringBuilder statement = new StringBuilder();
             statement.AppendLine(string.Format("\t WHERE {0} >= '{1}' AND {0} <= '{2}'  ", "date", dateStart.ToString("yyyy-MM-dd HH:mm:ss"), dateEnd.ToString("yyyy-MM-dd HH:mm:ss")));
@@ -83,7 +75,7 @@ namespace MiddleWareReports
         /// <param name="pageNumber">Page number</param>
         /// <param name="dynamicQuery">The created dynamic query to be used</param>
         /// <returns>A query that only selects the rows contained into the given page</returns>
-        public static StringBuilder addPaging(StringBuilder queryWithRowNum, string reportName, int pageSize, int pageNumber, bool isPivot, bool isTimePeriod, DynamicQuery dynamicQuery)
+        public static StringBuilder AddPaging(StringBuilder queryWithRowNum, string reportName, int pageSize, int pageNumber, bool isPivot, bool isTimePeriod, DynamicQuery dynamicQuery)
         {
             if (pageNumber > 0)
             {
@@ -135,7 +127,7 @@ namespace MiddleWareReports
         /// <returns>The statement between parentheses and prepended by an AND</returns>
         public static StringBuilder AndConjunction(StringBuilder statement)
         {
-            return conjunctionStatement(AND, statement);
+            return ConjunctionStatement(AND, statement);
         }
 
         /// <summary>
@@ -143,9 +135,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="statement">The statement to be enclosed and prepended with an OR</param>
         /// <returns>The statement between parentheses and prepended by an OR</returns>
-        public static StringBuilder orConjunction(StringBuilder statement)
+        public static StringBuilder OrConjunction(StringBuilder statement)
         {
-            return conjunctionStatement(OR, statement);
+            return ConjunctionStatement(OR, statement);
         }
 
         /// <summary>
@@ -159,10 +151,10 @@ namespace MiddleWareReports
         /// specified parameter and concatenated with AND operators
         /// </returns>
         /// <example><code>andStatement("name","john|ana|ron"); // name = 'john' AND name = 'ana' AND name = 'ron'</code></example>
-        /// <seealso cref="DynamicTsqlBuilder.booleanStatement"/>
-        public static StringBuilder andStatement(string parameter, string value)
+        /// <seealso cref="DynamicTsqlBuilder.BooleanStatement"/>
+        public static StringBuilder AndStatement(string parameter, string value)
         {
-            return booleanStatement(AND, parameter, value);
+            return BooleanStatement(AND, parameter, value);
         }
 
         /// <summary>
@@ -176,13 +168,13 @@ namespace MiddleWareReports
         /// specified parameter and concatenated with AND operators
         /// </returns>
         /// <example><code>andStatement("name","john|ana|ron"); // name = 'john' AND name = 'ana' AND name = 'ron'</code></example>
-        /// <seealso cref="DynamicTsqlBuilder.booleanStatement"/>
-        public static StringBuilder andStatement(string parameter, string value, string op)
+        /// <seealso cref="DynamicTsqlBuilder.BooleanStatement"/>
+        public static StringBuilder AndStatement(string parameter, string value, string op)
         {
             StringBuilder stament = new StringBuilder();
-            stament.Append(string.Format("{0} {1} {2}", parameter, translateOperator(op), value));
+            stament.Append(string.Format("{0} {1} {2}", parameter, TranslateOperator(op), value));
 
-            return conjunctionStatement(AND, stament);
+            return ConjunctionStatement(AND, stament);
         }
 
         /// <summary>
@@ -196,10 +188,10 @@ namespace MiddleWareReports
         /// specified parameter and concatenated with OR operators
         /// </returns>
         /// /// <example><code>orStatement("name","john|ana|ron"); // name = 'john' OR name = 'ana' OR name = 'ron'</code></example>
-        ///  <seealso cref="DynamicTsqlBuilder.booleanStatement"/>
+        ///  <seealso cref="DynamicTsqlBuilder.BooleanStatement"/>
         public static StringBuilder OrStatement(string parameter, string value)
         {
-            return booleanStatement(OR, parameter, value);
+            return BooleanStatement(OR, parameter, value);
         }
 
         /// <summary>
@@ -209,7 +201,7 @@ namespace MiddleWareReports
         /// <returns>
         /// Statement the operator BETWEEN parameter
         /// </returns>
-        public static StringBuilder betweenStatement(string parameter)
+        public static StringBuilder BetweenStatement(string parameter)
         {
             return new StringBuilder().Append(string.Format(" {0} {1} {3} {2} {4} ", parameter, BETWEEN, AND, "@" + parameter + "Min", "@" + parameter + "Max"));
         }
@@ -219,9 +211,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="columns">The columns that conform the GROUP BY statement</param>
         /// <returns>A GROUP BY statement using the columns passed in the parameter</returns>
-        public static StringBuilder groupByStatement(LinkedList<string> columns)
+        public static StringBuilder GroupByStatement(LinkedList<string> columns)
         {
-            return aggregateByStatement(GROUPBY, columns);
+            return AggregateByStatement(GROUPBY, columns);
         }
 
         /// <summary>
@@ -229,9 +221,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
         /// <returns>An ORDER BY statement using the columns passed in the parameter in ascending order</returns>
-        public static StringBuilder orderByAscStatement(LinkedList<string> columns)
+        public static StringBuilder OrderByAscStatement(LinkedList<string> columns)
         {
-            return orderByStatementPrivate(columns, ASCENDING);
+            return OrderByStatementPrivate(columns, ASCENDING);
         }
 
         /// <summary>
@@ -239,9 +231,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
         /// <returns>An ORDER BY statement using the columns passed in the parameter in descending order</returns>
-        public static StringBuilder orderByDescStatement(LinkedList<string> columns)
+        public static StringBuilder OrderByDescStatement(LinkedList<string> columns)
         {
-            return orderByStatementPrivate(columns, DESCENDING);
+            return OrderByStatementPrivate(columns, DESCENDING);
         }
 
         /// <summary>
@@ -249,9 +241,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="columns">The columns that conform the ORDER BY statement</param>
         /// <returns>An ORDER BY statement using the columns passed in the parameter with no specific order</returns>
-        public static StringBuilder orderByStatement(LinkedList<string> columns)
+        public static StringBuilder OrderByStatement(LinkedList<string> columns)
         {
-            return orderByStatementPrivate(columns);
+            return OrderByStatementPrivate(columns);
         }
 
         /// <summary>
@@ -259,9 +251,9 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="dynamicQuery">The created dynamic query to be used in the count query</param>
         /// <returns>The text to make a count query to the specified table</returns>
-        public static StringBuilder paginate(DynamicQuery dynamicQuery)
+        public static StringBuilder Paginate(DynamicQuery dynamicQuery)
         {
-            return new StringBuilder().Append(string.Format(" SELECT count(*) FROM {0}", dynamicQuery.SqlPaginate));
+            return new StringBuilder(string.Format(" SELECT count(*) FROM {0}", dynamicQuery.SqlPaginate));
         }
 
         /// <summary>
@@ -269,7 +261,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="tableName">The table to be used in the query</param>
         /// <returns>The text to select 1 row from the specified table</returns>
-        public static StringBuilder getTableColumns(string tableName)
+        public static StringBuilder GetTableColumns(string tableName)
         {
             return new StringBuilder(string.Format("SELECT TOP 1 * FROM [dbo].[{0}] ", tableName));
         }
@@ -279,7 +271,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="process">Id of the report to be searched</param>
         /// <returns>The text indicating the columns to be used for the totals query</returns>
-        public static StringBuilder getTotalColumns(short process)
+        public static StringBuilder GetTotalColumns(short process)
         {
             return new StringBuilder(string.Format("SELECT TotalColumns FROM ReportsTotals WHERE Id={0}", process));
         }
@@ -294,11 +286,11 @@ namespace MiddleWareReports
         /// </remarks>
         ///<example><code></code> having("ge", 5) ; // HAVING COUNT(*) >= 5  </example>
         /// <returns>A HAVING  statement with  the passed operator and value</returns>
-        public static StringBuilder having(string havingOp, int havingVal)
+        public static StringBuilder Having(string havingOp, int havingVal)
         {
             StringBuilder statement = new StringBuilder();
             string validOperator = "";
-            validOperator = translateOperator(havingOp);
+            validOperator = TranslateOperator(havingOp);
 
             if (validOperator.Length > 0)
             {
@@ -318,9 +310,9 @@ namespace MiddleWareReports
         /// <param name="columns">Columns used in the order by</param>
         /// <param name="orderType">ASC | DESC | Nothing</param>
         /// <returns>An ORDER BY statement using the columns passed and the ordering type specified</returns>
-        private static StringBuilder orderByStatementPrivate(LinkedList<string> columns, string orderType = "")
+        private static StringBuilder OrderByStatementPrivate(LinkedList<string> columns, string orderType = "")
         {
-            return aggregateByStatement(ORDERBY, columns).Append(string.Format(" {0} ", orderType));
+            return AggregateByStatement(ORDERBY, columns).Append(string.Format(" {0} ", orderType));
         }
 
         /// <summary>
@@ -329,7 +321,7 @@ namespace MiddleWareReports
         /// <param name="conjunction">AND | OR</param>
         /// <param name="statement">The statement to be appended</param>
         /// <returns>A conjunction of the statement and the passed operator</returns>
-        private static StringBuilder conjunctionStatement(string conjunction, StringBuilder statement)
+        private static StringBuilder ConjunctionStatement(string conjunction, StringBuilder statement)
         {
             return new StringBuilder().AppendLine(string.Format(" {0} ({1})", conjunction, statement));
         }
@@ -343,21 +335,16 @@ namespace MiddleWareReports
         /// <param name="addCountColumn">Indicates if a count(*) column must be added</param>
         /// <param name="dynamicQuery">The created dynamic query to be used</param>
         /// <returns>The SELECT FROM part of a sql statement</returns>
-        private static StringBuilder selectReportFromStatement(LinkedList<string> columns, string tableName, bool addRowNum, bool addCountColumn, string countColumn, bool isTimePeriod, DynamicQuery dynamicQuery, string dateColumnName)
+        private static StringBuilder SelectReportFromStatement(LinkedList<string> columns, string tableName, bool addRowNum, bool addCountColumn, string countColumn, bool isTimePeriod, DynamicQuery dynamicQuery, string dateColumnName)
         {
             StringBuilder statement = new StringBuilder();
             string rowNumExpression = "";
 
             if (addCountColumn)
             {
-                if (countColumn != "")
-                {
-                    countColumn = string.Format(", " + countColumn + " as totalCount ");
-                }
-                else
-                {
-                    countColumn = string.Format(", count(*) as  totalCount ");
-                }
+
+                countColumn = !string.IsNullOrEmpty(countColumn) ? string.Format(", {0} as totalCount ", countColumn)
+                : ", count(*) as  totalCount ";
             }
 
             if (addRowNum)
@@ -409,7 +396,7 @@ namespace MiddleWareReports
         /// <param name="parameters">Table´s columns to be used in the query</param>
         /// <param name="complementColumns">Table to be used in the select statement</param>
         /// <returns>Array columns selected</returns>
-        private static string[] getFilterColumnsPivot(LinkedList<string> parameters, string[] complementColumns)
+        private static string[] GetFilterColumnsPivot(LinkedList<string> parameters, string[] complementColumns)
         {
             if (parameters.Count == 0)
             {
@@ -430,7 +417,7 @@ namespace MiddleWareReports
             return arrayColumns;
         }
 
-        private static StringBuilder getPivotColumns(string[] pivotColumns, string reportName, string[] complementColumns, bool addRowNum, string where, string pivotFunction, bool isTimePeriod, LinkedList<string> parameters, string groupByColumns, DynamicQuery dynamicQuery, bool isGroupPivot)
+        private static StringBuilder GetPivotColumns(string[] pivotColumns, string reportName, string[] complementColumns, bool addRowNum, string where, string pivotFunction, bool isTimePeriod, LinkedList<string> parameters, string groupByColumns, DynamicQuery dynamicQuery, bool isGroupPivot)
         {
             StringBuilder pivot = new StringBuilder();
             string tempC = "";
@@ -599,7 +586,7 @@ namespace MiddleWareReports
         /// <param name="aggregateClause">GROUP BY | ORDER BY</param>
         /// <param name="columns">columns to be used in the statement</param>
         /// <returns>A BY query using the specified operator and columns</returns>
-        private static StringBuilder aggregateByStatement(string aggregateClause, LinkedList<string> columns)
+        private static StringBuilder AggregateByStatement(string aggregateClause, LinkedList<string> columns)
         {
             StringBuilder statement = new StringBuilder();
             statement.Append(" " + aggregateClause + " ");
@@ -631,7 +618,7 @@ namespace MiddleWareReports
         /// A serie of equality statements equal to the number of elements in the value that compare to the
         /// specified parameter and concatenated with the conjunction type operators
         /// </returns>
-        private static StringBuilder booleanStatement(string conjunctionType, string parameter, string value)
+        private static StringBuilder BooleanStatement(string conjunctionType, string parameter, string value)
         {
             StringBuilder statement = new StringBuilder();
             int i = 1;
@@ -644,7 +631,7 @@ namespace MiddleWareReports
                 if (conjunctionType.Equals(OR))
                 {
                     Logger.Trace("Change OR for in {0}:{1}", parameter, value);
-                    statement.AppendFormat(" {1} in( ", conjunctionType, parameter);
+                    statement.AppendFormat(" {0} in( ", parameter);
 
                     for (i = 1; i <= elements.Length; i++)
                     {
@@ -673,7 +660,7 @@ namespace MiddleWareReports
         /// </summary>
         /// <param name="op">The inequality operator to be transformed</param>
         /// <returns>An SQL inequality operator</returns>
-        private static string translateOperator(string op)
+        private static string TranslateOperator(string op)
         {
             op = op.ToLower();
 

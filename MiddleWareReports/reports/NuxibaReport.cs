@@ -9,7 +9,7 @@ namespace MiddleWareReports
     /// </summary>
     public interface NuxibaReport
     {
-        XmlDocument getXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals);
+        XmlDocument GetXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals);
 
         DataTable getDataReport(NameValueCollection parameters, short process);
 

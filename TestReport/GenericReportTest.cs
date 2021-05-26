@@ -90,14 +90,14 @@ namespace TestReport
                 string savetemplate = "save";
                 string totals = "1";
                 XmlDocument actual;
-                actual = target.getXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals);
+                actual = target.GetXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals);
                 Assert.IsNotNull(actual);
                 if (actual == null)
                 {
                     Assert.Fail("Not Exists parameters");
                 }
 
-                XmlDocument doc = target.getXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals);
+                XmlDocument doc = target.GetXmlReport(parameters, process, addFilters, sourceUserId, savetemplate, totals);
                 XmlNodeList node = doc.SelectNodes("/Report/Rows/Row/Cell");
 
                 if (node == null)

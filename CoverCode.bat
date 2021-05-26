@@ -1,0 +1,25 @@
+@echo off
+cls
+ 
+echo Se Configura por proyecto
+ 
+set NameSpace=NuxibaAppBase
+ 
+set NameSpaceProyect="%NameSpace%.Services"
+set pathDLL=".\%NameSpace%.Test.Unit\bin\Debug\%NameSpace%.Test.Unit.dll"
+ 
+set PathOpenCover=%appdata%\..\Local\Apps\OpenCover\OpenCover.Console.exe
+set PathNunit=C:\Program Files (x86)\NUnit.org\nunit-console\nunit3-console.exe
+set PathReportGenerator=C:\ReportGenerator\ReportGenerator.exe
+ 
+echo PathOpenCover %PathOpenCover%
+echo PathNunit %PathNunit%
+echo PathReportGenerator %PathReportGenerator%
+ 
+"%PathOpenCover%" -target:"%PathNunit%" -targetargs:"%pathDLL% --result=unitTestResult.xml;format=\"nunit2\"" -excludebyattribute:*.ExcludeFromCodeCoverage* -filter:"+[%NameSpaceProyect%]* -[%NameSpaceProyect%]*.Model.Dto.* -[%NameSpaceProyect%]*.Model.Db.* -[%NameSpaceProyect%]*.Helper.Event.* -[%NameSpaceProyect%]*.Wrapper.* -[%NameSpaceProyect%]*.Delegates.* -[%NameSpaceProyect%]*.Properties.* -[%NameSpaceProyect%]*.Repository.Db.* " -register:user -hideskipped:Filter -output:".\Coverge.xml"
+ 
+"%PathReportGenerator%" -reports:"Coverge.xml" -targetDir:"CoverageHTML" -reporttypes:HTML;PngChart "-historydir:HistoryCoverage"
+ 
+start "" ".\CoverageHTML\index.htm"
+ 
+rem pause

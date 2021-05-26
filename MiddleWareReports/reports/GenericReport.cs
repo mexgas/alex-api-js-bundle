@@ -18,7 +18,7 @@ namespace MiddleWareReports
     {
         protected string reportName;
         protected NameValueCollection translatedColumns;
-        private Dictionary<string, string> translatedSpecialColumns = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> translatedSpecialColumns = new Dictionary<string, string>();
         protected NameValueCollection convertedColumns;
         private CultureInfo currentCulture;
         protected const int PAGE_SIZE = 50;
@@ -59,7 +59,7 @@ namespace MiddleWareReports
         /// <summary>
         /// Changes the current culture of the report
         /// </summary>
-        public void changeCulture()
+        public void ChangeCulture()
         {
             if (currentCulture != null)
             {
@@ -85,9 +85,9 @@ namespace MiddleWareReports
         /// <param name="process">Id of the report</param>
         /// <remarks>Parameter names must be named excatly after the columns in the table</remarks>
         /// <returns>The data of the report as a XML</returns>
-        public virtual XmlDocument getXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals)
+        public virtual XmlDocument GetXmlReport(NameValueCollection parameters, short process, string addFilters, int sourceUserId, string savetemplate, string totals)
         {
-            changeCulture();
+            ChangeCulture();
 
             DateTime dateEndParam = DateTime.Now;
             DateTime dateNow = DateTime.Now;
@@ -212,7 +212,7 @@ namespace MiddleWareReports
         /// <returns>The data of the report as a XML</returns>
         public XmlDocument getXmlDetailReport(NameValueCollection parameters, short process)
         {
-            changeCulture();
+            ChangeCulture();
 
             //Get report data (details and totals) via a DB query
             DynamicQuery dynamicQuery = new DynamicQuery(process);
@@ -245,7 +245,7 @@ namespace MiddleWareReports
         /// <returns>A DataTable with the data satisfying the query parameters</returns>
         public virtual DataTable getDataReport(NameValueCollection parameters, short process)
         {
-            changeCulture();
+            ChangeCulture();
             NameValueCollection parametersTotals = new NameValueCollection(parameters);
 
             bool isTimePeriod = false;
@@ -359,7 +359,7 @@ namespace MiddleWareReports
         public XmlDocument getReportFilters(NameValueCollection parameters, short process)
         {
             string complementColumns = "";
-            changeCulture();
+            ChangeCulture();
 
             XmlDocument xml = new XmlDocument();
             xml.AppendChild(xml.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
@@ -396,7 +396,7 @@ namespace MiddleWareReports
 
         public XmlDocument getCRMReportFilters(NameValueCollection parameters, short process, bool getMenus)
         {
-            changeCulture();
+            ChangeCulture();
 
             XmlDocument xml = new XmlDocument();
             xml.AppendChild(xml.CreateNode(XmlNodeType.XmlDeclaration, "", ""));
@@ -430,7 +430,7 @@ namespace MiddleWareReports
         /// <returns>A xml list containing the fields that can be used in the crm´s search queries</returns>
         public XmlDocument getCRMFields(NameValueCollection parameters, short process)
         {
-            changeCulture();
+            ChangeCulture();
 
             XmlDocument xml = new XmlDocument();
 
@@ -909,7 +909,7 @@ namespace MiddleWareReports
         /// <returns>A chart Xml from the report</returns>
         public XmlDocument getChart(NameValueCollection paramValueList, short process)
         {
-            changeCulture();
+            ChangeCulture();
 
             if (paramValueList["columns"] != null && paramValueList["columns"].Length > 0)
             {
@@ -947,7 +947,7 @@ namespace MiddleWareReports
                 StringBuilder havingStatement = new StringBuilder();
                 if (havingOp.Length > 0 && havingVal >= 0)
                 {
-                    havingStatement = DynamicTsqlBuilder.having(havingOp, havingVal);
+                    havingStatement = DynamicTsqlBuilder.Having(havingOp, havingVal);
                 }
 
                 if (columnCount <= 0)
@@ -969,9 +969,9 @@ namespace MiddleWareReports
 
                 StringBuilder query = dynamicQuery.Stmt;
 
-                query.Append((DynamicTsqlBuilder.groupByStatement(columns)));
+                query.Append((DynamicTsqlBuilder.GroupByStatement(columns)));
                 query.Append(havingStatement);
-                query.Append(DynamicTsqlBuilder.orderByDescStatement(columns));
+                query.Append(DynamicTsqlBuilder.OrderByDescStatement(columns));
 
                 switch (process)
                 {
@@ -1109,7 +1109,7 @@ namespace MiddleWareReports
         protected virtual DataTable getTableColumns()
         {
             StringBuilder query = new StringBuilder();
-            query.Append(DynamicTsqlBuilder.getTableColumns(reportName));
+            query.Append(DynamicTsqlBuilder.GetTableColumns(reportName));
             return db.executeDynamicQuery(query);
         }
 
@@ -1122,7 +1122,7 @@ namespace MiddleWareReports
         protected string GetTotalColumns(DynamicQuery dynamicQuery, DataTable detailTable, bool isTimePeriod, TimePeriod t, NameValueCollection parametersTotals)
         {
             StringBuilder query = new StringBuilder();
-            query.Append(DynamicTsqlBuilder.getTotalColumns(dynamicQuery.Process));
+            query.Append(DynamicTsqlBuilder.GetTotalColumns(dynamicQuery.Process));
             DataTable table = db.executeDynamicQuery(query);
             string totalColumns = table.Rows.Count == 0 ? string.Empty : table.Rows[0][0].ToString().Trim();
 
@@ -1469,7 +1469,7 @@ namespace MiddleWareReports
                 foreach (string r in ranges)
                 {
                     string[] aux = r.Split(':');
-                    whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.betweenStatement(aux[0])));
+                    whereStatement.Append(DynamicTsqlBuilder.AndConjunction(DynamicTsqlBuilder.BetweenStatement(aux[0])));
 
                     parameters.Append(string.Format(", @" + aux[0] + "Min" + " " + DBSchema.getDataType(aux[0]).ToString()));
                     values.Add("@" + aux[0] + "Min", aux[1]);
@@ -1572,7 +1572,7 @@ namespace MiddleWareReports
                     }
                     else
                     {
-                        whereStatement.Append(DynamicTsqlBuilder.andStatement(columnDetail, "0", "g"));
+                        whereStatement.Append(DynamicTsqlBuilder.AndStatement(columnDetail, "0", "g"));
 
                         parameters.Append(string.Format(", @" + columnDetail + "1 " + DBSchema.getDataType(columnDetail).ToString()));
                         values.Add("@" + columnDetail + "1", "0");
@@ -1621,7 +1621,7 @@ namespace MiddleWareReports
 
             if (addPaging || dynamicQuery.IsTotals)
             {
-                tsql = DynamicTsqlBuilder.addPaging(tsql, this.reportName, PAGE_SIZE, page, (isPivotReport && !addCountColumn), isTimePeriod, dynamicQuery);
+                tsql = DynamicTsqlBuilder.AddPaging(tsql, this.reportName, PAGE_SIZE, page, (isPivotReport && !addCountColumn), isTimePeriod, dynamicQuery);
             }
             else if (isPivotReport)
             {
@@ -1697,7 +1697,7 @@ namespace MiddleWareReports
         /// <returns>An XmlElement containing paging information about the resulting table</returns>
         protected virtual XmlElement innerPaginate(XmlDocument xml, DynamicQuery dynamicQuery)
         {
-            StringBuilder query = DynamicTsqlBuilder.paginate(dynamicQuery);
+            StringBuilder query = DynamicTsqlBuilder.Paginate(dynamicQuery);
             DataTable table = db.executeDynamicQuery(query, lastParameters, lastValues);
             int totalPages = 1;
             int totalRows = 0;
@@ -1745,7 +1745,7 @@ namespace MiddleWareReports
         /// <returns>A xml containing the menus that the user can access</returns>
         public XmlDocument getMenu(int sourceUserId, int activeChat, int activeAVRS, int activeCRM, int activeEmail, int activeTwitter)
         {
-            changeCulture();
+            ChangeCulture();
             NameValueCollection reportParams = new NameValueCollection();
             reportParams.Add("userId", sourceUserId.ToString());
             reportParams.Add("activeChat", activeChat.ToString());
@@ -1855,7 +1855,7 @@ namespace MiddleWareReports
         /// <returns>A xml containing the templates that the user can access</returns>
         public XmlDocument getTemplates(int sourceUserId)
         {
-            changeCulture();
+            ChangeCulture();
             NameValueCollection reportParams = new NameValueCollection();
             reportParams.Add("userId", sourceUserId.ToString());
             DataTable menus = db.executeSP("dbo.GetReportTemplates", reportParams);
@@ -1899,7 +1899,7 @@ namespace MiddleWareReports
         /// <returns>A xml containing the default charts that the user can access</returns>
         public XmlDocument getDefaultChart(short process)
         {
-            changeCulture();
+            ChangeCulture();
             NameValueCollection reportParams = new NameValueCollection();
             reportParams.Add("id", process.ToString());
             DataTable menus = db.executeSP("dbo.GetDefaultChart", reportParams);
@@ -1944,7 +1944,7 @@ namespace MiddleWareReports
         /// <param name="sourceUserId">The admin id used to saved templates</param>
         public void saveTemplate(int sourceUserId, short process, NameValueCollection reportParams, string action)
         {
-            changeCulture();
+            ChangeCulture();
             NameValueCollection Params = new NameValueCollection();
             Params.Add("userId", sourceUserId.ToString());
             Params.Add("process", process.ToString());

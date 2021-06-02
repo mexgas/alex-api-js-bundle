@@ -103,7 +103,7 @@ END
   EXEC(@sql)
 
   set @process = 'CW-5367 Cortiza mejora DROP FUNCTION ChangePriorityCall'	
-	set @sql = 'if not exists (select * from sys.objects where object_id = OBJECT_ID(N''ChangePriorityCall'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+	set @sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''ChangePriorityCall'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
     begin
         DROP FUNCTION ChangePriorityCall
     end

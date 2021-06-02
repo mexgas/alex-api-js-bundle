@@ -462,7 +462,7 @@ END;'
     EXEC(@sql)
 
     
-    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5341 Filtro para solo traer campañas de tipo llamada'   
+    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5343 Filtro para solo traer campañas de tipo llamada'   
         set @sql = '
             CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
                                                         @CampType AS SMALLINT = 0, 

@@ -9,7 +9,7 @@ Date: 2021/04/06
 Description:
 
 Database: CCenterRia
-Required version: 123.14
+Required version: 123.18
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -416,7 +416,7 @@ SET NOCOUNT OFF'
   EXEC(@sql)
 
   set @process = 'CW-5367 Alter SP ccsp_OUTCancelDialJOB'	
-	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTCancelDialJOB] 
+  set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTCancelDialJOB] 
 @callout_id    INT, 
 @IsAnswer      TINYINT, 
 @nOcupado      TINYINT, 
@@ -453,7 +453,7 @@ IF @ExisteWT > 0 BEGIN
 END;'
   EXEC(@sql)
 
-  set @process = 'CW-5367'	
+  set @process = 'CW-'	
 	set @sql = ''
   EXEC(@sql)
 

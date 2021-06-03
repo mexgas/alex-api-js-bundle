@@ -72,7 +72,7 @@ if @type=0
 
         drop table #allListReciycled
     end
-	select 1
+
     return(0)
  end
 

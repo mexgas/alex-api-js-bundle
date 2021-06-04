@@ -40,7 +40,95 @@ EXEC(@sql)
         end'
 		EXEC(@sql)
 
-	SET @process = 'CW-5047 Version BD 100 Eliminar procedure ccspRepCallTimeSummary'
+
+		SET @process = 'CW-5047 Creacion de tabla RepCallTimeSummary'
+		SET @sql = 'if not exists (SELECT * FROM sys.tables WHERE name=N''RepCallTimeSummary'')
+		begin
+			CREATE TABLE [dbo].[RepCallTimeSummary](
+				[date] [datetime] NOT NULL,
+				[userId] [smallint] NOT NULL,
+				[user] [varchar] (255) NOT NULL,
+				[Agent] [varchar] (255) NOT NULL,
+				[sessionTime] [int] NOT NULL,
+				[unavailableTime] [smallint] NOT NULL,
+				[TiempoDispo] [smallint] NOT NULL,
+				[loginTime] [varchar] (20) NOT NULL,
+				[logoutTime] [varchar] (20)NOT NULL,
+				[genDialogTime] [int] NOT NULL,
+				[avgCallTime] [int] NOT NULL,
+				[inboundTime] [int] NOT NULL,
+				[avginboundTime] [int] NOT NULL,
+				[outboundTime] [int] NOT NULL,
+				[avgoutboundTime] [int] NOT NULL,
+				[tChatting] [smallint] NOT NULL,
+				[avgchatTime] [smallint] NOT NULL,
+				[chatsAttended] [int] NOT NULL,
+				[callsOut] [int] NOT NULL,
+				[callsIn] [int] NOT NULL,
+				[abandonedCalls] [int] NOT NULL,
+				[nanswer2] [int] NOT NULL,
+				[year] [int] NOT NULL,
+				[month] [int] NOT NULL,
+				[day] [int] NOT NULL,
+				[hour] [int] NOT NULL,
+				[minutes] [int] NOT NULL
+			) ON [PRIMARY]
+		end'
+		EXEC(@sql)
+
+
+		SET @process = 'CW-5047 Creacion de filtros en ReportsFiltersMenus'
+		SET @sql = 'if not exists (select * from ReportsFiltersMenus where idReport=7190)
+		begin
+			insert into ReportsFiltersMenus values (7190,''date'',1,'''')
+			insert into ReportsFiltersMenus values (7190,''filterby'',1,'''')
+			insert into ReportsFiltersMenus values (7190,''groupby'',1,'''')
+		end'
+		EXEC(@sql)
+
+
+		SET @process = 'CW-5047 Version BD 100 Creacion de filtro en ReportsFilters'
+		SET @sql = 'if not exists(select * from ReportsFilters where id=7190)
+		begin
+		insert into ReportsFilters values(''Call Time Summary'',''users'',7190)
+		end'
+		EXEC(@sql)
+
+		SET @process = 'CW-5047 Creacion de Agrupacion en GroupByReports'
+		SET @sql = 'if not exists(select * from GroupByReports where id=7190)
+		begin
+		insert into GroupByReports values(7190,
+		''userId|max([user]):user|max([Agent]):Agent|sum([sessionTime]):sessionTime|sum(unavailableTime):unavailableTime|
+		sum(TiempoDispo):TiempoDispo|min(loginTime):loginTime|max(logoutTime):logoutTime|sum(genDialogTime):genDialogTime|
+		isnull(sum(genDialogTime)/nullif(count(genDialogTime),0),0):avgCallTime|sum(inboundTime):inboundTime|
+		isnull(sum(inboundTime)/nullif(count(inboundTime),0),0):avginboundTime|sum(outboundTime):outboundTime|
+		isnull(sum(outboundTime)/nullif(count(outboundTime),0),0):avgoutboundTime|sum(tChatting):tChatting|
+		isnull(sum(tChatting)/nullif(count(tChatting),0),0):avgchatTime|sum(chatsAttended):chatsAttended|
+		sum(callsOut):callsOut|sum(callsIn):callsIn|sum(abandonedCalls):abandonedCalls|sum(nanswer2):nanswer2''
+		,''userId'')
+		end'
+		EXEC(@sql)
+
+		SET @process = 'CW-5047 Creacion de totales en ReportsTotals'
+		SET @sql = 'if not exists(select * from ReportsTotals where id=7190)
+		begin
+		insert into ReportsTotals values(7190,
+		''sum:sessionTime|sum:unavailableTime|sum:TiempoDispo|sum:genDialogTime|sum:avgCallTime|sum:inboundTime|
+		special:avginboundTime:isnull(sum(inboundTime)/nullif(sum([callsIn]),0),0)|
+		sum:outboundTime|special:avgoutboundTime:isnull(sum(outboundTime)/nullif(sum([callsOut]),0),0)|sum:tChatting|sum:avgchatTime|sum:chatsAttended|
+		sum:callsOut|sum:callsIn|sum:abandonedCalls|sum:nanswer2''
+		)
+		end'
+		EXEC(@sql)
+
+		SET @process = 'CW-5047 Creacion de indice IX_RepCallTimeSummary'
+		SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_RepCallTimeSummary'' and object_id = OBJECT_ID(N''RepCallTimeSummary''))
+		begin
+			CREATE INDEX IX_RepCallTimeSummary ON RepCallTimeSummary(date)
+		end'
+		EXEC(@sql)
+
+		SET @process = 'CW-5047 Eliminar procedure ccspRepCallTimeSummary'
 		SET @sql = 'if exists (select * from sys.procedures where name = N''ccspRepCallTimeSummary'')
 		begin
 			DROP PROCEDURE ccspRepCallTimeSummary;
@@ -300,93 +388,6 @@ EXEC(@sql)
 		IF OBJECT_ID(''tempdb..#auxMayores'') IS NOT NULL drop table #auxMayores;
 	
 		END'
-		EXEC(@sql)
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de tabla RepCallTimeSummary'
-		SET @sql = 'if not exists (SELECT * FROM sys.tables WHERE name=N''RepCallTimeSummary'')
-		begin
-			CREATE TABLE [dbo].[RepCallTimeSummary](
-				[date] [datetime] NOT NULL,
-				[userId] [smallint] NOT NULL,
-				[user] [varchar] (255) NOT NULL,
-				[Agent] [varchar] (255) NOT NULL,
-				[sessionTime] [int] NOT NULL,
-				[unavailableTime] [smallint] NOT NULL,
-				[TiempoDispo] [smallint] NOT NULL,
-				[loginTime] [varchar] (20) NOT NULL,
-				[logoutTime] [varchar] (20)NOT NULL,
-				[genDialogTime] [int] NOT NULL,
-				[avgCallTime] [int] NOT NULL,
-				[inboundTime] [int] NOT NULL,
-				[avginboundTime] [int] NOT NULL,
-				[outboundTime] [int] NOT NULL,
-				[avgoutboundTime] [int] NOT NULL,
-				[tChatting] [smallint] NOT NULL,
-				[avgchatTime] [smallint] NOT NULL,
-				[chatsAttended] [int] NOT NULL,
-				[callsOut] [int] NOT NULL,
-				[callsIn] [int] NOT NULL,
-				[abandonedCalls] [int] NOT NULL,
-				[nanswer2] [int] NOT NULL,
-				[year] [int] NOT NULL,
-				[month] [int] NOT NULL,
-				[day] [int] NOT NULL,
-				[hour] [int] NOT NULL,
-				[minutes] [int] NOT NULL
-			) ON [PRIMARY]
-		end'
-		EXEC(@sql)
-
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de filtros en ReportsFiltersMenus'
-		SET @sql = 'if not exists (select * from ReportsFiltersMenus where idReport=7190)
-		begin
-			insert into ReportsFiltersMenus values (7190,''date'',1,'''')
-			insert into ReportsFiltersMenus values (7190,''filterby'',1,'''')
-			insert into ReportsFiltersMenus values (7190,''groupby'',1,'''')
-		end'
-		EXEC(@sql)
-
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de filtro en ReportsFilters'
-		SET @sql = 'if not exists(select * from ReportsFilters where id=7190)
-		begin
-		insert into ReportsFilters values(''Call Time Summary'',''users'',7190)
-		end'
-		EXEC(@sql)
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de Agrupacion en GroupByReports'
-		SET @sql = 'if not exists(select * from GroupByReports where id=7190)
-		begin
-		insert into GroupByReports values(7190,
-		''userId|max([user]):user|max([Agent]):Agent|sum([sessionTime]):sessionTime|sum(unavailableTime):unavailableTime|
-		sum(TiempoDispo):TiempoDispo|min(loginTime):loginTime|max(logoutTime):logoutTime|sum(genDialogTime):genDialogTime|
-		isnull(sum(genDialogTime)/nullif(count(genDialogTime),0),0):avgCallTime|sum(inboundTime):inboundTime|
-		isnull(sum(inboundTime)/nullif(count(inboundTime),0),0):avginboundTime|sum(outboundTime):outboundTime|
-		isnull(sum(outboundTime)/nullif(count(outboundTime),0),0):avgoutboundTime|sum(tChatting):tChatting|
-		isnull(sum(tChatting)/nullif(count(tChatting),0),0):avgchatTime|sum(chatsAttended):chatsAttended|
-		sum(callsOut):callsOut|sum(callsIn):callsIn|sum(abandonedCalls):abandonedCalls|sum(nanswer2):nanswer2''
-		,''userId'')
-		end'
-		EXEC(@sql)
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de totales en ReportsTotals'
-		SET @sql = 'if not exists(select * from ReportsTotals where id=7190)
-		begin
-		insert into ReportsTotals values(7190,
-		''sum:sessionTime|sum:unavailableTime|sum:TiempoDispo|sum:genDialogTime|sum:avgCallTime|sum:inboundTime|
-		special:avginboundTime:isnull(sum(inboundTime)/nullif(sum([callsIn]),0),0)|
-		sum:outboundTime|special:avgoutboundTime:isnull(sum(outboundTime)/nullif(sum([callsOut]),0),0)|sum:tChatting|sum:avgchatTime|sum:chatsAttended|
-		sum:callsOut|sum:callsIn|sum:abandonedCalls|sum:nanswer2''
-		)
-		end'
-		EXEC(@sql)
-
-		SET @process = 'CW-5047 Version BD 100 Creacion de indice IX_RepCallTimeSummary'
-		SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_RepCallTimeSummary'' and object_id = OBJECT_ID(N''RepCallTimeSummary''))
-		begin
-			CREATE INDEX IX_RepCallTimeSummary ON RepCallTimeSummary(date)
-		end'
 		EXEC(@sql)
 
 		

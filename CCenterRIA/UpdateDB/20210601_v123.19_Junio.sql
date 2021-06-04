@@ -1313,6 +1313,15 @@ set nocount off'
 	'
 	EXEC(@sql)
 
+	set @process = 'CW-5047 Version BD 123.18 Creacion del menu Call Time Summary'	
+	set @sql = 'if not exists (select * from ccMenus where menu_id = 7190)
+    begin
+		insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+		values (7190,''Resumen de tiempos de llamada|Call Time Summary'',7000,''B'',10,3,'''',
+		''9a09dd61a8306c14d173ebd20a05d6582c9135fa845e4ce3d38665dfd9c26b08c9355e330355896fb4261e4910250353217ed10db48284e30239867f040159b2'')
+    end'
+    EXEC(@sql)
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

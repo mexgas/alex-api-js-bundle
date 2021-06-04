@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3417E82C-3907-4110-BE0F-278F97CF51D8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MiddleWareReports</RootNamespace>
+    <AssemblyName>MiddleWareReports</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MigraDoc.DocumentObjectModel">
+      <HintPath>Migradocs\MigraDoc.DocumentObjectModel.dll</HintPath>
+    </Reference>
+    <Reference Include="MigraDoc.Rendering">
+      <HintPath>Migradocs\MigraDoc.Rendering.dll</HintPath>
+    </Reference>
+    <Reference Include="MigraDoc.RtfRendering">
+      <HintPath>Migradocs\MigraDoc.RtfRendering.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.7.10\lib\net35\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="PdfSharp">
+      <HintPath>Migradocs\PdfSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="PdfSharp.Charting">
+      <HintPath>Migradocs\PdfSharp.Charting.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Abstract\Abs_Element.cs" />
+    <Compile Include="db\CRMxDatabase.cs" />
+    <Compile Include="language\detail\ResourcesDetail.pt-BR.Designer.cs">
+      <DependentUpon>ResourcesDetail.pt-BR.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="language\detail\ResourcesDetail.en-US.Designer.cs">
+      <DependentUpon>ResourcesDetail.en-US.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="language\detail\ResourcesDetail.Designer.cs">
+      <DependentUpon>ResourcesDetail.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="programmingstyle\CRMFieldsNotFoundException.cs" />
+    <Compile Include="reports\agentreports\RepAgentSummary.cs" />
+    <Compile Include="reports\agentreports\RepViewAgentGISpecial.cs" />
+    <Compile Include="reports\agentreports\RepAgentDetail.cs" />
+    <Compile Include="reports\agentreports\RepAgentCallStatusesByInterval.cs" />
+    <Compile Include="reports\agentreports\RepAgentSessionByInterval.cs" />
+    <Compile Include="reports\agentreports\RepDetailAgent.cs" />
+    <Compile Include="reports\avrs\RepAVRSAgent.cs" />
+    <Compile Include="reports\avrs\RepAVRSAgentChat.cs" />
+    <Compile Include="reports\avrs\RepAVRSDetailChat.cs" />
+    <Compile Include="reports\avrs\RepAVRSDisposition.cs" />
+    <Compile Include="reports\avrs\RepAVRSQuestion.cs" />
+    <Compile Include="reports\avrs\RepAVRSQuestionChat.cs" />
+    <Compile Include="reports\avrs\RepAVRSQuestionDetail.cs" />
+    <Compile Include="reports\avrs\RepAVRSRateChat.cs" />
+    <Compile Include="reports\avrs\RepAVRSRateDetail.cs" />
+    <Compile Include="reports\avrs\RepAVRSSection.cs" />
+    <Compile Include="reports\avrs\RepAVRSSupervisor.cs" />
+    <Compile Include="reports\crmreports\RepCRMXTemplates.cs" />
+    <Compile Include="reports\crmreports\RepCRMXView.cs" />
+    <Compile Include="reports\email\RepEmailAgente.cs" />
+    <Compile Include="reports\email\RepEmailACD.cs" />
+    <Compile Include="reports\email\RepEmailDetail.cs" />
+    <Compile Include="reports\email\RepEmailGeneral.cs" />
+    <Compile Include="reports\Errescuer\RepDialingResultsDetail.cs" />
+    <Compile Include="reports\inboundreports\RepInAbnd.cs" />
+    <Compile Include="reports\inboundreports\RepInAnsw.cs" />
+    <Compile Include="reports\ivrreports\RepIVRSurveys.cs" />
+    <Compile Include="reports\outboundreports\RepMKTIntervalosSalida.cs" />
+    <Compile Include="reports\outboundreports\RepAnsweredCallsByDialingRetries.cs" />
+    <Compile Include="reports\outboundreports\RepOutAnswAndXferCalls.cs" />
+    <Compile Include="reports\outboundreports\RepOutDispositionsContacOwner.cs" />
+    <Compile Include="reports\outboundreports\RepSpecialAbndCamp.cs" />
+    <Compile Include="reports\outboundreports\RepCallXfer.cs" />
+    <Compile Include="reports\outboundreports\RepOutAnswCalls.cs" />
+    <Compile Include="reports\outboundreports\RepOutCallsOnChatDetail.cs" />
+    <Compile Include="reports\outboundreports\RepOutManagementBase.cs" />
+    <Compile Include="reports\specialreports\RepMKTDiarioTiemposTotales.cs" />
+    <Compile Include="reports\specialreports\RepMKTIntervalosTiemposAcuTotales.cs" />
+    <Compile Include="reports\specialreports\RepMKTAgentes.cs" />
+    <Compile Include="reports\specialreports\RepMKTTiemposTotales.cs" />
+    <Compile Include="reports\specialreports\RepSpecialReportAgents.cs" />
+    <Compile Include="reports\specialreports\RepMKTIntervalos.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAbnd.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAbndPercentage.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAbndProfiles.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAbndTimes.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAgent.cs" />
+    <Compile Include="reports\specialreports\RepSpececialAgtPerformance.cs" />
+    <Compile Include="reports\specialreports\RepSpececialCamMovs.cs" />
+    <Compile Include="reports\specialreports\RepSpececialPromises.cs" />
+    <Compile Include="reports\specialreports\RepSpecialCallKeyHistory.cs" />
+    <Compile Include="reports\specialreports\RepSpecialDialingResults.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByRegistry.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTelephoneNumbersByState.cs" />
+    <Compile Include="reports\specialreports\RepViewMKTMensual.cs" />
+    <Compile Include="reports\specialreports\RepViewMKTDiario.cs" />
+    <Compile Include="reports\twitter\RepTwitterACD.cs" />
+    <Compile Include="reports\twitter\RepTwitterAgente.cs" />
+    <Compile Include="reports\twitter\RepTwitterDetail.cs" />
+    <Compile Include="reports\twitter\RepTwitterGeneral.cs" />
+    <Compile Include="utils\Convertions.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Convertions.resx</DependentUpon>
+    </Compile>
+    <Compile Include="db\DataBase.cs" />
+    <Compile Include="db\DBSchema.cs" />
+    <Compile Include="programmingstyle\SecurityException.cs" />
+    <Compile Include="reportcharts\Chart.cs" />
+    <Compile Include="reportcharts\ChartItem.cs" />
+    <Compile Include="reportformatting\pdfrender\Migradoc.cs" />
+    <Compile Include="reports\agentreports\RepAgentGI.cs" />
+    <Compile Include="reports\agentreports\RepAgentKPI.cs" />
+    <Compile Include="reports\agentreports\RepAgentNotReady.cs" />
+    <Compile Include="reports\agentreports\RepAgentNotReadyDet.cs" />
+    <Compile Include="reports\agentreports\RepAgentSession.cs" />
+    <Compile Include="reports\inboundreports\RepAvgAnswerTimeChats.cs" />
+    <Compile Include="reports\inboundreports\RepChatsAndCallsGeneral.cs" />
+    <Compile Include="reports\inboundreports\RepChatsDetail.cs" />
+    <Compile Include="reports\inboundreports\RepChatsEffectiveness.cs" />
+    <Compile Include="reports\inboundreports\RepChatsNotContacted.cs" />
+    <Compile Include="reports\inboundreports\RepACDChats.cs" />
+    <Compile Include="reports\inboundreports\RepInCallsDetail.cs" />
+    <Compile Include="reports\inboundreports\RepInDispositions.cs" />
+    <Compile Include="reports\inboundreports\RepInNotTransferred.cs" />
+    <Compile Include="reports\inboundreports\RepInSubDispositions.cs" />
+    <Compile Include="reports\inboundreports\RepInBill01900.cs" />
+    <Compile Include="reports\inboundreports\RepInCalls.cs" />
+    <Compile Include="reports\inboundreports\RepInDIDResume.cs" />
+    <Compile Include="reports\inboundreports\RepIneffectiveness.cs" />
+    <Compile Include="reports\inboundreports\RepInChangeFlow.cs" />
+    <Compile Include="reports\inboundreports\RepInRejectedCalls.cs" />
+    <Compile Include="reports\ivrreports\RepIVRDetail.cs" />
+    <Compile Include="reports\ivrreports\RepIVRFirstOption.cs" />
+    <Compile Include="reports\ivrreports\RepIVRByOptions.cs" />
+    <Compile Include="reports\ivrreports\RepIVRGeneral.cs" />
+    <Compile Include="reports\outboundreports\RepOutCallBacks.cs" />
+    <Compile Include="reports\outboundreports\RepOutCallBilling.cs" />
+    <Compile Include="reports\outboundreports\RepOutCalls.cs" />
+    <Compile Include="reports\outboundreports\RepOutCallsByTelephone.cs" />
+    <Compile Include="reports\outboundreports\RepOutCallsDetail.cs" />
+    <Compile Include="reports\outboundreports\RepOutDispositions.cs" />
+    <Compile Include="reports\outboundreports\RepOutKPI.cs" />
+    <Compile Include="reports\outboundreports\RepOutSubDispositions.cs" />
+    <Compile Include="reports\outboundreports\RepOutDials.cs" />
+    <Compile Include="reports\specialreports\RepInTrunkBusy.cs" />
+    <Compile Include="reports\specialreports\RepOutTrunkBusy.cs" />
+    <Compile Include="reports\specialreports\RepSpecialTimes.cs" />
+    <Compile Include="reports\specialreports\RepTrunkBusy.cs" />
+    <Compile Include="reports\Template.cs" />
+    <Compile Include="security\AESCipher.cs" />
+    <Compile Include="utils\ParametersReader.cs" />
+    <Compile Include="utils\DynamicQuery.cs" />
+    <Compile Include="utils\DynamicTsqlBuilder.cs" />
+    <Compile Include="language\Resources.en-US.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.en-US.resx</DependentUpon>
+    </Compile>
+    <Compile Include="language\Resources.pt-BR.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.pt-BR.resx</DependentUpon>
+    </Compile>
+    <Compile Include="programmingstyle\EmptyResultException.cs" />
+    <Compile Include="reports\outboundreports\RepOutDialDetail.cs" />
+    <Compile Include="programmingstyle\BadParameterException.cs" />
+    <Compile Include="programmingstyle\ReportNotFoundException.cs" />
+    <Compile Include="reportformatting\ReportFormat.cs" />
+    <Compile Include="reportformatting\ReportFormatFactory.cs" />
+    <Compile Include="reportformatting\CsvReport.cs" />
+    <Compile Include="reports\GenericReport.cs" />
+    <Compile Include="reports\NuxibaReport.cs" />
+    <Compile Include="reportformatting\PdfReport.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="language\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="reports\ReportFactory.cs" />
+    <Compile Include="utils\RequestHelper.cs" />
+    <Compile Include="utils\StringValueAttribute.cs" />
+    <Compile Include="utils\TimePeriodGroup.cs" />
+    <Compile Include="utils\TranslatorHelper.cs" />
+    <Compile Include="utils\TypeInspector.cs" />
+    <Compile Include="reportformatting\XlsReport.cs" />
+    <Compile Include="XionDecrypter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="language\detail\ResourcesDetail.pt-BR.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ResourcesDetail.pt-BR.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="language\detail\ResourcesDetail.en-US.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ResourcesDetail.en-US.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="language\detail\ResourcesDetail.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ResourcesDetail.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="utils\Convertions.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Convertions.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="language\Resources.en-US.resx">
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.en-US.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="language\Resources.pt-BR.resx">
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.pt-BR.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="language\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>MiddleWareReports</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

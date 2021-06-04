@@ -1303,6 +1303,16 @@ end
 set nocount off'
 	EXEC(@sql)	
 
+	set @process = 'CW-5373 Agregar el setting que contendra el valor máximo de tiempo de previsualización de registros preview'	
+	set @sql = '
+	if not exists( select * from ccSettings where setting_id = 229)
+	begin
+		insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
+		values (229, 300, ''Tiempo máximo de previsualización de registros en campaña tipo preview'', 1, ''AGT'', ''Tiempo en segundos que tendrá como máximo un agente para poder previsualizar registros en campaña tipo preview'', ''Maximum time to preview records in a preview campaign'', 1, ''.*'')
+	end
+	'
+	EXEC(@sql)
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

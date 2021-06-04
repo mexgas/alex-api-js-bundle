@@ -1,4 +1,4 @@
-CREATE proc [dbo].[ccsp_RIA_mnuReciclar]
+Create proc [dbo].[ccsp_RIA_mnuReciclar]
 @cam_id int,
 @type tinyint, -- 0:recicla todo / 1:recicla no efectivos / 2:recicla los efectivos calificados / 
 --                3:recicla no efectivos y efectivos calificados (1 y 2) / 4:Recicla status "Finalizado"
@@ -72,7 +72,7 @@ if @type=0
 
         drop table #allListReciycled
     end
-
+	select 1
     return(0)
  end
 

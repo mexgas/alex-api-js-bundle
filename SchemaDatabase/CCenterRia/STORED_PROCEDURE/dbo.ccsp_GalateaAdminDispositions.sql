@@ -1,5 +1,6 @@
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
 @command int,
+@calif_id smallint = null,
 @califIdLst varchar(8000) = null,
 @description varchar(60)=null,
 @order tinyint=null,
@@ -40,20 +41,21 @@ end
 
 If @command=3 -- New ccTipoCalif
 begin
-  If exists(select description from ccTipoCalif where Calif_Status=1 and description=@description)
+  If exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@description)
     begin
-      select cast(-1 as smallint) [result]
+      select cast(-1 as smallint) [result]	-- Disposition already exists
       return(0)
     end
 
-  If exists(select description from ccTipoCalif where Calif_Status=0 and description=@description)
+  If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
   begin
-      update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
-	  graphColor=isnull(@graphColor, '1DB4E2'), Calif_Status=1
-	  output inserted.calif_id into @inserted
-      where description=@description
-	  select ID [result] from @inserted 
-      return(0)
+	select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
+    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+	graphColor=isnull(@graphColor, '1DB4E2'), Calif_Status=1
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
+	select ID [result] from @inserted 
+    return(0)
   end
 
   insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation , graphColor)
@@ -65,21 +67,22 @@ end
 
 If @command=4 -- New ccTipoCalifOUT
 begin
-  If exists(select description from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
+  If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
   begin
-  select cast(-1 as smallint) [result]
+  select cast(-1 as smallint) [result]	-- Disposition already exists
   return(0)
   end
 
- If exists(select description from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
+ If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
  begin
-  update ccTipoCalifOut set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0),
-  Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
-  finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, '1DB4E2')
-  output inserted.calif_id into @inserted
-  where description=@description
-  select ID [result] from @inserted 
-  return(0)
+	select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
+	update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
+	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+	finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, '1DB4E2')
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
+	select ID [result] from @inserted 
+	return(0)
  end
 
  insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor)
@@ -106,35 +109,46 @@ begin
 end
 if @command=7 -- Update Inbound Disposition
 begin
-	If exists(select description from ccTipoCalif where Calif_Status=1 and description=@Description)
-      set @Description=null
+	if(exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@Description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
 
     UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
     canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
 	EndConversation=isnull(@endConversation,EndConversation)
-    where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, ','))
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
 
     delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
     tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
 
+	select ID [result] from @inserted
     return(0)
 end
 if @command=8 -- Update Outbound Disposition
 begin
-	If exists(select Description from ccTipoCalifOUT where CalifOut_Status=1 and Description=@Description)
-		set @Description=null
+	if(exists(select calif_id from ccTipoCalifOUT where CalifOut_Status=1 and Description=@description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
 
-	 UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
-	 canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
-	 autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
-	 finishPreview = isnull(@finishPreview,finishPreview)
-	 where calif_id=@califIdLst
+	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
+	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
+	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+	finishPreview = isnull(@finishPreview,finishPreview)
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
 
-	 if @keepDial is not null
-	  begin
-	  update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
-	  end
-	 return(0) 
+	if @keepDial is not null
+	begin
+		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	end
+
+	select ID [result] from @inserted
+	return(0) 
 end
 
 set nocount off

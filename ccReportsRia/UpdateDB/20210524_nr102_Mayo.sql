@@ -116,6 +116,8 @@ insert into  RepOutDispositions
 end'
 		EXEC(@sql)
 
+
+		
 		
 		IF @actualVersion = @version - 1
 			EXEC ccsp_getVersion 'BD', @version

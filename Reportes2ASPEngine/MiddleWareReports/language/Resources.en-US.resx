@@ -2874,4 +2874,31 @@
   <data name="dialTimeSec" xml:space="preserve">
     <value>Talking time (secs)</value>
   </data>
+  <data name="avgchatTime" xml:space="preserve">
+    <value>Average chat time</value>
+  </data>
+  <data name="avginboundTime" xml:space="preserve">
+    <value>Average inbound call time</value>
+  </data>
+  <data name="avgoutboundTime" xml:space="preserve">
+    <value>Average outbound call time</value>
+  </data>
+  <data name="CallTimeSummary" xml:space="preserve">
+    <value>Call Time Summary</value>
+  </data>
+  <data name="chatsAttended" xml:space="preserve">
+    <value>Answered chats</value>
+  </data>
+  <data name="genDialogTime" xml:space="preserve">
+    <value>General engaged time</value>
+  </data>
+  <data name="inboundTime" xml:space="preserve">
+    <value>Inbound engaged time</value>
+  </data>
+  <data name="outboundTime" xml:space="preserve">
+    <value>Outbound engaged time</value>
+  </data>
+  <data name="unavailableTime" xml:space="preserve">
+    <value>General unavailable time</value>
+  </data>
 </root>

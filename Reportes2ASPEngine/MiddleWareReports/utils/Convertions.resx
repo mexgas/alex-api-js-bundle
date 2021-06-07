@@ -513,4 +513,25 @@
   <data name="NdCWCallWork" xml:space="preserve">
     <value>convertToTime</value>
   </data>
+  <data name="avgchatTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="avginboundTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="avgoutboundTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="genDialogTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="inboundTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="outboundTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
+  <data name="unavailableTime" xml:space="preserve">
+    <value>convertToTime</value>
+  </data>
 </root>

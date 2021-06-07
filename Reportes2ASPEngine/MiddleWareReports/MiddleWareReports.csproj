@@ -110,6 +110,7 @@
     <Compile Include="reports\outboundreports\RepOutAnswCalls.cs" />
     <Compile Include="reports\outboundreports\RepOutCallsOnChatDetail.cs" />
     <Compile Include="reports\outboundreports\RepOutManagementBase.cs" />
+    <Compile Include="reports\specialreports\RepTiempoLlamadas.cs" />
     <Compile Include="reports\specialreports\RepMKTDiarioTiemposTotales.cs" />
     <Compile Include="reports\specialreports\RepMKTIntervalosTiemposAcuTotales.cs" />
     <Compile Include="reports\specialreports\RepMKTAgentes.cs" />

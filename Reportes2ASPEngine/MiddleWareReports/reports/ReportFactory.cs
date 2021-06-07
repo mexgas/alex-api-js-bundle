@@ -185,6 +185,8 @@ namespace MiddleWareReports
                     return new RepMKTTiemposTotales();
                 case 7180:
                     return new RepMKTDiarioTiemposTotales();
+                case 7190:
+                    return new RepCallTimeSummary();
                 case 8010:
                     return new RepTrunkBusy();
                 case 8020:

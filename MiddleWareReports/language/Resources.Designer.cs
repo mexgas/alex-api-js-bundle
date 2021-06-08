@@ -781,11 +781,38 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tiempo promedio de chat.
+        /// </summary>
+        public static string avgchatTime {
+            get {
+                return ResourceManager.GetString("avgchatTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Promedio.
         /// </summary>
         public static string avgDisposition {
             get {
                 return ResourceManager.GetString("avgDisposition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo promedio de llamada (entrada).
+        /// </summary>
+        public static string avginboundTime {
+            get {
+                return ResourceManager.GetString("avginboundTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo promedio de llamada (salida).
+        /// </summary>
+        public static string avgoutboundTime {
+            get {
+                return ResourceManager.GetString("avgoutboundTime", resourceCulture);
             }
         }
         
@@ -1474,6 +1501,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Resumen de tiempos de llamada.
+        /// </summary>
+        public static string CallTimeSummary {
+            get {
+                return ResourceManager.GetString("CallTimeSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tipos de llamadas.
         /// </summary>
         public static string CallTypes {
@@ -1596,6 +1632,15 @@ namespace MiddleWareReports {
         public static string Chats {
             get {
                 return ResourceManager.GetString("Chats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chats atendidos.
+        /// </summary>
+        public static string chatsAttended {
+            get {
+                return ResourceManager.GetString("chatsAttended", resourceCulture);
             }
         }
         
@@ -2689,6 +2734,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tiempo en diálogo general.
+        /// </summary>
+        public static string genDialogTime {
+            get {
+                return ResourceManager.GetString("genDialogTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to General.
         /// </summary>
         public static string General {
@@ -2802,6 +2856,15 @@ namespace MiddleWareReports {
         public static string InboundId {
             get {
                 return ResourceManager.GetString("InboundId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo en diálogo (entrada).
+        /// </summary>
+        public static string inboundTime {
+            get {
+                return ResourceManager.GetString("inboundTime", resourceCulture);
             }
         }
         
@@ -4350,6 +4413,15 @@ namespace MiddleWareReports {
         public static string OutboundCallsIntervals {
             get {
                 return ResourceManager.GetString("OutboundCallsIntervals", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo en diálogo (salida).
+        /// </summary>
+        public static string outboundTime {
+            get {
+                return ResourceManager.GetString("outboundTime", resourceCulture);
             }
         }
         
@@ -8166,6 +8238,15 @@ namespace MiddleWareReports {
         public static string Unavailables {
             get {
                 return ResourceManager.GetString("Unavailables", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tiempo no disponible general.
+        /// </summary>
+        public static string unavailableTime {
+            get {
+                return ResourceManager.GetString("unavailableTime", resourceCulture);
             }
         }
         

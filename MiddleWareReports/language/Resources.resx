@@ -2877,4 +2877,31 @@
   <data name="talkingTime" xml:space="preserve">
     <value>Tiempo en diálogo</value>
   </data>
+  <data name="avgchatTime" xml:space="preserve">
+    <value>Tiempo promedio de chat</value>
+  </data>
+  <data name="avginboundTime" xml:space="preserve">
+    <value>Tiempo promedio de llamada (entrada)</value>
+  </data>
+  <data name="avgoutboundTime" xml:space="preserve">
+    <value>Tiempo promedio de llamada (salida)</value>
+  </data>
+  <data name="CallTimeSummary" xml:space="preserve">
+    <value>Resumen de tiempos de llamada</value>
+  </data>
+  <data name="chatsAttended" xml:space="preserve">
+    <value>Chats atendidos</value>
+  </data>
+  <data name="genDialogTime" xml:space="preserve">
+    <value>Tiempo en diálogo general</value>
+  </data>
+  <data name="inboundTime" xml:space="preserve">
+    <value>Tiempo en diálogo (entrada)</value>
+  </data>
+  <data name="outboundTime" xml:space="preserve">
+    <value>Tiempo en diálogo (salida)</value>
+  </data>
+  <data name="unavailableTime" xml:space="preserve">
+    <value>Tiempo no disponible general</value>
+  </data>
 </root>

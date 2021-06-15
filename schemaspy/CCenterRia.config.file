@@ -6,7 +6,7 @@ schemaspy.port=1433
 schemaspy.db=CCenterRia
 schemaspy.u=sa
 schemaspy.p=nuxiba
-schemaspy.o=./CCenterRia
+schemaspy.o=D:/schemaspy/CCenterRia
 schemaspy.I=^(MSmerge_|sysmerge).+$
 
 schemaspy.meta=CCenterRIA.Schemameta.xml

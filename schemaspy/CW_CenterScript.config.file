@@ -6,7 +6,7 @@ schemaspy.port=1433
 schemaspy.db=CW_CenterScript
 schemaspy.u=sa
 schemaspy.p=nuxiba
-schemaspy.o=./CW_CenterScript
+schemaspy.o=.D:/schemaspyCW_CenterScript
 schemaspy.I=^(MSmerge_|sysmerge|CS_Data_\d+|TEMP_CS_Data_\d+).+$
 #schemaspy.i=^(Rep).+$
 

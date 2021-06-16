@@ -10,6 +10,18 @@ Description:
 
 Database: CCenterRia
 Required version: 123.18
+Tareas
+CW-5111
+CW-5367
+CW-5163
+CW-5341
+CW-5343
+CW-5296
+CW-5348
+CW-5337
+CW-5373
+CW-5047
+
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

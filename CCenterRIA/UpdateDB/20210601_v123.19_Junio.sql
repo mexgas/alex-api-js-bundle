@@ -77,22 +77,6 @@ end'
   EXEC(@sql)
 
 
-set @process = 'CW-5111  ALTER TABLE ccTimeZones.tz_id'    
-    set @sql = 'if not exists (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccTimeZones'' AND 
-     COLUMN_NAME = ''tz_id'' and DATA_TYPE=''bigint'')
-begin
-    ALTER TABLE ccTimeZones DROP CONSTRAINT PK_ccTimeZones;
-
-    ALTER TABLE ccTimeZones ALTER COLUMN tz_id bigint not null;
-
-    ALTER TABLE ccTimeZones ADD CONSTRAINT PK_ccTimeZones PRIMARY KEY (tz_id);
-
-    insert into ccTimeZones values(2147483648,''UTC+14'',-14)
-    insert into ccTimeZones values(4294967296,''UTC+20'',-20)
-end'
-  EXEC(@sql)
-
-
 
   set @process = 'CW-5111 DROP PROCEDURE ccSpGalateaSeriesUSA'	
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccSpGalateaSeriesUSA'')

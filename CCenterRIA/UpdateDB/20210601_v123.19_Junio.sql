@@ -78,7 +78,7 @@ end'
 
 
 set @process = 'CW-5111  ALTER TABLE ccTimeZones.tz_id'    
-    set @sql = 'if exists (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccTimeZones'' AND 
+    set @sql = 'if not exists (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccTimeZones'' AND 
      COLUMN_NAME = ''tz_id'' and DATA_TYPE=''bigint'')
 begin
     ALTER TABLE ccTimeZones DROP CONSTRAINT PK_ccTimeZones;

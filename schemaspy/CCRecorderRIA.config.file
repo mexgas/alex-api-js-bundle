@@ -6,7 +6,7 @@ schemaspy.port=1433
 schemaspy.db=CCRecorderRIA
 schemaspy.u=sa
 schemaspy.p=nuxiba
-schemaspy.o=D:/schemaspy/CCRecorderRIA
+#schemaspy.o=D:/schemaspy/CCRecorderRIA
 schemaspy.I=^(MSmerge_|sysmerge).+$
 #schemaspy.i=^(Rep).+$
 

@@ -10,6 +10,18 @@ Description:
 
 Database: CCenterRia
 Required version: 123.18
+Tareas
+CW-5111
+CW-5367
+CW-5163
+CW-5341
+CW-5343
+CW-5296
+CW-5348
+CW-5337
+CW-5373
+CW-5047
+
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -53,11 +65,18 @@ BEGIN
 	set @process = 'CW-5111 insert setting 228 Series USA'	
 	set @sql = 'if not exists(select * from ccsettings where setting_id=228) begin
 insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
-values(228,''1|1|5|13:00|192.168.1.115|root|toor|21|/mnt/Utilidades/Utilidades/Reminder/slingshot-installer/Series/USASeries.zip''
+values(228,''1|1|5|03:00|192.168.1.115|root|toor|21|/mnt/Utilidades/Utilidades/Reminder/slingshot-installer/Series/USASeries.zip''
 ,''Descarga automática de las series USA''
 ,1,''GLR'',''Activo(0:apagado,1:Mensual,2:semanal,3:diario)|# Semana Ejecucion|Dia Ejecucion(1:LU,2:Ma,3:Mi,4:Ju,5:Vi,6:Sa,0:Do)|Hora Inicio(00:00)|Servidor FTP|usuario FTP|contraseña FTP|Ruta de descarga FTP'',''USA number series automatic download'',1,''.*'')
+end
+else BEGIN
+update ccsettings 
+set valor=''0|1|6|03:00|192.168.1.115|root|toor|22|/mnt/Utilidades/Utilidades/Reminder/slingshot-installer/Series/USASeries.zip''
+where setting_id=228
 end'
   EXEC(@sql)
+
+
 
   set @process = 'CW-5111 DROP PROCEDURE ccSpGalateaSeriesUSA'	
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccSpGalateaSeriesUSA'')
@@ -66,38 +85,40 @@ end'
     end'
   EXEC(@sql)
 
+
+
   set @process = 'CW-5111 Create SP ccSpGalateaSeriesUSA'	
 	set @sql = 'CREATE PROCEDURE [dbo].[ccSpGalateaSeriesUSA]
-	@actionId int 
+    @actionId int 
 AS
-BEGIN	
-	SET NOCOUNT ON;
-	if @actionId= 1 begin
-		if exists(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ''SeriesUSA'') begin
-			truncate table SeriesUSA
-		end
-		else begin			
-			CREATE TABLE SeriesUSA(area varchar(5), prefix varchar(5), tz_standar float,
-			tz_dayligth float, nxx_type varchar(5), city varchar(50),county varchar(50),state varchar(50));
-		end		
+BEGIN   
+    SET NOCOUNT ON;
+    if @actionId= 1 begin
+        if exists(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ''SeriesUSA'') begin
+            truncate table SeriesUSA
+        end
+        else begin          
+            CREATE TABLE SeriesUSA(area varchar(5), prefix varchar(5), tz_standar float,
+            tz_dayligth float, nxx_type varchar(5), city varchar(50),county varchar(50),state varchar(50));
+        end     
 
-	end
-	else if @actionId= 2 begin
-		if exists(select * from SeriesUSA) begin
-			truncate table ccTimeZoneAreaUsaDetail
-			insert into ccTimeZoneAreaUsaDetail
+    end
+    else if @actionId= 2 begin
+        if exists(select * from SeriesUSA) begin
+            truncate table ccTimeZoneAreaUsaDetail
+            insert into ccTimeZoneAreaUsaDetail
 
-			select distinct A.area, A.prefix,B.tz_id as tz_standar,C.tz_id as tz_dayligth,A.city+'', ''+A.county+'', ''+A.state 
-							,A.nxx_type			
-							from SeriesUSA A
-							left join ccTimeZones B on A.tz_standar=B.tz_offset
-							left join ccTimeZones C on A.tz_dayligth=C.tz_offset			
-			where A.nxx_type !='''';
-		end
-	end
-	else if @actionId=3 begin			
-		select valor from ccsettings where setting_id = 228
-	end
+            select distinct A.area, A.prefix,B.tz_id as tz_standar,C.tz_id as tz_dayligth,A.city+'', ''+A.county+'', ''+A.state 
+                            ,A.nxx_type         
+                            from SeriesUSA A
+                            inner join ccTimeZones B on A.tz_standar=B.tz_offset
+                            inner join ccTimeZones C on A.tz_dayligth=C.tz_offset            
+            where A.nxx_type !='''';
+        end
+    end
+    else if @actionId=3 begin           
+        select valor from ccsettings where setting_id = 228
+    end
 END
 '
   EXEC(@sql)

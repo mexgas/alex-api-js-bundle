@@ -1,0 +1,14 @@
+# type of database. Run with -dbhelp for details
+schemaspy.t=mssql08
+schemaspy.dp=./mssql/mssql-jdbc-9.2.1.jre11.jar
+schemaspy.host=192.168.0.103
+schemaspy.port=1433
+schemaspy.db=CCenterRia
+schemaspy.u=sa
+schemaspy.p=nuxiba
+#schemaspy.o=D:/schemaspy/CCenterRia
+schemaspy.I=^(MSmerge_|sysmerge).+$
+
+schemaspy.meta=CCenterRIA.Schemameta.xml
+
+#schemaspy.i=ccBaseXDB

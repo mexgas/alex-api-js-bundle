@@ -21,8 +21,8 @@ BEGIN
             select distinct A.area, A.prefix,B.tz_id as tz_standar,C.tz_id as tz_dayligth,A.city+', '+A.county+', '+A.state 
                             ,A.nxx_type         
                             from SeriesUSA A
-                            left join ccTimeZones B on A.tz_standar=B.tz_offset
-                            left join ccTimeZones C on A.tz_dayligth=C.tz_offset            
+                            inner join ccTimeZones B on A.tz_standar=B.tz_offset
+                            inner join ccTimeZones C on A.tz_dayligth=C.tz_offset            
             where A.nxx_type !='';
         end
     end

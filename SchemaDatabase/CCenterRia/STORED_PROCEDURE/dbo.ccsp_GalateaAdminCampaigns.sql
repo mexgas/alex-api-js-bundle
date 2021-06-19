@@ -223,7 +223,10 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                     DECLARE @AgentStatusWithTotals TABLE(CampName VARCHAR(MAX), Total INT, Ready INT, NotReady INT, Dialog INT, Area VARCHAR(MAX));
 
                     INSERT INTO @Wg
-                            SELECT DISTINCT IDWG FROM ccRIAWorkGroupUsers WHERE user_id = @AdminId;
+                            SELECT DISTINCT IDWG FROM ccRIAWorkGroupUsers WG, ccUsers_Roles R
+                             WHERE WG.User_id = @AdminId OR
+                                  (R.User_id = @AdminId
+                                    AND R.Rol_id = 7);
 
                     INSERT INTO @tmpAgent
                             SELECT DISTINCT  A.User_id FROM ccRIAWorkGroupUsers A

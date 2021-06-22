@@ -1820,7 +1820,18 @@ BEGIN
 END'
   EXEC(@sql)
 
-  set @process = 'ALTER SP ccsp_MailInitialStatistics'
+ 
+ set @process = 'Create index IX_messageEmail_I'
+ set @sql =  'if not exists (select * from sys.indexes where name = N'IX_messageEmail_I' and object_id = OBJECT_ID(N'message'))
+
+	
+CREATE NONCLUSTERED INDEX IX_messageEmail_I
+ON [dbo].[message] ([conversationId])
+include ([messageId], [messageStatusId], [date], [tQueue], [tsend])
+'
+
+
+ set @process = 'ALTER SP ccsp_MailInitialStatistics'
   set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics]
 @inboundId int=0,
 @Option AS SMALLINT=0,

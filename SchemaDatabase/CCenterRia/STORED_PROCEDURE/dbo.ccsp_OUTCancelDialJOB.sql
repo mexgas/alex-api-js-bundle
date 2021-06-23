@@ -1,12 +1,12 @@
-CREATE PROCEDURE [dbo].[ccsp_OUTCancelDialJOB] 
-@callout_id    INT, 
-@IsAnswer      TINYINT, 
-@nOcupado      TINYINT, 
-@nNoContesta   TINYINT, 
-@nFax          TINYINT, 
-@nContestadora TINYINT, 
-@nShortCall    TINYINT, 
-@nOtro         TINYINT, 
+CREATE PROCEDURE [dbo].[ccsp_OUTCancelDialJOB]
+@callout_id    INT,
+@IsAnswer      TINYINT,
+@nOcupado      TINYINT,
+@nNoContesta   TINYINT,
+@nFax          TINYINT,
+@nContestadora TINYINT,
+@nShortCall    TINYINT,
+@nOtro         TINYINT,
 @ExisteWT      TINYINT = 1
 AS
 DECLARE @RecicleSIC TINYINT;
@@ -19,11 +19,11 @@ IF @RecicleSIC IS NULL
 IF @ExisteWT > 0 BEGIN
 	IF @IsAnswer = 1 BEGIN
 			UPDATE ccoWorkingTable WITH(ROWLOCK)
-			SET 
-				cal_fechaDial = DATEADD(hh, 1, GETDATE()), 
-				cal_status = 1, 
-				nOcupado = 1, 
-				nNoContesta = 1, 
+			SET
+				cal_fechaDial = DATEADD(hh, 1, GETDATE()),
+				cal_status = 1,
+				nOcupado = 1,
+				nNoContesta = 1,
 				nShortCall = nShortCall + 1
 			WHERE callout_id = @callout_id;
 	END;

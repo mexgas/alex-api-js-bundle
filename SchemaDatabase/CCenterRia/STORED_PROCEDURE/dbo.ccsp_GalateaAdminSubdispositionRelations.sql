@@ -24,8 +24,8 @@ end
 if @command=2  --Asignar subcalificacion a una calificacion
 begin
 	if @type=1 and (select cast(sum(isnull(cast(canReprogram as tinyint),0)) as bit) FROM cctipocalifSub where califSub_id in
-	(select value from dbo.fn_RIASplitDelimited (@califSub_id, ',')))>0 
-	and not exists (select IB.cam_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0 
+	(select value from dbo.fn_RIASplitDelimited (@califSub_id, ',')))>0
+	and not exists (select IB.cam_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0
 	join ccInbound IB on IB.Inbound_id = CF.cam_id where IB.cam_id is not null and CO.calif_id = @calif_id)
 	begin
 		select cast(-2 as smallint) [result]	-- Cant reprogram, there are not assigned campaign
@@ -43,8 +43,8 @@ begin
 	begin
 		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
 	end
-	
-	select cast(1 as smallint) [result]	 -- Done! 
+
+	select cast(1 as smallint) [result]	 -- Done!
 	return(0)
 end
 if @command=3	--Desasignacion de subcalificacion

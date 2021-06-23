@@ -1829,7 +1829,7 @@ CREATE NONCLUSTERED INDEX IX_messageEmail_I
 ON [dbo].[message] ([conversationId])
 include ([messageId], [messageStatusId], [date], [tQueue], [tsend])
 '
-
+ EXEC(@sql)
 
  set @process = 'ALTER SP ccsp_MailInitialStatistics'
   set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics]

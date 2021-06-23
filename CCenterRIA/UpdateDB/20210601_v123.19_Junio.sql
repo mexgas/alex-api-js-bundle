@@ -1822,7 +1822,7 @@ END'
 
  
  set @process = 'Create index IX_messageEmail_I'
- set @sql =  'if not exists (select * from sys.indexes where name = N'IX_messageEmail_I' and object_id = OBJECT_ID(N'message'))
+ set @sql =  'if not exists (select * from sys.indexes where name = N''IX_messageEmail_I'' and object_id = OBJECT_ID(N''message''))
 
 	
 CREATE NONCLUSTERED INDEX IX_messageEmail_I

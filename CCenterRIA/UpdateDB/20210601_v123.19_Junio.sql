@@ -21,6 +21,7 @@ CW-5348
 CW-5337
 CW-5373
 CW-5047
+CW-5357
 
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
@@ -42,7 +43,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 SET @version = 123 --**********actualizar a 122 sin fix
 SET @versionfix = 19
 /* Actual version (use your own script to do it)*/
-EXEC @actualVersion = ccsp_getVersion 'BD' 
+EXEC @actualVersion = ccsp_getVersion 'BD'
 
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
 
@@ -62,7 +63,7 @@ BEGIN
 
 	BEGIN TRY
 
-	set @process = 'CW-5111 insert setting 228 Series USA'	
+	set @process = 'CW-5111 insert setting 228 Series USA'
 	set @sql = 'if not exists(select * from ccsettings where setting_id=228) begin
 insert into ccsettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
 values(228,''1|1|5|03:00|192.168.1.115|root|toor|21|/mnt/Utilidades/Utilidades/Reminder/slingshot-installer/Series/USASeries.zip''
@@ -70,7 +71,7 @@ values(228,''1|1|5|03:00|192.168.1.115|root|toor|21|/mnt/Utilidades/Utilidades/R
 ,1,''GLR'',''Activo(0:apagado,1:Mensual,2:semanal,3:diario)|# Semana Ejecucion|Dia Ejecucion(1:LU,2:Ma,3:Mi,4:Ju,5:Vi,6:Sa,0:Do)|Hora Inicio(00:00)|Servidor FTP|usuario FTP|contraseña FTP|Ruta de descarga FTP'',''USA number series automatic download'',1,''.*'')
 end
 else BEGIN
-update ccsettings 
+update ccsettings
 set valor=''0|1|6|03:00|192.168.1.115|root|toor|22|/mnt/Utilidades/Utilidades/Reminder/slingshot-installer/Series/USASeries.zip''
 where setting_id=228
 end'
@@ -78,7 +79,7 @@ end'
 
 
 
-  set @process = 'CW-5111 DROP PROCEDURE ccSpGalateaSeriesUSA'	
+  set @process = 'CW-5111 DROP PROCEDURE ccSpGalateaSeriesUSA'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccSpGalateaSeriesUSA'')
     begin
         DROP PROCEDURE ccSpGalateaSeriesUSA;
@@ -87,20 +88,20 @@ end'
 
 
 
-  set @process = 'CW-5111 Create SP ccSpGalateaSeriesUSA'	
+  set @process = 'CW-5111 Create SP ccSpGalateaSeriesUSA'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccSpGalateaSeriesUSA]
-    @actionId int 
+    @actionId int
 AS
-BEGIN   
+BEGIN
     SET NOCOUNT ON;
     if @actionId= 1 begin
         if exists(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ''SeriesUSA'') begin
             truncate table SeriesUSA
         end
-        else begin          
+        else begin
             CREATE TABLE SeriesUSA(area varchar(5), prefix varchar(5), tz_standar float,
             tz_dayligth float, nxx_type varchar(5), city varchar(50),county varchar(50),state varchar(50));
-        end     
+        end
 
     end
     else if @actionId= 2 begin
@@ -108,22 +109,22 @@ BEGIN
             truncate table ccTimeZoneAreaUsaDetail
             insert into ccTimeZoneAreaUsaDetail
 
-            select distinct A.area, A.prefix,B.tz_id as tz_standar,C.tz_id as tz_dayligth,A.city+'', ''+A.county+'', ''+A.state 
-                            ,A.nxx_type         
+            select distinct A.area, A.prefix,B.tz_id as tz_standar,C.tz_id as tz_dayligth,A.city+'', ''+A.county+'', ''+A.state
+                            ,A.nxx_type
                             from SeriesUSA A
                             inner join ccTimeZones B on A.tz_standar=B.tz_offset
-                            inner join ccTimeZones C on A.tz_dayligth=C.tz_offset            
+                            inner join ccTimeZones C on A.tz_dayligth=C.tz_offset
             where A.nxx_type !='''';
         end
     end
-    else if @actionId=3 begin           
+    else if @actionId=3 begin
         select valor from ccsettings where setting_id = 228
     end
 END
 '
   EXEC(@sql)
 
-  set @process = 'CW-5367 Cortiza mejora DROP FUNCTION ChangePriorityCall'	
+  set @process = 'CW-5367 Cortiza mejora DROP FUNCTION ChangePriorityCall'
 	set @sql = 'if exists (select * from sys.objects where object_id = OBJECT_ID(N''ChangePriorityCall'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
     begin
         DROP FUNCTION ChangePriorityCall
@@ -131,7 +132,7 @@ END
 '
   EXEC(@sql)
 
-  set @process = 'CW-5367 Cortiza mejora CREATE FUNCTION ChangePriorityCall'	
+  set @process = 'CW-5367 Cortiza mejora CREATE FUNCTION ChangePriorityCall'
 	set @sql = 'CREATE FUNCTION [dbo].[ChangePriorityCall](@priorityCall VARCHAR(8))
 RETURNS VARCHAR(8)
 AS
@@ -150,10 +151,10 @@ BEGIN
 END;'
   EXEC(@sql)
 
-  set @process = 'CW-5367 Alter SP ccsp_OUTUpdateDialJob'	
+  set @process = 'CW-5367 Alter SP ccsp_OUTUpdateDialJob'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
-@callout_id     INT, 
-@CallResultDial TINYINT, 
+@callout_id     INT,
+@CallResultDial TINYINT,
 @isTCPA         BIT     = 0
 AS
      SET NOCOUNT ON
@@ -169,26 +170,26 @@ AS
      DECLARE @DateNextDial SMALLDATETIME, @DateNewDial SMALLDATETIME, @cam_id SMALLINT
      DECLARE @ExisteWT TINYINT, @cam_NoInt_fax TINYINT, @cam_NoInt_nocontesto TINYINT, @cal_status TINYINT
      DECLARE @sSQL NVARCHAR(MAX), @Telefono VARCHAR(15), @prioridadLlamada CHAR(8)
-     
-	 SELECT @cam_id = cam_id, 
-            @nOcupado = ISNULL(nOcupado, 0), 
-            @nNoContesta = ISNULL(nNoContesta, 0), 
-            @nFax = ISNULL(nFax, 0),  
-            @nContestadora = ISNULL(nContestadora, 0), 
-            @nShortCall = ISNULL(nShortCall, 0), 
-            @nOtro = ISNULL(nOtro, 0), 
+
+	 SELECT @cam_id = cam_id,
+            @nOcupado = ISNULL(nOcupado, 0),
+            @nNoContesta = ISNULL(nNoContesta, 0),
+            @nFax = ISNULL(nFax, 0),
+            @nContestadora = ISNULL(nContestadora, 0),
+            @nShortCall = ISNULL(nShortCall, 0),
+            @nOtro = ISNULL(nOtro, 0),
             @DateNextDial = cal_fechaDial
      FROM ccoWorkingTable with(nolock)
      WHERE callout_id = @callout_id
-     
+
 	 SELECT @ExisteWT = CASE WHEN @cam_id IS NOT NULL THEN 1 ELSE 0 END
      SELECT @cal_status = CASE WHEN @isTCPA = 1 THEN 0 ELSE 1 END--si esta en modo TCPA no gene|rar callbacks
 
-     IF @CallResultDial = 20 BEGIN-- CONTACTADO         
+     IF @CallResultDial = 20 BEGIN-- CONTACTADO
         EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
         RETURN(0)
      END
-     else IF @CallResultDial = 1 BEGIN-- CONTESTO 
+     else IF @CallResultDial = 1 BEGIN-- CONTESTO
         IF @isTCPA = 1 BEGIN
                 UPDATE ccoWorkingTable with(rowlock) SET cal_status = @cal_status WHERE callout_id = @callout_id
         END
@@ -203,7 +204,7 @@ AS
         END
         RETURN(0)
      END
-     ELSE IF @CallResultDial IN(2, 12) BEGIN -- OCUPADO 
+     ELSE IF @CallResultDial IN(2, 12) BEGIN -- OCUPADO
         SELECT @cam_ocupado = cam_ocupado,
 			@cam_inter_ocupado = cam_inter_ocupado,
 			@cam_NoInt_ocupado = cam_NoInt_ocupado,
@@ -211,35 +212,35 @@ AS
         FROM ccCamps
         WHERE cam_id = @cam_id
 
-            IF @cam_ocupado = 1 BEGIN -- Opcion Ocupado HABILITADA	 
+            IF @cam_ocupado = 1 BEGIN -- Opcion Ocupado HABILITADA
                 IF @nOcupado > @cam_NoInt_ocupado OR @nShortCall > 4 BEGIN
                     EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
                     RETURN(0)
                 END
-                
-								
+
+
                 SELECT @prioridadLlamada=priorityCall FROM ccoCallPriorityOrder with(nolock) WHERE callout_id = @callout_id
 				IF @prioridadLlamada is null BEGIN
 					SELECT @prioridadLlamada = Prioridad FROM ccCampsPrioridadTel with(nolock) WHERE cam_id = @cam_id
 					INSERT INTO ccoCallPriorityOrder VALUES (@callout_id,@prioridadLlamada)
 				END
-				
+
                 -- Change priority and obtain the next telephone
                 UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1	ELSE nNoContesta END
                 WHERE callout_id = @callout_id
 
-				
+
 				set @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
 				UPDATE ccoCallPriorityOrder with(rowlock) SET priorityCall = @prioridadLlamada WHERE callout_id = @callout_id
-				
-				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END 
-				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id='' 
+
+				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id=''
 				+ CAST(@callout_id AS VARCHAR(15))
-                
+
                 EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT
 
                 SELECT @DateNewDial = DATEADD(mi, @cam_inter_ocupado, GETDATE())
@@ -260,49 +261,49 @@ AS
             EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
             RETURN(0)
          END
-         ELSE IF @CallResultDial IN(3, 5, 8) BEGIN-- NO CONTESTA 
+         ELSE IF @CallResultDial IN(3, 5, 8) BEGIN-- NO CONTESTA
             --select NO Contesta
-            SELECT @cam_nocontesto = cam_nocontesto, 
-                @cam_inter_nocontesto = cam_inter_nocontesto, 
-                @cam_NoInt_nocontesto = cam_NoInt_nocontesto, 
+            SELECT @cam_nocontesto = cam_nocontesto,
+                @cam_inter_nocontesto = cam_inter_nocontesto,
+                @cam_NoInt_nocontesto = cam_NoInt_nocontesto,
                 @nNoContesta = @nNoContesta + 1
             FROM ccCamps
             WHERE cam_id = @cam_id
 
-            IF @cam_nocontesto = 1 BEGIN-- Opcion NoContesta HABILITADA	 
+            IF @cam_nocontesto = 1 BEGIN-- Opcion NoContesta HABILITADA
                 IF @nNoContesta > @cam_NoInt_nocontesto OR @nShortCall > 4 BEGIN --select No Contesta Habilitada
                     EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
                     RETURN(0)
                 END
-				
+
                 SELECT @prioridadLlamada=priorityCall FROM ccoCallPriorityOrder with(nolock) WHERE callout_id = @callout_id
 				IF @prioridadLlamada is null BEGIN
 					SELECT @prioridadLlamada = Prioridad FROM ccCampsPrioridadTel with(nolock) WHERE cam_id = @cam_id
 					INSERT INTO ccoCallPriorityOrder VALUES (@callout_id,@prioridadLlamada)
 				END
-				
+
                 -- Change priority and obtain the next telephone
-                UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1	
+                UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1
 				ELSE nNoContesta END
                 WHERE callout_id = @callout_id
-				
+
 
 				set @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
 				UPDATE ccoCallPriorityOrder with(rowlock) SET priorityCall = @prioridadLlamada WHERE callout_id = @callout_id
-				
-				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END 
-				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id='' 
+
+				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id=''
 				+ CAST(@callout_id AS VARCHAR(15))
-                
-                EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT                
+
+                EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT
 
                 SELECT @DateNewDial = DATEADD(mi, @cam_inter_nocontesto, GETDATE())
 
-                UPDATE ccoWorkingTable with(rowlock) SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = @Telefono, 
+                UPDATE ccoWorkingTable with(rowlock) SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = @Telefono,
 					cal_fechaDial = CASE
                                         WHEN @DateNewDial > @DateNextDial
                                         THEN @DateNewDial
@@ -316,15 +317,15 @@ AS
             EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
             RETURN(0)
         END
-	ELSE IF @CallResultDial = 4 BEGIN-- Fax/Modem 
+	ELSE IF @CallResultDial = 4 BEGIN-- Fax/Modem
 		SELECT @cam_fax = cam_fax,
-			@cam_inter_fax = cam_inter_fax, 
-			@cam_NoInt_fax = cam_NoInt_fax, 
+			@cam_inter_fax = cam_inter_fax,
+			@cam_NoInt_fax = cam_NoInt_fax,
 			@nFax = @nFax + 1
 		FROM ccCamps
 		WHERE cam_id = @cam_id
 
-        IF @cam_fax = 1 BEGIN-- Opcion Fax/Modem HABILITADA	 
+        IF @cam_fax = 1 BEGIN-- Opcion Fax/Modem HABILITADA
                 IF @nFax > @cam_NoInt_fax OR @nShortCall > 4 BEGIN
                     EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
                     RETURN(0)
@@ -339,24 +340,24 @@ AS
                 -- Change priority and obtain the next telephone
                 UPDATE ccoCallsOutSource with(rowlock) SET nFax = CASE WHEN nFax < 255 THEN ISNULL(nFax, 0) + 1 ELSE nFax END
                 WHERE callout_id = @callout_id
-                
+
                 set @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
 				UPDATE ccoCallPriorityOrder with(rowlock)  SET priorityCall = @prioridadLlamada WHERE callout_id = @callout_id
-				
-				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END 
-				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END 
-				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id='' 
+
+				SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+				+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+				+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id=''
 				+ CAST(@callout_id AS VARCHAR(15))
-                
-                EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT   
+
+                EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT
 
                 SELECT @DateNewDial = DATEADD(mi, @cam_inter_fax, GETDATE())
 
                 -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
-                UPDATE ccoWorkingTable with(rowlock) SET nFax = @nFax, cal_status = @cal_status, cal_telefono = @Telefono, 
+                UPDATE ccoWorkingTable with(rowlock) SET nFax = @nFax, cal_status = @cal_status, cal_telefono = @Telefono,
                     cal_fechaDial = CASE
                                         WHEN @DateNewDial > @DateNextDial
                                         THEN @DateNewDial
@@ -370,15 +371,15 @@ AS
         EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
         RETURN(0)
     END
-    ELSE IF @CallResultDial = 11 BEGIN-- Maquina Contestadora 
-        SELECT @cam_graba = cam_graba, 
-            @cam_inter_graba = cam_inter_graba, 
-            @cam_NoInt_graba = cam_NoInt_graba, 
+    ELSE IF @CallResultDial = 11 BEGIN-- Maquina Contestadora
+        SELECT @cam_graba = cam_graba,
+            @cam_inter_graba = cam_inter_graba,
+            @cam_NoInt_graba = cam_NoInt_graba,
             @nContestadora = @nContestadora + 1
         FROM ccCamps
         WHERE cam_id = @cam_id
 
-        IF @cam_graba = 1 BEGIN-- Opcion Maquina Contestadora HABILITADA                
+        IF @cam_graba = 1 BEGIN-- Opcion Maquina Contestadora HABILITADA
             IF @nContestadora > @cam_NoInt_graba OR @nShortCall > 4 BEGIN
                 EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
                 RETURN(0)
@@ -392,25 +393,25 @@ AS
 
             -- Change priority and obtain the next telephone
             UPDATE ccoCallsOutSource with(rowlock) SET nContestadora = CASE WHEN nContestadora < 255 THEN ISNULL(nContestadora, 0) + 1 ELSE nContestadora END
-            WHERE callout_id = @callout_id            
+            WHERE callout_id = @callout_id
 
             set @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
 			UPDATE ccoCallPriorityOrder with(rowlock) SET priorityCall = @prioridadLlamada WHERE callout_id = @callout_id
-				
-			SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END 
-			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END 
-			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END 
-			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END 
-			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END 
-			+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id='' 
+
+			SELECT @sSQL = ''select @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+			+ ''+''''         ''''),13)) from ccoCallsOutSource nolock where callout_id=''
 			+ CAST(@callout_id AS VARCHAR(15))
-                
-            EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT   
+
+            EXEC sp_executesql @sSQL, N''@outA varchar(15) OUTPUT'', @outA = @Telefono OUTPUT
 
             SELECT @DateNewDial = DATEADD(mi, @cam_inter_graba, GETDATE())
 
             -- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
-            UPDATE ccoWorkingTable with(rowlock) SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = @Telefono, 
+            UPDATE ccoWorkingTable with(rowlock) SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = @Telefono,
                 cal_fechaDial = CASE
                                     WHEN @DateNewDial > @DateNextDial
                                     THEN @DateNewDial
@@ -424,7 +425,7 @@ AS
         EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
         RETURN(0)
     END
-    ELSE IF @CallResultDial IN(10, 90) BEGIN--No Dial Tone, otros, NoService 
+    ELSE IF @CallResultDial IN(10, 90) BEGIN--No Dial Tone, otros, NoService
         EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
         RETURN(0)
     END
@@ -436,16 +437,16 @@ RETURN(0)
 SET NOCOUNT OFF'
   EXEC(@sql)
 
-  set @process = 'CW-5367 Alter SP ccsp_OUTCancelDialJOB'	
-  set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTCancelDialJOB] 
-@callout_id    INT, 
-@IsAnswer      TINYINT, 
-@nOcupado      TINYINT, 
-@nNoContesta   TINYINT, 
-@nFax          TINYINT, 
-@nContestadora TINYINT, 
-@nShortCall    TINYINT, 
-@nOtro         TINYINT, 
+  set @process = 'CW-5367 Alter SP ccsp_OUTCancelDialJOB'
+  set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTCancelDialJOB]
+@callout_id    INT,
+@IsAnswer      TINYINT,
+@nOcupado      TINYINT,
+@nNoContesta   TINYINT,
+@nFax          TINYINT,
+@nContestadora TINYINT,
+@nShortCall    TINYINT,
+@nOtro         TINYINT,
 @ExisteWT      TINYINT = 1
 AS
 DECLARE @RecicleSIC TINYINT;
@@ -458,11 +459,11 @@ IF @RecicleSIC IS NULL
 IF @ExisteWT > 0 BEGIN
 	IF @IsAnswer = 1 BEGIN
 			UPDATE ccoWorkingTable WITH(ROWLOCK)
-			SET 
-				cal_fechaDial = DATEADD(hh, 1, GETDATE()), 
-				cal_status = 1, 
-				nOcupado = 1, 
-				nNoContesta = 1, 
+			SET
+				cal_fechaDial = DATEADD(hh, 1, GETDATE()),
+				cal_status = 1,
+				nOcupado = 1,
+				nNoContesta = 1,
 				nShortCall = nShortCall + 1
 			WHERE callout_id = @callout_id;
 	END;
@@ -475,90 +476,90 @@ END;'
 
     EXEC(@sql)
 
-    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5343 Filtro para solo traer campañas de tipo llamada' 
+    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5343 Filtro para solo traer campañas de tipo llamada'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
             begin
                 DROP PROCEDURE ccsp_GalateaAdminCampaigns;
             end'
     EXEC(@sql)
 
-    
-    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5343 Filtro para solo traer campañas de tipo llamada'   
+
+    set @process = 'CW-5163 Ordenamiento de campañas alfabeticamente y CW-5343 Filtro para solo traer campañas de tipo llamada'
         set @sql = '
-            CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
-                                                        @CampType AS SMALLINT = 0, 
-                                                        @WorkgroupId AS INT = 0, 
+            CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
+                                                        @CampType AS SMALLINT = 0,
+                                                        @WorkgroupId AS INT = 0,
                                                         @Id AS INT = 0,
-                                                        @AdminId AS SMALLINT = 0, 
-                                                        @PinUpdate AS SMALLINT = 0, 
+                                                        @AdminId AS SMALLINT = 0,
+                                                        @PinUpdate AS SMALLINT = 0,
                                                         @LoadId AS INT = 0,
                                                         @Type AS SMALLINT = 0
             AS
             BEGIN
             set nocount on
-            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
+            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type
             BEGIN
-                IF @CampType = 1 -- Campaigns Out 
+                IF @CampType = 1 -- Campaigns Out
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=1
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror(''ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado'', 18, 1)
-                    END 
+                    END
                 END
                 IF @CampType = 0 -- Campaigns In (ACD)
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=0
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror(''ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado'', 18, 1)
-                    END 
+                    END
                 END
             END
-                    
-            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id 
+
+            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id
                 BEGIN
-                    IF @CampType = 1 -- Campaigns Out 
+                    IF @CampType = 1 -- Campaigns Out
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        camps.cam_id AS Id, 
-                                        camps.cam_descripcion AS Name, 
-                                        CAST(graph.graphic_id AS INT) AS Frame, 
+                                    SELECT DISTINCT
+                                        camps.cam_id AS Id,
+                                        camps.cam_descripcion AS Name,
+                                        CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(1 AS SMALLINT) AS Type,
                                         camps.cam_procesando IsStarted,
                                         a.AreaName as Area
-                                    FROM ccCamps camps 
+                                    FROM ccCamps camps
                                     LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
                                     left join ccRIACat_Areas a on a.IDArea = camps.IDArea
-                                    WHERE camps.cam_id = @Id 
+                                    WHERE camps.cam_id = @Id
                                     ORDER BY camps.cam_descripcion ASC;
                                 END
                             ELSE
                             BEGIN
                                 raiserror(''ERROR. No existe campa?as de salida con el id especificado'', 18, 1)
-                            END 
+                            END
                         END
                     IF @CampType = 0 -- Campaigns In (ACD)
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        inb.Inbound_id AS Id, 
-                                        inb.descripcion AS Name, 
+                                    SELECT DISTINCT
+                                        inb.Inbound_id AS Id,
+                                        inb.descripcion AS Name,
                                         CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(0 AS SMALLINT) AS Type,
                                         CAST(inb.Status AS BIT) IsStarted,
@@ -567,17 +568,17 @@ END;'
                                     FROM ccInbound inb
                                     LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
                                     left join ccRIACat_Areas a on a.IDArea = inb.IDArea
-                                    WHERE inb.Inbound_id = @Id 
+                                    WHERE inb.Inbound_id = @Id
                                     ORDER BY inb.descripcion ASC;
                                 END
                             ELSE
                                 BEGIN
                                     raiserror(''ERROR. No existe campa?as de entrada con el id especificado'', 18, 1)
-                                END 
+                                END
                         END
                 END
 
-            IF @Option = 3   -- Update OverallTotalNew By Campaign 
+            IF @Option = 3   -- Update OverallTotalNew By Campaign
                 BEGIN
                     IF @Id IS NOT NULL
                         BEGIN
@@ -586,7 +587,7 @@ END;'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. No existe la campa?as de entrada con el id especificado'', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 4   -- Update Pin from Campaign per Admin
@@ -607,9 +608,9 @@ END;'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. La campa?as o administrador no existen'', 18, 1)
-                        END 
+                        END
                 END
-                    
+
             IF @Option = 5   -- Get Pin from Campaign Ids per Admin
                 BEGIN
                     IF @AdminId IS NOT NULL
@@ -620,7 +621,7 @@ END;'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. El administrador con el id seleccionado no existe'', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 6   -- Get Blacklist Ids by Campaign Id
@@ -636,7 +637,7 @@ END;'
                 ELSE
                     BEGIN
                         raiserror(''ERROR. La campa?as con el id seleccionado no existe'', 18, 1)
-                    END 
+                    END
             END
 
             IF @Option = 7   -- Get RegistryListIds Ids by Campaign Id
@@ -648,8 +649,8 @@ END;'
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-                        raiserror(''ERROR. No existe una campa?a con el id especificado'', 18, 1)           
-                    END 
+                        raiserror(''ERROR. No existe una campa?a con el id especificado'', 18, 1)
+                    END
             END
 
             IF @Option = 8   -- Delete RegistryListIds Ids by LoadId
@@ -657,26 +658,26 @@ END;'
                 IF (@LoadId IS NOT NULL AND EXISTS(SELECT * FROM ccRIARegistryLists WHERE list_id = @loadID and status <> 0))
                     BEGIN
                         UPDATE ccoCallsOutSource SET cal_status = ''5'' WHERE list_id = @loadID
-                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId 
-                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId 
+                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId
+                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId
                     END
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
                         raiserror(''ERROR. No existe una carga el id especificado'', 18, 1)
-                    END     
+                    END
             END
 
             IF @option = 9   -- Get Campaigns by Supervisor, Wg and type when admin eliminated from wg
                     BEGIN
                         DECLARE @table TABLE
-                        (camId    INT, 
+                        (camId    INT,
                         campType TINYINT,
                         PRIMARY KEY(camId, campType)
                         );
                         INSERT INTO @table
-                            SELECT DISTINCT 
-                                    IdCampEsp, 
+                            SELECT DISTINCT
+                                    IdCampEsp,
                                     Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG IN
@@ -686,12 +687,12 @@ END;'
                                 WHERE IDWG <> @WorkgroupId
                                 AND User_id = @AdminId
                             );
-                        SELECT CAST(B.IdCampEsp AS INT) AS Id, 
+                        SELECT CAST(B.IdCampEsp AS INT) AS Id,
                             B.Tipo AS Type
                         FROM @table A
                             RIGHT JOIN
                         (
-                            SELECT wg.IdCampEsp, 
+                            SELECT wg.IdCampEsp,
                                 wg.Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG = @WorkgroupId
@@ -700,7 +701,7 @@ END;'
                         WHERE A.camId IS NULL
                         ORDER BY IdCampEsp;
                 END;
-            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type 
+            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type
                 BEGIN
                     DECLARE @date datetime = CONVERT(DATE, DATEADD(hh, -3, GETDATE()))
                     DECLARE @Wg TABLE(id INT, PRIMARY KEY(id));
@@ -715,13 +716,13 @@ END;'
                     INSERT INTO @tmpAgent
                             SELECT DISTINCT  A.User_id FROM ccRIAWorkGroupUsers A
                             INNER JOIN @Wg B ON A.IDWG=B.id
-                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1  
+                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1
                             ORDER BY A.User_id;
 
                     INSERT INTO @tmpCamAgent
                             SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id FROM ccRIACampEspWG campPerWg
                             INNER JOIN @Wg wg ON wg.Id=campPerWg.IDWG
-                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id 
+                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id
                             INNER JOIN ccUsers C ON wgUser.User_id=C.User_id AND C.TipoUser_id=1
                             WHERE campPerWg.Tipo = @CampType;
 
@@ -734,15 +735,15 @@ END;'
 
 
                             INSERT INTO @AgentStatus
-                                SELECT A.camId,  A.userId, 
+                                SELECT A.camId,  A.userId,
                                 ISNULL( B.currentStatus, 0 ) currentStatus,
                                 CASE WHEN B.IdCampEsp=A.camId AND B.Tipo = @CampType AND B.currentStatus IN( 4, 5, 6, 9 ) THEN 1 ELSE NULL END AS isCampDialog
                                 FROM @tmpCamAgent A
                                 LEFT JOIN
                                 (
-                                    SELECT B.User_id, 
-                                            B.currentStatus, 
-                                            B.IdCampEsp, 
+                                    SELECT B.User_id,
+                                            B.currentStatus,
+                                            B.IdCampEsp,
                                             B.Tipo
                                     FROM lastState A
                                     INNER JOIN
@@ -758,12 +759,12 @@ END;'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
@@ -774,32 +775,32 @@ END;'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 GROUP BY B.cam_descripcion, CampId, C.AreaName
-                        END 
-                    ELSE 
-                        BEGIN 
+                        END
+                    ELSE
+                        BEGIN
                             IF @Id <> 0
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 WHERE A.CampId = @Id
                                 GROUP BY  B.descripcion, CampId , C.AreaName
@@ -807,20 +808,20 @@ END;'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                     WHERE B.chat = 0
                                 GROUP BY  B.descripcion, CampId , C.AreaName
-                        END 
-                             
-                            
+                        END
+
+
                     SELECT * FROM @AgentStatusWithTotals
                     ORDER BY CampName
                 END;
@@ -837,12 +838,12 @@ END;'
 		end'
 	EXEC(@sql)
 
- 
 
-	set @process = 'CW-5296 CREATE SP ccsp_RIA_mnuReciclar'   
+
+	set @process = 'CW-5296 CREATE SP ccsp_RIA_mnuReciclar'
 	set @sql = 'Create proc [dbo].[ccsp_RIA_mnuReciclar]
 @cam_id int,
-@type tinyint, -- 0:recicla todo / 1:recicla no efectivos / 2:recicla los efectivos calificados / 
+@type tinyint, -- 0:recicla todo / 1:recicla no efectivos / 2:recicla los efectivos calificados /
 --                3:recicla no efectivos y efectivos calificados (1 y 2) / 4:Recicla status "Finalizado"
 @calif_id varchar(1500) = null,
 @user_id as integer = null,
@@ -856,8 +857,8 @@ If @Valor = 1
  begin
     declare @ultimoReciclaje datetime, @siguienteReciclaje datetime, @difDateAdd datetime
     select @Valor = valor from ccSettings with(nolock) where setting_id = 59
-    
-    If @Valor = 0 
+
+    If @Valor = 0
      begin
         select -2, ''No hay un limite para volver a reciclar''
         return(0)
@@ -867,7 +868,7 @@ If @Valor = 1
 
     -- Se crea log, ccsp_ADMlogReciclaje para que esta informacion la traiga, por que no se esta metiendo
     select @user_id = isnull(@user_id, ''0''), @calif_id = isnull(@calif_id, ''0'')
-    
+
     exec dbo.ccsp_ADMlogReciclaje @cam_id, @user_id, @type, @calif_id
 
     If @ultimoReciclaje is not null and getdate() < DateAdd(n, @Valor, @ultimoReciclaje)
@@ -884,15 +885,15 @@ if @type=0
         create table #allReciycled(callout_id int not null primary key)
 
         insert into #allReciycled
-        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_8),nolock) where cam_id = @cam_id and cal_status = 1       
+        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_8),nolock) where cam_id = @cam_id and cal_status = 1
 
         update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
         from ccoCallBacks a with(index([IX_ccoCallBacks6])) join #allReciycled b on (a.callout_id = b.callout_id)
         where [status] = 0
 
-        update ccoWorkingTable 
-        set cal_status = 0 
+        update ccoWorkingTable
+        set cal_status = 0
         from ccoWorkingTable a join #allReciycled b on (a.callout_id = b.callout_id)
 
         drop table #allReciycled
@@ -901,7 +902,7 @@ if @type=0
         create table #allListReciycled(callout_id int not null primary key)
 
         insert into #allListReciycled
-        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_10),nolock) where cam_id = @cam_id and cal_status = 1 and list_id = @list_id       
+        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_10),nolock) where cam_id = @cam_id and cal_status = 1 and list_id = @list_id
 
         update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
@@ -909,7 +910,7 @@ if @type=0
         where [status] = 0
 
         update ccoWorkingTable
-        set cal_status = 0 
+        set cal_status = 0
         from ccoWorkingTable a join #allListReciycled b on (a.callout_id = b.callout_id)
 
         drop table #allListReciycled
@@ -920,16 +921,16 @@ if @type=0
 
 if @type in(1,3)
  begin
-    
+
     update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
                          from ccoWorkingTable with(index(IX_ccoWorkingTable_12),nolock)
-                         where cam_id = @cam_id 
-                         and cal_status = 1 
+                         where cam_id = @cam_id
+                         and cal_status = 1
                          and tiporesdial_id <> 1
                          and callout_id in (select distinct(b.callout_id)
-                                                from ccologdials a with (index (IX_ccoLogDials_4),nolock) 
+                                                from ccologdials a with (index (IX_ccoLogDials_4),nolock)
                                                 left join ccocallsout b with(index(IX_ccoCallsOut12),nolock)
                                                 on a.callout_id = b.callout_id
                                                 and convert(varchar(13), a.fecha, 121) = convert(varchar(13), b.cal_inicio, 121)
@@ -938,12 +939,12 @@ if @type in(1,3)
     and [status] = 0
 
     update ccoWorkingTable
-    set cal_status = 0, tiporesdial_id = 0 
-    where cam_id = @cam_id 
-    and cal_status = 1 
+    set cal_status = 0, tiporesdial_id = 0
+    where cam_id = @cam_id
+    and cal_status = 1
     and tiporesdial_id <> 1
     and callout_id in (select distinct(b.callout_id)
-                           from ccologdials a with (index (IX_ccoLogDials_4),nolock) 
+                           from ccologdials a with (index (IX_ccoLogDials_4),nolock)
                            left join ccocallsout b with(index(IX_ccoCallsOut12),nolock)
                            on a.callout_id = b.callout_id
                            and convert(varchar(13), a.fecha, 121) = convert(varchar(13), b.cal_inicio, 121)
@@ -953,7 +954,7 @@ if @type in(1,3)
 
 if @type in(2,3)
  begin
-    
+
     Set @SQL = ''update ccoCallBacks with(rowlock) set [status] = 3, schedulerStatus = 1'' +
      ''where callout_id in ('' +
      ''select distinct(callout_id) from ccoWorkingTable with(index(IX_ccoWorkingTable_14),nolock) '' +
@@ -972,17 +973,17 @@ if @type in(2,3)
  end
 
 if @type = 4
- begin  
+ begin
 
     update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
-                         from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock) 
+                         from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock)
                          where cam_id = @cam_id and cal_status = 3)
     and [status] = 0
 
-    update ccoWorkingTable 
-  set cal_status = 0, tiporesdial_id = 0 
+    update ccoWorkingTable
+  set cal_status = 0, tiporesdial_id = 0
     where cam_id = @cam_id and cal_status = 3
  end
 
@@ -990,15 +991,15 @@ return(0)
 set nocount off'
 
 	EXEC(@sql)
-	
-	set @process = 'CW-5348 DROP PROCEDURE ccsp_GalateaAdminDispositions'	
+
+	set @process = 'CW-5348 DROP PROCEDURE ccsp_GalateaAdminDispositions'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositions'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminDispositions;
     end'
 	EXEC(@sql)
 
-	set @process = 'CW-5348 Create SP ccsp_GalateaAdminDispositions'	
+	set @process = 'CW-5348 Create SP ccsp_GalateaAdminDispositions'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
 @command int,
 @calif_id smallint = null,
@@ -1018,7 +1019,7 @@ declare @inserted table (ID smallint)
 
 if @command=1 -- Load Inbound Dispositions
 begin
-  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner,
   cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd, graphColor
   from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
   where C.Calif_Status=1
@@ -1029,12 +1030,12 @@ end
 
 If @command=2 -- Load Outbound Dispositions
 begin
-  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
-  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner,
   IsNull(C.finishPreview,0) as finishPreview, graphColor
   from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
   where C.CalifOut_Status=1
-  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,
   C.contactOwner, C.finishPreview, graphColor
   order by 2
   return(0)
@@ -1051,11 +1052,11 @@ begin
   If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
   begin
 	select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
-    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0),
 	graphColor=isnull(@graphColor, ''1DB4E2''), Calif_Status=1
 	output inserted.calif_id into @inserted
     where calif_id=@calif_id
-	select ID [result] from @inserted 
+	select ID [result] from @inserted
     return(0)
   end
 
@@ -1078,19 +1079,19 @@ begin
  begin
 	select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
 	update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
-	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0),
 	finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, ''1DB4E2'')
 	output inserted.calif_id into @inserted
 	where calif_id=@calif_id
-	select ID [result] from @inserted 
+	select ID [result] from @inserted
 	return(0)
  end
 
  insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor)
  output inserted.calif_id into @inserted
- select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
+ select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0),
  isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalifOut
- select ID [result] from @inserted 
+ select ID [result] from @inserted
  return(0)
 end
 If @command=5 -- Delete Inbound Dispositions
@@ -1117,7 +1118,7 @@ begin
 	end
 
     UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
-    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
+    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),
 	EndConversation=isnull(@endConversation,EndConversation)
 	output inserted.calif_id into @inserted
     where calif_id=@calif_id
@@ -1137,8 +1138,8 @@ begin
 	end
 
 	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
-	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
-	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial),
+	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner),
 	finishPreview = isnull(@finishPreview,finishPreview)
 	output inserted.calif_id into @inserted
 	where calif_id=@calif_id
@@ -1149,20 +1150,20 @@ begin
 	end
 
 	select ID [result] from @inserted
-	return(0) 
+	return(0)
 end
 
 set nocount off'
 	EXEC(@sql)
 
-	set @process = 'CW-5337 5370 5371 DROP PROCEDURE ccsp_GalateaAdminSubdispositions'	
+	set @process = 'CW-5337 5370 5371 DROP PROCEDURE ccsp_GalateaAdminSubdispositions'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSubdispositions'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminSubdispositions;
     end'
 	EXEC(@sql)
 
-	set @process = 'CW-5337 5370 5371 Create SP ccsp_GalateaAdminSubdispositions'	
+	set @process = 'CW-5337 5370 5371 Create SP ccsp_GalateaAdminSubdispositions'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSubdispositions]
 @command int,
 @califSub_id smallint = null,
@@ -1180,7 +1181,7 @@ declare @inserted table (ID smallint)
 
 if @command=1 -- Load Inbound Subdispositions
 begin
-  select califSub_id, IsNull(califSubDesc,'''') [califSubDesc], orden, canReprogram, 
+  select califSub_id, IsNull(califSubDesc,'''') [califSubDesc], orden, canReprogram,
   IsNull(EndConversation,0) EndConversation
   from ccTipoCalifSub
   where califSub_Status = 1
@@ -1217,7 +1218,7 @@ begin
 		califSub_Status=1
 		output inserted.califSub_id into @inserted
 		where califSub_id=@califSub_id
-		select ID [result] from @inserted 
+		select ID [result] from @inserted
 		return(0)
 	end
 
@@ -1242,7 +1243,7 @@ begin
 		califSubOut_Status=1, keepDial=isnull(@keepDial,0), autoCallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0)
 		output inserted.califSub_id into @inserted
 		where califSubDesc=@califSubDesc
-		select ID [result] from @inserted 
+		select ID [result] from @inserted
 		return(0)
 	end
 
@@ -1278,9 +1279,9 @@ begin
 	if @canReprogram=1
 	begin
 		declare @asignada bit, @can bit
-		select @asignada=IB.inbound_id, @can=IB.cam_id 
+		select @asignada=IB.inbound_id, @can=IB.cam_id
 		from cctipoSubCalifRel CR join cctipoCalif TC on CR.calif_id = TC.calif_id and CR.tipoSubRel=1
-		join ccCalifCamp CM on TC.calif_id = CM.calif_id and CM.tipo = 0 join ccInbound IB on CM.cam_id = IB.inbound_id 
+		join ccCalifCamp CM on TC.calif_id = CM.calif_id and CM.tipo = 0 join ccInbound IB on CM.cam_id = IB.inbound_id
 		where califSub_id = cast(@califSub_id as smallint)
 		if @asignada is not null and @can is null
 		begin
@@ -1298,12 +1299,12 @@ begin
     tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
 
 	select ID [result] from @inserted
-	return(0) 
+	return(0)
 end
 
 if @command=8	-- Update Outbound Subdisposition
 begin
-	
+
 	if(exists(select califSub_id from ccTipoCalifSubOUT where califSubOut_Status=1 and califSubDesc=@califSubDesc and califSub_id<>@califSub_id))
 	begin
 		select cast(-1 as smallint) [result]	-- Subdisposition already exists
@@ -1317,24 +1318,24 @@ begin
 	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
 
 	select ID [result] from @inserted
-	return(0) 
+	return(0)
 end
 
 
 set nocount off'
-	EXEC(@sql)	
+	EXEC(@sql)
 
-	set @process = 'CW-5373 Agregar el setting que contendra el valor máximo de tiempo de previsualización de registros preview'	
+	set @process = 'CW-5373 Agregar el setting que contendra el valor máximo de tiempo de previsualización de registros preview'
 	set @sql = '
 	if not exists( select * from ccSettings where setting_id = 229)
 	begin
-		insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
+		insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
 		values (229, 300, ''Tiempo máximo de previsualización de registros en campaña tipo preview'', 1, ''AGT'', ''Tiempo en segundos que tendrá como máximo un agente para poder previsualizar registros en campaña tipo preview'', ''Maximum time to preview records in a preview campaign'', 1, ''.*'')
 	end
 	'
 	EXEC(@sql)
 
-	set @process = 'CW-5047 Version BD 123.18 Creacion del menu Call Time Summary'	
+	set @process = 'CW-5047 Version BD 123.18 Creacion del menu Call Time Summary'
 	set @sql = 'if not exists (select * from ccMenus where menu_id = 7190)
     begin
 		insert into ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
@@ -1343,90 +1344,90 @@ set nocount off'
     end'
     EXEC(@sql)
 
-    set @process = 'CW-5344 no se muestran Campañas de otras areas' 
+    set @process = 'CW-5344 no se muestran Campañas de otras areas'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminCampaigns'')
             begin
                 DROP PROCEDURE ccsp_GalateaAdminCampaigns;
             end'
     EXEC(@sql)
 
-    
-    set @process = 'CW-5344 no se muestran Campañas de otras areas'   
+
+    set @process = 'CW-5344 no se muestran Campañas de otras areas'
         set @sql = '
-            CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
-                                                        @CampType AS SMALLINT = 0, 
-                                                        @WorkgroupId AS INT = 0, 
+            CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
+                                                        @CampType AS SMALLINT = 0,
+                                                        @WorkgroupId AS INT = 0,
                                                         @Id AS INT = 0,
-                                                        @AdminId AS SMALLINT = 0, 
-                                                        @PinUpdate AS SMALLINT = 0, 
+                                                        @AdminId AS SMALLINT = 0,
+                                                        @PinUpdate AS SMALLINT = 0,
                                                         @LoadId AS INT = 0,
                                                         @Type AS SMALLINT = 0
             AS
             BEGIN
             set nocount on
-            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
+            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type
             BEGIN
-                IF @CampType = 1 -- Campaigns Out 
+                IF @CampType = 1 -- Campaigns Out
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=1
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror(''ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado'', 18, 1)
-                    END 
+                    END
                 END
                 IF @CampType = 0 -- Campaigns In (ACD)
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=0
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror(''ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado'', 18, 1)
-                    END 
+                    END
                 END
             END
-                    
-            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id 
+
+            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id
                 BEGIN
-                    IF @CampType = 1 -- Campaigns Out 
+                    IF @CampType = 1 -- Campaigns Out
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        camps.cam_id AS Id, 
-                                        camps.cam_descripcion AS Name, 
-                                        CAST(graph.graphic_id AS INT) AS Frame, 
+                                    SELECT DISTINCT
+                                        camps.cam_id AS Id,
+                                        camps.cam_descripcion AS Name,
+                                        CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(1 AS SMALLINT) AS Type,
                                         camps.cam_procesando IsStarted,
                                         a.AreaName as Area
-                                    FROM ccCamps camps 
+                                    FROM ccCamps camps
                                     LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
                                     left join ccRIACat_Areas a on a.IDArea = camps.IDArea
-                                    WHERE camps.cam_id = @Id 
+                                    WHERE camps.cam_id = @Id
                                     ORDER BY camps.cam_descripcion ASC;
                                 END
                             ELSE
                             BEGIN
                                 raiserror(''ERROR. No existe campa?as de salida con el id especificado'', 18, 1)
-                            END 
+                            END
                         END
                     IF @CampType = 0 -- Campaigns In (ACD)
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        inb.Inbound_id AS Id, 
-                                        inb.descripcion AS Name, 
+                                    SELECT DISTINCT
+                                        inb.Inbound_id AS Id,
+                                        inb.descripcion AS Name,
                                         CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(0 AS SMALLINT) AS Type,
                                         CAST(inb.Status AS BIT) IsStarted,
@@ -1435,17 +1436,17 @@ set nocount off'
                                     FROM ccInbound inb
                                     LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
                                     left join ccRIACat_Areas a on a.IDArea = inb.IDArea
-                                    WHERE inb.Inbound_id = @Id 
+                                    WHERE inb.Inbound_id = @Id
                                     ORDER BY inb.descripcion ASC;
                                 END
                             ELSE
                                 BEGIN
                                     raiserror(''ERROR. No existe campa?as de entrada con el id especificado'', 18, 1)
-                                END 
+                                END
                         END
                 END
 
-            IF @Option = 3   -- Update OverallTotalNew By Campaign 
+            IF @Option = 3   -- Update OverallTotalNew By Campaign
                 BEGIN
                     IF @Id IS NOT NULL
                         BEGIN
@@ -1454,7 +1455,7 @@ set nocount off'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. No existe la campa?as de entrada con el id especificado'', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 4   -- Update Pin from Campaign per Admin
@@ -1475,9 +1476,9 @@ set nocount off'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. La campa?as o administrador no existen'', 18, 1)
-                        END 
+                        END
                 END
-                    
+
             IF @Option = 5   -- Get Pin from Campaign Ids per Admin
                 BEGIN
                     IF @AdminId IS NOT NULL
@@ -1488,7 +1489,7 @@ set nocount off'
                     ELSE
                         BEGIN
                             raiserror(''ERROR. El administrador con el id seleccionado no existe'', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 6   -- Get Blacklist Ids by Campaign Id
@@ -1504,7 +1505,7 @@ set nocount off'
                 ELSE
                     BEGIN
                         raiserror(''ERROR. La campa?as con el id seleccionado no existe'', 18, 1)
-                    END 
+                    END
             END
 
             IF @Option = 7   -- Get RegistryListIds Ids by Campaign Id
@@ -1516,8 +1517,8 @@ set nocount off'
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-                        raiserror(''ERROR. No existe una campa?a con el id especificado'', 18, 1)           
-                    END 
+                        raiserror(''ERROR. No existe una campa?a con el id especificado'', 18, 1)
+                    END
             END
 
             IF @Option = 8   -- Delete RegistryListIds Ids by LoadId
@@ -1525,26 +1526,26 @@ set nocount off'
                 IF (@LoadId IS NOT NULL AND EXISTS(SELECT * FROM ccRIARegistryLists WHERE list_id = @loadID and status <> 0))
                     BEGIN
                         UPDATE ccoCallsOutSource SET cal_status = ''5'' WHERE list_id = @loadID
-                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId 
-                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId 
+                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId
+                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId
                     END
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
                         raiserror(''ERROR. No existe una carga el id especificado'', 18, 1)
-                    END     
+                    END
             END
 
             IF @option = 9   -- Get Campaigns by Supervisor, Wg and type when admin eliminated from wg
                     BEGIN
                         DECLARE @table TABLE
-                        (camId    INT, 
+                        (camId    INT,
                         campType TINYINT,
                         PRIMARY KEY(camId, campType)
                         );
                         INSERT INTO @table
-                            SELECT DISTINCT 
-                                    IdCampEsp, 
+                            SELECT DISTINCT
+                                    IdCampEsp,
                                     Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG IN
@@ -1554,12 +1555,12 @@ set nocount off'
                                 WHERE IDWG <> @WorkgroupId
                                 AND User_id = @AdminId
                             );
-                        SELECT CAST(B.IdCampEsp AS INT) AS Id, 
+                        SELECT CAST(B.IdCampEsp AS INT) AS Id,
                             B.Tipo AS Type
                         FROM @table A
                             RIGHT JOIN
                         (
-                            SELECT wg.IdCampEsp, 
+                            SELECT wg.IdCampEsp,
                                 wg.Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG = @WorkgroupId
@@ -1568,7 +1569,7 @@ set nocount off'
                         WHERE A.camId IS NULL
                         ORDER BY IdCampEsp;
                 END;
-            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type 
+            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type
                 BEGIN
                     DECLARE @date datetime = CONVERT(DATE, DATEADD(hh, -3, GETDATE()))
                     DECLARE @Wg TABLE(id INT, PRIMARY KEY(id));
@@ -1586,13 +1587,13 @@ set nocount off'
                     INSERT INTO @tmpAgent
                             SELECT DISTINCT  A.User_id FROM ccRIAWorkGroupUsers A
                             INNER JOIN @Wg B ON A.IDWG=B.id
-                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1  
+                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1
                             ORDER BY A.User_id;
 
                     INSERT INTO @tmpCamAgent
                             SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id FROM ccRIACampEspWG campPerWg
                             INNER JOIN @Wg wg ON wg.Id=campPerWg.IDWG
-                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id 
+                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id
                             INNER JOIN ccUsers C ON wgUser.User_id=C.User_id AND C.TipoUser_id=1
                             WHERE campPerWg.Tipo = @CampType;
 
@@ -1605,15 +1606,15 @@ set nocount off'
 
 
                             INSERT INTO @AgentStatus
-                                SELECT A.camId,  A.userId, 
+                                SELECT A.camId,  A.userId,
                                 ISNULL( B.currentStatus, 0 ) currentStatus,
                                 CASE WHEN B.IdCampEsp=A.camId AND B.Tipo = @CampType AND B.currentStatus IN( 4, 5, 6, 9 ) THEN 1 ELSE NULL END AS isCampDialog
                                 FROM @tmpCamAgent A
                                 LEFT JOIN
                                 (
-                                    SELECT B.User_id, 
-                                            B.currentStatus, 
-                                            B.IdCampEsp, 
+                                    SELECT B.User_id,
+                                            B.currentStatus,
+                                            B.IdCampEsp,
                                             B.Tipo
                                     FROM lastState A
                                     INNER JOIN
@@ -1629,12 +1630,12 @@ set nocount off'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
@@ -1645,32 +1646,32 @@ set nocount off'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 GROUP BY B.cam_descripcion, CampId, C.AreaName
-                        END 
-                    ELSE 
-                        BEGIN 
+                        END
+                    ELSE
+                        BEGIN
                             IF @Id <> 0
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 WHERE A.CampId = @Id
                                 GROUP BY  B.descripcion, CampId , C.AreaName
@@ -1678,20 +1679,20 @@ set nocount off'
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                     WHERE B.chat = 0
                                 GROUP BY  B.descripcion, CampId , C.AreaName
-                        END 
-                             
-                            
+                        END
+
+
                     SELECT * FROM @AgentStatusWithTotals
                     ORDER BY CampName
                 END;
@@ -1700,9 +1701,9 @@ set nocount off'
 
 
     EXEC(@sql)
-	
-	
-	set @process = 'CW-5376 5419 DROP PROCEDURE ccsp_GalateaAdminSubdispositionRelations'	
+
+
+	set @process = 'CW-5376 5419 DROP PROCEDURE ccsp_GalateaAdminSubdispositionRelations'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSubdispositionRelations'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminSubdispositionRelations;
@@ -1710,7 +1711,7 @@ set nocount off'
     EXEC(@sql)
 
 
-    set @process = 'CW-5376 5419 CREATE PROCEDURE ccsp_GalateaAdminSubdispositionRelations'	
+    set @process = 'CW-5376 5419 CREATE PROCEDURE ccsp_GalateaAdminSubdispositionRelations'
     set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSubdispositionRelations]
 @command int,
 @type tinyint = null, --0=Outbound, 1=Inbound
@@ -1737,8 +1738,8 @@ end
 if @command=2  --Asignar subcalificacion a una calificacion
 begin
 	if @type=1 and (select cast(sum(isnull(cast(canReprogram as tinyint),0)) as bit) FROM cctipocalifSub where califSub_id in
-	(select value from dbo.fn_RIASplitDelimited (@califSub_id, '','')))>0 
-	and not exists (select IB.cam_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0 
+	(select value from dbo.fn_RIASplitDelimited (@califSub_id, '','')))>0
+	and not exists (select IB.cam_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0
 	join ccInbound IB on IB.Inbound_id = CF.cam_id where IB.cam_id is not null and CO.calif_id = @calif_id)
 	begin
 		select cast(-2 as smallint) [result]	-- Cant reprogram, there are not assigned campaign
@@ -1756,8 +1757,8 @@ begin
 	begin
 		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
 	end
-	
-	select cast(1 as smallint) [result]	 -- Done! 
+
+	select cast(1 as smallint) [result]	 -- Done!
 	return(0)
 end
 if @command=3	--Desasignacion de subcalificacion
@@ -1776,8 +1777,8 @@ end
 set nocount off'
     EXEC(@sql)
 
-	
-  set @process = 'Actualizacion de configuracion de campañas Galatea'	
+
+  set @process = 'Actualizacion de configuracion de campañas Galatea'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
     begin
         DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
@@ -1786,24 +1787,24 @@ set nocount off'
 
 
 
-set @process = 'Actualizacion de configuracion de campañas Galatea'	
+set @process = 'Actualizacion de configuracion de campañas Galatea'
 	set @sql = 'CREATE PROCEDURE ccsp_GalateaGetOutboundConfiguration
 @adminID int,
 @campID int
 AS
 BEGIN
 
-	declare @AllCampaigns table 
+	declare @AllCampaigns table
 	(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
 	cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
 	cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
 	detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
 	dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
 	t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
-	callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
-	callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+	callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit,
+	callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint,
 	prefijo varchar(40),enbleprefix bit )
-	 
+
 	 INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID
 
 	 SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
@@ -1813,12 +1814,104 @@ BEGIN
 	 prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
 	 cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
 	 cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
-	 editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+	 editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail,
 	 compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd
 	 from @AllCampaigns WHERE cam_id = @campID
 END'
   EXEC(@sql)
+
+ 
+ set @process = 'Create index IX_messageEmail_I'
+ set @sql =  'if not exists (select * from sys.indexes where name = N''IX_messageEmail_I'' and object_id = OBJECT_ID(N''message''))
+
+	
+CREATE NONCLUSTERED INDEX IX_messageEmail_I
+ON [dbo].[message] ([conversationId])
+include ([messageId], [messageStatusId], [date], [tQueue], [tsend])
+'
+ EXEC(@sql)
+
+ set @process = 'ALTER SP ccsp_MailInitialStatistics'
+  set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MailInitialStatistics]
+@inboundId int=0,
+@Option AS SMALLINT=0,
+@User_id AS SMALLINT=0
+AS
+BEGIN
+
+SET NOCOUNT ON;
+declare @from datetime,@to datetime
+  set @from =CONVERT(datetime, convert(varchar(10),getdate(),121))
+  set @to =dateadd(dd,1,@from)
+
   
+
+if(@Option=0)
+begin
+  select
+  count(*) received,
+  count(case when messageStatusId = 1 then 1 else null end) pending,
+  count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+  count(case when messageStatusId = 4 then 1 else null end) unassigned,
+  count(case when messageStatusId in (5,6) then 1 else null end) sent,
+  count(case when messageStatusId = 7 then 1 else null end) rejected,
+  count(case when messageStatusId = 8 then 1 else null end) programFwd,
+  count(case when messageStatusId = 9 then 1 else null end) forwarding,
+  count(case when messageStatusId in (10,11) then 1 else null end) closed,
+  count(case when messageStatusId = 3 then 1 else null end) active,
+  isnull(AVG(B.twait + B.tretention + B.tresponse),0) avgtAtention,
+  isnull(AVG(B.twait),0) avgtWait,
+  isnull(MAX(B.twait),0) maxtWait
+  from conversation A with (nolock, index(PK__conversation__31190FD5))
+  inner join message B with(nolock, index (IX_messageEmail_I)) on A.conversationId=b.conversationId
+  where inboundId= @inboundId
+  and (
+    (
+     messageStatusId in (1,4) 
+	 or tQueue   between @from and @to 
+	or tSend   between @from and @to    
+ 
+    )
+    or [date] between @from and @to
+   )
+end
+if @Option = 1
+BEGIN
+
+  select
+  count(*) received,
+  count(case when messageStatusId = 1 then 1 else null end) pending,
+  count(case when messageStatusId in (2,3) then 1 else null end) assigned,
+  count(case when messageStatusId = 4 then 1 else null end) unassigned,
+  count(case when messageStatusId in (5,6) then 1 else null end) sent,
+  count(case when messageStatusId = 7 then 1 else null end) rejected,
+  count(case when messageStatusId = 8 then 1 else null end) programFwd,
+  count(case when messageStatusId = 9 then 1 else null end) forwarding,
+  count(case when messageStatusId in (10,11) then 1 else null end) closed,
+  count(case when messageStatusId = 3 then 1 else null end) active ,
+  isnull(AVG(msg.twait + msg.tretention + msg.tresponse),0) avgtAtention,
+  isnull(AVG(msg.twait),0) avgtWait,
+  isnull(MAX(msg.twait),0) maxtWait,
+  InboundId inboundId
+  from message msg with (nolock, index(PK__message__320D340E)) 
+  join conversation con with (nolock, index(PK__conversation__31190FD5)) on con.conversationId =msg.conversationId
+  where inboundId in (select inbound_id from ccInbound where inbound_id in (SELECT cam_id FROM ccSupervisorCam WHERE user_id = @User_id AND tipo = 0) and chat = 3)
+  and (
+    (
+     messageStatusId in (1,4) 
+     or tQueue between @from and @to 
+	or tSend  between @from and @to      
+)
+    or [date] between @from and @to
+   )
+  GROUP BY InboundId
+  END
+END'
+   EXEC(@sql)
+
+set @process = 'CW-5369 ALTER table ccRiachats'
+set @sql = 'ALTER TABLE ccRiachats ALTER COLUMN clientName VARCHAR (100)'
+EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

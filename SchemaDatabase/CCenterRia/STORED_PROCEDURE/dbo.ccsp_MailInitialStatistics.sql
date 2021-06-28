@@ -7,7 +7,7 @@ BEGIN
 
 SET NOCOUNT ON;
 declare @from datetime,@to datetime
-  set @from =convert(datetime, convert(varchar(10),getdate(),121))
+  set @from =CONVERT(datetime, convert(varchar(10),getdate(),121))
   set @to =dateadd(dd,1,@from)
 
   
@@ -28,14 +28,15 @@ begin
   isnull(AVG(B.twait + B.tretention + B.tresponse),0) avgtAtention,
   isnull(AVG(B.twait),0) avgtWait,
   isnull(MAX(B.twait),0) maxtWait
-  from conversation A
-  inner join message B on A.conversationId=b.conversationId
+  from conversation A with (nolock, index(PK__conversation__31190FD5))
+  inner join message B with(nolock, index (IX_messageEmail_I)) on A.conversationId=b.conversationId
   where inboundId= @inboundId
   and (
     (
-     messageStatusId in (1,4) or
-    (tQueue is not null and convert(datetime, convert(varchar(10),tQueue,121)) = @from) or
-    (tSend is not null and convert(datetime, convert(varchar(10),tsend,121)) = @from)
+     messageStatusId in (1,4) 
+	 or tQueue   between @from and @to 
+	or tSend   between @from and @to    
+ 
     )
     or [date] between @from and @to
    )
@@ -58,14 +59,15 @@ BEGIN
   isnull(AVG(msg.twait),0) avgtWait,
   isnull(MAX(msg.twait),0) maxtWait,
   InboundId inboundId
-  from message msg (nolock) join conversation con (nolock) on con.conversationId=msg.conversationId
+  from message msg with (nolock, index(PK__message__320D340E)) 
+  join conversation con with (nolock, index(PK__conversation__31190FD5)) on con.conversationId =msg.conversationId
   where inboundId in (select inbound_id from ccInbound where inbound_id in (SELECT cam_id FROM ccSupervisorCam WHERE user_id = @User_id AND tipo = 0) and chat = 3)
   and (
     (
-     messageStatusId in (1,4) or
-    (tQueue is not null and convert(datetime, convert(varchar(10),tQueue,121)) = @from) or
-    (tSend is not null and convert(datetime, convert(varchar(10),tsend,121)) = @from)
-    )
+     messageStatusId in (1,4) 
+     or tQueue between @from and @to 
+	or tSend  between @from and @to      
+)
     or [date] between @from and @to
    )
   GROUP BY InboundId

@@ -1,77 +1,77 @@
-CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT, 
-                                                        @CampType AS SMALLINT = 0, 
-                                                        @WorkgroupId AS INT = 0, 
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
+                                                        @CampType AS SMALLINT = 0,
+                                                        @WorkgroupId AS INT = 0,
                                                         @Id AS INT = 0,
-                                                        @AdminId AS SMALLINT = 0, 
-                                                        @PinUpdate AS SMALLINT = 0, 
+                                                        @AdminId AS SMALLINT = 0,
+                                                        @PinUpdate AS SMALLINT = 0,
                                                         @LoadId AS INT = 0,
                                                         @Type AS SMALLINT = 0
             AS
             BEGIN
             set nocount on
-            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type 
+            IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type
             BEGIN
-                IF @CampType = 1 -- Campaigns Out 
+                IF @CampType = 1 -- Campaigns Out
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=1
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror('ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado', 18, 1)
-                    END 
+                    END
                 END
                 IF @CampType = 0 -- Campaigns In (ACD)
                 BEGIN
                     IF @WorkgroupId IS NOT NULL
                     BEGIN
-                        SELECT CAST(IdCampEsp AS INT) AS Id 
-                        FROM ccRIACampEspWG 
+                        SELECT CAST(IdCampEsp AS INT) AS Id
+                        FROM ccRIACampEspWG
                         WHERE IDWG = @WorkgroupId AND Tipo=0
                         ORDER BY IdCampEsp ASC
                     END
                     ELSE
                     BEGIN
                         raiserror('ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado', 18, 1)
-                    END 
+                    END
                 END
             END
-                    
-            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id 
+
+            IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id
                 BEGIN
-                    IF @CampType = 1 -- Campaigns Out 
+                    IF @CampType = 1 -- Campaigns Out
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        camps.cam_id AS Id, 
-                                        camps.cam_descripcion AS Name, 
-                                        CAST(graph.graphic_id AS INT) AS Frame, 
+                                    SELECT DISTINCT
+                                        camps.cam_id AS Id,
+                                        camps.cam_descripcion AS Name,
+                                        CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(1 AS SMALLINT) AS Type,
                                         camps.cam_procesando IsStarted,
                                         a.AreaName as Area
-                                    FROM ccCamps camps 
+                                    FROM ccCamps camps
                                     LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
                                     left join ccRIACat_Areas a on a.IDArea = camps.IDArea
-                                    WHERE camps.cam_id = @Id 
+                                    WHERE camps.cam_id = @Id
                                     ORDER BY camps.cam_descripcion ASC;
                                 END
                             ELSE
                             BEGIN
                                 raiserror('ERROR. No existe campa?as de salida con el id especificado', 18, 1)
-                            END 
+                            END
                         END
                     IF @CampType = 0 -- Campaigns In (ACD)
                         BEGIN
                             IF @Id IS NOT NULL
                                 BEGIN
-                                    SELECT DISTINCT 
-                                        inb.Inbound_id AS Id, 
-                                        inb.descripcion AS Name, 
+                                    SELECT DISTINCT
+                                        inb.Inbound_id AS Id,
+                                        inb.descripcion AS Name,
                                         CAST(graph.graphic_id AS INT) AS Frame,
                                         CAST(0 AS SMALLINT) AS Type,
                                         CAST(inb.Status AS BIT) IsStarted,
@@ -80,17 +80,17 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                                     FROM ccInbound inb
                                     LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
                                     left join ccRIACat_Areas a on a.IDArea = inb.IDArea
-                                    WHERE inb.Inbound_id = @Id 
+                                    WHERE inb.Inbound_id = @Id
                                     ORDER BY inb.descripcion ASC;
                                 END
                             ELSE
                                 BEGIN
                                     raiserror('ERROR. No existe campa?as de entrada con el id especificado', 18, 1)
-                                END 
+                                END
                         END
                 END
 
-            IF @Option = 3   -- Update OverallTotalNew By Campaign 
+            IF @Option = 3   -- Update OverallTotalNew By Campaign
                 BEGIN
                     IF @Id IS NOT NULL
                         BEGIN
@@ -99,7 +99,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                     ELSE
                         BEGIN
                             raiserror('ERROR. No existe la campa?as de entrada con el id especificado', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 4   -- Update Pin from Campaign per Admin
@@ -120,9 +120,9 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                     ELSE
                         BEGIN
                             raiserror('ERROR. La campa?as o administrador no existen', 18, 1)
-                        END 
+                        END
                 END
-                    
+
             IF @Option = 5   -- Get Pin from Campaign Ids per Admin
                 BEGIN
                     IF @AdminId IS NOT NULL
@@ -133,7 +133,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                     ELSE
                         BEGIN
                             raiserror('ERROR. El administrador con el id seleccionado no existe', 18, 1)
-                        END 
+                        END
                 END
 
             IF @Option = 6   -- Get Blacklist Ids by Campaign Id
@@ -149,7 +149,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                 ELSE
                     BEGIN
                         raiserror('ERROR. La campa?as con el id seleccionado no existe', 18, 1)
-                    END 
+                    END
             END
 
             IF @Option = 7   -- Get RegistryListIds Ids by Campaign Id
@@ -161,8 +161,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
-                        raiserror('ERROR. No existe una campa?a con el id especificado', 18, 1)           
-                    END 
+                        raiserror('ERROR. No existe una campa?a con el id especificado', 18, 1)
+                    END
             END
 
             IF @Option = 8   -- Delete RegistryListIds Ids by LoadId
@@ -170,26 +170,26 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                 IF (@LoadId IS NOT NULL AND EXISTS(SELECT * FROM ccRIARegistryLists WHERE list_id = @loadID and status <> 0))
                     BEGIN
                         UPDATE ccoCallsOutSource SET cal_status = '5' WHERE list_id = @loadID
-                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId 
-                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId 
+                        DELETE FROM ccoWorkingTable WHERE list_id = @LoadId
+                        exec ccsp_RIARegistryLists @action=6, @list_id = @LoadId
                     END
                 ELSE
                     BEGIN
                         --Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
                         raiserror('ERROR. No existe una carga el id especificado', 18, 1)
-                    END     
+                    END
             END
 
             IF @option = 9   -- Get Campaigns by Supervisor, Wg and type when admin eliminated from wg
                     BEGIN
                         DECLARE @table TABLE
-                        (camId    INT, 
+                        (camId    INT,
                         campType TINYINT,
                         PRIMARY KEY(camId, campType)
                         );
                         INSERT INTO @table
-                            SELECT DISTINCT 
-                                    IdCampEsp, 
+                            SELECT DISTINCT
+                                    IdCampEsp,
                                     Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG IN
@@ -199,12 +199,12 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                                 WHERE IDWG <> @WorkgroupId
                                 AND User_id = @AdminId
                             );
-                        SELECT CAST(B.IdCampEsp AS INT) AS Id, 
+                        SELECT CAST(B.IdCampEsp AS INT) AS Id,
                             B.Tipo AS Type
                         FROM @table A
                             RIGHT JOIN
                         (
-                            SELECT wg.IdCampEsp, 
+                            SELECT wg.IdCampEsp,
                                 wg.Tipo
                             FROM ccRIACampEspWG wg
                             WHERE wg.IDWG = @WorkgroupId
@@ -213,7 +213,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                         WHERE A.camId IS NULL
                         ORDER BY IdCampEsp;
                 END;
-            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type 
+            IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type
                 BEGIN
                     DECLARE @date datetime = CONVERT(DATE, DATEADD(hh, -3, GETDATE()))
                     DECLARE @Wg TABLE(id INT, PRIMARY KEY(id));
@@ -231,13 +231,13 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                     INSERT INTO @tmpAgent
                             SELECT DISTINCT  A.User_id FROM ccRIAWorkGroupUsers A
                             INNER JOIN @Wg B ON A.IDWG=B.id
-                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1  
+                            INNER JOIN ccUsers C ON A.User_id=C.User_id AND C.TipoUser_id=1
                             ORDER BY A.User_id;
 
                     INSERT INTO @tmpCamAgent
                             SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id FROM ccRIACampEspWG campPerWg
                             INNER JOIN @Wg wg ON wg.Id=campPerWg.IDWG
-                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id 
+                            INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG=wg.id
                             INNER JOIN ccUsers C ON wgUser.User_id=C.User_id AND C.TipoUser_id=1
                             WHERE campPerWg.Tipo = @CampType;
 
@@ -250,15 +250,15 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
 
 
                             INSERT INTO @AgentStatus
-                                SELECT A.camId,  A.userId, 
+                                SELECT A.camId,  A.userId,
                                 ISNULL( B.currentStatus, 0 ) currentStatus,
                                 CASE WHEN B.IdCampEsp=A.camId AND B.Tipo = @CampType AND B.currentStatus IN( 4, 5, 6, 9 ) THEN 1 ELSE NULL END AS isCampDialog
                                 FROM @tmpCamAgent A
                                 LEFT JOIN
                                 (
-                                    SELECT B.User_id, 
-                                            B.currentStatus, 
-                                            B.IdCampEsp, 
+                                    SELECT B.User_id,
+                                            B.currentStatus,
+                                            B.IdCampEsp,
                                             B.Tipo
                                     FROM lastState A
                                     INNER JOIN
@@ -274,12 +274,12 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
@@ -290,32 +290,32 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.cam_descripcion,
                                         COUNT( CurrentState ) as total,
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready, 
-                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END) 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ) as ready,
+                                        COUNT( CASE WHEN CurrentState NOT IN( 3, 4, 5, 6, 9 )  THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
-                                    
+
                                         as notReady,
-                                        COUNT( isCampDialog ) as dialog,  
+                                        COUNT( isCampDialog ) as dialog,
                                         C.AreaName
                                 FROM @AgentStatus A
                                 INNER JOIN ccCamps B on A.CampId=B.cam_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 GROUP BY B.cam_descripcion, CampId, C.AreaName
-                        END 
-                    ELSE 
-                        BEGIN 
+                        END
+                    ELSE
+                        BEGIN
                             IF @Id <> 0
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                 WHERE A.CampId = @Id
                                 GROUP BY  B.descripcion, CampId , C.AreaName
@@ -323,20 +323,20 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS SMALLINT,
                                 INSERT INTO @AgentStatusWithTotals
                                 SELECT  B.descripcion,
                                         COUNT( CurrentState ),
-                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ), 
+                                        COUNT( CASE WHEN CurrentState=3 THEN 1 ELSE NULL END ),
                                         COUNT( CASE WHEN CurrentState NOT IN(3, 4, 5, 6, 9 ) THEN 1 ELSE NULL END)
                                         + count (case when isCampDialog is null and  CurrentState IN( 4, 5, 6, 9 ) then 1 else null end)
                                         ,
-                                        COUNT( isCampDialog ), 
+                                        COUNT( isCampDialog ),
                                         C.AreaName
                                 FROM @AgentStatus A
-                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id  
+                                INNER JOIN ccInbound B on A.CampId = B.Inbound_id
                                 INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
                                     WHERE B.chat = 0
                                 GROUP BY  B.descripcion, CampId , C.AreaName
-                        END 
-                             
-                            
+                        END
+
+
                     SELECT * FROM @AgentStatusWithTotals
                     ORDER BY CampName
                 END;

@@ -17,7 +17,7 @@ declare @inserted table (ID smallint)
 
 if @command=1 -- Load Inbound Dispositions
 begin
-  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner,
   cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd, graphColor
   from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
   where C.Calif_Status=1
@@ -28,12 +28,12 @@ end
 
 If @command=2 -- Load Outbound Dispositions
 begin
-  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
-  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner,
   IsNull(C.finishPreview,0) as finishPreview, graphColor
   from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
   where C.CalifOut_Status=1
-  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,
   C.contactOwner, C.finishPreview, graphColor
   order by 2
   return(0)
@@ -50,11 +50,11 @@ begin
   If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
   begin
 	select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
-    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0),
 	graphColor=isnull(@graphColor, '1DB4E2'), Calif_Status=1
 	output inserted.calif_id into @inserted
     where calif_id=@calif_id
-	select ID [result] from @inserted 
+	select ID [result] from @inserted
     return(0)
   end
 
@@ -77,19 +77,19 @@ begin
  begin
 	select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
 	update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
-	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0),
 	finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, '1DB4E2')
 	output inserted.calif_id into @inserted
 	where calif_id=@calif_id
-	select ID [result] from @inserted 
+	select ID [result] from @inserted
 	return(0)
  end
 
  insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor)
  output inserted.calif_id into @inserted
- select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
+ select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0),
  isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, '1DB4E2') from ccTipoCalifOut
- select ID [result] from @inserted 
+ select ID [result] from @inserted
  return(0)
 end
 If @command=5 -- Delete Inbound Dispositions
@@ -116,7 +116,7 @@ begin
 	end
 
     UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
-    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
+    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),
 	EndConversation=isnull(@endConversation,EndConversation)
 	output inserted.calif_id into @inserted
     where calif_id=@calif_id
@@ -136,8 +136,8 @@ begin
 	end
 
 	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
-	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
-	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial),
+	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner),
 	finishPreview = isnull(@finishPreview,finishPreview)
 	output inserted.calif_id into @inserted
 	where calif_id=@calif_id
@@ -148,7 +148,7 @@ begin
 	end
 
 	select ID [result] from @inserted
-	return(0) 
+	return(0)
 end
 
 set nocount off

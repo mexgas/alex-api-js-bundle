@@ -1,6 +1,6 @@
 Create proc [dbo].[ccsp_RIA_mnuReciclar]
 @cam_id int,
-@type tinyint, -- 0:recicla todo / 1:recicla no efectivos / 2:recicla los efectivos calificados / 
+@type tinyint, -- 0:recicla todo / 1:recicla no efectivos / 2:recicla los efectivos calificados /
 --                3:recicla no efectivos y efectivos calificados (1 y 2) / 4:Recicla status "Finalizado"
 @calif_id varchar(1500) = null,
 @user_id as integer = null,
@@ -14,8 +14,8 @@ If @Valor = 1
  begin
     declare @ultimoReciclaje datetime, @siguienteReciclaje datetime, @difDateAdd datetime
     select @Valor = valor from ccSettings with(nolock) where setting_id = 59
-    
-    If @Valor = 0 
+
+    If @Valor = 0
      begin
         select -2, 'No hay un limite para volver a reciclar'
         return(0)
@@ -25,7 +25,7 @@ If @Valor = 1
 
     -- Se crea log, ccsp_ADMlogReciclaje para que esta informacion la traiga, por que no se esta metiendo
     select @user_id = isnull(@user_id, '0'), @calif_id = isnull(@calif_id, '0')
-    
+
     exec dbo.ccsp_ADMlogReciclaje @cam_id, @user_id, @type, @calif_id
 
     If @ultimoReciclaje is not null and getdate() < DateAdd(n, @Valor, @ultimoReciclaje)
@@ -42,15 +42,15 @@ if @type=0
         create table #allReciycled(callout_id int not null primary key)
 
         insert into #allReciycled
-        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_8),nolock) where cam_id = @cam_id and cal_status = 1       
+        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_8),nolock) where cam_id = @cam_id and cal_status = 1
 
         update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
         from ccoCallBacks a with(index([IX_ccoCallBacks6])) join #allReciycled b on (a.callout_id = b.callout_id)
         where [status] = 0
 
-        update ccoWorkingTable 
-        set cal_status = 0 
+        update ccoWorkingTable
+        set cal_status = 0
         from ccoWorkingTable a join #allReciycled b on (a.callout_id = b.callout_id)
 
         drop table #allReciycled
@@ -59,7 +59,7 @@ if @type=0
         create table #allListReciycled(callout_id int not null primary key)
 
         insert into #allListReciycled
-        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_10),nolock) where cam_id = @cam_id and cal_status = 1 and list_id = @list_id       
+        select callout_id from ccoWorkingTable with(index(IX_ccoWorkingTable_10),nolock) where cam_id = @cam_id and cal_status = 1 and list_id = @list_id
 
         update ccoCallBacks
         set [status] = 3, schedulerStatus = 1
@@ -67,7 +67,7 @@ if @type=0
         where [status] = 0
 
         update ccoWorkingTable
-        set cal_status = 0 
+        set cal_status = 0
         from ccoWorkingTable a join #allListReciycled b on (a.callout_id = b.callout_id)
 
         drop table #allListReciycled
@@ -78,16 +78,16 @@ if @type=0
 
 if @type in(1,3)
  begin
-    
+
     update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
                          from ccoWorkingTable with(index(IX_ccoWorkingTable_12),nolock)
-                         where cam_id = @cam_id 
-                         and cal_status = 1 
+                         where cam_id = @cam_id
+                         and cal_status = 1
                          and tiporesdial_id <> 1
                          and callout_id in (select distinct(b.callout_id)
-                                                from ccologdials a with (index (IX_ccoLogDials_4),nolock) 
+                                                from ccologdials a with (index (IX_ccoLogDials_4),nolock)
                                                 left join ccocallsout b with(index(IX_ccoCallsOut12),nolock)
                                                 on a.callout_id = b.callout_id
                                                 and convert(varchar(13), a.fecha, 121) = convert(varchar(13), b.cal_inicio, 121)
@@ -96,12 +96,12 @@ if @type in(1,3)
     and [status] = 0
 
     update ccoWorkingTable
-    set cal_status = 0, tiporesdial_id = 0 
-    where cam_id = @cam_id 
-    and cal_status = 1 
+    set cal_status = 0, tiporesdial_id = 0
+    where cam_id = @cam_id
+    and cal_status = 1
     and tiporesdial_id <> 1
     and callout_id in (select distinct(b.callout_id)
-                           from ccologdials a with (index (IX_ccoLogDials_4),nolock) 
+                           from ccologdials a with (index (IX_ccoLogDials_4),nolock)
                            left join ccocallsout b with(index(IX_ccoCallsOut12),nolock)
                            on a.callout_id = b.callout_id
                            and convert(varchar(13), a.fecha, 121) = convert(varchar(13), b.cal_inicio, 121)
@@ -111,7 +111,7 @@ if @type in(1,3)
 
 if @type in(2,3)
  begin
-    
+
     Set @SQL = 'update ccoCallBacks with(rowlock) set [status] = 3, schedulerStatus = 1' +
      'where callout_id in (' +
      'select distinct(callout_id) from ccoWorkingTable with(index(IX_ccoWorkingTable_14),nolock) ' +
@@ -130,17 +130,17 @@ if @type in(2,3)
  end
 
 if @type = 4
- begin  
+ begin
 
     update ccoCallBacks
     set [status] = 3, schedulerStatus = 1
     where callout_id in (select distinct(callout_id)
-                         from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock) 
+                         from ccoWorkingTable with(index(IX_ccoWorkingTable_9),nolock)
                          where cam_id = @cam_id and cal_status = 3)
     and [status] = 0
 
-    update ccoWorkingTable 
-  set cal_status = 0, tiporesdial_id = 0 
+    update ccoWorkingTable
+  set cal_status = 0, tiporesdial_id = 0
     where cam_id = @cam_id and cal_status = 3
  end
 

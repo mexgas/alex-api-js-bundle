@@ -2143,15 +2143,19 @@ set nocount off'
   EXEC(@sql)
 
   set @process = 'CW-5292 DROP índice duplicado para tabla ccoCallsOutSource'  
-  set @sql = 'DROP INDEX IX_ccoCallsOutSource_18 ON  ccoCallsOutSource;'
+  set @sql = 'if exists (select name from sysindexes
+  where name = ''IX_ccoCallsOutSource_18'')
+   DROP INDEX IX_ccoCallsOutSource_18 ON  ccoCallsOutSource;'
   EXEC(@sql)
 
   set @process = 'CW-5292 Creación de índice agrupado para tabla Camplistanegra'  
-  set @sql = 'CREATE CLUSTERED INDEX IX_list ON Camplistanegra(idtipolista)'
+  set @sql = 'if not exists (select name from sysindexes where name = ''IX_list'')
+  CREATE CLUSTERED INDEX IX_list ON Camplistanegra(idtipolista)'
   EXEC(@sql)
 
   set @process = 'CW-5292 Creación de índice agrupado para tabla cclistanegra' 
-  set @sql = 'CREATE CLUSTERED INDEX [IX_list_Hashtel] ON cclistanegra(Hashtel)'
+  set @sql = 'if not exists (select name from sysindexes where name = ''IX_list_Hashtel'')
+  CREATE CLUSTERED INDEX [IX_list_Hashtel] ON cclistanegra(Hashtel)'
   EXEC(@sql)
 
   set @process = 'CW-5292 Drop report ListaNegra' 

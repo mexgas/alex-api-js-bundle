@@ -80,3 +80,59 @@ begin
 
 end
 
+
+-----------------------------------------------------------------------------------------------------------------
+
+ALTER PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
+	@user_id varchar(255),
+	@Type INT,
+	@permissionName VARCHAR(255),
+	@permissionValue INT
+AS
+SET NOCOUNT ON
+
+DECLARE @dialMaskBefore INT
+DECLARE @xfermaskBefore INT
+DECLARE @xferagentsBefore INT
+DECLARE @startstopkBefore INT
+
+IF @user_id IS NOT NULL
+BEGIN
+
+	SET @dialMaskBefore = (SELECT DialMask FROM ccUsers WHERE User_id = @user_id)
+	SET @xfermaskBefore = (SELECT XferMask FROM ccUsers WHERE User_id = @user_id)
+	SET @xferagentsBefore = (SELECT XferAgents FROM ccUsers WHERE User_id = @user_id)
+	SET @startstopkBefore = (SELECT startStopRecording FROM ccUsers WHERE User_id = @user_id)
+	
+	UPDATE
+		ccUsers
+	SET DialMask =
+		CASE
+			WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'AllowLocalCalls' 
+			THEN @permissionValue
+			ELSE @dialMaskBefore
+		END,
+		XferMask =
+		CASE
+			WHEN @permissionName = 'AllowTransferCalls' 
+			THEN @permissionValue
+			ELSE @xfermaskBefore
+		END,
+		XferAgents =
+		CASE
+			WHEN @permissionName = 'XferAgents' 
+			THEN @permissionValue
+			ELSE @xferagentsBefore
+		END,
+		startStopRecording =
+		CASE
+			WHEN @permissionName = 'startStopRecording' 
+			THEN @permissionValue
+			ELSE @startstopkBefore
+		END
+	WHERE User_id = @user_id
+
+END
+
+
+SET NOCOUNT OFF

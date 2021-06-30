@@ -2142,6 +2142,1712 @@ select 0
 set nocount off'
   EXEC(@sql)
 
+  set @process = 'CW-5292 DROP índice duplicado para tabla ccoCallsOutSource'  
+  set @sql = 'if exists (select name from sysindexes
+  where name = ''IX_ccoCallsOutSource_18'')
+   DROP INDEX IX_ccoCallsOutSource_18 ON  ccoCallsOutSource;'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 Creación de índice agrupado para tabla Camplistanegra'  
+  set @sql = 'if not exists (select name from sysindexes where name = ''IX_list'')
+  CREATE CLUSTERED INDEX IX_list ON Camplistanegra(idtipolista)'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 Creación de índice agrupado para tabla cclistanegra' 
+  set @sql = 'if not exists (select name from sysindexes where name = ''IX_list_Hashtel'')
+  CREATE CLUSTERED INDEX [IX_list_Hashtel] ON cclistanegra(Hashtel)'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 Drop report ListaNegra' 
+  set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InsertDNCList'')
+    begin
+      DROP PROCEDURE ccsp_InsertDNCList;
+    end'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 CREATE SP ccsp_InsertDNCList' 
+  set @sql = 'CREATE PROCEDURE [dbo].[ccsp_InsertDNCList]
+@telephone as varchar(30),
+@ln_id as integer,
+@hashCalKey bigint=null
+WITH RECOMPILE
+AS
+
+declare @pais varchar(2), @ld varchar(5), @tel as varchar(30)
+
+insert into cclistanegra(telefono,idtipolista,HashKey) values(@telephone, @ln_id,@hashCalKey)
+
+CREATE TABLE [dbo].[#mycamps] (
+  [campsid] [int] NULL
+  )
+
+CREATE CLUSTERED INDEX [IX_mycamps] ON [dbo].[#mycamps]([campsid]) 
+
+insert #mycamps
+select cam_id from Camplistanegra where idtipolista = @ln_id
+
+CREATE TABLE [dbo].[#myprincipaltemp](
+  [callout_id] [int] NULL, 
+  [cam_id] [smallint] NULL ,
+  [tipomov] [int] NULL,
+  [idtipolista] [int] NULL,
+  [cal_telefono] [varchar] (15) NULL ,
+  [cal_telefono2] [varchar] (15) NULL ,
+  [cal_telefono3] [varchar] (15) NULL ,
+  [cal_telefono4] [varchar] (15) NULL ,
+  [cal_telefono5] [varchar] (15) NULL
+  )
+
+CREATE CLUSTERED INDEX [IX_myprincipaltemp] ON [dbo].[#myprincipaltemp]([callout_id]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp2] ON [dbo].[#myprincipaltemp]([cal_telefono]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp3] ON [dbo].[#myprincipaltemp]([cal_telefono2]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp4] ON [dbo].[#myprincipaltemp]([cal_telefono3]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp5] ON [dbo].[#myprincipaltemp]([cal_telefono4]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp6] ON [dbo].[#myprincipaltemp]([cal_telefono5]) 
+
+CREATE TABLE [dbo].[#mytemp](
+  [callout_id] [int] NULL, 
+  [telefono] [varchar] (15) NULL ,
+  [cam_id] [smallint] NULL ,
+  [tipomov] [int] NULL,
+  [idtipolista] [int] NULL
+  )
+
+CREATE CLUSTERED INDEX [IX_mytemp] ON [dbo].[#mytemp]([callout_id]) 
+
+select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @ld = valor from ccSettings with(nolock) where setting_id = 17
+select @tel = dbo.completa(@telephone, @pais, @ld)
+
+--declare @Sql nvarchar(max)
+--declare @fecha datetime = dateadd(dd,-30,getdate())
+declare @fech datetime = getdate()-30
+if @hashCalKey is not null or @hashCalKey > 0
+begin
+
+  insert into [#myprincipaltemp] 
+  SELECT a.callout_id as callout_id, a.cam_id,''3'',cast(@ln_id as nvarchar) as idtipolista , a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+  FROM [ccoCallsOutSource] as a, #mycamps as b with(nolock) WHERE a.cam_id = b.campsid 
+  AND dbo.hashList(cal_Key) = @hashCalKey and  cal_fechadial > @fech
+  
+end
+else begin
+  insert into [#myprincipaltemp]
+  SELECT a.callout_id as callout_id, a.cam_id,''3'',cast(@ln_id as nvarchar) as idtipolista , a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+  FROM [ccoCallsOutSource] as a, #mycamps as b with(nolock) WHERE a.cam_id = b.campsid
+  and (@tel  IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) 
+  or right(@tel,10) IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) 
+  or right(@tel,11) IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5])) 
+  and  cal_fechadial > @fech
+  
+end
+
+--EXEC(@Sql)
+
+if EXISTS (select * from #myprincipaltemp)
+  begin
+    /******************/
+    /*** Telefono 1 ***/
+    /******************/
+    insert #mytemp
+    select callout_id,cal_telefono,cam_id,tipomov,idtipolista
+    from [#myprincipaltemp] with(nolock)
+    where (cal_telefono = @tel or cal_telefono = right(@tel, 10) or cal_telefono = right(@tel, 11))
+
+    if EXISTS (select * from #mytemp)
+    begin
+      -- Borramos de WT todos los registros en los que el telefono1 sea el único telefono y este en la lista negra
+      delete ccoWOrkingTable with(rowlock)
+      from ccoWOrkingTable wt 
+      inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+      inner join #mytemp t on wt.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and
+      cs.cal_telefono = wt.cal_telefono
+      and rtrim(left(ltrim(cs.cal_telefono2 + ''         ''
+                 + cs.cal_telefono3 + ''         ''
+                 + cs.cal_telefono4 + ''         ''
+                 + cs.cal_telefono5 + ''         ''),13)) = ''''
+
+      -- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
+      update ccoWOrkingTable 
+      set cal_telefono = rtrim(left(ltrim(cs.cal_telefono2 + ''         ''
+                        + cs.cal_telefono3 + ''         ''
+                        + cs.cal_telefono4 + ''         ''
+                        + cs.cal_telefono5 + ''         ''),13))
+      from ccoCallsOutSource cs 
+      inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
+      inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono= wt.cal_telefono
+
+      ---insertar el historial
+      insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+      select * from #mytemp
+
+      -- Eliminamos el telefono1 de CS
+      update ccoCallsOutSource 
+      set cal_telefono = ''''
+      from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech
+
+      truncate table #mytemp
+    end
+
+    /******************/
+    /*** Telefono 2 ***/
+    /******************/
+    insert #mytemp
+    select callout_id,cal_telefono2,cam_id,tipomov,idtipolista
+    from [#myprincipaltemp] with(nolock)
+    where (cal_telefono2 = @tel or cal_telefono2 = right(@tel, 10) or cal_telefono2 = right(@tel, 11))
+
+    if EXISTS (select * from #mytemp)
+    begin
+      -- Borramos de WT todos los registros en los que el telefono2 sea el único telefono y este en la lista negra
+      delete ccoWOrkingTable 
+      from ccoWOrkingTable wt 
+      inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+      inner join #mytemp t on wt.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono2= wt.cal_telefono 
+      and rtrim(left(ltrim(cs.cal_telefono3 + ''         ''
+                 + cs.cal_telefono4 + ''         ''
+                 + cs.cal_telefono5 + ''         ''),13)) = ''''
+
+      -- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
+      update ccoWOrkingTable 
+      set cal_telefono = rtrim(left(ltrim(cs.cal_telefono3 + ''         ''
+                        + cs.cal_telefono4 + ''         ''
+                        + cs.cal_telefono5 + ''         ''),13))
+      from ccoCallsOutSource cs 
+      inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
+      inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono2= wt.cal_telefono
+
+      ---insertar el historial
+      insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+      select * from #mytemp
+
+      -- Eliminamos el telefono2 de CS
+      update ccoCallsOutSource 
+      set cal_telefono2 = ''''
+      from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech
+
+      truncate table #mytemp
+    end
+
+    /******************/
+    /*** Telefono 3 ***/
+    /******************/
+    insert #mytemp
+    select callout_id,cal_telefono3,cam_id,tipomov,idtipolista
+    from [#myprincipaltemp] with(nolock)
+    where (cal_telefono3 = @tel or cal_telefono3 = right(@tel, 10) or cal_telefono3 = right(@tel, 11))
+
+    if EXISTS (select * from #mytemp)
+    begin
+      -- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
+      delete ccoWOrkingTable 
+      from ccoWOrkingTable wt 
+      inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+      inner join #mytemp t on wt.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono3= wt.cal_telefono  
+      and  rtrim(left(ltrim(cs.cal_telefono4 + ''         ''
+                  + cs.cal_telefono5 + ''         ''),13)) = ''''
+
+      -- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
+      update ccoWOrkingTable 
+      set cal_telefono = rtrim(left(ltrim(cs.cal_telefono4 + ''         ''
+                        + cs.cal_telefono5 + ''         ''),13))
+      from ccoCallsOutSource cs 
+      inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
+      inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono3= wt.cal_telefono
+
+      ---insertar el historial
+      insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+      select * from #mytemp
+
+      -- Eliminamos el telefono3 de CS
+      update ccoCallsOutSource 
+      set cal_telefono3 = ''''
+      from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech
+
+      truncate table #mytemp
+    end
+
+    /******************/
+    /*** Telefono 4 ***/
+    /******************/
+    insert #mytemp
+    select callout_id,cal_telefono4,cam_id,tipomov,idtipolista
+    from [#myprincipaltemp] with(nolock)
+    where (cal_telefono4 = @tel or cal_telefono4 = right(@tel, 10) or cal_telefono4 = right(@tel, 11))
+
+    if EXISTS (select * from #mytemp)
+    begin
+      -- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
+      delete ccoWOrkingTable 
+      from ccoWOrkingTable wt 
+      inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+      inner join #mytemp t on wt.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono4= wt.cal_telefono 
+      and rtrim(left(ltrim(cs.cal_telefono5 + ''         ''),13)) = ''''
+
+      -- Actualizamos WT al siguiente telefono disponbile (cuando no es el único telefono)
+      update ccoWOrkingTable 
+      set cal_telefono = rtrim(left(ltrim(cs.cal_telefono5 + ''         ''),13))
+      from ccoCallsOutSource cs 
+      inner join ccoWorkingTable wt on cs.callout_id = wt.callout_id
+      inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono4= wt.cal_telefono
+
+      ---insertar el historial
+      insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+      select * from #mytemp
+
+      -- Eliminamos el telefono4 de CS
+      update ccoCallsOutSource 
+      set cal_telefono4 = ''''
+      from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech
+
+      truncate table #mytemp
+    end
+
+    /******************/
+    /*** Telefono 5 ***/
+    /******************/
+    insert #mytemp
+    select callout_id,cal_telefono5,cam_id,tipomov,idtipolista
+    from [#myprincipaltemp] with(nolock)
+    where (cal_telefono5 = @tel or cal_telefono5 = right(@tel, 10) or cal_telefono5 = right(@tel, 11))
+
+    if EXISTS (select * from #mytemp)
+    begin
+      -- Borramos de WT todos los registros en los que el telefono4 sea el único telefono y este en la lista negra
+      delete ccoWOrkingTable 
+      from ccoWOrkingTable wt 
+      inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+      inner join #mytemp t on wt.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech and cs.cal_telefono5= wt.cal_telefono
+
+      ---insertar el historial
+      insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+      select * from #mytemp
+
+      -- Eliminamos el telefono5 de CS
+      update ccoCallsOutSource 
+      set cal_telefono5 = ''''
+      from ccoCallsOutSource cs inner join #mytemp t on cs.callout_id = t.callout_id
+      where cs.cal_fechadial > @fech
+    end
+  end
+
+drop table [#myprincipaltemp]
+drop table [#mytemp]
+drop table [#mycamps]   
+'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 Drop Upload ListaNegra' 
+  set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUploadBLst'')
+    begin
+      DROP PROCEDURE ccsp_RIAUploadBLst;
+    end'
+  EXEC(@sql)
+
+  set @process = 'CW-5292 CREATE SP SP_ccsp_RIAUploadBLst' 
+  set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUploadBLst] @command TINYINT, @telephone VARCHAR(20) = 0, @idtipolista INT, @calKey AS VARCHAR(20) = NULL
+AS
+SET NOCOUNT ON
+
+DECLARE @hashCalKey BIGINT, @hashPhone BIGINT
+
+SELECT @hashPhone = dbo.hashPhone(@telephone)
+
+IF @calKey IS NOT NULL
+BEGIN
+  SELECT @hashCalKey = dbo.hashList(@calKey)
+END
+
+IF @hashCalKey IS NULL
+BEGIN
+  IF @command IN (1, 4) --LookForNumber 
+    AND EXISTS (
+      SELECT idtipolista
+      FROM cclistanegra
+      WHERE Hashtel = @hashPhone AND HashKey IS NULL AND idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT 1
+
+    RETURN (0)
+  END
+END
+ELSE
+BEGIN
+  IF @command IN (1, 4) --LookForNumber 
+    AND EXISTS (
+      SELECT idtipolista
+      FROM cclistanegra
+      WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT 1
+
+    RETURN (0)
+  END
+END
+
+IF @command = 1 --Insert Number
+BEGIN
+  EXEC ccsp_InsertDNCList @telephone, @idtipolista, @hashCalKey
+
+  INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  VALUES (@telephone, 1, @idtipolista)
+
+  RETURN (0)
+END
+
+IF @command = 2 --Delete Number
+BEGIN
+  INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  VALUES (@telephone, 5, @idtipolista)
+
+  IF @hashCalKey IS NULL
+  BEGIN
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND HashKey IS NULL
+  END
+  ELSE
+  BEGIN
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey
+  END
+
+  RETURN (0)
+END
+
+IF @command = 3 --Reemplaza
+BEGIN
+  INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+  SELECT telefono, 4, @idtipolista
+  FROM cclistanegra
+  WHERE idtipolista = @idtipolista
+
+  DELETE
+  FROM cclistanegra
+  WHERE idtipolista = @idtipolista
+
+  RETURN (0)
+END
+
+IF @command = 5 --Delete by idtipolista
+BEGIN
+  UPDATE ccTiposListaNegra
+  SET STATUS = 0
+  WHERE idtipolista = @idtipolista
+
+  DELETE ccAgendaListaNegra
+  WHERE idagenda IN (
+      SELECT idagenda
+      FROM ccAgenda_TipolistaNegra
+      WHERE idtipolista = @idtipolista
+      )
+
+  DELETE ccAgenda_TipolistaNegra
+  WHERE idtipolista = @idtipolista
+
+  DELETE cccalifblacklist
+  WHERE idtipolista = @idtipolista
+
+  DELETE Camplistanegra
+  WHERE idtipolista = @idtipolista
+
+  DECLARE @telefono VARCHAR(10)
+
+  WHILE EXISTS (
+      SELECT telefono
+      FROM ccListaNegra
+      WHERE idtipolista = @idtipolista
+      )
+  BEGIN
+    SELECT TOP 1 @hashPhone = Hashtel, @telefono = telefono
+    FROM ccListaNegra
+    WHERE idtipolista = @idtipolista
+
+    INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+    VALUES (@telefono, 5, @idtipolista)
+
+    DELETE
+    FROM cclistanegra
+    WHERE Hashtel = @hashPhone AND idtipolista = @idtipolista
+  END
+
+  RETURN (0)
+END'
+  EXEC(@sql)
+		
+
+ set @process = 'CW-5472_No_se_habilita_la_sección_de_encuestas'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIA_ABCCamps'')
+    begin
+        DROP PROCEDURE ccsp_RIA_ABCCamps;
+    end'
+  EXEC(@sql)
+
+ set @process = 'CW-5472_No_se_habilita_la_sección_de_encuestas'
+	set @sql = '
+CREATE PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
+@option smallint,
+@UserId int = null,
+@Descripcion varchar(40) = null,
+@Cam_id varchar(1000),
+@Activa tinyint = null,
+@IDArea smallint = null,
+@frame tinyint = null, 
+@MirrorInbound_Id smallint = null,
+@Prefijo varchar(40) = null
+as
+set nocount on
+
+if @option = 0
+	begin
+		select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
+		from ccCamps as CAMP with(nolock) 
+		left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
+		return(0)
+	end
+
+if @option = 1 -- select Camp
+	begin
+		select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
+		prefijo as Prefijo
+		from ccCamps a1 with(nolock) 
+		inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
+		inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
+		return(0)
+	end
+
+if @option = 4 --Delete
+	begin
+		if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
+		begin
+		declare @error varchar(70)
+		Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad''
+			else ''Campaign can not be deleted, it has an association with an ACD'' end
+		from ccsettings with(nolock) where setting_id = 27
+		raiserror (@error,18,1)		
+		return(0)
+		end
+
+		delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
+		insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
+		Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
+		Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
+		delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
+		delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
+		return(0)
+	end
+
+if @option = 2 --Insert
+	begin
+	declare @new_cam_id smallint
+
+	if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
+		begin
+		select -1 --, ''Nombre en Uso''
+		return(0)  
+		end
+
+	-- ODC: la campaña siempre esta activa
+	set @Activa = 1
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''''
+
+
+	Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo)
+	select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
+	case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end,@Prefijo
+
+	if @@rowcount = 1
+	select @new_cam_id = scope_identity()
+
+	else
+		begin
+		select -2 --, ''Error al crear campaña''
+		return(0)
+		end
+
+	if isnull(@MirrorInbound_Id, 0)<>0
+		begin
+		if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
+			begin
+			select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
+			return(0)
+			end
+
+		update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
+		update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
+		end
+
+	insert into ccoDialerCamp (dialer_id, cam_id) 
+	select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+
+	insert into ccCalifCamp (calif_id, cam_id, tipo) 
+	select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
+
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
+
+	If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		begin
+		insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
+		end
+
+	insert into ccRIACampsGraph (cam_id, graphic_id)
+	select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
+
+	--inserta la lista negra por default
+	if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
+	begin
+		declare @tempId as int
+		DECLARE @dnclId TABLE 
+		(
+			id int 
+		);
+		insert into @dnclId
+		exec dbo.ccsp_RIACATBList null, null, 5
+		select @tempId=id from @dnclId;
+		exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
+	end
+
+	select @new_cam_id
+	return(0)
+	end
+
+if @option = 3 -- Update
+	begin
+		if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		insert into ccRIAGraphics (frame,type_id) values (@frame,1)
+
+		Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
+
+		update ccRIACampsGraph with(rowlock)
+		set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		where cam_id = @Cam_id
+
+		return(0)
+	end
+
+	if @option = 5 --Obtener relaciones de campañas - campañas
+	begin
+		if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
+		(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+		not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
+		begin
+		select -3 -- Campaña invalida
+		return(0)
+		end
+				
+	if @descripcion=0
+		set @descripcion = null
+
+	update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
+	if @@rowcount=0
+		select -4 -- Error al actualizar
+					
+	else
+		begin
+		delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+		end
+
+	return(0)
+	end
+
+if @option = 6
+	begin
+		select cam_id, isnull(surveycamid,0)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
+	end
+
+if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
+	begin	
+		select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
+		--select 0 as Grabaciones	
+	end
+
+if @option = 8 -- Checa si la campaña tiene asignada una campaña tipo encuesta
+	begin	
+		SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
+	end
+
+return(0)
+set nocount off'
+    EXEC(@sql)
+  
+	set @process = 'CW-5464 DROP PROCEDURE ccsp_GalateaAdminDispositions'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminDispositions;
+    end'
+	EXEC(@sql)
+
+  set @process = 'CW-5464 Create SP ccsp_GalateaAdminDispositions'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
+@command int,
+@calif_id smallint = null,
+@califIdLst varchar(8000) = null,
+@description varchar(60)=null,
+@order tinyint=null,
+@canReprogram bit = null,
+@graphColor varchar(15) = null,
+@endConversation bit=null,
+@keepDial bit=null,
+@autoCB bit=null,
+@contactOwner bit=null,
+@finishPreview bit = 0
+AS
+set nocount on
+declare @inserted table (ID smallint)
+
+if @command=1 -- Load Inbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd, graphColor
+  from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
+  where C.Calif_Status=1
+  group by C.calif_id, C.Description, C.orden, C.canReprogram, C.EndConversation, graphColor
+  order by 2
+  return(0)
+end
+
+If @command=2 -- Load Outbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+  IsNull(C.finishPreview,0) as finishPreview, graphColor
+  from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
+  where C.CalifOut_Status=1
+  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+  C.contactOwner, C.finishPreview, graphColor
+  order by 2
+  return(0)
+end
+
+If @command=3 -- New ccTipoCalif
+begin
+  If exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@description)
+    begin
+      select cast(-1 as smallint) [result]	-- Disposition already exists
+      return(0)
+    end
+
+  If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
+  begin
+	select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
+    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+	graphColor=isnull(@graphColor, ''1DB4E2''), Calif_Status=1
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
+	select ID [result] from @inserted 
+    return(0)
+  end
+
+  insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation , graphColor)
+  output inserted.calif_id into @inserted
+  select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), isnull(@canReprogram,0), isnull(@endConversation,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalif
+  select ID [result] from @inserted
+  return(0)
+end
+
+If @command=4 -- New ccTipoCalifOUT
+begin
+  If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
+  begin
+  select cast(-1 as smallint) [result]	-- Disposition already exists
+  return(0)
+  end
+
+ If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
+ begin
+	select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
+	update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
+	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+	finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, ''1DB4E2'')
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
+	select ID [result] from @inserted 
+	return(0)
+ end
+
+ insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor)
+ output inserted.calif_id into @inserted
+ select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
+ isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalifOut
+ select ID [result] from @inserted 
+ return(0)
+end
+If @command=5 -- Delete Inbound Dispositions
+begin
+    delete from ccCalifCamp where tipo=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    delete from cctipoSubCalifRel where tipoSubRel=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    return(0)
+end
+if @command=6 -- Delete Outbound Disposition
+begin
+	delete from ccCalifCamp where tipo=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	delete from cctipoSubCalifRel where tipoSubRel=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	update ccTipoCalifOUT set CalifOut_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	return(0)
+end
+if @command=7 -- Update Inbound Disposition
+begin
+	if(exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@Description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
+
+	if @canReprogram=1
+	begin
+		if exists(select i.Inbound_id from ccCalifCamp cc inner join ccTipoCalif t on cc.calif_id=t.calif_id and tipo=0
+		inner join ccInbound i on cc.cam_id=i.Inbound_id where cc.calif_id=@calif_id and i.cam_id is null)
+		begin
+			select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
+			return(0)
+		end
+	end
+
+    UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
+    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
+	EndConversation=isnull(@endConversation,EndConversation)
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
+
+    delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
+    tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+	select ID [result] from @inserted
+    return(0)
+end
+if @command=8 -- Update Outbound Disposition
+begin
+	if(exists(select calif_id from ccTipoCalifOUT where CalifOut_Status=1 and Description=@description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
+
+	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
+	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
+	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+	finishPreview = isnull(@finishPreview,finishPreview)
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
+
+	if @keepDial is not null
+	begin
+		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	end
+
+	select ID [result] from @inserted
+	return(0) 
+end
+
+set nocount off'
+	EXEC(@sql)
+  
+    set @process = 'CW-5464 DROP PROCEDURE ccsp_GalateaAdminSubdispositionRelations'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSubdispositionRelations'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminSubdispositionRelations;
+    end'
+	EXEC(@sql)
+
+	set @process = 'CW-5464 Create SP ccsp_GalateaAdminSubdispositionRelations'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSubdispositionRelations]
+@command int,
+@type tinyint = null, --0=Outbound, 1=Inbound
+@califSub_id varchar(max) = null,
+@calif_id smallint = null
+AS
+set nocount on
+
+If @command = 1
+begin
+	select cast(0 as int) [type],
+		r.calif_id,
+		r.califSub_id
+	from cctipoSubCalifRel r inner join ccTipoCalifSub t on r.califSub_id = t.califSub_id and r.tipoSubRel = 1
+	where t.califSub_Status = 1
+	UNION
+	select cast(1 as int) [type],
+		r.calif_id,
+		r.califSub_id
+	from cctipoSubCalifRel r inner join ccTipoCalifSubOUT t on r.califSub_id = t.califSub_id and r.tipoSubRel = 0
+	where t.califSubOut_Status = 1
+	order by [type], calif_id, califSub_id
+end
+if @command=2  --Asignar subcalificacion a una calificacion
+begin
+	if @type=1 and (select cast(sum(isnull(cast(canReprogram as tinyint),0)) as bit) FROM cctipocalifSub where califSub_id in
+	(select value from dbo.fn_RIASplitDelimited (@califSub_id, '','')))>0 
+	and exists (select IB.Inbound_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0 
+	join ccInbound IB on IB.Inbound_id = CF.cam_id where IB.cam_id is null and CO.calif_id = @calif_id)
+	begin
+		select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
+		return(0)
+	end
+
+	insert cctipoSubCalifRel (calif_id, califSub_id, tipoSubRel)
+	select @calif_id [calif_id], S.value [califSub_id], @type [Tipo]
+	from dbo.fn_RIASplitDelimited (@califSub_id, '','') S
+	where cast(@calif_id as varchar(10))+''|''+cast(S.value as varchar(10))+''|''+cast(@type as varchar(10)) not in
+   (select cast(calif_id as varchar(10))+''|''+cast(califSub_id as varchar(10))+''|''+cast(tipoSubRel as varchar(10)) from cctipoSubCalifRel)
+	and S.value is not null
+
+	if @type=0
+	begin
+		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	end
+	
+	select cast(1 as smallint) [result]	 -- Done! 
+	return(0)
+end
+if @command=3	--Desasignacion de subcalificacion
+begin
+	delete cctipoSubCalifRel
+    where cast(calif_id as varchar(10))+''|''+cast(califSub_id as varchar(10))+''|''+cast(tipoSubRel as varchar(10)) in
+    (select cast(@calif_id as varchar(10))+''|''+cast(S.value as varchar(10))+''|''+cast(@type as varchar(10))
+    from dbo.fn_RIASplitDelimited (@califSub_id, '','') S)
+
+    if @type=0
+	begin
+      update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	end
+end
+
+set nocount off'
+	EXEC(@sql)
+  
+    set @process = 'CW-5464 DROP PROCEDURE ccsp_GalateaAdminSubdispositions'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSubdispositions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminSubdispositions;
+    end'
+	EXEC(@sql)
+
+	set @process = 'CW-5464 Create SP ccsp_GalateaAdminSubdispositions'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSubdispositions]
+@command int,
+@califSub_id smallint = null,
+@califSubIdLst varchar(max) = null,
+@califSubDesc varchar(60) = null,
+@order varchar(3) = null,
+@canReprogram bit = null,
+@endConversation bit=null,
+@keepDial bit=null,
+@autoCB bit=null,
+@contactOwner bit=null
+AS
+set nocount on
+declare @inserted table (ID smallint)
+
+if @command=1 -- Load Inbound Subdispositions
+begin
+  select califSub_id, IsNull(califSubDesc,'''') [califSubDesc], orden, canReprogram, 
+  IsNull(EndConversation,0) EndConversation
+  from ccTipoCalifSub
+  where califSub_Status = 1
+  order by 2
+  return(0)
+end
+
+If @command=2 -- Load Outbound Subdispositions
+begin
+  select califSub_id, IsNull(califSubDesc,'''') [califSubDesc],
+  IsNull(canReprogram, 0) [canReprogram],
+  IsNull(orden, 0) [orden],
+  IsNull(keepDial, 0) [keepDial],
+  IsNull(autoCallback, 0) [autoCallback],
+  IsNull(contactOwner, 0) [contactOwner]
+  from ccTipoCalifSubOut
+  where califSubOut_Status = 1
+  order by 2
+  return(0)
+end
+
+if @command=3	-- New Inbound Subdisposition
+begin
+	if(exists(select califSub_id from ccTipoCalifSub where califSub_Status = 1 and califSubDesc=@califSubDesc))
+	begin
+		select cast(-1 as smallint) [result]	-- Subdisposition already exists
+		return(0)
+	end
+
+	if(exists(select califSub_id from ccTipoCalifSub where califSub_Status=0 and califSubDesc=@califSubDesc))
+	begin
+		select top 1 @califSub_id = califSub_id from ccTipoCalifSub where califSub_Status=0 and califSubDesc=@califSubDesc order by califSub_id desc
+		update ccTipoCalifSub set orden=isnull(@order,0), canReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0),
+		califSub_Status=1
+		output inserted.califSub_id into @inserted
+		where califSub_id=@califSub_id
+		select ID [result] from @inserted 
+		return(0)
+	end
+
+	insert into ccTipoCalifSub (califSubDesc, orden, canReprogram, califSub_Status, EndConversation)
+	select @califSubDesc, isnull(@order,0), isnull(@canReprogram,0), 1, isnull(@endConversation,0)
+	select cast(SCOPE_IDENTITY() as smallint) [result]
+	return(0)
+end
+
+if @command=4	-- New Outbound Subdisposition
+begin
+	if(exists(select califSub_id from ccTipoCalifSubOUT where califSubOut_Status = 1 and califSubDesc=@califSubDesc))
+	begin
+		select cast(-1 as smallint) [result]	-- Subdisposition already exists
+		return(0)
+	end
+
+	if(exists(select califSub_id from ccTipoCalifSubOUT where califSubOut_Status=0 and califSubDesc=@califSubDesc))
+	begin
+		select top 1 @califSub_id = califSub_id from ccTipoCalifSubOUT where califSubOut_Status=0 and califSubDesc=@califSubDesc order by califSub_id desc
+		update ccTipoCalifSubOUT set orden=isnull(@order,0), canReprogram=isnull(@canReprogram,0),idTipoLista=0,
+		califSubOut_Status=1, keepDial=isnull(@keepDial,0), autoCallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0)
+		output inserted.califSub_id into @inserted
+		where califSubDesc=@califSubDesc
+		select ID [result] from @inserted 
+		return(0)
+	end
+
+	insert into ccTipoCalifSubOUT (califSubDesc, orden, canReprogram, califSubOut_Status, keepDial, autoCallback, contactOwner)
+	select @califSubDesc, isnull(@order,0), isnull(@canReprogram,0), 1, isnull(@keepDial,0), isnull(@autoCB,0), isnull(@contactOwner,0)
+	select cast(SCOPE_IDENTITY() as smallint) [result]
+	return(0)
+end
+
+if @command=5	-- Delete Inbound Subdisposition
+begin
+	delete cctipoSubCalifRel where tipoSubRel=1 and califSub_id in (select value from dbo.fn_RIASplitDelimited(@califSubIdLst, '',''))
+	update cctipocalifSub set califSub_Status=0 where califSub_id in (select value from dbo.fn_RIASplitDelimited(@califSubIdLst, '',''))
+	return(0)
+end
+
+if @command=6	-- Delete Outbound Subdisposition
+begin
+	delete cctipoSubCalifRel where tipoSubRel=0 and califSub_id in (select value from dbo.fn_RIASplitDelimited(@califSubIdLst, '',''))
+	update cctipocalifSubOUT set califSubOut_Status=0 where califSub_id in (select value from dbo.fn_RIASplitDelimited(@califSubIdLst, '',''))
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	return(0)
+end
+
+if @command=7	-- Update Inbound Subdisposition
+begin
+	if(exists(select califSub_id from ccTipoCalifSub where califSub_Status=1 and califSubDesc=@califSubDesc and califSub_id<>@califSub_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Subdisposition already exists
+		return(0)
+	end
+
+	if @canReprogram=1
+	begin
+		if exists (select IB.Inbound_id from cctipoSubCalifRel CR join cctipoCalif TC on CR.calif_id = TC.calif_id and CR.tipoSubRel=1
+		join ccCalifCamp CM on TC.calif_id = CM.calif_id and CM.tipo = 0 join ccInbound IB on CM.cam_id = IB.inbound_id 
+		where califSub_id = @califSub_id and IB.cam_id is null)
+		begin
+			select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
+			return(0)
+		end
+	end
+
+	update ccTipoCalifSub set califSubDesc=isnull(@califSubDesc, califSubDesc), orden=isnull(@order, orden), canReprogram=isnull(@canReprogram, canReprogram),
+	EndConversation=isnull(@endConversation, EndConversation)
+	output inserted.califSub_id into @inserted
+	where califSub_id=@califSub_id
+
+	delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
+    tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+	select ID [result] from @inserted
+	return(0) 
+end
+
+if @command=8	-- Update Outbound Subdisposition
+begin
+	
+	if(exists(select califSub_id from ccTipoCalifSubOUT where califSubOut_Status=1 and califSubDesc=@califSubDesc and califSub_id<>@califSub_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Subdisposition already exists
+		return(0)
+	end
+
+	update ccTipoCalifSubOUT set califSubDesc=isnull(@califSubDesc, califSubDesc), canReprogram=isnull(@canReprogram, canReprogram),
+	orden=isnull(@order, orden), keepDial=isnull(@keepDial, keepDial), autoCallback=isnull(@autoCB, autoCallback), contactOwner=isnull(@contactOwner,contactOwner)
+	output inserted.califSub_id into @inserted
+	where califSub_id=@califSub_id
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+
+	select ID [result] from @inserted
+	return(0) 
+end
+
+
+set nocount off'
+	EXEC(@sql)
+	
+	set @process = 'CW-5454 Insert new Agent Status'	
+	set @sql = 'if not exists (select * from ccTipoStatusAgente where TipoStatusAge_id =32)
+begin
+	insert into ccTipoStatusAgente values (32,''Preview'')
+end'
+    EXEC(@sql)
+	
+			set @process = 'CW-5454 Check if exists configuraIdiomaCatalogosEnglish'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''configuraIdiomaCatalogosEnglish'')
+            begin
+          DROP PROCEDURE configuraIdiomaCatalogosEnglish;
+            end'
+    EXEC(@sql)
+
+
+	set @process = 'CW-5454 Se crea sp configuraIdiomaCatalogosEnglish'
+	set @sql = 'Create PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
+	AS
+Print ''Iniciando proceso de configuracion en Ingles''
+
+Print ''Estableciendo Horarios''
+Delete [ccHorarios]
+DBCC CHECKIDENT (''[ccHorarios]'', RESEED, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (''Week'', 7, 0, 21, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (''Night shift'', 21, 0, 23, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (''Saturday'', 8, 0, 20, 0, 0, 0, 0, 0, 0, 1, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (''Sunday'', 8, 0, 14, 0, 0, 0, 0, 0, 0, 0, 1)
+
+Print ''Estableciendo Not Ready y graficas''
+Delete [ccRIANotReadyGraph]
+Delete [ccTipoNotReady]
+Delete [ccRIAGraphics]
+
+DBCC CHECKIDENT (''[ccTipoNotReady]'', RESEED, 0)
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Not Clasified'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Break'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Bathroom'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''With client'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Supervisor'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Clarification'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Meeting'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Lunch'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Systems'')
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (''Other'')
+
+
+DBCC CHECKIDENT (''[ccRIAGraphics]'', RESEED, 0)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(1,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(2,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(3,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(4,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(5,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(6,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(7,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(8,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(9,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(10,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(11,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(12,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(13,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(14,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(15,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(16,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(17,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(18,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(19,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(20,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(21,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(22,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(23,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(24,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(25,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(1,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(2,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(3,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(4,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(5,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(6,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(7,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(8,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(9,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(10,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(11,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(12,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(13,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(14,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(15,4)
+
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(1,26)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(2,27)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(3,28)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(4,29)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(5,30)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(6,31)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(8,32)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(9,33)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(10,36)
+
+Print ''Estableciendo Status de llamadas''
+delete from [ccStatusLLamada]
+
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (1, ''Initial'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (2, ''Out of Schedule'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (3, ''Out of Service'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (4, ''No Agents Logged in'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (5, ''On Hold'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (6, ''Abandoned'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (7, ''Time overflow'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (8, ''Queue size overflow'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (9, ''With Message'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (10, ''Assigned Message'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (11, ''Assigned'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (12, ''Attended Message'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (13, ''Answered'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14, ''Canceled Message'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (15, ''Assigned and Not Answered'')
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16, ''Assigned and took line'')
+update ccStatusLLamada set inAbandonConfig=1 where statusCall_id in (2, 3, 4, 6, 7, 8 )
+
+Print ''Estableciendo los tipos de dias''
+TRUNCATE TABLE [ccTipoDias]
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (1, ''Monday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (2, ''Tuesday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (3, ''Wednesday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (4, ''Thursday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (5, ''Friday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (6, ''Saturday'')
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, ''Sunday'')
+
+Print ''Estableciendo resultados de marcacion''
+delete from [ccTipoResultadoDial]
+
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, ''Answer'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, ''Busy'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, ''Not Answer'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, ''Fax/Modem'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, ''NoDialTone'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, ''Other'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, ''NoService'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, ''VoiceMail/Machine'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, ''Circuit busy'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, ''Cancelled'')
+
+Print ''Estableciendo los tipos de estado de los agentes''
+DELETE [ccTipoStatusAgente]
+
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (0, ''LogOut'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (1, ''Unknown'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (2, ''Not Ready'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (3, ''Ready'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (4, ''Talking'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (5, ''Transfer'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (6, ''Wrapup'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (7, ''Other'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (8, ''Client'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (9, ''Ringing'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (11, ''Problem'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (21, ''Wait for manual call'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, convert(text, N''ChatReq'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N''Chatting'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, ''Xfer Fail'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, ''Ringing Fail'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, ''ReconnectKolob'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, ''Ready PreviewPro'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, ''Preview'')
+
+
+
+Print ''Estableciendo los tipos de usuario''
+Delete [ccTipoUsers]
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (1, ''Agent'')
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (2, ''Supervisor'')
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (6, ''AVRS Access'')
+
+Print ''Estableciendo los dias''
+Delete [ccDias]
+DBCC CHECKIDENT (''[ccDias]'', RESEED, 0)
+SET IDENTITY_INSERT [ccDias] ON
+INSERT [ccDias] ([dia_id], [Name]) VALUES (1, ''Sunday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (2, ''Monday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (3, ''Tuesday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (4, ''Wednesday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (5, ''Thursday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (6, ''Friday'')
+INSERT [ccDias] ([dia_id], [Name]) VALUES (7, ''Saturday'')
+SET IDENTITY_INSERT [ccDias] OFF
+
+Print ''Estableciendo los tipos de llamada''
+delete from cstoTarifa
+delete cstoTipoLlamada
+
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,1,''Local'',''7|8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,2,''National LD'',''12'',''01%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,3,''Mobile'',''13'',''044%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,4,''LD Mobile'',''13'',''045%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,5,''01800'',''12'',''01800%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,6,''USA LD'',''13'',''001%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,7,''Inter LD'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,8,''On Net'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,9,''Off Net'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,10,''On Ring'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,11,''Triangle'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,1,''2-digit Local Area Code'',''8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,2,''3-digit Local Area Code'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,3,''4-digit Local Area Code'',''6'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,4,''2-digit Local Mobile Area Code'',''10'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,5,''3-digit Local Mobile Area Code'',''9'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,6,''4-digit Local Mobile Area Code'',''8'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,7,''Long Distance'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,8,''Long Distance Mobile'',''13'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,2,''LD'',''8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,3,''Mobile'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(4,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(4,2,''National LD'',''11'',''1%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(5,1,''Local'',''9'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(5,2,''National LD'',''10'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,2,''LD'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,3,''Mobile'',''11'',''04%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,1,''Local'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,2,''LD'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,3,''Mobile'',''11'',''07%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,4,''Inter LD'',''13'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,2,''Old LD'',''9'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,3,''Mobile'',''10'',''05%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,4,''New LD'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,5,''Inter LD'',''13'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,1,''Local'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,2,''Inter LD'',''0'',''0011%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,3,''Mobile'',''10'',''04%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,1,''Local'',''8'',''2%|3%|4%|5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,2,''Mobile '',''8'',''6%|7%|8%|9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,3,''9-digit Mobile'',''9'',''9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,4,''National LD'',''10'',''02%|03%|04%|05%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,5,''National Mobile LD'',''10'',''06%|07%|08%|09%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,6,''9-digit National Mobile LD'',''11'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,7,''International LD'',''19'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,1,''Local'',''8'',''2%|6%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,2,''Mobile'',''8'',''3%|4%|5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,3,''National LD'',''8'',''7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,4,''International LD'',''8'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,1,''Local'',''8'',''2%|3%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,2,''SIP Telephony'',''8'',''4%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,3,''Mobile Telephony'',''8'',''5%|6%|7%|8%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,4,''International LD'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,5,''Reverse Charge'',''10'',''800%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,6,''Premium Rate'',''10'',''90%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,7,''Internet Access'',''10'',''900%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,8,''Special'',''0'',''08%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,1,''Landline'',''8'',''2%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,2,''Mobile'',''8'',''6%|7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,3,''International LD'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,1,''Local'',''9'',''8%|9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,2,''Mobile'',''9'',''6%|7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,3,''International LD'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,4,''Webservices'',''9'',''5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,1,''Local'',''6|7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,2,''National LD'',''9'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,3,''Mobile'',''9'',''9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,4,''Inter LD'',''0'',''00%'')
+
+Print ''Estableciendo los movimientos de lista negra''
+Delete [ccTipoMovsListaNegra]
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] ON
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, ''Added to black list'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, ''Blocked on loading'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, ''Removed from campaign'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, ''Replaced from black list'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, ''Deleted from black list'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, ''Added by Disposition'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, ''Load black list'')
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, ''Load customer black list'')
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] OFF
+
+Print ''Estableciendo los tipos de calificacion''
+Delete [ccTipoCalif]
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, ''Wrong area'', 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, ''Disconnected call'', 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, ''Wrong number'', 0)
+
+Print ''Estableciendo los tipos de calificacion de salida''
+Delete [ccTipoCalifOUT]
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, ''Effective call'', 0, 0, 1)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, ''Leave a message'', 0, 1, 2)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, ''Wrong number'', 0, 1, 3)
+
+Print ''Estableciendo proveedores''
+Delete [cstoProvedor]
+DBCC CHECKIDENT (''[cstoProvedor]'', RESEED, 0)
+INSERT [cstoProvedor] ([descrip]) VALUES (''Carrier 1'')
+
+Print ''Tipo Msg ChatLog'' -- No se hace delete ni truncate ya que se perderia la integridad si ya hay registros, los id ya deberian estar creados por lo cual se genera el update
+Update ccRIAChat_TipoMsg set MsgDetalle=''Administrator writes an individual message to agent'' where TipoMsgChat=1
+Update ccRIAChat_TipoMsg set MsgDetalle=''Agent writes a message to Administrator'' where TipoMsgChat=2
+Update ccRIAChat_TipoMsg set MsgDetalle=''Administrator writes a global message'' where TipoMsgChat=3
+
+Print ''Mensajes defualt''
+DELETE [ccMsgFiles]
+DBCC CHECKIDENT (''[ccMsgFiles]'', RESEED, 0)
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default5'', ''Welcome message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default4'', ''Transfer message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default3'', ''Out of service message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default2'', ''After hours message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default1'', ''In queue message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default7'', ''No agents signed in message'' )
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default9'', ''VoiceMail message'')
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default10'', ''Overflow message'')
+INSERT [ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_En\Default11'', ''DNC list'')
+
+Print ''Mensajes default chat''
+DELETE [ccRIAChatInboundMsgs]
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default5'', ''Welcome!'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default3'', ''Service currently unavailable'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default2'', ''Our schedule service has finished'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default1'', ''Please hold while one of our agents is available'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default7'', ''There are not available agents'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default10'', ''Your request can not be processed'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default12'', ''Chat session has been inactive for too long'')
+INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default13'', ''Chat session has finished'')
+	'
+    EXEC(@sql)
+	
+				set @process = 'CW-5454 Check if exists configuraIdiomaCatalogosEspañol'	
+	set @sql = 'if exists (select * from sys.procedures where name = N''configuraIdiomaCatalogosEspañol'')
+            begin
+          DROP PROCEDURE configuraIdiomaCatalogosEspañol;
+            end'
+    EXEC(@sql)
+
+
+	set @process = 'CW-5454 Se crea sp configuraIdiomaCatalogosEspañol'
+	set @sql = 'Create PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol]
+	AS
+
+Print ''Iniciando proceso de configuracion en Español''
+
+Print ''Estableciendo Horarios''
+Delete [dbo].[ccHorarios]
+DBCC CHECKIDENT (''[ccHorarios]'', RESEED, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (convert(text, N''Semana'' collate SQL_Latin1_General_CP1_CI_AS), 7, 0, 21, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (convert(text, N''Nocturno'' collate SQL_Latin1_General_CP1_CI_AS), 21, 0, 23, 0, 1, 1, 1, 1, 1, 0, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (convert(text, N''Sabado'' collate SQL_Latin1_General_CP1_CI_AS), 8, 0, 20, 0, 0, 0, 0, 0, 0, 1, 0)
+INSERT [ccHorarios] ([Descripcion], [HoraInicio], [MinInicio], [HoraFin], [MinFin], [Lunes], [Martes], [Miercoles], [Jueves], [Viernes], [Sabado], [Domingo]) VALUES (convert(text, N''Domingo'' collate SQL_Latin1_General_CP1_CI_AS), 8, 0, 14, 0, 0, 0, 0, 0, 0, 0, 1)
+
+Print ''Estableciendo Not Ready y graficas''
+Delete [ccRIANotReadyGraph]
+Delete [dbo].[ccTipoNotReady]
+Delete [ccRIAGraphics]
+
+DBCC CHECKIDENT (''[ccTipoNotReady]'', RESEED, 0)
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''No Clasificado'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Break'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Tocador'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Con Cliente'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Supervisor'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Aclaracion'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Junta'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Comida'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Sistemas'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoNotReady] ([Descripcion]) VALUES (convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS))
+
+DBCC CHECKIDENT (''[ccRIAGraphics]'', RESEED, 0)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(1,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(2,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(3,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(4,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(5,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(6,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(7,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(8,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(9,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(10,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(11,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(12,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(13,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(14,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(15,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(16,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(17,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(18,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(19,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(20,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(21,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(22,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(23,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(24,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(25,1)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(1,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(2,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(3,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(4,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(5,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(6,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(7,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(8,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(9,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(10,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(11,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(12,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(13,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(14,4)
+INSERT INTO [ccRIAGraphics] ([frame],[type_id])VALUES(15,4)
+
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(1,26)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(2,27)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(3,28)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(4,29)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(5,30)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(6,31)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(8,32)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(9,33)
+INSERT INTO [ccRIANotReadyGraph] ([TipoNotReady_id],[graphic_id])VALUES(10,36)
+
+Print ''Estableciendo Status de llamadas''
+delete from [dbo].[ccStatusLLamada]
+
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (1, convert(text, N''Inicial'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (2, convert(text, N''Fuera de Horario'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (3, convert(text, N''Fuera de Servicio'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (4, convert(text, N''Sin Agentes Firmados'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (5, convert(text, N''En espera'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (6, convert(text, N''Colgada'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (7, convert(text, N''Desborde por Tiempo'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (8, convert(text, N''Desborde por Cantidad'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (9, convert(text, N''Con Mensaje'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (10, convert(text, N''Asignada Mensaje'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (11, convert(text, N''Asignada'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (12, convert(text, N''Atendida Mensaje'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (13, convert(text, N''Contestada'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14, convert(text, N''Cancelada Mensaje'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (15, convert(text, N''Asignada y No Contestada'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16, convert(text, N''Asignada y Toma Linea'' collate SQL_Latin1_General_CP1_CI_AS))
+update ccStatusLLamada set inAbandonConfig=1 where statusCall_id in (2, 3, 4, 6, 7, 8 )
+
+Print ''Estableciendo los tipos de dias''
+truncate table [dbo].[ccTipoDias]
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (1, convert(text, N''Lunes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (2, convert(text, N''Martes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (3, convert(text, N''Miercoles'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (4, convert(text, N''Jueves'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (5, convert(text, N''Viernes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (6, convert(text, N''Sabado'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, convert(text, N''Domingo'' collate SQL_Latin1_General_CP1_CI_AS))
+
+Print ''Estableciendo resultados de marcacion''
+delete from [dbo].[ccTipoResultadoDial]
+
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, convert(text, N''Contestan'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, convert(text, N''Ocupado'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, convert(text, N''No Contesta'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, convert(text, N''Fax/Modem'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, convert(text, N''NoDialTone'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, convert(text, N''NoService'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS))
+
+Print ''Estableciendo los tipos de estado de los agentes''
+Delete [dbo].[ccTipoStatusAgente]
+
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (0, convert(text, N''LogOut'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (1, convert(text, N''Desconocido'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (2, convert(text, N''No Disponible'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (3, convert(text, N''Disponible'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (4, convert(text, N''Dialogo'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (5, convert(text, N''Transferencia'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (6, convert(text, N''Notas'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (7, convert(text, N''Otra'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (8, convert(text, N''Cliente'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (9, convert(text, N''Ringing'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (11, convert(text, N''Problema'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (21, convert(text, N''Espera llamada manual'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (23, convert(text, N''ChatReq'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (24, convert(text, N''Chatting'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, convert(text, N''Transferencia Fallida'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, convert(text, N''Ringing Fallida'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, convert(text, N''ReconnectKolob'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, convert(text, N''Ready PreviewPro'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, convert(text, N''Preview'' collate SQL_Latin1_General_CP1_CI_AS))
+
+Print ''Estableciendo los tipos de usuario''
+Delete [dbo].[ccTipoUsers]
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (1, convert(text, N''Agente'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (2, convert(text, N''Supervisor'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoUsers] ([TipoUser_id], [descripcion]) VALUES (6, convert(text, N''AVRS Calidad'' collate SQL_Latin1_General_CP1_CI_AS))
+
+Print ''Estableciendo los dias''
+Delete [dbo].[ccDias]
+DBCC CHECKIDENT (''[ccDias]'', RESEED, 0)
+SET IDENTITY_INSERT [ccDias] ON
+INSERT [ccDias] ([dia_id], [Name]) VALUES (1, convert(text, N''Domingo'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (2, convert(text, N''Lunes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (3, convert(text, N''Martes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (4, convert(text, N''Miercoles'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (5, convert(text, N''Jueves'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (6, convert(text, N''Viernes'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccDias] ([dia_id], [Name]) VALUES (7, convert(text, N''Sabado'' collate SQL_Latin1_General_CP1_CI_AS))
+SET IDENTITY_INSERT [ccDias] OFF
+
+Print ''Estableciendo los tipos de llamada''
+delete from [dbo].cstoTarifa
+delete cstoTipoLlamada
+
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,1,''Local'',''7|8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,2,''LD nacional'',''12'',''01%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,3,''Cel'',''13'',''044%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,4,''Cel LD'',''13'',''045%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,5,''01800'',''12'',''01800%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,6,''LD USA'',''13'',''001%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,7,''LD inter'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,8,''On Net'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,9,''Off Net'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,10,''On Ring'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(1,11,''Triangle'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,1,''LADA local 2 dígitos'',''8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,2,''Local lada 3 digitos'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,3,''Local lada 4 digitos'',''6'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,4,''Cel LADA local 2 dígitos'',''10'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,5,''Cel LADA local 3 dígitos'',''9'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,6,''Cel LADA local 4 dígitos'',''8'',''15%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,7,''Larga distancia'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(2,8,''Cel larga distancia'',''13'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,2,''LD'',''8'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(3,3,''Celular'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(4,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(4,2,''LD Nacional'',''11'',''1%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(5,1,''Local'',''9'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(5,2,''LD Nacional'',''10'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,2,''LD'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(6,3,''Celular'',''11'',''04%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,1,''Local'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,2,''LD'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,3,''Cel'',''11'',''07%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(7,4,''LD inter'',''13'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,1,''Local'',''7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,2,''LD anterior'',''9'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,3,''Cel'',''10'',''05%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,4,''LD actual'',''11'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(8,5,''LD inter'',''13'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,1,''Local'',''10'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,2,''LD inter'',''0'',''0011%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(9,3,''Cel'',''10'',''04%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,1,''Local'',''8'',''2%|3%|4%|5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,2,''Movil '',''8'',''6%|7%|8%|9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,3,''Celular 9 dígitos '',''9'',''9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,4,''LD Nacional'',''10'',''02%|03%|04%|05%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,5,''Cel LD nacional'',''10'',''06%|07%|08%|09%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,6,''Cel LD nacional 9 dígitos'',''11'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(10,7,''LD internacional'',''19'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,1,''Local'',''8'',''2%|6%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,2,''Movil'',''8'',''3%|4%|5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,3,''LD Nacional'',''8'',''7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(11,4,''LD internacional'',''8'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,1,''Local'',''8'',''2%|3%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,2,''Telefonía SIP'',''8'',''4%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,3,''Telefonía móvil'',''8'',''5%|6%|7%|8%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,4,''LD internacional'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,5,''Cobro Revertido'',''10'',''800%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,6,''Tarifa Prima'',''10'',''90%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,7,''Acceso Internet'',''10'',''900%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(12,8,''Especial'',''0'',''08%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,1,''Fijo'',''8'',''2%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,2,''Movil'',''8'',''6%|7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(13,3,''LD internacional'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,1,''Local'',''9'',''8%|9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,2,''Celular'',''9'',''6%|7%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,3,''LD internacional'',''0'',''00%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(14,4,''Servicios web'',''9'',''5%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,1,''Local'',''6|7'',''%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,2,''LD nacional'',''9'',''0%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,3,''Cel'',''9'',''9%'')
+INSERT INTO [cstoTipoLlamada] ([country_id],[tipoLlamada_id],[descrip],[longitud],[prefijo])VALUES(15,4,''LD inter'',''0'',''00%'')
+
+Print ''Estableciendo los movimientos de lista negra''
+Delete [dbo].[ccTipoMovsListaNegra]
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] ON
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, convert(text, N''Carga Lista Negra'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, convert(text, N''Lista Negra en Carga de Registros'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, convert(text, N''Eliminado por Aplicar Lista Negra'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, convert(text, N''Eliminado de Lista Negra por Remplazo '' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, convert(text, N''Borrado de Lista Negra'' collate SQL_Latin1_General_CP1_CI_AS))
+SET IDENTITY_INSERT [ccTipoMovsListaNegra] OFF
+
+Print ''Estableciendo los tipos de calificacion''
+Delete [dbo].[ccTipoCalif]
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (1, convert(text, N''Solicita información general'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (2, convert(text, N''Se cortó la llamada'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+INSERT [ccTipoCalif] ([calif_id], [Description], [orden]) VALUES (3, convert(text, N''Número equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0)
+
+Print ''Estableciendo los tipos de calificacion de salida''
+Delete [dbo].[ccTipoCalifOUT]
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (1, convert(text, N''Gestión Efectiva'' collate SQL_Latin1_General_CP1_CI_AS), 0, 0, 1)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, convert(text, N''Se deja recado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 2)
+INSERT [ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, convert(text, N''Numero Equivocado'' collate SQL_Latin1_General_CP1_CI_AS), 0, 1, 3)
+
+Print ''Estableciendo proveedores''
+Delete [dbo].[cstoProvedor]
+DBCC CHECKIDENT (''[cstoProvedor]'', RESEED, 0)
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Telmex'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Maxcom'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Avantel'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''AT&T'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Telnor'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Axtel'')
+INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Telular'')
+
+Print ''Mensajes voz defualt''
+DELETE [dbo].[ccMsgFiles]
+DBCC CHECKIDENT (''[ccMsgFiles]'', RESEED, 0)
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default5'', ''Mensaje Bienvenida'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default4'', ''Mensaje Transferencia'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default3'', ''Mensaje Fuera de servicio'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default2'', ''Mensaje Fuera de horario'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default1'', ''Mensaje En espera'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default7'', ''Mensaje Sin agentes firmados'' )
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default9'', ''Mensaje VoiceMail'')
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default10'', ''Mensaje Desborde'')
+INSERT [dbo].[ccMsgFiles] ([msgFile], [Descripcion]) VALUES ( ''Default_Sp\Default11'', ''Lista Negra'')
+
+
+Print ''Mensajes default chat''
+DELETE [dbo].[ccRIAChatInboundMsgs]
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default5'', ''!Bienvenido!'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default3'', ''El servicio no se encuentra disponible'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default2'', ''Nuestro horario de atención ha terminado'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default1'', ''Por favor espere mientras uno de nuestros agentes se encuentra disponible'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default7'', ''No hay agentes disponibles'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default10'', ''No podemos tomar su solicitud'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesión de chat ha estado inactiva mucho tiempo'')
+INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesión de chat ha concluido'')
+'
+    EXEC(@sql)	
+  
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

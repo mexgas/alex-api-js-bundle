@@ -1,5 +1,5 @@
-CREATE PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
-AS
+Create PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
+	AS
 Print 'Iniciando proceso de configuracion en Ingles'
 
 Print 'Estableciendo Horarios'
@@ -146,6 +146,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (25, 'Xfe
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, 'Ringing Fail')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, 'ReconnectKolob')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, 'Ready PreviewPro')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, 'Preview')
+
 
 
 Print 'Estableciendo los tipos de usuario'

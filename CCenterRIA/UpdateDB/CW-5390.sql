@@ -83,26 +83,15 @@ end
 
 -----------------------------------------------------------------------------------------------------------------
 
-	@user_id varchar(255),
-	@Type INT,
 CREATE PROCEDURE [dbo].[prueba_GalateaAdminSetPermissions]
+	@user_id varchar(MAX),
 	@permissionName VARCHAR(255),
 	@permissionValue INT
 AS
 SET NOCOUNT ON
 
-DECLARE @dialMaskBefore INT
-DECLARE @xfermaskBefore INT
-DECLARE @xferagentsBefore INT
-DECLARE @startstopkBefore INT
-
 IF @user_id IS NOT NULL
 BEGIN
-
-	SET @dialMaskBefore = (SELECT DialMask FROM ccUsers WHERE User_id = @user_id)
-	SET @xfermaskBefore = (SELECT XferMask FROM ccUsers WHERE User_id = @user_id)
-	SET @xferagentsBefore = (SELECT XferAgents FROM ccUsers WHERE User_id = @user_id)
-	SET @startstopkBefore = (SELECT startStopRecording FROM ccUsers WHERE User_id = @user_id)
 	
 	UPDATE
 		ccUsers
@@ -110,27 +99,27 @@ BEGIN
 		CASE
 			WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'AllowLocalCalls' 
 			THEN @permissionValue
-			ELSE @dialMaskBefore
+			ELSE DialMask
 		END,
 		XferMask =
 		CASE
 			WHEN @permissionName = 'AllowTransferCalls' 
 			THEN @permissionValue
-			ELSE @xfermaskBefore
+			ELSE XferMask
 		END,
 		XferAgents =
 		CASE
 			WHEN @permissionName = 'XferAgents' 
 			THEN @permissionValue
-			ELSE @xferagentsBefore
+			ELSE XferAgents
 		END,
 		startStopRecording =
 		CASE
 			WHEN @permissionName = 'startStopRecording' 
 			THEN @permissionValue
-			ELSE @startstopkBefore
+			ELSE startStopRecording
 		END
-	WHERE User_id = @user_id
+	WHERE User_id  IN (select value from dbo.fn_RIASplitDelimited(@user_id,','))
 
 END
 

@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
 @user_id varchar(255),
 @Type int
 AS
@@ -21,7 +21,7 @@ set nocount off
 
 -----------------------------------------------------------------------------------------------------------------
 
-ALTER PROCEDURE [dbo].[ccsp_GalateaGetAdminRelations]
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetAdminRelations]
 @Option smallint,
 @areaId AS INT = 0,
 @AdminId AS INT = 0
@@ -83,9 +83,9 @@ end
 
 -----------------------------------------------------------------------------------------------------------------
 
-ALTER PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
 	@user_id varchar(255),
 	@Type INT,
+CREATE PROCEDURE [dbo].[prueba_GalateaAdminSetPermissions]
 	@permissionName VARCHAR(255),
 	@permissionValue INT
 AS

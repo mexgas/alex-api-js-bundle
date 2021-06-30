@@ -83,7 +83,7 @@ end
 
 -----------------------------------------------------------------------------------------------------------------
 
-CREATE PROCEDURE [dbo].[prueba_GalateaAdminSetPermissions]
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
 	@user_id varchar(MAX),
 	@permissionName VARCHAR(255),
 	@permissionValue INT

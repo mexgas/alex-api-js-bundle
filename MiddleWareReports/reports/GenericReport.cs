@@ -373,8 +373,10 @@ namespace MiddleWareReports
             XmlElement texts = getTexts(xml, parameters, process);
             XmlElement groupby = getGroupByColumns(xml, parameters, process);
             XmlElement detailReports = getDetailReports(xml, process);
+            XmlElement rateDetail = getRateDetail(xml, process);
             XmlElement translates = getTranslatedColumns(xml, process);
 
+            xml.ChildNodes.Item(1).AppendChild(rateDetail);
             xml.ChildNodes.Item(1).AppendChild(detailReports);
             xml.ChildNodes.Item(1).AppendChild(filters);
             xml.ChildNodes.Item(1).AppendChild(menus);
@@ -630,6 +632,28 @@ namespace MiddleWareReports
                 }
             }
             return detailReportsXml;
+        }
+
+        private XmlElement getRateDetail(XmlDocument xml, short process)
+        {
+            NameValueCollection reportParams = new NameValueCollection();
+            reportParams.Add("id", process.ToString());
+            reportParams.Add("action", "1");
+            DataTable columnsDetail = db.executeSP("dbo.ccspRepAVRSRateDetail", reportParams);
+            XmlElement rateDetail = xml.CreateElement("", "rateDetail", "");
+            foreach (DataRow detailRow in columnsDetail.Rows)
+            {
+                string dbColumnFilter = detailRow["dbColumnFilter"].ToString();
+                string showColumnsDetail = detailRow["showColumnsDetail"].ToString();
+                if (!string.IsNullOrEmpty(dbColumnFilter) && !string.IsNullOrEmpty(showColumnsDetail))
+                {
+                    XmlElement element = xml.CreateElement("", "rateDetail", "");
+                    element.SetAttribute("dbColumn", dbColumnFilter);
+                    element.SetAttribute("showColumnsDetail", showColumnsDetail);
+                    rateDetail.AppendChild(element);
+                }
+            }
+            return rateDetail;
         }
 
         /// <summary>

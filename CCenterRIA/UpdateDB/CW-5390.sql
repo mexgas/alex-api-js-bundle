@@ -82,13 +82,27 @@ end
 
 
 -----------------------------------------------------------------------------------------------------------------
-
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
 	@user_id varchar(MAX),
 	@permissionName VARCHAR(255),
 	@permissionValue INT
 AS
 SET NOCOUNT ON
+
+DECLARE @changeBit INT
+
+SET @changeBit =
+CASE
+	WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'startStopRecording' or @permissionName = 'XferManual' or @permissionName = 'AllowTransferCalls'
+	THEN 1
+	WHEN @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'XferExt'
+	THEN 2
+	WHEN @permissionName = 'AllowLocalCalls' or @permissionName = 'XferCamps'
+	THEN 4
+	WHEN @permissionName = 'XferAgents'
+	THEN 8
+	ELSE 0
+END
 
 IF @user_id IS NOT NULL
 BEGIN
@@ -97,29 +111,186 @@ BEGIN
 		ccUsers
 	SET DialMask =
 		CASE
-			WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'AllowLocalCalls' 
-			THEN @permissionValue
-			ELSE DialMask
+		WHEN @permissionName = 'AllowCellPhoneCalls'
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) <> @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) = @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			END
+		WHEN @permissionName = 'AllowLongDistanceCalls'
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) <> @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) = @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			END	
+		WHEN @permissionName = 'AllowLocalCalls'
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) <> @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (DialMask & @changeBit) = @changeBit
+				THEN DialMask ^ @changeBit
+				ELSE DialMask
+				END
+			END	
+		ELSE DialMask
 		END,
+		
 		XferMask =
 		CASE
-			WHEN @permissionName = 'AllowTransferCalls' 
-			THEN @permissionValue
-			ELSE XferMask
+		WHEN @permissionName = 'AllowTransferCalls' 
+		THEN
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (XferMask & @changeBit) <> @changeBit
+				THEN XferMask ^ @changeBit
+				ELSE XferMask
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (XferMask & @changeBit) = @changeBit
+				THEN XferMask ^ @changeBit
+				ELSE XferMask
+				END
+			END
+		ELSE XferMask
 		END,
+
 		XferAgents =
 		CASE
-			WHEN @permissionName = 'XferAgents' 
-			THEN @permissionValue
-			ELSE XferAgents
+		WHEN @permissionName = 'XferAgents' 
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) <> @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) = @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			END
+		WHEN @permissionName = 'XferCamps' 
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) <> @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) = @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			END
+		WHEN @permissionName = 'XferExt' 
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) <> @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) = @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			END
+		WHEN @permissionName = 'XferManual' 
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) <> @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (XferAgents & @changeBit) = @changeBit
+				THEN XferAgents ^ @changeBit
+				ELSE XferAgents
+				END
+			END
+		ELSE XferAgents
 		END,
+
 		startStopRecording =
 		CASE
-			WHEN @permissionName = 'startStopRecording' 
-			THEN @permissionValue
+		WHEN @permissionName = 'startStopRecording' 
+		THEN 
+			CASE
+			WHEN @permissionValue = 1
+			THEN
+				CASE
+				WHEN (startStopRecording & @changeBit) <> @changeBit
+				THEN startStopRecording ^ @changeBit
+				ELSE startStopRecording
+				END
+			WHEN @permissionValue = 0
+			THEN
+				CASE
+				WHEN (startStopRecording & @changeBit) = @changeBit
+				THEN startStopRecording ^ @changeBit
+				ELSE startStopRecording
+				END
+			END
 			ELSE startStopRecording
 		END
-	WHERE User_id  IN (select value from dbo.fn_RIASplitDelimited(@user_id,','))
+	WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,','))
 
 END
 

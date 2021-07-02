@@ -5,9 +5,9 @@ AS
 set nocount on
 
 Select distinct A.User_id as AgentId, Login as Username, Nombres + ' ' + isNull(apellidoPaterno,'') + ' ' +
-isNull(ApellidoMaterno, '') as FullName, cast(dialMask & 1 as int)^1 as AllowCellPhoneCalls,
-cast( (dialMask & 2) /2 as int)^1 as AllowLongDistanceCalls, cast((dialMask & 4) / 4 as int)^1 as AllowLocalCalls,
-cast( xfermask as int)^1 as AllowTransferCalls, cast(CanChangeStatus as tinyint) CanChangeStatus,
+isNull(ApellidoMaterno, '') as FullName, cast(dialMask & 1 as int) as AllowCellPhoneCalls,
+cast( (dialMask & 2) /2 as int) as AllowLongDistanceCalls, cast((dialMask & 4) / 4 as int) as AllowLocalCalls,
+cast( xfermask as int) as AllowTransferCalls, cast(CanChangeStatus as tinyint) CanChangeStatus,
 cast(XferAgents as tinyint) XferAgents,
 ISNULL(cast(startStopRecording as tinyint), 0) startStopRecording
 from ccUsers A
@@ -112,42 +112,8 @@ BEGIN
 	SET DialMask =
 		CASE
 		WHEN @permissionName = 'AllowCellPhoneCalls'
-		THEN 
-			CASE
-			WHEN @permissionValue = 1
-			THEN
-				CASE
-				WHEN (DialMask & @changeBit) <> @changeBit
-				THEN DialMask ^ @changeBit
-				ELSE DialMask
-				END
-			WHEN @permissionValue = 0
-			THEN
-				CASE
-				WHEN (DialMask & @changeBit) = @changeBit
-				THEN DialMask ^ @changeBit
-				ELSE DialMask
-				END
-			END
-		WHEN @permissionName = 'AllowLongDistanceCalls'
-		THEN 
-			CASE
-			WHEN @permissionValue = 1
-			THEN
-				CASE
-				WHEN (DialMask & @changeBit) <> @changeBit
-				THEN DialMask ^ @changeBit
-				ELSE DialMask
-				END
-			WHEN @permissionValue = 0
-			THEN
-				CASE
-				WHEN (DialMask & @changeBit) = @changeBit
-				THEN DialMask ^ @changeBit
-				ELSE DialMask
-				END
-			END	
-		WHEN @permissionName = 'AllowLocalCalls'
+		OR @permissionName = 'AllowLongDistanceCalls'
+		OR @permissionName = 'AllowLocalCalls'
 		THEN 
 			CASE
 			WHEN @permissionValue = 1
@@ -194,60 +160,9 @@ BEGIN
 		XferAgents =
 		CASE
 		WHEN @permissionName = 'XferAgents' 
-		THEN 
-			CASE
-			WHEN @permissionValue = 1
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) <> @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			WHEN @permissionValue = 0
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) = @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			END
-		WHEN @permissionName = 'XferCamps' 
-		THEN 
-			CASE
-			WHEN @permissionValue = 1
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) <> @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			WHEN @permissionValue = 0
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) = @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			END
-		WHEN @permissionName = 'XferExt' 
-		THEN 
-			CASE
-			WHEN @permissionValue = 1
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) <> @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			WHEN @permissionValue = 0
-			THEN
-				CASE
-				WHEN (XferAgents & @changeBit) = @changeBit
-				THEN XferAgents ^ @changeBit
-				ELSE XferAgents
-				END
-			END
-		WHEN @permissionName = 'XferManual' 
+		OR @permissionName = 'XferCamps' 
+		OR @permissionName = 'XferExt' 
+		OR @permissionName = 'XferManual' 
 		THEN 
 			CASE
 			WHEN @permissionValue = 1

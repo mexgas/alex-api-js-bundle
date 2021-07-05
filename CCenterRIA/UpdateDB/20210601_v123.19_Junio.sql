@@ -58,7 +58,7 @@ WHERE id = 4;
 
 
 
-IF @actualVersion = @version and @actualVersionFix >= 19
+IF @actualVersion = @version and @actualVersionFix >= @versionfix - 1
 BEGIN
 	BEGIN TRAN
 

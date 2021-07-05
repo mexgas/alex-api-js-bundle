@@ -63,7 +63,7 @@ BEGIN
                 set nocount on
 
                 Select distinct A.User_id as AgentId, Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' +
-                isNull(ApellidoMaterno, '') as FullName, cast(dialMask & 1 as int) as AllowCellPhoneCalls,
+                isNull(ApellidoMaterno, '''') as FullName, cast(dialMask & 1 as int) as AllowCellPhoneCalls,
                 cast( (dialMask & 2) /2 as int) as AllowLongDistanceCalls, cast((dialMask & 4) / 4 as int) as AllowLocalCalls,
                 cast( xfermask as int) as AllowTransferCalls, cast(CanChangeStatus as tinyint) CanChangeStatus,
                 cast(XferAgents as tinyint) XferAgents,

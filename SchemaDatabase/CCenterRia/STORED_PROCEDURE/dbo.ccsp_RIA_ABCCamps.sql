@@ -35,7 +35,7 @@ if @option = 4 --Delete
 		if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
 		begin
 		declare @error varchar(70)
-		Select @error=case valor when 0 then 'No es posible eliminar la campaña, esta asociada a una especialidad' 
+		Select @error=case valor when 0 then 'No es posible eliminar la campaña, esta asociada a una especialidad'
 			else 'Campaign can not be deleted, it has an association with an ACD' end
 		from ccsettings with(nolock) where setting_id = 27
 		raiserror (@error,18,1)		
@@ -180,6 +180,14 @@ if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar
 	begin	
 		select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
 		--select 0 as Grabaciones	
+	end
+
+if @option = 8 -- Checa si la campaña tiene asignada una campaña tipo encuesta
+	begin	
+		SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
 	end
 
 return(0)

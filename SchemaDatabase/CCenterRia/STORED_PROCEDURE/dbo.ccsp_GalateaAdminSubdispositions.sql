@@ -15,7 +15,7 @@ declare @inserted table (ID smallint)
 
 if @command=1 -- Load Inbound Subdispositions
 begin
-  select califSub_id, IsNull(califSubDesc,'') [califSubDesc], orden, canReprogram,
+  select califSub_id, IsNull(califSubDesc,'') [califSubDesc], orden, canReprogram, 
   IsNull(EndConversation,0) EndConversation
   from ccTipoCalifSub
   where califSub_Status = 1
@@ -52,7 +52,7 @@ begin
 		califSub_Status=1
 		output inserted.califSub_id into @inserted
 		where califSub_id=@califSub_id
-		select ID [result] from @inserted
+		select ID [result] from @inserted 
 		return(0)
 	end
 
@@ -77,7 +77,7 @@ begin
 		califSubOut_Status=1, keepDial=isnull(@keepDial,0), autoCallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0)
 		output inserted.califSub_id into @inserted
 		where califSubDesc=@califSubDesc
-		select ID [result] from @inserted
+		select ID [result] from @inserted 
 		return(0)
 	end
 
@@ -112,14 +112,11 @@ begin
 
 	if @canReprogram=1
 	begin
-		declare @asignada bit, @can bit
-		select @asignada=IB.inbound_id, @can=IB.cam_id
-		from cctipoSubCalifRel CR join cctipoCalif TC on CR.calif_id = TC.calif_id and CR.tipoSubRel=1
-		join ccCalifCamp CM on TC.calif_id = CM.calif_id and CM.tipo = 0 join ccInbound IB on CM.cam_id = IB.inbound_id
-		where califSub_id = cast(@califSub_id as smallint)
-		if @asignada is not null and @can is null
+		if exists (select IB.Inbound_id from cctipoSubCalifRel CR join cctipoCalif TC on CR.calif_id = TC.calif_id and CR.tipoSubRel=1
+		join ccCalifCamp CM on TC.calif_id = CM.calif_id and CM.tipo = 0 join ccInbound IB on CM.cam_id = IB.inbound_id 
+		where califSub_id = @califSub_id and IB.cam_id is null)
 		begin
-			select cast(-2 as smallint) [result]	-- Cant reprogram, there are not assigned campaign
+			select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
 			return(0)
 		end
 	end
@@ -133,12 +130,12 @@ begin
     tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
 
 	select ID [result] from @inserted
-	return(0)
+	return(0) 
 end
 
 if @command=8	-- Update Outbound Subdisposition
 begin
-
+	
 	if(exists(select califSub_id from ccTipoCalifSubOUT where califSubOut_Status=1 and califSubDesc=@califSubDesc and califSub_id<>@califSub_id))
 	begin
 		select cast(-1 as smallint) [result]	-- Subdisposition already exists
@@ -152,7 +149,7 @@ begin
 	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
 
 	select ID [result] from @inserted
-	return(0)
+	return(0) 
 end
 
 

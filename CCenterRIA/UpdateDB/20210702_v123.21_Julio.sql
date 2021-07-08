@@ -268,7 +268,6 @@ BEGIN
                     WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,'',''))
                 END
 
-
                 SET NOCOUNT OFF'
 	exec (@sql)
 

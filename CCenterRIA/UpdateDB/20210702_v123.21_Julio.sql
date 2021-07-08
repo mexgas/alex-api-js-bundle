@@ -266,7 +266,6 @@ BEGIN
 						ELSE startStopRecording
 						END
                     WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,'',''))
-
                 END
 
 

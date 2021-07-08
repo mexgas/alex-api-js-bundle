@@ -253,28 +253,18 @@ BEGIN
                         ELSE XferAgents
                         END,
 
-                        startStopRecording =
-                        CASE
-                        WHEN @permissionName = ''startStopRecording'' 
-                        THEN 
-                            CASE
-                            WHEN @permissionValue = 1
-                            THEN
-                                CASE
-                                WHEN (startStopRecording & @changeBit) <> @changeBit
-                                THEN startStopRecording ^ @changeBit
-                                ELSE startStopRecording
-                                END
-                            WHEN @permissionValue = 0
-                            THEN
-                                CASE
-                                WHEN (startStopRecording & @changeBit) = @changeBit
-                                THEN startStopRecording ^ @changeBit
-                                ELSE startStopRecording
-                                END
-                            END
-                            ELSE startStopRecording
-                        END
+						startStopRecording =
+						CASE
+						WHEN @permissionName = ''startStopRecording'' 
+						THEN 
+							CASE
+							WHEN @permissionValue = 1
+							THEN 1
+							WHEN @permissionValue = 0
+							THEN 0
+							END
+						ELSE startStopRecording
+						END
                     WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,'',''))
 
                 END

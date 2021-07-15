@@ -621,6 +621,27 @@ IF OBJECT_ID(''tempdb..#Adm'') IS NOT NULL
     DROP TABLE #Adm;'
     EXEC(@sql)
 
+    set @process = 'Chats- se quita el sp ccsp_GalateaLoadAreas si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaLoadAreas'')
+            begin
+          DROP PROCEDURE ccsp_GalateaLoadAreas;
+            end'
+    EXEC(@sql)
+
+    set @process = 'Chats- se quita el sp ccsp_GalateaLoadAreas'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaLoadAreas]
+as
+SET NOCOUNT ON; 
+select u.IDArea, ca.AreaName, User_id, TipoUser_id 
+from ccUsers u
+join ccRIACat_Areas ca on u.IDArea=ca.IDArea
+where TipoUser_id=1
+order by IDArea, User_id
+SET NOCOUNT OFF'
+    EXEC(@sql)
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

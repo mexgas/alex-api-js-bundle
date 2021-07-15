@@ -12,11 +12,14 @@ AS
 
 if @typecall = 1 --Inbound 
 begin
-	Update DataCallIn set Data=@data1 where CallId=@callid and Description = 'Dato 1'
-	Update DataCallIn set Data=@data2 where CallId=@callid and Description = 'Dato 2'
-	Update DataCallIn set Data=@data3 where CallId=@callid and Description = 'Dato 3'
-	Update DataCallIn set Data=@data4 where CallId=@callid and Description = 'Dato 4'
-	Update DataCallIn set Data=@data5 where CallId=@callid and Description = 'Dato 5'
+	IF EXISTS (SELECT * FROM DataCallIn WHERE CallId=@callid )
+		DELETE FROM DataCallIn WHERE CallId=@callid
+
+	INSERT INTO DataCallIn (CallId, Data, Description) Values (@callid, @data1, 'Dato 1' )
+	INSERT INTO DataCallIn (CallId, Data, Description) Values (@callid, @data2, 'Dato 2' )
+	INSERT INTO DataCallIn (CallId, Data, Description) Values (@callid, @data3, 'Dato 3' )
+	INSERT INTO DataCallIn (CallId, Data, Description) Values (@callid, @data4, 'Dato 4' )
+	INSERT INTO DataCallIn (CallId, Data, Description) Values (@callid, @data5, 'Dato 5' )
 end
 	
 if @typecall = 2 --Outbound 

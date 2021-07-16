@@ -6,9 +6,12 @@ CREATE Procedure [dbo].[ccsp_RIAABCChat]
 @ChatMsg varchar(1500) = null,
 @Fecha_Chat_ini datetime = null,
 @Fecha_Chat_fin datetime = null,
-@IDArea int = null
+@IDArea int = null,
+@IDGroup int = null
 AS
 set nocount on
+
+declare @new_chat_id int;
 
 if @OperationType not in (0,1,2,3,4,5,6,7)
     raiserror('Invalid Operation Type', 18, 1)
@@ -77,7 +80,15 @@ if @OperationType=1
 
     insert ccRIAChat_Log (TipoMsgChat, User_id_Adm, User_id_Agt, ChatMsg)
     select @TipoMsgChat, @User_id_Adm, @User_id_Agt, @ChatMsg
-    select SCOPE_IDENTITY() ChatID
+    select @new_chat_id = SCOPE_IDENTITY() 
+
+    if(@TipoMsgChat in (4,5) and @new_chat_id is not null)
+     begin
+        insert ccChatLog_AreaWg(ChatID, IdGroup, TypeGroup)
+        select @new_chat_id, @IDGroup, case @TipoMsgChat when 4 then 'Area' else 'Workgroup' end
+     end
+
+     select @new_chat_id as ChatID
     return(0)
  end
 
@@ -149,23 +160,41 @@ if @OperationType=5
 
  if @OperationType=6
  begin
-    --This action was created for Galatea's Agent Chat Log
-    SELECT  convert(varchar(10),Fecha_Chat,108) HourChat,
-    C.TipoMsgChat , u2.Login AdminLogin,
-    U1.Login AgentLogin,
-    '"'+ REPLACE(C.ChatMsg,'"','""') + '"' AS ChatMsg
-    FROM ccRIAChat_Log C join ccUsers U1 on U1.user_id = C.User_id_Agt
-     JOIN ccUsers U2 on U2.user_id = C.User_id_Adm
-    WHERE 
-      User_id_Agt in (select case when isnull(@User_id_Agt,'0')='0' then User_id_Agt else value end from dbo.fn_RIASplitDelimited (@User_id_Agt, ','))
-     AND Fecha_Chat BETWEEN ISNULL(@Fecha_Chat_ini, '19000101 00:00')
-     AND ISNULL(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+    declare @tableArea table (UserId int,AgentLogin varchar(40),areaId int, primary key(userId))
+    insert into @tableArea 
+    SELECT B.User_id,B.Login, B.IDArea FROM dbo.fn_RIASplitDelimited(@User_id_Agt, ',') A
+    inner join ccUsers B on A.Value=B.User_id
 
+    declare @tableWG table (UserId int,AgentLogin varchar(40),WgId varchar(100))
+    insert into @tableWG 
+    SELECT B.User_id,B.Login, D.IDWG FROM dbo.fn_RIASplitDelimited(@User_id_Agt, ',') A
+    inner join ccUsers B on A.Value=B.User_id
+    inner join ccRIAWorkGroupUsers D on A.Value=D.User_id
+
+   ;with Chats as(
+     select A.TipoMsgChat,t.AgentLogin,A.User_id_Adm,A.ChatMsg,A.Fecha_Chat from ccRIAChat_Log A ,@tableArea t where TipoMsgChat=4
+     union
+     select  A.TipoMsgChat,t.AgentLogin,A.User_id_Adm,A.ChatMsg,A.Fecha_Chat from ccRIAChat_Log A ,@tableWG t 
+     join ccChatLog_AreaWg caw on t.WgId=caw.IdGroup
+     where TipoMsgChat=5
+     union
+     select A.TipoMsgChat,case when TipoMsgChat=3 then (select Login from ccUsers where User_id=@User_id_Agt) else U.Login end as AgentLogin,A.User_id_Adm,A.ChatMsg,A.Fecha_Chat 
+     from ccRIAChat_Log A 
+     join ccUsers U on A.User_id_Agt=U.User_id
+     where TipoMsgChat in (1,2,3)
+    )
+
+    select convert(varchar(10),Fecha_Chat,108) HourChat,C.TipoMsgChat , u2.Login AdminLogin,
+    C.AgentLogin, c.ChatMsg from CHats C
+    JOIN ccUsers U2 ON U2.user_id = C.User_id_Adm
+    WHERE 
+    Fecha_Chat BETWEEN ISNULL(@Fecha_Chat_ini, '19000101 00:00')
+    AND ISNULL(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
  end
 
  if @OperationType=7
   begin
-    --This action was created for Galatea's Admin Chat (Last Message)
+    --This action was created for Galatea's Admin Chat Log
     select @Fecha_Chat_ini = convert(datetime,convert(varchar(11),getdate()))
     select @Fecha_Chat_fin = GETDATE()
     ;with Chat as (
@@ -173,11 +202,14 @@ if @OperationType=5
     from ccRiaChat_Log
     where Fecha_Chat between @Fecha_Chat_ini and @Fecha_Chat_fin
     group by user_id_Agt)
-    select B.ChatID, B.TipoMsgChat, B.User_id_Agt, B.ChatMsg, B.Fecha_Chat from Chat A
+    select B.ChatID, B.TipoMsgChat, B.User_id_Agt, B.ChatMsg, B.Fecha_Chat, isnull(caw.IdGroup,0) GroupID
+    from Chat A
     inner join ccRIAChat_Log B on A.ChatId=B.ChatID
+    left join ccChatLog_AreaWg caw on caw.ChatID=B.ChatID 
     where User_id_Adm=@User_id_Adm
     return(0)
   end
 
+ 
 select 0
 set nocount off

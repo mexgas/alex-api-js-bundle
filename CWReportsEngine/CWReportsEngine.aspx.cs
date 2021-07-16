@@ -57,7 +57,7 @@ public partial class CWReportsEngine : System.Web.UI.Page
 
         #endregion CacheControl
 
-        UseSession(8063);
+        UseSession(process);
     }
 
     #region Usar Sesion

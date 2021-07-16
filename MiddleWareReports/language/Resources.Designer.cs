@@ -19,7 +19,7 @@ namespace MiddleWareReports {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -1767,6 +1767,15 @@ namespace MiddleWareReports {
         public static string completeByHour {
             get {
                 return ResourceManager.GetString("completeByHour", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Conceptos.
+        /// </summary>
+        public static string conceptos {
+            get {
+                return ResourceManager.GetString("conceptos", resourceCulture);
             }
         }
         
@@ -7360,7 +7369,7 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Formato-Concepto.
+        ///   Looks up a localized string similar to Formato.
         /// </summary>
         public static string TemplateSection {
             get {

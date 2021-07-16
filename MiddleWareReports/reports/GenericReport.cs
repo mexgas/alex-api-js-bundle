@@ -1596,7 +1596,7 @@ namespace MiddleWareReports
                     }
                     else
                     {
-                        whereStatement.Append(DynamicTsqlBuilder.AndStatement(columnDetail, "0", "g"));
+                        whereStatement.Append(DynamicTsqlBuilder.AndStatement(columnDetail, "0", "ge"));
 
                         parameters.Append(string.Format(", @" + columnDetail + "1 " + DBSchema.getDataType(columnDetail).ToString()));
                         values.Add("@" + columnDetail + "1", "0");

@@ -575,7 +575,7 @@ namespace MiddleWareReports
             }
             else
             {
-                pivot.AppendLine(" declare @out nvarchar(max) exec sp_executesql N'");
+                pivot.AppendLine(" declare @out nvarchar(max) exec N'");
             }
             return pivot;
         }

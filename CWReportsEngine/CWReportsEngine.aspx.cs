@@ -57,14 +57,14 @@ public partial class CWReportsEngine : System.Web.UI.Page
 
         #endregion CacheControl
 
-        UseSession(process);
+        UseSession(8063);
     }
 
     #region Usar Sesion
 
     public void UseSession(short process)
     {
-        int sourceUserId = 0;
+        int sourceUserId = 37;
         int activeChat = 0;
         int activeAVRS = 0;
         int activeCRM = 0;

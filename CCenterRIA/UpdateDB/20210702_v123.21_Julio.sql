@@ -640,7 +640,9 @@ order by IDArea, User_id
 SET NOCOUNT OFF'
     EXEC(@sql)
 
+	
 	set @process = 'CW-5484 ALTER ccsp_RIAInsertChat SP'
+	
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @action int,
 @inboundId smallint = 0,
@@ -673,7 +675,7 @@ if @action = 1 begin -- Inserta nuevo chat request /*comentario: se recomienda h
 end
 
 else if @action = 2 begin -- Save Initial Info
-update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = @userId, tTimeout = @tTimeout where chatId = @chatId
+update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = case when @userId = 0 then userId else @userId end, tTimeout = @tTimeout where chatId = @chatId
 end
 
 else if @action = 3 begin -- Update Status
@@ -683,7 +685,7 @@ end
 else if @action = 4 begin -- Save Final Status
 if @firstMessage = 0
        begin
-             update ccRIAChats set finishedBy = @finished, userID = @userId where chatId = @chatId
+             update ccRIAChats set finishedBy = @finished, userID =case when @userId = 0 then userId else @userId end where chatId = @chatId
        end
 else
        begin
@@ -693,12 +695,14 @@ end
 
 else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion del nodo (registro final para el finder) se recomiendo en esta action, no olvidar validar status = 4, finishedby != null y validar los tiempos para garantizar el dato final */
        if @action = 5 begin
-             update ccRIAChats set tChatting = @chattingTime, userId = @userId, chatDate = @startTime where chatId = @chatId
+             update ccRIAChats set tChatting = @chattingTime, userId = case when @userId = 0 then userId else @userId end, chatDate = @startTime where chatId = @chatId
        end
 
 	   if @action = 6 begin
-			update ccRIAChats set userId = @userId where chatId = @chatId
+			update ccRIAChats set userId = case when @userId = 0 then userId else @userId end  where chatId = @chatId
 	   end
+
+
 
 	   set @crmNode = null
 

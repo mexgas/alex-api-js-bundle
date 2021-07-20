@@ -640,19 +640,14 @@ order by IDArea, User_id
 SET NOCOUNT OFF'
     EXEC(@sql)
 
+	
 	set @process = 'CW-5484 ALTER ccsp_RIAInsertChat SP'
-    set @sql = ' USE [CCenterRIA]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_RIAInsertChat]    Script Date: 19/07/2021 09:29:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
+	
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @action int,
 @inboundId smallint = 0,
-@domain varchar(50) = '',
-@session varchar(50) = '',
+@domain varchar(50) = '''',
+@session varchar(50) = '''',
 @tTimeout smallint = 0,
 @chatId int = 0,
 @status tinyInt = 0,
@@ -660,7 +655,7 @@ ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @finished tinyInt = 0,
 @chattingTime int = 0,
 @startTime datetime = null,
-@clientName varchar(50) = '',
+@clientName varchar(50) = '''',
 @firstMessage int = 0,
 @firstMessageTime datetime = null,
 @crmNode xml = null,
@@ -707,6 +702,8 @@ else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion 
 			update ccRIAChats set userId = case when @userId = 0 then userId else @userId end  where chatId = @chatId
 	   end
 
+
+
 	   set @crmNode = null
 
 	   exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=0,@xml=@xml OUTPUT,@supervisor=@supervisor,@template =@template,@ScoreTemplate=@ScoreTemplate
@@ -716,16 +713,15 @@ else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion 
              select @crmNode = node from ccCRMNodes where chatId = @chatId
              if @crmNode is not null
              begin
-                    set @sql = N' set @xml.modify(''insert'++CONVERT(NVARCHAR(2000),@crmNode)+' into(/R01)[1]'') '
-                    execute sp_executesql @sql,N'@xml XML Output,@crmNode XML',@xml OUTPUT,@crmNode
+                    set @sql = N'' set @xml.modify(''''insert''++CONVERT(NVARCHAR(2000),@crmNode)+'' into(/R01)[1]'''') ''
+                    execute sp_executesql @sql,N''@xml XML Output,@crmNode XML'',@xml OUTPUT,@crmNode
              end
 
              if not exists(select * from ccChatsNode where chatId=@chatId) begin ---insert finder
                 insert into ccChatsNode (chatId,node, dateIn,[status]) values (@chatId,@xml, getdate(),0)
              end
              else begin ---update finder
-				update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId
-                --select @chatId
+		     update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId                
              end
        end
 end'

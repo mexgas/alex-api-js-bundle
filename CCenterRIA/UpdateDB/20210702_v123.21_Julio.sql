@@ -531,7 +531,7 @@ if @OperationType=5
      select A.TipoMsgChat,case when TipoMsgChat=3 then (select Login from ccUsers where User_id=@User_id_Agt) else U.Login end as AgentLogin,A.User_id_Adm,A.ChatMsg,A.Fecha_Chat 
      from ccRIAChat_Log A 
      join ccUsers U on A.User_id_Agt=U.User_id
-     where TipoMsgChat in (1,2,3)
+     where TipoMsgChat in (1,2,3) and User_id_Agt in (select case when isnull(@User_id_Agt,''0'')=''0'' then User_id_Agt else value end from dbo.fn_RIASplitDelimited (@User_id_Agt, '',''))
     )
 
     select convert(varchar(10),Fecha_Chat,108) HourChat,C.TipoMsgChat , u2.Login AdminLogin,
@@ -540,6 +540,7 @@ if @OperationType=5
     WHERE 
     Fecha_Chat BETWEEN ISNULL(@Fecha_Chat_ini, ''19000101 00:00'')
     AND ISNULL(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+    order by Fecha_Chat asc
  end
 
  if @OperationType=7

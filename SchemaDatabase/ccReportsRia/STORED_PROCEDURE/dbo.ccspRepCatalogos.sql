@@ -45,13 +45,13 @@ end
 	-- WORKGROUPS
 if @type = 3 begin
 	if @userId <> 0 begin
-
+	
 		--insert into @tempwork
 		--select IDWG from ccRIAWorkGroupUsers with (index (IX_ccRIAWorkGroupUsers_I)) where User_id = @userId
 
 		select v.IDWG as id, c.WGName as description, 'workgroupId' as dbColumn
-		from ccWgByAcdView v
-		inner join ccriacat_workgroup c on c.IDWG=v.IDWG
+		from ccWgByAcdView v 
+		inner join ccriacat_workgroup c on c.IDWG=v.IDWG  
 		where USER_ID= @userId
 		return
 	end
@@ -198,16 +198,17 @@ end
 
 	-- AVRS TEMPLATE-SECTION
 if @type = 15 	begin
-	SELECT f.id_formato as id, f.nombre as description, 'sectionId' as dbColumn
-	FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,MAX(version) as version
+	SELECT c.id_concepto as id, (t.nombre+'-'+c.con_descripcion) as description, 'sectionId' as dbColumn
+	FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,nombre,MAX(version) as version
 									FROM RIA_FORMATOS
 									WHERE activo = 1
-									group by id_formato) as t
-	ON f.id_formato = t.id_formato AND f.version = t.version
+									group by id_formato,nombre) as t
+	ON f.id_formato = t.id_formato AND f.version = t.version INNER JOIN RIA_CONCEPTOS c
+	ON t.id_formato = c.id_formato AND t.version = c.version
 	order by f.nombre
 end
 
-		--AVRS TEMPLATES
+	-- AVRS TEMPLATES
 if @type = 16 	begin
 	SELECT f.id_formato as id, f.nombre as description, 'templateId' as dbColumn
 	FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,MAX(version) as version
@@ -217,26 +218,6 @@ if @type = 16 	begin
 	ON f.id_formato = t.id_formato AND f.version = t.version
 	order by f.nombre
 end
-
-		--AVRS TEMPLATES
-if @type = 31 	begin
-	SELECT c.id_concepto as id, c.con_descripcion as description, 'sectionId' as dbColumn
-	FROM RIA_CONCEPTOS c INNER JOIN (SELECT id_concepto,MAX(version) as version
-									FROM RIA_CONCEPTOS
-									group by id_concepto) as t
-	ON c.id_concepto = t.id_concepto AND c.version = t.version
-	order by c.con_descripcion
-END
-
-		--AVRS QUESTIONS
-if @type = 23 	begin
-	SELECT p.id_pregunta as id, p.enunciado_pregunta as description, 'questionId' as dbColumn
-	FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
-									FROM RIA_PREGUNTAS
-									group by id_pregunta) as t
-	ON p.id_pregunta = t.id_pregunta
-	order by p.enunciado_pregunta
-END
 
 	-- AVRS SUPERVISOR
 if @type = 17 	begin
@@ -299,6 +280,6 @@ if @action = 1 begin
 	-- SCORE
 	if @type = 20
 	begin
-		SELECT 0 as [min], 100 as [max],'avgDisposition' as dbColumn
+		SELECT 0 as [min], 100 as [max],'score' as dbColumn
 	end
-END
+end

@@ -264,7 +264,7 @@ BEGIN
 							THEN 0
 							END
 						ELSE startStopRecording
-						END
+						END,
 
                         DialingMode = 
                         CASE

@@ -163,9 +163,9 @@ BEGIN
 
                 SET @changeBit =
                 CASE
-                    WHEN @permissionName = ''AllowCellPhoneCalls'' or @permissionName = ''startStopRecording'' or @permissionName = ''XferManual'' or @permissionName = ''AllowTransferCalls''
+                    WHEN @permissionName = ''AllowCellPhoneCalls'' or @permissionName = ''startStopRecording'' or @permissionName = ''XferManual'' or @permissionName = ''AllowTransferCalls'' or @permissionName = ''AgentPermissionDailing''
                     THEN 1
-                    WHEN @permissionName = ''AllowLongDistanceCalls'' or @permissionName = ''XferExt''
+                    WHEN @permissionName = ''AllowLongDistanceCalls'' or @permissionName = ''XferExt'' or @permissionName = ''DailingMode''
                     THEN 2
                     WHEN @permissionName = ''AllowLocalCalls'' or @permissionName = ''XferCamps''
                     THEN 4
@@ -264,11 +264,48 @@ BEGIN
 							THEN 0
 							END
 						ELSE startStopRecording
-						END
+						END,
+
+                        DialingMode = 
+                        CASE
+                        WHEN @permissionName = ''DailingMode'' 
+                        OR @permissionName = ''AgentPermissionDailing'' 
+                        THEN 
+                            CASE
+                            WHEN @permissionValue = 1
+                            THEN
+                                CASE
+                                WHEN (DialingMode & @changeBit) <> @changeBit
+                                THEN DialingMode ^ @changeBit
+                                ELSE DialingMode
+                                END
+                            WHEN @permissionValue = 0
+                            THEN
+                                CASE
+                                WHEN (DialingMode & @changeBit) = @changeBit
+                                THEN DialingMode ^ @changeBit
+                                ELSE DialingMode
+                                END
+                            END	
+                        ELSE DialingMode
+                        END
                     WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,'',''))
                 END
 
                 SET NOCOUNT OFF'
+	exec (@sql)
+
+    set @process = 'CW-5310 Alter Table para la columna DialingMode'
+	set @sql = '
+        ALTER TABLE ccUsers DROP CONSTRAINT DF_ccUsers_DialingMode
+
+        ALTER TABLE ccUsers
+        ALTER COLUMN DialingMode 
+        TINYINT NOT NULL 
+
+        ALTER TABLE ccUsers
+        ADD CONSTRAINT DF_ccUsers_DialingMode
+        DEFAULT 0 FOR DialingMode'
 	exec (@sql)
 
 

@@ -48,6 +48,12 @@ BEGIN
 
 	BEGIN TRY
 
+set @process = 'CW-5580 Menu detalle agentes cambio a licencia tipo 1'
+    set @sql = 'update ccMenus 
+set release=''4517765b05ed60dd03269f5ee41a18e4c127d9296149a3a6e076f310a261a4335b58f5dccbb784d329d9bef77519eeb4''
+where type=3 and menu_id=2080'
+    EXEC(@sql)
+
 	set @process = 'CW-5390 se quita el sp ccsp_GalateaAdminGetPermissions si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetPermissions'')
             begin

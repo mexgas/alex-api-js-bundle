@@ -781,7 +781,7 @@ end'
 
             declare @isRoot int;
 
-            if exists (Select Rol_id from ccUsers A join ccUsers_Roles B on A.User_id = B.User_id where A.User_id = @user_id and rol_id = 1) set @isRoot = 1 else set @isRoot = 0;
+            if exists (Select Rol_id from ccUsers A join ccUsers_Roles B on A.User_id = B.User_id where A.User_id = @user_id and rol_id = 7) set @isRoot = 1 else set @isRoot = 0;
             print @isRoot
 
             IF @isRoot = 1

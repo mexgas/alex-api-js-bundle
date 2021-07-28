@@ -788,7 +788,7 @@ end'
             BEGIN
                 Select 
                 User_id as AgentId, 
-                Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
+                Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
                 cast(dialMask & 1 as int) as AllowCellPhoneCalls,
                 cast( (dialMask & 2) /2 as int) as AllowLongDistanceCalls, 
                 cast((dialMask & 4) / 4 as int) as AllowLocalCalls,

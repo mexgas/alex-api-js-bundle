@@ -7378,6 +7378,15 @@ namespace MiddleWareReports {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Identificador de formato-concepto.
+        /// </summary>
+        public static string templateSectionId {
+            get {
+                return ResourceManager.GetString("templateSectionId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tiempo de foco.
         /// </summary>
         public static string tfocus {

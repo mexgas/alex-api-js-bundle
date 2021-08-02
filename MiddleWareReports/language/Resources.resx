@@ -2907,4 +2907,7 @@
   <data name="conceptos" xml:space="preserve">
     <value>Conceptos</value>
   </data>
+  <data name="templateSectionId" xml:space="preserve">
+    <value>Identificador de formato-concepto</value>
+  </data>
 </root>

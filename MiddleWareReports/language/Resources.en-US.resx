@@ -2901,4 +2901,7 @@
   <data name="unavailableTime" xml:space="preserve">
     <value>General unavailable time</value>
   </data>
+  <data name="templateSectionId" xml:space="preserve">
+    <value>Identificador de formato concepto</value>
+  </data>
 </root>

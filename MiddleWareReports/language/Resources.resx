@@ -2374,7 +2374,7 @@
     <value>Plantilla</value>
   </data>
   <data name="TemplateSection" xml:space="preserve">
-    <value>Formato</value>
+    <value>Formato concepto</value>
   </data>
   <data name="tfocus" xml:space="preserve">
     <value>Tiempo de foco</value>
@@ -2908,6 +2908,9 @@
     <value>Conceptos</value>
   </data>
   <data name="templateSectionId" xml:space="preserve">
-    <value>Identificador de formato-concepto</value>
+    <value>Identificador de formato concepto</value>
+  </data>
+  <data name="TemplateSectionIds" xml:space="preserve">
+    <value>Identificador de formato concepto</value>
   </data>
 </root>

@@ -13,7 +13,7 @@ set nocount on
 
 declare @new_chat_id int;
 
-if @OperationType not in (0,1,2,3,4,5,6,7)
+if @OperationType not in (0,1,2,3,4,5,6,7,8)
     raiserror('Invalid Operation Type', 18, 1)
 
 if @OperationType=0
@@ -211,6 +211,20 @@ if @OperationType=5
     return(0)
   end
 
- 
+ if @OperationType=8
+  begin
+    SELECT  convert(varchar(10),Fecha_Chat,108) HourChat,C.TipoMsgChat,
+    case TipoMsgChat when 4 then 'A'+cast(caw.IdGroup as varchar(10)) 
+    when 5 then 'W'+cast(caw.IdGroup as varchar(10)) 
+    else cast(c.User_id_Agt as varchar(10)) end as User_id_Agt, 
+    cast(C.User_id_Adm as varchar(10)) User_id_Adm,C.ChatMsg
+    FROM ccRIAChat_Log C 
+    left join ccChatLog_AreaWg caw on c.ChatID=caw.ChatID
+    WHERE 
+      User_id_Adm in (select case when isnull(@User_id_Adm,'0')='0' then User_id_Adm else value end from dbo.fn_RIASplitDelimited (@User_id_Adm, ','))
+     AND Fecha_Chat BETWEEN ISNULL(@Fecha_Chat_ini, '19000101 00:00')
+     AND ISNULL(@Fecha_Chat_fin, DATEADD(hh, 1, getdate()))
+     return(0)
+  end
 select 0
 set nocount off

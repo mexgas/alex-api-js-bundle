@@ -48,6 +48,19 @@ BEGIN
 
 	BEGIN TRY
 
+	set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+    set @sql = 'IF not exists
+(
+SELECT *
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE COLUMN_NAME = ''publicIp'' AND TABLE_NAME =''ccPosicion''
+)
+BEGIN
+  ALTER TABLE ccPosicion ADD publicIp VARCHAR(15)
+END'
+    EXEC(@sql)
+
+
     set @process = 'Historial Chat- se quita el sp ccsp_RIAABCChat si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAABCChat'')
             begin
@@ -570,18 +583,7 @@ END
            SET NOCOUNT ON;'
     EXEC(@sql)
 
-		  set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
-    set @sql = 'IF not exists
-(
-SELECT *
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE COLUMN_NAME = ''publicIp'' AND TABLE_NAME =''ccPosicion''
-)
-BEGIN
-  ALTER TABLE ccPosicion ADD publicIp VARCHAR(15)
-END'
-    EXEC(@sql)
-
+		  
 
     
 		/* End script release */

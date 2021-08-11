@@ -26,6 +26,23 @@ END
 '
 	EXEC (@sql)
 
+	SET @process = 'CW-5452 add TemplateSection Filter (filters) '
+	SET @sql = '	update Filters set name=''TemplateSection'', xmlParentNode=''TemplateSection'',xmlChildNode=''TemplateSection'' where type=15'
+	EXEC (@sql)
+
+	SET @process = 'CW-5452 Add new columns to RepAVRSSection'
+	SET @sql = 'if not exists (select * from sys.columns where name = ''TemplateSection'' and Object_ID = Object_ID(N''RepAVRSSection''))
+		begin
+		ALTER TABLE RepAVRSSection
+		ADD TemplateSection varchar(100);
+		END
+	if not exists (select * from sys.columns where name = ''templateSectionId'' and Object_ID = Object_ID(N''RepAVRSSection''))
+		begin
+		ALTER TABLE RepAVRSSection
+		ADD templateSectionId int;
+		END'
+	EXEC (@sql)
+
 	SET @process = 'CW-5452 create new table RIA_FORMATOCONC'
 	SET @sql = 'IF NOT EXISTS (SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
            WHERE TABLE_NAME = N''RIA_FORMATOCONCEPTO'')
@@ -87,6 +104,23 @@ columns=''Template|Section|question|count(avgDisposition):Dispositions|avg(avgDi
 WHERE id=8064'
 	EXEC (@sql)
 
+
+		SET @process = 'CW-5452 DetailReports templateSectionId '
+		SET @sql = 'update DetailReports set dbColumnFilter = ''templateSectionId'' where id=8063'
+		EXEC (@sql)
+
+		SET @process = 'CW-5452 delete disposition2'
+		SET @sql = 'if exists (select * from sys.columns where name=''disposition2'' and object_id=object_id(''RepAVRSQuestionChat''))
+		begin
+			alter table RepAVRSQuestionChat drop column disposition2
+		end'
+		EXEC (@sql)
+
+		SET @process = 'CW-5452 update DetailReports 8082'
+		SET @sql = 'update DetailReports set showColumnsDetail = ''date|userId|user|agentName|Template|question|avgDisposition|inboundId|inbound'' where id=8082'
+		EXEC (@sql)
+
+
 	SET @process = 'CW-5452 Report Filters Catalog'
 	SET @sql = 'if not exists(select * from Filters  where id in(31,32)) begin
 	insert into Filters values(31,''concepto'',31,''Conceptos'',''Concepto'')
@@ -107,14 +141,11 @@ update ReportsFilters set reportName=''Section'' where id=8064
 	if not exists(select * from ReportsFilters  where id=8063 and filterName in(''templateSection''))
 	begin
 		insert into ReportsFilters values(''Section'',''TemplateSection'',8063)
-	END
-
-'
+	END'
 	EXEC (@sql)
 
-
-	SET @process = 'CW-5452 SP ccspRepAVRSSection'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
+SET @process = 'CW-5452 SP ccspRepAVRSSection'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAVRSSection]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -209,7 +240,7 @@ SET @process = 'CW-5452 SP ccspRepCatalogos'
 		if @userId <> 0 begin
 
 			insert into @tablatemp
-			select distinct caesp.IdCampEsp,'''' as description  from ccUserView us
+			select distinct caesp.IdCampEsp,'' '' as description  from ccUserView us
 			inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
 			inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=1
 			where us.[User_id] = @userId
@@ -572,28 +603,6 @@ from RIA_RESULTADOSFORMA r
 END'
 	EXEC (@sql)
 
-	SET @process = 'CW-5452 DetailReports templateSectionId '
-	SET @sql = 'update DetailReports set dbColumnFilter = ''templateSectionId'' where id=8063'
-	EXEC (@sql)
-
-	SET @process = 'CW-5452 add TemplateSection Filter (filters) '
-	SET @sql = '	update Filters set name=''TemplateSection'', xmlParentNode=''TemplateSection'',xmlChildNode=''TemplateSection'' where type=15'
-	EXEC (@sql)
-
-	SET @process = 'CW-5452 Add new columns to RepAVRSSection'
-	SET @sql = 'if not exists (select * from sys.columns where name = ''TemplateSection'' and Object_ID = Object_ID(N''RepAVRSSection''))
-    begin
-		ALTER TABLE RepAVRSSection
-		ADD TemplateSection varchar(100);
-    END
-if not exists (select * from sys.columns where name = ''templateSectionId'' and Object_ID = Object_ID(N''RepAVRSSection''))
-    begin
-		ALTER TABLE RepAVRSSection
-		ADD templateSectionId int;
-    END'
-	EXEC (@sql)
-
-
 SET @process='CW-5452 MasterSP'
 set @sql = 'ALTER procedure [dbo].[ReportsMasterProcess]
 
@@ -921,19 +930,6 @@ WHERE f.fecha_calif >=@from and f.fecha_calif < @to)
 END
 '
 EXEC (@sql)
-
-SET @process = 'CW-5452 delete disposition2'
-SET @sql = 'if exists (select * from sys.columns where name=''disposition2'' and object_id=object_id(''RepAVRSQuestionChat''))
-begin
-	alter table RepAVRSQuestionChat drop column disposition2
-end'
-EXEC (@sql)
-
-SET @process = 'CW-5452 update DetailReports 8082'
-SET @sql = 'update DetailReports set showColumnsDetail = ''date|userId|user|agentName|Template|question|avgDisposition|inboundId|inbound'' where id=8082'
-EXEC (@sql)
-
-
 		IF @actualVersion = @version - 1
 			EXEC ccsp_getVersion 'BD', @version
 

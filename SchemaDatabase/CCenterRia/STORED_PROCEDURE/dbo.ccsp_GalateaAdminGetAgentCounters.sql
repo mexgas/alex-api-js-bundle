@@ -25,11 +25,13 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
              END;
              IF @type = 2
                  BEGIN
-                     SELECT CAST(User_id AS INT) Id,
-                  Login Username, 
-                            Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno Name
-                     FROM ccUsers
-                     WHERE User_id = @agent_id;
+                     SELECT CAST(u.User_id AS INT) Id,
+							Login Username, 
+                            Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno Name,
+							CASE WHEN p.publicIp is null or p.publicIp = '' then '000.000.000.000' else p.publicIp end IP
+                     FROM ccUsers u
+					 LEFT JOIN ccPosicion p on p.user_id = @agent_id
+                     WHERE u.User_id = @agent_id;
              END;
              IF @type = 3 --Agents by supervisor and WG
                  BEGIN
@@ -120,4 +122,13 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
               AND us.TipoUser_id = 1
            END
 
+		   IF @type = 9 -- GET AGENT IP
+		   BEGIN
+				SELECT publicIp FROM ccPosicion where user_id = @agent_id
+		   END
+
+		    IF @type = 10 -- GET ONLINE AGENTS IP
+		   BEGIN
+				SELECT CAST ( user_id AS INT )    AgentId,  publicIp Ip FROM ccPosicion where user_id <> 0
+		   END
            SET NOCOUNT ON;

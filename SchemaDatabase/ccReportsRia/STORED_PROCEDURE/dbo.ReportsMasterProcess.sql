@@ -1,4 +1,4 @@
-CREATE procedure [dbo].[ReportsMasterProcess] 
+CREATE procedure [dbo].[ReportsMasterProcess]
 
 			as
 
@@ -31,8 +31,8 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 
 
 			print '---Kill Process Replication Merge Agent----'
-			while exists(SELECT	s.session_id AS SessionID		
-				from [master].sys.dm_exec_sessions  as s 
+			while exists(SELECT	s.session_id AS SessionID
+				from [master].sys.dm_exec_sessions  as s
 				LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
 				where s.session_id in(
 				select distinct r.blocking_session_id
@@ -40,13 +40,13 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 				INNER JOIN [master].sys.dm_exec_requests AS r ON r.session_id = s.session_id
 				WHERE    r.session_id != @@SPID and  r.blocking_session_id   <>0
 				)
-				and s.[program_name] like '%Replication Merge Agent%'	
-				and DB_NAME(p.dbid)='CCReportsRIA'	
+				and s.[program_name] like '%Replication Merge Agent%'
+				and DB_NAME(p.dbid)='CCReportsRIA'
 			) begin
 				insert into @sessionKIll(id,sessionId)
-	
-				SELECT	ROW_NUMBER() OVER(ORDER BY s.session_id) AS Row#, s.session_id AS SessionID		
-				from [master].sys.dm_exec_sessions  as s 
+
+				SELECT	ROW_NUMBER() OVER(ORDER BY s.session_id) AS Row#, s.session_id AS SessionID
+				from [master].sys.dm_exec_sessions  as s
 				LEFT OUTER JOIN [master].sys.sysprocesses p	ON s.session_id = p.spid
 				where s.session_id in(
 				select distinct r.blocking_session_id
@@ -80,19 +80,19 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 			;
 
 			with jobNotStart as(
-			select distinct A.[name] from msdb.dbo.sysjobs A 
-				inner join PublicationLowLoad B on A.[name] like '%'+B.namePublication+'%'		
-				where A.[name] like '%CCReportsRIA- 0%' and A.[name] like '%CCenterRia%'	
+			select distinct A.[name] from msdb.dbo.sysjobs A
+				inner join PublicationLowLoad B on A.[name] like '%'+B.namePublication+'%'
+				where A.[name] like '%CCReportsRIA- 0%' and A.[name] like '%CCenterRia%'
 			--union all
-			--select distinct A.[name] from msdb.dbo.sysjobs A 
+			--select distinct A.[name] from msdb.dbo.sysjobs A
 			--	inner join PublicationHighLoad B on A.[name] like '%'+B.namePublication+'%'
 			--	where A.[name] like '%CCReportsRIA- 0%' and A.[name] like '%CCenterRia%'
 			)
 
 			insert into #replications
-			select distinct A.[name],0 from msdb.dbo.sysjobs A 
-				where A.[name] like '%CCReportsRIA- 0%' and A.[name] like '%CCenterRia%'	
-				and A.name not in(select name from jobNotStart)	
+			select distinct A.[name],0 from msdb.dbo.sysjobs A
+				where A.[name] like '%CCReportsRIA- 0%' and A.[name] like '%CCenterRia%'
+				and A.name not in(select name from jobNotStart)
 
 			insert into #replications
 			select [name], 0 as flag from msdb.dbo.sysjobs where [name] like '%CCReportsRIA- 0%' and [name] like '%CCRecorderRIA%' order by [name]
@@ -106,24 +106,24 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 					from #replications with(nolock)
 					where flag = 0
 				set rowcount 0
-	
+
 				if (
 					SELECT top 1 sjh.run_status
-				  FROM msdb.dbo.sysjobhistory                sjh  
+				  FROM msdb.dbo.sysjobhistory                sjh
 				  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
-				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)
 				  WHERE
 				  j.name = @replicationName
-				  order by sjh.instance_id desc		
-				) <>4 
+				  order by sjh.instance_id desc
+				) <>4
 				or not exists(SELECT top 1 sjh.run_status
-				  FROM msdb.dbo.sysjobhistory                sjh  
+				  FROM msdb.dbo.sysjobhistory                sjh
 				  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
-				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)
 				  WHERE
 				  j.name = @replicationName
 				  order by sjh.instance_id desc	)
-	
+
 				begin
 					exec msdb.dbo.sp_start_job @job_name = @replicationName
 					print 'sp_start_job '+@replicationName
@@ -134,23 +134,23 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 
 				update #replications with(rowlock) 	set flag = 1	where [name] = @replicationName
 
-				WAITFOR DELAY '00:00:03'		
+				WAITFOR DELAY '00:00:03'
 
 				while (
 					SELECT top 1 sjh.run_status
-				  FROM msdb.dbo.sysjobhistory                sjh  
+				  FROM msdb.dbo.sysjobhistory                sjh
 				  inner join msdb.dbo.sysjobs j on j.job_id=sjh.job_id
-				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)  
+				  inner join msdb.dbo.sysjobs_view sj  on  (sj.job_id = sjh.job_id)
 				  WHERE
 				  j.name = @replicationName
-				  order by sjh.instance_id desc		
+				  order by sjh.instance_id desc
 				) = 4
-				begin	
+				begin
 					WAITFOR DELAY '00:00:01'
 					print 'In Progress Job in ReplicationName: '+@replicationName
 					if datediff(ss,@dateStart,getdate())>((@scheduleTime*60)/@count) begin
 						print 'Stop Job in ReplicationName: '+@replicationName
-						break	
+						break
 					end
 				end
 				print 'Progress End Job in ReplicationName: '+@replicationName
@@ -186,12 +186,25 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 			while @i<=@count
 			begin
 				select @name = nameArticle  from @tableTrigger where id=@i
-				set @sql ='DROP TRIGGER '+ @name 
+				set @sql ='DROP TRIGGER '+ @name
 				exec (@sql)
 				set @i = @i+1
 			end
 
 			print '--------------------------- DROP TRIGGER Tables ---------------------------'
+
+insert into RIA_FORMATOCONCEPTO
+SELECT
+	t.id_formato AS 'ID Formato', c.id_concepto as 'id concepto'
+	FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato, nombre, MAX(version) as version
+									FROM RIA_FORMATOS
+									WHERE activo = 1
+									group by id_formato, nombre) as t
+	ON f.id_formato = t.id_formato AND f.version = t.version inner join RIA_CONCEPTOS c
+	on t.id_formato = c.id_formato and t.version = c.version
+
+left join RIA_FORMATOCONCEPTO as a on a.templateId = t.id_formato  and a.sectionId = c.id_concepto
+where a.id is null
 
 			print '---#reinitmergepullsubscription----'
 			declare @lastTenMinuteFirst datetime
@@ -221,7 +234,7 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 			on (mh.agent_id = ma.id)
 			left outer join master.sys.servers s
 			on (ma.publisher_id = s.server_id)
-			where 
+			where
 			(mh.comments like '%You must reinitialize the subscription (without upload)%' or
 			mh.comments like  '%The Merge Agent failed because the schema of the article at the Publisher does not match the schema of the article at the Subscriber%')
 			and mh.time >= @lastTenMinuteFirst
@@ -234,7 +247,7 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 					from #reinitmergepullsubscription
 					where [status] = 0
 					set rowcount 0
-		
+
 					exec sp_reinitmergepullsubscription  @publisher = @publisher_reinit,    @puSblisher_db = @publisher_db_reinit,    @publication = @publication_reinit,    @upload_first = @upload_first_reinit
 
 					update #reinitmergepullsubscription
@@ -248,5 +261,5 @@ CREATE procedure [dbo].[ReportsMasterProcess]
 				set @scheduleTime=@scheduleTime+1
 				if  @scheduleTime < 59 begin
 					EXEC msdb.dbo.sp_update_schedule @schedule_id=@schedule_id,@freq_subday_interval = @scheduleTime
-				end	
+				end
 			end

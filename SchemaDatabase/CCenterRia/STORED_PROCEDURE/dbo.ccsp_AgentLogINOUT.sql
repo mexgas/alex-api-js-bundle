@@ -1,5 +1,6 @@
 CREATE PROCEDURE [dbo].[ccsp_AgentLogINOUT] @UserID SMALLINT, @Extension VARCHAR(7) = NULL, @Computer VARCHAR(20) = NULL, @TipoMov TINYINT, -- 0= LogOut,  1=LogIN,	3=Consulta
-	@fecha DATETIME = NULL
+	@fecha DATETIME = NULL,
+	@ipPublica VARCHAR(15) = NULL
 AS
 SET NOCOUNT ON
 
@@ -20,7 +21,7 @@ BEGIN
 	VALUES (@UserID, 0, 0, @fecha, 0, 0, 1, 0)
 
 	UPDATE c
-	SET User_id = @UserID
+	SET User_id = @UserID, publicIp = @ipPublica
 	FROM ccPosicion c WITH (INDEX (IX_ccPosicion))
 	WHERE Computer = @Computer
 

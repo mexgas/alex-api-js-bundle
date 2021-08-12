@@ -48,6 +48,19 @@ BEGIN
 
 	BEGIN TRY
 
+	set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+    set @sql = 'IF not exists
+(
+SELECT *
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE COLUMN_NAME = ''publicIp'' AND TABLE_NAME =''ccPosicion''
+)
+BEGIN
+  ALTER TABLE ccPosicion ADD publicIp VARCHAR(15)
+END'
+    EXEC(@sql)
+
+
     set @process = 'Historial Chat- se quita el sp ccsp_RIAABCChat si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAABCChat'')
             begin
@@ -287,6 +300,290 @@ if @OperationType=5
 select 0
 set nocount off'
     EXEC(@sql)
+
+	  set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AgentLogINOUT'')
+            begin
+          DROP PROCEDURE ccsp_AgentLogINOUT;
+            end'
+    EXEC(@sql)
+
+	  set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+    set @sql = '
+
+CREATE PROCEDURE [dbo].[ccsp_AgentLogINOUT] @UserID SMALLINT, @Extension VARCHAR(7) = NULL, @Computer VARCHAR(20) = NULL, @TipoMov TINYINT, -- 0= LogOut,  1=LogIN,	3=Consulta
+	@fecha DATETIME = NULL,
+	@ipPublica VARCHAR(15) = NULL
+AS
+SET NOCOUNT ON
+
+IF @fecha IS NULL
+	SET @fecha = getdate()
+
+DECLARE @hourlogin VARCHAR(8)
+DECLARE @sessionsecs INT
+DECLARE @sessiontime VARCHAR(8)
+DECLARE @fecha_ini DATETIME
+
+IF @TipoMov = 1
+BEGIN
+	INSERT ccLogLogIn (User_id, Extension, TipoMov, fecha)
+	VALUES (@UserID, @Extension, 1, @fecha)
+
+	INSERT ccLogAgentesDia (User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus, callID)
+	VALUES (@UserID, 0, 0, @fecha, 0, 0, 1, 0)
+
+	UPDATE c
+	SET User_id = @UserID, publicIp = @ipPublica
+	FROM ccPosicion c WITH (INDEX (IX_ccPosicion))
+	WHERE Computer = @Computer
+
+	UPDATE c
+	SET user_id = 0
+	FROM ccPosicion c WITH (INDEX (IX_ccPosicion_2))
+	WHERE Computer <> @Computer AND user_id = @UserId
+
+	UPDATE ccUsers
+	SET TipoStatusAge_id = 3, LastLoginAttempt = @fecha
+	WHERE User_id = @UserID
+
+	IF EXISTS (
+			SELECT valor
+			FROM ccSettings
+			WHERE tipo = ''AGT'' AND STATUS = ''1'' AND setting_id = ''53'' AND valor = 2
+			)
+	BEGIN
+		IF NOT EXISTS (
+				SELECT axLic_Desc
+				FROM axLicG729_Data
+				WHERE axLic_Status = 1 AND pos_id IN (
+						SELECT pos_id
+						FROM ccPosicion
+						WHERE Computer = @Computer OR user_id = @Userid
+						)
+				)
+		BEGIN
+			RAISERROR (''Error. Without License'', 18, 1)
+
+			RETURN (0)
+		END
+
+		UPDATE axLicG729_Data
+		SET axLic_Status = 2
+		WHERE axLic_Status = 1 AND pos_id IN (
+				SELECT pos_id
+				FROM ccPosicion
+				WHERE Computer = @Computer OR user_id = @Userid
+				)
+
+		SELECT ''0'' CPLic
+
+		RETURN (0)
+	END
+
+	RETURN (0)
+END
+
+IF @TipoMov = 0
+BEGIN
+	INSERT ccLogLogIn (User_id, Extension, TipoMov, fecha)
+	VALUES (@UserID, @Extension, 0, @fecha)
+
+	UPDATE c
+	SET User_id = 0
+	FROM ccPosicion c WITH (INDEX (IX_ccPosicion_2))
+	WHERE Computer = @Computer OR user_id = @Userid
+
+	UPDATE ccUsers
+	SET TipoStatusAge_id = 0
+	WHERE User_id = @UserID
+
+	IF EXISTS (
+			SELECT valor
+			FROM ccSettings
+			WHERE tipo = ''AGT'' AND STATUS = ''1'' AND setting_id = 53 AND valor = ''2''
+			)
+	BEGIN
+		UPDATE axLicG729_Data
+		SET axLic_Status = 0, pos_id = NULL, fecha_log = NULL
+		WHERE pos_id IN (
+				SELECT pos_id
+				FROM ccPosicion
+				WHERE Computer = @Computer OR user_id = @Userid
+				)
+	END
+
+	RETURN (0)
+END
+
+IF @TipoMov = 3
+BEGIN
+	SELECT @fecha_ini = convert(DATETIME, convert(VARCHAR(11), getdate()))
+
+	SELECT @hourlogin = convert(VARCHAR(8), isnull(min(fecha), getdate()), 114)
+	FROM ccLogLogin
+	WHERE TipoMov = 1 AND user_id = @UserID AND fecha >= @fecha_ini
+
+	SELECT @sessionsecs = isnull(CASE WHEN sum(convert(INT, DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14))) * (1 - 2 * tipomov)) > 0 THEN sum(convert(INT, DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14))) * (1 - 2 * tipomov)) ELSE sum(convert(INT, DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14))) * (1 - 2 * tipomov)) + convert(INT, DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14))) END, 0)
+	FROM ccLogLogin
+	WHERE user_id = @UserID AND fecha > dateadd(hh, - 10, getdate())
+
+	SELECT @sessiontime = RIGHT(''0'' + CONVERT(VARCHAR(6), @sessionsecs / 3600), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), (@sessionsecs % 3600) / 60), 2) + '':'' + RIGHT(''0'' + CONVERT(VARCHAR(2), @sessionsecs % 60), 2)
+
+	SELECT ''HourLogin'' = @hourlogin, ''SessionTime'' = @sessiontime, ''SessionSecs'' = @sessionsecs
+
+	RETURN (0)
+END
+'
+    EXEC(@sql)
+
+	
+	  set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetAgentCounters'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminGetAgentCounters;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5566 Obtener IP para monitoreo de agentes '
+    set @sql = '
+       CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
+                                                            @sup_id AS   INT = 0, 
+                                                            @agent_id AS INT = 0, 
+                                                            @WG AS       INT = 0,
+                                  @campId AS INT = 0,
+                                  @CampType AS SMALLINT = 1
+            AS
+             SET NOCOUNT ON;
+             IF @type = 1
+                 BEGIN
+                     WITH TableUserAgent(userId)
+                          AS (SELECT DISTINCT 
+                                   wgAgt.User_id  AS Id --,usr.login 
+                              FROM ccriaworkgroupusers wgAdmin
+                                   INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
+                                   INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
+                                                             AND usr.TipoUser_id = 1
+                              WHERE wgAdmin.User_id = @sup_id)
+                          SELECT CAST(a.User_id AS INT) Id, 
+                                 a.login AS Username, 
+                                 a.Nombres + '' '' + a.ApellidoPaterno + '' '' + a.ApellidoMaterno AS Name
+                          FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
+                               INNER JOIN TableUserAgent b ON a.User_id = b.userId
+                          ORDER BY a.Login ASC;
+             END;
+             IF @type = 2
+                 BEGIN
+                     SELECT CAST(u.User_id AS INT) Id,
+							Login Username, 
+                            Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno Name,
+							CASE WHEN p.publicIp is null or p.publicIp = '''' then ''000.000.000.000'' else p.publicIp end IP
+                     FROM ccUsers u
+					 LEFT JOIN ccPosicion p on p.user_id = @agent_id
+                     WHERE u.User_id = @agent_id;
+             END;
+             IF @type = 3 --Agents by supervisor and WG
+                 BEGIN
+                     DECLARE @table2 TABLE
+                     (userId INT
+                      PRIMARY KEY NOT NULL
+                     );
+                     INSERT INTO @table2
+                            SELECT DISTINCT 
+                                   wg.User_id
+                            FROM ccRIAWorkGroupUsers wg
+                                 LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                            WHERE us.TipoUser_id = 1
+                                  AND wg.IDWG IN
+                            (
+                                SELECT IDWG
+                                FROM ccRIAWorkGroupUsers
+                                WHERE User_id = @sup_id
+                                      AND IDWG <> @WG
+                            );
+                     SELECT CAST(B.User_id AS int) AS Id
+                     FROM @table2 A
+                          RIGHT JOIN
+                     (
+                         SELECT DISTINCT 
+                                wg.User_id
+                         FROM ccRIAWorkGroupUsers wg
+                              LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                         WHERE wg.IDWG = @WG
+                               AND us.TipoUser_id = 1
+                     ) B ON A.userId = B.User_id
+                     WHERE A.userId IS NULL;
+             END;
+
+           IF @type = 4 --Agents IDs by WG
+             BEGIN
+            SELECT  CAST(wg.User_id AS INT) Id  
+            FROM ccRIAWorkGroupUsers wg
+            JOIN CCUsers u on u.user_id = wg.user_id AND u.TipoUser_id = 1
+            where IDWG = @WG
+             END;
+
+           IF @type = 5 --Agents IDs by Campaign
+             BEGIN
+            SELECT Distinct(CAST(U.User_id AS INT)) Id FROM ccRIACampEspWG camp
+            JOIN ccRIAWorkGroupUsers wg ON camp.IDWG = wg.IDWG
+            JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
+            WHERE IdCampEsp = @campId AND TIPO = @CampType
+             END;
+
+            IF @type = 6 -- Get Agent current state
+           BEGIN
+            WITH UserMaxFecha(User_id,fecha) as(
+              SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id
+            )
+
+            SELECT CASE WHEN CurrentState.currentStatus is null or  CurrentState.currentStatus<0 
+                  then 0 else CAST(CurrentState.currentStatus as int) end CurrentState
+            from ccUsers u
+            left join 
+            (
+            select A.User_id,B.currentStatus from UserMaxFecha A 
+            inner join ccLogAgentesDia  B on A.User_id=B.User_id and A.fecha=B.fecha
+            ) CurrentState on u.User_id=CurrentState.User_id
+            where u.TipoUser_id=1 and u.User_id = @agent_id
+           END
+
+           IF @type = 7 -- Get superuser id''s except root
+           BEGIN
+            declare @superuserId as int
+            set @superuserId = (select Rol_id from ccRoles where Level = 7) -- obtenemos el id del rol superusuario
+
+            select CAST(cr.User_id AS INT) User_id 
+            from ccUsers_Roles cr
+            where Rol_id = @superuserId
+            and cr.User_id not in (1) 
+           END
+
+           IF @type = 8 -- Get all Agent''s ID, Login and Full Names related to a workgroup
+           BEGIN
+            SELECT DISTINCT 
+              Convert(INT,wg.User_id) Id,
+              us.Login Username,
+              us.Nombres + '' '' + us.ApellidoPaterno + '' '' + us.ApellidoMaterno Name
+            FROM ccRIAWorkGroupUsers wg
+              LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+            WHERE wg.IDWG = @WG
+              AND us.TipoUser_id = 1
+           END
+
+		   IF @type = 9 -- GET AGENT IP
+		   BEGIN
+				SELECT publicIp FROM ccPosicion where user_id = @agent_id
+		   END
+
+		    IF @type = 10 -- GET ONLINE AGENTS IP
+		   BEGIN
+				SELECT CAST ( user_id AS INT )    AgentId,  publicIp Ip FROM ccPosicion where user_id <> 0
+		   END
+           SET NOCOUNT ON;'
+    EXEC(@sql)
+
+		  
 
     
 		/* End script release */

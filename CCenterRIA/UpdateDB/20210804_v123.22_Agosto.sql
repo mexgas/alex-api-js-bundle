@@ -1043,6 +1043,10 @@ Para posiciones ip, by ODC
     SELECT @loginOK AS LoginOK,@pswdOK AS PswdOK,@compuOK AS CompuOK,@extenOK AS ExtenOK,@extension AS Extension,@userID AS
     UserID,@nombre AS Nombre,@cCServer AS CCServer,@teclaOK AS TeclaOK,@tipoConexion AS TipoConexion,@ipExtension AS
     ipExtension,@xferAgents AS XferAgents,@crmxActive AS CRMx,@passSecure AS passSecure,@dialingMode AS dialingMode'
+    EXEC(@sql)
+
+    set @process = 'Se actualiza valor default del setting 226'
+    set @sql = 'update ccsettings set valor=60000 where setting_id=''226'''
     EXEC(@sql)    
 
     

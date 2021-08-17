@@ -1,91 +1,121 @@
-CREATE PROCEDURE [dbo].[ccsp_RIAChecaLogin]
-@Login varchar(40),
-@Password varchar(40),
-@Computer varchar(20),
-@PasswordLwC varchar(40) = null
+CREATE PROCEDURE dbo.ccsp_RIAChecaLogin
+    @login             VARCHAR(40)
+,   @password          VARCHAR(40)
+,   @computer          VARCHAR(20)
+,   @passwordLwC       VARCHAR(40)=NULL
 AS
-declare @LoginOK tinyint, @PswdOK tinyint, @CompuOK tinyint, @ExtenOK tinyint, @TeclaOK tinyint, @XferAgents tinyint
-declare @Nombre varchar(60), @Extension varchar(15), @UserID smallint, @CCServer varchar(20), @dialingMode int
+    DECLARE @loginOK TINYINT,@pswdOK TINYINT,@compuOK TINYINT,@extenOK TINYINT,@teclaOK TINYINT,@xferAgents TINYINT
 
---Para posiciones ip, by ODC
-declare @ext_id int, @pos_id int, @isIP bit, @ipExtension varchar(15)
+    DECLARE @nombre VARCHAR(60),@extension VARCHAR(15),@userID SMALLINT,@cCServer VARCHAR(20),@dialingMode INT
 
--- Para live connected
--- Tipo de conexion: 0 normal, 1 liveconnected
-declare @tipoConexion smallint
+    DECLARE @passwordDb VARCHAR(33)
 
-SELECT @LoginOK=0, @PswdOK=0, @CompuOK=0, @ExtenOK=0, @TeclaOK=0, @XferAgents=0,
- @Extension=' ', @UserID=' ', @Nombre=' ', @tipoConexion = 0, @ipExtension='', @isIP=0
-SELECT @CCServer=valor FROM ccSettings WHERE setting_id=7
+    DECLARE @crmxActive TINYINT
 
-IF not exists(select Login from ccUsers Where Login=@Login and status>0 and tipoUser_id=1)
-  GOTO Mostrar
-else
-  set @LoginOK=1
+    DECLARE @passSecure INT
 
-IF not exists(select Login from ccUsers Where Login = @Login
- AND (Password=@Password OR Password = dbo.md5(@password) OR dbo.md5(Password)=@Password
- or Password=@PasswordLwC OR Password = dbo.md5(@PasswordLwC) OR dbo.md5(Password)=@PasswordLwC)
- and status > 0 and tipoUser_id = 1)
-  GOTO Mostrar
-else
-  set @PswdOK=1
+/*************************
+Para posiciones ip, by ODC
+*************************/
 
--- Se actualiza a Lower Case
---update ccUsers with(rowlock) set Password=isnull(@Password, Password) where Login=@Login and status>0 and tipoUser_id=1
+    DECLARE @ext_id INT,@pos_id INT,@isIP BIT,@ipExtension VARCHAR(15)
 
-if not exists (select Computer from ccPosicion Where Status=1 and Computer=@Computer)
-  insert ccposicion (computer, ext_id) select @Computer, 0
+    DECLARE @tipoConexion SMALLINT
 
-set @CompuOK = 1
+/***************************************************************
+ Para live connected Tipo de conexion: 0 normal, 1 liveconnected
+***************************************************************/
 
-if not exists(select Computer from ccPosicion P join ccMonitorExt M on P.ext_id= M.ext_id
- Where p.Status=1 and M.Status=1 and Computer=@Computer)
-  GOTO Mostrar
-else
-  set @ExtenOK=1
+    SELECT @loginOK=0,@pswdOK=0,@compuOK=0,@extenOK=0,@teclaOK=0,@xferAgents=0,@extension=' ',@userID=0,@nombre=' ',
+    @tipoConexion=0,@ipExtension='',@isIP=0,@cCServer='127.0.0.1',@dialingMode=0,@crmxActive=0,@passSecure=0
 
-select @Extension=Extension, @ext_id=p.ext_id, @pos_id=p.pos_id, @tipoConexion=p.tipoConexion, @isIP=isIP
-from ccPosicion P join  ccMonitorExt M on P.ext_id= M.ext_id
-Where Computer = @Computer
+    SELECT @userID=User_id,@passwordDb=Password
+    FROM ccUsers WITH(NOLOCK)
+    WHERE Login = @login AND STATUS > 0 AND tipoUser_id = 1
 
-select @TeclaOK=count(*) from ccTeclaExtensionPuerto T join ccMonitorExt M on T.ext_id=M.ext_id where M.Extension=@Extension
+    IF @userID > 0
+    SET @loginOK=1
 
-select @UserID=user_id, @Nombre=Nombres + ' ' + isnull(ApellidoPaterno,'') + ' ' +isnull(ApellidoMaterno,''), @XferAgents=XferAgents, @dialingMode = DialingMode
-from ccUsers Where Login = @Login AND TipoUser_id=1 AND status = 1
+    IF @loginOK = 1 AND (@passwordDb = @password OR @passwordDb = dbo.md5(@password) OR dbo.md5(@passwordDb) = @password OR
+    @passwordDb = @passwordLwC OR @passwordDb = dbo.md5(@passwordLwC) OR dbo.md5(@passwordDb) = @passwordLwC)
+    SET @pswdOK=1
 
-Mostrar:
---Para posiciones ip, by ODC
--- No verifica ccTeclaExtensionPuerto, @TeclaOK =1
--- Regresa un etension 'virtual'.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
-IF @ext_id=0
- BEGIN
-  select @TeclaOK =1, @Extension=cast(@pos_id * -1 as varchar(15))
- END
+    IF @pswdOK = 1 AND NOT EXISTS
+                            (
+                               SELECT Computer
+                               FROM ccPosicion WITH(NOLOCK)
+                               WHERE STATUS = '1' AND Computer = @computer
+                            )
+    INSERT INTO ccposicion(computer,ext_id,user_id,IP)
+    VALUES(@computer,0,@userID,@computer)
 
----Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
-IF(@ext_id > 0  and @isIP=1)
- BEGIN
-  select @TeclaOK =1, @ipExtension = @Extension, @Extension = cast( @pos_id * -1 as varchar(15))
- END
------------
+    SET @compuOK=1
 
-IF @tipoConexion = 1
-  select @TeclaOK =1
+    IF @pswdOK = 1
+    BEGIN
 
---  CRMx
-DECLARE @crmxActive TINYINT
-SET @crmxActive = 0
-IF (SELECT COUNT(setting_id) FROM ccsettings WHERE setting_id = 168) = 1
-  BEGIN
-    SELECT @crmxActive = valor FROM ccsettings WHERE setting_id = 168
-  END
+        IF EXISTS
+               (
+                  SELECT Computer
+                  FROM ccPosicion AS P
+                  JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+                  WHERE p.STATUS = '1' AND M.STATUS = '1' AND Computer = @computer
+               )
+        SET @extenOK=1
 
+        SELECT @extension=Extension,@ext_id=p.ext_id,@pos_id=p.pos_id,@tipoConexion=p.tipoConexion,@isIP=isIP
+        FROM ccPosicion AS P
+        INNER JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+        WHERE Computer = @computer
 
-declare @passSecure int
-select @passSecure= valor from ccSettings where setting_id=207
+        SELECT @teclaOK=COUNT(*)
+        FROM ccTeclaExtensionPuerto AS T
+        INNER JOIN ccMonitorExt AS M ON T.ext_id = M.ext_id
+        WHERE M.Extension = @extension
 
+        SELECT @nombre=Nombres + ' ' + ISNULL(ApellidoPaterno,'') + ' ' + ISNULL(ApellidoMaterno,''),@xferAgents=XferAgents,
+        @dialingMode=DialingMode
+        FROM ccUsers
+        WHERE User_id = @userID
 
-SELECT @LoginOK as [LoginOK], @PswdOK as [PswdOK], @CompuOK as [CompuOK], @ExtenOK as [ExtenOK], @Extension as [Extension],
-@UserID as [UserID], @Nombre as [Nombre], @CCServer as [CCServer], @TeclaOK as TeclaOK, @tipoConexion as TipoConexion, @ipExtension as ipExtension,
-@XferAgents as XferAgents, @crmxActive as [CRMx], @passSecure as [passSecure], @dialingMode  as dialingMode
+/******************************************************************************************
+Para posiciones ip, by ODC
+ No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+ Regresa un extension 'virtual'.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+******************************************************************************************/
+
+        IF @ext_id = 0
+        BEGIN
+           SELECT @teclaOK=1,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+/*****************************************************************************************
+-Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+*****************************************************************************************/
+
+        ELSE
+        IF @ext_id > 0 AND @isIP = 1
+        BEGIN
+           SELECT @teclaOK=1,@ipExtension=@extension,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+        IF @tipoConexion = 1
+        SET @teclaOK=1
+
+        SELECT @cCServer=valor
+        FROM ccSettings
+        WHERE setting_id = 7
+
+        SELECT @crmxActive=valor
+        FROM ccsettings
+        WHERE setting_id = 168
+
+        SELECT @passSecure=valor
+        FROM ccSettings
+        WHERE setting_id = 207
+
+    END
+
+    SELECT @loginOK AS LoginOK,@pswdOK AS PswdOK,@compuOK AS CompuOK,@extenOK AS ExtenOK,@extension AS Extension,@userID AS
+    UserID,@nombre AS Nombre,@cCServer AS CCServer,@teclaOK AS TeclaOK,@tipoConexion AS TipoConexion,@ipExtension AS
+    ipExtension,@xferAgents AS XferAgents,@crmxActive AS CRMx,@passSecure AS passSecure,@dialingMode AS dialingMode

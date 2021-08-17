@@ -438,7 +438,7 @@ END
     EXEC(@sql)
 
 	
-	  set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
+	set @process = 'CW-5566 Obtener IP para monitoreo de agentes'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetAgentCounters'')
             begin
           DROP PROCEDURE ccsp_GalateaAdminGetAgentCounters;
@@ -447,143 +447,603 @@ END
 
 	set @process = 'CW-5566 Obtener IP para monitoreo de agentes '
     set @sql = '
-       CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
-                                                            @sup_id AS   INT = 0, 
-                                                            @agent_id AS INT = 0, 
-                                                            @WG AS       INT = 0,
-                                  @campId AS INT = 0,
-                                  @CampType AS SMALLINT = 1
-            AS
-             SET NOCOUNT ON;
-             IF @type = 1
-                 BEGIN
-                     WITH TableUserAgent(userId)
-                          AS (SELECT DISTINCT 
-                                   wgAgt.User_id  AS Id --,usr.login 
-                              FROM ccriaworkgroupusers wgAdmin
-                                   INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
-                                   INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
-                                                             AND usr.TipoUser_id = 1
-                              WHERE wgAdmin.User_id = @sup_id)
-                          SELECT CAST(a.User_id AS INT) Id, 
-                                 a.login AS Username, 
-                                 a.Nombres + '' '' + a.ApellidoPaterno + '' '' + a.ApellidoMaterno AS Name
-                          FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
-                               INNER JOIN TableUserAgent b ON a.User_id = b.userId
-                          ORDER BY a.Login ASC;
-             END;
-             IF @type = 2
-                 BEGIN
-                     SELECT CAST(u.User_id AS INT) Id,
-							Login Username, 
-                            Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno Name,
-							CASE WHEN p.publicIp is null or p.publicIp = '''' then ''000.000.000.000'' else p.publicIp end IP
-                     FROM ccUsers u
-					 LEFT JOIN ccPosicion p on p.user_id = @agent_id
-                     WHERE u.User_id = @agent_id;
-             END;
-             IF @type = 3 --Agents by supervisor and WG
-                 BEGIN
-                     DECLARE @table2 TABLE
-                     (userId INT
-                      PRIMARY KEY NOT NULL
-                     );
-                     INSERT INTO @table2
-                            SELECT DISTINCT 
-                                   wg.User_id
-                            FROM ccRIAWorkGroupUsers wg
-                                 LEFT JOIN ccUsers us ON wg.User_id = us.User_id
-                            WHERE us.TipoUser_id = 1
-                                  AND wg.IDWG IN
-                            (
-                                SELECT IDWG
-                                FROM ccRIAWorkGroupUsers
-                                WHERE User_id = @sup_id
-                                      AND IDWG <> @WG
-                            );
-                     SELECT CAST(B.User_id AS int) AS Id
-                     FROM @table2 A
-                          RIGHT JOIN
-                     (
-                         SELECT DISTINCT 
-                                wg.User_id
-                         FROM ccRIAWorkGroupUsers wg
-                              LEFT JOIN ccUsers us ON wg.User_id = us.User_id
-                         WHERE wg.IDWG = @WG
-                               AND us.TipoUser_id = 1
-                     ) B ON A.userId = B.User_id
-                     WHERE A.userId IS NULL;
-             END;
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT, 
+                                                    @sup_id AS   INT = 0, 
+                                                    @agent_id AS INT = 0, 
+                                                    @WG AS       INT = 0,
+                          @campId AS INT = 0,
+                          @CampType AS SMALLINT = 1
+    AS
+     SET NOCOUNT ON;
+     IF @type = 1
+         BEGIN
+             WITH TableUserAgent(userId)
+                  AS (SELECT DISTINCT 
+                           wgAgt.User_id  AS Id --,usr.login 
+                      FROM ccriaworkgroupusers wgAdmin
+                           INNER JOIN ccriaworkgroupusers wgAgt ON wgAdmin.IDWG = wgAgt.IDWG
+                           INNER JOIN ccUsers usr ON usr.User_id = wgAgt.User_id
+                                                     AND usr.TipoUser_id = 1
+                      WHERE wgAdmin.User_id = @sup_id)
+                  SELECT CAST(a.User_id AS INT) Id, 
+                         a.login AS Username, 
+                         a.Nombres + '' '' + a.ApellidoPaterno + '' '' + a.ApellidoMaterno AS Name
+                  FROM ccusers a(NOLOCK)--, ccGenViewRelsSupsAgent b
+                       INNER JOIN TableUserAgent b ON a.User_id = b.userId
+                  ORDER BY a.Login ASC;
+     END;
+     IF @type = 2
+         BEGIN
+             SELECT CAST(u.User_id AS INT) Id,
+					Login Username, 
+                    Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno Name,
+					CASE WHEN p.publicIp is null or p.publicIp = '''' then ''000.000.000.000'' else p.publicIp end IP
+             FROM ccUsers u
+			 LEFT JOIN ccPosicion p on p.user_id = @agent_id
+             WHERE u.User_id = @agent_id;
+     END;
+     IF @type = 3 --Agents by supervisor and WG
+         BEGIN
+             DECLARE @table2 TABLE
+             (userId INT
+              PRIMARY KEY NOT NULL
+             );
+             INSERT INTO @table2
+                    SELECT DISTINCT 
+                           wg.User_id
+                    FROM ccRIAWorkGroupUsers wg
+                         LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                    WHERE us.TipoUser_id = 1
+                          AND wg.IDWG IN
+                    (
+                        SELECT IDWG
+                        FROM ccRIAWorkGroupUsers
+                        WHERE User_id = @sup_id
+                              AND IDWG <> @WG
+                    );
+             SELECT CAST(B.User_id AS int) AS Id
+             FROM @table2 A
+                  RIGHT JOIN
+             (
+                 SELECT DISTINCT 
+                        wg.User_id
+                 FROM ccRIAWorkGroupUsers wg
+                      LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+                 WHERE wg.IDWG = @WG
+                       AND us.TipoUser_id = 1
+             ) B ON A.userId = B.User_id
+             WHERE A.userId IS NULL;
+     END;
 
-           IF @type = 4 --Agents IDs by WG
-             BEGIN
-            SELECT  CAST(wg.User_id AS INT) Id  
-            FROM ccRIAWorkGroupUsers wg
-            JOIN CCUsers u on u.user_id = wg.user_id AND u.TipoUser_id = 1
-            where IDWG = @WG
-             END;
+   IF @type = 4 --Agents IDs by WG
+     BEGIN
+    SELECT  CAST(wg.User_id AS INT) Id  
+    FROM ccRIAWorkGroupUsers wg
+    JOIN CCUsers u on u.user_id = wg.user_id AND u.TipoUser_id = 1
+    where IDWG = @WG
+     END;
 
-           IF @type = 5 --Agents IDs by Campaign
-             BEGIN
-            SELECT Distinct(CAST(U.User_id AS INT)) Id FROM ccRIACampEspWG camp
-            JOIN ccRIAWorkGroupUsers wg ON camp.IDWG = wg.IDWG
-            JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
-            WHERE IdCampEsp = @campId AND TIPO = @CampType
-             END;
+   IF @type = 5 --Agents IDs by Campaign
+     BEGIN
+    SELECT Distinct(CAST(U.User_id AS INT)) Id FROM ccRIACampEspWG camp
+    JOIN ccRIAWorkGroupUsers wg ON camp.IDWG = wg.IDWG
+    JOIN ccUsers U ON U.User_id = WG.User_id AND U.TipoUser_id = 1
+    WHERE IdCampEsp = @campId AND TIPO = @CampType
+     END;
 
-            IF @type = 6 -- Get Agent current state
-           BEGIN
-            WITH UserMaxFecha(User_id,fecha) as(
-              SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id
-            )
+    IF @type = 6 -- Get Agent current state
+   BEGIN
+    WITH UserMaxFecha(User_id,fecha) as(
+      SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id
+    )
 
-            SELECT CASE WHEN CurrentState.currentStatus is null or  CurrentState.currentStatus<0 
-                  then 0 else CAST(CurrentState.currentStatus as int) end CurrentState
-            from ccUsers u
-            left join 
-            (
-            select A.User_id,B.currentStatus from UserMaxFecha A 
-            inner join ccLogAgentesDia  B on A.User_id=B.User_id and A.fecha=B.fecha
-            ) CurrentState on u.User_id=CurrentState.User_id
-            where u.TipoUser_id=1 and u.User_id = @agent_id
-           END
+    SELECT CASE WHEN CurrentState.currentStatus is null or  CurrentState.currentStatus<0 
+          then 0 else CAST(CurrentState.currentStatus as int) end CurrentState
+    from ccUsers u
+    left join 
+    (
+    select A.User_id,B.currentStatus from UserMaxFecha A 
+    inner join ccLogAgentesDia  B on A.User_id=B.User_id and A.fecha=B.fecha
+    ) CurrentState on u.User_id=CurrentState.User_id
+    where u.TipoUser_id=1 and u.User_id = @agent_id
+   END
 
-           IF @type = 7 -- Get superuser id''s except root
-           BEGIN
-            declare @superuserId as int
-            set @superuserId = (select Rol_id from ccRoles where Level = 7) -- obtenemos el id del rol superusuario
+   IF @type = 7 -- Get superuser id''s except root
+   BEGIN
+    declare @superuserId as int
+    set @superuserId = (select Rol_id from ccRoles where Level = 7) -- obtenemos el id del rol superusuario
 
-            select CAST(cr.User_id AS INT) User_id 
-            from ccUsers_Roles cr
-            where Rol_id = @superuserId
-            and cr.User_id not in (1) 
-           END
+    select CAST(cr.User_id AS INT) User_id 
+    from ccUsers_Roles cr
+    where Rol_id = @superuserId
+    and cr.User_id not in (1) 
+   END
 
-           IF @type = 8 -- Get all Agent''s ID, Login and Full Names related to a workgroup
-           BEGIN
-            SELECT DISTINCT 
-              Convert(INT,wg.User_id) Id,
-              us.Login Username,
-              us.Nombres + '' '' + us.ApellidoPaterno + '' '' + us.ApellidoMaterno Name
-            FROM ccRIAWorkGroupUsers wg
-              LEFT JOIN ccUsers us ON wg.User_id = us.User_id
-            WHERE wg.IDWG = @WG
-              AND us.TipoUser_id = 1
-           END
+   IF @type = 8 -- Get all Agent''s ID, Login and Full Names related to a workgroup
+   BEGIN
+    SELECT DISTINCT 
+      Convert(INT,wg.User_id) Id,
+      us.Login Username,
+      us.Nombres + '' '' + us.ApellidoPaterno + '' '' + us.ApellidoMaterno Name
+    FROM ccRIAWorkGroupUsers wg
+      LEFT JOIN ccUsers us ON wg.User_id = us.User_id
+    WHERE wg.IDWG = @WG
+      AND us.TipoUser_id = 1
+   END
 
-		   IF @type = 9 -- GET AGENT IP
-		   BEGIN
-				SELECT publicIp FROM ccPosicion where user_id = @agent_id
-		   END
+   IF @type = 9 -- GET AGENT IP
+   BEGIN
+		SELECT publicIp FROM ccPosicion where user_id = @agent_id
+   END
 
-		    IF @type = 10 -- GET ONLINE AGENTS IP
-		   BEGIN
-				SELECT CAST ( user_id AS INT )    AgentId,  publicIp Ip FROM ccPosicion where user_id <> 0
-		   END
-           SET NOCOUNT ON;'
+    IF @type = 10 -- GET ONLINE AGENTS IP
+   BEGIN
+		SELECT CAST ( user_id AS INT )    AgentId,  publicIp Ip FROM ccPosicion where user_id <> 0
+   END
+   SET NOCOUNT ON;'
     EXEC(@sql)
 
-		  
+	set @process = 'CW-5594 Alter SP ccsp_AgentGetCalificaciones'
+    set @sql = 'ALTER PROCEDURE dbo.ccsp_AgentGetCalificaciones
+    @inOut        TINYINT
+
+/**********
+0 in, 1 out
+**********/
+
+,   @cam_id       INT
+,   @isXml        BIT    =1
+AS
+    SET NOCOUNT ON
+    DECLARE @sql NVARCHAR(MAX)
+
+    IF @inOut = 0
+    BEGIN
+        IF EXISTS
+               (
+                  SELECT calif.calif_id
+                  FROM ccTipoCalif AS calif
+                  JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+                  LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+                  LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+                  WHERE cam_id = @cam_id AND tipo = @inOut
+               )
+        BEGIN
+           DECLARE @relationCamId INT
+           SELECT @relationCamId=cam_id
+           FROM ccInbound
+           WHERE Inbound_id = @cam_id
+           IF @relationCamId IS NULL
+           SET @relationCamId=0
+
+           SET @sql=
+           '';WITH disposition
+    AS (SELECT DISTINCT
+             1 AS tag,NULL AS parent,calif.calif_id AS "selection!1!id",calif.Description AS "selection!1!string",calif.
+             orden AS "selection!1!califorden",ISNULL(calif.EndConversation,0) AS "selection!1!endConversation",NULL AS
+             "subSelection!2!id",NULL AS "subSelection!2!string",NULL AS "subSelection!2!orden",NULL AS
+             "subSelection!2!endConversation",ISNULL(calif.CanReprogram,0) AS "selection!1!canReprogram",NULL AS
+             "subSelection!2!canReprogram"
+        FROM ccTipoCalif AS calif
+        INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id AND camp.cam_id = @cam_id AND camp.tipo = @inOut
+        LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+        LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+        WHERE calif.CanReprogram = 0 OR calif.CanReprogram = 1 AND @relationCamId > 0
+        UNION
+        SELECT DISTINCT
+             2 AS tag,1 AS parent,calif.calif_id AS "selection!1!id",NULL AS "selection!1!string",calif.orden AS
+             "selection!1!califorden",ISNULL(calif.EndConversation,0) AS "selection!1!endConversation",sb.califsub_id AS
+             "subSelection!2!id",sb.califSubDesc AS "subSelection!2!string",CAST(sb.orden AS INT) AS
+             "subSelection!2!orden",ISNULL(sb.EndConversation,0) AS "subSelection!2!endConversation",NULL AS
+             "selection!1!canReprogram",ISNULL(sb.CanReprogram,0) AS "subSelection!2!canReprogram"
+        FROM ccTipoCalif AS calif
+        INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id AND camp.cam_id = @cam_id AND camp.tipo = @inOut
+        LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+        LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+        WHERE sb.califsub_id IS NOT NULL AND (sb.CanReprogram = 0 OR sb.CanReprogram = 1 AND @relationCamId > 0))
+''
+
+           IF @isXml = 1
+           BEGIN
+              SET @sql=@sql +
+              ''select * from disposition
+               order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''           
+           END
+           ELSE
+           BEGIN
+              SET @sql=@sql +
+''select 
+tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''''''') as Description,
+"selection!1!califorden" as Orden, 
+"selection!1!endConversation" EndConversation, isnull("subSelection!2!id",0) as SubId,
+isnull("subSelection!2!string",'''''''') as SubDescription, 
+isnull("subSelection!2!orden",0) as SubOrden,   
+--CAST(  ROW_NUMBER() OVER(PARTITION BY parent ORDER BY "subSelection!2!orden" ASC) as tinyint) AS SubOrden,
+isnull("subSelection!2!endConversation",0) as SubEndConversation, 
+isnull("selection!1!canReprogram",0) as CanReprogram,isnull("subSelection!2!canReprogram",0) as SubCanReprogram
+FROM disposition''
+           END
+--         PRINT @sql
+
+
+           EXEC sp_executesql
+             @sql
+            ,N''@cam_id int, @InOut tinyint,@relationCamId int''
+            ,@cam_id
+            ,@inOut
+            ,@relationCamId
+        END
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 1
+    BEGIN
+        IF EXISTS
+               (
+                  SELECT calif.calif_id
+                  FROM ccTipoCalifOUT AS calif
+                  JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+                  LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+                  LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+                  WHERE cam_id = @cam_id AND tipo = @inOut
+               )
+        BEGIN
+           SET @sql=
+       '';WITH disposition
+AS (SELECT DISTINCT
+       1 AS tag,NULL AS parent,calif.calif_id AS "selection!1!id",calif.Description AS "selection!1!string",calif.
+       keepDial AS "selection!1!keepOnDial",calif.orden AS "selection!1!califorden",ISNULL(calif.finishPreview,0)
+       AS "selection!1!finishPreview",NULL AS "subSelection!2!id",NULL AS "subSelection!2!string",NULL AS
+       "subSelection!2!keepOnDial",NULL AS "subSelection!2!orden",ISNULL(calif.CanReprogram,0) AS
+       "selection!1!canReprogram",NULL AS "subSelection!2!canReprogram"
+    FROM ccTipoCalifOUT AS calif
+    INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+    LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+    LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+    WHERE cam_id = @cam_id AND tipo = @inOut
+    UNION
+    SELECT DISTINCT
+       2 AS tag,1 AS parent,calif.calif_id AS "selection!1!id",NULL AS "selection!1!string",NULL AS
+       "selection!1!keepOnDial",calif.orden AS "selection!1!califorden",ISNULL(calif.finishPreview,0) AS
+       "selection!1!finishPreview",sb.califsub_id AS "subSelection!2!id",sb.califSubDesc AS "subSelection!2!string",
+       sb.keepDial AS "subSelection!2!keepOnDial",CAST(sb.orden AS INT) AS "subSelection!2!orden",NULL AS
+       "selection!1!canReprogram",ISNULL(sb.CanReprogram,0) AS "subSelection!2!canReprogram"
+    FROM ccTipoCalifOUT AS calif
+    INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+    LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+    LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+    WHERE cam_id = @cam_id AND tipo = @inOut AND sb.califsub_id IS NOT NULL)
+''
+           IF @isXml = 1
+           BEGIN
+              SET @sql=@sql +
+              ''select * from disposition
+               order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type''
+           END
+           ELSE
+           BEGIN
+              SET @sql=@sql +
+''SELECT tag AS Tag,ISNULL(parent,0) AS Parent,"selection!1!id" AS Id,ISNULL("selection!1!string",'''''''') AS Description,
+    ISNULL("selection!1!keepOnDial",'''''''') AS KeepOnDial,
+    --"selection!1!califorden" AS Orden,
+    CAST(  ROW_NUMBER() OVER(ORDER BY "selection!1!califorden" ASC) as tinyint) AS Orden,
+    "selection!1!finishPreview" AS
+    FinishPreview,ISNULL("subSelection!2!id",0) AS SubId,ISNULL("subSelection!2!string",'''''''') AS SubDescription
+    ,ISNULL("subSelection!2!keepOnDial",0) AS SubKeepOnDial,
+    ISNULL("subSelection!2!orden",0) AS SubOrden,    
+    ISNULL("selection!1!canReprogram",0) AS CanReprogram,ISNULL("subSelection!2!canReprogram",0) AS SubCanReprogram
+    FROM disposition''
+           END
+           --PRINT @sql
+
+           EXEC sp_executesql
+             @sql
+            ,N''@cam_id int, @InOut tinyint''
+            ,@cam_id
+            ,@inOut
+        END
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 10
+    BEGIN
+        SELECT DISTINCT
+             S.califSub_id,S.califSubDesc,orden
+        FROM cctipoSubCalifRel AS R
+        JOIN cctipoCalifSub AS S ON R.califSub_id = S.califSub_id
+        WHERE R.tipoSubRel = 1 AND S.califSub_Status = 1 AND R.calif_id = @cam_id
+        ORDER BY S.orden,S.califSubDesc
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 11
+    BEGIN
+        SELECT DISTINCT
+             S.califSub_id,S.califSubDesc,orden
+        FROM cctipoSubCalifRel AS R
+        JOIN cctipoCalifSubOut AS S ON R.califSub_id = S.califSub_id
+        WHERE R.tipoSubRel = 0 AND S.califSubOut_Status = 1 AND R.calif_id = @cam_id
+        ORDER BY S.orden,S.califSubDesc
+        RETURN 0
+    END
+
+    SET NOCOUNT OFF'
+    EXEC(@sql)
+
+    set @process = 'CW-5594 Alter ccsp_BaseXmngr'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
+@action int,
+@option tinyint = 0,
+@ids varchar(max)=null,
+@name varchar(25) = NULL,
+@top int = 0,
+@dateIni datetime =null,
+@dateEnd datetime =null,
+@dateStart dateTime= null,
+@userId int = 0
+AS
+
+declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max),@tableNameHistory nvarchar(max)
+declare @parameterDefinition nvarchar(max)
+declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
+declare @status tinyint
+set @sql = ''''
+
+
+if @action in (1,2,6,7) begin
+    if @option = 1 begin
+        set @tableName=''ccChatsNode''
+        set @columnId=''chatId''
+        set @tableNameHistory = ''ccChatsNodeHistory''
+    end
+    else if @option = 3 begin
+        set @tableName=''ccEmailNode''
+        set @columnId=''emailId''
+        set @tableNameHistory = ''ccEmailNodeHistory''
+        end
+    else if @option = 4 begin
+        set @tableName=''ccTwitterNode''
+        set @columnId=''conversationTwitterId''
+        set @tableNameHistory = ''ccTwitterNodeHistory''
+    end
+end
+
+
+
+if @action in (1,6) begin --obtiene los nodos a insertar en BX
+    if @action = 1 set @status =0
+    else if @action = 6 set @status = 2
+
+    if @option in (1,3,4) begin
+
+    declare @auxTag nvarchar(4)
+    
+    select @auxTag =case when @option = 1 then ''@C09'' when @option in (3,4) then ''@C02'' end
+    set @parameterDefinition =N''@status int, @top int,@option int''
+    set @sql=''declare @basexName varchar(max)
+select @basexName=Xname from ccBaseXDB where serviceId=@option and isFull=0;
+    with node ( ''+@columnId+ '',xmlString,dateNode)
+    AS(
+        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+        from ''+ @tableName + '' A with(rowlock)
+        where A.status =@status
+        union
+        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+        from ''+ @tableNameHistory + '' A with(rowlock)
+        where A.status =@status  
+    )
+
+    select node.''+@columnId+ '',node.xmlString,isnull(baseX.Xname,@basexName) Xname from node
+    left join ccBaseXDB baseX on baseX.serviceId= @option and node.dateNode between baseX.dateStart and isnull(baseX.dateEnd,getdate())
+    order by baseX.Xname''
+
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status,@top=@top,@option=@option
+    end
+end
+else if @action in (2,7) begin--actualiza los nodos insertados en BX
+    if @action = 2 set @status =0
+    else if @action = 7 set @status = 2
+
+    set @parameterDefinition =N''@status int''
+
+    set @sql = ''update ''+@tableName+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+    select @tableName,@columnId,@ids,@sql
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+    set @sql = ''update ''+@tableNameHistory+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+    print(@sql)
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+
+end
+else if @action = 3 --trae el nombre de la base de datos en BX
+begin
+    select Xname from ccBaseXDB where serviceId = @option and isFull=0
+end
+else if @action = 4 --inserta el nombre del xml en BX
+begin
+    insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option,@dateStart, @name,0)
+end
+else if @action = 5 begin --obtener servicios disponibles
+    select @chat= 0,@rec= 2,@email= 0,@twitter=0
+    select @chat = case when valor >= 1 then 1 else 0 end from ccSettings where setting_id = 145
+    select @email = case when valor = 1 then 3 else 0 end from ccSettings where setting_id = 155
+    select @twitter = case when valor = 1 then 4 else 0 end from ccSettings where setting_id = 173
+    select id, ref  from ccFinderServices where id in (@chat, @rec, @email,@twitter)    
+end
+else if @action = 8 begin--trae la lista de las bases para la busqueda
+    select Xname from ccBaseXDB where serviceId = @option
+    and (
+
+    @dateIni between dateStart and dateEnd
+    or @dateEnd between dateStart and dateEnd
+    or dateStart between @dateIni and @dateEnd
+    )
+    union
+    select Xname from ccBaseXDB where serviceId = @option and isFull=0
+    and (
+        dateStart between @dateIni and @dateEnd
+        or @dateIni>=dateStart
+
+    )
+end
+else if @action = 9 begin--Cierra la base datos
+       update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()), dateStart=isnull(@dateStart,dateStart) where serviceId= @option and  isfull = 0 and dateEnd is null
+       and Xname=@name
+end
+
+else if @action = 10 begin
+    declare @filterWg varchar(max)
+    declare @len int
+    set @filterWg=''''
+         
+        select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+convert(varchar(max), WGCam.Tipo+1)+'') or '' from ccRIAWorkGroupUsers Wguser
+        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+        where Wguser.User_id=@userId
+         
+        set @len=len(@filterWg)- CHARINDEX(''ro )'', REVERSE(@filterWg))
+        select SUBSTRING(@filterWg,0, @len)
+end
+
+
+else if @action = 11 begin--trae el nombre de la base de datos en BX
+
+    if @option =1 begin
+    SELECT isnull(ISNULL(min(node.value(''(/R01/@CDATE)[1]'',''datetime'')),min(node.value(''(/R01/@C09)[1]'',''datetime''))),GETDATE()) as node FROM ccChatsNode where status = 0
+    end
+    if @option =3 begin
+    SELECT isnull(ISNULL(min(node.value(''(/R03/@CDATE)[1]'',''datetime'')),min(node.value(''(/R03/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccEmailNode where status = 0
+    end
+    if @option =4  begin
+    SELECT isnull(ISNULL(min(node.value(''(/R04/@CDATE)[1]'',''datetime'')),min(node.value(''(/R04/@C02)[1]'',''datetime''))),GETDATE()) as node FROM ccTwitterNode where status = 0
+    end
+
+end'
+    EXEC(@sql)	
+
+    set @process = 'CW-5594 Alter ccsp_RIAChecaLogin'
+    set @sql = 'ALTER PROCEDURE dbo.ccsp_RIAChecaLogin
+    @login             VARCHAR(40)
+,   @password          VARCHAR(40)
+,   @computer          VARCHAR(20)
+,   @passwordLwC       VARCHAR(40)=NULL
+AS
+    DECLARE @loginOK TINYINT,@pswdOK TINYINT,@compuOK TINYINT,@extenOK TINYINT,@teclaOK TINYINT,@xferAgents TINYINT
+
+    DECLARE @nombre VARCHAR(60),@extension VARCHAR(15),@userID SMALLINT,@cCServer VARCHAR(20),@dialingMode INT
+
+    DECLARE @passwordDb VARCHAR(33)
+
+    DECLARE @crmxActive TINYINT
+
+    DECLARE @passSecure INT
+
+/*************************
+Para posiciones ip, by ODC
+*************************/
+
+    DECLARE @ext_id INT,@pos_id INT,@isIP BIT,@ipExtension VARCHAR(15)
+
+    DECLARE @tipoConexion SMALLINT
+
+/***************************************************************
+ Para live connected Tipo de conexion: 0 normal, 1 liveconnected
+***************************************************************/
+
+    SELECT @loginOK=0,@pswdOK=0,@compuOK=0,@extenOK=0,@teclaOK=0,@xferAgents=0,@extension='' '',@userID=0,@nombre='' '',
+    @tipoConexion=0,@ipExtension='''',@isIP=0,@cCServer=''127.0.0.1'',@dialingMode=0,@crmxActive=0,@passSecure=0
+
+    SELECT @userID=User_id,@passwordDb=Password
+    FROM ccUsers WITH(NOLOCK)
+    WHERE Login = @login AND STATUS > 0 AND tipoUser_id = 1
+
+    IF @userID > 0
+    SET @loginOK=1
+
+    IF @loginOK = 1 AND (@passwordDb = @password OR @passwordDb = dbo.md5(@password) OR dbo.md5(@passwordDb) = @password OR
+    @passwordDb = @passwordLwC OR @passwordDb = dbo.md5(@passwordLwC) OR dbo.md5(@passwordDb) = @passwordLwC)
+    SET @pswdOK=1
+
+    IF @pswdOK = 1 AND NOT EXISTS
+                            (
+                               SELECT Computer
+                               FROM ccPosicion WITH(NOLOCK)
+                               WHERE STATUS = ''1'' AND Computer = @computer
+                            )
+    INSERT INTO ccposicion(computer,ext_id,user_id,IP)
+    VALUES(@computer,0,@userID,@computer)
+
+    SET @compuOK=1
+
+    IF @pswdOK = 1
+    BEGIN
+
+        IF EXISTS
+               (
+                  SELECT Computer
+                  FROM ccPosicion AS P
+                  JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+                  WHERE p.STATUS = ''1'' AND M.STATUS = ''1'' AND Computer = @computer
+               )
+        SET @extenOK=1
+
+        SELECT @extension=Extension,@ext_id=p.ext_id,@pos_id=p.pos_id,@tipoConexion=p.tipoConexion,@isIP=isIP
+        FROM ccPosicion AS P
+        INNER JOIN ccMonitorExt AS M ON P.ext_id = M.ext_id
+        WHERE Computer = @computer
+
+        SELECT @teclaOK=COUNT(*)
+        FROM ccTeclaExtensionPuerto AS T
+        INNER JOIN ccMonitorExt AS M ON T.ext_id = M.ext_id
+        WHERE M.Extension = @extension
+
+        SELECT @nombre=Nombres + '' '' + ISNULL(ApellidoPaterno,'''') + '' '' + ISNULL(ApellidoMaterno,''''),@xferAgents=XferAgents,
+        @dialingMode=DialingMode
+        FROM ccUsers
+        WHERE User_id = @userID
+
+/******************************************************************************************
+Para posiciones ip, by ODC
+ No verifica ccTeclaExtensionPuerto, @TeclaOK =1
+ Regresa un extension ''virtual''.  Debe ser diferente a cualquiera de ccMonitorExt.Extension
+******************************************************************************************/
+
+        IF @ext_id = 0
+        BEGIN
+           SELECT @teclaOK=1,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+/*****************************************************************************************
+-Por OAYC IPExtension, extension, para cuando es posición IP con alguna extension asignada
+*****************************************************************************************/
+
+        ELSE
+        IF @ext_id > 0 AND @isIP = 1
+        BEGIN
+           SELECT @teclaOK=1,@ipExtension=@extension,@extension=CAST(@pos_id * -1 AS VARCHAR(15))
+        END
+
+        IF @tipoConexion = 1
+        SET @teclaOK=1
+
+        SELECT @cCServer=valor
+        FROM ccSettings
+        WHERE setting_id = 7
+
+        SELECT @crmxActive=valor
+        FROM ccsettings
+        WHERE setting_id = 168
+
+        SELECT @passSecure=valor
+        FROM ccSettings
+        WHERE setting_id = 207
+
+    END
+
+    SELECT @loginOK AS LoginOK,@pswdOK AS PswdOK,@compuOK AS CompuOK,@extenOK AS ExtenOK,@extension AS Extension,@userID AS
+    UserID,@nombre AS Nombre,@cCServer AS CCServer,@teclaOK AS TeclaOK,@tipoConexion AS TipoConexion,@ipExtension AS
+    ipExtension,@xferAgents AS XferAgents,@crmxActive AS CRMx,@passSecure AS passSecure,@dialingMode AS dialingMode'
+    EXEC(@sql)    
 
     
 		/* End script release */

@@ -1050,9 +1050,9 @@ Para posiciones ip, by ODC
     EXEC(@sql)    
 	
 	set @process = 'CW-WhatsApp crea SP tabla conversaciones whatsapp'
-    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[ccRIAWhatsAppConversations]'') AND type in (N''U''))
+    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[ccWhatsAppConversations]'') AND type in (N''U''))
 BEGIN
-CREATE TABLE [dbo].[ccRIAWhatsAppConversations](
+CREATE TABLE [dbo].[ccWhatsAppConversations](
 	[conversationId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
 	[inboundId] [smallint] NOT NULL,
 	[phoneACD] [varchar](50) NOT NULL,
@@ -1071,21 +1071,21 @@ CREATE TABLE [dbo].[ccRIAWhatsAppConversations](
 	[conversationDate] [datetime] NULL,
 	[clientName] [varchar](100) NULL,
 	[firstMessageTime] [datetime] NULL,
- CONSTRAINT [pk_ccRIAWhatsAppMessages_1] PRIMARY KEY CLUSTERED 
+ CONSTRAINT [pk_ccWhatsAppMessages_1] PRIMARY KEY CLUSTERED 
 (
 	[conversationId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 END
 
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[DF_ccRIAWhatsAppConversations_requestDate]'') AND type = ''D'')
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[DF_ccWhatsAppConversations_requestDate]'') AND type = ''D'')
 BEGIN
-ALTER TABLE [dbo].[ccRIAWhatsAppConversations] ADD  CONSTRAINT [DF_ccRIAWhatsAppConversations_requestDate]  DEFAULT (getdate()) FOR [requestDate]
+ALTER TABLE [dbo].[ccWhatsAppConversations] ADD  CONSTRAINT [DF_ccWhatsAppConversations_requestDate]  DEFAULT (getdate()) FOR [requestDate]
 END
 
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[DF_ccRIAWhatsAppConversations_conversationDate]'') AND type = ''D'')
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[DF_ccWhatsAppConversations_conversationDate]'') AND type = ''D'')
 BEGIN
-ALTER TABLE [dbo].[ccRIAWhatsAppConversations] ADD  CONSTRAINT [DF_ccRIAWhatsAppConversations_conversationDate]  DEFAULT (getdate()) FOR [conversationDate]
+ALTER TABLE [dbo].[ccWhatsAppConversations] ADD  CONSTRAINT [DF_ccWhatsAppConversations_conversationDate]  DEFAULT (getdate()) FOR [conversationDate]
 END
 
 '
@@ -1116,7 +1116,7 @@ SET NOCOUNT ON;
 	
 	IF @action = 1 BEGIN --Califica la conversación y pone el tiempo Notas
 		DECLARE @Temp NVARCHAR(1000)= N''UPDATE '' + (SELECT CASE @mediaType
-						WHEN 5 THEN ''ccRIAWhatsAppConversations''
+						WHEN 5 THEN ''ccWhatsAppConversations''
 						WHEN 6 THEN ''chat''
 						ELSE ''''
 					END AS MediaTypeString) + 
@@ -1187,7 +1187,7 @@ BEGIN
 				i.tNotas as [WrapUpTime]
 			FROM  ccInbound i
 				INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
-				INNER JOIN ccRIAWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+				INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
 				INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
 			WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
 		END
@@ -1232,8 +1232,8 @@ BEGIN
 SET NOCOUNT ON;
 
 	IF @action = 1 BEGIN --new Conversation
-		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccRIAWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
-			INSERT INTO [ccRIAWhatsAppConversations](
+		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWhatsAppConversations](
 												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
 												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
 											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
@@ -1249,7 +1249,7 @@ SET NOCOUNT ON;
 	END
 
 	IF @action = 2 BEGIN --save conversation Times
-		Update ccRIAWhatsAppConversations 
+		Update ccWhatsAppConversations 
 		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
 			conversationStatus = @conversationStatus, finishedBy = 1,
 			tConversation = DATEDIFF(ss,requestDate,getdate()) 

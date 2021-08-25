@@ -14,7 +14,7 @@ SET NOCOUNT ON;
 	
 	IF @action = 1 BEGIN --Califica la conversación y pone el tiempo Notas
 		DECLARE @Temp NVARCHAR(1000)= N'UPDATE ' + (SELECT CASE @mediaType
-						WHEN 5 THEN 'ccRIAWhatsAppConversations'
+						WHEN 5 THEN 'ccWhatsAppConversations'
 						WHEN 6 THEN 'chat'
 						ELSE ''
 					END AS MediaTypeString) + 

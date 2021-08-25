@@ -49,7 +49,7 @@ BEGIN
 				i.tNotas as [WrapUpTime]
 			FROM  ccInbound i
 				INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
-				INNER JOIN ccRIAWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+				INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
 				INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
 			WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
 		END

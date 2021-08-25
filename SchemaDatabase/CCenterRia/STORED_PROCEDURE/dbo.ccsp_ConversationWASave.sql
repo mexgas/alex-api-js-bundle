@@ -25,8 +25,8 @@ BEGIN
 SET NOCOUNT ON;
 
 	IF @action = 1 BEGIN --new Conversation
-		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccRIAWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
-			INSERT INTO [ccRIAWhatsAppConversations](
+		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWhatsAppConversations](
 												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
 												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
 											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
@@ -42,7 +42,7 @@ SET NOCOUNT ON;
 	END
 
 	IF @action = 2 BEGIN --save conversation Times
-		Update ccRIAWhatsAppConversations 
+		Update ccWhatsAppConversations 
 		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
 			conversationStatus = @conversationStatus, finishedBy = 1,
 			tConversation = DATEDIFF(ss,requestDate,getdate()) 

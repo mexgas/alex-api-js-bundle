@@ -1,128 +1,184 @@
-CREATE procedure [dbo].[ccsp_AgentGetCalificaciones]
-@InOut tinyint, --0 in, 1 out
-@cam_id int, --ADC or CAMP Id
-@isXml bit=1
+CREATE PROCEDURE dbo.ccsp_AgentGetCalificaciones
+    @inOut        TINYINT
 
+/**********
+0 in, 1 out
+**********/
+
+,   @cam_id       INT
+,   @isXml        BIT    =1
 AS
-set nocount on
-declare @sql varchar(max)
+    SET NOCOUNT ON
+    DECLARE @sql NVARCHAR(MAX)
 
-IF @InOut = 0 BEGIN
-if exists(
-	select calif.calif_id from ccTipoCalif calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
-	left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
-	left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-	where cam_id = @cam_id and tipo = @InOut)
-  begin
-	 declare @relationCamId int
-	select @relationCamId =cam_id from ccInbound where Inbound_id=@cam_id
-	if @relationCamId is null set @relationCamId=0
+    IF @inOut = 0
+    BEGIN
+        IF EXISTS
+               (
+                  SELECT calif.calif_id
+                  FROM ccTipoCalif AS calif
+                  JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+                  LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+                  LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+                  WHERE cam_id = @cam_id AND tipo = @inOut
+               )
+        BEGIN
+           DECLARE @relationCamId INT
+           SELECT @relationCamId=cam_id
+           FROM ccInbound
+           WHERE Inbound_id = @cam_id
+           IF @relationCamId IS NULL
+           SET @relationCamId=0
 
-	set @sql ='
-	select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.orden "selection!1!califorden",
-		isnull(calif.EndConversation,0) "selection!1!endConversation",
-		null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!orden",  null "subSelection!2!endConversation",
-		isnull(calif.CanReprogram,0) "selection!1!canReprogram", null "subSelection!2!canReprogram"
-		from ccTipoCalif calif
-	 inner join ccCalifCamp camp on camp.calif_id=calif.calif_id 
-	 and camp.cam_id='+convert(varchar(max), @cam_id)+' and  camp.tipo = '+convert(varchar(max), @InOut)+'
-	 left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
-	 left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-	 where calif.CanReprogram=0 or (
-		calif.CanReprogram=1 and '+convert(varchar(max), @relationCamId)+'>0
-	 )
-	 union
-	 select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", calif.orden "selection!1!califorden", isnull(calif.EndConversation,0) "selection!1!endConversation",
-		sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string", cast(sb.orden as int) "subSelection!2!orden" ,isnull(sb.EndConversation,0) "subSelection!2!endConversation",
-		null "selection!1!canReprogram", isnull(sb.CanReprogram,0) "subSelection!2!canReprogram"
-		from ccTipoCalif calif
-		inner join ccCalifCamp camp on camp.calif_id=calif.calif_id and camp.cam_id='+convert(varchar(max), @cam_id)+' and  camp.tipo = '+convert(varchar(max), @InOut)+'
-		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=1
-		left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-		where sb.califsub_id is not null
-		and (
-			sb.CanReprogram=0 or
-			(sb.CanReprogram=1 and '+convert(varchar(max), @relationCamId)+'>0)
-		)'
-	  
-	  if @isXml=1 begin
-		set @sql= @sql+' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type'
-	  end
-	  else begin 
-	  set @sql='select 
-				tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''') as Description,
-				"selection!1!califorden" as Orden, "selection!1!endConversation" EndConversation, isnull("subSelection!2!id",0) as SubId,
-				isnull("subSelection!2!string",'''') as SubDescription, isnull("subSelection!2!orden",0) as SubOrden,	
-				isnull("subSelection!2!endConversation",0) as SubEndConversation, 
-				isnull("selection!1!canReprogram",0) as CanReprogram,isnull("subSelection!2!canReprogram",0) as SubCanReprogram
-			from (  ' + @sql+' )X'
-	  end
-	  print (@sql)
-	  exec (@sql)
-  end
- return(0)
- END
+           SET @sql=
+           ';WITH disposition
+    AS (SELECT DISTINCT
+             1 AS tag,NULL AS parent,calif.calif_id AS "selection!1!id",calif.Description AS "selection!1!string",calif.
+             orden AS "selection!1!califorden",ISNULL(calif.EndConversation,0) AS "selection!1!endConversation",NULL AS
+             "subSelection!2!id",NULL AS "subSelection!2!string",NULL AS "subSelection!2!orden",NULL AS
+             "subSelection!2!endConversation",ISNULL(calif.CanReprogram,0) AS "selection!1!canReprogram",NULL AS
+             "subSelection!2!canReprogram"
+        FROM ccTipoCalif AS calif
+        INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id AND camp.cam_id = @cam_id AND camp.tipo = @inOut
+        LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+        LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+        WHERE calif.CanReprogram = 0 OR calif.CanReprogram = 1 AND @relationCamId > 0
+        UNION
+        SELECT DISTINCT
+             2 AS tag,1 AS parent,calif.calif_id AS "selection!1!id",NULL AS "selection!1!string",calif.orden AS
+             "selection!1!califorden",ISNULL(calif.EndConversation,0) AS "selection!1!endConversation",sb.califsub_id AS
+             "subSelection!2!id",sb.califSubDesc AS "subSelection!2!string",CAST(sb.orden AS INT) AS
+             "subSelection!2!orden",ISNULL(sb.EndConversation,0) AS "subSelection!2!endConversation",NULL AS
+             "selection!1!canReprogram",ISNULL(sb.CanReprogram,0) AS "subSelection!2!canReprogram"
+        FROM ccTipoCalif AS calif
+        INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id AND camp.cam_id = @cam_id AND camp.tipo = @inOut
+        LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 1
+        LEFT JOIN ccTipoCalifSub AS sb ON rel.califsub_id = sb.califsub_id
+        WHERE sb.califsub_id IS NOT NULL AND (sb.CanReprogram = 0 OR sb.CanReprogram = 1 AND @relationCamId > 0))
+'
 
-IF @InOut = 1 BEGIN
- if exists(
-	select calif.calif_id from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
-	left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
-	left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
-	where cam_id = @cam_id and tipo = @InOut)
-  begin
-	set @sql ='
-		select distinct 1 as tag, null as parent, calif.calif_id "selection!1!id", calif.Description "selection!1!string", calif.keepDial "selection!1!keepOnDial",
-		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", null "subSelection!2!id", null "subSelection!2!string", null "subSelection!2!keepOnDial",
-		null "subSelection!2!orden",   isnull(calif.CanReprogram,0) "selection!1!canReprogram", null "subSelection!2!canReprogram"
-		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
-		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
-		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
-		where cam_id = '+convert(varchar(max), @cam_id)+' and tipo = '+convert(varchar(max),@InOut)+'
-		union
-		select distinct 2 as tag, 1 as parent, calif.calif_id "selection!1!id", null "selection!1!string", null "selection!1!keepOnDial",
-		calif.orden "selection!1!califorden", isnull(calif.finishPreview,0) "selection!1!finishPreview", sb.califsub_id "subSelection!2!id", sb.califSubDesc "subSelection!2!string",
-		sb.keepDial "subSelection!2!keepOnDial",
-		cast(sb.orden as int) "subSelection!2!orden",
-		null "selection!1!canReprogram", isnull(sb.CanReprogram,0) "subSelection!2!canReprogram"
-		from ccTipoCalifOUT calif join ccCalifCamp camp on camp.calif_id=calif.calif_id
-		left join cctipoSubCalifRel rel on calif.calif_id=rel.calif_id and rel.tipoSubRel=0
-		left join ccTipoCalifSubOUT sb on rel.califsub_id=sb.califsub_id
-		where cam_id = '+convert(varchar(max), @cam_id)+' and tipo ='+convert(varchar(max),@InOut)+' and sb.califsub_id is not null	'
-		if @isXml=1 begin
-			set @sql= @sql+' order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type'
-		end
-		else begin 
-		  set @sql='select 	tag as Tag, isnull(parent,0) Parent, "selection!1!id" as Id,isnull("selection!1!string",'''') as Description,
-					isnull("selection!1!keepOnDial",'''') as KeepOnDial,
-					"selection!1!califorden" as Orden, "selection!1!finishPreview" FinishPreview, isnull("subSelection!2!id",0) as SubId,
-					isnull("subSelection!2!string",'''') as SubDescription,isnull("subSelection!2!keepOnDial",0) as SubKeepOnDial,
-					isnull("subSelection!2!orden",0) as SubOrden,
-					isnull("selection!1!canReprogram", 0) CanReprogram,  isnull("subSelection!2!canReprogram",0) SubCanReprogram
-					
-				from (  ' + @sql+' )X'
-		  end
-		  print @sql
-		exec (@sql)
-  end
- return(0)
- END
+           IF @isXml = 1
+           BEGIN
+              SET @sql=@sql +
+              'select * from disposition
+               order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type'           
+           END
+           ELSE
+           BEGIN
+              SET @sql=@sql +
+'select 
+tag as Tag, isnull(parent,0) as Parent, "selection!1!id" as Id,isnull("selection!1!string",'''') as Description,
+"selection!1!califorden" as Orden, 
+"selection!1!endConversation" EndConversation, isnull("subSelection!2!id",0) as SubId,
+isnull("subSelection!2!string",'''') as SubDescription, 
+isnull("subSelection!2!orden",0) as SubOrden,   
+--CAST(  ROW_NUMBER() OVER(PARTITION BY parent ORDER BY "subSelection!2!orden" ASC) as tinyint) AS SubOrden,
+isnull("subSelection!2!endConversation",0) as SubEndConversation, 
+isnull("selection!1!canReprogram",0) as CanReprogram,isnull("subSelection!2!canReprogram",0) as SubCanReprogram
+FROM disposition'
+           END
+--         PRINT @sql
 
-IF @InOut = 10
- BEGIN
-  select distinct S.califSub_id, S.califSubDesc, orden
-  from cctipoSubCalifRel R join cctipoCalifSub S on R.califSub_id = S.califSub_id
- where R.tipoSubRel=1 and S.califSub_Status=1 and R.calif_id=@cam_id
- order by S.orden, S.califSubDesc
- return(0)
- END
 
-IF @InOut = 11
- BEGIN
-  select distinct S.califSub_id, S.califSubDesc, orden
-  from cctipoSubCalifRel R join cctipoCalifSubOut S on R.califSub_id = S.califSub_id
- where R.tipoSubRel=0 and S.califSubOut_Status=1 and R.calif_id=@cam_id
- order by S.orden, S.califSubDesc
- return(0)
- END
+           EXEC sp_executesql
+             @sql
+            ,N'@cam_id int, @InOut tinyint,@relationCamId int'
+            ,@cam_id
+            ,@inOut
+            ,@relationCamId
+        END
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 1
+    BEGIN
+        IF EXISTS
+               (
+                  SELECT calif.calif_id
+                  FROM ccTipoCalifOUT AS calif
+                  JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+                  LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+                  LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+                  WHERE cam_id = @cam_id AND tipo = @inOut
+               )
+        BEGIN
+           SET @sql=
+       ';WITH disposition
+AS (SELECT DISTINCT
+       1 AS tag,NULL AS parent,calif.calif_id AS "selection!1!id",calif.Description AS "selection!1!string",calif.
+       keepDial AS "selection!1!keepOnDial",calif.orden AS "selection!1!califorden",ISNULL(calif.finishPreview,0)
+       AS "selection!1!finishPreview",NULL AS "subSelection!2!id",NULL AS "subSelection!2!string",NULL AS
+       "subSelection!2!keepOnDial",NULL AS "subSelection!2!orden",ISNULL(calif.CanReprogram,0) AS
+       "selection!1!canReprogram",NULL AS "subSelection!2!canReprogram"
+    FROM ccTipoCalifOUT AS calif
+    INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+    LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+    LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+    WHERE cam_id = @cam_id AND tipo = @inOut
+    UNION
+    SELECT DISTINCT
+       2 AS tag,1 AS parent,calif.calif_id AS "selection!1!id",NULL AS "selection!1!string",NULL AS
+       "selection!1!keepOnDial",calif.orden AS "selection!1!califorden",ISNULL(calif.finishPreview,0) AS
+       "selection!1!finishPreview",sb.califsub_id AS "subSelection!2!id",sb.califSubDesc AS "subSelection!2!string",
+       sb.keepDial AS "subSelection!2!keepOnDial",CAST(sb.orden AS INT) AS "subSelection!2!orden",NULL AS
+       "selection!1!canReprogram",ISNULL(sb.CanReprogram,0) AS "subSelection!2!canReprogram"
+    FROM ccTipoCalifOUT AS calif
+    INNER JOIN ccCalifCamp AS camp ON camp.calif_id = calif.calif_id
+    LEFT JOIN cctipoSubCalifRel AS rel ON calif.calif_id = rel.calif_id AND rel.tipoSubRel = 0
+    LEFT JOIN ccTipoCalifSubOUT AS sb ON rel.califsub_id = sb.califsub_id
+    WHERE cam_id = @cam_id AND tipo = @inOut AND sb.califsub_id IS NOT NULL)
+'
+           IF @isXml = 1
+           BEGIN
+              SET @sql=@sql +
+              'select * from disposition
+               order by "selection!1!califorden", "selection!1!id", "subSelection!2!orden" for xml explicit, type'
+           END
+           ELSE
+           BEGIN
+              SET @sql=@sql +
+'SELECT tag AS Tag,ISNULL(parent,0) AS Parent,"selection!1!id" AS Id,ISNULL("selection!1!string",'''') AS Description,
+    ISNULL("selection!1!keepOnDial",'''') AS KeepOnDial,
+    --"selection!1!califorden" AS Orden,
+    CAST(  ROW_NUMBER() OVER(ORDER BY "selection!1!califorden" ASC) as tinyint) AS Orden,
+    "selection!1!finishPreview" AS
+    FinishPreview,ISNULL("subSelection!2!id",0) AS SubId,ISNULL("subSelection!2!string",'''') AS SubDescription
+    ,ISNULL("subSelection!2!keepOnDial",0) AS SubKeepOnDial,
+    ISNULL("subSelection!2!orden",0) AS SubOrden,    
+    ISNULL("selection!1!canReprogram",0) AS CanReprogram,ISNULL("subSelection!2!canReprogram",0) AS SubCanReprogram
+    FROM disposition'
+           END
+           --PRINT @sql
 
-set nocount off
+           EXEC sp_executesql
+             @sql
+            ,N'@cam_id int, @InOut tinyint'
+            ,@cam_id
+            ,@inOut
+        END
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 10
+    BEGIN
+        SELECT DISTINCT
+             S.califSub_id,S.califSubDesc,orden
+        FROM cctipoSubCalifRel AS R
+        JOIN cctipoCalifSub AS S ON R.califSub_id = S.califSub_id
+        WHERE R.tipoSubRel = 1 AND S.califSub_Status = 1 AND R.calif_id = @cam_id
+        ORDER BY S.orden,S.califSubDesc
+        RETURN 0
+    END
+    ELSE
+    IF @inOut = 11
+    BEGIN
+        SELECT DISTINCT
+             S.califSub_id,S.califSubDesc,orden
+        FROM cctipoSubCalifRel AS R
+        JOIN cctipoCalifSubOut AS S ON R.califSub_id = S.califSub_id
+        WHERE R.tipoSubRel = 0 AND S.califSubOut_Status = 1 AND R.calif_id = @cam_id
+        ORDER BY S.orden,S.califSubDesc
+        RETURN 0
+    END
+
+    SET NOCOUNT OFF

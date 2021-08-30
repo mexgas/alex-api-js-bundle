@@ -1725,6 +1725,22 @@ SET NOCOUNT ON;
 END'
 	
 	EXEC(@sql)
+
+    set @process = 'CW-5722 Valida si existe la columna clientName ccWhatsAppConversations y la borra'
+    set @sql = '
+    IF exists (SELECT * FROM sys.columns WHERE name = N''clientName'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations DROP COLUMN clientName
+    END'
+    EXEC(@sql)
+
+    set @process = 'CW-5722 Valida si no existe la columna clientName ccWhatsAppConversations y la agrega'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''agentId'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations ADD agentId INT;
+    END'
+    EXEC(@sql)
 	
 	
 		/* End script release */

@@ -1270,6 +1270,392 @@ END'
 	end'
   EXEC(@sql)
 
+  set @process = 'Valida y si existe SP'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteCampaignAndACD'')
+            begin
+          DROP PROCEDURE ccsp_GalateaDeleteCampaignAndACD;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5636'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
+        --declare
+        @userId           SMALLINT,
+        @DeleteCamId      VARCHAR(MAX),
+        @DeleteACDGroupId VARCHAR(MAX),
+        @moduleId         SMALLINT = 49
+    AS
+    BEGIN
+
+        IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+            SELECT value As DeleteCamId, c.IDArea AS IDAreaCamp, 1 AS CampTypeCamp
+            INTO #CampsDelete 
+            FROM fn_RIASplitDelimited(@DeleteCamId, '','') a
+            inner join ccCamps c on  a.value = c.cam_id and c.IDArea IS NOT NULL
+        IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+            SELECT value As DeleteACDId, c.IDArea AS IDAreaACD, 0 AS CampTypeACD
+            INTO #ACDDelete 
+            FROM fn_RIASplitDelimited(@DeleteACDGroupId, '','') a
+            inner join ccInbound c on  a.value = c.Inbound_id and c.IDArea IS NOT NULL
+
+        IF  not Exists (select * from #CampsDelete union select * from #ACDDelete )
+        begin 
+            select ''-1'' AS Result
+            return 
+        end
+
+        IF datalength(@DeleteCamId) > 0
+            BEGIN
+
+            if exists(select cam_id from ccInbound where cam_id in (select DeleteCamId from #CampsDelete)) begin
+                --Borra las calificacion con reprogramacion
+                delete ccCalifCamp from ccInbound A 
+                inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                inner join ccTipoCalif C on B.calif_id=C.calif_id and C.CanReprogram=1
+                where A.cam_id in (select DeleteCamId from #CampsDelete)
+                --Borra las subcalificacion con reprogramacion
+                delete rel from ccInbound A 
+                inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                inner join ccTipoCalif C on B.calif_id=C.calif_id 
+                inner join cctipoSubCalifRel rel on rel.calif_id=C.calif_id and rel.tipoSubRel=1
+                inner join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
+                where A.cam_id in (select DeleteCamId from #CampsDelete) and sb.canReprogram=1
+        
+                update ccInbound set cam_id = null where cam_id in (select DeleteCamId from #CampsDelete)           
+             
+            end
+
+            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) 
+            select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete)
+
+            delete from ccCampsAgente where cam_id in (select DeleteCamId from #CampsDelete)
+            insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) 
+            select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete) and A.tipo = 1
+        
+            delete from ccSupervisorCam where cam_id in (select DeleteCamId from #CampsDelete) and tipo = 1
+            delete from ccRIACampEspWG where IdCampEsp in (select DeleteCamId from #CampsDelete) and tipo = 1
+
+            IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
+            SELECT ca.AreaName,
+                   GETDATE() operationDate,
+                   27 operationType,
+                   (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                   @moduleId module_id,
+                   c.cam_descripcion value,
+                   ca.AreaName AS target
+            INTO #CampLog
+            FROM ccRIACat_Areas ca
+            Inner join ccCamps c with(nolock) on ca.IDArea = c.IDArea
+            WHERE c.cam_id in (select DeleteCamId from #CampsDelete)
+
+            Update ccCamps set IDArea = null where cam_id in (select DeleteCamId from #CampsDelete)
+
+        END
+        IF datalength(@DeleteACDGroupId) > 0
+            BEGIN
+
+            if exists(select top 1 cam_id from ccInbound where Inbound_id in (select DeleteACDId from #ACDDelete))
+                begin
+                    update ccInbound set cam_id = null where Inbound_id in (select DeleteACDId from #ACDDelete)
+            end
+
+            IF OBJECT_ID(''tempdb..#AllWGACD'') IS NOT NULL DROP TABLE #AllWGACD
+            SELECT DISTINCT(IDWG)
+            INTO #AllWGACD
+            FROM ccRIACampEspWG ce 
+            WHERE IDCampEsp in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+
+            insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) 
+            select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG 
+            from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id 
+            where B.User_id is null and A.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            delete ccInboundHorarios Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+            delete ccInboundMsgs Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) 
+            select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG 
+            from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id 
+            where B.User_id is null and A.cam_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            delete ccSupervisorCam where cam_id in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+            delete ccInboundAgentes where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+            delete ccRIACampEspWG where IdCampEsp  in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+
+
+            IF OBJECT_ID(''tempdb..#ACDLog'') IS NOT NULL DROP TABLE #ACDLog
+            SELECT ca.AreaName,
+                    GETDATE() operationDate,
+                    28 operationType,
+                    (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                    @moduleId module_id,
+                    i.descripcion value,
+                    ca.AreaName AS target
+            INTO #ACDLog
+            FROM ccRIACat_Areas ca
+            inner join ccInbound i with(nolock) on ca.IDArea = i.IDArea
+            WHERE i.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            Update ccInbound set IDArea = null, status = 0 where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+        
+            if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                begin
+                    update ContactMeanIn set name = '''', conexionInfo = ''usuarioID|token|tokenSecret|1|0'', connUser = '''', isActive = 0 
+                    where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=2
+            end
+            if exists(select * from ContactMeanIn where meanContactTypeId=1 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                begin
+                    update ContactMeanIn set name = '''', conexionInfo = '''', connUser = '''', connpass='''', isActive = 0 where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=1
+            end
+            update ccinbound set chatDomain = '''' where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)--para desasociar el dominio del chat
+            
+            if exists (SELECT inboundId FROM contactMeanIn WHERE inboundId in (select DeleteACDId from #ACDDelete))
+                begin
+                    update contactMeanIn set isActive = 0 where inboundId in (select DeleteACDId from #ACDDelete)
+            end
+        END
+
+        IF datalength(@DeleteCamId) > 0
+            Insert into ccRIALog Select * from #CampLog
+        IF datalength(@DeleteACDGroupId) > 0
+            Insert into ccRIALog Select * from #ACDLog
+        
+        SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result FROM #CampsDelete
+        UNION
+        SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result FROM #ACDDelete
+        IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+        IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+    END'
+    
+    EXEC(@sql)
+
+    set @process = 'Valida y si existe SP'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateEspecConfig'')
+            begin
+          DROP PROCEDURE ccsp_RIAUpdateEspecConfig;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5636'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALLINT, 
+                                                  @descripcion             VARCHAR(50)  = NULL, 
+                                                  @Status                  TINYINT      = NULL, 
+                                                  @tNotas                  INT          = NULL, 
+                                                  @tMaxWaitCall            INT          = NULL, 
+                                                  @nMaxQue                 INT          = NULL, 
+                                                  @tel_maxwait             VARCHAR(15)  = NULL, 
+                                                  @tel_MaxQueue            VARCHAR(15)  = NULL, 
+                                                  @tel_outservice          VARCHAR(15)  = NULL, 
+                                                  @tel_noct                VARCHAR(15)  = NULL, 
+                                                  @ShowCalifWnd            BIT          = NULL, 
+                                                  @StartTimerOnHangUp      BIT          = NULL, 
+                                                  @editableCallKey         BIT          = NULL, 
+                                                  @queuePosition           BIT          = NULL, 
+                                                  @tMaxQueueCallBack       SMALLINT     = NULL, 
+                                                  @stopRecording           BIT          = NULL, 
+                                                  @dialPrefixOverflow      VARCHAR(10)  = NULL, 
+                                                  @OpriorityT              SMALLINT     = NULL, 
+                                                  @callerIdDesc            VARCHAR(15)  = NULL, 
+                                                  @chat                    TINYINT      = NULL, 
+                                                  @inactiveChatTime        SMALLINT     = NULL, 
+                                                  @maxChats                TINYINT      = NULL, 
+                                                  @chatDomain              VARCHAR(MAX) = NULL, 
+                                                  @chatQueue               SMALLINT     = NULL, 
+                                                  @chatTime                SMALLINT     = NULL, 
+                                                  @dRestrictPlay           BIT          = NULL, 
+                                                  @callBackSurveyAgent     BIT          = NULL, 
+                                                  @callBackSurveyClient    BIT          = NULL, 
+                                                  @agts_notavailable       VARCHAR(15)  = NULL, 
+                                                  @editableDtmf            BIT          = NULL, 
+                                                  @prefijo                 VARCHAR(MAX) = NULL, 
+                                                  @addDataCallBackReminder BIT          = NULL
+AS
+     SET NOCOUNT ON;
+     UPDATE ccInbound
+       SET 
+           descripcion = ISNULL(@descripcion, descripcion), 
+           STATUS = ISNULL(@status, STATUS), 
+           tNotas = ISNULL(@tNotas, tNotas), 
+           tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall), 
+           nMaxQue = ISNULL(@nMaxQue, nMaxQue), 
+           tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait), 
+           tel_MaxQueue = ISNULL(@tel_MaxQueue, tel_MaxQueue), 
+           tel_outservice = ISNULL(@tel_outservice, tel_outservice), 
+           tel_noct = ISNULL(@tel_noct, tel_noct), 
+           bnocturno = CASE
+                           WHEN ISNULL(@tel_noct, 0) = ''0''
+                                OR @tel_noct = ''''
+                           THEN ''0''
+                           ELSE ''1''
+                       END, 
+           StartTimerOnHangUp = ISNULL(@StartTimerOnHangUp, StartTimerOnHangUp), 
+           editableCallKey = ISNULL(@editableCallKey, editableCallKey), 
+           queuePosition = ISNULL(@queuePosition, queuePosition), 
+           tMaxQueueCallBack = ISNULL(@tMaxQueueCallBack, tMaxQueueCallBack), 
+           stopRecording = ISNULL(@stopRecording, stopRecording), 
+           dialPrefixOverflow = ISNULL(@dialPrefixOverflow, dialPrefixOverflow), 
+           OpriorityT = ISNULL(@OpriorityT, OpriorityT), 
+           callerIdDesc = ISNULL(@callerIdDesc, callerIdDesc), 
+           chat = ISNULL(@chat, chat), 
+           inactiveChatTime = ISNULL(@inactiveChatTime, inactiveChatTime), 
+           maxChats = ISNULL(@maxChats, maxChats), 
+           chatQueueOverflow = ISNULL(@chatQueue, ISNULL(chatQueueOverflow, 15)), 
+           chatTimeOverflow = ISNULL(@chatTime, ISNULL(chatTimeOverflow, 300)), 
+           startStopRecording = ISNULL(@dRestrictPlay, startStopRecording), 
+           callBackSurveyAgent = ISNULL(@callBackSurveyAgent, callBackSurveyAgent), 
+           callBackSurveyClient = ISNULL(@callBackSurveyClient, callBackSurveyClient), 
+           agts_notavailable = ISNULL(@agts_notavailable, agts_notavailable), 
+           editableDtmf = ISNULL(@editableDtmf, editableDtmf), 
+           prefijo = ISNULL(@prefijo, prefijo), 
+           addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder)
+     WHERE inbound_id = @inbound_id;
+     IF @chat = 5 
+        BEGIN
+            IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+            BEGIN
+                INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) values (@chat, @descripcion, @inbound_id, (select status from ccInbound where Inbound_id = @inbound_id));
+            END
+        END;
+
+    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+        BEGIN
+           UPDATE contactMeanIn set name = @descripcion where inboundId = @inbound_id;
+        END
+     IF NOT EXISTS
+     (
+         SELECT inbound_id
+         FROM ccinbound
+         WHERE inbound_id <> @inbound_id
+               AND chatDomain = @chatDomain
+               AND chatDomain <> ''''
+     )
+         BEGIN
+             IF @chatDomain IS NOT NULL
+                 BEGIN
+                     UPDATE ccinbound
+                       SET 
+                           chatDomain = @chatDomain
+                     WHERE inbound_id = @inbound_id;
+             END;
+     END;
+         ELSE
+         BEGIN
+             UPDATE ccinbound
+               SET 
+                   chatDomain = ''''
+             WHERE inbound_id = @inbound_id;
+             RAISERROR(''Domain already in another ACD Group'', 15, 4);
+     END;
+     IF @ShowCalifWnd = 1
+         BEGIN
+             IF EXISTS
+             (
+                 SELECT cam_id
+                 FROM ccCalifCamp
+                 WHERE cam_id = @inbound_id
+                       AND tipo = 0
+             )
+                 BEGIN
+                     UPDATE ccInbound
+                       SET 
+                           ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd)
+                     WHERE inbound_id = @inbound_id;
+                     SELECT 1;
+                     RETURN(0);
+             END;
+             SELECT 0;
+             RETURN(0);
+     END;
+         ELSE
+         UPDATE ccInbound
+           SET 
+               ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd)
+         WHERE inbound_id = @inbound_id;
+         
+
+     SELECT 2;
+     RETURN(0);
+     SET NOCOUNT OFF;'
+    
+    EXEC(@sql)
+
+    set @process = 'Valida y si existe SP'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_UpdateACDWhatsappConfig'')
+            begin
+          DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5636'
+    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
+
+    @ConexionInfo varchar(400),
+    @inbound_id int,
+    @ConnUser varchar(60),
+    @tNotas int,
+    @closeConversationTime tinyint,
+    @ShowCalifWnd bit 
+
+    AS
+    set nocount on
+        IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+        BEGIN
+            UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime where inboundId = @inbound_id;
+        END;
+
+        IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+        BEGIN
+            UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd where Inbound_id = @inbound_id;
+        END;
+    SELECT @inbound_id;
+    return(@inbound_id)
+
+    set nocount off'
+    
+    EXEC(@sql)
+
+    set @process = 'Borra SP ccsp_GalateaAdminBlackListHistoricalLog si existe. Tarea CW-5254 Historial de listas negras'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminBlackListHistoricalLog'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminBlackListHistoricalLog;
+            end'
+    EXEC(@sql)
+
+    set @process = 'Crea el SP ccsp_GalateaAdminBlackListHistoricalLog. Tarea CW-5254 Historial de listas negras'
+    set @sql = 'CREATE PROCEDURE ccsp_GalateaAdminBlackListHistoricalLog --guiandose del sp ccsp_RIABlackListLog
+@date smalldatetime,--start date
+@endDate smalldatetime,
+@idtipomov int,
+@telephone varchar(1000),
+@Scam_id varchar(1000),
+@GenCSV tinyint
+
+AS
+set nocount on
+declare @sql as nvarchar (4000), @params nvarchar(1000), @newFinalDate nvarchar(22), @newStartDate nvarchar(22)
+
+set @params = ''@Ndate varchar(22), @Nidtipomov varchar(1),@Ntelephone varchar(1000)''
+
+select @sql = case @GenCSV when 1 then ''select '' else ''select top 200 '' end
+
+select @newFinalDate = convert(varchar(8), @endDate, 112)
+select @newStartDate = convert(varchar(8), @date, 112)
+
+set @sql = @sql + '' idhistorial, isnull(callout_id,0) as callout_id, telefono, fecha, isnull(cam_descripcion,'''''''') as campaign, movimiento, a4.Tipolista 
+from cchistoriallistanegra a1 
+inner join cctipomovslistanegra a2 on (a1.idtipomov=a2.idtipomov) 
+left join cccamps a3 on (a1.cam_id=a3.cam_id)
+inner join cctiposlistanegra a4 on (a1.idtipolista = a4.idtipolista) 
+where fecha between ''''''+ @newStartDate +'' 00:00:01''''  and '' + nchar(39) + @newFinalDate + '' 23:59:59'''' ''
++ case isnull(@idtipomov, 0) when ''0'' then '''' when ''1'' then '' and a1.idtipomov in (1,7)''-- estas lineas las modifique
+else '' and a1.idtipomov = @Nidtipomov '' end--aqui solo le di enter y lo puse en otra linea
++ case isnull(@telephone, 0) when ''0'' then '''' else '' and telefono = @Ntelephone '' end
++ case isnull(@Scam_id, 0) when ''0'' then '''' else '' and a1.cam_id in ('' + @Scam_id + '') '' end
+
+execute sp_executesql @sql, @params,@Ndate=@date,@Nidtipomov=@idtipomov,@Ntelephone=@telephone
+
+return(0)'
+    EXEC(@sql)
     
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

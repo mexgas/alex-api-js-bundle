@@ -3,7 +3,7 @@
 -- Create date: 16/12/2020
 -- Description:	Sabe to ccRIALog
 -- =============================================
-CREATE PROCEDURE ccsp_GalateaRIALog
+CREATE PROCEDURE [dbo].[ccsp_GalateaRIALog]
 @userId           SMALLINT,
 @OperationType    VARCHAR(MAX)= '',
 @Value			  VARCHAR(MAX) = '',

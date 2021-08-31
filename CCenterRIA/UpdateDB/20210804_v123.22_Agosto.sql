@@ -1946,6 +1946,126 @@ AS
      '
     EXEC(@sql)
 	
+	set @process = 'CW-5697 Valida si no existe la columna maxWhats ccRIACat_Areas y la agrega'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''maxWhats'' AND Object_ID = Object_ID(N''ccRIACat_Areas''))
+    BEGIN
+        ALTER TABLE ccRIACat_Areas ADD maxWhats tinyint;
+    END'
+    EXEC(@sql)
+	
+	set @process = 'CW-5697 Valida si existe ccsp_Multimedia2'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multimedia2'')
+            begin
+          DROP PROCEDURE ccsp_Multimedia2;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5697 Crea SP ccsp_Multimedia2 '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --Lista  ACD
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+		cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+		FROM ccInbound A
+		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
+	END
+	ELSE IF @action = 2
+	BEGIN --Lista Agentes  
+		SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+		FROM ccRIAWorkGroupUsers A
+		INNER JOIN ccusers B ON A.User_id = B.User_id
+		INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
+		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+		LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+		WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+		ORDER BY A.User_id
+	END
+	ELSE IF @action = 3
+	BEGIN --List Sender Mail
+		SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+		FROM contactMeanOut A
+		LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+		WHERE @senderId IS NULL OR @senderId = A.contactMeanOutId
+	END
+END'
+	
+	EXEC(@sql)
+	
+	set @process = 'CW-5697 Valida si existe ccsp_ConversationWASave'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ConversationWASave'')
+            begin
+          DROP PROCEDURE ccsp_ConversationWASave;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5697 Crea SP ccsp_ConversationWASave '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_ConversationWASave]
+
+	@action int,
+	@conversationId int=0,
+	@inboundId smallint=null,
+	@phoneACD varchar(50)= null,
+	@clientId varchar(25)= null,
+	@conversationStatus smallint=0,
+	@tChatting smallint=0,
+	@tWrapUp smallint=0,
+	@finishedBy tinyint = 0,
+	@onQueue bit = null,
+	@tQueue smallint = 0,
+	@tTimeout int = 0,
+	@disposition smallint=0,
+	@subDisposition smallint=0,
+	@agentId int
+
+AS
+BEGIN
+	DECLARE @isEndConversation bit
+	DECLARE @meanContactTypeId smallint
+
+	SET @meanContactTypeId = 1
+SET NOCOUNT ON;
+
+	IF @action = 1 BEGIN --new Conversation
+		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWhatsAppConversations](
+												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition,agentId) values 
+											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition,@agentId)
+			SELECT @conversationId=SCOPE_IDENTITY()
+			SELECT @conversationId as ConversationId
+			RETURN (0)
+		END
+		ELSE BEGIN
+			SELECT 0 AS ConversationId
+			RETURN (0)
+		END
+	END
+
+	IF @action = 2 BEGIN --save conversation Times
+		Update ccWhatsAppConversations 
+		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
+			conversationStatus = @conversationStatus, finishedBy = 1,
+			tConversation = DATEDIFF(ss,requestDate,getdate()) 
+		where conversationId = @conversationId  
+	END
+	
+	IF @action = 3 BEGIN --save conversation Status
+		Update ccWhatsAppConversations 
+		set conversationDate = getdate(),
+			conversationStatus = @conversationStatus
+		where conversationId = @conversationId  
+	END
+END'
+	
+	EXEC(@sql)
+	
 	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

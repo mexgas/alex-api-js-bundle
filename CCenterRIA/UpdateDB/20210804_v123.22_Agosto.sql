@@ -1148,12 +1148,6 @@ BEGIN
 
     IF(@Option = 1)
 		BEGIN
-			/*SELECT Inbound_id AS Id, 
-				   descripcion as Name, 
-				   CAST(Status as bit), 
-				   chat as Type 
-			  FROM ccInbound 
-			 WHERE chat <> 0*/
 
 			 SELECT --inbound.chat AS ServiceType,
 			   CAST(inbound.Inbound_id AS INT) AS ACDId,
@@ -1161,16 +1155,10 @@ BEGIN
 			   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
 			   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
 			   inbound.tNotas AS WrapUpTime
-			   --configuration.closeConversationTime AS CloseConversationMaxTime,
-			   --CAST(Status as bit)
 
 			   FROM  ccInbound inbound
 			   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
 		END      
-	--ELSE
-	--	BEGIN
- --           raiserror(''ERROR. No existe la opcion seleccionada o es nula'', 18, 1)
- --       END 
 
 	IF(@Option = 2)
 		BEGIN
@@ -1191,8 +1179,18 @@ BEGIN
 				INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
 			WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
 		END
-	
-	
+	IF(@Option = 3)
+		BEGIN
+			 SELECT 
+			   CAST(inbound.Inbound_id AS INT) AS ACDId,
+			   inbound.descripcion AS ACDName,
+			   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+			   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+			   inbound.tNotas AS WrapUpTime
+
+			   FROM  ccInbound inbound
+			   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+		END   	
 END'
 	
 	EXEC(@sql)

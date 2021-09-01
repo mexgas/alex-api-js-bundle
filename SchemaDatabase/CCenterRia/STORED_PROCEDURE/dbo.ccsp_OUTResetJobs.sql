@@ -4,7 +4,7 @@ AS
 BEGIN
 
   CREATE TABLE #TempccoLogDials ( 
-    callout_id INT, cam_id SMALLINT,PRIMARY KEY (callout_id)
+    callout_id INT, PRIMARY KEY (callout_id)
   );
   DECLARE @today DATETIME;
 
@@ -13,20 +13,20 @@ BEGIN
   IF @camid = 0
   BEGIN
     INSERT INTO #TempccoLogDials
-         SELECT callout_id, cam_id
+         SELECT callout_id
          FROM ccoLogDials AS ld WITH(NOLOCK)
          WHERE fecha >= @today
-         GROUP BY callout_id, cam_id;
+         GROUP BY callout_id;
   END;
      ELSE
     IF @camid > 0
     BEGIN
       INSERT INTO #TempccoLogDials
-           SELECT callout_id, cam_id
+           SELECT callout_id
            FROM ccoLogDials AS ld WITH(NOLOCK)
            WHERE cam_id = @camid AND 
              fecha >= @today
-           GROUP BY callout_id, cam_id;
+           GROUP BY callout_id;
     END;
 
   -- CALLBACKS Se han marcado recientemente
@@ -41,7 +41,7 @@ BEGIN
   IF @camid = 0
   BEGIN
     -- NUEVAS - Nunca se han marcado
-    UPDATE ccoWorkingTable WITH(ROWLOCK)
+    UPDATE ccoWorkingTable --WITH(ROWLOCK)
       SET cal_status = 0
     WHERE cal_status = 2;
   END;

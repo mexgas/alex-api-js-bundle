@@ -217,6 +217,17 @@ BEGIN
 	end'
     EXEC(@sql)
 
+	set @process = 'CW-5762 Valor por default para maximo de WhatsApp por agente'
+    set @sql = 'IF EXISTS (SELECT *  FROM SYS.COLUMNS  WHERE OBJECT_ID = OBJECT_ID(''ccRIACat_Areas'') AND NAME = ''maxWhats'')
+begin
+	ALTER TABLE ccRIACat_Areas DROP COLUMN maxWhats;
+	ALTER TABLE ccRIACat_Areas ADD maxWhats tinyint;
+	ALTER TABLE [dbo].[ccRIACat_Areas] ADD  DEFAULT ((3)) FOR [maxWhats];
+	Update ccRIACat_Areas set maxWhats=3
+	
+end
+'
+    EXEC(@sql)
 	
 	
 	

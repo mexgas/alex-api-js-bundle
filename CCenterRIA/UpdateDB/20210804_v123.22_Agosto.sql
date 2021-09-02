@@ -1148,12 +1148,6 @@ BEGIN
 
     IF(@Option = 1)
 		BEGIN
-			/*SELECT Inbound_id AS Id, 
-				   descripcion as Name, 
-				   CAST(Status as bit), 
-				   chat as Type 
-			  FROM ccInbound 
-			 WHERE chat <> 0*/
 
 			 SELECT --inbound.chat AS ServiceType,
 			   CAST(inbound.Inbound_id AS INT) AS ACDId,
@@ -1161,16 +1155,10 @@ BEGIN
 			   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
 			   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
 			   inbound.tNotas AS WrapUpTime
-			   --configuration.closeConversationTime AS CloseConversationMaxTime,
-			   --CAST(Status as bit)
 
 			   FROM  ccInbound inbound
 			   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
 		END      
-	--ELSE
-	--	BEGIN
- --           raiserror(''ERROR. No existe la opcion seleccionada o es nula'', 18, 1)
- --       END 
 
 	IF(@Option = 2)
 		BEGIN
@@ -1191,8 +1179,18 @@ BEGIN
 				INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
 			WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
 		END
-	
-	
+	IF(@Option = 3)
+		BEGIN
+			 SELECT 
+			   CAST(inbound.Inbound_id AS INT) AS ACDId,
+			   inbound.descripcion AS ACDName,
+			   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+			   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+			   inbound.tNotas AS WrapUpTime
+
+			   FROM  ccInbound inbound
+			   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+		END   	
 END'
 	
 	EXEC(@sql)
@@ -1657,6 +1655,416 @@ execute sp_executesql @sql, @params,@Ndate=@date,@Nidtipomov=@idtipomov,@Nteleph
 return(0)'
     EXEC(@sql)
     
+	set @process = 'CW-5697 Valida si existe ccsp_ConversationWASave'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ConversationWASave'')
+            begin
+          DROP PROCEDURE ccsp_ConversationWASave;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5697 Crea SP ccsp_ConversationWASave '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_ConversationWASave]
+
+	@action int,
+	@conversationId int=0,
+	@inboundId smallint=null,
+	@phoneACD varchar(50)= null,
+	@clientId varchar(25)= null,
+	@conversationStatus smallint=0,
+	@tChatting smallint=0,
+	@tWrapUp smallint=0,
+	@finishedBy tinyint = 0,
+	@onQueue bit = null,
+	@tQueue smallint = 0,
+	@tTimeout int = 0,
+	@clientName varchar(100)= null,
+	@disposition smallint=0,
+	@subDisposition smallint=0
+
+AS
+BEGIN
+	DECLARE @isEndConversation bit
+	DECLARE @meanContactTypeId smallint
+
+	SET @meanContactTypeId = 1
+SET NOCOUNT ON;
+
+	IF @action = 1 BEGIN --new Conversation
+		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWhatsAppConversations](
+												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
+											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @clientName, @disposition, @subDisposition)
+			SELECT @conversationId=SCOPE_IDENTITY()
+			SELECT @conversationId as ConversationId
+			RETURN (0)
+		END
+		ELSE BEGIN
+			SELECT 0 AS ConversationId
+			RETURN (0)
+		END
+	END
+
+	IF @action = 2 BEGIN --save conversation Times
+		Update ccWhatsAppConversations 
+		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
+			conversationStatus = @conversationStatus, finishedBy = 1,
+			tConversation = DATEDIFF(ss,requestDate,getdate()) 
+		where conversationId = @conversationId  
+	END
+	
+	IF @action = 3 BEGIN --save conversation Status
+		Update ccWhatsAppConversations 
+		set conversationDate = getdate(),
+			conversationStatus = @conversationStatus
+		where conversationId = @conversationId  
+	END
+END'
+	
+	EXEC(@sql)
+
+    set @process = 'CW-5722 Valida si existe la columna clientName ccWhatsAppConversations y la borra'
+    set @sql = '
+    IF exists (SELECT * FROM sys.columns WHERE name = N''clientName'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations DROP COLUMN clientName
+    END'
+    EXEC(@sql)
+
+    set @process = 'CW-5722 Valida si no existe la columna clientName ccWhatsAppConversations y la agrega'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''agentId'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations ADD agentId INT;
+    END'
+    EXEC(@sql)
+
+    set @process = 'CW-XXX Mejoras 477 Alter SP ccsp_OUTResetJobs'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTResetJobs] 
+        @camid AS INT= 0
+AS
+BEGIN
+
+  CREATE TABLE #TempccoLogDials ( 
+    callout_id INT, PRIMARY KEY (callout_id)
+  );
+  DECLARE @today DATETIME;
+
+  SELECT @today = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE(), 121), 121);
+  
+  IF @camid = 0
+  BEGIN
+    INSERT INTO #TempccoLogDials
+         SELECT callout_id
+         FROM ccoLogDials AS ld WITH(NOLOCK)
+         WHERE fecha >= @today
+         GROUP BY callout_id;
+  END;
+     ELSE
+    IF @camid > 0
+    BEGIN
+      INSERT INTO #TempccoLogDials
+           SELECT callout_id
+           FROM ccoLogDials AS ld WITH(NOLOCK)
+           WHERE cam_id = @camid AND 
+             fecha >= @today
+           GROUP BY callout_id;
+    END;
+
+  -- CALLBACKS Se han marcado recientemente
+  UPDATE ccoWorkingTable WITH(ROWLOCK)
+    SET cal_status = 1
+  FROM ccoWorkingTable wt
+     INNER JOIN
+     #TempccoLogDials ld
+     ON wt.callout_id = ld.callout_id
+  WHERE wt.cal_status = 2   
+
+  IF @camid = 0
+  BEGIN
+    -- NUEVAS - Nunca se han marcado
+    UPDATE ccoWorkingTable --WITH(ROWLOCK)
+      SET cal_status = 0
+    WHERE cal_status = 2;
+  END;
+     ELSE
+  BEGIN  
+    -- NUEVAS - Nunca se han marcado
+    UPDATE ccoWorkingTable WITH(ROWLOCK)
+      SET cal_status = 0
+    WHERE cal_status = 2 AND 
+        cam_id = @camid;
+  END;
+
+  DROP TABLE #TempccoLogDials;
+END;'
+    EXEC(@sql)
+
+    set @process = 'CW-XXX Mejoras 477 Alter SP ccspAgent_GetLastCalls'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id INT
+AS
+     SET NOCOUNT ON;
+     DECLARE @lastCallAgt TABLE(id           INT NOT NULL
+                              , tipo         VARCHAR(10) NOT NULL
+                              , Hora         DATETIME NOT NULL --VARCHAR(19) NOT NULL, 
+                              , Telefono     VARCHAR(55) NOT NULL
+                              , EspCamp      VARCHAR(55) NOT NULL
+                              , Calificacion VARCHAR(60)
+                              , Duracion     VARCHAR(10) NOT NULL
+                              , CallBack     DATETIME
+                              , cal_key      VARCHAR(40)
+                              , IDCampEsp    SMALLINT NOT NULL
+                              , prefijo      VARCHAR(255) NULL
+                              , GraphicID    INT
+                              , PRIMARY KEY(id)
+     );
+
+     DECLARE @pais TINYINT;
+     DECLARE @maxHours SMALLINT;
+     DECLARE @topRows INT;
+     DECLARE @setting VARCHAR(6);
+     DECLARE @hidePhone BIT;
+     DECLARE @dateStart DATETIME;
+
+     SET @hidePhone = 1;
+
+     SELECT @setting = valor FROM ccSettings WHERE setting_id = 255;
+
+     SET @maxHours = CAST(SUBSTRING(@setting, 1, (SELECT PATINDEX(''%|%'', @setting)) - 1) AS SMALLINT);
+     SET @topRows = CAST(SUBSTRING(@setting, (SELECT PATINDEX(''%|%'', @setting)) + 1, LEN(@setting)) AS INT);
+
+     IF @maxHours = 0
+     BEGIN
+         SELECT Id
+              , tipo
+              , (CONVERT(VARCHAR(10), Hora, 101) + '' '' + CONVERT(VARCHAR(8), Hora, 108)) AS Hora
+              , Telefono
+              , EspCamp
+              , Calificacion
+              , CallBack
+              , Duracion
+              , '''' AS CallBack
+              , cal_key
+              , IDCampEsp
+              , prefijo
+              , GraphicID
+              , @hidePhone AS HidePhone FROM @lastCallAgt;
+
+         RETURN 0;
+     END;
+
+     SELECT @pais = valor FROM ccSettings WHERE setting_id = 104;
+
+     SELECT @hidePhone = CASE WHEN valor = ''0''
+                         THEN 0 ELSE 1
+                         END FROM ccSettings WHERE setting_id = 223;
+
+     IF @topRows = 0
+     BEGIN
+         SET @topRows = 10000;
+     END;
+
+     SET @dateStart = DATEADD(hh, -@maxHours, GETDATE());
+
+     WITH timeTransfer
+          AS (SELECT cal_id
+                   , tipo
+                   , SUM(tAntesXfer) AS tAntesXfer
+                   , SUM(tDespuesXfer) AS tDespuesXfer FROM ccLogTransfers
+              WHERE fechaFin > @dateStart
+              GROUP BY cal_id
+                     , tipo)
+
+          INSERT INTO @lastCallAgt
+                 ---Insert OUT
+                 SELECT TOP (@topRows) c.cal_id AS id
+                                     , ''OUT'' AS Tipo
+                                     , cal_inicio
+                                     , cal_telefono AS Telefono
+                                     , cam_descripcion AS EspCamp
+                                     , ISNULL(cal.Description, '''') AS Calificacion
+                                     , CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - cal_tMoh + CASE WHEN stopRecording = 0
+                                                                                                THEN ISNULL(t.tDespuesXfer, 0) ELSE 0
+                                                                                                END, 0), 114) AS Duracion
+                                     , cal_fcallback AS CallBack
+                                     , cal_key
+                                     , c.cam_id AS IDCampEsp
+                                     , ISNULL(ccCamps.prefijo, '''') Prefijo
+                                     , graph.graphic_id GraphicID FROM ccoCallsOut c
+                                                                       INNER JOIN ccCamps ON ccCamps.cam_id = c.cam_id
+                                                                       LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = c.cam_id
+                                                                       LEFT JOIN ccTipoCalifOut cal ON c.calif_id = cal.calif_id
+                                                                       LEFT JOIN timeTransfer t ON c.cal_id = t.cal_id
+                                                                                                   AND t.tipo = 2
+                 WHERE user_id = @user_id
+                       AND cal_inicio > @dateStart
+                 UNION
+                 --- IN
+                 SELECT TOP (@topRows) c.cal_id AS id
+                                     , ''IN'' AS Tipo
+                                     , cal_inicio
+                                     , cal_ani AS Telefono
+                                     , descripcion AS EspCamp
+                                     , ISNULL(cal.Description, '''') AS Calificacion
+                                     , CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - cal_tMoh + CASE WHEN stopRecording = 0
+                                                                                                     THEN ISNULL(t.tDespuesXfer, 0) ELSE 0
+                                                                                                     END, 0), 108) Duracion
+                                     , NULL AS CallBack
+                                     , cal_key
+                                     , c.inbound_id AS IDCampEsp
+                                     , ISNULL(ccInbound.prefijo, '''') Prefijo
+                                     , graph.graphic_id GraphicID FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
+                                                                       JOIN ccRIAInboundGraph graph ON graph.Inbound_id = c.Inbound_id
+                                                                       INNER JOIN ccInbound ON ccInbound.Inbound_id = c.Inbound_id
+                                                                       LEFT JOIN ccTipoCalif cal ON c.calif_id = cal.calif_id
+                                                                       LEFT JOIN timeTransfer t ON c.cal_id = t.cal_id
+                                                                                                   AND t.tipo = 1
+                 WHERE user_id = @user_id
+                       AND cal_inicio > @dateStart;
+
+     SELECT Id
+          , tipo
+          , CASE WHEN @pais = 4
+            THEN(CONVERT(VARCHAR(10), Hora, 101) + '' '' + CONVERT(VARCHAR(8), Hora, 108)) ELSE(CONVERT(VARCHAR(10), Hora, 103) + '' '' + CONVERT(VARCHAR(8), Hora, 14))
+            END AS Hora
+          , Telefono
+          , EspCamp
+          , Calificacion
+          , ISNULL(CONVERT(VARCHAR(16), CallBack, 121), '''') AS CallBack
+          , Duracion
+          , CallBack
+          , cal_key
+          , IDCampEsp
+          , prefijo
+          , GraphicID
+          , @hidePhone AS HidePhone FROM @lastCallAgt
+     ORDER BY hora DESC;
+     SET NOCOUNT OFF;
+     '
+    EXEC(@sql)
+	
+	set @process = 'CW-5697 Valida si no existe la columna maxWhats ccRIACat_Areas y la agrega'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''maxWhats'' AND Object_ID = Object_ID(N''ccRIACat_Areas''))
+    BEGIN
+        ALTER TABLE ccRIACat_Areas ADD maxWhats tinyint;
+    END'
+    EXEC(@sql)
+	
+	set @process = 'CW-5697 Valida si existe ccsp_Multimedia2'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multimedia2'')
+            begin
+          DROP PROCEDURE ccsp_Multimedia2;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5697 Crea SP ccsp_Multimedia2 '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --Lista  ACD
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+		cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+		FROM ccInbound A
+		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
+	END
+	ELSE IF @action = 2
+	BEGIN --Lista Agentes  
+		SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+		FROM ccRIAWorkGroupUsers A
+		INNER JOIN ccusers B ON A.User_id = B.User_id
+		INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
+		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+		LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+		WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+		ORDER BY A.User_id
+	END
+	ELSE IF @action = 3
+	BEGIN --List Sender Mail
+		SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+		FROM contactMeanOut A
+		LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+		WHERE @senderId IS NULL OR @senderId = A.contactMeanOutId
+	END
+END'
+	
+	EXEC(@sql)
+	
+	set @process = 'CW-5697 Valida si existe ccsp_ConversationWASave'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ConversationWASave'')
+            begin
+          DROP PROCEDURE ccsp_ConversationWASave;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CW-5697 Crea SP ccsp_ConversationWASave '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_ConversationWASave]
+
+	@action int,
+	@conversationId int=0,
+	@inboundId smallint=null,
+	@phoneACD varchar(50)= null,
+	@clientId varchar(25)= null,
+	@conversationStatus smallint=0,
+	@tChatting smallint=0,
+	@tWrapUp smallint=0,
+	@finishedBy tinyint = 0,
+	@onQueue bit = null,
+	@tQueue smallint = 0,
+	@tTimeout int = 0,
+	@disposition smallint=0,
+	@subDisposition smallint=0,
+	@agentId int = 0
+
+AS
+BEGIN
+	DECLARE @isEndConversation bit
+	DECLARE @meanContactTypeId smallint
+
+	SET @meanContactTypeId = 1
+SET NOCOUNT ON;
+
+	IF @action = 1 BEGIN --new Conversation
+		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWhatsAppConversations](
+												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition,agentId) values 
+											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition,@agentId)
+			SELECT @conversationId=SCOPE_IDENTITY()
+			SELECT @conversationId as ConversationId
+			RETURN (0)
+		END
+		ELSE BEGIN
+			SELECT 0 AS ConversationId
+			RETURN (0)
+		END
+	END
+
+	IF @action = 2 BEGIN --save conversation Times
+		Update ccWhatsAppConversations 
+		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
+			conversationStatus = @conversationStatus, finishedBy = 1,
+			tConversation = DATEDIFF(ss,requestDate,getdate()) 
+		where conversationId = @conversationId  
+	END
+	
+	IF @action = 3 BEGIN --save conversation Status
+		Update ccWhatsAppConversations 
+		set conversationDate = getdate(),
+			conversationStatus = @conversationStatus
+		where conversationId = @conversationId  
+	END
+END'
+	
+	EXEC(@sql)
+	
+	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

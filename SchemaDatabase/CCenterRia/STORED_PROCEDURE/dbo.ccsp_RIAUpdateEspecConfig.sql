@@ -70,6 +70,18 @@ AS
            prefijo = ISNULL(@prefijo, prefijo), 
            addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder)
      WHERE inbound_id = @inbound_id;
+     IF @chat = 5 
+        BEGIN
+            IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+            BEGIN
+                INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) values (@chat, @descripcion, @inbound_id, (select status from ccInbound where Inbound_id = @inbound_id));
+            END
+        END;
+
+    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+        BEGIN
+           UPDATE contactMeanIn set name = @descripcion where inboundId = @inbound_id;
+        END
      IF NOT EXISTS
      (
          SELECT inbound_id
@@ -120,7 +132,8 @@ AS
            SET 
                ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd)
          WHERE inbound_id = @inbound_id;
+         
 
-	 SELECT 2;
+     SELECT 2;
      RETURN(0);
      SET NOCOUNT OFF;

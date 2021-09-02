@@ -14,7 +14,7 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave]
 	@tTimeout int = 0,
 	@disposition smallint=0,
 	@subDisposition smallint=0,
-	@agentId int
+	@agentId int = 0
 
 AS
 BEGIN

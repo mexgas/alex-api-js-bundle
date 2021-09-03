@@ -223,7 +223,7 @@ begin
 	ALTER TABLE ccRIACat_Areas DROP COLUMN maxWhats;
 	ALTER TABLE ccRIACat_Areas ADD maxWhats tinyint;
 	ALTER TABLE [dbo].[ccRIACat_Areas] ADD  DEFAULT ((3)) FOR [maxWhats];
-	Update ccRIACat_Areas set maxWhats=3
+	Update ccRIACat_Areas set maxWhats = 3 where maxWhats is null
 	
 end
 '

@@ -217,16 +217,53 @@ BEGIN
 	end'
     EXEC(@sql)
 
-	set @process = 'CW-5762 Valor por default para maximo de WhatsApp por agente'
-    set @sql = 'IF EXISTS (SELECT *  FROM SYS.COLUMNS  WHERE OBJECT_ID = OBJECT_ID(''ccRIACat_Areas'') AND NAME = ''maxWhats'')
-begin
-	ALTER TABLE ccRIACat_Areas DROP COLUMN maxWhats;
-	ALTER TABLE ccRIACat_Areas ADD maxWhats tinyint;
-	ALTER TABLE [dbo].[ccRIACat_Areas] ADD  DEFAULT ((3)) FOR [maxWhats];
-	Update ccRIACat_Areas set maxWhats = 3 where maxWhats is null
-	
+	set @process = 'CW-5762 Drop contraint ccRIACat_Areas_maxWhats'
+    set @sql = 'declare @name nvarchar(max),@sql2 nvarchar(max)
+SELECT 
+    @name=   dc.Name   
+FROM sys.tables t
+INNER JOIN sys.default_constraints dc ON t.object_id = dc.parent_object_id
+INNER JOIN sys.columns c ON dc.parent_object_id = c.object_id AND c.column_id = dc.parent_column_id
+where t.name=''ccRIACat_Areas'' and c.name=''maxWhats''  and dc.name<>''ccRIACat_Areas_maxWhats''
+ORDER BY t.Name
+
+if @name is not null begin
+ set @sql2=''ALTER TABLE ccRIACat_Areas DROP CONSTRAINT ''+@name
+    exec (@sql2)
 end
+
+	
+	
+	IF EXISTS
+          (SELECT * FROM SYS.COLUMNS WHERE OBJECT_ID = OBJECT_ID(''ccRIACat_Areas'')
+                                           AND NAME = ''maxWhats''
+          )
+BEGIN    	
+	ALTER TABLE ccRIACat_Areas ALTER COLUMN maxWhats TINYINT;    	
+END
+else begin
+	ALTER TABLE ccRIACat_Areas ADD maxWhats TINYINT;
+end
+
+
+
 '
+    EXEC(@sql)
+
+	set @process = 'CW-5762 Valor por default para maximo de WhatsApp por agente'
+    set @sql = 'if not exists (
+SELECT 
+    dc.Name   
+FROM sys.tables t
+INNER JOIN sys.default_constraints dc ON t.object_id = dc.parent_object_id
+INNER JOIN sys.columns c ON dc.parent_object_id = c.object_id AND c.column_id = dc.parent_column_id
+where t.name=''ccRIACat_Areas'' and c.name=''maxWhats'' and dc.name=''ccRIACat_Areas_maxWhats''
+
+)
+    begin
+        ALTER TABLE [ccRIACat_Areas] ADD CONSTRAINT ccRIACat_Areas_maxWhats DEFAULT 3 FOR [maxWhats];
+		UPDATE ccRIACat_Areas SET maxWhats = 3 WHERE maxWhats IS NULL;
+    end'
     EXEC(@sql)
 
     set @process = 'Correcion Del catalogo configuraIdiomaCatalogosEspañol'

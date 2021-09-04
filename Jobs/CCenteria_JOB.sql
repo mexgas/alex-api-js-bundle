@@ -689,13 +689,6 @@ EndSave:
     set @sql = ''
     EXEC(@sql)
 
-    
-
-        /* End script release */
-        /* Upgrade database version (use your own script to do it) */
-        --exec ccsp_getVersion 'BD', @version
-        EXEC ccsp_getVersion 'BDF', @versionFix
-
         COMMIT TRAN
     END TRY
 

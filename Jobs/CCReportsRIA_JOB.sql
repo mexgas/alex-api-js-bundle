@@ -1,48 +1,18 @@
-/*******************************/
-/***** NUXIBA TECHNOLOGIES *****/
-/*******************************/
-/*
-Author:
-
-
-Date: 2021/07/01
-Description:
-
-Database: CCenterRia
-Required version: 123.14
-
-IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
-*/
 SET NOCOUNT ON
 
-DECLARE @version INT, @versionFix INT
-DECLARE @actualVersion INT, @actualVersionFix INT
+DECLARE @version INT
+DECLARE @actualVersion INT
 DECLARE @sql VARCHAR(max)
 DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
-DECLARE @versionALL VARCHAR(max);
 
 /* Version to release (use the version of your own databse)*/
-/*******************************************************************************************************
-Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
-set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
-sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 123 --**********actualizar a 122 sin fix
-SET @versionfix = 23
-/* Actual version (use your own script to do it)*/
-EXEC @actualVersion = ccsp_getVersion 'BD' 
+SET @version = 104
 
-EXEC @actualVersionFix = ccsp_getVersion 'BDF'
+/* Actual version (use your own script to do it) */
+EXEC @actualVersion = ccsp_getVersion 'BD'
 
-SELECT @versionALL = valor
-FROM ccsettings
-WHERE setting_id = 77;
-
-SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
-FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
-WHERE id = 4;
-
-IF @actualVersion = @version and @actualVersionFix >= @versionfix - 1
+IF @actualVersion IN (@version, @version - 1)
 BEGIN
 	BEGIN TRAN
 
@@ -146,7 +116,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessPublicationHighLoadPublicationHighLoad'', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessPublicationHighLoad'', 
         @enabled=1, 
         @notify_level_eventlog=0, 
         @notify_level_email=0, 
@@ -260,11 +230,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:
-GO
-
-
-'
+EndSave:'
     EXEC(@sql)
 
     set @process = 'CREATE JOB ReportsMasterProcessYesterday'
@@ -338,11 +304,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:
-GO
-
-
-'
+EndSave:'
     EXEC(@sql)
 
     set @process = 'CREATE JOB ReportsMasterSubProcess'
@@ -403,23 +365,25 @@ EndSave:'
     set @process = 'CREATE JOB '
     set @sql = ''
     EXEC(@sql)
+    	
 
-    
-
-    	/* End script release */
-		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		EXEC ccsp_getVersion 'BDF', @versionFix
-
-		COMMIT TRAN
+		
+			COMMIT TRAN
 	END TRY
 
 	BEGIN CATCH
 		/* Error generated based on sintax */
-		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + ' Error process: ' + @process + ' Line: ' + cast(error_line() AS NVARCHAR) + ' Number: ' + cast(@@error AS NVARCHAR) + ' Message: ' + error_message()
 
 		RAISERROR (@errorGenerated, 11, 1)
 
 		ROLLBACK TRAN
 	END CATCH
 END
+ELSE
+BEGIN
+	/* Error generated based on database version */
+	SELECT 'Incorrect database version, actual version: ' + cast(@actualVersion AS VARCHAR(5)) + ', version to release: ' + cast(@version AS VARCHAR(5))
+END
+
+SET NOCOUNT OFF

@@ -1217,7 +1217,6 @@ END'
 	@onQueue bit = null,
 	@tQueue smallint = 0,
 	@tTimeout int = 0,
-	@clientName varchar(100)= null,
 	@disposition smallint=0,
 	@subDisposition smallint=0
 
@@ -1233,9 +1232,9 @@ SET NOCOUNT ON;
 		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
 			INSERT INTO [ccWhatsAppConversations](
 												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
-												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition) values 
 											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
-												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @clientName, @disposition, @subDisposition)
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition)
 			SELECT @conversationId=SCOPE_IDENTITY()
 			SELECT @conversationId as ConversationId
 			RETURN (0)
@@ -1677,7 +1676,6 @@ return(0)'
 	@onQueue bit = null,
 	@tQueue smallint = 0,
 	@tTimeout int = 0,
-	@clientName varchar(100)= null,
 	@disposition smallint=0,
 	@subDisposition smallint=0
 
@@ -1693,9 +1691,9 @@ SET NOCOUNT ON;
 		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
 			INSERT INTO [ccWhatsAppConversations](
 												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
-												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition) values 
 											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
-												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @clientName, @disposition, @subDisposition)
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition)
 			SELECT @conversationId=SCOPE_IDENTITY()
 			SELECT @conversationId as ConversationId
 			RETURN (0)

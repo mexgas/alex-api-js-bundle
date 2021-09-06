@@ -12,9 +12,9 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave]
 	@onQueue bit = null,
 	@tQueue smallint = 0,
 	@tTimeout int = 0,
-	@clientName varchar(100)= null,
 	@disposition smallint=0,
-	@subDisposition smallint=0
+	@subDisposition smallint=0,
+	@agentId int = 0
 
 AS
 BEGIN
@@ -28,9 +28,9 @@ SET NOCOUNT ON;
 		IF NOT EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
 			INSERT INTO [ccWhatsAppConversations](
 												inboundId, phoneACD, clientId, conversationStatus, tChatting, 
-												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, clientName, disposition, subDisposition) values 
+												tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition,agentId) values 
 											   (@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, 
-												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @clientName, @disposition, @subDisposition)
+												@tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition,@agentId)
 			SELECT @conversationId=SCOPE_IDENTITY()
 			SELECT @conversationId as ConversationId
 			RETURN (0)
@@ -46,6 +46,13 @@ SET NOCOUNT ON;
 		set tChatting = DATEDIFF(ss,conversationDate,getdate()), 
 			conversationStatus = @conversationStatus, finishedBy = 1,
 			tConversation = DATEDIFF(ss,requestDate,getdate()) 
+		where conversationId = @conversationId  
+	END
+	
+	IF @action = 3 BEGIN --save conversation Status
+		Update ccWhatsAppConversations 
+		set conversationDate = getdate(),
+			conversationStatus = @conversationStatus
 		where conversationId = @conversationId  
 	END
 END

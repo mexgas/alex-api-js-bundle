@@ -5,7 +5,8 @@ BEGIN
 
 	IF @action = 1
 	BEGIN --Lista  ACD
-		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, A.IDArea AS AreaId
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+		cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
 		FROM ccInbound A
 		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
 		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id

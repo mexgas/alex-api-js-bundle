@@ -1774,7 +1774,7 @@ else if @action = 11 begin--trae el nombre de la base de datos en BX
 end'
     EXEC(@sql)
 
-    set @process = 'CW-5781 '
+    set @process = ''
     set @sql = ''
     EXEC(@sql)
 	

@@ -409,16 +409,9 @@ BEGIN
 			return @tipo
 		END'
   exec (@sql)
-
-  set @process = 'CW-4918 DROP FUNCTION [dbo].[fnGetTimeZone]'
-		set @sql = 'IF EXISTS (SELECT name FROM   sys.objects WHERE  object_id = OBJECT_ID(N''[dbo].[fnGetTimeZone]'') AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
-BEGIN
-  DROP FUNCTION [dbo].[fnGetTimeZone]
-END'
-		EXEC(@sql)
-
+ 
 		set @process = 'CW-4918 CREATE FUNCTION [dbo].[fnGetTimeZone]'
-		set @sql = 'CREATE FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
+		set @sql = 'ALTER FUNCTION [dbo].[fnGetTimeZone](@phone varchar(20), @bIsDaylight bit)
 RETURNS int
 AS
  BEGIN
@@ -487,10 +480,12 @@ AS
 		set @ld=@lada
 	end
 
+		set @location = case when @location = ''DF'' then ''CDMX'' else @location end
+
 		select @timeZone = case @bIsDaylight when 1 then tz_daylight else tz_standard end from ccTimeZoneArea
           where id_country = @country and 
           area = @ld 
-		  and ( @location is null or location = (IIF(@location = ''DF'',''CDMX'',@location)))
+		  and ( @location is null or location = @location)
 		
 		if(@timeZone is null or @timeZone = 0)
 		begin

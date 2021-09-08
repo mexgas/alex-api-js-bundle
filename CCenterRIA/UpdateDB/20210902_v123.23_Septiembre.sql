@@ -124,99 +124,9 @@ BEGIN
 		end
 
 	END'
-    EXEC(@sql)
+    EXEC(@sql)		
 
-	 
-	set @process = 'CW-5629 ccsp_RIAInsertChat - Se quita el SP ccsp_RIAInsertChat si ya existe'
-    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAInsertChat'')
-            begin
-          DROP PROCEDURE ccsp_RIAInsertChat;
-            end'
-    EXEC(@sql)
-
-	set @process = 'CW-5629 ccsp_RIAInsertChat - Se modifica SP ccsp_RIAInsertChat'
-    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAInsertChat]
-
-	@action int,
-	@inboundId smallint = 0,
-	@domain varchar(50) = '''',
-	@session varchar(50) = '''',
-	@tTimeout smallint = 0,
-	@chatId int = 0,
-	@status tinyInt = 0,
-	@userId smallint = 0,
-	@finished tinyInt = 0,
-	@chattingTime int = 0,
-	@startTime datetime = null,
-	@clientName varchar(50) = '''',
-	@firstMessage int = 0,
-	@firstMessageTime datetime = null,
-	@crmNode xml = null,
-	@supervisor varchar(100) =null,
-	@template varchar (100)= null,
-	@ScoreTemplate int = null
-	AS
-
-	declare @xml xml
-	declare @sql nvarchar(2000)
-
-	if @action = 1 begin -- Inserta nuevo chat request /*comentario: se recomienda hacer la busqueda del userid del CRM en esta action*/
-		   insert into ccRIAChats (domain,session,chatStatus,requestDate,inboundId,clientName)
-		   values(@domain,@session,@status,getDate(),0,@clientName)
-		   set @chatId = scope_identity()
-		   select @chatId
-	end
-
-	else if @action = 2 begin -- Save Initial Info
-	update ccRIAChats set inboundId = @inboundId, chatStatus = @status, userId = case when @userId = 0 then userId else @userId end, tTimeout = @tTimeout where chatId = @chatId
-	end
-
-	else if @action = 3 begin -- Update Status
-	update ccRIAChats set chatStatus = @status where chatId = @chatId
-	end
-
-	else if @action = 4 begin -- Save Final Status
-	if @firstMessage = 0
-		   begin
-				 update ccRIAChats set finishedBy = @finished, userID =case when @userId = 0 then userId else @userId end where chatId = @chatId
-		   end
-	else
-		   begin
-				 update ccRIAChats set finishedBy = @finished, firstMessageTime  = @firstMessageTime where chatId = @chatId
-		   end
-	end
-
-	else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion del nodo (registro final para el finder) se recomiendo en esta action, no olvidar validar status = 4, finishedby != null y validar los tiempos para garantizar el dato final */
-		   if @action = 5 begin
-				 update ccRIAChats set tChatting = @chattingTime, userId = case when @userId = 0 then userId else @userId end, chatDate = @startTime where chatId = @chatId
-		   end
-
-		   if @action = 6 begin
-				update ccRIAChats set userId = case when @userId = 0 then userId else @userId end  where chatId = @chatId
-		   end
-
-		   set @crmNode = null
-
-		   exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=0,@xml=@xml OUTPUT,@supervisor=@supervisor,@template =@template,@ScoreTemplate=@ScoreTemplate
-
-		   if @xml is not null
-		   begin
-          
-
-				 if exists(select * from ccChatsNodeHistory where chatId=@chatId) begin
-					update ccChatsNodeHistory set [status] = 2, node =@xml  where chatId = @chatId
-				 end
-				 else if exists(select * from ccChatsNode where chatId=@chatId) 
-				 begin
-					update ccChatsNode set [status] = 2, node =@xml  where chatId = @chatId
-				 end
-				 else begin 
-					insert into ccChatsNode (chatId,node, dateIn,[status]) values (@chatId,@xml, getdate(),0)				                
-				 end
-		   end
-	end'
-    EXEC(@sql)
-
+	
 	set @process = 'CW-5762 Drop contraint ccRIACat_Areas_maxWhats'
     set @sql = 'declare @name nvarchar(max),@sql2 nvarchar(max)
 SELECT 
@@ -230,9 +140,7 @@ ORDER BY t.Name
 if @name is not null begin
  set @sql2=''ALTER TABLE ccRIACat_Areas DROP CONSTRAINT ''+@name
     exec (@sql2)
-end
-
-	
+end	
 	
 	IF EXISTS
           (SELECT * FROM SYS.COLUMNS WHERE OBJECT_ID = OBJECT_ID(''ccRIACat_Areas'')
@@ -570,6 +478,28 @@ INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default10'', '
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', ''La sesión de chat ha estado inactiva mucho tiempo'')
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesión de chat ha concluido'')
 '
+    EXEC(@sql)
+
+    set @process = 'CW-5781 Drop CONSTRAINT ccChatsNode.status'
+    set @sql = 'declare @name nvarchar(max),@sql2 nvarchar(max)
+SELECT
+    @name=   dc.Name  
+FROM sys.tables t
+INNER JOIN sys.default_constraints dc ON t.object_id = dc.parent_object_id
+INNER JOIN sys.columns c ON dc.parent_object_id = c.object_id AND c.column_id = dc.parent_column_id
+where t.name=''ccChatsNode'' and c.name=''status'' 
+ORDER BY t.Name
+ 
+if @name is not null begin
+
+ set @sql2=''ALTER TABLE ccChatsNode DROP CONSTRAINT ''+@name
+    exec (@sql2)
+end'
+    EXEC(@sql)
+
+     set @process = 'CW-5781 Alter Column ccChatsNode.status'
+    set @sql = 'ALTER TABLE ccChatsNode alter column status smallint 
+ALTER TABLE ccChatsNodeHistory alter column status smallint '
     EXEC(@sql)
 
     set @process = 'CW-5781 CREATE TABLE ccWhatsAppNode'
@@ -1145,7 +1075,7 @@ BEGIN
 END;'
     EXEC(@sql)
 
-    set @process = 'CW-5781 Alter SP ccsp_RIAInsertChat'
+    set @process = 'CW-5629,CW-5781 Alter SP ccsp_RIAInsertChat'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @action int,
 @inboundId smallint = 0,

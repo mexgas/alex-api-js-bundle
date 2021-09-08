@@ -1,112 +1,205 @@
-CREATE PROCEDURE [dbo].[ccsp_CreateNodeMultimedia]
-@conversationId bigint,
-@xml xml OUTPUT,
-@supervisor varchar(255)='',
-@template varchar (255)='',
-@ScoreTemplate int=0,
-@type int =1--1 EMAIL , 2 Twitter
+CREATE PROCEDURE [dbo].[ccsp_CreateNodeMultimedia] @conversationId BIGINT
+                                                , @supervisor     VARCHAR(255) = ''
+                                                , @template       VARCHAR(255) = ''
+                                                , @ScoreTemplate  INT          = 0
+                                                , @type           INT                                                
 AS
 BEGIN
-declare @info varchar(255)
-declare @infoEscape varchar(max)
-declare @charEscape varchar(255),@charReplace varchar(max)
-set @charEscape='"|''''|<|>|&'
-set @charReplace='&quot;|&apos;|&lt;|&gt;|&amp;'
 
-declare @existAttached bit,@numInteracion smallint
-if @type=0 begin--CHAT
+    DECLARE @xml XML, @dateStart DATETIME;
+    DECLARE @info VARCHAR(255);
+    DECLARE @infoEscape VARCHAR(MAX);
+    DECLARE @charEscape VARCHAR(255), @charReplace VARCHAR(MAX);
+    SET @charEscape = '"|''''|<|>|&';
+    SET @charReplace = '&quot;|&apos;|&lt;|&gt;|&amp;';
 
-    select @xml = convert(xml,'<R01 CDATE="'+rtrim(ltrim(convert(varchar(23), isNull(chatDate,requestDate), 126))) +
-	'" CID="'+convert(varchar(max),ccRIAChats.inboundid) +
-	'" CType="1'+
-    '" C01="'+convert(varchar(max),chatId) +
-    '" C02="'+convert(varchar(max),isnull(ccinbound.descripcion,'')) +
-    '" C03="'+convert(varchar(max),domain) +
-    '" C04="'+convert(varchar(max), isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno,'N/A') ) +
-    '" C05="'+convert(varchar(max),tchatting) +
-    '" C06="'+convert(varchar(max),isnull(cctipocalif.[Description],'N/A')) +
-    '" C07="'+convert(varchar(max),isnull(cctipocalifsub.califSubdesc,'N/A')) +
-    '" C08="'+convert(varchar(max),clientname) +
-    '" C09="'+rtrim(ltrim(convert(varchar(23), chatDate, 126))) +
-    '" C10="'+convert(varchar(max),isnull(@supervisor,'') ) +
-    '" C11="'+convert(varchar(max),isnull(@template,'') )  +
-    '" C12="'+convert(varchar(max),isnull(@ScoreTemplate,0)) +
-    '" C13="'+convert(varchar(max),isnull(ccusers.[Login],'')) + '"/>')
-    from ccRIAChats
-    left outer join ccinbound on ccinbound.inbound_id = ccRIAChats.inboundid
-    left outer join ccusers on ccusers.user_id = ccRIAChats.userid
-    left outer join cctipocalif on cctipocalif.calif_id = ccRIAChats.disposition
-    left outer join cctipocalifsub on cctipocalifsub.califsub_id = ccRIAChats.subdisposition and ccRIAChats.subdisposition <> 0
-    where chatId = @conversationId and chatStatus = 4 and requestDate is not null and chatDate is not null
+    DECLARE @existAttached BIT, @numInteracion SMALLINT;
+    IF @type = 1
+    BEGIN--CHAT
+        SELECT @xml = CONVERT(XML, '<R01 CDATE="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(chatDate, requestDate), 126))) 
+            + '" CID="' + CONVERT(VARCHAR(MAX), ccRIAChats.inboundid) 
+        + '" CType="1' 
+        + '" C01="' + CONVERT(VARCHAR(MAX), chatId) 
+        + '" C02="' + CONVERT(VARCHAR(MAX), ISNULL(ccinbound.descripcion, '')) 
+        + '" C03="' + CONVERT(VARCHAR(MAX), domain) 
+        + '" C04="' + CONVERT(VARCHAR(MAX), ISNULL(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno, 'N/A')) 
+        + '" C05="' + CONVERT(VARCHAR(MAX), tchatting) 
+        + '" C06="' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalif.[Description], 'N/A')) 
+        + '" C07="' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalifsub.califSubdesc, 'N/A')) 
+        + '" C08="' + CONVERT(VARCHAR(MAX), clientname) 
+        + '" C09="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), chatDate, 126))) 
+        + '" C10="' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '')) 
+        + '" C11="' + CONVERT(VARCHAR(MAX), ISNULL(@template, '')) 
+        + '" C12="' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+        + '" C13="' + CONVERT(VARCHAR(MAX), ISNULL(ccusers.[Login], '')) 
+        + '"/>')
+             , @dateStart = ISNULL(chatDate, requestDate) FROM ccRIAChats
+                                                               LEFT OUTER JOIN ccinbound ON ccinbound.inbound_id = ccRIAChats.inboundid
+                                                               LEFT OUTER JOIN ccusers ON ccusers.user_id = ccRIAChats.userid
+                                                               LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = ccRIAChats.disposition
+                                                               LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = ccRIAChats.subdisposition
+                                                                                                 AND ccRIAChats.subdisposition <> 0
+        WHERE chatId = @conversationId
+              AND chatStatus = 4
+              AND requestDate IS NOT NULL
+              AND chatDate IS NOT NULL;
 
-end
-else if @type=1 begin--EMAIL
-    SELECT @existAttached = case when count(*)>0 then 1 else 0 end
-    from attached where messageId in (select messageId from message where conversationId=@conversationId)
-    select @numInteracion = count(*) from message where conversationId=@conversationId
-    --Replaza los caracteres por los comunes
-    select @info=info from conversation where conversationId=@conversationId
-    select @info=replace(@info,A.Value,B.Value) from dbo.fn_RIASplitDelimited(@charEscape,'|') A
-    inner join dbo.fn_RIASplitDelimited(@charReplace,'|') B on A.Id=B.Id
+    END;
+    ELSE
+        IF @type = 3
+        BEGIN--EMAIL
+            SELECT @existAttached = CASE WHEN COUNT(*) > 0
+                                    THEN 1 ELSE 0
+                                    END FROM attached
+            WHERE messageId IN(SELECT messageId FROM message WHERE conversationId = @conversationId);
+            SELECT @numInteracion = COUNT(*) FROM message WHERE conversationId = @conversationId;
+            --Replaza los caracteres por los comunes
+            SELECT @info = info FROM conversation WHERE conversationId = @conversationId;
+            SELECT @info = replace(@info, A.Value, B.Value) FROM dbo.fn_RIASplitDelimited(@charEscape, '|') A
+                                                                 INNER JOIN dbo.fn_RIASplitDelimited(@charReplace, '|') B ON A.Id = B.Id;
 
+            SELECT @xml = CONVERT(XML, '<R03 CDATE="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(MAX(b.tsend), GETDATE()), 126))) 
+                + '" CID="' + CONVERT(VARCHAR(MAX), a.inboundid) 
+            + '" CType="1' 
+            + '" C01="' + CONVERT(VARCHAR(MAX), a.conversationId) 
+            + '" C02="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(MAX(b.tsend), GETDATE()), 126))) 
+            + '" C03="' + CONVERT(VARCHAR(MAX), MAX(c.descripcion)) 
+            + '" C04="' + CONVERT(VARCHAR, MAX(ISNULL(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno, ''))) 
+            + '" C05="' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalif.[Description], 'N/A'))) 
+            + '" C06="' + CONVERT(VARCHAR, MAX(replace(replace(a.mailClient, '<', ' '), '>', ' '))) 
+            + '" C07="' + CONVERT(VARCHAR(MAX), SUM(b.tRetention + b.tResponse + b.tWrapup)) 
+            + '" C08="' + CONVERT(VARCHAR(MAX), MIN(ISNULL(@info, ''))) 
+            + '" C09="' + CONVERT(VARCHAR(MAX), MAX(b.messageStatusid)) 
+            + '" C10="' + CONVERT(VARCHAR(MAX), ISNULL(@numInteracion, 0)) 
+            + '" C11="' + CONVERT(VARCHAR(MAX), @existAttached) 
+            + '" C12="' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '')) 
+            + '" C13="' + CONVERT(VARCHAR(MAX), ISNULL(@template, '')) 
+            + '" C14="' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+            + '" C15="' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalifsub.califSubdesc, 'N/A'))) 
+            + '" C16="' + CONVERT(VARCHAR(MAX), ISNULL(MAX(d.[Login]), '')) 
+            + '"/>')
+                 , @dateStart = ISNULL(MAX(b.tsend), GETDATE()) FROM conversation a
+                                                                     INNER JOIN message b ON a.conversationid = b.conversationid
+                                                                     LEFT OUTER JOIN ccinbound c ON c.inbound_id = a.inboundid
+                                                                     LEFT OUTER JOIN ccusers d ON d.user_id = b.userid
+                                                                     LEFT OUTER JOIN relationmessageDisposition e ON e.messageId = b.messageId
+                                                                     LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = e.dispositionId
+                                                                     LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = e.subdispositionId
+                                                                                                       AND e.subdispositionId <> 0
+            WHERE a.conversationId = @conversationId
+            GROUP BY a.conversationId
+                   , a.inboundid;
 
-    select @xml = convert(xml,'<R03 CDATE="'+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
-	'" CID="'+convert(varchar(max),a.inboundid) +
-	'" CType="1'+
-    '" C01="'+ convert(varchar(max),a.conversationId) +
-    '" C02="'+ rtrim(ltrim(convert(varchar(23), isnull(max(b.tsend), getdate()), 126))) +
-    '" C03="'+ convert(varchar(max),max(c.descripcion)) +
-    '" C04="'+ convert(varchar,max(isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno,''))) +
-    '" C05="'+ convert(varchar,max(isnull(cctipocalif.[Description],'N/A'))) +
-    '" C06="'+ convert(varchar,max(replace(replace(a.mailClient,'<',' '),'>',' '))) +
-    '" C07="'+ convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +
-    '" C08="'+ convert(varchar(max),min(isnull(@info,''))) +
-    '" C09="'+ convert(varchar(max),max(b.messageStatusid) ) +'" C10="'+  convert(varchar(max), isnull(@numInteracion,0)) +
-    '" C11="'+ convert(varchar(max),@existAttached) +'" C12="'+ convert(varchar(max),isnull(@supervisor,'') ) +
-    '" C13="'+ convert(varchar(max),isnull(@template,'') )  +'" C14="'+convert(varchar(max),isnull(@ScoreTemplate,0)) +
-    '" C15="'+ convert(varchar,max(isnull(cctipocalifsub.califSubdesc,'N/A'))) +
-    '" C16="'+ convert(varchar(max),isnull(max(d.[Login]),'')) + '"/>')
-    from conversation a
-    inner join message b on a.conversationid=b.conversationid
-    left outer join ccinbound c on c.inbound_id = a.inboundid
-    left outer join ccusers d on d.user_id = b.userid
-    left outer join relationmessageDisposition e on e.messageId=b.messageId
-    left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
-    left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
-    where a.conversationId=@conversationId
-    group by a.conversationId,a.inboundid
+        END;
+        ELSE
+            IF @type = 4
+            BEGIN--Twitter
+                SELECT @numInteracion = SUM(ninteration) FROM messageOutTwitter
+                WHERE conversationTwitterId = @conversationId;
 
-end
-else if @type=2 begin--Twitter
-    select @numInteracion = sum(ninteration) from messageOutTwitter where conversationTwitterId=@conversationId
+                SELECT @xml = CONVERT(XML, '<R04 CDATE="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), MIN(b.date), 126))) 
+                    + '" CID="' + CONVERT(VARCHAR(MAX), a.inboundid) 
+                + '" CType="1' 
+                + '" C01="' + CONVERT(VARCHAR(MAX), a.conversationTwitterId) 
+                + '" C02="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), MIN(b.date), 126))) 
+                + '" C03="' + CONVERT(VARCHAR(MAX), MAX(c.descripcion)) 
+                + '" C04="' + CONVERT(VARCHAR, MAX(ISNULL(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno, ''))) 
+                + '" C05="' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalif.[Description], 'N/A'))) 
+                + '" C06="' + MAX(a.screenNameClient) 
+                + '" C07="' + CONVERT(VARCHAR(MAX), SUM(b.tRetention + b.tResponse + b.tWrapup)) 
+                + '" C08="' + MAX(a.screenNameInbound) 
+                + '" C09="' + CONVERT(VARCHAR(MAX), MAX(b.messageStatusid)) 
+                + '" C10="' + CONVERT(VARCHAR(MAX), ISNULL(@numInteracion, 0)) 
+                + '" C11="' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '')) 
+                + '" C12="' + CONVERT(VARCHAR(MAX), ISNULL(@template, '')) 
+                + '" C13="' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+                + '" C14="' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalifsub.califSubdesc, 'N/A'))) 
+                + '" C15="' + CONVERT(VARCHAR(MAX), ISNULL(MAX(d.[Login]), '')) 
+                + '"/>')
+                     , @dateStart = ISNULL(MIN(b.date), GETDATE()) FROM conversationTwitter a
+                                                                        INNER JOIN messageOutTwitter b ON a.conversationTwitterId = b.conversationTwitterId
+                                                                        LEFT OUTER JOIN ccinbound c ON c.inbound_id = a.inboundid
+                                                                        LEFT OUTER JOIN ccusers d ON d.user_id = b.userid
+                                                                        LEFT OUTER JOIN relationMessageDispositionTwit e ON e.messageOutTwitterId = b.messageOutTwitterId
+                                                                        LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = e.dispositionId
+                                                                        LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = e.subdispositionId
+                                                                                                          AND e.subdispositionId <> 0
+                WHERE a.conversationTwitterId = @conversationId
+                GROUP BY a.conversationTwitterId
+                       , a.inboundid;
+            END;
+            ELSE
+                IF @type = 5
+                BEGIN --WhatsApp
+                    SELECT @xml = CONVERT(XML, '<R05 CDATE="' + CONVERT(VARCHAR(23), ISNULL(conversationDate, requestDate), 126) 
+                        + '" CID="' + CONVERT(VARCHAR(MAX), A.inboundid) 
+                    + '" CType="1' 
+                    + '" C01="' + CONVERT(VARCHAR(MAX), A.conversationId) 
+                    + '" C02="' + ISNULL(inbound.descripcion, '') 
+                    + '" C03="' + ISNULL(ccusers.[Login], '') 
+                    + '" C04="' + ISNULL(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno, 'N/A') 
+                    + '" C05="' + clientId 
+                    + '" C06="' + CONVERT(VARCHAR(MAX), tChatting) 
+                    + '" C07="' + ISNULL(cctipocalif.[Description], 'N/A') 
+                    + '" C08="' + ISNULL(cctipocalifsub.califSubdesc, 'N/A') 
+                    + '" C09="' + CONVERT(VARCHAR(MAX), A.agentId) 
+                    + '" C10="' + phoneACD 
+                    + '" C11="' + CONVERT(VARCHAR(MAX), A.agentId) 
+                    + '" C12="' + ISNULL(@supervisor, '') 
+                    + '" C13="' + ISNULL(@template, '') 
+                    + '" C14="' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+                    + '"/>')
+                         , @dateStart = ISNULL(conversationDate, requestDate) FROM ccWhatsAppConversations A
+                                                                                   LEFT OUTER JOIN ccinbound inbound ON inbound.inbound_id = A.inboundid
+                                                                                   LEFT OUTER JOIN ccusers ON ccusers.user_id = A.agentId
+                                                                                   LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+                                                                                   LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+                    WHERE A.conversationId = @conversationId;
 
-    select @xml = convert(xml,'<R04 CDATE="'+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
-	'" CID="'+convert(varchar(max),a.inboundid) +
-	'" CType="1'+
-    '" C01="'+convert(varchar(max),a.conversationTwitterId) +
-    '" C02="'+rtrim(ltrim(convert(varchar(23), min(b.date), 126))) +
-    '" C03="'+convert(varchar(max),max(c.descripcion)) +
-    '" C04="'+ convert(varchar,max(isnull(Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMAterno,''))) +
-    '" C05="'+convert(varchar,max(isnull(cctipocalif.[Description],'N/A'))) +
-    '" C06="'+ max(a.screenNameClient) +
-    '" C07="'+convert(varchar(max),sum(b.tRetention+b.tResponse+b.tWrapup)) +
-    '" C08="'+ max(a.screenNameInbound) +
-    '" C09="'+convert(varchar(max),max(b.messageStatusid) ) +
-    '" C10="'+  convert(varchar(max), isnull(@numInteracion,0)) +
-    '" C11="'+ convert(varchar(max),isnull(@supervisor,'') ) +
-    '" C12="'+convert(varchar(max),isnull(@template,''))  +
-    '" C13="'+convert(varchar(max),isnull(@ScoreTemplate,0)) +
-    '" C14="'+ convert(varchar,max(isnull(cctipocalifsub.califSubdesc,'N/A'))) +
-    '" C15="'+convert(varchar(max),isnull(max(d.[Login]),'')) + '"/>')
-    from conversationTwitter a
-    inner join messageOutTwitter b on a.conversationTwitterId=b.conversationTwitterId
-    left outer join ccinbound c on c.inbound_id = a.inboundid
-    left outer join ccusers d on d.user_id = b.userid
-    left outer join relationMessageDispositionTwit e on e.messageOutTwitterId=b.messageOutTwitterId
-    left outer join cctipocalif on cctipocalif.calif_id = e.dispositionId
-    left outer join cctipocalifsub on cctipocalifsub.califsub_id = e.subdispositionId and e.subdispositionId <> 0
-    where a.conversationTwitterId=@conversationId
-    group by a.conversationTwitterId,a.inboundid
-end
+                END;
 
-END
+    DECLARE @sql NVARCHAR(MAX), @tableName NVARCHAR(MAX), @columnId NVARCHAR(MAX), @tableNameHistory NVARCHAR(MAX);
+    DECLARE @parameterDefinition NVARCHAR(MAX);
+
+    SELECT @tableName = tableName
+         , @tableNameHistory = tableNameHistory
+         , @columnId = columnId FROM ccFinderServices
+    WHERE id = @type;
+
+	SET @parameterDefinition = N'@conversationId bigint,@xml xml,@dateStart datetime';
+
+    IF @xml IS NOT NULL
+    BEGIN        
+
+        SET @sql = 'IF EXISTS(SELECT * FROM ' + @tableNameHistory + ' WHERE '+@columnId+' = @conversationId)
+        BEGIN
+            UPDATE ' + @tableNameHistory + ' SET node = @xml ,dateIn=@dateStart, STATUS = 2 WHERE '+@columnId+' = @conversationId;
+        END
+        else IF EXISTS(SELECT * FROM ' + @tableName + ' WHERE '+@columnId+' = @conversationId)
+        BEGIN
+            UPDATE ' + @tableName + ' SET node = @xml ,dateIn=@dateStart, STATUS = 2 WHERE '+@columnId+' = @conversationId;
+        END
+        else begin
+            INSERT INTO ' + @tableName + ' ('+@columnId+', node, dateIn, STATUS) VALUES(@conversationId, @xml, @dateStart, 0);
+        end     
+        ';
+        
+    END
+	else begin
+		 SET @sql =' IF EXISTS(SELECT * FROM ' + @tableName + ' WHERE '+@columnId+' = @conversationId)
+        BEGIN
+            UPDATE ' + @tableName + ' SET node = @xml ,dateIn=@dateStart, STATUS = -1 WHERE '+@columnId+' = @conversationId;
+        END
+        else begin
+            INSERT INTO ' + @tableName + ' ('+@columnId+', node, dateIn, STATUS) VALUES(@conversationId, @xml, @dateStart, -1);
+        end ';
+	end
+
+	 EXECUTE sp_executesql
+                @sql
+              , @parameterDefinition
+              , @conversationId = @conversationId
+              , @xml = @xml
+              , @dateStart = @dateStart;
+
+END;

@@ -79,13 +79,7 @@ else if @action = 7 BEGIN --Cambia el status del mensaje
 
 	--Answered,Send,CLose Conversation system or agent
 	if @messageStatusId in (5,6,10,11)  begin
-		exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
-		if not exists(select * from [ccTwitterNode] where [conversationTwitterId]=@conversationId) begin
-			insert into [ccTwitterNode]([conversationTwitterId],[node],dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-		end
-		else begin
-			update [ccTwitterNode] set node=@xmlnode,status=2 where [conversationTwitterId]=@conversationId
-		end
+		exec ccsp_CreateNodeMultimedia @type=4, @conversationId=@conversationId		
 	end
 
 END
@@ -136,13 +130,7 @@ else if @action = 13 BEGIN  --Limpia las conversaciones quedaron abiertas por ce
 	update [messageoutTwitter] set @messageStatusId=1,twitId='',tQueue=null,userId=0,tWait=0,tResponse=0,tRetention=0,tWrapUp=0,tSend=null,isSender=0  where messageStatusId in(2,3)
 END
 else if @action = 14 begin --Asignar una evaluacion
-	exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate
-	if not exists(select * from ccEmailNode where emailId=@conversationId) begin
-		insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-	end
-	else begin
-		update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
-	end
+	exec ccsp_CreateNodeMultimedia @type=4, @conversationId=@conversationId,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate
 END
 else if @action = 15 BEGIN  --Descartar Tweet
 	select @messageId=max(messageOutTwitterId) from messageOutTwitter with(nolock) where conversationTwitterId=@conversationId
@@ -150,13 +138,7 @@ else if @action = 15 BEGIN  --Descartar Tweet
 	update messageOutTwitter set messageStatusId=14,userId=@userId,tResponse=@timeAtt,tRetention=@tRetention,isSender=0 where messageOutTwitterId=@messageId   
 	update conversationTwitter set isFinished=1 where meanContactTypeId = @meanContactTypeId and conversationTwitterId=@conversationId
 
-	exec ccsp_CreateNodeMultimedia @type=2, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
-	if not exists(select * from [ccTwitterNode] where [conversationTwitterId]=@conversationId) begin
-		insert into [ccTwitterNode]([conversationTwitterId],[node],dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-	end
-	else begin
-		update [ccTwitterNode] set node=@xmlnode,status=2 where [conversationTwitterId]=@conversationId
-	end
+	exec ccsp_CreateNodeMultimedia @type=4, @conversationId=@conversationId		
 
 END
 

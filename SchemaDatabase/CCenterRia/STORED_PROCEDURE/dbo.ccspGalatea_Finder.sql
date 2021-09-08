@@ -1,25 +1,53 @@
-CREATE PROCEDURE [dbo].[ccspGalatea_Finder]
-@action int,
-@userId int = 0
+CREATE PROCEDURE [dbo].[ccspGalatea_Finder] @action       INT
+                                         , @userId       INT    = 0
+                                         , @conversationId BIGINT = 0
 AS
-if @action = 1 begin--trae el nombre de la base de datos en BX
-	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int)+1 as callType, c.cam_descripcion as label
-		from ccRIAWorkGroupUsers Wguser
-		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-		inner join ccCamps c on  WGCam.IdCampEsp=c.cam_id and WGCam.Tipo=1		
-		where Wguser.User_id=@userId
-	union
-	select cast( WGCam.IdCampEsp as int) as [Value], cast(WGCam.Tipo as int)+1 as callType, inb.descripcion as label
-		from ccRIAWorkGroupUsers Wguser
-		inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-		inner join ccInbound inb on  WGCam.IdCampEsp=inb.Inbound_id and WGCam.Tipo=0
-		where Wguser.User_id=@userId
-end
-else if @action = 2 begin--trae el nombre de la base de datos en BX
-	;
-	with WgId as(select IDWG from ccRIAWorkGroupUsers Wguser where Wguser.User_id=@userId)
+     IF @action = 1
+     BEGIN--trae el nombre de la base de datos en BX
+         SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value]
+              , CAST(WGCam.Tipo AS INT) + 1 AS callType
+              , c.cam_descripcion AS label FROM ccRIAWorkGroupUsers Wguser
+                                                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                                                INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+                                                                        AND WGCam.Tipo = 1
+         WHERE Wguser.User_id = @userId
+         UNION
+         SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value]
+              , CAST(WGCam.Tipo AS INT) + 1 AS callType
+              , inb.descripcion AS label FROM ccRIAWorkGroupUsers Wguser
+                                              INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                                              INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+                                                                          AND WGCam.Tipo = 0
+         WHERE Wguser.User_id = @userId;
+     END;
+     ELSE
+         IF @action = 2
+         BEGIN
+             WITH WgId
+                  AS (SELECT IDWG FROM ccRIAWorkGroupUsers Wguser WHERE Wguser.User_id = @userId)
+                  SELECT DISTINCT
+                         CAST(Wguser.User_id AS INT) AS [Value]
+                       , ccUsers.Login AS label FROM ccRIAWorkGroupUsers Wguser
+                                                     INNER JOIN WgId ON Wguser.IDWG = WgId.IDWG
+                                                     INNER JOIN ccUsers ON ccUsers.User_id = Wguser.User_id
+                                                                           AND TipoUser_id = 1;
+         END;
+         ELSE
+             IF @action = 3
+             BEGIN--Informacion de la conversacion de whatsApp
+                 SELECT A.ConversationID
+                      , A.inboundId AS AcdId
+					  , isnull(graph.graphic_id,1) as GraphicId
+                      , A.phoneACD AS PhoneAcd
+                      , A.clientId AS PhoneClient
+                      , ISNULL(B.descripcion, 'N/A') AS AcdName
+                      , ISNULL(cctipocalif.[Description], 'N/A') AS Disposition
+                      , ISNULL(cctipocalifsub.califSubdesc, 'N/A') AS SubDisposition
+                      , ISNULL(conversationDate, requestDate) DateStart FROM ccWhatsAppConversations A
+                                                                             LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+                                                                             LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+                                                                             LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+																			 left join ccRIAInboundGraph graph on graph.Inbound_id=A.inboundId
+                 WHERE A.conversationId = @conversationId;
 
-	select distinct cast(Wguser.User_id as int) as [Value],ccUsers.Login as label from ccRIAWorkGroupUsers  Wguser
-	inner join WgId on Wguser.IDWG=WgId.IDWG
-	inner join ccUsers on ccUsers.User_id =Wguser.User_id and TipoUser_id=1
-end
+             END;

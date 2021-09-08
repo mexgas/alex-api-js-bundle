@@ -90,14 +90,10 @@ else if @action = 3 BEGIN --new Messages
     --Finder
     select @existAttached =case when count(*)>0 then 1 else 0 end  from attached where messageId in (select messageId from message where conversationId=@conversationId)
     select @numInteracion = count(*) from message where conversationId=@conversationId
-    --Actualiza un nodo del finder
-    exec ccsp_CreateNodeMultimedia @type=1, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
-    if not exists(select * from ccEmailNode where emailId=@conversationId) begin
-        insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-    end
-    else begin
-        update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
-    end
+    
+	--Actualiza un nodo del finder	
+    exec ccsp_CreateNodeMultimedia @type=3, @conversationId=@conversationId
+    
     select @conversationId as ConversationId,@messageId as MessageId,0 as LastUserId
 
 END
@@ -136,16 +132,7 @@ else if @action = 7 BEGIN --Cambia el status del mensaje
 
     --Answered,Send,CLose Conversation system or agent
     if @messageStatusId in (5,6,10,11)  begin
-        exec ccsp_CreateNodeMultimedia @type=1, @conversationId=@conversationId, @xml = @xmlnode OUTPUT
-		if exists(select * from ccEmailNodeHistory where emailId=@conversationId) begin
-            update ccEmailNodeHistory set node=@xmlnode,status=2 where emailId=@conversationId
-        end
-        if  exists(select * from ccEmailNode where emailId=@conversationId) begin
-            update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
-        end
-        else begin
-            insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-        end
+        exec ccsp_CreateNodeMultimedia @type=3, @conversationId=@conversationId
     end
 
 END
@@ -246,13 +233,7 @@ else if @action = 16 begin
     where A.conversationId=@conversationId
 end
 else if @action = 17 begin --Asignar una evluacion
-    exec ccsp_CreateNodeMultimedia @type=1, @conversationId=@conversationId, @xml = @xmlnode OUTPUT,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate
-    if not exists(select * from ccEmailNode where emailId=@conversationId) begin
-        insert into ccEmailNode(emailId,node,dateIn,status) values(@conversationId,@xmlnode,getdate(),0)
-    end
-    else begin
-        update ccEmailNode set node=@xmlnode,status=2 where emailId=@conversationId
-    end
+	exec ccsp_CreateNodeMultimedia @type=3, @conversationId=@conversationId,@supervisor=@supervisor,@template=@template,@ScoreTemplate=@ScoreTemplate    
 end
 else if @action = 18 begin --cerrar conversacion por tiempo
     if not exists(select A.uid conversationId from messageMail A inner join [message] B on A.messageId=B.messageId where A.uid=@uid and B.date=@date)

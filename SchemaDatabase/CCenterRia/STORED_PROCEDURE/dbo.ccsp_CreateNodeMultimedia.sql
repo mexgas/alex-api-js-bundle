@@ -27,7 +27,7 @@ BEGIN
         + '" C06="' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalif.[Description], 'N/A')) 
         + '" C07="' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalifsub.califSubdesc, 'N/A')) 
         + '" C08="' + CONVERT(VARCHAR(MAX), clientname) 
-        + '" C09="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), chatDate, 126))) 
+        + '" C09="' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(chatDate, requestDate), 126))) 
         + '" C10="' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '')) 
         + '" C11="' + CONVERT(VARCHAR(MAX), ISNULL(@template, '')) 
         + '" C12="' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
@@ -40,9 +40,7 @@ BEGIN
                                                                LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = ccRIAChats.subdisposition
                                                                                                  AND ccRIAChats.subdisposition <> 0
         WHERE chatId = @conversationId
-              AND chatStatus = 4
-              AND requestDate IS NOT NULL
-              AND chatDate IS NOT NULL;
+              AND chatStatus = 4              
 
     END;
     ELSE

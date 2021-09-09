@@ -490,6 +490,7 @@ INNER JOIN sys.columns c ON dc.parent_object_id = c.object_id AND c.column_id = 
 where t.name=''ccChatsNode'' and c.name=''status'' 
 ORDER BY t.Name
  
+
 if @name is not null begin
 
  set @sql2=''ALTER TABLE ccChatsNode DROP CONSTRAINT ''+@name
@@ -497,7 +498,14 @@ if @name is not null begin
 end'
     EXEC(@sql)
 
-     set @process = 'CW-5781 Alter Column ccChatsNode.status'
+	set @process = 'CW-5781  Drop index ccChatsNode.IX_status'
+    set @sql = 'if exists (select * from sys.indexes where name = N''IX_status'' and object_id = OBJECT_ID(N''ccChatsNode''))
+    begin
+        Drop index ccChatsNode.IX_status
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-5781 Alter Column ccChatsNode.status'
     set @sql = 'ALTER TABLE ccChatsNode alter column status smallint 
 ALTER TABLE ccChatsNodeHistory alter column status smallint '
     EXEC(@sql)
@@ -579,8 +587,7 @@ END;'
     EXEC(@sql)
 
     set @process = 'CW-5781 update data ccFinderServices'
-    set @sql = 'IF EXISTS(SELECT * FROM ccFinderServices WHERE tableName IS NULL)
-BEGIN
+    set @sql = '
     UPDATE ccFinderServices
            SET
                tableName = ''ccChatsNode''
@@ -608,8 +615,7 @@ BEGIN
              , tableNameHistory = ''ccTwitterNodeHistory''
              , columnId = ''conversationTwitterId''
 			 ,isActive=1
-    WHERE id = 4;
-END;'
+    WHERE id = 4;'
     EXEC(@sql)
 
     set @process = 'CW-5781 Add ccFinderServices WhastApp'

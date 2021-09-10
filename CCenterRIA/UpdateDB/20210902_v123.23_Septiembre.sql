@@ -1842,9 +1842,106 @@ set nocount off
 '
     EXEC(@sql)
 
-    set @process = 'CW-5781 update ccFinderServices isActive=1'
-    set @sql = 'update ccFinderServices set isActive=1 where id<=5'
-    EXEC(@sql)
+	    set @process = 'CW-5781 update ccFinderServices isActive=1'
+	    set @sql = 'update ccFinderServices set isActive=1 where id<=5'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create table VonageConfigurations'
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VonageConfigurations]'') AND type in (N''U''))
+					BEGIN
+					CREATE TABLE [dbo].[ccVonageConfigurations](
+						[vonageId][int] IDENTITY(1,1) NOT NULL, 
+						[serviceType][smallint] NOT NULL,
+						[applicationId] [varchar](50) NOT NULL,
+						[secretKey] [varchar](MAX) NOT NULL,
+						[messagesUrl] [varchar](50) NOT NULL, 
+						PRIMARY KEY (vonageId))
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create table WhatsAppNumbers'
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[WhatsAppNumbers]'') AND type in (N''U''))
+					BEGIN
+					CREATE TABLE [dbo].[ccWhatsAppNumbers](
+						[vonageId][int] NOT NULL, 
+						[number] [varchar](30) NOT NULL,
+						[inboundId] [int] NOT NULL DEFAULT(0),
+						[status] [bit] NOT NULL DEFAULT (0),
+						PRIMARY KEY (number))
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Drop procedure ccsp_MultimediaConfigurations'
+	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+		            BEGIN
+		          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+		            END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create procedure ccsp_MultimediaConfigurations'
+	    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
+					@Option AS SMALLINT,
+					@ServiceType AS SMALLINT = 0
+					AS
+					BEGIN
+					    SET NOCOUNT ON;
+						BEGIN
+					    IF(@Option = 1) -- Get Vonage Configurations depending the Service Type 
+							BEGIN
+								SELECT applicationId AS ApplicationId,
+									   secretKey AS SecretKey,
+									   messagesUrl AS MessagesUrl
+								FROM ccVonageConfigurations
+								WHERE serviceType = @ServiceType   -- 5 = WhatsApp
+							END 
+
+						IF(@Option = 2) -- Get WhatsApp registered numbers 
+							BEGIN
+								SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+								INNER JOIN ccVonageConfigurations Configurations 
+								ON Numbers.vonageId = Configurations.vonageId 
+								AND Numbers.inboundId = 0 
+								AND Numbers.status = 1 
+								AND Configurations.serviceType = 5
+							END 
+						END
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Drop procedure ccsp_UpdateACDWhatsappConfig'
+	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+		            BEGIN
+		          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+		            END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create procedure ccsp_UpdateACDWhatsappConfig with inbound id insertion in ccWhatsAppNumbers table'
+	    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
+
+					@ConexionInfo varchar(400),
+					@inbound_id int,
+					@ConnUser varchar(60),
+					@tNotas int,
+					@closeConversationTime tinyint,
+					@ShowCalifWnd bit 
+
+					AS
+					set nocount on
+					    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+					    BEGIN
+					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime where inboundId = @inbound_id;
+							UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+					    END;
+
+					    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+					    BEGIN
+					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd where Inbound_id = @inbound_id;
+					    END;
+					SELECT @inbound_id;
+					return(@inbound_id)
+
+					set nocount off'
+	    EXEC(@sql)
 	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

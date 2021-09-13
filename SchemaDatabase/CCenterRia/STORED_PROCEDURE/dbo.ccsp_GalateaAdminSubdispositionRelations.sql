@@ -8,18 +8,18 @@ set nocount on
 
 If @command = 1
 begin
-	select cast(0 as int) [type],
+	select cast(1 as int) [type],
 		r.calif_id,
 		r.califSub_id
 	from cctipoSubCalifRel r inner join ccTipoCalifSub t on r.califSub_id = t.califSub_id and r.tipoSubRel = 1
 	where t.califSub_Status = 1
 	UNION
-	select cast(1 as int) [type],
+	select cast(0 as int) [type],
 		r.calif_id,
 		r.califSub_id
 	from cctipoSubCalifRel r inner join ccTipoCalifSubOUT t on r.califSub_id = t.califSub_id and r.tipoSubRel = 0
 	where t.califSubOut_Status = 1
-	order by [type], calif_id, califSub_id
+	order by [type] desc, calif_id, califSub_id
 end
 if @command=2  --Asignar subcalificacion a una calificacion
 begin
@@ -28,7 +28,7 @@ begin
 	and exists (select IB.Inbound_id from cctipocalif CO join ccCalifCamp CF on  CF.calif_id = CO.calif_id and CF.tipo = 0 
 	join ccInbound IB on IB.Inbound_id = CF.cam_id where IB.cam_id is null and CO.calif_id = @calif_id)
 	begin
-		select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
+		select cast(-2 as smallint) [result]	-- Cant reprogram, there are not assigned campaign
 		return(0)
 	end
 

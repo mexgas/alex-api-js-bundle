@@ -1842,8 +1842,286 @@ set nocount off
 '
     EXEC(@sql)
 
-    set @process = 'CW-5781 update ccFinderServices isActive=1'
-    set @sql = 'update ccFinderServices set isActive=1 where id<=5'
+	    set @process = 'CW-5781 update ccFinderServices isActive=1'
+	    set @sql = 'update ccFinderServices set isActive=1 where id<=5'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create table VonageConfigurations'
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VonageConfigurations]'') AND type in (N''U''))
+					BEGIN
+					CREATE TABLE [dbo].[ccVonageConfigurations](
+						[vonageId][int] IDENTITY(1,1) NOT NULL, 
+						[serviceType][smallint] NOT NULL,
+						[applicationId] [varchar](50) NOT NULL,
+						[secretKey] [varchar](MAX) NOT NULL,
+						[messagesUrl] [varchar](50) NOT NULL, 
+						PRIMARY KEY (vonageId))
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create table WhatsAppNumbers'
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[WhatsAppNumbers]'') AND type in (N''U''))
+					BEGIN
+					CREATE TABLE [dbo].[ccWhatsAppNumbers](
+						[vonageId][int] NOT NULL, 
+						[number] [varchar](30) NOT NULL,
+						[inboundId] [int] NOT NULL DEFAULT(0),
+						[status] [bit] NOT NULL DEFAULT (0),
+						PRIMARY KEY (number))
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Drop procedure ccsp_MultimediaConfigurations'
+	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+		            BEGIN
+		          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+		            END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create procedure ccsp_MultimediaConfigurations'
+	    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
+					@Option AS SMALLINT,
+					@ServiceType AS SMALLINT = 0
+					AS
+					BEGIN
+					    SET NOCOUNT ON;
+						BEGIN
+					    IF(@Option = 1) -- Get Vonage Configurations depending the Service Type 
+							BEGIN
+								SELECT applicationId AS ApplicationId,
+									   secretKey AS SecretKey,
+									   messagesUrl AS MessagesUrl
+								FROM ccVonageConfigurations
+								WHERE serviceType = @ServiceType   -- 5 = WhatsApp
+							END 
+
+						IF(@Option = 2) -- Get WhatsApp registered numbers 
+							BEGIN
+								SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+								INNER JOIN ccVonageConfigurations Configurations 
+								ON Numbers.vonageId = Configurations.vonageId 
+								AND Numbers.inboundId = 0 
+								AND Numbers.status = 1 
+								AND Configurations.serviceType = 5
+							END 
+						END
+					END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Drop procedure ccsp_UpdateACDWhatsappConfig'
+	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+		            BEGIN
+		          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+		            END'
+	    EXEC(@sql)
+
+	    set @process = 'CW-5750 Create procedure ccsp_UpdateACDWhatsappConfig with inbound id insertion in ccWhatsAppNumbers table'
+	    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
+
+					@ConexionInfo varchar(400),
+					@inbound_id int,
+					@ConnUser varchar(60),
+					@tNotas int,
+					@closeConversationTime tinyint,
+					@ShowCalifWnd bit 
+
+					AS
+					set nocount on
+					    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+					    BEGIN
+					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime where inboundId = @inbound_id;
+							UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+					    END;
+
+					    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+					    BEGIN
+					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd where Inbound_id = @inbound_id;
+					    END;
+					SELECT @inbound_id;
+					return(@inbound_id)
+
+					set nocount off'
+	    EXEC(@sql)
+		
+		set @process = 'CW-5786 crea tabla ccWAMessagesConversations'
+    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[ccWAMessagesConversations]'') AND type in (N''U''))
+BEGIN
+CREATE TABLE [dbo].[ccWAMessagesConversations](
+	[messageId] [varchar](75) NOT NULL,
+	[conversationId] [int] NOT NULL,
+	[timeStampMessage] [datetime] NOT NULL,
+	[originType] [varchar](15) NOT NULL,
+	[price] [varchar](10) NOT NULL,
+	[messageIdUi] [int] NULL,
+	[currency] [varchar](10) NULL,
+	[typeMessage] [varchar](25) NULL,
+	[content] [varchar](max) NULL,
+	[clientNum] [varchar](15) NULL,
+	[vonageNum] [varchar](15) NULL,
+	[timeStampMessageUTC] [datetime] NULL,
+ CONSTRAINT [pk_ccWAMessagesConvs_1] PRIMARY KEY CLUSTERED 
+(
+	[messageId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+ALTER TABLE [dbo].[ccWAMessagesConversations]  WITH CHECK ADD  CONSTRAINT [fk_WAConversationId_1] FOREIGN KEY([conversationId])
+REFERENCES [dbo].[ccWhatsAppConversations] ([conversationId])
+
+ALTER TABLE [dbo].[ccWAMessagesConversations] CHECK CONSTRAINT [fk_WAConversationId_1]
+END
+'
+EXEC(@sql)
+
+ set @process = 'CW-5774 create cambia nombre de columna '
+    set @sql = '
+	IF EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''firstMessageTime''
+          AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+BEGIN
+	EXEC sp_rename ''ccWhatsAppConversations.firstMessageTime'', ''assignDate'', ''COLUMN'';
+END
+	'
+	EXEC(@sql)
+
+   	set @process = 'CW-5774 Valida si existe SP ccsp_ConversationWASave'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ConversationWASave'')
+            begin
+          DROP PROCEDURE ccsp_ConversationWASave;
+            end'
+    EXEC(@sql) 
+
+    set @process = 'CW-5774 create SP ccsp_ConversationWASave '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+                                              , @conversationId     INT         = 0
+                                              , @inboundId          SMALLINT    = NULL
+                                              , @phoneACD           VARCHAR(50) = NULL
+                                              , @clientId           VARCHAR(25) = NULL
+                                              , @conversationStatus SMALLINT    = 0
+                                              , @tChatting          SMALLINT    = 0
+                                              , @tWrapUp            SMALLINT    = 0
+                                              , @finishedBy         TINYINT     = 0
+                                              , @onQueue            BIT         = NULL
+                                              , @tQueue             SMALLINT    = 0
+                                              , @tTimeout           INT         = 0
+                                              , @disposition        SMALLINT    = 0
+                                              , @subDisposition     SMALLINT    = 0
+                                              , @agentId            INT         = 0
+											  --VAR MESSAGES
+											  , @messageId          VARCHAR(50) = NULL
+											  , @messageIdUi        INT			= NULL
+											  , @clientNum			VARCHAR(15) = NULL
+											  , @vonageNum			VARCHAR(15) = NULL
+											  , @typeMessage		VARCHAR(25) = ''''
+											  , @content			VARCHAR(MAX)= NULL
+											  , @timeStampMessage   DATETIME	= NULL
+											  , @timeStampMessageUTC DATETIME	= NULL
+											  , @originType         VARCHAR(15) = NULL
+											  , @currency			VARCHAR(10) = NULL
+											  ,	@price				VARCHAR(10) = NULL
+AS
+BEGIN
+    DECLARE @isEndConversation BIT;
+    DECLARE @meanContactTypeId SMALLINT;
+
+    SET @meanContactTypeId = 1;
+    SET NOCOUNT ON;
+
+    IF @action = 1
+    BEGIN --new Conversation
+        IF NOT EXISTS
+                      (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A
+                       WHERE A.conversationId = @conversationId
+                      )
+        BEGIN
+            INSERT INTO [ccWhatsAppConversations]
+            (inboundId
+           , phoneACD
+           , clientId
+           , conversationStatus
+           , tChatting
+           , tWrapUp
+           , finishedBy
+           , onQueue
+           , tQueue
+           , tTimeout
+           , disposition
+           , subDisposition
+           , agentId
+            )
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+            SELECT @conversationId = SCOPE_IDENTITY();
+            SELECT @conversationId AS ConversationId;
+            RETURN(0);
+        END;
+        ELSE
+        BEGIN
+            SELECT 0 AS ConversationId;
+            RETURN(0);
+        END;
+    END;
+
+    IF @action = 2
+    BEGIN --save conversation Times
+        UPDATE ccWhatsAppConversations
+               SET
+                   tChatting = DATEDIFF(ss, conversationDate, GETDATE())
+                 , conversationStatus = @conversationStatus
+                 , finishedBy = case when @conversationStatus = 10 then 2 else 1 end
+                 , tConversation = DATEDIFF(ss, requestDate, GETDATE())
+				 ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
+				 ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+        WHERE conversationId = @conversationId;
+
+
+		exec ccsp_CreateNodeMultimedia @conversationId=@conversationId, @type=5
+
+    END;
+
+    IF @action = 3
+    BEGIN --save conversation Status
+        UPDATE ccWhatsAppConversations
+               SET
+                   conversationDate = GETDATE()
+                 , conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+    END;
+
+	IF @action = 4 BEGIN --save messages from conversation
+		IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO [ccWAMessagesConversations](
+												messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price) values 
+											   (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price)
+			SELECT @messageId=SCOPE_IDENTITY()
+			SELECT @messageId as MessageId
+			RETURN (0)
+		END
+		ELSE BEGIN
+			SELECT 0 AS MessageId
+			RETURN (0)
+		END
+	END;
+
+	IF @action = 5
+    BEGIN --save onQueue 
+        UPDATE ccWhatsAppConversations
+               SET onQueue = 1
+        WHERE conversationId = @conversationId;
+    END;
+
+	IF @action = 6
+    BEGIN --save agent, assigdate and tqueue
+        UPDATE ccWhatsAppConversations
+               SET agentId = @agentId,
+			   assignDate = getdate(),
+			   conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+
+		UPDATE ccWhatsAppConversations
+               SET tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+        WHERE conversationId = @conversationId;
+    END;
+END;'
     EXEC(@sql)
 	
 		/* End script release */

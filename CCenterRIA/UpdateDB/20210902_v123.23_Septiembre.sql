@@ -2023,7 +2023,7 @@ set nocount off
 	    EXEC(@sql)
 
 	    set @process = 'CW-5750 Create table WhatsAppNumbers'
-	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[WhatsAppNumbers]'') AND type in (N''U''))
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[ccWhatsAppNumbers]'') AND type in (N''U''))
 					BEGIN
 					CREATE TABLE [dbo].[ccWhatsAppNumbers](
 						[vonageId][int] NOT NULL, 

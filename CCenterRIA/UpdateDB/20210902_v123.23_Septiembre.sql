@@ -2009,8 +2009,8 @@ set nocount off
 	    set @sql = 'update ccFinderServices set isActive=1 where id<=5'
 	    EXEC(@sql)
 
-	    set @process = 'CW-5750 Create table VonageConfigurations'
-	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VonageConfigurations]'') AND type in (N''U''))
+	    set @process = 'CW-5750 Create table ccVonageConfigurations'
+	    set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[ccVonageConfigurations]'') AND type in (N''U''))
 					BEGIN
 					CREATE TABLE [dbo].[ccVonageConfigurations](
 						[vonageId][int] IDENTITY(1,1) NOT NULL, 

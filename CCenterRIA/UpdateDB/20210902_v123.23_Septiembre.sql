@@ -2048,9 +2048,9 @@ set nocount off
 	    EXEC(@sql)
 
 	    set @process = 'CW-5750 Drop procedure ccsp_MultimediaConfigurations'
-	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+	    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_MultimediaConfigurations'')
 		            BEGIN
-		          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+		          		DROP PROCEDURE ccsp_MultimediaConfigurations;
 		            END'
 	    EXEC(@sql)
 

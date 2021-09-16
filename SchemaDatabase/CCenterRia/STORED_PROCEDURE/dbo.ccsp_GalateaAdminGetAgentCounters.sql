@@ -26,11 +26,13 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
              END;
              IF @type = 2
                  BEGIN
-                     SELECT CAST(User_id AS INT) Id,
-                  Login Username, 
-                            Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno Name
-                     FROM ccUsers
-                     WHERE User_id = @agent_id;
+                    SELECT CAST(u.User_id AS INT) Id,
+					Login Username, 
+                    Nombres + ' ' + ApellidoPaterno + ' ' + ApellidoMaterno Name,
+					CASE WHEN p.publicIp is null or p.publicIp = '' then '000.000.000.000' else p.publicIp end IP
+					FROM ccUsers u
+					LEFT JOIN ccPosicion p on p.user_id = @agent_id
+					WHERE u.User_id = @agent_id;
              END;
              IF @type = 3 --Agents by supervisor and WG
                  BEGIN
@@ -136,7 +138,17 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetAgentCounters] @type AS     INT,
 				left join ccLogAgentesDia B on A.User_id=B.User_id and A.dateStart=B.fecha
            END
 
-		   IF @type = 9
+		   IF @type = 9 -- GET AGENT IP
+			   BEGIN
+					SELECT publicIp FROM ccPosicion where user_id = @agent_id
+			   END
+
+			IF @type = 10 -- GET ONLINE AGENTS IP
+				BEGIN
+					SELECT CAST ( user_id AS INT )    AgentId,  publicIp Ip FROM ccPosicion where user_id <> 0
+				END
+
+		   IF @type = 11
 		   BEGIN
 				WITH UserMaxFecha(User_id,fecha) as(
 				  SELECT User_id,max(fecha) as fecha from ccLogAgentesDia where fecha>=convert(date,getdate()) group by User_id

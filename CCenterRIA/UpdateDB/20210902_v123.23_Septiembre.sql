@@ -2454,8 +2454,12 @@ end
 '
     EXEC(@sql)
 	
-	
-	
+    set @process = 'CW-5740 Se agrega propiedad a detalle'
+    set @sql = 'UPDATE ccsettings 
+	            SET detalle = ''Activo(0:apagado,1:Mensual,2:semanal,3:diario)|# Semana Ejecucion|Dia Ejecucion(1:LU,2:Ma,3:Mi,4:Ju,5:Vi,6:Sa,0:Do)|Hora Inicio(00:00)|Servidor FTP|usuario FTP|contraseña FTP|Ruta de descarga FTP|Tiene SSL (1 si, 0 no)''
+	            WHERE setting_id=228'
+    EXEC(@sql)
+    
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

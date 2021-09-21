@@ -2594,7 +2594,9 @@ end
 					set nocount on
 					    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
 					    BEGIN
-					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime where inboundId = @inbound_id;
+					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime,
+													 ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 					 
+							where inboundId = @inbound_id;
 							UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
 					    END;
 

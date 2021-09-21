@@ -5,7 +5,8 @@ CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
 					@ConnUser varchar(60),
 					@tNotas int,
 					@closeConversationTime tinyint,
-					@ShowCalifWnd bit 
+					@ShowCalifWnd bit,
+					@ExitWrapUpDisposition bit
 
 					AS
 					set nocount on
@@ -17,7 +18,7 @@ CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
 
 					    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
 					    BEGIN
-					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd where Inbound_id = @inbound_id;
+					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
 					    END;
 					SELECT @inbound_id;
 					return(@inbound_id)

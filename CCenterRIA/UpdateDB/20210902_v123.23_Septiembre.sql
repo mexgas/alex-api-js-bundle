@@ -2300,6 +2300,316 @@ BEGIN
 END;'
     EXEC(@sql)
 	
+	set @process = 'CW-5791 Drop sp ccsp_GalateaAdminANIListLD'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminANIListLD'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminANIListLD;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5791 Create Procedure ccsp_GalateaAdminANIListLD'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminANIListLD]
+@type as tinyint,
+@idArea as smallint,
+@descriptionList as varchar(40) = NULL,
+@idAniList as smallint = NULL,
+@cld as varchar(max)= NULL,
+@aniTel as varchar(30)= NULL,
+@edo as varchar(350) = NULL
+AS
+set nocount on
+declare @pais tinyint, @listEdos varchar(4000), @idLista as integer, @sql as varchar(500)
+select @pais = valor from ccsettings where setting_id = 104
+
+select @listEdos = ''select distinct '' + case @type when 1 then
+case @pais	when 1  then ''estado as [state] ''
+			when 2  then ''estado as [state] ''
+			when 3  then ''municipio as [state] ''
+			when 4  then ''location as [state] ''
+			when 5  then ''cld as [state] ''
+			when 6  then ''region as [state] ''
+			when 7  then ''region as [state] ''
+			when 8  then ''Regiones as [state] ''
+			when 9  then ''Regiones as [state] ''
+			when 10 then ''Regiones as [state] ''
+			when 11 then ''zonaGeografica as [state] ''
+			when 12 then ''zonaGeografica as [state] ''
+			when 13 then ''zonaGeografica as [state] ''
+			when 14 then ''provincia as [state] ''
+			else '''' end
+when 4 then
+case @pais	when 1  then ''estado, cld as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 2  then ''estado, cld as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 3  then ''municipio as estado, region +''''''''+ serie as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 4  then ''location as estado, area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 5  then ''cld as estado, cld as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 6  then ''region as estado, LD as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 7  then ''region as estado, CLD as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 8  then ''Regiones as estado, cld +''''-''''+ [serie inicio] as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 9  then ''Regiones as estado, LD + AreaCode as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 10 then ''Regiones as estado, AreaCode as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 11 then ''zonaGeografica as estado, indicativoDestino as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 12 then ''zonaGeografica as estado, indicativoDestino as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 13 then ''zonaGeografica as estado, indicativoDestino as area, @id_anilist as id_anilist, '''''''' as telani ''
+			when 14 then ''provincia as estado, indicativoProvincia as area, @id_anilist as id_anilist, '''''''' as telani ''
+			else '''' end 
+end + ''from '' +
+case @pais	when 1  then ''series''
+			when 2  then ''seriesarg where estado <> ''''''''''
+			when 3  then ''seriescol''
+			when 4  then ''ccTimeZoneArea where id_country = '' + convert(varchar(5),@pais) + ''''
+			when 5  then ''serieschi''
+			when 6  then ''SeriesVen''
+			when 7  then ''SeriesUK''
+			when 8  then ''SeriesSA''
+			when 9  then ''SeriesAU''
+			when 10 then ''SeriesBR''
+			when 11 then ''SeriesGT''
+			when 12 then ''SeriesCR''
+			when 13 then ''SeriesSV''
+			when 14 then ''SeriesEsp''
+			else '''' end + ''''
+
+if @type=1
+begin	--Get locations / states
+	exec(@listEdos + '' order by [state]'')
+	return(0)
+end
+
+if @type=2
+begin
+	select @sql = ''select id_AniList, description from ccEdoAniList where idArea = '' + convert(varchar(5),@idArea) +  
+	case when isnull(@idAniList,'''') <> '''' then '' and id_AniList = '' + convert(varchar(5),@idAniList) else '''' end
+	exec(@sql)
+	return(0)
+end
+
+if @type=3
+begin	-- Get Outbound telAni with Area Codes
+	select @sql = ''select id_AniList, Estado, telAni, area from ccEstadosAni where id_AniList = '' + convert(varchar(5),@idAniList) + 
+	'' and estado like ''''%'' + @edo + ''%'''' and id_AniList in (select id_AniList from ccEdoAniList where idArea = '' +
+	 convert(varchar(5),@idArea) + '') order by estado''
+	exec(@sql)
+	--print(@sql)
+	return(0)
+end
+
+if @type=4
+begin  --Insert new aniList
+	if @descriptionList <> '''' begin
+		if exists(select * from dbo.ccEdoAniList where [description]=@descriptionList )
+		begin
+			select cast(2 as int) [result]
+			return(0)
+		end
+		insert into ccEdoAniList values(@descriptionList, @idArea)
+		select @idLista = id_anilist from ccEdoAniList where [description] = @descriptionList
+		set @listEdos = ''insert into ccEstadosAni (estado, area, id_anilist, telani) '' + @listEdos
+		set @listEdos = replace(@listEdos, ''@id_anilist'', convert(varchar(6),@idLista))
+		exec(@listEdos)
+		--print(@listEdos)
+		select cast(1 as int) [result]
+		return(0)
+	end
+	select cast(0 as int) [result]
+	return(0)
+end
+
+if @type=5
+begin --Save ANI number
+	update ccEstadosAni set telani= ISNULL(@aniTel, TELANI) WHERE id_anilist = @idAniList 
+	and area in (select value from dbo.fn_RIASplitDelimited(@cld, '',''))
+
+	select cast(1 as int) [result]
+	return(0)
+end
+
+if @type=6
+begin --Delete ANI list
+	if not exists(select id_anilist from ccEdoAniList WHERE id_anilist = @idAniList and idarea = @idArea )
+	 begin
+		select cast(-1 as int) [result]
+		return(0)
+	 end
+
+	delete from ccEstadosAni where id_anilist = @idAniList
+	delete from ccEdoAniList WHERE id_anilist = @idAniList
+
+	select cast(1 as int) [result]
+	return(0)
+end
+
+if @type=7
+begin --Update ANI list name
+	if(exists(select [description] from ccEdoAniList where [description]=@descriptionList and id_AniList<>@idAniList))
+	begin
+		select cast(2 as int) [result]
+		return(0)
+	end
+
+	update ccEdoAniList set [description]=@descriptionList where id_AniList=@idAniList
+	select cast(1 as int) [result]
+	return(0)
+end
+'
+    EXEC(@sql)
+	
+    set @process = 'CW-5740 Se agrega propiedad a detalle'
+    set @sql = 'UPDATE ccsettings 
+	            SET detalle = ''Activo(0:apagado,1:Mensual,2:semanal,3:diario)|# Semana Ejecucion|Dia Ejecucion(1:LU,2:Ma,3:Mi,4:Ju,5:Vi,6:Sa,0:Do)|Hora Inicio(00:00)|Servidor FTP|usuario FTP|contraseña FTP|Ruta de descarga FTP|Tiene SSL (1 si, 0 no)''
+	            WHERE setting_id=228'
+    EXEC(@sql)
+
+    set @process = 'CW-5829 Drop procedure ccsp_UpdateACDWhatsappConfig'
+    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+	            BEGIN
+	          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+	            END'
+    EXEC(@sql)
+
+    set @process = 'CW-5829 Create procedure ccsp_UpdateACDWhatsappConfig'
+    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
+
+					@ConexionInfo varchar(400),
+					@inbound_id int,
+					@ConnUser varchar(60),
+					@tNotas int,
+					@closeConversationTime tinyint,
+					@ShowCalifWnd bit 
+
+					AS
+					set nocount on
+					    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+					    BEGIN
+					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime,
+													 ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 					 
+							where inboundId = @inbound_id;
+							UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+					    END;
+
+					    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+					    BEGIN
+					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd where Inbound_id = @inbound_id;
+					    END;
+					SELECT @inbound_id;
+					return(@inbound_id)
+
+					set nocount off'
+    EXEC(@sql)
+
+    set @process = 'CW-5820 Se agrega columna ExitWrapUpDisposition'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''ExitWrapUpDisposition'' AND Object_ID = Object_ID(N''ccInbound''))
+    BEGIN
+        ALTER TABLE ccInbound ADD ExitWrapUpDisposition BIT NOT NULL DEFAULT (0);
+    END'
+    EXEC(@sql)
+
+    set @process = 'CW-5820 Drop procedure ccsp_MultimediaCommon'
+    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_MultimediaCommon'')
+	            BEGIN
+	          		DROP PROCEDURE ccsp_MultimediaCommon;
+	            END'
+    EXEC(@sql)
+
+    set @process = 'CW-5820 update procedure ccsp_MultimediaCommon'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon] 
+		@Option AS SMALLINT, 
+		@inboundId AS SMALLINT = 0, 
+		@conversationId AS INT = 0, 
+		@ServiceType AS SMALLINT = 0,
+		@status as SMALLINT =0
+		AS
+		BEGIN
+		    SET NOCOUNT ON;
+
+		    IF(@Option = 1)
+				BEGIN
+
+					 SELECT --inbound.chat AS ServiceType,
+					   CAST(inbound.Inbound_id AS INT) AS ACDId,
+					   inbound.descripcion AS ACDName,
+					   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					   inbound.tNotas AS WrapUpTime
+
+					   FROM  ccInbound inbound
+					   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
+				END      
+
+			IF(@Option = 2)
+				BEGIN
+					SELECT 
+						cast(i.chat as int) AS ServiceType,
+						cast(c.conversationId as int) as ConversationID,
+						c.clientId as ClientId,
+						cm.conexionInfo as [To],
+						cast(i.Inbound_id as int) as ACDId,
+						i.descripcion as ACDName,
+						cast(g.graphic_id as int) as ACDGraphicId,
+						cast(cm.closeConversationTime as int) as [TimeOut],
+						cast(cm.answerTimeOut as int) as [TimeOutWarning],
+						i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+						i.tNotas as [WrapUpTime]
+					FROM  ccInbound i
+						INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
+						INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+						INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+					WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
+				END
+			IF(@Option = 3)
+				BEGIN
+					 SELECT 
+					   CAST(inbound.Inbound_id AS INT) AS ACDId,
+					   inbound.descripcion AS ACDName,
+					   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					   inbound.tNotas AS WrapUpTime
+
+					   FROM  ccInbound inbound
+					   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+				END   	
+		END'
+    EXEC(@sql)
+
+    set @process = 'CW-5820 Drop procedure ccsp_UpdateACDWhatsappConfig'
+    set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateACDWhatsappConfig'')
+	            BEGIN
+	          		DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+	            END'
+    EXEC(@sql)
+
+    set @process = 'CW-5820 update procedure ccsp_UpdateACDWhatsappConfig'
+    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
+
+					@ConexionInfo varchar(400),
+					@inbound_id int,
+					@ConnUser varchar(60),
+					@tNotas int,
+					@closeConversationTime tinyint,
+					@ShowCalifWnd bit,
+					@ExitWrapUpDisposition bit
+
+					AS
+					set nocount on
+					    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+					    BEGIN
+					        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime,
+													 ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 					 
+							where inboundId = @inbound_id;
+							UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+					    END;
+
+					    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+					    BEGIN
+					        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
+					    END;
+					SELECT @inbound_id;
+					return(@inbound_id)
+
+					set nocount off'
+    EXEC(@sql)
+    
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

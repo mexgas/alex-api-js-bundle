@@ -2550,7 +2550,8 @@ end
 						cast(cm.closeConversationTime as int) as [TimeOut],
 						cast(cm.answerTimeOut as int) as [TimeOutWarning],
 						i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-						i.tNotas as [WrapUpTime]
+						i.tNotas as [WrapUpTime],
+						i.ShowCalifWnd
 					FROM  ccInbound i
 						INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
 						INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)

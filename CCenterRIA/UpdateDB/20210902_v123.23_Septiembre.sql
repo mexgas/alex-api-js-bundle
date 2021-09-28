@@ -2854,7 +2854,7 @@ set nocount off'
 			DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
 				,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
 			,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
-			,isnull(sipHdrFormat, '') sipHdrFormat
+			,isnull(sipHdrFormat, '''') sipHdrFormat
 			,cam_inter_cancelled
 			,prefijo,	enbleprefix = case when existRec = 0 then 1 else 0 end,
 			isnull(exitAssisted, 0) exitAssisted

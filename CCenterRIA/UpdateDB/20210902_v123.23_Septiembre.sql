@@ -3041,7 +3041,7 @@ set nocount off'
 	set @process = 'CW-5856 add Assisted to ccTipoStatusAgente'
     set @sql = 'if not exists (select TipoStatusAge_id from ccTipoStatusAgente where TipoStatusAge_id=28)
 		begin
-			insert ccTipoStatusAgente (TipoStatusAge_id, descripcion) values (28,'Assisted')
+			insert ccTipoStatusAgente (TipoStatusAge_id, descripcion) values (28,''Assisted'')
 		end'
     EXEC(@sql)
 

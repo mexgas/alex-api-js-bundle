@@ -2796,6 +2796,12 @@ if @tipo = 7
 set nocount off'
     EXEC(@sql)
 
+	set @process = 'CW-5860 add exitAssisted to ccCamps'
+    set @sql = 'IF not exists (SELECT * FROM SYS.columns WHERE name=''exitAssisted'' AND OBJECT_ID = OBJECT_ID(''ccCamps''))
+		begin
+			alter table ccCamps add exitAssisted bit null
+		end'
+    EXEC(@sql)
 
 	set @process = 'CW-5858 update procedure ccsp_GalateaGetOutboundConfiguration'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
@@ -3028,13 +3034,6 @@ set nocount off'
     set @sql = 'if not exists (select operationType from ccRIALog_Operation where operationType=182)
 		begin
 			insert ccRIALog_Operation values (182,''Salir de Modo Asistido|Exit Assisted Dialing Mode'')
-		end'
-    EXEC(@sql)
-
-	set @process = 'CW-5860 add exitAssisted to ccCamps'
-    set @sql = 'IF not exists (SELECT * FROM SYS.columns WHERE name=''exitAssisted'' AND OBJECT_ID = OBJECT_ID(''ccCamps''))
-		begin
-			alter table ccCamps add exitAssisted bit null
 		end'
     EXEC(@sql)
 

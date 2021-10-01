@@ -2889,4 +2889,7 @@
   <data name="templateSectionId" xml:space="preserve">
     <value>Identificador de formato concepto</value>
   </data>
+  <data name="systemTranslated_Assisted" xml:space="preserve">
+    <value>Assistida</value>
+  </data>
 </root>

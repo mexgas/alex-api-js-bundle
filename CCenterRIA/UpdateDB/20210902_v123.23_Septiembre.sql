@@ -2611,6 +2611,440 @@ end
 					set nocount off'
     EXEC(@sql)
     
+  set @process = 'Totales de contactacion ccsp_GalateaTotalContact'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaTotalContact'')
+            begin
+          DROP PROCEDURE ccsp_GalateaTotalContact;
+            end'
+    EXEC(@sql)
+
+	  set @process = 'Totales de contactacion ccsp_GalateaTotalContact'
+    set @sql = '
+CREATE PROCEDURE ccsp_GalateaTotalContact
+ @option int, 
+ @agent_id  int = 0
+AS BEGIN
+	declare @dateStart datetime
+	set @dateStart =convert(date,getdate())
+
+	IF(@option = 1)
+	BEGIN
+		declare @outbound int = 0 , @inboud int = 0 , @twiter int = 0 , @email int = 0 , @whatsapp int = 0 , @chat int = 0 
+		select @outbound = count(cal_id)
+			from ccoCallsOut with(nolock) where cal_inicio>@dateStart and User_id = @agent_id and statusCall_id = 13
+		select @inboud = count(cal_id)
+			from ccCallsIn  with(nolock) where cal_inicio>@dateStart and User_id = @agent_id and statusCall_id = 13
+		select @chat = count(chatId)
+			from ccRIAChats  with(nolock) where requestDate>@dateStart and userId = @agent_id
+
+		SELECT @agent_id AgentId, @outbound Outbound, @inboud Inbound, @chat Chat, @email Email, @whatsapp Whatsapp, @twiter Twitter
+	END
+	
+	IF(@option = 2)
+	BEGIN
+		select CAST(User_id as INT) AgentId,count(*) Count,''OUTBOUND'' as media from ccoCallsOut with(nolock) where cal_inicio>@dateStart  and statusCall_id = 13 group by User_id
+		union
+		select CAST(User_id as INT) AgentId, count(*) Count,''INBOUND'' from ccCallsIn with(nolock) where cal_inicio>@dateStart and statusCall_id = 13  group by User_id
+		union
+		select CAST(userId as INT) AgentId, count(*) Count,''CHAT'' from ccRIAChats with(nolock) where requestDate>@dateStart and userId>0 group by userId
+	END
+END
+'
+EXEC(@sql)
+
+set @process = 'CW-Dnis ccsp_GalateaDnis - Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaDnis'')
+            begin
+          DROP PROCEDURE ccsp_GalateaDnis;
+            end'
+    EXEC(@sql)
+
+
+    set @process = 'CW-Dnis ccsp_GalateaDnis - Se quita el SP  si ya existe'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaDnis]
+--declare
+@User varchar(10),
+@Tipo tinyint,
+@Dnis varchar(40) = null,
+@Inbound_id smallint = null,
+@dni_id as smallint = null,
+@dnis_ids as varchar(MAX) = null,
+@dni_description as varchar(40) = null,
+@dni_isBlock as bit = null
+as
+set nocount on
+
+if @Tipo = 1 -- carga dnis
+ begin
+	select dni_id, dni_numero as dni_number, dni_descripcion as dni_description, case when dni_id in(select dni_id from ccInboundDnis) then 1 else 0 end dni_isRelated
+	from ccDnis where dni_Status=1 order by 2
+	return(0)
+ end
+
+if @Tipo = 2 -- carga relaciones de dnis
+ begin
+	if cast(@user as smallint) > 0 and not exists (select * from ccUsers_Roles where User_id = cast(@user as smallint) and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+		select a1.Inbound_id, cast(0 as smallint) dni_id, a1.descripcion as description,'''' as dni_number,'''' as dni_description, cast(0 as tinyint) dni_isBlock
+		from ccInbound a1
+		inner join ccRIAInboundGraph a2 on (a1.Inbound_id = a2.Inbound_id)
+		inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1
+		AND a1.Inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@User, 2) where cam_id not in (select Inbound_id from ccInboundDnis))
+		union
+		select ci.inbound_id, cid.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
+		from ccInboundDnis cid 
+		left join ccInbound ci on ci.inbound_id = cid.inbound_id 
+		join ccDnis cd on cd.dni_id = cid.dni_id 
+		where cd.dni_Status=1
+		order by 3,4
+		return(0)
+	end
+	else begin
+		select a1.Inbound_id, cast(0 as smallint) dni_id, a1.descripcion as description,'''' as dni_number,'''' as dni_description, cast(0 as tinyint) dni_isBlock
+		from ccInbound a1
+		inner join ccRIAInboundGraph a2 on (a1.Inbound_id = a2.Inbound_id)
+		inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1 and IDArea is not null and a1.Inbound_id not in (select Inbound_id from ccInboundDnis)
+		union
+		select ci.inbound_id, cid.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
+		from ccInboundDnis cid 
+		left join ccInbound ci on ci.inbound_id = cid.inbound_id 
+		join ccDnis cd on cd.dni_id = cid.dni_id 
+		where cd.dni_Status=1
+		order by 3,4
+		return(0)
+	end
+	return(0)
+ end
+
+if @Tipo = 3 -- Agrega Dnis
+ begin
+	if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis)
+	 begin
+		insert into ccDnis (dni_id, dni_numero, dni_tpoMaxEspera, tipodni_id, dni_Descripcion, dni_tipo)
+		select isNull(max(dni_id), 0) + 1, @Dnis , 0, 1, @dni_description, 2 from ccDnis
+		select top(1) dni_id from ccDNIS order by dni_id desc
+		return(0)
+	 end
+	 
+	select cast(-1 as smallint)
+ end
+
+if @Tipo = 4 -- Elimina Dnis
+ begin
+	delete from ccInboundDnis where inbound_id = @Inbound_Id and dni_id = @dni_id
+	
+	select ci.inbound_id, cd.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
+	from ccInbound ci , ccDNIS cd
+	where ci.Inbound_id=@Inbound_id and dni_id=@dni_id
+ end
+
+if @Tipo = 5 -- Agrega Relacion
+ begin
+	insert into ccInboundDnis (Inbound_id, dni_id)
+	select @Inbound_Id,B.Value from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
+	left join ccInboundDnis A on A.dni_id=B.Value 
+	where  A.dni_id is null
+
+	select cast(@Inbound_Id as smallint) inbound_id,cast(B.Value as smallint) dni_id, 
+	ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock		
+	,case when cid.Inbound_id is null then 0 else 1 end isAssigned
+	from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
+	left join ccInboundDnis cid on cid.dni_id=B.Value and cid.Inbound_id=@Inbound_Id
+	left join ccInbound ci on ci.inbound_id = @Inbound_Id
+	inner join ccDnis cd on cd.dni_id = B.Value
+	order by 3,4
+ end
+
+if @Tipo = 6 -- Elimina Dnis sin pedir inbound_id
+ begin
+	if exists(select dni_id from ccInboundDnis where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '','')) and isnull(inbound_id, 0) <> 0)
+		select -1
+
+	else begin
+		update ccDNIS set dni_Status=0 where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '',''))--= @dni_id -- delete from ccdnis where dni_id = @dni_id
+		select 1
+	end
+ end
+
+if @tipo = 7
+ begin
+	if @Dnis = (select dni_numero from ccDNIS where dni_id=@dni_id) begin
+		update ccDnis set 
+		dni_Descripcion=isnull(@dni_description,dni_Descripcion)
+		where dni_id = @dni_id 
+		
+		select 1
+		return(0)
+	end
+
+	if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis) begin
+		update ccDnis set 
+		dni_numero=case when @Dnis <> ''0'' then @Dnis else dni_numero end,
+		dni_Descripcion=isnull(@dni_description,dni_Descripcion),
+		dni_isBlock = isnull(@dni_isBlock,dni_isBlock)
+		where dni_id = @dni_id 
+
+		select 1
+		--select dni_id,dni_numero as dni_number, dni_Descripcion as dni_Descriptiondni_id, dni_isBlock from ccDNIS where dni_id=@
+		return(0)
+	end
+	
+	select -1
+ end
+
+set nocount off'
+    EXEC(@sql)
+
+	set @process = 'CW-5860 add exitAssisted to ccCamps'
+    set @sql = 'IF not exists (SELECT * FROM SYS.columns WHERE name=''exitAssisted'' AND OBJECT_ID = OBJECT_ID(''ccCamps''))
+		begin
+			alter table ccCamps add exitAssisted bit null
+		end'
+    EXEC(@sql)
+
+	set @process = 'CW-5858 update procedure ccsp_GalateaGetOutboundConfiguration'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+		@adminID int,
+		@campID int
+		AS
+		BEGIN
+
+			declare @AllCampaigns table 
+			(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
+			cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
+			cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
+			detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
+			dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
+			t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
+			callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
+			callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+			prefijo varchar(40),enbleprefix bit,exitAssisted bit )
+	 
+			 INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID
+
+			 SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
+			 t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
+			 ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
+			 callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
+			 prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
+			 cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
+			 cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
+			 editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+			 compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode
+			 from @AllCampaigns WHERE cam_id = @campID
+		END'
+    EXEC(@sql)
+
+	set @process = 'CW-5858 update procedure ccsp_RIAConfCamp'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
+		@User_id smallint
+		AS
+		set nocount on
+			declare @tableExistsRec table (camId int primary key,existRec bit)
+
+			insert into @tableExistsRec
+			select B.cam_id,case when count(A.cal_id) >0 then 1 else 0 end as existRec 
+			from dbo.fGet_CampAcd_Area (@User_id, 1) B
+			left join ccoCallsOut A on A.cam_id=B.cam_id
+			group by B.cam_id
+
+			select a1.cam_id, cam_Descripcion
+			, cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+			, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+			, cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+			, detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+			, cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+			, stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
+			cam_maxqueue as queSize,
+			DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+				,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+			,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+			,isnull(sipHdrFormat, '''') sipHdrFormat
+			,cam_inter_cancelled
+			,prefijo,	enbleprefix = case when existRec = 0 then 1 else 0 end,
+			isnull(exitAssisted, 0) exitAssisted
+			from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+			inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+			inner join @tableExistsRec a4 on a1.cam_id=a4.camId
+			--where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+			order by cam_descripcion
+			return(0)
+			set nocount off'
+    EXEC(@sql)
+
+	set @process = 'CW-5858 update procedure ccsp_RIAUpdateCamConfig'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+				@cam_id smallint,
+				@cam_descripcion varchar(40) = null,
+				@cam_tnotas smallint = null,
+				@cam_ocupado tinyint = null,
+				@cam_NoInt_ocupado tinyint = null,
+				@cam_inter_ocupado smallint = null,
+				@cam_nocontesto tinyint = null,
+				@cam_NoInt_nocontesto tinyint = null,
+				@cam_inter_nocontesto smallint = null,
+				@cam_fax tinyint = null,
+				@cam_NoInt_fax tinyint = null,
+				@cam_inter_fax smallint = null,
+				@cam_ModoManual tinyint= null,
+				@ANI varchar(15) = null,
+				@cam_ShowCalifWnd bit = null,
+				@cam_StartTimerOnHangUp bit = null,
+				@editableCallKey bit = null,
+				@cam_tNoContesta tinyint = null,
+				@cam_intensive_dialing tinyint = null,
+				@detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+				@detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+				@compliance TinyInt = null,
+				@cam_inter_graba smallint = null,
+				@cam_NoInt_graba tinyint = null,
+				@progDial smallint = null,
+				@excCallBack Tinyint = null,
+				@dialOrder Tinyint = null,
+				@dialPrefix varchar(10) = null,
+				@dialPrefixMan varchar(10) = null,
+				@dialPrefixXfe varchar(10) = null,
+				@listenManualCall bit = null,
+				@stopRecording bit = null,
+				@abandonCallback bit = null,
+				@autoCB smallint = null,
+				@id_listAni int = null,
+				@tDialonWrapUp smallint = null,
+				@quesize smallint=null,
+				@DNCScrub int=null,
+				@callerIdDesc varchar(15)=null,
+				@timeZoneRule int=null,
+				@callsBySurvey int=null,
+				@ivrScript int=null,
+				@surveyPctg int=null,
+				@call_record tinyint=null,
+				@dRestrictPlay bit = null,
+				@leaveRecMessage bit = null,
+				@manualCallOnChat bit = null,
+				@callBackSurveyClient bit = null,
+				@callBackSurveyAgent bit = null,
+				@funcEspDtmf int =null,
+				@sipHdrsCfg varchar(255) = null,
+				@cam_inter_cancelled smallint = null,
+				@prefijo varchar(max) = null,
+				@exitAssisted bit = null
+				as
+				set nocount on
+				UPDATE ccCamps SET
+				 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+				 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+				 cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+				 cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+				 cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+				 cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+				 cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+				 cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+				 cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+				 cam_fax = isnull(@cam_fax,cam_fax),
+				 cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+				 cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+				 cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+				 ANI = isnull(@ANI,ANI),
+				 cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+				 editableCallKey = isnull(@editableCallKey, editableCallKey),
+				 cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+				 iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+				 detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+				 detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+				 compliance = isnull(@compliance, compliance),
+				 cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+				 cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+				 cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+				 progDial = isnull(@progDial, progDial),
+				 excCallBack = isnull(@excCallBack,excCallBack),
+				 dialOrder = isnull(@dialOrder, dialOrder),
+				 dialPrefix = isnull(@dialPrefix, dialPrefix),
+				 dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+				 dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+				 listenManualCall = isnull(@listenManualCall, listenManualCall),
+				 stopRecording = isnull(@stopRecording, stopRecording),
+				 abandonCallback = isnull(@abandonCallback, abandonCallback),
+				 t_autoCB = isnull(@autoCB,t_autoCB),
+				 id_anilist = isnull(@id_listAni,id_anilist),
+				 tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+				 cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+				 cam_maxqueue = isnull(@quesize,cam_maxqueue),
+				 DNCScrub = isnull(@DNCScrub,DNCScrub),
+				 callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+				 timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+				 callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+				 ivrScript = isnull(@ivrScript,ivrScript),
+				 surveyPctg = isnull(@surveyPctg,surveyPctg),
+				 call_record = isnull(@call_record,call_record),
+				 startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+				 leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+				 manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+				 callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+				 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+				 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+				 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+				 prefijo = isnull(@prefijo, prefijo),
+				 exitAssisted = isnull(@exitAssisted, exitAssisted)
+				Where cam_id = @cam_id
+
+				if @cam_ShowCalifWnd = 1
+				 begin
+				 If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+				  begin
+				  select 0
+				  return(0)
+				  end
+
+				 UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+				 where cam_id = @cam_id
+				 select 1
+				 return(0)
+				  end
+
+				--else
+				UPDATE ccCamps SET
+				cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+				where cam_id = @cam_id
+				select 2
+				return(0)
+				set nocount off'
+    EXEC(@sql)
+
+	set @process = 'CW-5858 drop procedure ccsp_AgentGetAssistedPermission'
+    set @sql = 'IF exists (select * from sys.procedures where name = N''ccsp_AgentGetAssistedPermission'')
+            BEGIN
+				DROP PROCEDURE ccsp_AgentGetAssistedPermission;
+            END'
+    EXEC(@sql)
+
+	set @process = 'CW-5858 create procedure ccsp_AgentGetAssistedPermission'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentGetAssistedPermission]
+		@age_id int,
+		@cam_id int
+		AS
+		BEGIN
+			SET NOCOUNT ON;
+
+			select isnull(exitAssisted,0) Allowed from ccCamps (nolock) where cam_id = @cam_id
+		END'
+    EXEC(@sql)
+
+	set @process = 'CW-5860 add op 182 to ccRIALog_Operation'
+    set @sql = 'if not exists (select operationType from ccRIALog_Operation where operationType=182)
+		begin
+			insert ccRIALog_Operation values (182,''Salir de Modo Asistido|Exit Assisted Dialing Mode'')
+		end'
+    EXEC(@sql)
+
+	set @process = 'CW-5856 add Assisted to ccTipoStatusAgente'
+    set @sql = 'if not exists (select TipoStatusAge_id from ccTipoStatusAgente where TipoStatusAge_id=28)
+		begin
+			insert ccTipoStatusAgente (TipoStatusAge_id, descripcion) values (28,''Assisted'')
+		end'
+    EXEC(@sql)
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

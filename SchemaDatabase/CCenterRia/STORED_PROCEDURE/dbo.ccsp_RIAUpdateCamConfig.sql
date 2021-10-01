@@ -51,7 +51,8 @@ CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@funcEspDtmf int =null,
 				@sipHdrsCfg varchar(255) = null,
 				@cam_inter_cancelled smallint = null,
-				@prefijo varchar(max) = null
+				@prefijo varchar(max) = null,
+				@exitAssisted bit = null
 				as
 				set nocount on
 				UPDATE ccCamps SET
@@ -107,7 +108,8 @@ CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
 				 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
 				 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
-				 prefijo = isnull(@prefijo, prefijo)
+				 prefijo = isnull(@prefijo, prefijo),
+				 exitAssisted = isnull(@exitAssisted, exitAssisted)
 				Where cam_id = @cam_id
 
 				if @cam_ShowCalifWnd = 1

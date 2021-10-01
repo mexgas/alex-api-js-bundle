@@ -57,8 +57,9 @@ CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail]
 							END AS [ByCarrier],
 							ISNULL(tl.descrip, 'systemTranslated_Indefinite') AS [Calltypes],
 							CASE 
-								WHEN Call.cal_manual = 0 THEN 'systemTranslated_Auto' 
-								ELSE 'systemTranslated_Manual' 
+								WHEN LEFT(ld.TipoDialingMode, 1) = '1' THEN 'systemTranslated_Assisted' ELSE
+								CASE WHEN Call.cal_manual = 0 THEN 'systemTranslated_Auto' 
+								ELSE 'systemTranslated_Manual' END
 							END AS [dialType], 
 							CASE 
 								WHEN Call.cal_whoHung = 0 THEN 'systemTranslated_Client' 
@@ -84,18 +85,19 @@ CREATE PROCEDURE [dbo].[ccspRepOutCallsDetail]
 							ISNULL(cs.Dato5, '') AS [data5],
 							ISNULL(Call.cal_tMsg, 0) AS [MessageTime],
 							ISNULL(rc.grab_id, 0) as grabId
-						FROM ccoCallsOut Call
-							LEFT JOIN ccTipoCalifOUT Tipo ON Call.calif_id = Tipo.calif_id
-							LEFT JOIN ccUserView Usr ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
-							LEFT JOIN ccCamps camps ON camps.[cam_id] = Call.[cam_id]
-							LEFT JOIN ccStatusLlamada sta ON call.statuscall_id = sta.statuscall_id
-							LEFT JOIN cstoProvedor prov ON prov.[provedor_id] = Call.[provedor_id]
-							LEFT JOIN cstoTipoLlamada tl ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] AND tl.Country_id = @country)
-							LEFT JOIN ccTipoCalifSubOut sub ON call.califsub_id = sub.califsub_id
-							LEFT JOIN ccoDialers di ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
-							LEFT JOIN ccoCallsOutSource cs ON Call.callout_id = cs.callout_id
-							LEFT JOIN ccCallCost_RIA cc ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
-							LEFT JOIN Ria_grabacion rc on (rc.cal_id = Call.cal_id and rc.tipo_llamada = 2)
+						FROM ccoCallsOut Call (nolock)
+							LEFT JOiN ccoLogDials ld (nolock) ON Call.cal_id=ld.cal_id
+							LEFT JOIN ccTipoCalifOUT Tipo (nolock) ON Call.calif_id = Tipo.calif_id
+							LEFT JOIN ccUserView Usr (nolock) ON Usr.[user_id] = Call.[user_id] -- User_id IS NOT NULL
+							LEFT JOIN ccCamps camps (nolock) ON camps.[cam_id] = Call.[cam_id]
+							LEFT JOIN ccStatusLlamada sta (nolock) ON call.statuscall_id = sta.statuscall_id
+							LEFT JOIN cstoProvedor prov (nolock) ON prov.[provedor_id] = Call.[provedor_id]
+							LEFT JOIN cstoTipoLlamada tl (nolock) ON (tl.[tipoLlamada_id] = Call.[tipoLlamada_id] AND tl.Country_id = @country)
+							LEFT JOIN ccTipoCalifSubOut sub (nolock) ON call.califsub_id = sub.califsub_id
+							LEFT JOIN ccoDialers di (nolock) ON di.dialer_id = Call.cal_puerto AND call.provedor_id = di.provedor_id
+							LEFT JOIN ccoCallsOutSource cs (nolock) ON Call.callout_id = cs.callout_id
+							LEFT JOIN ccCallCost_RIA cc (nolock) ON cc.country_id = tl.country_id AND cc.tipoLlamada_id = tl.tipoLlamada_id
+							LEFT JOIN Ria_grabacion rc (nolock) on (rc.cal_id = Call.cal_id and rc.tipo_llamada = 2)
 						WHERE Call.cal_inicio >= @from AND Call.cal_inicio < @to AND Call.cal_manual IN (0, 2)
 						ORDER BY DATE
 					END

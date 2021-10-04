@@ -389,6 +389,77 @@ AS
              END;'
     EXEC(@sql)
 
+	set @process = 'CW-5830 Se quita el SP ccsp_GalateaAdminGetCampaignsPerAgent si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetCampaignsPerAgent'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminGetCampaignsPerAgent;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5830 se crea SP ccsp_GalateaAdminGetCampaignsPerAgent'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignsPerAgent]
+				@agent_id INT
+				AS
+				BEGIN
+				SELECT DISTINCT 0 CampType, a1.inbound_id AS CampId, a1.descripcion AS Description, a3.frame AS Frame
+					FROM ccinbound a1
+					JOIN ccRIAinboundGraph a2 ON a1.inbound_id = a2.inbound_id
+					JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+					JOIN ccInboundAgentes a4 ON a1.inbound_id = a4.inbound_id
+					WHERE a3.type_id = 1 AND a4.user_id = @agent_id
+
+					union
+
+				SELECT DISTINCT 1 CampType, a1.cam_id AS CampId, a1.cam_descripcion AS Description, a3.frame AS Frame
+					FROM ccCamps a1
+					JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+					JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+					JOIN ccCampsAgente a4 ON a1.cam_id = a4.cam_id
+					WHERE a3.type_id = 1 AND a4.user_id = @agent_id
+				END'
+    EXEC(@sql)
+
+	set @process = 'CW-5830 Se quita el SP ccsp_GalateaAdminGetCampaignSubDispositions si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetCampaignSubDispositions'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminGetCampaignSubDispositions;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5845 se crea SP ccsp_GalateaAdminGetCampaignSubDispositions'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignSubDispositions]
+				@camp_id int,@type int, @agent_id int 
+				AS
+				BEGIN
+				IF @type=0
+					begin
+						select c2.Description,
+						case when c3.califSubDesc is not null 
+							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
+						count(*) Total from ccCallsIn c1
+						inner join ccTipoCalif c2 on c1.calif_id=c2.calif_id
+						left join ccTipoCalifSub c3 on c1.califSub_id=c3.califSub_id
+						where cal_inicio > convert(varchar(11), getdate(), 101)
+						AND User_id=@agent_id AND statusCall_id=13
+						AND Inbound_id=@camp_id AND c1.califSub_id!=-1
+						group by c2.Description,c3.califSubDesc
+					END
+				IF @type=1
+					BEGIN 
+						select c2.Description,
+						case when c3.califSubDesc is not null 
+							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
+						count(*) Total from ccoCallsOut c1
+						inner join ccTipoCalifOUT c2 on c1.calif_id=c2.calif_id
+						left join ccTipoCalifSubOUT c3 on c1.califSub_id=c3.califSub_id
+						where cal_inicio > convert(varchar(11), getdate(), 101)
+						AND User_id=@agent_id AND statusCall_id=13
+						AND cam_id=@camp_id AND c1.califSub_id!=-1
+						group by c2.Description,c3.califSubDesc
+					END
+				END'
+    EXEC(@sql)
+
 
 
 		/* End script release */

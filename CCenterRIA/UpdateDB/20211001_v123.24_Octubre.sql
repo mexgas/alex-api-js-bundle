@@ -323,6 +323,143 @@ END'
     EXEC(@sql)
 
 
+set @process = 'CW-5837 Se quita el SP ccspGalatea_Finder si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccspGalatea_Finder'')
+            begin
+          DROP PROCEDURE ccspGalatea_Finder;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5837 se crea SP ccspGalatea_Finder'
+    set @sql = '
+CREATE PROCEDURE [dbo].[ccspGalatea_Finder] @action       INT
+                                         , @userId       INT    = 0
+                                         , @conversationId BIGINT = 0
+AS
+     IF @action = 1
+     BEGIN--trae el nombre de la base de datos en BX
+         SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value]
+              , CAST(WGCam.Tipo AS INT) + 1 AS callType
+              , c.cam_descripcion AS label FROM ccRIAWorkGroupUsers Wguser
+                                                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                                                INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+                                                                        AND WGCam.Tipo = 1
+         WHERE Wguser.User_id = @userId
+         UNION
+         SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value]
+              , CAST(WGCam.Tipo AS INT) + 1 AS callType
+              , inb.descripcion AS label FROM ccRIAWorkGroupUsers Wguser
+                                              INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                                              INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+                                                                          AND WGCam.Tipo = 0
+         WHERE Wguser.User_id = @userId;
+     END;
+     ELSE
+         IF @action = 2
+         BEGIN
+             WITH WgId
+                  AS (SELECT IDWG FROM ccRIAWorkGroupUsers Wguser WHERE Wguser.User_id = @userId)
+                  SELECT DISTINCT
+                         CAST(Wguser.User_id AS INT) AS [Value]
+                       , ccUsers.Login AS label FROM ccRIAWorkGroupUsers Wguser
+                                                     INNER JOIN WgId ON Wguser.IDWG = WgId.IDWG
+                                                     INNER JOIN ccUsers ON ccUsers.User_id = Wguser.User_id
+                                                                           AND TipoUser_id = 1;
+         END;
+         ELSE
+             IF @action = 3
+             BEGIN--Informacion de la conversacion de whatsApp
+                 SELECT A.ConversationID
+                      , A.inboundId AS AcdId
+					  , isnull(graph.graphic_id,1) as GraphicId
+                      , A.phoneACD AS PhoneAcd
+                      , A.clientId AS PhoneClient
+                      , ISNULL(B.descripcion, ''N/A'') AS AcdName
+                      , ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition
+                      , ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition
+                      , ISNULL(conversationDate, requestDate) DateStart 
+					  , ISNULL(A.agentId,0) AgentID
+					  FROM ccWhatsAppConversations A
+                                                                             LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+                                                                             LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+                                                                             LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+																			 left join ccRIAInboundGraph graph on graph.Inbound_id=A.inboundId
+                 WHERE A.conversationId = @conversationId;
+
+             END;'
+    EXEC(@sql)
+
+	set @process = 'CW-5830 Se quita el SP ccsp_GalateaAdminGetCampaignsPerAgent si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetCampaignsPerAgent'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminGetCampaignsPerAgent;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5830 se crea SP ccsp_GalateaAdminGetCampaignsPerAgent'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignsPerAgent]
+				@agent_id INT
+				AS
+				BEGIN
+				SELECT DISTINCT 0 CampType, a1.inbound_id AS CampId, a1.descripcion AS Description, a3.frame AS Frame
+					FROM ccinbound a1
+					JOIN ccRIAinboundGraph a2 ON a1.inbound_id = a2.inbound_id
+					JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+					JOIN ccInboundAgentes a4 ON a1.inbound_id = a4.inbound_id
+					WHERE a3.type_id = 1 AND a4.user_id = @agent_id
+
+					union
+
+				SELECT DISTINCT 1 CampType, a1.cam_id AS CampId, a1.cam_descripcion AS Description, a3.frame AS Frame
+					FROM ccCamps a1
+					JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+					JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+					JOIN ccCampsAgente a4 ON a1.cam_id = a4.cam_id
+					WHERE a3.type_id = 1 AND a4.user_id = @agent_id
+				END'
+    EXEC(@sql)
+
+	set @process = 'CW-5830 Se quita el SP ccsp_GalateaAdminGetCampaignSubDispositions si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetCampaignSubDispositions'')
+            begin
+          DROP PROCEDURE ccsp_GalateaAdminGetCampaignSubDispositions;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5845 se crea SP ccsp_GalateaAdminGetCampaignSubDispositions'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignSubDispositions]
+				@camp_id int,@type int, @agent_id int 
+				AS
+				BEGIN
+				IF @type=0
+					begin
+						select c2.Description,
+						case when c3.califSubDesc is not null 
+							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
+						count(*) Total from ccCallsIn c1
+						inner join ccTipoCalif c2 on c1.calif_id=c2.calif_id
+						left join ccTipoCalifSub c3 on c1.califSub_id=c3.califSub_id
+						where cal_inicio > convert(varchar(11), getdate(), 101)
+						AND User_id=@agent_id AND statusCall_id=13
+						AND Inbound_id=@camp_id AND c1.califSub_id!=-1
+						group by c2.Description,c3.califSubDesc
+					END
+				IF @type=1
+					BEGIN 
+						select c2.Description,
+						case when c3.califSubDesc is not null 
+							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
+						count(*) Total from ccoCallsOut c1
+						inner join ccTipoCalifOUT c2 on c1.calif_id=c2.calif_id
+						left join ccTipoCalifSubOUT c3 on c1.califSub_id=c3.califSub_id
+						where cal_inicio > convert(varchar(11), getdate(), 101)
+						AND User_id=@agent_id AND statusCall_id=13
+						AND cam_id=@camp_id AND c1.califSub_id!=-1
+						group by c2.Description,c3.califSubDesc
+					END
+				END'
+    EXEC(@sql)
+
 
 
 		/* End script release */

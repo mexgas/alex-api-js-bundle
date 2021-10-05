@@ -88,3 +88,41 @@ BEGIN
 
   RETURN (0)
 END
+
+
+IF @option = 4 -- supervisores en Area/Sistema
+BEGIN
+	DECLARE @Admins TABLE (UserId smallint, Username varchar(50), Names varchar(50), LastName varchar(50), OptionalExtraName varchar(50), AreaId smallint, primary key(UserId))
+	INSERT INTO @Admins
+	SELECT User_id as UserId,
+	LOGIN as Username,
+	Nombres as Names,
+	CASE 
+	  WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
+	  ELSE isnull(ApellidoPaterno, '')
+	END as LastName,
+
+	CASE 
+	  WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
+	  ELSE isnull(ApellidoMaterno, '')
+	END as OptionalExtraName,
+
+	isnull(IDArea, 0) as AreaId
+	FROM ccusers
+	WHERE TipoUser_id = 2 AND STATUS = 1
+
+
+	IF NOT EXISTS(SELECT * FROM ccUsers_Roles WHERE User_id=@userId and Rol_id=7) BEGIN
+		SELECT UserId, Username, Names, LastName, OptionalExtraName
+		FROM @Admins
+		WHERE AreaId = (SELECT IDArea FROM ccUsers WHERE User_id=@userId)
+		ORDER BY Username, Names, LastName, UserId
+	END
+	ELSE BEGIN
+		SELECT UserId, Username, Names, LastName, OptionalExtraName
+		FROM @Admins
+		ORDER BY Username, Names, LastName, UserId
+	END
+
+  RETURN (0)
+END

@@ -2913,4 +2913,7 @@
   <data name="TemplateSectionIds" xml:space="preserve">
     <value>Identificador de formato concepto</value>
   </data>
+  <data name="chatId" xml:space="preserve">
+    <value>ID de chat</value>
+  </data>
 </root>

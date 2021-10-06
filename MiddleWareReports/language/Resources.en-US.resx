@@ -2907,4 +2907,7 @@
   <data name="systemTranslated_Assisted" xml:space="preserve">
     <value>Assisted</value>
   </data>
+  <data name="chatId" xml:space="preserve">
+    <value>Chat ID</value>
+  </data>
 </root>

@@ -2916,4 +2916,7 @@
   <data name="systemTranslated_Assisted" xml:space="preserve">
     <value>Asistida</value>
   </data>
+  <data name="chatId" xml:space="preserve">
+    <value>ID de chat</value>
+  </data>
 </root>

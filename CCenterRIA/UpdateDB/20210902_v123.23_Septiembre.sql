@@ -2610,6 +2610,14 @@ end
 
 					set nocount off'
     EXEC(@sql)
+
+    set @process = 'CW-XX Se agrega fila para el tipo de WhatsApp en meanContactType '
+    set @sql = 'if not exists(select * from meanContactType where meanContactTypeId=5) begin
+	SET IDENTITY_INSERT meanContactType ON
+	insert into meanContactType (meanContactTypeId, name, isActive) values (5, ''WhatsApp'', 1)
+	SET IDENTITY_INSERT meanContactType OFF
+	end'
+    EXEC(@sql)
     
   set @process = 'Totales de contactacion ccsp_GalateaTotalContact'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaTotalContact'')

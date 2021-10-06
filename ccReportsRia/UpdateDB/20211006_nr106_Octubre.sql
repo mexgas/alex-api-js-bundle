@@ -19,7 +19,11 @@ BEGIN
 	BEGIN TRY
 
 	SET @process = 'CW-5586 update table RepChatsDetail'
-	SET @sql = 'ALTER TABLE RepChatsDetail ADD chatId int NOT NULL;'
+	SET @sql = 'ALTER TABLE RepChatsDetail ADD chatId int NOT NULL CONSTRAINT MyColumn DEFAULT 0;'
+	EXEC (@sql)
+
+	SET @process = 'update table RepChatsDetail'
+	SET @sql = 'ALTER TABLE RepChatsDetail DROP CONSTRAINT MyColumn;'
 	EXEC (@sql)
 
 	SET @process = 'CW-5586 update SP ccspRepChatsDetail'

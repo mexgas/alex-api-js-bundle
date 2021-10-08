@@ -22,8 +22,7 @@ BEGIN
 	SET @sql = 'IF EXISTS (
 				  SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
 				  WHERE table_name = ''RepChatsDetail''
-				  AND column_name = ''chatId''
-				)
+				  AND column_name = ''chatId'')
 				SELECT ''Column exists in table'' AS [Status] ;
 				ELSE
 				ALTER TABLE RepChatsDetail ADD chatId int NOT NULL CONSTRAINT MyColumn DEFAULT 0;'

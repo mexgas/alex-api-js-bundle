@@ -19,11 +19,18 @@ BEGIN
 	BEGIN TRY
 
 	SET @process = 'CW-5586 update table RepChatsDetail'
-	SET @sql = 'ALTER TABLE RepChatsDetail ADD chatId int NOT NULL CONSTRAINT MyColumn DEFAULT 0;'
+	SET @sql = 'IF EXISTS (
+				  SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+				  WHERE table_name = ''RepChatsDetail''
+				  AND column_name = ''chatId''
+				)
+				SELECT ''Column exists in table'' AS [Status] ;
+				ELSE
+				ALTER TABLE RepChatsDetail ADD chatId int NOT NULL CONSTRAINT MyColumn DEFAULT 0;'
 	EXEC (@sql)
 
 	SET @process = 'update table RepChatsDetail'
-	SET @sql = 'ALTER TABLE RepChatsDetail DROP CONSTRAINT MyColumn;'
+	SET @sql = 'IF OBJECT_ID(''MyColumn'', ''C'') IS NOT NULL ALTER TABLE RepChatsDetail DROP CONSTRAINT MyColumn;'
 	EXEC (@sql)
 
 	SET @process = 'CW-5586 update SP ccspRepChatsDetail'

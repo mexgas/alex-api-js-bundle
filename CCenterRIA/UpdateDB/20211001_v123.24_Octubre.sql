@@ -30,7 +30,7 @@ sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'
 SET @version = 123 --**********actualizar a 122 sin fix
 SET @versionfix = 24
 /* Actual version (use your own script to do it)*/
-EXEC @actualVersion = ccsp_getVersion 'BD' 
+EXEC @actualVersion = ccsp_getVersion 'BD'
 
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
 
@@ -68,18 +68,18 @@ as
 Declare @lenguageXion varchar
 select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
 
-IF @option = 1 --Agentes/supervisores de un Area  
+IF @option = 1 --Agentes/supervisores de un Area
 BEGIN
   SELECT  TipoUser_id as UserType,
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '''')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '''')
   END as OptionalExtraName,
@@ -101,12 +101,12 @@ BEGIN
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '''')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '''')
   END as OptionalExtraName,
@@ -127,12 +127,12 @@ BEGIN
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '''')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '''')
   END as OptionalExtraName,
@@ -155,12 +155,12 @@ BEGIN
 	SELECT User_id as UserId,
 	LOGIN as Username,
 	Nombres as Names,
-	CASE 
+	CASE
 	  WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
 	  ELSE isnull(ApellidoPaterno, '''')
 	END as LastName,
 
-	CASE 
+	CASE
 	  WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
 	  ELSE isnull(ApellidoMaterno, '''')
 	END as OptionalExtraName,
@@ -194,11 +194,11 @@ END'
     EXEC(@sql)
 
     set @process = 'CW-5828, CW-5841 Se crea SP ccsp_GalateaChangeHistory'
-    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory] 
-	@option TINYINT, 
-	@loginLst VARCHAR(max) = NULL, 
-	@moduleWithOperation varchar(max) = NULL, 
-	@operationDateIni SMALLDATETIME = NULL, 
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+	@option TINYINT,
+	@loginLst VARCHAR(max) = NULL,
+	@moduleWithOperation varchar(max) = NULL,
+	@operationDateIni SMALLDATETIME = NULL,
 	@operationDateFin SMALLDATETIME = NULL,
 	@top INT = 0
 	AS
@@ -217,26 +217,26 @@ END'
 		FROM ccRIALog_Operation o WITH (INDEX (IX_ccRIALog_Operation))
 		JOIN ccRIALog_Cat_Relation r ON o.operationType = r.operationType
 		JOIN ccRIALog_Module m WITH (INDEX (IX_ccRIALog_Module)) ON r.module_id = m.module_id
-						
+
 		UNION
-						
+
 		SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
-						
+
 		UNION
-						
+
 		SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
-						
+
 		UNION
-						
+
 		SELECT cast(module_id as int) module_id, 0, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX(''|'', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX(''|'', descripcion) + 1, len(descripcion)) END AS descripcion, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
 		FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module))
-						
+
 		UNION
-						
+
 		SELECT cast(module_id as int) module_id, - 1 , CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX(''|'', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX(''|'', descripcion) + 1, len(descripcion)) END AS descripcion, '' - ''
 		FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module)))
 
-		SELECT module_id,operationType,mDescripcion,oDescripcion FROM Catalog 
+		SELECT module_id,operationType,mDescripcion,oDescripcion FROM Catalog
 		WHERE module_id not in(5,8,14,21,22,25,32,33,36,37,44,53,57,58,59,60,42)
 		AND operationType not in(6,15,51,58,36,46,44,45,59,12,8,7,55,54,33)
 		ORDER BY mDescripcion, oDescripcion
@@ -256,7 +256,7 @@ END'
 		declare @value varchar(max)
 		declare @first int = 1
 		declare @pos int
-	
+
 		insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
 		while exists(select * from @table)
 		begin
@@ -280,7 +280,7 @@ END'
 			delete @table where id = @id
 		end
 		set @query = @query + '')''
-	
+
 
 		SET ROWCOUNT @top
 
@@ -288,11 +288,11 @@ END'
 		''DECLARE @tableLogin TABLE(id int,value varchar(255))
 		insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
 
-		SELECT L.log_id, L.areaName, L.operationDate, 
-		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''''|'''', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''''|'''', o.descripcion) + 1, len(o.descripcion)) END operationType, 
-		L.LOGIN, 
-		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''''|'''', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''''|'''', m.descripcion) + 1, len(m.descripcion)) END module_id, 
-		CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target, 
+		SELECT L.log_id, L.areaName, L.operationDate,
+		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''''|'''', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''''|'''', o.descripcion) + 1, len(o.descripcion)) END operationType,
+		L.LOGIN,
+		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''''|'''', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''''|'''', m.descripcion) + 1, len(m.descripcion)) END module_id,
+		CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
 		CASE WHEN v.valueT IS NULL THEN L.value ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.es WHEN 2 THEN v.pt ELSE v.en END END AS value
 		FROM CCRIALOG L
 		JOIN ccRIALog_Module M WITH (INDEX (IX_ccRIALog_Module)) ON L.module_id = M.module_id
@@ -301,9 +301,9 @@ END'
 		LEFT JOIN valueRecord v ON v.valueT = L.value
 		WHERE 1=1 ''
 		+
-		case isnull(@loginLst, '''') when '''' then '''' else 
+		case isnull(@loginLst, '''') when '''' then '''' else
 		'' AND L.LOGIN in (select value from @tableLogin) ''
-		END 
+		END
 		+
 		case isnull(@moduleWithOperation, '''') when '''' then '''' else
 		@query
@@ -377,7 +377,7 @@ AS
                       , ISNULL(B.descripcion, ''N/A'') AS AcdName
                       , ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition
                       , ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition
-                      , ISNULL(conversationDate, requestDate) DateStart 
+                      , ISNULL(conversationDate, requestDate) DateStart
 					  , ISNULL(A.agentId,0) AgentID
 					  FROM ccWhatsAppConversations A
                                                                              LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
@@ -428,13 +428,13 @@ AS
 
     set @process = 'CW-5845 se crea SP ccsp_GalateaAdminGetCampaignSubDispositions'
     set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignSubDispositions]
-				@camp_id int,@type int, @agent_id int 
+				@camp_id int,@type int, @agent_id int
 				AS
 				BEGIN
 				IF @type=0
 					begin
 						select c2.Description,
-						case when c3.califSubDesc is not null 
+						case when c3.califSubDesc is not null
 							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
 						count(*) Total from ccCallsIn c1
 						inner join ccTipoCalif c2 on c1.calif_id=c2.calif_id
@@ -445,9 +445,9 @@ AS
 						group by c2.Description,c3.califSubDesc
 					END
 				IF @type=1
-					BEGIN 
+					BEGIN
 						select c2.Description,
-						case when c3.califSubDesc is not null 
+						case when c3.califSubDesc is not null
 							then c3.califSubDesc else ''No Subdisposition'' end as SubCalifDescription,
 						count(*) Total from ccoCallsOut c1
 						inner join ccTipoCalifOUT c2 on c1.calif_id=c2.calif_id
@@ -573,11 +573,11 @@ AS
 	    END;
 
 		IF @action = 4 BEGIN --save messages from conversation
-			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) 
-				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)	
+			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
 			BEGIN
 				INSERT INTO [ccWAMessagesConversations](
-													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values 
+													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
 												   (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
 				SELECT @messageId=SCOPE_IDENTITY()
 				SELECT @messageId as MessageId
@@ -590,7 +590,7 @@ AS
 		END;
 
 		IF @action = 5
-	    BEGIN --save onQueue 
+	    BEGIN --save onQueue
 	        UPDATE ccWhatsAppConversations
 	               SET onQueue = 1
 	        WHERE conversationId = @conversationId;
@@ -616,7 +616,7 @@ AS
 					   currency = @currency
 	        WHERE messageId = @messageId;
 	    END;
-		
+
 		IF @action = 8
 	    BEGIN --update status message
 			IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
@@ -627,7 +627,7 @@ AS
 	    END;
 	END;'
     EXEC(@sql)
-	
+
 	set @process = 'CW-5949 cambio de tipo de dato columna Content'
     set @sql = 'if(SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=''ccWAMessagesConversations'' and COLUMN_NAME = ''content'') <> ''nvarchar''
 			begin
@@ -635,7 +635,7 @@ AS
 			ALTER COLUMN content nvarchar(max);
 			end'
     EXEC(@sql)
-	
+
 
     set @process = 'CW-5949 ccsp_ConversationWASave - Se quita el SP si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ConversationWASave'')
@@ -742,11 +742,11 @@ AS
 	    END;
 
 		IF @action = 4 BEGIN --save messages from conversation
-			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) 
-				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)	
+			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
 			BEGIN
 				INSERT INTO [ccWAMessagesConversations](
-													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values 
+													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
 												   (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
 				SELECT @messageId=SCOPE_IDENTITY()
 				SELECT @messageId as MessageId
@@ -759,7 +759,7 @@ AS
 		END;
 
 		IF @action = 5
-	    BEGIN --save onQueue 
+	    BEGIN --save onQueue
 	        UPDATE ccWhatsAppConversations
 	               SET onQueue = 1
 	        WHERE conversationId = @conversationId;
@@ -785,7 +785,7 @@ AS
 					   currency = @currency
 	        WHERE messageId = @messageId;
 	    END;
-		
+
 		IF @action = 8
 	    BEGIN --update status message
 			IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
@@ -806,10 +806,10 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
     EXEC(@sql)
 
     set @process = 'CW-5949 ccsp_MultimediaCommon '
-    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon] 
-		@Option AS SMALLINT, 
-		@inboundId AS SMALLINT = 0, 
-		@conversationId AS INT = 0, 
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+		@Option AS SMALLINT,
+		@inboundId AS SMALLINT = 0,
+		@conversationId AS INT = 0,
 		@ServiceType AS SMALLINT = 0,
 		@status as SMALLINT =0,
 		@messagesList as varchar(max) = ''''
@@ -829,11 +829,11 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
 
 					   FROM  ccInbound inbound
 					   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
-				END      
+				END
 
 			IF(@Option = 2)
 				BEGIN
-					SELECT 
+					SELECT
 						cast(i.chat as int) AS ServiceType,
 						cast(c.conversationId as int) as ConversationID,
 						c.clientId as ClientId,
@@ -854,7 +854,7 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
 				END
 			IF(@Option = 3)
 				BEGIN
-					 SELECT 
+					 SELECT
 					   CAST(inbound.Inbound_id AS INT) AS ACDId,
 					   inbound.descripcion AS ACDName,
 					   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
@@ -863,7 +863,7 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
 
 					   FROM  ccInbound inbound
 					   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-				END  
+				END
 			IF(@Option = 4)
 			Begin
 
@@ -873,10 +873,10 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
 
 				insert into @mensajes
 				select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
-			
+
 
 				select @pathFile = valor from ccSettings where setting_id=230
-				select 
+				select
 					messageId as MessageId,
 					originType as Origin,
 					case when originType =''Client'' then 3
@@ -888,29 +888,65 @@ set @process = 'CW-5949 ccsp_MultimediaCommon - Se quita el SP si ya existe'
 					typeMessage as Type,
 					case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
 					case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +''.''+
-					case 
+					case
 						when typeMessage = ''video'' then ''mp4''
 						when typeMessage = ''image'' then ''jpg''
 						when typeMessage = ''audio'' then ''mp3''
 						when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
 						else '''' end
 					end as [Url],
-					case when typeMessage = ''location'' 
+					case when typeMessage = ''location''
 					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-					case when typeMessage = ''location'' 
+					case when typeMessage = ''location''
 					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-					case when typeMessage = ''location'' 
+					case when typeMessage = ''location''
 					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-					case when typeMessage = ''location'' 
+					case when typeMessage = ''location''
 					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-					case when typeMessage = ''location'' 
-					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 5),'':'') where id=2) + 
+					case when typeMessage = ''location''
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 5),'':'') where id=2) +
 					      (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 5),'':'') where id=3) else '''' end as [LocationURL]
 				 from ccWAMessagesConversations where conversationId = @conversationId and messageId in (select idMessage from @mensajes)
 
 			End
 		END'
     EXEC(@sql)
+
+		set @process = 'CW-5723 AgentCheckCampsActive  - Se quita el SP si ya existe'
+				set @sql = 'if exists (select * from sys.procedures where name = N''AgentCheckCampsActive '')
+								begin
+									DROP PROCEDURE AgentCheckCampsActive ;
+								end'
+				EXEC(@sql)
+
+		set @process = 'CW-5723 AgentCheckCampsActive  - Se añade SP para validar que la campaña pertenezca a un área'
+			set @sql = 'CREATE PROCEDURE [dbo].[AgentCheckCampsActive]
+					@cam_id as smallint,
+					@user_id as smallint,
+					@forceManualCall as tinyint = 0
+					AS
+
+					declare @isValidCall as int
+					declare @timeZoneRule as int
+					declare @idArea as int
+
+					select @isValidCall = count(*)from ccCampsAgente with(nolock) where cam_id = @cam_id and user_id = @user_id
+					select @idArea = IDArea from ccCamps with(nolock) where cam_id = @cam_id
+					select @timeZoneRule = 0
+					if @idArea is not NULL
+						begin
+							select @isValidCall = cam_ModoManual, @timeZoneRule = timeZoneRule, @idArea = 1
+							from ccCamps with(nolock) where cam_id = @cam_id
+							end
+
+							else if @idArea is null
+							begin
+							select  @isValidCall = cam_ModoManual, @timeZoneRule = timeZoneRule, @idArea = 0
+							from ccCamps with(nolock) where cam_id = @cam_id
+							end
+
+						select @isValidCall as Validation, @timeZoneRule as TimeZoneRule, @idArea as Active'
+			EXEC(@sql)
 
 
 		/* End script release */

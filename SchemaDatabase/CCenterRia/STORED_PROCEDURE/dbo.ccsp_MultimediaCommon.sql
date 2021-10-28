@@ -1,9 +1,10 @@
-CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon] 
-		@Option AS SMALLINT, 
-		@inboundId AS SMALLINT = 0, 
-		@conversationId AS INT = 0, 
+CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+		@Option AS SMALLINT,
+		@inboundId AS SMALLINT = 0,
+		@conversationId AS INT = 0,
 		@ServiceType AS SMALLINT = 0,
-		@status as SMALLINT =0
+		@status as SMALLINT =0,
+		@messagesList as varchar(max) = ''
 		AS
 		BEGIN
 		    SET NOCOUNT ON;
@@ -20,11 +21,11 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 
 					   FROM  ccInbound inbound
 					   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
-				END      
+				END
 
 			IF(@Option = 2)
 				BEGIN
-					SELECT 
+					SELECT
 						cast(i.chat as int) AS ServiceType,
 						cast(c.conversationId as int) as ConversationID,
 						c.clientId as ClientId,
@@ -45,7 +46,7 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 				END
 			IF(@Option = 3)
 				BEGIN
-					 SELECT 
+					 SELECT
 					   CAST(inbound.Inbound_id AS INT) AS ACDId,
 					   inbound.descripcion AS ACDName,
 					   ISNULL(configuration.conexionInfo, '') AS PhoneACD,
@@ -54,5 +55,50 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 
 					   FROM  ccInbound inbound
 					   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-				END   	
+				END
+			IF(@Option = 4)
+			Begin
+
+				declare @pathFile as varchar(max)
+				declare @filetype as varchar(5)
+				DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+
+				insert into @mensajes
+				select value from dbo.fn_RIASplitDelimited(@messagesList,',')
+
+
+				select @pathFile = valor from ccSettings where setting_id=230
+				select
+					messageId as MessageId,
+					originType as Origin,
+					case when originType ='Client' then 3
+						 when originType ='Agent' then 2
+						 when originType ='Admin' then 1
+					else 0 end as OriginType,
+					timeStampMessage as [Timestamp],
+					case when typeMessage <> 'text'  then '' else content end as Content,
+					typeMessage as Type,
+					case when typeMessage not in( 'text' ,'location') then content else '' end as Caption,
+					case when typeMessage = 'text' or typeMessage = 'location' then '' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +'.'+
+					case
+						when typeMessage = 'video' then 'mp4'
+						when typeMessage = 'image' then 'jpg'
+						when typeMessage = 'audio' then 'mp3'
+						when typeMessage = 'file' then (select substring(content, CHARINDEX('.',content)+1, len(content)))
+						else '' end
+					end as [Url],
+					case when typeMessage = 'location'
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 1),':') where id=2) else '' end as [Address],
+					case when typeMessage = 'location'
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 2),':') where id=2) else '' end as [Lat],
+					case when typeMessage = 'location'
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 3),':') where id=2) else '' end as [Long],
+					case when typeMessage = 'location'
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 4),':') where id=2) else '' end as [Name],
+					case when typeMessage = 'location'
+					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 5),':') where id=2) +
+					      (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 5),':') where id=3) else '' end as [LocationURL]
+				 from ccWAMessagesConversations where conversationId = @conversationId and messageId in (select idMessage from @mensajes)
+
+			End
 		END

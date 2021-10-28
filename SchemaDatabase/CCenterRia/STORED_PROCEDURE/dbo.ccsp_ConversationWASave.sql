@@ -19,7 +19,7 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 											  , @clientNum			VARCHAR(15) = NULL
 											  , @vonageNum			VARCHAR(15) = NULL
 											  , @typeMessage		VARCHAR(25) = ''
-											  , @content			VARCHAR(MAX)= NULL
+											  , @content			NVARCHAR(MAX)= NULL
 											  , @timeStampMessage   DATETIME	= NULL
 											  , @timeStampMessageUTC DATETIME	= NULL
 											  , @originType         VARCHAR(15) = NULL
@@ -95,11 +95,11 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 	    END;
 
 		IF @action = 4 BEGIN --save messages from conversation
-			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId) 
-				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)	
+			IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+				AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
 			BEGIN
 				INSERT INTO [ccWAMessagesConversations](
-													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values 
+													messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
 												   (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
 				SELECT @messageId=SCOPE_IDENTITY()
 				SELECT @messageId as MessageId
@@ -112,7 +112,7 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 		END;
 
 		IF @action = 5
-	    BEGIN --save onQueue 
+	    BEGIN --save onQueue
 	        UPDATE ccWhatsAppConversations
 	               SET onQueue = 1
 	        WHERE conversationId = @conversationId;
@@ -138,7 +138,7 @@ CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 					   currency = @currency
 	        WHERE messageId = @messageId;
 	    END;
-		
+
 		IF @action = 8
 	    BEGIN --update status message
 			IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> 'read' BEGIN

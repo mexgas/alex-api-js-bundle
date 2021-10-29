@@ -23,22 +23,8 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'CW (AutoStart),(Callback/aba
 		@category_name=N'Nuxiba',
 		@owner_login_name=N'replication', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'CW AutoStart',
-		@step_id=1,
-		@cmdexec_success_code=0,
-		@on_success_action=3,
-		@on_success_step_id=0,
-		@on_fail_action=2,
-		@on_fail_step_id=0,
-		@retry_attempts=0,
-		@retry_interval=0,
-		@os_run_priority=0,  @subsystem=N'TSQL',
-		@command=N'exec ccsp_OutGenerateAutoinicio',
-		@database_name=N'CCenterRia',
-		@flags=0
-IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'CW Callback/abandoned update',
-		@step_id=2,
+		@step_id=1,
 		@cmdexec_success_code=0,
 		@on_success_action=3,
 		@on_success_step_id=0,
@@ -70,7 +56,7 @@ if len(@callout_id_array)>1
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'CW Campaign summary',
-		@step_id=3,
+		@step_id=2,
 		@cmdexec_success_code=0,
 		@on_success_action=1,
 		@on_success_step_id=0,

@@ -226,7 +226,21 @@ end'
     EXEC(@sql)   
 
 	set @process = 'CW-5882 InCallback ADD Inbound COLUMNS'
-    set @sql = ''
+    set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+						  WHERE Name = N''callBackRetries''
+						  AND Object_ID = Object_ID(N''dbo.ccInbound''))
+				BEGIN
+					alter table ccInbound add callBackRetries tinyint null, callBackCustomPhone tinyint null, callBackCustomKey bit null
+				END'
+	EXEC(@sql)
+
+	set @process = 'CW-5882 InCallback ADD ccRIACallBack_Queue COLUMNS'
+    set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+						  WHERE Name = N''retry''
+						  AND Object_ID = Object_ID(N''dbo.ccRIACallBack_Queue''))
+				BEGIN
+					alter table ccRIACallBack_Queue add retry tinyint null, xferDate datetime null
+				END'
 	EXEC(@sql)
 
 	set @process = 'CW-5882 InCallback ALTER SP ccsp_ccRIACallBack_Queue'

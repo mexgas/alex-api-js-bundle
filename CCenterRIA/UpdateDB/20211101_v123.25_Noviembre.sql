@@ -59,7 +59,7 @@ end'
 	set @process = 'CW-5749 ccsp_ccActivityDataQuery - Se quita el SP si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_ccActivityDataQuery'')
             begin
-          DROP PROCEDURE ccsp_GalateaLoadUsersForManagement;
+          DROP PROCEDURE ccsp_ccActivityDataQuery;
             end'
     EXEC(@sql)
 

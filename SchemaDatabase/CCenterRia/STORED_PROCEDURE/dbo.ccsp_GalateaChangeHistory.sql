@@ -1,8 +1,8 @@
-CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory] 
-	@option TINYINT, 
-	@loginLst VARCHAR(max) = NULL, 
-	@moduleWithOperation varchar(max) = NULL, 
-	@operationDateIni SMALLDATETIME = NULL, 
+CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+	@option TINYINT,
+	@loginLst VARCHAR(max) = NULL,
+	@moduleWithOperation varchar(max) = NULL,
+	@operationDateIni SMALLDATETIME = NULL,
 	@operationDateFin SMALLDATETIME = NULL,
 	@top INT = 0
 	AS
@@ -21,26 +21,26 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 		FROM ccRIALog_Operation o WITH (INDEX (IX_ccRIALog_Operation))
 		JOIN ccRIALog_Cat_Relation r ON o.operationType = r.operationType
 		JOIN ccRIALog_Module m WITH (INDEX (IX_ccRIALog_Module)) ON r.module_id = m.module_id
-						
+
 		UNION
-						
+
 		SELECT 0, - 1, CASE @lang WHEN 0 THEN ' - TODAS - ' ELSE ' - ALL - ' END, ' - '
-						
+
 		UNION
-						
+
 		SELECT 0, 0, CASE @lang WHEN 0 THEN ' - TODAS - ' ELSE ' - ALL - ' END, CASE @lang WHEN 0 THEN ' - TODAS - ' ELSE ' - ALL - ' END
-						
+
 		UNION
-						
+
 		SELECT cast(module_id as int) module_id, 0, CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX('|', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX('|', descripcion) + 1, len(descripcion)) END AS descripcion, CASE @lang WHEN 0 THEN ' - TODAS - ' ELSE ' - ALL - ' END
 		FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module))
-						
+
 		UNION
-						
+
 		SELECT cast(module_id as int) module_id, - 1 , CASE @lang WHEN 0 THEN SUBSTRING(descripcion, 1, CHARINDEX('|', descripcion) - 1) ELSE SUBSTRING(descripcion, CHARINDEX('|', descripcion) + 1, len(descripcion)) END AS descripcion, ' - '
 		FROM ccRIALog_Module WITH (INDEX (IX_ccRIALog_Module)))
 
-		SELECT module_id,operationType,mDescripcion,oDescripcion FROM Catalog 
+		SELECT module_id,operationType,mDescripcion,oDescripcion FROM Catalog
 		WHERE module_id not in(5,8,14,21,22,25,32,33,36,37,44,53,57,58,59,60,42)
 		AND operationType not in(6,15,51,58,36,46,44,45,59,12,8,7,55,54,33)
 		ORDER BY mDescripcion, oDescripcion
@@ -60,7 +60,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 		declare @value varchar(max)
 		declare @first int = 1
 		declare @pos int
-	
+
 		insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'') as varchar(max)), ',')
 		while exists(select * from @table)
 		begin
@@ -84,7 +84,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 			delete @table where id = @id
 		end
 		set @query = @query + ')'
-	
+
 
 		SET ROWCOUNT @top
 
@@ -92,11 +92,11 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 		'DECLARE @tableLogin TABLE(id int,value varchar(255))
 		insert into @tableLogin  select * from dbo.fn_RIASplitDelimited(''' + cast(isnull(@loginLst,'') as varchar(max)) + ''','','')
 
-		SELECT L.log_id, L.areaName, L.operationDate, 
-		CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''|'', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''|'', o.descripcion) + 1, len(o.descripcion)) END operationType, 
-		L.LOGIN, 
-		CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''|'', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''|'', m.descripcion) + 1, len(m.descripcion)) END module_id, 
-		CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target, 
+		SELECT L.log_id, L.areaName, L.operationDate,
+		CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN SUBSTRING(o.descripcion, 1, CHARINDEX(''|'', o.descripcion) - 1) ELSE SUBSTRING(o.descripcion, CHARINDEX(''|'', o.descripcion) + 1, len(o.descripcion)) END operationType,
+		L.LOGIN,
+		CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN SUBSTRING(m.descripcion, 1, CHARINDEX(''|'', m.descripcion) - 1) ELSE SUBSTRING(m.descripcion, CHARINDEX(''|'', m.descripcion) + 1, len(m.descripcion)) END module_id,
+		CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
 		CASE WHEN v.valueT IS NULL THEN L.value ELSE CASE ' + cast(@lang as varchar(5)) + ' WHEN 0 THEN v.es WHEN 2 THEN v.pt ELSE v.en END END AS value
 		FROM CCRIALOG L
 		JOIN ccRIALog_Module M WITH (INDEX (IX_ccRIALog_Module)) ON L.module_id = M.module_id
@@ -105,9 +105,9 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 		LEFT JOIN valueRecord v ON v.valueT = L.value
 		WHERE 1=1 '
 		+
-		case isnull(@loginLst, '') when '' then '' else 
+		case isnull(@loginLst, '') when '' then '' else
 		' AND L.LOGIN in (select value from @tableLogin) '
-		END 
+		END
 		+
 		case isnull(@moduleWithOperation, '') when '' then '' else
 		@query

@@ -1,11 +1,11 @@
 CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignSubDispositions]
-				@camp_id int,@type int, @agent_id int 
+				@camp_id int,@type int, @agent_id int
 				AS
 				BEGIN
 				IF @type=0
 					begin
 						select c2.Description,
-						case when c3.califSubDesc is not null 
+						case when c3.califSubDesc is not null
 							then c3.califSubDesc else 'No Subdisposition' end as SubCalifDescription,
 						count(*) Total from ccCallsIn c1
 						inner join ccTipoCalif c2 on c1.calif_id=c2.calif_id
@@ -16,9 +16,9 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetCampaignSubDispositions]
 						group by c2.Description,c3.califSubDesc
 					END
 				IF @type=1
-					BEGIN 
+					BEGIN
 						select c2.Description,
-						case when c3.califSubDesc is not null 
+						case when c3.califSubDesc is not null
 							then c3.califSubDesc else 'No Subdisposition' end as SubCalifDescription,
 						count(*) Total from ccoCallsOut c1
 						inner join ccTipoCalifOUT c2 on c1.calif_id=c2.calif_id

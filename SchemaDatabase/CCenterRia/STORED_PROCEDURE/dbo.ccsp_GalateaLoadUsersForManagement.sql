@@ -10,18 +10,18 @@ as
 Declare @lenguageXion varchar
 select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
 
-IF @option = 1 --Agentes/supervisores de un Area  
+IF @option = 1 --Agentes/supervisores de un Area
 BEGIN
   SELECT  TipoUser_id as UserType,
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '')
   END as OptionalExtraName,
@@ -43,12 +43,12 @@ BEGIN
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '')
   END as OptionalExtraName,
@@ -69,12 +69,12 @@ BEGIN
   User_id as UserId,
   LOGIN as Username,
   Nombres as Names,
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoPaterno, '')
   END as LastName,
 
-  CASE 
+  CASE
     WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
     ELSE isnull(ApellidoMaterno, '')
   END as OptionalExtraName,
@@ -97,12 +97,12 @@ BEGIN
 	SELECT User_id as UserId,
 	LOGIN as Username,
 	Nombres as Names,
-	CASE 
+	CASE
 	  WHEN @lenguageXion='1' THEN isnull(ApellidoMaterno, '')-- El sistema esta en ingles
 	  ELSE isnull(ApellidoPaterno, '')
 	END as LastName,
 
-	CASE 
+	CASE
 	  WHEN @lenguageXion='1' THEN isnull(ApellidoPaterno, '')-- El sistema esta en ingles
 	  ELSE isnull(ApellidoMaterno, '')
 	END as OptionalExtraName,

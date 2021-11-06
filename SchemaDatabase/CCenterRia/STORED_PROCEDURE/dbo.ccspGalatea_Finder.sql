@@ -43,7 +43,7 @@ AS
                       , ISNULL(B.descripcion, 'N/A') AS AcdName
                       , ISNULL(cctipocalif.[Description], 'N/A') AS Disposition
                       , ISNULL(cctipocalifsub.califSubdesc, 'N/A') AS SubDisposition
-                      , ISNULL(conversationDate, requestDate) DateStart 
+                      , ISNULL(conversationDate, requestDate) DateStart
 					  , ISNULL(A.agentId,0) AgentID
 					  FROM ccWhatsAppConversations A
                                                                              LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id

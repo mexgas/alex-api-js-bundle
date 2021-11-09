@@ -9,7 +9,7 @@ if @to is null
 select @to = getdate()
 if @action = 1 BEGIN
 
---SELECT * FROM RepAVRSQuestion
+
 DELETE FROM dbo.RepAVRSQuestion with(rowlock)
 where date >= @from AND date < @to
 ;with pregunta as(
@@ -47,8 +47,8 @@ from RIA_RESULTADOSFORMA r
   INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
   INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
   INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
-  INNER JOIN cccamps AS e ON f.cam_id = e.cam_id and  f.tipo_llamada=2
-  INNER JOIN ccinbound AS u ON f.cam_id = u.Inbound_id and  f.tipo_llamada=1
+  left JOIN cccamps AS e ON f.cam_id = e.cam_id and  f.tipo_llamada=2
+  left JOIN ccinbound AS u ON f.cam_id = u.Inbound_id and  f.tipo_llamada=1
   WHERE f.fecha_calif >= @from AND f.fecha_calif <= @to
   )
 
@@ -57,5 +57,5 @@ from RIA_RESULTADOSFORMA r
   from dataResume
   group by  [date], userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question,
   mediaId,media,cam_id,campaignAcd
-  SELECT * FROM DetailReports
+ 
 END

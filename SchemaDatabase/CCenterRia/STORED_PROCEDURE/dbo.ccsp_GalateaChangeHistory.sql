@@ -103,7 +103,10 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 		JOIN ccRIALog_Operation O WITH (INDEX (IX_ccRIALog_Operation)) ON L.operationType = O.operationType
 		LEFT JOIN targetRecord t ON t.targetT = L.target
 		LEFT JOIN valueRecord v ON v.valueT = L.value
-		WHERE 1=1 '
+		LEFT JOIN ccUsers CU ON CU.Login = L.login
+		WHERE 1=1 
+		AND
+		CU.TipoUser_id = 2'
 		+
 		case isnull(@loginLst, '') when '' then '' else
 		' AND L.LOGIN in (select value from @tableLogin) '

@@ -798,6 +798,305 @@ end'
 			insert ccTipoStatusAgente values (34, ''Dialogo WhatsApp'')
 		end'
 	EXEC(@sql)
+
+	set @process = 'No disponibles - Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUnavailableStates'')
+            begin
+          DROP PROCEDURE ccsp_GalateaUnavailableStates;
+            end'
+    EXEC(@sql)
+
+    set @process = 'No disponibles - Se crea sp'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUnavailableStates]
+@NotReady_id smallint = null,
+@Description varchar(30)='''',
+@Acc_Time int = null,
+@Intervals int = null,
+@Pass_Supv tinyint = null,
+@NextStatus int = null,
+@Frame smallint = null,
+@Type varchar(1)='''',
+@IsSupv int = null,
+@NotReady_ids varchar(max)=''''
+AS
+set nocount on
+DECLARE @sql nvarchar(4000), @graph nvarchar(1000), @id smallint, @newGraph smallint
+
+	if @Type = 1 -- LOAD
+		begin
+			SELECT distinct a1.TipoNotReady_id as NotReady_Id, a1.Descripcion as Description, a1.Time_Acum as Acc_Time, a1.Time_xEv as Intervals, 
+			cast(a1.Pas_Sup as bit) Pass_Supv, a1.NextStatus, frame as Frame, cast(a1.IsSup as bit) IsSupv
+			FROM ccTipoNotReady a1 
+			inner join ccRIAnotreadyGraph a2 on (a1.tiponotready_id=a2.tiponotready_id)
+			inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+			where a1.StatusTipoNotReady=1 and a1.TipoNotReady_id between 0 and 250
+			order by 2
+		end
+
+	If @Type=2 -- INSERT
+	 begin
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=1 and Descripcion=@Description)
+		 begin		
+			select -1
+			return(0)
+		 end
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=0 and Descripcion=@Description)
+			begin		
+				select @id=TipoNotReady_id from ccTipoNotReady where Descripcion=@Description
+				update ccTipoNotReady set 
+				Time_acum=@Acc_Time,
+				Time_xEv=@Intervals,
+				Pas_Sup=@Pass_Supv,
+				NextStatus=@NextStatus,
+				IsSup=@IsSupv,
+				StatusTipoNotReady=1
+				where Descripcion=@Description
+				If not exists(select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+					Begin
+						insert into ccRIAGraphics (frame, type_id) select @Frame,4
+					End
+			
+				insert into ccRIANotReadyGraph select @id, graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+				select cast(@id as int)
+				return(0)		
+			end
+		If not exists(select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+		 Begin
+			insert into ccRIAGraphics (frame, type_id) select @Frame,4
+		 End
+
+		insert ccTipoNotReady (Descripcion, Time_Acum, Time_xEv, Pas_Sup, NextStatus, IsSup, StatusTipoNotReady) 
+		select @Description, @Acc_Time, @Intervals, @Pass_Supv, @NextStatus, @IsSupv,1
+		select @id=SCOPE_IDENTITY()
+		insert into ccRIANotReadyGraph select @id, graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+		select cast(@id as int)
+	 end
+
+	If @Type=3 -- DELETE
+	 begin
+		 declare @NDs_Ids table (id int primary key not null)
+
+		if @NotReady_id is null
+		 begin
+			insert into @NDs_Ids
+			select value from dbo.fn_RIASplitDelimited (@NotReady_ids, '','')
+		 end
+		else
+		 begin
+			insert into @NDs_Ids
+			select @NotReady_id
+		 end
+
+		exec ccsp_AdminNotready 3,0,@NotReady_id,0, @NotReady_ids
+		delete ccRIANotReadyGraph where tipoNotReady_id in (select id from @NDs_Ids)
+		update ccTipoNotReady set StatusTipoNotReady=0 where tipoNotReady_id in (select id from @NDs_Ids)
+		update ccTipoNotReady set NextStatus=-1 where NextStatus in (select id from @NDs_Ids)
+	
+		select cast(id as smallint) NotReady_Id, 0 as Related from @NDs_Ids
+	 end
+
+	if(@Type=4) --UPDATE
+	 begin
+
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=1 and Descripcion=@Description and TipoNotReady_id not in (@NotReady_id))
+		 begin		
+			select -1
+			return(0)
+		 end
+
+		update ccTipoNotReady set 
+		 Descripcion=case @Description when '''' then Descripcion else @Description end,
+		 Time_Acum=ISNULL(@Acc_Time,Time_Acum),
+		 Time_xEv=ISNULL(@Intervals,Time_xEv),
+		 Pas_Sup=ISNULL(@Pass_Supv,Pas_Sup), 
+		 NextStatus=ISNULL(@NextStatus,NextStatus), 
+		 IsSup=ISNULL(@IsSupv,IsSup)
+		where TipoNotReady_id=@NotReady_id
+
+		IF ISNULL(@Frame,'''') not in('''')
+		 BEGIN
+			If not exists (select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+			 begin
+				insert into ccRIAGraphics (frame, type_id) select @Frame,4
+			 end
+
+			select @graph = graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+			update ccRIANotReadyGraph set graphic_id=cast(@graph as smallint) where TipoNotReady_id=cast(@NotReady_id as tinyint)
+		 END
+		 select 1
+	 end
+
+	if @Type = 5
+	 begin
+		select cast(NextStatus as smallint) NotReady_Id, cast(TipoNotReady_id as int) Related
+		from ccTipoNotReady 
+		where StatusTipoNotReady=1 and NextStatus in (select value from dbo.fn_RIASplitDelimited (@NotReady_ids, '',''))
+	 end
+
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'CW-5351 - Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMGetCalifDayForced'')
+            begin
+          DROP PROCEDURE ccsp_RIAADMGetCalifDayForced;
+            end'
+    EXEC(@sql)
+
+    set @process = 'CW-5351 - Se agrega sp'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAADMGetCalifDayForced]
+		@type smallint,
+		@cam_id smallint,
+		@calif_id smallint = null
+		AS 
+		set nocount on
+		create table #CalifTemp (id int identity,
+		tipo integer, 
+		Cam_id varchar(50), 
+		Calificacion varchar(50), 
+		subCalificacion varchar(50) null,
+		calif_id smallint null,
+		Total int,
+		GraphColor varchar(15)) 
+
+		declare @today datetime
+		set @today = convert(datetime, convert (varchar(11), getdate(), 101))
+		--set @today =convert(datetime, convert (varchar(11), ''2015-10-01 17:50:20.470'', 101))
+
+		-- Seleccion de idioma -- 
+		declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+		select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end
+		from ccsettings where setting_id = 27 -- 0esp
+
+		select @nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+		from ccsettings where setting_id = 27 -- 0 esp
+
+		if @type=0 
+		insert into #CalifTemp 
+		select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13
+				then case when description is not null 
+							then description 
+							else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+							end
+		else case when sll.descripcion is not null then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end end as Calificacion,
+		case when count(co.califSub_id) > 0 then 1 else 0 end as Subcalificacion,co.calif_id as calif_id,count(*) cantidad,
+		ISNULL(GraphColor,''1DB4E2'') GraphColor
+		from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+		left join ccTipoCalifOut ca on co.calif_id = ca.calif_id 
+		left join ccTipoCalifSubOUT tcsout on co.califSub_id = tcsout.califSub_id
+		left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+		left join ccCamps ci on ci.cam_id = co.cam_id 
+		where co.cal_inicio > @today
+		and co.cam_id = @cam_id
+		group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id,GraphColor
+
+
+
+		if @type=1 
+		insert into #CalifTemp 
+		select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+		else @nIdioma-- substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end as Calificacion,count(ci.califSub_id) as subCalificacion,ci.calif_id,count(*)  as total,
+		ISNULL(GraphColor,''1DB4E2'') GraphColor
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) 
+		left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+		where ci.cal_inicio > @today
+		and ci.inbound_id = @cam_id
+		and statuscall_id = 13 
+		group by description, cci.inbound_id,ci.califSub_id,ci.calif_id,GraphColor
+
+
+
+		-- Se corrigio suma de totales -- 
+		Alter table #CalifTemp add iTotal4Campaign int null
+
+		if (select valor from ccSettings where setting_id = 78) = 0
+		update #CalifTemp set iTotal4Campaign = 0
+
+		else	
+		update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign 
+		from (select cam_id, sum(A.Total) iTotal4Campaign
+		from #CalifTemp A group by cam_id) t join #CalifTemp c
+		on t.cam_id = c.cam_id
+
+		if @type=1 
+		select tipo as Type, cast(cam_id as varchar) as CampId, calificacion as Calification, cast(subCalificacion as varchar) as SubCalificationQuantity, cast(calif_id as smallint) as CalificationId, sum( total ) as Total, GraphColor from (
+			select 1 as tipo, inboundId as Cam_id, case when description is not null then description 
+			 else @nIdioma --substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			 end as Calificacion,0 as subCalificacion ,0 as calif_id,count(disposition) as Total,ISNULL(GraphColor,''1DB4E2'') GraphColor--,0 as iTotal4Campaign
+			from ccriachats a left join ccTipoCalif b 
+			on a.disposition=b.calif_id 
+			where a.chatDate > @today
+			and a.inboundId = @cam_id
+			group by inboundId, Description, GraphColor
+			
+			union all
+			
+			
+			select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma --substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end as Calificacion,
+			case when count(subCalificacion) > 0 then 1 else 0 end subCalificacion,calif_id,sum(Total) as Total, ISNULL(GraphColor,''1DB4E2'') GraphColor  --iTotal4Campaign -- para ver total por campaña
+			from #CalifTemp 
+			group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end, Cam_id,calif_id, iTotal4Campaign, GraphColor
+		)  as a group by tipo, cam_id, calificacion,subCalificacion,calif_id,GraphColor order by tipo,cam_id 
+		if @type=0 
+
+		select tipo as Type,Cam_id as CampId,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end as Calification,subCalificacion as SubCalificationQuantity, calif_id as CalificationId,sum(Total) as Total, ISNULL(GraphColor,''1DB4E2'') GraphColor -- , iTotal4Campaign -- para ver total por campaña
+		from #CalifTemp 
+		group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end, Cam_id,subCalificacion, calif_id, iTotal4Campaign, GraphColor
+
+
+
+		if @type = 3 begin -----entrada acd''s
+			select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+			else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end as Calificacion,isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(*) as totales 
+			from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+			left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+			left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+			where ci.cal_inicio > @today
+			and ci.inbound_id = @cam_id
+			and statuscall_id = 13 
+			and ci.calif_id = @calif_id
+			group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id 
+		end
+
+		if @type = 4 begin --salida campañas
+				select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13 
+					then case when description is not null 
+								then description 
+								else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+								end
+			else case when sll.descripcion is not null 
+			then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end end as Calificacion,isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad 
+			from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+			left join ccTipoCalifOut ca on co.calif_id = ca.calif_id 
+			left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+			left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+			left join ccCamps ci on ci.cam_id = co.cam_id 
+			where co.cal_inicio > @today
+			and co.cam_id = @cam_id
+			group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+		end 
+		 
+
+		drop table #CalifTemp 
+		set nocount off'
+    EXEC(@sql)
     
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

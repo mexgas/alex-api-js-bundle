@@ -790,6 +790,14 @@ end'
 	SET NOCOUNT OFF
 		'
 	EXEC(@sql)
+
+	set @process = 'CW-5951 Cambios de estado Dialogo WhatsApp'
+    set @sql = '
+		if not exists(select * from ccTipoStatusAgente nolock where TipoStatusAge_id=34)
+		begin
+			insert ccTipoStatusAgente values (34, ''Dialogo WhatsApp'')
+		end'
+	EXEC(@sql)
     
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

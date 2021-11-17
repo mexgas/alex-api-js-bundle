@@ -1716,6 +1716,34 @@ set nocount off'
    		EXEC(@sql)
     
     
+		set @process = 'CW-6013 ccsp_GalateaSettingsById - Se quita el SP si ya existe'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaSettingsById'')
+					begin
+						DROP PROCEDURE ccsp_GalateaSettingsById;
+					end'
+		EXEC(@sql)
+		
+		set @process = 'CW-6013 ccsp_GalateaSettingsById - Se crea el SP'
+		
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaSettingsById]
+						@Id tinyint = NULL
+					AS
+					BEGIN
+
+						SET NOCOUNT ON;
+
+						SELECT [setting_id]
+								,[valor]
+								,[Status]
+								,[Tipo]
+								,[bLoadSettings]
+							FROM [dbo].[ccSettings] WITH(NOLOCK)
+							WHERE (@Id IS NULL OR [setting_id]=@Id)
+
+					END'
+		EXEC(@sql)
+	
+	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version
@@ -1733,3 +1761,5 @@ set nocount off'
 		ROLLBACK TRAN
 	END CATCH
 END
+
+

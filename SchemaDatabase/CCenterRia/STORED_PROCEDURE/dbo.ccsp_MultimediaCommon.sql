@@ -96,8 +96,8 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 					case when typeMessage = 'location'
 					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 4),':') where id=2) else '' end as [Name],
 					case when typeMessage = 'location'
-					then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 5),':') where id=2) +
-					      (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 5),':') where id=3) else '' end as [LocationURL]
+					then 'https://www.google.com/maps/search/' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 2),':') where id=2) + ',' +
+						(select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 3),':') where id=2) else '' end as [LocationURL]
 				 from ccWAMessagesConversations where conversationId = @conversationId and messageId in (select idMessage from @mensajes)
 
 			End

@@ -1,8 +1,9 @@
-CREATE procedure [dbo].[ccsp_AdminNotready]
+Create procedure [dbo].[ccsp_AdminNotready]
 @Type tinyint,	-- 1:ND x Supervisor/2:actualiza x supervisor/3:Actualiza todo/4:trae ND/5:Trae supervisores
 @User_id smallint = null,
 @id_ND smallint = null,
-@valor bit=1
+@valor bit=1,
+@id_NDs varchar(max) = ''
 as
 set nocount on
 
@@ -71,20 +72,32 @@ if @Type = 2
 
 if @Type = 3
  begin
+	declare @NDs_Ids table (id int primary key not null)
 
- 	if not exists(select tiponotready_id from cctiponotready where tiponotready_id =@id_ND)
+	if @id_ND is null
+	 begin
+		insert into @NDs_Ids
+		select value from dbo.fn_RIASplitDelimited (@id_NDs, ',')
+	 end
+	else
+	 begin
+		insert into @NDs_Ids
+		select @id_ND
+	 end
+
+ 	if not exists(select tiponotready_id from cctiponotready where tiponotready_id in (select id from @NDs_Ids))
 	 begin
 		raiserror('ERROR. invalid notReady id', 18, 1)
 		return(0)
 	 end
 
 	if @valor=0
-		delete from ccSupervisor_NotReady where tiponotready_id = @id_ND
+		delete from ccSupervisor_NotReady where tiponotready_id in (select id from @NDs_Ids)
 
 	else
 		insert ccSupervisor_NotReady select u.User_id , nd.tiponotready_id
 		from ccUsers u cross join cctipoNotReady nd
-		where u.tipouser_id in (2,6) and nd.tiponotready_id = @id_ND
+		where u.tipouser_id in (2,6) and nd.tiponotready_id in (select id from @NDs_Ids)
 		and cast(u.User_id as varchar(10)) + '|' + cast(nd.tiponotready_id as varchar(10))
 		not in (select cast(User_id as varchar(10)) + '|' + cast(tiponotready_id as varchar(10)) 
 		from ccSupervisor_NotReady)

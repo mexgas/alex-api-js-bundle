@@ -18,7 +18,11 @@ BEGIN
 
 	BEGIN TRY
 
-	SET @process = 'CW-6053 se modifica sp ccspRepIVRSurveys'
+	SET @process = 'CW-6053 update PivotReports'
+	SET @sql = 'update PivotReports set complementColumns=''date|userId|login|scriptId|surveyId|survey|calId|calKey|clientPhoneNumber|campACDDescription'' where id=6050'
+	EXEC (@sql)
+
+	SET @process = 'CW-6053 alter sp ccspRepIVRSurveys'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
 		@action as tinyint,
 		@from AS datetime = null,

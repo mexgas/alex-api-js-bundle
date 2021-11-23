@@ -22,6 +22,15 @@ BEGIN
 	SET @sql = 'update PivotReports set complementColumns=''date|userId|login|scriptId|surveyId|survey|calId|calKey|clientPhoneNumber|campACDDescription'' where id=6050'
 	EXEC (@sql)
 
+	set @process = 'CW-6053 Reporte IVR Encuestas ADD IVROptions COLUMNS'
+    set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+						  WHERE Name = N''callType''
+						  AND Object_ID = Object_ID(N''dbo.IVROptions''))
+				BEGIN
+					alter table IVROptions add callType tinyint null
+				END'
+	EXEC(@sql)
+
 	SET @process = 'CW-6053 alter sp ccspRepIVRSurveys'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]
 		@action as tinyint,

@@ -12,7 +12,7 @@ SET @version = 104
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
-IF @actualVersion IN (@version, @version - 1)
+IF @actualVersion >= @version
 BEGIN
 	BEGIN TRAN
 

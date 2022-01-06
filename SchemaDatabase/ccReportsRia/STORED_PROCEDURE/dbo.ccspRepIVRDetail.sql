@@ -44,10 +44,12 @@ if @action = 1
 	, isnull(calif.description, #IVRLlamadas.calif_id) as calificacion, cal_id as cal_id
 	, isnull(
 	(
-		select selectedOption + ','	from IVROptions with(nolock)
+		select
+		case when selectedOption = '' then ''	else selectedOption + ','	end
+			from IVROptions with(nolock)
 		where IVROptions.ivr_id = #IVRLlamadas.ivr_id
 		order by IVROptions.date for xml path('')
-	),'') as opciones
+	),'') as opciones	
 	,#IVRLlamadas.tincall as tiempo,
 	datepart(yyyy,[date]),
 	datepart(mm,[date]),

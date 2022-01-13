@@ -230,13 +230,874 @@ END'
     EXEC(@sql)
 
     
-	
-	
-    set @process = ''
-    set @sql = ''
+    set @process = 'AutoInicio DROP PROCEDURE ccsp_RIAADMAutoInicio'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAADMAutoInicio'')
+            begin
+				DROP PROCEDURE ccsp_RIAADMAutoInicio;
+            end'
     EXEC(@sql)
 
 
+    set @process = 'AutoInicio CREATE PROCEDURE ccsp_RIAADMAutoInicio'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAADMAutoInicio]
+    @cam_id smallint,
+    @AutoInicio bit = 0,
+    @tipoRegistros  tinyint = 0,
+    @delaCampana    int = 0,
+    @condicion  tinyint = 0,
+    @numero int = 0,
+    @AutoInicioHora bit = 0,
+    @hora   smalldatetime = ''01/01/1900'',
+    @type tinyint,
+    @tipoRegistros2 tinyint = NULL,
+    @condicion2 tinyint = NULL,
+    @numero2 int = NULL,
+    @camps varchar(max) = NULL
+AS
+
+IF @Type = 1
+begin
+    select AutoInicio, tipoRegistros, delaCampana, condicion, numero, AutoInicioHora, hora, tipoRegistros2, condicion2, numero2
+    from ccCampsAutoInicio
+    where cam_id = @cam_id
+end
+
+IF @Type = 2
+Begin
+    UPDATE ccCampsAutoInicio SET AutoInicio= @AutoInicio, AutoInicioHora = @AutoInicioHora
+    WHERE cam_id=@cam_id
+
+    IF @AutoInicio = 1
+    begin
+        UPDATE ccCampsAutoInicio SET tipoRegistros = @tipoRegistros, delaCampana = @delaCampana, condicion = @condicion, numero = @numero,  tipoRegistros2 = @tipoRegistros2, condicion2 = @condicion2, numero2 = @numero2
+        WHERE cam_id=@cam_id
+    end
+
+    IF @AutoInicioHora = 1
+    begin
+        UPDATE ccCampsAutoInicio SET hora = @hora
+        WHERE cam_id=@cam_id
+    end
+end
+
+IF @Type = 3
+Begin
+    Insert into ccCampsAutoInicio (cam_id, hora) values(@cam_id, getdate())
+End
+
+IF @Type = 4
+Begin
+    declare @Camps_Ids table (id int primary key not null)
+
+    if @cam_id is null
+        begin
+        insert into @Camps_Ids
+        select value from dbo.fn_RIASplitDelimited (@camps, '','')
+        end
+    else
+        begin
+        insert into @Camps_Ids
+        select @cam_id
+        end
+
+    IF @AutoInicio = 1
+    begin
+        UPDATE ccCampsAutoInicio SET tipoRegistros = @tipoRegistros, delaCampana = @delaCampana, condicion = @condicion, numero = @numero,  tipoRegistros2 = @tipoRegistros2, condicion2 = @condicion2, numero2 = @numero2, AutoInicio=0
+        WHERE cam_id in (select id from @Camps_Ids)
+
+        select 1
+    end
+
+    IF @AutoInicioHora = 1
+    begin
+        UPDATE ccCampsAutoInicio SET hora = @hora, AutoInicioHora=0
+        WHERE cam_id in (select id from @Camps_Ids)
+
+        select 1
+    end
+end'
+    EXEC(@sql)
+
+
+    set @process = 'AutoInicio DROP PROCEDURE ccsp_OutGenerateAutoinicio'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OutGenerateAutoinicio'')
+            begin
+                DROP PROCEDURE ccsp_OutGenerateAutoinicio;
+            end'
+    EXEC(@sql)
+
+
+    set @process = 'AutoInicio CREATE PROCEDURE ccsp_OutGenerateAutoinicio'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_OutGenerateAutoinicio]
+AS
+set nocount on
+
+declare @today smalldatetime
+set @today = getdate()
+declare @CampsToStart table (cam_id int)
+
+/**************************/
+/*** Iniciar la campaña ***/
+/**************************/
+
+--Actualiza ccCamps si es necesario iniciar una campaña
+;with Camps as( 
+--buscar las que se tienen que iniciar por hora
+select ccCampsAutoInicio.cam_id from ccCampsAutoInicio
+join ccCamps  on ccCamps.cam_id = ccCampsAutoInicio.cam_id
+where AutoInicioHora = 1
+and hora between dateadd( mi, -10, @today ) and dateadd( mi, 5, @today )
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+
+union
+--buscar las que se tienen que iniciar con base a otra campaña
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 0 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 0
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 0
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 0
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 0
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.cam_id
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 0
+and cai.tiporegistros2 is NULL
+and condicion2 is NULL
+and numero2 is NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (       
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2) --solo las que estan detendias, para iniciarlas
+
+insert into @CampsToStart select cam_id from Camps
+update ccCamps set cam_procesando = 1, cam_bNew = 3 where cam_id in(select cam_id from @CampsToStart)
+update ccCampsAutoInicio set iniciada=GETDATE() where cam_id in(select cam_id from @CampsToStart)
+
+declare @camps_ids varchar(max);
+select @camps_ids = STUFF((SELECT '', '' + CAST(c.cam_id AS varchar) FROM @CampsToStart c FOR XML PATH ('''')),1,2,'''')
+
+if(LEN(@camps_ids) > 0)
+    exec ccsp_RIAADMAutoInicio @type=4,@cam_id=null,@AutoInicio=1,@AutoInicioHora=1,@hora=@today, @camps=@camps_ids
+
+/**************************/
+/*** Detener la campaña ***/
+/**************************/
+
+update ccCamps set cam_procesando = 0, cam_bNew = 0 where cam_id in(
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 0 -- -- CONDICION (<)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) < cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 1 -- -- CONDICION (>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) > cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 2 -- -- CONDICION (=)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) = cai.numero2
+
+union
+
+select cai.delacampana
+from ccCampsAutoInicio cai
+join ccCamps  on ccCamps.cam_id = cai.cam_id
+where AutoInicio = 1 and cai.condicion = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero
+and cam_procesando = 1 --solo las que estan detendias, para iniciarlas
+and cai.tiporegistros2 is not NULL
+and condicion2 is not NULL
+and numero2 is not NULL
+and cai.tiporegistros <> cai.tiporegistros2
+and cai.condicion2 = 3 -- -- CONDICION (<>)
+and (
+    select case cai.tiporegistros2 when 0 then new when 1 then cb when 2 then pro end
+    from ccCampsNvosCB wt
+    where wt.id = cai.delacampana) <> cai.numero2)
+
+set nocount off'
+    EXEC(@sql)
+	
+	
 	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

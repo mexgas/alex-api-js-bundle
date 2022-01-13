@@ -5,11 +5,11 @@
 Author:
 
 
-Date: 2021/07/01
+Date: 2022/01/13
 Description:
 
 Database: CCenterRia
-Required version: 123.14
+Required version: 123.26
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -27,8 +27,8 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 123 --**********actualizar a 122 sin fix
-SET @versionfix = 26
+SET @version = 123 --**********actualizar a 123 sin fix
+SET @versionfix = 27
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -48,7 +48,6 @@ BEGIN
 
 	BEGIN TRY
 
-	
 	set @process = 'CW-6199 Add value to ccRiaLog_Operation'
     set @sql = 'IF NOT EXISTS(SELECT * FROM ccRiaLog_Operation WHERE operationType = 190) 
 BEGIN
@@ -229,17 +228,15 @@ BEGIN
 	SET NOCOUNT OFF;
 END'
     EXEC(@sql)
+
+    
 	
-
-
-
+	
     set @process = ''
     set @sql = ''
     EXEC(@sql)
 
-    set @process = ''
-    set @sql = ''
-    EXEC(@sql)
+
 	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -1193,7 +1193,7 @@ set nocount off'
 						i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
 						i.tNotas as [WrapUpTime],
 						i.ShowCalifWnd,
-						cast(cm.answerTimeoutClient as int) as [AnswerTimeoutClient]
+						cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient]
 					FROM  ccInbound i
 						INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
 						INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)

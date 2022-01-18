@@ -37,7 +37,8 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 						cast(cm.answerTimeOut as int) as [TimeOutWarning],
 						i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
 						i.tNotas as [WrapUpTime],
-						i.ShowCalifWnd
+						i.ShowCalifWnd,
+						cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient]
 					FROM  ccInbound i
 						INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
 						INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
@@ -70,6 +71,7 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 				select @pathFile = valor from ccSettings where setting_id=230
 				select
 					messageId as MessageId,
+					messageStatus as Status,
 					originType as Origin,
 					case when originType ='Client' then 3
 						 when originType ='Agent' then 2
@@ -98,7 +100,15 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 					case when typeMessage = 'location'
 					then 'https://www.google.com/maps/search/' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 2),':') where id=2) + ',' +
 						(select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,'|') where id = 3),':') where id=2) else '' end as [LocationURL]
-				 from ccWAMessagesConversations where conversationId = @conversationId and messageId in (select idMessage from @mensajes)
+				 from ccWAMessagesConversations where messageId in (select idMessage from @mensajes)
+				 order by Timestamp asc
 
 			End
+			
+			IF(@Option = 5)
+			BEGIN
+				SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+				 FROM contactMeanIn
+				WHERE inboundId = @inboundId
+			END
 		END

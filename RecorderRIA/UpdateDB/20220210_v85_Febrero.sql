@@ -81,6 +81,7 @@ begin
             begin
           DROP PROCEDURE ccsp_GalateaCreateUpdateConcept;
             end'
+	EXEC(@Sql)
 	set @process = 'Create sp ccsp_GalateaCreateUpdateConcept'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaCreateUpdateConcept]
 	@idFormat INT = 0,
@@ -108,11 +109,13 @@ BEGIN CATCH
 	ROLLBACK TRANSACTION addConcept;
 	SELECT -1
 END CATCH'
+	EXEC(@Sql)
 	set @process = 'Delete if sp ccsp_GalateaCreateUpdateEvaluationFormat'
 	set @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaCreateUpdateEvaluationFormat'')
             begin
           DROP PROCEDURE ccsp_GalateaCreateUpdateEvaluationFormat;
             end'
+	EXEC(@Sql)
 	set @process = 'Create sp ccsp_GalateaCreateUpdateEvaluationFormat'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaCreateUpdateEvaluationFormat] 
 	@nameFormat VARCHAR(250) = '''',
@@ -152,11 +155,13 @@ BEGIN CATCH
 	ROLLBACK TRANSACTION addFormat;
 	SELECT -1
 END CATCH;'
+	EXEC(@Sql)
 	set @process = 'Delete if exist sp ccsp_GalateaCreateUpdateQuestions'
 	set @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaCreateUpdateQuestions'')
             begin
           DROP PROCEDURE ccsp_GalateaCreateUpdateQuestions;
             end'
+	EXEC(@Sql)
 	set @process = 'Create sp ccsp_GalateaCreateUpdateQuestions'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaCreateUpdateQuestions]
 	@option INT,
@@ -188,11 +193,13 @@ BEGIN CATCH
 	ROLLBACK TRANSACTION addQuestion
 	SELECT -1
 END CATCH'
+	EXEC(@Sql)
 	set @process = 'Delete if exist sp ccsp_GalateaEvaluationFormat'
 	set @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaEvaluationFormat'')
             begin
           DROP PROCEDURE ccsp_GalateaEvaluationFormat;
             end'
+	EXEC(@Sql)
 	set @process = 'Create sp ccsp_GalateaEvaluationFormat'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaEvaluationFormat]
 	@option SMALLINT,
@@ -225,7 +232,7 @@ BEGIN
 		SELECT nameFormat FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat LIKE @name+''%''
 	END
 END'
-
+	EXEC(@Sql)
  	update trec_parametros set par_valor = @Version where par_id = 30
  	set @Version_Actual=@Version_Actual+1
 

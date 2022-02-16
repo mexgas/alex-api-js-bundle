@@ -54,6 +54,8 @@ if @option = 4 --Delete
 if @option = 2 --Insert
 	begin
 	declare @new_cam_id smallint
+	declare @isAssingPortbyCam bit
+
 
 	if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
 		begin
@@ -93,9 +95,14 @@ if @option = 2 --Insert
 		update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
 		update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
 		end
+	set @isAssingPortbyCam=1
 
-	insert into ccoDialerCamp (dialer_id, cam_id) 
-	select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+	select @isAssingPortbyCam=valor from ccSettings where setting_id=232
+
+	if @isAssingPortbyCam=1 begin
+		insert into ccoDialerCamp (dialer_id, cam_id) 
+		select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+	end
 
 	insert into ccCalifCamp (calif_id, cam_id, tipo) 
 	select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1

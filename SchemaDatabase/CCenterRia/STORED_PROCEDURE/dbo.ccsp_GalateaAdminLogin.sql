@@ -6,7 +6,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '',
 AS
     BEGIN
         SET NOCOUNT ON;
-        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme SMALLINT= 0;
+        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme smallint = 0;
         CREATE TABLE #temp
         (LoginOK              INT, 
          PswdOK               INT, 
@@ -23,17 +23,27 @@ AS
              @Login, 
              @Password, 
              @PasswordLwC, 
-             @adminId,
-			 1;
-        SELECT @LoginOK = LoginOK, @PswdOK = PswdOK, @Nombre = Nombre, @ADMServer = ADMServer, @AreaId = AreaId, @ViewAvrs = ViewAvrs, @changeRecDisposition = changeRecDisposition, @PasswordExpired = LastPasswordchange
+             @adminId;
+        SELECT @LoginOK = LoginOK, 
+               @PswdOK = PswdOK, 
+               @Nombre = Nombre, 
+               @ADMServer = ADMServer, 
+               @AreaId = AreaId, 
+               @ViewAvrs = ViewAvrs, 
+               @changeRecDisposition = changeRecDisposition, 
+               @PasswordExpired = LastPasswordchange
         FROM #temp;
         IF @LoginOK = 1
             BEGIN
-                SELECT @User_id = User_id, @ViewAgents = viewAgents, @Theme = theme
+                SELECT @User_id = User_id, 
+                       @ViewAgents = viewAgents,
+					   @Theme = theme
                 FROM ccUsers
                 WHERE Login = @Login;
                 DECLARE @LastLoginAttempt DATETIME, @LoginAttempts INT, @MaxAttemptsAllow INT, @TimeBloqued INT, @TimeFromLastAttempt INT;
-                SELECT @LastLoginAttempt = LastLoginAttempt, @LoginAttempts = LoginAttempts, @LastPasswordChange = LastPasswordChange
+                SELECT @LastLoginAttempt = LastLoginAttempt, 
+                       @LoginAttempts = LoginAttempts, 
+                       @LastPasswordChange = LastPasswordChange
                 FROM ccUsers
                 WHERE User_id = @User_id;
                 SELECT @MaxAttemptsAllow = valor
@@ -89,7 +99,9 @@ AS
                 WHERE setting_id = 29;
                 SELECT @PasswordExpired = (CASE
                                                WHEN DATEDIFF(DAY, LastPasswordChange, GETDATE()) > @ExpirationTime
-                                                    AND @ExpirationTime > 0 THEN 1 ELSE 0
+                                                    AND @ExpirationTime > 0
+                                               THEN 1
+                                               ELSE 0
                                            END)
                 FROM ccUsers;
                 IF @UserBlocked = 0
@@ -105,17 +117,34 @@ AS
                         WHERE User_id = @User_id;
                 END;
                 SELECT @Ext = dbo.fn_Ext_X_ip(@IPAddress);
-                DECLARE @WorkGroup VARCHAR(MAX);
+                
+				DECLARE @WorkGroup VARCHAR(MAX);
                 SELECT @WorkGroup = COALESCE(@WorkGroup + '|' + CAST(IDWG AS VARCHAR(MAX)), CAST(IDWG AS VARCHAR(MAX)))
                 FROM ccRIAWorkGroupUsers
                 WHERE User_id = @User_id;
-                DECLARE @Roles VARCHAR(MAX);
-                SELECT @Roles = STUFF(
-                (
-                    SELECT ', ' + CAST(ur.Rol_id AS VARCHAR)
-                    FROM ccUsers_Roles ur
-                    WHERE User_id = @User_id FOR XML PATH('')
-                ), 1, 2, '');
+
+				DECLARE @Roles Varchar(MAX);
+				SELECT @Roles = STUFF(
+								(SELECT ', ' + CAST(ur.Rol_id AS varchar)
+								FROM ccUsers_Roles ur
+								WHERE User_id = @User_id
+								FOR XML PATH ('')),
+							1,2,'')
         END;
-        SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles;
-    END;
+        SELECT @LoginOK UserExists, 
+               @UserBlocked UserBlocked, 
+               @UsernameMatch UsernameMatch, 
+               @PswdOK PasswordMatch, 
+               CAST(@PasswordExpired AS BIT) PasswordExpired, 
+               @User_id UserID, 
+               @Nombre Name, 
+               @ADMServer ADMServer, 
+               @AreaId AreaId, 
+               @ViewAvrs ViewAvrs, 
+               @changeRecDisposition ChangeRecDisposition, 
+               @Ext Ext, 
+               isnull(@ViewAgents,0) ViewAgents,
+			   ISNULL(@WorkGroup, 0) WorkGroup,
+			   ISNULL(@Theme, 0) Theme,
+			   ISNULL(@Roles,0) Roles
+    END

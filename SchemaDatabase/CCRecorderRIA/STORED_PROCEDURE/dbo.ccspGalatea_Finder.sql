@@ -4,14 +4,42 @@ CREATE PROCEDURE [dbo].[ccspGalatea_Finder]
 @grabId int =null,
 @userId int =0,	
 @markTime int=null,
-@markId int=null
+@markId int=null,
+@isSuperUser bit=0,
+@dateStart datetime=null,
+@dateEnd datetime=null
 AS
 BEGIN
 
     SET NOCOUNT ON;
 	declare @sql varchar(max)
+	declare @camType table(Id int,camType tinyint)
 
-	if @action=1 begin
+	if @action=0 begin			
+		if @isSuperUser =0 begin			
+				 SELECT WGCam.IdCampEsp AS [Id], 2 callType
+				 FROM ccRIAWorkGroupUsers Wguser
+					  INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+					  INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+											  AND WGCam.Tipo = 1
+				 WHERE Wguser.User_id = @userId
+				 UNION
+				 SELECT WGCam.IdCampEsp AS [Id], 1 AS callType
+				 FROM ccRIAWorkGroupUsers Wguser
+					  INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+					  INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+												  AND WGCam.Tipo = 0
+				 WHERE Wguser.User_id = @userId;
+			 end
+		else begin			 
+			SELECT c.cam_id as [Id], 2 AS callType FROM ccCamps c
+			UNION
+			SELECT inb.Inbound_id AS [Id], 1 AS callType FROM ccInbound inb;
+		end
+		
+	end
+
+	else if @action=1 begin
 		select id_repositorio as repositoryId,dirvirtual_audio as pathAudio,dirvirtual_video as pathVideo,ruta_repositorio as pathRepositoryAudio from TREC_REPOSITORIOS
 	end
 	else if @action=2 begin
@@ -83,6 +111,82 @@ BEGIN
 	end
 	else if @action=8 begin	
 		select par_valor as hexKey from TREC_PARAMETROS where par_id=75
+	end
+	else if @action=9 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+			
+		select A.grab_id from RIA_GRABACION A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+		union
+		select A.grab_id from RIA_GRABACIONCONSULTA A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+	end
+	else if @action=10 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+			
+		select distinct A.cal_key from RIA_GRABACION A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+		union
+		select distinct A.cal_key from RIA_GRABACIONCONSULTA A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+	end
+	else if @action=11 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+			
+		select distinct A.ani as Phone from RIA_GRABACION A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+		union
+		select distinct A.ani as Phone from RIA_GRABACIONCONSULTA A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+	end
+	else if @action=12 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+			
+		select distinct A.dni from RIA_GRABACION A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+		union
+		select distinct A.dni from RIA_GRABACIONCONSULTA A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+	end
+	else if @action=13 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+			
+		select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+		union
+		select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA A
+		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+		where A.finicio between @dateStart and @dateEnd
+	end
+
+	else if @action=14 begin					
+		insert into @camType
+		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+
+		
+		select isnull(min(minDuration),0) as MinDuration, isnull(max(maxDuration),600) as MaxDuration from (
+			select min(duracion) as minDuration,max(duracion) as maxDuration from RIA_GRABACION A
+			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+			where A.finicio between @dateStart and @dateEnd
+			union
+			select min(duracion) as minDuration,max(duracion) as maxDuration from RIA_GRABACIONCONSULTA A
+			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+			where A.finicio between @dateStart and @dateEnd
+		)X
 	end
   
 END

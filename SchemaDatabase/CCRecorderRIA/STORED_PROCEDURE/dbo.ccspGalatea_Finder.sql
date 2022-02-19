@@ -179,11 +179,11 @@ BEGIN
 
 		
 		select isnull(min(minDuration),0) as MinDuration, isnull(max(maxDuration),600) as MaxDuration from (
-			select min(duracion) as minDuration,max(duracion) as maxDuration from RIA_GRABACION A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION A
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 			union
-			select min(duracion) as minDuration,max(duracion) as maxDuration from RIA_GRABACIONCONSULTA A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA A
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 		)X

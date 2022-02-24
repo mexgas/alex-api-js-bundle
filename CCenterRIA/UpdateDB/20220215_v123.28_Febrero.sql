@@ -2147,8 +2147,12 @@ AS
      END;'
     EXEC(@sql)
 
-    set @process = 'CW-6363 '
-    set @sql = ''
+    set @process = 'CW-Roles permiso gestionar nds'
+    set @sql = 'update ccPermissions set Description=''Gestionar tipos de no disponible'', KeyJson=''RolesPermissionUnavailableManagement'' where Permissions_Id=10009'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles gestionar permisos de agente'
+    set @sql = 'update ccPermissions set Description=''Gestionar permisos de agente'', KeyJson=''RolesPermissionAgtPermissionsManagement'' where Permissions_Id=10010'
     EXEC(@sql)
 
 	

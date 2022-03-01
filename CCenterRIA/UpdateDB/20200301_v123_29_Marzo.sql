@@ -1,0 +1,134 @@
+/*******************************/
+/***** NUXIBA TECHNOLOGIES *****/
+/*******************************/
+/*
+Author:
+
+
+Date: 2022/02/15
+Description: Merge con los cambios de sorteos
+
+Database: CCenterRia
+Required version: 123.27
+
+IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+*/
+SET NOCOUNT ON
+
+DECLARE @version INT, @versionFix INT
+DECLARE @actualVersion INT, @actualVersionFix INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
+DECLARE @versionALL VARCHAR(max);
+
+/* Version to release (use the version of your own databse)*/
+/*******************************************************************************************************
+Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
+set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
+sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
+SET @version = 123 --**********actualizar a 123 sin fix
+SET @versionfix = 29
+/* Actual version (use your own script to do it)*/
+EXEC @actualVersion = ccsp_getVersion 'BD'
+
+EXEC @actualVersionFix = ccsp_getVersion 'BDF'
+
+SELECT @versionALL = valor
+FROM ccsettings
+WHERE setting_id = 77;
+
+SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
+FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
+WHERE id = 4;
+
+IF @actualVersion = @version and @actualVersionFix >= @versionfix - 1
+BEGIN
+	BEGIN TRAN
+
+	BEGIN TRY
+
+	set @process = 'CW-6223 Drop sp ccsp_GalateaAdminBlacklistCatalog '
+    set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_GalateaAdminBlacklistCatalog'')
+BEGIN
+    DROP PROCEDURE dbo.ccsp_GalateaAdminBlacklistCatalog
+END'
+    EXEC(@sql)
+
+	set @process = 'CW-6223 Create sp ccsp_GalateaAdminBlacklistCatalog '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminBlacklistCatalog]
+@BLID smallint,
+@name varchar(50),
+@Type tinyint
+AS
+set nocount on
+if @Type=1-- Read black lists
+ begin
+	Select idtipolista AS ID, tipolista AS TIPO , DateCreation as DateCreation 
+	from cctiposlistanegra where idtipolista = case isnull(@BLID,0) when 0 then idtipolista else @BLID end
+	and Status= 1 order by 2
+	return(0)
+ end
+
+If @Type=2 --Create black list
+ begin
+ DECLARE @newBlackListId INT= -1 --Nombre en Uso
+	if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
+			SELECT @newBlackListId = SCOPE_IDENTITY() 
+		end
+	else if exists(select tipolista from cctiposlistanegra where tipolista=@name and Status = 0)
+		begin
+			declare @idBL int = (select idtipolista from cctiposlistanegra where tipolista=@name and Status = 0)
+			update cctiposlistanegra set Status = 1, DateCreation =  SYSDATETIME() where idtipolista = @idBL
+			select @newBlackListId = @idBL
+		end 
+	SELECT @newBlackListId as ReturnValue
+	return(0)
+ end
+
+if @Type=4-- update 
+ begin
+ if not exists(select tipolista from cctiposlistanegra where tipolista=@name)
+		begin
+			update cctiposlistanegra set tipolista=@name where idtipolista= @BLID
+			SELECT 200 as ReturnValue
+		end
+		else
+			SELECT -1 as ReturnValue --Nombre en uso
+ return(0)
+ end
+
+if @Type=5 --obtiene el id de lista llamada defaultList/General
+	begin
+		declare @dnclid as int
+		set @dnclid = 0;
+
+		select @dnclid = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		select @dnclid
+		return(0)
+	end
+
+set nocount off'
+    EXEC(@sql)
+	
+		/* End script release */
+		/* Upgrade database version (use your own script to do it) */
+		--exec ccsp_getVersion 'BD', @version
+		EXEC ccsp_getVersion 'BDF', @versionFix
+
+		COMMIT TRAN
+	END TRY
+
+	BEGIN CATCH
+		/* Error generated based on sintax */
+		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+
+		RAISERROR (@errorGenerated, 11, 1)
+
+		ROLLBACK TRAN
+	END CATCH
+END
+
+

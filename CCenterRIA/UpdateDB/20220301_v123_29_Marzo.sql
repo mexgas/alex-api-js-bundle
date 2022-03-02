@@ -165,7 +165,118 @@ set nocount off'
 		END
 	'
     EXEC(@sql)
-	
+    set @process = 'Cambios_preview Borrar sp ccsp_GalateaGetPreviewData'
+    set @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaGetPreviewData'')
+    begin
+        DROP PROCEDURE ccsp_GalateaGetPreviewData;
+    end
+	'
+    EXEC(@sql)
+		set @process = 'Cambios_preview Create sp ccsp_GalateaGetPreviewData'
+		    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
+		@callout_id int -- 1.- cambia permiso, 2.- obtiene lista de permisos
+
+		AS
+		set nocount on
+
+		select''previewData''=
+		 ISNULL(P.Headers,'''')+''~''+
+		 ISNULL(O.Dato1,'''')+''~''+
+		 ISNULL(O.Dato2,'''')+''~''+
+		 ISNULL(O.Dato3,'''')+''~''+
+		 ISNULL(O.Dato4,'''')+''~''+
+		 ISNULL(O.Dato5,'''')+''~''+
+		 ISNULL(P.Dato6,'''')+''~''+
+		 ISNULL(P.Dato7,'''')+''~''+
+		 ISNULL(P.Dato8,'''')+''~''+
+		 ISNULL(P.Dato9,'''')+''~''+
+		 ISNULL(P.Dato10,'''')+''~''+
+		 ISNULL(P.Dato11,'''')+''~''+
+		 ISNULL(P.Dato12,'''')+''~''+
+		 ISNULL(P.Dato13,'''')+''~''+
+		 ISNULL(P.Dato14,'''')+''~''+
+		 ISNULL(P.Dato15,'''')
+			   from ccoCallsOutSource O
+		INNER JOIN ccoCallsPreviewData P on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id
+		Where callout_id=@callout_id;
+		set nocount off'
+    EXEC(@sql)
+	  set @process = 'Cambios_preview Creacion de la tabla ccoCallsPreviewData '
+    set @sql = 'if not exists (select * from sys.tables where name = N''ccoCallsPreviewData'')
+            begin
+                CREATE TABLE [dbo].[ccoCallsPreviewData](
+                        [cal_Key] [varchar](40) NOT NULL,
+                        [cam_id] [smallint] NOT NULL,
+                        [Dato6] [varchar](255) NOT NULL,
+                        [Dato7] [varchar](255) NOT NULL,
+                        [Dato8] [varchar](255) NOT NULL,
+                        [Dato9] [varchar](255) NOT NULL,
+                        [Dato10] [varchar](255) NOT NULL,
+                        [Dato11] [varchar](255) NOT NULL,
+                        [Dato12] [varchar](255) NOT NULL,
+                        [Dato13] [varchar](255) NOT NULL,
+                        [Dato14] [varchar](255) NOT NULL,
+                        [Dato15] [varchar](255) NOT NULL,
+                        [Headers] [varchar](1000) NOT NULL,
+                        [TotalData] [int] NOT NULL
+                        ) ON [PRIMARY]
+            end'
+ 
+    exec (@sql)
+
+    set @process = 'Cambios_preview Creacion de la tabla ccoCallsPreviewData '
+    set @sql ='
+        if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_cal_Key'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_cal_Key]  DEFAULT ('''') FOR [cal_Key]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato6'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato6]  DEFAULT ('''') FOR [Dato6]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato7'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato7]  DEFAULT ('''') FOR [Dato7]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato8'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato8]  DEFAULT ('''') FOR [Dato8]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato9'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato9]  DEFAULT ('''') FOR [Dato9]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato10'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato10]  DEFAULT ('''') FOR [Dato10]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato11'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato11]  DEFAULT ('''') FOR [Dato11]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato12'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato12]  DEFAULT ('''') FOR [Dato12]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato13'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato13]  DEFAULT ('''') FOR [Dato13]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato14'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato14]  DEFAULT ('''') FOR [Dato14]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_Dato15'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_Dato15]  DEFAULT ('''') FOR [Dato15]
+    end
+    if not exists (select * from sysobjects where xtype in (N''C'', N''D'', N''F'', N''PK'', N''R'', N''UQ'') and name = N''DF_ccoCallsPreviewData_TotalData'')
+    begin
+        ALTER TABLE [dbo].[ccoCallsPreviewData] ADD  CONSTRAINT [DF_ccoCallsPreviewData_TotalData]  DEFAULT ('''') FOR [TotalData]
+    end
+    '
+    exec (@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

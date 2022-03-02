@@ -148,7 +148,7 @@ set nocount off'
 
 	set @process = 'Cambios_preview Crear sp ccsp_RegProcessPreviewRecord'
     set @sql = '
-		CREATE PROC [dbo].[ccsp_RegProcessPreviewRecord](
+		CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
 		@process smallint,
 		@callout_id int,
 		@agent_id smallint,

@@ -148,8 +148,6 @@ set nocount off'
 
 	set @process = 'Cambios_preview Crear sp ccsp_RegProcessPreviewRecord'
     set @sql = '
-	if not exists (select * from sys.procedures where name = N''ccsp_RegProcessPreviewRecord'')
-	begin
 		CREATE PROC [dbo].[ccsp_RegProcessPreviewRecord](
 		@process smallint,
 		@callout_id int,
@@ -165,7 +163,6 @@ set nocount off'
 			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId ) VALUES (@agent_id,@process,@callout_id,@camId)
 			DELETE ccoWorkingTable WHERE callout_id = @callout_id
 		END
-	end
 	'
     EXEC(@sql)
 	

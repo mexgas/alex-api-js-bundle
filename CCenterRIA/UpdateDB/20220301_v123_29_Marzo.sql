@@ -112,6 +112,62 @@ if @Type=5 --obtiene el id de lista llamada defaultList/General
 
 set nocount off'
     EXEC(@sql)
+
+	
+	set @process = 'Cambios_preview agregar columna nDescartes a ccoWorkingTable'
+    set @sql = '
+	if not exists (select * from sys.columns where name = N''nDescartes '' and Object_ID = Object_ID(N''ccoWorkingTable ''))
+    begin
+        alter table ccoWorkingTable add nDescartes int default 0
+    end
+	'
+    EXEC(@sql)
+
+	set @process = 'Cambios_preview crear tabla RegProcessPreviewRecord'
+    set @sql = '
+	if  not exists (select * from sys.tables where name = N''RegProcessPreviewRecord'')
+    begin
+       create table RegProcessPreviewRecord
+	   (	userId smallint not null,
+			process smallint not null,
+			callout_id int not null,
+			camId int not null
+		)
+    end
+	'
+    EXEC(@sql)
+
+	set @process = 'Cambios_preview Borrar sp ccsp_RegProcessPreviewRecord'
+    set @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_RegProcessPreviewRecord'')
+    begin
+        DROP PROCEDURE ccsp_RegProcessPreviewRecord;
+    end
+	'
+    EXEC(@sql)
+
+	set @process = 'Cambios_preview Crear sp ccsp_RegProcessPreviewRecord'
+    set @sql = '
+	if not exists (select * from sys.procedures where name = N''ccsp_RegProcessPreviewRecord'')
+	begin
+		CREATE PROC [dbo].[ccsp_RegProcessPreviewRecord](
+		@process smallint,
+		@callout_id int,
+		@agent_id smallint,
+		@camId int)
+		AS
+		IF ((@process =0 OR @process=2) AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
+		BEGIN
+			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId ) VALUES (@agent_id,@process,@callout_id,@camId)
+		END
+		IF (@process = 1 AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
+		BEGIN
+			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId ) VALUES (@agent_id,@process,@callout_id,@camId)
+			DELETE ccoWorkingTable WHERE callout_id = @callout_id
+		END
+	end
+	'
+    EXEC(@sql)
 	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

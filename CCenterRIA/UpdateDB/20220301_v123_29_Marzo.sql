@@ -131,7 +131,8 @@ set nocount off'
 	   (	userId smallint not null,
 			process smallint not null,
 			callout_id int not null,
-			camId int not null
+			camId int not null,
+			reg_date datetime,
 		)
     end
 	'
@@ -156,11 +157,11 @@ set nocount off'
 		AS
 		IF ((@process =0 OR @process=2) AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
 		BEGIN
-			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId ) VALUES (@agent_id,@process,@callout_id,@camId)
+			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date  ) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())
 		END
 		IF (@process = 1 AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
 		BEGIN
-			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId ) VALUES (@agent_id,@process,@callout_id,@camId)
+			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date ) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())
 			DELETE ccoWorkingTable WHERE callout_id = @callout_id
 		END
 	'

@@ -165,45 +165,10 @@ set nocount off'
 			DELETE ccoWorkingTable WHERE callout_id = @callout_id
 		END
 	'
-    EXEC(@sql)
-    set @process = 'Cambios_preview Borrar sp ccsp_GalateaGetPreviewData'
-    set @sql = '
-	if exists (select * from sys.procedures where name = N''ccsp_GalateaGetPreviewData'')
-    begin
-        DROP PROCEDURE ccsp_GalateaGetPreviewData;
-    end
-	'
-    EXEC(@sql)
-		set @process = 'Cambios_preview Create sp ccsp_GalateaGetPreviewData'
-		    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
-		@callout_id int -- 1.- cambia permiso, 2.- obtiene lista de permisos
 
-		AS
-		set nocount on
-
-		select''previewData''=
-		 ISNULL(P.Headers,'''')+''~''+
-		 ISNULL(O.Dato1,'''')+''~''+
-		 ISNULL(O.Dato2,'''')+''~''+
-		 ISNULL(O.Dato3,'''')+''~''+
-		 ISNULL(O.Dato4,'''')+''~''+
-		 ISNULL(O.Dato5,'''')+''~''+
-		 ISNULL(P.Dato6,'''')+''~''+
-		 ISNULL(P.Dato7,'''')+''~''+
-		 ISNULL(P.Dato8,'''')+''~''+
-		 ISNULL(P.Dato9,'''')+''~''+
-		 ISNULL(P.Dato10,'''')+''~''+
-		 ISNULL(P.Dato11,'''')+''~''+
-		 ISNULL(P.Dato12,'''')+''~''+
-		 ISNULL(P.Dato13,'''')+''~''+
-		 ISNULL(P.Dato14,'''')+''~''+
-		 ISNULL(P.Dato15,'''')
-			   from ccoCallsOutSource O
-		INNER JOIN ccoCallsPreviewData P on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id
-		Where callout_id=@callout_id;
-		set nocount off'
     EXEC(@sql)
-	  set @process = 'Cambios_preview Creacion de la tabla ccoCallsPreviewData '
+
+    set @process = 'Cambios_preview Creacion de la tabla ccoCallsPreviewData '
     set @sql = 'if not exists (select * from sys.tables where name = N''ccoCallsPreviewData'')
             begin
                 CREATE TABLE [dbo].[ccoCallsPreviewData](
@@ -225,6 +190,16 @@ set nocount off'
             end'
  
     exec (@sql)
+
+    set @process = 'Cambios_preview Borrar sp ccsp_GalateaGetPreviewData'
+    set @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaGetPreviewData'')
+    begin
+        DROP PROCEDURE ccsp_GalateaGetPreviewData;
+    end
+	'
+    EXEC(@sql)
+
 
     set @process = 'Cambios_preview Creacion de la tabla ccoCallsPreviewData '
     set @sql ='
@@ -278,6 +253,37 @@ set nocount off'
     end
     '
     exec (@sql)
+    
+    	set @process = 'Cambios_preview Create sp ccsp_GalateaGetPreviewData'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
+		@callout_id int -- 1.- cambia permiso, 2.- obtiene lista de permisos
+
+		AS
+		set nocount on
+
+		select''previewData''=
+		 ISNULL(P.Headers,'''')+''~''+
+		 ISNULL(O.Dato1,'''')+''~''+
+		 ISNULL(O.Dato2,'''')+''~''+
+		 ISNULL(O.Dato3,'''')+''~''+
+		 ISNULL(O.Dato4,'''')+''~''+
+		 ISNULL(O.Dato5,'''')+''~''+
+		 ISNULL(P.Dato6,'''')+''~''+
+		 ISNULL(P.Dato7,'''')+''~''+
+		 ISNULL(P.Dato8,'''')+''~''+
+		 ISNULL(P.Dato9,'''')+''~''+
+		 ISNULL(P.Dato10,'''')+''~''+
+		 ISNULL(P.Dato11,'''')+''~''+
+		 ISNULL(P.Dato12,'''')+''~''+
+		 ISNULL(P.Dato13,'''')+''~''+
+		 ISNULL(P.Dato14,'''')+''~''+
+		 ISNULL(P.Dato15,'''')
+			   from ccoCallsOutSource O
+		INNER JOIN ccoCallsPreviewData P on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id
+		Where callout_id=@callout_id;
+		set nocount off'
+    EXEC(@sql)
+	
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

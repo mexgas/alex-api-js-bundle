@@ -156,7 +156,9 @@ set nocount off'
         @camId int)
         AS
         DECLARE @result_callout_id INT
-        SELECT @result_callout_id = count(callout_id) FROM ccoWorkingTable WHERE callout_id= @callout_id
+        if(exists(select * from ccoWorkingTable where callout_id = @callout_id)) begin
+            set @result_callout_id =1
+        end
         IF (@result_callout_id > 0)
         BEGIN
             INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())

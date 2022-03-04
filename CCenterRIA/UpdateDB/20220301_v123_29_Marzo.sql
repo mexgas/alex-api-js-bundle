@@ -132,7 +132,7 @@ set nocount off'
 			process smallint not null,
 			callout_id int not null,
 			camId int not null,
-			reg_date datetime,
+			reg_date datetime2,
 		)
     end
 	'
@@ -150,20 +150,21 @@ set nocount off'
 	set @process = 'Cambios_preview Crear sp ccsp_RegProcessPreviewRecord'
     set @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
-		@process smallint,
-		@callout_id int,
-		@agent_id smallint,
-		@camId int)
-		AS
-		IF ((@process =0 OR @process=2) AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
-		BEGIN
-			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date  ) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())
-		END
-		IF (@process = 1 AND exists(select * from ccoWorkingTable where callout_id = @callout_id))
-		BEGIN
-			INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date ) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())
-			DELETE ccoWorkingTable WHERE callout_id = @callout_id
-		END
+        @process smallint,
+        @callout_id int,
+        @agent_id smallint,
+        @camId int)
+        AS
+        DECLARE @result_callout_id INT
+        SELECT @result_callout_id = count(callout_id) FROM ccoWorkingTable WHERE callout_id= @callout_id
+        IF (@result_callout_id > 0)
+        BEGIN
+            INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME())
+        END
+        IF (@process = 1 AND @result_callout_id > 0)
+        BEGIN
+            DELETE ccoWorkingTable WHERE callout_id = @callout_id
+        END
 	'
 
     EXEC(@sql)
@@ -256,7 +257,7 @@ set nocount off'
     
     	set @process = 'Cambios_preview Create sp ccsp_GalateaGetPreviewData'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
-		@callout_id int -- 1.- cambia permiso, 2.- obtiene lista de permisos
+		@callout_id int 
 
 		AS
 		set nocount on

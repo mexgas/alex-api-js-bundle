@@ -69,28 +69,37 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
             end'
 	EXEC(@Sql)
 	set @process = 'Create sp ccsp_GalateaEvaluationFormat'
-	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaRecordingEvaluation]
+	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaEvaluationFormat]
 		@option SMALLINT,
-		@idRecordingEvaluation INT = 0,
-		@user VARCHAR(50) = '',
-		@idFormat INT = 0,
-		@userSupervisor VARCHAR(50) = ''
-	AS
-	BEGIN
-		IF @option = 1 --search recording evaluation owner
+		@id INT = 0,
+		@name VARCHAR(250) = ''
+		AS
 		BEGIN
-			SELECT userAdmin FROM RECORDERRIA_RECORDINGEVALUATION WHERE deleted = 0 AND idRecordingEvaluation = @idRecordingEvaluation
-		END
-		IF @option = 2 --get all answers
-		BEGIN
-			SELECT * FROM RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION WHERE idRecordingEvaluation in (
-				SELECT idRecordingEvaluation FROM RECORDERRIA_RECORDINGEVALUATION WHERE grab_id = @idRecordingEvaluation AND userAdmin = @user AND userSupervisor = @userSupervisor AND idFormat = @idFormat AND deleted = 0)
-		END
-		IF @option = 3 --get all recording evaluations
-		BEGIN
-			SELECT * FROM RECORDERRIA_RECORDINGEVALUATION WHERE grab_id = @idRecordingEvaluation AND userAdmin = @user AND userSupervisor = @userSupervisor AND idFormat = @idFormat AND deleted = 0
-		END
-	END'
+			IF @option = 1 --get all evaluation formats
+			BEGIN
+				SELECT * FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted != 1
+			END
+			IF @option = 2 --get concepts
+			BEGIN
+				SELECT * FROM RECORDERRIA_FORMATCONCEPTS WHERE idFormat = @id
+			END
+			IF @option = 3 --get questions
+			BEGIN
+				SELECT * FROM RECORDERRIA_CONCEPTQUESTIONS WHERE idFormat = @id
+			END
+			IF @option = 4 --verify same name
+			BEGIN
+				SELECT COUNT(idFormat) FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat = @name COLLATE SQL_Latin1_General_CP1_CS_AS
+			END
+			IF @option = 5 --get evaluation format by id
+			BEGIN
+				SELECT * FROM RECORDERRIA_EVALUATIONFORMATS WHERE idFormat = @id
+			END
+			IF @option = 6 --get count evaluation format like name
+			BEGIN
+				SELECT nameFormat FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat LIKE @name+'%'
+			END
+		END'
 	EXEC(@Sql)
 	-----------------------------------------------------
 	set @process = 'Delete if exist sp ccsp_GalateaRecordingEvaluation'
@@ -404,7 +413,7 @@ BEGIN TRY
 	INSERT INTO RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION(idRecordingEvaluation, idQuestion, answerType123, answerType4, answerType5, points)
 	VALUES (@idRecordingEvaluation, @idQuestion, @answerType123, @answerType4, @answerType5, @points)
 	COMMIT TRANSACTION addAnswerEvaluation
-	SELECT MAX(idAnswerQuestions) from RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
+	select scope_identity() as maxValue --RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
 END TRY
 BEGIN CATCH
 	ROLLBACK TRANSACTION addAnswerEvaluation;
@@ -459,7 +468,7 @@ BEGIN TRY
 	INSERT INTO RECORDERRIA_RECORDINGEVALUATION(grab_id, userAdmin, idFormat, totalPoints, generalQualification, nameAdmin, nameSupervisor, userSupervisor, createAt, deleted)
 	VALUES (@grab_id, @userAdmin, @idFormat, @totalPoints, @generalQualification, @nameAdmin, @nameSupervisor, @userSupervisor, @createAt, 0)
 	COMMIT TRANSACTION addRecordingEvaluation
-	SELECT MAX(idRecordingEvaluation) from RECORDERRIA_RECORDINGEVALUATION
+	select scope_identity() as maxValue --RECORDERRIA_RECORDINGEVALUATION 
 END TRY
 BEGIN CATCH
 	ROLLBACK TRANSACTION addRecordingEvaluation;

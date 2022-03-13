@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
+Create PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
                     @user_id varchar(MAX),
                     @permissionName VARCHAR(255),
                     @permissionValue INT
@@ -9,9 +9,9 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
 
                 SET @changeBit =
                 CASE
-                    WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'startStopRecording' or @permissionName = 'XferManual' or @permissionName = 'AllowTransferCalls' or @permissionName = 'AgentPermissionDailing'
+                    WHEN @permissionName = 'AllowCellPhoneCalls' or @permissionName = 'startStopRecording' or @permissionName = 'XferManual' or @permissionName = 'AllowTransferCalls' or @permissionName = 'AgentPermissionDailing'or @permissionName = 'DailingMode' or @permissionName='AgentPermissionDailing'
                     THEN 1
-                    WHEN @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'XferExt' or @permissionName = 'DailingMode'
+                    WHEN @permissionName = 'AllowLongDistanceCalls' or @permissionName = 'XferExt' 
                     THEN 2
                     WHEN @permissionName = 'AllowLocalCalls' or @permissionName = 'XferCamps'
                     THEN 4
@@ -19,7 +19,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
                     THEN 8
                     ELSE 0
                 END
-
+                print(@changeBit)
                 IF @user_id IS NOT NULL
                 BEGIN
                     
@@ -46,7 +46,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
                                 THEN DialMask ^ @changeBit
                                 ELSE DialMask
                                 END
-                            END	
+                            END 
                         ELSE DialMask
                         END,
                         
@@ -99,23 +99,22 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
                         ELSE XferAgents
                         END,
 
-						startStopRecording =
-						CASE
-						WHEN @permissionName = 'startStopRecording' 
-						THEN 
-							CASE
-							WHEN @permissionValue = 1
-							THEN 1
-							WHEN @permissionValue = 0
-							THEN 0
-							END
-						ELSE startStopRecording
-						END,
+                        startStopRecording =
+                        CASE
+                        WHEN @permissionName = 'startStopRecording' 
+                        THEN 
+                            CASE
+                            WHEN @permissionValue = 1
+                            THEN 1
+                            WHEN @permissionValue = 0
+                            THEN 0
+                            END
+                        ELSE startStopRecording
+                        END,
 
                         DialingMode = 
                         CASE
                         WHEN @permissionName = 'DailingMode' 
-                        OR @permissionName = 'AgentPermissionDailing' 
                         THEN 
                             CASE
                             WHEN @permissionValue = 1
@@ -132,8 +131,20 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
                                 THEN DialingMode ^ @changeBit
                                 ELSE DialingMode
                                 END
-                            END	
+                            END 
                         ELSE DialingMode
+                        END,
+                        AllowChangeDialingMode = 
+                        CASE
+                        WHEN @permissionName = 'AgentPermissionDailing' 
+                        THEN 
+                            CASE
+                            WHEN @permissionValue = 1
+                            THEN 1
+                            WHEN @permissionValue = 0
+                            THEN 0
+                            END
+                        ELSE AllowChangeDialingMode
                         END
                     WHERE User_id IN (select value from dbo.fn_RIASplitDelimited(@user_id,','))
                 END

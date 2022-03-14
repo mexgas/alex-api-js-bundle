@@ -408,15 +408,12 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 	@answerType5 VARCHAR(MAX),
 	@points INT = 0
 AS
-BEGIN TRANSACTION addAnswerEvaluation
 BEGIN TRY
 	INSERT INTO RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION(idRecordingEvaluation, idQuestion, answerType123, answerType4, answerType5, points)
 	VALUES (@idRecordingEvaluation, @idQuestion, @answerType123, @answerType4, @answerType5, @points)
-	COMMIT TRANSACTION addAnswerEvaluation
 	select scope_identity() as maxValue --RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
 END TRY
 BEGIN CATCH
-	ROLLBACK TRANSACTION addAnswerEvaluation;
 	SELECT -1
 END CATCH'
 	EXEC(@Sql)
@@ -432,14 +429,11 @@ END CATCH'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteRecordingEvaluation] 
 	@idRecordingEvaluation INT = 0
 AS
-BEGIN TRANSACTION deleteRecordingEvaluation
 BEGIN TRY
 	UPDATE RECORDERRIA_RECORDINGEVALUATION SET deleted = 1 WHERE idRecordingEvaluation = @idRecordingEvaluation
-	COMMIT TRANSACTION deleteRecordingEvaluation
 	SELECT 0
 END TRY
 BEGIN CATCH
-	ROLLBACK TRANSACTION deleteRecordingEvaluation;
 	SELECT -1
 END CATCH'
 	EXEC(@Sql)
@@ -463,15 +457,12 @@ END CATCH'
 	@userSupervisor VARCHAR(50) = '',
 	@createAt DATETIME = NULL
 AS
-BEGIN TRANSACTION addRecordingEvaluation
 BEGIN TRY
 	INSERT INTO RECORDERRIA_RECORDINGEVALUATION(grab_id, userAdmin, idFormat, totalPoints, generalQualification, nameAdmin, nameSupervisor, userSupervisor, createAt, deleted)
 	VALUES (@grab_id, @userAdmin, @idFormat, @totalPoints, @generalQualification, @nameAdmin, @nameSupervisor, @userSupervisor, @createAt, 0)
-	COMMIT TRANSACTION addRecordingEvaluation
 	select scope_identity() as maxValue --RECORDERRIA_RECORDINGEVALUATION 
 END TRY
 BEGIN CATCH
-	ROLLBACK TRANSACTION addRecordingEvaluation;
 	SELECT -1
 END CATCH'
 	EXEC(@Sql)

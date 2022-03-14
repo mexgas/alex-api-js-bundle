@@ -1,7 +1,7 @@
-CREATE PROCEDURE ccsp_GalateaAdminBlacklistCatalog
+CREATE PROCEDURE [dbo].[ccsp_GalateaAdminBlacklistCatalog]
 @BLID smallint,
 @name varchar(50),
-@Type tinyint 
+@Type tinyint
 AS
 set nocount on
 if @Type=1-- Read black lists
@@ -20,6 +20,12 @@ If @Type=2 --Create black list
 			insert into cctiposlistanegra (tipolista,DateCreation) values(@name, SYSDATETIME())
 			SELECT @newBlackListId = SCOPE_IDENTITY() 
 		end
+	else if exists(select tipolista from cctiposlistanegra where tipolista=@name and Status = 0)
+		begin
+			declare @idBL int = (select idtipolista from cctiposlistanegra where tipolista=@name and Status = 0)
+			update cctiposlistanegra set Status = 1, DateCreation =  SYSDATETIME() where idtipolista = @idBL
+			select @newBlackListId = @idBL
+		end 
 	SELECT @newBlackListId as ReturnValue
 	return(0)
  end

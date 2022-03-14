@@ -11,6 +11,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
 
             IF @isRoot = 1
             BEGIN
+            
+            
                 Select 
                 User_id as AgentId, 
                 Login as Username, Nombres + ' ' + isNull(apellidoPaterno,'') + ' ' + isNull(ApellidoMaterno, '') as FullName, 
@@ -21,7 +23,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
                 cast(CanChangeStatus as tinyint) CanChangeStatus,
                 cast(XferAgents as tinyint) XferAgents,
                 ISNULL(cast(startStopRecording as tinyint), 0) startStopRecording,
-                ISNULL(cast( (DialingMode & 2) / 2 as int), 0) as AgentPermissionDailing,
+                
+                cast(AllowChangeDialingMode as int) as AgentPermissionDailing,
                 ISNULL(cast( DialingMode & 1 as int), 0) as DailingMode
             from 
                 ccUsers
@@ -41,7 +44,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
                 cast(CanChangeStatus as tinyint) CanChangeStatus,
                 cast(XferAgents as tinyint) XferAgents,
                 ISNULL(cast(startStopRecording as tinyint), 0) startStopRecording,
-                ISNULL(cast( (DialingMode & 2) / 2 as int), 0) as AgentPermissionDailing,
+                cast(AllowChangeDialingMode as int) as AgentPermissionDailing,
                 ISNULL(cast( DialingMode & 1 as int), 0) as DailingMode
             from 
                 ccUsers A

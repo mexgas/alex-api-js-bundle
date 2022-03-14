@@ -77,7 +77,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 		BEGIN
 			IF @option = 1 --get all evaluation formats
 			BEGIN
-				SELECT * FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted != 1
+				SELECT e.*, case when r.idFormat is null then 0 else 1 end as inUSe from RECORDERRIA_EVALUATIONFORMATS e LEFT JOIN (SELECT idFormat FROM RECORDERRIA_RECORDINGEVALUATION WHERE deleted != 1 GROUP BY idFormat) r ON e.idFormat = r.idFormat WHERE e.deleted != 1
 			END
 			IF @option = 2 --get concepts
 			BEGIN

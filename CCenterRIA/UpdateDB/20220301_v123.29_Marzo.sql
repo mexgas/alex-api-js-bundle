@@ -522,7 +522,472 @@ set nocount off'
     '
     EXEC(@sql)
 
+	SET @process = 'Insert new column allNumbersBL'
+	SET @sql = ' if not exists (select * from sys.columns where name = N''allNumbersToBlacklist'' and Object_ID = Object_ID(N''ccTipoCalifOut''))
+    begin
+        alter table ccTipoCalifOut add allNumbersToBlacklist bit default 0 not null
+    end'
+	EXEC (@sql)
+	SET @process = 'Delete ccsp_GalateaAdminDispositions'
+	SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminDispositions;
+    end'
+	EXEC (@sql)
+	SET @process = 'Create sp ccsp_GalateaAdminDispositions'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
+@command int,
+@calif_id smallint = null,
+@califIdLst varchar(8000) = null,
+@description varchar(60)=null,
+@order tinyint=null,
+@canReprogram bit = null,
+@graphColor varchar(15) = null,
+@endConversation bit=null,
+@keepDial bit=null,
+@autoCB bit=null,
+@contactOwner bit=null,
+@finishPreview bit = 0,
+@allNumbersToBlacklist bit = 0
+AS
+set nocount on
+declare @inserted table (ID smallint)
 
+if @command=1 -- Load Inbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd, graphColor
+  from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
+  where C.Calif_Status=1
+  group by C.calif_id, C.Description, C.orden, C.canReprogram, C.EndConversation, graphColor
+  order by 2
+  return(0)
+end
+
+If @command=2 -- Load Outbound Dispositions
+begin
+  Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
+  cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+  IsNull(C.finishPreview,0) as finishPreview, graphColor, allNumbersToBlacklist
+  from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
+  where C.CalifOut_Status=1
+  group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+  C.contactOwner, C.finishPreview, graphColor, allNumbersToBlacklist
+  order by 2
+  return(0)
+end
+
+If @command=3 -- New ccTipoCalif
+begin
+  If exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@description)
+    begin
+      select cast(-1 as smallint) [result]	-- Disposition already exists
+      return(0)
+    end
+
+  If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
+  begin
+	select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
+    update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+	graphColor=isnull(@graphColor, ''1DB4E2''), Calif_Status=1
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
+	select ID [result] from @inserted 
+    return(0)
+  end
+
+  insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation , graphColor)
+  output inserted.calif_id into @inserted
+  select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), isnull(@canReprogram,0), isnull(@endConversation,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalif
+  select ID [result] from @inserted
+  return(0)
+end
+
+If @command=4 -- New ccTipoCalifOUT
+begin
+  If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
+  begin
+  select cast(-1 as smallint) [result]	-- Disposition already exists
+  return(0)
+  end
+
+ If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
+ begin
+	select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
+	update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
+	Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+	finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, ''1DB4E2'')
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
+	select ID [result] from @inserted 
+	return(0)
+ end
+
+ insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor, allNumbersToBlacklist)
+ output inserted.calif_id into @inserted
+ select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
+ isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, ''1DB4E2''), ISNULL(@allNumbersToBlacklist,0) from ccTipoCalifOut
+ select ID [result] from @inserted 
+ return(0)
+end
+If @command=5 -- Delete Inbound Dispositions
+begin
+    delete from ccCalifCamp where tipo=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    delete from cctipoSubCalifRel where tipoSubRel=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+    return(0)
+end
+if @command=6 -- Delete Outbound Disposition
+begin
+	delete from ccCalifCamp where tipo=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	delete from cctipoSubCalifRel where tipoSubRel=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	update ccTipoCalifOUT set CalifOut_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	return(0)
+end
+if @command=7 -- Update Inbound Disposition
+begin
+	if(exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@Description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
+
+	if @canReprogram=1
+	begin
+		if exists(select i.Inbound_id from ccCalifCamp cc inner join ccTipoCalif t on cc.calif_id=t.calif_id and tipo=0
+		inner join ccInbound i on cc.cam_id=i.Inbound_id where cc.calif_id=@calif_id and i.cam_id is null)
+		begin
+			select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
+			return(0)
+		end
+	end
+
+    UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
+    canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
+	EndConversation=isnull(@endConversation,EndConversation)
+	output inserted.calif_id into @inserted
+    where calif_id=@calif_id
+
+    delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
+    tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+	select ID [result] from @inserted
+    return(0)
+end
+if @command=8 -- Update Outbound Disposition
+begin
+	if(exists(select calif_id from ccTipoCalifOUT where CalifOut_Status=1 and Description=@description and calif_id<>@calif_id))
+	begin
+		select cast(-1 as smallint) [result]	-- Disposition already exists
+		return(0)
+	end
+
+	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
+	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
+	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+	finishPreview = isnull(@finishPreview,finishPreview), allNumbersToBlacklist = isnull(@allNumbersToBlacklist, allNumbersToBlacklist)
+	output inserted.calif_id into @inserted
+	where calif_id=@calif_id
+
+	if @keepDial is not null
+	begin
+		update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+	end
+
+	select ID [result] from @inserted
+	return(0) 
+	end
+
+set nocount off
+
+	'
+	EXEC (@sql)
+	SET @process = 'Delete ccsp_AgentUpdateCallCALIF'
+	SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_AgentUpdateCallCALIF'')
+    begin
+        DROP PROCEDURE ccsp_AgentUpdateCallCALIF;
+    end'
+	EXEC (@sql)
+	SET @process = 'Create sp ccsp_AgentUpdateCallCALIF'
+	SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_AgentUpdateCallCALIF] @IDCall INT, @calif_id SMALLINT, @TipoCall SMALLINT, @Origin INT = 0, @cal_key VARCHAR(20) = NULL, @callOutId INT = 0, @subId SMALLINT = 0
+AS
+SET NOCOUNT ON
+
+DECLARE @RecicleSIC TINYINT, @Reprogram TINYINT, @DateNewDial SMALLDATETIME, @idTipoLista INT, @autoCB TINYINT, @tel VARCHAR(30), @camp INT, @iddncList AS INT
+DECLARE @userid INT
+
+SELECT @RecicleSIC = valor
+FROM ccSettings
+WHERE setting_id = 60
+
+SELECT @RecicleSIC = IsNull(@RecicleSIC, 0)
+
+DECLARE @hashTel INT
+DECLARE @killListID INT = (
+		SELECT idtipolista
+		FROM ccTiposListaNegra
+		WHERE Tipolista = ''default/KillList''
+		)
+DECLARE @killListSetting INT = (
+		SELECT STATUS
+		FROM ccSettings
+		WHERE setting_id = 215
+		)
+
+IF @TipoCall = 1
+BEGIN
+	UPDATE ccCallsIN
+	SET calif_id = @calif_id, cal_origin_id = @Origin, cal_key = isnull(@cal_key, cal_key), califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
+
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 0 AND calif_id = @calif_id
+			)
+	BEGIN
+		SELECT @tel = dbo.Completa_ListaNegra(ci.cal_ANI), @iddncList = cbl.idTipoLista
+		FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+		JOIN cccalifblacklist AS cbl ON ci.calif_id = cbl.calif_id
+		WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+
+		IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+		BEGIN
+			--insert ccListaNegra
+			INSERT INTO cclistanegra (telefono, idtipolista)
+			VALUES (@tel, @iddncList)
+
+			--insert cc_killlist
+			IF (@killListSetting = 1 AND @iddncList = @killListID) -- verifies if kill list setting is active and if the list_id matches killList id
+			BEGIN
+				select @hashTel = dbo.hashPhone(@tel)
+
+				IF NOT EXISTS (
+						SELECT hashtel
+						FROM cc_KillList
+						WHERE hashTel = @hashTel
+						)
+				BEGIN
+					INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+					VALUES (@hashTel, @iddncList, GETDATE())
+				END
+			END
+
+			INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+			SELECT dbo.Completa_ListaNegra(ci.cal_ANI), cbl.idTipoLista, ci.Inbound_id, getdate(), ci.dni_id, 6
+			FROM ccCallsIN ci WITH (INDEX (PK_ccCallsIn))
+			JOIN cccalifblacklist cbl ON ci.calif_id = cbl.calif_id
+			WHERE ci.cal_id = @idCall AND left(dbo.Completa_ListaNegra(ci.cal_ANI), 1) <> ''E'' AND cbl.tipo = 0
+		END
+	END
+
+	RETURN (0)
+END
+
+IF @TipoCall = 2
+BEGIN
+	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	SELECT @autoCB = autocallback
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
+
+	-- Si no tiene subcalificacion toma la de la calificacion
+	IF @autoCB IS NULL
+	BEGIN
+		SELECT @autoCB = autocallback
+		FROM cctipocalifout
+		WHERE calif_id = @calif_id
+	END
+
+	IF @autoCB = 1
+	BEGIN
+		SELECT @callOutId = callout_id, @camp = cam_id, @userid = user_id
+		FROM ccocallsout
+		WHERE Cal_id = @IDCall
+
+		SELECT @DateNewDial = dateadd(mi, t_autoCB, getdate())
+		FROM cccamps cam
+		WHERE cam.cam_id = @camp
+
+		EXEC ccsp_OUTInsertaCallBack @IDCall, '''', @camp, @DateNewDial, @callOutId, 1, @userid, '''', 1
+	END
+
+	UPDATE ccoCallsOUT
+	SET calif_id = @calif_id, califSub_id = CASE @subId WHEN 0 THEN NULL ELSE @subId END
+	WHERE cal_id = @IDCall
+
+	IF EXISTS (
+			SELECT idTipoLista
+			FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+			WHERE tipo = 1 AND calif_id = @calif_id
+			) AND NOT EXISTS (
+			SELECT co.cal_telefono
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			JOIN ccListaNegra bl ON dbo.Completa_ListaNegra(co.cal_telefono) = bl.telefono OR co.cal_telefono = bl.telefono
+			WHERE co.cal_id = @idCall AND bl.idtipolista IN (
+					SELECT idTipoLista
+					FROM cccalifblacklist WITH (INDEX (IX_cccalifblacklist))
+					WHERE tipo = 1 AND calif_id = @calif_id
+					)
+			)
+	BEGIN --IF
+
+		CREATE TABLE #NUMANDBL (id int identity,  iddncList int)
+		CREATE TABLE #NUMBERS (id int identity, number varchar(30))
+		DECLARE @allnumbersToBl BIT
+		DECLARE @number varchar(30)
+
+		SELECT @allnumbersToBl = allNumbersToBlacklist FROM ccTipoCalifOUT WHERE calif_id = @calif_id
+
+		IF(@allnumbersToBl = 1)
+		BEGIN
+			DECLARE @camid SMALLINT
+			SELECT @camid = cam_id FROM ccoCallsOut WITH (INDEX (PK_ccoCallsOut)) WHERE cal_id = @IDCall
+			DECLARE @i SMALLINT = 0
+			WHILE (@i < 5 )
+			BEGIN
+				SELECT @number = CASE @i 
+									WHEN 0 THEN cal_telefono 
+									WHEN 1 THEN cal_telefono2
+									WHEN 2 THEN cal_telefono3
+									WHEN 3 THEN cal_telefono4
+									WHEN 4 THEN cal_telefono5
+									END FROM ccoCallsOutSource WHERE callout_id = @callOutId AND cam_id = @camid
+				SET @number = dbo.Completa_ListaNegra(@number)
+				IF(LEFT(@number, 1) <> ''E'') 
+				BEGIN
+					INSERT INTO #NUMBERS (number) VALUES (@number)
+				END
+				SET @i = @i + 1
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT @number = co.cal_telefono
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			WHERE co.cal_id = @idCall 
+			SET @number = dbo.Completa_ListaNegra(@number)
+			IF(LEFT(@number, 1) <> ''E'') 
+			BEGIN
+				INSERT INTO #NUMBERS (number) VALUES (@number)
+			END
+		END
+
+		IF((SELECT COUNT(*) FROM #NUMBERS) > 0) begin
+			INSERT INTO #NUMANDBL (iddncList) 
+			select cbl.idTipoLista from cccalifblacklist cbl  where cbl.calif_id=@calif_id and cbl.tipo = 1
+		END
+
+		DECLARE @Count int		
+		WHILE (SELECT count(id) from #NUMANDBL) > 0
+		BEGIN  --WHILE
+			select @Count = count(id) from #NUMANDBL
+			SELECT @iddncList = iddncList from #NUMANDBL where id = @Count
+			DECLARE @countNumbers INT, @indexNumbers INT = 1
+			SELECT @countNumbers = COUNT(*) FROM #NUMBERS
+			WHILE( @indexNumbers <= @countNumbers) --WHILE NUMBERS
+			BEGIN 
+				SELECT @tel = number FROM #NUMBERS WHERE id = @indexNumbers
+				IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+				BEGIN--Tel adn iddnclist
+					EXEC ccsp_InsertDNCList @tel, @iddncList
+
+					IF (@killListSetting = 1 AND @iddncList = @killListID)
+					BEGIN
+						select @hashTel = dbo.hashPhone(@tel)
+
+						IF NOT EXISTS (SELECT hashtel FROM cc_KillList WHERE hashTel = @hashTel)
+						BEGIN
+							INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+							VALUES (@hashTel, @iddncList, GETDATE())
+						END
+					END
+
+					INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+					SELECT @tel, @iddncList, co.cam_id, getdate(), co.callout_id, 6
+					FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+					--JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+					WHERE co.cal_id = @idCall 
+				END --Tel adn iddnclist
+				SET @indexNumbers = @indexNumbers + 1
+			END --WHILE NUMBERS
+			delete from #NUMANDBL where id = @Count
+		END --WHILE
+		DROP TABLE #NUMANDBL
+		DROP TABLE #NUMBERS
+	END --IF
+	IF @RecicleSIC = 1
+	BEGIN
+		-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+		SELECT @Reprogram = CanReprogram
+		FROM ccTipoCalifSubout
+		WHERE califSub_Id = @subId
+
+		-- Si no tiene subcalificacion toma la de la calificacion
+		IF @Reprogram IS NULL
+		BEGIN
+			SELECT @Reprogram = CanReprogram
+			FROM ccTipoCalifOUT
+			WHERE calif_id = @calif_id
+		END
+
+		IF @callOutId = 0
+			SELECT @callOutId = callout_id
+			FROM ccocallsout
+			WHERE Cal_id = @IDCall
+
+		UPDATE ccoWorkingTable
+		SET calif_id = @calif_id, cal_status = CASE @Reprogram WHEN 0 THEN 3 ELSE cal_status END
+		WHERE callout_id = @callOutId
+	END
+
+	DECLARE @keepDial BIT
+	DECLARE @finishPreview SMALLINT
+
+	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	SELECT @keepDial = keepDial
+	FROM ccTipoCalifSubout
+	WHERE califSub_Id = @subId
+
+	-- Si no tiene subcalificacion toma la de la calificacion
+	IF @keepDial IS NULL
+	BEGIN
+		SELECT @keepDial = keepDial
+		FROM ccTipoCalifout
+		WHERE calif_id = @calif_id
+	END
+
+	SELECT @finishPreview = isnull(finishPreview, 0)
+	FROM ccTipoCalifout
+	WHERE calif_id = @calif_id
+
+	IF @keepDial = 1
+	BEGIN
+		UPDATE ccologdials
+		SET TipoDialingMode = dbo.fn_getDialingMode(@IDCall, 3, 0, @camp)
+		WHERE logDial_id IN (
+				SELECT TOP 1 L.logDial_id
+				FROM ccoLogDials L WITH (INDEX (IX_ccoLogDials_2), NOLOCK)
+				JOIN ccoCallsOut O WITH (INDEX (PK_ccoCallsOut), NOLOCK) ON L.callout_id = O.callout_id
+				WHERE O.cal_id = @IDCall
+				ORDER BY L.logDial_id DESC
+				)
+	END
+
+	SELECT @keepDial, @finishPreview
+
+	RETURN (0)
+END
+
+SET NOCOUNT OFF
+
+	'
+	EXEC (@sql)
 
 		set @process = 'SPEC-9 - Crear tabla'
 		set @sql = 'IF (NOT EXISTS (SELECT * 
@@ -782,7 +1247,6 @@ set nocount off'
 			set nocount off
 		'
 		EXEC(@sql)
-
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

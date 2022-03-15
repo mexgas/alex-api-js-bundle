@@ -89,7 +89,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 			END
 			IF @option = 4 --verify same name
 			BEGIN
-				SELECT COUNT(idFormat) FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat = @name COLLATE SQL_Latin1_General_CP1_CS_AS
+				SELECT COUNT(idFormat) FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat = @name
 			END
 			IF @option = 5 --get evaluation format by id
 			BEGIN

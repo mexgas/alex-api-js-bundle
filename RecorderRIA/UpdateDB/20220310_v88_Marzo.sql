@@ -133,7 +133,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 		END
 		IF @option = 4 --get all supervisors
 		BEGIN
-			SELECT us.[User_id], us.[Login] as 'Username' FROM [CCenterRIA].[dbo].[ccUsers] AS us INNER JOIN [CCenterRIA].[dbo].[ccCamps] AS ca ON us.IDArea = ca.IDArea WHERE ca.cam_descripcion = @nameCamp AND us.TipoUser_id = 2
+			SELECT us.[User_id], us.[Login] as ''Username'' FROM [CCenterRIA].[dbo].[ccUsers] AS us INNER JOIN [CCenterRIA].[dbo].[ccCamps] AS ca ON us.IDArea = ca.IDArea WHERE ca.cam_descripcion = @nameCamp AND us.TipoUser_id = 2
 		END
 	END'
 	EXEC(@Sql)

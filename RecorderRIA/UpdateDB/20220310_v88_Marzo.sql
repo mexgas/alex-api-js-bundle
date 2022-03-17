@@ -114,7 +114,8 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 		@idRecordingEvaluation INT = 0,
 		@user VARCHAR(50) = '',
 		@idFormat INT = 0,
-		@userSupervisor VARCHAR(50) = ''
+		@userSupervisor VARCHAR(50) = '',
+		@nameCamp varchar(40) = ''
 	AS
 	BEGIN
 		IF @option = 1 --search recording evaluation owner
@@ -129,6 +130,10 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 		IF @option = 3 --get all recording evaluations
 		BEGIN
 			SELECT * FROM RECORDERRIA_RECORDINGEVALUATION WHERE grab_id = @idRecordingEvaluation AND userAdmin = @user AND userSupervisor = @userSupervisor AND idFormat = @idFormat AND deleted = 0
+		END
+		IF @option = 4 --get all supervisors
+		BEGIN
+			SELECT us.[User_id], us.[Login] as 'Username' FROM [CCenterRIA].[dbo].[ccUsers] AS us INNER JOIN [CCenterRIA].[dbo].[ccCamps] AS ca ON us.IDArea = ca.IDArea WHERE ca.cam_descripcion = @nameCamp AND us.TipoUser_id = 2
 		END
 	END'
 	EXEC(@Sql)
@@ -216,7 +221,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 						FROM ria_grabacion rec
 						LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
 						LEFT JOIN (
-							SELECT AVG(generalQualification) AS total_forma, grab_id  
+							SELECT AVG(totalPoints) AS total_forma, grab_id  
 							FROM RECORDERRIA_RECORDINGEVALUATION 
 							WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
 							) formCalif ON formCalif.grab_id = rec.grab_id
@@ -253,7 +258,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 								FROM RIA_GRABACIONCONSULTA rec
 								LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
 								LEFT JOIN (
-									SELECT AVG(generalQualification) AS total_forma, grab_id  
+									SELECT AVG(totalPoints) AS total_forma, grab_id  
 									FROM RECORDERRIA_RECORDINGEVALUATION 
 									WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
 									) formCalif ON formCalif.grab_id = rec.grab_id

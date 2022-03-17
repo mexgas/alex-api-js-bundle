@@ -1032,11 +1032,31 @@ SET NOCOUNT OFF
 		'
 		EXEC(@sql)
 
+		set @process = 'SPEC-9 - Limpiar tabla'
+		set @sql = 'truncate table ccsipcodemap'
+		EXEC(@sql)
+
 		set @process = 'SPEC-9 - Valores default'
 		set @sql = 'IF NOT EXISTS (select top 1 1 from ccsipcodemap)
 			BEGIN
-			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''RADIOMOVIL DIPSA S.A. DE C.V.'',480,2)
 			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''RADIOMOVIL DIPSA S.A. DE C.V.'',504,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''RADIOMOVIL DIPSA S.A. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''PEGASO PCS S.A. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''GRUPO AT&T CELULLAR S. DE R.L. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''AT&T COMERCIALIZACION MOVIL S. DE R.L. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''TELEFONOS DE MEXICO S.A.B. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''RADIOMOVIL DIPSA S.A. DE C.V.'',404,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''AT&T COMUNICACIONES DIGITALES S. DE R.L. DE C.V.'',480,2)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''TELEFONOS DE MEXICO S.A.B. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''PEGASO PCS S.A. DE C.V.'',410,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''GRUPO AT&T CELULLAR S. DE R.L. DE C.V.'',410,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''AXTEL S.A.B. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''MAXCOM TELECOMUNICACIONES S.A.B. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''AT&T COMERCIALIZACION MOVIL S. DE R.L. DE C.V.'',410,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''TOTAL PLAY TELECOMUNICACIONES S.A. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''MEGA CABLE S.A. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''RADIOMOVIL DIPSA S.A. DE C.V.'',404,10)
+			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''TELEFONOS DE MEXICO S.A.B. DE C.V.'',484,10)
 			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''OPERBES S.A. DE C.V. (ANTES BESTPHONE S.A. DE C.V.)'',403,10)
 			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''OPERBES S.A. DE C.V. (ANTES BESTPHONE S.A. DE C.V.)'',404,10)
 			insert ccsipcodemap (country,carrier,resultcode,mappedcode) values (1,''CABLEMAS TELECOMUNICACIONES S.A. DE C.V.'',403,10)

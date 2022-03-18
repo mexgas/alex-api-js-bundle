@@ -72,7 +72,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaEvaluationFormat]
 		@option SMALLINT,
 		@id INT = 0,
-		@name VARCHAR(250) = ''
+		@name VARCHAR(250) = ''''
 		AS
 		BEGIN
 			IF @option = 1 --get all evaluation formats
@@ -97,7 +97,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 			END
 			IF @option = 6 --get count evaluation format like name
 			BEGIN
-				SELECT nameFormat FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat LIKE @name+'%'
+				SELECT nameFormat FROM RECORDERRIA_EVALUATIONFORMATS WHERE deleted = 0 AND nameFormat LIKE @name+''%''
 			END
 		END'
 	EXEC(@Sql)
@@ -112,10 +112,10 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaRecordingEvaluation]
 		@option SMALLINT,
 		@idRecordingEvaluation INT = 0,
-		@user VARCHAR(50) = '',
+		@user VARCHAR(50) = '''',
 		@idFormat INT = 0,
-		@userSupervisor VARCHAR(50) = '',
-		@nameCamp varchar(40) = ''
+		@userSupervisor VARCHAR(50) = '''',
+		@nameCamp varchar(40) = ''''
 	AS
 	BEGIN
 		IF @option = 1 --search recording evaluation owner
@@ -408,7 +408,7 @@ set @process = 'Create table RECORDERRIA_RECORDINGEVALUATION'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaCreateAnswerEvaluation] 
 	@idRecordingEvaluation INT,
 	@idQuestion INT,
-	@answerType123 XML = '',
+	@answerType123 XML = '''',
 	@answerType4 INT,
 	@answerType5 VARCHAR(MAX),
 	@points INT = 0
@@ -453,13 +453,13 @@ END CATCH'
 	set @process = 'Create sp ccsp_GalateaCreateRecordingEvaluation'
 	set @Sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaCreateRecordingEvaluation] 
 	@grab_id INT,
-	@userAdmin VARCHAR(50) = '',
+	@userAdmin VARCHAR(50) = '''',
 	@idFormat INT,
 	@totalPoints INT = 0,
 	@generalQualification INT = 0,
-	@nameAdmin VARCHAR(50) = '',
-	@nameSupervisor VARCHAR(50) = '',
-	@userSupervisor VARCHAR(50) = '',
+	@nameAdmin VARCHAR(50) = '''',
+	@nameSupervisor VARCHAR(50) = '''',
+	@userSupervisor VARCHAR(50) = '''',
 	@createAt DATETIME = NULL
 AS
 BEGIN TRY

@@ -416,7 +416,7 @@ AS
 BEGIN TRY
 	INSERT INTO RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION(idRecordingEvaluation, idQuestion, answerType123, answerType4, answerType5, points)
 	VALUES (@idRecordingEvaluation, @idQuestion, @answerType123, @answerType4, @answerType5, @points)
-	select scope_identity() as maxValue --RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
+	select CAST(scope_identity() AS int) --RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
 END TRY
 BEGIN CATCH
 	SELECT -1
@@ -465,7 +465,7 @@ AS
 BEGIN TRY
 	INSERT INTO RECORDERRIA_RECORDINGEVALUATION(grab_id, userAdmin, idFormat, totalPoints, generalQualification, nameAdmin, nameSupervisor, userSupervisor, createAt, deleted)
 	VALUES (@grab_id, @userAdmin, @idFormat, @totalPoints, @generalQualification, @nameAdmin, @nameSupervisor, @userSupervisor, @createAt, 0)
-	select scope_identity() as maxValue --RECORDERRIA_RECORDINGEVALUATION 
+	select CAST(scope_identity() AS int) --RECORDERRIA_RECORDINGEVALUATION 
 END TRY
 BEGIN CATCH
 	SELECT -1

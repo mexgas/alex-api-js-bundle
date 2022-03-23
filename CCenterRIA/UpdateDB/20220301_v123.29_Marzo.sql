@@ -521,6 +521,30 @@ set nocount off'
         
     '
     EXEC(@sql)
+
+	SET @process = 'CW-6518 Registro menu 7210'
+	SET @sql = '
+	IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 7210)
+		INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+		VALUES (7210, ''KPIs Especiales Salida|Special Outbound KPIs'', 7000, ''B'', 10, 3, '''', ''efa4d1a49710f091ef14fbe832fa64deea30ab5e5d898ad75f065e83546205909bb8196a7e85810bdcd22d0ee7e07293'')
+	'
+	EXEC(@sql)
+
+	SET @process = 'CW-6519 Registro menu 7220'
+	SET @sql = '
+	IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 7220)
+		INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+		VALUES (7220, ''KPIs Especiales Agentes|Special Agent KPIs'', 7000, ''B'', 10, 3, '''', ''a51282c9f3778d5f7b8f48a3b7290382b057c1652fa3ce9ac6a0683abb45d2a62ab46ec96807514900822f4d16a634ef'')
+	'
+	EXEC(@sql)
+
+	SET @process = 'CW-6451 Registro menu 7200'
+	SET @sql = '
+	IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 7200)
+		INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+		VALUES (7200, ''KPIs Especiales Entrada|Special Inbound KPIs'', 7000, ''B'', 10, 3, '''', ''a51282c9f3778d5f7b8f48a3b7290382cb7373be67144e901962bae0c6147dbcf390fbdb914fffe3d313764e5b14fce9'')
+	'
+	EXEC(@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

@@ -10,7 +10,8 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
 @keepDial bit=null,
 @autoCB bit=null,
 @contactOwner bit=null,
-@finishPreview bit = 0
+@finishPreview bit = 0,
+@allNumbersToBlacklist bit = 0
 AS
 set nocount on
 declare @inserted table (ID smallint)
@@ -30,11 +31,11 @@ If @command=2 -- Load Outbound Dispositions
 begin
   Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
   cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
-  IsNull(C.finishPreview,0) as finishPreview, graphColor
+  IsNull(C.finishPreview,0) as finishPreview, graphColor, allNumbersToBlacklist
   from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
   where C.CalifOut_Status=1
   group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
-  C.contactOwner, C.finishPreview, graphColor
+  C.contactOwner, C.finishPreview, graphColor, allNumbersToBlacklist
   order by 2
   return(0)
 end
@@ -85,10 +86,10 @@ begin
 	return(0)
  end
 
- insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor)
+ insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor, allNumbersToBlacklist)
  output inserted.calif_id into @inserted
  select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
- isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, '1DB4E2') from ccTipoCalifOut
+ isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, '1DB4E2'), ISNULL(@allNumbersToBlacklist,0) from ccTipoCalifOut
  select ID [result] from @inserted 
  return(0)
 end
@@ -148,7 +149,7 @@ begin
 	UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
 	canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
 	autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
-	finishPreview = isnull(@finishPreview,finishPreview)
+	finishPreview = isnull(@finishPreview,finishPreview), allNumbersToBlacklist = isnull(@allNumbersToBlacklist, allNumbersToBlacklist)
 	output inserted.calif_id into @inserted
 	where calif_id=@calif_id
 
@@ -159,6 +160,6 @@ begin
 
 	select ID [result] from @inserted
 	return(0) 
-end
+	end
 
 set nocount off

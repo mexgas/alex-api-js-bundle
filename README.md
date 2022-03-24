@@ -2,6 +2,8 @@
 
 Este documento al orden que se deben poner los objetos para la liberacion del release y validaciones necesarias para cuando se coloque algun script
 
+https://nuxiba.atlassian.net/wiki/spaces/CW/pages/101843033/Database+pasos+para+validar+archivo
+
 ## Orden de creacion de objetos ##
 
 * DDL (Data Definition Language)

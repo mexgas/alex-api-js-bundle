@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0
+CREATE PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0, @rateEvaluationFormatKolob BIT = 0 
 				AS
 				BEGIN
 					DECLARE @shoutLevel AS NVARCHAR(20)
@@ -66,6 +66,22 @@ CREATE PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0
 							WHERE grab_id = @grabId
 							)
 					BEGIN
+					
+					IF (@rateEvaluationFormatKolob = 1)
+						BEGIN
+						SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END,
+						@shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio, @hasVideo = rec.video
+						FROM ria_grabacion rec
+						LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
+						LEFT JOIN (
+							SELECT AVG(totalPoints) AS total_forma, grab_id  
+							FROM RECORDERRIA_RECORDINGEVALUATION 
+							WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
+							) formCalif ON formCalif.grab_id = rec.grab_id
+						WHERE rec.grab_id = @grabId
+						END
+					ElSE
+						BEGIN
 						SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END,
 						@shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio, @hasVideo = rec.video
 						FROM ria_grabacion rec
@@ -77,6 +93,9 @@ CREATE PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0
 							ORDER BY fecha_calif DESC
 							) formCalif ON formCalif.id_grabacion = rec.grab_id
 						WHERE grab_id = @grabId
+					END
+
+						
 
 						IF(@hasVideo = 0 AND EXISTS (SELECT * FROM RIA_AgentVideo where callId=@callID and calltype = @callType))
 						BEGIN 
@@ -86,16 +105,31 @@ CREATE PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0
 					END
 					ELSE
 					BEGIN
-						SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
-						FROM RIA_GRABACIONCONSULTA rec
-						LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
-						LEFT JOIN (
-							SELECT TOP 1 total_forma, id_grabacion
-							FROM ria_formacalif
-							WHERE id_grabacion = @grabId
-							ORDER BY fecha_calif DESC
-							) formCalif ON formCalif.id_grabacion = rec.grab_id
-						WHERE grab_id = @grabId
+						IF (@rateEvaluationFormatKolob = 1)
+							BEGIN
+								SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
+								FROM RIA_GRABACIONCONSULTA rec
+								LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
+								LEFT JOIN (
+									SELECT AVG(totalPoints) AS total_forma, grab_id  
+									FROM RECORDERRIA_RECORDINGEVALUATION 
+									WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
+									) formCalif ON formCalif.grab_id = rec.grab_id
+								WHERE rec.grab_id = @grabId
+							END
+						ElSE
+							BEGIN
+								SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN 'N/A' ELSE 'Manual' END, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
+								FROM RIA_GRABACIONCONSULTA rec
+								LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
+								LEFT JOIN (
+									SELECT TOP 1 total_forma, id_grabacion
+									FROM ria_formacalif
+									WHERE id_grabacion = @grabId
+									ORDER BY fecha_calif DESC
+									) formCalif ON formCalif.id_grabacion = rec.grab_id
+								WHERE grab_id = @grabId
+							END
 					END
 
 					--Languages 0 spanish 1 english

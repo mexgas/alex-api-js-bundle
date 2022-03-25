@@ -39,7 +39,6 @@ BEGIN
 END'
 	EXEC (@sql)
 
-	
 	SET @process = 'CW-5966 Registro setting 42 para info en reporte Detalle de Llamadas Contestadas y Transferidas '
 	SET @sql = '
 	if not exists (select * from ccSettings where setting_id = 42)
@@ -497,7 +496,6 @@ END'
 			drop table #Quejas
 	end'
 	EXEC(@sql)
-
 			IF @actualVersion = @version - 1
 			EXEC ccsp_getVersion 'BD', @version
 

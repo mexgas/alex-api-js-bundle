@@ -1399,7 +1399,7 @@ SET NOCOUNT OFF
 		,L.Otro,L.Cancelado,L.buzon,L.NoDialTone,L.congestion
 		,isnull(Assigned,0) As Assigned,isnull(Attended,0) As Attended,isnull(Abandon,0) As Abandoned
 		from (
-		select cam_id, '' as Campana,
+		select cam_id, '''' as Campana,
 		count(case tipoResDial_id when 1 then 1 else null end) as Contestan,
 		count(case tipoResDial_id when 2 then 1 else null end) as Ocupado,
 		count(case tipoResDial_id when 3 then 1 else null end) as NoContesta,

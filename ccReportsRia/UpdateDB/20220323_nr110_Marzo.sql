@@ -1122,7 +1122,7 @@ IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
 IF NOT EXISTS (
 		SELECT *
 		FROM sys.tables
-		WHERE name = ''tmpccLogAgentesDia ''
+		WHERE name = ''tmpccLogAgentesDia''
 		)
 BEGIN
 	CREATE TABLE tmpccLogAgentesDia (

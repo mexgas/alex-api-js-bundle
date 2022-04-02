@@ -93,7 +93,7 @@ BEGIN
     set @process = 'CW-Roles permiso gestionar formatos'
     set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10018)
     begin
-        insert into ccPermissions values (10018, ''Gestionar formatos de evaluación'', ''RolesPermissionFormsManage'',0,0,0,''N/A'',1)
+        insert into ccPermissions values (10018, ''Gestionar formatos de evaluacion'', ''RolesPermissionFormsManage'',0,0,0,''N/A'',1)
     end'
     EXEC(@sql)
 
@@ -121,7 +121,7 @@ BEGIN
     set @process = 'CW-Roles permiso gestionar autoinicio'
     set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10020)
     begin
-        insert into ccPermissions values (10020, ''Gestionar inicio automático'', ''RolesPermissionAutostartManage'',0,0,0,''N/A'',1)
+        insert into ccPermissions values (10020, ''Gestionar inicio automatico'', ''RolesPermissionAutostartManage'',0,0,0,''N/A'',1)
     end'
     EXEC(@sql)
 
@@ -149,7 +149,7 @@ BEGIN
     set @process = 'CW-Roles permiso gestionar marcacion'
     set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10022)
     begin
-        insert into ccPermissions values (10022, ''Gestionar factor de marcación fijo'', ''RolesPermissionDialFactorManage'',0,0,0,''N/A'',1)
+        insert into ccPermissions values (10022, ''Gestionar factor de marcacion fijo'', ''RolesPermissionDialFactorManage'',0,0,0,''N/A'',1)
     end'
     EXEC(@sql)
 
@@ -177,7 +177,7 @@ BEGIN
     set @process = 'CW-Roles permiso gestionar dnis'
     set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10024)
     begin
-        insert into ccPermissions values (10024, ''Gestionar números DNIS'', ''RolesPermissionDnisNumManage'',0,0,0,''N/A'',1)
+        insert into ccPermissions values (10024, ''Gestionar numeros DNIS'', ''RolesPermissionDnisNumManage'',0,0,0,''N/A'',1)
     end'
     EXEC(@sql)
 

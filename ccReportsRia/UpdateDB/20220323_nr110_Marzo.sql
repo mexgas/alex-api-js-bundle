@@ -4870,7 +4870,7 @@ BEGIN
 	INSERT INTO RepOutTrunkBusy
 	SELECT timegroup
 		,A.cam_id
-		,[out].descripcion
+		,[out].cam_descripcion
 		,[port]
 		,tbusy
 		,llamadas

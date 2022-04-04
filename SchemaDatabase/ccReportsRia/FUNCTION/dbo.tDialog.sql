@@ -12,7 +12,7 @@ BEGIN
 			RETURN @totalDialog
 		END
 		ELSE
-			SET @totalDialog = 60 + COALESCE(@totalCall_Time + ISNULL(@cal_tMsg,0) + ISNULL(@tdialing,0), @tdialing)
+			SET @totalDialog = COALESCE(@totalCall_Time + ISNULL(@cal_tMsg,0) + ISNULL(@tdialing,0), @tdialing)
 			RETURN @totalDialog
 
 END

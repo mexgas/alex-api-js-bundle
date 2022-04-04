@@ -107,7 +107,7 @@ BEGIN
     set @process = 'CW-Roles permiso gestionar historial'
     set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10019)
     begin
-        insert into ccPermissions values (10019, ''Gestionar historial de actividad, ''RolesPermissionActivityLogManage'',0,0,0,''N/A'',1)
+        insert into ccPermissions values (10019, ''Gestionar historial de actividad'', ''RolesPermissionActivityLogManage'',0,0,0,''N/A'',1)
     end'
     EXEC(@sql)
 

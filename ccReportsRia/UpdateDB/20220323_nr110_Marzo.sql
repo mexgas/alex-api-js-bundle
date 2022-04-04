@@ -636,8 +636,17 @@ SET NOCOUNT OFF
 '
 		EXEC(@Sql)
 
+		SET @process = 'CW-6501 DROP PROCEDURE ccspTmpTimesccLogtransfers'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccspTmpTimesccLogtransfers'')
+	begin
+	DROP PROCEDURE ccspTmpTimesccLogtransfers;
+	end'
+
+		EXEC (@Sql)
+
+
 		set @process = 'CW-6501 Alter SP ccspTmpTimesccLogtransfers '
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccspTmpTimesccLogtransfers] @from AS SMALLDATETIME, @to AS SMALLDATETIME
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccspTmpTimesccLogtransfers] @from AS SMALLDATETIME, @to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
 
@@ -743,8 +752,16 @@ FROM Numbers
 '
 		EXEC(@Sql)
 
+		SET @process = 'CW-6501 DROP PROCEDURE ccspTimesOutboundData'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccspTimesOutboundData'')
+	begin
+	DROP PROCEDURE ccspTimesOutboundData;
+	end'
+
+		EXEC (@Sql)
+
 		set @process = 'CW-6501 Alter SP  ccspTimesOutboundData'
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccspTimesOutboundData] @from AS SMALLDATETIME
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccspTimesOutboundData] @from AS SMALLDATETIME
 	,@to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
@@ -1107,8 +1124,16 @@ IF OBJECT_ID(N''tempdb..#outboundData2'', N''U'') IS NOT NULL
 '
 		EXEC(@Sql)
 
+		SET @process = 'CW-6501 DROP PROCEDURE ccspTimesccLogAgentesDia'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccspTimesccLogAgentesDia'')
+	begin
+	DROP PROCEDURE ccspTimesccLogAgentesDia;
+	end'
+
+		EXEC (@Sql)
+
 		set @process = 'CW-6501 Alter SP  ccspTimesccLogAgentesDia'
-		set @Sql= 'ALTER PROCEDURE [dbo].ccspTimesccLogAgentesDia @from AS SMALLDATETIME
+		set @Sql= 'CREATE PROCEDURE [dbo].ccspTimesccLogAgentesDia @from AS SMALLDATETIME
 	,@to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
@@ -1336,8 +1361,16 @@ IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
 '
 		EXEC(@Sql)
 
+		SET @process = 'CW-6501 DROP PROCEDURE ccspTimesInboundData'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccspTimesInboundData'')
+	begin
+	DROP PROCEDURE ccspTimesInboundData;
+	end'
+
+		EXEC (@Sql)
+
 		set @process = 'CW-6501 Alter SP ccspTimesInboundData '
-		set @Sql= 'ALTER PROCEDURE [dbo].ccspTimesInboundData @from AS SMALLDATETIME
+		set @Sql= 'CREATE PROCEDURE [dbo].ccspTimesInboundData @from AS SMALLDATETIME
 	,@to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
@@ -1706,8 +1739,16 @@ IF OBJECT_ID(N''tempdb..#outboundData2'', N''U'') IS NOT NULL
 '
 		EXEC(@Sql)
 
+		SET @process = 'CW-6501 DROP PROCEDURE ccsptmpTimesHoldIn'
+		SET @Sql = 'if exists (select * from sys.procedures where name = N''ccsptmpTimesHoldIn'')
+	begin
+	DROP PROCEDURE ccsptmpTimesHoldIn;
+	end'
+
+		EXEC (@Sql)
+
 		set @process = 'CW-6501 Alter SP  ccsptmpTimesHoldIn'
-		set @Sql= 'ALTER PROCEDURE [dbo].[ccsptmpTimesHoldIn] @from AS SMALLDATETIME
+		set @Sql= 'CREATE PROCEDURE [dbo].[ccsptmpTimesHoldIn] @from AS SMALLDATETIME
 	,@to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
@@ -4829,7 +4870,7 @@ BEGIN
 	INSERT INTO RepOutTrunkBusy
 	SELECT timegroup
 		,A.cam_id
-		,[out].descripcion
+		,[out].cam_descripcion
 		,[port]
 		,tbusy
 		,llamadas

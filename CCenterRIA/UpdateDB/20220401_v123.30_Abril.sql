@@ -233,7 +233,7 @@ BEGIN
     set @process = 'KR020000 Se borra job si existe de callbacks por campaña'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OUTGetCB_Distribucion'')
     begin
-        DROP PROCEDURE ccsp_AgentDataACD;
+        DROP PROCEDURE ccsp_OUTGetCB_Distribucion;
     end'
     EXEC(@sql)
 

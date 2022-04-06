@@ -260,14 +260,12 @@ BEGIN
             return(0)
         end
 
-        --else if @Tipo=1
         select datepart(hh, cal_fechaDial) as Hora, count(callout_id) as CB
             from ccoWorkingTable
             where cam_id=@CAMPID and cal_fechaDial BETWEEN @end AND @final and cal_status=1
             group by datepart(hh, cal_fechaDial)
             order by Hora
-        return(0)
-        set nocount off'
+        return(0)'
     EXEC(@sql)
 
     set @process = 'CW-Settings permiso tiempo de consulta de callbacks por hora'

@@ -109,11 +109,11 @@ begin
 	CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121) as [date], userId, [Login], inboundId, [inbound],
 	[user], 
 	 convert(decimal(10,2),isnull( sum([answerTime])/count(*),0.00)) as [avgAnswerTime]		
-	, datepart(yyyy,CONVERT(smalldatetime,date))
-	, datepart(mm,CONVERT(smalldatetime,date))
-	, datepart(dd,CONVERT(smalldatetime,date))
-	, datepart(hh,CONVERT(smalldatetime,date))
-	, datepart(mi,CONVERT(smalldatetime,date))
+	, datepart(yyyy,date)
+	, datepart(mm,date)
+	, datepart(dd,date)
+	, datepart(hh,date)
+	, 0 as [minute]
 	, chatId
 	from(
 	select requestDate as [date], userId, [Login] as [login], 

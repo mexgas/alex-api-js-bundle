@@ -229,6 +229,7 @@ BEGIN
         insert into ccRoles_Permissions values(1,10027)
     end'
     EXEC(@sql)
+	
 
     set @process = 'KR020000 Se borra job si existe de callbacks por campaña'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OUTGetCB_Distribucion'')

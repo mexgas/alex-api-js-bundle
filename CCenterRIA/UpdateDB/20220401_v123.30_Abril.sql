@@ -333,8 +333,20 @@ BEGIN
         end'
     EXEC(@sql)
     
+
+
     set @process = 'K002050-K002062, desconexion y tiempos ALTER column ccWhatsAppConversations'
-    set @sql = 'ALTER TABLE ccWhatsAppConversations alter column tChatting FLOAT '
+    set @sql = 'IF NOT EXISTS (
+        SELECT object_NAME(c.object_id), c.name, t.name, c.max_length
+        FROM sys.columns c
+        INNER JOIN sys.types t ON t.user_type_id = c.user_type_id
+        WHERE c.name = N''tChatting''
+            AND Object_ID = Object_ID(N''ccWhatsAppConversations'')
+            AND t.name = ''int''
+        )
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations alter column tChatting FLOAT 
+    END;'
     EXEC(@sql)
 
 
@@ -460,7 +472,8 @@ BEGIN
                     SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
                      FROM contactMeanIn
                     WHERE inboundId = @inboundId
-                END'
+                END
+            END'
     EXEC(@sql)
 
     set @process = 'K002050-K002062, desconexion y tiempos ccsp_ConversationWASave - Se quita el SP si ya existe'
@@ -911,7 +924,7 @@ BEGIN
     set @process = 'K002050-K002062, desconexion y tiempos cssp_WHatsAppInformation - Se quita el SP si ya existe'
         set @sql = 'if exists (select * from sys.procedures where name = N''cssp_WHatsAppInformation'')
                 begin
-              DROP PROCEDURE cssp_WHatsAppInformation;
+              DROP PROCEDURE ccsp_WhatsAppInformation;
                 end'
     EXEC(@sql)
     set @process = 'K002050-K002062, desconexion y tiempos cssp_WHatsAppInformation '

@@ -291,10 +291,11 @@ BEGIN
     set @sql = 'IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''ccLastMessageAgentByConversation'')
         BEGIN
             CREATE TABLE [dbo].[ccLastMessageAgentByConversation](
-                    [conversationId] [int]  NOT NULL,
-                    [timeStampLastMessageAgent] [datetime] NOT NULL DEFAULT getDate(),
-                    CONSTRAINT [fk_LMConversationId_1] FOREIGN KEY ([conversationId]) REFERENCES [ccWhatsAppConversations] ([conversationId]),
-                );
+            [conversationId] [int]  NOT NULL,
+            [timeStampLastMessageAgent] [datetime] NOT NULL DEFAULT getDate(),
+            [desconnectionAgent] [datetime],
+            CONSTRAINT [fk_LMConversationId_1] FOREIGN KEY ([conversationId]) REFERENCES [ccWhatsAppConversations] ([conversationId]),
+        )
 
         END;'
     EXEC(@sql)
@@ -921,8 +922,8 @@ BEGIN
         '
 
     EXEC(@sql)
-    set @process = 'K002050-K002062, desconexion y tiempos cssp_WHatsAppInformation - Se quita el SP si ya existe'
-        set @sql = 'if exists (select * from sys.procedures where name = N''cssp_WHatsAppInformation'')
+    set @process = 'K002050-K002062, desconexion y tiempos ccsp_WhatsAppInformation - Se quita el SP si ya existe'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_WhatsAppInformation'')
                 begin
               DROP PROCEDURE ccsp_WhatsAppInformation;
                 end'

@@ -5,19 +5,20 @@ CREATE PROCEDURE [dbo].[ccspTimesReports]
 AS
 set nocount on
 
-CREATE TABLE #times([ID] INT primary key,[Start] DATETIME,[Stop] DATETIME)
+declare @row int
+declare @starttime datetime
 
-declare @starttime datetime,@number int
 set @starttime = CONVERT(smalldatetime,CONVERT(varchar(13),@from,121)+ ':00',121)
-set @number = 0
+--set @to=dateadd(mi,15,@to)
 
 
+select @row=ABS( CEILING(1.0*DATEDIFF(mi,@starttime,@to)/@interval))
 
-while @number <= (datediff(mi,@starttime,@to)/@interval) begin
-	insert into #times
-	select @number,DATEADD(mi, @number*@interval, @starttime),DATEADD(mi, (@number+1)*@interval, @StartTime)
-	set @number = @number +1
-end
 
-select * from #times
-drop table #times
+;WITH Numbers AS
+(
+    SELECT TOP (@row) n = CONVERT(INT, ROW_NUMBER() OVER (ORDER BY s1.[object_id]))
+    FROM sys.all_objects AS s1 CROSS JOIN sys.all_objects AS s2
+)
+SELECT  ROW_NUMBER() OVER (ORDER BY n) as [ID], DATEADD(MINUTE,@interval* (n-1), @from) as [Start], DATEADD(MINUTE,@interval* (n), @from) as [Stop]
+FROM Numbers

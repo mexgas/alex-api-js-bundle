@@ -279,6 +279,19 @@ BEGIN
     end'
     EXEC(@sql)
 
+    set @process = 'K002055 Historial de conversaciones de WA'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentHistoricalChat]
+	@option SMALLINT,
+	@clientNum VARCHAR(15) = ''''
+    AS
+    BEGIN
+        IF @option = 1 --whatsapp, get conversation ids
+        BEGIN
+            SELECT conversationId FROM [CCenterRIA].[dbo].[ccWhatsAppConversations] WHERE clientId = @clientNum GROUP BY conversationId
+        END
+    END'
+    EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

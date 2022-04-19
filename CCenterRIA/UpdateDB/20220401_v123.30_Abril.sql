@@ -279,6 +279,7 @@ BEGIN
     end'
     EXEC(@sql)
 
+
     set @process = 'CW-6446 Se agrega columna allowsConference'
     set @sql = '
         if not exists (select * from sys.columns where name = N''allowsConference'' and Object_ID = Object_ID(N''telefonosTransferencia''))
@@ -286,7 +287,6 @@ BEGIN
             ALTER TABLE telefonosTransferencia ADD allowsConference BIT NOT NULL DEFAULT 1
         end'
     EXEC(@sql)
-
 
     set @process = 'CW-6446 Se modifica ccsptelefonosTransferencia para traer columna allowsConference'
     set @sql = '
@@ -317,6 +317,18 @@ BEGIN
         END'
     EXEC(@sql) 
 
+    set @process = 'K002055 Historial de conversaciones de WA'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentHistoricalChat]
+	@option SMALLINT,
+	@clientNum VARCHAR(15) = ''''
+    AS
+    BEGIN
+        IF @option = 1 --whatsapp, get conversation ids
+        BEGIN
+            SELECT conversationId FROM [CCenterRIA].[dbo].[ccWhatsAppConversations] WHERE clientId = @clientNum GROUP BY conversationId
+        END
+    END'
+    EXEC(@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

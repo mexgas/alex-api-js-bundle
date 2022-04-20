@@ -231,14 +231,14 @@ BEGIN
     EXEC(@sql)
 	
 
-    set @process = 'KR020000 Se borra job si existe de callbacks por campaña'
+    set @process = 'KR020000 Se borra job si existe de callbacks por campaĆ±a'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OUTGetCB_Distribucion'')
     begin
         DROP PROCEDURE ccsp_OUTGetCB_Distribucion;
     end'
     EXEC(@sql)
 
-    set @process = 'KR020000 Se actualiza job de callbacks por campaña'
+    set @process = 'KR020000 Se actualiza job de callbacks por campaĆ±a'
     set @sql = '
         CREATE PROCEDURE [dbo].[ccsp_OUTGetCB_Distribucion]
         @CAMPID as int,
@@ -295,7 +295,7 @@ BEGIN
     end'
     EXEC(@sql)
 
-    set @process = 'CW-6457 Enviar datos de campaña de whats a UI Dashboard'
+    set @process = 'CW-6457 Enviar datos de campaĆ±a de whats a UI Dashboard'
     set @sql = '
     CREATE PROCEDURE [dbo].[ccsp_WhatsAppInformation]
     @Option SMALLINT,
@@ -468,7 +468,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR(''ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado'', 18, 1);
+                                RAISERROR(''ERROR. No existe una lista de campañas de salida con el id de grupo de trabajo especificado'', 18, 1);
                         END;
                 END;
                 IF @CampType = 0 -- Campaigns In (ACD)
@@ -483,7 +483,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR(''ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado'', 18, 1);
+                                RAISERROR(''ERROR. No existe una lista de campañas de entrada con el id de grupo de trabajo especificado'', 18, 1);
                         END;
                 END;
                 RETURN 0;
@@ -504,7 +504,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR(''ERROR. No existe campa?as de salida con el id especificado'', 18, 1);
+                                RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
                         END;
                 END;
                 IF @CampType = 0 -- Campaigns In (ACD)
@@ -521,7 +521,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR(''ERROR. No existe campa?as de entrada con el id especificado'', 18, 1);
+                                RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
                         END;
                 END;
                 RETURN 0;
@@ -537,7 +537,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR(''ERROR. No existe la campa?as de entrada con el id especificado'', 18, 1);
+                        RAISERROR(''ERROR. No existe la campañas de entrada con el id especificado'', 18, 1);
                 END;
                 RETURN 0;
         END;
@@ -561,7 +561,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR(''ERROR. La campa?as o administrador no existen'', 18, 1);
+                        RAISERROR(''ERROR. La campañas o administrador no existen'', 18, 1);
                 END;
                 RETURN 0;
         END;
@@ -594,7 +594,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR(''ERROR. La campa?as con el id seleccionado no existe'', 18, 1);
+                        RAISERROR(''ERROR. La campañas con el id seleccionado no existe'', 18, 1);
                 END;
                 RETURN 0;
         END;

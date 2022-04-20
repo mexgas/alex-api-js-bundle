@@ -931,14 +931,6 @@ End
         ALTER TABLE ccWhatsAppConversations ADD FirstMessageAgent DATETIME;
     END'
     EXEC(@sql)
-
-    set @process = 'K002050-K002062, desconexion y tiempos ADD column FirstMessageAgent'
-    set @sql = '
-    IF not exists (SELECT * FROM sys.columns WHERE name = N''FirstMessageAgent'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
-    BEGIN
-        ALTER TABLE ccWhatsAppConversations ADD FirstMessageAgent DATETIME;
-    END'
-    EXEC(@sql)
     
     set @process = 'K002050-K002062, desconexion y tiempos CREATE TABLE ccLastMessageAgentByConversation'
     set @sql = 'IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''ccLastMessageAgentByConversation'')

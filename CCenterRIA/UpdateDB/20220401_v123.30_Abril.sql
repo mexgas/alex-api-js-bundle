@@ -230,6 +230,13 @@ BEGIN
     end'
     EXEC(@sql)
 	
+	set @process = 'K002050-K002062, desconexion y tiempos ADD column FirstMessageAgent'
+    set @sql = '
+    IF not exists (SELECT * FROM sys.columns WHERE name = N''FirstMessageAgent'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
+    BEGIN
+        ALTER TABLE ccWhatsAppConversations ADD FirstMessageAgent DATETIME;
+    END'
+    EXEC(@sql)
 
     set @process = 'KR020000 Se borra job si existe de callbacks por campaña'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OUTGetCB_Distribucion'')
@@ -922,15 +929,7 @@ End
             SELECT conversationId FROM [CCenterRIA].[dbo].[ccWhatsAppConversations] WHERE clientId = @clientNum GROUP BY conversationId
         END
     END'
-    EXEC(@sql)
-
-    set @process = 'K002050-K002062, desconexion y tiempos ADD column FirstMessageAgent'
-    set @sql = '
-    IF not exists (SELECT * FROM sys.columns WHERE name = N''FirstMessageAgent'' AND Object_ID = Object_ID(N''ccWhatsAppConversations''))
-    BEGIN
-        ALTER TABLE ccWhatsAppConversations ADD FirstMessageAgent DATETIME;
-    END'
-    EXEC(@sql)
+    EXEC(@sql)    
     
     set @process = 'K002050-K002062, desconexion y tiempos CREATE TABLE ccLastMessageAgentByConversation'
     set @sql = 'IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''ccLastMessageAgentByConversation'')

@@ -1589,7 +1589,7 @@ End
     end'
     EXEC(@sql)
 
-	set @process = ''
+	set @process = 'CW-6328 Guardar nueva configuración del tiempo en base'
     set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
 
 	@ConexionInfo varchar(400),

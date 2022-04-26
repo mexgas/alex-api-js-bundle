@@ -160,12 +160,14 @@ BEGIN
         INSERT INTO ccRoles_Permissions VALUES(6,10025)
     end'
     EXEC(@sql)
+
     set @process = 'CW-Roles se quita relacion permiso-rol Acceder a reporteador'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10026)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10026)
     end'
     EXEC(@sql)
+
     set @process = 'CW-Roles se quita relacion permiso-rol Acceder a buscador'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10027)
     begin
@@ -173,9 +175,175 @@ BEGIN
     end'
     EXEC(@sql)
 
+    /*  Calidad */
 
+    set @process = 'CW-Roles se agrega el rol calidad'
+    set @sql = 'if not exists (select * from ccRoles where Level=8 and Active=1)
+    begin
+        INSERT ccRoles (Description,KeyJson,CreateDate,Active,Level) 
+        VALUES (''Calidad'',''translate_quality'',CURRENT_TIMESTAMP ,1,8 )
+    end'
+    EXEC(@sql)
 
+    set @process = 'CW-Roles se agrega relacion permiso-rol Monitoreo de llamadas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10016)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10016) 
+    end'
+    EXEC(@sql)
 
+    set @process = 'CW-Roles se agrega relacion permiso-rol Gestion de areas '
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10008)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10008) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Acceder a buscador '
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10027)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10027) 
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10026)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10026) 
+    end'
+    EXEC(@sql)
+
+     /*  Monitor */
+
+    set @process = 'CW-Roles se agrega el rol Monitor'
+    set @sql = 'if not exists (select * from ccRoles where Level=9 and Active=1)
+    begin
+        INSERT ccRoles (Description,KeyJson,CreateDate,Active,Level) 
+    VALUES (''Monitor'',''translate_monitor'',CURRENT_TIMESTAMP ,1,9)
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Solo Monitoreo'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10017)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10017) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Monitorear areas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10007)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10007) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10026)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10026) 
+    end'
+    EXEC(@sql)
+
+    /*  Eliminar Administrador */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Administrador'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 2 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 2
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Administrador'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 2)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 2
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Administrador'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 2 AND Description=''Admin'' AND Level=2)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 2 AND Description=''Admin'' AND Level=2
+    end'
+    EXEC(@sql)
+
+    /* Eliminar Sistemas */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Sistemas'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 3 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 3
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Sistemas'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 3)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 3
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Sistemas'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 3 AND Description=''It Manager'' AND Level=3)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 3 AND Description=''It Manager'' AND Level=3
+    end'
+    EXEC(@sql)
+
+    /* Eliminar Gerente  */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Gerente'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 4 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 4
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Gerente'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 4)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 4
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Gerente'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 4 AND Description=''Manager'' AND Level=4)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 4 AND Description=''Manager'' AND Level=4
+    end'
+    EXEC(@sql)
+    /* Eliminar Gestion de salas  */
+    
+    set @process = 'CW-Roles se eliminan permisos del Gestion de salas'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 5 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 5
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del Gestion de salas'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 5)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 5
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el Gestion de salas'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 5 AND Description=''Room Manager'' AND Level=5)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 5 AND Description=''Room Manager'' AND Level=5
+    end'
+    EXEC(@sql)
+
+    /* Superusuario  */
+    set @process = 'CW-Roles se eliminan el Gestion de salas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10004)
+    begin
+		INSERT INTO ccRoles_Permissions Values(7,10004)
+    end'
+    EXEC(@sql)
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

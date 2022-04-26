@@ -23,7 +23,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR('ERROR. No existe una lista de campa?as de salida con el id de grupo de trabajo especificado', 18, 1);
+                                RAISERROR('ERROR. No existe una lista de campañas de salida con el id de grupo de trabajo especificado', 18, 1);
                         END;
                 END;
                 IF @CampType = 0 -- Campaigns In (ACD)
@@ -38,7 +38,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR('ERROR. No existe una lista de campa?as de entrada con el id de grupo de trabajo especificado', 18, 1);
+                                RAISERROR('ERROR. No existe una lista de campañas de entrada con el id de grupo de trabajo especificado', 18, 1);
                         END;
                 END;
                 RETURN 0;
@@ -59,7 +59,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR('ERROR. No existe campa?as de salida con el id especificado', 18, 1);
+                                RAISERROR('ERROR. No existe campañas de salida con el id especificado', 18, 1);
                         END;
                 END;
                 IF @CampType = 0 -- Campaigns In (ACD)
@@ -76,7 +76,7 @@ AS
                         END;
                         ELSE
                             BEGIN
-                                RAISERROR('ERROR. No existe campa?as de entrada con el id especificado', 18, 1);
+                                RAISERROR('ERROR. No existe campañas de entrada con el id especificado', 18, 1);
                         END;
                 END;
                 RETURN 0;
@@ -92,7 +92,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR('ERROR. No existe la campa?as de entrada con el id especificado', 18, 1);
+                        RAISERROR('ERROR. No existe la campañas de entrada con el id especificado', 18, 1);
                 END;
                 RETURN 0;
         END;
@@ -116,7 +116,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR('ERROR. La campa?as o administrador no existen', 18, 1);
+                        RAISERROR('ERROR. La campañas o administrador no existen', 18, 1);
                 END;
                 RETURN 0;
         END;
@@ -149,7 +149,7 @@ AS
                 END;
                 ELSE
                     BEGIN
-                        RAISERROR('ERROR. La campa?as con el id seleccionado no existe', 18, 1);
+                        RAISERROR('ERROR. La campañas con el id seleccionado no existe', 18, 1);
                 END;
                 RETURN 0;
         END;
@@ -236,150 +236,122 @@ AS
                 RETURN 0;
         END;
         IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type
-            BEGIN
+        BEGIN
+            DECLARE @date DATETIME= CONVERT(DATE, DATEADD(hh, -3, GETDATE()));
+            DECLARE @Wg TABLE (id INT, PRIMARY KEY(id));
+            DECLARE @tmpAgent TABLE(id INT, PRIMARY KEY(id));
+            DECLARE @tmpCamAgent TABLE(camId INT, userId INT, PRIMARY KEY(camId, userId));
+            DECLARE @AgentStatus TABLE(CampId SMALLINT, userId INT, CurrentState INT, isCampDialog BIT);
+            DECLARE @CurrentStatus TABLE(userId INT, CurrentState INT, IdCampEsp INT, camType INT);
+            DECLARE @campDataTotal TABLE(camId INT, CampName VARCHAR(500), Total INT, Area VARCHAR(100), PRIMARY KEY(camId));
+
+            INSERT INTO @Wg SELECT DISTINCT IDWG
+            FROM ccRIAWorkGroupUsers WG, 
+                    ccUsers_Roles R
+            WHERE WG.User_id = @AdminId
+            OR (R.User_id = @AdminId
+            AND R.Rol_id = 7);
                 
-				DECLARE @date DATETIME= CONVERT(DATE, DATEADD(hh, -3, GETDATE()));
-DECLARE @Wg TABLE
-(id INT, 
- PRIMARY KEY(id)
-);
-DECLARE @tmpAgent TABLE
-(id INT, 
- PRIMARY KEY(id)
-);
-DECLARE @tmpCamAgent TABLE
-(camId  INT, 
- userId INT, 
- PRIMARY KEY(camId, userId)
-);
-DECLARE @AgentStatus TABLE
-(CampId       SMALLINT, 
- userId       INT, 
- CurrentState INT, 
- isCampDialog BIT
-);
-DECLARE @CurrentStatus TABLE
-(userId       INT, 
- CurrentState INT, 
- IdCampEsp    INT, 
- camType      INT
-);
-DECLARE @campDataTotal TABLE
-(camId int,
-  CampName VARCHAR(500),
- Total    INT,
- Area varchar(100)
- primary key (camId)
-);
-INSERT INTO @Wg
-       SELECT DISTINCT 
-              IDWG
-       FROM ccRIAWorkGroupUsers WG, 
-            ccUsers_Roles R
-       WHERE WG.User_id = @AdminId
-             OR (R.User_id = @AdminId
-                 AND R.Rol_id = 7);
-INSERT INTO @tmpAgent
-       SELECT DISTINCT 
-              A.User_id
-       FROM ccRIAWorkGroupUsers A
+            INSERT INTO @tmpAgent SELECT DISTINCT A.User_id
+            FROM ccRIAWorkGroupUsers A
             INNER JOIN @Wg B ON A.IDWG = B.id
-            INNER JOIN ccUsers C ON A.User_id = C.User_id
-                                    AND C.TipoUser_id = 1
-              ORDER BY A.User_id;
-INSERT INTO @tmpCamAgent
-       SELECT DISTINCT 
-              campPerWg.IdCampEsp, wgUser.User_id
-       FROM ccRIACampEspWG campPerWg
+            INNER JOIN ccUsers C ON A.User_id = C.User_id   
+            AND C.TipoUser_id = 1
+            ORDER BY A.User_id;
+
+            INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id
+            FROM ccRIACampEspWG campPerWg
             INNER JOIN @Wg wg ON wg.Id = campPerWg.IDWG
             INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
             INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
-                                    AND C.TipoUser_id = 1
-       WHERE campPerWg.Tipo = @CampType;
+            AND C.TipoUser_id = 1
+            WHERE campPerWg.Tipo = @CampType
+            AND (@Id=0 OR campPerWg.IdCampEsp=@Id);
+       
+            WITH lastState AS (
+            SELECT A.user_id, MAX(A.fecha) AS fecha
+            FROM ccLogAgentesDia A
+            INNER JOIN @tmpAgent B ON A.User_id = B.id
+            WHERE fecha >= @date
+            GROUP BY user_id)
 
-
-
-WITH lastState
-     AS (SELECT A.user_id, MAX(A.fecha) AS fecha
-         FROM ccLogAgentesDia A
-              INNER JOIN @tmpAgent B ON A.User_id = B.id
-         WHERE fecha >= @date
-         GROUP BY user_id)
-     INSERT INTO @CurrentStatus
-            SELECT B.User_id,
-                     CASE
-                         WHEN B.currentStatus <= 0 THEN 0 ELSE B.currentStatus
-                     END AS currentStatus, B.IdCampEsp, B.Tipo
+            INSERT INTO @CurrentStatus SELECT B.User_id,
+            CASE WHEN B.currentStatus <= 0 THEN 0 ELSE B.currentStatus END AS currentStatus, B.IdCampEsp, B.Tipo
             FROM lastState A
-                 INNER JOIN ccLogAgentesDia B ON A.User_id = B.User_id
-                                                 AND A.fecha = B.fecha;
+            INNER JOIN ccLogAgentesDia B ON A.User_id = B.User_id
+            AND A.fecha = B.fecha;
 
+            DECLARE @MultimediaType SMALLINT = (SELECT CASE WHEN @CampType = 1 THEN -1 ELSE meanContactTypeId END
+                                                FROM contactMeanIn WHERE inboundId = 3)
 
-	
-	insert into @AgentStatus
-	select A.camId,A.userId,B.CurrentState,
-	(case when B.CurrentState in( 4, 5, 6, 9) and B.IdCampEsp=A.camId and B.camType=1 then @CampType else null end)  as isCampDialog 
-	from @tmpCamAgent A
-	inner join @CurrentStatus B on A.userId=B.userId
-	where (@Id=0 or A.camId=@Id)
+            DECLARE @StateIds VARCHAR(100) =(SELECT CASE WHEN @MultimediaType = 5 THEN '6,34' ELSE '4,5,6,9' END)-- Add more for multimediaTypes
+
+            INSERT INTO @AgentStatus SELECT A.camId, A.userId, B.CurrentState,
+            (CASE WHEN B.CurrentState IN(SELECT value FROM dbo.fn_RIASplitDelimited(@StateIds,',')) AND B.IdCampEsp = A.camId AND B.camType = 1
+             THEN @CampType ELSE null END) AS isCampDialog 
+            FROM @tmpCamAgent A
+            INNER JOIN @CurrentStatus B ON A.userId = B.userId
+            WHERE (@Id = 0 or A.camId = @Id)
 
 IF @CampType = 1
     BEGIN
-	;with  campDataTotal as(
-		select camId,count(*) total from @tmpCamAgent A	group by camId
-	)
-	
-	insert into @campDataTotal
-	select 
-		A.camId,
-		B.cam_descripcion as campName 
-		,A.Total
-		,C.AreaName as Area
-		from campDataTotal A
-	   INNER JOIN ccCamps B ON A.camId= B.cam_id 
-	   INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
-	End
+    ;with  campDataTotal as(
+        select camId,count(*) total from @tmpCamAgent A group by camId
+    )
+    
+    insert into @campDataTotal
+    select 
+        A.camId,
+        B.cam_descripcion as campName 
+        ,A.Total
+        ,C.AreaName as Area
+        from campDataTotal A
+       INNER JOIN ccCamps B ON A.camId= B.cam_id 
+       INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
+    End
 else begin    
-	;with  campDataTotal as(
-		select camId,count(*) total from @tmpCamAgent A	group by camId
-	)
-	
-	insert into @campDataTotal
-	select 
-		A.camId,
-		B.descripcion as campName 
-		,A.Total
-		,C.AreaName as Area
-		from campDataTotal A
-	   	INNER JOIN ccInbound B ON A.camId = B.Inbound_id 
-		INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
-End	
+    ;with  campDataTotal as(
+        select camId,count(*) total from @tmpCamAgent A group by camId
+    )
+    
+    insert into @campDataTotal
+    select 
+        A.camId,
+        B.descripcion as campName 
+        ,A.Total
+        ,C.AreaName as Area
+        from campDataTotal A
+        INNER JOIN ccInbound B ON A.camId = B.Inbound_id 
+        INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
+End 
 
-	
-	;with   stateCamp as(
+    
+    ;with   stateCamp as(
 
-		SELECT A.CampId,
-		count(case when A.CurrentState =3 then 1 else null end) as ready,
-		count(case when  A.CurrentState NOT IN(3, 4, 5, 6, 9) then 1 else null end) as notReady,
-		COUNT(isCampDialog) AS dialog	
-		FROM @AgentStatus A
-		GROUP BY A.CampId
-	)
+        SELECT A.CampId,
+        count(case when A.CurrentState = 3 then 1 else null end) as ready,
+        count(case when A.CurrentState NOT IN(-2, -1, 0, 3, 4, 5, 6, 9, 34) then 1 else null end) as notReady,
+        COUNT(isCampDialog) AS dialog,
+        count(case when a.CurrentState <= 0 then 1 else null end) as disconnected 
+        FROM @AgentStatus A
+        GROUP BY A.CampId
+    )
 
+                --select * from ccTipoStatusAgente
 
-	select 
-	A.camId,
-	A.campName,A.Total
-	,isnull(B.ready,0) as Ready
-	,case when B.notReady is null then  A.Total else  A.Total-B.ready-B.dialog end as NotReady
-	
-	,isnull(B.dialog,0) as Dialog
-	,A.Area
-	
-	from @campDataTotal A
-	left join stateCamp B on A.camId=B.CampId
-	order by A.campName
-	
+    select 
+    A.camId,
+    A.campName,A.Total
+    ,isnull(B.ready,0) as Ready
+    ,case when B.notReady is null then  A.Total else  A.Total-B.ready-B.dialog end as NotReady
+    ,isnull(B.dialog,0) as Dialog
+    ,isnull(B.disconnected, 0) as Disconnected
+    ,A.Area
+    
+    from @campDataTotal A
+    left join stateCamp B on A.camId=B.CampId
+    order by A.campName
+    
 
 
                 RETURN 0;
@@ -394,7 +366,8 @@ End
                           AND Rol_id = 7
                 )
                     BEGIN
-                        WITH wgId
+                        print 'xxxx SIn Super'
+                        ;WITH wgId
                              AS (SELECT IDWG
                                  FROM ccRIAWorkGroupUsers
                                  WHERE user_id = @AdminId)
@@ -406,11 +379,19 @@ End
                 END;
                 ELSE
                     BEGIN
-                        SELECT DISTINCT 
-                               CAST(IdCampEsp AS INT) AS Id
-                        FROM ccRIACampEspWG A
-                             INNER JOIN ccCamps B ON A.IdCampEsp = B.cam_id
-                                                     AND A.Tipo = @CampType;
+                    print 'xxxx Super'
+                    IF @CampType = 1
+                        BEGIN
+                            SELECT DISTINCT 
+                                   CAST(cam_id AS INT) AS Id
+                            FROM ccCamps where IDArea IS NOT NULL
+                        END
+                    ELSE
+                        BEGIN 
+                            SELECT DISTINCT 
+                                   CAST(Inbound_id AS INT) AS Id
+                            FROM ccInbound where IDArea IS NOT NULL
+                        END
                 END;
                 RETURN 0;
         END;

@@ -13,8 +13,7 @@ if @to is null
 if @action = 1
 BEGIN		
 	---Before insert delete first table dbo.RepAVRSQuestionDetail 
-	DELETE FROM dbo.RepAVRSDetailChat with(rowlock)
-	where date >= @from AND date < @to
+	DELETE FROM dbo.RepAVRSDetailChat	where date >= @from AND date < @to
 
 	INSERT INTO dbo.RepAVRSDetailChat
 
@@ -29,7 +28,8 @@ BEGIN
 		r.etiquetas,
 		r.peso as avgDisposition,
 		i.Inbound_id AS inboundId,
-		i.descripcion AS inbound	
+		i.descripcion AS inbound,
+		c.chatId
 	from RIA_RESULTADOSFORMA_CHAT r
 	INNER JOIN dbo.RIA_FORMACALIF_CHAT f ON f.id_forma = r.id_forma
 	INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id

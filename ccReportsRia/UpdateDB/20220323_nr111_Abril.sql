@@ -24,15 +24,17 @@ BEGIN
         alter table RepAVRSDetailChat add chatId int default 0 not null
     end'
 	EXEC(@sql)
-	set @process = 'CW-5608 drop procedure ccspRepAVRSDetailChat'
-	set @sql = 'if exists (select * from sys.procedures where name = N''ccspRepAVRSDetailChat'')
-            begin
-          DROP PROCEDURE ccspRepAVRSDetailChat;
-            end'
-	EXEC(@sql)
-	set @process = 'CW-5608 create procedure ccspRepAVRSDetailChat'
+
+	set @process = 'CW-5611 add column to RepAvgAnswerTimeChats'
 	set @sql = '
-	CREATE PROCEDURE  [dbo].[ccspRepAVRSDetailChat]
+	 if not exists (select * from sys.columns where name = N''chatId'' and Object_ID = Object_ID(N''RepAvgAnswerTimeChats''))
+    begin
+        alter table RepAvgAnswerTimeChats add chatId int default 0 not null
+    end'
+	EXEC(@sql)
+	
+	set @process = 'CW-5608 create procedure ccspRepAVRSDetailChat'
+	set @sql = 'ALTER PROCEDURE  [dbo].[ccspRepAVRSDetailChat]
 @action as tinyint,
 @from as datetime = null,
 @to as datetime = null
@@ -47,13 +49,12 @@ if @to is null
 if @action = 1
 BEGIN		
 	---Before insert delete first table dbo.RepAVRSQuestionDetail 
-	DELETE FROM dbo.RepAVRSDetailChat with(rowlock)
-	where date >= @from AND date < @to
+	DELETE FROM dbo.RepAVRSDetailChat	where date >= @from AND date < @to
 
 	INSERT INTO dbo.RepAVRSDetailChat
 
 		select
-		DATEADD(dd, 0, f.fecha_calif) AS fecha,
+		DATEADD(dd, 0, DATEDIFF(dd, 0, f.fecha_calif)) AS fecha,
 		a.User_id,
 		a.Login,
 		(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agent, 
@@ -78,57 +79,49 @@ BEGIN
 	WHERE f.fecha_calif >= @from AND f.fecha_calif < @to
 				
 set nocount off
-END'
+END
+'
 	EXEC(@sql)
-	set @process = 'CW-5611 add column to RepAvgAnswerTimeChats'
-	set @sql = '
-	 if not exists (select * from sys.columns where name = N''chatId'' and Object_ID = Object_ID(N''RepAvgAnswerTimeChats''))
-    begin
-        alter table RepAvgAnswerTimeChats add chatId int default 0 not null
-    end'
-	EXEC(@sql)
-	set @process = 'CW-5611 drop procedure ccspRepAvgAnswerTimeChats'
-	set @sql = '
-	CREATE PROCEDURE [dbo].[ccspRepAvgAnswerTimeChats]
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
+	
+	set @process = 'CW-5611 ALTER procedure ccspRepAvgAnswerTimeChats'
+	set @sql = 'ALTER PROCEDURE [dbo].[ccspRepAvgAnswerTimeChats] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 AS
+IF @from IS NULL
+	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
 
-if @from is null
-	select @from = convert(datetime,convert(varchar(11),getdate()))
-if @to is null
-	select @to = getdate()
+IF @to IS NULL
+	SELECT @to = getdate()
 
-if @action = 1
-begin
-	delete RepAvgAnswerTimeChats where date >= @from and date < @to
+IF @action = 1
+BEGIN
+	DELETE RepAvgAnswerTimeChats
+	WHERE DATE >= @from
+		AND DATE < @to;
 
-	insert into RepAvgAnswerTimeChats
-	select 
-	CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121) as [date], userId, [Login], inboundId, [inbound],
-	[user], 
-	 convert(decimal(10,2),isnull( sum([answerTime])/count(*),0.00)) as [avgAnswerTime]		
-	, datepart(yyyy,date)
-	, datepart(mm,date)
-	, datepart(dd,date)
-	, datepart(hh,date)
-	, 0 as [minute]
-	, chatId
-	from(
-	select requestDate as [date], userId, [Login] as [login], 
-	inboundId, c.descripcion as [inbound], nombres + '' '' + apellidopaterno + '' '' + apellidomaterno as [user],
-	case when firstMessageTime is null then convert(int,isnull(firstMessageTime,0)) 
-	else datediff(ss,chatdate,firstMessageTime) end as [answerTime], a.chatId as [chatId]
-	from ccriachats a
-	left join ccUserView b on (a.userId = b.user_id)
-	left join ccinbound c on (a.inboundId = c.inbound_id)
-	where b.user_id is not null
-	and c.inbound_id is not null
-	and a.chatstatus = 4) as answerTime
-	group by CONVERT(smalldatetime,CONVERT(varchar(13),date,121)+ '':00'',121), userId, [Login], inboundId, [inbound], [user], [chatId]
-
-end'
+	WITH answerTime
+	AS (
+		SELECT CONVERT(SMALLDATETIME, CONVERT(VARCHAR(13), requestDate, 121) + '':00'', 121) AS [date], userId, [Login] AS [login], inboundId, c.descripcion AS [inbound], nombres + '' '' + apellidopaterno + '' '' + apellidomaterno AS 
+			[user], CASE 
+				WHEN firstMessageTime IS NULL
+					THEN convert(INT, isnull(firstMessageTime, 0))
+				ELSE datediff(ss, chatdate, firstMessageTime)
+				END AS [answerTime], a.chatId AS [chatId]
+		FROM ccriachats a
+		LEFT JOIN ccUserView b ON (a.userId = b.user_id)
+		LEFT JOIN ccinbound c ON (a.inboundId = c.inbound_id)
+		WHERE b.user_id IS NOT NULL
+			AND c.inbound_id IS NOT NULL
+			AND a.chatstatus = 4
+			AND requestDate BETWEEN @from
+				AND @to
+		)
+	INSERT INTO RepAvgAnswerTimeChats
+	SELECT [date] AS [date], userId, [Login], inboundId, [inbound], [user], convert(DECIMAL(10, 2), isnull(sum([answerTime]) / count(*), 0.00)) AS [avgAnswerTime], datepart(yyyy, [date]), datepart(mm, [date]), datepart(dd
+			, [date]), datepart(hh, [date]), 0 AS [minute], chatId
+	FROM answerTime
+	GROUP BY [date], userId, [Login], inboundId, [inbound], [user], [chatId]
+END
+'
 	EXEC(@sql)
 
 	IF @actualVersion = @version - 1

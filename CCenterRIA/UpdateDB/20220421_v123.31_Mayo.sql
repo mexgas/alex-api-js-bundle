@@ -337,13 +337,7 @@ BEGIN
     end'
     EXEC(@sql)
 
-    /* Superusuario  */
-    set @process = 'CW-Roles se eliminan el Gestion de salas'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10004)
-    begin
-		INSERT INTO ccRoles_Permissions Values(7,10004)
-    end'
-    EXEC(@sql)
+    
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

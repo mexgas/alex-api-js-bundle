@@ -1582,44 +1582,236 @@ End
         '
     EXEC(@sql)
 
-	set @process = 'CW-6328 Guardar nueva configuración del tiempo en base'
+	    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_UpdateACDWhatsappConfig'')
-    begin
-        DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
-    end'
+                begin
+              DROP PROCEDURE ccsp_UpdateACDWhatsappConfig;
+                end'
+    EXEC(@sql)
+    
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'CREATE PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
+      @ConexionInfo varchar(400),
+      @inbound_id int,
+      @ConnUser varchar(60),
+      @tNotas int,
+      @closeConversationTime tinyint,
+      @ShowCalifWnd bit,
+      @ExitWrapUpDisposition bit,
+      @MUTimeOutClient int
+
+      AS
+      set nocount on
+        IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+        BEGIN
+          UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime,
+                        ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 , answerTimeoutClient = @MUTimeOutClient           
+          where inboundId = @inbound_id;
+          UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+        END;
+
+        IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+        BEGIN
+          UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
+        END;
+      SELECT @inbound_id;
+      return(@inbound_id)
+
+      set nocount off
+        '
     EXEC(@sql)
 
-	set @process = 'CW-6328 Guardar nueva configuración del tiempo en base'
-    set @sql = 'CREATE procedure  [dbo].[ccsp_UpdateACDWhatsappConfig]
-
-	@ConexionInfo varchar(400),
-	@inbound_id int,
-	@ConnUser varchar(60),
-	@tNotas int,
-	@closeConversationTime tinyint,
-	@ShowCalifWnd bit,
-	@ExitWrapUpDisposition bit,
-	@MUTimeOutClient tinyint
-
-	AS
-	set nocount on
-		IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
-		BEGIN
-			UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime,
-										ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 , answerTimeoutClient = @MUTimeOutClient 					 
-			where inboundId = @inbound_id;
-			UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
-		END;
-
-		IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
-		BEGIN
-			UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
-		END;
-	SELECT @inbound_id;
-	return(@inbound_id)
-
-	set nocount off'
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetInboundConfiguration'')
+                begin
+              DROP PROCEDURE ccsp_GalateaGetInboundConfiguration;
+                end'
     EXEC(@sql)
+    
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetInboundConfiguration'')
+                begin
+              DROP PROCEDURE ccsp_GalateaGetInboundConfiguration;
+                end'
+    EXEC(@sql)
+    
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
+        @command int,
+        @inboundId int
+      AS
+      BEGIN
+
+      SET NOCOUNT ON;
+
+      if @command=0
+      begin
+        select descripcion from ccInbound where Inbound_id = @inboundId
+      end
+      if @command=1 -- Voice campaign
+      begin
+        select 
+        A.Inbound_id [InboundId],
+        A.descripcion [Description],
+        A.chat [MediaType],
+        A.Status,
+        isnull(gra.graphic_id,1) [Frame],
+        A.tNotas,
+        A.tMaxWaitCall,
+        A.nMaxQue,
+        A.tel_maxwait,
+        A.tel_maxqueue,
+        A.tel_outservice,
+        A.tel_noct,
+        A.ShowCalifWnd,
+        A.editableCallKey [EditableCallKey],
+        A.queuePosition [QueuePosition],
+        A.tMaxQueueCallBack,
+        A.stopRecording [StopRecording],
+        A.dialPrefixOverflow [DialPrefixOverflow],
+        isnull(A.callerIdDesc, '''') [CallerIdDesc],
+        isnull(A.startStopRecording,0) [StartStopRecording],
+        case when A.cam_id > 0  and C.callsBySurvey>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
+        case when A.cam_id > 0  and C.callsBySurvey>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
+        case when A.cam_id > 0  and C.callsBySurvey>0 then cast(1 as bit) else cast(0 as bit) end [IsRelationSurvey],
+        isnull(A.editableDtmf,0) [EditableDtmf],
+        isnull(A.addDataCallBackReminder,0) [AddDataCallBackReminder]
+        from ccInbound A
+        left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+        left join ccCamps C on C.cam_id=A.cam_id
+        where A.Inbound_id=@inboundId
+      end
+      if @command=2 -- WhatsApp campaign
+      begin
+        declare @numbers varchar(max)
+        select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
+
+        select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
+        ISNULL(c.conexionInfo,'''') [Number],
+        ISNULL(@numbers,'''') [FreeNumbersStr],
+        ISNULL(c.closeConversationTime, 0) [MaxAnswerTime],
+        ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
+        i.tNotas [tNotas],
+        i.ExitWrapUpDisposition,
+        i.ShowCalifWnd
+        from ccInbound i left join ccRIAInboundGraph g on i.Inbound_id = g.Inbound_id
+        left join contactMeanIn c on i.Inbound_id = c.inboundId and i.chat = 5 and c.meanContactTypeId = 5
+        where i.Inbound_id=@inboundId
+      end
+      if @command=3 -- Email campaign
+      begin
+        select 
+        A.Inbound_id [InboundId],
+        A.descripcion [Description],
+        A.chat [MediaType],
+        A.Status,
+        isnull(gra.graphic_id,1) [Frame],
+        A.tNotas,
+        A.ShowCalifWnd,
+        C.conexionInfo [ConnInfo],
+        C.connUser  [ConnUserName],
+        C.ConnPass [ConnPwd],
+        C.isActive [IsActive],
+        C.timeAlertMessage,
+        C.closeConversationTime [CloseConversationTime],
+        C.answerTimeOut [AnswerTimeOut],
+        C.name [SenderName]
+        from ccInbound A
+        left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+        left join contactMeanIn C on A.Inbound_id = C.inboundId and C.meanContactTypeId=1
+        where A.Inbound_id=@inboundId
+      end
+      RETURN(0)
+        
+      SET NOCOUNT OFF;    
+      END
+        '
+    EXEC(@sql)
+
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateWhatsAppConfiguration'')
+                begin
+              DROP PROCEDURE ccsp_GalateaUpdateWhatsAppConfiguration;
+                end'
+    EXEC(@sql)
+    
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
+        @inboundId        smallint,
+        @frame          smallint  = null,
+        @description      varchar(50) = null,
+        @mediaType        tinyint   = null,
+        @status         smallint  = null,
+        @number         varchar(400)= null,
+        @maxAnswerTime      tinyint   = null,
+        @muTimeOutClient    int     = null,
+        @tNotas         int     = null,
+        @exitWrapUpDisposition  bit     = null,
+        @showCalifWnd     bit     = null
+      AS
+      BEGIN
+        SET NOCOUNT ON;
+        DECLARE @graph_id smallint
+
+        UPDATE ccInbound SET
+          descripcion = ISNULL(@description, descripcion),
+          chat = ISNULL(@mediaType, chat),
+          Status = ISNULL(@status, Status),
+          tNotas = ISNULL(@tNotas, tNotas),
+          ExitWrapUpDisposition = ISNULL(@exitWrapUpDisposition, ExitWrapUpDisposition)
+        WHERE Inbound_id = @inboundId
+
+        DECLARE @descUpdate varchar(50)
+        DECLARE @statusCCInbound smallint
+        select @descUpdate = ISNULL(@description, descripcion), @statusCCInbound = status from ccInbound where Inbound_id =@inboundId
+
+        IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId=@inboundId) 
+          BEGIN
+              INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) 
+          values (5, @descUpdate, @inboundId, @statusCCInbound);
+          END
+
+        IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inboundId) 
+          BEGIN
+          UPDATE contactMeanIn set name=@descUpdate, conexionInfo=ISNULL(@number, conexionInfo), 
+          closeConversationTime = ISNULL(@maxAnswerTime, closeConversationTime),
+          answerTimeoutClient = ISNULL(@muTimeOutClient, 30)
+          where inboundId = @inboundId;
+          END
+
+        IF @frame IS NOT NULL
+        BEGIN
+          SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
+          UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
+        END
+
+        IF @showCalifWnd = 1
+          BEGIN
+          IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
+              BEGIN
+            UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
+                  WHERE inbound_id = @inboundId
+            SELECT 1 [Result]
+            RETURN(0)
+              END
+
+              SELECT -1 [Result]
+              RETURN(0)
+           END
+           ELSE
+         BEGIN
+          UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
+         END
+
+         SELECT 1 [Result]
+         RETURN(0)
+
+        SET NOCOUNT OFF;
+      END
+        '
+    EXEC(@sql)
+
+    
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

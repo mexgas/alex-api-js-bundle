@@ -1629,12 +1629,18 @@ End
     EXEC(@sql)
     
     set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetInboundConfiguration'')
+                begin
+              DROP PROCEDURE ccsp_GalateaGetInboundConfiguration;
+                end'
+    EXEC(@sql)
+    
+    set @process = 'cw-6837 timeOutCliente correcto- Se quita el SP si ya existe'
     set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
         @command int,
         @inboundId int
       AS
       BEGIN
-      declare @mediaType tinyint
 
       SET NOCOUNT ON;
 
@@ -1756,12 +1762,13 @@ End
         WHERE Inbound_id = @inboundId
 
         DECLARE @descUpdate varchar(50)
-        select @descUpdate = ISNULL(@description, descripcion) from ccInbound where Inbound_id =@inboundId
+        DECLARE @statusCCInbound smallint
+        select @descUpdate = ISNULL(@description, descripcion), @statusCCInbound = status from ccInbound where Inbound_id =@inboundId
 
         IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId=@inboundId) 
           BEGIN
               INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) 
-          values (5, @descUpdate, @inboundId, (select status from ccInbound where Inbound_id=@inboundId));
+          values (5, @descUpdate, @inboundId, @statusCCInbound);
           END
 
         IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inboundId) 

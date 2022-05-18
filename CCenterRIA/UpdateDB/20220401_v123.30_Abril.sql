@@ -2150,6 +2150,138 @@ End
 					SET IDENTITY_INSERT ccTipoMovsListaNegra OFF ; 
 					end'
 		EXEC(@sql)
+
+
+        ---------------------------------------------------BEGIN WHATS ------------------------------------------------
+
+        set @process = 'CW-6866 Setting Location MultimediaCommons Service'
+        set @sql='if not exists(select * from ccSettings where setting_id=234) begin
+insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
+values(234,''127.0.0.1'',''Ubicacion del Multimedia Commons'',1,''GRL''
+,''IP del servidor donde se encuentra el MultimediaCommons Service, se actualiza automaticamente cuando se abre el multimedia commons''
+,''MultimediaCommons Service location (automatically updated when the multimediaCommon service starts)''
+,1,''^(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}(25[0-5]|[01]?\d\d?|2[0-4]\d)$''
+)
+end'
+        EXEC(@sql)
+
+
+        set @process = 'CW-6866 Create table ccWhatsAppUnsetMessagesMCSbyWebApi'
+        set @sql='if not exists(select * from sys.tables where name=''ccWhatsAppUnsetMessagesMCSbyWebApi'') begin
+    create table ccWhatsAppUnsetMessagesMCSbyWebApi(Id  bigint primary key identity, Content varchar(max))
+end'
+        EXEC(@sql)
+
+        set @process = 'CW-6866 Create Table ccWhatsAppUnsetStatusMessages'
+        set @sql='if not exists(select * from sys.tables where name=''ccWhatsAppUnsetStatusMessages'') begin
+    create table ccWhatsAppUnsetStatusMessages(
+    Message_uuid varchar(150) primary key,
+    ClientNumber varchar(32) not null,
+    VonageNumber varchar(32) not null,
+    Timestamp datetime not null,
+    MessageType varchar(50) not null,
+    Status varchar(100) not null,
+    Currency varchar(50) not null default(''EUR''),
+    Price varchar(20) not null default(''0.0000''),
+    Client_ref int not null,
+    Content varchar(max) not null)
+end'
+        EXEC(@sql)
+
+
+        set @process = 'CW-6866 DROP PROCEDURE ccsp_WhatsAppUnsentMessages;'
+        set @sql='if exists (select * from sys.procedures where name = N''ccsp_WhatsAppUnsentMessages'')
+    begin
+        DROP PROCEDURE ccsp_WhatsAppUnsentMessages;
+    end'
+        EXEC(@sql)
+
+        set @process = 'CW-6866 K002126-Estados de mensajes del Agente durante pérdida de conexión entre MultimediaCommon y WhatsApp WebApi'
+        set @sql='CREATE PROCEDURE [dbo].[ccsp_WhatsAppUnsentMessages]
+@Option TINYINT = 0, 
+@Message_uuid VARCHAR(150) = '''',
+@ClientNumber VARCHAR(25) = '''', 
+@VonageNumber VARCHAR(25) = '''', 
+@Timestamp DATETIME = NULL,
+@MessageType VARCHAR(50) = '''', 
+@Content VARCHAR(MAX) = '''',
+@MessagesList VARCHAR(max) = NULL,
+@Status varchar(100)='''',
+@Currency varchar(50)=''EUR'',
+@Price varchar(14)=''0.0000'',
+@Client_ref int=0
+AS
+SET NOCOUNT ON
+
+IF @Option IS NOT NULL
+BEGIN 
+    IF  @Option = 0  -- Save Unsent Message
+    BEGIN
+        IF @Message_uuid IS NOT NULL AND NOT EXISTS (SELECT * FROM ccWhatsAppUnsentMessages WHERE Message_uuid = @Message_uuid)
+        BEGIN
+            INSERT INTO ccWhatsAppUnsentMessages(Message_uuid, ClientNumber, VonageNumber, Timestamp, MessageType, Content)
+            VALUES(@Message_uuid, @ClientNumber, @VonageNumber, @Timestamp, @MessageType, @Content)
+            SELECT 1
+        END
+        ELSE BEGIN SELECT 0 END
+    END
+    else IF  @Option = 1  -- Get Unsent Messages
+    BEGIN
+        SELECT TOP 100 *FROM ccWhatsAppUnsentMessages
+    END
+    else  IF  @Option = 2  -- Delete Unsent Message
+    BEGIN
+        DELETE UnsentMessages FROM ccWhatsAppUnsentMessages UnsentMessages
+        INNER JOIN  dbo.fn_RIASplitDelimited(@MessagesList, ''|'') MessagesList
+        ON UnsentMessages.Message_uuid = MessagesList.Value
+    END
+    else IF  @Option = 3  -- 
+    BEGIN
+        if @Content is not null or @Content<>'''' begin
+            INSERT INTO ccWhatsAppUnsetMessagesMCSbyWebApi(Content)         VALUES(@Content)
+        end
+    END
+    else IF  @Option = 4  -- 
+    BEGIN
+        select TOP 100 * from ccWhatsAppUnsetMessagesMCSbyWebApi
+    END
+
+    else IF  @Option = 5  -- 
+    BEGIN
+        DELETE UnsentMessages FROM ccWhatsAppUnsetMessagesMCSbyWebApi UnsentMessages
+        INNER JOIN  dbo.fn_RIASplitDelimited(@MessagesList, ''|'') MessagesList
+        ON UnsentMessages.Id = MessagesList.Value
+    END
+    else IF  @Option = 6  -- Save Unsent Message Status
+    BEGIN       
+        if NOT EXISTS (SELECT * FROM ccWhatsAppUnsetStatusMessages WHERE Message_uuid = @Message_uuid and Client_ref=@Client_ref) begin
+            INSERT INTO ccWhatsAppUnsetStatusMessages(Message_uuid, ClientNumber, VonageNumber, Timestamp, MessageType,
+            Status,Currency, Price, Client_ref, Content)
+            VALUES(@Message_uuid, @ClientNumber, @VonageNumber, @Timestamp, @MessageType,@Status,@Currency,@Price, @Client_ref ,@Content)           
+        end
+        else begin
+            update ccWhatsAppUnsetStatusMessages
+            set Status=@Status,Currency=@Currency,Price=@Price,Timestamp=@Timestamp,Content=@Content
+            where Message_uuid=@Message_uuid and Client_ref=@Client_ref
+        end
+    END
+    else IF  @Option = 7  -- Save Unsent Message Status
+    BEGIN       
+        SELECT top 100 * FROM ccWhatsAppUnsetStatusMessages 
+    END
+    else IF  @Option = 8  -- 
+    BEGIN
+        DELETE UnsentMessages FROM ccWhatsAppUnsetStatusMessages UnsentMessages
+        INNER JOIN  dbo.fn_RIASplitDelimited(@MessagesList, ''|'') MessagesList
+        ON UnsentMessages.Message_uuid = MessagesList.Value
+    END
+END
+
+SET NOCOUNT OFF
+'
+        EXEC(@sql)
+
+        ---------------------------------------------------END WHATS ------------------------------------------------
     
 
 		/* End script release */

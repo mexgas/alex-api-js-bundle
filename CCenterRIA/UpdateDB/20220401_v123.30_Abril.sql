@@ -2203,7 +2203,7 @@ end'
                             Message_uuid VARCHAR(150) NOT NULL,
                             ClientNumber VARCHAR(25) NOT NULL, 
                             VonageNumber VARCHAR(25) NOT NULL, 
-                            Timestamp DATE NOT NULL,
+                            Timestamp DATETIME NOT NULL,
                             MessageType VARCHAR(50) NOT NULL, 
                             Content VARCHAR(MAX) NOT NULL
                             PRIMARY KEY (Message_uuid)

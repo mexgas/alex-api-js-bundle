@@ -2188,6 +2188,29 @@ end'
 end'
         EXEC(@sql)
 
+        set @process = 'CW-6840 Drop table ccWhatsAppUnsentMessages'
+        set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccWhatsAppUnsentMessages'')
+                    BEGIN 
+                        DROP TABLE ccWhatsAppUnsentMessages
+                    END'
+        EXEC(@sql)
+
+        set @process = 'CW-6840 Create table ccWhatsAppUnsentMessages'
+        set @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE NAME = N''ccWhatsAppUnsentMessages'')
+                    BEGIN
+                        CREATE TABLE ccWhatsAppUnsentMessages 
+                        (
+                            Message_uuid VARCHAR(150) NOT NULL,
+                            ClientNumber VARCHAR(25) NOT NULL, 
+                            VonageNumber VARCHAR(25) NOT NULL, 
+                            Timestamp DATE NOT NULL,
+                            MessageType VARCHAR(50) NOT NULL, 
+                            Content VARCHAR(MAX) NOT NULL
+                            PRIMARY KEY (Message_uuid)
+                        );
+                    END'
+        EXEC(@sql)
+
 
         set @process = 'CW-6866 DROP PROCEDURE ccsp_WhatsAppUnsentMessages;'
         set @sql='if exists (select * from sys.procedures where name = N''ccsp_WhatsAppUnsentMessages'')

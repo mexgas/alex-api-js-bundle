@@ -2154,9 +2154,6 @@ End
 
         ---------------------------------------------------BEGIN WHATS ------------------------------------------------
 
-
-        
-
         set @process = 'CW-6866 Setting Location MultimediaCommons Service'
         set @sql='if not exists(select * from ccSettings where setting_id=234) begin
 insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) 
@@ -2195,7 +2192,7 @@ end'
         set @process = 'CW-6866 DROP PROCEDURE ccsp_WhatsAppUnsentMessages;'
         set @sql='if exists (select * from sys.procedures where name = N''ccsp_WhatsAppUnsentMessages'')
     begin
-        DROP PROCEDURE ccsp_AgentDccsp_WhatsAppUnsentMessagesataACD;
+        DROP PROCEDURE ccsp_WhatsAppUnsentMessages;
     end'
         EXEC(@sql)
 

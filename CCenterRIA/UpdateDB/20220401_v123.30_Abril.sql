@@ -2250,7 +2250,7 @@ BEGIN
     END
     else IF  @Option = 1  -- Get Unsent Messages
     BEGIN
-        SELECT TOP 100 *FROM ccWhatsAppUnsentMessages
+        SELECT TOP 100 *FROM ccWhatsAppUnsentMessages order by ClientNumber,Timestamp
     END
     else  IF  @Option = 2  -- Delete Unsent Message
     BEGIN
@@ -2290,7 +2290,7 @@ BEGIN
     END
     else IF  @Option = 7  -- Save Unsent Message Status
     BEGIN       
-        SELECT top 100 * FROM ccWhatsAppUnsetStatusMessages 
+        SELECT top 100 * FROM ccWhatsAppUnsetStatusMessages order by ClientNumber,Timestamp
     END
     else IF  @Option = 8  -- 
     BEGIN

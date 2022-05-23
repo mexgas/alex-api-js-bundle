@@ -474,7 +474,7 @@ order by A.campName
     END;
 END;'
     EXEC(@sql)
-    set @process = 'CW-PREVIEW se aumenta un bit a TipoDialingMode '
+    set @process = 'CW-PREVIEW se aumenta un bit a TipoDialingMode ccsp_DLRSaveDialResult'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
                     @callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
                     @tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
@@ -576,7 +576,7 @@ END;'
         SELECT @logDial_id as LogDialId'
     EXEC(@sql)
 
-    set @process = 'CW-PREVIEW se modifica funcion para tipo de marcacion preview '
+    set @process = 'CW-PREVIEW se modifica funcion fn_getDialingMode para tipo de marcacion preview '
     set @sql = '
     ALTER function [dbo].[fn_getDialingMode](@call_id int, @TipoDialingMode tinyint, @logDial_id int, @cam_id int)
 returns nvarchar(9)
@@ -624,7 +624,66 @@ begin
  return @valor
 end'
     EXEC(@sql)
- 
+
+    set @process = 'CW-PREVIEW modifica columna TipoDialingMode'
+    set @sql = '
+        ALTER TABLE [dbo].[ccoLogDials] ALTER COLUMN [TipoDialingMode] [varchar](9) NULL;'
+    EXEC(@sql)
+
+    set @process = 'CW-PREVIEW se agrega login en [ccsp_AgentTransfLstArea]'
+    set @sql = '
+    ALTER PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+@userID INT,
+@current INTEGER = 0
+AS
+set nocount on
+
+BEGIN
+declare @value int
+
+set @value = 0
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings (nolock) where setting_id = 191
+
+    IF @value = 0
+        begin
+            select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+            (
+                select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+            )
+            x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+            Order by name asc
+        end
+
+    if @value = 1
+        begin
+            if (@current <> 0)
+                begin
+                    select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+                    (
+                        select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                        join ccmonitorext ce (nolock) on cp.ext_id = ce.ext_id where user_id > 0
+                    )
+                    x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+                    and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci (nolock) on cu.IDArea = ci.IDArea where inbound_id =  @current)
+                    Order by name asc
+                end
+            else
+                begin
+                    select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+                    (
+                        select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                        join ccmonitorext ce (nolock) on cp.ext_id = ce.ext_id where user_id > 0
+                    )
+                    x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+                    and IDArea in (select IDArea from ccUsers (nolock) where User_id = @userID)
+                    Order by name asc
+                end
+        end
+END
+       
+       '
+    EXEC(@sql)
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

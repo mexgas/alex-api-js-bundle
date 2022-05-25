@@ -1018,7 +1018,7 @@ if @option = 2 -- Delete Agent-Supervisor from WorkGroup
                 update ccusers set 
                 AllowChangeDialingMode=(case when assigned is null then 0 else 1 end),
                 DialingMode=(case when assigned is null then 0 else 1 end) from ccusers us (nolock) left join (
-                select count(*) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
+                select count(1) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
                 where progDial=3 and user_id = @user group by user_id)c on us.User_id=c.user_id
                 where us.user_id = @user
                 --select @Type
@@ -1644,7 +1644,7 @@ set nocount off
             set @sql = ''update ccusers set 
                 AllowChangeDialingMode=(case when assigned is null then 0 else 1 end),
                 DialingMode=(case when assigned is null then 0 else 1 end) from ccusers us (nolock) left join (
-                select count(*) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
+                select count(1) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
                 where progDial=3 and user_id in ('' + isnull(@multipleUsers, ''0'') +'') group by user_id)c on us.User_id=c.user_id
                 where us.user_id in ('' + isnull(@multipleUsers, ''0'') +'')''
             exec(@sql)

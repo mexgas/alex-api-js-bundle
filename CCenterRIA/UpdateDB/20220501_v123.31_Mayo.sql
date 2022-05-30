@@ -48,6 +48,22 @@ BEGIN
 
 	BEGIN TRY
 
+	set @process = 'CW-PREVIEW se agrega campo para permiso descarte en campañas preview'
+    set @sql = 'IF not exists(SELECT top 1 1
+		FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE COLUMN_NAME = ''previewDiscard'' AND TABLE_NAME = ''cccamps'')
+		BEGIN
+			alter table cccamps add previewDiscard bit null
+		END'
+	EXEC(@sql)
+
+	set @process = 'CW-PREVIEW se agrega la operacion del permiso de descarte de campañas preview'
+    set @sql = 'IF not exists(SELECT top 1 1 FROM ccRIALog_Operation WHERE operationType=191)
+		BEGIN
+			insert ccRIALog_Operation values (191,''PERMISO PARA DESCARTAR|PERMISSION TO DISCARD'')
+		END'
+	EXEC(@sql)
+
     set @process = 'CW-PREVIEW se agrega type para campaigns preview'
     set @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 

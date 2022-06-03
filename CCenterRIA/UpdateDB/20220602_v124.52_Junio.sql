@@ -49,11 +49,17 @@ BEGIN
 	BEGIN TRY
 	-------------------------  Start CCC --------------------------------------------------
 	 set @process = 'Se añade columna para permitir archivos adjuntos'
-     set @sql = 'ALTER TABLE dbo.contactMeanIn ADD allowFileAttachments bit;'
+     set @sql = 'if not exists (select * from sys.columns where name = N''allowFileAttachments'' and Object_ID = Object_ID(N''yourTableName''))
+				begin
+					ALTER TABLE dbo.contactMeanIn ADD allowFileAttachments bit;
+				end'
 	 EXEC(@sql)
 
 	 set @process = 'Se añade opción de archivos adjuntos para historial'
-     set @sql = 'insert into  ccRIALog_Operation values (193,''Adjuntar archivos|Attach files'')'
+     set @sql = 'if not exists (select * from ccRIALog_Operation where operationType = 193)
+				begin
+					insert into  ccRIALog_Operation values (193,''Adjuntar archivos|Attach files'')
+				end'
 	 EXEC(@sql)
 
 

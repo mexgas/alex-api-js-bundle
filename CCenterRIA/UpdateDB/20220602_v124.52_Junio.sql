@@ -662,29 +662,34 @@ END
 
                         IF(@Option = 2)
                             BEGIN
-                                
-                                DECLARE @OldAgentId INT = (SELECT conv.agentId FROM ccWhatsAppConversationsRelationship rel 
-                                                           RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
-                                                           WHERE rel.conversationIdAfter = @conversationId)
+                                DECLARE @OldAgentId INT = 0
+                                DECLARE @OldConversationId INT = 0
+
+                                SELECT  @OldAgentId = conv.agentId,
+                                        @OldConversationId = rel.conversationIdBefore
+                                FROM ccWhatsAppConversationsRelationship rel 
+                                RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+                                WHERE rel.conversationIdAfter = @conversationId
 
                                 SELECT
-                                    cast(i.chat as int) AS ServiceType,
-                                    cast(c.conversationId as int) as ConversationID,
-                                    c.clientId as ClientId,
-                                    cm.conexionInfo as [To],
-                                    cast(i.Inbound_id as int) as ACDId,
-                                    i.descripcion as ACDName,
-                                    cast(g.graphic_id as int) as ACDGraphicId,
-                                    cast(cm.closeConversationTime as int) as [TimeOut],
-                                    cast(cm.answerTimeOut as int) as [TimeOutWarning],
-                                    i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-                                    i.tNotas as [WrapUpTime],
-                                    i.ShowCalifWnd,
-                                    cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                                    ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                                    permission.AllowUnassign,
-                                    permission.AllowSpam,
-                                    @OldAgentId AS OldAgentId
+                                      cast(i.chat as int) AS ServiceType,
+                                      cast(c.conversationId as int) as ConversationID,
+                                      c.clientId as ClientId,
+                                      cm.conexionInfo as [To],
+                                      cast(i.Inbound_id as int) as ACDId,
+                                      i.descripcion as ACDName,
+                                      cast(g.graphic_id as int) as ACDGraphicId,
+                                      cast(cm.closeConversationTime as int) as [TimeOut],
+                                      cast(cm.answerTimeOut as int) as [TimeOutWarning],
+                                      i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+                                      i.tNotas as [WrapUpTime],
+                                      i.ShowCalifWnd,
+                                      cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+                                      ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+                                      permission.AllowUnassign,
+                                      permission.AllowSpam,
+                                      ISNULL(@OldAgentId, 0) AS OldAgentId,
+                                      ISNULL(@OldConversationId, 0) AS OldConversationId
                                 FROM  ccInbound i
                                     INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
                                     INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)

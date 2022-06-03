@@ -48,7 +48,7 @@ BEGIN
 
 	BEGIN TRY
 
-	    set @process = 'Version Bd 123.32 update ccsp_AgentHistoricalChat'
+	    set @process = 'CW-6688 Version Bd 123.32 update ccsp_AgentHistoricalChat'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat]
         @option SMALLINT,
         @clientNum VARCHAR(15) = '''',
@@ -142,7 +142,7 @@ BEGIN
         END'
 		EXEC(@sql)
 
-        set @process = 'Version Bd 123.32 update ccsp_MultimediaCommon'
+        set @process = 'CW-6688 Version Bd 123.32 update ccsp_MultimediaCommon'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
         @Option AS SMALLINT,
         @inboundId AS SMALLINT = 0,

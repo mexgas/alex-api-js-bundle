@@ -2843,8 +2843,7 @@ order by A.campName
     END;
 END;'
         EXEC(@sql)
-    
-
+        
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

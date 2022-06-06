@@ -49,14 +49,14 @@ BEGIN
 	BEGIN TRY
 
 	-------------------------  Start CCC --------------------------------------------------
-	 set @process = 'Se añade columna para permitir archivos adjuntos'
+	 set @process = 'Se aÃ±ade columna para permitir archivos adjuntos'
      set @sql = 'if not exists (select * from sys.columns where name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactMeanIn''))
 				begin
 					ALTER TABLE dbo.contactMeanIn ADD allowFileAttachments bit;
 				end'
 	 EXEC(@sql)
 
-	 set @process = 'Se añade opción de archivos adjuntos para historial'
+	 set @process = 'Se aÃ±ade opciÃ³n de archivos adjuntos para historial'
      set @sql = 'if not exists (select * from ccRIALog_Operation where operationType = 193)
 				begin
 					insert into  ccRIALog_Operation values (193,''Adjuntar archivos|Attach files'')
@@ -295,9 +295,9 @@ BEGIN
 		set @sql = 'IF not EXISTS (SELECT * FROM ccRIAUsersPermissions WHERE PermissionName = N''AllowSpam'')
 					BEGIN
 						INSERT INTO ccRIAUsersPermissions (PermissionId, PermissionName, PermissionTag)
-						VALUES (12, ''AllowSpam'',  ''Marcar conversación como spam|Mark conversation as spam|Marcar conversa como spam'')
+						VALUES (12, ''AllowSpam'',  ''Marcar conversaciÃ³n como spam|Mark conversation as spam|Marcar conversa como spam'')
 						INSERT INTO ccRIAUsersPermissions (PermissionId, PermissionName, PermissionTag)
-						VALUES (13, ''AllowUnassign'', ''Desasignar conversación|Unassign conversation|Cancelar atribuição da conversa'')
+						VALUES (13, ''AllowUnassign'', ''Desasignar conversaciÃ³n|Unassign conversation|Cancelar atribuiÃ§Ã£o da conversa'')
 					END'
 		EXEC(@sql)
 
@@ -358,7 +358,7 @@ BEGIN
 					@Login varchar(40),
 					@Nombres varchar(45),
 					@LastName varchar(45),
-					@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+					@NombreOpcionalExtra varchar(45),-- para espaÃ±ol es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
 					@Password varchar(200),
 					@Sexo bit,
 					@canChangeStatus bit,
@@ -371,10 +371,10 @@ BEGIN
 
 					--Obtiene el idioma de de Centerware
 					Declare @lenguageXion varchar
-					select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+					select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espaÃ±ol, 1 para ingles, 2 para portugues
 
 					--se acondiciona los apellidos con el nombre opcional dependiendo del idioma
-					  if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para español y portugues
+					  if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para espaÃ±ol y portugues
 					    begin
 					      set @ApellidoPaterno = @LastName
 					      set @ApellidoMaterno = @NombreOpcionalExtra

@@ -50,7 +50,7 @@ BEGIN
 
 	-------------------------  Start CCC --------------------------------------------------
 	 set @process = 'Se añade columna para permitir archivos adjuntos'
-     set @sql = 'if not exists (select * from sys.columns where name = N''allowFileAttachments'' and Object_ID = Object_ID(N''yourTableName''))
+     set @sql = 'if not exists (select * from sys.columns where name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactMeanIn''))
 				begin
 					ALTER TABLE dbo.contactMeanIn ADD allowFileAttachments bit;
 				end'
@@ -292,7 +292,7 @@ BEGIN
 		EXEC(@sql)
 
 		set @process = 'CW-6322 Agregar etiquetas a ccRIAUsersPermissions'
-		set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIAUsersPermissions'')
+		set @sql = 'IF not EXISTS (SELECT * FROM ccRIAUsersPermissions WHERE PermissionName = N''AllowSpam'')
 					BEGIN
 						INSERT INTO ccRIAUsersPermissions (PermissionId, PermissionName, PermissionTag)
 						VALUES (12, ''AllowSpam'',  ''Marcar conversación como spam|Mark conversation as spam|Marcar conversa como spam'')
@@ -321,7 +321,7 @@ BEGIN
 		EXEC(@sql)
 
 		set @process = 'CW-6322 Agregar etiquetas a ccRIAUserPermissionsStatusTags'
-		set @sql = 'if exists (select * from sys.tables where name = N''ccRIAUserPermissionsStatusTags'')
+		set @sql = 'if not exists (select * from ccRIAUserPermissionsStatusTags where AllAgentsTag = N''Todos los agentes'')
 				    begin
 				    	INSERT INTO ccRIAUserPermissionsStatusTags (Language, AllAgentsTag) VALUES
 						(0, ''Todos los agentes'')

@@ -1100,7 +1100,7 @@ BEGIN
                         when typeMessage = ''video'' then ''mp4''
                         when typeMessage = ''image'' then ''jpg''
                         when typeMessage = ''audio'' then ''mp3''
-                        when typeMessage = ''file'' then (select substring(content, CHARINDEX('.',content)+1, len(content)))
+                        when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
                         else '' end
                     end as [Url],
                     case when typeMessage = ''location''

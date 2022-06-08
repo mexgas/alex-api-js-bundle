@@ -779,150 +779,714 @@ BEGIN
 
 		-- Ivan (CW-6919) Obtener permiso de agente para mandar a Agent UI en nueva conversacion
 
-        set @process = 'CW-6919 Drop procedure ccsp_MultimediaCommon'
-        set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_MultimediaCommon'')
-                    BEGIN 
-                        DROP PROCEDURE ccsp_MultimediaCommon
-                    END'
-        EXEC(@sql)
+        set @process = 'CW-6919,CW-6688 Alter procedure ccsp_MultimediaCommon'
+set @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
+@Option AS SMALLINT,
+@inboundId AS SMALLINT = 0,
+@conversationId AS INT = 0,
+@ServiceType AS SMALLINT = 0,
+@status as SMALLINT =0,
+@messagesList as varchar(max) = '''',
+@agentId AS SMALLINT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-        set @process = 'CW-6919 Create procedure ccsp_MultimediaCommon'
-        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
-                    @Option AS SMALLINT,
-                    @inboundId AS SMALLINT = 0,
-                    @conversationId AS INT = 0,
-                    @ServiceType AS SMALLINT = 0,
-                    @status as SMALLINT =0,
-                    @messagesList as varchar(max) = ''''
-                    AS
-                    BEGIN
-                        SET NOCOUNT ON;
+    IF(@Option = 1)
+        BEGIN
 
-                        IF(@Option = 1)
-                            BEGIN
+             SELECT --inbound.chat AS ServiceType,
+               CAST(inbound.Inbound_id AS INT) AS ACDId,
+               inbound.descripcion AS ACDName,
+               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+               inbound.tNotas AS WrapUpTime
 
-                                 SELECT --inbound.chat AS ServiceType,
-                                   CAST(inbound.Inbound_id AS INT) AS ACDId,
-                                   inbound.descripcion AS ACDName,
-                                   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
-                                   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                                   inbound.tNotas AS WrapUpTime
+               FROM  ccInbound inbound
+               INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
+        END
 
-                                   FROM  ccInbound inbound
-                                   INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
-                            END
+    IF(@Option = 2)
+        BEGIN
+            DECLARE @OldAgentId INT = 0
+            DECLARE @OldConversationId INT = 0
 
-                        IF(@Option = 2)
-                            BEGIN
-                                DECLARE @OldAgentId INT = 0
-                                DECLARE @OldConversationId INT = 0
+            SELECT  @OldAgentId = conv.agentId,
+                    @OldConversationId = rel.conversationIdBefore
+            FROM ccWhatsAppConversationsRelationship rel 
+            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+            WHERE rel.conversationIdAfter = @conversationId
 
-                                SELECT  @OldAgentId = conv.agentId,
-                                        @OldConversationId = rel.conversationIdBefore
-                                FROM ccWhatsAppConversationsRelationship rel 
-                                RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
-                                WHERE rel.conversationIdAfter = @conversationId
+            SELECT
+                  cast(i.chat as int) AS ServiceType,
+                  cast(c.conversationId as int) as ConversationID,
+                  c.clientId as ClientId,
+                  cm.conexionInfo as [To],
+                  cast(i.Inbound_id as int) as ACDId,
+                  i.descripcion as ACDName,
+                  cast(g.graphic_id as int) as ACDGraphicId,
+                  cast(cm.closeConversationTime as int) as [TimeOut],
+                  cast(cm.answerTimeOut as int) as [TimeOutWarning],
+                  i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+                  i.tNotas as [WrapUpTime],
+                  i.ShowCalifWnd,
+                  cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+                  ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+                  permission.AllowUnassign,
+                  permission.AllowSpam,
+                  ISNULL(@OldAgentId, 0) AS OldAgentId,
+                  ISNULL(@OldConversationId, 0) AS OldConversationId
+            FROM  ccInbound i
+                INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
+                INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+                INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+                LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+                LEFT JOIN ccRIAMultimediaUsersPermissions permission ON permission.AgentId = c.agentId
 
-                                SELECT
-                                      cast(i.chat as int) AS ServiceType,
-                                      cast(c.conversationId as int) as ConversationID,
-                                      c.clientId as ClientId,
-                                      cm.conexionInfo as [To],
-                                      cast(i.Inbound_id as int) as ACDId,
-                                      i.descripcion as ACDName,
-                                      cast(g.graphic_id as int) as ACDGraphicId,
-                                      cast(cm.closeConversationTime as int) as [TimeOut],
-                                      cast(cm.answerTimeOut as int) as [TimeOutWarning],
-                                      i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-                                      i.tNotas as [WrapUpTime],
-                                      i.ShowCalifWnd,
-                                      cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                                      ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                                      permission.AllowUnassign,
-                                      permission.AllowSpam,
-                                      ISNULL(@OldAgentId, 0) AS OldAgentId,
-                                      ISNULL(@OldConversationId, 0) AS OldConversationId
-                                FROM  ccInbound i
-                                    INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
-                                    INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
-                                    INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-                                    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-                                    LEFT JOIN ccRIAMultimediaUsersPermissions permission ON permission.AgentId = c.agentId
+            WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
+        END
+    IF(@Option = 3)
+        BEGIN
+             SELECT
+               CAST(inbound.Inbound_id AS INT) AS ACDId,
+               inbound.descripcion AS ACDName,
+               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+               inbound.tNotas AS WrapUpTime
 
-                                WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
-                            END
-                        IF(@Option = 3)
-                            BEGIN
-                                 SELECT
-                                   CAST(inbound.Inbound_id AS INT) AS ACDId,
-                                   inbound.descripcion AS ACDName,
-                                   ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
-                                   CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                                   inbound.tNotas AS WrapUpTime
+               FROM  ccInbound inbound
+               INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+        END
+    IF(@Option = 4)
+    Begin
 
-                                   FROM  ccInbound inbound
-                                   INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-                            END
-                        IF(@Option = 4)
-                        Begin
+        declare @pathFile as varchar(max)
+        declare @filetype as varchar(5)
+        DECLARE @mensajes TABLE(idMessage VARCHAR(100));
 
-                            declare @pathFile as varchar(max)
-                            declare @filetype as varchar(5)
-                            DECLARE @mensajes TABLE(idMessage VARCHAR(100));
-
-                            insert into @mensajes
-                            select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+        insert into @mensajes
+        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
 
 
-                            select @pathFile = valor from ccSettings where setting_id=230
-                            select
-                                messageId as MessageId,
-                                messageStatus as Status,
-                                originType as Origin,
-                                case when originType =''Client'' then 3
-                                     when originType =''Agent'' then 2
-                                     when originType =''Admin'' then 1
-                                else 0 end as OriginType,
-                                timeStampMessage as [Timestamp],
-                                case when typeMessage <> ''text''  then '''' else content end as Content,
-                                typeMessage as Type,
-                                case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
-                                case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +''.''+
-                                case
-                                    when typeMessage = ''video'' then ''mp4''
-                                    when typeMessage = ''image'' then ''jpg''
-                                    when typeMessage = ''audio'' then ''mp3''
-                                    when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
-                                    else '''' end
-                                end as [Url],
-                                case when typeMessage = ''location''
-                                then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-                                case when typeMessage = ''location''
-                                then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-                                case when typeMessage = ''location''
-                                then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-                                case when typeMessage = ''location''
-                                then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-                                case when typeMessage = ''location''
-                                then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
-                                    (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
-                             from ccWAMessagesConversations where messageId in (select idMessage from @mensajes)
-                             order by Timestamp asc
+        select @pathFile = valor from ccSettings where setting_id=230
+        select
+            messageId as MessageId,
+            messageStatus as Status,
+            originType as Origin,
+            case when originType =''Client'' then 3
+                 when originType =''Agent'' then 2
+                 when originType =''Admin'' then 1
+            else 0 end as OriginType,
+            timeStampMessage as [Timestamp],
+            case when typeMessage <> ''text''  then '''' else content end as Content,
+            typeMessage as Type,
+            case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
+            case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +''.''+
+            case
+                when typeMessage = ''video'' then ''mp4''
+                when typeMessage = ''image'' then ''jpg''
+                when typeMessage = ''audio'' then ''mp3''
+                when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
+                else '''' end
+            end as [Url],
+            case when typeMessage = ''location''
+            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+            case when typeMessage = ''location''
+            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+            case when typeMessage = ''location''
+            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+            case when typeMessage = ''location''
+            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+            case when typeMessage = ''location''
+            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+         from ccWAMessagesConversations where messageId in (select idMessage from @mensajes)
+         order by Timestamp asc
 
-                        End
-                        
-                        IF(@Option = 5)
-                        BEGIN
-                            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-                             FROM contactMeanIn
-                            WHERE inboundId = @inboundId
-                        END
-                    END'
+    End
+    
+    IF(@Option = 5)
+    BEGIN
+        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+         FROM contactMeanIn
+        WHERE inboundId = @inboundId
+    END
+    IF(@Option = 6)
+    BEGIN
+        SELECT [Login] AS ''OriginName''
+            FROM [CCenterRIA].[dbo].[ccUsers]
+        WHERE [User_id] = @agentId
+    END
+END'
         EXEC(@sql)  
 
-
 		----------------------- End CCC   ---------------------------------------------
-  
+
+		------------------------------ Start El Santi ---------------------------------
+
+	set @process = 'CW-6688 Version Bd 123.52 update ccsp_AgentHistoricalChat'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat]
+	@option SMALLINT,
+	@clientNum VARCHAR(15) = '''',
+	@conversationId AS INT = 0,
+	@inboundId AS SMALLINT = 0,
+	@serviceType AS SMALLINT = 0
+    AS
+    BEGIN
+        IF @option = 1 --whatsapp, get conversation ids
+        BEGIN
+            SELECT conversationId FROM [CCenterRIA].[dbo].[ccWhatsAppConversations] WHERE clientId = @clientNum GROUP BY conversationId
+        END
+		IF @option = 2 --whatsapp, get acdId by conversation id
+        BEGIN
+            SELECT CAST(inboundId AS INT) FROM [CCenterRIA].[dbo].[ccWhatsAppConversations] WHERE conversationId = @conversationId
+        END
+		IF @option = 3 --get data conversation
+		BEGIN
+			SELECT
+                cast(i.chat as int) AS ServiceType,
+                cast(c.conversationId as int) as ConversationID,
+                c.clientId as ClientId,
+                cm.conexionInfo as [To],
+                cast(i.Inbound_id as int) as ACDId,
+                i.descripcion as ACDName,
+                cast(g.graphic_id as int) as ACDGraphicId,
+                cast(cm.closeConversationTime as int) as [TimeOut],
+                cast(cm.answerTimeOut as int) as [TimeOutWarning],
+                i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+                i.tNotas as [WrapUpTime],
+                i.ShowCalifWnd,
+                cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+                ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent]
+            FROM  ccInbound i
+                INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
+                INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+                INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+                LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+            WHERE i.chat = @serviceType and i.Inbound_id = @inboundId
+		END
+		IF @option = 4 --get messages from conversation id
+		BEGIN
+			declare @pathFile as varchar(max)
+			declare @filetype as varchar(5)
+
+			select @pathFile = valor from ccSettings where setting_id=230
+			select
+				messageId as MessageId,
+				messageStatus as Status,
+				originType as Origin,
+				case when originType =''Client'' then 3
+						when originType =''Agent'' then 2
+						when originType =''Admin'' then 1
+				else 0 end as OriginType,
+				timeStampMessage as [Timestamp],
+				case when typeMessage <> ''text''  then '''' else content end as Content,
+				typeMessage as Type,
+				case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
+				case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +''.''+
+				case
+					when typeMessage = ''video'' then ''mp4''
+					when typeMessage = ''image'' then ''jpg''
+					when typeMessage = ''audio'' then ''mp3''
+					when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
+					else '''' end
+				end as [Url],
+				case when typeMessage = ''location''
+				then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+				case when typeMessage = ''location''
+				then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+				case when typeMessage = ''location''
+				then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+				case when typeMessage = ''location''
+				then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+				case when typeMessage = ''location''
+				then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+					(select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+				from ccWAMessagesConversations where conversationId = @conversationId
+				order by Timestamp asc
+		END
+		IF @option = 5 --get if conversation is reassigned
+		BEGIN
+			SELECT CASE WHEN EXISTS (
+			SELECT *
+			FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship]
+			WHERE conversationIdAfter = @conversationId
+			)
+			THEN CAST(1 AS BIT)
+			ELSE CAST(0 AS BIT) END
+		END
+    END
+
+
+
+'
+	EXEC(@sql)
+
+
+
+		------------------------------- End El Santi ----------------------------------
+		----------------------------------- GERARDO ----------------------------------
+
+
+
+		 set @process = 'insert messageStatus 16 Agent Disconnected'
+        set @sql = 'if not exists (select * from messageStatus where messageStatusId=16)
+        begin
+            SET IDENTITY_INSERT messageStatus ON
+
+            insert into messageStatus (messageStatusId,name, description,isFinished) values (16, ''Disconnected'', ''Agent Disconnected'',1)			
+
+			SET IDENTITY_INSERT messageStatus OFF
+        end'
+
+		   EXEC(@sql)
+
+		set @process = 'K002079-81 K002079-81 insert messageStatus'
+        set @sql = 'if not exists (select * from messageStatus where messageStatusId in(17,18))
+        begin
+			SET IDENTITY_INSERT messageStatus ON
+
+            insert into messageStatus (messageStatusId,name, description,isFinished) values (17,''Close WhatsApp conversation'', ''Close WhatsApp conversation for window time'',1)
+			insert into messageStatus (messageStatusId,name, description,isFinished) values (18,''Close conversation for error'', ''Close WhatsApp conversation for system error'',1)
+
+			SET IDENTITY_INSERT messageStatus OFF
+
+			DBCC CHECKIDENT (''messageStatus'', RESEED, 18)
+        end'
+        EXEC(@sql)
+
+       
+     
+
+
+        
+        set @process = 'K002068 SPAM CREATE TABLE ccWhatsAppSpam'
+        set @sql = 'IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''ccWhatsAppSpam'')
+        BEGIN
+            CREATE TABLE [dbo].[ccWhatsAppSpam](
+                [WhatsAppSpamId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+                [InboundId] [smallint] NOT NULL,
+                [AgentId] [int],
+                [ConversationId] [int],
+                [Fecha] [datetime] DEFAULT GETDATE(),
+                [NumberClient] [varchar](25) NOT NULL
+            CONSTRAINT [pk_ccWhatsAppSpam_1] PRIMARY KEY CLUSTERED
+            (
+                [WhatsAppSpamId] ASC
+            )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+            )ON [PRIMARY]
+
+        END;'
+        EXEC(@sql)
+
+
+        set @process = 'K002079-81 Create procedure ccsp_WhatsAppInformation'
+set @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
+@Option SMALLINT,
+@InboundId SMALLINT = 0, 
+@ConversationId INT = 0,
+@AgentsAvailables INT = 0
+
+AS
+SET NOCOUNT ON
+
+IF @InboundId IS NOT NULL BEGIN
+    IF EXISTS (SELECT * FROM ccInbound WHERE Inbound_id = @InboundId AND chat = 5) BEGIN
+        DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
+        --DECLARE @Today SMALLDATETIME = ''2022-03-24''
+        IF @Option = 1 -- Generate Averages and Obtain all WhatsApp Campaign Information
+            BEGIN
+                IF EXISTS (SELECT * FROM ccWAAverageConversations 
+                           WHERE InboundId = @InboundId 
+                           AND (LastUpdate IS NULL
+                           OR ( StatusUpdate = 1 AND  DATEDIFF(ss, LastUpdate, GETDATE()) >= 5) 
+                           OR  DATEDIFF(MI, LastUpdate, GETDATE()) >= 5))
+                BEGIN 
+                    -------------------------- ----------------------- Variable Declaration ---------------------------------------------------
+        
+                    DECLARE @AverageConversationTime INT = 0;
+                    DECLARE @AverageDialogTime INT = 0;
+                    DECLARE @AverageWaitingTime INT = 0;
+                    DECLARE @MaximumWaitingTime INT = 0;
+                    DECLARE @DefaultValue INT = (SELECT ISNULL(defaultServiceLevelParameter, 2) FROM contactMeanIn WHERE inboundId = @InboundId);
+                    SET @DefaultValue = @DefaultValue * 60;
+                    DECLARE @LessThanDefault INT = 0;
+                    DECLARE @ReceivedConversations INT = 0;
+                    DECLARE @ServiceLevel SMALLINT = 0;
+
+                    --------- Modify Average Conversation, Dialog Time, Queue/Waiting Time, Maximum Waiting Time and Service Level ------------
+
+                    SELECT @AverageConversationTime = ROUND(AVG(tConversation), 4),
+                           @AverageDialogTime = ROUND(AVG(tChatting), 4),
+                           @AverageWaitingTime = ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),
+                           @MaximumWaitingTime = MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),
+                           @ReceivedConversations = COUNT(conversationDate),
+                           @LessThanDefault = COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= @DefaultValue THEN 1 ELSE NULL END)
+                    FROM ccWhatsAppConversations WHERE inboundId = @InboundId
+                    AND requestDate >= @Today
+
+                    SET @ServiceLevel = CASE WHEN @ReceivedConversations = 0 THEN 0 ELSE ROUND(((@LessThanDefault*1.0) / @ReceivedConversations) * 100, 2) END
+    
+                    ----------------------------------------------------- Update table --------------------------------------------------------
+                    
+                    IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId) 
+                    BEGIN
+                        UPDATE ccWAAverageConversations 
+                        SET AverageConversationTime = @AverageConversationTime,
+                            AverageDialogTime = @AverageDialogTime,
+                            AverageWaitingTime = @AverageWaitingTime,
+                            MaximumWaitingTime = @MaximumWaitingTime,
+                            ServiceLevel = @ServiceLevel,
+                            StatusUpdate = 0,
+                            LastUpdate = GETDATE()
+                        WHERE InboundId = @InboundId
+                    END
+                    ELSE
+                    BEGIN
+                        INSERT INTO ccWAAverageConversations (InboundId, AverageConversationTime, AverageDialogTime, 
+                                                              AverageWaitingTime, MaximumWaitingTime, ServiceLevel, StatusUpdate, LastUpdate)
+                        VALUES(@InboundId, @AverageConversationTime, @AverageDialogTime, @AverageWaitingTime, @MaximumWaitingTime,
+                               @ServiceLevel, 0 , GETDATE()) 
+                    END
+                END
+                --------------------------------- Results -----------------------------------
+
+                SELECT ISNULL(AverageConversationTime, 0) AS AverageConversationTime,
+                       ISNULL(AverageDialogTime, 0) AS AverageDialogTime, 
+                       ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime, 
+                       ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+                       ISNULL(ServiceLevel, 0) AS ServiceLevel
+                FROM ccWAAverageConversations
+                WHERE inboundId = @InboundId 
+            END
+        IF @Option = 2 -- Set Status Change in any column (Average Conversation Time, Average Dialog Time, 
+                       -- Average Queue/Waiting Time, and Service Level)
+        BEGIN
+            IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId) 
+                BEGIN
+                    UPDATE ccWAAverageConversations SET StatusUpdate = 1 
+                    WHERE InboundId = @InboundId
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO ccWAAverageConversations (InboundId, StatusUpdate)
+                    VALUES(@InboundId, 1) 
+                END
+        END
+        IF @Option = 3 -- Save time from accepted conversation by agent
+        BEGIN
+            IF @ConversationId IS NOT NULL
+            BEGIN 
+                UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+            END
+        END
+        IF @Option = 4 -- Get Disposition Information
+        BEGIN
+            SELECT disposition.Description AS DispositionName,
+                   disposition.calif_id AS DispositionId,
+                   COUNT(whatsConv.disposition) AS Total, 
+                   disposition.GraphColor,
+                   COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+            FROM ccWhatsAppConversations whatsConv  
+            INNER JOIN cctipocalif disposition ON disposition.calif_id = whatsConv.disposition
+            WHERE inboundId = @InboundId AND assignDate >= @Today
+            GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor  
+        END
+        IF @Option = 5 -- Get Subdisposition Information
+        BEGIN
+            SELECT relation.calif_id AS DispositionId,
+                   subDispositions.califSubDesc AS SubDispositionsName, 
+                   COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+            FROM cctipoSubCalifRel relation
+            INNER JOIN ccTipoCalifSub subDispositions ON subDispositions.califSub_id = relation.califSub_id
+            INNER JOIN ccWhatsAppConversations whatsConv ON whatsConv.subDisposition = subDispositions.califSub_id
+            WHERE whatsConv.inboundId = @InboundId AND 
+                  whatsConv.assignDate >= @Today AND
+                  relation.tipoSubRel = 1
+            GROUP BY subDispositions.califSubDesc, relation.calif_id
+        END
+    END
+END
+IF @Option = 0 BEGIN-- Reset TABLES
+    TRUNCATE TABLE ccWAAverageConversations;
+    TRUNCATE TABLE ccLastMessageAgentByConversation;
+END
+RETURN(0)
+SET NOCOUNT OFF'
+        EXEC(@sql) 
+        
+        set @process = 'K002079-81 Create procedure ccsp_ConversationWASave'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+                                          , @conversationId     INT         = 0
+                                          , @inboundId          SMALLINT    = NULL
+                                          , @phoneACD           VARCHAR(50) = NULL
+                                          , @clientId           VARCHAR(25) = NULL
+                                          , @conversationStatus SMALLINT    = 0
+                                          , @tChatting          FLOAT    = 0
+                                          , @tWrapUp            SMALLINT    = 0
+                                          , @finishedBy         TINYINT     = 0
+                                          , @onQueue            BIT         = NULL
+                                          , @tQueue             SMALLINT    = 0
+                                          , @tTimeout           INT         = 0
+                                          , @disposition        SMALLINT    = 0
+                                          , @subDisposition     SMALLINT    = 0
+                                          , @agentId            INT         = 0
+                                          --VAR MESSAGES
+                                          , @messageId          VARCHAR(50) = NULL
+                                          , @messageIdUi        INT         = NULL
+                                          , @clientNum          VARCHAR(15) = NULL
+                                          , @vonageNum          VARCHAR(15) = NULL
+                                          , @typeMessage        VARCHAR(25) = ''''
+                                          , @content            NVARCHAR(MAX)= NULL
+                                          , @timeStampMessage   DATETIME    = NULL
+                                          , @timeStampMessageUTC DATETIME   = NULL
+                                          , @originType         VARCHAR(15) = NULL
+                                          , @currency           VARCHAR(10) = ''-''
+                                          , @price              VARCHAR(10) = ''0.00''
+                                          , @messageStatus      VARCHAR(15) = ''N/A''
+                                          , @listConversationsIds   VARCHAR(MAX) = NULL 
+AS
+BEGIN
+    DECLARE @isEndConversation BIT;
+    DECLARE @meanContactTypeId SMALLINT;
+    DECLARE @conversationIdNew INT;
+    SET @meanContactTypeId = 1;
+    SET NOCOUNT ON;
+
+    IF @action = 1
+    BEGIN --new Conversation
+        IF NOT EXISTS
+                      (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A
+                       WHERE A.conversationId = @conversationId
+                      )
+        BEGIN
+            INSERT INTO [ccWhatsAppConversations]
+            (inboundId
+           , phoneACD
+           , clientId
+           , conversationStatus
+           , tChatting
+           , tWrapUp
+           , finishedBy
+           , onQueue
+           , tQueue
+           , tTimeout
+           , disposition
+           , subDisposition
+           , agentId
+            )
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+
+            IF NOT EXISTS (SELECT WhatsAppSpamId FROM ccWhatsAppSpam WHERE NumberClient = @clientId and InboundId = @inboundId) BEGIN
+                SELECT @conversationId = SCOPE_IDENTITY();
+                SELECT @conversationId AS ConversationId;
+            END
+            ELSE BEGIN
+                
+                declare @conversationIdTemporal     INT;
+                SELECT @conversationIdTemporal = SCOPE_IDENTITY();
+                EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationIdTemporal, @conversationStatus = 13
+                SELECT 0 AS ConversationId;
+            END;
+            RETURN(0);
+        END
+        ELSE
+        BEGIN
+             INSERT INTO [ccWhatsAppConversations]
+            (inboundId
+           , phoneACD
+           , clientId
+           , conversationStatus
+           , tChatting
+           , tWrapUp
+           , finishedBy
+           , onQueue
+           , tQueue
+           , tTimeout
+           , disposition
+           , subDisposition
+           , agentId
+            )
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+            SELECT @conversationIdNew = SCOPE_IDENTITY();
+            
+            INSERT INTO ccWhatsAppConversationsRelationship (conversationIdBefore
+                                                             , conversationIdAfter)
+                VALUES (@conversationId, @conversationIdNew);
+
+            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = 17
+
+            SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
+            RETURN(0);
+        END;
+    END;
+
+    IF @action = 2
+    BEGIN --save conversation Times
+        IF @listConversationsIds IS NOT NULL
+
+        BEGIN --register desconnection by conversationID
+            UPDATE ccWhatsAppConversations
+                   SET
+                       --tChatting = DATEDIFF(ss, conversationDate, GETDATE())
+                      conversationStatus = @conversationStatus
+                     , finishedBy = case when @conversationStatus = 10 then 2
+                                         when @conversationStatus = 17 then 2
+                                         when @conversationStatus = 18 then 2
+                                         else 1 end
+                     , tConversation = DATEDIFF(ss, requestDate, GETDATE())
+                     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
+                     ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+            WHERE conversationId IN (SELECT value FROM fn_RIASplitDelimited(@listConversationsIds, '',''));
+            
+            DECLARE @counter INT;
+            DECLARE @conversationIdTemp INT;
+            DECLARE @TablaTemp TABLE(id INT, value varchar(7));
+            insert into @TablaTemp SELECT * FROM fn_RIASplitDelimited(@listConversationsIds, '','');
+            SET @counter = 1;
+
+            WHILE (@counter <= (SELECT COUNT(*) FROM fn_RIASplitDelimited(@listConversationsIds, '','')))
+            BEGIN  
+               set @conversationIdTemp = (select value from @TablaTemp where id = @counter);
+               IF @conversationStatus = 17 OR @conversationStatus = 18 BEGIN --Save conversation Ended by system
+                    select @inboundId = inboundId from ccWhatsAppConversations where conversationId = @conversationIdTemp;
+               END
+               exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
+               SET @counter += 1;
+            END
+        END
+        ELSE BEGIN
+            UPDATE ccWhatsAppConversations
+                   SET
+                       --tChatting = DATEDIFF(ss, conversationDate, GETDATE())
+                      conversationStatus = @conversationStatus
+                     , finishedBy = case when @conversationStatus = 10 then 2
+                                         when @conversationStatus = 17 then 2
+                                         when @conversationStatus = 18 then 2
+                                         else 1 end
+                     , tConversation = DATEDIFF(ss, requestDate, GETDATE())
+                     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
+                     ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+            WHERE conversationId = @conversationId;
+
+            IF @conversationStatus = 13 BEGIN
+                select @inboundId = inboundId, @agentId = agentId, @clientId = clientId from ccWhatsAppConversations where conversationId = @conversationId;
+                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient)
+                        VALUES (@inboundId, @agentId, @conversationId, @clientId);
+                    END
+            END
+            exec ccsp_CreateNodeMultimedia @conversationId=@conversationId, @type=5
+        END;
+
+    END;
+
+    IF @action = 3
+    BEGIN --save conversation Status
+        UPDATE ccWhatsAppConversations
+               SET
+                   --conversationDate = GETDATE(),
+                   conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+    END;
+
+    IF @action = 4 BEGIN --save messages from conversation
+        IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+            AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
+        BEGIN
+            IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS 
+                (SELECT messageIdUi 
+                  FROM ccWAMessagesConversations 
+                 WHERE originType IN (''Agent'', ''Admin'') 
+                   AND conversationId = @conversationId)
+                BEGIN
+                    UPDATE ccWhatsAppConversations 
+                       SET FirstMessageAgent = @timeStampMessage 
+                     WHERE conversationId = @conversationId;
+                END
+            
+            INSERT INTO [ccWAMessagesConversations](
+                                                messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
+                                               (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+            SELECT @messageId=SCOPE_IDENTITY()
+            SELECT @messageId as MessageId
+            RETURN (0)
+        END
+        ELSE BEGIN
+            SELECT 0 AS MessageId
+            RETURN (0)
+        END
+    END;
+
+    IF @action = 5
+    BEGIN --save onQueue
+        UPDATE ccWhatsAppConversations
+               SET onQueue = 1
+        WHERE conversationId = @conversationId;
+    END;
+
+    IF @action = 6
+    BEGIN --save agent, assigdate and tqueue
+        IF ((SELECT A.agentId AS idAgent FROM ccWhatsAppConversations A where A.conversationId = @conversationId) IS NULL 
+            OR (SELECT A.agentId AS idAgent FROM ccWhatsAppConversations A where A.conversationId = @conversationId) = 0)
+        BEGIN
+            UPDATE ccWhatsAppConversations
+                   SET agentId = @agentId,
+                   assignDate = getdate(),
+                   conversationStatus = @conversationStatus
+            WHERE conversationId = @conversationId;
+
+            UPDATE ccWhatsAppConversations
+                   SET tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+            WHERE conversationId = @conversationId;
+            SELECT conversationId FROM ccWhatsAppConversations WHERE conversationId = @conversationId;
+        END
+    END;
+
+    IF @action = 7
+    BEGIN --update price message
+        UPDATE ccWAMessagesConversations
+               SET price = @price,
+                   currency = @currency
+        WHERE messageId = @messageId;
+    END;
+
+    IF @action = 8
+    BEGIN --update status message
+        IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+            UPDATE ccWAMessagesConversations
+                   SET messageStatus = @messageStatus
+            WHERE messageId = @messageId;
+        END;
+    END;
+
+    IF @action = 9
+    BEGIN --Save last message time by conversationID
+        IF (SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversation A WHERE A.conversationId=@conversationId) IS NULL BEGIN
+            INSERT INTO ccLastMessageAgentByConversation (conversationId) VALUES (@conversationId)
+        END;
+        ELSE
+            BEGIN
+                UPDATE ccLastMessageAgentByConversation
+                   SET timeStampLastMessageAgent = getDate()
+                WHERE conversationId = @conversationId;
+            END;
+    END;
+
+    IF @action = 10
+    BEGIN --drop register by conversationID
+        DELETE FROM ccLastMessageAgentByConversation WHERE conversationId = @conversationId;
+    END;
+
+    IF @action = 11
+    BEGIN --register desconnection by conversationID
+        UPDATE ccLastMessageAgentByConversation SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
+    END;
+END;'
+        EXEC(@sql) 
+
+        		----------------------------------- GERARDO ----------------------------------
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

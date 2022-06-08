@@ -487,211 +487,221 @@ BEGIN
 
 		set @process = 'CW-6322 Se agrega implementacion para Permisos de Spam y Desasignar de WhatsApp con registro en historial'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
-						@adminId SMALLINT,
-						@areaId SMALLINT,
-		                @agentsIds VARCHAR(MAX),
-						@allAgentsSelected BIT, 
-		                @permissionName VARCHAR(255),
-		                @permissionValue INT
-		            AS
-		            SET NOCOUNT ON
+			@adminId SMALLINT,
+			@areaId SMALLINT,
+		    @agentsIds VARCHAR(MAX),
+			@allAgentsSelected BIT, 
+		    @permissionName VARCHAR(255),
+		    @permissionValue INT
+		AS
+		SET NOCOUNT ON
 
-		            DECLARE @changeBit INT
+		DECLARE @changeBit INT
 
-		            SET @changeBit =
+		SET @changeBit =
+		CASE
+		    WHEN @permissionName = ''AllowCellPhoneCalls'' or @permissionName = ''startStopRecording'' or @permissionName = ''XferManual'' or @permissionName = ''AllowTransferCalls'' or @permissionName = ''AgentPermissionDailing''or @permissionName = ''DailingMode'' or @permissionName=''AgentPermissionDailing''
+		    THEN 1
+		    WHEN @permissionName = ''AllowLongDistanceCalls'' or @permissionName = ''XferExt'' 
+		    THEN 2
+		    WHEN @permissionName = ''AllowLocalCalls'' or @permissionName = ''XferCamps''
+		    THEN 4
+		    WHEN @permissionName = ''XferAgents''
+		    THEN 8
+		    ELSE 0
+		END
+		print(@changeBit)
+		IF @agentsIds IS NOT NULL
+		BEGIN
+			DECLARE @AgentIdsTemp TABLE (AgentId INT, Status BIT)
+			INSERT INTO @AgentIdsTemp SELECT VALUE, 0 FROM dbo.fn_RIASplitDelimited(@agentsIds,'','')
+
+			IF @permissionName = ''AllowUnassign'' 
+			BEGIN 						
+				UPDATE permissions SET permissions.AllowUnassign = @permissionValue FROM @AgentIdsTemp agentIds
+				INNER JOIN ccRIAMultimediaUsersPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+				INSERT INTO ccRIAMultimediaUsersPermissions(AgentId, AllowUnassign, AllowSpam)
+				SELECT agentIds.AgentId , @permissionValue, 0 FROM @AgentIdsTemp agentIds
+				LEFT JOIN ccRIAMultimediaUsersPermissions permissions ON agentIds.AgentId = permissions.AgentId
+				WHERE permissions.AgentId IS NULL
+			END
+			IF @permissionName = ''AllowSpam''
+			BEGIN 
+				UPDATE permissions SET permissions.AllowSpam = @permissionValue FROM @AgentIdsTemp agentIds
+				INNER JOIN ccRIAMultimediaUsersPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+				INSERT INTO ccRIAMultimediaUsersPermissions(AgentId, AllowSpam, AllowUnassign)
+				SELECT agentIds.AgentId , @permissionValue, 0 FROM @AgentIdsTemp agentIds
+				LEFT JOIN ccRIAMultimediaUsersPermissions permissions ON agentIds.AgentId = permissions.AgentId
+				WHERE permissions.AgentId IS NULL
+			END
+
+		    UPDATE
+		        ccUsers
+		    SET DialMask =
+		        CASE
+		        WHEN @permissionName = ''AllowCellPhoneCalls''
+		        OR @permissionName = ''AllowLongDistanceCalls''
+		        OR @permissionName = ''AllowLocalCalls''
+		        THEN 
 		            CASE
-		                WHEN @permissionName = ''AllowCellPhoneCalls'' or @permissionName = ''startStopRecording'' or @permissionName = ''XferManual'' or @permissionName = ''AllowTransferCalls'' or @permissionName = ''AgentPermissionDailing''or @permissionName = ''DailingMode'' or @permissionName=''AgentPermissionDailing''
-		                THEN 1
-		                WHEN @permissionName = ''AllowLongDistanceCalls'' or @permissionName = ''XferExt'' 
-		                THEN 2
-		                WHEN @permissionName = ''AllowLocalCalls'' or @permissionName = ''XferCamps''
-		                THEN 4
-		                WHEN @permissionName = ''XferAgents''
-		                THEN 8
-		                ELSE 0
-		            END
-		            print(@changeBit)
-		            IF @agentsIds IS NOT NULL
-		            BEGIN
-						DECLARE @AgentIdsTemp TABLE (AgentId INT, Status BIT)
-						INSERT INTO @AgentIdsTemp SELECT VALUE, 0 FROM dbo.fn_RIASplitDelimited(@agentsIds,'','')
-
-						IF @permissionName = ''AllowUnassign'' 
-						BEGIN 
-							UPDATE ccRIAMultimediaUsersPermissions SET AllowUnassign = @permissionValue
-							WHERE AgentId IN (SELECT AgentId FROM @AgentIdsTemp)
-						END
-						IF @permissionName = ''AllowSpam''
-						BEGIN 
-							UPDATE ccRIAMultimediaUsersPermissions SET AllowSpam = @permissionValue
-							WHERE AgentId IN (SELECT AgentId FROM @AgentIdsTemp)
-						END
-
-		                UPDATE
-		                    ccUsers
-		                SET DialMask =
-		                    CASE
-		                    WHEN @permissionName = ''AllowCellPhoneCalls''
-		                    OR @permissionName = ''AllowLongDistanceCalls''
-		                    OR @permissionName = ''AllowLocalCalls''
-		                    THEN 
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN
-		                            CASE
-		                            WHEN (DialMask & @changeBit) <> @changeBit
-		                            THEN DialMask ^ @changeBit
-		                            ELSE DialMask
-		                            END
-		                        WHEN @permissionValue = 0
-		                        THEN
-		                            CASE
-		                            WHEN (DialMask & @changeBit) = @changeBit
-		                            THEN DialMask ^ @changeBit
-		                            ELSE DialMask
-		                            END
-		                        END 
-		                    ELSE DialMask
-		                    END,
+		            WHEN @permissionValue = 1
+		            THEN
+		                CASE
+		                WHEN (DialMask & @changeBit) <> @changeBit
+		                THEN DialMask ^ @changeBit
+		                ELSE DialMask
+		                END
+		            WHEN @permissionValue = 0
+		            THEN
+		                CASE
+		                WHEN (DialMask & @changeBit) = @changeBit
+		                THEN DialMask ^ @changeBit
+		                ELSE DialMask
+		                END
+		            END 
+		        ELSE DialMask
+		        END,
 		                    
-		                    XferMask =
-		                    CASE
-		                    WHEN @permissionName = ''AllowTransferCalls''
-		                    THEN
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN
-		                            CASE
-		                            WHEN (XferMask & @changeBit) <> @changeBit
-		                            THEN XferMask ^ @changeBit
-		                            ELSE XferMask
-		                            END
-		                        WHEN @permissionValue = 0
-		                        THEN
-		                            CASE
-		                            WHEN (XferMask & @changeBit) = @changeBit
-		                            THEN XferMask ^ @changeBit
-		                            ELSE XferMask
-		                            END
-		                        END
-		                    ELSE XferMask
-		                    END,
+		        XferMask =
+		        CASE
+		        WHEN @permissionName = ''AllowTransferCalls''
+		        THEN
+		            CASE
+		            WHEN @permissionValue = 1
+		            THEN
+		                CASE
+		                WHEN (XferMask & @changeBit) <> @changeBit
+		                THEN XferMask ^ @changeBit
+		                ELSE XferMask
+		                END
+		            WHEN @permissionValue = 0
+		            THEN
+		                CASE
+		                WHEN (XferMask & @changeBit) = @changeBit
+		                THEN XferMask ^ @changeBit
+		                ELSE XferMask
+		                END
+		            END
+		        ELSE XferMask
+		        END,
 
-		                    XferAgents =
-		                    CASE
-		                    WHEN @permissionName = ''XferAgents''
-		                    OR @permissionName = ''XferCamps'' 
-		                    OR @permissionName = ''XferExt'' 
-		                    OR @permissionName = ''XferManual'' 
-		                    THEN 
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN
-		                            CASE
-		                            WHEN (XferAgents & @changeBit) <> @changeBit
-		                            THEN XferAgents ^ @changeBit
-		                            ELSE XferAgents
-		                            END
-		                        WHEN @permissionValue = 0
-		                        THEN
-		                            CASE
-		                            WHEN (XferAgents & @changeBit) = @changeBit
-		                            THEN XferAgents ^ @changeBit
-		                            ELSE XferAgents
-		                            END
-		                        END
-		                    ELSE XferAgents
-		                    END,
+		        XferAgents =
+		        CASE
+		        WHEN @permissionName = ''XferAgents''
+		        OR @permissionName = ''XferCamps'' 
+		        OR @permissionName = ''XferExt'' 
+		        OR @permissionName = ''XferManual'' 
+		        THEN 
+		            CASE
+		            WHEN @permissionValue = 1
+		            THEN
+		                CASE
+		                WHEN (XferAgents & @changeBit) <> @changeBit
+		                THEN XferAgents ^ @changeBit
+		                ELSE XferAgents
+		                END
+		            WHEN @permissionValue = 0
+		            THEN
+		                CASE
+		                WHEN (XferAgents & @changeBit) = @changeBit
+		                THEN XferAgents ^ @changeBit
+		                ELSE XferAgents
+		                END
+		            END
+		        ELSE XferAgents
+		        END,
 
-		                    startStopRecording =
-		                    CASE
-		                    WHEN @permissionName = ''startStopRecording'' 
-		                    THEN 
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN 1
-		                        WHEN @permissionValue = 0
-		                        THEN 0
-		                        END
-		                    ELSE startStopRecording
-		                    END,
+		        startStopRecording =
+		        CASE
+		        WHEN @permissionName = ''startStopRecording'' 
+		        THEN 
+		            CASE
+		            WHEN @permissionValue = 1
+		            THEN 1
+		            WHEN @permissionValue = 0
+		            THEN 0
+		            END
+		        ELSE startStopRecording
+		        END,
 
-		                    DialingMode = 
-		                    CASE
-		                    WHEN @permissionName = ''DailingMode'' 
-		                    THEN 
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN
-		                            CASE
-		                            WHEN (DialingMode & @changeBit) <> @changeBit
-		                            THEN DialingMode ^ @changeBit
-		                            ELSE DialingMode
-		                            END
-		                        WHEN @permissionValue = 0
-		                        THEN
-		                            CASE
-		                            WHEN (DialingMode & @changeBit) = @changeBit
-		                            THEN DialingMode ^ @changeBit
-		                            ELSE DialingMode
-		                            END
-		                        END 
-		                    ELSE DialingMode
-		                    END,
-		                    AllowChangeDialingMode = 
-		                    CASE
-		                    WHEN @permissionName = ''AgentPermissionDailing'' 
-		                    THEN 
-		                        CASE
-		                        WHEN @permissionValue = 1
-		                        THEN 1
-		                        WHEN @permissionValue = 0
-		                        THEN 0
-		                        END
-		                    ELSE AllowChangeDialingMode
-		                    END
-		                WHERE User_id IN (SELECT AgentId FROM @AgentIdsTemp)
+		        DialingMode = 
+		        CASE
+		        WHEN @permissionName = ''DailingMode'' 
+		        THEN 
+		            CASE
+		            WHEN @permissionValue = 1
+		            THEN
+		                CASE
+		                WHEN (DialingMode & @changeBit) <> @changeBit
+		                THEN DialingMode ^ @changeBit
+		                ELSE DialingMode
+		                END
+		            WHEN @permissionValue = 0
+		            THEN
+		                CASE
+		                WHEN (DialingMode & @changeBit) = @changeBit
+		                THEN DialingMode ^ @changeBit
+		                ELSE DialingMode
+		                END
+		            END 
+		        ELSE DialingMode
+		        END,
+		        AllowChangeDialingMode = 
+		        CASE
+		        WHEN @permissionName = ''AgentPermissionDailing'' 
+		        THEN 
+		            CASE
+		            WHEN @permissionValue = 1
+		            THEN 1
+		            WHEN @permissionValue = 0
+		            THEN 0
+		            END
+		        ELSE AllowChangeDialingMode
+		        END
+		    WHERE User_id IN (SELECT AgentId FROM @AgentIdsTemp)
 
 					
-						DECLARE @Login VARCHAR(20) = (SELECT Login FROM ccUsers WHERE User_id = @adminId)
-						DECLARE @AreaName VARCHAR(50) = (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @areaId)
-						DECLARE @OperationType TINYINT = (SELECT CASE WHEN @permissionValue = 1 THEN 33 ELSE 35 END)
-						DECLARE @Language TINYINT = (SELECT valor FROM ccSettings WHERE setting_id = 27)
-						DECLARE @Tag varchar(100) = (SELECT PermissionTag FROM ccRIAUsersPermissions WHERE PermissionName = @permissionName)		
-						DECLARE @Value VARCHAR(250) = (SELECT permissions.Value 
-													   FROM  dbo.fn_RIASplitDelimited(@Tag,''|'') permissions
-													   WHERE permissions.Id = @Language + 1)
+			DECLARE @Login VARCHAR(20) = (SELECT Login FROM ccUsers WHERE User_id = @adminId)
+			DECLARE @AreaName VARCHAR(50) = (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @areaId)
+			DECLARE @OperationType TINYINT = (SELECT CASE WHEN @permissionValue = 1 THEN 33 ELSE 35 END)
+			DECLARE @Language TINYINT = (SELECT valor FROM ccSettings WHERE setting_id = 27)
+			DECLARE @Tag varchar(100) = (SELECT PermissionTag FROM ccRIAUsersPermissions WHERE PermissionName = @permissionName)		
+			DECLARE @Value VARCHAR(250) = (SELECT permissions.Value 
+											FROM  dbo.fn_RIASplitDelimited(@Tag,''|'') permissions
+											WHERE permissions.Id = @Language + 1)
 
-						DECLARE @AgentId INT = 0
-						DECLARE @AgentName VARCHAR(20) = ''''
+			DECLARE @AgentId INT = 0
+			DECLARE @AgentName VARCHAR(20) = ''''
 
-						IF @allAgentsSelected = 0
-						BEGIN
-							WHILE EXISTS(SELECT * FROM @AgentIdsTemp WHERE Status = 0)
-							BEGIN 
-								SELECT TOP 1 @AgentId = AgentId FROM @AgentIdsTemp WHERE Status = 0
-								SET @AgentName = (SELECT Login FROM ccUsers WHERE User_id = @AgentId)
+			IF @allAgentsSelected = 0
+			BEGIN
+				WHILE EXISTS(SELECT * FROM @AgentIdsTemp WHERE Status = 0)
+				BEGIN 
+					SELECT TOP 1 @AgentId = AgentId FROM @AgentIdsTemp WHERE Status = 0
+					SET @AgentName = (SELECT Login FROM ccUsers WHERE User_id = @AgentId)
 						
-								EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
-								@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+					EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+					@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
 							
-								UPDATE @AgentIdsTemp SET Status = 1 WHERE AgentId = @AgentId
-							END
-						END
-						ELSE
-						BEGIN
-							SET @AgentName = (SELECT AllAgentsTag FROM ccRIAUserPermissionsStatusTags WHERE Language = @Language)
+					UPDATE @AgentIdsTemp SET Status = 1 WHERE AgentId = @AgentId
+				END
+			END
+			ELSE
+			BEGIN
+				SET @AgentName = (SELECT AllAgentsTag FROM ccRIAUserPermissionsStatusTags WHERE Language = @Language)
 						
-							EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
-							@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+				EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+				@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
 							
-							UPDATE @AgentIdsTemp SET Status = 1
-						END
+				UPDATE @AgentIdsTemp SET Status = 1
+			END
 
 
-		            END
+		END
 
-		            SET NOCOUNT OFF'
+		SET NOCOUNT OFF'
 		EXEC(@sql)
 
 		set @process = 'CW-6322 Drop ccsp_GalateaAdminGetPermissions'

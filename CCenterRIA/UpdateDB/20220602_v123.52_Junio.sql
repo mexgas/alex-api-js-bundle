@@ -235,7 +235,7 @@ BEGIN
 		  ,connUser=ISNULL(@number, connUser)
 		  ,ConnPass=ISNULL(@number, ConnPass) 
           ,closeConversationTime = ISNULL(@maxAnswerTime, closeConversationTime),
-          answerTimeoutClient = ISNULL(@muTimeOutClient, 30),
+          answerTimeoutClient = ISNULL(@muTimeOutClient, answerTimeoutClient),
 		  allowFileAttachments = ISNULL(@allowFileAttachments, allowFileAttachments)
           where inboundId = @inboundId;
 

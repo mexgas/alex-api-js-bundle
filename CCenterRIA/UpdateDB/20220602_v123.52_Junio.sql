@@ -967,10 +967,8 @@ END'
 		END
 		IF @option = 4 --get messages from conversation id
 		BEGIN
-			declare @pathFile as varchar(max)
 			declare @filetype as varchar(5)
 
-			select @pathFile = valor from ccSettings where setting_id=230
 			select
 				messageId as MessageId,
 				messageStatus as Status,
@@ -983,7 +981,7 @@ END'
 				case when typeMessage <> ''text''  then '''' else content end as Content,
 				typeMessage as Type,
 				case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
-				case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else @pathFile +char(92)+cast(conversationId/1000 as varchar(30))+char(92)+cast(conversationId as varchar(20))+char(92)+ typeMessage + char(92)+ messageId +''.''+
+				case when typeMessage = ''text'' or typeMessage = ''location'' then '''' else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +''.''+
 				case
 					when typeMessage = ''video'' then ''mp4''
 					when typeMessage = ''image'' then ''jpg''

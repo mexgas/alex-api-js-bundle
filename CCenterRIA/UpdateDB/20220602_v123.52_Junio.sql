@@ -832,8 +832,8 @@ BEGIN
                   i.ShowCalifWnd,
                   cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
                   ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                  permission.AllowUnassign,
-                  permission.AllowSpam,
+                	isnull(permission.AllowUnassign,0) as AllowUnassign,
+                  isnull(permission.AllowSpam,0) as AllowSpam,
                   ISNULL(@OldAgentId, 0) AS OldAgentId,
                   ISNULL(@OldConversationId, 0) AS OldConversationId
             FROM  ccInbound i

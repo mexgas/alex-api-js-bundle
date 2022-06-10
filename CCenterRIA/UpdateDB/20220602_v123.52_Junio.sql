@@ -503,7 +503,7 @@ insert into @changeBitTable	values(''AllowCellPhoneCalls'',1)
 insert into @changeBitTable	values(''startStopRecording'',1)
 insert into @changeBitTable	values(''XferManual'',1)
 insert into @changeBitTable	values(''AllowTransferCalls'',1)
-insert into @changeBitTable	values(''AgentPermissionDailing''or,1)
+insert into @changeBitTable	values(''AgentPermissionDailing'',1)
 insert into @changeBitTable	values(''DailingMode'',1)
 
 

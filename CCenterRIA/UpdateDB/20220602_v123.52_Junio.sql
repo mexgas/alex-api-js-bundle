@@ -1006,7 +1006,7 @@ END'
                 LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
                 LEFT JOIN ccRIAMultimediaUsersPermissions permission ON permission.AgentId = c.agentId
 
-            WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
+            WHERE i.chat = @serviceType and i.Inbound_id = @inboundId
 		IF @option = 4 --get messages from conversation id
 		BEGIN
 			declare @filetype as varchar(5)

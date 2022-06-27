@@ -1983,7 +1983,7 @@ END;'
         ----------------------------------- IVAN ----------------------------------
         
         ----------------------------------- START WHATSAPP CW-7099 IVAN   -----------------------------------
-		-- Fix for bug CW-7099 'No se asigna correctamente el estatus de "Desasignado" a las conversaciones desasignadas.'
+		-- Fix for bug CW-7099 'No se asigna correctamente el estatus de "Desasignado" a las conversaciones desasignadas.' 
 		set @process = 'CW-7099 Drop procedure ccsp_ConversationWASave'
 		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_ConversationWASave'')
 					BEGIN 

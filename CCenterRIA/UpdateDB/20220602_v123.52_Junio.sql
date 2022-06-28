@@ -1328,7 +1328,7 @@ BEGIN
                                                              , conversationIdAfter)
                 VALUES (@conversationId, @conversationIdNew);
 
-            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = 4
+            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = 17
 
             SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
             RETURN(0);

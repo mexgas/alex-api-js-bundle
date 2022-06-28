@@ -1193,7 +1193,7 @@ END
         EXEC(@sql)
 
 
-        set @process = 'K002079-81 Create procedure ccsp_WhatsAppInformation'
+        set @process = 'K002079-81 Alter procedure ccsp_WhatsAppInformation'
 set @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
 @Option SMALLINT,
 @InboundId SMALLINT = 0, 

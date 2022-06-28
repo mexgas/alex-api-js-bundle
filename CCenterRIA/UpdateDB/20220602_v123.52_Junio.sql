@@ -1225,10 +1225,7 @@ END
 RETURN(0)
 SET NOCOUNT OFF'
         EXEC(@sql) 
-                ----------------------------------- IVAN ----------------------------------
         
-        ----------------------------------- START WHATSAPP CW-7099 IVAN   -----------------------------------
-		-- Fix for bug CW-7099 'No se asigna correctamente el estatus de "Desasignado" a las conversaciones desasignadas. (cambio de estado 17 a 4)'
         set @process = 'K002079-81 Create procedure ccsp_ConversationWASave'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                           , @conversationId     INT         = 0

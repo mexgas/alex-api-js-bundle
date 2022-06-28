@@ -945,7 +945,7 @@ BEGIN
         WHERE [User_id] = @agentId
     END
 END'
-      --  EXEC(@sql)  
+       EXEC(@sql) 
 
 		----------------------- End CCC   ---------------------------------------------
 

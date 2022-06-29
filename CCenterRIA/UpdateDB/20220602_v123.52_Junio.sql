@@ -997,139 +997,140 @@ BEGIN
 		WHERE i.chat = @serviceType
 			AND i.Inbound_id = @inboundId
 
-		IF @option = 4 --get messages from conversation id
-		BEGIN
-			DECLARE @filetype AS VARCHAR(5)
+	END
 
-			SELECT messageId AS MessageId, messageStatus AS STATUS, originType AS Origin, CASE 
-					WHEN originType = ''Client''
-						THEN 3
-					WHEN originType = ''Agent''
-						THEN 2
-					WHEN originType = ''Admin''
-						THEN 1
-					ELSE 0
-					END AS OriginType, timeStampMessage AS [Timestamp], CASE 
-					WHEN typeMessage <> ''text''
-						THEN ''''
-					ELSE content
-					END AS Content, typeMessage AS Type, CASE 
-					WHEN typeMessage NOT IN (''text'', ''location'')
-						THEN content
-					ELSE ''''
-					END AS Caption, CASE 
-					WHEN originType = ''Client''
-						THEN CASE 
-								WHEN typeMessage = ''text''
-									OR typeMessage = ''location''
-									THEN ''''
-								ELSE CHAR(92) + CHAR(92) + ''WhatsApp'' + CHAR(92) + CHAR(92) + cast(conversationId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(conversationId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
-									typeMessage + CHAR(92) + CHAR(92) + messageId + ''.'' + CASE 
-										WHEN typeMessage = ''video''
-											THEN ''mp4''
-										WHEN typeMessage = ''image''
-											THEN ''jpg''
-										WHEN typeMessage = ''audio''
-											THEN ''mp3''
-										WHEN typeMessage = ''file''
-											THEN (
-													SELECT substring(content, CHARINDEX(''.'', content) + 1, len(content))
-													)
-										ELSE ''''
-										END
-								END
-					ELSE CASE 
+	IF @option = 4 --get messages from conversation id
+	BEGIN
+		DECLARE @filetype AS VARCHAR(5)
+
+		SELECT messageId AS MessageId, messageStatus AS STATUS, originType AS Origin, CASE 
+				WHEN originType = ''Client''
+					THEN 3
+				WHEN originType = ''Agent''
+					THEN 2
+				WHEN originType = ''Admin''
+					THEN 1
+				ELSE 0
+				END AS OriginType, timeStampMessage AS [Timestamp], CASE 
+				WHEN typeMessage <> ''text''
+					THEN ''''
+				ELSE content
+				END AS Content, typeMessage AS Type, CASE 
+				WHEN typeMessage NOT IN (''text'', ''location'')
+					THEN content
+				ELSE ''''
+				END AS Caption, CASE 
+				WHEN originType = ''Client''
+					THEN CASE 
 							WHEN typeMessage = ''text''
 								OR typeMessage = ''location''
 								THEN ''''
-							ELSE content
+							ELSE CHAR(92) + CHAR(92) + ''WhatsApp'' + CHAR(92) + CHAR(92) + cast(conversationId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(conversationId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
+								typeMessage + CHAR(92) + CHAR(92) + messageId + ''.'' + CASE 
+									WHEN typeMessage = ''video''
+										THEN ''mp4''
+									WHEN typeMessage = ''image''
+										THEN ''jpg''
+									WHEN typeMessage = ''audio''
+										THEN ''mp3''
+									WHEN typeMessage = ''file''
+										THEN (
+												SELECT substring(content, CHARINDEX(''.'', content) + 1, len(content))
+												)
+									ELSE ''''
+									END
 							END
-					END AS [Url], CASE 
-					WHEN typeMessage = ''location''
-						THEN (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 1
-											), '':'')
-								WHERE id = 2
-								)
-					ELSE ''''
-					END AS [Address], CASE 
-					WHEN typeMessage = ''location''
-						THEN (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 2
-											), '':'')
-								WHERE id = 2
-								)
-					ELSE ''''
-					END AS [Lat], CASE 
-					WHEN typeMessage = ''location''
-						THEN (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 3
-											), '':'')
-								WHERE id = 2
-								)
-					ELSE ''''
-					END AS [Long], CASE 
-					WHEN typeMessage = ''location''
-						THEN (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 4
-											), '':'')
-								WHERE id = 2
-								)
-					ELSE ''''
-					END AS [Name], CASE 
-					WHEN typeMessage = ''location''
-						THEN ''https://www.google.com/maps/search/'' + (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 2
-											), '':'')
-								WHERE id = 2
-								) + '','' + (
-								SELECT value
-								FROM dbo.fn_RIASplitDelimited((
-											SELECT value
-											FROM dbo.fn_RIASplitDelimited(content, ''|'')
-											WHERE id = 3
-											), '':'')
-								WHERE id = 2
-								)
-					ELSE ''''
-					END AS [LocationURL]
-			FROM ccWAMessagesConversations
-			WHERE conversationId = @conversationId
-			ORDER BY TIMESTAMP ASC
-		END
-
-		IF @option = 5 --get if conversation is reassigned
-		BEGIN
-			SELECT CASE 
-					WHEN EXISTS (
-							SELECT *
-							FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship]
-							WHERE conversationIdAfter = @conversationId
+				ELSE CASE 
+						WHEN typeMessage = ''text''
+							OR typeMessage = ''location''
+							THEN ''''
+						ELSE content
+						END
+				END AS [Url], CASE 
+				WHEN typeMessage = ''location''
+					THEN (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 1
+										), '':'')
+							WHERE id = 2
 							)
-						THEN CAST(1 AS BIT)
-					ELSE CAST(0 AS BIT)
-					END
-		END
+				ELSE ''''
+				END AS [Address], CASE 
+				WHEN typeMessage = ''location''
+					THEN (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 2
+										), '':'')
+							WHERE id = 2
+							)
+				ELSE ''''
+				END AS [Lat], CASE 
+				WHEN typeMessage = ''location''
+					THEN (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 3
+										), '':'')
+							WHERE id = 2
+							)
+				ELSE ''''
+				END AS [Long], CASE 
+				WHEN typeMessage = ''location''
+					THEN (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 4
+										), '':'')
+							WHERE id = 2
+							)
+				ELSE ''''
+				END AS [Name], CASE 
+				WHEN typeMessage = ''location''
+					THEN ''https://www.google.com/maps/search/'' + (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 2
+										), '':'')
+							WHERE id = 2
+							) + '','' + (
+							SELECT value
+							FROM dbo.fn_RIASplitDelimited((
+										SELECT value
+										FROM dbo.fn_RIASplitDelimited(content, ''|'')
+										WHERE id = 3
+										), '':'')
+							WHERE id = 2
+							)
+				ELSE ''''
+				END AS [LocationURL]
+		FROM ccWAMessagesConversations
+		WHERE conversationId = @conversationId
+		ORDER BY TIMESTAMP ASC
+	END
+
+	IF @option = 5 --get if conversation is reassigned
+	BEGIN
+		SELECT CASE 
+				WHEN EXISTS (
+						SELECT *
+						FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship]
+						WHERE conversationIdAfter = @conversationId
+						)
+					THEN CAST(1 AS BIT)
+				ELSE CAST(0 AS BIT)
+				END
 	END
 END
 '

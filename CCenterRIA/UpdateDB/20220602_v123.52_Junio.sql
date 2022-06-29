@@ -1329,7 +1329,14 @@ SET NOCOUNT OFF'
         EXEC(@sql) 
         
         set @process = 'K002079-81 Create procedure ccsp_ConversationWASave'
-        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+        set @sql = 'USE [CCenterRIA]
+GO
+/****** Object:  StoredProcedure [dbo].[ccsp_ConversationWASave]    Script Date: 28/6/2022 19:13:13 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                           , @conversationId     INT         = 0
                                           , @inboundId          SMALLINT    = NULL
                                           , @phoneACD           VARCHAR(50) = NULL
@@ -1427,7 +1434,7 @@ BEGIN
                                                              , conversationIdAfter)
                 VALUES (@conversationId, @conversationIdNew);
 
-            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = 17
+            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = 4
 
             SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
             RETURN(0);
@@ -1436,61 +1443,44 @@ BEGIN
 
     IF @action = 2
     BEGIN --save conversation Times
-        IF @listConversationsIds IS NOT NULL
+		DECLARE @conversationIdTemp INT;
+		DECLARE @TablaTemp TABLE (conversationId INT, status bit);
 
-        BEGIN --register desconnection by conversationID
-            UPDATE ccWhatsAppConversations
-                   SET
-                       --tChatting = DATEDIFF(ss, conversationDate, GETDATE())
-                      conversationStatus = @conversationStatus
-                     , finishedBy = case when @conversationStatus = 10 then 2
-                                         when @conversationStatus = 17 then 2
-                                         when @conversationStatus = 18 then 2
-                                         else 1 end
-                     , tConversation = DATEDIFF(ss, requestDate, GETDATE())
-                     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
-                     ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
-            WHERE conversationId IN (SELECT value FROM fn_RIASplitDelimited(@listConversationsIds, '',''));
-            
-            DECLARE @counter INT;
-            DECLARE @conversationIdTemp INT;
-            DECLARE @TablaTemp TABLE(id INT, value varchar(7));
-            insert into @TablaTemp SELECT * FROM fn_RIASplitDelimited(@listConversationsIds, '','');
-            SET @counter = 1;
+		IF @listConversationsIds IS NOT NULL begin
+			INSERT INTO @TablaTemp
+			SELECT value,0
+			FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+			where value is not null and value<>''''
+		end
+		else begin
+			INSERT INTO @TablaTemp values(@conversationId,0)
+		end
+				
+		UPDATE ccWhatsAppConversations
+		SET                       
+		conversationStatus = @conversationStatus
+		, finishedBy = case when @conversationStatus = 10 then 2
+			when @conversationStatus = 17 then 2
+			when @conversationStatus = 18 then 2
+			else 1 end
+		, tConversation =  case when @conversationStatus = 17 then 0 else DATEDIFF(ss, requestDate, GETDATE()) end
+		,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
+		,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+		WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
 
-            WHILE (@counter <= (SELECT COUNT(*) FROM fn_RIASplitDelimited(@listConversationsIds, '','')))
-            BEGIN  
-               set @conversationIdTemp = (select value from @TablaTemp where id = @counter);
-               IF @conversationStatus = 17 OR @conversationStatus = 18 BEGIN --Save conversation Ended by system
-                    select @inboundId = inboundId from ccWhatsAppConversations where conversationId = @conversationIdTemp;
-               END
-               exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
-               SET @counter += 1;
-            END
-        END
-        ELSE BEGIN
-            UPDATE ccWhatsAppConversations
-                   SET
-                       --tChatting = DATEDIFF(ss, conversationDate, GETDATE())
-                      conversationStatus = @conversationStatus
-                     , finishedBy = case when @conversationStatus = 10 then 2
-                                         when @conversationStatus = 17 then 2
-                                         when @conversationStatus = 18 then 2
-                                         else 1 end
-                     , tConversation = DATEDIFF(ss, requestDate, GETDATE())
-                     ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
-                     ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
-            WHERE conversationId = @conversationId;
-
-            IF @conversationStatus = 13 BEGIN
-                select @inboundId = inboundId, @agentId = agentId, @clientId = clientId from ccWhatsAppConversations where conversationId = @conversationId;
-                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
-                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient)
-                        VALUES (@inboundId, @agentId, @conversationId, @clientId);
-                    END
-            END
-            exec ccsp_CreateNodeMultimedia @conversationId=@conversationId, @type=5
-        END;
+		 WHILE exists(SELECT conversationId FROM @TablaTemp where status=0) 
+		BEGIN  
+			select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0    
+			exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
+			
+			IF @conversationStatus = 13 BEGIN
+				select @inboundId = inboundId, @agentId = agentId, @clientId = clientId from ccWhatsAppConversations where conversationId = @conversationIdTemp;
+				IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+					INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationIdTemp, @clientId);
+				END
+			END
+			update @TablaTemp set status=1 where conversationId=@conversationIdTemp
+		END
 
     END;
 
@@ -1540,19 +1530,19 @@ BEGIN
 
     IF @action = 6
     BEGIN --save agent, assigdate and tqueue
-        IF ((SELECT A.agentId AS idAgent FROM ccWhatsAppConversations A where A.conversationId = @conversationId) IS NULL 
-            OR (SELECT A.agentId AS idAgent FROM ccWhatsAppConversations A where A.conversationId = @conversationId) = 0)
+		declare @agentIdTmp int
+		SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A where A.conversationId = @conversationId
+
+        IF (@agentIdTmp is null or @agentIdTmp=0)
         BEGIN
             UPDATE ccWhatsAppConversations
                    SET agentId = @agentId,
                    assignDate = getdate(),
                    conversationStatus = @conversationStatus
+				   ,tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
             WHERE conversationId = @conversationId;
-
-            UPDATE ccWhatsAppConversations
-                   SET tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
-            WHERE conversationId = @conversationId;
-            SELECT conversationId FROM ccWhatsAppConversations WHERE conversationId = @conversationId;
+            
+            SELECT @conversationId as conversationId 
         END
     END;
 

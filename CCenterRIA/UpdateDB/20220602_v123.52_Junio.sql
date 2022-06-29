@@ -1329,14 +1329,7 @@ SET NOCOUNT OFF'
         EXEC(@sql) 
         
         set @process = 'K002079-81 Create procedure ccsp_ConversationWASave'
-        set @sql = 'USE [CCenterRIA]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_ConversationWASave]    Script Date: 28/6/2022 19:13:13 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                           , @conversationId     INT         = 0
                                           , @inboundId          SMALLINT    = NULL
                                           , @phoneACD           VARCHAR(50) = NULL

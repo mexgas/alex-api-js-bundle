@@ -1329,7 +1329,7 @@ RETURN(0)
 SET NOCOUNT OFF'
         EXEC(@sql) 
         
-        set @process = 'K002079-81 Create procedure ccsp_ConversationWASave'
+        set @process = 'K002079-81 Alter procedure ccsp_ConversationWASave'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                           , @conversationId     INT         = 0
                                           , @inboundId          SMALLINT    = NULL

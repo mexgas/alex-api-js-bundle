@@ -944,6 +944,8 @@ if @Version_Actual >= @Version
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'Conversationtweet',  @login = @publisherlogin
 	END
+
+
 	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'Conversationtweet' and [retention]<>@retentionDay)
 	BEGIN
 		exec sp_changemergepublication @publication = N'Conversationtweet', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
@@ -972,11 +974,22 @@ if @Version_Actual >= @Version
 
 		exec sp_addmergearticle @publication = N'ConversationWhatsApp', @article = N'ccWhatsAppConversationsRelationship', @source_owner = N'dbo', @source_object = N'ccWhatsAppConversationsRelationship', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0
 
-	
+		exec sp_addmergearticle @publication = N'ConversationWhatsApp', @article = N'contactMeanIn', @source_owner = N'dbo', @source_object = N'contactMeanIn', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0	
 
 		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = N'ConversationWhatsApp',  @login = @publisherlogin
 	END
+	ELSE
+	BEGIN
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'contactMeanIn')
+		BEGIN
+			-- Adding articles
+			use [CCenterRia]
+			exec sp_addmergearticle @publication = N'ConversationWhatsApp', @article = N'contactMeanIn', @source_owner = N'dbo', @source_object = N'contactMeanIn', @type = N'table', @description = N'', @creation_script = null, @pre_creation_cmd = N'drop', @schema_option = 0x000000000C034FD1, @identityrangemanagementoption = N'manual', @destination_owner = N'dbo', @force_reinit_subscription = 1, @column_tracking = N'false', @subset_filterclause = null, @vertical_partition = N'false', @verify_resolver_signature = 1, @allow_interactive_resolver = N'false', @fast_multicol_updateproc = N'true', @check_permissions = 0, @subscriber_upload_options = 1, @delete_tracking = N'true', @compensate_for_errors = N'false', @stream_blob_columns = N'false', @partition_options = 0, @force_invalidate_snapshot = 1
+		END
+		
+	END
+
 	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = N'ConversationWhatsApp' and [retention]<>@retentionDay)
 	BEGIN
 		exec sp_changemergepublication @publication = N'ConversationWhatsApp', @property='retention',  @value=@retentionDay, @force_reinit_subscription=1

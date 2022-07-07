@@ -44,16 +44,60 @@ WHERE id = 4;
 
 IF @actualVersion = @version and @actualVersionFix >= @versionfix - 1
 BEGIN
-	BEGIN TRAN
+    BEGIN TRAN
 
-	BEGIN TRY
+    BEGIN TRY
 
-	set @process = 'AutomaticMessages_V1 DROP PROCEDURE  ccsp_AutomaticMessages'
+     set @process = 'AutomaticMessages_V1  Create table ccRIA_AutamaticMessages_VariableDataTags '
+    set @sql = 'if not exists(select * from sys.tables where name=''ccRIA_AutamaticMessages_VariableDataTags'') begin
+    CREATE TABLE [dbo].[ccRIA_AutamaticMessages_VariableDataTags](
+    [LanguageId] [tinyint] NOT NULL,
+    [VariableDataTag] [varchar](10) NOT NULL)
+end'
+    EXEC(@sql)
+
+      set @process = 'AutomaticMessages_V1 Create table ccRIA_AutamaticMessages_TtsTypesTags'
+    set @sql = 'if not exists (select * from sys.tables where name=''ccRIA_AutamaticMessages_TtsTypesTags'') begin
+CREATE TABLE [dbo].[ccRIA_AutamaticMessages_TtsTypesTags](
+    [Id] [tinyint] NOT NULL,
+    [TtsTypesTagsSpanish] [varchar](10) NOT NULL,
+    [TtsTypesTagsEnglish] [varchar](10) NOT NULL,
+    [TtsTypesTagsPortuguese] [varchar](10) NOT NULL)
+end
+
+
+'
+    EXEC(@sql)
+
+    set @process = 'AutomaticMessages_V1 insert into ccRIA_AutamaticMessages_VariableDataTags'
+    set @sql = 'if not exists(select * from [ccRIA_AutamaticMessages_VariableDataTags]) begin
+    insert into [ccRIA_AutamaticMessages_VariableDataTags] values(0,''Dato'')
+    insert into [ccRIA_AutamaticMessages_VariableDataTags] values(1,''Data'')
+    insert into [ccRIA_AutamaticMessages_VariableDataTags] values(2,''Dado'')
+end'
+    EXEC(@sql)
+
+      set @process = 'AutomaticMessages_V1 insert into ccRIA_AutamaticMessages_TtsTypesTags'
+    set @sql = 'if not exists(select * from  [ccRIA_AutamaticMessages_TtsTypesTags]) begin
+
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(0,''Deletreo'',''Spelling'',''Soletração'')
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(1,''Fecha'',''Date'',''Data'')
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(2,''Hora'',''Time'',''Hora'')
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(3,''Moneda'',''Currency'',''Moeda'')
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(4,''Número'',''Number'',''Número'')
+insert into [ccRIA_AutamaticMessages_TtsTypesTags] values(5,''General'',''General'',''Geral'')
+
+end'
+    EXEC(@sql)
+
+
+
+    set @process = 'AutomaticMessages_V1 DROP PROCEDURE  ccsp_AutomaticMessages'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AutomaticMessages'')
     begin
         DROP PROCEDURE  ccsp_AutomaticMessages;
     end'
-	EXEC(@sql)
+    EXEC(@sql)
 
     set @process = 'AutomaticMessages_V1 Drop sP ccsp_GalateaAutomaticMessages'
     set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAutomaticMessages'')
@@ -122,7 +166,7 @@ else
             left join ccCampsMsgs B on A.Value=B.Msg_id and B.cam_id=@campIO_id and B.Type=@type
             where B.cam_id  is null
 
-            select @maxOrden =isnull(max(orden),0) from ccInboundMsgs where Inbound_id=@campIO_id and type=@type
+            select @maxOrden =isnull(max(orden),0) from ccCampsMsgs where cam_id=@campIO_id and type=@type
 
             insert into ccCampsMsgs(msg_id, cam_id, orden, type)
             select B.msg_id, @campIO_id as cam_id, @maxOrden+B.id as orden,@type as type 
@@ -142,7 +186,7 @@ else
             where Msg_id IN(select Value from dbo.fn_RIASplitDelimited(@msg_id, '','')) and Inbound_id=@campIO_id and Type=@type
 
             insert @T_all
-            select ROW_NUMBER() OVER(ORDER BY B.orden ASC) AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY B.orden ASC)-1 AS Row#,
             b.Msg_id from ccInboundMsgs B
             where B.Inbound_id=@campIO_id and B.Type=@type
             order by orden
@@ -162,7 +206,7 @@ else
             where Msg_id IN(select Value from dbo.fn_RIASplitDelimited(@msg_id, '','')) and cam_id=@campIO_id and Type=@type
 
             insert @T_all
-            select ROW_NUMBER() OVER(ORDER BY B.orden ASC) AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY B.orden ASC)-1 AS Row#,
             b.Msg_id from ccCampsMsgs B 
             where B.cam_id=@campIO_id and B.Type=@type
             order by orden
@@ -194,6 +238,9 @@ set nocount off'
 @msgIdLst varchar(8000) = null,
 @msgName as varchar(40) = '''',
 @msg_id int = 0,
+@VariableData TINYINT = 0,
+@TtsType TINYINT = 0,
+@VariableOrder TINYINT = 0,
 @MsgRelation varchar(8000) = null
 
 AS
@@ -251,11 +298,21 @@ begin
         select 0 as result
         return(0)
     end
-    if exists(select Msg_id from ccCampsMsgs where Msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')))
+    if exists(select Msg_id from ccCampsMsgs where Msg_id in (
+select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
+inner join ccMsgFiles B on A.Value=B.msg_id 
+where msgFile not like ''TTS|%''
+)
+)
     begin
         select 0 as result
         return(0)
     end
+    
+    delete A from ccCampsMsgs A where Msg_id in (
+    select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
+    inner join ccMsgFiles B on A.Value=B.msg_id 
+    where msgFile like ''TTS|%'')
 
     delete ccMsgFiles Where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '',''))
     select 1 as result
@@ -279,6 +336,31 @@ BEGIN
     select msg_id as msgId, msgName as MsgName, Descripcion as MsgDescription from ccMsgFiles where msg_id = @msg_id
 END
 
+IF @action = 8
+BEGIN
+    DECLARE @Language TINYINT = (SELECT valor from ccSettings where setting_id = 27)
+    DECLARE @TempMsgFile VARCHAR(10) = (''TTS'' + ''|'' + CONVERT(VARCHAR(2), @TtsType) + ''|'' + CONVERT(VARCHAR(2), @VariableData))
+    SET @Description = (SELECT CASE WHEN @Language = 0 THEN TtsTypesTagsSpanish 
+                                    WHEN @Language = 1 THEN TtsTypesTagsEnglish 
+                                    ELSE TtsTypesTagsPortuguese END 
+                        FROM ccRIA_AutamaticMessages_TtsTypesTags 
+                        WHERE Id = @VariableData) 
+                        + ''|'' + 
+                        (SELECT VariableDataTag FROM ccRIA_AutamaticMessages_VariableDataTags 
+                        WHERE LanguageId = @Language)
+                        + CONVERT(VARCHAR(2), @VariableData) 
+                        + ''|'' + CONVERT(VARCHAR(2), @CampId) 
+
+    EXEC ccsp_RIAADMCampMsgs @Command = 3, @cam_id = @CampId, @order = @VariableOrder,@type=8,@msgFile=@TempMsgFile,@description=@Description   
+
+    
+END
+
+IF @action = 9
+BEGIN
+    select msgFile [MsgFile] from ccMsgFiles where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')) and msgFile not like ''TTS|%''
+END
+
 IF @action = 10
 BEGIN
     IF @CampType = 0  -- Inbound Campaigns
@@ -291,9 +373,8 @@ BEGIN
         END
 END
 
-SET NOCOUNT OFF
 
-'
+SET NOCOUNT OFF'
     EXEC(@sql)
 
     set @process = 'AutomaticMessages_V1 '
@@ -407,31 +488,28 @@ SET NOCOUNT OFF
 '
     EXEC(@sql)
 
-    set @process = 'AutomaticMessages_V1 '
-    set @sql = ''
-    EXEC(@sql)
-
+   
     set @process = 'AutomaticMessages_V1 '
     set @sql = ''
     EXEC(@sql)
 
   
-		/* End script release */
-		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
-		--EXEC ccsp_getVersion 'BDF', @versionFix
+        /* End script release */
+        /* Upgrade database version (use your own script to do it) */
+        --exec ccsp_getVersion 'BD', @version
+        --EXEC ccsp_getVersion 'BDF', @versionFix
 
-		COMMIT TRAN
-	END TRY
+        COMMIT TRAN
+    END TRY
 
-	BEGIN CATCH
-		/* Error generated based on sintax */
-		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+    BEGIN CATCH
+        /* Error generated based on sintax */
+        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
 
-		RAISERROR (@errorGenerated, 11, 1)
+        RAISERROR (@errorGenerated, 11, 1)
 
-		ROLLBACK TRAN
-	END CATCH
+        ROLLBACK TRAN
+    END CATCH
 END
 
 

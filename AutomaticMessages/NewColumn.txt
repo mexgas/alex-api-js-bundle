@@ -1,2 +1,0 @@
-ALTER TABLE ccMsgFiles
-ADD msgName VARCHAR(40) NULL

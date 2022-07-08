@@ -146,7 +146,7 @@ else
             select @num = case when @maxOrden=0 then 1 else 0 end
 
             insert @T_all 
-            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-1 AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,
             A.value from dbo.fn_RIASplitDelimited(@msg_id, '','') A
             left join ccInboundMsgs B on A.Value=B.Msg_id and B.Inbound_id=@campIO_id and B.Type=@type
             where B.Inbound_id  is null
@@ -166,7 +166,7 @@ else
             select @num = case when @maxOrden=0 then 1 else 0 end
 
             insert @T_all 
-            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-1 AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,
             A.value from dbo.fn_RIASplitDelimited(@msg_id, '','') A
             left join ccCampsMsgs B on A.Value=B.Msg_id and B.cam_id=@campIO_id and B.Type=@type
             where B.cam_id  is null

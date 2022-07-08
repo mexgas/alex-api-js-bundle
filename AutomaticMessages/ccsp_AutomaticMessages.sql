@@ -14,7 +14,7 @@ ALTER PROCEDURE [dbo].[ccsp_AutomaticMessages]
 as
 set nocount on
 
-declare @maxOrden int, @campName varchar(max)
+declare @maxOrden int, @campName varchar(max), @num int
 declare @T_all as table (id int, msg_id int)
 
 if @campType=0
@@ -26,40 +26,42 @@ else
      begin
         if @campType=0 
          begin
+			select @maxOrden =isnull(max(orden),0) from ccInboundMsgs where Inbound_id=@campIO_id and type=@type
+
+			select @num = case when @maxOrden=0 then 1 else 0 end
+
             insert @T_all 
-            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-1 AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,
             A.value from dbo.fn_RIASplitDelimited(@msg_id, ',') A
             left join ccInboundMsgs B on A.Value=B.Msg_id and B.Inbound_id=@campIO_id and B.Type=@type
             where B.Inbound_id  is null
-
-            select @maxOrden =isnull(max(orden),0) from ccInboundMsgs where Inbound_id=@campIO_id and type=@type
 
             insert into ccInboundMsgs (msg_id, inbound_id, orden, type)
             select B.msg_id, @campIO_id as inbound_id, @maxOrden+B.id as orden,@type as type 
             from  @T_all B
             where msg_id not in(select Msg_id from ccInboundMsgs where Inbound_id=@campIO_id and Type=@type)
 
-            if @@ROWCOUNT > 0
-                select @campName
+            select @campName
          end
 
         if @campType=1 
          begin
+			select @maxOrden =isnull(max(orden),0) from ccCampsMsgs where cam_id=@campIO_id and type=@type
+
+			select @num = case when @maxOrden=0 then 1 else 0 end
+
             insert @T_all 
-            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-1 AS Row#,
+            select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,
             A.value from dbo.fn_RIASplitDelimited(@msg_id, ',') A
             left join ccCampsMsgs B on A.Value=B.Msg_id and B.cam_id=@campIO_id and B.Type=@type
             where B.cam_id  is null
-
-            select @maxOrden =isnull(max(orden),0) from ccCampsMsgs where cam_id=@campIO_id and type=@type
 
             insert into ccCampsMsgs(msg_id, cam_id, orden, type)
             select B.msg_id, @campIO_id as cam_id, @maxOrden+B.id as orden,@type as type 
             from  @T_all B
             where msg_id not in(select Msg_id from ccCampsMsgs where cam_id=@campIO_id and Type=@type)
 
-            if @@ROWCOUNT > 0
-                select @campName
+            select @campName
          end
      end
 
@@ -81,8 +83,7 @@ else
             INNER JOIN @T_all A ON IM.Msg_id = A.msg_id
             WHERE IM.Inbound_id=@campIO_id and IM.Type=@type
 
-            if @@ROWCOUNT > 0
-                select @campName
+            select @campName
         end
 
         if @campType=1
@@ -101,8 +102,7 @@ else
             INNER JOIN @T_all A ON CM.Msg_id = A.msg_id
             WHERE CM.cam_id=@campIO_id and CM.Type=@type
 
-            if @@ROWCOUNT > 0
-                select @campName
+            select @campName
         end
      end
 

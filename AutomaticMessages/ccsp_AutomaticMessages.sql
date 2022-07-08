@@ -26,9 +26,10 @@ else
      begin
         if @campType=0 
          begin
-			select @maxOrden =isnull(max(orden),0) from ccInboundMsgs where Inbound_id=@campIO_id and type=@type
+			select @maxOrden = max(orden) from ccInboundMsgs where Inbound_id=@campIO_id and type=@type
 
-			select @num = case when @maxOrden=0 then 1 else 0 end
+			select @num = case when @maxOrden is null then 1 else 0 end
+			set @maxOrden =ISNULL(@maxOrden,0)
 
             insert @T_all 
             select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,
@@ -46,9 +47,10 @@ else
 
         if @campType=1 
          begin
-			select @maxOrden =isnull(max(orden),0) from ccCampsMsgs where cam_id=@campIO_id and type=@type
+			select @maxOrden = max(orden) from ccCampsMsgs where cam_id=@campIO_id and type=@type
 
-			select @num = case when @maxOrden=0 then 1 else 0 end
+			select @num = case when @maxOrden is null then 1 else 0 end
+			set @maxOrden =ISNULL(@maxOrden,0)
 
             insert @T_all 
             select ROW_NUMBER() OVER(ORDER BY A.id ASC)-@num AS Row#,

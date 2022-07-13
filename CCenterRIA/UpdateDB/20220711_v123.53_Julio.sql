@@ -440,7 +440,7 @@ BEGIN
             END;
             ELSE
                 BEGIN
-      print ''xxxx Super''
+      --print ''xxxx Super''
       IF @CampType = 1
         BEGIN
           SELECT DISTINCT 

@@ -337,6 +337,34 @@ BEGIN
     end'
     EXEC(@sql)
 
+    set @process = 'Roles-Permission campaign association'
+    set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10028)
+    begin
+      insert into ccPermissions values (10028,''Gestionar Asociacion de campaña'',''RolesPermissionCampaignAssociation'',0,0,0,''N/A'',1)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission automatic messages'
+    set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10029)
+    begin
+      insert into ccPermissions values (10029,''Gestionar Mensajes Automaticos'',''RolesPermissionAutomaticMessages'',0,0,0,''N/A'',1)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission root-campaign association'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10028)
+    begin
+      insert into ccRoles_Permissions values(1,10028)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission root-automatic messages'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10029)
+    begin
+      insert into ccRoles_Permissions values(1,10029)
+    end'
+    EXEC(@sql)
+
     
 
 		/* End script release */

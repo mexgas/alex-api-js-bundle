@@ -7,7 +7,6 @@ declare @isShudulerLey bit, @valueShudulerLey varchar(max),@hourStart int,@hourE
 declare @shourStart varchar(max),@shourEnd varchar(max),@timeMaxContestacion tinyint,@revHorario bit
 
 set @timeMaxContestacion=30
-select @timeMaxContestacion=(cam_tNoContesta*2) from cccamps where cam_id=@campId
 
 select @revHorario=valor from ccsettings where setting_id = 112
 select @valueShudulerLey = valor from ccsettings where setting_id=166

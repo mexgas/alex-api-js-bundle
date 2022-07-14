@@ -22,6 +22,13 @@ BEGIN
 	SET @sql = 'update PivotReports set complementColumns=''date|userId|login|scriptId|surveyId|survey|calId|calKey|clientPhoneNumber|campACDDescription'' where id=6050'
 	EXEC (@sql)
 
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+
 	set @process = 'CW-6053 Reporte IVR Encuestas ADD IVROptions COLUMNS'
     set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
 						  WHERE Name = N''callType''
@@ -30,6 +37,14 @@ BEGIN
 					alter table IVROptions add callType tinyint null
 				END'
 	EXEC(@sql)
+
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
 
 	SET @process = 'CW-6053 alter sp ccspRepIVRSurveys'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepIVRSurveys]

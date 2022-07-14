@@ -75,7 +75,7 @@ END
 
 IF @TipoCall = 2
 BEGIN
-	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	-- Toma como prioridad la configuraci?n de la subcalificaci?n (en caso de existir)
 	SELECT @autoCB = autocallback
 	FROM ccTipoCalifSubout
 	WHERE califSub_Id = @subId
@@ -122,14 +122,47 @@ BEGIN
 	BEGIN --IF
 
 		CREATE TABLE #NUMANDBL (id int identity,  iddncList int)
+		CREATE TABLE #NUMBERS (id int identity, number varchar(30))
+		DECLARE @allnumbersToBl BIT
+		DECLARE @number varchar(30)
 
-		SELECT @tel= co.cal_telefono
-		FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
-		WHERE co.cal_id = @idCall 
+		SELECT @allnumbersToBl = allNumbersToBlacklist FROM ccTipoCalifOUT WHERE calif_id = @calif_id
 
-		SET @tel=dbo.Completa_ListaNegra(@tel)
+		IF(@allnumbersToBl = 1)
+		BEGIN
+			DECLARE @camid SMALLINT
+			SELECT @camid = cam_id FROM ccoCallsOut WITH (INDEX (PK_ccoCallsOut)) WHERE cal_id = @IDCall
+			DECLARE @i SMALLINT = 0
+			WHILE (@i < 5 )
+			BEGIN
+				SELECT @number = CASE @i 
+									WHEN 0 THEN cal_telefono 
+									WHEN 1 THEN cal_telefono2
+									WHEN 2 THEN cal_telefono3
+									WHEN 3 THEN cal_telefono4
+									WHEN 4 THEN cal_telefono5
+									END FROM ccoCallsOutSource WHERE callout_id = @callOutId AND cam_id = @camid
+				SET @number = dbo.Completa_ListaNegra(@number)
+				IF(LEFT(@number, 1) <> 'E') 
+				BEGIN
+					INSERT INTO #NUMBERS (number) VALUES (@number)
+				END
+				SET @i = @i + 1
+			END
+		END
+		ELSE
+		BEGIN
+			SELECT @number = co.cal_telefono
+			FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+			WHERE co.cal_id = @idCall 
+			SET @number = dbo.Completa_ListaNegra(@number)
+			IF(LEFT(@number, 1) <> 'E') 
+			BEGIN
+				INSERT INTO #NUMBERS (number) VALUES (@number)
+			END
+		END
 
-		IF(LEFT(@tel, 1) <> 'E') begin
+		IF((SELECT COUNT(*) FROM #NUMBERS) > 0) begin
 			INSERT INTO #NUMANDBL (iddncList) 
 			select cbl.idTipoLista from cccalifblacklist cbl  where cbl.calif_id=@calif_id and cbl.tipo = 1
 		END
@@ -139,34 +172,42 @@ BEGIN
 		BEGIN  --WHILE
 			select @Count = count(id) from #NUMANDBL
 			SELECT @iddncList = iddncList from #NUMANDBL where id = @Count
-			IF @tel IS NOT NULL AND @iddncList IS NOT NULL
-			BEGIN--Tel adn iddnclist
-				EXEC ccsp_InsertDNCList @tel, @iddncList
+			DECLARE @countNumbers INT, @indexNumbers INT = 1
+			SELECT @countNumbers = COUNT(*) FROM #NUMBERS
+			WHILE( @indexNumbers <= @countNumbers) --WHILE NUMBERS
+			BEGIN 
+				SELECT @tel = number FROM #NUMBERS WHERE id = @indexNumbers
+				IF @tel IS NOT NULL AND @iddncList IS NOT NULL
+				BEGIN--Tel adn iddnclist
+					EXEC ccsp_InsertDNCList @tel, @iddncList
 
-				IF (@killListSetting = 1 AND @iddncList = @killListID)
-				BEGIN
-					select @hashTel = dbo.hashPhone(@tel)
-
-					IF NOT EXISTS (SELECT hashtel FROM cc_KillList WHERE hashTel = @hashTel)
+					IF (@killListSetting = 1 AND @iddncList = @killListID)
 					BEGIN
-						INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
-						VALUES (@hashTel, @iddncList, GETDATE())
-					END
-				END
+						select @hashTel = dbo.hashPhone(@tel)
 
-				INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
-				SELECT dbo.Completa_ListaNegra(co.cal_telefono), cbl.idTipoLista, co.cam_id, getdate(), co.callout_id, 6
-				FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
-				JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
-				WHERE co.cal_id = @idCall AND left(dbo.Completa_ListaNegra(co.cal_telefono), 1) <> 'E' AND cbl.tipo = 1
-			END --Tel adn iddnclist
+						IF NOT EXISTS (SELECT hashtel FROM cc_KillList WHERE hashTel = @hashTel)
+						BEGIN
+							INSERT INTO cc_KillList (hashTel, id_tipoLista, DATE)
+							VALUES (@hashTel, @iddncList, GETDATE())
+						END
+					END
+
+					INSERT ccHistorialListaNegra (telefono, idtipolista, cam_id, fecha, callout_id, idtipomov)
+					SELECT @tel, @iddncList, co.cam_id, getdate(), co.callout_id, 6
+					FROM ccoCallsOut co WITH (INDEX (PK_ccoCallsOut))
+					--JOIN cccalifblacklist cbl ON co.calif_id = cbl.calif_id
+					WHERE co.cal_id = @idCall 
+				END --Tel adn iddnclist
+				SET @indexNumbers = @indexNumbers + 1
+			END --WHILE NUMBERS
 			delete from #NUMANDBL where id = @Count
 		END --WHILE
 		DROP TABLE #NUMANDBL
+		DROP TABLE #NUMBERS
 	END --IF
 	IF @RecicleSIC = 1
 	BEGIN
-		-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+		-- Toma como prioridad la configuraci?n de la subcalificaci?n (en caso de existir)
 		SELECT @Reprogram = CanReprogram
 		FROM ccTipoCalifSubout
 		WHERE califSub_Id = @subId
@@ -192,7 +233,7 @@ BEGIN
 	DECLARE @keepDial BIT
 	DECLARE @finishPreview SMALLINT
 
-	-- Toma como prioridad la configuración de la subcalificación (en caso de existir)
+	-- Toma como prioridad la configuraci?n de la subcalificaci?n (en caso de existir)
 	SELECT @keepDial = keepDial
 	FROM ccTipoCalifSubout
 	WHERE califSub_Id = @subId

@@ -241,6 +241,14 @@ CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
               '=' + cast(@IDCampEsp as varchar(10)) + ' and IDWG=' + cast(@IDWG as varchar(10)) +
               ' delete ccRIACampEspWG where tipo=' + @NinOut + ' and IDWG=' + cast(@IDWG as varchar(10)) + ' and IdCampEsp=' + cast(@IDCampEsp as varchar(10))
             exec(@sql)
+            --update preview permission
+            set @sql = 'update ccusers set 
+                AllowChangeDialingMode=(case when assigned is null then 0 else 1 end),
+                DialingMode=(case when assigned is null then 0 else 1 end) from ccusers us (nolock) left join (
+                select count(1) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
+                where progDial=3 and user_id in (' + isnull(@multipleUsers, '0') +') group by user_id)c on us.User_id=c.user_id
+                where us.user_id in (' + isnull(@multipleUsers, '0') +')'
+            exec(@sql)
           return(0)
             end
 

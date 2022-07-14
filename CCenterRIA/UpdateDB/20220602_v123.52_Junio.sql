@@ -1597,12 +1597,11 @@ END;'
         EXEC(@sql)
 
         set @process = 'CW-6459 Se modifica ccsp_GalateaAdminCampaigns para obtener agentes en estado de dialogo de whats'
-        set @sql = '
-        CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
-                                                   @CampType AS    SMALLINT = 0, 
-                                                   @WorkgroupId AS INT      = 0, 
-                                                   @Id AS          INT      = 0, 
-                                                   @AdminId AS     SMALLINT = 0, 
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
+                                                 @CampType AS    SMALLINT = 0, 
+                                                 @WorkgroupId AS INT      = 0, 
+                                                 @Id AS          INT      = 0, 
+                                                 @AdminId AS     SMALLINT = 0, 
                                                    @PinUpdate AS   SMALLINT = 0, 
                                                    @LoadId AS      INT      = 0, 
                                                    @Type AS        SMALLINT = 0

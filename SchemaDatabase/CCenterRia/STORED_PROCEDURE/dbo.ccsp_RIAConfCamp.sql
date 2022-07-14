@@ -14,33 +14,33 @@ IF Not EXISTS
         WHERE User_id = @User_id
                 AND Rol_id = 7
     )begin
-	insert into @camByUser 
-	select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
-	where @campID is null or cam_id=@campID
+    insert into @camByUser 
+    select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
+    where @campID is null or cam_id=@campID
 end
 else begin
-	insert into @camByUser 
-	select cam_id,0 from ccCamps 
-	where (IDArea>0 or IDArea is null)
-	and (@campID is null or cam_id=@campID)
+    insert into @camByUser 
+    select cam_id,0 from ccCamps 
+    where (IDArea>0 or IDArea is null)
+    and (@campID is null or cam_id=@campID)
 end
 
 
 while exists(select * from @camByUser where isCheck=0)
 begin
-	select top 1 @camId=camId  from @camByUser where isCheck=0 
-	if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
-		insert into @tableExistsRec values(@camId,1)
-	end
-	else begin
-		insert into @tableExistsRec values(@camId,0)
-	end
+    select top 1 @camId=camId  from @camByUser where isCheck=0 
+    if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
+        insert into @tableExistsRec values(@camId,1)
+    end
+    else begin
+        insert into @tableExistsRec values(@camId,0)
+    end
 
-	update  @camByUser  set isCheck=1 where camId=@camId
+    update  @camByUser  set isCheck=1 where camId=@camId
 end
 
 
-			
+            
 
 select a1.cam_id, cam_Descripcion
 , cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
@@ -51,12 +51,12 @@ select a1.cam_id, cam_Descripcion
 , stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
 cam_maxqueue as queSize,
 DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
-	,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+    ,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
 ,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
 ,isnull(sipHdrFormat, '') sipHdrFormat
 ,cam_inter_cancelled
-,prefijo,	enbleprefix = case when existRec = 0 then 1 else 0 end,
-isnull(exitAssisted, 0) exitAssisted
+,prefijo,   enbleprefix = case when existRec = 0 then 1 else 0 end,
+isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard
 from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
 inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 inner join @tableExistsRec a4 on a1.cam_id=a4.camId

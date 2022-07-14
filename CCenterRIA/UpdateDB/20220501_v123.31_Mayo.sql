@@ -65,8 +65,7 @@ BEGIN
 	EXEC(@sql)
 
     set @process = 'CW-PREVIEW se agrega type para campaigns preview'
-    set @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
                                                @CampType AS    SMALLINT = 0, 
                                                @WorkgroupId AS INT      = 0, 
                                                @Id AS          INT      = 0, 
@@ -489,6 +488,7 @@ order by A.campName
             RETURN 0;
     END;
 END;'
+
     EXEC(@sql)
     set @process = 'CW-PREVIEW se aumenta un bit a TipoDialingMode ccsp_DLRSaveDialResult'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
@@ -1761,8 +1761,7 @@ set nocount off'
     EXEC(@sql)
 
     set @process = 'PREVIEW se agrega permiso de descarte para update campañas'
-    set @sql = '
-ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
                 @cam_id smallint,
                 @cam_descripcion varchar(40) = null,
                 @cam_tnotas smallint = null,

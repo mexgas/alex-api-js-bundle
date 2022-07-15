@@ -48,7 +48,7 @@ BEGIN
 
 	BEGIN TRY
 
-	set @process = 'CW-PREVIEW se agrega campo para permiso eliminar en campañas preview'
+	set @process = 'CW-PREVIEW se agrega campo para permiso eliminar registro en campañas preview'
     set @sql = 'IF not exists(SELECT top 1 1
 		FROM INFORMATION_SCHEMA.COLUMNS
 		WHERE COLUMN_NAME = ''AllowDeleteRecord'' AND TABLE_NAME = ''ccUsers'')

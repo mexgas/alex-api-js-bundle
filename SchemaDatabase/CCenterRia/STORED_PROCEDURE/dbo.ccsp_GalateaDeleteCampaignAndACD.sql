@@ -100,6 +100,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
 
             delete ccSupervisorCam where cam_id in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
             delete ccInboundAgentes where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+            delete ccInboundDnis where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
             delete ccRIACampEspWG where IdCampEsp  in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
 
 

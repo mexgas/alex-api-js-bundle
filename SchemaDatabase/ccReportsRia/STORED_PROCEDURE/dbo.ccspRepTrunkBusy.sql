@@ -1,165 +1,181 @@
-CREATE PROCEDURE [dbo].[ccspRepTrunkBusy]
-
-@action as tinyint,
-@from as datetime = null,
-@to as datetime = null
+CREATE PROCEDURE [dbo].[ccspRepTrunkBusy] @action AS TINYINT
+	,@from AS DATETIME = NULL
+	,@to AS DATETIME = NULL
 AS
-
-SET ANSI_WARNINGS off
+SET ANSI_WARNINGS OFF
 SET NOCOUNT ON
 
-if @from is null
-select @from = convert(datetime,convert(varchar(11),getdate()))
-select @to = getdate()
+IF @from IS NULL
+	SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
 
-if @action = 1 
-begin
-	
-	create table #RtnValue(cal_id int,
-	[user_id] int,
-	fecha datetime,
-	puerto int,
-	cam_id int,
-	tbusy int,
-	contador int,
-	tipo int,
-	fechafin datetime,
-	fechaInicio datetime,
-	fechaFinal datetime)
+SELECT @to = getdate()
 
-	create nonclustered index ix_RtnValue on #RtnValue(
-	[fecha] DESC,
-	[fechafin] DESC
-	)
+IF @action = 1
+BEGIN
+	CREATE TABLE #RtnValue (
+		fecha DATETIME
+		,puerto INT
+		,cam_id INT
+		,tbusy INT
+		,contador INT
+		,fechafin DATETIME
+		,timegroup DATETIME
+		,timegroupNext DATETIME
+		)
 
-	create nonclustered index ix_RtnValue2 on #RtnValue(
-	[fechaInicio] DESC,
-	[fechafinal] DESC
-	)
+	CREATE TABLE #RtnValue2 (
+		fecha DATETIME
+		,puerto INT
+		,cam_id INT
+		,tbusy INT
+		,contador INT
+		,fechafin DATETIME
+		,timegroup DATETIME
+		,timegroupNext DATETIME
+		);
 
-	create table #RtnValue2(cal_id int,
-	[user_id] int,
-	fecha datetime,
-	puerto int,
-	cam_id int,
-	tbusy int,
-	contador int,
-	tipo int,
-	fechafin datetime,
-	fechaInicio datetime,
-	fechaFinal datetime)
+	WITH trunkOut
+	AS (
+		SELECT dials.fecha
+			,dials.Puerto
+			,dials.cam_id
+			,dials.tDialing + dials.tBusy + isnull(calls.cal_tDialog + calls.cal_tXfer + calls.cal_tRing, 0) AS tBusy
+			,1 AS contador
+			,dateadd(ss, dials.tDialing + dials.tBusy + isnull(calls.cal_tDialog + calls.cal_tXfer + calls.cal_tRing, 0), dials.fecha) AS fechafin
+		FROM ccologdials AS dials
+		LEFT JOIN ccocallsout AS calls ON (
+				dials.Puerto = calls.cal_puerto
+				AND dials.cal_id = calls.cal_id
+				)
+		WHERE dials.fecha BETWEEN @from
+				AND @to
+		)
+	INSERT INTO #RtnValue
+	SELECT fecha
+		,puerto
+		,cam_id
+		,tBusy
+		,contador
+		,fechafin
+		,dbo.GetTimeGroup(fecha, 0) AS timegroup
+		,dbo.GetTimeGroup(fechafin, 0) AS timegroupNext
+	FROM trunkOut
+	WHERE tBusy > 0
 
-	create nonclustered index ix_RtnValue on #RtnValue2(
-	[fecha] DESC,
-	[fechafin] DESC
-	)
+	INSERT INTO #RtnValue2
+	SELECT *
+	FROM #RtnValue
+	WHERE datediff(mi, fecha, fechafin) > 15
 
-	insert into #RtnValue
-		select dials.cal_id, calls.user_id, dials.fecha, dials.Puerto, dials.cam_id,
-		sum(dials.tDialing+ dials.tBusy+ isnull(calls.cal_tDialog,0)+isnull(calls.cal_tXfer,0)+isnull(calls.cal_tRing,0)) as tBusy,1 as contador, 1 as tipo,
-		dateadd(ss,sum(dials.tDialing+ dials.tBusy+ isnull(calls.cal_tDialog,0)+isnull(calls.cal_tXfer,0)+isnull(calls.cal_tRing,0)),dials.fecha) as fechafin			
-		,dbo.GetTimeGroup(dials.fecha,0) as timegroup		
-		,dbo.GetTimeGroup(
-		dateadd(ss,sum(dials.tDialing+ dials.tBusy+ isnull(calls.cal_tDialog,0)+isnull(calls.cal_tXfer,0)+isnull(calls.cal_tRing,0)),dials.fecha)			
-		,1) as timegroup_next					
-		from ccologdials as dials left join ccocallsout as calls 
-		on (dials.Puerto = calls.cal_puerto and dials.cal_id = calls.cal_id ) 
-		where dials.fecha >= @from and dials.fecha < getdate()
-		group by dials.cal_id, calls.user_id, dials.fecha, dials.Puerto, dials.cam_id 
-	union all
-		select incall.cal_id,incall.user_id,incall.cal_inicio as fecha,incall.cal_puerto as puerto, incall.inbound_id as cam_id, 
-		sum(isnull(incall.cal_tDialog,0) + isnull(incall.cal_tXfer,0)+ isnull(incall.cal_tRing,0)) as tBusy,1 as contador, 0 as tipo,
-		dateadd(ss,sum(isnull(incall.cal_tDialog,0) + isnull(incall.cal_tXfer,0)+ isnull(incall.cal_tRing,0)),incall.cal_inicio) as fechafin
-		,dbo.GetTimeGroup(incall.cal_inicio,0) as timegroup	
-		,dbo.GetTimeGroup(
-		dateadd(ss,sum(isnull(incall.cal_tDialog,0) + isnull(incall.cal_tXfer,0)+ isnull(incall.cal_tRing,0)),incall.cal_inicio)
-		,1) as timegroup_next				
-		from cccallsin as incall 
-		where cal_inicio >= @from and cal_inicio < getdate()
-		group by incall.cal_id, incall.user_id, incall.cal_inicio, incall.cal_puerto, incall.inbound_id  
+	DELETE #RtnValue
+	WHERE datediff(mi, fecha, fechafin) > 15
 
-	delete #RtnValue
-	where tbusy = 0
-		
-	CREATE TABLE #times(
-	[ID] INT primary key,
-	[Start] DATETIME,
-	[Stop] DATETIME
-	)
+	INSERT INTO #RtnValue
+	SELECT t.fecha
+		,t.Puerto
+		,t.cam_id
+		,dbo.TimeInterval(th.start, th.stop, t.fecha, fechafin) AS tBusy
+		,t.contador AS llamadas
+		,fechafin
+		,th.start
+		,th.stop
+	FROM #RtnValue2 t
+	INNER JOIN TmpTimesInterval th ON (
+			t.fecha > th.Start
+			AND t.fecha < th.stop
+			)
+		OR th.Start BETWEEN t.fecha
+			AND t.fechafin
 
-	create nonclustered index ix_times on #times(
-	[Start] DESC,
-	[Stop] DESC
-	)
-	create nonclustered index ix_times2 on #times(
-	[Start] DESC
-	)
+	SELECT timegroup
+		,puerto AS [port]
+		,cam_id
+		,SUM(tBusy) tBusy
+		,sum(contador) AS llamadas
+		,1 AS tipo
+	INTO #ccGenOutPortStats
+	FROM #RtnValue
+	GROUP BY timegroup
+		,puerto
+		,cam_id
 
-	insert into #times
-	exec ccspTimesReports @from=@from,@to=@to,@interval=15
-		
-	insert into #RtnValue2
-	select *
-	from #RtnValue
-	where datediff(mi,fechainicio,fechafinal) > 15
+	INSERT INTO #ccGenOutPortStats
+	SELECT timegroup
+		,cal_puerto AS [port]
+		,Inbound_id AS cam_id
+		,sum(txfer + tRing + tDialog) AS tBusy
+		,count(*) llamadas
+		,0 AS tipo
+	FROM tmpTimesInboundData
+	GROUP BY timegroup
+		,cal_puerto
+		,Inbound_id
+	HAVING sum(txfer + tRing + tDialog) > 0
 
-	delete #RtnValue
-	where datediff(mi,fechainicio,fechafinal) > 15
+	DELETE
+	FROM RepInTrunkBusy
+	WHERE DATE >= @from
+		AND DATE < @to
 
-	insert into #RtnValue
-	select cal_id, [user_id], th.start as fecha, t.Puerto, t.cam_id
-		,dbo.TimeInterval(th.start,th.stop,t.fecha,fechafin)  as tBusy				
-	,t.contador as llamadas, tipo, th.stop, th.start, th.stop
-	from #RtnValue2 t
-	join #times th on (t.fecha > th.Start and t.fecha < th.stop) OR th.Start between t.fecha and t.fechafin
+	INSERT INTO RepInTrunkBusy
+	SELECT timegroup
+		,A.cam_id
+		,[in].descripcion
+		,[port]
+		,tbusy
+		,llamadas
+		,datepart(yyyy, timegroup) AS [year]
+		,datepart(mm, timegroup) AS [month]
+		,datepart(dd, timegroup) AS [day]
+		,datepart(hh, timegroup) AS [hour]
+		,datepart(mi, timegroup) AS [minutes]
+	FROM #ccGenOutPortStats A
+	INNER JOIN ccInbound [in] ON [in].inbound_id = A.cam_id
+		AND A.tipo = 0
 
-	drop table #times
-	drop table #RtnValue2
+	DELETE
+	FROM RepOutTrunkBusy
+	WHERE DATE >= @from
+		AND DATE < @to
 
-	select fecha as timegroup, puerto as port,cam_id,sum(tBusy) as tbusy,sum(contador) as llamadas,tipo
-	into #ccGenOutPortStats
-	from #RtnValue
-	group by fecha, puerto, cam_id, tipo
+	INSERT INTO RepOutTrunkBusy
+	SELECT timegroup
+		,A.cam_id
+		,[out].cam_descripcion
+		,[port]
+		,tbusy
+		,llamadas
+		,datepart(yyyy, timegroup) AS [year]
+		,datepart(mm, timegroup) AS [month]
+		,datepart(dd, timegroup) AS [day]
+		,datepart(hh, timegroup) AS [hour]
+		,datepart(mi, timegroup) AS [minutes]
+	FROM #ccGenOutPortStats A
+	INNER JOIN cccamps [out] ON (
+			[out].cam_id = A.cam_id
+			AND A.tipo = 1
+			)
 
-	drop table #RtnValue
-		
-	delete from RepInTrunkBusy where date >= @from AND date < @to
+	DELETE
+	FROM RepTrunkBusy
+	WHERE DATE >= @from
+		AND DATE < @to
 
-	insert into RepInTrunkBusy
-		select timegroup, #ccGenOutPortStats.cam_id, [in].descripcion, port, tbusy, llamadas,
-		datepart(yyyy,CONVERT(varchar(20), timegroup, 120)) as [year],
-		datepart(mm,CONVERT(varchar(20), timegroup, 120)) as [month],
-		datepart(dd,CONVERT(varchar(20), timegroup, 120)) as [day],
-		datepart(hh,CONVERT(varchar(20), timegroup, 120)) as [hour],
-		datepart(mi,CONVERT(varchar(20), timegroup, 120)) as [minutes]
-		from #ccGenOutPortStats
-		inner join ccInbound [in] on ([in].inbound_id = #ccGenOutPortStats.cam_id and #ccGenOutPortStats.tipo = 0)
-		where timegroup >= @from and timegroup < @to
-			
-	delete from RepOutTrunkBusy where date >= @from AND date < @to
+	INSERT INTO RepTrunkBusy
+	SELECT timegroup
+		,port
+		,tbusy
+		,llamadas
+		,datepart(yyyy, timegroup) AS [year]
+		,datepart(mm, timegroup) AS [month]
+		,datepart(dd, timegroup) AS [day]
+		,datepart(hh, timegroup) AS [hour]
+		,datepart(mi, timegroup) AS [minutes]
+	FROM #ccGenOutPortStats A
 
-	insert into RepOutTrunkBusy
-		select timegroup, #ccGenOutPortStats.cam_id, [out].cam_descripcion, port, tbusy, llamadas,
-		datepart(yyyy,CONVERT(varchar(20), timegroup, 120)) as [year],
-		datepart(mm,CONVERT(varchar(20), timegroup, 120)) as [month],
-		datepart(dd,CONVERT(varchar(20), timegroup, 120)) as [day],
-		datepart(hh,CONVERT(varchar(20), timegroup, 120)) as [hour],
-		datepart(mi,CONVERT(varchar(20), timegroup, 120)) as [minutes]
-		from #ccGenOutPortStats
-		inner join cccamps [out] on ([out].cam_id = #ccGenOutPortStats.cam_id and #ccGenOutPortStats.tipo = 1)
-		where timegroup >= @from and timegroup < @to
-		
-	delete from RepTrunkBusy where date >= @from AND date < @to
+	DROP TABLE #RtnValue
 
-	insert into RepTrunkBusy
-		select timegroup, port, tbusy, llamadas,
-		datepart(yyyy,CONVERT(varchar(20), timegroup, 120)) as [year],
-		datepart(mm,CONVERT(varchar(20), timegroup, 120)) as [month],
-		datepart(dd,CONVERT(varchar(20), timegroup, 120)) as [day],
-		datepart(hh,CONVERT(varchar(20), timegroup, 120)) as [hour],
-		datepart(mi,CONVERT(varchar(20), timegroup, 120)) as [minutes]
-		from #ccGenOutPortStats
-		where timegroup >= @from and timegroup < @to
-				
-	drop table #ccGenOutPortStats 
-end
+	DROP TABLE #RtnValue2
+
+	DROP TABLE #ccGenOutPortStats
+END

@@ -5,7 +5,7 @@ CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
         @camId int)
         AS
         DECLARE @result_callout_id INT
-        if(exists(select * from ccoWorkingTable where callout_id = @callout_id)) begin
+        if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
             set @result_callout_id =1
         end
         IF (@result_callout_id > 0)

@@ -16,246 +16,84 @@ if @action = 1
 begin
 
 	IF OBJECT_ID('tempdb..#sessionTimeGroup') IS NOT NULL drop table #sessionTimeGroup;			
-	IF OBJECT_ID('tempdb..#inbound') IS NOT NULL drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores') IS NOT NULL drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#holdTime') IS NOT NULL drop table #holdTime
-	IF OBJECT_ID('tempdb..#hold') IS NOT NULL DROP TABLE #hold
-	IF OBJECT_ID('tempdb..#tempccHoldSession') IS NOT NULL DROP TABLE #tempccHoldSession
-	IF OBJECT_ID('tempdb..#tiempoHold') IS NOT NULL DROP TABLE #tiempoHold
-	IF OBJECT_ID('tempdb..#holdMayores2') IS NOT NULL DROP TABLE #holdMayores2
-	IF OBJECT_ID('tempdb..#timeHoldInterval') IS NOT NULL DROP TABLE #timeHoldInterval
+		
 	IF OBJECT_ID('tempdb..#IntervalosInbound') IS NOT NULL DROP TABLE #IntervalosInbound
-	IF OBJECT_ID('tempdb..#ccLogAgentesDia') IS NOT NULL DROP TABLE #ccLogAgentesDia
-	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores') IS NOT NULL DROP TABLE #ccLogAgentesDiaMayores
+	
 	IF OBJECT_ID('tempdb..#HoldDisp') IS NOT NULL drop table #HoldDisp
 	IF OBJECT_ID('tempdb..#groupLog') IS NOT NULL drop table #groupLog	
 
-	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+	IF OBJECT_ID('tempdb..#transferData') IS NOT NULL drop table #transferData		
 	
-	--CREATE TABLE #sessionTimeMayores([user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
-	CREATE TABLE #inbound([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,ncalls int,nacd int,tresp int,nabnd int,
-	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
-	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
-	CREATE TABLE #inboundTimeMayores([dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,[inboundId] [int] NOT NULL,ncalls int,nacd int,tresp int,nabnd int,
-	nacw int,nring int,tacd int,tacw int,tring int,SalExt int,tprosalext int,nhold int,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL
-	,[dateTResp] datetime,[dateTACD] datetime,[dateTTransferStart] datetime,[dateTTransferEnd] datetime,userId int,ntotal int)
-	CREATE TABLE #holdTime([userId] int not null,inbound_id int not null,tiempohold int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+
+	CREATE TABLE #sessionTimeGroup(	[user_id] [smallint] NOT NULL,[login] [datetime] NOT NULL,[logout] [datetime] NULL,[timegroup] [datetime]  NOT NULL,
+	[timegroup_next] [datetime]  NOT NULL, [tlog seg] [INT] NULL, [inb_id] [int] NOT NULL)
+			
 	
-	create table #ccLogAgentesDia(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null,dateIni datetime not null,dateEnd datetime not null,
-	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
-	create table #ccLogAgentesDiaMayores(user_id int not null,[IdCampEsp] [int] not null,TipoStatusAge_id tinyint not null,tStatus int not null, nstatusfra int not null, dateIni datetime not null,dateEnd datetime not null,
-	[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
+	;with 
+	 relationCallIdCamId as(
+		select distinct cal_id as callId,Inbound_id InboundId,User_id as userId from tmpTimesInboundData
+	),
+	transferData as(
+		select B.userId,B.InboundId
+		,CASE WHEN t.modo in (0,3,4) then dbo.AccountInterval(timegroup,timegroup_next,dateIni,dateEnd,1)  else 0 end as SalExt
+		,CASE WHEN t.modo in (0,3,4)  then (t.tAntesXfer + t.tDespuesXfer) else 0 end as tprosalext			
+		,timegroup		
+		from TmpTimesccLogtransfers T
+		inner join relationCallIdCamId B on t.callId=B.callId	
+		where tipo=1
+	), transferDataGroup as(
+
+	select userId, timegroup, InboundId 
+	,sum(SalExt) SalExt,sum(tprosalext) tprosalext
+	from transferData
+	group by timegroup, InboundId,userId
+	)
 	
-	INSERT INTO #sessionTimeGroup
-	select st.[user_id],[login],logout,timegroup as timeGroup,timegroup_next as timeGroupNext,tlog as tlog, wg.IdCampEsp 
-	from TmpSessionTimeGroup st
-		Inner Join ccriaworkgroupusers wgu ON st.User_id = wgu.User_id
+
+	select * into #transferData from transferDataGroup
+
+	;with relationWg as(
+		select distinct wgu.User_id,wg.IdCampEsp from ccriaworkgroupusers wgu
 		Inner Join ccRIACampEspWG wg ON wg.IDWG = WGU.IDWG
-	where wg.Tipo = 0 			
+		where wg.Tipo = 0
+	)
+
+	INSERT INTO #sessionTimeGroup
+	select st.[user_id],[login],logout,timegroup,timegroup_next timeGroupNext,tlog, wgu.IdCampEsp from TmpSessionTimeGroup st
+		Inner Join relationWg wgu ON st.User_id = wgu.User_id
+
 	
-	insert into #inbound
-	select 
-		cal_Inicio as [dateStart],
-		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
-		,Inbound_id as inboundId
-		,1 as ncalls
-		,case when i.statusCall_id=13 then 1 else 0 end as nacd
-		,case when i.statuscall_id = 13  then (i.cal_twait + i.cal_txfer + i.cal_tring) else 0 end as tresp
-		,case when (i.statuscall_id <> 13) then 1 else 0 end as nabnd
-		,case when i.statusCall_id=13 and i.cal_tnotas>0 then 1 else 0 end as nacw
-		,case when i.statusCall_id=13 and i.cal_tring>0 then 1 else null end nring
-		,case when i.statusCall_id=13 and i.cal_tdialog>=0 then i.cal_tdialog else 0 end as tacd	
-		,case when i.statusCall_id=13 then i.cal_tnotas else 0 end as tacw
-		,case when i.statusCall_id=13 then i.cal_tring else null end tring
-		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then 1 else 0 end as SalExt
-		,CASE WHEN t.modo in (0,3,4) and t.tipo=1 then (t.tAntesXfer + t.tDespuesXfer) else 0 end as tprosalext	
-		,case when i.statusCall_id=13 and i.cal_tmoh>0 then 1 else 0 end nhold
-		,dbo.GetTimeGroup(cal_Inicio,0) as timegroup
-		,dbo.GetTimeGroup(dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio),1) as timegroup
-		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring,cal_Inicio) as [dateTResp]
-		,dateadd(ss,i.cal_twait + i.cal_txfer + i.cal_tring+i.cal_tdialog,cal_Inicio) as [dateTACD]	
-		,dateadd(ss,-t.tAntesXfer - t.tDespuesXfer,fechaFin) as [dateTTransferStart]	
-		,fechaFin as [dateTTransferEnd]
-		,i.User_id
-		,1 as ntotal
-	from cccallsin i (nolock) 
-	left join ccLogTransfers t (nolock) on i.cal_id=t.cal_id and t.tipo=1
-	where cal_Inicio between @from and @to
-	
-	INSERT into #inboundTimeMayores 
-	SELECT * from #inbound where datediff(mi,timegroup,timegroup_next)>15
-	delete #inbound where  datediff(mi,timegroup,timegroup_next)>15	
-
-	insert into #inbound
-	select dateStart,dateEnd,inboundId,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ncalls) as ncalls,	
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacd) as nacd,	
-		[dbo].TimeInterval( th.[start],th.[stop] ,dateStart,dateTResp) as tresp,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nabnd) as nabnd,		
-		[dbo].TimeInterval( th.[start],th.[stop] ,dateTResp,[dateTACD]) as tacd,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nacw) as nacw,
-		[dbo].TimeInterval( th.[start],th.[stop] ,[dateTACD],dateEnd) as tacw,
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nring) as nring
-		,[dbo].TimeInterval( th.[start],th.[stop] ,[dateTACD],tring) as tring
-		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,SalExt) as SalExt,
-		case when [dateTTransferStart] is null then 0 else  [dbo].TimeInterval( th.[start],th.[stop] ,[dateTTransferStart],[dateTTransferEnd]) end as tprosalext,	
-		dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,nhold) as nhold,
-		th.[start] as timegroup,th.[stop] as timegroup_next
-		,[dateTResp] ,[dateTACD] ,[dateTTransferStart] ,[dateTTransferEnd] 
-		,UserId
-		,dbo.AccountInterval(th.[start],th.[stop],dateStart,dateEnd,ntotal) as ntotal
-	from #inboundTimeMayores t
-	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next	
-	and th.Start between @from and @to
-
-	insert into #ccLogAgentesDia
-	select [User_id]
-	,IdCampEsp
-	,TipoStatusAge_id
-	,tStatus
-	,case when tStatus is not null then 1 else 0 end nstatusfra
-	,DATEADD(ss,-tStatus,fecha) dateIni
-	,fecha dateEnd
-	,dbo.GetTimeGroup(DATEADD(ss,-tStatus,fecha),0) as timegroup
-	,dbo.GetTimeGroup(fecha,1) as timegroup_next
-	from ccLogAgentesDia A
-	WHERE DATEADD(ss,-tStatus,fecha)>=@from AND DATEADD(ss,-tStatus,fecha)<@to
-	and TipoStatusAge_id = 3
-
-	INSERT into #ccLogAgentesDiaMayores 
-	SELECT * from #ccLogAgentesDia where datediff(mi,dateIni,dateEnd)>15
-	delete #ccLogAgentesDia where  datediff(mi,timegroup,timegroup_next)>15	
-
-	insert into #ccLogAgentesDia
-	select User_id,IdCampEsp
-	,TipoStatusAge_id
-	,[dbo].TimeInterval( th.[start],th.[stop], dateIni, dateEnd) as tstatus
-	,nstatusfra
-	,DATEADD(ss,-tStatus,dateEnd) dateIni
-	,dateEnd dateEnd
-	,th.[start] as timegroup
-	,th.[stop] as timegroup_next
-	from #ccLogAgentesDiaMayores A 
-	inner join TmpTimesInterval th on (A.timegroup > th.Start and A.timegroup < th.stop) OR th.Start between A.timegroup and A.timegroup_next
-	WHERE dateIni>=@from AND dateIni<@to
-	and TipoStatusAge_id = 3
-	and th.Start between @from and @to
-
-	select User_id,IdCampEsp
-		,TipoStatusAge_id
-		,sum(tstatus) as tstatus
-		,sum(nstatusfra) as nstatusfra
-		,timegroup
+	select userId as user_id,camId as IdCampEsp,TipoStatusAge_id,
+	sum(tstatus) as tstatus,
+	sum(CASE WHEN timeGroup > dateIni AND timeGroupNext > dateEnd THEN 1 ELSE 0 END) AS nstatusfra,
+	timeGroup
 	INTO #groupLog
-	from #ccLogAgentesDia
-	GROUP BY User_id,IdCampEsp,TipoStatusAge_id,timegroup
-
-	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	------------------------------------------------------------------------------------HOLD TIME--------------------------------------------------------------------------------------------------------------
-	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	CREATE TABLE #hold ([userId] int not null,[dateStart] [datetime] NOT NULL,[dateEnd] [datetime] NOT NULL,call_id int not null,inbound_id int not null,  marca int not null, Tipo_marca int not null,
-					Tipo_llamada int not null,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL, [time_dialog] [datetime] not null,[time_notes] [datetime] not null
-					,[time_hold] [datetime] not null)
-
-	CREATE TABLE #tempccHoldSession([fila] int NOT NULL,[call_id] [int] NOT NULL,[userId] int not null,[inbound_id] [int] NOT NULL,[hold] [datetime] NOT NULL,[unhold] [datetime] NULL,[Tipo_marca] [int] not null
-				,[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL primary key (fila,call_id))	
-
-	CREATE TABLE #holdMayores2 (call_id int not null,[userId] int not null,inbound_id int not null,  hold [datetime] not null , [unhold] [datetime] not null,Tipo_marca int not null,tiempoHold int not null,
-					[timegroup] [datetime] NOT NULL,[timegroup_next] [datetime] NOT NULL)
-
-	insert into #hold
-	select 
-		User_id as userId
-		,cal_Inicio as [dateStart],
-		dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio) as [dateEnd]
-		,cal_id as cal_id		
-		,inbound_id as inbound_id
-		,isnull(h.marca,0) as Marca,
-		case when (h.tipo_marca>0) then h.tipo_marca else 0 end as Tipo_marca,
-		isnull(tipo_llamada,0) as Tipo_llamada
-		,dbo.GetTimeGroup(cal_Inicio,0) as timegroup
-		,dbo.GetTimeGroup(dateadd(ss,cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,cal_Inicio),1) as timegroup_next
-		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring,0),cal_inicio) as time_dialog
-		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog,0),cal_inicio) as time_notes
-		,DATEADD(ss,isnull(cal_twait + cal_txfer + cal_tring + marca,0),cal_Inicio) as time_hold		
-	from cccallsin i (nolock) 
-	left join RiaMarkHold h (nolock) on i.cal_id=h.call_id and h.tipo_llamada=1
-	where cal_Inicio between @from and @to
+	from tmpccLogAgentesDia
+	where TipoStatusAge_id=3 
+	GROUP BY userId,camId,TipoStatusAge_id,timegroup
+	order by userId,timegroup,camId
+		   	 	
 	
-
-	insert into #tempccHoldSession
-	select A.Fila 
-		,A.call_id
-		,a.userId
-		,a.inbound_id
-		,A.time_hold hold,
-		--S.fecha holdout
-		isnull(S.time_hold,a.time_notes) unhold,
-		a.Tipo_marca Tipo_marca
-		,a.timegroup timegroup
-		,a.timegroup_next timegroup_next
-	from (
-		select ROW_NUMBER() OVER(PARTITION BY call_id ORDER BY time_hold,tipo_marca) Fila,call_id,userId,inbound_id,marca,tipo_marca,tipo_llamada,time_hold,time_notes,timegroup,timegroup_next
-		from #hold a where time_hold >= @from and time_hold <= @to
-	)A
-	left join (
-		select ROW_NUMBER() OVER(PARTITION BY call_id ORDER BY time_hold,tipo_marca) Fila,call_id,userId,inbound_id,marca,tipo_marca,tipo_llamada,time_hold,time_notes,timegroup,timegroup_next
-		from #hold a where time_hold >= @from	and time_hold <= @to
-	) S
-	on A.Fila=S.Fila-1 and A.call_id=S.call_id and A.tipo_marca=1 and S.tipo_marca=0
-	where A.tipo_llamada=1 --and a.Tipo_marca=1 
-	order by hold
-
-	select 
-		ths.call_id,
-		ths.userId,
-		ths.inbound_id,
-		ths.hold,
-		ths.unhold,
-		ths.Tipo_marca,
-		[dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold) as tiempohold,
-		ths.timegroup,
-		ths.timegroup_next
-		into #tiempoHold
-	 from #tempccHoldSession ths
-	 inner join TmpTimesInterval th on (ths.timegroup > th.Start and ths.timegroup < th.stop) OR th.Start between ths.timegroup and ths.timegroup_next
-	 where [dbo].TimeInterval( th.[start],th.[stop],ths.hold ,ths.unhold)>0 and Tipo_marca=1	
-	 and th.Start between @from and @to
-	
-	INSERT into #holdMayores2 
-	SELECT * from #tiempoHold where datediff(mi,timegroup,timegroup_next)>15 
-	delete #tiempoHold where  datediff(mi,timegroup,timegroup_next)>15	
-
-	insert into #tiempoHold
-	select DISTINCT  call_id,
-		userId as userId,
-		inbound_id as inbound_id,
-		hold,
-		unhold,
-		Tipo_marca,
-		[dbo].TimeInterval( th.[start],th.[stop],hold ,unhold) as tiempohold, 
-		th.[start] as timegroup,
-		th.[stop] as timegroup_next
-	from #holdMayores2 t
-	inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop ) OR th.Start between t.timegroup and t.timegroup_next
-	where [dbo].TimeInterval( th.[start],th.[stop],hold ,unhold)>0 
-	and th.Start between @from and @to
-
-	select 
-	inbound_id,
-	userId,
-	sum(tiempohold) as tiempohold,
-	--sum(Tipo_marca) as Tipo_marca,
-	timegroup,
-	timegroup_next
-	into #timeHoldInterval 
-	from #tiempoHold 
-	where tiempoHold>0 and Tipo_marca=1
-	group by userId,inbound_id,timegroup,timegroup_next
-
 	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	;with inCount as(
+		select i.timegroup,Inbound_id as inboundId,User_id userId 
+		,sum(CASE WHEN i.timeGroup > dateStartDetail AND i.timegroup_next > dateEndDetail and  statusCall_id = 13  THEN 1 ELSE 0 END ) as nacd			
+				,sum(CASE WHEN i.timeGroup > dateStartDetail AND timegroup_next > dateEndDetail and  statusCall_id = 13  THEN 1 ELSE 0 END ) as nabnd
+				,sum(tdialog) as tacd
+				,sum(tnotes) as tacw
+				,sum(CASE WHEN i.timeGroup > dateStartDetail AND timegroup_next > dateEndDetail and  statusCall_id = 13  and tnotes>0 THEN 1 ELSE 0 END) as nacw			
+				,sum(SalExt) as SalExt
+				,sum(tprosalext) as tprosalext
+				,sum(ntotal) as ncalls	
+				,SUM(tring) as tring
+				,SUM(CASE WHEN i.timeGroup > dateStartDetail AND timegroup_next > dateEndDetail and  statusCall_id = 13  and tring>0 THEN 1 ELSE 0 END) as nring
+				,SUM(CASE WHEN i.timeGroup > dateStartDetail AND timegroup_next > dateEndDetail and  statusCall_id = 13   THEN nMoh ELSE 0 END) as nhold
+		from tmpTimesInboundData i
+		left join #transferData  t on i.timegroup=t.timegroup and i.Inbound_id=t.InboundId
+					group by i.timegroup,Inbound_id,User_id 
+	)
 
 	select case when c.timegroup is not null then c.timegroup else G.timegroup end  as [date]
 		,isnull(c.inboundId,inb_id) as inboundId
@@ -271,35 +109,21 @@ begin
 		,isnull(c.nhold, 0) AS nhold
 	 INTO #IntervalosInbound
 	 from (
-			select timegroup,inboundId,userId 
-				,sum(c.nacd) as nacd			
-				,sum(c.nabnd) as nabnd
-				,sum(c.tacd) as tacd
-				,sum(c.tacw) as tacw
-				,sum(c.nacw) as nacw			
-				,sum(SalExt) as SalExt
-				,sum(tprosalext) as tprosalext
-				,sum(c.ncalls) as ncalls	
-				,SUM(c.tring) as tring
-				,SUM(c.nring) as nring
-				,SUM(c.nhold) as nhold
-			from #inbound as c
-			where inboundId > 0
-			group by timegroup,inboundId,userId 
+			select * from  inCount where inboundId > 0		
 		) c		
 	full join 
 	(select [user_id] as userId, timegroup, inb_id,sum([tlog seg] ) as [tlog seg] from  #sessionTimeGroup group by [user_id] ,timegroup,inb_id ) G
 	on G.timegroup=c.[timegroup] and c.inboundId = G.inb_id and G.userId=c.userId
-	 
+
+	
 	select i.*
 	,isnull(case when lo.TipoStatusAge_id=3 then isnull(lo.tStatus,0) end,0) tdispo
 	,isnull(case when lo.TipoStatusAge_id=3 then lo.nstatusfra end,0) ndispo
 	,isnull(h.tiempohold, 0) AS thold
-	--,isnull(h.Tipo_marca, 0) AS nhold	
 	INTO #HoldDisp
 	from #IntervalosInbound i
 	left JOIN #groupLog lo on i.date = lo.timegroup and i.inboundId = lo.IdCampEsp and i.userId = lo.user_id
-	left JOIN #timeHoldInterval h on h.inbound_id = i.inboundId and i.date = h.timegroup and i.userId = h.userId
+	left JOIN tmpTimesHoldIn h on h.inbound_id = i.inboundId and i.date = h.timegroup and i.userId = h.userId	
 
 	delete from [RepMKTTiemposTotales]	where date >= @from AND date <= @to
 
@@ -342,19 +166,12 @@ begin
 		group by[date],inboundId, userId, inb.descripcion
 		order by date		
 
-	IF OBJECT_ID('tempdb..#sessionTimeGroup') IS NOT NULL drop table #sessionTimeGroup;			
-	IF OBJECT_ID('tempdb..#inbound') IS NOT NULL drop table #inbound
-	IF OBJECT_ID('tempdb..#inboundTimeMayores') IS NOT NULL drop table #inboundTimeMayores
-	IF OBJECT_ID('tempdb..#holdTime') IS NOT NULL drop table #holdTime
-	IF OBJECT_ID('tempdb..#hold') IS NOT NULL DROP TABLE #hold
-	IF OBJECT_ID('tempdb..#tempccHoldSession') IS NOT NULL DROP TABLE #tempccHoldSession
-	IF OBJECT_ID('tempdb..#tiempoHold') IS NOT NULL DROP TABLE #tiempoHold
-	IF OBJECT_ID('tempdb..#holdMayores2') IS NOT NULL DROP TABLE #holdMayores2
-	IF OBJECT_ID('tempdb..#timeHoldInterval') IS NOT NULL DROP TABLE #timeHoldInterval
+	IF OBJECT_ID('tempdb..#sessionTimeGroup') IS NOT NULL drop table #sessionTimeGroup;					
 	IF OBJECT_ID('tempdb..#IntervalosInbound') IS NOT NULL DROP TABLE #IntervalosInbound
-	IF OBJECT_ID('tempdb..#ccLogAgentesDia') IS NOT NULL DROP TABLE #ccLogAgentesDia
-	IF OBJECT_ID('tempdb..#ccLogAgentesDiaMayores') IS NOT NULL DROP TABLE #ccLogAgentesDiaMayores
+	
 	IF OBJECT_ID('tempdb..#HoldDisp') IS NOT NULL drop table #HoldDisp
 	IF OBJECT_ID('tempdb..#groupLog') IS NOT NULL drop table #groupLog	
+
+	IF OBJECT_ID('tempdb..#transferData') IS NOT NULL drop table #transferData		
 
 END

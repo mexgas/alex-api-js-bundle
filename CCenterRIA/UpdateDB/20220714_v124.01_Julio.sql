@@ -28,7 +28,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 124 --**********actualizar a 123 sin fix
-SET @versionfix = 01
+SET @versionfix = 1
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -42,13 +42,15 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion = @version and @actualVersionFix >= 30
+IF @actualVersion in(@version,@version-1) and @actualVersionFix >= 53
 BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-	-------------------------  Start CCC --------------------------------------------------
-	 set @process = 'K002124-Mensajes recibidos en conversaciÃ³n al existir una desconexiÃ³n en el servicio MultimediaCommon'
+
+	
+	 -------------------------  Start CCC --------------------------------------------------
+	 set @process = 'K002124-Mensajes recibidos en conversación al existir una desconexión en el servicio MultimediaCommon'
      set @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
 				AS
 				BEGIN
@@ -90,10 +92,10 @@ BEGIN
 	 EXEC(@sql)
 
 	-------------------------  END CCC --------------------------------------------------
-	
+   
 	 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
-		--exec ccsp_getVersion 'BD', @version
+		exec ccsp_getVersion 'BD', @version
 		EXEC ccsp_getVersion 'BDF', @versionFix
 
 		COMMIT TRAN

@@ -76,99 +76,99 @@ BEGIN
     end'
     EXEC(@sql)
     /************************/
-    set @process = 'CW-Roles se quita relacion permiso-rol Iniciar y detener campañas|Start and stop Campaign'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Iniciar y detener campañas|Start and stop Campaign'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10001)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10001)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Carga de base de datos|Data Import'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Carga de base de datos|Data Import'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10002)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10002)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Eliminar nuevos registros|Delete new records'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Eliminar nuevos registros|Delete new records'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10005)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10005)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Devolucion de llamada|CallBacks'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Devolucion de llamada|CallBacks'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10006)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10006)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar de areas'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar de areas'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10008)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10008)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar tipos de no disponible'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar tipos de no disponible'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10009)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10009)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar permisos de agente'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar permisos de agente'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10010)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10010)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar campañas'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar campañas'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10011)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10011)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar horarios'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar horarios'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10014)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10014)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar chat con agentes'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar chat con agentes'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10015)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10015)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar monitoreo de llamada'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar monitoreo de llamada'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10016)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10016)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar inicio automático'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar inicio automático'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10020)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10020)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar calificaciones'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar calificaciones'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10021)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10021)
     end'
     EXEC(@sql)
-    set @process = 'CW-Roles se quita relacion permiso-rol Gestionar listas negras'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar listas negras'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10025)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10025)
     end'
     EXEC(@sql)
 
-    set @process = 'CW-Roles se quita relacion permiso-rol Acceder a reporteador'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Acceder a reporteador'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10026)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10026)
     end'
     EXEC(@sql)
 
-    set @process = 'CW-Roles se quita relacion permiso-rol Acceder a buscador'
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Acceder a buscador'
     set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10027)
     begin
         INSERT INTO ccRoles_Permissions VALUES(6,10027)

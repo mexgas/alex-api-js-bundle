@@ -57,15 +57,8 @@ BEGIN
 		END'
 	EXEC(@sql)
 
-    set @process = 'CW-PREVIEW eliminar sp ccsp_GalateaAdminSetPermissions'
-    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSetPermissions'')
-    begin
-        DROP PROCEDURE ccsp_GalateaAdminSetPermissions;
-    end'
-    EXEC(@sql)
-
     set @process = 'CW-PREVIEW se agrega SP ccsp_GalateaAdminSetPermissions'
-    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
     @adminId SMALLINT,
     @areaId SMALLINT,
     @agentsIds VARCHAR(MAX),
@@ -309,15 +302,8 @@ END
 SET NOCOUNT OFF'
     EXEC(@sql)
 
-    set @process = 'CW-PREVIEW eliminar sp ccsp_GalateaAdminGetPermissions'
-    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetPermissions'')
-    begin
-        DROP PROCEDURE ccsp_GalateaAdminGetPermissions;
-    end'
-    EXEC(@sql)
-
     set @process = 'CW-PREVIEW agregar sp ccsp_GalateaAdminGetPermissions'
-    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
     @user_id varchar(255),
     @Type int
 AS
@@ -425,8 +411,6 @@ set nocount off'
                from ccUsers U,ccoCallsOutSource O (nolock)
         INNER JOIN ccoCallsPreviewData P (nolock) on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id
         Where callout_id=@callout_id and U.User_id=@user_id
-        --union
-        --select AllowDeleteRecord+''~'' from ccUsers where User_id=@user_id
 
         set nocount off'
     EXEC(@sql)

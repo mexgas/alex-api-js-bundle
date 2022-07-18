@@ -172,6 +172,18 @@ end
 set nocount off'
     EXEC(@sql)
 
+
+	set @process = 'CW-7116 Estado inactivo'
+    set @sql = '
+		if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=33)
+		begin
+			insert cctipostatusagente values (33,''Assisted'')
+		end
+		if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=35)
+		begin
+			insert cctipostatusagente values (35,''Inactive (Preview)'')
+		end'
+    EXEC(@sql)
     
 
 		/* End script release */

@@ -101,31 +101,31 @@ BEGIN
     EXEC(@sql)
 
 	set @process = 'Add data to ccTypeProcessPreview'
-    set @sql = '
-		if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id = 0) = 0
+    set @sql = '		
+		if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 0)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (0, ''Discard'',''systemTranslated_Discard'')
 			end
-		 if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id = 1) = 0
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 1)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (1, ''Delete'',''systemTranslated_DeletePreview'')
 			end
-		 if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id=2) = 0
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 2)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (2, ''DiscardByTime'',''systemTranslated_DiscardByTime'')
 			end
-		 if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id = 3) = 0
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 3)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (3, ''DiscardByND'',''systemTranslated_DiscardByND'')
 			end
-		 if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id = 4) = 0
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 4)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (4, ''DiscardByXfer'',''systemTranslated_DiscardByXfer'')
 			end
-		 if (select count(typeProcess_id) from ccTypeProcessPreview where typeProcess_id = 7) = 0
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 7)
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (7, ''WithDialResult'','''')
-			end
+			end		
 	'    
 
 		/* End script release */

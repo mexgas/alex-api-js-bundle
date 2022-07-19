@@ -242,6 +242,53 @@ END'
 	'
 
 	EXEC(@sql)
+
+	
+	SET @process = 'CW-6672 validación de sp ccsp_RecordsManagement'
+
+	SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_RecordsManagement'')
+	begin
+		DROP PROCEDURE ccsp_RecordsManagement;
+	end'
+
+	EXEC(@sql)
+
+
+	SET @process = 'CW-6672 Creacion de sp ccsp_RecordsManagement'
+
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_RecordsManagement]
+
+	@action int,
+	@pbxId int = 0
+
+	AS
+	BEGIN
+
+		if @action = 1 
+		begin			
+			select ruta_repositorio from TREC_REPOSITORIOS where id_repositorio = @pbxId
+		end
+
+		if @action = 2 
+		begin			
+			select ruta_repositorio_secundario from TREC_REPOSITORIOS where id_repositorio = @pbxId
+		end
+
+		if @action = 3 
+		begin			
+			select cast(id_repositorio as int) as DialerId, InIniPort as InitialPort, InFinPort as FinalPort from TREC_REPOSITORIOS where id_repositorio = @pbxId
+		end
+
+		if @action = 4 
+		begin			
+			select cast(id_repositorio as int) as DialerId, OutIniPort as InitialPort, OutFinPort as FinalPort from TREC_REPOSITORIOS where id_repositorio = @pbxId
+		end
+	END
+	'
+
+	EXEC(@sql)
 	
 --------------------------------------------------------------------------------------------------
 		

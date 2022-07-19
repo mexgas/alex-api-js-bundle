@@ -863,11 +863,11 @@ set nocount off'
     EXEC(@sql)
 
 ----------------------------------- Hugo, Relaciones de campañas  ---------------------------------
-    set @process = 'ALter SP ccsp_GalateaAdminInbound Relaciones de campañas'
-    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminInbound] @Option AS SMALLINT, 
+    set @process = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminInbound] @Option AS SMALLINT, 
                                                 @InboundId AS SMALLINT = 0,
 												@User_id AS SMALLINT = 0,
-												@OutboundID AS SMALLINT = 0
+												@OutboundID AS SMALLINT = 0,
+												@multi_cam as varchar(max) = null
 	AS
 	BEGIN
 	    set nocount on;
@@ -931,10 +931,10 @@ set nocount off'
 				--assignedAndTookLine = ISNULL(COUNT (CASE WHEN statusCall_id =16 THEN 1 ELSE NULL END), 0), -- asignada y toma linea
 				callsQueue = ISNULL(count (case when cal_que > 0 then 1 else null end), 0)
 				--onQueue = ISNULL(COUNT(CASE WHEN statusCall_id = 5 THEN 1 ELSE NULL END), 0)
-				--initCalls = CAST(ISNULL(COUNT(CASE WHEN statusCall_id = 1 THEN 1 ELSE NULL END), 0) AS varchar(7))+'|'+
-				--			ISNULL((SELECT STUFF((SELECT '|' + cast(ci.cal_id AS varchar(7))
+				--initCalls = CAST(ISNULL(COUNT(CASE WHEN statusCall_id = 1 THEN 1 ELSE NULL END), 0) AS varchar(7))+''|''+
+				--			ISNULL((SELECT STUFF((SELECT ''|'' + cast(ci.cal_id AS varchar(7))
 				--			FROM ccCallsin ci (nolock) WHERE cal_inicio > dateadd(mi,-5,getdate()) AND ci.inbound_id=a.inbound_id
-				--			FOR XML PATH('')) ,1,1,'')),''0'')
+				--			FOR XML PATH('''')) ,1,1,'''')),''0'')
 			FROM ccCallsIn a (nolock)
 			WHERE cal_inicio > CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
 					--and a.inbound_id in (select cam_id from ccSupervisorCam where user_id = @User_id and tipo = 0)
@@ -946,15 +946,22 @@ set nocount off'
 		if(@Option = 4) -- Carga los ACD del administrador mandado
 	    begin
 			SELECT cam_id 
-			FROM ccSupervisorCam 
+			FROM ccSupervisorCam  nolock
 			WHERE user_id = @User_id and tipo = 0
 			SET nocount off
 			return(0)
 		end
 
 		IF(@Option = 5) -- Relate the inbound campaign with the outbound campaign
-		BEGIN		
-			IF((SELECT ISNULL(cam_id,-1) AS outboundId FROM ccInbound WHERE Inbound_id = @InboundId) != -1)
+		BEGIN
+			IF(@multi_cam is not null)
+			BEGIN
+				UPDATE ccInbound SET cam_id = @OutboundID WHERE Inbound_id IN (
+					SELECT value from dbo.fn_RIASplitDelimited(@multi_cam,'',''))
+				SELECT 1;
+				RETURN 1;
+			END
+			IF((SELECT ISNULL(cam_id,-1) AS outboundId FROM ccInbound nolock WHERE Inbound_id = @InboundId) != -1)
 				BEGIN
 					SELECT -1;
 					RETURN -1;
@@ -974,7 +981,7 @@ set nocount off'
 		END;
 		IF(@Option = 7) -- Check if the inbound Campaign is related
 		BEGIN
-			SELECT CAST(ISNULL(cam_id,-1) AS INT) AS outboundId FROM ccInbound WHERE Inbound_id = @InboundId;
+			SELECT CAST(ISNULL(cam_id,-1) AS INT) AS outboundId FROM ccInbound nolock WHERE Inbound_id = @InboundId;
 		END
 		IF(@Option = 8) -- Delete the relation between inbound campaings which are related to outdbound campaign
 		BEGIN

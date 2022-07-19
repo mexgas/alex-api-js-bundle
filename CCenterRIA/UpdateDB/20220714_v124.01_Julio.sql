@@ -42,12 +42,11 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF @actualVersion in(@version,@version-1) and @actualVersionFix >= 53
+IF (@actualVersion =@version-1 and @actualVersionFix >= 53) or  (@actualVersion =@version and @actualVersionFix =1)
 BEGIN
 	BEGIN TRAN
 
-	BEGIN TRY
-
+	BEGIN TRY	
 	
 	 -------------------------  Start CCC --------------------------------------------------
 	 set @process = 'K002124-Mensajes recibidos en conversación al existir una desconexión en el servicio MultimediaCommon'

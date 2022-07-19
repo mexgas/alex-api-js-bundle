@@ -50,7 +50,7 @@ BEGIN
 
 	
 	 -------------------------  Start CCC --------------------------------------------------
-	 set @process = 'K002124-Mensajes recibidos en conversación al existir una desconexión en el servicio MultimediaCommon'
+	 set @process = 'K002124-Mensajes recibidos en conversaciÃ³n al existir una desconexiÃ³n en el servicio MultimediaCommon'
      set @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
 				AS
 				BEGIN

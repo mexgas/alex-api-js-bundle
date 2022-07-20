@@ -183,7 +183,8 @@ set nocount off'
                                                @LoadId AS      INT      = 0, 
                                                @Type AS        SMALLINT = 0,
 											   @InboundType	   SMALLINT = 0,
-											   @AreaId		   SMALLINT = 0
+											   @AreaId		   SMALLINT = 0,
+											   @multi_type     varchar(max) = null
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -633,7 +634,9 @@ order by A.campName
 								FROM ccRIACampEspWG A (NOLOCK)
 									INNER JOIN wgId ON wgId.IDWG = A.IDWG
 														AND A.Tipo = 0
-									INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND cci.chat = @InboundType;
+									INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id 
+									AND ((@multi_type is null AND cci.chat = @InboundType)
+										OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))));
 						END
 			END;
 			ELSE
@@ -648,7 +651,10 @@ order by A.campName
 					BEGIN 
 						SELECT DISTINCT 
 								CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-						FROM ccInbound cci (NOLOCK) where IDArea = @AreaId AND cci.chat = @InboundType
+						FROM ccInbound cci (NOLOCK) where IDArea = @AreaId
+						AND ((@multi_type is null AND cci.chat = @InboundType)
+							OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
 					END
 			END;
 			RETURN 0;
@@ -674,13 +680,19 @@ order by A.campName
 							FROM ccRIACampEspWG A (NOLOCK)
 								INNER JOIN wgId ON wgId.IDWG = A.IDWG
 													AND A.Tipo = 0
-								INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND cci.chat = @InboundType AND isnull(cci.cam_id,-1) = -1
+								INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND isnull(cci.cam_id,-1) = -1
+								AND ((@multi_type is null AND cci.chat = @InboundType)
+									OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
 				END
 			ELSE
 				BEGIN
 					SELECT DISTINCT 
 					CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
-					FROM ccInbound cci (NOLOCK) where IDArea = @AreaId AND cci.chat = @InboundType AND isnull(cam_id,-1) = -1
+					FROM ccInbound cci (NOLOCK) where IDArea = @AreaId AND isnull(cam_id,-1) = -1
+					AND ((@multi_type is null AND cci.chat = @InboundType)
+						OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
 				END
 		END
     IF @Option = 15
@@ -689,7 +701,7 @@ order by A.campName
             CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
             FROM ccInbound NOLOCK where cam_id = @Id
         END
-END; '
+END;'
  EXEC(@sql)
 
 

@@ -244,7 +244,7 @@ END'
 	EXEC(@sql)
 
 	
-	SET @process = 'CW-6672 validación de sp ccsp_RecordsManagement'
+	SET @process = 'CW-6672 validacion de sp ccsp_RecordsManagement'
 
 	SET @sql = '
 	if exists (select * from sys.procedures where name = N''ccsp_RecordsManagement'')

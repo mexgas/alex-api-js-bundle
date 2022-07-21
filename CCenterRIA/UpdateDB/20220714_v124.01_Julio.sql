@@ -7,6 +7,8 @@ Author:
 
 Date: 2022/05/23
 Description: Archivo julio 2022, cambios preview
+Date: 2022/02/15
+Description: Merge con los cambios de sorteos
 
 Database: CCenterRia
 Required version: 123.27
@@ -42,56 +44,11 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-IF (@actualVersion =@version-1 and @actualVersionFix >= 53) or  (@actualVersion =@version and @actualVersionFix =1)
+IF (@actualVersion =@version-1 and @actualVersionFix >= 53) or  (@actualVersion =@version and @actualVersionFix =@versionfix)
 BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY	
-	
-	 -------------------------  Start CCC --------------------------------------------------
-	 set @process = 'K002124-Mensajes recibidos en conversación al existir una desconexión en el servicio MultimediaCommon'
-     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
-				AS
-				BEGIN
-					SET NOCOUNT ON;
-
-					IF @action = 1
-					BEGIN --Lista  ACD
-						SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
-						cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
-						FROM ccInbound A
-						INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
-						WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
-					END
-					ELSE IF @action = 2
-					BEGIN --Lista Agentes  
-						SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
-						FROM ccRIAWorkGroupUsers A
-						INNER JOIN ccusers B ON A.User_id = B.User_id
-						INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
-						INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
-						LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
-						WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
-						ORDER BY A.User_id
-					END
-					ELSE IF @action = 3
-					BEGIN --List Sender Mail
-						SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
-						FROM contactMeanOut A
-						LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
-						WHERE @senderId IS NULL OR @senderId = A.contactMeanOutId
-					END
-					ELSE IF @action = 4
-					BEGIN --List ACD Whatsapp
-						SELECT  inboundId AS Id
-						FROM contactMeanIn
-						WHERE meanContactTypeId = 5
-					END
-				END'
-	 EXEC(@sql)
-
-	-------------------------  END CCC --------------------------------------------------
- 
 
 	set @process = 'K002056 se agregan menus'
     set @sql = 'if not exists( select * from ccmenus where type=3 and menu_id=12000)
@@ -216,10 +173,53 @@ end
 
 set nocount off'
     EXEC(@sql)
+	
 
-    
+	 -------------------------  Start CCC --------------------------------------------------
+	 set @process = 'K002124-Mensajes recibidos en conversación al existir una desconexión en el servicio MultimediaCommon'
+     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
 
-		/* End script release */
+	IF @action = 1
+	BEGIN --Lista  ACD
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+		cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+		FROM ccInbound A
+		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
+	END
+	ELSE IF @action = 2
+	BEGIN --Lista Agentes  
+		SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+		FROM ccRIAWorkGroupUsers A
+		INNER JOIN ccusers B ON A.User_id = B.User_id
+		INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
+		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+		LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+		WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+		ORDER BY A.User_id
+	END
+	ELSE IF @action = 3
+	BEGIN --List Sender Mail
+		SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+		FROM contactMeanOut A
+		LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+		WHERE @senderId IS NULL OR @senderId = A.contactMeanOutId
+	END
+	ELSE IF @action = 4
+	BEGIN --List ACD Whatsapp
+		SELECT  inboundId AS Id
+		FROM contactMeanIn
+		WHERE meanContactTypeId = 5
+	END
+END'
+	 EXEC(@sql)
+
+	-------------------------  END CCC --------------------------------------------------
+   
+	 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		exec ccsp_getVersion 'BD', @version
 		EXEC ccsp_getVersion 'BDF', @versionFix

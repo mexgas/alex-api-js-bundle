@@ -1077,12 +1077,12 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 	
 		if @type = 0
 		begin 	
-			select cast(cal_id as int) as cal_id from ccoCallsOut where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
+			select cast(cal_id as int) as cal_id from ccoCallsOut with(nolock) where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
 		end
 
 		else if @type = 1
 		begin
-			select cast(cal_id as int) as cal_id from ccCallsIn where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
+			select cast(cal_id as int) as cal_id from ccCallsIn with(nolock) where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
 		end
 	
 	end
@@ -1106,11 +1106,11 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 	begin
 		if @type=0 
 		begin
-			update ccoCallsOut with(rowlock) set file_moved=@fileMoved where cal_id=@callId
+			update ccoCallsOut with(nolock) set file_moved=@fileMoved where cal_id=@callId
 		end
 		else 
 		begin
-			update ccCallsIn with(rowlock) set file_moved=@fileMoved where cal_id=@callId
+			update ccCallsIn with(nolock) set file_moved=@fileMoved where cal_id=@callId
 		end
 	end
 
@@ -1119,7 +1119,7 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 		declare @result as int = 0
 		if @type = 0 
 		begin
-			if exists (select * from ccoCallsOut where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
+			if exists (select * from ccoCallsOut with(nolock) where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
 			begin
 				set @result = 1
 			end
@@ -1127,7 +1127,7 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 	
 		else if @type = 1
 		begin
-			if exists (select * from cccallsin where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
+			if exists (select * from cccallsin with(nolock) where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
 			begin
 				set @result = 1
 			end

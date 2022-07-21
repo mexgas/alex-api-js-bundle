@@ -531,6 +531,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, conv
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, convert(text, N''ReconnectKolob'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, convert(text, N''Ready PreviewPro'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, convert(text, N''Preview'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (33, convert(text, N''Asistida'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Inactivo'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de usuario''
 Delete [dbo].[ccTipoUsers]
@@ -841,6 +843,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, ''Ri
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, ''ReconnectKolob'')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, ''Ready PreviewPro'')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, ''Preview'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (33, convert(text, N''Assisted'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Idle'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de usuario''
 Delete [ccTipoUsers]
@@ -1030,6 +1034,18 @@ end
 SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 '
 		EXEC(@sql)
+
+		set @process = 'CW-7116 Estado inactivo'
+	    set @sql = '
+			if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=33)
+			begin
+				insert cctipostatusagente values (33,''Assisted'')
+			end
+			if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=35)
+			begin
+				insert cctipostatusagente values (35,''Idle'')
+			end'
+	    EXEC(@sql)
 
 	 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

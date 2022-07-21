@@ -1106,11 +1106,11 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 	begin
 		if @type=0 
 		begin
-			update ccoCallsOut with(nolock) set file_moved=@fileMoved where cal_id=@callId
+			update ccoCallsOut set file_moved=@fileMoved where cal_id=@callId
 		end
 		else 
 		begin
-			update ccCallsIn with(nolock) set file_moved=@fileMoved where cal_id=@callId
+			update ccCallsIn set file_moved=@fileMoved where cal_id=@callId
 		end
 	end
 

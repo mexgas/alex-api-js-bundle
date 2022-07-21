@@ -15,7 +15,7 @@ begin
 	begin try
 
 
------------------------------------------------------------------------------------------------------------------------
+------------------------------------------- BEGIN Repositorio Secundario ----------------------------------------------------------------------------
 
 	set @process = 'CW-6280 Add column ruta_repositorio_secundario'
 	set @Sql = 'IF NOT EXISTS (SELECT * FROM sys.columns WHERE NAME = N''ruta_repositorio_secundario'' AND Object_ID = Object_ID(N''TREC_REPOSITORIOS''))
@@ -31,8 +31,87 @@ BEGIN
 END'
 	EXEC(@Sql)
 	
---------------------------------------------------------------------------------------------------
+------------------------------------------- END Repositorio Secundario ----------------------------------------------------------------------------
 		
+------------------------------------------- BEGIN Capacitacion  ----------------------------------------------------------------------------
+		set @process = 'ALTER sp ccsp_GalateaRecordingEvaluation Capacitacion'
+	set @Sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaRecordingEvaluation] 
+@option SMALLINT, @idRecordingEvaluation INT = 0, @user VARCHAR(50) = '''', @idFormat INT = 0, @userSupervisor VARCHAR(50) = '''', @grabId BIGINT = 0
+AS
+BEGIN
+	IF @option = 1 --search recording evaluation owner
+	BEGIN
+		SELECT userAdmin
+		FROM RECORDERRIA_RECORDINGEVALUATION
+		WHERE deleted = 0
+			AND idRecordingEvaluation = @idRecordingEvaluation
+	END
+
+	Else IF @option = 2 --get all answers
+	BEGIN
+		SELECT *
+		FROM RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION
+		WHERE idRecordingEvaluation IN (
+				SELECT idRecordingEvaluation
+				FROM RECORDERRIA_RECORDINGEVALUATION
+				WHERE grab_id = @idRecordingEvaluation
+					AND userAdmin = @user
+					AND userSupervisor = @userSupervisor
+					AND idFormat = @idFormat
+					AND deleted = 0
+				)
+	END
+
+	Else  IF @option = 3 --get all recording evaluations
+	BEGIN
+		SELECT *
+		FROM RECORDERRIA_RECORDINGEVALUATION
+		WHERE grab_id = @idRecordingEvaluation
+			AND userAdmin = @user
+			AND userSupervisor = @userSupervisor
+			AND idFormat = @idFormat
+			AND deleted = 0
+	END
+
+	Else  IF @option = 4 --get all supervisors
+	BEGIN
+		DECLARE @camId INT, @callType INT
+
+		SELECT @camId = cam_id, @callType = tipo_llamada
+		FROM (
+			SELECT grab_id, cam_id, tipo_llamada
+			FROM RIA_GRABACION
+			WHERE grab_id = @grabId
+			
+			UNION
+			
+			SELECT grab_id, cam_id, tipo_llamada
+			FROM RIA_GRABACIONCONSULTA
+			WHERE grab_id = @grabId --1 Entrada/2 salida
+			) x
+
+		IF @callType = 1
+		BEGIN
+			SELECT us.[User_id], us.[Login] AS ''Username''
+			FROM [ccUsers] AS us
+			INNER JOIN [ccInbound] AS ca ON us.IDArea = ca.IDArea
+				AND us.TipoUser_id = 2
+			WHERE ca.Inbound_id = @camId
+		END
+		ELSE
+		BEGIN
+			SELECT us.[User_id], us.[Login] AS ''Username''
+			FROM [ccUsers] AS us
+			INNER JOIN cccamps AS ca ON us.IDArea = ca.IDArea
+				AND us.TipoUser_id = 2
+			WHERE ca.cam_id = @camId
+		END
+	END
+END
+'
+	EXEC(@Sql)
+
+	------------------------------------------- END Capacitacion  ----------------------------------------------------------------------------
 		
 		
 

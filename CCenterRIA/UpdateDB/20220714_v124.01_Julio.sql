@@ -219,7 +219,6 @@ END'
 
 	-------------------------  END CCC --------------------------------------------------
 
-
 -------------------------------START CAPACITACION --------------------------------
 set @process = 'Correcion ALter SP ccsp_GalateaAdminANIListLD Capacitacion'
         set @sql='ALTER PROCEDURE [dbo].[ccsp_GalateaAdminANIListLD]
@@ -378,8 +377,6 @@ end
         EXEC(@sql)
 
 -------------------------------END CAPACITACION --------------------------------
-
-
 
 	set @process = 'CW-6949 ST_2022_05_301 alter configuraIdiomaCatalogosEspañol'
     set @sql='ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol] AS
@@ -1035,6 +1032,114 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 '
 		EXEC(@sql)
 
+	SET @process = 'CW-6672 Creacion de setting 233'
+
+	SET @sql = '
+	if not exists (select * from ccsettings where setting_id = 233)
+	begin
+		insert into ccsettings (setting_id, valor, descripcion, status, tipo, detalle, description, bloadSettings, validate) values
+		(233, ''30|10'', ''Parametros que el servicio NuxibaMangementRecordsRepository tomará'', 1, ''GRL'', ''Tiempo en días maximo de antiguedad de una grabacion|Tiempo en minutos para hacer copia las grabaciones de servidor local a repositorios principal y secundario'', ''Time in days maximum age of a recording|Time in minutes to make a copy of the recordings from the local server to the main and secondary repositories'', 1, ''.*'')
+	end '
+
+	EXEC(@sql)
+
+	SET @process = 'CW-6672 validación de sp ccsp_RecordsManagement'
+
+	SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_RecordsManagement'')
+	begin
+		DROP PROCEDURE ccsp_RecordsManagement;
+	end
+	'
+
+	EXEC(@sql)
+
+	SET @process = 'CW-6672 Creacion de sp ccsp_RecordsManagement'
+
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_RecordsManagement]
+	@action as tinyint,
+	@type as int = null,
+	@initialPort as int = null,
+	@finalPort as int = null,
+	@maxOldDays as int = null,
+	@callId as int = null,
+	@fileMoved as int = null
+
+	AS
+
+	declare @maxDays as int
+
+	SET NOCOUNT ON
+
+	if @action = 1
+	begin
+		set @maxDays = @maxOldDays * -1
+
+		if @type = 0
+		begin
+			select cast(cal_id as int) as cal_id from ccoCallsOut with(nolock) where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
+		end
+
+		else if @type = 1
+		begin
+			select cast(cal_id as int) as cal_id from ccCallsIn with(nolock) where cal_Inicio < DATEADD(DAY, @maxDays, getDate()) and cal_puerto between @initialPort and @finalPort
+		end
+
+	end
+
+	if @action = 2
+	begin
+		declare @time int
+		if @type=0
+		begin
+			select @time=cal_tDialog from ccoCallsOut with(nolock) where cal_id=@callId and file_moved is null
+		end
+		else
+		begin
+			select @time=cal_tDialog from ccCallsIn with(nolock) where cal_id=@callId and file_moved is null
+		end
+
+		select case when @time > 0 then 1 else 0 end as result
+	end
+
+	if @action = 3
+	begin
+		if @type=0
+		begin
+			update ccoCallsOut set file_moved=@fileMoved where cal_id=@callId
+		end
+		else
+		begin
+			update ccCallsIn set file_moved=@fileMoved where cal_id=@callId
+		end
+	end
+
+	if @action = 4
+	begin
+		declare @result as int = 0
+		if @type = 0
+		begin
+			if exists (select * from ccoCallsOut with(nolock) where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
+			begin
+				set @result = 1
+			end
+		end
+
+		else if @type = 1
+		begin
+			if exists (select * from cccallsin with(nolock) where cal_id = @callId and cal_puerto between @initialPort and @finalPort)
+			begin
+				set @result = 1
+			end
+		end
+
+		select @result as result
+	end'
+
+	EXEC(@sql)
+
+
 		set @process = 'CW-7116 Estado inactivo'
 	    set @sql = '
 			if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=33)
@@ -1047,7 +1152,953 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 			end'
 	    EXEC(@sql)
 
-set @process = 'CW-PREVIEW se agrega campo para permiso eliminar registro en campa�as preview'
+-------------------------------START RESUMEN OPERATIVO --------------------------------
+	 set @process = 'K002107-ResumenOperativo se crea tabla'
+     set @sql = 'if not exists (select * from sys.tables where name = N''ccWAOperatingSummary'')
+begin
+    CREATE TABLE [dbo].[ccWAOperatingSummary](
+	[Inboundid] [INT] NOT NULL,
+	[Attended] [INT] DEFAULT 0,
+	[OnQueue] [INT] DEFAULT 0,
+	[Assigned] [INT] DEFAULT 0,
+	[Request] [INT] DEFAULT 0,
+	[EndedBySystem] [INT] DEFAULT 0,
+	[Available] [INT] DEFAULT 0)
+end'
+	 EXEC(@sql)
+
+     set @process = 'K002107-ResumenOperativo se altera el sp ccsp_WhatsAppInformation'
+     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
+    @Option SMALLINT,
+    @InboundId SMALLINT = 0,
+    @ConversationId INT = 0,
+	@AgentsAvailables INT = 0,
+	@IncreaseDecreaseAgent BIT = NULL
+
+    AS
+    SET NOCOUNT ON
+
+    IF @InboundId IS NOT NULL BEGIN
+        IF EXISTS (SELECT * FROM ccInbound WHERE Inbound_id = @InboundId AND chat = 5) BEGIN
+            DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
+            --DECLARE @Today SMALLDATETIME = ''2022-03-24''
+            IF @Option = 1 -- Generate Averages and Obtain all WhatsApp Campaign Information
+                BEGIN
+                    IF EXISTS (SELECT * FROM ccWAAverageConversations
+                               WHERE InboundId = @InboundId
+                               AND (LastUpdate IS NULL
+                               OR ( StatusUpdate = 1 AND  DATEDIFF(ss, LastUpdate, GETDATE()) >= 5)
+                               OR  DATEDIFF(MI, LastUpdate, GETDATE()) >= 5))
+                    BEGIN
+                        -------------------------- ----------------------- Variable Declaration ---------------------------------------------------
+
+                        DECLARE @AverageConversationTime INT = 0;
+                        DECLARE @AverageDialogTime INT = 0;
+                        DECLARE @AverageWaitingTime INT = 0;
+                        DECLARE @MaximumWaitingTime INT = 0;
+                        DECLARE @DefaultValue INT = (SELECT ISNULL(defaultServiceLevelParameter, 2) FROM contactMeanIn WHERE inboundId = @InboundId);
+                        SET @DefaultValue = @DefaultValue * 60;
+                        DECLARE @LessThanDefault INT = 0;
+                        DECLARE @ReceivedConversations INT = 0;
+                        DECLARE @ServiceLevel SMALLINT = 0;
+
+                        --------- Modify Average Conversation, Dialog Time, Queue/Waiting Time, Maximum Waiting Time and Service Level ------------
+
+                        SELECT @AverageConversationTime = ROUND(AVG(tConversation), 4),
+                               @AverageDialogTime = ROUND(AVG(tChatting), 4),
+                               @AverageWaitingTime = ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),
+                               @MaximumWaitingTime = MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),
+                               @ReceivedConversations = COUNT(conversationDate),
+                               @LessThanDefault = COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= @DefaultValue THEN 1 ELSE NULL END)
+                        FROM ccWhatsAppConversations WHERE inboundId = @InboundId
+                        AND requestDate >= @Today
+
+                        SET @ServiceLevel = CASE WHEN @ReceivedConversations = 0 THEN 0 ELSE ROUND(((@LessThanDefault*1.0) / @ReceivedConversations) * 100, 2) END
+
+                        ----------------------------------------------------- Update table --------------------------------------------------------
+
+                        IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId)
+                        BEGIN
+                            UPDATE ccWAAverageConversations
+                            SET AverageConversationTime = @AverageConversationTime,
+                                AverageDialogTime = @AverageDialogTime,
+                                AverageWaitingTime = @AverageWaitingTime,
+                                MaximumWaitingTime = @MaximumWaitingTime,
+                                ServiceLevel = @ServiceLevel,
+                                StatusUpdate = 0,
+                                LastUpdate = GETDATE()
+                            WHERE InboundId = @InboundId
+                        END
+                        ELSE
+                        BEGIN
+                            INSERT INTO ccWAAverageConversations (InboundId, AverageConversationTime, AverageDialogTime,
+                                                                  AverageWaitingTime, MaximumWaitingTime, ServiceLevel, StatusUpdate, LastUpdate)
+                            VALUES(@InboundId, @AverageConversationTime, @AverageDialogTime, @AverageWaitingTime, @MaximumWaitingTime,
+                                   @ServiceLevel, 0 , GETDATE())
+                        END
+                    END
+                    --------------------------------- Results -----------------------------------
+
+                    SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
+                           ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
+                           ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
+                           ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+                           ISNULL(ServiceLevel, 0) AS ServiceLevel,
+						   ISNULL(Attended, 0) AS Attended,
+						   ISNULL(Assigned, 0) AS Assigned,
+						   ISNULL(OnQueue, 0) AS OnQueue,
+						   ISNULL(EndedBySystem, 0) AS EndedBySystem,
+						   ISNULL(Available, 0) AS Available,
+						   ISNULL(Request, 0) AS Request
+                    FROM ccWAAverageConversations conv
+					RIGHT JOIN ccWAOperatingSummary summary ON conv.InboundId = summary.InboundId
+                    WHERE conv.inboundId = @InboundId OR summary.InboundId = @InboundId
+                END
+            IF @Option = 2 -- Set Status Change in any column (Average Conversation Time, Average Dialog Time,
+                           -- Average Queue/Waiting Time, and Service Level)
+            BEGIN
+                IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId)
+                    BEGIN
+                        UPDATE ccWAAverageConversations SET StatusUpdate = 1
+                        WHERE InboundId = @InboundId
+                    END
+                    ELSE
+                    BEGIN
+                        INSERT INTO ccWAAverageConversations (InboundId, StatusUpdate)
+                        VALUES(@InboundId, 1)
+                    END
+            END
+            IF @Option = 3 -- Save time from accepted conversation by agent
+            BEGIN
+                IF @ConversationId IS NOT NULL
+                BEGIN
+                    UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+					--Save Conversation Assigned
+					SELECT @inboundId = inboundId FROM ccWhatsAppConversations where conversationId=@conversationId;
+					UPDATE ccWAOperatingSummary SET Assigned = (Assigned + 1) WHERE InboundId = @inboundId
+					--EXEC ccsp_WhatsAppOperatingSummary @Option = 2, @InboundId = @CampIdTemp;
+                END
+            END
+            IF @Option = 4 -- Get Disposition Information
+            BEGIN
+                SELECT disposition.Description AS DispositionName,
+                       disposition.calif_id AS DispositionId,
+                       COUNT(whatsConv.disposition) AS Total,
+                       disposition.GraphColor,
+                       COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+                FROM ccWhatsAppConversations whatsConv
+                INNER JOIN cctipocalif disposition ON disposition.calif_id = whatsConv.disposition
+                WHERE inboundId = @InboundId AND assignDate >= @Today
+                GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
+            END
+            IF @Option = 5 -- Get Subdisposition Information
+            BEGIN
+                SELECT relation.calif_id AS DispositionId,
+                       subDispositions.califSubDesc AS SubDispositionsName,
+                       COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+                FROM cctipoSubCalifRel relation
+                INNER JOIN ccTipoCalifSub subDispositions ON subDispositions.califSub_id = relation.califSub_id
+                INNER JOIN ccWhatsAppConversations whatsConv ON whatsConv.subDisposition = subDispositions.califSub_id
+                WHERE whatsConv.inboundId = @InboundId AND
+                      whatsConv.assignDate >= @Today AND
+                      relation.tipoSubRel = 1
+                GROUP BY subDispositions.califSubDesc, relation.calif_id
+            END
+			IF @Option = 6 -- Agents Availables
+			BEGIN
+				IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @InboundId)
+					BEGIN
+						INSERT INTO ccWAOperatingSummary (InboundId, Available) VALUES (@InboundId, @AgentsAvailables);
+					END
+				ELSE
+					BEGIN
+						UPDATE ccWAOperatingSummary SET Available = @AgentsAvailables WHERE InboundId = @InboundId
+					END
+			END
+
+        END
+    END
+	IF @Option = 0 BEGIN-- Reset TABLES
+		TRUNCATE TABLE ccWAOperatingSummary;
+		TRUNCATE TABLE ccWAAverageConversations;
+		TRUNCATE TABLE ccLastMessageAgentByConversation;
+	END
+	ELSE IF @Option = 7 -- Reset attended and OnQueue from OperatingSummary
+	BEGIN
+		UPDATE ccWAOperatingSummary SET Assigned = 0, OnQueue = 0
+	END
+    RETURN(0)
+    SET NOCOUNT OFF'
+     EXEC(@sql)
+
+     set @process = 'K002107-ResumenOperativo se altera sp ccsp_ConversationWASave'
+     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+                                              , @conversationId     INT         = 0
+                                              , @inboundId          SMALLINT    = NULL
+                                              , @phoneACD           VARCHAR(50) = NULL
+                                              , @clientId           VARCHAR(25) = NULL
+                                              , @conversationStatus SMALLINT    = 0
+                                              , @tChatting          FLOAT    = 0
+                                              , @tWrapUp            SMALLINT    = 0
+                                              , @finishedBy         TINYINT     = 0
+                                              , @onQueue            BIT         = NULL
+                                              , @tQueue             SMALLINT    = 0
+                                              , @tTimeout           INT         = 0
+                                              , @disposition        SMALLINT    = 0
+                                              , @subDisposition     SMALLINT    = 0
+                                              , @agentId            INT         = 0
+											  --VAR MESSAGES
+											  , @messageId          VARCHAR(50) = NULL
+											  , @messageIdUi        INT			= NULL
+											  , @clientNum			VARCHAR(15) = NULL
+											  , @vonageNum			VARCHAR(15) = NULL
+											  , @typeMessage		VARCHAR(25) = ''''
+											  , @content			NVARCHAR(MAX)= NULL
+											  , @timeStampMessage   DATETIME	= NULL
+											  , @timeStampMessageUTC DATETIME	= NULL
+											  , @originType         VARCHAR(15) = NULL
+											  , @currency			VARCHAR(10) = ''-''
+											  ,	@price				VARCHAR(10) = ''0.00''
+											  , @messageStatus		VARCHAR(15) = ''N/A''
+											  , @listConversationsIds	VARCHAR(MAX) = NULL
+	AS
+	BEGIN
+	    DECLARE @isEndConversation BIT;
+	    DECLARE @meanContactTypeId SMALLINT;
+		DECLARE @conversationIdNew INT;
+	    SET @meanContactTypeId = 1;
+	    SET NOCOUNT ON;
+
+	    IF @action = 1
+	    BEGIN --new Conversation
+	        IF NOT EXISTS
+	                      (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A
+	                       WHERE A.conversationId = @conversationId
+	                      )
+	        BEGIN
+	            INSERT INTO [ccWhatsAppConversations]
+	            (inboundId
+	           , phoneACD
+	           , clientId
+	           , conversationStatus
+	           , tChatting
+	           , tWrapUp
+	           , finishedBy
+	           , onQueue
+	           , tQueue
+	           , tTimeout
+	           , disposition
+	           , subDisposition
+	           , agentId
+	            )
+	            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+
+				IF NOT EXISTS (SELECT WhatsAppSpamId FROM ccWhatsAppSpam WHERE NumberClient = @clientId and InboundId = @inboundId) BEGIN
+					SELECT @conversationId = SCOPE_IDENTITY();
+					SELECT @conversationId AS ConversationId;
+				END
+				ELSE BEGIN
+
+					declare @conversationIdTemporal     INT;
+					SELECT @conversationIdTemporal = SCOPE_IDENTITY();
+					EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationIdTemporal, @conversationStatus = 13
+					SELECT 0 AS ConversationId;
+				END;
+
+				--Save new request
+				IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @inboundId)
+					BEGIN
+						INSERT INTO ccWAOperatingSummary (InboundId, Request) VALUES (@inboundId, 1);
+					END
+				ELSE
+					BEGIN
+						UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+					END
+
+
+
+	            RETURN(0);
+	        END
+	        ELSE
+	        BEGIN
+				DECLARE @conversationStatusTemp INT = @conversationStatus;
+				IF @conversationStatus in(17,18) BEGIN
+					SET @conversationStatusTemp = 1
+				END
+				 INSERT INTO [ccWhatsAppConversations]
+	            (inboundId
+	           , phoneACD
+	           , clientId
+	           , conversationStatus
+	           , tChatting
+	           , tWrapUp
+	           , finishedBy
+	           , onQueue
+	           , tQueue
+	           , tTimeout
+	           , disposition
+	           , subDisposition
+	           , agentId
+	            )
+	            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+	            SELECT @conversationIdNew = SCOPE_IDENTITY();
+
+				INSERT INTO ccWhatsAppConversationsRelationship (conversationIdBefore
+																 , conversationIdAfter)
+					VALUES (@conversationId, @conversationIdNew);
+				--Save new request by reassign
+				UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+
+            EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
+
+            SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
+            RETURN(0);
+        END;
+    END;
+
+    IF @action = 2
+    BEGIN --save conversation Times
+		DECLARE @conversationIdTemp INT;
+		DECLARE @TablaTemp TABLE (conversationId INT, status bit);
+
+		IF @listConversationsIds IS NOT NULL begin
+			INSERT INTO @TablaTemp
+			SELECT value,0
+			FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+			where value is not null and value<>''''
+		end
+		else begin
+			INSERT INTO @TablaTemp values(@conversationId,0)
+		end
+
+		UPDATE ccWhatsAppConversations
+		SET
+		conversationStatus = @conversationStatus
+		, finishedBy = case when @conversationStatus = 10 then 2
+			when @conversationStatus = 17 then 2
+			when @conversationStatus = 18 then 2
+			else 1 end
+		, tConversation =  case when @conversationStatus = 17 then 0 else DATEDIFF(ss, requestDate, GETDATE()) end
+		,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else tQueue end
+		,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+		WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
+
+		 WHILE exists(SELECT conversationId FROM @TablaTemp where status=0)
+		BEGIN
+			select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
+			exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
+
+            IF @conversationStatus in(13,10,17,18,11) BEGIN
+				DECLARE @conversationDateTemp INT;
+                select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate != null then 1 else 0 end from ccWhatsAppConversations where conversationId = @conversationId;
+
+    			IF @conversationStatus = 13 BEGIN
+    				IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+    					INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationId, @clientId);
+    				END
+    			END
+                ELSE IF @conversationStatus in(10,17,18) BEGIN --Save conversation Ended by system
+					IF @conversationDateTemp > 0 BEGIN
+						UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+					END
+					ELSE BEGIN
+						 UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1) WHERE InboundId = @inboundId
+					END
+                END
+                ELSE IF @conversationStatus = 11 BEGIN --Save conversation Ended by AGENT
+                    UPDATE ccWAOperatingSummary SET Attended = (Attended + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+                END
+            END
+			update @TablaTemp set status=1 where conversationId=@conversationIdTemp
+		END
+
+    END;
+
+    IF @action = 3
+    BEGIN --save conversation Status
+        UPDATE ccWhatsAppConversations
+               SET
+                   --conversationDate = GETDATE(),
+                   conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+    END;
+
+    IF @action = 4 BEGIN --save messages from conversation
+        IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+            AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
+        BEGIN
+            IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
+                (SELECT messageIdUi
+                  FROM ccWAMessagesConversations
+                 WHERE originType IN (''Agent'', ''Admin'')
+                   AND conversationId = @conversationId)
+                BEGIN
+                    UPDATE ccWhatsAppConversations
+                       SET FirstMessageAgent = @timeStampMessage
+                     WHERE conversationId = @conversationId;
+                END
+
+            INSERT INTO [ccWAMessagesConversations](
+                                                messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
+                                               (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+            SELECT @messageId=SCOPE_IDENTITY()
+            SELECT @messageId as MessageId
+            RETURN (0)
+        END
+        ELSE BEGIN
+            SELECT 0 AS MessageId
+            RETURN (0)
+        END
+    END;
+
+		IF @action = 5
+	    BEGIN --save onQueue
+	        UPDATE ccWhatsAppConversations
+	               SET onQueue = 1
+	        WHERE conversationId = @conversationId;
+			SELECT @inboundId = inboundId FROM ccWhatsAppConversations where conversationId=@conversationId;
+			UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue + 1) WHERE InboundId = @inboundId
+	    END;
+
+    IF @action = 6
+    BEGIN --save agent, assigdate and tqueue
+		declare @agentIdTmp int
+		SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A where A.conversationId = @conversationId
+
+        IF (@agentIdTmp is null or @agentIdTmp=0)
+        BEGIN
+            UPDATE ccWhatsAppConversations
+                   SET agentId = @agentId,
+                   assignDate = getdate(),
+                   conversationStatus = @conversationStatus
+				   ,tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+            WHERE conversationId = @conversationId;
+
+            SELECT @conversationId as conversationId
+	    SELECT @inboundId = inboundId,  @onQueue = onQueue FROM ccWhatsAppConversations where conversationId=@conversationId;
+
+	    IF @onQueue = 1 BEGIN
+		UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue - 1) WHERE InboundId = @inboundId
+	    END
+        END
+    END;
+
+		IF @action = 7
+	    BEGIN --update price message
+	        UPDATE ccWAMessagesConversations
+	               SET price = @price,
+					   currency = @currency
+	        WHERE messageId = @messageId;
+	    END;
+
+		IF @action = 8
+	    BEGIN --update status message
+			IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+				UPDATE ccWAMessagesConversations
+					   SET messageStatus = @messageStatus
+				WHERE messageId = @messageId;
+			END;
+	    END;
+
+		IF @action = 9
+	    BEGIN --Save last message time by conversationID
+			IF (SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversation A WHERE A.conversationId=@conversationId) IS NULL BEGIN
+				INSERT INTO ccLastMessageAgentByConversation (conversationId) VALUES (@conversationId)
+			END;
+			ELSE
+				BEGIN
+					UPDATE ccLastMessageAgentByConversation
+					   SET timeStampLastMessageAgent = getDate()
+					WHERE conversationId = @conversationId;
+				END;
+	    END;
+
+		IF @action = 10
+	    BEGIN --drop register by conversationID
+			DELETE FROM ccLastMessageAgentByConversation WHERE conversationId = @conversationId;
+	    END;
+
+		IF @action = 11
+	    BEGIN --register desconnection by conversationID
+			UPDATE ccLastMessageAgentByConversation SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
+	    END;
+	END;'
+     EXEC(@sql)
+
+     set @process = 'K002107-ResumenOperativo se altera ccsp_GalateaDeleteCampaignAndACD'
+     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
+        --declare
+        @userId           SMALLINT,
+        @DeleteCamId      VARCHAR(MAX),
+        @DeleteACDGroupId VARCHAR(MAX),
+        @moduleId         SMALLINT = 49
+    AS
+    BEGIN
+
+        IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+            SELECT value As DeleteCamId, c.IDArea AS IDAreaCamp, 1 AS CampTypeCamp
+            INTO #CampsDelete
+            FROM fn_RIASplitDelimited(@DeleteCamId, '','') a
+            inner join ccCamps c on  a.value = c.cam_id and c.IDArea IS NOT NULL
+        IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+            SELECT value As DeleteACDId, c.IDArea AS IDAreaACD, 0 AS CampTypeACD
+            INTO #ACDDelete
+            FROM fn_RIASplitDelimited(@DeleteACDGroupId, '','') a
+            inner join ccInbound c on  a.value = c.Inbound_id and c.IDArea IS NOT NULL
+
+        IF  not Exists (select * from #CampsDelete union select * from #ACDDelete )
+        begin
+            select ''-1'' AS Result
+            return
+        end
+
+        IF datalength(@DeleteCamId) > 0
+            BEGIN
+
+            if exists(select cam_id from ccInbound where cam_id in (select DeleteCamId from #CampsDelete)) begin
+                --Borra las calificacion con reprogramacion
+                delete ccCalifCamp from ccInbound A
+                inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                inner join ccTipoCalif C on B.calif_id=C.calif_id and C.CanReprogram=1
+                where A.cam_id in (select DeleteCamId from #CampsDelete)
+                --Borra las subcalificacion con reprogramacion
+                delete rel from ccInbound A
+                inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                inner join ccTipoCalif C on B.calif_id=C.calif_id
+                inner join cctipoSubCalifRel rel on rel.calif_id=C.calif_id and rel.tipoSubRel=1
+                inner join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
+                where A.cam_id in (select DeleteCamId from #CampsDelete) and sb.canReprogram=1
+
+                update ccInbound set cam_id = null where cam_id in (select DeleteCamId from #CampsDelete)
+
+            end
+
+            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+            select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete)
+
+            delete from ccCampsAgente where cam_id in (select DeleteCamId from #CampsDelete)
+            insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+            select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete) and A.tipo = 1
+
+            delete from ccSupervisorCam where cam_id in (select DeleteCamId from #CampsDelete) and tipo = 1
+            delete from ccRIACampEspWG where IdCampEsp in (select DeleteCamId from #CampsDelete) and tipo = 1
+
+            IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
+            SELECT ca.AreaName,
+                   GETDATE() operationDate,
+                   27 operationType,
+                   (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                   @moduleId module_id,
+                   c.cam_descripcion value,
+                   ca.AreaName AS target
+            INTO #CampLog
+            FROM ccRIACat_Areas ca
+            Inner join ccCamps c with(nolock) on ca.IDArea = c.IDArea
+            WHERE c.cam_id in (select DeleteCamId from #CampsDelete)
+
+            Update ccCamps set IDArea = null where cam_id in (select DeleteCamId from #CampsDelete)
+
+        END
+        IF datalength(@DeleteACDGroupId) > 0
+            BEGIN
+
+            if exists(select top 1 cam_id from ccInbound where Inbound_id in (select DeleteACDId from #ACDDelete))
+                begin
+                    update ccInbound set cam_id = null where Inbound_id in (select DeleteACDId from #ACDDelete)
+            end
+
+            IF OBJECT_ID(''tempdb..#AllWGACD'') IS NOT NULL DROP TABLE #AllWGACD
+            SELECT DISTINCT(IDWG)
+            INTO #AllWGACD
+            FROM ccRIACampEspWG ce
+            WHERE IDCampEsp in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+
+            insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+            select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG
+            from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id
+            where B.User_id is null and A.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            delete ccInboundHorarios Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+            delete ccInboundMsgs Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+            select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG
+            from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id
+            where B.User_id is null and A.cam_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            delete ccSupervisorCam where cam_id in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+            delete ccInboundAgentes where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+            delete ccRIACampEspWG where IdCampEsp  in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+
+
+            IF OBJECT_ID(''tempdb..#ACDLog'') IS NOT NULL DROP TABLE #ACDLog
+            SELECT ca.AreaName,
+                    GETDATE() operationDate,
+                    28 operationType,
+                    (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                    @moduleId module_id,
+                    i.descripcion value,
+                    ca.AreaName AS target
+            INTO #ACDLog
+            FROM ccRIACat_Areas ca
+            inner join ccInbound i with(nolock) on ca.IDArea = i.IDArea
+            WHERE i.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            Update ccInbound set IDArea = null, status = 0 where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+
+            if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                begin
+                    update ContactMeanIn set name = '''', conexionInfo = ''usuarioID|token|tokenSecret|1|0'', connUser = '''', isActive = 0
+                    where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=2
+            end
+            if exists(select * from ContactMeanIn where meanContactTypeId=1 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                begin
+                    update ContactMeanIn set name = '''', conexionInfo = '''', connUser = '''', connpass='''', isActive = 0 where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=1
+            end
+            update ccinbound set chatDomain = '''' where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)--para desasociar el dominio del chat
+
+            if exists (SELECT inboundId FROM contactMeanIn WHERE inboundId in (select DeleteACDId from #ACDDelete))
+                begin
+                    update contactMeanIn set isActive = 0 where inboundId in (select DeleteACDId from #ACDDelete)
+            end
+
+			if exists (SELECT inboundId FROM ccWhatsAppNumbers WHERE inboundId in (select DeleteACDId from #ACDDelete))
+				begin
+					update ccWhatsAppNumbers set inboundId = 0 where inboundId in (select DeleteACDId from #ACDDelete)
+			end
+        END
+
+        IF datalength(@DeleteCamId) > 0
+            Insert into ccRIALog Select * from #CampLog
+        IF datalength(@DeleteACDGroupId) > 0
+            Insert into ccRIALog Select * from #ACDLog
+
+        SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result FROM #CampsDelete
+        UNION
+        SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result FROM #ACDDelete
+        IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+        IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+    END'
+     EXEC(@sql)
+
+	 set @process = 'CW-Roles se quita relacion permiso-rol Solo monitoreo'
+    set @sql = 'if exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10017)
+    begin
+        DELETE FROM ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10017
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se quita relacion permiso-rol Areas'
+    set @sql = 'if exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10007)
+    begin
+        DELETE FROM ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10007
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se quita relacion permiso-rol Gestion de Campañas eliminar,agregar, etc'
+    set @sql = 'if exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10013)
+    begin
+        DELETE FROM ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10013
+    end'
+    EXEC(@sql)
+
+	/* Supervisor */
+    set @process = 'CW-Roles se quita relacion permiso-rol CenterScript|CenterScript'
+    set @sql = 'if exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10003)
+    begin
+        DELETE FROM ccRoles_Permissions where Rol_Id = 6 AND Permissions_Id = 10003
+    end'
+    EXEC(@sql)
+    /************************/
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Iniciar y detener campañas|Start and stop Campaign'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10001)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10001)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Carga de base de datos|Data Import'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10002)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10002)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Eliminar nuevos registros|Delete new records'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10005)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10005)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Devolucion de llamada|CallBacks'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10006)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10006)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar de areas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10008)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10008)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar tipos de no disponible'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10009)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10009)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar permisos de agente'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10010)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10010)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar campañas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10011)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10011)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar horarios'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10014)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10014)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar chat con agentes'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10015)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10015)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar monitoreo de llamada'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10016)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10016)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar inicio automático'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10020)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10020)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar calificaciones'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10021)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10021)
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Gestionar listas negras'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10025)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10025)
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Acceder a reporteador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10026)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10026)
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega  relacion permiso-rol Acceder a buscador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=6 and Permissions_Id=10027)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(6,10027)
+    end'
+    EXEC(@sql)
+
+    /*  Calidad */
+
+    set @process = 'CW-Roles se agrega el rol calidad'
+    set @sql = 'if not exists (select * from ccRoles where Level=8 and Active=1)
+    begin
+        INSERT ccRoles (Description,KeyJson,CreateDate,Active,Level) 
+        VALUES (''Calidad'',''translate_quality'',CURRENT_TIMESTAMP ,1,8 )
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Monitoreo de llamadas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10016)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10016) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Gestion de areas '
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10008)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10008) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Acceder a buscador '
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10027)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10027) 
+    end'
+    EXEC(@sql)
+    set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10026)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(8, 10026) 
+    end'
+    EXEC(@sql)
+
+     /*  Monitor */
+
+    set @process = 'CW-Roles se agrega el rol Monitor'
+    set @sql = 'if not exists (select * from ccRoles where Level=9 and Active=1)
+    begin
+        INSERT ccRoles (Description,KeyJson,CreateDate,Active,Level) 
+    VALUES (''Monitor'',''translate_monitor'',CURRENT_TIMESTAMP ,1,9)
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Solo Monitoreo'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10017)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10017) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Monitorear areas'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10007)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10007) 
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10026)
+    begin
+        INSERT INTO ccRoles_Permissions VALUES(9, 10026) 
+    end'
+    EXEC(@sql)
+
+    /*  Eliminar Administrador */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Administrador'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 2 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 2
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Administrador'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 2)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 2
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Administrador'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 2 AND Description=''Admin'' AND Level=2)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 2 AND Description=''Admin'' AND Level=2
+    end'
+    EXEC(@sql)
+
+    /* Eliminar Sistemas */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Sistemas'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 3 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 3
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Sistemas'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 3)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 3
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Sistemas'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 3 AND Description=''It Manager'' AND Level=3)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 3 AND Description=''It Manager'' AND Level=3
+    end'
+    EXEC(@sql)
+
+    /* Eliminar Gerente  */
+    
+    set @process = 'CW-Roles se eliminan permisos del rol Gerente'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 4 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 4
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del rol Gerente'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 4)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 4
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el rol Gerente'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 4 AND Description=''Manager'' AND Level=4)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 4 AND Description=''Manager'' AND Level=4
+    end'
+    EXEC(@sql)
+    /* Eliminar Gestion de salas  */
+    
+    set @process = 'CW-Roles se eliminan permisos del Gestion de salas'
+    set @sql = 'if  exists (select * from ccRoles_Permissions WHERE Rol_Id = 5 )
+    begin
+        DELETE FROM ccRoles_Permissions WHERE Rol_Id = 5
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan user_id del Gestion de salas'
+    set @sql = 'if  exists (select * from ccUsers_Roles WHERE Rol_Id = 5)
+    begin
+        DELETE FROM ccUsers_Roles WHERE Rol_Id = 5
+
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-Roles se eliminan el Gestion de salas'
+    set @sql = 'if  exists (select * from ccRoles WHERE Rol_id = 5 AND Description=''Room Manager'' AND Level=5)
+    begin
+		DELETE FROM ccRoles WHERE Rol_id = 5 AND Description=''Room Manager'' AND Level=5
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission campaign association'
+    set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10028)
+    begin
+      insert into ccPermissions values (10028,''Gestionar Asociacion de campaña'',''RolesPermissionCampaignAssociation'',0,0,0,''N/A'',1)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission automatic messages'
+    set @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10029)
+    begin
+      insert into ccPermissions values (10029,''Gestionar Mensajes Automaticos'',''RolesPermissionAutomaticMessages'',0,0,0,''N/A'',1)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission root-campaign association'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10028)
+    begin
+      insert into ccRoles_Permissions values(1,10028)
+    end'
+    EXEC(@sql)
+
+    set @process = 'Roles-Permission root-automatic messages'
+    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10029)
+    begin
+      insert into ccRoles_Permissions values(1,10029)
+    end'
+    EXEC(@sql)
+-------------------------------END RESUMEN OPERATIVO --------------------------------
+
+    set @process = 'CW-PREVIEW se agrega campo para permiso eliminar registro en campa?s preview'
     set @sql = 'IF not exists(SELECT top 1 1
 		FROM INFORMATION_SCHEMA.COLUMNS
 		WHERE COLUMN_NAME = ''AllowDeleteRecord'' AND TABLE_NAME = ''ccUsers'')

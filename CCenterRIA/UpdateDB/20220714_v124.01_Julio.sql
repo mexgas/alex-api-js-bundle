@@ -46,8 +46,86 @@ IF (@actualVersion =@version-1 and @actualVersionFix >= 53) or  (@actualVersion 
 BEGIN
 	BEGIN TRAN
 
-	BEGIN TRY
+	BEGIN TRY	
+	-------------------------------Preview K004009 DetalleMarcación --------------------------------
+    set @process = 'Alter table ccsp_RegProcessPreviewRecord'
+    set @sql = '
+		ALTER PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
+        @process smallint,
+        @callout_id int,
+        @agent_id smallint,
+        @camId int,
+		@previewTime smallint,
+		@callId int)
+        AS
+        DECLARE @result_callout_id INT
+        if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
+            set @result_callout_id =1
+        end
+        IF (@result_callout_id > 0 or @process in (4,7))
+        BEGIN
+            INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview, callID) VALUES (@agent_id,@process,@callout_id,@camId,SYSDATETIME(),@previewTime,@callId)
+		END
+        IF (@process=1 AND @result_callout_id > 0)
+        BEGIN
+            DELETE ccoWorkingTable WHERE callout_id = @callout_id
+        END
+	'
+    EXEC(@sql)
 
+	set @process = 'Add columns CallId and tPreview to RegProcessPreviewRecord'
+    set @sql = '
+		if not exists (select * from sys.columns where name = N''tPreview'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
+		begin
+			alter table RegProcessPreviewRecord add tPreview smallint not null default 0
+		end
+
+		if not exists (select * from sys.columns where name = N''callId'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
+		begin
+			alter table RegProcessPreviewRecord add callId int not null default 0
+		end
+	'
+    EXEC(@sql)
+
+	set @process = 'Create table ccTypeProcessPreview'
+    set @sql = '
+		if not exists (select * from sys.tables where name = N''ccTypeProcessPreview'')
+		begin
+			create table ccTypeProcessPreview(
+			typeProcess_id tinyint primary key not null,
+			descripcion varchar (20) not null,
+			translatedDesc varchar (50) not null)
+		end
+	'
+    EXEC(@sql)
+
+	set @process = 'Add data to ccTypeProcessPreview'
+    set @sql = '		
+		if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 0)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (0, ''Discard'',''systemTranslated_Discard'')
+			end
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 1)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (1, ''Delete'',''systemTranslated_DeletePreview'')
+			end
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 2)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (2, ''DiscardByTime'',''systemTranslated_DiscardByTime'')
+			end
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 3)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (3, ''DiscardByND'',''systemTranslated_DiscardByND'')
+			end
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 4)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (4, ''DiscardByXfer'',''systemTranslated_DiscardByXfer'')
+			end
+		 if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 7)
+			begin
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (7, ''WithDialResult'','''')
+			end		
+	'    
 	-------------------------------BEGIN MENUS --------------------------------
 
 	set @process = 'K002056 se agregan menus'

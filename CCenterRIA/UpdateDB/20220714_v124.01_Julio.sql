@@ -46,7 +46,7 @@ IF (@actualVersion =@version-1 and @actualVersionFix >= 53) or  (@actualVersion 
 BEGIN
 	BEGIN TRAN
 
-	BEGIN TRY	
+	BEGIN TRY
 
 	-------------------------------BEGIN MENUS --------------------------------
 
@@ -184,14 +184,14 @@ BEGIN
 
 	IF @action = 1
 	BEGIN --Lista  ACD
-		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets, 
+		SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets,
 		cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
 		FROM ccInbound A
 		INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
 		WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
 	END
 	ELSE IF @action = 2
-	BEGIN --Lista Agentes  
+	BEGIN --Lista Agentes
 		SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
 		FROM ccRIAWorkGroupUsers A
 		INNER JOIN ccusers B ON A.User_id = B.User_id
@@ -266,7 +266,7 @@ case @pais  when 1  then ''estado, cld as area, @id_anilist as id_anilist, '''''
             when 12 then ''zonaGeografica as estado, indicativoDestino as area, @id_anilist as id_anilist, '''''''' as telani ''
             when 13 then ''zonaGeografica as estado, indicativoDestino as area, @id_anilist as id_anilist, '''''''' as telani ''
             when 14 then ''provincia as estado, indicativoProvincia as area, @id_anilist as id_anilist, '''''''' as telani ''
-            else '''' end 
+            else '''' end
 end + ''from '' +
 case @pais  when 1  then ''series''
             when 2  then ''seriesarg where estado <> ''''''''''
@@ -293,7 +293,7 @@ end
 
 if @type=2
 begin
-    select @sql = ''select id_AniList, description from ccEdoAniList where idArea = '' + convert(varchar(5),@idArea) +  
+    select @sql = ''select id_AniList, description from ccEdoAniList where idArea = '' + convert(varchar(5),@idArea) +
     case when isnull(@idAniList,'''') <> '''' then '' and id_AniList = '' + convert(varchar(5),@idAniList) else '''' end
     exec(@sql)
     return(0)
@@ -301,7 +301,7 @@ end
 
 if @type=3
 begin   -- Get Outbound telAni with Area Codes
-    select @sql = ''select id_AniList, Estado, telAni, area from ccEstadosAni where id_AniList = '' + convert(varchar(5),@idAniList) + 
+    select @sql = ''select id_AniList, Estado, telAni, area from ccEstadosAni where id_AniList = '' + convert(varchar(5),@idAniList) +
     '' and estado like ''''%'' + @edo + ''%'''' and id_AniList in (select id_AniList from ccEdoAniList where idArea = '' +
      convert(varchar(5),@idArea) + '') order by estado''
     exec(@sql)
@@ -311,8 +311,8 @@ end
 
 if @type=4
 begin  --Insert new aniList
-    if @descriptionList <> '''' begin       
-        select @idAniList=id_AniList from dbo.ccEdoAniList where [description]=@descriptionList     
+    if @descriptionList <> '''' begin
+        select @idAniList=id_AniList from dbo.ccEdoAniList where [description]=@descriptionList
         if @idAniList is not null and @idAniList>0
         begin
             select cast(2 as int) [result],cast(@idAniList as int) as id_AniList,@descriptionList as[description]
@@ -338,7 +338,7 @@ begin --Save ANI number
 
     select @descriptionList=[description] from dbo.ccEdoAniList where id_anilist = @idAniList
 
-    update ccEstadosAni set telani= ISNULL(@aniTel, TELANI) WHERE id_anilist = @idAniList 
+    update ccEstadosAni set telani= ISNULL(@aniTel, TELANI) WHERE id_anilist = @idAniList
     and area in (select value from dbo.fn_RIASplitDelimited(@cld, '',''))
 
     select cast(1 as int) [result],cast(@idAniList as int) as id_AniList,@descriptionList as[description]
@@ -378,7 +378,7 @@ end
         EXEC(@sql)
 
 -------------------------------END CAPACITACION --------------------------------
-   
+
 
 
 	set @process = 'CW-6949 ST_2022_05_301 alter configuraIdiomaCatalogosEspañol'
@@ -531,6 +531,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, conv
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, convert(text, N''ReconnectKolob'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, convert(text, N''Ready PreviewPro'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, convert(text, N''Preview'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (33, convert(text, N''Asistida'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Inactivo'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de usuario''
 Delete [dbo].[ccTipoUsers]
@@ -690,7 +692,7 @@ INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default12'', '
 INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_Sp\Default13'', ''La sesión de chat ha concluido'')
 				'
 	EXEC(@sql)
-	
+
 	set @process = 'CW-6949 ST_2022_05_301 alter configuraIdiomaCatalogosEnglish'
     set @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
 	AS
@@ -841,6 +843,8 @@ INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (26, ''Ri
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (30, ''ReconnectKolob'')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (31, ''Ready PreviewPro'')
 INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (32, ''Preview'')
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (33, convert(text, N''Assisted'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Idle'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de usuario''
 Delete [ccTipoUsers]
@@ -998,36 +1002,36 @@ INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default12'', ''Chat 
 INSERT [ccRIAChatMsg](descripcion, msg) values(''Default_En\Default13'', ''Chat session has finished'')
 '
     EXEC(@sql)
-	
-	
+
+
 	set @process = 'CW-6949 ST_2022_05_301 Completar catalogo ccTipoMovsListaNegra '
-	set @sql='DECLARE @valorLang INT; 
-select @valorLang = valor from ccSettings where setting_id = 27; 
+	set @sql='DECLARE @valorLang INT;
+select @valorLang = valor from ccSettings where setting_id = 27;
 SET IDENTITY_INSERT ccTipoMovsListaNegra ON;
-if @valorLang = 0 
-begin 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 1) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, ''Carga Registro Lista Negra''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 2) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, ''Lista Negra en Carga de Registros''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 3) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, ''Eliminado por Aplicar Lista Negra''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 4) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, ''Eliminado de Lista Negra por Remplazo ''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 5) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, ''Borrado de Lista Negra''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 6) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, ''Agregado por calificación por campaña''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 7) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, ''Carga Lista Negra''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 8) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, ''Carga Registro Cliente Lista Negra''); 
+if @valorLang = 0
+begin
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 1) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, ''Carga Registro Lista Negra'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 2) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, ''Lista Negra en Carga de Registros'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 3) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, ''Eliminado por Aplicar Lista Negra'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 4) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, ''Eliminado de Lista Negra por Remplazo '');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 5) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, ''Borrado de Lista Negra'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 6) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, ''Agregado por calificación por campaña'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 7) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, ''Carga Lista Negra'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 8) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, ''Carga Registro Cliente Lista Negra'');
 	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 9) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (9, ''Agregado por calificación por ACD'');
 end
 else begin
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 1) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, ''Added to black list''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 2) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, ''Blocked on loading''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 3) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, ''Removed from campaign''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 4) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, ''Replaced from black list''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 5) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, ''Deleted from black list''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 6) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, ''Added by Disposition''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 7) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, ''Load black list''); 
-	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 8) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, ''Load customer black list''); 
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 1) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (1, ''Added to black list'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 2) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (2, ''Blocked on loading'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 3) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (3, ''Removed from campaign'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 4) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (4, ''Replaced from black list'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 5) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (5, ''Deleted from black list'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 6) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (6, ''Added by Disposition'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 7) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (7, ''Load black list'');
+	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 8) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (8, ''Load customer black list'');
 	if not exists (select * from ccTipoMovsListaNegra where idtipomov = 9) INSERT [dbo].[ccTipoMovsListaNegra] ([idtipomov], [movimiento]) VALUES (9, ''Added by Inbound Disposition'');
 end
-SET IDENTITY_INSERT ccTipoMovsListaNegra OFF; 
+SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 '
 		EXEC(@sql)
 
@@ -1139,6 +1143,18 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 	EXEC(@sql)
 		
 	 
+		set @process = 'CW-7116 Estado inactivo'
+	    set @sql = '
+			if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=33)
+			begin
+				insert cctipostatusagente values (33,''Assisted'')
+			end
+			if not exists(select top 1 1 from cctipostatusagente nolock where tipostatusage_id=35)
+			begin
+				insert cctipostatusagente values (35,''Idle'')
+			end'
+	    EXEC(@sql)
+
 	 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version
@@ -1156,5 +1172,3 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 		ROLLBACK TRAN
 	END CATCH
 END
-
-

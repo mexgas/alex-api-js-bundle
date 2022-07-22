@@ -2174,6 +2174,60 @@ end'
       insert into ccRoles_Permissions values(1,10029)
     end'
     EXEC(@sql)
+    set @process = 'K004016-Agente-Poder recibir transferencias entre Agentes, se altera el sp ccsp_AgentTransfLstArea para el listado de agentes en blended y normal'
+set @sql = '
+ALTER PROCEDURE [dbo].[ccsp_AgentTransfLstArea]
+@userID INT,
+@current INTEGER = 0
+AS
+set nocount on
+
+BEGIN
+declare @value int
+declare @valueDialingMode int 
+set @value = 0
+set @valueDialingMode=0
+select @value = case when valor=''1'' then 1 else 0 end from ccSettings (nolock) where setting_id = 191
+select @valueDialingMode = case when DialingMode= 1 then 1 else 0 end from ccusers  (nolock) where user_id = @userID
+    IF @value = 0
+        begin
+            select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+            (
+                select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                join ccmonitorext ce on cp.ext_id = ce.ext_id where user_id > 0
+            )
+            x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID and cu.DialingMode=@valueDialingMode
+            Order by name asc
+        end
+
+    if @value = 1
+        begin
+            if (@current <> 0)
+                begin
+                    select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+                    (
+                        select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                        join ccmonitorext ce (nolock) on cp.ext_id = ce.ext_id where user_id > 0
+                    )
+                    x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID
+                    and IDArea in (select cu.IDArea from ccUsers cu join ccInbound ci (nolock) on cu.IDArea = ci.IDArea where inbound_id =  @current)
+                    Order by name asc
+                end
+            else
+                begin
+                    select x.extid, Nombres + '' '' + isNull( apellidoPAterno, '''') as name,login from ccusers cu (nolock) join
+                    (
+                        select user_id, case when cp.ext_id > 0 then Extension else pos_id * -1 end as extId from ccposicion cp (nolock)
+                        join ccmonitorext ce (nolock) on cp.ext_id = ce.ext_id where user_id > 0
+                    )
+                    x on x.user_id = cu.user_id where cu.status = 1 and cu.xfermask = 1 and cu.user_id <> @userID and cu.DialingMode=@valueDialingMode
+                    and IDArea in (select IDArea from ccUsers (nolock) where User_id = @userID)
+                    Order by name asc
+                end
+        end
+END
+       '
+EXEC(@sql)
 -------------------------------END RESUMEN OPERATIVO --------------------------------
 
     set @process = 'CW-PREVIEW se agrega campo para permiso eliminar registro en campa?s preview'

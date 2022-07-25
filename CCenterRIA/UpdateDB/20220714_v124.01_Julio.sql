@@ -48,6 +48,20 @@ BEGIN
 
 	BEGIN TRY	
 	-------------------------------Preview K004009 DetalleMarcación --------------------------------
+	set @process = 'Add columns CallId and tPreview to RegProcessPreviewRecord'
+    set @sql = '
+		if not exists (select * from sys.columns where name = N''tPreview'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
+		begin
+			alter table RegProcessPreviewRecord add tPreview smallint not null default 0
+		end
+
+		if not exists (select * from sys.columns where name = N''callId'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
+		begin
+			alter table RegProcessPreviewRecord add callId int not null default 0
+		end
+	'
+    EXEC(@sql)
+
     set @process = 'Alter table ccsp_RegProcessPreviewRecord'
     set @sql = '
 		ALTER PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
@@ -70,20 +84,6 @@ BEGIN
         BEGIN
             DELETE ccoWorkingTable WHERE callout_id = @callout_id
         END
-	'
-    EXEC(@sql)
-
-	set @process = 'Add columns CallId and tPreview to RegProcessPreviewRecord'
-    set @sql = '
-		if not exists (select * from sys.columns where name = N''tPreview'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
-		begin
-			alter table RegProcessPreviewRecord add tPreview smallint not null default 0
-		end
-
-		if not exists (select * from sys.columns where name = N''callId'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
-		begin
-			alter table RegProcessPreviewRecord add callId int not null default 0
-		end
 	'
     EXEC(@sql)
 
@@ -125,7 +125,8 @@ BEGIN
 			begin
 			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (7, ''WithDialResult'','''')
 			end		
-	'    
+	'   
+	EXEC(@sql)
 	-------------------------------BEGIN MENUS --------------------------------
 
 	set @process = 'K002056 se agregan menus'

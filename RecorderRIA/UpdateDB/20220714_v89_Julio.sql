@@ -95,9 +95,9 @@ BEGIN
 		set @sql=''
 		;
 		with grab as (
-		select grab_id,cal_id,tipo_llamada from RIA_GRABACION where grab_id in(''+@grabIds+'')
+		select grab_id,cal_id,tipo_llamada from RIA_GRABACION with(nolock) where grab_id in(''+@grabIds+'')
 		union
-		select grab_id,cal_id,tipo_llamada from RIA_GRABACIONCONSULTA where grab_id in(''+@grabIds+'')
+		select grab_id,cal_id,tipo_llamada from RIA_GRABACIONCONSULTA with(nolock) where grab_id in(''+@grabIds+'')
 		)
 
 		select mark.id_marca as markId, grab.grab_id as grabId,b.login as userName, mark.user_id as [userId],mark.marca as mark,convert(bit,case when b.TipoUser_id =1 then 0 else 1 end ) as IsAdmin
@@ -121,9 +121,9 @@ BEGIN
 	select @ext = case when par_valor=''''1'''' then ''''.wav.enc'''' else ''''.wav'''' end from TREC_PARAMETROS where par_id=15
 		;
 		with grab as (
-		select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACION where grab_id in(''+@grabIds+'')
+		select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACION with(nolock) where grab_id in(''+@grabIds+'')
 		union
-		select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACIONCONSULTA where grab_id in(''+@grabIds+'')
+		select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACIONCONSULTA with(nolock) where grab_id in(''+@grabIds+'')
 		)
 		
 		select grab.grab_id as grabId,grab.id_repositorio as repositoryId,rep.dirvirtual_audio as virtualAudio
@@ -147,10 +147,10 @@ BEGIN
 	else if @action=6 begin
 		declare @cal_id int,@tipo_llamada int
 
-		select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACION where grab_id=@grabId
+		select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACION with(nolock) where grab_id=@grabId
 
 		if @cal_id is null and @tipo_llamada is null begin
-			select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACIONCONSULTA where grab_id=@grabId
+			select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACIONCONSULTA with(nolock) where grab_id=@grabId
 		end			   
 		insert RIA_MARCAS (grab_id,user_id,marca,tipo_marca,tipo_llamada,call_id) values (@grabId,@userId,CONVERT(varchar, DATEADD(ss, @markTime , 0), 8),2,@tipo_llamada,@cal_id )
 		select cast( @@IDENTITY  as int) as markId
@@ -165,11 +165,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select A.grab_id from RIA_GRABACION A
+		select A.grab_id from RIA_GRABACION with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select A.grab_id from RIA_GRABACIONCONSULTA A
+		select A.grab_id from RIA_GRABACIONCONSULTA with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -177,11 +177,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.cal_key from RIA_GRABACION A
+		select distinct A.cal_key from RIA_GRABACION with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.cal_key from RIA_GRABACIONCONSULTA A
+		select distinct A.cal_key from RIA_GRABACIONCONSULTA with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -189,11 +189,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.ani as Phone from RIA_GRABACION A
+		select distinct A.ani as Phone from RIA_GRABACION with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.ani as Phone from RIA_GRABACIONCONSULTA A
+		select distinct A.ani as Phone from RIA_GRABACIONCONSULTA with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -201,11 +201,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.dni from RIA_GRABACION A
+		select distinct A.dni from RIA_GRABACION with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.dni from RIA_GRABACIONCONSULTA A
+		select distinct A.dni from RIA_GRABACIONCONSULTA with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -213,11 +213,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION A
+		select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA A
+		select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA with(nolock) A
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -228,11 +228,11 @@ BEGIN
 
 		
 		select isnull(min(minDuration),0) as MinDuration, isnull(max(maxDuration),600) as MaxDuration from (
-			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION with(nolock) A
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 			union
-			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA with(nolock) A
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 		)X

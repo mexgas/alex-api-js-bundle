@@ -32,20 +32,9 @@ begin
 	EXEC(@Sql)
 
 
-	SET @process = 'CW-6281 validacion de sp ccspGalatea_Finder'
-
-	SET @sql = '
-	if exists (select * from sys.procedures where name = N''ccspGalatea_Finder'')
-	begin
-		DROP PROCEDURE ccspGalatea_Finder;
-	end'
-
-	EXEC(@sql)
-
 	SET @process = 'CW-6281 Creacion de sp ccspGalatea_Finder'
 
-	SET @sql = '
-	CREATE PROCEDURE [dbo].[ccspGalatea_Finder]
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccspGalatea_Finder]
 @action int,
 @grabIds varchar(max)=null,
 @grabId int =null,
@@ -165,11 +154,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select A.grab_id from RIA_GRABACION with(nolock) A
+		select A.grab_id from RIA_GRABACION A with(nolock) 
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select A.grab_id from RIA_GRABACIONCONSULTA with(nolock) A
+		select A.grab_id from RIA_GRABACIONCONSULTA A with(nolock) 
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -177,11 +166,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.cal_key from RIA_GRABACION with(nolock) A
+		select distinct A.cal_key from RIA_GRABACION A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.cal_key from RIA_GRABACIONCONSULTA with(nolock) A
+		select distinct A.cal_key from RIA_GRABACIONCONSULTA A with(nolock) 
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -189,11 +178,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.ani as Phone from RIA_GRABACION with(nolock) A
+		select distinct A.ani as Phone from RIA_GRABACION A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.ani as Phone from RIA_GRABACIONCONSULTA with(nolock) A
+		select distinct A.ani as Phone from RIA_GRABACIONCONSULTA A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -201,11 +190,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct A.dni from RIA_GRABACION with(nolock) A
+		select distinct A.dni from RIA_GRABACION A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct A.dni from RIA_GRABACIONCONSULTA with(nolock) A
+		select distinct A.dni from RIA_GRABACIONCONSULTA A with(nolock) 
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -213,11 +202,11 @@ BEGIN
 		insert into @camType
 		exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
 			
-		select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION with(nolock) A
+		select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 		union
-		select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA with(nolock) A
+		select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA A with(nolock)
 		inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 		where A.finicio between @dateStart and @dateEnd
 	end
@@ -228,11 +217,11 @@ BEGIN
 
 		
 		select isnull(min(minDuration),0) as MinDuration, isnull(max(maxDuration),600) as MaxDuration from (
-			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION with(nolock) A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION A with(nolock) 
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 			union
-			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA with(nolock) A
+			select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA A with(nolock)
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 		)X
@@ -240,7 +229,6 @@ BEGIN
   
 END
 '
-
 	EXEC(@sql)
 
 	
@@ -256,7 +244,6 @@ END
 
 
 	SET @process = 'CW-6672 Creacion de sp ccsp_RecordsManagement'
-
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_RecordsManagement]
 

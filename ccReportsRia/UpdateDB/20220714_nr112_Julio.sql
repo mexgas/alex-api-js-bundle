@@ -332,7 +332,7 @@ if not exists (select * from ReportsTotals where id=''12010'') begin
 end
 
 if not exists (select * from ReportsTotals where id=''12020'') begin
-	INSERT INTO ReportsTotals VALUES (12020,''sum:numberSentMessagesWhatsApp|sum:totalContactsWhatsApp|sum:numberMsgReceivedWhats|sum:totalConversationsWhatsApp|sum:numberAssignedMessagesWhatsApp|sum:maxWaitTimeWhatsApp|sum:avgWaitTimeWhatsApp|sum:spamWhatsApp|special:serviceLevelWhats:CASE WHEN receivedConversations = 0 THEN 0 ELSE ROUND(((lessThanDefault*1.0) / receivedConversations) * 100, 2)|sum:contactFinishedConversationsWhatApp|sum:agentFinishedConversationsWhatApp|sum:systemFinishedConversationsWhatsApp'')
+	INSERT INTO ReportsTotals VALUES (12020,''sum:numberSentMessagesWhatsApp|sum:totalContactsWhatsApp|sum:numberMsgReceivedWhats|sum:totalConversationsWhatsApp|sum:numberAssignedMessagesWhatsApp|sum:maxWaitTimeWhatsApp|sum:avgWaitTimeWhatsApp|sum:spamWhatsApp|sum:contactFinishedConversationsWhatApp|sum:agentFinishedConversationsWhatApp|sum:systemFinishedConversationsWhatsApp'')
 end
 
 

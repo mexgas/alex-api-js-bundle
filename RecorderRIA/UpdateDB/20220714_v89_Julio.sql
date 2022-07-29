@@ -272,6 +272,11 @@ END
 		begin			
 			select cast(id_repositorio as int) as DialerId, OutIniPort as InitialPort, OutFinPort as FinalPort from TREC_REPOSITORIOS where id_repositorio = @pbxId
 		end
+
+		if @action = 5 
+		begin			
+			select ruta_local from TREC_REPOSITORIOS where id_repositorio = @pbxId
+		end
 	END
 	'
 

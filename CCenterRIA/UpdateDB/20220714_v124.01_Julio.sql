@@ -3543,7 +3543,8 @@ set @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIA_Autama
 EXEC(@sql)
 
 set @process = 'CW-7126 Add tags to ccRIA_AutamaticMessages_VariableDataTags'
-set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIA_AutamaticMessages_VariableDataTags'')
+set @sql = 'IF not EXISTS (SELECT * FROM ccRIA_AutamaticMessages_VariableDataTags)
+			
 			BEGIN
 				INSERT INTO ccRIA_AutamaticMessages_VariableDataTags (LanguageId, VariableDataTag)
 				VALUES (0,''Dato '')
@@ -3568,7 +3569,7 @@ set @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIA_Autama
 EXEC(@sql)
 
 set @process = 'CW-7126 Add tags to ccRIA_AutamaticMessages_TtsTypesTags'
-set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIA_AutamaticMessages_TtsTypesTags'')
+set @sql = 'IF not EXISTS (SELECT * FROM ccRIA_AutamaticMessages_TtsTypesTags)
 			BEGIN
 				INSERT INTO ccRIA_AutamaticMessages_TtsTypesTags (Id, TtsTypesTagsEnglish, TtsTypesTagsSpanish, TtsTypesTagsPortuguese)
 				VALUES (0,''Spelling'', ''Deletreo'', ''Soletração'')

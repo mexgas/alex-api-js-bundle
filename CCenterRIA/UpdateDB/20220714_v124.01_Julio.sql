@@ -50,6 +50,17 @@ BEGIN
 
 	BEGIN TRY	
 	-------------------------------Preview K004009 DetalleMarcación --------------------------------
+
+	set @process = 'Alter column reg_date from RegProcessPreviewRecord'
+    set @sql = '
+		if ( exists (select * from sys.columns where name = N''reg_date'' and Object_ID = Object_ID(N''RegProcessPreviewRecord'') )and 
+			(select DATA_TYPE from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=''RegProcessPreviewRecord''and COLUMN_NAME=''reg_date'') != ''datetime'')
+		begin
+			ALTER TABLE RegProcessPreviewRecord ALTER COLUMN reg_date datetime
+		end
+	'
+    EXEC(@sql)
+
 	set @process = 'Add columns CallId and tPreview to RegProcessPreviewRecord'
     set @sql = '
 		if not exists (select * from sys.columns where name = N''tPreview'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
@@ -2591,7 +2602,6 @@ set nocount off'
          ISNULL(O.cal_telefono2,'''')+''~''+
          ISNULL(O.cal_telefono3,'''')+''~''+
          ISNULL(O.cal_telefono4,'''')+''~''+
-         ISNULL(O.cal_telefono5,'''')+''~''+
          ISNULL(O.cal_telefono5,'''')+''~''
                from ccUsers U,ccoCallsOutSource O (nolock)
         INNER JOIN ccoCallsPreviewData P (nolock) on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id

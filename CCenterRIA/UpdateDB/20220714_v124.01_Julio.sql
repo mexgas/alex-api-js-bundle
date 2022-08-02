@@ -2602,7 +2602,6 @@ set nocount off'
          ISNULL(O.cal_telefono2,'''')+''~''+
          ISNULL(O.cal_telefono3,'''')+''~''+
          ISNULL(O.cal_telefono4,'''')+''~''+
-         ISNULL(O.cal_telefono5,'''')+''~''+
          ISNULL(O.cal_telefono5,'''')+''~''
                from ccUsers U,ccoCallsOutSource O (nolock)
         INNER JOIN ccoCallsPreviewData P (nolock) on O.cal_Key=P.Cal_key and O.cam_id=P.cam_id

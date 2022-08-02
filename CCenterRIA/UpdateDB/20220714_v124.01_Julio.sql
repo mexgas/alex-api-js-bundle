@@ -1582,7 +1582,7 @@ end'
 
             IF @conversationStatus in(13,10,17,18,11) BEGIN
 				DECLARE @conversationDateTemp INT;
-                select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate != null then 1 else 0 end from ccWhatsAppConversations where conversationId = @conversationId;
+                select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end from ccWhatsAppConversations where conversationId = @conversationId; 
 
     			IF @conversationStatus = 13 BEGIN
     				IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN

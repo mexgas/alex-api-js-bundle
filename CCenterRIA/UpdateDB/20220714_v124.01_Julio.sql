@@ -53,7 +53,7 @@ BEGIN
 
 	set @process = 'Alter column reg_date from RegProcessPreviewRecord'
     set @sql = '
-		if ( exists (select * from sys.tables where name = N''RegProcessPreviewRecord'') and 
+		if ( exists (select * from sys.columns where name = N''reg_date'' and Object_ID = Object_ID(N''RegProcessPreviewRecord'') )and 
 			(select DATA_TYPE from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=''RegProcessPreviewRecord''and COLUMN_NAME=''reg_date'') != ''datetime'')
 		begin
 			ALTER TABLE RegProcessPreviewRecord ALTER COLUMN reg_date datetime

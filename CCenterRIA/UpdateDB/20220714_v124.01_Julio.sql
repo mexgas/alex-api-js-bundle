@@ -50,6 +50,17 @@ BEGIN
 
 	BEGIN TRY	
 	-------------------------------Preview K004009 DetalleMarcación --------------------------------
+
+	set @process = 'Alter column reg_date from RegProcessPreviewRecord'
+    set @sql = '
+		if ( exists (select * from sys.tables where name = N''RegProcessPreviewRecord'') and 
+			(select DATA_TYPE from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=''RegProcessPreviewRecord''and COLUMN_NAME=''reg_date'') != ''datetime'')
+		begin
+			ALTER TABLE RegProcessPreviewRecord ALTER COLUMN reg_date datetime
+		end
+	'
+    EXEC(@sql)
+
 	set @process = 'Add columns CallId and tPreview to RegProcessPreviewRecord'
     set @sql = '
 		if not exists (select * from sys.columns where name = N''tPreview'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))

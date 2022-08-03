@@ -2003,36 +2003,52 @@ end'
 
     set @process = 'CW-Roles se agrega el rol calidad'
     set @sql = 'if not exists (select * from ccRoles where Level=8 and Active=1)
-    begin
+    begin	
         INSERT ccRoles (Description,KeyJson,CreateDate,Active,Level) 
         VALUES (''Calidad'',''translate_quality'',CURRENT_TIMESTAMP ,1,8 )
+
+		
     end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Monitoreo de llamadas'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10016)
+    set @sql = 'declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=8
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10016)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(8, 10016) 
+			
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10016) 
     end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Gestion de areas '
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10008)
+    set @sql = 'declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=8
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10008)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(8, 10008) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10008) 
     end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Acceder a buscador '
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10027)
+    set @sql = '
+	declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=8
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10027)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(8, 10027) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10027) 
     end'
     EXEC(@sql)
     set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=8 and Permissions_Id=10026)
+    set @sql = '
+	declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=8
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10026)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(8, 10026) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10026) 
     end'
     EXEC(@sql)
 
@@ -2047,23 +2063,33 @@ end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Solo Monitoreo'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10017)
+    set @sql = 'declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=9
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10017)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(9, 10017) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10017) 
     end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Monitorear areas'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10007)
+    set @sql = 'declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=9
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10007)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(9, 10007) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10007) 
     end'
     EXEC(@sql)
 
     set @process = 'CW-Roles se agrega relacion permiso-rol Reporteador'
-    set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=9 and Permissions_Id=10026)
+    set @sql = '
+	declare @rolId int 
+	select @rolId=Rol_id from ccRoles where Level=9
+
+	if not exists (select * from ccRoles_Permissions where Rol_Id=@rolId and Permissions_Id=10026)
     begin
-        INSERT INTO ccRoles_Permissions VALUES(9, 10026) 
+        INSERT INTO ccRoles_Permissions VALUES(@rolId, 10026) 
     end'
     EXEC(@sql)
 

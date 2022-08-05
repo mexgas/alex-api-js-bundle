@@ -3904,7 +3904,7 @@ BEGIN
         END
     else
         BEGIN
-            update ccMsgFiles set Descripcion = @Description, msgName = @msgName, msgFile = @msgFile where msg_id = @msg_id
+            update ccMsgFiles set Descripcion = @Description, msgName = @msgName, msgFile = @msgFile, length = @length where msg_id = @msg_id
         END
 END 
 

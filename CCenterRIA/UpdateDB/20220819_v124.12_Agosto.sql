@@ -49,9 +49,9 @@ BEGIN
 	BEGIN TRY
 
 	    ----------------------------------IVAN MARTIN | AUTOMATIC MESSAGES | SCP-71 DEFAULT MESSAGES --------------------------------------------------
-
+    
         set @process = 'SCP-71 Create new column DefaultMessage to table ccMsgFiles'
-        set @sql = 'IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''DefaultMessage'')
+        set @sql = 'IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''DefaultMessage'' AND Object_ID = Object_ID(N''ccMsgFiles''))
                     BEGIN
                         ALTER TABLE ccMsgFiles
                         ADD DefaultMessage BIT NULL 

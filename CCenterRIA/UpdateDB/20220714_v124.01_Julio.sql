@@ -3910,7 +3910,7 @@ END
 
 if @action = 7
 BEGIN
-    select msg_id as msgId, msgName as MsgName, Descripcion as MsgDescription from ccMsgFiles where msg_id = @msg_id
+	select msg_id as MsgId, msgName as MsgName, Descripcion as MsgDescription, MsgFile as MsgFile from ccMsgFiles where msg_id = @msg_id
 END
 
 IF @action = 8

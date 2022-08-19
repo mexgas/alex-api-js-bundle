@@ -3826,8 +3826,8 @@ SET NOCOUNT ON
 
 if @action = 1  -- Get audio catalog
 begin
-    select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msg_id [MsgId] from ccMsgFiles
-    where msgFile not like ''TTS|%''
+    select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msgFile [MsgFile], msg_id [MsgId] from ccMsgFiles
+	where msgFile not like ''TTS|%''
     return (0)
 end
 

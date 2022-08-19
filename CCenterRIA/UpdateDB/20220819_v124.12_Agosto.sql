@@ -50,7 +50,7 @@ BEGIN
 
 	    ----------------------------------GMZ | CW-7258_GetCampaignByAudio --------------------------------------------------
 
-        set @process = 'CW-7258_GetCampaignByAudio se modifica sp de ccsp_GalateaAutomaticMessages'
+        set @process = 'CW-7258_GetCampaignByAudio se modifica sp de ccsp_GalateaAutomaticMessages (se agrego action 11)'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAutomaticMessages]
 		@action as tinyint,
 		@type as int = null,

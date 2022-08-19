@@ -66,7 +66,7 @@ BEGIN
 		end'
         EXEC(@sql)
 
-        set @process = 'Reincio MCS se altera sp ccsp_ConversationWASave'
+        set @process = 'Reincio MCS se altera sp ccsp_ConversationWASave (se agrego action 13 y 14)'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                               , @conversationId     INT         = 0
                                               , @inboundId          SMALLINT    = NULL
@@ -414,7 +414,7 @@ BEGIN
 		END;'
         EXEC(@sql)
 
-        set @process = 'Reinicio MCS se altera sp ccsp_ConversationWASave'
+        set @process = 'Reinicio MCS se altera sp ccsp_ConversationWASave (se quito option 7)'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
 		    @Option SMALLINT,
 		    @InboundId SMALLINT = 0,

@@ -1351,6 +1351,25 @@ END;'
 
 ------------------------------------------------------------  END  ----------------------------------------------------------------------------------------------------------------------------------
 
+	    ----------------------------------GMZ | K002130-Editar telefono --------------------------------------------------
+
+        set @process = 'K002130-Editar telefono'
+        set @sql = 'if not exists( select * from ccRIALog_Operation where operationType in (195,196))
+        begin
+            insert into ccRIALog_Operation (operationType, descripcion) VALUES (195, ''DESASOCIAR TELÉFONO|DISASSOCIATE PHONE NUMBER'')
+            insert into ccRIALog_Operation (operationType, descripcion) VALUES (196, ''ASOCIAR TELÉFONO|ASSOCIATE PHONE NUMBER'')
+        end'
+        EXEC(@sql)
+
+        set @process = 'K002130-Editar telefono'
+        set @sql = 'if not exists( select * from ccRIALog_Module where module_id = 61 )
+        begin
+            INSERT INTO ccRIALog_Module (module_id, descripcion) VALUES (61, ''CONFIGURACIÓN DE CAMPAÑA (WHATSAPP ENTRADA)|CAMPAIGN CONFIGURATION (INBOUND WHATSAPP)'')
+        end'
+        EXEC(@sql)
+
+        ------------------------------------------------------------  END  ----------------------------------------------------------------------------------------------------------------------------------
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version
@@ -1368,5 +1387,3 @@ END;'
 		ROLLBACK TRAN
 	END CATCH
 END
-
-

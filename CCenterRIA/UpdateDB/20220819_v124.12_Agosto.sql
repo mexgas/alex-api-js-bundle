@@ -110,6 +110,8 @@ BEGIN
 								  AND cal_status = 0
 						)
 				END
+				SELECT @cam_id;
+				return(@cam_id)
 		END
 		IF @Type = 1
 			BEGIN
@@ -120,9 +122,6 @@ BEGIN
 				WHERE ccCamps.cam_id = @cam_id
 					  AND ccCampsPrioridadTel.cam_id = @cam_id
 		END
-
-		SELECT @cam_id;
-		return(@cam_id)
 '
 
         EXEC(@sql)

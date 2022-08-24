@@ -118,7 +118,7 @@ BEGIN
 		select grab.grab_id as grabId,grab.id_repositorio as repositoryId,rep.dirvirtual_audio as virtualAudio
 		,rep.ruta_repositorio+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as pathRep,
 		rep.dirvirtual_audio_secundario as VirtualAudioSecundario, 
-		,rep.ruta_repositorio_secundario+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as PathRepSecundario,
+		rep.ruta_repositorio_secundario+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as PathRepSecundario,
 		f.prefijo+cast(cal_id as varchar(100))	+ case when subFijo<>'''''''' then ''''_''''+subFijo else '''''''' end + @ext as [fileAudio]
 		from grab 
 		inner join TREC_REPOSITORIOS rep on grab.id_repositorio=rep.id_repositorio

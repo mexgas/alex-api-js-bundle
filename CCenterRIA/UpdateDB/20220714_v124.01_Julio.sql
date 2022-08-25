@@ -3295,19 +3295,6 @@ begin
 		return(0)
 	end
 
-	if @canReprogram=1
-	begin
-		if exists(select top 1 1 from ccCalifCamp nolock where tipo=0 and calif_id=@calif_id)
-		begin
-			if exists(select i.Inbound_id from ccCalifCamp cc inner join ccTipoCalif t on cc.calif_id=t.calif_id and tipo=0
-			inner join ccInbound i on cc.cam_id=i.Inbound_id where cc.calif_id=@calif_id and i.cam_id is null)
-			begin
-				select cast(-2 as smallint) [result]	-- Cant reprogram, there is not assigned campaign
-				return(0)
-			end
-		end
-	end
-
     UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
     canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
 	EndConversation=isnull(@endConversation,EndConversation)

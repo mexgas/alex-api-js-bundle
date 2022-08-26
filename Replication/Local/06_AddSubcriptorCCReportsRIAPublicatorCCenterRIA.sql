@@ -5,41 +5,26 @@ declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
 Set @Version = '123'
 
-create table #temp([version] int)
-insert into #temp
 exec @Version_Actual = dbo.ccsp_getVersion 'BD'
-
-drop table #temp
 
 if @Version_Actual >= @Version
  begin
 	declare @Sql nvarchar(max)
 
-	declare @subscriptionServerReportsRia nvarchar(max)
-	select @subscriptionServerReportsRia = convert(nvarchar(max),valor) from ccsettings where setting_id = 137
+	declare @subscriptionServer nvarchar(max)
+	select @subscriptionServer = convert(nvarchar(max),valor) from ccsettings where setting_id = 137
 
 	/****************************************************/
 	/*** Crea registro de Alias para replicas remotas ***/
 	/****************************************************/
 
-	if @subscriptionServerReportsRia <> '' begin
-		select @subscriptionServerReportsRia = substring(@subscriptionServerReportsRia, 0, charindex('|',@subscriptionServerReportsRia))
+	if @subscriptionServer <> '' begin
+		select @subscriptionServer = substring(@subscriptionServer, 0, charindex('|',@subscriptionServer))
 	end
 
 	------------------ INICIO SCRIPT ------------------
 
-
-	/******************************/
-	/*** Change user dboowner *****/
-	/******************************/
-
-	if exists (select * from sys.databases where name='CCenterRia')
-	begin
-		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='CCenterRia')
-			ALTER AUTHORIZATION ON DATABASE::CCenterRia TO sa
-	end
-
-	if @subscriptionServerReportsRia <> '' begin
+	if @subscriptionServer <> '' begin
 		use [CCenterRia]		
 
 		declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
@@ -81,7 +66,7 @@ if @Version_Actual >= @Version
 						and subscription_type <> 2 and subscription_type <> 3) begin
 				
 				exec sp_addmergesubscription @publication = @publicationName, 
-				@subscriber = @subscriptionServerReportsRia, 
+				@subscriber = @subscriptionServer, 
 				@subscriber_db = N'ccReportsRia', 
 				@subscription_type = N'pull', 
 				@subscriber_type = N'local', 

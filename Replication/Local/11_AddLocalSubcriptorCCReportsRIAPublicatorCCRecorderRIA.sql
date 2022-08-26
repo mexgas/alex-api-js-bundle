@@ -1,8 +1,9 @@
 set nocount on
 use [ccReportsRia]
+
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '102'
+Set @Version = '9'
 
 exec @Version_Actual = dbo.ccsp_getVersion 'BD'
 
@@ -17,23 +18,24 @@ if @Version_Actual >= @Version
 	if @indexInstancia>0
 		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
 
+	select @publicationServer = convert(nvarchar(max),valor)
+	from ccsettings where setting_id = 32
 
-	select @publicationServer = convert(nvarchar(max),valor) from ccsettings where setting_id = 31
 	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
 	
 	declare @userNameSQL nvarchar(50)
-	declare @passwordSQL nvarchar(50)
-	
+	declare @passwordSQL nvarchar(50)	
+
+	declare @settingBD nvarchar(100)
 
 	declare @publDistLogin nvarchar(max)
 	declare @publDistPassword nvarchar(max)
 
-	declare @settingBD nvarchar(100)
-
-	declare @temp table	(id int, value nvarchar(100));
+	declare @temp table  (id int, value nvarchar(100));
 	select @settingBD = valor from ccSettings where setting_id = 35
 
-	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
+	insert into @temp
+	 select id,Value from fn_RIASplitDelimited(@settingBD,'|')
 
 	
 	select @userNameSQL = value  from @temp where id = 3
@@ -41,50 +43,17 @@ if @Version_Actual >= @Version
 	select @hostName = value  from @temp where id = 5
 
 	
-
 	-----agregado de credenciales SQL SERVER-----
 	set @publDistLogin = isnull(@userNameSQL,'replication')
 	set @publDistPassword = isnull(@passwordSQL,'replication')
 
+
 	---------------- INICIO SCRIPT ----------------
-
-	/******************************/
-	/*** Change user dboowner *****/
-	/******************************/
-
-	if exists (select * from sys.databases where name='ccReportsRia')
-	begin
-		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='ccReportsRia')
-			ALTER AUTHORIZATION ON DATABASE::ccReportsRia TO sa
-	end
-
 	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
 	
-	insert into @publicationTable(publicationName,status) values(N'LogDials',0)
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia',0)	
-	insert into @publicationTable(publicationName,status) values(N'Hold',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOutSource',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsPreviewData',0)	
-	insert into @publicationTable(publicationName,status) values(N'RegProcessPreviewRecord',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOut',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'Users',0)	
-	insert into @publicationTable(publicationName,status) values(N'Activity',0)	
-	insert into @publicationTable(publicationName,status) values(N'IVR',0)	
-	insert into @publicationTable(publicationName,status) values(N'Catalogs',0)	
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia_Dialog',0)	
-	insert into @publicationTable(publicationName,status) values(N'Callbacks',0)	
-	insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-	insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
-	insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-	insert into @publicationTable(publicationName,status) values(N'MenuReportsRia',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-	insert into @publicationTable(publicationName,status) values(N'Conversationtweet',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationWhatsApp',0)	
+	insert into @publicationTable(publicationName,status) values(N'AVRSTemplatesRate',0)
+	insert into @publicationTable(publicationName,status) values(N'AVRSTemplates',0)	
+	insert into @publicationTable(publicationName,status) values(N'AVRSRecordings',0)
 
 	declare @publicationId int,@publicationName varchar(100)
 	
@@ -95,14 +64,14 @@ if @Version_Actual >= @Version
 		begin
 			exec sp_addmergepullsubscription @publisher = @publicationServer, 
 			@publication = @publicationName, 
-			@publisher_db = N'CCenterRia', 
+			@publisher_db = N'CCRecorderRIA', 
 			@subscriber_type = N'Local', 
 			@subscription_priority = 0, 
 			@description = N'', 
 			@sync_type = N'Automatic'
 
 			exec sp_addmergepullsubscription_agent @publisher = @publicationServer, 
-			@publisher_db = N'CCenterRia', 
+			@publisher_db = N'CCRecorderRIA', 
 			@publication = @publicationName, 
 			@distributor = @publicationServer, 
 			@distributor_security_mode = 0, 
@@ -135,14 +104,14 @@ if @Version_Actual >= @Version
 			begin
 				exec sp_addmergepullsubscription @publisher = @publicationServer, 
 				@publication = @publicationName, 
-				@publisher_db = N'CCenterRia', 
+				@publisher_db = N'CCRecorderRIA', 
 				@subscriber_type = N'Local', 
 				@subscription_priority = 0, 
 				@description = N'', 
 				@sync_type = N'Automatic'
 			
 				exec sp_addmergepullsubscription_agent @publisher = @publicationServer, 
-				@publisher_db = N'CCenterRia', 
+				@publisher_db = N'CCRecorderRIA', 
 				@publication = @publicationName, 
 				@distributor = @publicationServer, 
 				@distributor_security_mode = 0, 

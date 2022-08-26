@@ -1,10 +1,10 @@
 set nocount on
-use [ccReportsRia]
+use [CCRecorderRIA]
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '102'
+Set @Version = '9'
 
-exec @Version_Actual = dbo.ccsp_getVersion 'BD'
+select @Version_Actual = par_valor from TREC_PARAMETROS where par_id = 30
 
 if @Version_Actual >= @Version
  begin
@@ -17,8 +17,7 @@ if @Version_Actual >= @Version
 	if @indexInstancia>0
 		set @hostName = substring(@hostName , 0, charindex('\',@hostName ))
 
-
-	select @publicationServer = convert(nvarchar(max),valor) from ccsettings where setting_id = 31
+	select @publicationServer = convert(nvarchar(max),par_valor) from TREC_PARAMETROS where par_id = 66
 	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
 	
 	declare @userNameSQL nvarchar(50)
@@ -31,8 +30,7 @@ if @Version_Actual >= @Version
 	declare @settingBD nvarchar(100)
 
 	declare @temp table	(id int, value nvarchar(100));
-	select @settingBD = valor from ccSettings where setting_id = 35
-
+	select @settingBD = par_valor from TREC_PARAMETROS where par_id = 73
 	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
 
 	
@@ -40,64 +38,35 @@ if @Version_Actual >= @Version
 	select @passwordSQL = value  from @temp where id = 4
 	select @hostName = value  from @temp where id = 5
 
-	
-
 	-----agregado de credenciales SQL SERVER-----
-	set @publDistLogin = isnull(@userNameSQL,'replication')
-	set @publDistPassword = isnull(@passwordSQL,'replication')
+	set @publDistLogin =  isnull(@userNameSQL,'replication')
+	set @publDistPassword =  isnull(@passwordSQL,'replication')
 
 	---------------- INICIO SCRIPT ----------------
 
-	/******************************/
-	/*** Change user dboowner *****/
-	/******************************/
-
-	if exists (select * from sys.databases where name='ccReportsRia')
-	begin
-		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='ccReportsRia')
-			ALTER AUTHORIZATION ON DATABASE::ccReportsRia TO sa
-	end
-
 	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
 	
-	insert into @publicationTable(publicationName,status) values(N'LogDials',0)
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia',0)	
-	insert into @publicationTable(publicationName,status) values(N'Hold',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOutSource',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsPreviewData',0)	
-	insert into @publicationTable(publicationName,status) values(N'RegProcessPreviewRecord',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOut',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'Users',0)	
-	insert into @publicationTable(publicationName,status) values(N'Activity',0)	
-	insert into @publicationTable(publicationName,status) values(N'IVR',0)	
-	insert into @publicationTable(publicationName,status) values(N'Catalogs',0)	
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia_Dialog',0)	
-	insert into @publicationTable(publicationName,status) values(N'Callbacks',0)	
-	insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-	insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
-	insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
 	insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
 	insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
 	insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-	insert into @publicationTable(publicationName,status) values(N'MenuReportsRia',0)	
+	insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
+	insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
+	insert into @publicationTable(publicationName,status) values(N'Chats',0)	
+	insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
 	insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-	insert into @publicationTable(publicationName,status) values(N'Conversationtweet',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationWhatsApp',0)	
 
 	declare @publicationId int,@publicationName varchar(100)
 	
 	while exists(select publicationName from @publicationTable where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
-		use [ccReportsRia]
+		use [CCRecorderRIA]
 		if not exists (SELECT * FROM sysobjects WHERE name = N'sysmergepublications')
 		begin
 			exec sp_addmergepullsubscription @publisher = @publicationServer, 
 			@publication = @publicationName, 
 			@publisher_db = N'CCenterRia', 
-			@subscriber_type = N'Local', 
-			@subscription_priority = 0, 
+			@subscriber_type = N'Global', 
+			@subscription_priority = 1, 
 			@description = N'', 
 			@sync_type = N'Automatic'
 
@@ -130,14 +99,14 @@ if @Version_Actual >= @Version
 			@use_web_sync = 0	
 		end
 		else begin			
-			if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'ccReportsRia' 
+			if not exists (select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' 
 			AND pubid = (select pubid FROM dbo.sysmergepublications WHERE name = @publicationName))
 			begin
 				exec sp_addmergepullsubscription @publisher = @publicationServer, 
 				@publication = @publicationName, 
 				@publisher_db = N'CCenterRia', 
-				@subscriber_type = N'Local', 
-				@subscription_priority = 0, 
+				@subscriber_type = N'Global', 
+				@subscription_priority = 1, 
 				@description = N'', 
 				@sync_type = N'Automatic'
 			
@@ -172,6 +141,8 @@ if @Version_Actual >= @Version
 		end	
 		update @publicationTable set status=1 where id=@publicationId
 	end
+
+
 
 	------------------ FIN SCRIPT ------------------
 

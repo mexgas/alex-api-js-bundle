@@ -1132,140 +1132,7 @@ BEGIN
                     INSERT [dbo].[ccRIAChatMsg](descripcion, msg) values(''Default_En\Default13'', ''SessÃ£o de chat terminou'')'
         EXEC(@sql)
 
-        set @process = 'CW-7231 Alter SP ccsp_GalateaDnis change  @Tipo = 2'
-    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDnis]
-@User varchar(10),
-@Tipo tinyint,
-@Dnis varchar(40) = null,
-@Inbound_id smallint = null,
-@dni_id as smallint = null,
-@dnis_ids as varchar(MAX) = null,
-@dni_description as varchar(40) = null,
-@dni_isBlock as bit = null
-as
-set nocount on
-
-
-if @Tipo = 1 -- carga dnis
- begin
-    select dni_id, dni_numero as dni_number, dni_descripcion as dni_description, case when dni_id in(select dni_id from ccInboundDnis) then 1 else 0 end dni_isRelated
-    from ccDnis where dni_Status=1 order by 2
-    return(0)
- end
-
-if @Tipo = 2 -- carga relaciones de dnis
- begin
-    declare @UserId int=cast(@user as smallint)
-    declare @isSuperUser bit=0
-
-    if @UserId > 0 and exists (
-        select * from ccUsers_Roles A
-        inner join ccRoles R on A.Rol_id=R.Rol_id and R.Level=7
-            where User_id = @UserId
-        ) begin
-            set @isSuperUser =1
-        end
-
-    ;with relationDnis as(
-        select a1.Inbound_id, cast(0 as smallint) dni_id, a1.descripcion as description,'''' as dni_number,'''' as dni_description, cast(0 as tinyint) dni_isBlock
-        from ccInbound a1
-        inner join ccRIAInboundGraph a2 on (a1.Inbound_id = a2.Inbound_id)
-        inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
-        where a3.type_id = 1 and IDArea is not null 
-        and a1.Inbound_id not in (select Inbound_id from ccInboundDnis)
-        union
-        select ci.inbound_id, cid.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
-        from ccInboundDnis cid 
-        inner join ccInbound ci on ci.inbound_id = cid.inbound_id 
-        join ccDnis cd on cd.dni_id = cid.dni_id 
-        where cd.dni_Status=1
-    )
-
-    select * from relationDnis a1
-    where @isSuperUser=1 or a1.Inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@UserId, 2))
-    order by 3,4
-
-    return(0)
- end
-
-if @Tipo = 3 -- Agrega Dnis
- begin
-    if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis)
-     begin
-        insert into ccDnis (dni_id, dni_numero, dni_tpoMaxEspera, tipodni_id, dni_Descripcion, dni_tipo)
-        select isNull(max(dni_id), 0) + 1, @Dnis , 0, 1, @dni_description, 2 from ccDnis
-        select top(1) dni_id from ccDNIS order by dni_id desc
-        return(0)
-     end
-     
-    select cast(-1 as smallint)
- end
-
-if @Tipo = 4 -- Elimina Dnis
- begin
-    delete from ccInboundDnis where inbound_id = @Inbound_Id and dni_id = @dni_id
-    
-    select ci.inbound_id, cd.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
-    from ccInbound ci , ccDNIS cd
-    where ci.Inbound_id=@Inbound_id and dni_id=@dni_id
- end
-
-if @Tipo = 5 -- Agrega Relacion
- begin
-    insert into ccInboundDnis (Inbound_id, dni_id)
-    select @Inbound_Id,B.Value from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
-    left join ccInboundDnis A on A.dni_id=B.Value 
-    where  A.dni_id is null
-
-    select cast(@Inbound_Id as smallint) inbound_id,cast(B.Value as smallint) dni_id, 
-    ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock        
-    ,case when cid.Inbound_id is null then 0 else 1 end isAssigned
-    from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
-    left join ccInboundDnis cid on cid.dni_id=B.Value and cid.Inbound_id=@Inbound_Id
-    left join ccInbound ci on ci.inbound_id = @Inbound_Id
-    inner join ccDnis cd on cd.dni_id = B.Value
-    order by 3,4
- end
-
-if @Tipo = 6 -- Elimina Dnis sin pedir inbound_id
- begin
-    if exists(select dni_id from ccInboundDnis where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '','')) and isnull(inbound_id, 0) <> 0)
-        select -1
-
-    else begin
-        update ccDNIS set dni_Status=0 where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '',''))--= @dni_id -- delete from ccdnis where dni_id = @dni_id
-        select 1
-    end
- end
-
-if @tipo = 7
- begin
-    if @Dnis = (select dni_numero from ccDNIS where dni_id=@dni_id) begin
-        update ccDnis set 
-        dni_Descripcion=isnull(@dni_description,dni_Descripcion)
-        where dni_id = @dni_id 
-        
-        select 1
-        return(0)
-    end
-
-    if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis) begin
-        update ccDnis set 
-        dni_numero=case when @Dnis <> ''0'' then @Dnis else dni_numero end,
-        dni_Descripcion=isnull(@dni_description,dni_Descripcion),
-        dni_isBlock = isnull(@dni_isBlock,dni_isBlock)
-        where dni_id = @dni_id 
-
-        select 1
-        --select dni_id,dni_numero as dni_number, dni_Descripcion as dni_Descriptiondni_id, dni_isBlock from ccDNIS where dni_id=@
-        return(0)
-    end
-    
-    select -1
- end
-
-set nocount off'
-    EXEC(@sql)
+       
 -------------------------------- Begin Ciro -----------------------------------------
     set @process = 'K002133-Consulta conversaciÃ³n reasignada'
     set @sql = 'ALTER PROCEDURE [dbo].[ccsp_CreateNodeMultimedia] @conversationId BIGINT
@@ -2473,7 +2340,7 @@ END;'
 			END'
         EXEC(@sql)
 
-        ----------------- GG |  CW-6927|CW-7423 DNIS Asociados | CW-7422 Campañas relacionadas--------------------------------------------------
+        ----------------- GG |  CW-6927|CW-7423 DNIS Asociados | CW-7422 Campa?s relacionadas--------------------------------------------------
 
         set @process = 'CW-6927 y CW-7422 Se agrega IDWG en select y delete en ccInboundDnis'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
@@ -2674,7 +2541,7 @@ if @option = 3 -- Insert camp area
 if @option = 4 begin-- Delete camp area
     
 
-    --Si existe una campaña relacionada con el grupo
+    --Si existe una campa? relacionada con el grupo
     if exists(select cam_id from ccInbound where cam_id=@DeleteCamId) begin
         select -4
         return(0)    
@@ -3323,6 +3190,312 @@ set nocount off'
             exec(@sql)'
         EXEC(@sql)
         ------------------------------------------------------------  END  ---------------------------------------------------------------------
+
+
+        ------------------------------------------------------------  Jesus Gallardo  ---------------------------------------------------------------------
+
+ set @process = 'CW-7231 Alter SP ccsp_GalateaDnis change  @Tipo = 2'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDnis]
+@User varchar(10),
+@Tipo tinyint,
+@Dnis varchar(40) = null,
+@Inbound_id smallint = null,
+@dni_id as smallint = null,
+@dnis_ids as varchar(MAX) = null,
+@dni_description as varchar(40) = null,
+@dni_isBlock as bit = null
+as
+set nocount on
+
+
+if @Tipo = 1 -- carga dnis
+ begin
+    select dni_id, dni_numero as dni_number, dni_descripcion as dni_description, case when dni_id in(select dni_id from ccInboundDnis) then 1 else 0 end dni_isRelated
+    from ccDnis where dni_Status=1 order by 2
+    return(0)
+ end
+
+if @Tipo = 2 -- carga relaciones de dnis
+ begin
+    declare @UserId int=cast(@user as smallint)
+    declare @isSuperUser bit=0
+
+    if @UserId > 0 and exists (
+        select * from ccUsers_Roles A
+        inner join ccRoles R on A.Rol_id=R.Rol_id and R.Level=7
+            where User_id = @UserId
+        ) begin
+            set @isSuperUser =1
+        end
+
+    ;with relationDnis as(
+        select a1.Inbound_id, cast(0 as smallint) dni_id, a1.descripcion as description,'''' as dni_number,'''' as dni_description, cast(0 as tinyint) dni_isBlock
+        from ccInbound a1
+        inner join ccRIAInboundGraph a2 on (a1.Inbound_id = a2.Inbound_id)
+        inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+        where a3.type_id = 1 and IDArea is not null 
+        and a1.Inbound_id not in (select Inbound_id from ccInboundDnis)
+        union
+        select ci.inbound_id, cid.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
+        from ccInboundDnis cid 
+        inner join ccInbound ci on ci.inbound_id = cid.inbound_id 
+        join ccDnis cd on cd.dni_id = cid.dni_id 
+        where cd.dni_Status=1
+    )
+
+    select * from relationDnis a1
+    where @isSuperUser=1 or a1.Inbound_id in (select cam_id from dbo.fGet_CampAcd_Area (@UserId, 2))
+    order by 3,4
+
+    return(0)
+ end
+
+if @Tipo = 3 -- Agrega Dnis
+ begin
+    if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis)
+     begin
+        insert into ccDnis (dni_id, dni_numero, dni_tpoMaxEspera, tipodni_id, dni_Descripcion, dni_tipo)
+        select isNull(max(dni_id), 0) + 1, @Dnis , 0, 1, @dni_description, 2 from ccDnis
+        select top(1) dni_id from ccDNIS order by dni_id desc
+        return(0)
+     end
+     
+    select cast(-1 as smallint)
+ end
+
+if @Tipo = 4 -- Elimina Dnis
+ begin
+    delete from ccInboundDnis where inbound_id = @Inbound_Id and dni_id = @dni_id
+    
+    select ci.inbound_id, cd.dni_id, ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock
+    from ccInbound ci , ccDNIS cd
+    where ci.Inbound_id=@Inbound_id and dni_id=@dni_id
+ end
+
+if @Tipo = 5 -- Agrega Relacion
+ begin
+    insert into ccInboundDnis (Inbound_id, dni_id)
+    select @Inbound_Id,B.Value from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
+    left join ccInboundDnis A on A.dni_id=B.Value 
+    where  A.dni_id is null
+
+    select cast(@Inbound_Id as smallint) inbound_id,cast(B.Value as smallint) dni_id, 
+    ci.descripcion as description, cd.dni_numero as dni_number, dni_descripcion as dni_description, cast(dni_isBlock as tinyint) dni_isBlock        
+    ,case when cid.Inbound_id is null then 0 else 1 end isAssigned
+    from  dbo.fn_RIASplitDelimited (@dnis_Ids, '','') B
+    left join ccInboundDnis cid on cid.dni_id=B.Value and cid.Inbound_id=@Inbound_Id
+    left join ccInbound ci on ci.inbound_id = @Inbound_Id
+    inner join ccDnis cd on cd.dni_id = B.Value
+    order by 3,4
+ end
+
+if @Tipo = 6 -- Elimina Dnis sin pedir inbound_id
+ begin
+    if exists(select dni_id from ccInboundDnis where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '','')) and isnull(inbound_id, 0) <> 0)
+        select -1
+
+    else begin
+        update ccDNIS set dni_Status=0 where dni_id in (select value from dbo.fn_RIASplitDelimited (@dnis_Ids, '',''))--= @dni_id -- delete from ccdnis where dni_id = @dni_id
+        select 1
+    end
+ end
+
+if @tipo = 7
+ begin
+    if @Dnis = (select dni_numero from ccDNIS where dni_id=@dni_id) begin
+        update ccDnis set 
+        dni_Descripcion=isnull(@dni_description,dni_Descripcion)
+        where dni_id = @dni_id 
+        
+        select 1
+        return(0)
+    end
+
+    if not exists(select dni_numero from ccDnis where dni_Status=1 and dni_numero like @Dnis) begin
+        update ccDnis set 
+        dni_numero=case when @Dnis <> ''0'' then @Dnis else dni_numero end,
+        dni_Descripcion=isnull(@dni_description,dni_Descripcion),
+        dni_isBlock = isnull(@dni_isBlock,dni_isBlock)
+        where dni_id = @dni_id 
+
+        select 1
+        --select dni_id,dni_numero as dni_number, dni_Descripcion as dni_Descriptiondni_id, dni_isBlock from ccDNIS where dni_id=@
+        return(0)
+    end
+    
+    select -1
+ end
+
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'CW-7276 CREATE TABLE [dbo].[ccAgentMsgFiles]'
+    set @sql = 'if not exists(select * from sys.tables where name=''ccAgentMsgFiles'') begin
+CREATE TABLE [dbo].[ccAgentMsgFiles](
+    [MsgId] [int] primary key identity NOT NULL,
+    [MsgFile] [varchar](100) NOT NULL,
+    [Description] [varchar](40) NOT NULL,
+    [Duration] [smallint] NOT NULL,
+    [MsgName] [varchar](40) NOT NULL)
+end'
+    EXEC(@sql)
+
+    set @process = 'CW-7276 CREATE TABLE [dbo].[ccAgentMsgRelationFiles]'
+    set @sql = 'if not exists(select * from sys.tables where name=''ccAgentMsgRelationFiles'') begin
+CREATE TABLE [dbo].[ccAgentMsgRelationFiles](
+    [MsgId] [int] NOT NULL FOREIGN KEY REFERENCES ccAgentMsgFiles(MsgId),
+    [CamId] [int] NOT NULL,
+    [CamType] [tinyint] NOT NULL,
+    primary key([MsgId],[CamId],[CamType])  
+    )       
+end'
+    EXEC(@sql)
+
+    set @process = 'CW-7276 add ccTipoMsgs '
+    set @sql = 'if not exists(select * from ccTipoMsgs where tipomsg_id=16) begin
+    insert into ccTipoMsgs values(16,''Message Agent befor xfer'',''Message Agent befor xfer'')
+end'
+    EXEC(@sql)
+
+    set @process = 'CW-7276 DROP PROCEDURE ccsp_GalateaAgentAutomaticMessages '
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAgentAutomaticMessages'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAgentAutomaticMessages;
+    end'
+    EXEC(@sql)
+
+    set @process = 'CW-7276 Create SP ccsp_GalateaAgentAutomaticMessages '
+    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAgentAutomaticMessages] 
+    @action as tinyint,
+    @msgName as varchar(40) = '''',
+    @msgFile as varchar(100) = null,
+    @Description as varchar(40) = '''',
+    @duration as int = -1,
+    @CampType tinyint = 0,
+    @msgIdLst varchar(8000) = null,
+    @camId int =null,
+    @MsgId int = null
+AS
+BEGIN
+    SET NOCOUNT ON
+    declare @tableMsgId table(MsgId int not null)
+    declare @campName varchar(70)
+
+    if @action in (3,7) begin --Assin/Unassign
+        if @CampType=0
+            select @campName =descripcion from ccInbound where Inbound_id=@camId
+        else
+            select @campName =cam_descripcion from ccCamps where cam_id=@camId
+    end
+
+    if @action = 1  -- GET_AUDIO_CATALOG
+    begin
+        select ISNULL(msgName, msgFile) [MsgName], [Description] [MsgDescription], [MsgId] [MsgId] from ccAgentMsgFiles     
+        return (0)
+    end
+    else if @action = 2 --CREATE_NEW_MSG
+    begin
+        if EXISTS(select msgName from ccAgentMsgFiles where msgName=@msgName)
+        begin
+            select -1 as result
+        end
+        else
+        begin 
+            insert into ccAgentMsgFiles (msgFile, [Description], Duration, msgName) 
+            values (@msgFile, @Description, @duration, @msgName)
+            select cast(@@identity as int) as result
+        end 
+    
+    end 
+    else IF @action = 3 -- Assing
+    begin   
+        if not exists(select MsgId from ccAgentMsgFiles where MsgId=@MsgId)
+        begin
+            select ''0'' as result
+            return(0)
+        end
+
+        if exists(select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType)
+        begin
+            select ''-1'' as result
+            return(0)
+        end
+
+        insert into [ccAgentMsgRelationFiles]    values(@MsgId,@camId,@CampType)
+
+        select @campName
+
+    end
+    
+    else IF @action = 4 -- GET_CAMP_MESSAGES_RELATION
+    begin   
+        select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType         
+    end
+    else IF @action = 5 -- DELETE_AUDIO_MSG
+    begin
+    
+        insert into @tableMsgId
+        select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+
+        if exists(select A.MsgId from [ccAgentMsgRelationFiles] A 
+                  inner join @tableMsgId B on A.MsgId=B.MsgId
+        )
+        begin
+            select 0 as result
+            return(0)
+        end
+
+         delete A from ccAgentMsgFiles A 
+         inner join @tableMsgId B on A.MsgId=B.MsgId
+         
+         select 1 as result  
+         return(0)
+    end
+        
+    else if @action = 6 --EDIT_AUDIO_MSG
+    BEGIN    
+        update ccAgentMsgFiles set [Description] = isnull(@Description,[Description]), MsgName = isnull(@msgName,MsgName),
+        MsgFile = isnull(@msgFile,MsgFile), Duration=case when @duration is null or @duration<=0 then Duration else @duration end
+        where MsgId = @MsgId    
+    END
+    else IF @action = 7 -- UnAssing
+    begin       
+        if not exists(select MsgId from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType)
+        begin
+            select ''-1'' as result
+            return(0)
+        end
+
+        delete from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType 
+        select @campName
+    end
+    
+    else IF @action = 8 -- list fileName
+    begin               
+        insert into @tableMsgId
+        select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+        
+        select A.MsgFile from ccAgentMsgFiles A 
+                  inner join @tableMsgId B on A.MsgId=B.MsgId
+    end
+    else IF @action = 9 -- Relation CampIn and MsgFile
+    begin               
+        select A.CamId,B.MsgFile,B.Duration from [ccAgentMsgRelationFiles] A
+        inner join ccAgentMsgFiles B on A.MsgId=B.MsgId
+        where CamType=@CampType 
+
+    end
+    else IF @action = 10 -- Relation CampIn and MsgFile
+    begin
+        select MsgId,MsgFile ,Duration from ccAgentMsgFiles where MsgId=@MsgId
+
+    end
+    
+END
+'
+    EXEC(@sql)
+        ------------------------------------------------------------ End Jesus Gallardo  ---------------------------------------------------------------------
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

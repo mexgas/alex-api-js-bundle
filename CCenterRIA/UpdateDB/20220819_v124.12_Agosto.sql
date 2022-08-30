@@ -3497,6 +3497,13 @@ END
         ------------------------------------------------------------ End Jesus Gallardo  ---------------------------------------------------------------------
 		---------------------------------- ANIRotative --------------------------------------------------
 		
+	set @process = 'ANIRotative Add column rotativeAlgo on ccCamps'
+    set @sql = 'IF not exists (SELECT * FROM sys.columns WHERE name = N''rotativeAlgo'' AND Object_ID = Object_ID(N''ccCamps''))
+		BEGIN
+			alter table ccCamps add rotativeAlgo tinyint null
+		END'
+    EXEC(@sql)
+		
 		set @process = 'ANIRotative Create table ccRotativeANIList'
         set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES 
                  WHERE TABLE_SCHEMA = ''dbo'' 

@@ -3166,6 +3166,699 @@ END
 '
     EXEC(@sql)
         ------------------------------------------------------------ End Jesus Gallardo  ---------------------------------------------------------------------
+		---------------------------------- ANIRotative --------------------------------------------------
+		
+		set @process = 'ANIRotative Create table ccRotativeANIList'
+        set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_SCHEMA = ''dbo'' 
+                 AND  TABLE_NAME = ''ccRotativeANIList''))
+				BEGIN
+				CREATE TABLE [dbo].[ccRotativeANIList](
+					[id_RAniList] [smallint] IDENTITY(1,1) NOT NULL,
+					[description] [varchar](50) NOT NULL,
+					[idArea] [smallint] NOT NULL,
+					CONSTRAINT [PK_ccRotativeANIList] PRIMARY KEY CLUSTERED ( [id_RAniList] ASC ))
+				END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Create table ccRotativeANIListDetail'
+        set @sql = 'IF (NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_SCHEMA = ''dbo'' 
+                 AND  TABLE_NAME = ''ccRotativeANIListDetail''))
+				BEGIN
+				CREATE TABLE [dbo].[ccRotativeANIListDetail](
+					[id_RAniList] [int] NOT NULL,
+					[telAni] [varchar](32) NOT NULL,
+					[loadDate] [smalldatetime] NOT NULL DEFAULT Getdate())
+				END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Add Constraint FK_ccRotativeANIListDetail_ccRotativeANIList'
+        set @sql = 'IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS 
+			WHERE CONSTRAINT_NAME =''FK_ccRotativeANIListDetail_ccRotativeANIList'')
+			BEGIN
+				ALTER TABLE [dbo].[ccRotativeANIListDetail] DROP CONSTRAINT FK_ccRotativeANIListDetail_ccRotativeANIList
+			END
+			ALTER TABLE [dbo].[ccRotativeANIListDetail] WITH CHECK ADD CONSTRAINT [FK_ccRotativeANIListDetail_ccRotativeANIList] FOREIGN KEY([id_RAniList])
+			REFERENCES [dbo].[ccRotativeANIList] ([id_RAniList])
+			ALTER TABLE [dbo].[ccRotativeANIListDetail] CHECK CONSTRAINT [FK_ccRotativeANIListDetail_ccRotativeANIList]'
+		EXEC(@sql)
+		
+		SET @process = 'ANIRotative Create index for ccRotativeANIListDetail'
+		SET @sql = 'IF NOT EXISTS(SELECT * FROM sys.indexes WHERE name = ''index_tel'' AND object_id = OBJECT_ID(''ccRotativeANIListDetail''))
+		BEGIN
+		   CREATE INDEX index_tel ON ccRotativeANIListDetail (id_RAniList, telAni);
+		END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Create table ccLoadType'
+		set @sql = 'if not exists (select * from sys.tables where name = N''ccLoadType'')
+			begin
+					 create table ccLoadType(
+							  loadType_ID smallint primary key not null,
+					 description varchar (100),
+					 status bit)
+			end'
+		EXEC(@sql)
+
+		set @process = 'ANIRotative Add data to ccLoadType '
+		set @sql = 'if not exists(select loadType_ID from ccLoadType where loadType_ID = 0)
+						  begin
+							   insert into dbo.ccLoadType(loadType_ID, description, status) values (0, ''Campaign'', 1)
+						  end
+					 if not exists(select loadType_ID from ccLoadType where loadType_ID = 1)
+						  begin
+							   insert into dbo.ccLoadType(loadType_ID, description, status) values (1, ''BlackList'', 1)
+						  end
+					 if not exists(select loadType_ID from ccLoadType where loadType_ID = 2)
+						  begin
+							   insert into dbo.ccLoadType(loadType_ID, description, status) values (2, ''RotativeANIList'', 1)
+						  end'
+		EXEC(@sql)
+
+		set @process = 'ANIRotative Add module to ccRIALog_Module'
+		set @sql = 'if not exists (select module_id from ccRIALog_Module where module_id = 62)
+						begin
+							insert into dbo.ccRIALog_Module(module_id, descripcion) values (62, ''CARGA DE LISTA ANI ROTATIVA | ROTATIVE ANI LIST UPLOAD'')
+						end'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotativeANI'
+        set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotativeANI'') begin
+						DROP PROCEDURE ccsp_GalateaAdminRotativeANI
+					end'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotativeANI'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotativeANI]
+	@type SMALLINT,
+	@idArea SMALLINT = NULL,
+	@descriptionList VARCHAR(50) = NULL,
+	@id_RAniList SMALLINT = NULL,
+	@PageIndex		INT = 0,
+	@PageSize		INT = 0
+
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF (@type = 1) -- Read Rotative ANI List Catalog
+    BEGIN
+        SELECT cral.id_RAniList,
+               cral.description,
+			   cral.idArea
+        FROM dbo.ccRotativeANIList AS cral
+        WHERE cral.idArea IN (@idArea,-1) 
+		AND cral.id_RAniList = ISNULL(@id_RAniList, cral.id_RAniList);
+		RETURN 0;
+    END;
+	IF (@type = 2)
+    BEGIN
+        SELECT * 
+		FROM
+			(SELECT ROW_NUMBER() OVER(ORDER BY loadDate ASC) AS RowNum,
+				id_RAniList,
+				telAni,
+				loadDate
+			FROM dbo.ccRotativeANIListDetail
+			WHERE id_RAniList = @id_RAniList) tmp
+		WHERE  tmp.RowNum > @PageSize * (@PageIndex - 1)
+		AND tmp.RowNum <= @PageSize * @PageIndex
+		RETURN 0;
+    END;
+	If @type=3 --Create Rotative ANI List
+	begin
+		declare @newANILstId SMALLINT = -1 --Name in use
+
+		if not exists(select id_RAniList from ccRotativeANIList where description = @descriptionList)
+		begin
+			insert into ccRotativeANIList (description,idArea) values(@descriptionList, @idArea)
+			select @newANILstId = SCOPE_IDENTITY() 
+		end
+
+		select @newANILstId as [result]
+		return(0)
+	end
+	If @type=4 --Update Rotative ANI List
+	begin
+		declare @idAreaOfExistingLst smallint
+
+		select @idAreaOfExistingLst = idArea from ccRotativeANIList where id_RAniList = @id_RAniList
+		if(@idAreaOfExistingLst = -1 and @idArea <> @idAreaOfExistingLst)	--Changing from global to particular idArea
+		begin
+			if exists(select cam_id from ccCamps where IDArea <> @idArea and id_anilist = @id_RAniList and ISNULL(rotativeAlgo, 0) > 0)
+			begin
+				select -2 as [result] --Cant change idArea cause the ANI list is related to camps on other IDArea
+				return(0)
+			end
+		end
+
+		if exists(select id_RAniList from ccRotativeANIList where [description] = @descriptionList and id_RAniList <> @id_RAniList)
+		begin
+			SELECT -1 as [result] --Name in use
+			return(0)
+		end
+		
+		update ccRotativeANIList set [description] = @descriptionList, idArea = @idArea where id_RAniList = @id_RAniList
+		SELECT 1 as [result]
+		return(0)
+	end
+	If @type=5 --Delete Rotative ANI List
+	begin
+		declare @result int = -2   --ANI list is related to campaign
+
+		if not exists(select cam_id from ccCamps where id_anilist = @id_RAniList and ISNULL(rotativeAlgo, 0) > 0)
+		begin
+			delete ccRotativeANIListDetail where id_RAniList = @id_RAniList
+			delete ccRotativeANIList where id_RAniList = @id_RAniList
+			select @result = 1
+		end
+
+		select @result as [result]
+		return(0)
+	END
+    IF (@type = 6) -- Read Rotative ANI List By Id
+	BEGIN
+		SELECT cral.id_RAniList,
+               cral.description,
+			   cral.idArea
+        FROM dbo.ccRotativeANIList AS cral
+        WHERE cral.id_RAniList = @id_RAniList
+		RETURN 0;
+	END
+
+	IF (@type = 7) -- Get List size
+	BEGIN
+		SELECT COUNT(*) AS listSize FROM dbo.ccRotativeANIListDetail WHERE id_RAniList = @id_RAniList
+		RETURN 0;
+	END
+	IF(@type = 8) --Check if exist an other process executing
+	BEGIN 
+		SELECT CASE WHEN COUNT(crl.load_id) > 0 THEN CONVERT(BIT,1) ELSE CONVERT(BIT,0) END AS isProcessExecuting FROM dbo.ccRIALoading AS crl
+		WHERE crl.cam_id = @id_RAniList AND crl.state IN (0,2) AND crl.loadType = 2;
+		RETURN (0);
+	END
+	IF(@type = 9) --Check if exist a campaign executing
+	BEGIN
+		SELECT CASE WHEN COUNT(cc.cam_id) > 0 THEN CONVERT(BIT,1) ELSE CONVERT(BIT,0) END AS isCampaignExecuting   FROM dbo.ccCamps AS cc
+		WHERE cc.id_anilist = @id_RAniList AND cc.rotativeAlgo IN (1,2,3)
+		AND cc.cam_procesando = 1
+		RETURN 0;
+	END
+
+SET NOCOUNT OFF
+
+END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotativeANIImportStatus '
+        set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotativeANIImportStatus'') begin
+DROP PROCEDURE ccsp_GalateaAdminRotativeANIImportStatus
+end'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotativeANIImportStatus'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotativeANIImportStatus]
+@command int,
+@loadID int = NULL
+AS
+
+SET nocount ON
+
+declare @today datetime
+select @today = convert(datetime, convert(varchar(10), getdate(), 121), 121)
+
+If @command = 1
+BEGIN
+	select distinct load_id [LoadId], camName [RotANILst], pctg [ProgressPercentage], regsNotLoaded+regsBlocked [RecordsNotLoaded], 
+	regsLoaded [RecordsLoaded], [state] [LoadState], loadDate [LoadDate]
+	from ccRIALoading
+	where loadDate >= @today and loadType = 2
+	order by loadDate desc
+	return (0)
+END
+If @command = 2
+BEGIN
+	select distinct load_id [LoadId], camName [RotANILst], pctg [ProgressPercentage], regsNotLoaded+regsBlocked [RecordsNotLoaded], 
+	regsLoaded [RecordsLoaded], [state] [LoadState], loadDate [LoadDate]
+	from ccRIALoading
+	where load_id  = @loadID
+	return (0)
+END
+
+SET nocount OFF'
+		EXEC(@sql)
+		
+		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANICreateTempTable'
+		SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotANICreateTempTable'')
+		BEGIN
+			DROP PROCEDURE ccsp_GalateaAdminRotANICreateTempTable
+		END
+		CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANICreateTempTable] 
+		@TableName VARCHAR(50) = NULL
+		AS
+		BEGIN
+			IF @TableName IS NOT NULL AND @TableName != ''''
+				BEGIN
+
+					DECLARE @query VARCHAR(max)
+					SET @query= ''if not exists(select * from sys.tables where name=''+ @TableName +'')''
+								+ ''create table '' + @TableName + '' (Phone varchar(32))''
+					exec(@query)
+					SELECT 1 AS [result]
+					return(0)
+				END
+			ELSE
+				BEGIN
+					SELECT -1 AS [result]
+					return(0)
+				END
+		END'
+		EXEC(@sql)
+
+		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANIDeleteFromTemp'
+		SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotANIDeleteFromTemp'')
+		BEGIN
+			DROP PROCEDURE ccsp_GalateaAdminRotANIDeleteFromTemp
+		END
+		CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANIDeleteFromTemp] 
+		@TableName VARCHAR(50) = NULL,
+		@id_RAniList smallint = -1
+		AS
+		BEGIN
+			IF @TableName IS NOT NULL AND @TableName != '''' AND @id_RAniList != -1
+				BEGIN
+
+					DECLARE @query VARCHAR(max)
+					SET @query= ''if exists(select * from sys.tables where name=''''''+ @TableName +'''''')
+								DELETE details FROM ccRotativeANIListDetail details
+								INNER JOIN ''  + @TableName + '' tmp ON details.telAni = tmp.Phone 
+								WHERE details.id_RAniList =  + CAST(@id_RAniList as varchar(max))''
+					exec(@query)
+					SELECT @@ROWCOUNT AS [result]
+					return(0)
+				END
+			ELSE
+				BEGIN
+					SELECT -1 AS [result]
+					return(0)
+				END
+		END
+		'
+		EXEC(@sql)
+
+		SET @process = 'ANIRotative Create procedure ccsp_ANIListDetails'
+		SET @sql = '
+		IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_ANIListDetails'')
+		BEGIN
+			DROP PROCEDURE ccsp_ANIListDetails
+		END
+		CREATE PROCEDURE [dbo].[ccsp_ANIListDetails] @phoneNumber AS VARCHAR(30), @id_RotativeANI AS INTEGER, @tipoMov AS TINYINT
+		AS
+		DECLARE @Phone BIGINT
+
+		IF @tipoMov = 1
+		BEGIN -- Inserta ANI LIST	
+			INSERT ccRotativeANIListDetail(id_RAniList, telAni) VALUES(@id_RotativeANI, @phoneNumber)
+		END
+
+		IF @tipoMov = 2
+		BEGIN -- Borra datos de ANI LIST	
+			SELECT @Phone = dbo.hashPhone(@phoneNumber)
+
+			DELETE FROM ccRotativeANIListDetail
+			WHERE telAni = @Phone AND id_RAniList = @id_RotativeANI
+		END
+
+		IF @tipoMov = 3
+		BEGIN -- Reemplaza ANI LIST
+			DELETE
+			FROM ccRotativeANIListDetail
+			WHERE id_RAniList = @id_RotativeANI
+		END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Alter procedure ccsp_GalateaGetBlacklistImportStatus'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetBlacklistImportStatus]
+@action tinyint,
+@loadID int = NULL
+
+AS
+declare @today datetime
+select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+
+SET nocount ON
+if @action not IN (1,2)
+	BEGIN
+		raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+		return (0)
+	END
+
+if @action=1 -- Detalle general de carga de registros a listas Negras
+BEGIN
+     SELECT DISTINCT load_id as LoadId, camName as BlacklistName, cam_id as BlacklistId, pctg as ProgressPercentage , regsNotLoaded+regsBlocked as PhonesNotLoaded,
+		regsLoaded as PhonesLoaded, state as LoadState, loadDate as StartLoadDate
+        FROM ccRIALoading riaLoad
+        WHERE 
+        loadDate>=@today and loadType = 1
+        ORDER BY riaLoad.loadDate DESC
+END
+
+if @action=2 -- obtiene datos especificos de una carga a listas Negras a partir del id de carga
+BEGIN
+     SELECT DISTINCT load_id as LoadId, camName as BlacklistName, cam_id as BlacklistId, pctg as ProgressPercentage , regsNotLoaded+regsBlocked as PhonesNotLoaded,
+		regsLoaded as PhonesLoaded, state as LoadState, loadDate as StartLoadDate
+        FROM ccRIALoading riaLoad
+        WHERE 
+        load_id=@loadID
+END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Alter procedure ccsp_GalateaGetRecordsImportStatus'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+@action tinyint, 
+@loadID int = NULL, 
+@userID smallint = NULL
+
+AS
+declare @today datetime
+select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+SET nocount ON
+if @action not IN (1,2,3)
+raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+if @action=1 -- Detalle general de carga de registros
+BEGIN
+if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+ BEGIN
+  raiserror(''ERROR. invalid user id'', 18, 1)
+  return(0)
+ END
+
+if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+    BEGIN
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+        FROM ccRIALoading riaLoad
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today and loadType = 0
+        ORDER BY riaLoad.loadDate DESC
+    END
+else
+    BEGIN
+        SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked as regsNotLoaded, state, loadDate
+        FROM ccRIALoading riaLoad
+        JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+        JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+        WHERE 
+        loadDate>=@today AND
+        superCam.user_id = @userID
+        AND superCam.tipo = 1
+        ORDER BY riaLoad.loadDate DESC
+    END
+
+return(0)
+END
+
+if @action=2 -- Detalle específico de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+ BEGIN
+  raiserror(''ERROR. invalid template ID'', 18, 1)
+  return(0)
+ END
+
+  SELECT regsLoaded, alreadyLoaded, regsBlocked, regsNotLoaded,
+         telsLoaded, telsBlocked, telsNotLoaded
+  FROM ccRIALoading
+  WHERE load_id  = @loadID
+
+END
+
+if @action=3 -- Porcentaje de carga de registros
+BEGIN
+if not exists(SELECT load_id FROM ccRIALoading)
+ BEGIN
+  raiserror(''ERROR. invalid load ID'', 18, 1)
+  return(0)
+ END
+
+  SELECT state, pctg
+  FROM ccRIALoading
+  WHERE load_id  = @loadID
+
+END
+SET nocount off'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Alter procedure ccsp_GalateaGetOutboundConfiguration'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+@adminID int,
+@campID int
+AS
+BEGIN
+
+    declare @AllCampaigns table 
+    (cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
+    cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
+    cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
+    detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
+    dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
+    t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
+    callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
+    callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+    prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit, rotativeAlgo tinyint )
+     
+        INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID, @campID
+
+        SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
+        t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
+        ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
+        callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
+        prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
+        cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
+        cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
+        editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+        compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, 
+		previewDiscard PreviewDiscard, rotativeAlgo RotativeAlgo
+        from @AllCampaigns WHERE cam_id = @campID
+END'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Alter procedure ccsp_RIAConfCamp'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
+@User_id smallint,
+@campID int =null
+AS
+set nocount on
+declare @tableExistsRec table (camId int primary key,existRec bit)
+declare @camByUser table (camId int primary key,isCheck bit)
+declare @camId int,@id int;
+
+IF Not EXISTS
+    (
+        SELECT *
+        FROM ccUsers_Roles
+        WHERE User_id = @User_id
+                AND Rol_id = 7
+    )begin
+	insert into @camByUser 
+	select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
+	where @campID is null or cam_id=@campID
+end
+else begin
+	insert into @camByUser 
+	select cam_id,0 from ccCamps 
+	where (IDArea>0 or IDArea is null)
+	and (@campID is null or cam_id=@campID)
+end
+
+
+while exists(select * from @camByUser where isCheck=0)
+begin
+	select top 1 @camId=camId  from @camByUser where isCheck=0 
+	if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
+		insert into @tableExistsRec values(@camId,1)
+	end
+	else begin
+		insert into @tableExistsRec values(@camId,0)
+	end
+
+	update  @camByUser  set isCheck=1 where camId=@camId
+end
+
+select a1.cam_id, cam_Descripcion
+, cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+, cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+, detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+, cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+, stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
+cam_maxqueue as queSize,
+DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+	,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+,isnull(sipHdrFormat, '''') sipHdrFormat
+,cam_inter_cancelled
+,prefijo,	enbleprefix = case when existRec = 0 then 1 else 0 end,
+isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(rotativeAlgo, 0 ) rotativeAlgo
+from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+inner join @tableExistsRec a4 on a1.cam_id=a4.camId
+--where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
+order by cam_descripcion
+return(0)
+set nocount off'
+		EXEC(@sql)
+		
+		set @process = 'ANIRotative Alter procedure ccsp_RIAUpdateCamConfig'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+                @cam_id smallint,
+                @cam_descripcion varchar(40) = null,
+                @cam_tnotas smallint = null,
+                @cam_ocupado tinyint = null,
+                @cam_NoInt_ocupado tinyint = null,
+                @cam_inter_ocupado smallint = null,
+                @cam_nocontesto tinyint = null,
+                @cam_NoInt_nocontesto tinyint = null,
+                @cam_inter_nocontesto smallint = null,
+                @cam_fax tinyint = null,
+                @cam_NoInt_fax tinyint = null,
+                @cam_inter_fax smallint = null,
+                @cam_ModoManual tinyint= null,
+                @ANI varchar(15) = null,
+                @cam_ShowCalifWnd bit = null,
+                @cam_StartTimerOnHangUp bit = null,
+                @editableCallKey bit = null,
+                @cam_tNoContesta tinyint = null,
+                @cam_intensive_dialing tinyint = null,
+                @detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+                @detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+                @compliance TinyInt = null,
+                @cam_inter_graba smallint = null,
+                @cam_NoInt_graba tinyint = null,
+                @progDial smallint = null,
+                @excCallBack Tinyint = null,
+                @dialOrder Tinyint = null,
+                @dialPrefix varchar(10) = null,
+                @dialPrefixMan varchar(10) = null,
+                @dialPrefixXfe varchar(10) = null,
+                @listenManualCall bit = null,
+                @stopRecording bit = null,
+                @abandonCallback bit = null,
+                @autoCB smallint = null,
+                @id_listAni int = null,
+                @tDialonWrapUp smallint = null,
+                @quesize smallint=null,
+                @DNCScrub int=null,
+                @callerIdDesc varchar(15)=null,
+                @timeZoneRule int=null,
+                @callsBySurvey int=null,
+                @ivrScript int=null,
+                @surveyPctg int=null,
+                @call_record tinyint=null,
+                @dRestrictPlay bit = null,
+                @leaveRecMessage bit = null,
+                @manualCallOnChat bit = null,
+                @callBackSurveyClient bit = null,
+                @callBackSurveyAgent bit = null,
+                @funcEspDtmf int =null,
+                @sipHdrsCfg varchar(255) = null,
+                @cam_inter_cancelled smallint = null,
+                @prefijo varchar(max) = null,
+                @exitAssisted bit = null,
+                @previewDiscard bit = null,
+				@rotativeAlgo tinyint = null
+                as
+                set nocount on
+                UPDATE ccCamps SET
+                 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+                 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+                 cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+                 cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+                 cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+                 cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+                 cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+                 cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+                 cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+                 cam_fax = isnull(@cam_fax,cam_fax),
+                 cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+                 cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+                 cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+                 ANI = isnull(@ANI,ANI),
+                 cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+                 editableCallKey = isnull(@editableCallKey, editableCallKey),
+                 cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+                 iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+                 detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+                 detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+                 compliance = isnull(@compliance, compliance),
+                 cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+                 cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+                 cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+                 progDial = isnull(@progDial, progDial),
+                 excCallBack = isnull(@excCallBack,excCallBack),
+                 dialOrder = isnull(@dialOrder, dialOrder),
+                 dialPrefix = isnull(@dialPrefix, dialPrefix),
+                 dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+                 dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+                 listenManualCall = isnull(@listenManualCall, listenManualCall),
+                 stopRecording = isnull(@stopRecording, stopRecording),
+                 abandonCallback = isnull(@abandonCallback, abandonCallback),
+                 t_autoCB = isnull(@autoCB,t_autoCB),
+                 id_anilist = isnull(@id_listAni,id_anilist),
+                 tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+                 cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+                 cam_maxqueue = isnull(@quesize,cam_maxqueue),
+                 DNCScrub = isnull(@DNCScrub,DNCScrub),
+                 callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+                 timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+                 callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+                 ivrScript = isnull(@ivrScript,ivrScript),
+                 surveyPctg = isnull(@surveyPctg,surveyPctg),
+                 call_record = isnull(@call_record,call_record),
+                 startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+                 leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+                 manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+                 callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+                 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+                 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+                 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+                 prefijo = isnull(@prefijo, prefijo),
+                 exitAssisted = isnull(@exitAssisted, exitAssisted),
+                 previewDiscard = isnull(@previewDiscard, previewDiscard),
+				 rotativeAlgo = isnull(@rotativeAlgo, rotativeAlgo)
+                Where cam_id = @cam_id
+
+                if @cam_ShowCalifWnd = 1
+                 begin
+                 If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+                  begin
+                  select 0
+                  return(0)
+                  end
+
+                 UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+                 where cam_id = @cam_id
+                 select 1
+                 return(0)
+                  end
+
+                --else
+                UPDATE ccCamps SET
+                cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+                where cam_id = @cam_id
+                select 2
+                return(0)
+                set nocount off'
+		EXEC(@sql)
+		
+		
+
+        ------------------------------------------------------------  END  ---------------------------------------------------------------------
+
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

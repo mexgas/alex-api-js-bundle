@@ -3756,6 +3756,13 @@ END
 		SELECT @logDial_id as LogDialId'
 		EXEC(@sql)
 
+		set @process = 'add ani to ccologdials'
+		set @sql = 'IF COL_LENGTH(''dbo.ccologdials'', ''ani'') IS NULL
+			BEGIN
+				alter table ccologdials add ani varchar(32) null
+			END'
+		EXEC(@sql)
+
 		set @process = 'add id_RAniList to ccoworkingtable'
 		set @sql = 'IF COL_LENGTH(''dbo.ccoworkingtable'', ''id_RAniList'') IS NULL
 			BEGIN

@@ -4007,12 +4007,15 @@ END
 SET nocount OFF'
 		EXEC(@sql)
 		
-		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANICreateTempTable'
+		SET @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotANICreateTempTable'
 		SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotANICreateTempTable'')
 		BEGIN
 			DROP PROCEDURE ccsp_GalateaAdminRotANICreateTempTable
-		END
-		CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANICreateTempTable] 
+		END'
+		EXEC(@sql)
+		
+		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANICreateTempTable'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANICreateTempTable] 
 		@TableName VARCHAR(50) = NULL
 		AS
 		BEGIN
@@ -4034,12 +4037,15 @@ SET nocount OFF'
 		END'
 		EXEC(@sql)
 
-		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANIDeleteFromTemp'
+		SET @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotANIDeleteFromTemp'
 		SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotANIDeleteFromTemp'')
 		BEGIN
 			DROP PROCEDURE ccsp_GalateaAdminRotANIDeleteFromTemp
-		END
-		CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANIDeleteFromTemp] 
+		END'
+		EXEC(@sql)
+		
+		SET @process = 'ANIRotative Create procedure ccsp_GalateaAdminRotANIDeleteFromTemp'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotANIDeleteFromTemp] 
 		@TableName VARCHAR(50) = NULL,
 		@id_RAniList smallint = -1
 		AS
@@ -4061,17 +4067,18 @@ SET nocount OFF'
 					SELECT -1 AS [result]
 					return(0)
 				END
-		END
-		'
+		END'
 		EXEC(@sql)
 
-		SET @process = 'ANIRotative Create procedure ccsp_ANIListDetails'
-		SET @sql = '
-		IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_ANIListDetails'')
+		SET @process = 'ANIRotative Drop procedure ccsp_ANIListDetails'
+		SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_ANIListDetails'')
 		BEGIN
 			DROP PROCEDURE ccsp_ANIListDetails
-		END
-		CREATE PROCEDURE [dbo].[ccsp_ANIListDetails] @phoneNumber AS VARCHAR(30), @id_RotativeANI AS INTEGER, @tipoMov AS TINYINT
+		END'
+		EXEC(@sql)
+		
+		SET @process = 'ANIRotative Create procedure ccsp_ANIListDetails'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ANIListDetails] @phoneNumber AS VARCHAR(30), @id_RotativeANI AS INTEGER, @tipoMov AS TINYINT
 		AS
 		DECLARE @Phone BIGINT
 

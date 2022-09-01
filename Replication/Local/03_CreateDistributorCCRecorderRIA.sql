@@ -48,7 +48,8 @@ if @Version_Actual >= @Version
 	set @publisherPassword =  isnull(@passwordSQL,'replication')
 
 	-----Folder compartido para las replicas-----
-	set @snapshotFolder =  'C:\Centerware\ReplData2'-- '\\' + @hostName + '\ReplData\'+@publicationServer
+	select @snapshotFolder=valor from ccSettings where setting_id=237
+	set @snapshotFolder =ISNULL(@snapshotFolder,'C:\Centerware\ReplData')
 
 	/***********************************************/
 	/*** Revisa la BD distribution para replicas ***/

@@ -3756,6 +3756,289 @@ END
 		SELECT @logDial_id as LogDialId'
 		EXEC(@sql)
 
+		set @process = 'add id_RAniList to ccoworkingtable'
+		set @sql = 'IF COL_LENGTH(''dbo.ccoworkingtable'', ''id_RAniList'') IS NULL
+			BEGIN
+				alter table ccoworkingtable add id_RAniList int null
+			END'
+		EXEC(@sql)
+
+		set @process = 'add ani_idx to ccoworkingtable'
+		set @sql = 'IF COL_LENGTH(''dbo.ccoworkingtable'', ''ani_idx'') IS NULL
+			BEGIN
+				alter table ccoworkingtable add ani_idx varchar(500) null
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE VIEW GetNewID'
+		set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.GetNewID'') AND type = ''V'')
+			BEGIN
+				CREATE VIEW dbo.GetNewID
+				AS
+				SELECT NewId() AS [NewID]
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE VIEW RowRotativeAniListDetail'
+		set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RowRotativeAniListDetail'') AND type = ''V'')
+			BEGIN
+				CREATE VIEW dbo.RowRotativeAniListDetail
+				AS
+				SELECT 
+				Row_Number() OVER (ORDER By id_RAniList) As RowNum
+				, * FROM ccRotativeAniListDetail NOLOCK
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE function fnGetRotativeANI'
+		set @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.objects 
+					   WHERE Name = ''fnGetRotativeANI'' 
+						 AND Type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+			BEGIN
+				CREATE FUNCTION [dbo].[fnGetRotativeANI] (@aniListId int, @aniIdx varchar(max), @cld varchar(3) = '''', @serie varchar(4) = '''')
+				RETURNS @retANIinfo TABLE 
+				(
+					telAni varchar(30) NULL, 
+					idx int NULL
+				)
+				AS
+				BEGIN
+					DECLARE @AniList table (aniIdx varchar(30))
+					DECLARE @ani varchar(30), @idx int
+
+					INSERT @AniList 
+					SELECT value aniIdx FROM fn_RIASplitDelimited(@aniIdx, '','') WHERE len(value)>0
+
+					SELECT TOP 1 @ani = telAni, @idx = cast(RowNum as varchar(8))
+					FROM RowRotativeAniListDetail NOLOCK
+					WHERE id_RAniList = @aniListId and RowNum not in (SELECT aniIdx FROM @AniList) 
+						and (len(@cld) = 0 or left(telAni, len(@cld)) = @cld) 
+						and (len(@serie) = 0 or substring(telAni, len(@cld)+1, 6-len(@cld)) != @serie) 
+					ORDER BY (SELECT [NewId] FROM GetNewID)
+
+					INSERT @retANIinfo
+					SELECT @ani, @idx
+
+					RETURN
+				END
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE SP ccsp_DLRGetRotativeANI'
+		set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''GetCustomers'')
+			BEGIN
+				CREATE PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
+				@callout_id int,
+				@phones varchar(max),
+				@aniList int,
+				@algo tinyint
+				AS
+				set nocount on
+				DECLARE @aniIdx varchar(500), @aniCnt smallint, @aniCurList int, @usedAniCnt int, @phoneCnt int, @ani varchar(32), @idx varchar(8)
+				DECLARE @Tels table (id int, pid varchar(2), phone varchar(32), ani varchar(32))
+				DECLARE @id_phone INT, @phone varchar(32), @usedAni varchar(30)
+
+				SELECT @aniCnt = count(*) FROM ccRotativeAniListDetail NOLOCK WHERE id_RAniList = @aniList			
+				SELECT @aniCurList=isnull(id_RAniList,0),@aniIdx=isnull(ani_idx,'''') FROM ccoWorkingTable NOLOCK WHERE callout_id = @callout_id
+
+				IF @aniList != @aniCurList SET @aniIdx = ''''
+
+				IF isnull(@aniCnt,0) > 0
+				BEGIN
+					INSERT @Tels 
+					SELECT id,''p''+cast(id as varchar(1)),value,'''' FROM fn_RIASplitDelimited(@phones, '';'') WHERE len(value)>0
+
+					IF OBJECT_ID(''tempdb..#UsedAniList'') IS NOT NULL DROP TABLE #UsedAniList;
+					SELECT * INTO #UsedAniList FROM fn_RIASplitDelimited(@aniIdx, '','') WHERE len(value)>0
+					SELECT @usedAniCnt=count(*) FROM #UsedAniList
+
+					IF @algo = 3 and @usedAniCnt > 0 and @usedAniCnt < 2
+					SELECT @usedAni = telAni FROM RowRotativeAniListDetail NOLOCK WHERE id_RAniList = @aniList AND RowNum=(SELECT TOP 1 value from #UsedAniList)
+
+					DECLARE CUR_TEST CURSOR FAST_FORWARD FOR SELECT Id, phone FROM @Tels ORDER BY Id;
+					OPEN CUR_TEST FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+
+					WHILE @@FETCH_STATUS = 0
+					BEGIN
+			
+						IF @usedAniCnt >= @aniCnt SET @aniIdx = ''''
+
+						IF @algo = 0
+						BEGIN
+							SELECT @ani = dbo.TelAni(@phone,@aniList)
+						END
+						ELSE IF @algo = 1
+						BEGIN
+							SELECT TOP 1 @ani=telAni, @idx=idx FROM fnGetRotativeANI(@aniList, @aniIdx, default, default)
+						END
+						ELSE IF @algo = 2 or @algo = 3
+						BEGIN
+							DECLARE @cld varchar(3), @serie varchar(4), @cldCnt smallint
+							IF len(@phone) < 10
+							BEGIN
+								FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+								CONTINUE
+							END
+							IF @algo = 3 and @usedAniCnt > 0 and @usedAniCnt < 2
+							BEGIN
+								IF EXISTS(SELECT TOP 1 1 FROM Series NOLOCK WHERE CLD=left(@usedAni, 2))
+									SELECT @serie = substring(@usedAni, 3, 4)
+								ELSE
+									SELECT @serie = substring(@usedAni, 4, 3)
+							END
+							IF @algo = 2 or (@algo = 3 and @usedAniCnt < 2)
+							BEGIN
+								IF EXISTS(SELECT TOP 1 1 FROM Series NOLOCK WHERE CLD=left(@phone, 2))
+									SET @cld = left(@phone, 2)
+								ELSE
+									SET @cld = left(@phone, 3)
+							END
+							SELECT @cldCnt = count(*) 
+							FROM ccRotativeAniListDetail NOLOCK 
+							WHERE id_RAniList = @aniList 
+								AND (((@algo = 2 or (@algo = 3 and @usedAniCnt < 2)) and left(telAni, len(@cld))=@cld) or (@algo = 3 and @usedAniCnt >= 2))
+								AND (@algo = 2 OR @usedAni is null OR left(telAni, 6) != left(@usedAni, 6) OR @usedAniCnt >= 2)
+							IF @cldCnt > 0 and @usedAniCnt >= @cldCnt and @algo = 2 SET @aniIdx = ''''
+							SELECT TOP 1 @ani=telAni, @idx=idx 
+							FROM fnGetRotativeANI(@aniList, @aniIdx
+								, case when @cldCnt > 0 and (@algo = 2 or (@algo = 3 and @usedAniCnt < 2)) then @cld else '''' end
+								, case when @algo = 2 then '''' when @usedAniCnt = 1 and @serie is not null then @serie else '''' end)
+						END
+
+						SELECT @aniIdx = @aniIdx+'',''+@idx, @usedAniCnt = @usedAniCnt+1, @usedAni = @ani
+
+						UPDATE @Tels SET ani=@ani WHERE id=@id_phone
+
+						FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+					END
+					CLOSE CUR_TEST
+					DEALLOCATE CUR_TEST
+
+					UPDATE ccoWorkingTable SET id_RAniList=@aniList, ani_idx=isnull(@aniIdx,'''') WHERE callout_id=@callout_id
+				END
+
+				SELECT * FROM @Tels
+
+				set nocount off
+			END'
+		EXEC(@sql)
+
+		set @process = 'ALTER SP ccsp_DLRGetDialInfo'
+		set @sql = 'ALTER procedure [dbo].[ccsp_DLRGetDialInfo]
+			@callout_id int,
+			@cam_id smallint=0,
+			@iPortNumber smallint = 0
+			AS
+			set nocount on
+			declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
+			declare @prefix as varchar(15)
+			declare @prefixCalKey as varchar(30)
+			declare @tNoContesta as tinyint
+			declare @ani as varchar(32)
+			declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint, @rotativeAlgo tinyint
+			declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
+			declare @ivr_script smallint, @surveycamid int
+			declare @call_record_cam as tinyint
+			declare @pais as tinyint 
+			declare @sipHdrFormat varchar(255)
+			declare @PrefixRec varchar(40)
+
+			set @prefix =''''
+			set @tNoContesta = 25
+			set @ani=''''
+			set @iTipoDial = 0
+			set @detectAnswerMachine = 0
+			set @detectVoiceMail =1
+			set @cam_tnotas = 30
+			set @keepDial = 0
+
+			select @pais = valor from ccsettings where setting_id = 104
+			select @PrefixRec=ISNULL(prefijo,'''') from ccCamps nolock where cam_id = @cam_id
+
+			-- Mensajes
+			select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
+			from dbo.fn_ccCamps_SelMessage(@cam_id)
+
+			-- Prefijo por puerto
+			select @prefix = prefix from cstoProvedor nolock where provedor_id = (select provedor_id from ccodialers nolock where puerto = @iPortNumber )
+			-- Prefijo por campa?a
+			if @prefix =''''
+				select @prefix = dialPrefix from ccCamps nolock where cam_id = @cam_id
+			-- Prefijo general, si es que esta habilitado
+			if @prefix ='''' and ((select cast(valor as int) from ccsettings nolock where setting_id =102) & 1 = 1)
+				select @prefix = valor from ccsettings nolock where setting_id =101
+
+			select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
+
+			-- Propiedades de campa?a
+			select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
+			@detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
+			@call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0), @rotativeAlgo=isnull(rotativeAlgo,0)
+			from ccCamps C (nolock) where C.cam_id=@cam_id
+
+			if @surveycamid > 0
+				select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+			--Custom MOH Files
+			DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
+			SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+			FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+			--Agrega prefijo Marcacion con directo
+			declare @mainPrefix varchar(1), @phones varchar(max)
+			set @prefixCalKey=''''
+			select @mainPrefix = valor from ccSettings where setting_id=202
+			SELECT @prefixCalKey=CASE WHEN @mainPrefix=''1'' THEN isnull(dialPrefix,'''') ELSE '''' END,
+				@phones=cal_telefono+'';''+cal_telefono2+'';''+cal_telefono3+'';''+cal_telefono4+'';''+cal_telefono5
+			FROM ccoCallsOutSource NOLOCK WHERE callout_id=@callout_id 
+
+			if @iPortNumber >= 0 
+			begin
+				declare @Anis table(id int, pid varchar(2), phone varchar(32), ani varchar(32))
+
+				insert @Anis
+				exec ccsp_DLRGetRotativeANI @callout_id=@callout_id,@phones=@phones,@aniList=@lista_id,@algo=@rotativeAlgo
+
+				SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+	
+				SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)+''~''+rtrim(dato5)
+				, ISNULL(cpt.Prioridad,''12345NNN'') dial_tels
+				, C.cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, isnull(@message_name, '''') as message_name
+				, @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
+				, case when anis.p1 <> '''' then anis.p1 else @ani end ani
+				, case when anis.p2 <> '''' then anis.p2 else @ani end ani2
+				, case when anis.p3 <> '''' then anis.p3 else @ani end ani3
+				, case when anis.p4 <> '''' then anis.p4 else @ani end ani4
+				, case when anis.p5 <> '''' then anis.p5 else @ani end ani5
+				, @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
+				, @cam_tnotas cam_tnotas, @keepDial keepDial
+				, isnull(@messageDNCL_name, '''') as messageDNCL_name
+				,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
+				,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
+				,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
+				,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
+				,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
+				, isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
+				, isnull(@MohFiles,'''') as mohFiles
+				,@ivr_script ivrScript
+				,@sipheader data
+				,@PrefixRec as Prefijo,
+				dbo.GetCarrierByTel(C.cal_telefono) carrier1, 
+				dbo.GetCarrierByTel(cal_telefono2) carrier2, 
+				dbo.GetCarrierByTel(cal_telefono3) carrier3, 
+				dbo.GetCarrierByTel(cal_telefono4) carrier4, 
+				dbo.GetCarrierByTel(cal_telefono5) carrier5
+				FROM ccoCallsOutSource C with(nolock)
+				left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
+				left join ccCampsPrioridadTel cpt on cpt.cam_id = c.cam_id
+				join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
+				WHERE C.callout_id = @callout_id
+				return
+			end 
+
+			set nocount off'
+		EXEC(@sql)
+
 		------------------------------------------------------------ End Hugo Longoria ---------------------------------------------------------------------
 
 		/* End script release */

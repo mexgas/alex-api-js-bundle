@@ -43,7 +43,8 @@ begin
 @markId int=null,
 @isSuperUser bit=0,
 @dateStart datetime=null,
-@dateEnd datetime=null
+@dateEnd datetime=null,
+@idRepository int = 0
 AS
 BEGIN
 
@@ -227,6 +228,18 @@ BEGIN
 			inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
 			where A.finicio between @dateStart and @dateEnd
 		)X
+	end
+
+	else if @action = 15 begin
+		select cast(id_repositorio as int) as idRepository from RIA_GRABACION where grab_id = @grabId
+	end
+
+	else if @action = 16 begin
+		select id_repositorio as repositoryId,rep.ruta_repositorio as pathRep, Cred.domain, Cred.[user], Cred.[password],Rep.dirvirtual_audio as virtualAudio
+		from TREC_REPOSITORIOS Rep
+		inner join TREC_REPO_NWCREDENTIALS  RepCred on Rep.id_repositorio =repCred.id_repository
+		inner join RIA_NETWORKCREDENTIALS  Cred on RepCred.id_nwCredential=Cred.id
+		where Cred.type = 1 and status=1 and Rep.id_repositorio = @idRepository
 	end
   
 END

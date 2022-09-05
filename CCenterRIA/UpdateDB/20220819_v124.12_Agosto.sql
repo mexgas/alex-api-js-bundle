@@ -4057,7 +4057,7 @@ SET nocount OFF'
 					SET @query= ''if exists(select * from sys.tables where name=''''''+ @TableName +'''''')
 								DELETE details FROM ccRotativeANIListDetail details
 								INNER JOIN ''  + @TableName + '' tmp ON details.telAni = tmp.Phone 
-								WHERE details.id_RAniList =  + CAST(@id_RAniList as varchar(max))''
+								WHERE details.id_RAniList =  '' + CAST(@id_RAniList as varchar(max))
 					exec(@query)
 					SELECT @@ROWCOUNT AS [result]
 					return(0)

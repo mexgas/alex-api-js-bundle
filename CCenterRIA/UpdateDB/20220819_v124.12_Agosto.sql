@@ -3654,6 +3654,13 @@ END
 			set nocount off'
 		EXEC(@sql)
 
+		set @process = 'add ani to ccologdials'
+		set @sql = 'IF COL_LENGTH(''dbo.ccologdials'', ''ani'') IS NULL
+			BEGIN
+				alter table ccologdials add ani varchar(32) null
+			END'
+		EXEC(@sql)
+
 		set @process = 'ANI logDials'
 		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
 					@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
@@ -3754,13 +3761,6 @@ END
 	END;
 
 		SELECT @logDial_id as LogDialId'
-		EXEC(@sql)
-
-		set @process = 'add ani to ccologdials'
-		set @sql = 'IF COL_LENGTH(''dbo.ccologdials'', ''ani'') IS NULL
-			BEGIN
-				alter table ccologdials add ani varchar(32) null
-			END'
 		EXEC(@sql)
 
 		set @process = 'add id_RAniList to ccoworkingtable'

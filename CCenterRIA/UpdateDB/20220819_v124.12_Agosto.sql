@@ -3777,32 +3777,43 @@ END
 			END'
 		EXEC(@sql)
 
-		set @process = 'CREATE VIEW GetNewID'
-		set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.GetNewID'') AND type = ''V'')
+		set @process = 'DROP VIEW GetNewID'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.GetNewID'') AND type = ''V'')
 			BEGIN
-				CREATE VIEW dbo.GetNewID
-				AS
-				SELECT NewId() AS [NewID]
+				DROP VIEW dbo.GetNewID
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE VIEW GetNewID'
+		set @sql = 'CREATE VIEW dbo.GetNewID AS SELECT NewId() AS [NewID]'
+		EXEC(@sql)
+
+		set @process = 'DROP VIEW RowRotativeAniListDetail'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RowRotativeAniListDetail'') AND type = ''V'')
+			BEGIN
+				DROP VIEW dbo.RowRotativeAniListDetail
 			END'
 		EXEC(@sql)
 
 		set @process = 'CREATE VIEW RowRotativeAniListDetail'
-		set @sql = 'IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RowRotativeAniListDetail'') AND type = ''V'')
-			BEGIN
-				CREATE VIEW dbo.RowRotativeAniListDetail
+		set @sql = 'CREATE VIEW dbo.RowRotativeAniListDetail
 				AS
 				SELECT 
 				Row_Number() OVER (ORDER By id_RAniList) As RowNum
-				, * FROM ccRotativeAniListDetail NOLOCK
-			END'
+				, * FROM ccRotativeAniListDetail NOLOCK'
 		EXEC(@sql)
 
-		set @process = 'CREATE function fnGetRotativeANI'
-		set @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.objects 
+		set @process = 'DROP FUNCTION fnGetRotativeANI'
+		set @sql = 'IF EXISTS (SELECT 1 FROM sys.objects 
 					   WHERE Name = ''fnGetRotativeANI'' 
 						 AND Type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
 			BEGIN
-				CREATE FUNCTION [dbo].[fnGetRotativeANI] (@aniListId int, @aniIdx varchar(max), @cld varchar(3) = '''', @serie varchar(4) = '''')
+				DROP FUNCTION dbo.fnGetRotativeANI
+			END'
+		EXEC(@sql)
+
+		set @process = 'CREATE FUNCTION fnGetRotativeANI'
+		set @sql = 'CREATE FUNCTION [dbo].[fnGetRotativeANI] (@aniListId int, @aniIdx varchar(max), @cld varchar(3) = '''', @serie varchar(4) = '''')
 				RETURNS @retANIinfo TABLE 
 				(
 					telAni varchar(30) NULL, 
@@ -3827,14 +3838,18 @@ END
 					SELECT @ani, @idx
 
 					RETURN
-				END
+				END'
+		EXEC(@sql)
+
+		set @process = 'DROP SP ccsp_DLRGetRotativeANI'
+		set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_DLRGetRotativeANI'')
+			BEGIN
+				DROP PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
 			END'
 		EXEC(@sql)
 
 		set @process = 'CREATE SP ccsp_DLRGetRotativeANI'
-		set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''GetCustomers'')
-			BEGIN
-				CREATE PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
 				@callout_id int,
 				@phones varchar(max),
 				@aniList int,
@@ -3926,8 +3941,7 @@ END
 
 				SELECT * FROM @Tels
 
-				set nocount off
-			END'
+				set nocount off'
 		EXEC(@sql)
 
 		set @process = 'ALTER SP ccsp_DLRGetDialInfo'

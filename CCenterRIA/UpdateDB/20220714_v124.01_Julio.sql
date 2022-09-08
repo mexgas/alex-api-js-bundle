@@ -1185,11 +1185,11 @@ SET IDENTITY_INSERT ccTipoMovsListaNegra OFF;
 		declare @time int
 		if @type=0
 		begin
-			select @time=cal_tDialog from ccoCallsOut with(nolock) where cal_id=@callId and file_moved is null
+			select @time=cal_tDialog from ccoCallsOut with(nolock) where cal_id=@callId
 		end
 		else
 		begin
-			select @time=cal_tDialog from ccCallsIn with(nolock) where cal_id=@callId and file_moved is null
+			select @time=cal_tDialog from ccCallsIn with(nolock) where cal_id=@callId
 		end
 
 		select case when @time > 0 then 1 else 0 end as result

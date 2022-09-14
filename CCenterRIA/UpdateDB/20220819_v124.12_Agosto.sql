@@ -42,15 +42,13 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
-select @actualVersion,@version,@actualVersionFix,@versionfix - 1
 
 IF @actualVersion = @version and @actualVersionFix >= 1
 BEGIN
     BEGIN TRAN
 
     BEGIN TRY
-        select 'xxx'
-
+        
         ----------------------------------IVAN MARTIN | AUTOMATIC MESSAGES | SCP-71 DEFAULT MESSAGES --------------------------------------------------
     
         set @process = 'SCP-71 Create new column DefaultMessage to table ccMsgFiles'

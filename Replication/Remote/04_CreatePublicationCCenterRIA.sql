@@ -235,7 +235,7 @@ if @Version_Actual >= @Version
 		IF NOT EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = @publicationName) BEGIN
 		-- Adding the merge publication
 		exec sp_addmergepublication @publication = @publicationName, 
-		@description = N'Merge publication of database '+@dataBaseName, 
+		@description = N'Merge publication of database CCenterRIA', 
 		@sync_mode = N'native', 
 		@retention = @retentionDay,
 		@allow_push = N'true', 

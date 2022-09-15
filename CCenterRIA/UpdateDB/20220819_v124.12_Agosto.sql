@@ -1446,17 +1446,17 @@ END;'
 
         ----------------------------------GMZ | Reincio MCS --------------------------------------------------
 
-        set @process = 'Reincio MCS se crea tabla ccDesconnectionMCS'
-        set @sql = 'if not exists (select * from sys.tables where name = N''ccDesconnectionMCS'')
+        set @process = 'Reincio MCS se crea tabla ccDisconnectionMCS'
+        set @sql = 'if not exists (select * from sys.tables where name = N''ccDisconnectionMCS'')
         begin
-            CREATE TABLE [dbo].[ccDesconnectionMCS](
-            [desconnectionId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-            [timeStampDesconnection] [DATETIME] NOT NULL,
+            CREATE TABLE [dbo].[ccDisconnectionMCS](
+            [disconnectionId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+            [timeStampDisconnection] [DATETIME] NOT NULL,
             [timeStampConnection] [DATETIME]
             
-            CONSTRAINT [pk_ccRIADesconnectionMCS_1] PRIMARY KEY CLUSTERED
+            CONSTRAINT [pk_ccRIADisconnectionMCS_1] PRIMARY KEY CLUSTERED
             (
-                [desconnectionId] ASC
+                [disconnectionId] ASC
             )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
             )ON [PRIMARY]
         end'

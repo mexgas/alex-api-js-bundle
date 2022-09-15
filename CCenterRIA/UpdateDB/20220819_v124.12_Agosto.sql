@@ -1787,7 +1787,7 @@ END;'
                       GROUP BY User_id
                     ) AS t
                     ON c.fecha = t.max_time
-                    AND c.User_id=t.User_id AND currentStatus in (3, 34,31)
+                    AND c.User_id=t.User_id AND currentStatus in (3, 31)
                 ), usersByCampigns
                 AS (
                     select IdCampEsp, User_id from ccRIACampEspWG A

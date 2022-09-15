@@ -4172,20 +4172,20 @@ SET nocount OFF'
             IF @TableName IS NOT NULL AND @TableName != ''''
                 BEGIN
 
-                    DECLARE @query VARCHAR(max)
-                    SET @query= ''if not exists(select * from sys.tables where name=''+ @TableName +'')''
-                                + ''create table '' + @TableName + '' (Phone varchar(32))''
-                    exec(@query)
-                    SELECT 1 AS [result]
-                    return(0)
-                END
-            ELSE
-                BEGIN
-                    SELECT -1 AS [result]
-                    return(0)
-                END
-        END'
-        EXEC(@sql)
+					DECLARE @query VARCHAR(max)
+					SET @query= ''if not exists(select * from sys.tables where name=''''''+ @TableName +'''''')''
+								+ ''create table '' + @TableName + '' (Phone varchar(32))''
+					exec(@query)
+					SELECT 1 AS [result]
+					return(0)
+				END
+			ELSE
+				BEGIN
+					SELECT -1 AS [result]
+					return(0)
+				END
+		END'
+		EXEC(@sql)
 
         SET @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotANIDeleteFromTemp'
         SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotANIDeleteFromTemp'')

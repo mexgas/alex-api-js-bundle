@@ -64,165 +64,7 @@ BEGIN
         set @process = 'SCP-71 Insert value to default columns'
         set @sql = 'UPDATE ccMsgFiles SET DefaultMessage = 1 WHERE msgFile LIKE ''%Default%'''
         EXEC(@sql)
-
-        set @process = 'SCP-71 Alter procedure ccsp_GalateaAutomaticMessages: Changes in action 1, adding the return of DefaultMessage column'
-        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAutomaticMessages]
-                    @action as tinyint,
-                    @type as int = null,
-                    @msgFile as varchar(40) = '''',
-                    @Description as varchar(40) = '''',
-                    @length as int = null,
-                    @CampId INT = 0,
-                    @CampType SMALLINT = 0,
-                    @MessageType TINYINT = 0,
-                    @msgIdLst varchar(8000) = null,
-                    @msgName as varchar(40) = '''',
-                    @msg_id int = 0,
-                    @VariableData TINYINT = 0,
-                    @TtsType TINYINT = 0,
-                    @VariableOrder TINYINT = 0,
-                    @MsgRelation varchar(8000) = null
-
-                    AS
-
-                    SET NOCOUNT ON
-
-                    if @action = 1  -- Get audio catalog
-                    begin
-                        select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msg_id [MsgId], DefaultMessage from ccMsgFiles
-                        where msgFile not like ''TTS|%''
-                        return (0)
-                    end
-
-                    if @action = 2
-                    begin
-                        if EXISTS(select msgName from ccMsgFiles where msgName=@msgName)
-                        begin
-                            select 1 as result
-                        end
-                        else
-                        begin 
-                            insert into ccMsgFiles (msgFile, descripcion, length, msgName) values (@msgFile, @Description, @length, @msgName)
-                            select 0 as result
-                        end 
-                        
-                    end 
-
-                    if @action = 3
-                    begin
-                        select msg_id from ccMsgFiles where msgName=@msgName
-                    end
-
-                    IF @action = 4 -- Get Assigned Messages by Campaign Id and Campaign Type
-                    BEGIN
-                        DECLARE @CampaignMessagesRelation TABLE (MessageType TINYINT, MessageOrder TINYINT, MessageFile VARCHAR(MAX), 
-                                                                 MessageId INT, MessageDescription VARCHAR(MAX), Queue BIT)
-                        IF @CampType = 0  -- Inbound Campaigns
-                            BEGIN
-                                INSERT INTO @CampaignMessagesRelation (MessageType, MessageOrder, MessageFile, MessageId, MessageDescription, Queue) 
-                                EXEC ccsp_RIAADMInboundMsgs @Command = 1,@Inbound_id = @CampId
-                            END
-                        ELSE              -- Outbound Campaigns
-                            BEGIN 
-                                INSERT INTO @CampaignMessagesRelation (MessageType, MessageOrder, MessageFile, MessageId, MessageDescription)
-                                EXEC ccsp_RIAADMCampMsgs @Command = 1, @cam_id = @CampId
-                                UPDATE @CampaignMessagesRelation SET Queue = 0
-                            END
-                        SELECT * FROM @CampaignMessagesRelation WHERE MessageType = @MessageType
-                    END 
-
-                    IF @action = 5 -- Delete audio message
-                    begin
-                        if exists(select Msg_id from ccInboundMsgs where Msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')))
-                        begin
-                            select 0 as result
-                            return(0)
-                        end
-                        if exists(select Msg_id from ccCampsMsgs where Msg_id in (
-                    select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
-                    inner join ccMsgFiles B on A.Value=B.msg_id 
-                    where msgFile not like ''TTS|%''
-                    )
-                    )
-                        begin
-                            select 0 as result
-                            return(0)
-                        end
-                        
-                        delete A from ccCampsMsgs A where Msg_id in (
-                        select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
-                        inner join ccMsgFiles B on A.Value=B.msg_id 
-                        where msgFile like ''TTS|%'')
-
-                        delete ccMsgFiles Where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '',''))
-                        select 1 as result
-                        return(0)
-                    end 
-
-                    if @action = 6
-                    BEGIN
-                        if @type = 0
-                            BEGIN
-                                update ccMsgFiles set Descripcion = @Description, msgName = @msgName where msg_id = @msg_id
-                            END
-                        else
-                            BEGIN
-                                update ccMsgFiles set Descripcion = @Description, msgName = @msgName, msgFile = @msgFile where msg_id = @msg_id
-                            END
-                    END 
-
-                    if @action = 7
-                    BEGIN
-                        select msg_id as msgId, msgName as MsgName, Descripcion as MsgDescription from ccMsgFiles where msg_id = @msg_id
-                    END
-
-                    IF @action = 8
-                    BEGIN
-                        DECLARE @Language TINYINT = (SELECT valor from ccSettings where setting_id = 27)
-                        DECLARE @TempMsgFile VARCHAR(10) = (''TTS'' + ''|'' + CONVERT(VARCHAR(2), @TtsType) + ''|'' + CONVERT(VARCHAR(2), @VariableData))
-                        SET @Description = (SELECT CASE WHEN @Language = 0 THEN TtsTypesTagsSpanish 
-                                                        WHEN @Language = 1 THEN TtsTypesTagsEnglish 
-                                                        ELSE TtsTypesTagsPortuguese END 
-                                            FROM ccRIA_AutamaticMessages_TtsTypesTags 
-                                            WHERE Id = @VariableData) 
-                                            + ''|'' + 
-                                            (SELECT VariableDataTag FROM ccRIA_AutamaticMessages_VariableDataTags 
-                                            WHERE LanguageId = @Language)
-                                            + CONVERT(VARCHAR(2), @VariableData) 
-                                            + ''|'' + CONVERT(VARCHAR(2), @CampId) 
-
-                        IF @msg_id = 0
-                        BEGIN
-                            EXEC ccsp_RIAADMCampMsgs @Command = 3, @cam_id = @CampId, @order = @VariableOrder,@type=8,@msgFile=@TempMsgFile,@description=@Description   
-                        END
-                        ELSE
-                        BEGIN
-                            UPDATE ccMsgFiles SET msgFile = @TempMsgFile, Descripcion = @Description where msg_id = @msg_id
-                        END
-                        
-                    END
-
-                    IF @action = 9
-                    BEGIN
-                        select msgFile [MsgFile] from ccMsgFiles where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')) and msgFile not like ''TTS|%''
-                    END
-
-                    IF @action = 10
-                    BEGIN
-                        IF @CampType = 0  -- Inbound Campaigns
-                            BEGIN
-                                UPDATE b SET b.orden = a.Id - 1 FROM dbo.fn_RIASplitDelimited(@MsgRelation, '','') a INNER JOIN ccInboundMsgs b ON b.Inbound_id = @CampId AND b.Type = @MessageType AND b.Msg_id = a.Value 
-                            END
-                        ELSE              -- Outbound Campaigns
-                            BEGIN 
-                                UPDATE b SET b.orden = a.Id - 1 FROM dbo.fn_RIASplitDelimited(@MsgRelation, '','') a INNER JOIN ccCampsMsgs b ON b.cam_id = @CampId AND b.Type = @MessageType AND b.Msg_id = a.Value 
-                            END
-                    END
-
-
-                    SET NOCOUNT OFF'
-        EXEC(@sql)
-
+        
         set @process = 'SCP-71 Alter procedure configuraIdiomaCatalogosEnglish: Insert values 1 in DefaultMessage column in ccMsgFiles'
         set @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
                     AS
@@ -1975,7 +1817,7 @@ END;'
 
         ----------------------------------GMZ | CW-7258_GetCampaignByAudio --------------------------------------------------
 
-        set @process = 'CW-7258_GetCampaignByAudio se modifica sp de ccsp_GalateaAutomaticMessages (se agrego action 11)'
+        set @process = 'CW-7258_GetCampaignByAudio se modifica sp de ccsp_GalateaAutomaticMessages (se agrego action 11), Changes in action 1, adding the return of DefaultMessage column'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAutomaticMessages]
         @action as tinyint,
         @type as int = null,
@@ -1999,7 +1841,7 @@ END;'
 
         if @action = 1  -- Get audio catalog
         begin
-            select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msg_id [MsgId] from ccMsgFiles
+            select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msg_id [MsgId], DefaultMessage from ccMsgFiles
             where msgFile not like ''TTS|%''
             return (0)
         end

@@ -4327,7 +4327,7 @@ SET nocount OFF'
 				BEGIN
 
 					DECLARE @query VARCHAR(max)
-					SET @query= ''if not exists(select * from sys.tables where name=''+ @TableName +'')''
+					SET @query= ''if not exists(select * from sys.tables where name=''''''+ @TableName +'''''')''
 								+ ''create table '' + @TableName + '' (Phone varchar(32))''
 					exec(@query)
 					SELECT 1 AS [result]

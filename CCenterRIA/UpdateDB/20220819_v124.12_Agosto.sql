@@ -3894,7 +3894,7 @@ END
                 FROM ccoCallsOutSource C with(nolock)
                 left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
                 left join ccCampsPrioridadTel cpt on cpt.cam_id = c.cam_id
-                join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
+                left join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
                 WHERE C.callout_id = @callout_id
                 return
             end 

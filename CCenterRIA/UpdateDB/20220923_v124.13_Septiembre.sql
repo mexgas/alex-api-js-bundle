@@ -56,6 +56,14 @@ BEGIN
 		end'
 		EXEC(@sql)
 
+		set @process = 'DEV2-3_K004023-Admin-Config_Times_Preview add column timesPreview'
+        set @sql = '
+		if not exists (select * from sys.columns where name = N''timesPreview'' and Object_ID = Object_ID(N''ccCamps''))
+		begin
+			alter table ccCamps add timesPreview tinyint not null default 5
+		end'
+		EXEC(@sql)
+
 		set @process = 'DEV2-17_K004022-Admin-Config_Tiempo_Preview add column descTranslate'
         set @sql = '
 		if not exists (select * from sys.columns where name = N''descTranslate'' and Object_ID = Object_ID(N''ccTipoResultadoDial''))
@@ -380,14 +388,6 @@ BEGIN
         ------------------------------------------------------------  END  DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
 
         ------------------------------------------------------------ DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
-        set @process = 'DEV2-3_K004023-Admin-Config_Times_Preview add column timesPreview'
-        set @sql = '
-		if not exists (select * from sys.columns where name = N''timesPreview'' and Object_ID = Object_ID(N''ccCamps''))
-		begin
-			alter table ccCamps add timesPreview tinyint not null default 5
-		end'
-		EXEC(@sql)
-
 		set @process = 'DEV2-3_K004023-Admin-Config_Times_Preview edit sp ccsp_RegProcessPreviewRecord'
         set @sql = '
 				ALTER PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](

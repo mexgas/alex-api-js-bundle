@@ -378,8 +378,648 @@ BEGIN
                 set nocount off'
 		EXEC(@sql)
         ------------------------------------------------------------  END  DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
+		
+		------------------------------------------------------------  Inicia Ciro ---------------------------------------------------------------------
+		set @process = 'Setting para ocultar tareas de Whatsapp salida'
+        set @sql = 'if not exists (select * from ccsettings where setting_id = 233)
+					begin
+						insert into ccSettings values (241,0,''Permitir configuracipon de Whatsapp'',1,''GRL'',''Parametro para permitir al cliente tener las configuraciones y accesos para Whatsapp'',''Permitir configuracipon de Whatsapp'',0,''^[0-1]$'',CAST(''00000000-0000-0000-0000-000000000000'' AS UNIQUEIDENTIFIER))
+					end '
+		EXEC(@sql)
+
+		set @process = 'SP para consultar setting para ocultar tareas de Whatsapp salida'
+        set @sql = 'CREATE PROCEDURE GetWhatsAppAllowConfiguration
+					AS
+					select valor from ccSettings WHERE setting_id = 241'
+		EXEC(@sql)
+
+		set @process = 'K020002 Crear campaña WhatsApp Out'
+        set @sql = 'ALTER TABLE contactmeanout ADD camp_id int null, numMessages tinyint null, closeConversationTime tinyint null, answerTimeoutClient tinyint null, allowFileAttachments bit null
+					ALTER TABLE contactmeanout Alter column conexionInfo varchar(255) null;
+					ALTER TABLE contactmeanout Alter column connUser varchar(60) null;
+					ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
+					ALTER TABLE ccCamps ADD chat int null
+					ALTER TABLE ccWhatsAppNumbers ADD camp_id int null'
+		EXEC(@sql)
+
+		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_MultimediaConfigurations'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
+				@Option AS SMALLINT,
+				@ServiceType AS SMALLINT = 0,
+				@Number AS VARCHAR(25) = ''''
+				AS
+				BEGIN
+				    SET NOCOUNT ON;
+					BEGIN
+				    IF(@Option = 1) -- Get Vonage Configurations depending the Service Type and number 
+						BEGIN
+							SELECT config.applicationId AS ApplicationId,
+								   config.secretKey AS SecretKey,
+								   config.messagesUrl AS MessagesUrl
+							FROM ccVonageConfigurations config
+							INNER JOIN ccWhatsAppNumbers numbers ON config.vonageId = numbers.vonageId 
+							AND numbers.number = @Number 
+							AND config.serviceType = @ServiceType   -- 5 = WhatsApp
+						END 
+
+					IF(@Option = 2) -- Get WhatsApp registered numbers 
+						BEGIN
+							SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+							INNER JOIN ccVonageConfigurations Configurations 
+							ON Numbers.vonageId = Configurations.vonageId 
+							AND Numbers.inboundId = 0 
+							AND Numbers.status = 1 
+							AND Configurations.serviceType = 5
+						END 
+					IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
+						BEGIN
+							SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+							INNER JOIN ccVonageConfigurations Configurations 
+							ON Numbers.vonageId = Configurations.vonageId 
+							AND Numbers.camp_id IS NULL
+							AND Numbers.status = 1 
+							AND Configurations.serviceType = 5
+						END
+					END
+				END'
+		EXEC(@sql)
+
+		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_GalateaAdminCampaigns'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
+                                       @CampType AS    SMALLINT = 0, 
+                                       @WorkgroupId AS INT      = 0, 
+                                       @Id AS          INT      = 0, 
+                                       @AdminId AS     SMALLINT = 0, 
+                                       @PinUpdate AS   SMALLINT = 0, 
+                                       @LoadId AS      INT      = 0, 
+                                               @Type AS        SMALLINT = 0,
+											   @InboundType	   SMALLINT = 0,
+											   @AreaId		   SMALLINT = 0,
+											   @multi_type     varchar(max) = null
+					AS
+					BEGIN
+						SET NOCOUNT ON;
+						IF @Option = 1   -- Get Campaigns Ids List Per Workgroup and Campaign Type
+							BEGIN
+								IF @CampType = 1 -- Campaigns Out
+									BEGIN
+										IF @WorkgroupId IS NOT NULL
+											BEGIN
+												SELECT CAST(IdCampEsp AS INT) AS Id
+												FROM ccRIACampEspWG
+												WHERE IDWG = @WorkgroupId
+													AND Tipo = 1
+													ORDER BY IdCampEsp ASC;
+										END;
+										ELSE
+											BEGIN
+												RAISERROR(''ERROR. No existe una lista de campañas de salida con el id de grupo de trabajo especificado'', 18, 1);
+										END;
+								END;
+								IF @CampType = 0 -- Campaigns In (ACD)
+									BEGIN
+										IF @WorkgroupId IS NOT NULL
+											BEGIN
+												SELECT CAST(IdCampEsp AS INT) AS Id
+												FROM ccRIACampEspWG
+												WHERE IDWG = @WorkgroupId
+													AND Tipo = 0
+													ORDER BY IdCampEsp ASC;
+										END;
+										ELSE
+											BEGIN
+												RAISERROR(''ERROR. No existe una lista de campañas de entrada con el id de grupo de trabajo especificado'', 18, 1);
+										END;
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 2   -- Get Campaign complete information per Campaign Type and Campaign Id
+							BEGIN
+								IF @CampType = 1 -- Campaigns Out
+									BEGIN
+										IF @Id IS NOT NULL
+											BEGIN
+												SELECT DISTINCT 
+													CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type, camps.cam_procesando IsStarted, a.AreaName AS Area,  
+															CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, CONVERT(tinyint,isnull(camps.chat,0)) as OutboundType
+												FROM ccCamps camps
+													LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
+													LEFT JOIN ccRIACat_Areas a ON a.IDArea = camps.IDArea
+												WHERE camps.cam_id = @Id
+													ORDER BY camps.cam_descripcion ASC;
+										END;
+										ELSE
+											BEGIN
+												RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
+										END;
+								END;
+								IF @CampType = 0 -- Campaigns In (ACD)
+									BEGIN
+										IF @Id IS NOT NULL
+											BEGIN
+												SELECT DISTINCT 
+													CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, inb.chat AS InboundType, CAST(0 AS tinyint) as OutboundType
+												FROM ccInbound inb
+													LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
+													LEFT JOIN ccRIACat_Areas a ON a.IDArea = inb.IDArea
+												WHERE inb.Inbound_id = @Id
+													ORDER BY inb.descripcion ASC;
+										END;
+										ELSE
+											BEGIN
+												RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
+										END;
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 3   -- Update OverallTotalNew By Campaign
+							BEGIN
+								IF @Id IS NOT NULL
+									BEGIN
+										UPDATE ccCampsNvosCB
+										SET 
+											OverallTotalNew = ccCampsNvosCB.new
+										WHERE id = @Id;
+								END;
+								ELSE
+									BEGIN
+										RAISERROR(''ERROR. No existe la campañas de entrada con el id especificado'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 4   -- Update Pin from Campaign per Admin
+							BEGIN
+								IF @Id IS NOT NULL
+								AND @AdminId IS NOT NULL
+									BEGIN
+										IF @PinUpdate = 1
+											BEGIN
+												INSERT INTO PinedCampaigns(CampId, AdminId, Type)
+											VALUES(@Id, @AdminId, @Type);
+										END;
+										IF @PinUpdate = 0
+											BEGIN
+												DELETE FROM PinedCampaigns
+												WHERE CampId = @Id
+													AND AdminId = @AdminId
+													AND Type = @Type;
+										END;
+								END;
+								ELSE
+									BEGIN
+										RAISERROR(''ERROR. La campañas o administrador no existen'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 5   -- Get Pin from Campaign Ids per Admin
+							BEGIN
+								IF @AdminId IS NOT NULL
+									BEGIN
+										SELECT CampId AS Id
+										FROM PinedCampaigns
+										WHERE AdminId = @AdminId
+											AND Type = @Type
+											ORDER BY Id ASC;
+								END;
+								ELSE
+									BEGIN
+										RAISERROR(''ERROR. El administrador con el id seleccionado no existe'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 6   -- Get Blacklist Ids by Campaign Id
+							BEGIN
+								IF @Id IS NOT NULL
+									BEGIN
+										DECLARE @BlackListIds VARCHAR(MAX);
+										SELECT @BlackListIds = COALESCE(@BlackListIds + ''|'' + CAST(idtipolista AS VARCHAR(MAX)), CAST(idtipolista AS VARCHAR(MAX)))
+										FROM Camplistanegra
+										WHERE cam_id = @Id
+											AND STATUS = 1;
+										SELECT ISNULL(@BlackListIds, ''0'') AS BlackListIds;
+								END;
+								ELSE
+									BEGIN
+										RAISERROR(''ERROR. La campañas con el id seleccionado no existe'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 7   -- Get RegistryListIds Ids by Campaign Id
+							BEGIN
+								IF(@Id IS NOT NULL
+								AND EXISTS
+								(
+									SELECT *
+									FROM cccamps
+									WHERE cam_id = @Id
+								))
+									BEGIN
+										SELECT TOP 1 list_id
+										FROM ccRIARegistryLists
+										WHERE cam_id = @Id
+											AND STATUS = 2
+											ORDER BY list_id DESC;
+								END;
+								ELSE
+									BEGIN
+										--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+										RAISERROR(''ERROR. No existe una campa?a con el id especificado'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 8   -- Delete RegistryListIds Ids by LoadId
+							BEGIN
+								IF(@LoadId IS NOT NULL
+								AND EXISTS
+								(
+									SELECT *
+									FROM ccRIARegistryLists
+									WHERE list_id = @loadID
+										AND STATUS <> 0
+								))
+									BEGIN
+										UPDATE ccoCallsOutSource
+										SET 
+											cal_status = ''5''
+										WHERE list_id = @loadID;
+										DELETE FROM ccoWorkingTable
+										WHERE list_id = @LoadId;
+										EXEC ccsp_RIARegistryLists 
+											@action = 6, 
+											@list_id = @LoadId;
+								END;
+								ELSE
+									BEGIN
+										--Si el id de carga es nulo o no se encuentra registro de dicha carga o esta ya ha sido borrada
+										RAISERROR(''ERROR. No existe una carga el id especificado'', 18, 1);
+								END;
+								RETURN 0;
+						END;
+						IF @option = 9   -- Get Campaigns by Supervisor, Wg and type when admin eliminated from wg
+							BEGIN
+								DECLARE @table TABLE
+								(camId    INT, 
+								campType TINYINT, 
+								PRIMARY KEY(camId, campType)
+								);
+								INSERT INTO @table
+									SELECT DISTINCT 
+											IdCampEsp, Tipo
+									FROM ccRIACampEspWG wg
+									WHERE wg.IDWG IN
+									(
+										SELECT IDWG
+										FROM ccRIAWorkGroupUsers
+										WHERE IDWG <> @WorkgroupId
+												AND User_id = @AdminId
+									);
+								SELECT CAST(B.IdCampEsp AS INT) AS Id, B.Tipo AS Type
+								FROM @table A
+									RIGHT JOIN
+								(
+									SELECT wg.IdCampEsp, wg.Tipo
+									FROM ccRIACampEspWG wg
+									WHERE wg.IDWG = @WorkgroupId
+								) B ON A.camId = B.IdCampEsp
+									AND A.campType = B.Tipo
+								WHERE A.camId IS NULL
+									ORDER BY IdCampEsp;
+								RETURN 0;
+						END;
+						IF @option = 10  -- Get Agents States with totals per campaign by admin id and campaign type
+						BEGIN
+					DECLARE @date DATETIME= CONVERT(DATE, DATEADD(hh, -3, GETDATE()));
+					DECLARE @AdminWorkgroups TABLE (id INT, PRIMARY KEY(id));
+					DECLARE @AgentsList TABLE(id INT, PRIMARY KEY(id));
+					DECLARE @tmpCamAgent TABLE(camId INT, userId INT, multimediaType TINYINT, PRIMARY KEY(camId, userId));
+					DECLARE @AgentStatus TABLE(CampId SMALLINT, userId INT, CurrentState INT, isCampDialog BIT);
+					DECLARE @CurrentStatus TABLE(userId INT, CurrentState INT, IdCampEsp INT, camType INT);
+					DECLARE @campDataTotal TABLE(camId INT, CampName VARCHAR(500), Total INT, Area VARCHAR(100), PRIMARY KEY(camId));
+
+					INSERT INTO @AdminWorkgroups SELECT DISTINCT IDWG
+					FROM ccRIAWorkGroupUsers WG, 
+						ccUsers_Roles R
+					WHERE WG.User_id = @AdminId
+					OR (R.User_id = @AdminId
+					AND R.Rol_id = 7);
+						
+					INSERT INTO @AgentsList SELECT DISTINCT A.User_id
+					FROM ccRIAWorkGroupUsers A
+					INNER JOIN @AdminWorkgroups B ON A.IDWG = B.id
+					INNER JOIN ccUsers C ON A.User_id = C.User_id 
+					AND C.TipoUser_id = 1
+						ORDER BY A.User_id;
+
+					INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
+					CASE WHEN @Id = 0 AND @CampType = 0 THEN inbound.chat ELSE NULL END
+					FROM ccRIACampEspWG campPerWg
+					INNER JOIN @AdminWorkgroups wg ON wg.Id = campPerWg.IDWG
+					INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
+					INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
+					INNER JOIN ccInbound inbound ON Inbound_id = campPerWg.IdCampEsp 
+					AND C.TipoUser_id = 1
+					WHERE campPerWg.Tipo = @CampType
+					AND (@Id = 0 OR campPerWg.IdCampEsp = @Id);
+					
+					WITH lastState AS (
+					SELECT A.user_id, MAX(A.fecha) AS fecha
+					FROM ccLogAgentesDia A
+					INNER JOIN @AgentsList B ON A.User_id = B.id
+					WHERE fecha >= @date
+					GROUP BY user_id)
+
+						INSERT INTO @CurrentStatus 
+					SELECT B.User_id,
+					CASE WHEN B.currentStatus <= 0 THEN 0 ELSE B.currentStatus END AS currentStatus,
+					B.IdCampEsp,
+					B.Tipo
+					FROM lastState A
+					INNER JOIN ccLogAgentesDia B ON A.User_id = B.User_id
+					AND A.fecha = B.fecha;
+
+					IF @Id = 0 AND @CampType = 0 
+					BEGIN
+						DELETE FROM @tmpCamAgent WHERE multimediaType = 5
+					END
+
+					DECLARE @MultimediaType SMALLINT = (SELECT CASE WHEN @CampType = 1 THEN -1 ELSE meanContactTypeId END
+										FROM contactMeanIn WHERE inboundId = @Id)
+
+					DECLARE @StateIds VARCHAR(100) =(SELECT CASE WHEN @MultimediaType = 5 THEN ''6,34'' ELSE ''4,5,6,9'' END)-- Add more for multimediaTypes
+
+					INSERT INTO @AgentStatus SELECT A.camId, A.userId, B.CurrentState,
+					(CASE WHEN B.CurrentState IN(SELECT value FROM dbo.fn_RIASplitDelimited(@StateIds,'','')) AND B.IdCampEsp = A.camId AND B.camType = @CampType
+					THEN @CampType ELSE null END) AS isCampDialog 
+					FROM @tmpCamAgent A
+					INNER JOIN @CurrentStatus B ON A.userId = B.userId
+					WHERE (@Id = 0 or A.camId = @Id)
+
+					IF @CampType = 1
+						BEGIN
+						;with  campDataTotal as(
+						select camId,count(*) total from @tmpCamAgent A group by camId
+						)
+
+						insert into @campDataTotal
+						select 
+						A.camId,
+						B.cam_descripcion as campName 
+						,A.Total
+						,C.AreaName as Area
+						from campDataTotal A
+						INNER JOIN ccCamps B ON A.camId= B.cam_id 
+						INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
+						END
+					ELSE
+						BEGIN    
+						;with  campDataTotal as(
+						select camId,count(*) total from @tmpCamAgent A group by camId
+						)
+
+						insert into @campDataTotal
+						select 
+						A.camId,
+						B.descripcion as campName 
+						,A.Total
+						,C.AreaName as Area
+						from campDataTotal A
+							INNER JOIN ccInbound B ON A.camId = B.Inbound_id 
+						INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
+						END 
 
 
+					;WITH stateCamp AS(
+						SELECT A.CampId,
+						count(CASE WHEN A.CurrentState = 3 THEN 1 ELSE NULL END) AS ready,
+						count(CASE WHEN A.CurrentState NOT IN(-2, -1, 0, 3, 4, 5, 6, 9, 30, 34) THEN 1 
+							WHEN A.CurrentState IN (6, 34) AND A.CampId != C.IdCampEsp THEN 1 ELSE NULL END) AS notReady,
+						COUNT(isCampDialog) AS dialog,
+						COUNT(CASE WHEN a.CurrentState <= 0 THEN 1 ELSE NULL END) AS disconnected 
+						FROM @AgentStatus A
+						INNER JOIN @CurrentStatus C ON A.userId = C.userId
+						GROUP BY A.CampId
+					)
+
+					SELECT 
+						A.camId,
+						A.campName,
+						A.Total,
+						ISNULL(B.ready, 0) AS Ready,
+						ISNULL(B.notReady, 0 ) AS NotReady, 
+						ISNULL(B.dialog, 0) AS Dialog,
+						CASE WHEN B.disconnected IS NULL THEN A.Total ELSE A.Total - B.ready - B.dialog - B.notReady END Disconnected,
+						A.Area
+					FROM @campDataTotal A
+					LEFT JOIN stateCamp B ON A.camId = B.CampId
+					ORDER BY A.campName
+
+							RETURN 0;
+						END;
+						IF @Option = 11  -- Get Campaigns Ids List Per Workgroup and Campaign Type
+							BEGIN                
+								IF Not EXISTS
+								(
+									SELECT *
+									FROM ccUsers_Roles NOLOCK
+									WHERE User_id = @AdminId
+										AND Rol_id = 7
+								)
+									BEGIN
+							print ''xxxx SIn Super''
+										;WITH wgId
+											AS (SELECT IDWG
+												FROM ccRIAWorkGroupUsers NOLOCK
+												WHERE user_id = @AdminId)
+											SELECT DISTINCT 
+													CAST(IdCampEsp AS INT) AS Id
+											FROM ccRIACampEspWG A (NOLOCK)
+												INNER JOIN wgId ON wgId.IDWG = A.IDWG
+																	AND A.Tipo = @CampType;
+								END;
+								ELSE
+									BEGIN
+						--print ''xxxx Super''
+						IF @CampType = 1
+							BEGIN
+							SELECT DISTINCT 
+								CAST(cam_id AS INT) AS Id
+											FROM ccCamps (NOLOCK) where IDArea IS NOT NULL
+							END
+						ELSE
+							BEGIN 
+							SELECT DISTINCT 
+								CAST(Inbound_id AS INT) AS Id
+											FROM ccInbound (NOLOCK) where IDArea IS NOT NULL
+							END
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 12  -- Get All Campaigns complete information per Campaign Type and Campaign Id
+							BEGIN
+								IF @CampType = 1 -- Campaigns Out
+									BEGIN
+										SELECT DISTINCT 
+											CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type, camps.cam_procesando IsStarted, a.AreaName AS Area,  
+											CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, CONVERT(tinyint,isnull(camps.chat,0)) as OutboundType
+										FROM ccCamps camps (NOLOCK)
+											INNER JOIN ccRIACampsGraph graph (NOLOCK) ON camps.cam_id = graph.cam_id
+											INNER JOIN ccRIACat_Areas a (NOLOCK) ON a.IDArea = camps.IDArea
+											--WHERE camps.cam_id = @Id
+											ORDER BY camps.cam_descripcion ASC;
+								END;
+								ELSE
+									BEGIN
+										SELECT DISTINCT 
+											CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, inb.chat AS InboundType, CAST(0 AS tinyint) as OutboundType
+										FROM ccInbound inb (NOLOCK)
+											INNER JOIN ccRIAInboundGraph graph (NOLOCK) ON inb.Inbound_id = graph.Inbound_id
+											INNER JOIN ccRIACat_Areas a (NOLOCK) ON a.IDArea = inb.IDArea
+											ORDER BY inb.descripcion ASC;
+								END;
+								RETURN 0;
+						END;
+						IF @Option = 13
+						BEGIN
+							BEGIN                
+								IF NOT EXISTS
+								(
+									SELECT *
+									FROM ccUsers_Roles NOLOCK
+									WHERE User_id = @AdminId
+											AND Rol_id = 7
+								)
+									BEGIN
+										IF @CampType = 1
+											BEGIN
+												WITH wgId
+													AS (SELECT IDWG
+														FROM ccRIAWorkGroupUsers NOLOCK
+														WHERE user_id = @AdminId)
+													SELECT DISTINCT 
+														CAST(IdCampEsp AS INT) AS CampId,cam_descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(-1 AS SMALLINT) AS CampaignType,CAST(-1 AS INT) AS RelatedCampId
+													FROM ccRIACampEspWG A
+														INNER JOIN wgId ON wgId.IDWG = A.IDWG
+																			AND A.Tipo = 1
+														INNER JOIN ccCamps ccc (NOLOCK) ON A.IdCampEsp = ccc.cam_id;
+											END
+										ELSE
+											BEGIN
+												WITH wgId
+													AS (SELECT IDWG
+														FROM ccRIAWorkGroupUsers NOLOCK
+														WHERE user_id = @AdminId)
+													SELECT DISTINCT 
+														CAST(IdCampEsp AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+													FROM ccRIACampEspWG A (NOLOCK)
+														INNER JOIN wgId ON wgId.IDWG = A.IDWG
+																			AND A.Tipo = 0
+														INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id 
+														AND ((@multi_type is null AND cci.chat = @InboundType)
+															OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))));
+											END
+								END;
+								ELSE
+									BEGIN
+									IF @CampType = 1
+										BEGIN
+											SELECT DISTINCT 
+													CAST(cam_id AS INT) AS CampId,cam_descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(-1 AS SMALLINT) AS CampaignType,-1 AS RelatedCampId
+											FROM ccCamps NOLOCK where IDArea = @AreaId
+										END
+									ELSE
+										BEGIN 
+											SELECT DISTINCT 
+													CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+											FROM ccInbound cci (NOLOCK) where IDArea = @AreaId
+											AND ((@multi_type is null AND cci.chat = @InboundType)
+												OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
+										END
+								END;
+								RETURN 0;
+							END;
+						END;
+
+						IF @Option = 14
+							BEGIN
+								IF NOT EXISTS
+								(
+										SELECT *
+										FROM ccUsers_Roles NOLOCK
+										WHERE User_id = @AdminId
+												AND Rol_id = 7
+								)
+									BEGIN
+										WITH wgId
+												AS (SELECT IDWG
+													FROM ccRIAWorkGroupUsers NOLOCK
+													WHERE user_id = @AdminId)
+												SELECT DISTINCT 
+													CAST(IdCampEsp AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+												FROM ccRIACampEspWG A (NOLOCK)
+													INNER JOIN wgId ON wgId.IDWG = A.IDWG
+																		AND A.Tipo = 0
+													INNER JOIN ccInbound cci (NOLOCK) ON A.IdCampEsp = cci.Inbound_id AND isnull(cci.cam_id,-1) = -1
+													AND ((@multi_type is null AND cci.chat = @InboundType)
+														OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
+									END
+								ELSE
+									BEGIN
+										SELECT DISTINCT 
+										CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+										FROM ccInbound cci (NOLOCK) where IDArea = @AreaId AND isnull(cam_id,-1) = -1
+										AND ((@multi_type is null AND cci.chat = @InboundType)
+											OR (@multi_type is not null AND cci.chat in (SELECT value from dbo.fn_RIASplitDelimited(@multi_type,'',''))))
+
+									END
+							END
+						IF @Option = 15
+							BEGIN
+								SELECT DISTINCT 
+								CAST(Inbound_id AS INT) AS CampId,descripcion AS Description,isnull(IDArea, -1) AS AreaID,CAST(chat AS SMALLINT) AS CampaignType,CAST(isnull(cam_id,-1) AS INT) AS RelatedCampId
+								FROM ccInbound NOLOCK where cam_id = @Id
+							END
+					END;'
+		EXEC(@sql)
+
+		set @process = 'K020002 Crear campaña WhatsApp Out'
+        set @sql = 'CREATE PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
+			@ConexionInfo varchar(400),
+			@outbound_id int,
+			@descripcion varchar(400), 
+			@ConnUser varchar(60),
+			@tNotas int,
+			@closeConversationTime tinyint,
+			@ShowCalifWnd bit,
+			@ExitWrapUpDisposition bit,
+			@MUTimeOutClient int,
+			@allowFileAttachments bit
+			AS
+			set nocount on
+			IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
+					BEGIN
+						INSERT INTO ContactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments) values 
+						(5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = 4),3,@conexionInfo,@connUser,@closeConversationTime,''N/A'',@MUTimeOutClient,@allowFileAttachments);
+					END
+
+			IF EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id)
+			BEGIN
+			
+				UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+			END;
+
+			IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
+			BEGIN
+				UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitWrapUpDisposition, chat = 5 where cam_id = @outbound_id;
+			END;
+			SELECT @outbound_id;
+			return(@outbound_id)
+
+			set nocount off'
+		EXEC(@sql)
+
+		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

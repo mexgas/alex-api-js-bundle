@@ -386,16 +386,16 @@ BEGIN
 
 		set @process = 'SPEC-59 ccsettings grabacion early media'
         set @sql = 'insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
-			(236,0,''Habilita la grabación de audio antes de que se conteste la llamada'',1,''GRL'',
-			''Habilita la grabación de audio antes de que se conteste la llamada (Early Media). 0-Deshabilitado, 1-Habilitado'',
+			(236,0,''Habilita la grabacion de audio antes de que se conteste la llamada'',1,''GRL'',
+			''Habilita la grabacion de audio antes de que se conteste la llamada (Early Media). 0-Deshabilitado, 1-Habilitado'',
 			''Enable audio recording before the call is answered (Early Media). 0-Disabled, 1-Enabled'',
 			1,''^[0-1]$'')'
 		EXEC(@sql)
 
 		set @process = 'DEV2-26_KR021006_CPS ccsettings cps'
         set @sql = 'insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
-			(238,30,''Límite de llamadas por segundo generadas por el servidor de marcación'',1,''GRL'',
-			''Llamadas por segundo (CPS). Parámetro por sistema independiente de la configuración de las troncales'',
+			(238,30,''Limite de llamadas por segundo generadas por el servidor de marcacion'',1,''GRL'',
+			''Llamadas por segundo (CPS). Parametro por sistema independiente de la configuracion de las troncales'',
 			''Calls Per Second (CPS). Setting operate on a per-system basis, regardless of trunks settings'',
 			1,''^\d{1,3}$'')'
 		EXEC(@sql)

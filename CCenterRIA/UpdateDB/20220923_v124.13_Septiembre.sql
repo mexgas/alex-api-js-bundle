@@ -380,6 +380,28 @@ BEGIN
         ------------------------------------------------------------  END  DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
 
 
+		set @process = 'SPEC-59, DEV2-26'
+        set @sql = 'delete ccsettings where setting_id in (236,238)'
+		EXEC(@sql)
+
+		set @process = 'SPEC-59 ccsettings grabacion early media'
+        set @sql = 'insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
+			(236,0,''Habilita la grabación de audio antes de que se conteste la llamada'',1,''GRL'',
+			''Habilita la grabación de audio antes de que se conteste la llamada (Early Media). 0-Deshabilitado, 1-Habilitado'',
+			''Enable audio recording before the call is answered (Early Media). 0-Disabled, 1-Enabled'',
+			1,''^[0-1]$'')'
+		EXEC(@sql)
+
+		set @process = 'DEV2-26_KR021006_CPS ccsettings cps'
+        set @sql = 'insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
+			(238,30,''Límite de llamadas por segundo generadas por el servidor de marcación'',1,''GRL'',
+			''Llamadas por segundo (CPS). Parámetro por sistema independiente de la configuración de las troncales'',
+			''Calls Per Second (CPS). Setting operate on a per-system basis, regardless of trunks settings'',
+			1,''^\d{1,3}$'')'
+		EXEC(@sql)
+
+
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

@@ -404,11 +404,17 @@ BEGIN
 			end'
 		EXEC(@sql)
 
+		set @process = 'K013001 validacion de SP ccsp_GetInfoDash'
+        set @sql = '
+		if exists (select * from sys.procedures where name = N''ccsp_GetInfoDash'')
+		begin
+			DROP PROCEDURE ccsp_GetInfoDash;
+		end'
+		EXEC(@sql)
+
 
 		set @process = 'K013001 create ccsp_GetInfoDash'
         set @sql = '
-			if not exists (select * from sys.procedures where name = N''ccsp_GetInfoDash'')
-			begin
 				create procedure [dbo].[ccsp_GetInfoDash]
 				@CampId as smallint
 				as
@@ -530,8 +536,7 @@ BEGIN
 
 				end
 
-				set nocount off
-			end'
+				set nocount off'
 		EXEC(@sql)
  ------------------------------------------------------------ DEV2-3_K004023-labels-reports---------------------------------------------------------------------
 		set @process = 'DEV2-17_K004022-Admin-Config_Tiempo_Preview add column cam_tPreview'

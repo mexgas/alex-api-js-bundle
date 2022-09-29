@@ -4223,7 +4223,7 @@ EXEC(@sql)
 
     set @process = 'CW-7457 Se crea SP ccsp_ccActivityDataQuery'
     set @sql = '
-	ALTER PROCEDURE [dbo].[ccsp_ccActivityDataQuery]
+	CREATE PROCEDURE [dbo].[ccsp_ccActivityDataQuery]
 	@action int,@userId int=0,@camId int=0,@dnisId int=0,@WgId int=0,@tipo int =null
 	,@camIdOuts varchar(1000)='''',@camIdIns varchar(1000)=''''
 	AS

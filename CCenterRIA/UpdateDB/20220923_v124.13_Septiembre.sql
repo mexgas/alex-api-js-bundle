@@ -459,6 +459,13 @@ BEGIN
 					end '
 		EXEC(@sql)
 
+		set @process = 'DROP SP para consultar setting para ocultar tareas de Whatsapp salida'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''GetWhatsAppAllowConfiguration'')
+					BEGIN
+					    DROP PROCEDURE GetWhatsAppAllowConfiguration;
+					END'
+		EXEC(@sql)
+
 		set @process = 'SP para consultar setting para ocultar tareas de Whatsapp salida'
         set @sql = 'CREATE PROCEDURE GetWhatsAppAllowConfiguration
 					AS
@@ -466,12 +473,36 @@ BEGIN
 		EXEC(@sql)
 
 		set @process = 'K020002 Crear campaña WhatsApp Out'
-        set @sql = 'ALTER TABLE contactmeanout ADD camp_id int null, numMessages tinyint null, closeConversationTime tinyint null, answerTimeoutClient tinyint null, allowFileAttachments bit null
-					ALTER TABLE contactmeanout Alter column conexionInfo varchar(255) null;
-					ALTER TABLE contactmeanout Alter column connUser varchar(60) null;
-					ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
-					ALTER TABLE ccCamps ADD chat int null
-					ALTER TABLE ccWhatsAppNumbers ADD camp_id int null'
+        set @sql = '
+					if not exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE contactmeanout ADD camp_id int null, numMessages tinyint null, closeConversationTime tinyint null, answerTimeoutClient tinyint null, allowFileAttachments bit null
+					end
+
+					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE contactmeanout Alter column conexionInfo varchar(255) null;
+					end
+
+					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE contactmeanout Alter column connUser varchar(60) null;
+					end
+
+					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
+					end
+
+					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE ccCamps ADD chat int null
+					end
+
+					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					begin
+						ALTER TABLE ccWhatsAppNumbers ADD camp_id int null
+					end'
 		EXEC(@sql)
 
 		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_MultimediaConfigurations'
@@ -1055,6 +1086,13 @@ BEGIN
 					END;'
 		EXEC(@sql)
 
+		set @process = 'K020002 Drop procedure ccsp_UpdateOutWhatsappConfig'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateOutWhatsappConfig'')
+					BEGIN
+					    DROP PROCEDURE ccsp_UpdateOutWhatsappConfig;
+					END'
+		EXEC(@sql)
+
 		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_UpdateOutWhatsappConfig'
         set @sql = 'CREATE PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
 			@ConexionInfo varchar(400),
@@ -1347,7 +1385,7 @@ BEGIN
 			set nocount off'
 		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
-
+	
         --- IVAN MARTIN  DEV1-23- Permiso para reproducir grabaciones en historial de llamadas ---
 
 		set @process = 'DEV1-23 Rename table ccRIAUsersPermissions for better code understanding'

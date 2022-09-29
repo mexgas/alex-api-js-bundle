@@ -381,9 +381,9 @@ BEGIN
 		
 		------------------------------------------------------------  Inicia Ciro ---------------------------------------------------------------------
 		set @process = 'Setting para ocultar tareas de Whatsapp salida'
-        set @sql = 'if not exists (select * from ccsettings where setting_id = 233)
+        set @sql = 'if not exists (select * from ccsettings where setting_id = 241)
 					begin
-						insert into ccSettings values (241,0,''Permitir configuracipon de Whatsapp'',1,''GRL'',''Parametro para permitir al cliente tener las configuraciones y accesos para Whatsapp'',''Permitir configuracipon de Whatsapp'',0,''^[0-1]$'',CAST(''00000000-0000-0000-0000-000000000000'' AS UNIQUEIDENTIFIER))
+						 insert into ccSettings (setting_id, valor, descripcion, Status, tipo, detalle, description, bLoadSettings, validate) values (241,0,''Permitir configuración de whatsapp salida'',1,''GRL'',''Habilitar campañas de WhatsApp de salida'',''Enable outbound WhatsApp campaigns'',0,''^[0-1]$'')
 					end '
 		EXEC(@sql)
 

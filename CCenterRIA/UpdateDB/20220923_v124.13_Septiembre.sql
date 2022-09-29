@@ -56,6 +56,14 @@ BEGIN
 		end'
 		EXEC(@sql)
 
+		set @process = 'DEV2-3_K004023-Admin-Config_Times_Preview add column timesPreview'
+        set @sql = '
+		if not exists (select * from sys.columns where name = N''timesPreview'' and Object_ID = Object_ID(N''ccCamps''))
+		begin
+			alter table ccCamps add timesPreview tinyint not null default 5
+		end'
+		EXEC(@sql)
+
 		set @process = 'DEV2-17_K004022-Admin-Config_Tiempo_Preview add column descTranslate'
         set @sql = '
 		if not exists (select * from sys.columns where name = N''descTranslate'' and Object_ID = Object_ID(N''ccTipoResultadoDial''))
@@ -389,6 +397,60 @@ BEGIN
 		EXEC(@sql)
 		------------------------------------------------------------  END  DEV2-3_K004023-labels-reports ---------------------------------------------------------------------
 
+
+        ------------------------------------------------------------ DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
+		set @process = 'DEV2-3_K004023-Admin-Config_Times_Preview edit sp ccsp_RegProcessPreviewRecord'
+        set @sql = '
+				ALTER PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
+        @process smallint,
+        @callout_id int,
+        @agent_id smallint,
+        @camId int,
+		@previewTime smallint,
+		@callId int)
+        AS
+        DECLARE @result_callout_id INT
+		DECLARE @result_maxtimespreview INT = 0
+		DECLARE @insert_date DATETIME = SYSDATETIME()
+		DECLARE @first_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
+		DECLARE @process_insert int =  @process
+
+        if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
+            set @result_callout_id =1
+        end
+
+        IF (@process=1 AND @result_callout_id > 0)
+        BEGIN
+            DELETE ccoWorkingTable WHERE callout_id = @callout_id
+			RETURN
+        END
+
+		IF (@process NOT IN (1, 7))
+		BEGIN
+			if(
+				(SELECT COUNT(process) FROM RegProcessPreviewRecord 
+				WHERE reg_date BETWEEN @first_date AND @insert_date
+				and (process != 1 AND process != 7) 
+				and (callout_id=@callout_id)
+				)
+				>=
+				(SELECT timesPreview FROM ccCamps WHERE cam_id = @camId)
+				)
+			begin
+					set @result_maxtimespreview = 1
+					set @process_insert = 8
+					DELETE ccoWorkingTable WHERE callout_id = @callout_id
+			end
+		END
+
+		IF (@result_callout_id > 0 or @process in (4,7))
+        BEGIN
+            INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview, callID) VALUES (@agent_id,@process_insert,@callout_id,@camId,@insert_date,@previewTime,@callId)
+		END
+
+		select @result_maxtimespreview as ''value'''
+		EXEC(@sql)
+		------------------------------------------------------------  END  DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
 
 
 		/* End script release */

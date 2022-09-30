@@ -456,27 +456,18 @@ BEGIN
 						end else
 						begin
 
-							update z
-								set z.contact_reg=(convert(decimal(5,2),x.contacted)/convert(decimal(5,2),y.dialed))*100, z.date_update=getdate()
-							from
-							(select cam_id,count(distinct(callout_id)) contacted from ccocallsout nolock where cam_id=@CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id)x
-							join
-							(select cam_id,count(distinct(callout_id)) dialed from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id)y
-							on x.cam_id=y.cam_id
-							join ccCampsInfo z
-							on x.cam_id=z.cam_id
+							declare @vop1 decimal(5,2)
+							declare @vop2 decimal(5,2)
+							declare @vop3 decimal(5,2)
+							declare @vop4 decimal(5,2)
 
-							update c
-								set c.dial_retries=(cast(count_tels as float)/cast(count_dialings as float))*100
-							from 
-							(select cam_id, count(distinct telefono) count_tels from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date)=cast(getdate() as date) group by cam_id, Telefono having count(1)>1) rt
-							join
-							(select cam_id, count(distinct telefono) count_dialings from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date)=cast(getdate() as date) group by cam_id) dl
-							on rt.cam_id=dl.cam_id
-							join
-							ccCampsInfo c
-							on c.cam_id=rt.cam_id
-
+							select @vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
+							select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id
+							select @vop3 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id, Telefono having count(1) > 1
+							
+							update ccCampsInfo
+								set contact_reg=(@vop1/@vop2)*100, dial_retries=(@vop3/@vop4)*100, date_update=getdate()
+					
 							select
 								cam_id, contact_reg, dial_retries, date_update, calls_per_second
 							from ccCampsInfo nolock
@@ -507,31 +498,22 @@ BEGIN
 					end else
 					begin
 
-						update z
-							set z.contact_reg=(convert(decimal(5,2),x.contacted)/convert(decimal(5,2),y.dialed))*100, date_update=getdate(), calls_per_second=@cps
-						from
-						(select cam_id,count(distinct(callout_id)) contacted from ccocallsout nolock where cam_id=@CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id)x
-						join
-						(select cam_id,count(distinct(callout_id)) dialed from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id)y
-						on x.cam_id=y.cam_id
-						join ccCampsInfo z
-						on x.cam_id=z.cam_id
+							declare @vop1 decimal(5,2)
+							declare @vop2 decimal(5,2)
+							declare @vop3 decimal(5,2)
+							declare @vop4 decimal(5,2)
 
-						update c
-							set c.dial_retries=(cast(count_tels as float)/cast(count_dialings as float))*100
-						from 
-						(select cam_id, count(distinct telefono) count_tels from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date)=cast(getdate() as date) group by cam_id, Telefono having count(1)>1) rt
-						join
-						(select cam_id, count(distinct telefono) count_dialings from ccoLogDials nolock where cam_id=@CampId and cast(fecha as date)=cast(getdate() as date) group by cam_id) dl
-						on rt.cam_id=dl.cam_id
-						join
-						ccCampsInfo c
-						on c.cam_id=rt.cam_id
-
-						select
-							cam_id, contact_reg, dial_retries, date_update, calls_per_second
-						from ccCampsInfo nolock
-						where cam_id = @CampId
+							select @vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
+							select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id
+							select @vop3 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id, Telefono having count(1) > 1
+							
+							update ccCampsInfo
+								set contact_reg=(@vop1/@vop2)*100, dial_retries=(@vop3/@vop4)*100, date_update=getdate()
+					
+							select
+								cam_id, contact_reg, dial_retries, date_update, calls_per_second
+							from ccCampsInfo nolock
+							where cam_id = @CampId
 
 					end
 

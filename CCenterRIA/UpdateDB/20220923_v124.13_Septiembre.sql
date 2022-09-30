@@ -420,6 +420,10 @@ BEGIN
 				@CampId as smallint
 				as
 				set nocount on
+				declare @vop1 decimal(5,2)
+				declare @vop2 decimal(5,2)
+				declare @vop3 decimal(5,2)
+				declare @vop4 decimal(5,2)				
 				declare @upd_date as datetime
 				declare @cps  as int 
 				select @cps = [valor] from ccSettings  where setting_id=238
@@ -455,11 +459,6 @@ BEGIN
 
 						end else
 						begin
-
-							declare @vop1 decimal(5,2)
-							declare @vop2 decimal(5,2)
-							declare @vop3 decimal(5,2)
-							declare @vop4 decimal(5,2)
 
 							select @vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
 							select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id
@@ -497,11 +496,6 @@ BEGIN
 
 					end else
 					begin
-
-							declare @vop1 decimal(5,2)
-							declare @vop2 decimal(5,2)
-							declare @vop3 decimal(5,2)
-							declare @vop4 decimal(5,2)
 
 							select @vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
 							select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id

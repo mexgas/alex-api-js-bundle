@@ -1504,32 +1504,32 @@ SET NOCOUNT OFF'
 
 		set @process = 'K020002 Crear campaña WhatsApp Out'
         set @sql = '
-					if not exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if not exists (select * from sys.columns where name = N''camp_id'' or name = N''numMessages'' or name = N''closeConversationTime''  or name = N''answerTimeoutClient''  or name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE contactmeanout ADD camp_id int null, numMessages tinyint null, closeConversationTime tinyint null, answerTimeoutClient tinyint null, allowFileAttachments bit null
 					end
 
-					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if exists (select * from sys.columns where name = N''conexionInfo'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE contactmeanout Alter column conexionInfo varchar(255) null;
 					end
 
-					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if exists (select * from sys.columns where name = N''connUser'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE contactmeanout Alter column connUser varchar(60) null;
 					end
 
-					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if exists (select * from sys.columns where name = N''ConnPass'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
 					end
 
-					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if exists (select * from sys.columns where name = N''ccCamps'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE ccCamps ADD chat int null
 					end
 
-					if exists (select * from sys.columns where name = N''yourColumnName'' and Object_ID = Object_ID(N''yourTableName''))
+					if exists (select * from sys.columns where name = N''ccWhatsAppNumbers'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE ccWhatsAppNumbers ADD camp_id int null
 					end'

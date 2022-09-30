@@ -5094,13 +5094,12 @@ set nocount off'
         EXEC(@sql)
 
 
-        set @process = 'Se agrego parametro opcion para retornar resultado individual'
+        set @process = 'Se quita parametro opcion para retornar resultado individual ccsp_OUTGetNewJobs'
         set @sql = 'ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
 		@CAMPID int,
 		@test int=0,
 		@nAgentsLogin int=1,
-		@iZonas int = null,
-		@option int=0
+		@iZonas int = null
 		as
 		--set nocount on
 		declare @total int
@@ -5274,9 +5273,7 @@ set nocount off'
 		end
 		else
 		begin
-			if @option = 0
-			begin
-				  select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,
+			select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,
 			user_id, tz, tz2, tz3, tz4, tz5,
 			case when tz is null then '''''''' else cal_telefono end as tel,
 			case when tz2 is null then '''''''' else cal_telefono end as tel2,
@@ -5292,15 +5289,6 @@ set nocount off'
 			SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
 			exec ccsp_GetCampsNvosCB @cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + '',@Tipo=0,@user_id =0
 			''
-			end else
-			begin
-				  select @sql=@sql+nchar(13)+ ''
-			---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
-			declare @regval int
-			SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
-			exec ccsp_GetCampsNvosCB @cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + '',@Tipo=0,@user_id =0
-			''
-			end
 		end
 
 		set @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''

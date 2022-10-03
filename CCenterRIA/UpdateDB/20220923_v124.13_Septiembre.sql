@@ -1496,12 +1496,6 @@ SET NOCOUNT OFF'
 					END'
 		EXEC(@sql)
 
-		set @process = 'SP para consultar setting para ocultar tareas de Whatsapp salida'
-        set @sql = 'CREATE PROCEDURE GetWhatsAppAllowConfiguration
-					AS
-					select valor from ccSettings WHERE setting_id = 241'
-		EXEC(@sql)
-
 		set @process = 'K020002 Crear campaña WhatsApp Out'
         set @sql = '
 					if not exists (select * from sys.columns where name = N''camp_id'' or name = N''numMessages'' or name = N''closeConversationTime''  or name = N''answerTimeoutClient''  or name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactmeanout''))

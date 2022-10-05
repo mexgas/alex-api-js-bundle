@@ -3990,6 +3990,16 @@ END
                             insert into dbo.ccRIALog_Module(module_id, descripcion) values (62, ''CARGA DE LISTA ANI ROTATIVA | ROTATIVE ANI LIST UPLOAD'')
                         end'
         EXEC(@sql)
+
+		set @process = 'ccRiaLoading add UserID column if not exist '
+        set @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''UserID''
+          AND Object_ID = Object_ID(N''ccRIALoading''))
+BEGIN
+   ALTER TABLE ccRiaLoading
+   ADD UserID smallint
+END'
+        EXEC(@sql)
         
         set @process = 'ANIRotative Drop procedure ccsp_GalateaAdminRotativeANI'
         set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE type = ''P'' AND name = ''ccsp_GalateaAdminRotativeANI'') begin
@@ -4004,7 +4014,8 @@ END
     @descriptionList VARCHAR(50) = NULL,
     @id_RAniList SMALLINT = NULL,
     @PageIndex      INT = 0,
-    @PageSize       INT = 0
+    @PageSize       INT = 0,
+	@UserId			SMALLINT = 0
 
 AS
 BEGIN
@@ -4113,6 +4124,17 @@ BEGIN
         AND cc.cam_procesando = 1
         RETURN 0;
     END
+	IF(@type = 10) --Update current Rotative ANI List loads to error
+	BEGIN
+		IF(@UserId = 0)
+		BEGIN
+			UPDATE ccRIALoading SET [state] = 4 WHERE loadType = 2 AND [state] < 3
+		END
+		UPDATE ccRIALoading SET [state] = 4
+		WHERE loadType = 2 AND [state] < 3 AND userID = @UserId 
+		SELECT CASE WHEN @@ROWCOUNT > 0 THEN CONVERT(BIT,1) ELSE CONVERT(BIT,0) END AS LoadError
+		RETURN 0;
+	END
 
 SET NOCOUNT OFF
 

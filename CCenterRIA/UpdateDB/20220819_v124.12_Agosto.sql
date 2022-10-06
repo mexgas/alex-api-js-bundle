@@ -6222,32 +6222,17 @@ BEGIN
   AND C.TipoUser_id = 1
     ORDER BY A.User_id;
 
-	IF @CampType = 0 -- Campaigns In
-	BEGIN
-		INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
-		CASE WHEN @Id = 0 AND @CampType = 0 THEN inbound.chat ELSE NULL END
-		FROM ccRIACampEspWG campPerWg
-		INNER JOIN @AdminWorkgroups wg ON wg.Id = campPerWg.IDWG
-		INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
-		INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
-		INNER JOIN ccInbound inbound ON Inbound_id = campPerWg.IdCampEsp 
-		AND C.TipoUser_id = 1
-		WHERE campPerWg.Tipo = @CampType
-		AND (@Id = 0 OR campPerWg.IdCampEsp = @Id);
-	END;
-	IF @CampType = 1 -- Campaigns Out
-	BEGIN
-		INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
-		NULL
-		FROM ccRIACampEspWG campPerWg
-		INNER JOIN @AdminWorkgroups wg ON wg.Id = campPerWg.IDWG
-		INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
-		INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
-		INNER JOIN ccCamps cout ON cam_id = campPerWg.IdCampEsp 
-		AND C.TipoUser_id = 1
-		WHERE campPerWg.Tipo = @CampType
-		AND (@Id = 0 OR campPerWg.IdCampEsp = @Id);
-	END;
+    INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
+    CASE WHEN @Id = 0 AND @CampType = 0 THEN inbound.chat ELSE NULL END
+    FROM ccRIACampEspWG campPerWg
+    INNER JOIN @AdminWorkgroups wg ON wg.Id = campPerWg.IDWG
+    INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
+    INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
+    LEFT JOIN ccInbound inbound ON Inbound_id = campPerWg.IdCampEsp
+    LEFT JOIN ccCamps outbound ON outbound.cam_id = campPerWg.IdCampEsp 
+    AND C.TipoUser_id = 1
+    WHERE campPerWg.Tipo = @CampType
+    AND (@Id = 0 OR campPerWg.IdCampEsp = @Id);
   
   WITH lastState AS (
   SELECT A.user_id, MAX(A.fecha) AS fecha

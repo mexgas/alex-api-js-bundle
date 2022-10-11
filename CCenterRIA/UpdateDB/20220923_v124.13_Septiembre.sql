@@ -1489,13 +1489,6 @@ SET NOCOUNT OFF'
 					end '
 		EXEC(@sql)
 
-		set @process = 'DROP SP para consultar setting para ocultar tareas de Whatsapp salida'
-		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''GetWhatsAppAllowConfiguration'')
-					BEGIN
-					    DROP PROCEDURE GetWhatsAppAllowConfiguration;
-					END'
-		EXEC(@sql)
-
 		set @process = 'K020002 Crear campaña WhatsApp Out'
         set @sql = '
 					if not exists (select * from sys.columns where name = N''camp_id'' or name = N''numMessages'' or name = N''closeConversationTime''  or name = N''answerTimeoutClient''  or name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactmeanout''))
@@ -1518,12 +1511,12 @@ SET NOCOUNT OFF'
 						ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
 					end
 
-					if exists (select * from sys.columns where name = N''ccCamps'' and Object_ID = Object_ID(N''contactmeanout''))
+					if exists (select * from sys.columns where name = N''chat'' and Object_ID = Object_ID(N''ccCamps''))
 					begin
 						ALTER TABLE ccCamps ADD chat int null
 					end
 
-					if exists (select * from sys.columns where name = N''ccWhatsAppNumbers'' and Object_ID = Object_ID(N''contactmeanout''))
+					if exists (select * from sys.columns where name = N''camp_id'' and Object_ID = Object_ID(N''ccWhatsAppNumbers''))
 					begin
 						ALTER TABLE ccWhatsAppNumbers ADD camp_id int null
 					end'
@@ -2134,20 +2127,19 @@ SET NOCOUNT OFF'
 			IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
 					BEGIN
 						INSERT INTO ContactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments) values 
-						(5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = 4),3,@conexionInfo,@connUser,@closeConversationTime,''N/A'',@MUTimeOutClient,@allowFileAttachments);
+						(5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id),3,@conexionInfo,@connUser,@closeConversationTime,''N/A'',@MUTimeOutClient,@allowFileAttachments);
 					END
 
-			IF EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id)
-			BEGIN
-			
-				UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
-			END;
+			ELSE 
+				BEGIN
+				
+					UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+				END;
 
 			IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
 			BEGIN
 				UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitWrapUpDisposition, chat = 5 where cam_id = @outbound_id;
 			END;
-			SELECT @outbound_id;
 			return(@outbound_id)
 
 			set nocount off'

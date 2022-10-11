@@ -1621,7 +1621,7 @@ SET NOCOUNT OFF'
 											BEGIN
 												SELECT DISTINCT 
 													CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type, camps.cam_procesando IsStarted, a.AreaName AS Area,  
-															CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, CONVERT(tinyint,isnull(camps.chat,0)) as OutboundType
+															CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, isnull(camps.chat,0) as OutboundType
 												FROM ccCamps camps
 													LEFT JOIN ccRIACampsGraph graph ON camps.cam_id = graph.cam_id
 													LEFT JOIN ccRIACat_Areas a ON a.IDArea = camps.IDArea
@@ -1980,7 +1980,7 @@ SET NOCOUNT OFF'
 									BEGIN
 										SELECT DISTINCT 
 											CAST(camps.cam_id AS INT) AS Id, camps.cam_descripcion AS Name, isnull(CAST(graph.graphic_id AS INT),1) AS Frame, CAST(1 AS SMALLINT) AS Type, camps.cam_procesando IsStarted, a.AreaName AS Area,  
-											CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, CONVERT(tinyint,isnull(camps.chat,0)) as OutboundType
+											CAST(CASE WHEN camps.progDial = 3 THEN 6 ELSE 0 END as [tinyint]) as InboundType, isnull(camps.chat,0) as OutboundType
 										FROM ccCamps camps (NOLOCK)
 											INNER JOIN ccRIACampsGraph graph (NOLOCK) ON camps.cam_id = graph.cam_id
 											INNER JOIN ccRIACat_Areas a (NOLOCK) ON a.IDArea = camps.IDArea

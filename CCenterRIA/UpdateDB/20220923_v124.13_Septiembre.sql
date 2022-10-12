@@ -526,7 +526,7 @@ BEGIN
         set @sql = '
 		if not exists(select typeProcess_id from ccTypeProcessPreview where typeProcess_id = 8)
 			begin
-			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (8, ''systemTranslated_DiscardByMaxTimes'','''')
+			insert into  ccTypeProcessPreview (typeProcess_id,descripcion,translatedDesc) values (8, ''DiscardByMaxTimes'',''systemTranslated_DiscardByMaxTimes'')
 		end
 '
 		EXEC(@sql)

@@ -28,7 +28,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCenterRIA') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                 PublishFtp(params.__RELEASE_VERSION)
 
@@ -47,7 +47,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCReportsRIA') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                 PublishFtp(params.__RELEASE_VERSION)
 
@@ -66,7 +66,7 @@ pipeline {
         }
 
         stage('Publish Ftp AVRS') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                 PublishFtp(params.__RELEASE_VERSION)
 
@@ -79,7 +79,7 @@ pipeline {
         }
 
         stage('Publish Ftp Jobs') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
             steps {
                 PublishFtp(params.__RELEASE_VERSION)
 
@@ -92,7 +92,7 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
             steps {
                 PublishFtp(params.__RELEASE_VERSION)
 

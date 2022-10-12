@@ -84,15 +84,21 @@ pipeline {
                     remoteDirectory: 'cw/$__RELEASE_VERSION/Jobs', remoteDirectorySDF: false,
                     removePrefix: '/Jobs/',
                     sourceFiles: '/Jobs/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+
+                    sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
+                    sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
+                    remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/', remoteDirectorySDF: false,
+                    removePrefix: '/SQLTools/',
+                    sourceFiles: '/SQLTools/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
         }
 
         stage('Publish Ftp Replication') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
-            steps {              
+            steps {
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
-                    sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
+                    sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/Replication', remoteDirectorySDF: false,
                     removePrefix: '/Replication/',
                     sourceFiles: '/Replication/**/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])

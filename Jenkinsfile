@@ -30,8 +30,7 @@ pipeline {
         stage('Publish Ftp CCenterRIA') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
-                PublishFtp(params.__RELEASE_VERSION)
-
+            
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/UpdateDB', remoteDirectorySDF: false,
@@ -49,8 +48,7 @@ pipeline {
         stage('Publish Ftp CCReportsRIA') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
-                PublishFtp(params.__RELEASE_VERSION)
-
+               
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/ReportsRia/UpdateDB', remoteDirectorySDF: false,
@@ -68,8 +66,7 @@ pipeline {
         stage('Publish Ftp AVRS') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
             steps {
-                PublishFtp(params.__RELEASE_VERSION)
-
+               
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/AVRS/UpdateDB', remoteDirectorySDF: false,
@@ -81,8 +78,7 @@ pipeline {
         stage('Publish Ftp Jobs') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
             steps {
-                PublishFtp(params.__RELEASE_VERSION)
-
+                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/Jobs', remoteDirectorySDF: false,
@@ -93,8 +89,7 @@ pipeline {
 
         stage('Publish Ftp Replication') {
             when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
-            steps {
-                PublishFtp(params.__RELEASE_VERSION)
+            steps {              
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',

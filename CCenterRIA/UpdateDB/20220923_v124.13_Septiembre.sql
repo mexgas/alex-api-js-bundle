@@ -2395,6 +2395,27 @@ SET NOCOUNT OFF'
 			return(0)
 			set nocount off'
 		EXEC(@sql)
+
+		set @process = 'Eliminar constraint unique de contactmeanout'
+        set @sql = 'declare @name nvarchar(max),@sql2 nvarchar(max)
+					SELECT
+						@name=   dc.Name  
+					FROM sys.tables t
+					INNER JOIN sys.key_constraints dc ON t.object_id = dc.parent_object_id
+					where t.name=''ContactMeanOut''  and dc.type=''UQ'' 
+					ORDER BY t.Name
+					select @name
+					if @name is not null begin
+					set @sql2=''ALTER TABLE ContactMeanOut DROP CONSTRAINT ''+@name
+						exec (@sql2)
+					end'
+		EXEC(@sql)
+
+		set @process = 'Añadir constraint condicional unique a contactmeanout'
+        set @sql = 'create unique index UniqueIndex
+					on contactmeanout(connUser)
+					where meanContactTypeId != 5;'
+		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 
 		/* End script release */

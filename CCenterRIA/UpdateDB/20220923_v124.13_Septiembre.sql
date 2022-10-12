@@ -387,6 +387,140 @@ BEGIN
                 set nocount off'
 		EXEC(@sql)
         ------------------------------------------------------------  END  DEV2-17_K004022, DEV2-3-K004023 ---------------------------------------------------------------------
+		
+		set @process = 'K013001 create ccCampsInfo'
+        set @sql = '
+			if not exists (select * from sys.tables where name = N''ccCampsInfo'')
+			begin
+
+				CREATE TABLE [dbo].[ccCampsInfo](
+					[id] [int] IDENTITY(1,1) NOT NULL,
+					[cam_id] [smallint] NOT NULL,
+					[contact_reg] [decimal](5, 2) NOT NULL default 0,
+					[dial_retries] [decimal](5, 2) NOT NULL default 0,
+					[date_update] [datetime] NOT NULL default getdate(),
+					[calls_per_second] [int] NULL
+				) ON [PRIMARY]
+
+			end'
+		EXEC(@sql)
+
+		set @process = 'K013001 validacion de SP ccsp_GetInfoDash'
+        set @sql = '
+		if exists (select * from sys.procedures where name = N''ccsp_GetInfoDash'')
+		begin
+			DROP PROCEDURE ccsp_GetInfoDash;
+		end'
+		EXEC(@sql)
+
+
+		set @process = 'K013001 create ccsp_GetInfoDash'
+        set @sql = '
+				create procedure [dbo].[ccsp_GetInfoDash]
+				@CampId as smallint
+				as
+				set nocount on				
+				declare @upd_date as datetime
+				declare @cps  as int 
+				select @cps = [valor] from ccSettings  where setting_id=238
+				select
+					@upd_date = date_update
+				from ccCampsInfo where cam_id = @CampId
+
+				if exists(select cam_id from ccCampsInfo nolock where cam_id = @CampId)
+				begin
+
+					if(datediff(s, @upd_date, getdate()) < 300)
+					begin
+
+						select
+							cam_id, contact_reg, dial_retries, date_update, calls_per_second
+						from ccCampsInfo
+						where cam_id = @CampId
+
+					end else
+					begin
+
+						if not exists(select cam_id from ccocallsout nolock where cam_id=@CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date))
+						begin
+
+							update ccCampsInfo
+								set contact_reg=0, dial_retries=0, date_update = getdate(), calls_per_second=@cps
+							where cam_id = @CampId
+
+							select
+								cam_id, contact_reg, dial_retries, date_update, calls_per_second
+							from ccCampsInfo
+							where cam_id = @CampId
+
+						end else
+						begin
+
+							declare @vop1 decimal(5,2)
+							declare @vop2 decimal(5,2)
+							declare @vop3 decimal(5,2)
+							declare @vop4 decimal(5,2)
+
+							select @vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
+							select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id
+							select @vop3 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id, Telefono having count(1) > 1
+							
+							update ccCampsInfo
+								set contact_reg=(@vop1/@vop2)*100, dial_retries=(@vop3/@vop4)*100, date_update=getdate()
+					
+							select
+								cam_id, contact_reg, dial_retries, date_update, calls_per_second
+							from ccCampsInfo nolock
+							where cam_id = @CampId
+
+						end
+
+					end
+
+				end else
+				begin
+
+					insert into ccCampsInfo(cam_id)
+					values(@CampId)
+
+					if not exists(select cam_id from ccocallsout nolock where cam_id=@CampId)
+					begin
+
+						update ccCampsInfo
+							set contact_reg=0, dial_retries=0, date_update = getdate(), calls_per_second=@cps
+						where cam_id = @CampId
+
+						select
+							cam_id, contact_reg, dial_retries, date_update
+						from ccCampsInfo nolock
+						where cam_id = @CampId
+
+					end else
+					begin
+
+							declare @in_vop1 decimal(5,2)
+							declare @in_vop2 decimal(5,2)
+							declare @in_vop3 decimal(5,2)
+							declare @in_vop4 decimal(5,2)
+
+							select @in_vop1 = count(distinct(callout_id)) from ccocallsout nolock where cam_id = @CampId and statuscall_id=13 and cast(cal_inicio as date) = cast(getdate() as date) group by cam_id
+							select @in_vop2 = count(distinct(callout_id)), @in_vop4 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id
+							select @in_vop3 = count(distinct telefono) from ccoLogDials nolock where cam_id = @CampId and cast(fecha as date) = cast(getdate() as date) group by cam_id, Telefono having count(1) > 1
+							
+							update ccCampsInfo
+								set contact_reg=(@in_vop1/@in_vop2)*100, dial_retries=(@in_vop3/@in_vop4)*100, date_update=getdate()
+					
+							select
+								cam_id, contact_reg, dial_retries, date_update, calls_per_second
+							from ccCampsInfo nolock
+							where cam_id = @CampId
+
+					end
+
+				end
+
+				set nocount off'
+		EXEC(@sql)
  ------------------------------------------------------------ DEV2-3_K004023-labels-reports---------------------------------------------------------------------
 		set @process = 'DEV2-17_K004022-Admin-Config_Tiempo_Preview add column cam_tPreview'
         set @sql = '

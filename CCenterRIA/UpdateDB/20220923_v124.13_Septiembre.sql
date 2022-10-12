@@ -1511,12 +1511,12 @@ SET NOCOUNT OFF'
 						ALTER TABLE contactmeanout Alter column ConnPass varchar(30) null;
 					end
 
-					if exists (select * from sys.columns where name = N''chat'' and Object_ID = Object_ID(N''ccCamps''))
+					if not exists (select * from sys.columns where name = N''chat'' and Object_ID = Object_ID(N''ccCamps''))
 					begin
 						ALTER TABLE ccCamps ADD chat int null
 					end
 
-					if exists (select * from sys.columns where name = N''camp_id'' and Object_ID = Object_ID(N''ccWhatsAppNumbers''))
+					if not exists (select * from sys.columns where name = N''camp_id'' and Object_ID = Object_ID(N''ccWhatsAppNumbers''))
 					begin
 						ALTER TABLE ccWhatsAppNumbers ADD camp_id int null
 					end'
@@ -2128,19 +2128,14 @@ SET NOCOUNT OFF'
 					BEGIN
 						INSERT INTO ContactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments) values 
 						(5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id),3,@conexionInfo,@connUser,@closeConversationTime,''N/A'',@MUTimeOutClient,@allowFileAttachments);
-					END
-
-			ELSE 
-				BEGIN
-				
-					UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+						UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
 				END;
 
 			IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
 			BEGIN
 				UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitWrapUpDisposition, chat = 5 where cam_id = @outbound_id;
 			END;
-			return(@outbound_id)
+			SELECT @outbound_id;
 
 			set nocount off'
 		EXEC(@sql)

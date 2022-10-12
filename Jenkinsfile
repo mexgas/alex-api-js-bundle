@@ -93,7 +93,7 @@ pipeline {
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/Replications', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/Replication', remoteDirectorySDF: false,
                     removePrefix: '/Replication/',
                     sourceFiles: '/Replication/**/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }

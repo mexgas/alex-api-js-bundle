@@ -95,7 +95,7 @@ pipeline {
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/Replications', remoteDirectorySDF: false,
                     removePrefix: '/Replication/',
-                    sourceFiles: '/Replication/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+                    sourceFiles: '/Replication/**/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
         }
     }

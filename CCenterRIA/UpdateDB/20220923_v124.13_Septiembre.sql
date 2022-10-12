@@ -889,8 +889,11 @@ SET NOCOUNT OFF'
 		set @process = 'DEV1-23 Insert new tags to ccRIAAgentsPermissionsTags'
 		set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccRIAAgentsPermissionsTags'')
 					BEGIN
-						INSERT INTO ccRIAAgentsPermissionsTags (PermissionId, PermissionName, PermissionTag)
+						IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissionsTags WHERE PermissionId = 14)
+						BEGIN
+							INSERT INTO ccRIAAgentsPermissionsTags (PermissionId, PermissionName, PermissionTag)
 						VALUES (14, ''AllowPlayRecordsOnCallHistory'',  ''Reproducir grabaciones en historial|Play back recordings in log|Reproduzir gravações no histórico'')
+						END
 					END'
 		EXEC(@sql)
 

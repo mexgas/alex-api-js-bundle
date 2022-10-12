@@ -1625,11 +1625,26 @@ SET NOCOUNT OFF'
 
 		set @process = 'K020002 Crear campaña WhatsApp Out'
         set @sql = '
-					if not exists (select * from sys.columns where name = N''camp_id'' or name = N''numMessages'' or name = N''closeConversationTime''  or name = N''answerTimeoutClient''  or name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactmeanout''))
+					if not exists (select * from sys.columns where name = N''camp_id'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
-						ALTER TABLE contactmeanout ADD camp_id int null, numMessages tinyint null, closeConversationTime tinyint null, answerTimeoutClient tinyint null, allowFileAttachments bit null
+						ALTER TABLE contactmeanout ADD camp_id int null
 					end
-
+					if not exists (select * from sys.columns where name = N''numMessages'' and Object_ID = Object_ID(N''contactmeanout''))
+					begin
+					ALTER TABLE contactmeanout ADD numMessages tinyint null
+					end
+					if not exists (select * from sys.columns where name = N''closeConversationTime'' and Object_ID = Object_ID(N''contactmeanout''))
+					begin
+					ALTER TABLE contactmeanout ADD closeConversationTime tinyint null
+					end
+					if not exists (select * from sys.columns where name = N''answerTimeoutClient'' and Object_ID = Object_ID(N''contactmeanout''))
+					begin
+					ALTER TABLE contactmeanout ADD answerTimeoutClient tinyint null
+					end
+					if not exists (select * from sys.columns where name = N''allowFileAttachments'' and Object_ID = Object_ID(N''contactmeanout''))
+					begin
+					ALTER TABLE contactmeanout ADD allowFileAttachments bit null
+					end
 					if exists (select * from sys.columns where name = N''conexionInfo'' and Object_ID = Object_ID(N''contactmeanout''))
 					begin
 						ALTER TABLE contactmeanout Alter column conexionInfo varchar(255) null;
@@ -2546,9 +2561,14 @@ SET NOCOUNT OFF'
 		EXEC(@sql)
 
 		set @process = 'Añadir constraint condicional unique a contactmeanout'
-        set @sql = 'create unique index UniqueIndex
+        set @sql = 'IF NOT EXISTS (SELECT name from sys.indexes  
+					WHERE name = N''UniqueIndex''
+					AND object_id = OBJECT_ID(N''contactmeanout'', N''U''))   
+					begin
+					create unique index  UniqueIndex
 					on contactmeanout(connUser)
-					where meanContactTypeId != 5;'
+					where meanContactTypeId != 5;
+					end'
 		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 

@@ -136,110 +136,6 @@ BEGIN
 		ORDER BY RowNum	'
 		EXEC(@sql)
 
-		set @process = 'DEV2-17_K004022, DEV2-3-K004023 alter ccsp_RIAConfCamp'
-        set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
-		@User_id smallint,
-		@campID int =null
-		AS
-		set nocount on
-		declare @tableExistsRec table (camId int primary key,existRec bit)
-		declare @camByUser table (camId int primary key,isCheck bit)
-		declare @camId int,@id int;
-
-		IF Not EXISTS
-			(
-				SELECT *
-				FROM ccUsers_Roles
-				WHERE User_id = @User_id
-						AND Rol_id = 7
-			)begin
-			insert into @camByUser 
-			select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
-			where @campID is null or cam_id=@campID
-		end
-		else begin
-			insert into @camByUser 
-			select cam_id,0 from ccCamps 
-			where (IDArea>0 or IDArea is null)
-			and (@campID is null or cam_id=@campID)
-		end
-
-
-		while exists(select * from @camByUser where isCheck=0)
-		begin
-			select top 1 @camId=camId  from @camByUser where isCheck=0 
-			if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
-				insert into @tableExistsRec values(@camId,1)
-			end
-			else begin
-				insert into @tableExistsRec values(@camId,0)
-			end
-
-			update  @camByUser  set isCheck=1 where camId=@camId
-		end
-
-		select a1.cam_id, cam_Descripcion
-		, cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
-		, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
-		, cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
-		, detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
-		, cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
-		, stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
-		cam_maxqueue as queSize,
-		DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
-			,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
-		,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
-		,isnull(sipHdrFormat, '''') sipHdrFormat
-		,cam_inter_cancelled
-		,prefijo,   enbleprefix = case when existRec = 0 then 1 else 0 end,
-		isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(rotativeAlgo, 0 ) rotativeAlgo, isnull(timesPreview,0) TimesPreview, cam_tPreview
-		from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
-		inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
-		inner join @tableExistsRec a4 on a1.cam_id=a4.camId
-		--where a1.cam_id in (select cam_id from dbo.fGet_CampAcd_Area (@User_id, 1))
-		order by cam_descripcion
-		return(0)
-		set nocount off
-		'
-		EXEC(@sql)
-
-		set @process = 'DEV2-17_K004022, DEV2-3-K004023 alter ccsp_GalateaGetOutboundConfiguration'
-        set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
-		@adminID int,
-		@campID int
-		AS
-		BEGIN
-
-			declare @AllCampaigns table 
-			(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
-			cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
-			cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
-			detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
-			dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
-			t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
-			callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
-			callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
-			prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit, rotativeAlgo tinyint , timesPreview smallint, cam_tPreview smallint)
-     
-				INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID, @campID
-
-				SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
-				t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
-				ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
-				callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
-				prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
-				cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
-				cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
-				editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
-				compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, 
-				previewDiscard PreviewDiscard, rotativeAlgo RotativeAlgo, timesPreview TimesPreview, cam_tPreview CamTPreview
-				from @AllCampaigns WHERE cam_id = @campID
-		END
-		'
-		EXEC(@sql)
-
 		set @process = 'DEV2-17_K004022, DEV2-3-K004023 alter ccsp_RIAUpdateCamConfig'
         set @sql = '
 		ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
@@ -1622,7 +1518,7 @@ SET NOCOUNT OFF'
 		set @process = 'Setting para ocultar tareas de Whatsapp salida'
         set @sql = 'if not exists (select * from ccsettings where setting_id = 241)
 					begin
-						 insert into ccSettings (setting_id, valor, descripcion, Status, tipo, detalle, description, bLoadSettings, validate) values (241,0,''Permitir configuración de whatsapp salida'',1,''GRL'',''Habilitar campañas de WhatsApp de salida'',''Enable outbound WhatsApp campaigns'',0,''^[0-1]$'')
+						 insert into ccSettings (setting_id, valor, descripcion, Status, tipo, detalle, description, bLoadSettings, validate) values (241,0,''Permitir configuración de whatsapp salida'',1,''GRL'',''Habilitar campañas de WhatsApp de salida'',''Enable outbound WhatsApp campaigns'',1,''^[0-1]$'')
 					end '
 		EXEC(@sql)
 
@@ -2446,7 +2342,7 @@ SET NOCOUNT OFF'
 		SET NOCOUNT OFF'
 		EXEC(@sql)
 
-		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_GalateaGetOutboundConfiguration'
+		set @process = 'DEV2-17_K004022, DEV2-3-K004023 alter ccsp_RIAConfCamp, K020002 Crear campaña WhatsApp Out ccsp_GalateaGetOutboundConfiguration'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
 		@adminID int,
 		@campID int
@@ -2462,7 +2358,7 @@ SET NOCOUNT OFF'
 			t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
 			callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
 			callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
-			prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit , chat int )
+			prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit, rotativeAlgo tinyint , timesPreview smallint, cam_tPreview smallint, chat int )
 			
 				INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID, @campID
 
@@ -2474,12 +2370,12 @@ SET NOCOUNT OFF'
 				cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
 				cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
 				editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
-				compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, previewDiscard PreviewDiscard, chat Chat
+				compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, previewDiscard PreviewDiscard, rotativeAlgo RotativeAlgo, timesPreview TimesPreview, cam_tPreview CamTPreview, chat Chat
 				from @AllCampaigns WHERE cam_id = @campID
 		END'
 		EXEC(@sql)
 
-		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_RIAConfCamp'
+		set @process = 'K020002 Crear campaña WhatsApp Out ccsp_RIAConfCamp DEV2-17_K004022, DEV2-3-K004023 alter ccsp_RIAConfCamp'
         set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
 			@User_id smallint,
 			@campID int =null
@@ -2538,7 +2434,7 @@ SET NOCOUNT OFF'
 			,isnull(sipHdrFormat, '''') sipHdrFormat
 			,cam_inter_cancelled
 			,prefijo,   enbleprefix = case when existRec = 0 then 1 else 0 end,
-			isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(chat, 0) Chat
+			isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(rotativeAlgo, 0 ) rotativeAlgo, isnull(timesPreview,0) TimesPreview, cam_tPreview, isnull(chat, 0) Chat
 			from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
 			inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 			inner join @tableExistsRec a4 on a1.cam_id=a4.camId

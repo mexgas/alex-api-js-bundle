@@ -2471,6 +2471,14 @@ SET NOCOUNT OFF'
 		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 
+
+		set @process = 'DEV1-2 ADD Setting 237 Replication local'
+        set @sql = 'if not exists(select * from ccSettings where setting_id=237) begin
+	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+	values(237,''C:\Centerware\ReplData2'',''Ruta donde se guardaran las replicas'',1,''GRL'',''Ruta Replicas'',''Path replication'',0,''.*'')
+end'
+		EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

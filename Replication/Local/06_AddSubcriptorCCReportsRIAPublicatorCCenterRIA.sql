@@ -27,38 +27,10 @@ if @Version_Actual >= @Version
 	if @subscriptionServer <> '' begin
 		use [CCenterRia]		
 
-		declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-
-		insert into @publicationTable(publicationName,status) values(N'LogDials',0)
-		insert into @publicationTable(publicationName,status) values(N'LogAgentesDia',0)	
-		insert into @publicationTable(publicationName,status) values(N'Hold',0)	
-		insert into @publicationTable(publicationName,status) values(N'CallsOutSource',0)	
-		insert into @publicationTable(publicationName,status) values(N'CallsPreviewData',0)	
-		insert into @publicationTable(publicationName,status) values(N'RegProcessPreviewRecord',0)	
-		insert into @publicationTable(publicationName,status) values(N'CallsOut',0)	
-		insert into @publicationTable(publicationName,status) values(N'CallsIn',0)	
-		insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-		insert into @publicationTable(publicationName,status) values(N'Users',0)	
-		insert into @publicationTable(publicationName,status) values(N'Activity',0)	
-		insert into @publicationTable(publicationName,status) values(N'IVR',0)	
-		insert into @publicationTable(publicationName,status) values(N'Catalogs',0)	
-		insert into @publicationTable(publicationName,status) values(N'LogAgentesDia_Dialog',0)	
-		insert into @publicationTable(publicationName,status) values(N'Callbacks',0)	
-		insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-		insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
-		insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-		insert into @publicationTable(publicationName,status) values(N'MenuReportsRia',0)	
-		insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-		insert into @publicationTable(publicationName,status) values(N'Conversationtweet',0)	
-		insert into @publicationTable(publicationName,status) values(N'ConversationWhatsApp',0)	
-
 		declare @publicationId int,@publicationName varchar(100)
 	
-		while exists(select publicationName from @publicationTable where status=0) begin
-			select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+		while exists(select publicationName from subcripcionTableCCReportsRIA where status=0) begin
+			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCReportsRIA where status=0
 
 			if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'ccReportsRia' 
 					AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
@@ -74,7 +46,7 @@ if @Version_Actual >= @Version
 				@sync_type = N'Automatic'
 		end
 
-			update @publicationTable set status=1 where id=@publicationId
+			update subcripcionTableCCReportsRIA set status=1 where id=@publicationId
 		end		
 
 	end

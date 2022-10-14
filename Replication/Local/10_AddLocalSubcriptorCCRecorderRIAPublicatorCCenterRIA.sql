@@ -43,22 +43,10 @@ if @Version_Actual >= @Version
 	set @publDistPassword =  isnull(@passwordSQL,'replication')
 
 	---------------- INICIO SCRIPT ----------------
-
-	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-	
-	insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-	insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
-	insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-	insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-	insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-
 	declare @publicationId int,@publicationName varchar(100)
 	
-	while exists(select publicationName from @publicationTable where status=0) begin
-		select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
+		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
 		use [CCRecorderRIA]
 		if not exists (SELECT * FROM sysobjects WHERE name = N'sysmergepublications')
 		begin
@@ -139,7 +127,7 @@ if @Version_Actual >= @Version
 				@use_web_sync = 0
 			end
 		end	
-		update @publicationTable set status=1 where id=@publicationId
+		update publicationTableCCenterRIA set status=1 where id=@publicationId
 	end
 
 

@@ -20,23 +20,11 @@ if @Version_Actual >= @Version
 
 	if @subscriptionServer <> '' begin
 		use [CCenterRia]
-
-		declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-
-		insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)
-		insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-		insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-		insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-		insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-		insert into @publicationTable(publicationName,status) values(N'Conversationtweet',0)	
-
+		
 		declare @publicationId int,@publicationName varchar(100)
 	
-		while exists(select publicationName from @publicationTable where status=0) begin
-			select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+		while exists(select publicationName from subcripcionTableCCRecorderRIA where status=0) begin
+			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCRecorderRIA where status=0
 
 			if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'CCRecorderRIA' 
 					AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
@@ -52,7 +40,7 @@ if @Version_Actual >= @Version
 				@sync_type = N'Automatic'
 		end
 
-			update @publicationTable set status=1 where id=@publicationId
+			update subcripcionTableCCRecorderRIA set status=1 where id=@publicationId
 		end
 		
 	end

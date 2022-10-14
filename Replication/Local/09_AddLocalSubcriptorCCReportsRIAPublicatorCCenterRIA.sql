@@ -58,38 +58,11 @@ if @Version_Actual >= @Version
 			ALTER AUTHORIZATION ON DATABASE::ccReportsRia TO sa
 	end
 
-	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-	
-	insert into @publicationTable(publicationName,status) values(N'LogDials',0)
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia',0)	
-	insert into @publicationTable(publicationName,status) values(N'Hold',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOutSource',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsPreviewData',0)	
-	insert into @publicationTable(publicationName,status) values(N'RegProcessPreviewRecord',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsOut',0)	
-	insert into @publicationTable(publicationName,status) values(N'CallsIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'OutIn',0)	
-	insert into @publicationTable(publicationName,status) values(N'Users',0)	
-	insert into @publicationTable(publicationName,status) values(N'Activity',0)	
-	insert into @publicationTable(publicationName,status) values(N'IVR',0)	
-	insert into @publicationTable(publicationName,status) values(N'Catalogs',0)	
-	insert into @publicationTable(publicationName,status) values(N'LogAgentesDia_Dialog',0)	
-	insert into @publicationTable(publicationName,status) values(N'Callbacks',0)	
-	insert into @publicationTable(publicationName,status) values(N'Chats',0)	
-	insert into @publicationTable(publicationName,status) values(N'SpecialAVRS',0)	
-	insert into @publicationTable(publicationName,status) values(N'ccRIAWorkGroup_Calid',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSCampEsp',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSGraphs',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSSettings',0)	
-	insert into @publicationTable(publicationName,status) values(N'MenuReportsRia',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationMail',0)	
-	insert into @publicationTable(publicationName,status) values(N'Conversationtweet',0)	
-	insert into @publicationTable(publicationName,status) values(N'ConversationWhatsApp',0)	
 
 	declare @publicationId int,@publicationName varchar(100)
 	
-	while exists(select publicationName from @publicationTable where status=0) begin
-		select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
+		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
 		use [ccReportsRia]
 		if not exists (SELECT * FROM sysobjects WHERE name = N'sysmergepublications')
 		begin
@@ -170,7 +143,7 @@ if @Version_Actual >= @Version
 				@use_web_sync = 0
 			end
 		end	
-		update @publicationTable set status=1 where id=@publicationId
+		update publicationTableCCenterRIA set status=1 where id=@publicationId
 	end
 
 	------------------ FIN SCRIPT ------------------

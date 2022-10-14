@@ -20,20 +20,11 @@ if @Version_Actual >= @Version
 	------------------ INICIO SCRIPT ------------------
 	
 	if @subscriptionServer <> '' begin
-		use [CCRecorderRIA]
-
-		declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-
-		insert into @publicationTable(publicationName,status) values(N'AVRSRecordings',0)
-		insert into @publicationTable(publicationName,status) values(N'AVRSTemplates',0)	
-		insert into @publicationTable(publicationName,status) values(N'AVRSTemplatesRate',0)	
-		
-
+		use [CCRecorderRIA]		
 		declare @publicationId int,@publicationName varchar(100)
-		-- Adding Subscription
-
-		while exists(select publicationName from @publicationTable where status=0) begin
-			select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+		
+		while exists(select publicationName from subcripcionTableCCReportsRIA where status=0) begin
+			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCReportsRIA where status=0
 
 			if not exists(select * FROM dbo.sysmergesubscriptions  WHERE db_name = 'ccReportsRia' 
 					AND pubid = (select pubid FROM dbo.sysmergepublications WHERE
@@ -48,7 +39,7 @@ if @Version_Actual >= @Version
 				@subscription_priority = 1, 
 				@sync_type = N'Automatic'
 		end
-			update @publicationTable set status=1 where id=@publicationId
+			update subcripcionTableCCReportsRIA set status=1 where id=@publicationId
 		end		
 	end
 

@@ -59,38 +59,13 @@ if @Version_Actual >= @Version
 	set @retentionDay=7
 
 	
-	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)
-	declare @articleTable table (id int identity, articleName varchar(100),publicationId int,status bit)
-	declare @idInt int=1
-
-	insert into @publicationTable(publicationName,status) values(N'AVRSTemplatesRate',0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_FORMACALIF',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_RESULTADOSFORMA',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_FORMACALIF_CHAT',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_RESULTADOSFORMA_CHAT',@idInt,0)
-
-	set @idInt=@idInt+1
-	insert into @publicationTable(publicationName,status) values(N'AVRSTemplates',0)	
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_FORMATOS',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_CONCEPTOS',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_PREGUNTAS',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_RESPUESTAS',@idInt,0)
-
-	set @idInt=@idInt+1
-	insert into @publicationTable(publicationName,status) values(N'AVRSRecordings',0)	
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_GRABACION',@idInt,0)
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_GRABACIONCONSULTA',@idInt,0)
-
-	set @idInt=@idInt+1
-	insert into @publicationTable(publicationName,status) values(N'AVRSRecordings',0)	
-	insert into @articleTable(articleName,publicationId,status) values(N'RIA_GRABACION',@idInt,0)
-
+	
 
 	declare @publicationId int,@publicationName varchar(100)
 	declare @articleId int,@articleName varchar(100)
 
-	while exists(select publicationName from @publicationTable where status=0) begin
-		select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+	while exists(select publicationName from publicationTableCCRecorderRIA where status=0) begin
+		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCRecorderRIA where status=0
 
 		IF NOT EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = @publicationName) BEGIN
 		-- Adding the merge publication
@@ -141,8 +116,8 @@ if @Version_Actual >= @Version
 		@publisher_login = @publisherLogin, 
 		@publisher_password = @publisherPassword 		
 
-		while exists(select articleName from @articleTable where publicationId=@publicationId and status=0) begin
-			select top 1 @articleName=articleName,@articleId=id from @articleTable where publicationId=@publicationId and status=0
+		while exists(select articleName from articleTableCCRecorderRIA where publicationId=@publicationId and status=0) begin
+			select top 1 @articleName=articleName,@articleId=id from articleTableCCRecorderRIA where publicationId=@publicationId and status=0
 
 			-- Adding articles
 			use [CCRecorderRIA]
@@ -171,14 +146,14 @@ if @Version_Actual >= @Version
 			@stream_blob_columns = N'false', 
 			@partition_options = 0
 
-			update @articleTable set status=1 where id=@articleId 
+			update articleTableCCRecorderRIA set status=1 where id=@articleId 
 		end	
 
 --		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = @publicationName,  @login = @publisherLogin
 	END
 
-		update @publicationTable set status=1 where id=@publicationId
+		update publicationTableCCRecorderRIA set status=1 where id=@publicationId
 	end
 
 	------------------ FIN SCRIPT ------------------

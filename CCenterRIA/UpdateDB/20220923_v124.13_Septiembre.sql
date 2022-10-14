@@ -992,7 +992,7 @@ SET NOCOUNT OFF'
 						IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
 						BEGIN 
 							INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
-							VALUES (@UserId, 0, 0, 0)
+							VALUES (@UserId, 0, 0, 1)
 						END
 						END
 

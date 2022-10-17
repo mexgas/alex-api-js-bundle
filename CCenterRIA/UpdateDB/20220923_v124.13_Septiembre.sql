@@ -2038,7 +2038,7 @@ SET NOCOUNT OFF'
 								ELSE
 									BEGIN
 										SELECT DISTINCT 
-											CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, inb.chat AS InboundType, CAST(0 AS tinyint) as OutboundType
+											CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, a.AreaName AS Area, inb.chat AS InboundType, 0 as OutboundType
 										FROM ccInbound inb (NOLOCK)
 											INNER JOIN ccRIAInboundGraph graph (NOLOCK) ON inb.Inbound_id = graph.Inbound_id
 											INNER JOIN ccRIACat_Areas a (NOLOCK) ON a.IDArea = inb.IDArea

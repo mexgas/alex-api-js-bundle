@@ -778,7 +778,7 @@ SET NOCOUNT OFF'
 		set @sql = 'IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = N''AllowPlayRecordsOnCallHistory'' AND Object_ID = Object_ID(N''ccRIAAgentsPermissions''))
 					BEGIN
 						ALTER TABLE ccRIAAgentsPermissions
-						ADD AllowPlayRecordsOnCallHistory BIT NOT NULL
+						ADD AllowPlayRecordsOnCallHistory BIT NOT NULL DEFAULT(1)
 					END'
 		EXEC(@sql)
 

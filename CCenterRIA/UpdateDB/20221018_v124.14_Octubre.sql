@@ -58,7 +58,7 @@ BEGIN
 		end'
 		EXEC(@sql)
 
-	------- KR022021,KR022023 ----------------------------
+	------------------------------------------------------------- KR022021 Lista ANI Rotativo---------------------------------------------------
 
 		SET @process = 'KR022021,KR022023_Listas_ANI_Rotativo Alter procedure ccsp_GalateaAdminRotativeANI'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRotativeANI]
@@ -201,6 +201,8 @@ BEGIN
 		END';
 
 		EXEC(@sql);
+
+		------------------------------------------------------------- KR022021 Lista ANI Rotativo---------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -59,10 +59,9 @@ if @Version_Actual >= @Version
 	set @retentionDay=7
 
 	
-	
+	update publicationTableCCRecorderRIA set status=0
+	update articleTableCCRecorderRIA set status=0
 
-	declare @publicationId int,@publicationName varchar(100)
-	declare @articleId int,@articleName varchar(100)
 
 	while exists(select publicationName from publicationTableCCRecorderRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCRecorderRIA where status=0

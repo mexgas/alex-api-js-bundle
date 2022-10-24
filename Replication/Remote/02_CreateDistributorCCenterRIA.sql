@@ -56,7 +56,7 @@ if @Version_Actual >= @Version
 	set @publisherPassword =  isnull(@passwordSQL,'replication')
 
 	-----Folder compartido para las replicas-----
-	set @snapshotFolder = '\\' + @hostName + '\ReplData\'+@publicationServer
+	set @snapshotFolder = '\\' + @hostName + '\ReplData\'+@publicationServer	
 
 	/***********************************************/
 	/*** Revisa la BD distribution para replicas ***/

@@ -57,9 +57,10 @@ if @Version_Actual >= @Version
 		if not exists (select * from sys.databases where suser_sname(owner_sid)<>'sa' and name='ccReportsRia')
 			ALTER AUTHORIZATION ON DATABASE::ccReportsRia TO sa
 	end
-
+	
 
 	declare @publicationId int,@publicationName varchar(100)
+	update publicationTableCCenterRIA set status=0
 	
 	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0

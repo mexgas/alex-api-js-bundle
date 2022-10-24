@@ -4,7 +4,6 @@ use [ccReportsRia]
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
 Set @Version = '9'
-
 exec @Version_Actual = dbo.ccsp_getVersion 'BD'
 
 if @Version_Actual >= @Version
@@ -48,17 +47,14 @@ if @Version_Actual >= @Version
 	set @publDistPassword = isnull(@passwordSQL,'replication')
 
 
-	---------------- INICIO SCRIPT ----------------
-	declare @publicationTable table (id int identity, publicationName varchar(100),status bit)	
-	
-	insert into @publicationTable(publicationName,status) values(N'AVRSTemplatesRate',0)
-	insert into @publicationTable(publicationName,status) values(N'AVRSTemplates',0)	
-	insert into @publicationTable(publicationName,status) values(N'AVRSRecordings',0)
+	---------------- INICIO SCRIPT ----------------	
 
 	declare @publicationId int,@publicationName varchar(100)
+
+	update publicationTableCCRecorderRIA set status=0
 	
-	while exists(select publicationName from @publicationTable where status=0) begin
-		select top 1 @publicationName=publicationName,@publicationId=Id from @publicationTable where status=0
+	while exists(select publicationName from publicationTableCCRecorderRIA where status=0) begin
+		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCRecorderRIA where status=0
 		use [ccReportsRia]
 		if not exists (SELECT * FROM sysobjects WHERE name = N'sysmergepublications')
 		begin
@@ -139,7 +135,7 @@ if @Version_Actual >= @Version
 				@use_web_sync = 0
 			end
 		end	
-		update @publicationTable set status=1 where id=@publicationId
+		update publicationTableCCRecorderRIA set status=1 where id=@publicationId
 	end
 
 	------------------ FIN SCRIPT ------------------

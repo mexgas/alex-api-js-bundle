@@ -35,7 +35,7 @@ if @Version_Actual >= @Version
 	declare @settingBD nvarchar(100)
 
 	declare @temp table	(id int, value nvarchar(100));
-	select @settingBD = valor from ccSettings where setting_id = 176
+	select @settingBD = par_valor from TREC_PARAMETROS where par_id = 73
 	insert into @temp select id,Value from fn_RIASplitDelimited(@settingBD,'|')
 	
 	select @userNameSQL = value  from @temp where id = 3

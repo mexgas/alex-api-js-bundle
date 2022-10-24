@@ -12,7 +12,7 @@ pipeline {
                         parameters([
                              string(
                                 name: '__RELEASE_VERSION',
-                                defaultValue: '124.01-3_20220923_1',
+                                defaultValue: '124.01-3_20220923_4',
                                 trim: true
                             )
                         ])

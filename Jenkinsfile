@@ -33,13 +33,13 @@ pipeline {
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/UpdateDB', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/UpdateDB', remoteDirectorySDF: false,
                     removePrefix: '/CCenterRIA/UpdateDB/',
                     sourceFiles: '/CCenterRIA/UpdateDB/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/Database', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/Database', remoteDirectorySDF: false,
                     removePrefix: '/CCenterRIA/',
                     sourceFiles: '/CCenterRIA/CCenterRIA*.*')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
@@ -50,13 +50,13 @@ pipeline {
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/ReportsRia/UpdateDB', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/ReportsRia/UpdateDB', remoteDirectorySDF: false,
                     removePrefix: '/ccReportsRia/UpdateDB/',
                     sourceFiles: '/ccReportsRia/UpdateDB/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/ReportsRia/Database', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/ReportsRia/Database', remoteDirectorySDF: false,
                     removePrefix: '/ccReportsRia/',
                     sourceFiles: '/ccReportsRia/ccReportsRia*.*')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
@@ -67,7 +67,7 @@ pipeline {
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/AVRS/UpdateDB', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/AVRS/UpdateDB', remoteDirectorySDF: false,
                     removePrefix: '/RecorderRIA/UpdateDB/',
                     sourceFiles: '/RecorderRIA/UpdateDB/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
@@ -78,13 +78,13 @@ pipeline {
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/Jobs', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/Jobs', remoteDirectorySDF: false,
                     removePrefix: '/Jobs/',
                     sourceFiles: '/Jobs/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
 
                     sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/SQLTools/', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/SQLTools/', remoteDirectorySDF: false,
                     removePrefix: '/SQLTools/',
                     sourceFiles: '/SQLTools/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }
@@ -95,7 +95,7 @@ pipeline {
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
-                    remoteDirectory: 'cw/$RELEASE_VERSION/SQLTools/Replication', remoteDirectorySDF: false,
+                    remoteDirectory: 'cw/${RELEASE_VERSION}/SQLTools/Replication', remoteDirectorySDF: false,
                     removePrefix: '/Replication/',
                     sourceFiles: '/Replication/**/*.sql')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
             }

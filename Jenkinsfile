@@ -20,6 +20,13 @@ pipeline {
                 }
             }
         }
+        stage('Parameters:'){
+            steps{
+                params.each() { param, value ->
+                    print "Parameter: ${param}, Value: ${value}"
+                }
+            }
+        }
         stage('slack notification') {
             when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; branch 'master' } }
             steps {
@@ -140,4 +147,3 @@ def notifyBuild(String buildStatus = 'STARTED') {
     // Send notifications
     slackSend(color: colorCode, message: summary)
 }
-

@@ -14,14 +14,19 @@ pipeline {
                                 name: '__RELEASE_VERSION',
                                 defaultValue: '124.01-4_20221020_1',
                                 trim: true
+                            ),
+                             booleanParam(
+                                name: 'IS_PUBLISH_FTP',
+                                defaultValue: false,
+                                description: 'Publica el archivo en ftp'
                             )
                         ])
                     ])
                 }
             }
         }
-        stage('Parameters:'){
-            steps{
+        stage('Parameters:') {
+            steps {
                 script {
                     params.each() { param, value ->
                         print "Parameter: ${param}, Value: ${value}"
@@ -32,14 +37,15 @@ pipeline {
         stage('slack notification') {
             when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; branch 'master' } }
             steps {
-                notifyBuild('STARTED')
+                wrap([$class: 'BuildUser']) {
+                    notifyBuild('STARTED')
+                }
             }
         }
 
         stage('Publish Ftp CCenterRIA') {
-            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
+            when { expression { return params.IS_PUBLISH_FTP } }
             steps {
-            
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/UpdateDB', remoteDirectorySDF: false,
@@ -55,9 +61,8 @@ pipeline {
         }
 
         stage('Publish Ftp CCReportsRIA') {
-            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
+            when { expression { return params.IS_PUBLISH_FTP } }
             steps {
-               
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/ReportsRia/UpdateDB', remoteDirectorySDF: false,
@@ -73,9 +78,8 @@ pipeline {
         }
 
         stage('Publish Ftp AVRS') {
-            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
+            when { expression { return params.IS_PUBLISH_FTP } }
             steps {
-               
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/AVRS/UpdateDB', remoteDirectorySDF: false,
@@ -85,9 +89,8 @@ pipeline {
         }
 
         stage('Publish Ftp Jobs') {
-            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
+            when { expression { return params.IS_PUBLISH_FTP } }
             steps {
-                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/Jobs', remoteDirectorySDF: false,
@@ -103,9 +106,8 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
+            when { expression { return params.IS_PUBLISH_FTP } }
             steps {
-
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
                     remoteDirectory: 'cw/$__RELEASE_VERSION/SQLTools/Replication', remoteDirectorySDF: false,
@@ -115,35 +117,27 @@ pipeline {
         }
     }
     post {
-        success {
-            notifyBuild('SUCCESS')
-            cleanWs()
-        }
-        failure {
-            notifyBuild('FAIL')
+        always {
+            wrap([$class: 'BuildUser']) {
+                notifyBuild("${currentBuild.currentResult}")
+                cleanWs()
+            }
         }
     }
 }
 
 def notifyBuild(String buildStatus = 'STARTED') {
-    // build status of null means successful
-    buildStatus = buildStatus ?: 'SUCCESS'
-
-    // Default values
-    def colorCode = '#FF0000'
+    def colorCode = '#4682b4'
     def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-    def summary = "${subject} (${env.BUILD_URL})"
+    def summary = "${subject} ${buildStatus != 'STARTED'? currentBuild.durationString:'' } User:${BUILD_USER}  (<${env.BUILD_URL}|Open>)"
 
     // Override default values based on build status
     if (buildStatus == 'STARTED') {
-        color = 'YELLOW'
-        colorCode = '#FFFF00'
+        colorCode = '#4682b4'
   } else if (buildStatus == 'SUCCESS') {
-        color = 'GREEN'
         colorCode = '#00FF00'
   } else {
-        color = 'RED'
-        colorCode = '#FF0000'
+        colorCode = '#e62e1b'
     }
 
     // Send notifications

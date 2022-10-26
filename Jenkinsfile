@@ -29,7 +29,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCenterRIA') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { expression { return env.IS_PUBLISH_FTP } }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
@@ -46,7 +46,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCReportsRIA') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { expression { return env.IS_PUBLISH_FTP } }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
@@ -63,7 +63,7 @@ pipeline {
         }
 
         stage('Publish Ftp AVRS') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { expression { return env.IS_PUBLISH_FTP } }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
@@ -74,7 +74,7 @@ pipeline {
         }
 
         stage('Publish Ftp Jobs') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { expression { return env.IS_PUBLISH_FTP } }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: true, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',
@@ -91,7 +91,7 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { expression { return params.IS_PUBLISH_FTP } }
+            when { expression { return env.IS_PUBLISH_FTP } }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',

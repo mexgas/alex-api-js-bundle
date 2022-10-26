@@ -13,7 +13,7 @@ pipeline {
                              string(
                                 name: '__RELEASE_VERSION',
                                 defaultValue: '124.01-4_20221020_1',
-                                description: 'Carpeta de release donde donde se copiarán los archivos',
+                                description: 'Carpeta de release donde donde se copiaran los archivos',
                                 trim: true
                             ),
                              booleanParam(

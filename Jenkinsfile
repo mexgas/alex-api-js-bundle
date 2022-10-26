@@ -91,7 +91,7 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { environment name: 'IS_PUBLISH_FTP', value: true }
+            when { environment name: 'IS_PUBLISH_FTP', value: "true" }
             steps {
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
                     sshTransfer(cleanRemote: false, excludes: '', execCommand: '', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+',

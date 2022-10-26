@@ -22,8 +22,10 @@ pipeline {
         }
         stage('Parameters:'){
             steps{
-                params.each() { param, value ->
-                    print "Parameter: ${param}, Value: ${value}"
+                script {
+                    params.each() { param, value ->
+                        print "Parameter: ${param}, Value: ${value}"
+                    }
                 }
             }
         }

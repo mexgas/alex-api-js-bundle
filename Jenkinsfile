@@ -28,7 +28,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCenterRIA') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
             
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -46,7 +46,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCReportsRIA') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -64,7 +64,7 @@ pipeline {
         }
 
         stage('Publish Ftp AVRS') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -76,7 +76,7 @@ pipeline {
         }
 
         stage('Publish Ftp Jobs') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
             steps {
                 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -94,7 +94,7 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
             steps {
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [

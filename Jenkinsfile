@@ -13,12 +13,13 @@ pipeline {
                              string(
                                 name: '__RELEASE_VERSION',
                                 defaultValue: '124.01-4_20221020_1',
+                                description: 'Carpeta de release donde donde se copiarán los archivos',
                                 trim: true
                             ),
                              booleanParam(
                                 name: 'IS_PUBLISH_FTP',
-                                defaultValue: false,
-                                description: 'Publica el archivo en ftp'
+                                defaultValue: true,
+                                description: 'Copia los archivos a la carpeta del FTP del instalador'
                             )
                         ])
                     ])

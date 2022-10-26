@@ -12,11 +12,20 @@ pipeline {
                         parameters([
                              string(
                                 name: '__RELEASE_VERSION',
-                                defaultValue: '124.01-4_20221018_1',
+                                defaultValue: '124.01-4_20221020_1',
                                 trim: true
                             )
                         ])
                     ])
+                }
+            }
+        }
+        stage('Parameters:'){
+            steps{
+                script {
+                    params.each() { param, value ->
+                        print "Parameter: ${param}, Value: ${value}"
+                    }
                 }
             }
         }
@@ -28,7 +37,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCenterRIA') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
             
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -46,7 +55,7 @@ pipeline {
         }
 
         stage('Publish Ftp CCReportsRIA') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -64,7 +73,7 @@ pipeline {
         }
 
         stage('Publish Ftp AVRS') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*'; } }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*'; } }
             steps {
                
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -76,7 +85,7 @@ pipeline {
         }
 
         stage('Publish Ftp Jobs') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
             steps {
                 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -94,7 +103,7 @@ pipeline {
         }
 
         stage('Publish Ftp Replication') {
-            when { anyOf {  branch 'release/*'; branch 'hotfix/*';} }
+            when { anyOf { branch 'develop'; branch 'release/*'; branch 'hotfix/*';} }
             steps {
 
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'SFTP Dev46', transfers: [
@@ -140,4 +149,3 @@ def notifyBuild(String buildStatus = 'STARTED') {
     // Send notifications
     slackSend(color: colorCode, message: summary)
 }
-

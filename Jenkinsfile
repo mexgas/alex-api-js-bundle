@@ -4,7 +4,7 @@ pipeline {
         PROJECT_ENVIRONMENT = 'DEVELOP'
         SONAR_NAME = 'CW_Data_Base_DEV'
         RELEASE_VERSION = '124.01-4_20221020_1' // Carpeta de release donde se copiaran los archivos
-        IS_PUBLISH_FTP = true // true -> copia los archivos a la carpeta del FTP del instalador, false -> no copia nada
+        IS_PUBLISH_FTP = false // true -> copia los archivos a la carpeta del FTP del instalador, false -> no copia nada
     }
     stages {
         stage('Setup Environment') {

@@ -51,6 +51,8 @@ if @Version_Actual >= @Version
 	declare @retentionDay int
 	set @retentionDay=7
 
+	declare @publicationName varchar(100),@articleName varchar(100)
+	declare @publicationId int,@articleId int
 
 	update publicationTableCCRecorderRIA set status=0
 	update articleTableCCRecorderRIA set status=0 

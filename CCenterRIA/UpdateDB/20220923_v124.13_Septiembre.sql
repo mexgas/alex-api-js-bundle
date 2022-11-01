@@ -2472,13 +2472,177 @@ SET NOCOUNT OFF'
 		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 
-
 		set @process = 'DEV1-2 ADD Setting 237 Replication local'
         set @sql = 'if not exists(select * from ccSettings where setting_id=237) begin
 	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
 	values(237,''C:\Centerware\ReplData2'',''Ruta donde se guardaran las replicas'',1,''GRL'',''Ruta Replicas'',''Path replication'',0,''.*'')
 end'
 		EXEC(@sql)
+
+		------------------------------------------------------------  IVAN CW-7583 Fix bug ccsp_MultimediaCommon ---------------------------------------------------------------------
+		set @process = 'CW-7583 Drop procedure [ccsp_MultimediaCommon]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MultimediaCommon'')
+					begin
+						DROP PROCEDURE ccsp_MultimediaCommon;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CW-7583 Change name from ccRIAMultimediaUsersPermissions to ccRIAAgentsPermissions'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+					@Option AS SMALLINT,
+					@inboundId AS SMALLINT = 0,
+					@conversationId AS INT = 0,
+					@ServiceType AS SMALLINT = 0,
+					@status as SMALLINT =0,
+					@messagesList as varchar(max) = '''',
+					@agentId AS SMALLINT = 0
+					AS
+					BEGIN
+					    SET NOCOUNT ON;
+
+					    IF(@Option = 1)
+					        BEGIN
+
+					             SELECT --inbound.chat AS ServiceType,
+					               CAST(inbound.Inbound_id AS INT) AS ACDId,
+					               inbound.descripcion AS ACDName,
+					               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					               inbound.tNotas AS WrapUpTime
+
+					               FROM  ccInbound inbound
+					               INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
+					        END
+
+					    IF(@Option = 2)
+					        BEGIN
+					            DECLARE @OldAgentId INT = 0
+					            DECLARE @OldConversationId INT = 0
+
+					            SELECT  @OldAgentId = conv.agentId,
+					                    @OldConversationId = rel.conversationIdBefore
+					            FROM ccWhatsAppConversationsRelationship rel 
+					            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+					            WHERE rel.conversationIdAfter = @conversationId
+
+					            SELECT
+					                  cast(i.chat as int) AS ServiceType,
+					                  cast(c.conversationId as int) as ConversationID,
+					                  c.clientId as ClientId,
+					                  cm.conexionInfo as [To],
+					                  cast(i.Inbound_id as int) as ACDId,
+					                  i.descripcion as ACDName,
+					                  cast(g.graphic_id as int) as ACDGraphicId,
+					                  cast(cm.closeConversationTime as int) as [TimeOut],
+					                  cast(cm.answerTimeOut as int) as [TimeOutWarning],
+					                  i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+					                  i.tNotas as [WrapUpTime],
+					                  i.ShowCalifWnd,
+					                  cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+					                  ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+					                  isnull(permission.AllowUnassign,0) as AllowUnassign,
+					                  isnull(permission.AllowSpam,0) as AllowSpam,
+					                  ISNULL(@OldAgentId, 0) AS OldAgentId,
+					                  ISNULL(@OldConversationId, 0) AS OldConversationId,
+					                  c.agentId AS AgentId
+					            FROM  ccInbound i
+					                INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
+					                INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+					                INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+					                LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+					                LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+
+					            WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
+					        END
+					    IF(@Option = 3)
+					        BEGIN
+					             SELECT
+					               CAST(inbound.Inbound_id AS INT) AS ACDId,
+					               inbound.descripcion AS ACDName,
+					               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					               inbound.tNotas AS WrapUpTime
+
+					               FROM  ccInbound inbound
+					               INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+					        END
+					    IF(@Option = 4)
+					    Begin
+
+					        declare @pathFile as varchar(max)
+					        declare @filetype as varchar(5)
+					        DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+
+					        insert into @mensajes
+					        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+
+
+					        select @pathFile = valor from ccSettings where setting_id=230
+					        select
+					            messageId as MessageId,
+					            messageStatus as Status,
+					            originType as Origin,
+					            case when originType =''Client'' then 3
+					                 when originType =''Agent'' then 2
+					                 when originType =''Admin'' then 1
+					            else 0 end as OriginType,
+					            timeStampMessage as [Timestamp],
+					            case when typeMessage <> ''text''  then '''' else content end as Content,
+					            typeMessage as Type,
+					            case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
+					            case 
+										when originType = ''Client''
+										then
+											case
+												when typeMessage = ''text'' or typeMessage = ''location''
+												then ''''
+												else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +''.''+
+													case
+														when typeMessage = ''video'' then ''mp4''
+														when typeMessage = ''image'' then ''jpg''
+														when typeMessage = ''audio'' then ''mp3''
+														when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
+														else '''' end
+											end
+										else
+											case
+												when typeMessage = ''text'' or typeMessage = ''location''
+												then ''''
+												else content
+										end
+									end as [Url],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+					            case when typeMessage = ''location''
+					            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+					                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+					         from ccWAMessagesConversations where messageId in (select idMessage from @mensajes)
+					         order by Timestamp asc
+
+					    End
+					    
+					    IF(@Option = 5)
+					    BEGIN
+					        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+					         FROM contactMeanIn
+					        WHERE inboundId = @inboundId
+					    END
+					    IF(@Option = 6)
+					    BEGIN
+					        SELECT [Login] AS ''OriginName''
+					            FROM [CCenterRIA].[dbo].[ccUsers]
+					        WHERE [User_id] = @agentId
+					    END
+					END'
+		EXEC(@sql)
+		------------------------------------------------------------  Ends Iván ---------------------------------------------------------------------
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

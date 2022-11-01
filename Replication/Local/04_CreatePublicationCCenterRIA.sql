@@ -60,6 +60,9 @@ if @Version_Actual >= @Version
 	declare @publicationId int,@publicationName varchar(100)
 	declare @articleId int,@articleName varchar(100)
 
+	update publicationTableCCenterRIA set status=0 
+	update articleTableCCenterRIA set status=0
+
 	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
 
@@ -112,8 +115,8 @@ if @Version_Actual >= @Version
 		@publisher_login = @publisherLogin, 
 		@publisher_password = @publisherPassword 		
 
-		while exists(select articleName from @articleTable where publicationId=@publicationId and status=0) begin
-			select top 1 @articleName=articleName,@articleId=id from @articleTable where publicationId=@publicationId and status=0
+		while exists(select articleName from articleTableCCenterRIA where publicationId=@publicationId and status=0) begin
+			select top 1 @articleName=articleName,@articleId=id from articleTableCCenterRIA where publicationId=@publicationId and status=0
 
 			-- Adding articles
 			use [CCenterRia]
@@ -142,7 +145,7 @@ if @Version_Actual >= @Version
 			@stream_blob_columns = N'false', 
 			@partition_options = 0
 
-			update @articleTable set status=1 where id=@articleId 
+			update articleTableCCenterRIA set status=1 where id=@articleId 
 		end	
 
 --		-- Add login to the PAL

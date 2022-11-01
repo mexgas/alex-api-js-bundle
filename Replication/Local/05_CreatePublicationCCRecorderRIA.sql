@@ -51,8 +51,11 @@ if @Version_Actual >= @Version
 	declare @retentionDay int
 	set @retentionDay=7
 
-	declare @publicationId int,@publicationName varchar(100)
-	declare @articleId int,@articleName varchar(100)
+	declare @publicationName varchar(100),@articleName varchar(100)
+	declare @publicationId int,@articleId int
+
+	update publicationTableCCRecorderRIA set status=0
+	update articleTableCCRecorderRIA set status=0 
 
 	while exists(select publicationName from publicationTableCCRecorderRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCRecorderRIA where status=0
@@ -106,8 +109,8 @@ if @Version_Actual >= @Version
 		@publisher_login = @publisherLogin, 
 		@publisher_password = @publisherPassword 		
 
-		while exists(select articleName from @articleTable where publicationId=@publicationId and status=0) begin
-			select top 1 @articleName=articleName,@articleId=id from @articleTable where publicationId=@publicationId and status=0
+		while exists(select articleName from articleTableCCRecorderRIA where publicationId=@publicationId and status=0) begin
+			select top 1 @articleName=articleName,@articleId=id from articleTableCCRecorderRIA where publicationId=@publicationId and status=0
 
 			-- Adding articles
 			use [CCRecorderRIA]
@@ -136,7 +139,7 @@ if @Version_Actual >= @Version
 			@stream_blob_columns = N'false', 
 			@partition_options = 0
 
-			update @articleTable set status=1 where id=@articleId 
+			update articleTableCCRecorderRIA set status=1 where id=@articleId 
 		end	
 
 --		-- Add login to the PAL

@@ -15,14 +15,15 @@ if @Version_Actual >= @Version
 	declare @subscriptionServer nvarchar(max)
 	select @subscriptionServer = convert(nvarchar(max),par_valor) from TREC_PARAMETROS where par_id = 64
 	select @subscriptionServer = substring(@subscriptionServer, 0, charindex('|',@subscriptionServer))
-	
-	
+		
 	------------------ INICIO SCRIPT ------------------
 	
 	if @subscriptionServer <> '' begin
 		use [CCRecorderRIA]		
 		declare @publicationId int,@publicationName varchar(100)
 		
+		update subcripcionTableCCReportsRIA set status=0
+
 		while exists(select publicationName from subcripcionTableCCReportsRIA where status=0) begin
 			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCReportsRIA where status=0
 

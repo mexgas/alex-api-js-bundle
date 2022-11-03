@@ -3135,6 +3135,171 @@ end'
 					END'
 		EXEC(@sql)
 
+		set @process = 'Drop procedure [ccsp_RIAConfCamp]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAConfCamp'')
+					begin
+						DROP PROCEDURE ccsp_RIAConfCamp;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CREATE procedure [ccsp_RIAConfCamp]'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
+			@User_id smallint,
+			@campID int =null
+			AS
+			set nocount on
+			declare @tableExistsRec table (camId int primary key,existRec bit)
+			declare @camByUser table (camId int primary key,isCheck bit)
+			declare @camId int,@id int;
+
+			IF Not EXISTS
+				(
+					SELECT *
+					FROM ccUsers_Roles
+					WHERE User_id = @User_id
+							AND Rol_id = 7
+				)begin
+				insert into @camByUser 
+				select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
+				where @campID is null or cam_id=@campID
+			end
+			else begin
+				insert into @camByUser 
+				select cam_id,0 from ccCamps 
+				where (IDArea>0 or IDArea is null)
+				and (@campID is null or cam_id=@campID)
+			end
+
+
+			while exists(select * from @camByUser where isCheck=0)
+			begin
+				select top 1 @camId=camId  from @camByUser where isCheck=0 
+				if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
+					insert into @tableExistsRec values(@camId,1)
+				end
+				else begin
+					insert into @tableExistsRec values(@camId,0)
+				end
+
+				update  @camByUser  set isCheck=1 where camId=@camId
+			end
+
+			select a1.cam_id, cam_Descripcion
+			, cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+			, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+			, cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+			, detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+			, cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+			, stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
+			cam_maxqueue as queSize,
+			DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+				,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+			,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+			,isnull(sipHdrFormat, '''') sipHdrFormat
+			,cam_inter_cancelled
+			,prefijo,   enbleprefix = case when existRec = 0 then 1 else 0 end,
+			isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(chat, 0) Chat, isnull(contact.conexionInfo,'''') conexionInfo, isnull(contact.closeConversationTime,0) closeConversationTime, isnull(contact.answerTimeoutClient,0) answerTimeoutClient, isnull(contact.allowFileAttachments,0) allowFileAttachments
+			from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+			inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+			inner join @tableExistsRec a4 on a1.cam_id=a4.camId
+			left join contactMeanOut contact on a1.cam_id = contact.camp_id
+			order by cam_descripcion
+			return(0)
+			set nocount off'
+		EXEC(@sql)
+
+		set @process = 'Drop procedure [ccsp_GalateaGetOutboundConfiguration]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
+					begin
+						DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+					end'
+		EXEC(@sql)
+
+		set @process = 'Drop procedure [ccsp_GalateaGetOutboundConfiguration]'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+				@adminID int,
+				@campID int
+				AS
+				BEGIN
+
+					declare @AllCampaigns table 
+					(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
+					cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
+					cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
+					detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
+					dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
+					t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
+					callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
+					callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+					prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit , chat int, conexionInfo varchar(15), closeConversationTime smallint, answerTimeoutClient int, allowFileAttachments bit)
+					
+						INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID, @campID
+
+						SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
+						t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
+						ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
+						callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
+						prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
+						cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
+						cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
+						editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+						compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, previewDiscard PreviewDiscard, chat Chat,
+						conexionInfo ConexionInfo, closeConversationTime CloseConversationTime, answerTimeoutClient MUTimeOutClient, allowFileAttachments AllowFileAttachments
+						from @AllCampaigns WHERE cam_id = @campID
+				END'
+		EXEC(@sql)
+
+
+		set @process = 'Drop procedure [ccsp_MultimediaConfigurations]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MultimediaConfigurations'')
+					begin
+						DROP PROCEDURE ccsp_MultimediaConfigurations;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CREATE procedure [ccsp_MultimediaConfigurations]'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
+				@Option AS SMALLINT,
+				@ServiceType AS SMALLINT = 0,
+				@Number AS VARCHAR(25) = ''''
+				AS
+				BEGIN
+				    SET NOCOUNT ON;
+					BEGIN
+				    IF(@Option = 1) -- Get Vonage Configurations depending the Service Type and number 
+						BEGIN
+							SELECT config.applicationId AS ApplicationId,
+								   config.secretKey AS SecretKey,
+								   config.messagesUrl AS MessagesUrl
+							FROM ccVonageConfigurations config
+							INNER JOIN ccWhatsAppNumbers numbers ON config.vonageId = numbers.vonageId 
+							AND numbers.number = @Number 
+							AND config.serviceType = @ServiceType   -- 5 = WhatsApp
+						END 
+
+					IF(@Option = 2) -- Get WhatsApp registered numbers 
+						BEGIN
+							SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+							INNER JOIN ccVonageConfigurations Configurations 
+							ON Numbers.vonageId = Configurations.vonageId 
+							AND Numbers.inboundId = 0 
+							AND Numbers.status = 1 
+							AND Configurations.serviceType = 5
+						END 
+					IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
+						BEGIN
+							SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+							INNER JOIN ccVonageConfigurations Configurations 
+							ON Numbers.vonageId = Configurations.vonageId 
+							AND (Numbers.camp_id  = 0 or Numbers.camp_id IS NULL)
+							AND Numbers.status = 1 
+							AND Configurations.serviceType = 5
+						END
+					END
+				END'
+		EXEC(@sql)
+
+
 		------------------------------------------------------------  Termina Ciro 2 ---------------------------------------------------------------------
 
 

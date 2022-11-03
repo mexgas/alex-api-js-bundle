@@ -116,6 +116,7 @@ BEGIN
 					left join cctipoResultadoDial trd ON ld.tipoResDial_id = trd.tiporesdial_id
 					LEFT JOIN cctipocalifout tco ON tco.calif_id = co.calif_id
 					where co.callout_id = @callOut_Id and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13
+					and cast(co.cal_Inicio as varchar) = cast(ld.fecha as varchar)
 
 					union 
 					select rppr.callout_id,
@@ -2471,13 +2472,671 @@ SET NOCOUNT OFF'
 		EXEC(@sql)
 		------------------------------------------------------------  Termina Ciro ---------------------------------------------------------------------
 
-
 		set @process = 'DEV1-2 ADD Setting 237 Replication local'
         set @sql = 'if not exists(select * from ccSettings where setting_id=237) begin
 	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
 	values(237,''C:\Centerware\ReplData2'',''Ruta donde se guardaran las replicas'',1,''GRL'',''Ruta Replicas'',''Path replication'',0,''.*'')
 end'
 		EXEC(@sql)
+
+		------------------------------------------------------------  IVAN CW-7583 Fix bug ccsp_MultimediaCommon ---------------------------------------------------------------------
+		set @process = 'CW-7583 Drop procedure [ccsp_MultimediaCommon]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MultimediaCommon'')
+					begin
+						DROP PROCEDURE ccsp_MultimediaCommon;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CW-7583 Change name from ccRIAMultimediaUsersPermissions to ccRIAAgentsPermissions'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+					@Option AS SMALLINT,
+					@inboundId AS SMALLINT = 0,
+					@conversationId AS INT = 0,
+					@ServiceType AS SMALLINT = 0,
+					@status as SMALLINT =0,
+					@messagesList as varchar(max) = '''',
+					@agentId AS SMALLINT = 0
+					AS
+					BEGIN
+					    SET NOCOUNT ON;
+
+					    IF(@Option = 1)
+					        BEGIN
+
+					             SELECT --inbound.chat AS ServiceType,
+					               CAST(inbound.Inbound_id AS INT) AS ACDId,
+					               inbound.descripcion AS ACDName,
+					               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					               inbound.tNotas AS WrapUpTime
+
+					               FROM  ccInbound inbound
+					               INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
+					        END
+
+					    IF(@Option = 2)
+					        BEGIN
+					            DECLARE @OldAgentId INT = 0
+					            DECLARE @OldConversationId INT = 0
+
+					            SELECT  @OldAgentId = conv.agentId,
+					                    @OldConversationId = rel.conversationIdBefore
+					            FROM ccWhatsAppConversationsRelationship rel 
+					            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+					            WHERE rel.conversationIdAfter = @conversationId
+
+					            SELECT
+					                  cast(i.chat as int) AS ServiceType,
+					                  cast(c.conversationId as int) as ConversationID,
+					                  c.clientId as ClientId,
+					                  cm.conexionInfo as [To],
+					                  cast(i.Inbound_id as int) as ACDId,
+					                  i.descripcion as ACDName,
+					                  cast(g.graphic_id as int) as ACDGraphicId,
+					                  cast(cm.closeConversationTime as int) as [TimeOut],
+					                  cast(cm.answerTimeOut as int) as [TimeOutWarning],
+					                  i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+					                  i.tNotas as [WrapUpTime],
+					                  i.ShowCalifWnd,
+					                  cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+					                  ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+					                  isnull(permission.AllowUnassign,0) as AllowUnassign,
+					                  isnull(permission.AllowSpam,0) as AllowSpam,
+					                  ISNULL(@OldAgentId, 0) AS OldAgentId,
+					                  ISNULL(@OldConversationId, 0) AS OldConversationId,
+					                  c.agentId AS AgentId
+					            FROM  ccInbound i
+					                INNER JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId
+					                INNER JOIN ccWhatsAppConversations c ON (c.inboundId = i.Inbound_id and c.conversationId = @conversationId)
+					                INNER JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+					                LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+					                LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+
+					            WHERE i.chat = @ServiceType and i.Inbound_id = @inboundId
+					        END
+					    IF(@Option = 3)
+					        BEGIN
+					             SELECT
+					               CAST(inbound.Inbound_id AS INT) AS ACDId,
+					               inbound.descripcion AS ACDName,
+					               ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+					               CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+					               inbound.tNotas AS WrapUpTime
+
+					               FROM  ccInbound inbound
+					               INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+					        END
+					    IF(@Option = 4)
+					    Begin
+
+					        declare @pathFile as varchar(max)
+					        declare @filetype as varchar(5)
+					        DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+
+					        insert into @mensajes
+					        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+
+
+					        select @pathFile = valor from ccSettings where setting_id=230
+					        select
+					            messageId as MessageId,
+					            messageStatus as Status,
+					            originType as Origin,
+					            case when originType =''Client'' then 3
+					                 when originType =''Agent'' then 2
+					                 when originType =''Admin'' then 1
+					            else 0 end as OriginType,
+					            timeStampMessage as [Timestamp],
+					            case when typeMessage <> ''text''  then '''' else content end as Content,
+					            typeMessage as Type,
+					            case when typeMessage not in( ''text'' ,''location'') then content else '''' end as Caption,
+					            case 
+										when originType = ''Client''
+										then
+											case
+												when typeMessage = ''text'' or typeMessage = ''location''
+												then ''''
+												else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +''.''+
+													case
+														when typeMessage = ''video'' then ''mp4''
+														when typeMessage = ''image'' then ''jpg''
+														when typeMessage = ''audio'' then ''mp3''
+														when typeMessage = ''file'' then (select substring(content, CHARINDEX(''.'',content)+1, len(content)))
+														else '''' end
+											end
+										else
+											case
+												when typeMessage = ''text'' or typeMessage = ''location''
+												then ''''
+												else content
+										end
+									end as [Url],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+					            case when typeMessage = ''location''
+					            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+					            case when typeMessage = ''location''
+					            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+					                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+					         from ccWAMessagesConversations where messageId in (select idMessage from @mensajes)
+					         order by Timestamp asc
+
+					    End
+					    
+					    IF(@Option = 5)
+					    BEGIN
+					        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+					         FROM contactMeanIn
+					        WHERE inboundId = @inboundId
+					    END
+					    IF(@Option = 6)
+					    BEGIN
+					        SELECT [Login] AS ''OriginName''
+					            FROM [CCenterRIA].[dbo].[ccUsers]
+					        WHERE [User_id] = @agentId
+					    END
+					END'
+		EXEC(@sql)
+
+		set @process = 'CW-7583 Drop procedure [ccsp_AgentHistoricalChat]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AgentHistoricalChat'')
+					begin
+						DROP PROCEDURE ccsp_AgentHistoricalChat;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CW-7583 Change name from ccRIAMultimediaUsersPermissions to ccRIAAgentsPermissions'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentHistoricalChat] @option SMALLINT, @clientNum VARCHAR(15) = '''', @conversationId AS INT = 0, @inboundId AS SMALLINT = 0, @serviceType AS SMALLINT = 0
+		            AS
+		            BEGIN
+		                IF @option = 1 --whatsapp, get conversation ids
+		                BEGIN
+		                    SELECT conversationId
+		                    FROM [CCenterRIA].[dbo].[ccWhatsAppConversations]
+		                    WHERE clientId = @clientNum AND
+		                        inboundId = @inboundId 
+		                    GROUP BY conversationId
+		                END
+
+		                IF @option = 2 --whatsapp, get acdId by conversation id
+		                BEGIN
+		                    SELECT CAST(inboundId AS INT)
+		                    FROM [CCenterRIA].[dbo].[ccWhatsAppConversations]
+		                    WHERE conversationId = @conversationId
+		                END
+
+		                IF @option = 3 --get data conversation
+		                BEGIN
+		                    DECLARE @OldAgentId INT = 0
+		                    DECLARE @OldConversationId INT = 0
+
+		                    SELECT @OldAgentId = conv.agentId, @OldConversationId = rel.conversationIdBefore
+		                    FROM ccWhatsAppConversationsRelationship rel
+		                    RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+		                    WHERE rel.conversationIdAfter = @conversationId
+
+		                    SELECT cast(i.chat AS INT) AS ServiceType, cast(c.conversationId AS INT) AS ConversationID, c.clientId AS ClientId, cm.conexionInfo AS [To], cast(i.Inbound_id AS INT) AS ACDId, i.descripcion AS ACDName, cast(g.
+		                            graphic_id AS INT) AS ACDGraphicId, cast(cm.closeConversationTime AS INT) AS [TimeOut], cast(cm.answerTimeOut AS INT) AS [TimeOutWarning], i.ExitWrapUpDisposition AS [ExitWrapUpDisposition], i.tNotas AS 
+		                        [WrapUpTime], i.ShowCalifWnd, cast(ISNULL(answerTimeoutClient, 30) AS INT) AS [AnswerTimeoutClient], ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent), 0) AS 
+		                        [SecTimeOutLastMessageAgent], isnull(permission.AllowUnassign, 0) AS AllowUnassign, isnull(permission.AllowSpam, 0) AS AllowSpam, ISNULL(@OldAgentId, 0) AS OldAgentId, ISNULL(@OldConversationId, 0) AS 
+		                        OldConversationId, c.agentId AS AgentId
+		                    FROM ccInbound i
+		                    INNER JOIN contactMeanIn cm ON i.Inbound_id = cm.inboundId
+		                    INNER JOIN ccWhatsAppConversations c ON (
+		                            c.inboundId = i.Inbound_id
+		                            AND c.conversationId = @conversationId
+		                            )
+		                    INNER JOIN ccRIAInboundGraph g ON g.Inbound_id = i.Inbound_id
+		                    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+		                    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+		                    WHERE i.chat = @serviceType
+		                        AND i.Inbound_id = @inboundId
+
+		                END
+
+		                IF @option = 4 --get messages from conversation id
+		                BEGIN
+		                    DECLARE @filetype AS VARCHAR(5)
+
+		                    SELECT messageId AS MessageId, messageStatus AS STATUS, originType AS Origin, CASE 
+		                            WHEN originType = ''Client''
+		                                THEN 3
+		                            WHEN originType = ''Agent''
+		                                THEN 2
+		                            WHEN originType = ''Admin''
+		                                THEN 1
+		                            ELSE 0
+		                            END AS OriginType, timeStampMessage AS [Timestamp], CASE 
+		                            WHEN typeMessage <> ''text''
+		                                THEN ''''
+		                            ELSE content
+		                            END AS Content, typeMessage AS Type, CASE 
+		                            WHEN typeMessage NOT IN (''text'', ''location'')
+		                                THEN content
+		                            ELSE ''''
+		                            END AS Caption, CASE 
+		                            WHEN originType = ''Client''
+		                                THEN CASE 
+		                                        WHEN typeMessage = ''text''
+		                                            OR typeMessage = ''location''
+		                                            THEN ''''
+		                                        ELSE CHAR(92) + CHAR(92) + ''WhatsApp'' + CHAR(92) + CHAR(92) + cast(conversationId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(conversationId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
+		                                            typeMessage + CHAR(92) + CHAR(92) + messageId + ''.'' + CASE 
+		                                                WHEN typeMessage = ''video''
+		                                                    THEN ''mp4''
+		                                                WHEN typeMessage = ''image''
+		                                                    THEN ''jpg''
+		                                                WHEN typeMessage = ''audio''
+		                                                    THEN ''mp3''
+		                                                WHEN typeMessage = ''file''
+		                                                    THEN (
+		                                                            SELECT substring(content, CHARINDEX(''.'', content) + 1, len(content))
+		                                                            )
+		                                                ELSE ''''
+		                                                END
+		                                        END
+		                            ELSE CASE 
+		                                    WHEN typeMessage = ''text''
+		                                        OR typeMessage = ''location''
+		                                        THEN ''''
+		                                    ELSE content
+		                                    END
+		                            END AS [Url], CASE 
+		                            WHEN typeMessage = ''location''
+		                                THEN (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 1
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        )
+		                            ELSE ''''
+		                            END AS [Address], CASE 
+		                            WHEN typeMessage = ''location''
+		                                THEN (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 2
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        )
+		                            ELSE ''''
+		                            END AS [Lat], CASE 
+		                            WHEN typeMessage = ''location''
+		                                THEN (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 3
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        )
+		                            ELSE ''''
+		                            END AS [Long], CASE 
+		                            WHEN typeMessage = ''location''
+		                                THEN (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 4
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        )
+		                            ELSE ''''
+		                            END AS [Name], CASE 
+		                            WHEN typeMessage = ''location''
+		                                THEN ''https://www.google.com/maps/search/'' + (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 2
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        ) + '','' + (
+		                                        SELECT value
+		                                        FROM dbo.fn_RIASplitDelimited((
+		                                                    SELECT value
+		                                                    FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                    WHERE id = 3
+		                                                    ), '':'')
+		                                        WHERE id = 2
+		                                        )
+		                            ELSE ''''
+		                            END AS [LocationURL]
+		                    FROM ccWAMessagesConversations
+		                    WHERE conversationId = @conversationId
+		                    ORDER BY TIMESTAMP ASC
+		                END
+
+		                IF @option = 5 --get if conversation is reassigned
+		                BEGIN
+		                    SELECT CASE 
+		                            WHEN EXISTS (
+		                                    SELECT *
+		                                    FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship]
+		                                    WHERE conversationIdAfter = @conversationId
+		                                    )
+		                                THEN CAST(1 AS BIT)
+		                            ELSE CAST(0 AS BIT)
+		                            END
+		                END
+		            END'
+		EXEC(@sql)
+		------------------------------------------------------------  Ends Iván ---------------------------------------------------------------------
+
+		------------------------------------------------------------  Inicia Ciro 2 ---------------------------------------------------------------------
+
+		set @process = 'Drop procedure [ccsp_Multimedia2]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multimedia2'')
+					begin
+						DROP PROCEDURE ccsp_Multimedia2;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CREATE procedure [ccsp_Multimedia2]'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL, @senderId INT = NULL
+					AS
+					BEGIN
+						SET NOCOUNT ON;
+
+						IF @action = 1
+						BEGIN --Lista  ACD
+							SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets,
+							cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+							FROM ccInbound A
+							INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+							WHERE @inboundId IS NULL OR @inboundId = A.Inbound_id
+						END
+						ELSE IF @action = 2
+						BEGIN --Lista Agentes
+							SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+							FROM ccRIAWorkGroupUsers A
+							INNER JOIN ccusers B ON A.User_id = B.User_id
+							INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG AND C.Tipo = 0
+							INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+							LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+							WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+							ORDER BY A.User_id
+						END
+						ELSE IF @action = 3
+						BEGIN --List Sender Mail
+							SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+							FROM contactMeanOut A
+							LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+							WHERE (@senderId IS NULL OR @senderId = A.contactMeanOutId) and A.meanContactTypeId = 1
+						END
+						ELSE IF @action = 4
+						BEGIN --List ACD Whatsapp
+							SELECT  inboundId AS Id
+							FROM contactMeanIn
+							WHERE meanContactTypeId = 5
+						END
+					END'
+		EXEC(@sql)
+
+		set @process = 'Drop procedure [ccsp_MailAdminAccount]'
+        set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MailAdminAccount'')
+					begin
+						DROP PROCEDURE ccsp_MailAdminAccount;
+					end'
+		EXEC(@sql)
+
+		set @process = 'CREATE procedure [ccsp_MailAdminAccount]'
+        set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MailAdminAccount]
+					@action int,
+					@meanContactTypeId smallint = 1,
+					@contactMeanId int=0,
+					@name   varchar(30)=null,
+					@conexionInfo   varchar(255)=null,
+					@inboundId  int=0,
+					@connUser   varchar(60)=null,
+					@ConnPass   varchar(30)=null,
+					@numMessages    tinyint=null,
+					@timeAlertMessage   tinyint=null,
+					@isActive bit =null,
+					@UserId int =null,
+					@idArea smallint =null,
+					@maxMails tinyint =3,
+					@answerTimeOut tinyint=null,
+					@revisionTime varchar(10)=null,
+					@daysTwitterRecord varchar(10)=null,
+					@closeConversationTime varchar(10)=null
+					AS
+					BEGIN
+					-- SET NOCOUNT ON added to prevent extra result sets from
+					-- interfering with SELECT statements.
+
+					SET NOCOUNT ON;
+					/****
+					Conexion Info Email In
+						protocol|server|ssl|port|cleanMail|revisionTime
+					Conexion Info Email Out
+						serverOut|portOut|tls|sslOut
+					Conexion Info Twitter
+						usuarioID|token|tokenSecret|time|daysTwitterRecord
+					***/
+
+
+					declare @isActiveMail bit
+					set @isActiveMail=0
+
+					if @action = 1 begin --checha si esta activo el servicio
+						select @isActiveMail = valor from ccSettings where setting_id=152
+						if @isActiveMail = 1 begin
+							select @isActiveMail=(case when isActive = 1 and @isActiveMail = 1 then 1 else 0 end) from meanContactType where meanContactTypeId = 1
+						end
+						select @isActiveMail as isActiveMail
+						return (0)
+					end
+					else if @action = 2 begin --Obsoleto para email - actualizado en case 23
+						select A.inboundId as IdIn,A.conexionInfo as ConexionInfo,A.connUser as [Username],A.connPass as [Password], A.isActive as IsActive
+							from ContactMeanIn A
+								inner join ccInbound B on A.inboundId=B.Inbound_Id
+							where meanContactTypeId = @meanContactTypeId and B.Status=1 and A.isActive=1
+					end
+					else if @action = 3 begin   --
+						select name,conexionInfo,connUser,ConnPass,numMessages,timeAlertMessage,answerTimeOut from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+					end
+					else if @action = 4 begin--insert or update relation mail whit ACD by in
+						---Es necesario cambiar [ccsp_NetworkSocialAdminAccount] por que tambien se ocupa aqui
+						DECLARE @tableConexionInfo TABLE(  id int, value varchar(255))
+						if @connUser=''''   set @connUser=''nuxiba@nuxiba.com''
+						if not exists(select * from ContactMeanIn where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId) begin
+							if not exists(select * from ContactMeanIn where connUser=@connUser) or @connUser=''nuxiba@nuxiba.com'' begin
+							if @name is null set @name=''''
+							if @conexionInfo is null and @meanContactTypeId=1  set @conexionInfo=''''
+							if @connUser is null set @connUser=''''
+							if @connPass is null set @connPass=''''
+							if @numMessages is null set @numMessages=3
+							if @timeAlertMessage is null set @timeAlertMessage=5
+							if @isActive is null set @isActive=0
+							if @answerTimeOut is null set @answerTimeOut=0
+							if @closeConversationTime is null set @closeConversationTime=3
+
+							--Twitter deja los token
+							--conexion Info usuarioID|token|tokenSecret|time|daysTwitterRecord
+							if @meanContactTypeId= 2 begin
+
+								if @conexionInfo is null begin
+									set @conexionInfo=''usuarioID|token|tokenSecret''
+									set @revisionTime=isnull(@revisionTime,''1'')
+									set @daysTwitterRecord=isnull(@daysTwitterRecord,''0'')
+								end
+								else begin
+								select @conexionInfo
+									insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+									set @conexionInfo=null
+
+									SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+									SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+									SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+								end
+								set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+							end
+
+
+
+							insert into ContactMeanIn (meanContactTypeId,name,conexionInfo,inboundId,connUser,ConnPass,numMessages,timeAlertMessage,isActive,answerTimeOut,closeConversationTime)
+									values (@meanContactTypeId,@name,@conexionInfo,@inboundId,@connUser,@connPass,@numMessages,@timeAlertMessage,@isActive,@answerTimeOut,@closeConversationTime)
+							select 1,''insert''
+						end
+							else select -1,''insert''
+						end
+						else begin
+							if not exists(select * from ContactMeanIn where inboundId<>@inboundId and connUser=@connUser) or @connUser=''nuxiba@nuxiba.com'' begin
+
+								select @name=isnull(@name,name), @conexionInfo = isnull(@conexionInfo,conexionInfo),@connUser= isnull(@connUser,connUser),@connPass= isnull(@connPass,ConnPass),
+									@numMessages= isnull(@numMessages,numMessages),@timeAlertMessage= isnull(@timeAlertMessage,timeAlertMessage),@isActive= isnull(@isActive,isActive),
+									@answerTimeOut= isnull(@answerTimeOut,answerTimeOut),@closeConversationTime=isnull(@closeConversationTime,closeConversationTime)
+								from ContactMeanIn where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+
+
+								--Twitter deja los token
+								if @meanContactTypeId= 2 begin
+									--usuarioID|token|tokenSecret|time|daysTwitterRecord
+									insert into @tableConexionInfo  select * from dbo.fn_RIASplitDelimited(@conexionInfo,''|'')
+									set @conexionInfo=null
+
+									SELECT @conexionInfo= COALESCE(@conexionInfo + ''|'', '''') + value FROM @tableConexionInfo where id<4
+
+									SELECT @revisionTime=  isnull(@revisionTime,isnull(max(value),''1'')) FROM @tableConexionInfo where id=4
+									SELECT @daysTwitterRecord=  isnull(@daysTwitterRecord,isnull(max(value),''0'')) FROM @tableConexionInfo where id=5
+									set @conexionInfo=@conexionInfo+''|''+@revisionTime+''|''+@daysTwitterRecord
+								end
+
+
+								update ContactMeanIn set name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,
+									numMessages=@numMessages,timeAlertMessage=@timeAlertMessage,isActive=@isActive,answerTimeOut=@answerTimeOut,
+									closeConversationTime=@closeConversationTime
+									where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+								select 1,''update''
+							end
+							else select -1,''update''
+						end
+						return (0)
+					end
+
+					else if @action = 5 begin--parameters check conection Mail In
+						select conexionInfo,connUser,connPass from ContactMeanIn with(nolock) where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+					end
+					else if @action = 6 begin--parameters check conection Mail Out
+						select conexionInfo as ConexionInfo,connUser as UserName,connPass as Password, isActive as IsActive, contactMeanOutId as IdOut
+							from ContactMeanOut with(nolock) where contactMeanOutId  = @contactMeanId
+					end
+					else if @action = 7 begin--list mail out by ACD
+						select A.contactMeanOutId,A.name, A.conexionInfo,A.connUser,A.connPass,A.isActive
+							from ContactMeanOut A with(nolock) where A.meanContactTypeId = 1
+
+					end
+					else if @action = 8 begin--insert account mail out
+						if not exists(select * from ContactMeanOut where connUser=@connUser) begin
+							insert into ContactMeanOut (meanContactTypeId,name,conexionInfo,connUser,ConnPass,isActive)
+								values (@meanContactTypeId,@name,@conexionInfo,@connUser,@connPass,@isActive)
+							select 1
+							return(0)
+						end
+						else select -1
+					end
+					else if @action = 9 begin--update account mail out
+						if not exists(select * from ContactMeanOut where contactMeanOutId <> @contactMeanId  and connUser=@connUser) begin
+
+							select  @meanContactTypeId=isnull(@meanContactTypeId,meanContactTypeId),@name=isnull(@name,name),
+								@conexionInfo=isnull(@conexionInfo,conexionInfo),@connUser=isnull(@connUser,connUser),
+								@connPass=isnull(@connPass,ConnPass),@isActive=isnull(@isActive,isActive)
+								from ContactMeanOut where contactMeanOutId = @contactMeanId
+
+							update ContactMeanOut set meanContactTypeId=@meanContactTypeId,name=@name,conexionInfo=@conexionInfo,connUser=@connUser,ConnPass=@connPass,isActive=@isActive
+							where contactMeanOutId = @contactMeanId
+							select 1,''update ''
+						end
+						else select -1
+					end
+					else if @action = 10 begin  --insert relation mail out and ACD
+						if not exists(select * from relationContactMeanOutInbound where contactMeanOutId=@contactMeanId) begin
+							insert into relationContactMeanOutInbound(contactMeanOutId,inboundId) values (@contactMeanId,@inboundId)
+						end
+					end
+					else if @action = 11 begin --delete relation mail out and ACD
+						delete relationContactMeanOutInbound where contactMeanOutId=@contactMeanId and inboundId=@inboundId
+					end
+					else if @action = 12 begin --delete mail out
+						delete relationContactMeanOutInbound where contactMeanOutId=@contactMeanId
+						delete ContactMeanOut where contactMeanOutId=@contactMeanId
+					end
+					else if @action = 13 begin --delete mail out
+						if not exists(select * from ContactMeanOut where contactMeanOutId=@contactMeanId) begin
+							update ContactMeanOut set isActive=@isActive where contactMeanOutId = @contactMeanId
+							select 1
+						end
+						else select -1
+					end
+					else if @action = 14 begin
+						select * from relationContactMeanOutInbound
+					end
+					else if @action = 15 begin
+						select * from relationContactMeanOutInbound where inboundId=@inboundId
+					end
+					--else if @action = 16 begin
+					--  update ccRIACat_Areas set maxMails = @maxMails where IDArea=@idArea
+					--end
+					else if @action = 17 begin  --
+						select A.conexionInfo as ConexionInfo,A.connUser as UserName,A.connPass as Password,A.isActive as IsActive,inboundId as IdIn  from ContactMeanIn A where inboundId=@inboundId and meanContactTypeId=@meanContactTypeId
+					End
+					else if @action = 18 begin   --Obsoleto para email - actualizado en case 24
+						select A.contactMeanOutId as IdOut,A.conexionInfo as ConexionInfo ,A.connUser as UserName,A.connPass as [Password],isActive as IsActive from contactMeanOut A where isActive=1
+					end
+					else if @action = 19 begin   --relation MailOut and ACD
+						select contactMeanOutId as Id,inboundId as AcdId from relationContactMeanOutInbound where inboundId = @inboundId or @inboundId = 0 order by inboundId
+					end
+					else if @action = 20 begin --relation MailOut and ACD
+						select B.inboundId,A.conexionInfo,A.connUser,A.connPass
+						from ContactMeanOut A
+						inner join relationContactMeanOutInbound B on B.contactMeanOutId=A.contactMeanOutId
+						where B.inboundId = @inboundId or @inboundId = 0
+					end
+					else if @action = 21 begin --relation MailOut and ACD
+						update ContactMeanOut set isActive=@isActive where contactMeanOutId = @contactMeanId
+					end
+					else if @action = 22 begin --Update type
+						if @meanContactTypeId = 2 --Twitter
+							set @conexionInfo=''usuarioID|token|tokenSecret|1|0''
+						else
+							set @conexionInfo=''''
+						update ContactMeanIn set name = '''', conexionInfo = @conexionInfo, connUser = '''', isActive = 0 where inboundId = @inboundId and meanContactTypeId=@meanContactTypeId
+						select 1,''unAssigned''
+					end
+					else if @action = 23 begin -- carga la relacion de especialidades y cuentas de email de entrada
+							select A.inboundId as IdIn,A.conexionInfo as ConexionInfo,A.connUser as [Username],A.connPass as [Password], A.isActive as IsActive,
+							cast(case when A.inboundId = C.inboundId then 1 else 0 end as bit) as IsAzure,
+							tenantId [TenantId], clientId [ClientId], clientSecret [ClientSecret], instance [Instance], apiUrl [ApiUrl]
+							from ContactMeanIn A inner join ccInbound B on A.inboundId=B.Inbound_Id
+							left join contactMeanInAzure C on B.Inbound_id = C.inboundId
+							where meanContactTypeId = @meanContactTypeId and B.Status=1 and A.isActive=1
+					end
+					else if @action = 24  begin  --Carga cuentas de salida
+						select A.contactMeanOutId as IdOut,A.conexionInfo as ConexionInfo ,A.connUser as UserName,A.connPass as [Password],isActive as IsActive, 
+						cast(case when A.contactMeanOutId = B.contactMeanOutId then 1 else 0 end as bit) as IsAzure,
+						tenantId [TenantId], clientId [ClientId], clientSecret [ClientSecret], instance [Instance], apiUrl [ApiUrl]
+						from contactMeanOut A left join contactMeanOutAzure B on A.contactMeanOutId = B.contactMeanOutId
+						where isActive=1 and A.meanContactTypeId = 1
+					end
+					END'
+		EXEC(@sql)
+
+		------------------------------------------------------------  Termina Ciro 2 ---------------------------------------------------------------------
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

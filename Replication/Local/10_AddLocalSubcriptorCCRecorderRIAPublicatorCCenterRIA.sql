@@ -44,6 +44,8 @@ if @Version_Actual >= @Version
 
 	---------------- INICIO SCRIPT ----------------
 	declare @publicationId int,@publicationName varchar(100)
+
+	update publicationTableCCenterRIA set status=0
 	
 	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
@@ -129,8 +131,6 @@ if @Version_Actual >= @Version
 		end	
 		update publicationTableCCenterRIA set status=1 where id=@publicationId
 	end
-
-
 
 	------------------ FIN SCRIPT ------------------
 

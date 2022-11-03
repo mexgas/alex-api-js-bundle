@@ -26,9 +26,12 @@ if @Version_Actual >= @Version
 
 	if @subscriptionServer <> '' begin
 		use [CCenterRia]		
-					
+		
+		update subcripcionTableCCReportsRIA set status=0
 
 		declare @publicationId int,@publicationName varchar(100)
+
+		update subcripcionTableCCReportsRIA set status=0
 	
 		while exists(select publicationName from subcripcionTableCCReportsRIA where status=0) begin
 			select top 1 @publicationName=publicationName,@publicationId=Id from subcripcionTableCCReportsRIA where status=0

@@ -224,7 +224,11 @@ BEGIN
                         DECLARE @AverageDialogTime INT = 0;
                         DECLARE @AverageWaitingTime INT = 0;
                         DECLARE @MaximumWaitingTime INT = 0;
-                        DECLARE @DefaultValue INT = (SELECT ISNULL(defaultServiceLevelParameter, 2) FROM contactMeanIn WHERE inboundId = @InboundId);
+                        DECLARE @DefaultValue INT = (SELECT CASE 
+															WHEN defaultServiceLevelParameter IS NULL THEN 2 
+															WHEN defaultServiceLevelParameter = 0 THEN 2
+															ELSE defaultServiceLevelParameter END
+														FROM contactMeanIn WHERE inboundId = @InboundId);
                         SET @DefaultValue = @DefaultValue * 60;
                         DECLARE @LessThanDefault INT = 0;
                         DECLARE @ReceivedConversations INT = 0;
@@ -309,15 +313,19 @@ BEGIN
             END
             IF @Option = 4 -- Get Disposition Information
             BEGIN
-                SELECT disposition.Description AS DispositionName,
-                       disposition.calif_id AS DispositionId,
-                       COUNT(whatsConv.disposition) AS Total,
-                       disposition.GraphColor,
-                       COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
-                FROM ccWhatsAppConversations whatsConv
-                INNER JOIN cctipocalif disposition ON disposition.calif_id = whatsConv.disposition
-                WHERE inboundId = @InboundId AND assignDate >= @Today
-                GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
+				declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+				select @nIdioma = case valor when 0 then ''Sin calificación'' else ''No disposition'' end
+				from ccsettings where setting_id = 27 -- 0esp
+				SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
+						ISNULL(disposition.calif_id, 0) AS DispositionId,
+						COUNT(whatsConv.disposition) AS Total,
+						ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
+						COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+				FROM ccWhatsAppConversations whatsConv
+				LEFT JOIN cctipocalif disposition ON disposition.calif_id = whatsConv.disposition
+				WHERE inboundId = @InboundId AND assignDate >= @Today
+					and whatsConv.conversationStatus != 2
+				GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
             END
             IF @Option = 5 -- Get Subdisposition Information
             BEGIN

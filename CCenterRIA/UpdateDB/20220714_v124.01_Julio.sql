@@ -1378,7 +1378,7 @@ IF @InboundId IS NOT NULL BEGIN
         IF @Option = 4 -- Get Disposition Information
         BEGIN
             declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
-            select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end
+            select @nIdioma = case valor when 0 then ''Sin calificación'' else ''No disposition'' end
             from ccsettings where setting_id = 27 -- 0esp
             SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
                     ISNULL(disposition.calif_id, 0) AS DispositionId,

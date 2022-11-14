@@ -52,7 +52,7 @@ BEGIN
 		SET @process = 'Epic KR042000 setting max Chat'
 		SET @sql = 'IF not EXISTS
 		(
-		   select top 1 * from ccSettings where descripcion = ''Máximo de imágenes que se pueden enviar por el Chat''
+		   select setting_id from ccSettings where setting_id = 243
 		)
 			BEGIN
 				insert into ccSettings (setting_id, valor, descripcion, status, tipo, detalle, description, bloadSettings, validate) values (

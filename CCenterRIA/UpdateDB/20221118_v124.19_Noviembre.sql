@@ -59,7 +59,7 @@ BEGIN
 				1,
 				''Permiso para responder llamadas mientras se atiende un correo.'',
 				1,
-				''GRL'',
+				''AGT'',
 				''0:Desactivado,1:Habilitar'',
 				''Permission to answer calls while replying to an email.'',
 				0,

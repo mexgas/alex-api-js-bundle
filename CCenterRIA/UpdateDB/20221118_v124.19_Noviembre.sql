@@ -48,6 +48,27 @@ BEGIN
 
 	BEGIN TRY
 
+	SET @process = 'KR061001-Setting recibir o no llamadas al atender email, ccSettings'
+		SET @sql = 'IF not EXISTS
+		(
+		   select setting_id from ccSettings where setting_id = 240
+		)
+			BEGIN
+				insert into ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) values (
+				240,
+				1,
+				''Permiso para responder llamadas mientras se atiende un correo.'',
+				1,
+				''AGT'',
+				''0:Desactivado,1:Habilitar'',
+				''Permission to answer calls while replying to an email.'',
+				0,
+				''^[0-1]$''
+				)
+			END';
+
+		EXEC(@sql);
+
 	SET @process = 'KR061003 Agregando estado de email 36 en ccTipoStatusAgente'
 		SET @sql = '
 		IF NOT EXISTS(SELECT * FROM ccTipoStatusAgente WHERE TipoStatusAge_id=36)
@@ -1000,4 +1021,3 @@ BEGIN
 		ROLLBACK TRAN
 	END CATCH
 END
-

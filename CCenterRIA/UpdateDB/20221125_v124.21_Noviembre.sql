@@ -47,15 +47,17 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-	set @process = 'Se elimina SP ccsp_DLRGetDialInfo si existe'
-    set @sql = 'if exists (select * from sys.procedures where name =''ccsp_DLRGetDialInfo'')
-    begin
-        DROP PROCEDURE ccsp_DLRGetDialInfo
-    end'
-    EXEC(@sql)
+	
+		set @process = 'Se elimina SP ccsp_DLRGetDialInfo si existe'
+	    set @sql = 'if exists (select * from sys.procedures where name =''ccsp_DLRGetDialInfo'')
+			begin
+				DROP PROCEDURE ccsp_DLRGetDialInfo
+			end'
 
-	set @process = 'Se crea SP ccsp_DLRGetDialInfo,se hace modificacion para evitar que duplique el 5 dato en la concatenacion (rtrim(dato5))'
-	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
+		EXEC(@sql)
+		
+		set @process = 'Se crea SP ccsp_DLRGetDialInfo,se hace modificacion para evitar que duplique el 5 dato en la concatenacion (rtrim(dato5))'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
             @callout_id int,
             @cam_id smallint=0,
             @iPortNumber smallint = 0
@@ -166,18 +168,10 @@ BEGIN
                 WHERE C.callout_id = @callout_id
                 return
             end 
-
             set nocount off'
-	EXEC(@sql)
-
-END
-
-SET NOCOUNT OFF'
-EXEC(@sql)
-
-	
-	
-
+			
+		EXEC(@sql)
+		
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

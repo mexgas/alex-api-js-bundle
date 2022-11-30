@@ -426,8 +426,741 @@ END
 SET NOCOUNT OFF'
 EXEC(@sql)
 
-	
-	
+-------------------------------------------------------- IVAN feature/IM-K038001-Add_camp_type_to_ccCamps ----------------------------------------------------------
+		
+		set @process = 'K038001 Remove publication for ccCamps in order to rename column'
+		set @sql = 'DECLARE @publication AS sysname;  
+					DECLARE @article1 AS sysname;  
+
+					SET @publication = N''SpecialAVRS'';  
+					SET @article1 = N''cccamps'';  
+					IF EXISTS(SELECT * FROM sys.tables WHERE name=''sysmergepublications'')
+					AND EXISTS(SELECT * FROM dbo.sysmergepublications WHERE name=@publication)
+					BEGIN	
+						-- Remove articles from a merge publication.  
+						USE CCenterRIA  
+						EXEC sp_dropmergearticle   
+						  @publication = @publication,   
+						  @article = @article1,  
+						  @force_invalidate_snapshot = 1;  
+					END'
+		EXEC(@sql)
+
+		set @process = 'K038001 Rename column if exists'
+		set @sql = 'IF EXISTS (SELECT 1 FROM sys.columns WHERE name = N''chat'' AND object_name(object_id) = N''ccCamps'') 
+					AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE name = ''CampType'' AND  object_name(object_id) = N''ccCamps'')
+					BEGIN 
+						EXEC sp_RENAME ''dbo.ccCamps.chat'', ''CampType'', ''COLUMN'';
+					END'
+		EXEC(@sql)
+
+		set @process = 'K038001 Drop procedure ccsp_RIALoadCamps'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIALoadCamps'')
+					BEGIN
+						DROP PROCEDURE ccsp_RIALoadCamps;
+					END'
+		EXEC(@sql)
+
+		set @process = 'K038001 Change column name in ccsp_RIALoadCamps'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIALoadCamps] @option SMALLINT, @AreaId SMALLINT = NULL, @Sup SMALLINT = NULL, @WGID SMALLINT = NULL
+					AS
+					SET NOCOUNT ON
+
+					DECLARE @loginDays INT
+
+					SET @loginDays = 0
+
+					IF @option = 1 -- Todas las campañas
+					BEGIN
+						SELECT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0), isnull(DNCscrub, 0)
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						WHERE a3.type_id = 1 AND a1.cam_id IN (
+								SELECT cam_id
+								FROM dbo.fGet_CampAcd_Area(@Sup, 1)
+								)
+						ORDER BY 5, 2
+
+						RETURN (0)
+					END
+
+					IF @option = 2 -- Campañas de un Area
+					BEGIN
+						SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
+						ORDER BY cam_descripcion
+
+						RETURN (0)
+					END
+
+					IF @option = 3 -- Campañas por Supervisor
+					BEGIN
+						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(a1.IDArea, 0) IDArea
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						JOIN ccSupervisorCam a4 ON a1.cam_id = a4.cam_id
+						WHERE a3.type_id = 1 AND a4.tipo = 1 AND a4.user_id = @Sup
+						ORDER BY 5, 2
+
+						RETURN (0)
+					END
+
+					IF @option = 4 -- Rels Camps-Agents
+					BEGIN
+						SELECT @loginDays = valor
+						FROM ccSettings
+						WHERE setting_id = 211 --Numero dias que cargara las relaciones
+
+						SELECT LOGIN, User_id, Prioridad, Skill, cam_id, cam_descripcion, IDArea, min(rel_id) rel_id
+						FROM (
+							SELECT A.LOGIN, A.User_id, Prioridad, Skill, C.cam_id, C.cam_descripcion, isnull(C.IDArea, 0) IDArea, CA.rel_id
+							FROM ccCamps C
+							JOIN ccCampsAgente CA ON C.cam_id = CA.cam_id
+							JOIN ccRIACampsGraph a2 ON C.cam_id = a2.cam_id
+							JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+							JOIN ccUsers A ON A.User_id = CA.User_id AND A.TipoUser_id = 1 AND A.STATUS = 1 AND (@loginDays = 0 OR DATEDIFF(dd, LastLoginAttempt, getdate()) <= @loginDays)
+							WHERE C.cam_id IN (
+									SELECT cam_id
+									FROM ccsupervisorcam
+									WHERE user_id = CASE isnull(@Sup, 0) WHEN 0 THEN user_id ELSE @Sup END AND tipo = 1
+									)
+							) Relations
+						GROUP BY LOGIN, User_id, Prioridad, Skill, cam_id, cam_descripcion, IDArea
+						ORDER BY User_id, cam_descripcion, cam_id, Prioridad
+
+						RETURN (0)
+					END
+
+					IF @option = 5 -- Campañas por Supervisor
+					BEGIN
+						SELECT @AreaId = IDArea
+						FROM ccUsers
+						WHERE User_id = @sup
+
+						SELECT DISTINCT Camps.cam_id, Camps.cam_descripcion, a3.frame, Camps.cam_procesando, isnull(Camps.IDArea, 0) IDArea, IsNull(CN.New, 0) AS New, IsNull(CN.CB, 0) AS CB, IsNull(CN.Pro, 0) AS Pro, IsNull(CN.pen, 0) AS Pen, cast(Camps.cam_procesando AS INT) AS St, Camps.cam_TipoJobs AS Job, isnull(CN.Fin, 0) Fin, isnull(CP.prioridad, ''12345NNN'') prioridad, cast(camps.dialorder AS TINYINT) dialorder, cast(camps.progDial AS TINYINT) progDial, U.monitored, Camps.aggressionFactor
+						FROM ccCamps Camps
+						LEFT JOIN ccCampsPrioridadTel CP ON CP.cam_id = Camps.cam_id
+						LEFT JOIN ccCampsNvosCB CN ON CN.id = Camps.cam_id
+						JOIN ccRIACampsGraph a2 ON (Camps.cam_id = a2.cam_id)
+						JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+						JOIN ccSupervisorCam U ON Camps.cam_id = U.cam_id
+						WHERE U.user_id = @sup AND tipo = 1 AND a3.type_id = 1 AND Camps.cam_id IN (
+								SELECT cam_id
+								FROM ccSupervisorCam
+								WHERE tipo = 1 AND user_id = @sup
+								) AND Camps.IDArea = @AreaId
+						ORDER BY 5, cam_procesando DESC, cam_descripcion
+
+						RETURN (0)
+					END
+
+					IF @option = 7 -- Una sola
+					BEGIN
+						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(IDArea, 0) IDArea, isnull(DNCscrub, 0) DNCScrub
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						WHERE a3.type_id = 1 AND isnull(a1.cam_id, 0) = isnull(@AreaId, 0)
+						ORDER BY 5, 2
+
+						RETURN (0)
+					END
+
+					IF @option = 8 -- Campañas de un Agente
+					BEGIN
+						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						JOIN ccCampsAgente a4 ON a1.cam_id = a4.cam_id
+						WHERE a3.type_id = 1 AND a4.user_id = @Sup
+						ORDER BY 2
+
+						RETURN (0)
+					END
+					IF @option = 9 -- Campañas de un Area
+					BEGIN
+						(SELECT DISTINCT a1.cam_id as CamID, cam_descripcion as CamDescription, frame as Frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) as RelationsWG,1 CamType, 
+						ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 1 and IdCampEsp = a1.cam_id and IDWG = @WGID group by IdCampEsp),0) IsAssignedToCurrentWG,
+						CAST(CASE WHEN a1.progDial = 3 THEN 6 WHEN a1.CampType = 5 THEN 5 ELSE 0 END as [tinyint]) [MediaType]
+						FROM ccCamps a1
+						JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
+						JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
+						WHERE a3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
+						UNION
+						SELECT DISTINCT b1.inbound_id, descripcion, frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(b1.inbound_id, 2) relationsWG, 0 CampType, 
+						ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 0 and IdCampEsp = b1.inbound_id and IDWG = @WGID group by IdCampEsp),0) isAssignedToCurrentWG,
+						b1.chat [MediaType]
+						FROM ccinbound b1
+						JOIN ccRIAinboundGraph b2 ON b1.inbound_id = b2.inbound_id
+						INNER JOIN ccRIAGraphics b3 ON b2.graphic_id = b3.graphic_id
+						LEFT JOIN (
+							SELECT inbound_id, CASE WHEN (sum(skill) / count(user_id)) = max(skill) THEN 0 ELSE 1 END skillDif
+							FROM ccSkills
+							GROUP BY inbound_id
+							) S ON S.Inbound_id = b1.inbound_id
+						WHERE b3.type_id = 1 AND isnull(IDArea, 0) = isnull(@AreaId, 0)
+						) ORDER BY camtype desc,cam_descripcion
+
+						RETURN (0)
+					END
+
+					RETURN (0)
+
+					SET NOCOUNT OFF'
+		EXEC(@sql)
+
+		set @process = 'K038001 Drop procedure ccsp_RIAConfCamp'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIAConfCamp'')
+					BEGIN
+						DROP PROCEDURE ccsp_RIAConfCamp;
+					END'
+		EXEC(@sql)
+
+		set @process = 'K038001 Change column name in ccsp_RIAConfCamp'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
+					@User_id smallint,
+					@campID int =null
+					AS
+					set nocount on
+					declare @tableExistsRec table (camId int primary key,existRec bit)
+					declare @camByUser table (camId int primary key,isCheck bit)
+					declare @camId int,@id int;
+
+					IF Not EXISTS
+						(
+							SELECT *
+							FROM ccUsers_Roles
+							WHERE User_id = @User_id
+									AND Rol_id = 7
+						)begin
+						insert into @camByUser 
+						select *,0 from dbo.fGet_CampAcd_Area (@User_id, 1) B 
+						where @campID is null or cam_id=@campID
+					end
+					else begin
+						insert into @camByUser 
+						select cam_id,0 from ccCamps 
+						where (IDArea>0 or IDArea is null)
+						and (@campID is null or cam_id=@campID)
+					end
+
+
+					while exists(select * from @camByUser where isCheck=0)
+					begin
+						select top 1 @camId=camId  from @camByUser where isCheck=0 
+						if exists(select cam_id from ccoCallsOut where cam_id=@camId) begin
+							insert into @tableExistsRec values(@camId,1)
+						end
+						else begin
+							insert into @tableExistsRec values(@camId,0)
+						end
+
+						update  @camByUser  set isCheck=1 where camId=@camId
+					end
+
+					select a1.cam_id, cam_Descripcion
+					, cam_tNotas, cast(cam_ocupado as int) as cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto as int) as cam_nocontesto
+					, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax as int) as cam_fax, cam_noInt_fax, cam_inter_fax
+					, cast(cam_modomanual as int) as cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial
+					, detectAnswerMachine, detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial as tinyint)progDial
+					, cast(excCallBack as tinyint)excCallBack, dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall
+					, stopRecording, cast(abandonCallback as tinyint)abandonCallback, a3.frame, a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, 
+					cam_maxqueue as queSize,
+					DNCScrub, callerIdDesc, timeZoneRule, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record,1) as call_record
+						,cast (startStopRecording as tinyint)startStopRecording, leaveRecMessage, manualCallOnChat
+					,callBackSurveyAgent,callBackSurveyClient,case when surveycamid is null or surveycamid = 0 then 0 else 1 end isRelationSurvey,isnull(a1.funcEspDtmf,0)
+					,isnull(sipHdrFormat, '''') sipHdrFormat
+					,cam_inter_cancelled
+					,prefijo,   enbleprefix = case when existRec = 0 then 1 else 0 end,
+					isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(CampType, 0) Chat, isnull(contact.conexionInfo,'''') conexionInfo, isnull(contact.closeConversationTime,0) closeConversationTime, isnull(contact.answerTimeoutClient,0) answerTimeoutClient, isnull(contact.allowFileAttachments,0) allowFileAttachments
+					from ccCamps a1 inner join ccRIACampsGraph a2 on (a1.cam_id=a2.cam_id)
+					inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+					inner join @tableExistsRec a4 on a1.cam_id=a4.camId
+					left join contactMeanOut contact on a1.cam_id = contact.camp_id
+					order by cam_descripcion
+					return(0)
+					set nocount off'
+		EXEC(@sql)
+
+		set @process = 'K038001 Drop procedure ccsp_UpdateOutWhatsappConfig'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_UpdateOutWhatsappConfig'')
+					BEGIN
+						DROP PROCEDURE ccsp_UpdateOutWhatsappConfig;
+					END'
+
+		set @process = 'K038001 Change column name in ccsp_UpdateOutWhatsappConfig'
+		set @sql = 'CREATE PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
+					@ConexionInfo varchar(400),
+					@outbound_id int,
+					@descripcion varchar(400), 
+					@ConnUser varchar(60),
+					@tNotas int,
+					@closeConversationTime tinyint,
+					@ShowCalifWnd bit,
+					@ExitAssisted bit,
+					@MUTimeOutClient int,
+					@allowFileAttachments bit
+					AS
+					set nocount on
+					IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
+							BEGIN
+								INSERT INTO ContactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments) values 
+								(5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id),3,@conexionInfo,@connUser,@closeConversationTime,''N/A'',@MUTimeOutClient,@allowFileAttachments);
+								UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+						END;
+
+					IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
+					BEGIN
+						UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitAssisted, CampType = 5 where cam_id = @outbound_id;
+					END;
+					SELECT @outbound_id;
+
+					set nocount off'
+		EXEC(@sql)
+
+		set @process = 'K038001 Drop procedure ccsp_GalateaGetOutboundConfiguration'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaGetOutboundConfiguration'')
+					BEGIN
+						DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+					END'
+
+		set @process = 'K038001 Change column name in ccsp_GalateaGetOutboundConfiguration'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+					@adminID int,
+					@campID int
+					AS
+					BEGIN
+
+						declare @AllCampaigns table 
+						(cam_id smallint, cam_Descripcion varchar(40), cam_tNotas smallint, cam_ocupado smallint,cam_noInt_ocupado smallint, cam_inter_ocupado smallint,
+						cam_nocontesto smallint, cam_noInt_nocontesto smallint, cam_inter_nocontesto smallint, cam_fax smallint, cam_noInt_fax smallint, cam_inter_fax smallint,
+						cam_modomanual smallint, ANI varchar(15), cam_ShowCalifWnd bit, cam_StartTimerOnHangUp bit, editableCallKey bit, cam_tNoContesta smallint, iTipoDial smallint,
+						detectAnswerMachine smallint,detectVoiceMail smallint, compliance smallint, cam_inter_graba smallint, cam_noint_graba smallint, progDial smallint, excCallBack smallint, dialOrder smallint,
+						dialPrefix varchar(10),dialPrefixMan varchar(10), dialPrefixXfe varchar(10),listenManualCall bit,  stopRecording bit,abandonCallback bit, frame smallint,
+						t_autoCB smallint, id_anilist int, tDialonWrapUp smallint, viewMode tinyint, queSize smallint, DNCScrub int, callerIdDesc varchar (15), timeZoneRule int,
+						callsBySurvey int, ivrScript int, surveyPctg int,call_record smallint,startStopRecording bit,  leaveRecMessage  bit, manualCallOnChat bit, 
+						callBackSurveyAgent bit, callBackSurveyClient bit, isRelationSurvey bit, funcEspDtmf int,  sipHdrFormat varchar(255), cam_inter_cancelled smallint, 
+						prefijo varchar(40),enbleprefix bit,exitAssisted bit,previewDiscard bit , CampType int, conexionInfo varchar(15), closeConversationTime smallint, answerTimeoutClient int, allowFileAttachments bit)
+						
+							INSERT INTO @AllCampaigns EXEC ccsp_RIAConfCamp @adminID, @campID
+
+							SELECT dialPrefixMan DialPrefixMan, dialPrefixXfe DialPrefixXfe, listenManualCall  ListenManualCall, stopRecording StopRecording, abandonCallback AbandonCallBack,
+							t_autoCB AutoCB,id_anilist IdIstANI,tDialonWrapUp TDialOnWrapup, queSize Quesize, DNCScrub, callerIdDesc CallerIdDesc, timeZoneRule TimeZoneRule,callsBySurvey CallsBySurvey,
+							ivrScript IvrScript, surveyPctg SurveyPctg, call_record CallRecord,startStopRecording StartStopRecording, leaveRecMessage LeaveRecMessage,manualCallOnChat ManualCallOnChat,
+							callBackSurveyClient CallBackSurveyClient, callBackSurveyAgent CallBackSurveyAgent, funcEspDtmf FuncEspDtmf,sipHdrFormat SipHdrsCfg, dialPrefix DialPrefix,
+							prefijo Prefix, dialOrder DialOrder, progDial ProgDial, cam_Descripcion CamDescription, cam_tNotas CamTnotas, cam_ocupado CamBusy, cam_noInt_ocupado CamNoIntBusy,
+							cam_inter_ocupado CamInterBusy,cam_nocontesto CamNoAnswer, cam_noInt_nocontesto CamNoIntNoAnswer,cam_inter_nocontesto CamInterNoAnswer, (cam_inter_cancelled/60) CamInterCancelled,
+							cam_fax CamFax, cam_noInt_fax CamNoIntFax,cam_inter_fax CamInterFax, cam_modomanual CamModoManual,ANI ,cam_StartTimerOnHangUp CamStartTimerOnHangUp,
+							editableCallKey EditableCallKey, cam_tNoContesta CamTNoAnswer, iTipoDial  CamIntensiveDialing, detectAnswerMachine DetectAnswerMachine, detectVoiceMail DetectVoiceMail, 
+							compliance Compliance, cam_inter_graba CamInterRecord,cam_noint_graba CamNoIntRecord,excCallBack ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted ExitAssistedDialMode, previewDiscard PreviewDiscard, CampType Chat,
+							conexionInfo ConexionInfo, closeConversationTime CloseConversationTime, answerTimeoutClient MUTimeOutClient, allowFileAttachments AllowFileAttachments
+							from @AllCampaigns WHERE cam_id = @campID
+					END'
+		EXEC(@sql)
+
+		set @process = 'K038001 Drop procedure ccsp_RIA_ABCCamps'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIA_ABCCamps'')
+					BEGIN
+						DROP PROCEDURE ccsp_RIA_ABCCamps;
+					END'
+
+		set @process = 'K038001 Add CampType 1 insertion when normal campaign is created lines 792 and 810'
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
+					@option smallint,
+					@UserId int = null,
+					@Descripcion varchar(40) = null,
+					@Cam_id varchar(1000),
+					@Activa tinyint = null,
+					@IDArea smallint = null,
+					@frame tinyint = null, 
+					@MirrorInbound_Id smallint = null,
+					@Prefijo varchar(40) = null
+					as
+					set nocount on
+
+					if @option = 0
+						begin
+							select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
+							from ccCamps as CAMP with(nolock) 
+							left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
+							return(0)
+						end
+
+					if @option = 1 -- select Camp
+						begin
+							select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
+							prefijo as Prefijo
+							from ccCamps a1 with(nolock) 
+							inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
+							inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+							where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
+							return(0)
+						end
+
+					if @option = 4 --Delete
+						begin
+							if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
+							begin
+							declare @error varchar(70)
+							Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad''
+								else ''Campaign can not be deleted, it has an association with an ACD'' end
+							from ccsettings with(nolock) where setting_id = 27
+							raiserror (@error,18,1)		
+							return(0)
+							end
+
+							delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
+							insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
+							Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
+							Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
+							delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
+							delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
+							return(0)
+						end
+
+					if @option = 2 --Insert
+						begin
+						declare @new_cam_id smallint
+						declare @isAssingPortbyCam bit
+
+						DECLARE @CampTypeNormal INT = 1
+
+						if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
+							begin
+							select -1 --, ''Nombre en Uso''
+							return(0)  
+							end
+
+						-- ODC: la campaña siempre esta activa
+						set @Activa = 1
+						declare @pref int
+						select  @pref = valor from ccSettings where setting_id = 201
+						if (@pref = 0)
+							set @Prefijo = ''''
+
+
+						Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo, CampType)
+						select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
+						case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end, @Prefijo, @CampTypeNormal
+
+						if @@rowcount = 1
+						select @new_cam_id = scope_identity()
+
+						else
+							begin
+							select -2 --, ''Error al crear campaña''
+							return(0)
+							end
+
+						if isnull(@MirrorInbound_Id, 0)<>0
+							begin
+							if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
+								begin
+								select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
+								return(0)
+								end
+
+							update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
+							update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
+							end
+						set @isAssingPortbyCam=1
+
+						select @isAssingPortbyCam=valor from ccSettings where setting_id=232
+
+						if @isAssingPortbyCam=1 begin
+							insert into ccoDialerCamp (dialer_id, cam_id) 
+							select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+						end
+
+						insert into ccCalifCamp (calif_id, cam_id, tipo) 
+						select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
+
+						update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
+
+						If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+							begin
+							insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
+							end
+
+						insert into ccRIACampsGraph (cam_id, graphic_id)
+						select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
+
+						--inserta la lista negra por default
+						if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
+						begin
+							declare @tempId as int
+							DECLARE @dnclId TABLE 
+							(
+								id int 
+							);
+							insert into @dnclId
+							exec dbo.ccsp_RIACATBList null, null, 5
+							select @tempId=id from @dnclId;
+							exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
+						end
+
+						select @new_cam_id
+						return(0)
+						end
+
+					if @option = 3 -- Update
+						begin
+							if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+							insert into ccRIAGraphics (frame,type_id) values (@frame,1)
+
+							Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
+
+							update ccRIACampsGraph with(rowlock)
+							set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+							where cam_id = @Cam_id
+
+							return(0)
+						end
+
+						if @option = 5 --Obtener relaciones de campañas - campañas
+						begin
+							if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
+							(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+							not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
+							begin
+							select -3 -- Campaña invalida
+							return(0)
+							end
+									
+						if @descripcion=0
+							set @descripcion = null
+
+						update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
+						if @@rowcount=0
+							select -4 -- Error al actualizar
+										
+						else
+							begin
+							delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+							end
+
+						return(0)
+						end
+
+					if @option = 6
+						begin
+							select cam_id, isnull(surveycamid,0)
+							from cccamps with(index(PK_ccCamps),nolock)
+							where cam_id = @Cam_id
+							return(0)
+						end
+
+					if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
+						begin	
+							select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
+							--select 0 as Grabaciones	
+						end
+
+					if @option = 8 -- Checa si la campaña tiene asignada una campaña tipo encuesta
+						begin	
+							SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
+							from cccamps with(index(PK_ccCamps),nolock)
+							where cam_id = @Cam_id
+							return(0)
+						end
+
+					return(0)
+					set nocount off'
+
+		set @process = 'K038001 Drop procedure ccsp_RIAUpdateCamConfig'
+		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIAUpdateCamConfig'')
+					BEGIN
+						DROP PROCEDURE ccsp_RIAUpdateCamConfig;
+					END'
+
+		set @process = 'K038001 Add CampType 3 when preview campaign is created line 1102'
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+	                @cam_id smallint,
+	                @cam_descripcion varchar(40) = null,
+	                @cam_tnotas smallint = null,
+	                @cam_ocupado tinyint = null,
+	                @cam_NoInt_ocupado tinyint = null,
+	                @cam_inter_ocupado smallint = null,
+	                @cam_nocontesto tinyint = null,
+	                @cam_NoInt_nocontesto tinyint = null,
+	                @cam_inter_nocontesto smallint = null,
+	                @cam_fax tinyint = null,
+	                @cam_NoInt_fax tinyint = null,
+	                @cam_inter_fax smallint = null,
+	                @cam_ModoManual tinyint= null,
+	                @ANI varchar(15) = null,
+	                @cam_ShowCalifWnd bit = null,
+	                @cam_StartTimerOnHangUp bit = null,
+	                @editableCallKey bit = null,
+	                @cam_tNoContesta tinyint = null,
+	                @cam_intensive_dialing tinyint = null,
+	                @detectAnswerMachine smallint = null, -- defualt 0 | nivel de confianza: 1 rapido, pero no tan exacto | 2 normal | 3 menos rapido, mas exacto
+	                @detectVoiceMail TinyInt = null, -- permitidos 0,1 (bandera para activar)
+	                @compliance TinyInt = null,
+	                @cam_inter_graba smallint = null,
+	                @cam_NoInt_graba tinyint = null,
+	                @progDial smallint = null,
+	                @excCallBack Tinyint = null,
+	                @dialOrder Tinyint = null,
+	                @dialPrefix varchar(10) = null,
+	                @dialPrefixMan varchar(10) = null,
+	                @dialPrefixXfe varchar(10) = null,
+	                @listenManualCall bit = null,
+	                @stopRecording bit = null,
+	                @abandonCallback bit = null,
+	                @autoCB smallint = null,
+	                @id_listAni int = null,
+	                @tDialonWrapUp smallint = null,
+	                @quesize smallint=null,
+	                @DNCScrub int=null,
+	                @callerIdDesc varchar(15)=null,
+	                @timeZoneRule int=null,
+	                @callsBySurvey int=null,
+	                @ivrScript int=null,
+	                @surveyPctg int=null,
+	                @call_record tinyint=null,
+	                @dRestrictPlay bit = null,
+	                @leaveRecMessage bit = null,
+	                @manualCallOnChat bit = null,
+	                @callBackSurveyClient bit = null,
+	                @callBackSurveyAgent bit = null,
+	                @funcEspDtmf int =null,
+	                @sipHdrsCfg varchar(255) = null,
+	                @cam_inter_cancelled smallint = null,
+	                @prefijo varchar(max) = null,
+	                @exitAssisted bit = null,
+	                @previewDiscard bit = null,
+	                @rotativeAlgo tinyint = null,
+					@timesPreview varchar(10) = null,
+					@cam_tPreview varchar(10) = null
+	                as
+	                set nocount on
+	                UPDATE ccCamps SET
+	                 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+	                 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+	                 cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+	                 cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+	                 cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+	                 cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+	                 cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+	                 cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+	                 cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+	                 cam_fax = isnull(@cam_fax,cam_fax),
+	                 cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+	                 cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+	                 cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+	                 ANI = isnull(@ANI,ANI),
+	                 cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+	                 editableCallKey = isnull(@editableCallKey, editableCallKey),
+	                 cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+	                 iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+	                 detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+	                 detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+	                 compliance = isnull(@compliance, compliance),
+	                 cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+	                 cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+	                 cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+	                 progDial = isnull(@progDial, progDial),
+	                 excCallBack = isnull(@excCallBack,excCallBack),
+	                 dialOrder = isnull(@dialOrder, dialOrder),
+	                 dialPrefix = isnull(@dialPrefix, dialPrefix),
+	                 dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+	                 dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+	                 listenManualCall = isnull(@listenManualCall, listenManualCall),
+	                 stopRecording = isnull(@stopRecording, stopRecording),
+	                 abandonCallback = isnull(@abandonCallback, abandonCallback),
+	                 t_autoCB = isnull(@autoCB,t_autoCB),
+	                 id_anilist = isnull(@id_listAni,id_anilist),
+	                 tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+	                 cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+	                 cam_maxqueue = isnull(@quesize,cam_maxqueue),
+	                 DNCScrub = isnull(@DNCScrub,DNCScrub),
+	                 callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+	                 timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+	                 callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+	                 ivrScript = isnull(@ivrScript,ivrScript),
+	                 surveyPctg = isnull(@surveyPctg,surveyPctg),
+	                 call_record = isnull(@call_record,call_record),
+	                 startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+	                 leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+	                 manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+	                 callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+	                 callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+	                 funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+	                 sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+	                 prefijo = isnull(@prefijo, prefijo),
+	                 exitAssisted = isnull(@exitAssisted, exitAssisted),
+	                 previewDiscard = isnull(@previewDiscard, previewDiscard),
+	                 rotativeAlgo = isnull(@rotativeAlgo, rotativeAlgo),
+					 CampType = (CASE WHEN @progDial = 3 THEN @progDiaL ELSE 1 END)
+	                Where cam_id = @cam_id
+
+	                if @cam_ShowCalifWnd = 1
+	                 begin
+	                 If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
+	                  begin
+	                  select 0
+	                  return(0)
+	                  end
+
+	                 UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+	                 where cam_id = @cam_id
+	                 select 1
+	                 return(0)
+	                  end
+
+	                --else
+	                UPDATE ccCamps SET
+	                cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
+	                where cam_id = @cam_id
+	                select 2
+	                return(0)
+	                set nocount off'
+
+		set @process = 'K038001 Add publication back'
+		set @sql = 'use [CCenterRia]
+					DECLARE @publicationName AS sysname;  
+					DECLARE @articleName AS sysname;  
+
+
+					SET @publicationName = N''SpecialAVRS'';  
+					SET @articleName = N''cccamps'';  
+
+					exec sp_addmergearticle @publication = @publicationName, 
+					@article = @articleName, 
+					@source_owner = N''dbo'', 
+					@source_object = @articleName, 
+					@type = N''table'', 
+					@description = N'''', 
+					@creation_script = null, 
+					@pre_creation_cmd = N''drop'', 
+					@schema_option = 0x000000000C034FD1, 
+					@identityrangemanagementoption = N''manual'', 
+					@destination_owner = N''dbo'', 
+					@force_reinit_subscription = 1, 
+					@column_tracking = N''false'', 
+					@subset_filterclause = null, 
+					@vertical_partition = N''false'', 
+					@verify_resolver_signature = 1, 
+					@allow_interactive_resolver = N''false'', 
+					@fast_multicol_updateproc = N''true'', 
+					@check_permissions = 0, 
+					@subscriber_upload_options = 1, 
+					@delete_tracking = N''true'', 
+					@compensate_for_errors = N''false'', 
+					@stream_blob_columns = N''false'', 
+					@partition_options = 0'
+		EXEC(@sql)
+
+-------------------------------------------------------- END IVAN feature/IM-K038001-Add_camp_type_to_ccCamps ----------------------------------------------------------
+
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

@@ -60,7 +60,7 @@ BEGIN
 	    set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminTransferNumbersCRUD]
 			@Type SMALLINT,
 			@IDArea SMALLINT = -1,
-			@Nombre VARCHAR(50) = NULL,
+			@Name VARCHAR(50) = NULL,
 			@Tel VARCHAR(50) = NULL,
 			@AllowConference bit = 0,
 			@NumTraId SMALLINT = NULL
@@ -74,7 +74,7 @@ BEGIN
 						   telTransfer.allowsConference,
 						   telTransfer.IDArea
 					FROM dbo.telefonosTransferencia AS telTransfer
-					WHERE telTransfer.idArea IN (@IDArea,-1)
+					WHERE telTransfer.idArea IN (@IDArea)
 					RETURN 0;
 				END;
 
@@ -83,10 +83,10 @@ BEGIN
 					DECLARE @resultCreate SMALLINT = -1 -- -1:Name in use -2:Number alredy registered
 					IF NOT EXISTS(SELECT tel FROM telefonosTransferencia WHERE tel = @Tel)
 					BEGIN
-						IF NOT EXISTS(SELECT numtra_id FROM telefonosTransferencia WHERE nombre = @Nombre)
+						IF NOT EXISTS(SELECT numtra_id FROM telefonosTransferencia WHERE nombre = @Name)
 						BEGIN
 							INSERT INTO telefonosTransferencia (nombre, tel, IDArea, allowsConference) 
-							VALUES (@Nombre, @Tel, @idArea, @AllowConference)
+							VALUES (@Name, @Tel, @idArea, @AllowConference)
 							SELECT @resultCreate = SCOPE_IDENTITY() 
 						END
 					END
@@ -104,10 +104,10 @@ BEGIN
 					DECLARE @resultEdit int = -1 -- -1:Name in use -2:Number alredy registered
 					IF NOT EXISTS(SELECT tel FROM telefonosTransferencia WHERE tel = @Tel AND numtra_id <> @NumTraId)
 					BEGIN
-						IF NOT EXISTS(SELECT numtra_id FROM telefonosTransferencia WHERE nombre = @Nombre AND numtra_id <> @NumTraId)
+						IF NOT EXISTS(SELECT numtra_id FROM telefonosTransferencia WHERE nombre = @Name AND numtra_id <> @NumTraId)
 						BEGIN
 							UPDATE telefonosTransferencia SET
-							nombre = @Nombre, 
+							nombre = @Name, 
 							tel = @Tel, 
 							IDArea = @IDArea, 
 							allowsConference = @AllowConference

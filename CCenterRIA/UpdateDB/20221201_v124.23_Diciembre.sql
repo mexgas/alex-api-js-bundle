@@ -69,7 +69,7 @@ BEGIN
 				IF (@type = 1) -- Read Transfer Numbers
 				BEGIN
 					SELECT telTransfer.numtra_id,
-						   telTransfer.nombre,
+						   telTransfer.nombre as [name],
 						   telTransfer.tel,
 						   telTransfer.allowsConference,
 						   telTransfer.IDArea

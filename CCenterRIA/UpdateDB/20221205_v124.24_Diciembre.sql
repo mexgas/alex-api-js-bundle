@@ -152,7 +152,7 @@ BEGIN
 
 			INSERT INTO @recordsToDel
 			SELECT 0,0,callout_id,cam_id,@insert_date,0,0  FROM ccoWorkingTable
-			WHERE cam_id = @camId --and reg_date between cal_fechaDial and @insert_date
+			WHERE cam_id = @camId
 			AND timesDiscard >= (SELECT timesDiscard FROM ccCamps WHERE cam_id = @camId)
 
 			INSERT INTO RegProcessPreviewRecord(userId, process, callout_id, camId, reg_date, tPreview, callId)

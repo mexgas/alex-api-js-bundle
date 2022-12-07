@@ -110,6 +110,17 @@ BEGIN
 
 		------------------------------- K004051 TimesDiscard --------------------------------
 
+	set @process = 'Insert TypeProcessPreview 9'
+	set @sql = 'IF EXISTS (SELECT NAME FROM sys.tables WHERE name = N''ccTypeProcessPreview'')
+	BEGIN
+		IF NOT EXISTS (SELECT typeProcess_id FROM ccTypeProcessPreview WHERE typeProcess_id = 9)
+		BEGIN
+			INSERT [dbo].[ccTypeProcessPreview] ([typeProcess_id], [descripcion], [translatedDesc])
+			VALUES (9, N''DeletedByMaxDiscards'', N''systemTranslated_DeletedByMaxDiscards'')
+		END
+	END'
+	EXEC(@sql)
+
 	set @process = 'Add column timesDiscard to ccCamps'
     set @sql = '
 		if not exists (select * from sys.columns where name = N''timesDiscard'' and Object_ID = Object_ID(N''ccCamps''))
@@ -203,7 +214,7 @@ BEGIN
             end'
     EXEC(@sql)
 
-	set @process = 'CREATE SP RIAUpdateCamConfig'
+	set @process = 'CREATE SP ccsp_RIAUpdateCamConfig'
     set @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
                 @cam_id smallint,

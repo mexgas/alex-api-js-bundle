@@ -196,7 +196,7 @@ BEGIN
 	'
     EXEC(@sql)
 
-	set @process = 'Deleting SP ccsp_CheckTimesDiscard if exists'
+	set @process = 'Deleting SP RIAUpdateCamConfig if exists'
     set @sql = 'if exists (select * from sys.procedures where name = N''RIAUpdateCamConfig'')
             begin
           		DROP PROCEDURE RIAUpdateCamConfig;

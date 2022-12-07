@@ -119,6 +119,83 @@ BEGIN
 	'
     EXEC(@sql)
 
+	set @process = 'Deleting SP ccsp_CheckTimesDiscard if exists'
+	set @sql = 'if exists (select * from sys.procedures where name =''ccsp_CheckTimesDiscard'')
+		begin
+			DROP PROCEDURE ccsp_CheckTimesDiscard
+		end'
+
+	EXEC(@sql)
+
+	set @process = 'Create SP ccsp_CheckTimesDiscard'
+    set @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_CheckTimesDiscard](
+		@action int,
+        @camId int,
+		@calloutId int = null)
+        AS
+		BEGIN
+		DECLARE @insert_date DATETIME = SYSDATETIME()
+		DECLARE @ini_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
+		DECLARE @process_discard int = 9
+
+		IF(@action=0)
+		BEGIN
+			DECLARE @recordsToDel AS TABLE
+			([userId] [smallint] NOT NULL,
+			[process] [smallint] NOT NULL,
+			[callout_id] [int] NOT NULL,
+			[camId] [int] NOT NULL,
+			[reg_date] [datetime] NULL,
+			[tPreview] [smallint] NOT NULL,
+			[callId] [int] NOT NULL)
+
+			INSERT INTO @recordsToDel
+			SELECT 0,0,callout_id,cam_id,@insert_date,0,0  FROM ccoWorkingTable
+			WHERE cam_id = @camId --and reg_date between cal_fechaDial and @insert_date
+			AND timesDiscard >= (SELECT timesDiscard FROM ccCamps WHERE cam_id = @camId)
+
+			INSERT INTO RegProcessPreviewRecord(userId, process, callout_id, camId, reg_date, tPreview, callId)
+			SELECT userId, @process_discard, callout_id, camId, reg_date, tPreview, callId FROM @recordsToDel
+
+			DELETE FROM ccoWorkingTable WHERE callout_id IN (SELECT callout_id FROM @recordsToDel)
+
+			SELECT * FROM @recordsToDel
+		END
+
+
+		IF(@action=1)
+		BEGIN
+			DECLARE @result_maxtimesdiscard INT = 0
+
+			if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @calloutId)) 
+			begin
+				if(
+				(SELECT timesDiscard FROM ccoWorkingTable WHERE callout_id=@calloutId)
+				>=
+				(SELECT timesDiscard FROM ccCamps WHERE cam_id = @camId)
+				)
+				begin
+					set @result_maxtimesdiscard = 1
+
+					DELETE ccoWorkingTable WHERE callout_id = @calloutId and cam_id=@camId
+
+					INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview, callID) VALUES (0,@process_discard,@calloutid,@camId,@insert_date,0,0)
+				end
+			end
+			else
+			begin
+				set @result_maxtimesdiscard = 1
+			end
+
+
+			select @result_maxtimesdiscard as ''value''
+		END
+
+		END
+	'
+    EXEC(@sql)
+
 	set @process = 'Alter SP RIAUpdateCamConfig'
     set @sql = '
 		ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
@@ -275,75 +352,6 @@ BEGIN
                 return(0)
 
                 set nocount off
-	'
-    EXEC(@sql)
-
-    set @process = 'Create SP ccsp_CheckTimesDiscard'
-    set @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_CheckTimesDiscard](
-		@action int,
-        @camId int,
-		@calloutId int = null)
-        AS
-		BEGIN
-		DECLARE @insert_date DATETIME = SYSDATETIME()
-		DECLARE @ini_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
-		DECLARE @process_discard int = 9
-
-		IF(@action=0)
-		BEGIN
-			DECLARE @recordsToDel AS TABLE
-			([userId] [smallint] NOT NULL,
-			[process] [smallint] NOT NULL,
-			[callout_id] [int] NOT NULL,
-			[camId] [int] NOT NULL,
-			[reg_date] [datetime] NULL,
-			[tPreview] [smallint] NOT NULL,
-			[callId] [int] NOT NULL)
-
-			INSERT INTO @recordsToDel
-			SELECT 0,0,callout_id,cam_id,@insert_date,0,0  FROM ccoWorkingTable
-			WHERE cam_id = @camId --and reg_date between cal_fechaDial and @insert_date
-			AND timesDiscard >= (SELECT timesDiscard FROM ccCamps WHERE cam_id = @camId)
-
-			INSERT INTO RegProcessPreviewRecord(userId, process, callout_id, camId, reg_date, tPreview, callId)
-			SELECT userId, @process_discard, callout_id, camId, reg_date, tPreview, callId FROM @recordsToDel
-
-			DELETE FROM ccoWorkingTable WHERE callout_id IN (SELECT callout_id FROM @recordsToDel)
-
-			SELECT * FROM @recordsToDel
-		END
-
-
-		IF(@action=1)
-		BEGIN
-			DECLARE @result_maxtimesdiscard INT = 0
-
-			if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @calloutId)) 
-			begin
-				if(
-				(SELECT timesDiscard FROM ccoWorkingTable WHERE callout_id=@calloutId)
-				>=
-				(SELECT timesDiscard FROM ccCamps WHERE cam_id = @camId)
-				)
-				begin
-					set @result_maxtimesdiscard = 1
-
-					DELETE ccoWorkingTable WHERE callout_id = @calloutId and cam_id=@camId
-
-					INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview, callID) VALUES (0,@process_discard,@calloutid,@camId,@insert_date,0,0)
-				end
-			end
-			else
-			begin
-				set @result_maxtimesdiscard = 1
-			end
-
-
-			select @result_maxtimesdiscard as ''value''
-		END
-
-		END
 	'
     EXEC(@sql)
 

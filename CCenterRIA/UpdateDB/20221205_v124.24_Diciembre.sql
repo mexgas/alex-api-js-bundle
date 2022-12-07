@@ -196,9 +196,16 @@ BEGIN
 	'
     EXEC(@sql)
 
-	set @process = 'Alter SP RIAUpdateCamConfig'
+	set @process = 'Deleting SP ccsp_CheckTimesDiscard if exists'
+    set @sql = 'if exists (select * from sys.procedures where name = N''RIAUpdateCamConfig'')
+            begin
+          		DROP PROCEDURE RIAUpdateCamConfig;
+            end'
+    EXEC(@sql)
+
+	set @process = 'CREATE SP RIAUpdateCamConfig'
     set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+		CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
                 @cam_id smallint,
                 @cam_descripcion varchar(40) = null,
                 @cam_tnotas smallint = null,
@@ -355,9 +362,16 @@ BEGIN
 	'
     EXEC(@sql)
 
-	set @process = 'Alter SP ccsp_RegProcessPreviewRecord'
+	set @process = 'Deleting SP ccsp_RegProcessPreviewRecord if exists'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RegProcessPreviewRecord'')
+            begin
+          		DROP PROCEDURE ccsp_RegProcessPreviewRecord;
+            end'
+    EXEC(@sql)
+
+	set @process = 'Create SP ccsp_RegProcessPreviewRecord'
     set @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
+		CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
         @process smallint,
         @callout_id int,
         @agent_id smallint,
@@ -369,7 +383,6 @@ BEGIN
 		DECLARE @result_maxtimespreview INT = 0
 		DECLARE @result_maxtimesdiscard INT = 0
 		DECLARE @insert_date DATETIME = SYSDATETIME()
-		DECLARE @first_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
 		DECLARE @process_insert int =  @process
 
         if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
@@ -383,6 +396,7 @@ BEGIN
 
 		IF (@process NOT IN (1, 7))
 		BEGIN
+		DECLARE @first_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
 			if(
 				(SELECT COUNT(process) FROM RegProcessPreviewRecord 
 				WHERE reg_date BETWEEN @first_date AND @insert_date
@@ -415,9 +429,16 @@ BEGIN
 	'
     EXEC(@sql)
 
-	set @process = 'Alter SP ccsp_RIAConfCamp'
+	set @process = 'Deleting SP ccsp_RIAConfCamp if exists'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAConfCamp'')
+            begin
+          		DROP PROCEDURE ccsp_RIAConfCamp;
+            end'
+    EXEC(@sql)
+
+	set @process = 'Create SP ccsp_RIAConfCamp'
     set @sql = '		
-		ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp]
+		CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
 			@User_id smallint,
 			@campID int =null
 			AS
@@ -483,9 +504,16 @@ BEGIN
 	'   
 	EXEC(@sql)
 
-	set @process = 'Alter SP ccsp_GalateaGetOutboundConfiguration'
+	set @process = 'Deleting SP ccsp_GalateaGetOutboundConfiguration if exists'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
+            begin
+          		DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+            end'
+    EXEC(@sql)
+
+	set @process = 'Create SP ccsp_GalateaGetOutboundConfiguration'
     set @sql = '		
-		ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
+		CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
 				@adminID int,
 				@campID int
 				AS

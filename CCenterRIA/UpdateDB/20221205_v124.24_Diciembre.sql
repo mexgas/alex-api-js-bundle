@@ -196,10 +196,10 @@ BEGIN
 	'
     EXEC(@sql)
 
-	set @process = 'Deleting SP RIAUpdateCamConfig if exists'
-    set @sql = 'if exists (select * from sys.procedures where name = N''RIAUpdateCamConfig'')
+	set @process = 'Deleting SP ccsp_RIAUpdateCamConfig if exists'
+    set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateCamConfig'')
             begin
-          		DROP PROCEDURE RIAUpdateCamConfig;
+          		DROP PROCEDURE ccsp_RIAUpdateCamConfig;
             end'
     EXEC(@sql)
 

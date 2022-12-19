@@ -518,51 +518,51 @@ end'
 	set @sql = '
 		if not exists (select * from sys.columns where name = N''data6'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 		begin
-			alter table RepOutDialDetail add data6 varchar(255) not null default ''''
+			alter table RepOutDialDetail add data6 varchar(255) null
 		end
 		if not exists (select * from sys.columns where name = N''data7'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data7 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data7 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data8'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data8 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data8 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data9'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data9 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data9 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data10'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data10 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data10 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data11'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data11 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data11 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data12'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data12 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data12 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data13'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data13 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data13 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data14'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data14 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data14 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''data15'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add data15 varchar(255) not null default ''''
+				alter table RepOutDialDetail add data15 varchar(255) null
 			end
 		if not exists (select * from sys.columns where name = N''preview_Time'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add preview_Time smallint not null default 0
+				alter table RepOutDialDetail add preview_Time smallint null
 			end
 		if not exists (select * from sys.columns where name = N''login'' and Object_ID = Object_ID(N''RepOutDialDetail''))
 			begin
-				alter table RepOutDialDetail add login varchar(40) not null default ''''
+				alter table RepOutDialDetail add login varchar(40) null
 			end
 	'
 	EXEC(@sql)

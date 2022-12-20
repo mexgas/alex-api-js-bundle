@@ -91,6 +91,28 @@ end'
 	set @sql = 'ALTER TABLE RepOutManagementBase ALTER COLUMN dialresult varchar(50);'
 	EXEC(@sql)
 
+	SET @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+	BEGIN
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+	EXEC (@Sql)
+
+	set @process = 'SPEC-72 Alter column descripcion from ccTipoResultadoDial'
+    set @sql = '
+		ALTER TABLE ccTipoResultadoDial ALTER COLUMN descripcion varchar(50);
+	'
+    EXEC(@sql)
+
+SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+	BEGIN 
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+		EXEC (@Sql)
+
 
 	set @process = 'K002056 se crean registros de los diferentes paises'
 	set @sql = 'if not exists(select * from ccWhatsOringCountry) begin

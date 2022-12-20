@@ -11,7 +11,7 @@ Date: 2022/02/15
 Description: Merge con los cambios de sorteos
 
 Database: CCenterRia
-Required version: 123.27
+Required version: 124.13
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -30,7 +30,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 124 --**********actualizar a 123 sin fix
-SET @versionfix = 1
+SET @versionfix = 13
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -2644,7 +2644,7 @@ set nocount off'
         set nocount off'
     EXEC(@sql)
 
-        SET @process = 'ALter SP ccsp_GalateaAdminCampaigns Relaciones de campañas'
+        SET @process = 'CW-7659 ALter SP ccsp_GalateaAdminCampaigns Relaciones de campañas'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
                                        @CampType AS    SMALLINT = 0, 
                                        @WorkgroupId AS INT      = 0, 
@@ -2892,7 +2892,7 @@ BEGIN
   DECLARE @AdminWorkgroups TABLE (id INT, PRIMARY KEY(id));
   DECLARE @AgentsList TABLE(id INT, PRIMARY KEY(id));
   DECLARE @tmpCamAgent TABLE(camId INT, userId INT, multimediaType TINYINT, PRIMARY KEY(camId, userId));
-  DECLARE @AgentStatus TABLE(CampId SMALLINT, userId INT, CurrentState INT, isCampDialog BIT);
+  DECLARE @AgentStatus TABLE(CampId SMALLINT, userId INT, CurrentState INT, isCampDialog BIT, campType BIT);
   DECLARE @CurrentStatus TABLE(userId INT, CurrentState INT, IdCampEsp INT, camType INT);
   DECLARE @campDataTotal TABLE(camId INT, CampName VARCHAR(500), Total INT, Area VARCHAR(100), PRIMARY KEY(camId));
 
@@ -2902,7 +2902,7 @@ BEGIN
   WHERE WG.User_id = @AdminId
   OR (R.User_id = @AdminId
   AND R.Rol_id = 7);
-    
+    	
   INSERT INTO @AgentsList SELECT DISTINCT A.User_id
   FROM ccRIAWorkGroupUsers A
   INNER JOIN @AdminWorkgroups B ON A.IDWG = B.id
@@ -2910,15 +2910,20 @@ BEGIN
   AND C.TipoUser_id = 1
     ORDER BY A.User_id;
 
-  INSERT INTO @tmpCamAgent SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
+
+	
+
+  INSERT INTO @tmpCamAgent 
+  SELECT DISTINCT campPerWg.IdCampEsp, wgUser.User_id,
   CASE WHEN @Id = 0 AND @CampType = 0 THEN inbound.chat ELSE NULL END
   FROM ccRIACampEspWG campPerWg
   INNER JOIN @AdminWorkgroups wg ON wg.Id = campPerWg.IDWG
   INNER JOIN ccRIAWorkGroupUsers wgUser ON wgUser.IDWG = wg.id
   INNER JOIN ccUsers C ON wgUser.User_id = C.User_id
-  INNER JOIN ccInbound inbound ON Inbound_id = campPerWg.IdCampEsp 
-  AND C.TipoUser_id = 1
-  WHERE campPerWg.Tipo = @CampType
+  left JOIN ccInbound inbound ON inbound.Inbound_id = campPerWg.IdCampEsp and @CampType = 0
+  left JOIN ccCamps camps ON camps.cam_id = campPerWg.IdCampEsp and @CampType = 1
+  where C.TipoUser_id = 1
+  AND campPerWg.Tipo = @CampType
   AND (@Id = 0 OR campPerWg.IdCampEsp = @Id);
   
   WITH lastState AS (
@@ -2949,7 +2954,8 @@ BEGIN
 
   INSERT INTO @AgentStatus SELECT A.camId, A.userId, B.CurrentState,
   (CASE WHEN B.CurrentState IN(SELECT value FROM dbo.fn_RIASplitDelimited(@StateIds,'','')) AND B.IdCampEsp = A.camId AND B.camType = @CampType
-   THEN @CampType ELSE null END) AS isCampDialog 
+   THEN @CampType ELSE null END) AS isCampDialog,
+   B.camType
   FROM @tmpCamAgent A
   INNER JOIN @CurrentStatus B ON A.userId = B.userId
   WHERE (@Id = 0 or A.camId = @Id)
@@ -2992,7 +2998,7 @@ BEGIN
     SELECT A.CampId,
     count(CASE WHEN A.CurrentState = 3 THEN 1 ELSE NULL END) AS ready,
     count(CASE WHEN A.CurrentState NOT IN(-2, -1, 0, 3, 4, 5, 6, 9, 30, 34) THEN 1 
-           WHEN A.CurrentState IN (6, 34) AND A.CampId != C.IdCampEsp THEN 1 ELSE NULL END) AS notReady,
+           WHEN A.CurrentState IN (6, 34, 4) AND (A.CampId != C.IdCampEsp OR A.campType != @CampType) THEN 1 ELSE NULL END) AS notReady,
     COUNT(isCampDialog) AS dialog,
     COUNT(CASE WHEN a.CurrentState <= 0 THEN 1 ELSE NULL END) AS disconnected 
     FROM @AgentStatus A
@@ -3011,7 +3017,7 @@ BEGIN
     A.Area
   FROM @campDataTotal A
   LEFT JOIN stateCamp B ON A.camId = B.CampId
-  ORDER BY A.campName
+  ORDER BY A.CampName;
 
         RETURN 0;
     END;
@@ -5434,7 +5440,140 @@ END;'
     EXEC(@sql)    
 
 ------------------------- END Capacitacion ---------------------------------------------------------
+	 
 
+	set @process = 'TT2904 -adminKolob -No se muestran agentes ccsp_GalateaLoadUsersForManagement 
+	-- AND DATEDIFF(dd, LastLoginAttempt, getdate()) < 60'
+    set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaLoadUsersForManagement]
+ @option SMALLINT,
+ @AreaId SMALLINT,
+ @UserType INT,
+ @Username VARCHAR(200)=null,
+ @userId INT =0
+as
+
+--Obtiene el idioma de de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+IF @option = 1 --Agentes/supervisores de un Area
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '''')
+  END as LastName,
+
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '''')
+  END as OptionalExtraName,
+
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+  isnull(IDArea, 0) as AreaId
+  FROM ccusers
+  WHERE isnull(IDArea, 0) = isnull(@AreaId, 0) AND TipoUser_id & 2 = CASE @UserType WHEN 1 THEN 0 ELSE 2 END AND STATUS = 1
+	AND DATEDIFF(dd, LastLoginAttempt, getdate()) < 60
+  ORDER BY LOGIN, Nombres, ApellidoPaterno,Sexo, User_id
+
+  RETURN (0)
+END
+
+IF @option = 2 -- obtiene Agente o supervisor en base a su nombre de usuario
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '''')
+  END as LastName,
+
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '''')
+  END as OptionalExtraName,
+
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+  isnull(IDArea, 0) as AreaId
+  FROM ccusers
+  WHERE Login=@Username
+
+  RETURN (0)
+END
+
+IF @option = 3 -- obtiene Agente o supervisor en base a su ID de usuario
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoPaterno, '''')
+  END as LastName,
+
+  CASE
+    WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
+    ELSE isnull(ApellidoMaterno, '''')
+  END as OptionalExtraName,
+
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+  isnull(IDArea, 0) as AreaId
+  FROM ccusers
+  WHERE user_id=@userId
+
+  RETURN (0)
+END
+
+
+IF @option = 4 -- supervisores en Area/Sistema
+BEGIN
+	DECLARE @Admins TABLE (UserId smallint, Username varchar(50), Names varchar(50), LastName varchar(50), OptionalExtraName varchar(50), AreaId smallint, primary key(UserId))
+	INSERT INTO @Admins
+	SELECT User_id as UserId,
+	LOGIN as Username,
+	Nombres as Names,
+	CASE
+	  WHEN @lenguageXion=''1'' THEN isnull(ApellidoMaterno, '''')-- El sistema esta en ingles
+	  ELSE isnull(ApellidoPaterno, '''')
+	END as LastName,
+
+	CASE
+	  WHEN @lenguageXion=''1'' THEN isnull(ApellidoPaterno, '''')-- El sistema esta en ingles
+	  ELSE isnull(ApellidoMaterno, '''')
+	END as OptionalExtraName,
+
+	isnull(IDArea, 0) as AreaId
+	FROM ccusers
+	WHERE TipoUser_id = 2 AND STATUS = 1
+
+
+	IF NOT EXISTS(SELECT * FROM ccUsers_Roles WHERE User_id=@userId and Rol_id=7) BEGIN
+		SELECT UserId, Username, Names, LastName, OptionalExtraName
+		FROM @Admins
+		WHERE AreaId = (SELECT IDArea FROM ccUsers WHERE User_id=@userId)
+		ORDER BY Username, Names, LastName, UserId
+	END
+	ELSE BEGIN
+		SELECT UserId, Username, Names, LastName, OptionalExtraName
+		FROM @Admins
+		ORDER BY Username, Names, LastName, UserId
+	END
+
+  RETURN (0)
+END'
+ 	EXEC(@sql)    
 
 
 	 		/* End script release */

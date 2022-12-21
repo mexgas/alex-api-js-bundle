@@ -120,53 +120,55 @@ BEGIN
 
     set @process = 'SPEC-72 Inserta ccTIpoResultadoDial catalogo'
     set @sql = '
-		declare @idioma tinyint
+		--Paso 2 actualizar catalogo
+
+declare @idioma tinyint
 select @idioma =valor from ccSettings where setting_id=27
 
 delete from [ccTipoResultadoDial]
 
 if @idioma = 0
 begin
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, convert(text, N''Contestan'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Answer'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, convert(text, N''Ocupado'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Busy'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, convert(text, N''No Contesta'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoAnswer'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, convert(text, N''Fax/Modem'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Fax'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, convert(text, N''NoDialTone'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoDialTone'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Other'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10, convert(text, N''NoService'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoService'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_VoiceMail'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Congestion'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13, convert(text, N''Cancelado'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Cancelled'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, convert(text, N''Rechazada por proveedor'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Rejected_by_carrier'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, convert(text, N''Contestan'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, convert(text, N''Ocupado'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, convert(text, N''No Contesta'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, convert(text, N''Fax/Modem'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, convert(text, N''NoDialTone'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, convert(text, N''NoService'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, convert(text, N''Cancelado'' collate SQL_Latin1_General_CP1_CI_AS))
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, convert(text, N''Rechazada por proveedor'' collate SQL_Latin1_General_CP1_CI_AS))
 end
 
 if @idioma = 1
 begin
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, ''Answer'',''systemTranslated_Answer'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, ''Busy'',''systemTranslated_Busy'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, ''Not Answer'',''systemTranslated_NoAnswer'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, ''Fax/Modem'',''systemTranslated_Fax'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, ''NoDialTone'',''systemTranslated_NoDialTone'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, ''Other'',''systemTranslated_Other'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10, ''NoService'',''systemTranslated_NoService'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11, ''VoiceMail/Machine'',''systemTranslated_VoiceMail'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12, ''Circuit busy'',''systemTranslated_Congestion'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13, ''Cancelled'',''systemTranslated_Cancelled'')
-	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, ''Rejected by carrier'',''systemTranslated_Rejected_by_carrier'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, ''Answer'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, ''Busy'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, ''Not Answer'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, ''Fax/Modem'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, ''NoDialTone'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, ''Other'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, ''NoService'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, ''VoiceMail/Machine'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, ''Circuit busy'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, ''Cancelled'')
+	INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected by carrier'')
 end
 if @idioma = 2
 begin
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, ''Resposta'',''systemTranslated_Answer'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, ''Ocupado'',''systemTranslated_Busy'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, ''Não resposta'',''systemTranslated_NoAnswer'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, ''Fax / Modem'',''systemTranslated_Fax'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, ''NoDialTone'',''systemTranslated_NoDialTone'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, ''Outros'',''systemTranslated_Other'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10,''NOservice'',''systemTranslated_NoService'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11,''Correio de Voz/Máquina'',''systemTranslated_VoiceMail'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12,''Circuito ocupado'',''systemTranslated_Congestion'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13,''Cancelado'',''systemTranslated_Cancelled'')
-	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, ''Rejeitada pela operadora'',''systemTranslated_Rejected_by_carrier'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, ''Resposta'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, ''Ocupado'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, ''Não resposta'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, ''Fax / Modem'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, ''NoDialTone'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, ''Outros'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10,''NOservice'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11,''Correio de Voz/Máquina'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12,''Circuito ocupado'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13,''Cancelado'')
+	INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejeitada pela operadora'')
 end
 	'
     EXEC(@sql)
@@ -646,17 +648,17 @@ INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, convert(text, N''Doming
 Print ''Estableciendo resultados de marcacion''
 delete from [dbo].[ccTipoResultadoDial]
 
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, convert(text, N''Contestan'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Answer'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, convert(text, N''Ocupado'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Busy'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, convert(text, N''No Contesta'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoAnswer'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, convert(text, N''Fax/Modem'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Fax'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, convert(text, N''NoDialTone'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoDialTone'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Other'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10, convert(text, N''NoService'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_NoService'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_VoiceMail'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Congestion'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13, convert(text, N''Cancelado'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Cancelled'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, convert(text, N''Rechazada por proveedor'' collate SQL_Latin1_General_CP1_CI_AS),''systemTranslated_Rejected_by_carrier'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, convert(text, N''Contestan'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, convert(text, N''Ocupado'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, convert(text, N''No Contesta'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, convert(text, N''Fax/Modem'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, convert(text, N''NoDialTone'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, convert(text, N''Otro'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, convert(text, N''NoService'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, convert(text, N''Cancelado'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, convert(text, N''Rechazada por proveedor_'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de estado de los agentes''
 Delete [dbo].[ccTipoStatusAgente]
@@ -959,17 +961,17 @@ INSERT [ccTipoDias] ([dia_id], [descripcion]) VALUES (7, ''Sunday'')
 Print ''Estableciendo resultados de marcacion''
 delete from [ccTipoResultadoDial]
 
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, ''Answer'',''systemTranslated_Answer'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, ''Busy'',''systemTranslated_Busy'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, ''Not Answer'',''systemTranslated_NoAnswer'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, ''Fax/Modem'',''systemTranslated_Fax'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, ''NoDialTone'',''systemTranslated_NoDialTone'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, ''Other'',''systemTranslated_Other'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10, ''NoService'',''systemTranslated_NoService'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11, ''VoiceMail/Machine'',''systemTranslated_VoiceMail'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12, ''Circuit busy'',''systemTranslated_Congestion'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13, ''Cancelled'',''systemTranslated_Cancelled'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, ''Rejected by carrier'',''systemTranslated_Rejected_by_carrier'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, ''Answer'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, ''Busy'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, ''Not Answer'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, ''Fax/Modem'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, ''NoDialTone'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, ''Other'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, ''NoService'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, ''VoiceMail/Machine'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, ''Circuit busy'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, ''Cancelled'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected_by_carrier_'')
 
 Print ''Estableciendo los tipos de estado de los agentes''
 DELETE [ccTipoStatusAgente]
@@ -5611,17 +5613,17 @@ INSERT [dbo].[ccTipoDias] ([dia_id], [descripcion]) VALUES (7, ''domingo'')
 
 Print ''Estableciendo resultados de marcacion''
 TRUNCATE TABLE [dbo].[ccTipoResultadoDial]
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (1, ''Resposta'',''systemTranslated_Answer'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (2, ''Ocupado'',''systemTranslated_Busy'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (3, ''Não resposta'',''systemTranslated_NoAnswer'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (4, ''Fax / Modem'',''systemTranslated_Fax'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (5, ''NoDialTone'',''systemTranslated_NoDialTone'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (8, ''Outros'',''systemTranslated_Other'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (10,''NOservice'',''systemTranslated_NoService'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (11,''Correio de Voz/Máquina'',''systemTranslated_VoiceMail'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (12,''Circuito ocupado'',''systemTranslated_Congestion'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (13,''Cancelado'',''systemTranslated_Cancelled'')
-INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion], [descTranslate]) VALUES (90, ''Rejeitada pela operadora'',''systemTranslated_Rejected_by_carrier'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (1, ''Resposta'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (2, ''Ocupado'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (3, ''Não resposta'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (4, ''Fax / Modem'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (5, ''NoDialTone'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (8, ''Outros'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10,''NOservice'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11,''Correio de Voz/Máquina'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12,''Circuito ocupado'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13,''Cancelado'')
+INSERT [dbo].[ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejeitada pela operadora'')
 
 Print ''Estableciendo los tipos de estado de los agentes''
 DELETE [dbo].[ccTipoStatusAgente]

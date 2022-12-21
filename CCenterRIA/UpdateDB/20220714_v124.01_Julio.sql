@@ -5930,6 +5930,68 @@ END'
  	EXEC(@sql)    
 
 
+
+
+		SET @process = 'TT2571 drop ccsp_IVRAfterXferAge'
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_IVRAfterXferAge'')
+		begin
+			DROP PROCEDURE ccsp_IVRAfterXferAge;
+		end'
+		EXEC(@sql)
+
+		SET @process = 'TT2571 create ccsp_IVRAfterXferAge'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_IVRAfterXferAge]
+		@cal_id int,
+		@User_id smallint,
+		@cal_extension varchar(7),
+		@tWait smallint
+		AS
+		set nocount on
+		Update ccCallsIn SET 
+			user_id= case when user_id=0 and @User_id>0 then @User_id else user_id end, 
+			cal_extension= case when len(cal_extension)=0 and len(@cal_extension)>0 then @cal_extension else cal_extension end,
+			cal_xfer=getdate(), statusCall_id=11  -- 11=Assigned
+		where cal_id=@cal_id
+
+		update ccRIAWorkGroup_Calid set user_id=@User_id where cal_id = @cal_id and tipo = 0
+
+		return(0)
+		set nocount off'
+		EXEC(@sql)
+
+		SET @process = 'TT2571 drop ccsp_IVRUpdateCallEndNew'
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_IVRUpdateCallEndNew'')
+		begin
+			DROP PROCEDURE ccsp_IVRUpdateCallEndNew;
+		end'
+		EXEC(@sql)
+
+		SET @process = 'TT2571 create ccsp_IVRUpdateCallEndNew'
+		SET @sql = 'CREATE procEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
+		@cal_id int,
+		@cal_tIVRCallDuration smallint,
+		@statuscal_id tinyint, 
+		@cal_opciones varchar(10),
+		@cal_colgada tinyint,
+		@User_id smallint,
+		@cal_extension varchar(7),
+		@tWait smallint,
+		@cbPhone varchar(20)
+		AS
+		set nocount on
+
+		Update ccCallsIn SET statusCall_id = case when @statuscal_id in (2, 3, 4, 7, 8) then @statuscal_id else case when statusCall_id = 5 then 6 else statuscall_id end end, 
+		 user_id= case when user_id=0 and @User_id>0 then @User_id else user_id end, 
+		 cal_extension= case when len(cal_extension)=0 and len(@cal_extension)>0 then @cal_extension else cal_extension end, 
+		 cal_tWait=@tWait where cal_id=@cal_id
+
+		exec ccsp_RIAUpdateCallBack_Abandon @cal_id, @statuscal_id, @cbPhone
+		exec ccsp_EngineLogTransfers 2, @cal_id, 2, 2, null, @tWait, @cal_tIVRCallDuration
+
+		set nocount off'
+		EXEC(@sql)
+
+
 	 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		exec ccsp_getVersion 'BD', @version

@@ -78,7 +78,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'K039002 delete sp ccsp_RIACampsManualCall'
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ccspAgent_GetLastCalls'')
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIACampsManualCall'')
 		begin
 			DROP PROCEDURE ccsp_RIACampsManualCall;
 		end'
@@ -113,7 +113,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'K039002 delete sp ccspAgent_GetLastCalls '
-		SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIACampsManualCall'')
+		SET @sql = 'if exists (select * from sys.procedures where name = N''ccspAgent_GetLastCalls'')
 		begin
 			DROP PROCEDURE ccspAgent_GetLastCalls;
 		end'

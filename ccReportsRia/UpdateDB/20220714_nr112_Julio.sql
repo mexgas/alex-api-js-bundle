@@ -83,6 +83,37 @@ create table ccWhatsOringCountry(CodeCountry varchar(10) ,country varchar(255) n
 end'
 	EXEC(@sql)
 
+	set @process = 'SPEC-72 RepAnsweredCallsByDialingRetries varchar(50) '
+	set @sql = 'ALTER TABLE RepAnsweredCallsByDialingRetries ALTER COLUMN dialresult varchar(50);'
+	EXEC(@sql)
+
+	set @process = 'SPEC-72 RepOutManagementBase varchar(50) '
+	set @sql = 'ALTER TABLE RepOutManagementBase ALTER COLUMN dialresult varchar(50);'
+	EXEC(@sql)
+
+	SET @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 0)
+	BEGIN
+	DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+	EXEC (@Sql)
+
+	set @process = 'SPEC-72 Alter column descripcion from ccTipoResultadoDial'
+    set @sql = '
+		ALTER TABLE ccTipoResultadoDial ALTER COLUMN descripcion varchar(50);
+	'
+    EXEC(@sql)
+
+SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		SET @Sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE [name] = N''MSmerge_tr_altertable'' AND type in (N''TR'') AND is_disabled = 1)
+	BEGIN 
+		ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+	END'
+
+		EXEC (@Sql)
+
+
 	set @process = 'K002056 se crean registros de los diferentes paises'
 	set @sql = 'if not exists(select * from ccWhatsOringCountry) begin
 	insert into ccWhatsOringCountry values(''1264'',''Anguilla'',''systemTranslated_Anguilla'',4)
@@ -567,7 +598,7 @@ end'
 	'
 	EXEC(@sql)
 
-	set @process = 'ccspRepOutDialDetail sp ccspRepOutDialDetail'
+	set @process = 'SPEC-66 ALTER SP ccspRepOutDialDetail'
 	set @sql = '
 		ALTER PROCEDURE [dbo].[ccspRepOutDialDetail] 
 		@action AS TINYINT, 
@@ -592,9 +623,10 @@ end'
 		--Borrar lo que esta para no repetir          
 		DELETE FROM RepOutDialDetail WHERE date >= @from            AND date < @to
 		        
+			IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
+			IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
+			IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
 
-		;WITH dials
-		AS (
 			SELECT	dial.logDial_id
 				,dial.callout_id
 				,dial.cam_id
@@ -623,6 +655,7 @@ end'
 					WHEN dial.tipoLlamada_id IN (3, 4) THEN ''systemTranslated_cellPhone'' ELSE ''systemTranslated_Indefinite'' END TipoTel
 				,ISNULL(regp.tPreview,'''') as tpreview
 				,co.User_id as UserID
+			INTO #dials
 			FROM ccoLogDials dial(NOLOCK)
 			LEFT JOIN ccocallsout co(NOLOCK) ON dial.cal_id = co.cal_id
 			LEFT JOIN cctipocalifout tco WITH (NOLOCK) ON tco.calif_id = co.calif_id
@@ -663,13 +696,10 @@ end'
 			WHERE reg.reg_date >= @from AND reg.reg_date < @to AND reg.process !=7
 			)
 	
-			), codeSip as(
-				select distinct cast(codeSip as int) as codeSip,disconnectCause from dials where codeSip<>'''' and IsNumeric(codeSip)=1
-			)
-			, relationCodeSip as(
-				select A.codeSip,A.disconnectCause,B.description from codeSip A
+				select distinct cast(codeSip as int) as codeSip,disconnectCause into #codeSip from #dials where codeSip<>'''' and IsNumeric(codeSip)=1
+			
+				select A.codeSip,A.disconnectCause,B.description into #relationCodeSip from #codeSip A
 				inner join DC_Extra B on A.codeSip=B.id
-			)
 	
 		--Inserta informacon de reporte  
 			INSERT INTO RepOutDialDetail
@@ -712,16 +742,318 @@ end'
 				,ISNULL(csP.Dato15, '''') AS data15
 				,dials.tpreview AS preview_Time
 				,ISNULL(us.Login,'''')
-			FROM dials
+			FROM #dials as dials
 			LEFT JOIN ccoCallsOutSource cs(NOLOCK) ON dials.callout_id = cs.callout_id
 			LEFT JOIN cctipoResultadoDial tr(NOLOCK) ON dials.tiporesdial_id = tr.tiporesdial_id
 			LEFT JOIN ccCamps camps(NOLOCK) ON camps.[cam_id] = dials.[cam_id]
 			LEFT JOIN ccRIARegistryLists rl(NOLOCK) ON cs.list_id = rl.list_id
-			LEFT JOIN relationCodeSip dat ON dat.disconnectCause = dials.disconnectCause
+			LEFT JOIN #relationCodeSip dat ON dat.disconnectCause = dials.disconnectCause
 			LEFT JOIN ccoCallsPreviewData csP ON (dials.cal_Key = csP.cal_Key AND dials.cam_id = csP.cam_id)
 			LEFT JOIN ccUsers us (NOLOCK) ON  us.User_id = dials.UserID
+
+			IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
+			IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
+			IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
 		END
 	'	
+	EXEC(@sql)
+
+	set @process = 'SPEC-66 ALTER SP ccspRepOutboundKPI'
+	set @sql = '
+
+ALTER PROCEDURE [dbo].[ccspRepOutboundKPI]
+		@action as tinyint,
+		@from as datetime = null,
+		@to as datetime = null
+		AS
+
+		SET NOCOUNT ON
+
+		if @from is null
+			select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+			select @to = getdate()
+
+		if @action = 1
+		begin
+
+			DELETE FROM RepOutboundKPI WITH (ROWLOCK) WHERE DATE >= @from AND DATE < @to
+
+			IF OBJECT_ID(''tempdb..#UniqueRecords'') IS NOT NULL drop table #UniqueRecords
+			IF OBJECT_ID(''tempdb..#Connects'') IS NOT NULL drop table #Connects;
+			IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+			IF OBJECT_ID(''tempdb..#Quejas'') IS NOT NULL drop table #Quejas;
+			IF OBJECT_ID(''tempdb..#t'') IS NOT NULL drop table #t;
+			IF OBJECT_ID(''tempdb..#te'') IS NOT NULL drop table #te;
+
+			create table #UniqueRecords (date datetime, UniqueRecordsCalled int)
+			create table #Connects(date datetime, Connects int)
+			create table #CallsOut(date datetime, Abandono int, RPC int, PTP int, PK int)
+			create table #Quejas(date datetime, Quejas int)
+	
+
+			select distinct convert(date,[date]) as date,callKey,telephone into #t from RepOutDialDetail where date between @from and @to
+			insert into #UniqueRecords
+				select distinct convert(date,[date]),count(*) from #t group by convert(date,[date]) order by convert(date,[date])
+	
+			select date into #te from RepOutCallsDetail where date between @from and @to and USERID >0 and dialog>0
+			insert into #Connects
+				select distinct convert(date,[date]) as date,count(*) from #te group by convert(date,[date]) 
+
+			insert into #CallsOut
+				select convert(date,date),
+					sum(Abandono) as Abandono,
+					sum(RPC) as RPC,
+					sum(PTP) as PTP,
+					sum(PK) as PK
+				from(
+					select [cal_Inicio] as date,
+						case when statusCall_id in (6,7,8) then 1 else 0 end Abandono,
+						case when calif_id in (5,6,7,8,9,22,23,24,25,26,29,30,31,32,33,34) then 1 else 0 end RPC,
+						case when calif_id in (5,6,7,8,9) then 1 else 0 end as PTP,
+						case when calif_id in (46,47,48,49) then 1 else 0 end as PK
+					from ccoCallsOut
+					where cal_Inicio between @from and @to
+				) as temp
+				group by convert(date,date)
+
+			insert into #Quejas
+				select convert(date,[date]), sum(cuenta) 
+				from (
+				(select convert(date,[date]) as date,count(1) as cuenta from RepInCallsDetail where date between @from and @to and callStatusId=13 and dispositionId in (5,6,7,8,9,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,29,30,31,32,33,34,48,49) group by convert(date,[date]))
+				union all
+				(select convert(date,[cal_Inicio]) as date,count(1) as cuenta from ccoCallsOut where cal_Inicio between @from and @to and calif_id in (31) group by convert(date,[cal_inicio]) )
+				) as final
+				group by convert(date,[date]);
+
+			insert into RepOutboundKPI
+			select convert(date,final.date) as date,
+				ISNULL(UniqueRecordsCalled, 0) as UniqueRecordCalled,
+				sum(DialsAttempted) as DialsAttemted,
+				sum(dialsComplete) as DialsCompleteRing,
+				sum(Answer) as Answer,
+				ISNULL(Connects, 0) as Connects,
+				ISNULL(Abandono, 0) as Abandono,
+				ISNULL(RPC, 0) as RPC,
+				ISNULL(PTP, 0) as PTP,
+				ISNULL(PK, 0) as PK,
+				ISNULL(Quejas, 0) as Quejas,
+				datepart(yyyy,max(final.date)) as year,
+				datepart(mm,max(final.date)) as month,
+				datepart(dd,max(final.date)) as day,
+				datepart(hh,max(final.date)) as hours,
+				datepart(mi,max(final.date)) as minutes
+			from (
+				select date as date,
+					1 as DialsAttempted,
+					case when dialResultId in (1,2,3,8,11,13) then 1 else 0 end dialsComplete,
+					case when dialResultId in (1) then 1 else 0 end Answer
+				from RepOutDialDetail
+				where date between @from and @to
+			) as final
+			left join #UniqueRecords a on convert(date,final.date) = convert(date, a.date)
+			left join #CallsOut b on convert(date,final.date) = convert(date, b.date)
+			left join #Quejas c on convert(date,final.date) = convert(date, c.date)
+			left join #Connects d on convert(date,final.date) = convert(date, d.date)
+			group by convert(date,final.date), UniqueRecordsCalled, Abandono, RPC, PTP, PK, Quejas, Connects
+			order by convert(date,final.date)
+
+			IF OBJECT_ID(''tempdb..#UniqueRecords'') IS NOT NULL drop table #UniqueRecords
+			IF OBJECT_ID(''tempdb..#Connects'') IS NOT NULL drop table #Connects;
+			IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+			IF OBJECT_ID(''tempdb..#Quejas'') IS NOT NULL drop table #Quejas;
+			IF OBJECT_ID(''tempdb..#t'') IS NOT NULL drop table #t;
+			IF OBJECT_ID(''tempdb..#te'') IS NOT NULL drop table #te;
+end
+	'
+	EXEC(@sql)
+
+	set @process = 'SPEC-66 ALTER SP ccspRepMKTIntervalosSalidas'
+	set @sql = '
+	ALTER PROCEDURE [dbo].[ccspRepMKTIntervalosSalidas] 
+@action as tinyint, @from as datetime = null, @to as datetime = null	
+AS
+SET NOCOUNT ON
+if @from is null
+	select @from = convert(datetime, convert(varchar(11), getdate()))
+if @to is null
+	select @to = getdate()
+
+if @action = 1
+BEGIN
+	
+	DECLARE @tresRing AS SMALLINT
+	EXEC @tresRing = ccspConfigTresRing;						
+			
+delete RepMKTIntervalosSalida with(rowlock) where date between @from and @to;
+
+IF OBJECT_ID(''tempdb..#tPersonal'') IS NOT NULL drop table #tPersonal
+IF OBJECT_ID(''tempdb..#tDisp'') IS NOT NULL drop table #tDisp;
+IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+IF OBJECT_ID(''tempdb..#OutboundCalls'') IS NOT NULL drop table #OutboundCalls;
+IF OBJECT_ID(''tempdb..#OutboundCallGroup'') IS NOT NULL drop table #OutboundCallGroup;
+
+select count(distinct user_id) as uid
+	,sum(tlog) tlog
+,DATEADD(mi, CASE WHEN DATEPART(mi, timegroup_next) in (15,45) THEN - 15 ELSE 0 END, timegroup_next) timegroup_next
+into #tPersonal
+from TmpSessionTimeGroup
+group by DATEADD(mi, CASE WHEN DATEPART(mi, timegroup_next) in (15,45) THEN - 15 ELSE 0 END, timegroup_next)
+	
+select 
+DATEADD(mi, 
+case when DATEPART(mi,timeGroupNext)= 15 then -15 
+	else 0 end
+, timeGroupNext) as timeGroupNext
+,sum(case when TipoStatusAge_id=2 then tStatus else 0 end) tnodispo
+,sum(case when TipoStatusAge_id=2 then tStatus else 0 end) tdispo
+into #tDisp
+from tmpccLogAgentesDia
+where TipoStatusAge_id in (2,3)
+group by DATEADD(mi, 
+case when DATEPART(mi,timeGroupNext)= 15 then -15 
+	else 0 end
+, timeGroupNext) 
+
+	SELECT cal_id,dateStartDetail, dateEndDetail,timegroup_next
+		, user_id, ntotal AS Recibidas, nanswer AS [Contestadas], nabnd_dialog AS [Abandonadas], nhangup AS SinAgentes, statusCall_id, tque, 
+		txfer, tring, tdialog, tnotes, cal_tMoh
+	INTO #callOut
+	FROM tmpTimesOutboundData
+	
+	SELECT lo.cal_id
+	,co.cal_id AS callId
+	,co.dateStartDetail
+	,co.dateEndDetail	
+	,CASE WHEN co.statusCall_id = 13 THEN co.timegroup_next ELSE dbo.getTimegroup(DATEADD(ss, tDialing, fecha),1) END AS timegroup_next	
+	,Recibidas
+	,co.user_id AS userId
+	,cam_id AS cam_id
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 2 THEN 1 ELSE 0 END Ocupado
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 3 THEN 1 ELSE 0 END NoContestan
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 4 THEN 1 ELSE 0 END Fax
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 11 THEN 1 ELSE 0 END Buzon
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 5 THEN 1 ELSE 0 END SinTono
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 10 THEN 1 ELSE 0 END NoService
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 8 THEN 1 ELSE 0 END Otro
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 12 THEN 1 ELSE 0 END Congestion
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 13 THEN 1 ELSE 0 END Cancelado
+	,CASE WHEN Recibidas > 0 AND tipoResDial_id = 1 THEN 1 ELSE 0 END [Contactos] --contactos sistema
+	,[Contestadas]
+	,CASE WHEN statusCall_id IN (6, 10, 11, 12, 14, 15, 16)
+			OR (
+				canceledNoAgents <> 0 AND answerbit = 1
+				)
+			OR ([Abandonadas] > 0) THEN 1 ELSE 0 END AS [Abandonadas]
+	,SinAgentes
+	,CASE WHEN statuscall_id IN (15, 16) THEN 1 ELSE 0 END AS NoContestadas
+	,CASE WHEN statuscall_id IN (11, 10, 12, 14) AND tring <= @tresRing THEN 1 ELSE 0 END AS CortadasRing
+	,CASE WHEN statuscall_id IN (11, 10, 12, 14) AND tring > @tresRing THEN 1 ELSE 0 END AS CortadasDespRing
+	,[Abandonadas] AS CortadasDlg
+	,CASE WHEN statuscall_id = 13 THEN co.txfer + co.tring + co.tdialog + co.tnotes + co.cal_tMoh ELSE 0 END TMO
+	,CASE WHEN statuscall_id = 13 THEN 1 ELSE NULL END countStatus13
+	,co.tdialog
+	,co.cal_tMoh AS TiempoTotalHold
+	,co.tnotes
+	,co.txfer + co.tring AS TiempoTotalRing
+	,co.tque
+	,co.txfer + co.tring + co.tdialog + co.tnotes  [Ocupacion]
+	,co.statuscall_id
+	,co.tring
+	,tipoResDial_id
+INTO #OutboundCalls
+FROM ccologdials(NOLOCK) lo
+LEFT JOIN #callOut co
+	ON co.cal_id = lo.cal_id
+WHERE fecha BETWEEN @from
+		AND @to
+
+SELECT 
+dateadd(mi, case when datepart(mi,timegroup_next) in (15,45) then -15 else 0 end,timegroup_next) as timegroup_next
+,count(distinct userId )as Staff
+,sum(Recibidas) as Recibidas
+,sum(Ocupado) as Ocupado
+,sum(NoContestan) as NoContestan	
+,sum(Fax) as Fax
+,sum(Buzon) as Buzon
+,sum(SinTono) as SinTono
+,sum(NoService) as nout_service	
+,sum(Otro) as Other	
+,sum(Congestion) as Congestion
+,sum(Cancelado) as Cancelado
+,sum(Contactos) as contacted
+,sum(Contestadas) as Answered
+,sum(Abandonadas) as abandonedCalls
+,sum(SinAgentes) as SinAgentes
+,sum(NoContestadas) as NoContestadas
+,sum(CortadasRing) as nabndxferout
+,sum(CortadasDespRing) as nabndringout
+,sum(CortadasDlg) nabnddlgout
+,isnull(SUM([Ocupacion])/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0)  as TMO
+,isnull(SUM(tdialog)/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0) as promDialogo
+,sum(TiempoTotalHold) as holdTime
+,sum(tnotes) as tnotesout
+,sum(TiempoTotalRing) as tringout
+,isnull(sum(tque)*1.0/nullif(COUNT(case when statuscall_id=13 then 1 end),0),0)  as avrAnswer
+, case when count(case when statusCall_id=13 then 1 end ) = 0 or count(case when tipoResDial_id=1 then 1 end) = 0 then 0.00
+else convert(decimal(10,2),sum(Abandonadas)*100.0/count(case when tipoResDial_id=1 then 1 end) ) end as AvgAbandon
+,Cam_id
+,sum([Ocupacion]) as sumTime
+INTO #OutboundCallGroup
+FROM #OutboundCalls co
+group by dateadd(mi, case when datepart(mi,timegroup_next) in (15,45) then -15 else 0 end,timegroup_next),cam_id
+
+
+
+insert into RepMKTIntervalosSalida
+select convert(datetime, convert([date],oc.timegroup_next,121)) as [date]
+,convert(varchar(5),oc.timegroup_next,108) rango1
+,convert(varchar(5),dateadd(mi,30,oc.timegroup_next),108) rango2
+,oc.Staff
+,oc.Recibidas
+,oc.Ocupado
+,oc.NoContestan
+,oc.Fax
+,oc.Buzon
+,oc.SinTono
+,oc.nout_service
+,oc.Other
+,oc.Congestion
+,oc.Cancelado
+,oc.contacted
+,oc.Answered
+,oc.abandonedCalls
+,oc.SinAgentes
+,oc.NoContestadas
+,oc.nabndxferout
+,oc.nabndringout
+,oc.nabnddlgout
+,oc.TMO
+,oc.promDialogo
+,oc.holdTime
+,oc.tnotesout
+,oc.tringout
+,isnull(d.tdispo,0) as readyTime
+,isnull(d.tnodispo,0) as notReadyTime
+,isnull(l.tlog,0) as Personal
+,oc.avrAnswer
+,isnull(case when l.tlog=0 then 0.00 else convert(decimal(10,2), (oc.tnotesout+d.tnodispo)*100.0/L.tlog) end,0.00) as Reductor
+,oc.AvgAbandon
+,case when l.tlog is null or l.tlog =0  then 0.00 else convert(decimal(10,2), oc.sumTime*100.0/L.tlog,0) end as OcupacionCOPC
+,oc.Cam_id
+from #OutboundCallGroup oc
+left join #tPersonal L on oc.timegroup_next=L.timegroup_next
+left join #tDisp d on oc.timegroup_next=d.timeGroupNext
+
+IF OBJECT_ID(''tempdb..#tPersonal'') IS NOT NULL drop table #tPersonal
+IF OBJECT_ID(''tempdb..#tDisp'') IS NOT NULL drop table #tDisp;
+IF OBJECT_ID(''tempdb..#callOut'') IS NOT NULL drop table #callOut;
+IF OBJECT_ID(''tempdb..#OutboundCalls'') IS NOT NULL drop table #OutboundCalls;
+IF OBJECT_ID(''tempdb..#OutboundCallGroup'') IS NOT NULL drop table #OutboundCallGroup;
+END
+
+
+	'
 	EXEC(@sql)
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

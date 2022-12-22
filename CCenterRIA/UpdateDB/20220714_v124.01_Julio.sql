@@ -658,7 +658,7 @@ INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, conve
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, convert(text, N''Buzon/Maquina'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, convert(text, N''Congestion'' collate SQL_Latin1_General_CP1_CI_AS))
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, convert(text, N''Cancelado'' collate SQL_Latin1_General_CP1_CI_AS))
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, convert(text, N''Rechazada por proveedor_'' collate SQL_Latin1_General_CP1_CI_AS))
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, convert(text, N''Rechazada por proveedor'' collate SQL_Latin1_General_CP1_CI_AS))
 
 Print ''Estableciendo los tipos de estado de los agentes''
 Delete [dbo].[ccTipoStatusAgente]
@@ -971,7 +971,7 @@ INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, ''NoS
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, ''VoiceMail/Machine'')
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, ''Circuit busy'')
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, ''Cancelled'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected_by_carrier_'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected_by_carrier'')
 
 Print ''Estableciendo los tipos de estado de los agentes''
 DELETE [ccTipoStatusAgente]

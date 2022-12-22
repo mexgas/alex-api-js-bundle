@@ -971,7 +971,7 @@ INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (10, ''NoS
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (11, ''VoiceMail/Machine'')
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (12, ''Circuit busy'')
 INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (13, ''Cancelled'')
-INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected_by_carrier'')
+INSERT [ccTipoResultadoDial] ([tipoResDial_id], [descripcion]) VALUES (90, ''Rejected by carrier'')
 
 Print ''Estableciendo los tipos de estado de los agentes''
 DELETE [ccTipoStatusAgente]

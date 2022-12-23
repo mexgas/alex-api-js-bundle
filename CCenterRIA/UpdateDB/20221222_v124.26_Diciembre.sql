@@ -1,12 +1,12 @@
-ï»¿/*******************************/
+/*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
 Author:
 
 
-Date: 2022/02/15
-Description: Merge con los cambios de sorteos
+Date: 2022/11/19
+Description: Cambios para estados de email
 
 Database: CCenterRia
 Required version: 124.25
@@ -47,8 +47,9 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-   		/* Permiso de manejo de administradores conectados */
-		SET @process = 'K001084-Gestionar administradores conectados'
+
+
+	SET @process = 'K001084-Gestionar administradores conectados'
 	  	
 		SET @sql = 'if not exists (select * from ccPermissions where Permissions_Id=10030)
 		begin
@@ -65,15 +66,15 @@ BEGIN
 		SET @process = 'K039001 Add translate to calueRecord'
 		SET @sql = 'if not exists (select * from valueRecord where valueT=''MANUALMODE1'')
 		begin
-			insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE1'',''Vía teclado e historial'',''Via keypad and log'',''Via teclado e histórico'')
+			insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE1'',''VÃ­a teclado e historial'',''Via keypad and log'',''Via teclado e histÃ³rico'')
 		end
 		if not exists (select * from valueRecord where valueT=''MANUALMODE2'')
 				begin
-					insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE2'',''Vía historial de llamadas'',''Via calls log'',''Via histórico de chamadas'')
+					insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE2'',''VÃ­a historial de llamadas'',''Via calls log'',''Via histÃ³rico de chamadas'')
 				end
 		if not exists (select * from valueRecord where valueT=''MANUALMODE3'')
 				begin
-					insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE3'',''Vía dato en teclado'',''Via data in keypad'',''Via dado no teclado'')
+					insert into valueRecord (valueT, es, en, pt) values (''MANUALMODE3'',''VÃ­a dato en teclado'',''Via data in keypad'',''Via dado no teclado'')
 				end'
 		EXEC(@sql)
 
@@ -266,9 +267,8 @@ BEGIN
 		'
 		EXEC(@sql)
 
-		
-
-
+	
+	
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
@@ -287,4 +287,3 @@ BEGIN
 		ROLLBACK TRAN
 	END CATCH
 END
-

@@ -53,8 +53,8 @@ BEGIN
 			begin
 
 				CREATE TABLE [dbo].[ccPasswordHistory](
-					[(User_id] [int] NOT NULL,
-					[Password] [varchar(max)] NOT NULL,
+					[(User_id] [smallint] NOT NULL,
+					[Password] [varchar(33)] NOT NULL,
 					[PasswdDate] [datetime] NOT NULL
 				)
 			end';
@@ -76,13 +76,11 @@ BEGIN
 
 	SET @process = 'KR063003-Setting 207-No permitir editar contraseña con contraseña previamente asignada al usuario'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
-@UserId int,
+@UserId smallint,
 @Login varchar(200),
-@Password varchar(200)
+@Password varchar(33)
 as
-	declare @date datetime = GETDATE()
-	declare @setting207 int = (select valor from ccSettings where setting_id=207)
-
+	
 -- validaciones	
 	if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
 		begin
@@ -92,6 +90,9 @@ as
 
 	if  @Password <> '''' 
 		begin 
+			declare @date datetime = GETDATE()
+			declare @setting207 int = (select valor from ccSettings where setting_id=207)
+
 			if (@setting207 = 1 and exists(select Password from ccPasswordHistory where Password=@Password and User_id=@UserId))
 			 begin
 				select -7 as ResponseCode -- La contraseña ya existe

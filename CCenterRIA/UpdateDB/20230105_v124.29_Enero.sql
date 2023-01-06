@@ -268,7 +268,7 @@ BEGIN
 AS
     BEGIN
         SET NOCOUNT ON;
-        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme SMALLINT= 0;
+        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme SMALLINT= 0, @UserBlockedByMaxAttempts BIT = 0;
         CREATE TABLE #temp
         (LoginOK              INT, 
          PswdOK               INT, 
@@ -280,6 +280,7 @@ AS
          changeRecDisposition INT, 
          LastPasswordchange   INT
         );
+		
         INSERT INTO #temp
         EXEC ccsp_RIAADMChecaLogin 
              @Login, 
@@ -289,8 +290,18 @@ AS
 			 1;
         SELECT @LoginOK = LoginOK, @PswdOK = PswdOK, @Nombre = Nombre, @ADMServer = ADMServer, @AreaId = AreaId, @ViewAvrs = ViewAvrs, @changeRecDisposition = changeRecDisposition, @PasswordExpired = LastPasswordchange
         FROM #temp;
+
         IF @LoginOK = 1
             BEGIN
+			IF (SELECT isBlocked
+			FROM ccUsers
+			WHERE User_id = @User_id) = 1
+			BEGIN
+			SET @UserBlockedByMaxAttempts = 1;
+			END
+			ELSE
+			BEGIN
+
                 SELECT @User_id = User_id, @ViewAgents = viewAgents, @Theme = theme
                 FROM ccUsers
                 WHERE Login = @Login;
@@ -298,6 +309,22 @@ AS
                 SELECT @LastLoginAttempt = LastLoginAttempt, @LoginAttempts = LoginAttempts, @LastPasswordChange = LastPasswordChange
                 FROM ccUsers
                 WHERE User_id = @User_id;
+				
+				IF (SELECT valor
+				FROM ccSettings
+				WHERE setting_id = 207) = 1
+				BEGIN
+					IF (SELECT LoginAttempts
+					FROM ccUsers
+					WHERE User_id = @User_id) > 3
+					BEGIN
+						SET @UserBlockedByMaxAttempts = 1;
+						UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+					END
+				END
+				ELSE
+				BEGIN
+				
                 SELECT @MaxAttemptsAllow = valor
                 FROM ccSettings
                 WHERE setting_id = 198;
@@ -320,6 +347,7 @@ AS
                         SET @UserBlocked = 1;
                 END;
 
+				END
                 --Checks Username match case sensitive    
                 IF CAST(@Login AS VARBINARY(200)) <>
                 (
@@ -332,9 +360,9 @@ AS
                 END;
 
                 --Increments attemps if error
-                IF @UserBlocked = 0
+                IF (@UserBlocked = 0
                    AND (@UsernameMatch = 0
-                        OR @PswdOK = 0)
+                        OR @PswdOK = 0)) AND @UserBlockedByMaxAttempts = 0
                     BEGIN
                         UPDATE ccUsers
                           SET 
@@ -379,7 +407,21 @@ AS
                     WHERE User_id = @User_id FOR XML PATH('''')
                 ), 1, 2, '''');
         END;
-        SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles;
+		END;
+		
+		IF (SELECT valor
+		FROM ccSettings
+		WHERE setting_id = 207) = 1
+		BEGIN
+			IF (SELECT LoginAttempts
+			FROM ccUsers
+			WHERE User_id = @User_id) > 3
+			BEGIN
+				SET @UserBlockedByMaxAttempts = 1;
+				UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+			END
+		END
+        SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles, @UserBlockedByMaxAttempts UserBlockedByMaxAttempts;
     END;'
 		EXEC(@sql)
 

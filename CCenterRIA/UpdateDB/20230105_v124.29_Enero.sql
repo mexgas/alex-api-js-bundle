@@ -214,7 +214,7 @@ BEGIN
 
 	SET @process = 'KR063006-Admin-Alerta de bloqueo de contraseña-Backend'
 	SET @sql = 'CREATE PROCEDURE ccsp_ParametersPassSecure
-	@login varchar(250),
+	@login varchar(40),
 	@passsecure bit
 	AS
 	BEGIN
@@ -222,8 +222,6 @@ BEGIN
 	declare @LongPass int
 	declare @RemainingDays int
 	declare @setting207 int
-	declare @setting29 int
-	declare @setting30 int
 
 	select @setting207 = valor from ccSettings where setting_id = 207
 
@@ -240,6 +238,8 @@ BEGIN
 		end
 		else
 		begin
+			declare @setting29 int
+			declare @setting30 int
 			select @setting29 = valor from ccSettings where setting_id = 29
 			select @setting30 = valor from ccSettings where setting_id = 30
 			if @setting29 != 0

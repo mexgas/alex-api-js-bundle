@@ -202,6 +202,54 @@ BEGIN
 					select -6 as ResponseCode -- la nueva contraseña es vacia
 				end'
 		EXEC(@sql)
+
+
+	-------------------------------------------- JCL KR063006 --------------------
+	SET @process = 'KR063006-Admin-Alerta de bloqueo de contraseña-Backend'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_ParametersPassSecure'')
+				BEGIN
+					DROP PROCEDURE ccsp_ParametersPassSecure;
+				END';
+	EXEC(@sql);
+
+	SET @process = 'KR063006-Admin-Alerta de bloqueo de contraseña-Backend'
+	SET @sql = 'CREATE PROCEDURE ccsp_ParametersPassSecure
+	@login varchar(40),
+	@passsecure bit
+	AS
+	BEGIN
+
+	declare @RemainingDays int
+	declare @setting207 int
+
+	select @setting207 = valor from ccSettings where setting_id = 207
+
+		if @passsecure=1 or @setting207 =1
+		begin
+			set @passsecure=1
+			select @RemainingDays = DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange)) from ccUsers nolock where login = @login
+			--se retorna 8 en LongPass de acuerdo a reglas del setting 207
+			select @passsecure passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, 8 LongPass
+		end
+		else
+		begin
+			declare @setting29 int = (select valor from ccSettings where setting_id = 29)
+			declare @setting30 int = (select valor from ccSettings where setting_id = 30)
+			if @setting29 != 0
+			begin
+				set @passsecure = 1
+				select @RemainingDays = DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange)) from ccUsers nolock where login = @login
+
+				select @passsecure passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, @setting30 LongPass
+			end
+			else
+			begin
+				select @passsecure passSecure, 0 RemainingDays, @setting30 LongPass
+			end
+		end
+
+	END';
+	EXEC(@sql);		
 	----------------------------------------------------------------------------------------------------------------------
 
 		/* End script release */

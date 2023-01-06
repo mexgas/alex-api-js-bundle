@@ -219,7 +219,6 @@ BEGIN
 	AS
 	BEGIN
 
-	declare @LongPass int
 	declare @RemainingDays int
 	declare @setting207 int
 
@@ -227,17 +226,15 @@ BEGIN
 
 		if @passsecure=1 or @setting207 =1
 		begin
+			set @passsecure=1
 			select @RemainingDays = DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange)) from ccUsers nolock where login = @login
-			set @LongPass = 8
-
-			select @setting207 passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, @LongPass LongPass
+			--se retorna 8 en LongPass de acuerdo a reglas del setting 207
+			select @passsecure passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, 8 LongPass
 		end
 		else
 		begin
-			declare @setting29 int
-			declare @setting30 int
-			select @setting29 = valor from ccSettings where setting_id = 29
-			select @setting30 = valor from ccSettings where setting_id = 30
+			declare @setting29 int = (select valor from ccSettings where setting_id = 29)
+			declare @setting30 int = (select valor from ccSettings where setting_id = 30)
 			if @setting29 != 0
 			begin
 				set @passsecure = 1

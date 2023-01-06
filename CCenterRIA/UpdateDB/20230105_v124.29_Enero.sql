@@ -67,55 +67,6 @@ BEGIN
     end';
 	EXEC(@sql);
 
-	SET @process = 'KR063003-Setting 207-No permitir editar contraseña con contraseña previamente asignada al usuario'
-	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdatePassword'')
-		begin
-			DROP PROCEDURE ccsp_GalateaUpdatePassword;
-		end';
-	EXEC(@sql);
-
-	SET @process = 'KR063003-Setting 207-No permitir editar contraseña con contraseña previamente asignada al usuario'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
-@UserId smallint,
-@Login varchar(200),
-@Password varchar(33)
-as
-	
--- validaciones	
-	if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
-		begin
-			select -5 as ResponseCode--el usuario no existe
-			return(0)
-		end
-
-	if  @Password <> '''' 
-		begin 
-			declare @date datetime = GETDATE()
-			declare @setting207 int = (select valor from ccSettings where setting_id=207)
-
-			if (@setting207 = 1 and exists(select Password from ccPasswordHistory where Password=@Password and User_id=@UserId))
-			 begin
-				select -7 as ResponseCode -- La contraseña ya existe
-			 end
-			else
-			 begin
-				Update ccUsers set Password=@Password, LastPasswordChange = @date where User_id=@UserId	and Login=@Login
-				
-				if @setting207 = 1
-				 begin
-					insert into ccPasswordHistory(User_id, Password, PasswdDate)
-					values (@UserId, @Password, @date)
-				 end
-
-				select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
-			 end
-		end
-	else
-		begin 
-			select -6 as ResponseCode -- la nueva contraseña es vacia
-		end';
-	EXEC(@sql);
-
 	-------------------------------------------- Ivan Martin (Gerardo Zumaya) K002082-DescargaConv_WA --------------------
 	SET @process = 'K002082-DescargaConv_WA Drop procedure ccspGalatea_Finder'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspGalatea_Finder'')
@@ -216,7 +167,7 @@ as
 		@Login varchar(40),
 		@Password varchar(33)
 		as
-
+	
 		-- validaciones	
 			if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
 				begin
@@ -226,12 +177,29 @@ as
 
 			if  @Password <> '''' 
 				begin 
-					Update ccUsers set Password=@Password, LastPasswordChange = GETDATE(), isBlocked=0, LoginAttempts=0 where User_id=@UserId	and Login=@Login
-					select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+					declare @date datetime = GETDATE()
+					declare @setting207 int = (select valor from ccSettings where setting_id=207)
+
+					if (@setting207 = 1 and exists(select Password from ccPasswordHistory where Password=@Password and User_id=@UserId))
+					 begin
+						select -7 as ResponseCode -- La contraseña ya existe
+					 end
+					else
+					 begin
+						Update ccUsers set Password=@Password, LastPasswordChange = @date, isBlocked=0, LoginAttempts=0 where User_id=@UserId	and Login=@Login
+				
+						if @setting207 = 1
+						 begin
+							insert into ccPasswordHistory(User_id, Password, PasswdDate)
+							values (@UserId, @Password, @date)
+						 end
+
+						select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+					 end
 				end
 			else
 				begin 
-					select -6 as ResponseCode -- la nueva contrase�a es vacia
+					select -6 as ResponseCode -- la nueva contraseña es vacia
 				end'
 		EXEC(@sql)
 	----------------------------------------------------------------------------------------------------------------------

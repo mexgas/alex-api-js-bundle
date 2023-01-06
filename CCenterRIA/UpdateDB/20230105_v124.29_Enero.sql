@@ -212,9 +212,9 @@ as
 
 		set @process = 'DEV2-154_FAOM_Block_Agent_Setting207 create ccsp_GalateaUpdatePassword '
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
-		@UserId int,
-		@Login varchar(200),
-		@Password varchar(200)
+		@UserId smallint,
+		@Login varchar(40),
+		@Password varchar(33)
 		as
 
 		-- validaciones	

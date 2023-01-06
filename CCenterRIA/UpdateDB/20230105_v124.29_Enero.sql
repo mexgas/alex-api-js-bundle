@@ -231,9 +231,64 @@ as
 				end
 			else
 				begin 
-					select -6 as ResponseCode -- la nueva contrase�a es vacia
+					select -6 as ResponseCode -- la nueva contrase�a es vacia
 				end'
 		EXEC(@sql)
+
+
+	-------------------------------------------- JCL KR063006 --------------------
+	SET @process = 'KR063006-Admin-Alerta de bloqueo de contraseña-Backend'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_ParametersPassSecure'')
+				BEGIN
+					DROP PROCEDURE ccsp_ParametersPassSecure;
+				END';
+	EXEC(@sql);
+
+	SET @process = 'KR063006-Admin-Alerta de bloqueo de contraseña-Backend'
+	SET @sql = 'CREATE PROCEDURE ccsp_ParametersPassSecure
+	@login varchar(250),
+	@passsecure bit
+	AS
+	BEGIN
+
+	declare @LongPass int
+	declare @RemainingDays int
+	declare @setting207 int
+	declare @setting29 int
+	declare @setting30 int
+
+	select @setting207 = valor from ccSettings where setting_id = 207
+
+		if @passsecure=1 or @setting207 =1
+		begin
+			if @setting207 =1
+			begin
+				set @passsecure =1
+			end
+			select @RemainingDays = case when DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange))<0 then 0 else DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange)) end from ccUsers nolock where login = @login
+			set @LongPass = 8
+
+			select @passsecure passSecure, @RemainingDays RemainingDays, @LongPass LongPass
+		end
+		else
+		begin
+			select @setting29 = valor from ccSettings where setting_id = 29
+			select @setting30 = valor from ccSettings where setting_id = 30
+			if @setting29 != 0
+			begin
+				set @passsecure = 1
+				select @RemainingDays = case when DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange))<0 then 0 else DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange)) end from ccUsers nolock where login = @login
+
+				select @passsecure passSecure, @RemainingDays RemainingDays, @setting30 LongPass
+			end
+			else
+			begin
+				select @passsecure passSecure, 0 RemainingDays, @setting30 LongPass
+			end
+		end
+
+	END';
+	EXEC(@sql);		
 	----------------------------------------------------------------------------------------------------------------------
 
 		/* End script release */

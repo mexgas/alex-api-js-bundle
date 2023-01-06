@@ -227,14 +227,10 @@ BEGIN
 
 		if @passsecure=1 or @setting207 =1
 		begin
-			if @setting207 =1
-			begin
-				set @passsecure =1
-			end
-			select @RemainingDays = case when DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange))<0 then 0 else DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange)) end from ccUsers nolock where login = @login
+			select @RemainingDays = DATEDIFF(d, getdate(), DATEADD(dd, 30, LastPasswordChange)) from ccUsers nolock where login = @login
 			set @LongPass = 8
 
-			select @passsecure passSecure, @RemainingDays RemainingDays, @LongPass LongPass
+			select @setting207 passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, @LongPass LongPass
 		end
 		else
 		begin
@@ -245,9 +241,9 @@ BEGIN
 			if @setting29 != 0
 			begin
 				set @passsecure = 1
-				select @RemainingDays = case when DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange))<0 then 0 else DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange)) end from ccUsers nolock where login = @login
+				select @RemainingDays = DATEDIFF(d, getdate(), DATEADD(dd, @setting29, LastPasswordChange)) from ccUsers nolock where login = @login
 
-				select @passsecure passSecure, @RemainingDays RemainingDays, @setting30 LongPass
+				select @passsecure passSecure, case when @RemainingDays < 0 then 0 else @RemainingDays end RemainingDays, @setting30 LongPass
 			end
 			else
 			begin

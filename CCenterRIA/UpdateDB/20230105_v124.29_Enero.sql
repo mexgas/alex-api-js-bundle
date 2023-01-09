@@ -53,9 +53,9 @@ BEGIN
 			begin
 
 				CREATE TABLE [dbo].[ccPasswordHistory](
-					[(User_id] [smallint] NOT NULL,
-					[Password] [varchar(33)] NOT NULL,
-					[PasswdDate] [datetime] NOT NULL
+					[(User_id] smallint NOT NULL,
+					[Password] varchar(33) NOT NULL,
+					[PasswdDate] datetime NOT NULL
 				)
 			end';
 	EXEC(@sql);

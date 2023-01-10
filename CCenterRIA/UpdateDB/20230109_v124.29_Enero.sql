@@ -91,7 +91,7 @@ BEGIN
 
 					SET @loginDays = 0
 
-					IF @option = 1 -- Todas las campaÃ±as
+					IF @option = 1 -- Todas las campañas
 					BEGIN
 						SELECT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0), isnull(DNCscrub, 0)
 						FROM ccCamps a1
@@ -106,7 +106,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 2 -- CampaÃ±as de un Area
+					IF @option = 2 -- Campañas de un Area
 					BEGIN
 						SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG
 						FROM ccCamps a1
@@ -118,7 +118,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 3 -- CampaÃ±as por Supervisor
+					IF @option = 3 -- Campañas por Supervisor
 					BEGIN
 						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(a1.IDArea, 0) IDArea
 						FROM ccCamps a1
@@ -157,7 +157,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 5 -- CampaÃ±as por Supervisor
+					IF @option = 5 -- Campañas por Supervisor
 					BEGIN
 						SELECT @AreaId = IDArea
 						FROM ccUsers
@@ -192,7 +192,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 8 -- CampaÃ±as de un Agente
+					IF @option = 8 -- Campañas de un Agente
 					BEGIN
 						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame
 						FROM ccCamps a1
@@ -204,7 +204,7 @@ BEGIN
 
 						RETURN (0)
 					END
-					IF @option = 9 -- CampaÃ±as de un Area
+					IF @option = 9 -- Campañas de un Area
 					BEGIN
 						(SELECT DISTINCT a1.cam_id as CamID, cam_descripcion as CamDescription, frame as Frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) as RelationsWG,1 CamType, 
 						ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 1 and IdCampEsp = a1.cam_id and IDWG = @WGID group by IdCampEsp),0) IsAssignedToCurrentWG,
@@ -429,7 +429,7 @@ BEGIN
 							if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
 							begin
 							declare @error varchar(70)
-							Select @error=case valor when 0 then ''No es posible eliminar la campaÃ±a, esta asociada a una especialidad''
+							Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad''
 								else ''Campaign can not be deleted, it has an association with an ACD'' end
 							from ccsettings with(nolock) where setting_id = 27
 							raiserror (@error,18,1)		
@@ -458,7 +458,7 @@ BEGIN
 							return(0)  
 							end
 
-						-- ODC: la campaÃ±a siempre esta activa
+						-- ODC: la campaña siempre esta activa
 						set @Activa = 1
 						declare @pref int
 						select  @pref = valor from ccSettings where setting_id = 201
@@ -475,7 +475,7 @@ BEGIN
 
 						else
 							begin
-							select -2 --, ''Error al crear campaÃ±a''
+							select -2 --, ''Error al crear campaña''
 							return(0)
 							end
 
@@ -483,7 +483,7 @@ BEGIN
 							begin
 							if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
 								begin
-								select -3 -- Error al asignar campaÃ±a a ACD, el ACD no existe o no pertenece a la misma area
+								select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
 								return(0)
 								end
 
@@ -544,13 +544,13 @@ BEGIN
 							return(0)
 						end
 
-						if @option = 5 --Obtener relaciones de campaÃ±as - campaÃ±as
+						if @option = 5 --Obtener relaciones de campañas - campañas
 						begin
 							if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
 							(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
 							not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
 							begin
-							select -3 -- CampaÃ±a invalida
+							select -3 -- Campaña invalida
 							return(0)
 							end
 									
@@ -578,13 +578,13 @@ BEGIN
 							return(0)
 						end
 
-					if @option = 7 -- Checa si la campaÃ±a no tiene grabaciones y se puede modificar el prefijo
+					if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
 						begin	
 							select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
 							--select 0 as Grabaciones	
 						end
 
-					if @option = 8 -- Checa si la campaÃ±a tiene asignada una campaÃ±a tipo encuesta
+					if @option = 8 -- Checa si la campaña tiene asignada una campaña tipo encuesta
 						begin	
 							SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
 							from cccamps with(index(PK_ccCamps),nolock)
@@ -780,7 +780,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe una lista de campaÃ±as de salida con el id de grupo de trabajo especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe una lista de campañas de salida con el id de grupo de trabajo especificado'', 18, 1);
 					                    END;
 					            END;
 					            IF @CampType = 0 -- Campaigns In (ACD)
@@ -795,7 +795,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe una lista de campaÃ±as de entrada con el id de grupo de trabajo especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe una lista de campañas de entrada con el id de grupo de trabajo especificado'', 18, 1);
 					                    END;
 					            END;
 					            RETURN 0;
@@ -817,7 +817,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe campaÃ±as de salida con el id especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
 					                    END;
 					            END;
 					            IF @CampType = 0 -- Campaigns In (ACD)
@@ -834,7 +834,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe campaÃ±as de entrada con el id especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
 					                    END;
 					            END;
 					            RETURN 0;
@@ -850,7 +850,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. No existe la campaÃ±as de entrada con el id especificado'', 18, 1);
+					                    RAISERROR(''ERROR. No existe la campañas de entrada con el id especificado'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;
@@ -874,7 +874,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. La campaÃ±as o administrador no existen'', 18, 1);
+					                    RAISERROR(''ERROR. La campañas o administrador no existen'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;
@@ -907,7 +907,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. La campaÃ±as con el id seleccionado no existe'', 18, 1);
+					                    RAISERROR(''ERROR. La campañas con el id seleccionado no existe'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;
@@ -1327,7 +1327,345 @@ BEGIN
 
 -------------------------------------------------------- END IVAN feature/IM-K038001-Add_camp_type_to_ccCamps ----------------------------------------------------------
 
+-------------------------------------------------------BEGIN MARCO GARCIA KR011005-Inspeccionar mensaje campaña de entrada ------------------------------------------------
+	SET @process = 'KR011005-Inspeccionar mensaje campaña de entrada delete procedure ccsp_GalateaAgentAutomaticMessages'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaAgentAutomaticMessages'')
+		BEGIN
+			DROP PROCEDURE ccsp_GalateaAgentAutomaticMessages;
+		END';
+	EXEC(@sql);
 
+
+	SET @process = 'KR011005-Inspeccionar mensaje campaña de entrada create procedure ccsp_GalateaAgentAutomaticMessages'
+	SET @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_GalateaAgentAutomaticMessages] 
+        @action as tinyint,
+        @msgName as varchar(40) = '''',
+        @msgFile as varchar(100) = null,
+        @Description as varchar(40) = '''',
+        @duration as int = -1,
+        @CampType tinyint = 0,
+        @msgIdLst varchar(8000) = null,
+        @camId int =null,
+        @MsgId int = null
+	AS
+	BEGIN
+        SET NOCOUNT ON
+        declare @tableMsgId table(MsgId int not null)
+        declare @campName varchar(70)
+
+        if @action in (3,7) begin --Assin/Unassign
+                if @CampType=0
+                        select @campName =descripcion from ccInbound where Inbound_id=@camId
+                else
+                        select @campName =cam_descripcion from ccCamps where cam_id=@camId
+        end
+
+        if @action = 1  -- GET_AUDIO_CATALOG
+        begin
+                select ISNULL(msgName, msgFile) [MsgName], [Description] [MsgDescription], [MsgFile] [MsgFile], [MsgId] [MsgId] from ccAgentMsgFiles         
+                return (0)
+        end
+        else if @action = 2 --CREATE_NEW_MSG
+        begin
+                if EXISTS(select msgName from ccAgentMsgFiles where msgName=@msgName)
+                begin
+                        select -1 as result
+                end
+                else
+                begin 
+                        insert into ccAgentMsgFiles (msgFile, [Description], Duration, msgName) 
+                        values (@msgFile, @Description, @duration, @msgName)
+                        select cast(@@identity as int) as result
+                end 
+    
+        end 
+        else IF @action = 3 -- Assing
+        begin   
+                if not exists(select MsgId from ccAgentMsgFiles where MsgId=@MsgId)
+                begin
+                        select ''0'' as result
+                        return(0)
+                end
+
+                if exists(select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType)
+                begin
+                        select ''-1'' as result
+                        return(0)
+                end
+
+                insert into [ccAgentMsgRelationFiles]    values(@MsgId,@camId,@CampType)
+
+                select @campName
+
+        end
+        
+        else IF @action = 4 -- GET_CAMP_MESSAGES_RELATION
+        begin   
+                select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType             
+        end
+        else IF @action = 5 -- DELETE_AUDIO_MSG
+        begin
+        
+                insert into @tableMsgId
+                select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+
+                if exists(select A.MsgId from [ccAgentMsgRelationFiles] A 
+                                  inner join @tableMsgId B on A.MsgId=B.MsgId
+                )
+                begin
+                        select 0 as result
+                        return(0)
+                end
+
+                 delete A from ccAgentMsgFiles A 
+                 inner join @tableMsgId B on A.MsgId=B.MsgId
+                 
+                 select 1 as result  
+                 return(0)
+        end
+                
+        else if @action = 6 --EDIT_AUDIO_MSG
+        BEGIN    
+                update ccAgentMsgFiles set [Description] = isnull(@Description,[Description]), MsgName = isnull(@msgName,MsgName),
+                MsgFile = isnull(@msgFile,MsgFile), Duration=case when @duration is null or @duration<=0 then Duration else @duration end
+                where MsgId = @MsgId    
+        END
+        else IF @action = 7 -- UnAssing
+        begin           
+                if not exists(select MsgId from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType)
+                begin
+                        select ''-1'' as result
+                        return(0)
+                end
+
+                delete from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType 
+                select @campName
+        end
+        
+        else IF @action = 8 -- list fileName
+        begin                           
+                insert into @tableMsgId
+                select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+                
+                select A.MsgFile from ccAgentMsgFiles A 
+                                  inner join @tableMsgId B on A.MsgId=B.MsgId
+        end
+        else IF @action = 9 -- Relation CampIn and MsgFile
+        begin                           
+                select A.CamId,B.MsgFile,B.Duration from [ccAgentMsgRelationFiles] A
+                inner join ccAgentMsgFiles B on A.MsgId=B.MsgId
+                where CamType=@CampType 
+
+        end
+        else IF @action = 10 -- Relation CampIn and MsgFile
+        begin
+                select MsgId,MsgFile ,Duration from ccAgentMsgFiles where MsgId=@MsgId
+
+        END
+        ELSE IF @action = 11 -- Relation Campaign and Audio Msg
+		BEGIN
+			 (select IC.Inbound_id as Camp_Id, Camp_Type = 0,ISNULL(descripcion,'''''''') as [Name], Graphics.frame as Frame, Type = CONVERT(TINYINT ,16), ISNULL(IC.IDArea,0) as IdArea, ISNULL(AREas.AreaName,'''') as AreaName
+            from ccInbound as IC with(nolock) 
+            left join ccRIACat_Areas as AREas with(nolock) on IC.IDArea = AREas.IDArea
+            inner join ccRIAInboundGraph as CampsGraph on IC.Inbound_id = CampsGraph.Inbound_id
+            inner join ccRIAGraphics as Graphics on Graphics.graphic_id = CampsGraph.graphic_id
+            inner join ccAgentMsgRelationFiles IM on IM.CamId = IC.Inbound_id
+            Where IM.MsgId = @MsgId)
+		END 
+	END'
+
+	EXEC(@sql);
+
+
+	SET @process = 'KR011005-Inspeccionar mensaje campaña de entrada delete procedure ccsp_GalateaAutomaticMessages'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaAutomaticMessages'')
+		BEGIN
+			DROP PROCEDURE ccsp_GalateaAutomaticMessages;
+		END';
+	EXEC(@sql);
+
+	SET @process = 'KR011005-Inspeccionar mensaje campaña create procedure ccsp_GalateaAutomaticMessages'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_GalateaAutomaticMessages]
+        @action as tinyint,
+        @type as int = null,
+        @msgFile as varchar(40) = '''',
+        @Description as varchar(40) = '''',
+        @length as int = null,
+        @CampId INT = 0,
+        @CampType SMALLINT = 0,
+        @MessageType TINYINT = 0,
+        @msgIdLst varchar(8000) = null,
+        @msgName as varchar(40) = '''',
+        @msg_id int = 0,
+        @VariableData TINYINT = 0,
+        @TtsType TINYINT = 0,
+        @VariableOrder TINYINT = 0,
+        @MsgRelation varchar(8000) = NULL,
+		@idArea SMALLINT = NULL
+
+        AS
+
+        SET NOCOUNT ON
+
+        if @action = 1  -- Get audio catalog
+        begin
+            select ISNULL(msgName, msgFile) [MsgName], Descripcion [MsgDescription], msgFile [MsgFile], msg_id [MsgId], DefaultMessage, ISNULL(idArea, -1) [IdArea] from ccMsgFiles
+            where msgFile not like ''TTS|%'' AND (idArea IN (@idArea,-1) OR idArea IS NULL)
+            return (0)
+        end
+
+        if @action = 2
+        begin
+            if EXISTS(select msgName from ccMsgFiles where msgName=@msgName)
+            begin
+                select 1 as result
+            end
+            else
+            begin 
+                insert into ccMsgFiles (msgFile, descripcion, length, msgName, idArea) values (@msgFile, @Description, @length, @msgName, @idArea)
+                select 0 as result
+            end 
+            
+        end 
+
+        if @action = 3
+        begin
+            select msg_id from ccMsgFiles where msgName=@msgName
+        end
+
+        IF @action = 4 -- Get Assigned Messages by Campaign Id and Campaign Type
+        BEGIN
+            DECLARE @CampaignMessagesRelation TABLE (MessageType TINYINT, MessageOrder TINYINT, MessageFile VARCHAR(MAX), 
+                                                     MessageId INT, MessageDescription VARCHAR(MAX), Queue BIT)
+            IF @CampType = 0  -- Inbound Campaigns
+                BEGIN
+                    INSERT INTO @CampaignMessagesRelation (MessageType, MessageOrder, MessageFile, MessageId, MessageDescription, Queue) 
+                    EXEC ccsp_RIAADMInboundMsgs @Command = 1,@Inbound_id = @CampId
+                END
+            ELSE              -- Outbound Campaigns
+                BEGIN 
+                    INSERT INTO @CampaignMessagesRelation (MessageType, MessageOrder, MessageFile, MessageId, MessageDescription)
+                    EXEC ccsp_RIAADMCampMsgs @Command = 1, @cam_id = @CampId
+                    UPDATE @CampaignMessagesRelation SET Queue = 0
+                END
+            SELECT * FROM @CampaignMessagesRelation WHERE MessageType = @MessageType
+        END 
+
+        IF @action = 5 -- Delete audio message
+        begin
+            if exists(select Msg_id from ccInboundMsgs where Msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')))
+            begin
+                select 0 as result
+                return(0)
+            end
+            if exists(select Msg_id from ccCampsMsgs where Msg_id in (
+        select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
+        inner join ccMsgFiles B on A.Value=B.msg_id 
+        where msgFile not like ''TTS|%''
+        )
+        )
+            begin
+                select 0 as result
+                return(0)
+            end
+            
+            delete A from ccCampsMsgs A where Msg_id in (
+            select B.msg_id from dbo.fn_RIASplitDelimited(@msgIdLst, '','') A
+            inner join ccMsgFiles B on A.Value=B.msg_id 
+            where msgFile like ''TTS|%'')
+
+            delete ccMsgFiles Where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '',''))
+            select 1 as result
+            return(0)
+        end 
+
+        if @action = 6
+        BEGIN
+            if @type = 0
+                BEGIN
+                    update ccMsgFiles set Descripcion = @Description, msgName = @msgName, idArea = @idArea where msg_id = @msg_id
+                END
+            else
+                BEGIN
+                    update ccMsgFiles set Descripcion = @Description, msgName = @msgName, msgFile = @msgFile, length = @length, idArea = @idArea where msg_id = @msg_id
+                END
+        END 
+
+        if @action = 7
+        BEGIN
+            select msg_id as msgId, msgName as MsgName, Descripcion as MsgDescription, ISNULL(idArea,-1) AS IdArea from ccMsgFiles where msg_id = @msg_id
+        END
+
+        IF @action = 8
+        BEGIN
+            DECLARE @Language TINYINT = (SELECT valor from ccSettings where setting_id = 27)
+            DECLARE @TempMsgFile VARCHAR(10) = (''TTS'' + ''|'' + CONVERT(VARCHAR(2), @TtsType) + ''|'' + CONVERT(VARCHAR(2), @VariableData))
+            SET @Description = (SELECT CASE WHEN @Language = 0 THEN TtsTypesTagsSpanish 
+                                            WHEN @Language = 1 THEN TtsTypesTagsEnglish 
+                                            ELSE TtsTypesTagsPortuguese END 
+                                FROM ccRIA_AutamaticMessages_TtsTypesTags 
+                                WHERE Id = @VariableData) 
+                                + ''|'' + 
+                                (SELECT VariableDataTag FROM ccRIA_AutamaticMessages_VariableDataTags 
+                                WHERE LanguageId = @Language)
+                                + CONVERT(VARCHAR(2), @VariableData) 
+                                + ''|'' + CONVERT(VARCHAR(2), @CampId) 
+
+            IF @msg_id = 0
+            BEGIN
+            EXEC ccsp_RIAADMCampMsgs @Command = 3, @cam_id = @CampId, @order = @VariableOrder,@type=8,@msgFile=@TempMsgFile,@description=@Description   
+            END
+            ELSE
+            BEGIN
+                UPDATE ccMsgFiles SET msgFile = @TempMsgFile, Descripcion = @Description where msg_id = @msg_id
+            END
+            
+        END
+
+        IF @action = 9
+        BEGIN
+            select msgFile [MsgFile] from ccMsgFiles where msg_id in (select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')) and msgFile not like ''TTS|%''
+        END
+
+        IF @action = 10
+        BEGIN
+            IF @CampType = 0  -- Inbound Campaigns
+                BEGIN
+                    UPDATE b SET b.orden = a.Id - 1 FROM dbo.fn_RIASplitDelimited(@MsgRelation, '','') a INNER JOIN ccInboundMsgs b ON b.Inbound_id = @CampId AND b.Type = @MessageType AND b.Msg_id = a.Value 
+                END
+            ELSE              -- Outbound Campaigns
+                BEGIN 
+                    UPDATE b SET b.orden = a.Id - 1 FROM dbo.fn_RIASplitDelimited(@MsgRelation, '','') a INNER JOIN ccCampsMsgs b ON b.cam_id = @CampId AND b.Type = @MessageType AND b.Msg_id = a.Value 
+                END
+        END
+
+        IF @action = 11
+        BEGIN
+            (select OC.cam_id as Camp_Id, Camp_Type = 1, ISNULL(cam_descripcion,'''''''') as [Name], Graphics.frame as Frame, CM.Type, ISNULL(OC.IDArea,0) as IdArea, ISNULL(AREas.AreaName,'''') as AreaName
+            from ccCamps as OC with(nolock) 
+            left join ccRIACat_Areas as AREas with(nolock) on OC.IDArea = AREas.IDArea
+            inner join ccRIACampsGraph as CampsGraph on OC.cam_id = CampsGraph.cam_id
+            inner join ccRIAGraphics as Graphics on Graphics.graphic_id = CampsGraph.graphic_id
+            inner join ccCampsMsgs CM on CM.cam_id = OC.cam_id
+            Where CM.msg_id = @msg_id)
+            UNION ALL
+            (select IC.Inbound_id as Camp_Id, Camp_Type = 0,ISNULL(descripcion,'''''''') as [Name], Graphics.frame as Frame, IM.Type, ISNULL(IC.IDArea,0) as IdArea, ISNULL(AREas.AreaName,'''') as AreaName
+            from ccInbound as IC with(nolock) 
+            left join ccRIACat_Areas as AREas with(nolock) on IC.IDArea = AREas.IDArea
+            inner join ccRIAInboundGraph as CampsGraph on IC.Inbound_id = CampsGraph.Inbound_id
+            inner join ccRIAGraphics as Graphics on Graphics.graphic_id = CampsGraph.graphic_id
+            inner join ccInboundMsgs IM on IM.Inbound_id = IC.Inbound_id
+            Where IM.msg_id = @msg_id)
+        END
+
+
+        SET NOCOUNT OFF'
+
+		EXEC(@sql)
+
+-------------------------------------------------------END MARCO GARCIA KR011005-Inspeccionar mensaje campaña de entrada ------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

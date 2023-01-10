@@ -91,7 +91,7 @@ BEGIN
 
 					SET @loginDays = 0
 
-					IF @option = 1 -- Todas las campañas
+					IF @option = 1 -- Todas las campaÃ±as
 					BEGIN
 						SELECT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0), isnull(DNCscrub, 0)
 						FROM ccCamps a1
@@ -106,7 +106,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 2 -- Campañas de un Area
+					IF @option = 2 -- CampaÃ±as de un Area
 					BEGIN
 						SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG
 						FROM ccCamps a1
@@ -118,7 +118,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 3 -- Campañas por Supervisor
+					IF @option = 3 -- CampaÃ±as por Supervisor
 					BEGIN
 						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame, a1.cam_procesando, isnull(a1.IDArea, 0) IDArea
 						FROM ccCamps a1
@@ -157,7 +157,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 5 -- Campañas por Supervisor
+					IF @option = 5 -- CampaÃ±as por Supervisor
 					BEGIN
 						SELECT @AreaId = IDArea
 						FROM ccUsers
@@ -192,7 +192,7 @@ BEGIN
 						RETURN (0)
 					END
 
-					IF @option = 8 -- Campañas de un Agente
+					IF @option = 8 -- CampaÃ±as de un Agente
 					BEGIN
 						SELECT DISTINCT a1.cam_id, a1.cam_descripcion, a3.frame
 						FROM ccCamps a1
@@ -204,7 +204,7 @@ BEGIN
 
 						RETURN (0)
 					END
-					IF @option = 9 -- Campañas de un Area
+					IF @option = 9 -- CampaÃ±as de un Area
 					BEGIN
 						(SELECT DISTINCT a1.cam_id as CamID, cam_descripcion as CamDescription, frame as Frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) as RelationsWG,1 CamType, 
 						ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 1 and IdCampEsp = a1.cam_id and IDWG = @WGID group by IdCampEsp),0) IsAssignedToCurrentWG,
@@ -429,7 +429,7 @@ BEGIN
 							if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
 							begin
 							declare @error varchar(70)
-							Select @error=case valor when 0 then ''No es posible eliminar la campaña, esta asociada a una especialidad''
+							Select @error=case valor when 0 then ''No es posible eliminar la campaÃ±a, esta asociada a una especialidad''
 								else ''Campaign can not be deleted, it has an association with an ACD'' end
 							from ccsettings with(nolock) where setting_id = 27
 							raiserror (@error,18,1)		
@@ -458,7 +458,7 @@ BEGIN
 							return(0)  
 							end
 
-						-- ODC: la campaña siempre esta activa
+						-- ODC: la campaÃ±a siempre esta activa
 						set @Activa = 1
 						declare @pref int
 						select  @pref = valor from ccSettings where setting_id = 201
@@ -475,7 +475,7 @@ BEGIN
 
 						else
 							begin
-							select -2 --, ''Error al crear campaña''
+							select -2 --, ''Error al crear campaÃ±a''
 							return(0)
 							end
 
@@ -483,7 +483,7 @@ BEGIN
 							begin
 							if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
 								begin
-								select -3 -- Error al asignar campaña a ACD, el ACD no existe o no pertenece a la misma area
+								select -3 -- Error al asignar campaÃ±a a ACD, el ACD no existe o no pertenece a la misma area
 								return(0)
 								end
 
@@ -544,13 +544,13 @@ BEGIN
 							return(0)
 						end
 
-						if @option = 5 --Obtener relaciones de campañas - campañas
+						if @option = 5 --Obtener relaciones de campaÃ±as - campaÃ±as
 						begin
 							if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
 							(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
 							not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
 							begin
-							select -3 -- Campaña invalida
+							select -3 -- CampaÃ±a invalida
 							return(0)
 							end
 									
@@ -578,13 +578,13 @@ BEGIN
 							return(0)
 						end
 
-					if @option = 7 -- Checa si la campaña no tiene grabaciones y se puede modificar el prefijo
+					if @option = 7 -- Checa si la campaÃ±a no tiene grabaciones y se puede modificar el prefijo
 						begin	
 							select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
 							--select 0 as Grabaciones	
 						end
 
-					if @option = 8 -- Checa si la campaña tiene asignada una campaña tipo encuesta
+					if @option = 8 -- Checa si la campaÃ±a tiene asignada una campaÃ±a tipo encuesta
 						begin	
 							SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
 							from cccamps with(index(PK_ccCamps),nolock)
@@ -780,7 +780,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe una lista de campañas de salida con el id de grupo de trabajo especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe una lista de campaÃ±as de salida con el id de grupo de trabajo especificado'', 18, 1);
 					                    END;
 					            END;
 					            IF @CampType = 0 -- Campaigns In (ACD)
@@ -795,7 +795,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe una lista de campañas de entrada con el id de grupo de trabajo especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe una lista de campaÃ±as de entrada con el id de grupo de trabajo especificado'', 18, 1);
 					                    END;
 					            END;
 					            RETURN 0;
@@ -817,7 +817,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe campañas de salida con el id especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe campaÃ±as de salida con el id especificado'', 18, 1);
 					                    END;
 					            END;
 					            IF @CampType = 0 -- Campaigns In (ACD)
@@ -834,7 +834,7 @@ BEGIN
 					                    END;
 					                    ELSE
 					                        BEGIN
-					                            RAISERROR(''ERROR. No existe campañas de entrada con el id especificado'', 18, 1);
+					                            RAISERROR(''ERROR. No existe campaÃ±as de entrada con el id especificado'', 18, 1);
 					                    END;
 					            END;
 					            RETURN 0;
@@ -850,7 +850,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. No existe la campañas de entrada con el id especificado'', 18, 1);
+					                    RAISERROR(''ERROR. No existe la campaÃ±as de entrada con el id especificado'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;
@@ -874,7 +874,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. La campañas o administrador no existen'', 18, 1);
+					                    RAISERROR(''ERROR. La campaÃ±as o administrador no existen'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;
@@ -907,7 +907,7 @@ BEGIN
 					            END;
 					            ELSE
 					                BEGIN
-					                    RAISERROR(''ERROR. La campañas con el id seleccionado no existe'', 18, 1);
+					                    RAISERROR(''ERROR. La campaÃ±as con el id seleccionado no existe'', 18, 1);
 					            END;
 					            RETURN 0;
 					    END;

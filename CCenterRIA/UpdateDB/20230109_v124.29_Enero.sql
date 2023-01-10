@@ -602,7 +602,7 @@ BEGIN
 					END'
 
 		set @process = 'K038001 Add CampType 3 when preview campaign is created line 1102'
-		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 	                @cam_id smallint,
 	                @cam_descripcion varchar(40) = null,
 	                @cam_tnotas smallint = null,

@@ -315,6 +315,8 @@ BEGIN
 						DROP PROCEDURE ccsp_UpdateOutWhatsappConfig;
 					END'
 
+		EXEC(@sql)
+
 		set @process = 'K038001 Change column name in ccsp_UpdateOutWhatsappConfig'
 		set @sql = 'CREATE PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
 					@ConexionInfo varchar(400),
@@ -350,6 +352,8 @@ BEGIN
 					BEGIN
 						DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
 					END'
+
+		EXEC(@sql)
 
 		set @process = 'K038001 Change column name in ccsp_GalateaGetOutboundConfiguration'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
@@ -390,6 +394,8 @@ BEGIN
 					BEGIN
 						DROP PROCEDURE ccsp_RIA_ABCCamps;
 					END'
+
+		EXEC(@sql)
 
 		set @process = 'K038001 Add CampType 1 insertion when normal campaign is created lines 792 and 810'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
@@ -595,11 +601,15 @@ BEGIN
 					return(0)
 					set nocount off'
 
+		EXEC(@sql)
+
 		set @process = 'K038001 Drop procedure ccsp_RIAUpdateCamConfig'
 		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_RIAUpdateCamConfig'')
 					BEGIN
 						DROP PROCEDURE ccsp_RIAUpdateCamConfig;
 					END'
+
+		EXEC(@sql)
 
 		set @process = 'K038001 Add CampType 3 when preview campaign is created line 1102'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
@@ -744,13 +754,15 @@ BEGIN
 	                select 2
 	                return(0)
 	                set nocount off'
+	    EXEC(@sql)
 
 	    set @process = 'K038001 Drop procedure ccsp_GalateaAdminCampaigns'
 		set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaAdminCampaigns'')
 					BEGIN
 						DROP PROCEDURE ccsp_GalateaAdminCampaigns;
 					END'
-
+		EXEC(@sql)
+					
 		set @process = 'K038001 Change ccCamps column chat to CampType'
 		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] @Option AS      SMALLINT, 
                                        @CampType AS    SMALLINT = 0, 
@@ -1289,7 +1301,8 @@ BEGIN
 					            FROM ccInbound NOLOCK where cam_id = @Id
 					        END
 					                    END;'
-
+		EXEC(@sql)
+					                    
 		set @process = 'K038001 Add publication back'
 		set @sql = 'use [CCenterRia]
 					DECLARE @publicationName AS sysname;  

@@ -669,10 +669,14 @@ BEGIN
 	                @exitAssisted bit = null,
 	                @previewDiscard bit = null,
 	                @rotativeAlgo tinyint = null,
-					@timesPreview varchar(10) = null,
-					@cam_tPreview varchar(10) = null
+	                @timesPreview tinyint = null,
+	                @cam_tPreview smallint = null,
+	                @timesDiscard tinyint = null
 	                as
 	                set nocount on
+	                DECLARE @timesDiscardActual int = (SELECT timesDiscard FROM ccCamps WHERE cam_id = @cam_id)
+	                DECLARE @CheckCamp int = (Select case when cam_procesando=0 and progDial=3 then 1 else 0 end from ccCamps where cam_id=@cam_id)
+
 	                UPDATE ccCamps SET
 	                 cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
 	                 cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
@@ -730,8 +734,17 @@ BEGIN
 	                 exitAssisted = isnull(@exitAssisted, exitAssisted),
 	                 previewDiscard = isnull(@previewDiscard, previewDiscard),
 	                 rotativeAlgo = isnull(@rotativeAlgo, rotativeAlgo),
-					 CampType = (CASE WHEN @progDial = 3 THEN @progDiaL ELSE 1 END)
+	                 timesPreview = isnull(@timesPreview, timesPreview),
+	                 cam_tPreview = isnull(@cam_tPreview,cam_tPreview),
+	                 timesDiscard = isnull(@timesDiscard, timesDiscard),
+	                 CampType = (CASE WHEN @progDial = 3 THEN @progDiaL ELSE 1 END)
+
 	                Where cam_id = @cam_id
+
+	                if (@timesDiscard < @timesDiscardActual and @CheckCamp=1)
+	                begin
+	                    EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
+	                end
 
 	                if @cam_ShowCalifWnd = 1
 	                 begin
@@ -753,6 +766,7 @@ BEGIN
 	                where cam_id = @cam_id
 	                select 2
 	                return(0)
+
 	                set nocount off'
 	    EXEC(@sql)
 

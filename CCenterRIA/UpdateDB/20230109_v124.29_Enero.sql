@@ -55,8 +55,8 @@ BEGIN
 
 					SET @publication = N''SpecialAVRS'';  
 					SET @article1 = N''cccamps'';  
-					IF EXISTS(SELECT * FROM sys.tables WHERE name=''sysmergepublications'')
-					AND EXISTS(SELECT * FROM dbo.sysmergepublications WHERE name=@publication)
+					IF EXISTS(SELECT * FROM sys.tables WHERE name=''sysmergepublications'') BEGIN
+					IF EXISTS(SELECT * FROM dbo.sysmergepublications WHERE name=@publication)
 					BEGIN	
 						-- Remove articles from a merge publication.  
 						USE CCenterRIA  
@@ -64,7 +64,7 @@ BEGIN
 						  @publication = @publication,   
 						  @article = @article1,  
 						  @force_invalidate_snapshot = 1;  
-					END'
+					END END'
 		EXEC(@sql)
 
 		set @process = 'K038001 Rename column if exists'
@@ -1318,38 +1318,43 @@ BEGIN
 		EXEC(@sql)
 					                    
 		set @process = 'K038001 Add publication back'
-		set @sql = 'use [CCenterRia]
-					DECLARE @publicationName AS sysname;  
-					DECLARE @articleName AS sysname;  
+		set @sql = 'IF EXISTS(SELECT is_published FROM sys.databases WHERE is_published = 1 OR is_subscribed = 1 OR
+													   is_merge_published = 1 OR is_distributor = 1 
+													   AND databases.name = ''CCenterRIA'') 
+					BEGIN
+						use [CCenterRia]
+						DECLARE @publicationName AS sysname;  
+						DECLARE @articleName AS sysname;  
 
 
-					SET @publicationName = N''SpecialAVRS'';  
-					SET @articleName = N''cccamps'';  
+						SET @publicationName = N''SpecialAVRS'';  
+						SET @articleName = N''cccamps'';  
 
-					exec sp_addmergearticle @publication = @publicationName, 
-					@article = @articleName, 
-					@source_owner = N''dbo'', 
-					@source_object = @articleName, 
-					@type = N''table'', 
-					@description = N'''', 
-					@creation_script = null, 
-					@pre_creation_cmd = N''drop'', 
-					@schema_option = 0x000000000C034FD1, 
-					@identityrangemanagementoption = N''manual'', 
-					@destination_owner = N''dbo'', 
-					@force_reinit_subscription = 1, 
-					@column_tracking = N''false'', 
-					@subset_filterclause = null, 
-					@vertical_partition = N''false'', 
-					@verify_resolver_signature = 1, 
-					@allow_interactive_resolver = N''false'', 
-					@fast_multicol_updateproc = N''true'', 
-					@check_permissions = 0, 
-					@subscriber_upload_options = 1, 
-					@delete_tracking = N''true'', 
-					@compensate_for_errors = N''false'', 
-					@stream_blob_columns = N''false'', 
-					@partition_options = 0'
+						exec sp_addmergearticle @publication = @publicationName, 
+						@article = @articleName, 
+						@source_owner = N''dbo'', 
+						@source_object = @articleName, 
+						@type = N''table'', 
+						@description = N'''', 
+						@creation_script = null, 
+						@pre_creation_cmd = N''drop'', 
+						@schema_option = 0x000000000C034FD1, 
+						@identityrangemanagementoption = N''manual'', 
+						@destination_owner = N''dbo'', 
+						@force_reinit_subscription = 1, 
+						@column_tracking = N''false'', 
+						@subset_filterclause = null, 
+						@vertical_partition = N''false'', 
+						@verify_resolver_signature = 1, 
+						@allow_interactive_resolver = N''false'', 
+						@fast_multicol_updateproc = N''true'', 
+						@check_permissions = 0, 
+						@subscriber_upload_options = 1, 
+						@delete_tracking = N''true'', 
+						@compensate_for_errors = N''false'', 
+						@stream_blob_columns = N''false'', 
+						@partition_options = 0
+					END'
 		EXEC(@sql)
 
 -------------------------------------------------------- END IVAN feature/IM-K038001-Add_camp_type_to_ccCamps ----------------------------------------------------------

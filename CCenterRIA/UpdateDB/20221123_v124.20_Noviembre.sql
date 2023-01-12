@@ -426,8 +426,6 @@ END
 SET NOCOUNT OFF'
 EXEC(@sql)
 
-	
-	
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

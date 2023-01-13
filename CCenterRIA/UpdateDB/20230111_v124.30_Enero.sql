@@ -463,12 +463,6 @@ AS
 		return(0)
 		set nocount off'
 		EXEC(@sql)
-
-		SET @process = 'K001085-Gestionar configuración de callbacks'
-		SET @sql = 'if not exists (select * from ccPermissions where Permissions_Id = 10031)
-					insert into ccPermissions values (10031,''Gestionar configuracion de callback'', ''RolesPermissionCallbackConf'',0,0,0,''N/A'',1)';
-
-		EXEC(@sql);
 		
 		----------------------------------------------------------------------------------------------------------------------
 

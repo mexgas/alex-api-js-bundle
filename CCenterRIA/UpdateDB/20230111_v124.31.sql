@@ -97,15 +97,48 @@ if not exists(select tableName from ccAIReplicaConfiguration where tableName=''c
 	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck) 
 	values(''ccUsers'',''User_id'',''tg_ccUsersTmp_IA'',0,30)
 end
+
+';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccCamps_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))
+begin      
+	drop trigger [tg_ccCamps_IA]    
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOutSource_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOutSource_IA'' and parent_id = OBJECT_ID(N''ccoCallsOutSource''))
+begin 
+	drop trigger [tg_ccoCallsOutSource_IA]    
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOut_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOut_IA'' and parent_id = OBJECT_ID(N''ccoCallsOut''))
+begin      
+	drop trigger [tg_ccoCallsOut_IA]    
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoLogDials_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoLogDials_IA'' and parent_id = OBJECT_ID(N''ccoLogDials''))
+begin 
+	drop trigger [tg_ccoLogDials_IA]    
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccUsersTmp_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccUsersTmp_IA'' and parent_id = OBJECT_ID(N''ccUsers''))
+begin 
+	drop trigger [tg_ccUsersTmp_IA]    
+end
 ';
 	EXEC(@sql);
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccCamps'
-	SET @sql = '
-if not exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))
-    begin      
-    
-CREATE TRIGGER [dbo].[tg_ccCamps_IA]
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccCamps_IA]
 ON [dbo].[ccCamps]
 After INSERT,UPDATE
 AS
@@ -123,16 +156,11 @@ BEGIN
 	left join ccCampsTmpIA B on A.cam_id=B.cam_id  
 	where B.cam_id is null and A.CampType=4
 
-END
-
-end';
+END';
 	EXEC(@sql);
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccoCallsOutSource'
-	SET @sql = '
-if not exists (select * from sys.triggers where name = N''tg_ccoCallsOutSource_IA'' and parent_id = OBJECT_ID(N''ccoCallsOutSource''))
-    begin      
-CREATE TRIGGER dbo.tg_ccoCallsOutSource_IA
+	SET @sql = 'CREATE TRIGGER dbo.tg_ccoCallsOutSource_IA
 ON dbo.ccoCallsOutSource
 AFTER INSERT, UPDATE
 AS 
@@ -150,16 +178,11 @@ BEGIN
 	left join ccoCallsOutSourceTmpIA B on A.callout_id=b.callout_id
 	where B.dateUpdate is null
 
-END
-
-End';
+END';
 	EXEC(@sql);
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccoCallsOut'
-	SET @sql = '
-if not exists (select * from sys.triggers where name = N''tg_ccoCallsOut_IA'' and parent_id = OBJECT_ID(N''ccoCallsOut''))
-    begin  
-CREATE TRIGGER dbo.tg_ccoCallsOut_IA
+	SET @sql = 'CREATE TRIGGER dbo.tg_ccoCallsOut_IA
 ON dbo.ccoCallsOut
 AFTER INSERT, UPDATE
 AS 
@@ -177,16 +200,11 @@ BEGIN
 	left join ccoCallsOutTmpIA B on A.cal_id=b.cal_id
 	where B.dateUpdate is null
 
-END
-
 END';
 	EXEC(@sql);
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccoLogDials'
-	SET @sql = 'if not exists (select * from sys.triggers where name = N''tg_ccoLogDials_IA'' and parent_id = OBJECT_ID(N''ccoLogDials''))
-    begin  
-
-CREATE TRIGGER dbo.tg_ccoLogDials_IA
+	SET @sql = 'CREATE TRIGGER dbo.tg_ccoLogDials_IA
 ON dbo.ccoLogDials
 AFTER INSERT, UPDATE
 AS 
@@ -204,16 +222,11 @@ BEGIN
 	left join ccoLogDialsTmpIA B on A.logDial_id=B.logDial_id
 	where B.logDial_id is null
 
-END
-
-END
-';
+END';
 	EXEC(@sql);
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccUsers'
-	SET @sql = 'if not exists (select * from sys.triggers where name = N''tg_ccUsersTmp_IA'' and parent_id = OBJECT_ID(N''ccUsers''))
-    begin 
-CREATE TRIGGER dbo.tg_ccUsersTmp_IA
+	SET @sql = 'CREATE TRIGGER dbo.tg_ccUsersTmp_IA
 ON dbo.ccUsers	
 AFTER INSERT, UPDATE
 AS 
@@ -229,23 +242,9 @@ BEGIN
 	left join  ccUsersTmpIA B on A.[User_id]=b.[User_id]
 	where B.dateUpdate is null
 
-END
-
 END';
 	EXEC(@sql);
-
-	SET @process = 'K038008-Servicio IA Service setting replicación de tablas'
-	SET @sql = '';
-	EXEC(@sql);
-
-	SET @process = 'K038008-Servicio IA Service setting replicación de tablas'
-	SET @sql = '';
-	EXEC(@sql);
-
-	SET @process = 'K038008-Servicio IA Service setting replicación de tablas'
-	SET @sql = '';
-	EXEC(@sql);
-		----------------------------------------------------------------------------------------------------------------------
+		-------------------------------------- Jesus --------------------------------------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */

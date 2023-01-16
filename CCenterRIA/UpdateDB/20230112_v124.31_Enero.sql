@@ -240,6 +240,16 @@ BEGIN
 
 	--------------------------------END CW-7706 MARCO GARCÍA -----------------------------------------------------------------------------------------
 
+
+	--------------------------------Jesus Esquipulas -----------------------------------------------------------------------------------------
+	SET @process = 'K001085-Gestionar configuración de callbacks'
+		SET @sql = 'if not exists (select * from ccPermissions where Permissions_Id = 10032)
+		begin
+					insert into ccPermissions values (10032,''Gestionar configuracion de callback'', ''RolesPermissionCallbackConf'',0,0,0,''N/A'',1)
+		end';
+
+		EXEC(@sql);
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

@@ -1421,6 +1421,13 @@ BEGIN
 
 		EXEC(@sql);
 
+		set @process = 'K001085-Gestionar configuración de callbacks'
+		set @sql = 'if not exists (select * from ccRoles_Permissions where Rol_Id=1 and Permissions_Id=10032)
+		begin
+		  insert into ccRoles_Permissions values(1,10032)
+		end'
+		EXEC(@sql)
+
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version

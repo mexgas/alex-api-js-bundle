@@ -6003,7 +6003,7 @@ END'
 			END';
 		EXEC(@sql);
 
-		SET @process = 'TT3147 - AdminKolob - Error al cargar registros delete function create function Verifica2'
+		SET @process = 'TT3147 - AdminKolob - Error al cargar registros create function Verifica2'
 		SET @sql = '
 		CREATE FUNCTION [dbo].[Verifica2] (@tel VARCHAR(32), @pais TINYINT = 0, @cldLocal VARCHAR(7) = '''')
 		RETURNS VARCHAR(32)

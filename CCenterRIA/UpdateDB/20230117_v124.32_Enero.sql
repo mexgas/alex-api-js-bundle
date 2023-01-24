@@ -48,15 +48,15 @@ BEGIN
 
 	BEGIN TRY
 
-	/**---------------------------------- BEGIN K029000 MARCO GARCIA - MARCO CHAGOLLA ----------------------------------------------------------*/
-	SET @process = 'K029000-Configuración de buzón de voz delete procedure ccsp_RIACATvoiceMail'
+	/**---------------------------------- BEGIN CW-7740 MARCO GARCIA - MARCO CHAGOLLA ----------------------------------------------------------*/
+	SET @process = 'CW-7740-Configuración de buzón de voz delete procedure ccsp_RIACATvoiceMail'
 	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RIACATvoiceMail'')
 		BEGIN
 			DROP PROCEDURE ccsp_RIACATvoiceMail;
 		END';
 	EXEC(@sql);
 
-	SET @process = 'K029000-Configuración de buzón de voz create procedure ccsp_RIACATvoiceMail'
+	SET @process = 'CW-7740-Configuración de buzón de voz create procedure ccsp_RIACATvoiceMail'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_RIACATvoiceMail]
 	@type TINYINT,
@@ -82,7 +82,11 @@ BEGIN
 	 BEGIN
 	 IF(@isKolob = 1)
 		BEGIN
-			SELECT Inbound_id, descripcion from ccInbound where IDArea=@IDArea AND chat = 0 order by descripcion
+			SELECT ci.Inbound_id, ci.descripcion FROM dbo.ccRIACat_WorkGroup AS crcwg INNER JOIN dbo.ccRIACampEspWG AS crcew ON crcew.IDWG = crcwg.IDWG 
+			INNER JOIN dbo.ccRIAWorkGroupUsers AS crwgu ON crwgu.IDWG = crcwg.IDWG AND crwgu.User_id = @user_id
+			INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg ON crawg.IDWG = crcew.IDWG INNER JOIN dbo.ccInbound AS ci ON crcew.IdCampEsp = ci.Inbound_id
+			WHERE crcew.Tipo = 0 AND crawg.IDArea = @IDarea AND ci.chat = 0
+			ORDER BY ci.descripcion
 		END
 		ELSE
 		BEGIN
@@ -240,7 +244,7 @@ BEGIN
 
 	EXEC(@sql);	
 
-	/**---------------------------------- END K029000 MARCO GARCIA - MARCO CHAGOLLA ----------------------------------------------------------*/
+	/**---------------------------------- END CW-7740 MARCO GARCIA - MARCO CHAGOLLA ----------------------------------------------------------*/
 	/**---------------------------------- BEGIN K028000_HistorialChat GERARDO - IVAN MARTIN ----------------------------------------------------------*/
 	SET @process = 'K028000_HistorialChat DROP procedure ccsp_RIAABCChat'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RIAABCChat'')

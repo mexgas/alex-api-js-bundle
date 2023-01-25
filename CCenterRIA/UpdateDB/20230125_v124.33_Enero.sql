@@ -283,8 +283,7 @@ set nocount off'
 				inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 				inner join ccsupervisor_notready snd on (a1.tiponotready_id = snd.tiponotready_id and snd.user_id = @super_id)
 				where a1.TipoNotReady_id > 0 
-				and a1.IsSup = case @Type when 1 then (select valor from ccSettings where setting_id = 28)
-				when 2 then a1.IsSup when 4 then a1.issup else 1 end and a1.StatusTipoNotReady=1
+				and a1.StatusTipoNotReady=1
 			end
 			else begin
 				SELECT a1.TipoNotReady_id, a1.Descripcion, a1.Time_Acum, a1.Time_xEv, a1.Pas_Sup, a1.NextStatus, frame, a1.IsSup
@@ -293,7 +292,7 @@ set nocount off'
 				inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 				where a1.TipoNotReady_id > 0 
 				and a1.IsSup = case @Type when 1 then (select valor from ccSettings where setting_id = 28)
-				when 2 then a1.IsSup when 4 then a1.issup else 1 end and a1.StatusTipoNotReady=1
+				when 2 then a1.IsSup else 1 end and a1.StatusTipoNotReady=1
 			end
 			return(0)
 		 end
@@ -430,8 +429,7 @@ set nocount off'
 					inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
 					inner join ccsupervisor_notready snd on (a1.tiponotready_id = snd.tiponotready_id and snd.user_id = @super_id)
 					where a1.TipoNotReady_id = @TipoNotReady_id 
-					and a1.IsSup = case @Type when 1 then (select valor from ccSettings where setting_id = 28)
-					when 2 then a1.IsSup when 4 then a1.issup else 1 end and a1.StatusTipoNotReady=1
+					and a1.StatusTipoNotReady=1
 				end
 				else begin
 					SELECT CAST(1 AS bit) AS  hasPermission

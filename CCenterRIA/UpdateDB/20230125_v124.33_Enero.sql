@@ -252,14 +252,14 @@ set nocount off'
 	SET @process = 'K035002-Listado de agentes-Cambiar a ND create procedure ccsp_RIACATNotReadyTypes'
 	SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_RIACATNotReadyTypes]
-		@TipoNotReady_id varchar(5)='',
-		@Descripcion varchar(30)='',
-		@Time_Acum varchar(10)='',
-		@Time_xEv varchar(5)='',
-		@Pas_Sup varchar(2)='',
-		@NextStatus varchar(5)='',
-		@graphic_id varchar(5)='',
-		@Type varchar(1)='',
+		@TipoNotReady_id varchar(5)='''',
+		@Descripcion varchar(30)='''',
+		@Time_Acum varchar(10)='''',
+		@Time_xEv varchar(5)='''',
+		@Pas_Sup varchar(2)='''',
+		@NextStatus varchar(5)='''',
+		@graphic_id varchar(5)='''',
+		@Type varchar(1)='''',
 		@IsSup int = null,
 		@super_id as int = null
 		AS
@@ -384,19 +384,19 @@ set nocount off'
 
 			if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=1 and Descripcion=@Descripcion)
 			 begin		
-				select @Descripcion=''
+				select @Descripcion=''''
 			 end
 
 			update ccTipoNotReady set 
-			 Descripcion=case @Descripcion when '' then Descripcion else @Descripcion end,
-			 Time_Acum=case @Time_Acum when '' then Time_Acum else @Time_Acum end,
-			 Time_xEv=case @Time_xEv when '' then Time_xEv else @Time_xEv end,
-			 Pas_Sup=case @Pas_Sup when '' then Pas_Sup else @Pas_Sup end,
-			 NextStatus=case @NextStatus when '' then NextStatus else @NextStatus end,
+			 Descripcion=case @Descripcion when '''' then Descripcion else @Descripcion end,
+			 Time_Acum=case @Time_Acum when '''' then Time_Acum else @Time_Acum end,
+			 Time_xEv=case @Time_xEv when '''' then Time_xEv else @Time_xEv end,
+			 Pas_Sup=case @Pas_Sup when '''' then Pas_Sup else @Pas_Sup end,
+			 NextStatus=case @NextStatus when '''' then NextStatus else @NextStatus end,
 			 IsSup=ISNULL(@IsSup,IsSup)
 			where TipoNotReady_id=@TipoNotReady_id
 
-			IF ISNULL(@graphic_id,'') not in('')
+			IF ISNULL(@graphic_id,'''') not in('''')
 			 BEGIN
 				If not exists (select frame from ccRIAGraphics where frame = @graphic_id and type_id = 4)
 				 begin

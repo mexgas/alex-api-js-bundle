@@ -65,8 +65,65 @@ end
 ';
 	EXEC(@sql);
 
+	SET @process = 'K038008-Servicio IA Service table ccoLogDialsTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccoLogDialsTmpIA'') begin
+CREATE TABLE ccoLogDialsTmpIA (
+    logDial_id int not null primary key,
+dateUpdate datetime not null
+);
 
-	SET @process = 'K038008-Servicio IA Service setting replicación de tablas'
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038008-Servicio IA Service table ccCampsTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccCampsTmpIA'') begin
+CREATE TABLE ccCampsTmpIA (
+    cam_id int not null primary key,
+    dateUpdate datetime not null
+);
+
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038008-Servicio IA Service table ccoCallsOutSourceTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccoCallsOutSourceTmpIA'') begin
+CREATE TABLE ccoCallsOutSourceTmpIA (
+    callout_id int not null primary key,
+    dateUpdate datetime not null
+);
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038008-Servicio IA Service table ccoCallsOutTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccoCallsOutTmpIA'') begin
+CREATE TABLE ccoCallsOutTmpIA (
+    cal_id int not null primary key,
+    dateUpdate datetime not null
+);
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038008-Servicio IA Service table ccRIALoadingTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccRIALoadingTmpIA'') begin
+CREATE TABLE ccRIALoadingTmpIA (
+    load_id int not null primary key,
+    dateUpdate datetime not null
+);
+end';
+	EXEC(@sql);
+
+	SET @process = 'K038008-Servicio IA Service table ccoLogDialsTmpIA'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccUsersTmpIA'') begin
+CREATE TABLE ccUsersTmpIA (
+    User_id smallint not null primary key,
+    dateUpdate datetime not null
+);
+
+end';
+	EXEC(@sql);
+
+
+	SET @process = 'K038008-Servicio IA Service setting replicación de tablas '
 	SET @sql = 'if not exists(select tableName from ccAIReplicaConfiguration where tableName=''ccoLogDials'') begin
 	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck,columnWhereDays) 
 	values(''ccoLogDials'',''logDial_id'',''tg_ccoLogDials_IA'',0,10,''fecha'')
@@ -97,7 +154,10 @@ if not exists(select tableName from ccAIReplicaConfiguration where tableName=''c
 	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck) 
 	values(''ccUsers'',''User_id'',''tg_ccUsersTmp_IA'',0,30)
 end
-
+if not exists(select tableName from ccAIReplicaConfiguration where tableName=''ccRIALoading'') begin
+	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck,copyContent, columnWhereDays) 
+	values(''ccRIALoading'',''load_id'',''tg_ccRIALoading_IA'',0,60,0, ''loadDate'')
+end
 ';
 	EXEC(@sql);
 
@@ -136,6 +196,35 @@ begin
 end
 ';
 	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccRIALoading_IA'
+	SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccRIALoading_IA'' and parent_id = OBJECT_ID(N''ccRIALoading''))
+begin 
+	drop trigger [tg_ccRIALoading_IA]    
+end
+';
+	EXEC(@sql);
+
+	SET @process = 'K038009-Servicio IA Service replicación de ccRIALoading'
+	SET @sql = 'CREATE TRIGGER dbo.tg_ccRIALoading_IA
+ON dbo.ccRIALoading	
+AFTER INSERT, UPDATE
+AS 
+BEGIN
+	SET NOCOUNT ON;
+
+	declare @datenow datetime=getdate()
+	update B set B.dateUpdate=@datenow FROM INSERTED A
+	inner join ccRIALoadingTmpIA B on A.[load_id]=b.[load_id]
+
+	insert into ccRIALoadingTmpIA
+	select A.[load_id],@datenow from INSERTED A
+	left join  ccRIALoadingTmpIA B on A.[load_id]=b.[load_id]
+	where B.dateUpdate is null
+
+END
+';
+	EXEC(@sql)
 
 	SET @process = 'K038009-Servicio IA Service replicación de ccCamps'
 	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccCamps_IA]
@@ -560,7 +649,7 @@ End;
 		/* End script release */
 		/* Upgrade database version (use your own script to do it) */
 		--exec ccsp_getVersion 'BD', @version
-		EXEC ccsp_getVersion 'BDF', @versionFix
+--		EXEC ccsp_getVersion 'BDF', @versionFix
 
 		COMMIT TRAN
 	END TRY

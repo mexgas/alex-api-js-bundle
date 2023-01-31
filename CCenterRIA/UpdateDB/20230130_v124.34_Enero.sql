@@ -630,12 +630,27 @@ End;
 	EXEC(@sql);
 
 
-	SET @process = 'K038009-Servicio IA Service replicación de ccUsers'
-	SET @sql = '';
+	SET @process = 'IA_States'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''ia_state'' and Object_ID = Object_ID(N''ccRIALoading''))
+    begin
+        ALTER TABLE ccRIALoading ADD ia_state int;
+end';
 	EXEC(@sql);
 
-	SET @process = 'K038009-Servicio IA Service replicación de ccUsers'
-	SET @sql = '';
+	SET @process = 'IA_States'
+	SET @sql = 'if not exists(select * from sys.tables where name=''IA_States'') begin
+	CREATE TABLE IA_States (
+		id int,
+		description varchar(255),
+	);
+	
+end';
+	EXEC(@sql);
+
+	SET @process = 'IA_States'
+	SET @sql = 'if not exists(select id from IA_States where id=1) begin
+	INSERT INTO IA_States VALUES(1,''En espera de copiado a IA'');
+end';
 	EXEC(@sql);
 
 	

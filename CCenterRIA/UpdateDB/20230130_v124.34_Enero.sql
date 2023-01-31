@@ -128,10 +128,6 @@ end';
 	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck,columnWhereDays) 
 	values(''ccoLogDials'',''logDial_id'',''tg_ccoLogDials_IA'',0,10,''fecha'')
 end
-if not exists(select tableName from ccAIReplicaConfiguration where tableName=''ccoLogDials'') begin
-	insert into ccAIReplicaConfiguration (tableName,columnPrimaryKey,triggerName,active,timeCheck,columnWhereDays) 
-	values(''ccoLogDials'',''logDial_id'',''tg_ccoLogDials_IA'',0,10,''fecha'')
-end
 
 
 
@@ -406,8 +402,7 @@ BEGIN
 				
 	END + CHAR(13) 
 	FROM sys.columns AS c WITH (NOWAIT)
-	INNER JOIN sys.types AS tp WITH (NOWAIT) ON c.user_type_id = tp.user_type_id
-	--inner join @tableColumn T on c.name=T.columnName
+	INNER JOIN sys.types AS tp WITH (NOWAIT) ON c.user_type_id = tp.user_type_id	
 	LEFT JOIN sys.computed_columns AS cc WITH (NOWAIT) ON c.object_id = cc.object_id
 		AND c.column_id = cc.column_id
 	LEFT JOIN sys.default_constraints AS dc WITH (NOWAIT) ON c.default_object_id != 0
@@ -535,7 +530,7 @@ BEGIN
 	end
 	
 	print @SQL
-	--select @dateLastCheck
+	
 	EXEC sp_executesql @SQL, @params, @dateLastCheck=@dateLastCheck;
 End;
 

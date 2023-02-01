@@ -9,7 +9,7 @@ Date: 2022/11/19
 Description: Cambios para estados de email
 
 Database: CCenterRia
-Required version: 124.25
+Required version: 124.33
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */

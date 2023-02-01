@@ -48,6 +48,29 @@ BEGIN
 
 	BEGIN TRY
 
+		SET @process = 'IA_States'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''ia_state'' and Object_ID = Object_ID(N''ccRIALoading''))
+    begin
+        ALTER TABLE ccRIALoading ADD ia_state int;
+end';
+	EXEC(@sql);
+
+	SET @process = 'IA_States'
+	SET @sql = 'if not exists(select * from sys.tables where name=''IA_States'') begin
+	CREATE TABLE IA_States (
+		id int,
+		description varchar(255),
+	);
+	
+end';
+	EXEC(@sql);
+
+	SET @process = 'IA_States'
+	SET @sql = 'if not exists(select id from IA_States where id=1) begin
+	INSERT INTO IA_States VALUES(1,''En espera de copiado a IA'');
+end';
+	EXEC(@sql);
+
 	SET @process = 'K038008-Servicio IA Service setting replicación de tablas'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccAIReplicaConfiguration'') begin
 CREATE TABLE [dbo].[ccAIReplicaConfiguration](
@@ -61,6 +84,16 @@ CREATE TABLE [dbo].[ccAIReplicaConfiguration](
 	[columnWhereDays] [varchar](255) NULL,
 	[copyContent] [bit] NULL
 )
+end
+';
+	EXEC(@sql);
+
+	SET @process = 'K038016-Servicio IA-Actualiza ccoCallsOutSource al cargar BD'
+	SET @sql = 'if not exists(select * from sys.tables where name=''cc_CalloutDateIA'') begin
+CREATE TABLE [dbo].[cc_CalloutDateIA](
+	[CalloutId] [int] NOT NULL primary Key,
+	[DateDial] [datetime] NULL,
+	)
 end
 ';
 	EXEC(@sql);
@@ -212,9 +245,12 @@ BEGIN
 	declare @datenow datetime=getdate()
 	update B set B.dateUpdate=@datenow FROM INSERTED A
 	inner join ccRIALoadingTmpIA B on A.[load_id]=b.[load_id]
+	inner join ccCamps c on c.cam_id=A.cam_id and c.CampType=4
+
 
 	insert into ccRIALoadingTmpIA
 	select A.[load_id],@datenow from INSERTED A
+	inner join ccCamps c on c.cam_id=A.cam_id and c.CampType=4
 	left join  ccRIALoadingTmpIA B on A.[load_id]=b.[load_id]
 	where B.dateUpdate is null
 
@@ -330,14 +366,14 @@ BEGIN
 END';
 	EXEC(@sql);
 
-	SET @process = 'K038009-Servicio IA Service replicación de ccUsers'
+	SET @process = 'K038009-Servicio Drop ccsp_GalateaArtificialIntelligence'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaArtificialIntelligence'')
     begin
         DROP PROCEDURE ccsp_GalateaArtificialIntelligence;
     end';
 	EXEC(@sql);
 
-	SET @process = 'K038009-Servicio IA Service replicación de ccUsers'
+	SET @process = 'K038009-Servicio Create ccsp_GalateaArtificialIntelligence'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaArtificialIntelligence] 
 
 @option AS SMALLINT, 
@@ -630,28 +666,7 @@ End;
 	EXEC(@sql);
 
 
-	SET @process = 'IA_States'
-	SET @sql = 'if not exists (select * from sys.columns where name = N''ia_state'' and Object_ID = Object_ID(N''ccRIALoading''))
-    begin
-        ALTER TABLE ccRIALoading ADD ia_state int;
-end';
-	EXEC(@sql);
 
-	SET @process = 'IA_States'
-	SET @sql = 'if not exists(select * from sys.tables where name=''IA_States'') begin
-	CREATE TABLE IA_States (
-		id int,
-		description varchar(255),
-	);
-	
-end';
-	EXEC(@sql);
-
-	SET @process = 'IA_States'
-	SET @sql = 'if not exists(select id from IA_States where id=1) begin
-	INSERT INTO IA_States VALUES(1,''En espera de copiado a IA'');
-end';
-	EXEC(@sql);
 
 	
 		-------------------------------------- Jesus --------------------------------------------------------------------------------

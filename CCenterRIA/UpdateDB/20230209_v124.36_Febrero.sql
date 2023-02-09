@@ -143,7 +143,7 @@ BEGIN
 		EXEC(@sql);
 
 		SET @process = 'K049000 create procedure ccsp_GalateaChangeHistory'
-		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 	@option TINYINT,
 	@loginLst VARCHAR(max) = NULL,
 	@moduleWithOperation varchar(max) = NULL,
@@ -282,7 +282,7 @@ BEGIN
 		EXEC(@sql);
 
 		SET @process = 'K049000 create procedure ccsp_GalateaDialer'
-		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDialer]
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaDialer]
 @Description varchar(40)='''',
 @DialerId int = 0,
 @PortNumber int = 0,
@@ -420,7 +420,7 @@ set nocount off';
 
 
 		SET @process = 'K049000 delete procedure ccsp_GalateaAdminPortsManagement'
-		SET @sql = ' ALTER PROCEDURE [dbo].[ccsp_GalateaAdminPortsManagement]
+		SET @sql = ' CREATE PROCEDURE [dbo].[ccsp_GalateaAdminPortsManagement]
 @action SMALLINT,
 @dialer_id INT = 0,
 @cam_id SMALLINT = 0,

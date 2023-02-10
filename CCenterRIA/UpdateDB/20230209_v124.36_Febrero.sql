@@ -48,6 +48,13 @@ BEGIN
 
 	BEGIN TRY
 
+		SET @process = 'K049000 delete relation module-operation'
+		SET @sql = 'if exists (select * from ccRIALog_Cat_Relation  where module_id=24)
+		begin
+		  delete ccRIALog_Cat_Relation where module_id=24 
+		end';
+		EXEC(@sql);
+
 		SET @process = 'K049000 Update module ports'
 		SET @sql = 'if exists (select * from ccRIALog_Module where module_id=24)
 		begin
@@ -59,13 +66,15 @@ BEGIN
 		SET @sql = 'if exists (select * from ccRIALog_Operation where operationType=37)
 		begin
 		  update ccRIALog_Operation set descripcion=''Configurar puerto|Configure port'' where operationType=37
+		  insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,37)
 		end';
 		EXEC(@sql);
 
 		SET @process = 'K049004 Update operation delete ports'
-		SET @sql = 'if exists (select * from ccRIALog_Operation where operationType=37)
+		SET @sql = 'if exists (select * from ccRIALog_Operation where operationType=38)
 		begin
 		  update ccRIALog_Operation set descripcion=''Eliminar puerto|Delete port'' where operationType=38
+		  insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,38)
 		end';
 		EXEC(@sql);
 
@@ -73,6 +82,7 @@ BEGIN
 		SET @sql = 'if not exists (select * from ccRIALog_Operation where operationType=199)
 		begin
 		  insert into ccRIALog_Operation (operationType, descripcion) values(199,''Editar puerto|Edit port'')
+		  insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,199)
 		end';
 		EXEC(@sql);
 
@@ -80,6 +90,7 @@ BEGIN
 		SET @sql = 'if not exists (select * from ccRIALog_Operation where operationType=200)
 		begin
 		  insert into ccRIALog_Operation (operationType, descripcion) values(200,''Asignar puerto|Assign port'')
+		  insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,200)
 		end';
 		EXEC(@sql);
 
@@ -87,6 +98,7 @@ BEGIN
 		SET @sql = 'if not exists (select * from ccRIALog_Operation where operationType=201)
 		begin
 		  insert into ccRIALog_Operation (operationType, descripcion) values(201,''Desasignar puerto|Unassign port'')
+		  insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,201)
 		end';
 		EXEC(@sql);
 
@@ -116,22 +128,6 @@ BEGIN
 		begin
 		  insert into valueRecord(valueT,es,en,pt) values(''XFER TYPE'',''Tipo de transferencia'',''Transfer type'',''Tipo de transferência'')
 		end';
-		EXEC(@sql);
-
-		SET @process = 'K049000 delete relation module-operation'
-		SET @sql = 'if exists (select * from ccRIALog_Cat_Relation  where module_id=24)
-		begin
-		  delete ccRIALog_Cat_Relation where module_id=24 
-		end';
-		EXEC(@sql);
-
-		SET @process = 'K049000 insert relation module-operation'
-		SET @sql = '
-		insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,37)
-		insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,38)
-		insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,199)
-		insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,200)
-		insert into ccRIALog_Cat_Relation (module_id,operationType) values(24,201)';
 		EXEC(@sql);
 
 
@@ -318,7 +314,7 @@ if @action=2 --Insert
 		insert into #tempPortTable values(@PortNumber)
 	  end
 	
-	if exists(select Puerto from ccoDialers where Puerto in (select portId from #tempPortTable)) ---Puerto=@Port and dialer_id <> @Dialer_id
+	if exists(select Puerto from ccoDialers where Puerto in (select portId from #tempPortTable))
 	 begin
 		drop table #tempPortTable
 		select -1 as ResponseCode
@@ -370,26 +366,13 @@ if @action=4 --Delete
 		return(0)
 	 end
 	 
-	declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15), inUse tinyint)
+	declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15))
 
-	insert @portsDelete (DialerId,Port,PortDescription,inUse)
-	select Value, Puerto,Descripcion,0 from dbo.fn_RIASplitDelimited (@dialer_ids, '','') 
+	insert @portsDelete (DialerId,Port,PortDescription)
+	select Value, Puerto,Descripcion from dbo.fn_RIASplitDelimited (@dialer_ids, '','') 
 	inner join ccoDialers on dialer_id=Value
 
-	update pd set inUse=1
-	from @portsDelete pd
-	inner join ccoCallsOut co on co.cal_puerto=pd.Port
-	where statusCall_id=13 and cal_Inicio is not null and cal_tDialog=0
-	and DialerId in (select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '',''))
-
-	update pd set inUse=1
-	from @portsDelete pd
-	inner join ccCallsIn co on co.cal_puerto=pd.Port
-	where statusCall_id=13 and cal_Inicio is not null and cal_tDialog=0
-	and DialerId in (select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '',''))
-
-	delete from ccoDialers Where Dialer_id in (select DialerId from @portsDelete where inUse=0)
-	--(select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '',''))
+	delete from ccoDialers Where Dialer_id in (select DialerId from @portsDelete)
 	
 	select 200 as ResponseCode, DialerId, PortDescription
 	from @portsDelete

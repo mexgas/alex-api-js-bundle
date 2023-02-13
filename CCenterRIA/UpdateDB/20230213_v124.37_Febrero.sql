@@ -247,7 +247,7 @@ BEGIN
 
 	
 	if @tableName=''ccRIALoading'' begin
-	set @SQL='' and ia_state=1 and ''
+	set @SQL='' and ia_state=1 ''
 	end
 	
 	print @SQL

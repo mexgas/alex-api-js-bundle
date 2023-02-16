@@ -142,7 +142,7 @@ BEGIN
 		SET @process = 'K051000 insert modules'
 		SET @sql = 'if not exists (select * from ccGalateaModules)
 		begin
-		  insert into ccGalateaModules(ModuleId,MTagEs,MTagEn,MTagPt) values (1,''Sesión de usuario'',''User session'',''Sessão de usuário'')
+		  insert into ccGalateaModules(ModuleId,MTagEs,MTagEn,MTagPt) values (1,''SesiÃ³n de usuario'',''User session'',''SessÃ£o de usuÃ¡rio'')
 		  insert into ccGalateaModules(ModuleId,MTagEs,MTagEn,MTagPt) values (2,''Tablero de control'',''Dashboard'',''Painel de controle'')
 		end';
 		EXEC(@sql);
@@ -150,17 +150,17 @@ BEGIN
 		SET @process = 'K051000 insert operations'
 		SET @sql = 'if not exists (select * from ccGalateaOperations)
 		begin
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (1,''Iniciar sesión'',''Log in'',''Entrar'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (2,''Cerrar sesión'',''Log out'',''Sair'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (3,''Cambiar a no disponible'',''Set agent to unavailable'',''Alterar status para não disponível'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (4,''Cambiar a disponible'',''Set agent to ready'',''Alterar status para disponível'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (5,''Deshabilitar uso de no disponible'',''Deny use of unavailable options'',''Desativar o uso de status não disponível'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (6,''Habilitar uso de no disponible'',''Allow use of unavailable options'',''Ativar o uso de status não disponível'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (1,''Iniciar sesiÃ³n'',''Log in'',''Entrar'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (2,''Cerrar sesiÃ³n'',''Log out'',''Sair'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (3,''Cambiar a no disponible'',''Set agent to unavailable'',''Alterar status para nÃ£o disponÃ­vel'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (4,''Cambiar a disponible'',''Set agent to ready'',''Alterar status para disponÃ­vel'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (5,''Deshabilitar uso de no disponible'',''Deny use of unavailable options'',''Desativar o uso de status nÃ£o disponÃ­vel'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (6,''Habilitar uso de no disponible'',''Allow use of unavailable options'',''Ativar o uso de status nÃ£o disponÃ­vel'')
 		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (7,''Desconectar agente '',''Disconnect agent'',''Desconectar agente'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (8,''Iniciar campaña de salida'',''Start outbound campaign'',''Iniciar campanha de saída'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (9,''Detener campaña de salida'',''Stop outbound campaign'',''Parar campanha de saída'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (10,''Habilitar campaña de entrada'',''Enable inbound campaign'',''Ativar campanha de entrada'')
-		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (11,''Deshabilitar campaña de entrada'',''Disable inbound campaign'',''Desativar campanha de entrada'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (8,''Iniciar campaÃ±a de salida'',''Start outbound campaign'',''Iniciar campanha de saÃ­da'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (9,''Detener campaÃ±a de salida'',''Stop outbound campaign'',''Parar campanha de saÃ­da'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (10,''Habilitar campaÃ±a de entrada'',''Enable inbound campaign'',''Ativar campanha de entrada'')
+		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (11,''Deshabilitar campaÃ±a de entrada'',''Disable inbound campaign'',''Desativar campanha de entrada'')
 		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (12,''Cambiar tipo de registros a marcar'',''Change records to dial'',''Alterar tipo de registros a discar'')
 		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (13,''Eliminar registros nuevos'',''Delete new records'',''Excluir registros novos'')
 		  insert into ccGalateaOperations(OperationId,OpTagEs,OpTagEn,OpTagPt) values (14,''Eliminar registros devolver llamada'',''Delete callback records'',''Excluir registros retornar chamada'')
@@ -179,7 +179,7 @@ BEGIN
 		EXEC(@sql);
 
 		SET @process = 'K051000 insert module-operation relations'
-		SET @sql = 'if not exists (select * from ccRIALog_Operation)
+		SET @sql = 'if not exists (select * from ccGalateaModOpRelation)
 		begin
 		  insert into ccGalateaModOpRelation(ModuleId,OperationId) values (1,1)
 		  insert into ccGalateaModOpRelation(ModuleId,OperationId) values (1,2)
@@ -208,7 +208,7 @@ BEGIN
 		EXEC(@sql);
 
 		SET @process = 'K051000 create procedure ccsp_GalateaChangeHistory'
-		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 	@option TINYINT,
 	@loginLst VARCHAR(max) = NULL,
 	@moduleWithOperation varchar(max) = NULL,
@@ -430,7 +430,7 @@ END';
 
 
 		SET @process = 'K049000 create procedure ccsp_RIA_ABCAgents'
-		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
           @option smallint,
           @UserId int,
           @Login varchar(40)='''',

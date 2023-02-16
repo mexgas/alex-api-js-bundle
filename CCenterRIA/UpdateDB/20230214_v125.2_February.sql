@@ -42,7 +42,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
---- ValidaciÛn para cuando pasamos a una nueva versiÛn LTS
+--- Validaci√≥n para cuando pasamos a una nueva versi√≥n LTS
 IF @version > @actualVersion 
 BEGIN 
 	SET @actualVersionFix = 0
@@ -99,10 +99,10 @@ BEGIN
 		IF(@language = 0)
 		BEGIN
 			SET @column = ''COLUMNA'';
-			SET @typeDescriptionPhoneNotLoaded = ''TelÈfono no cargado'';
-			SET @typeDescriptionPhoneBlocked = ''TelÈfono bloqueado'';
-			SET @typeDescriptionPhoneUpdated = ''TelÈfono actualizado'';
-			SET @typeDescriptionPhoneBlackList = ''TelÈfono en lista negra'';
+			SET @typeDescriptionPhoneNotLoaded = ''Tel√©fono no cargado'';
+			SET @typeDescriptionPhoneBlocked = ''Tel√©fono bloqueado'';
+			SET @typeDescriptionPhoneUpdated = ''Tel√©fono actualizado'';
+			SET @typeDescriptionPhoneBlackList = ''Tel√©fono en lista negra'';
 		END
 		ELSE IF(@language = 1)
 		BEGIN
@@ -115,7 +115,7 @@ BEGIN
 		ELSE
 		BEGIN
 			SET @column = ''COLUNA'';
-			SET @typeDescriptionPhoneNotLoaded = ''Telefone n„o carregado'';
+			SET @typeDescriptionPhoneNotLoaded = ''Telefone n√£o carregado'';
 			SET @typeDescriptionPhoneBlocked = ''Telefone bloqueado''
 			SET @typeDescriptionPhoneUpdated = ''Telefone atualizado'';
 			SET @typeDescriptionPhoneBlackList = ''Telefone em lista negra'';
@@ -149,9 +149,9 @@ BEGIN
 						crlp.cal_key, 
 						dbo.Limpia(crlp.telefono) AS phone, 
 						CASE 
-							WHEN crlp.tipoMov = 0 THEN ''''TelÈfono no cargado'''' 
-							WHEN crlp.tipoMov = 1 OR crlp.tipoMov = 4 THEN ''''TelÈfono bloqueado''''  
-							WHEN crlp.tipoMov = 2 THEN ''''TelÈfono actualizado'''' 
+							WHEN crlp.tipoMov = 0 THEN ''''Tel√©fono no cargado'''' 
+							WHEN crlp.tipoMov = 1 OR crlp.tipoMov = 4 THEN ''''Tel√©fono bloqueado''''  
+							WHEN crlp.tipoMov = 2 THEN ''''Tel√©fono actualizado'''' 
 						ELSE 
 							crlp2.descTipoMov   
 						END AS Tipo, 

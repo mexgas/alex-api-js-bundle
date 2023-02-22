@@ -230,7 +230,6 @@ BEGIN
 	                 return(0)
 	                end
 
-	                --else
 	                UPDATE ccCamps SET
 	                cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
 	                where cam_id = @cam_id

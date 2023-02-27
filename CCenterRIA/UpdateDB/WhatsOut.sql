@@ -277,7 +277,34 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla Relac
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Env�o manual WhatsApp de salida Insert Finder WhastAppOut'
+		SET @process = 'K020017-Consultar conversaciones WhatsApp en Finder Create Table ccWhatsAppNodeOut'
+		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppNodeOut'') begin
+CREATE TABLE [dbo].[ccWhatsAppNodeOut](
+	[conversationId] [int] NOT NULL primary key,
+	[node] [xml] NULL,
+	[dateIn] [datetime] NULL,
+	[dateOut] [datetime] NULL,
+	[status] [smallint] NULL
+)
+
+ALTER TABLE [dbo].[ccWhatsAppNodeOut] ADD  DEFAULT (NULL) FOR [dateOut]
+ALTER TABLE [dbo].[ccWhatsAppNodeOut] ADD  DEFAULT ((0)) FOR [status]
+end'
+		EXEC(@sql)
+
+		SET @process = 'K020017-Consultar conversaciones WhatsApp en Finder Create Table ccWhatsAppNodeHistoryOut'
+		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppNodeHistoryOut'') begin
+CREATE TABLE [dbo].[ccWhatsAppNodeHistoryOut](
+	[conversationId] [int] NOT NULL,
+	[node] [xml] NULL,
+	[dateIn] [datetime] NULL,
+	[dateOut] [datetime] NULL,
+	[status] [smallint] NULL
+)
+end'
+		EXEC(@sql)
+
+		SET @process = 'K020093-Envio manual WhatsApp de salida Insert Finder WhastAppOut'
 		SET @sql = 'SET IDENTITY_INSERT ccFinderServices ON
 if not exists(select * from ccFinderServices where name=''WhastAppOut'') begin
 	insert into ccFinderServices (id,[name],ref,tableName,tableNameHistory,columnId,isActive)
@@ -3204,7 +3231,7 @@ BEGIN
 			WHEN ca.cam_id = @mod
 				THEN 1
 			ELSE 0
-			END [isDefault], g.graphic_id, c.cam_ModoManual, isnull(c.CampType,0) as CampType
+			END [isDefault], g.graphic_id, c.cam_ModoManual, isnull(c.CampType,1) as CampType
 	FROM ccCamps c WITH (INDEX (PK_ccCamps))
 	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
 	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id
@@ -3213,7 +3240,7 @@ BEGIN
 	ORDER BY cam_descripcion
 END
 ELSE
-	SELECT DISTINCT c.cam_id, c.cam_descripcion, g.graphic_id, c.cam_ModoManual, isnull(c.CampType,0) as CampType
+	SELECT DISTINCT c.cam_id, c.cam_descripcion, g.graphic_id, c.cam_ModoManual, isnull(c.CampType,1) as CampType
 	FROM ccCamps c WITH (INDEX (PK_ccCamps))
 	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
 	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id

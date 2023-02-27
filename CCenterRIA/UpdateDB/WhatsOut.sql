@@ -994,8 +994,8 @@ END
     
 SET NOCOUNT OFF'
 		EXEC(@sql)
-
-
+------------------------------------------------- END CREATE Store ----------------------------------------------------------------------
+------------------------------------------------- BEGIN Alter Store ----------------------------------------------------------------------
 
 SET @process = 'K00200  ALTER PROCEDURE ccsp_SaveStatusAgent'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
@@ -1933,7 +1933,7 @@ BEGIN
 END'
 		EXEC(@sql)
 	
-		------------------------------------------------- END BEGIN K00200- Create Table Or Alter ----------------------------------------------------------------------
+		------------------------------------------------- END BEGIN Alter Store ----------------------------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */

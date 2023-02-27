@@ -42,7 +42,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
---- Validación para cuando pasamos a una nueva versión LTS
+--- Validaciï¿½n para cuando pasamos a una nueva versiï¿½n LTS
 declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
 
 
@@ -107,7 +107,20 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla guard
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWAOperatingSummaryOut'
+		SET @process = 'K020016-Resultados de envÃ­o mensajes de WhatsApp de salida'
+		SET @sql = 'if not exists(select * from sys.tables where name=''ccWAConversationsResult'') begin
+CREATE TABLE [dbo].[ccWAConversationsResult] (
+	[camId] [SMALLINT] NOT NULL,
+	[SentMsg] [int] not null,
+	[Delivered] [int] not null,
+	[NotDelivered] [int] not null,
+	[ReadMsg] [int] not null,
+	[NotSupported] [int] not null,
+)
+end'
+		EXEC(@sql)
+
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccWAOperatingSummaryOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWAOperatingSummaryOut'') begin
 CREATE TABLE [dbo].[ccWAOperatingSummaryOut](
 	[CamId] [int] NOT NULL,
@@ -129,7 +142,7 @@ ALTER TABLE [dbo].[ccWAOperatingSummaryOut] ADD  DEFAULT ((0)) FOR [Available]
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWAAverageConversationsOut'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccWAAverageConversationsOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWAAverageConversationsOut'') begin
 CREATE TABLE [dbo].[ccWAAverageConversationsOut](
 	[CamId] [smallint] NOT NULL,
@@ -149,7 +162,7 @@ ALTER TABLE [dbo].[ccWAAverageConversationsOut] ADD  DEFAULT ((0)) FOR [StatusUp
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccLastMessageAgentByConversationOut'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccLastMessageAgentByConversationOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccLastMessageAgentByConversationOut'') begin
 CREATE TABLE [dbo].[ccLastMessageAgentByConversationOut](
 	[conversationId] [int] NOT NULL,
@@ -163,7 +176,7 @@ ALTER TABLE [dbo].[ccLastMessageAgentByConversationOut] ADD  DEFAULT (getdate())
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppOutNode'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccWhatsAppOutNode'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppOutNode'') begin
 
 CREATE TABLE [dbo].[ccWhatsAppOutNode](
@@ -181,7 +194,7 @@ ALTER TABLE [dbo].[ccWhatsAppOutNode] ADD  DEFAULT ((0)) FOR [status]
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida  Create Table ccWhatsAppOutNodeHistory'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida  Create Table ccWhatsAppOutNodeHistory'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppOutNodeHistory'') begin
 
 CREATE TABLE [dbo].[ccWhatsAppOutNodeHistory](
@@ -196,7 +209,7 @@ CREATE TABLE [dbo].[ccWhatsAppOutNodeHistory](
 End'
 		EXEC(@sql)			
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppConversationsOut'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccWhatsAppConversationsOut'
 		SET @sql = '
 if not exists(select * from sys.tables where name=''ccWhatsAppConversationsOut'') begin
 CREATE TABLE [dbo].[ccWhatsAppConversationsOut](
@@ -225,7 +238,7 @@ CREATE TABLE [dbo].[ccWhatsAppConversationsOut](
 ALTER TABLE [dbo].[ccWhatsAppConversationsOut] ADD  CONSTRAINT [DF_ccWhatsAppConversationsOut_requestDate]  DEFAULT (getdate()) FOR [requestDate]
 
 EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Indentificador de la tabla guarda las conversaciones'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''conversationId''
-EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Identificador de la campaña en ccCamps'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''camId''
+EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Identificador de la campaï¿½a en ccCamps'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''camId''
 EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Numero de whatsapp donde se enviara el mensaje'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''phoneCamp''
 EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Numero del cliente que se desea enviar'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''clientId''
 EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Estado de la conversaciones'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsOut'', @level2type=N''COLUMN'',@level2name=N''conversationStatus''
@@ -247,7 +260,7 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla donde
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppConversationsRelationshipOut'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Create Table ccWhatsAppConversationsRelationshipOut'
 		SET @sql = '
 if not exists(select * from sys.tables where name=''ccWhatsAppConversationsRelationshipOut'') begin
 
@@ -264,7 +277,7 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla Relac
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida Insert Finder WhastAppOut'
+		SET @process = 'K020093-Envï¿½o manual WhatsApp de salida Insert Finder WhastAppOut'
 		SET @sql = 'SET IDENTITY_INSERT ccFinderServices ON
 if not exists(select * from ccFinderServices where name=''WhastAppOut'') begin
 	insert into ccFinderServices (id,[name],ref,tableName,tableNameHistory,columnId,isActive)
@@ -275,7 +288,7 @@ SET IDENTITY_INSERT ccFinderServices OFF
 '
 		EXEC(@sql)
 
-			SET @process = 'K020093-Envío manual WhatsApp de salida'
+			SET @process = 'K020093-Envï¿½o manual WhatsApp de salida'
 		SET @sql = 'if not exists(
 SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
 WHERE TABLE_NAME = ''ccWhatsAppConversations''
@@ -951,7 +964,7 @@ END
 else IF @Option = 4 -- Get Disposition Information
 BEGIN
 declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
-select @nIdioma = case valor when 0 then ''Sin calificación'' else ''No disposition'' end
+select @nIdioma = case valor when 0 then ''Sin calificaciï¿½n'' else ''No disposition'' end
 from ccsettings where setting_id = 27 -- 0esp
 SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
 		ISNULL(disposition.calif_id, 0) AS DispositionId,
@@ -1018,7 +1031,7 @@ SET @process = 'K00200  ALTER PROCEDURE ccsp_SaveStatusAgent'
 @call_id int=0,
 @isLogout smallint=0, --Agrega el tiempo cuando esta dialogo y se desloguea
 @tDialog int =0 ,
-@currentStatus int =-2,--NUEVO PARÁMETRO PARA LA NUEVA COLUMNA
+@currentStatus int =-2,--NUEVO PARï¿½METRO PARA LA NUEVA COLUMNA
 @Fecha4 datetime=null,
 @tMusicHold int =0,
 @isTransferEngine bit = 0
@@ -1120,7 +1133,7 @@ select @User_id, cam_id, datediff(ms, dateadd(ss, -@tStatus3, @Fecha3), dateadd(
 from cccampsagente where user_id = @User_id
 
 
----Agregar callback en caso de este activo setting en campañas o acd y tenga relacion de campaña de encuesta
+---Agregar callback en caso de este activo setting en campaï¿½as o acd y tenga relacion de campaï¿½a de encuesta
 if @call_id>0 begin
 if @TipoCall = 0 begin --IN
 
@@ -2844,7 +2857,7 @@ END'
         END;'
 		EXEC(@sql)
 
-		set @process = 'K002075 SP ccspGalatea_Finder opcion 4 para obtener la informacion de la conversación wa salida'
+		set @process = 'K002075 SP ccspGalatea_Finder opcion 4 para obtener la informacion de la conversaciï¿½n wa salida'
 		set @sql ='ALTER PROCEDURE [dbo].[ccspGalatea_Finder] 
 				@action INT, 
 				@userId INT = 0, 

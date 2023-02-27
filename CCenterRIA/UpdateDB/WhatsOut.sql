@@ -3183,6 +3183,48 @@ SET NOCOUNT OFF
 '
 		EXEC(@sql)
 
+		set @process = 'K020018 SP ccsp_RIACampsManualCall se agrega CampType'
+		set @sql ='ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall] @UserID INT, @onChat INT = 0
+AS
+SET NOCOUNT ON
+
+IF (@onChat = 0)
+BEGIN
+	DECLARE @mod SMALLINT
+
+	SELECT @mod = defCampaing
+	FROM ccRIACat_Areas A
+	WHERE A.IDArea = (
+			SELECT IDArea
+			FROM ccUsers
+			WHERE User_id = @UserID
+			)
+
+	SELECT DISTINCT c.cam_id, c.cam_descripcion, CASE 
+			WHEN ca.cam_id = @mod
+				THEN 1
+			ELSE 0
+			END [isDefault], g.graphic_id, c.cam_ModoManual, c.CampType
+	FROM ccCamps c WITH (INDEX (PK_ccCamps))
+	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
+	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id
+	WHERE ca.user_id = @UserID
+		AND cam_modoManual IN (1, 3)
+	ORDER BY cam_descripcion
+END
+ELSE
+	SELECT DISTINCT c.cam_id, c.cam_descripcion, g.graphic_id, c.cam_ModoManual, c.CampType
+	FROM ccCamps c WITH (INDEX (PK_ccCamps))
+	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
+	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id
+	WHERE ca.user_id = @UserID
+		AND manualCallOnChat = 1
+	ORDER BY cam_descripcion
+
+SET NOCOUNT OFF;
+'
+		EXEC(@sql)
+
 		------------------------------------------------- END BEGIN Alter Store ----------------------------------------------------------------------
 
 		/* End script release */

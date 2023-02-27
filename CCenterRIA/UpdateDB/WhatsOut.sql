@@ -3204,7 +3204,7 @@ BEGIN
 			WHEN ca.cam_id = @mod
 				THEN 1
 			ELSE 0
-			END [isDefault], g.graphic_id, c.cam_ModoManual, c.CampType
+			END [isDefault], g.graphic_id, c.cam_ModoManual, isnull(c.CampType,0) as CampType
 	FROM ccCamps c WITH (INDEX (PK_ccCamps))
 	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
 	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id
@@ -3213,7 +3213,7 @@ BEGIN
 	ORDER BY cam_descripcion
 END
 ELSE
-	SELECT DISTINCT c.cam_id, c.cam_descripcion, g.graphic_id, c.cam_ModoManual, c.CampType
+	SELECT DISTINCT c.cam_id, c.cam_descripcion, g.graphic_id, c.cam_ModoManual, isnull(c.CampType,0) as CampType
 	FROM ccCamps c WITH (INDEX (PK_ccCamps))
 	INNER JOIN ccCampsAgente ca ON c.cam_id = ca.cam_id
 	INNER JOIN ccRIACampsGraph g ON g.cam_id = c.cam_id

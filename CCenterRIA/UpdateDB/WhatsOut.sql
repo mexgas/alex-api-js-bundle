@@ -43,9 +43,13 @@ FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
 --- Validación para cuando pasamos a una nueva versión LTS
+declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
+
+
 IF @version > @actualVersion 
 BEGIN 
 	SET @actualVersionFix = 0
+	select @version,@actualVersion,@versioMajer
 END
 
 IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
@@ -61,13 +65,8 @@ BEGIN
 CREATE TABLE [dbo].[ccDisconnectionMCSOut](
 	[disconnectionId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
 	[timeStampDisconnection] [datetime] NOT NULL,
-	[timeStampConnection] [datetime] NULL,
- CONSTRAINT [pk_ccRIADisconnectionMCSOut_1] PRIMARY KEY CLUSTERED 
-(
-	[disconnectionId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-
+	[timeStampConnection] [datetime] NULL
+)
 end'
 		EXEC(@sql)
 
@@ -108,7 +107,7 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla guard
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWAOperatingSummaryOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWAOperatingSummaryOut'') begin
 CREATE TABLE [dbo].[ccWAOperatingSummaryOut](
 	[CamId] [int] NOT NULL,
@@ -130,7 +129,7 @@ ALTER TABLE [dbo].[ccWAOperatingSummaryOut] ADD  DEFAULT ((0)) FOR [Available]
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWAAverageConversationsOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWAAverageConversationsOut'') begin
 CREATE TABLE [dbo].[ccWAAverageConversationsOut](
 	[CamId] [smallint] NOT NULL,
@@ -143,14 +142,14 @@ CREATE TABLE [dbo].[ccWAAverageConversationsOut](
 	[LastUpdate] [datetime] NULL
 ) ON [PRIMARY]
 
-ALTER TABLE [dbo].[ccWAAverageConversations] ADD  DEFAULT ((0)) FOR [ServiceLevel]
+ALTER TABLE [dbo].[ccWAAverageConversationsOut] ADD  DEFAULT ((0)) FOR [ServiceLevel]
 
-ALTER TABLE [dbo].[ccWAAverageConversations] ADD  DEFAULT ((0)) FOR [StatusUpdate]
+ALTER TABLE [dbo].[ccWAAverageConversationsOut] ADD  DEFAULT ((0)) FOR [StatusUpdate]
 
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccLastMessageAgentByConversationOut'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccLastMessageAgentByConversationOut'') begin
 CREATE TABLE [dbo].[ccLastMessageAgentByConversationOut](
 	[conversationId] [int] NOT NULL,
@@ -164,7 +163,7 @@ ALTER TABLE [dbo].[ccLastMessageAgentByConversationOut] ADD  DEFAULT (getdate())
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppOutNode'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppOutNode'') begin
 
 CREATE TABLE [dbo].[ccWhatsAppOutNode](
@@ -172,12 +171,8 @@ CREATE TABLE [dbo].[ccWhatsAppOutNode](
 	[node] [xml] NULL,
 	[dateIn] [datetime] NULL,
 	[dateOut] [datetime] NULL,
-	[status] [smallint] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[conversationId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+	[status] [smallint] NULL
+	)
 
 ALTER TABLE [dbo].[ccWhatsAppOutNode] ADD  DEFAULT (NULL) FOR [dateOut]
 
@@ -186,7 +181,7 @@ ALTER TABLE [dbo].[ccWhatsAppOutNode] ADD  DEFAULT ((0)) FOR [status]
 End'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida  Create Table ccWhatsAppOutNodeHistory'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccWhatsAppOutNodeHistory'') begin
 
 CREATE TABLE [dbo].[ccWhatsAppOutNodeHistory](
@@ -194,18 +189,14 @@ CREATE TABLE [dbo].[ccWhatsAppOutNodeHistory](
 	[node] [xml] NULL,
 	[dateIn] [datetime] NULL,
 	[dateOut] [datetime] NULL,
-	[status] [smallint] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[conversationId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+	[status] [smallint] NULL
+	)
 
 
 End'
 		EXEC(@sql)			
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppConversationsOut'
 		SET @sql = '
 if not exists(select * from sys.tables where name=''ccWhatsAppConversationsOut'') begin
 CREATE TABLE [dbo].[ccWhatsAppConversationsOut](
@@ -256,7 +247,24 @@ EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla donde
 end'
 		EXEC(@sql)
 
-		SET @process = 'K020093-Envío manual WhatsApp de salida'
+		SET @process = 'K020093-Envío manual WhatsApp de salida Create Table ccWhatsAppConversationsRelationshipOut'
+		SET @sql = '
+if not exists(select * from sys.tables where name=''ccWhatsAppConversationsRelationshipOut'') begin
+
+CREATE TABLE [dbo].[ccWhatsAppConversationsRelationshipOut](
+	[relationshipId] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[conversationIdBefore] [int] NOT NULL,
+	[conversationIdAfter] [int] NOT NULL
+) 
+EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Indentificador de la tabla'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsRelationshipOut'', @level2type=N''COLUMN'',@level2name=N''relationshipId''
+EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Id de la tabla ccWhatsAppConversationsOut.conversationId'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsRelationshipOut'', @level2type=N''COLUMN'',@level2name=N''conversationIdBefore''
+EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Id de la tabla ccWhatsAppConversationsOut.conversationId'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsRelationshipOut'', @level2type=N''COLUMN'',@level2name=N''conversationIdAfter''
+EXEC sys.sp_addextendedproperty @name=N''MS_Description'', @value=N''Tabla Relacion de mensaje anterior y siguiente'' , @level0type=N''SCHEMA'',@level0name=N''dbo'', @level1type=N''TABLE'',@level1name=N''ccWhatsAppConversationsRelationshipOut''
+
+end'
+		EXEC(@sql)
+
+		SET @process = 'K020093-Envío manual WhatsApp de salida Insert Finder WhastAppOut'
 		SET @sql = 'SET IDENTITY_INSERT ccFinderServices ON
 if not exists(select * from ccFinderServices where name=''WhastAppOut'') begin
 	insert into ccFinderServices (id,[name],ref,tableName,tableNameHistory,columnId,isActive)
@@ -3063,11 +3071,110 @@ else if @action = 11 begin--trae el nombre de la base de datos en BX
 end'
 		EXEC(@sql)
 
+		set @process = 'K020018 SP ccsp_RIAConfCamp se agrega connUser y connpass'
+		set @sql ='ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
+AS
+SET NOCOUNT ON
+
+DECLARE @tableExistsRec TABLE (camId INT PRIMARY KEY, existRec BIT)
+DECLARE @camByUser TABLE (camId INT PRIMARY KEY, isCheck BIT)
+DECLARE @camId INT, @id INT;
+
+IF NOT EXISTS (
+		SELECT *
+		FROM ccUsers_Roles
+		WHERE User_id = @User_id
+			AND Rol_id = 7
+		)
+BEGIN
+	INSERT INTO @camByUser
+	SELECT *, 0
+	FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
+	WHERE @campID IS NULL
+		OR cam_id = @campID
+END
+ELSE
+BEGIN
+	INSERT INTO @camByUser
+	SELECT cam_id, 0
+	FROM ccCamps
+	WHERE (
+			IDArea > 0
+			OR IDArea IS NULL
+			)
+		AND (
+			@campID IS NULL
+			OR cam_id = @campID
+			)
+END
+
+WHILE EXISTS (
+		SELECT *
+		FROM @camByUser
+		WHERE isCheck = 0
+		)
+BEGIN
+	SELECT TOP 1 @camId = camId
+	FROM @camByUser
+	WHERE isCheck = 0
+
+	IF EXISTS (
+			SELECT cam_id
+			FROM ccoCallsOut
+			WHERE cam_id = @camId
+			)
+	BEGIN
+		INSERT INTO @tableExistsRec
+		VALUES (@camId, 1)
+	END
+	ELSE
+	BEGIN
+		INSERT INTO @tableExistsRec
+		VALUES (@camId, 0)
+	END
+
+	UPDATE @camByUser
+	SET isCheck = 1
+	WHERE camId = @camId
+END
+
+SELECT a1.cam_id, cam_Descripcion, cam_tNotas, cast(cam_ocupado AS INT) AS cam_ocupado, cam_noInt_ocupado, cam_inter_ocupado, cast(cam_nocontesto AS INT) 
+	AS cam_nocontesto, cam_noInt_nocontesto, cam_inter_nocontesto, cast(cam_fax AS INT) AS cam_fax, cam_noInt_fax, cam_inter_fax, cast(cam_modomanual AS 
+		INT) AS cam_modomanual, ANI, cam_ShowCalifWnd, cam_StartTimerOnHangUp, editableCallKey, cam_tNoContesta, iTipoDial, detectAnswerMachine, 
+	detectVoiceMail, compliance, cam_inter_graba, cam_noint_graba, cast(progDial AS TINYINT) progDial, cast(excCallBack AS TINYINT) excCallBack, 
+	dialOrder, dialPrefix, dialPrefixMan, dialPrefixXfe, listenManualCall, stopRecording, cast(abandonCallback AS TINYINT) abandonCallback, a3.frame, 
+	a1.t_autoCB, a1.id_anilist, a1.tDialonWrapUp, dbo.fn_viewMode(@User_id, 10) viewMode, cam_maxqueue AS queSize, DNCScrub, callerIdDesc, timeZoneRule
+	, callsBySurvey, ivrScript, surveyPctg, isnull(a1.call_record, 1) AS call_record, cast(startStopRecording AS TINYINT) startStopRecording, 
+	leaveRecMessage, manualCallOnChat, callBackSurveyAgent, callBackSurveyClient, CASE 
+		WHEN surveycamid IS NULL
+			OR surveycamid = 0
+			THEN 0
+		ELSE 1
+		END isRelationSurvey, isnull(a1.funcEspDtmf, 0), isnull(sipHdrFormat, '''') sipHdrFormat, cam_inter_cancelled, prefijo, enbleprefix = CASE 
+		WHEN existRec = 0
+			THEN 1
+		ELSE 0
+		END, isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(CampType, 0) Chat, isnull(contact.conexionInfo, '''') 
+	conexionInfo, isnull(contact.closeConversationTime, 0) closeConversationTime, isnull(contact.answerTimeoutClient, 0) answerTimeoutClient, 
+	isnull(contact.allowFileAttachments, 0) allowFileAttachments
+FROM ccCamps a1
+INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
+LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
+ORDER BY cam_descripcion
+
+RETURN (0)
+
+SET NOCOUNT OFF
+'
+		EXEC(@sql)
+
 		------------------------------------------------- END BEGIN Alter Store ----------------------------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
-		--EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
 		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
 		COMMIT TRAN

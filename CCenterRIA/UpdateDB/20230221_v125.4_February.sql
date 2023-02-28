@@ -54,14 +54,13 @@ BEGIN
 
 	BEGIN TRY
 		
-		SET @process = 'CW-7800  La etiquetas en la columna descripci�n, no corresponden con las etiquetas que se muestran en los lineamientos para etiquetas delete store procedure ccsp_RIALogPhones'
+		SET @process = 'CW-7800  La etiquetas en la columna descripción, no corresponden con las etiquetas que se muestran en los lineamientos para etiquetas delete store procedure ccsp_RIALogPhones'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RIALogPhones'')
 		BEGIN
 			DROP PROCEDURE ccsp_RIALogPhones
 		END'
 	EXEC(@sql)
 
-	SET @process = 'CW-7800  La etiquetas en la columna descripci�n, no corresponden con las etiquetas que se muestran en los lineamientos para etiquetas create store procedure ccsp_RIALogPhones'
 	SET @sql = 'CREATE procedure [dbo].[ccsp_RIALogPhones]
 		@load_id int,
 		@Type smallint,
@@ -83,14 +82,14 @@ BEGIN
 		IF(@language = 0)
 		BEGIN
 			SET @column = ''COLUMNA'';
-			SET @typeDescriptionPhoneNotLoaded = ''Tel�fono no cargado'';
-			SET @typeDescriptionPhoneBlocked = ''Tel�fono bloqueado'';
-			SET @typeDescriptionPhoneUpdated = ''Tel�fono actualizado'';
-			SET @typeDescriptionPhoneBlackList = ''Tel�fono en lista negra'';
+			SET @typeDescriptionPhoneNotLoaded = ''Teléfono no cargado'';
+			SET @typeDescriptionPhoneBlocked = ''Teléfono bloqueado'';
+			SET @typeDescriptionPhoneUpdated = ''Teléfono actualizado'';
+			SET @typeDescriptionPhoneBlackList = ''Teléfono en lista negra'';
 			SET @typeBlockedRecords = ''Registro bloqueado'';
 			SET @typeIncorrectRecords = ''Registro no cargado'';
-			SET @descriptionBlockedRecords = ''Todos los tel�fonos bloqueados'';
-			SET @descriptionIncorrectRecords = ''Todos los tel�fonos inv�lidos'';
+			SET @descriptionBlockedRecords = ''Todos los teléfonos bloqueados'';
+			SET @descriptionIncorrectRecords = ''Todos los teléfonos inválidos'';
 		END
 		ELSE IF(@language = 1)
 		BEGIN
@@ -107,14 +106,14 @@ BEGIN
 		ELSE
 		BEGIN
 			SET @column = ''COLUNA'';
-			SET @typeDescriptionPhoneNotLoaded = ''Telefone n�o carregado'';
+			SET @typeDescriptionPhoneNotLoaded = ''Telefone não carregado'';
 			SET @typeDescriptionPhoneBlocked = ''Telefone bloqueado''
 			SET @typeDescriptionPhoneUpdated = ''Telefone atualizado'';
 			SET @typeDescriptionPhoneBlackList = ''Telefone em lista negra'';
 			SET @typeBlockedRecords = ''Registro bloqueado'';
-			SET @typeIncorrectRecords = ''Registro n�o carregado'';
+			SET @typeIncorrectRecords = ''Registro não carregado'';
 			SET @descriptionBlockedRecords = ''Todos os telefones bloqueados'';
-			SET @descriptionIncorrectRecords = ''Todos os telefones inv�lidos'';
+			SET @descriptionIncorrectRecords = ''Todos os telefones inválidos'';
 		END
 
 		select @CaseType = '''', @nType = right(''0000''+cast(@Type as varchar(5)), 5)
@@ -145,9 +144,9 @@ BEGIN
 						crlp.cal_key, 
 						dbo.Limpia(crlp.telefono) AS phone, 
 						CASE 
-							WHEN crlp.tipoMov = 0 THEN ''''Tel�fono no cargado'''' 
-							WHEN crlp.tipoMov = 1 OR crlp.tipoMov = 4 THEN ''''Tel�fono bloqueado''''  
-							WHEN crlp.tipoMov = 2 THEN ''''Tel�fono actualizado'''' 
+							WHEN crlp.tipoMov = 0 THEN ''''Teléfono no cargado'''' 
+							WHEN crlp.tipoMov = 1 OR crlp.tipoMov = 4 THEN ''''Teléfono bloqueado''''  
+							WHEN crlp.tipoMov = 2 THEN ''''Teléfono actualizado'''' 
 						ELSE 
 							crlp2.descTipoMov   
 						END AS Tipo, 

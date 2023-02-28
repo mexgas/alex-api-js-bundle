@@ -833,9 +833,10 @@ SET NOCOUNT ON;
 
 	IF @Action = 0 -- Get WhatsApp Campaigns List
 	BEGIN 
-		SELECT CAST(campaigns.cam_id AS INT) AS CampaignId,
-			   campaigns.cam_descripcion AS CampaignName,
-			   waNumbers.number AS CampaignPhone
+		SELECT CAST(campaigns.cam_id AS INT) AS Id,
+			   campaigns.cam_descripcion AS Name,
+			   waNumbers.number AS Phone,
+			   5 as [Type]
 		FROM ccCamps campaigns
 		INNER JOIN ccWhatsAppNumbers waNumbers
 		ON campaigns.cam_id = waNumbers.camp_id

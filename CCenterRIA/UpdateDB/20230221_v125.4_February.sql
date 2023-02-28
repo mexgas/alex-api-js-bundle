@@ -42,7 +42,7 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
---- Validaci�n para cuando pasamos a una nueva versi�n LTS
+--- Validación para cuando pasamos a una nueva versión LTS
 IF @version > @actualVersion 
 BEGIN 
 	SET @actualVersionFix = 0

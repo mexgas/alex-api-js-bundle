@@ -513,9 +513,7 @@ BEGIN --save conversation Times
     else begin
         INSERT INTO @TablaTemp values(@conversationId,0)
     end
-	select @conversationStatus,conversationDate, case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end,* from ccWhatsAppConversationsOut
-	WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
-
+	
     UPDATE ccWhatsAppConversationsOut
     SET
     conversationStatus = @conversationStatus
@@ -665,12 +663,12 @@ END;
 
 Else IF @action = 11
 BEGIN --register desconnection agent by conversationID
-    UPDATE ccLastMessageAgentByConversationOut SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
+	exec ccsp_ConversationWASaveOut @action = 9, @conversationId=@conversationId
 END;
 
 else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
     declare @disconnectionIdTemp int = (select top 1 disconnectionId from [ccDisconnectionMCSOut] where timeStampConnection is null order by timeStampDisconnection desc);
-    UPDATE ccDisconnectionMCS SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
+    UPDATE ccDisconnectionMCSOut SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
 
     declare @from as datetime;
     select @from = convert(datetime,convert(varchar(11),getdate()))
@@ -811,7 +809,7 @@ BEGIN
 		DetectAnswerMachine, detectVoiceMail DetectVoiceMail, compliance Compliance, 
 		cam_inter_graba CamInterRecord, cam_noint_graba CamNoIntRecord, excCallBack 
 		ExcCallBack, cam_ShowCalifWnd CamShowCalifWnd, frame Frame, exitAssisted 
-		ExitAssistedDialMode, previewDiscard PreviewDiscard, CampType Chat, 
+		ExitAssistedDialMode, previewDiscard PreviewDiscard, CampType, 
 		conexionInfo ConexionInfo, closeConversationTime CloseConversationTime, 
 		answerTimeoutClient MUTimeOutClient, allowFileAttachments 
 		AllowFileAttachments

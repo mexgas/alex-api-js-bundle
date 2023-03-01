@@ -395,18 +395,33 @@ IF @action = 1 BEGIN --new Conversation
 		select 0 as [ConversationId],0 as [MessageId]
 		return(0)
 	end
-		
-    INSERT INTO [ccWhatsAppConversationsOut]
-    ([camId] , [phoneCamp], clientId, conversationStatus, tChatting
-    , tWrapUp, finishedBy, onQueue, tQueue, requestDate
-    , tTimeout, disposition, subDisposition, agentId)
-    VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
-	@onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
+
+	if not exists (select * from ccWhatsAppConversationsOut where camId = @campId and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) begin
+		if not exists (select * from ccWhatsAppConversations where clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) begin
+			INSERT INTO [ccWhatsAppConversationsOut]
+			([camId] , [phoneCamp], clientId, conversationStatus, tChatting
+			, tWrapUp, finishedBy, onQueue, tQueue, requestDate
+			, tTimeout, disposition, subDisposition, agentId)
+			VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
+			@onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
     
-    SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
-    SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]                                               
-       
-END
+			SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
+			SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
+		end
+		else begin
+			select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+			FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
+			ON A.cam_id = @campId AND B.clientId = @clientId AND B.finishedBy = 0
+			INNER JOIN ccUsers C ON B.agentId = C.User_id;
+		end  
+	end
+	else begin
+		select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+		FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
+		ON A.cam_id = @campId AND B.clientId = @clientId AND B.finishedBy = 0
+		INNER JOIN ccUsers C ON B.agentId = C.User_id;
+	end  
+END 
 END'
 		EXEC(@sql)
 

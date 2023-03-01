@@ -1769,10 +1769,9 @@ BEGIN
 				cast(g.graphic_id as int) as ACDGraphicId,
 				cast(cm.closeConversationTime as int) as [TimeOut],
 				cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-				
-				--i.ExitWrapUpDisposition as [ExitWrapUpDisposition],				
+				i.exitAssisted as [ExitWrapUpDisposition],				
 				cast(i.cam_tnotas as int) [WrapUpTime],
-				i.cam_ShowCalifWnd,
+				i.cam_ShowCalifWnd as ShowCalifWnd,	
 				cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
 				ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
 				isnull(permission.AllowUnassign,0) as AllowUnassign,

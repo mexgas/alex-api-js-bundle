@@ -1793,9 +1793,9 @@ ELSE IF(@Option = 3)
 BEGIN
 	if @campType =0 begin --ACD
 		SELECT
-		CAST(inbound.Inbound_id AS INT) AS ACDId,
-		inbound.descripcion AS ACDName,
-		ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+		CAST(inbound.Inbound_id AS INT) AS Id,
+		inbound.descripcion AS Name,
+		ISNULL(configuration.conexionInfo, '''') AS Phone,
 		CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
 		inbound.tNotas AS WrapUpTime
 		FROM  ccInbound inbound
@@ -1803,9 +1803,9 @@ BEGIN
 	end
 	else begin
 	SELECT
-		CAST(inbound.cam_id AS INT) AS ACDId,
-		inbound.cam_descripcion AS ACDName,
-		ISNULL(configuration.conexionInfo, '''') AS PhoneACD,
+		CAST(inbound.cam_id AS INT) AS Id,
+		inbound.cam_descripcion AS Name,
+		ISNULL(configuration.conexionInfo, '''') AS Phone,
 		CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
 		inbound.cam_tnotas AS WrapUpTime
 		FROM  ccCamps inbound

@@ -1973,7 +1973,7 @@ BEGIN
 		FROM ccRIAWorkGroupUsers A
 		INNER JOIN ccusers B ON A.User_id = B.User_id
 		INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG -- AND C.Tipo = 0
-		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id
+		INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id  and D.IDArea is not null
 		LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
 		WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
 		ORDER BY A.User_id

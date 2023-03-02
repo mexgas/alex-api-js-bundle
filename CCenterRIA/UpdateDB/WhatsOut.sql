@@ -381,7 +381,7 @@ alter table ccWhatsAppConversations alter column tQueue bigint
 , @disposition        SMALLINT    = 0
 , @subDisposition     SMALLINT    = 0
 , @agentId            INT         = 0
-                                              
+
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -411,14 +411,14 @@ IF @action = 1 BEGIN --new Conversation
 		else begin
 			select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
 			FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
-			ON A.cam_id = @campId AND B.clientId = @clientId AND B.finishedBy = 0
+			ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
 			INNER JOIN ccUsers C ON B.agentId = C.User_id;
 		end  
 	end
 	else begin
 		select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
 		FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
-		ON A.cam_id = @campId AND B.clientId = @clientId AND B.finishedBy = 0
+		ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
 		INNER JOIN ccUsers C ON B.agentId = C.User_id;
 	end  
 END 

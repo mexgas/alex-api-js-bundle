@@ -742,6 +742,150 @@ QuitWithRollback:
 EndSave:
 '
     EXEC(@sql)
+	
+	set @process = 'CREATE JOB CW Update TimeZones'
+    set @sql = 'USE [msdb]
+	
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW Update TimeZones'') begin
+    EXEC msdb.dbo.sp_delete_job @job_name=N''CW Update TimeZones'', @delete_unused_schedule=1
+end
+
+/****** Object:  Job [CW Update TimeZones]    Script Date: 07/03/2023 03:46:46 p. m. ******/
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SELECT @ReturnCode = 0
+/****** Object:  JobCategory [[Uncategorized (Local)]]    Script Date: 07/03/2023 03:46:46 p. m. ******/
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''[Uncategorized (Local)]'' AND category_class=1)
+BEGIN
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''[Uncategorized (Local)]''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+END
+
+DECLARE @jobId BINARY(16)
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW Update TimeZones'', 
+		@enabled=1, 
+		@notify_level_eventlog=0, 
+		@notify_level_email=0, 
+		@notify_level_netsend=0, 
+		@notify_level_page=0, 
+		@delete_level=0, 
+		@description=N''Inserta registros nuevos en la tabla de ccTimeZoneArea en caso de que la lada exista en la tabla de Series pero no en ccTimeZoneArea, valida contra las excepciones de horario de verano del gobierno de México'', 
+		@category_name=N''[Uncategorized (Local)]'', 
+		@owner_login_name=N''sa'', @job_id = @jobId OUTPUT
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [Insert in TimeZoneArea]    Script Date: 07/03/2023 03:46:47 p. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Insert in TimeZoneArea'', 
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=2, 
+		@retry_interval=5, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''-- Insert new Rows in ccTimeZoneArea from Series if not Exists
+
+
+insert into cctimezonearea (id_country,area,location,tz_standard,tz_daylight,locality)
+
+select
+1 as id_country,
+CLD as area,
+estado as location,
+--ASIGNACION ZONA HORARIA ESTANDAR
+--UTC-5
+CASE WHEN ESTADO like ''''qroo%''''
+THEN ''''32''''
+--UTC-6
+WHEN ESTADO in (''''CHIH'''',''''DGO'''',''''ZAC'''',''''JAL'''',''''COAH'''',''''NL'''',''''TAMPS'''',
+''''SLP'''',''''GTO'''',''''AGS'''',''''QRO'''',''''HGO'''',''''VER'''',''''MICH'''',''''COL'''',''''MEX'''',''''CDMX'''',''''MOR'''',''''TLAX'''',''''PUE'''',''''GRO'''',''''OAX'''',
+''''TAB'''',''''CHIS'''',''''CAMP'''',''''YUC'''') OR(MUNICIPIO=''''BAHIA DE BANDERAS'''' AND ESTADO=''''NAY'''')
+THEN ''''64''''
+--UTC-7
+when ESTADO in (''''SON'''',''''SIN'''',''''BCS'''',''''NAY'''') 
+then ''''128''''
+--UTC-8
+WHEN ESTADO in (''''BC'''')
+THEN ''''256''''
+ELSE ''''64''''
+end as tz_standard,
+--validaciones para zona horaria en verano.
+-- 1. Valida si pertenece a los municipios correspondientes a la fraccion 1  
+case when MUNICIPIO in(
+''''Acuna'''', ''''Allende'''', ''''Guerrero'''', ''''Hidalgo'''', ''''Jimenez'''', ''''Morelos'''',
+''''Nava'''', ''''Ocampo'''', ''''Piedras Negras'''', ''''Villa Union'''', ''''Zaragoza'''',
+''''Anahuac'''',''''Nuevo Laredo'''', ''''Guerrero'''', ''''Mier'''', ''''Miguel Aleman'''', 
+''''Camargo'''', ''''Gustavo Diaz Ordaz'''', ''''Reynosa'''', ''''Rio Bravo'''',
+''''Valle Hermoso'''', ''''Matamoros'''') and ESTADO in (''''NL'''',''''COAH'''',''''TAMPS'''') 
+then ''''32''''
+--2 valida si pertenece a los municipios correspondientes a la fraccion 2
+WHEN MUNICIPIO in (''''Coyame del Sotol'''', ''''OJINAGA'''', ''''Manuel Benavides'''') and ESTADO =''''CHIH''''
+then ''''128''''
+--3 fraccion 3
+when ESTADO=''''BC'''' or(MUNICIPIO in (''''Janos'''', ''''Ascension'''',''''Juarez'''', ''''Praxedis G. Guerrero'''' , ''''Guadalupe'''') and MUNICIPIO =''''CHIH'''')
+then ''''128''''
+--4 NO CAMBIAN DE HORARIO - COLOCAR ZONA HORARIA DE ACUERDO AL ESTADO.
+--UTC-5
+WHEN ESTADO like ''''qroo%''''
+THEN ''''32''''
+--UTC-6
+WHEN ESTADO in (''''CHIH'''',''''DGO'''',''''ZAC'''',''''JAL'''',''''COAH'''',''''NL'''',''''TAMPS'''',
+''''SLP'''',''''GTO'''',''''AGS'''',''''QRO'''',''''HGO'''',''''VER'''',''''MICH'''',''''COL'''',''''MEX'''',''''CDMX'''',''''MOR'''',''''TLAX'''',''''PUE'''',''''GRO'''',''''OAX'''',
+''''TAB'''',''''CHIS'''',''''CAMP'''',''''YUC'''') OR(MUNICIPIO=''''BAHIA DE BANDERAS'''' AND ESTADO=''''NAY'''')
+THEN ''''64''''
+--UTC-7
+when ESTADO in (''''SON'''',''''SIN'''',''''BCS'''',''''NAY'''')
+then ''''128''''
+ELSE ''''64''''
+end
+ as tz_daylight,
+MUNICIPIO as locality
+from(
+select s.POBLACION as POBLACIONSERIES,s.MUNICIPIO,s.CLD,s.ESTADO,t.area,t.locality,t.location from series s left join cctimezonearea t
+on t.area=s.CLD and t.id_country=1 and s.ESTADO=t.location
+and t.locality=s.MUNICIPIO
+)x
+where locality is null
+group by CLD ,
+estado ,
+MUNICIPIO 
+order by municipio
+
+'', 
+		@database_name=N''CCenterRIA'', 
+		@flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''Every Sunday'', 
+		@enabled=1, 
+		@freq_type=8, 
+		@freq_interval=1, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=1, 
+		@active_start_date=20230307, 
+		@active_end_date=99991231, 
+		@active_start_time=20000, 
+		@active_end_time=235959, 
+		@schedule_uid=N''06a91baa-512b-45c8-a16a-79482b1e0d7d''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+COMMIT TRANSACTION
+GOTO EndSave
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+EndSave:
+GO
+
+
+
+	'
+    EXEC(@sql)
 
     set @process = 'CREATE JOB '
     set @sql = ''

@@ -1788,7 +1788,7 @@ SET NOCOUNT OFF'
 	END;'
      EXEC(@sql)
 
-     set @process = 'K002107-ResumenOperativo se altera ccsp_GalateaDeleteCampaignAndACD'
+     set @process = 'K002107-ResumenOperativo se altera ccsp_GalateaDeleteCampaignAndACD -- Se agregan cambios para el ticket TT3587'
      set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
         --declare
         @userId           SMALLINT,
@@ -1908,6 +1908,7 @@ SET NOCOUNT OFF'
             WHERE i.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
             Update ccInbound set IDArea = null, status = 0 where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+			delete from ccInboundDnis where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
             if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
                 begin
@@ -1936,9 +1937,11 @@ SET NOCOUNT OFF'
         IF datalength(@DeleteACDGroupId) > 0
             Insert into ccRIALog Select * from #ACDLog
 
-        SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result FROM #CampsDelete
+        SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result, CAST(0 AS SMALLINT) as IDWG FROM #CampsDelete
         UNION
-        SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result FROM #ACDDelete
+        SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result, (select CAST(IDWG AS SMALLINT) from #AllWGACD)  FROM #ACDDelete
+
+
         IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
         IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
     END'

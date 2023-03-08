@@ -880,10 +880,6 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
-GO
-
-
-
 	'
     EXEC(@sql)
 

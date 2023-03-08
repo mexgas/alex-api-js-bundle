@@ -273,33 +273,6 @@ BEGIN
 	'
     EXEC(@sql)		
 
-		SET @process = 'SPEC-74 Eliminar telefonos sin zona horaria para evitar infringir el reglamento de husos horarios'
-
-	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RemoveNoTZNumbers'')
-
-		BEGIN
-
-			DROP PROCEDURE ccsp_RemoveNoTZNumbers
-
-		END'
-
-	EXEC(@sql)
-
-	SET @process = 'SPEC-74 Eliminar telefonos sin zona horaria para evitar infringir el reglamento de husos horarios'
-
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RemoveNoTZNumbers]
-				AS
-				BEGIN
-
-				insert into BlockedNumbers
-				select callout_id, cal_telefono, cam_id, getdate() from ccoWorkingTable where iZonaHoraria = 0
-
-				delete from ccoWorkingTable where iZonaHoraria=0
-
-				END'
-
-		EXEC(@sql)
-
 	 set @process = 'SPEC-74 Eliminar telefonos sin zona horaria para evitar infringir el reglamento de husos horarios'
      
 	 set @sql = 'ALTER procedure [dbo].[ccsp_OUTGetNewProviderJobs]
@@ -326,7 +299,10 @@ BEGIN
 		if (@country_id = 4) 
 		begin
 
-			exec dbo.ccsp_RemoveNoTZNumbers
+			insert into BlockedNumbers
+			select callout_id, cal_telefono, cam_id, getdate() from ccoWorkingTable where iZonaHoraria = 0
+
+			delete from ccoWorkingTable where iZonaHoraria=0
 
 		end
 

@@ -288,7 +288,6 @@ BEGIN
 	SET @process = 'SPEC-74 Eliminar telefonos sin zona horaria para evitar infringir el reglamento de husos horarios'
 
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RemoveNoTZNumbers]
-				@cam_id int = 0
 				AS
 				BEGIN
 
@@ -327,7 +326,7 @@ BEGIN
 		if (@country_id = 4) 
 		begin
 
-			exec dbo.ccsp_RemoveNoTZNumbers @CAMPID
+			exec dbo.ccsp_RemoveNoTZNumbers
 
 		end
 

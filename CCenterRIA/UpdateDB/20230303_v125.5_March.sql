@@ -1749,7 +1749,7 @@ end'
 		EXEC(@sql)
 
 
-SET @process = 'K00200  Alter PROCEDURE ccsp_GalateaDeleteCampaignAndACD update contactMeanOut.conexionInfo empty'
+SET @process = 'K00200  Alter PROCEDURE ccsp_GalateaDeleteCampaignAndACD update contactMeanOut.conexionInfo y connUser empty '
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
 			@userId           SMALLINT,
 			@DeleteCamId      VARCHAR(MAX),
@@ -3593,7 +3593,7 @@ else if @action = 11 begin--trae el nombre de la base de datos en BX
 end'
 		EXEC(@sql)
 
-		set @process = 'K020018 SP ccsp_RIAConfCamp se agrega connUser y connpass'
+		set @process = 'K020018 SP ccsp_RIAConfCamp'
 		set @sql ='ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
 AS
 SET NOCOUNT ON

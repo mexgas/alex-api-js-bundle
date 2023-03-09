@@ -3593,7 +3593,7 @@ else if @action = 11 begin--trae el nombre de la base de datos en BX
 end'
 		EXEC(@sql)
 
-		set @process = 'K020018 SP ccsp_RIAConfCamp'
+		set @process = 'K020018 SP ccsp_RIAConfCamp se agrega closeConversationTime,answerTimeoutClient,allowFileAttachments'
 		set @sql ='ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
 AS
 SET NOCOUNT ON

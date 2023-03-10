@@ -2276,7 +2276,7 @@ BEGIN
 		inbound.cam_descripcion AS Name,
 		ISNULL(configuration.conexionInfo, '''') AS Phone,
 		CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
-		inbound.cam_tnotas AS WrapUpTime
+		cast(inbound.cam_tnotas as int) AS WrapUpTime
 		FROM  ccCamps inbound
 		INNER JOIN  contactMeanOut configuration ON (inbound.cam_id = configuration.camp_id and inbound.cam_id = @inboundId)
 	end

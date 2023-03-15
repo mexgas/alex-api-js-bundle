@@ -469,6 +469,7 @@ BEGIN
 
 						select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual, 
 						isnull(c.selectRotativeANI, 0) selectRotativeANI
+						, isnull(c.CampType,0) as CampType
 						from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
 						join ccRIACampsGraph g ON g.cam_id = c.cam_id
 						where ca.user_id = @UserID and cam_modoManual in(1,3)
@@ -477,7 +478,9 @@ BEGIN
 					else 
 					begin 
 						select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
+						, isnull(c.CampType,0) as CampType
 						from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+
 						join ccRIACampsGraph g ON g.cam_id = c.cam_id
 						where ca.user_id = @UserID and manualCallOnChat = 1
 						order by cam_descripcion
@@ -493,10 +496,10 @@ BEGIN
 
 					if(@rotativeAniListId > 0 )
 					begin
-						select @aniList
 						select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
 					end
 				end
+	
 	'
 	EXEC(@sql)
 

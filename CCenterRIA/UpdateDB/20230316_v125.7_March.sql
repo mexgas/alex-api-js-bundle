@@ -58,6 +58,40 @@ BEGIN
 
 	BEGIN TRY
 
+	SET @process = 'create table ccSmsSchedules'
+	SET @sql = '
+	if not exists (select * from sys.tables where name = N''ccSmsSchedules'')
+    begin
+        create table ccSmsSchedules (sched_id smallint identity, cam_id smallint,iDate datetime, fDate datetime) 
+    end
+	'
+	EXEC(@sql)
+
+	SET @process = 'Add column messagingOrder'
+	SET @sql = '
+	if not exists (select * from sys.columns where name = N''messagingOrder'' and Object_ID = Object_ID(N''cccamps''))
+    begin
+	    alter table ccCamps add messagingOrder bit null
+    end
+	'
+	EXEC(@sql)
+	
+	SET @process = 'Add column autoStart'
+	SET @sql = '
+	if not exists (select * from sys.columns where name = N''autoStart'' and Object_ID = Object_ID(N''cccamps''))
+    begin
+	    alter table ccCamps add autoStart bit null
+    end
+	'
+	EXEC(@sql)
+
+	set @process = 'Setting 253 horarios legales'
+	set @Sql= 'if not exists(select * from ccsettings where setting_id=253)
+		insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) 
+		values (253,''1|07:00|22:00'',''Marcar sólo en horarios permitidos por ley.'',1,''GRL'',''Configuracion el horario permitido indepentiende del horario de la campaña activo|hh:mm|hh:mm ejemplo(1|07:00|22:00)'',''Dial only during compliance schedules.'',1,''^[0-1]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'')
+		'
+    EXEC(@Sql)
+
 	SET @process = 'KR076000 Validación y eliminación de sp ccsp_RIAConfCamp'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAConfCamp'')
 				begin

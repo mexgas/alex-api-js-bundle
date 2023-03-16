@@ -263,7 +263,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	SET @process = 'KR076000 Creación de sp ccsp_RIAConfCamp'
+	SET @process = 'Creación de sp ccsp_RIAConfCamp'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
 				AS
 				SET NOCOUNT ON
@@ -371,7 +371,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	SET @process = 'KR076000 Creación de sp ccsp_GalateaGetOutboundConfiguration'
+	SET @process = 'Creación de sp ccsp_GalateaGetOutboundConfiguration'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT, @campID INT
 				AS
 				BEGIN
@@ -447,7 +447,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	SET @process = 'KR076000 Creación de sp ccsp_RIAUpdateCamConfig'
+	SET @process = 'Creación de sp ccsp_RIAUpdateCamConfig'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@cam_id smallint,
 				@cam_descripcion varchar(40) = null,

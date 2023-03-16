@@ -185,7 +185,8 @@ BEGIN
 						ELSE 0
 						END, isnull(exitAssisted, 0) exitAssisted, isnull(previewDiscard, 0) PreviewDiscard, isnull(CampType, 0) Chat, isnull(contact.conexionInfo, '''') 
 					conexionInfo, isnull(contact.closeConversationTime, 0) closeConversationTime, isnull(contact.answerTimeoutClient, 0) answerTimeoutClient, 
-					isnull(contact.allowFileAttachments, 0) allowFileAttachments, isnull(selectRotativeANI, 0) selectRotativeANI, ISNULL(rotativeAlgo, 0) rotativeAlgo
+					isnull(contact.allowFileAttachments, 0) allowFileAttachments, isnull(selectRotativeANI, 0) selectRotativeANI, ISNULL(rotativeAlgo, 0) rotativeAlgo,
+					isnull(autoStart,0) autoStart, isnull(messagingOrder,0) messagingOrder
 				FROM ccCamps a1
 				INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
 				INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
@@ -231,7 +232,8 @@ BEGIN
 						VARCHAR(255), cam_inter_cancelled SMALLINT, prefijo VARCHAR(40), enbleprefix 
 						BIT, exitAssisted BIT, previewDiscard BIT, CampType INT, conexionInfo VARCHAR(50
 						), closeConversationTime SMALLINT, answerTimeoutClient INT, 
-						allowFileAttachments BIT, selectRotativeANI int, rotativeAlgo tinyint
+						allowFileAttachments BIT, selectRotativeANI int, rotativeAlgo tinyint,
+						autoStart bit, messagingOrder bit
 						)
 
 					declare @numbers varchar(max)
@@ -266,7 +268,8 @@ BEGIN
 						conexionInfo ConexionInfo, closeConversationTime CloseConversationTime, 
 						answerTimeoutClient MUTimeOutClient, allowFileAttachments 
 						AllowFileAttachments, @numbers AS FreeNumbers, selectRotativeANI SelectRotativeANIManualCall, 
-						rotativeAlgo RotativeAlgo
+						rotativeAlgo RotativeAlgo,
+						autoStart AutoStart, messagingOrder MessagingOrder
 					FROM @AllCampaigns
 					WHERE cam_id = @campID
 				END
@@ -347,7 +350,9 @@ BEGIN
 				@adminCloseConversationTime INT = NULL,
 				@ConexionInfo VARCHAR(400) = NULL,
 				@allowFileAttachments BIT = NULL,
-				@selectRotativeANI int = null
+				@selectRotativeANI int = null,
+				@messagingOrder bit = null,
+				@autoStart bit = null
 				as
 				set nocount on
 				DECLARE @timesDiscardActual int = (SELECT timesDiscard FROM ccCamps WHERE cam_id = @cam_id)
@@ -414,7 +419,9 @@ BEGIN
 				 cam_tPreview = isnull(@cam_tPreview,cam_tPreview),
 				 timesDiscard = isnull(@timesDiscard, timesDiscard),
 				 CampType = (CASE  WHEN @CampType is not null THEN @CampType WHEN @progDial = 3 THEN @progDiaL ELSE 1 END),
-				 selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI)
+				 selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI),
+				 messagingOrder = isnull(@messagingorder, messagingOrder),
+				 autoStart = isnull(@autoStart,autoStart)
 
 				Where cam_id = @cam_id
 
@@ -466,6 +473,67 @@ BEGIN
 				return(0)
 
 				set nocount off
+	'
+	EXEC(@sql)
+
+	SET @process = 'Validación y eliminación de sp ccspConfigSMSCamp'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccspConfigSMSCamp'')
+				begin
+					DROP PROCEDURE ccspConfigSMSCamp;
+				end
+	'
+	EXEC(@sql)
+
+	SET @process = 'Creación de sp ccspConfigSMSCamp'
+	SET @sql = 'CREATE procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strIDates nvarchar(max),@strFDates nvarchar(max) )
+	as
+	declare @i int
+	declare @tempTableFDates as table (Id int,Value nvarchar(255))
+	declare @tempTableIDates as table (Id int,Value nvarchar(255))
+
+	select @i=1
+	insert into @tempTableFDates select * from fn_RIASplitDelimited(@strFDates,'','')
+	insert into @tempTableIDates select * from fn_RIASplitDelimited(@strIDates,'','')
+
+	if(@process = 0) --Create SMS campaign
+	begin
+		while @i <= (select count(Value) from @tempTableFDates)
+		begin
+			insert into ccSmsSchedules (cam_id,iDate,fDate) values (@cam_id, (select cast(Value as datetime) from @tempTableIDates where Id = @i), (select cast(Value as datetime) from @tempTableFDates where Id = @i))
+			set @i = @i +1
+		end
+	end
+	if(@process = 1) -- Update SMS campaign
+	begin
+		delete from ccSmsSchedules WHERE cam_id = @cam_id
+		while @i <= (select count(Value) from @tempTableFDates)
+		begin
+			insert into ccSmsSchedules (cam_id,iDate,fDate) values (@cam_id, (select cast(Value as datetime) from @tempTableIDates where Id = @i), (select cast(Value as datetime) from @tempTableFDates where Id = @i))
+			set @i = @i +1
+		end
+	end
+	'
+	EXEC(@sql)
+
+	SET @process = 'Validación y eliminación de sp ccsp_GetSchedulesPerCampaign'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GetSchedulesPerCampaign'')
+				begin
+					DROP PROCEDURE ccsp_GetSchedulesPerCampaign;
+				end
+	'
+	EXEC(@sql)
+
+	SET @process = 'Creación de sp ccsp_GetSchedulesPerCampaign'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GetSchedulesPerCampaign]
+	@camID int =null
+	AS
+	Declare @iDates Varchar(MAX);
+	Declare @fDates Varchar(MAX);
+	Select 
+	@iDates = COALESCE(@iDates + '','' + CONVERT(VARCHAR(MAX),iDate,120), CONVERT(VARCHAR(MAX),iDate,120)),
+	@fDates = COALESCE(@fDates + '','' + CONVERT(VARCHAR(MAX),fDate,120), CONVERT(VARCHAR(MAX),fDate,120))
+			From ccSmsSchedules WHERE cam_id = @camID
+	Select @iDates AS Idates, @fDates AS fDates
 	'
 	EXEC(@sql)
 

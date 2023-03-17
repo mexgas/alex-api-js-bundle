@@ -251,7 +251,7 @@ BEGIN
 	set @process = 'Setting 253 horarios legales'
 	set @Sql= 'if not exists(select * from ccsettings where setting_id=253)
 		insert ccsettings (setting_id,valor,descripcion,status,tipo,detalle,description,bloadsettings,validate) 
-		values (253,''1|07:00|22:00'',''Marcar sólo en horarios permitidos por ley.'',1,''GRL'',''Configuracion el horario permitido indepentiende del horario de la campaña activo|hh:mm|hh:mm ejemplo(1|07:00|22:00)'',''Dial only during compliance schedules.'',1,''^[0-1]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'')
+		values (253,''1|07:00|22:00'',''Marcar sólo en horarios permitidos por ley.'',1,''GRL'',''Configuración del horario permitido, independientemente del horario activo en la campaña|hh:mm|hh:mm ejemplo(1|07:00|22:00)'',''Dial only during compliance schedules.'',1,''^[0-1]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]\|([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'')
 		'
     EXEC(@Sql)
 

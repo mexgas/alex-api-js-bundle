@@ -404,8 +404,8 @@ BEGIN
 							END
 		                END
 		            END'
-		            exec (@sql)
-		            
+		EXEC(@sql)
+
 		-------------------------------------------- END IVAN OUTBOUND HISTORICAL CHAT ------------------------------
 		SET @process = 'DEV1-19 Alter ccsp_SaveDispositionsMultimedia Se modifica para que tengamos option @mediaType 7 cuando es WhatsApp ccWhatsAppConversationsOut'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveDispositionsMultimedia] @action         INT

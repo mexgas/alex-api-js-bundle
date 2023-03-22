@@ -407,8 +407,49 @@ BEGIN
 		EXEC(@sql)
 
 		-------------------------------------------- END IVAN OUTBOUND HISTORICAL CHAT ------------------------------
+		SET @process = 'DEV1-19 Alter ccsp_SaveDispositionsMultimedia Se modifica para que tengamos option @mediaType 7 cuando es WhatsApp ccWhatsAppConversationsOut'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveDispositionsMultimedia] @action         INT
+                                                      , @conversationId bigint      = 0
+                                                      , @disposition    SMALLINT = 0
+                                                      , @subDisposition SMALLINT = 0
+                                                      , @tWrapUp        SMALLINT = 0
+                                                      , @mediaType      SMALLINT = 0
+													  , @campType bit =0
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    IF @action = 1
+    BEGIN --Califica la conversación y pone el tiempo Notas
+        DECLARE @Temp NVARCHAR(1000),@tableName NVARCHAR(255),@type int
+		
+		set @mediaType= CASE when @mediaType=5 and @campType=1 then 7 else @mediaType end
+		set @type=CASE @mediaType WHEN 6 then 1 else @mediaType end ---revisar tabla ccfinderServices
+
+		set @tableName= CASE @mediaType 
+					WHEN 5 THEN ''ccWhatsAppConversations'' 
+					WHEN 6 THEN ''chat'' 
+					WHEN 7 THEN ''ccWhatsAppConversationsOut'' 
+					ELSE '''' END
+
+		set @Temp= N''UPDATE '' +
+                @tableName + '' SET disposition= @disposition ,subDisposition= @subDisposition ,tWrapUp= @tWrapUp WHERE conversationId= @conversationId;'';
+        EXEC sp_executesql
+             @temp
+           , N''@disposition SMALLINT, @subDisposition SMALLINT, @tWrapUp SMALLINT, @conversationId INT''
+           , @disposition
+           , @subDisposition
+           , @tWrapUp
+           , @conversationId;
 
 
+		exec ccsp_CreateNodeMultimedia @conversationId=@conversationId, @type=@type
+
+    END;
+END; '
+	
+		exec (@sql)
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -404,6 +404,8 @@ BEGIN
 							END
 		                END
 		            END'
+		EXEC(@sql)
+
 		-------------------------------------------- END IVAN OUTBOUND HISTORICAL CHAT ------------------------------
 
 

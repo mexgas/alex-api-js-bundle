@@ -455,8 +455,7 @@ BEGIN
 		SET @sql = 'Alter PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT, @campID INT
 					AS
 					BEGIN
-						DECLARE @AllCampaigns TABLE (
-							cam_id SMALLINT
+						DECLARE @AllCampaigns TABLE (		cam_id SMALLINT
 							,cam_Descripcion VARCHAR(60)
 							,cam_tNotas SMALLINT
 							,cam_ocupado SMALLINT
@@ -521,12 +520,12 @@ BEGIN
 							,closeConversationTime SMALLINT
 							,answerTimeoutClient INT
 							,allowFileAttachments BIT
-							,CamTPreview SMALLINT
-							,TimesPreview TINYINT
-							,selectRotativeANI INT
+							,selectRotativeANI int
 							,rotativeAlgo TINYINT
 							,autoStart BIT
 							,messagingOrder BIT
+							,CamTPreview SMALLINT
+							,TimesPreview TINYINT
 							,timesDiscard TINYINT
 							)
 						DECLARE @numbers VARCHAR(max)

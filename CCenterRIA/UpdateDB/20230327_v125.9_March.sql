@@ -220,7 +220,47 @@ BEGIN
 		'
 	exec (@sql)
 	---------------------------------------End Rod Salazar  ---------------------------------------------------------
-	---------------------------------------Begin B Dunzz  ---------------------------------------------------------
+
+
+	---------------------------------------Begin Roberto Nava  ---------------------------------------------------------
+	SET @process = 'K041000 - Creación del setting 245'
+	SET @sql = '
+		IF NOT EXISTS(SELECT * FROM ccsettings WHERE setting_id=245)
+			INSERT INTO ccsettings (setting_id, valor, descripcion, status, tipo, detalle, description, bloadsettings, validate)
+			VALUES(245,''3'', ''Limite de ventanas externas abiertas por administrador'', 1, ''ADM'', ''Limite de ventanas externas abiertas por administrador'', ''Number of windows that Administrator can be opened'', 1, ''^\d{1,3}$'')
+	'
+	EXEC(@sql)
+
+	SET @process = 'K041000 - Validación y eliminación de Trigger para Tabla ccSettings'
+	SET @sql = '
+		IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''TR_CCSettings_245'')  
+			DROP TRIGGER TR_CCSettings_245
+    '
+	EXEC(@sql)
+
+	SET @process = 'K041000 - Creación de Trigger para ccSettings'
+	SET @sql = '
+		CREATE TRIGGER
+			TR_CCSettings_245
+		ON ccSettings
+		AFTER 
+			INSERT, UPDATE
+		AS
+			DECLARE @VALUE INT
+			SELECT @VALUE = valor FROM ccSettings WHERE setting_id = 245
+
+			IF @VALUE NOT IN (1,2,3,4,5) BEGIN
+				UPDATE
+					ccSettings
+				SET 
+					valor = 3
+				WHERE 
+					setting_id = 245
+			END	
+	'
+	EXEC(@sql)
+	---------------------------------------End Roberto Nava  ---------------------------------------------------------
+---------------------------------------Begin B Dunzz  ---------------------------------------------------------
 	SET @process = 'KR051000 - Creación del menu 3230'
 	SET @sql = '
 		IF NOT EXISTS(select * from ccMenus where menu_id = 3230)
@@ -228,6 +268,8 @@ BEGIN
 	'
 	EXEC(@sql)
 	---------------------------------------End B Dunzz  ---------------------------------------------------------
+
+
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

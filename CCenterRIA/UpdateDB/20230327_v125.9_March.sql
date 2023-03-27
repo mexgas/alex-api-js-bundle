@@ -58,6 +58,13 @@ BEGIN
 	BEGIN TRY
 
 	---------------------------------------Begin Roberto Nava  ---------------------------------------------------------
+	SET @process = 'K041000 - Creación del setting 245'
+	SET @sql = '
+		IF NOT EXISTS(SELECT * FROM ccsettings WHERE setting_id=245)
+			INSERT INTO ccsettings (setting_id, valor, descripcion, status, tipo, detalle, description, bloadsettings, validate)
+			VALUES(245,''3'', ''Limite de ventanas externas abiertas por administrador'', 1, ''ADM'', ''Limite de ventanas externas abiertas por administrador'', ''Number of windows that Administrator can be opened'', 1, ''^\d{1,3}$'')
+	'
+	EXEC(@sql)
 
 	SET @process = 'K041000 - Validación y eliminación de Trigger para Tabla ccSettings'
 	SET @sql = '
@@ -68,7 +75,7 @@ BEGIN
 
 	SET @process = 'K041000 - Creación de Trigger para ccSettings'
 	SET @sql = '
-		CREATE OR ALTER TRIGGER
+		CREATE TRIGGER
 			TR_CCSettings_245
 		ON ccSettings
 		AFTER 

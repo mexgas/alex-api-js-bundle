@@ -114,6 +114,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Callbacks',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallbacks',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccRIACallBack_Queue',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Chats',0)	

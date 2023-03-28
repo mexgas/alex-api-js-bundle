@@ -260,6 +260,14 @@ BEGIN
 	'
 	EXEC(@sql)
 	---------------------------------------End Roberto Nava  ---------------------------------------------------------
+---------------------------------------Begin B Dunzz  ---------------------------------------------------------
+	SET @process = 'KR051000 - Creación del menu 3230'
+	SET @sql = '
+		IF NOT EXISTS(select * from ccMenus where menu_id = 3230)
+			insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type) values (3230, ''Cola virtual|Virtual queue'', 3000, ''B'', 3, 2)
+	'
+	EXEC(@sql)
+	---------------------------------------End B Dunzz  ---------------------------------------------------------
 
 
 		/* End script release */

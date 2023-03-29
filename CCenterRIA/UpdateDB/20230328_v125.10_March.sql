@@ -1148,6 +1148,59 @@ as
 select isnull(prefijo,''''), ISNULL(recordHold,0) recordHold from ccInbound where Inbound_id = @inboundId'
     EXEC(@Sql)
 
+    SET @process = 'CW-7849 alter Sp ccsp_RIACampsManualCall if(@option = 2) se agrega else select top 0 '''' telAni '
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
+@option int,
+@UserID int = 0,
+@onChat int = 0,
+@campId int = 0
+AS
+set nocount on
+
+if(@option = 1)
+begin
+	if (@onChat = 0)
+	begin
+		declare @mod smallint
+		select @mod = defCampaing from ccRIACat_Areas A
+		where A.IDArea = (select IDArea from ccUsers where User_id = @UserID) 
+
+		select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual, 
+		isnull(c.selectRotativeANI, 0) selectRotativeANI
+		, isnull(c.CampType,0) as CampType
+		from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+		join ccRIACampsGraph g ON g.cam_id = c.cam_id
+		where ca.user_id = @UserID and cam_modoManual in(1,3)
+		order by cam_descripcion
+	end
+	else 
+	begin 
+		select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
+		, isnull(c.CampType,0) as CampType
+		from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+
+		join ccRIACampsGraph g ON g.cam_id = c.cam_id
+		where ca.user_id = @UserID and manualCallOnChat = 1
+		order by cam_descripcion
+		SET NOCOUNT OFF;
+	end
+end
+
+if(@option = 2)
+begin
+	declare @aniList int 
+	declare @rotativeAniListId int
+	select @aniList = id_anilist, @rotativeAniListId  = rotativeAlgo from ccCamps where cam_id = @campId
+
+	if @rotativeAniListId >0 begin
+		select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
+	end
+	else begin
+		select top 0 '''' telAni 
+	end					
+end'
+	EXEC(@sql)
+
 	SET @process = 'CW-7850 Alter procedure ccsp_ConversationOutWASave'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
 		@action             INT
@@ -1208,7 +1261,6 @@ select isnull(prefijo,''''), ISNULL(recordHold,0) recordHold from ccInbound wher
 		END 
 		END'
 	EXEC(@sql)
-
 
 
 		/* End script release */

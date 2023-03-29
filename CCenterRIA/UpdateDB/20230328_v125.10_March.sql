@@ -1148,6 +1148,66 @@ as
 select isnull(prefijo,''''), ISNULL(recordHold,0) recordHold from ccInbound where Inbound_id = @inboundId'
     EXEC(@Sql)
 
+	SET @process = 'CW-7850 Alter procedure ccsp_ConversationOutWASave'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
+		@action             INT
+		, @conversationId     INT         = 0
+		, @campId          int    = NULL        
+		, @phoneCamp           VARCHAR(50) = NULL
+		, @clientId           VARCHAR(25) = NULL
+		, @conversationStatus SMALLINT    = 0
+		, @tChatting          FLOAT    = 0
+		, @tWrapUp            SMALLINT    = 0
+		, @finishedBy         TINYINT     = 0
+		, @onQueue            BIT         = NULL
+		, @tQueue             SMALLINT    = 0
+		, @tTimeout           INT         = 0
+		, @disposition        SMALLINT    = 0
+		, @subDisposition     SMALLINT    = 0
+		, @agentId            INT         = 0
+
+		AS
+		BEGIN
+			SET NOCOUNT ON;
+			
+			declare @conversationIdTemporal     INT;
+
+		IF @action = 1 BEGIN --new Conversation
+			select @phoneCamp= number from ccWhatsAppNumbers where camp_id= @campId
+				
+			if @phoneCamp is null or @phoneCamp='''' begin
+				select 0 as [ConversationId],0 as [MessageId]
+				return(0)
+			end
+
+			if not exists (select * from ccWhatsAppConversationsOut where phoneCamp = @phoneCamp and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) begin
+				if not exists (select * from ccWhatsAppConversations where phoneACD = @phoneCamp and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) begin
+					INSERT INTO [ccWhatsAppConversationsOut]
+					([camId] , [phoneCamp], clientId, conversationStatus, tChatting
+					, tWrapUp, finishedBy, onQueue, tQueue, requestDate
+					, tTimeout, disposition, subDisposition, agentId)
+					VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
+					@onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
+			
+					SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
+					SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
+				end
+				else begin
+					select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+					FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
+					ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
+					INNER JOIN ccUsers C ON B.agentId = C.User_id;
+				end  
+			end
+			else begin
+				select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+				FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
+				ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
+				INNER JOIN ccUsers C ON B.agentId = C.User_id;
+			end  
+		END 
+		END'
+	EXEC(@sql)
 
 
 

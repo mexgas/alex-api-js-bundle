@@ -1,4 +1,4 @@
-set nocount on --Mi
+set nocount on 
 use [CCenterRIA]
 
 declare @Version int, @Version_Actual int

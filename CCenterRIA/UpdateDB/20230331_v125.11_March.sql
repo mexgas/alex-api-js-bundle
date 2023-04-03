@@ -60,12 +60,11 @@ BEGIN
 	---------------------------------------Begin B Dunzz  ---------------------------------------------------------
 	set @process = 'KR051000 Modificacion tabla ccMenus'
 	set @sql = '
-		if exists (select * from ccMenuUser where id_User = 1 and id_Menu = 3230 and [type] = 3 )
+		if not exists (select * from ccMenuUser where id_User = 1 and id_Menu = 3230 and [type] = 3 )
 		begin
-        Delete from ccMenuUser where id_User = 1 and id_Menu = 3230 and [type] = 3;
+			insert into ccMenuUser (id_User, id_Menu, [type]) values (1, 3230, 3);
 		end
-		insert into ccMenuUser (id_User, id_Menu, [type]) values (1, 3230, 3);
-
+		
 		update ccMenus 
 		set release = ''3f2db252ad1e8747e879159ed8498ccf30092c85618c7a5edde85033f5b8cfac'',
 		type = 3

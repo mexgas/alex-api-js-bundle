@@ -20,9 +20,6 @@ BEGIN
 
 	----------------------------------------------------- Begin Roberto Nava -----------------------------------------------------------------
 
-DECLARE @process Varchar(max)
-declare @sql varchar(max)
-
 	set @process = 'KR085000 ccspRepInCallsDetail DROP SP'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccspRepInCallsDetail'')
 	begin

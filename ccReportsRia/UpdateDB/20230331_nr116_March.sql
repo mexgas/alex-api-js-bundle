@@ -19,7 +19,92 @@ BEGIN
 	BEGIN TRY
 
 	----------------------------------------------------- Begin Roberto Nava -----------------------------------------------------------------
+	set @process = 'KR085000 Verifica si la columna nameDNI existe en la tabla RepInCallsDetail'
+	set @sql = '
+	IF NOT EXISTS (
+		SELECT *
+		FROM 
+			INFORMATION_SCHEMA.COLUMNS
+		WHERE 
+			COLUMN_NAME = ''nameDNI''
+			AND TABLE_NAME = ''RepInCallsDetail''
+	)
+	BEGIN 
+		ALTER TABLE RepInCallsDetail
+		ADD nameDNI VARCHAR(250);
+	END
+	'
+	EXEC(@sql)
 
+
+	set @process = 'KR085000 Verifica si la columna numDNI existe en la tabla RepInCallsDetail'
+	set @sql = '
+	IF NOT EXISTS (
+		SELECT *
+		FROM 
+			INFORMATION_SCHEMA.COLUMNS
+		WHERE 
+			COLUMN_NAME = ''numDNI''
+			AND TABLE_NAME = ''RepInCallsDetail''
+	)
+	BEGIN 
+		ALTER TABLE RepInCallsDetail
+		ADD numDNI VARCHAR(250);
+	END
+	'
+	EXEC(@sql)
+
+	set @process = 'KR085000 Verifica si la columna collectCall existe en la tabla RepInCallsDetail'
+	set @sql = '
+	IF NOT EXISTS (
+		SELECT *
+		FROM 
+			INFORMATION_SCHEMA.COLUMNS
+		WHERE 
+			COLUMN_NAME = ''collectCall''
+			AND TABLE_NAME = ''RepInCallsDetail''
+	)
+	BEGIN 
+		ALTER TABLE RepInCallsDetail
+		ADD collectCall VARCHAR(250);
+	END
+	'
+	EXEC(@sql)
+
+	set @process = 'KR085000 Verifica si la columna timeTotalInCallSec existe en la tabla RepInCallsDetail'
+	set @sql = '
+	IF NOT EXISTS (
+		SELECT *
+		FROM 
+			INFORMATION_SCHEMA.COLUMNS
+		WHERE 
+			COLUMN_NAME = ''timeTotalInCallSec''
+			AND TABLE_NAME = ''RepInCallsDetail''
+	)
+	BEGIN 
+		ALTER TABLE RepInCallsDetail
+		ADD timeTotalInCallSec INT;
+	END
+	'
+	EXEC(@sql)
+
+	set @process = 'KR085000 Verifica si la columna timeTotalInCallMin existe en la tabla RepInCallsDetail'
+	set @sql = '
+	IF NOT EXISTS (
+		SELECT *
+		FROM 
+			INFORMATION_SCHEMA.COLUMNS
+		WHERE 
+			COLUMN_NAME = ''timeTotalInCallMin''
+			AND TABLE_NAME = ''RepInCallsDetail''
+	)
+	BEGIN 
+		ALTER TABLE RepInCallsDetail
+		ADD timeTotalInCallMin INT;
+	END
+	'
+	EXEC(@sql)
+	
 	set @process = 'KR085000 ccspRepInCallsDetail DROP SP'
 	set @sql = 'if exists (select * from sys.procedures where name = N''ccspRepInCallsDetail'')
 	begin
@@ -143,92 +228,6 @@ BEGIN
 	'
 
 
-	EXEC(@sql)
-
-	set @process = 'KR085000 Verifica si la columna nameDNI existe en la tabla RepInCallsDetail'
-	set @sql = '
-	IF NOT EXISTS (
-		SELECT *
-		FROM 
-			INFORMATION_SCHEMA.COLUMNS
-		WHERE 
-			COLUMN_NAME = ''nameDNI''
-			AND TABLE_NAME = ''RepInCallsDetail''
-	)
-	BEGIN 
-		ALTER TABLE RepInCallsDetail
-		ADD nameDNI VARCHAR(250);
-	END
-	'
-	EXEC(@sql)
-
-
-	set @process = 'KR085000 Verifica si la columna numDNI existe en la tabla RepInCallsDetail'
-	set @sql = '
-	IF NOT EXISTS (
-		SELECT *
-		FROM 
-			INFORMATION_SCHEMA.COLUMNS
-		WHERE 
-			COLUMN_NAME = ''numDNI''
-			AND TABLE_NAME = ''RepInCallsDetail''
-	)
-	BEGIN 
-		ALTER TABLE RepInCallsDetail
-		ADD numDNI VARCHAR(250);
-	END
-	'
-	EXEC(@sql)
-
-	set @process = 'KR085000 Verifica si la columna collectCall existe en la tabla RepInCallsDetail'
-	set @sql = '
-	IF NOT EXISTS (
-		SELECT *
-		FROM 
-			INFORMATION_SCHEMA.COLUMNS
-		WHERE 
-			COLUMN_NAME = ''collectCall''
-			AND TABLE_NAME = ''RepInCallsDetail''
-	)
-	BEGIN 
-		ALTER TABLE RepInCallsDetail
-		ADD collectCall VARCHAR(250);
-	END
-	'
-	EXEC(@sql)
-
-	set @process = 'KR085000 Verifica si la columna timeTotalInCallSec existe en la tabla RepInCallsDetail'
-	set @sql = '
-	IF NOT EXISTS (
-		SELECT *
-		FROM 
-			INFORMATION_SCHEMA.COLUMNS
-		WHERE 
-			COLUMN_NAME = ''timeTotalInCallSec''
-			AND TABLE_NAME = ''RepInCallsDetail''
-	)
-	BEGIN 
-		ALTER TABLE RepInCallsDetail
-		ADD timeTotalInCallSec INT;
-	END
-	'
-	EXEC(@sql)
-
-	set @process = 'KR085000 Verifica si la columna timeTotalInCallMin existe en la tabla RepInCallsDetail'
-	set @sql = '
-	IF NOT EXISTS (
-		SELECT *
-		FROM 
-			INFORMATION_SCHEMA.COLUMNS
-		WHERE 
-			COLUMN_NAME = ''timeTotalInCallMin''
-			AND TABLE_NAME = ''RepInCallsDetail''
-	)
-	BEGIN 
-		ALTER TABLE RepInCallsDetail
-		ADD timeTotalInCallMin INT;
-	END
-	'
 	EXEC(@sql)
 
 

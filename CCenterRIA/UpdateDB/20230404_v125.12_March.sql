@@ -77,13 +77,17 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'KR081000 SP ccsp_SaveRecorderData'
+	set @process = 'KR081000 DROP ccsp_SaveRecorderData'
 	set @sql = '
 		if exists (select * from sys.procedures where name = N''ccsp_SaveRecorderData'')
 		begin
 			DROP PROCEDURE ccsp_SaveRecorderData;
 		end
+	'
+	EXEC(@sql)
 
+	set @process = 'KR081000 CREATE ccsp_SaveRecorderData'
+	set @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_SaveRecorderData]
 		@TipoCall tinyint,	-- 1= IN,  2=Out
 		@cal_id int,
@@ -107,13 +111,17 @@ BEGIN
 		'
 	EXEC(@sql)
 
-	set @process = 'KR081000 SP ccsp_AgentUpdateCallTimes'
+	set @process = 'KR081000 DROP ccsp_SaveRecorderData'
 	set @sql = '
 		if exists (select * from sys.procedures where name = N''ccsp_AgentUpdateCallTimes'')
 		begin
 			DROP PROCEDURE ccsp_AgentUpdateCallTimes;
 		end
+	'
+	EXEC(@sql)
 
+	set @process = 'KR081000 CREATE ccsp_AgentUpdateCallTimes'
+	set @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_AgentUpdateCallTimes]
 		@IDCall int,
 		@cal_tXfer smallint,

@@ -227,6 +227,31 @@ if not exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecor
     end';
 EXEC(@sql);
 
+--------------------------------------------------- Start Ricardo M --------------------------------------------------------------------
+
+SET @process = 'delete sp [ccsp_RIAAdmDelRegsSMS]'
+SET @sql = '
+if exists (select * from sys.procedures where name = N''ccsp_RIAAdmDelRegsSMS'')
+begin
+	DROP PROCEDURE ccsp_RIAAdmDelRegsSMS;
+end
+'
+EXEC(@sql)
+
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAAdmDelRegsSMS]
+@tipoDel int, -- 1 Registros Nuevos
+@cam_id int
+AS
+
+if @tipoDel = 1 --nuevos
+ begin
+	delete from smsWorkingTable where cam_id = @cam_id and sms_status = 0
+ end
+ '
+ EXEC(@sql)
+
+ --------------------------------------------------- End Ricardo M --------------------------------------------------------------------
+
 	
 	
 		/* End script release */

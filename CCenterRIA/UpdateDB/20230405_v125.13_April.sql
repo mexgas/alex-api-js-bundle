@@ -204,8 +204,29 @@ if update(sms_phoneNumber5) begin
 end
 END';
 EXEC(@sql);
-
 	--------------------------------------------------- END Marco Garcia --------------------------------------------------------------------
+
+SET @process = 'K042010-Registros nuevos SMS Dashboard';
+SET @sql = '
+if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsInfoBySMSCamp'')
+    begin
+		drop proc ccsp_GalateaGetRecordsInfoBySMSCamp
+    end';
+EXEC(@sql);
+
+SET @process = 'K042010-Registros nuevos SMS Dashboard';
+SET @sql = '
+if not exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsInfoBySMSCamp'')
+    begin
+        Create proc ccsp_GalateaGetRecordsInfoBySMSCamp
+		@cam_id integer = 0, @user_id int = 0
+		as
+		SELECT cam_id as id,
+		count(case sms_status when 0 then 1 else null end) as New
+		FROM smsWorkingTable SMS where SMS.cam_id=@cam_id group by cam_id
+    end';
+EXEC(@sql);
+
 	
 	
 		/* End script release */

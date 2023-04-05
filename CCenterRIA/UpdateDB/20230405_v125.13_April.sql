@@ -204,6 +204,7 @@ if update(sms_phoneNumber5) begin
 end
 END';
 EXEC(@sql);
+	--------------------------------------------------- END Marco Garcia --------------------------------------------------------------------
 
 SET @process = 'K042010-Registros nuevos SMS Dashboard';
 SET @sql = '
@@ -225,7 +226,7 @@ if not exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecor
 		FROM smsWorkingTable SMS where SMS.cam_id=@cam_id group by cam_id
     end';
 EXEC(@sql);
-	--------------------------------------------------- END Marco Garcia --------------------------------------------------------------------
+
 	
 	
 		/* End script release */

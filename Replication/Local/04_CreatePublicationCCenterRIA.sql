@@ -1,4 +1,4 @@
-set nocount on
+set nocount on 
 use [CCenterRIA]
 
 declare @Version int, @Version_Actual int
@@ -59,6 +59,8 @@ if @Version_Actual >= @Version
 	
 	declare @publicationId int,@publicationName varchar(100)
 	declare @articleId int,@articleName varchar(100)
+	declare @force_invalidate_snapshot int= 0
+	declare @existPublication bit=0
 
 	update publicationTableCCenterRIA set status=0 
 	update articleTableCCenterRIA set status=0
@@ -115,10 +117,17 @@ if @Version_Actual >= @Version
 		@publisher_login = @publisherLogin, 
 		@publisher_password = @publisherPassword 		
 
+		end 
+		else begin
+			set @force_invalidate_snapshot=1
+			set @existPublication=1
+		end 
+
 		while exists(select articleName from articleTableCCenterRIA where publicationId=@publicationId and status=0) begin
 			select top 1 @articleName=articleName,@articleId=id from articleTableCCenterRIA where publicationId=@publicationId and status=0
-
+			select  @publicationName,@articleName
 			-- Adding articles
+			IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = @articleName) begin
 			use [CCenterRia]
 			exec sp_addmergearticle @publication = @publicationName, 
 			@article = @articleName, 
@@ -146,6 +155,9 @@ if @Version_Actual >= @Version
 			@partition_options = 0
 
 			update articleTableCCenterRIA set status=1 where id=@articleId 
+			if @existPublication=0 begin
+				exec sp_grant_publication_access @publication = @publicationName,  @login = @publisherLogin
+			end
 		end	
 
 --		-- Add login to the PAL

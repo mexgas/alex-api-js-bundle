@@ -191,7 +191,7 @@ BEGIN
 				WHERE co.cal_Inicio >= @date
 				AND cs.cal_status not in (0,1,7)
 				AND ISNULL(co.canBeRecycled, 1) = 1
-				AND ISNULL(recycledByCalif, 0) = 0
+				AND ISNULL(recycledByDisposition, 0) = 0
 				AND co.calif_id = @disposition_id
 				AND ISNULL(co.califSub_id, 0) <= 0
 				AND cs.cam_id = @cam_id
@@ -209,7 +209,7 @@ BEGIN
 				WHERE co.cal_Inicio >= @date
 				AND cs.cal_status not in (0,1,7)
 				AND ISNULL(co.canBeRecycled, 1) = 1
-				AND ISNULL(recycledByCalif, 0) = 0
+				AND ISNULL(recycledByDisposition, 0) = 0
 				AND co.calif_id = @disposition_id
 				AND co.califSub_id = @subDisposition_id
 				AND cs.cam_id = @cam_id
@@ -277,14 +277,14 @@ BEGIN
 				WHERE co.cal_Inicio >= @date
 				AND cs.cal_status not in (0,1,7)
 				AND ISNULL(co.canBeRecycled, 1) = 1
-				AND ISNULL(recycledByCalif, 0) = 0
+				AND ISNULL(recycledByDisposition, 0) = 0
 				AND co.calif_id = @disposition_id
 				AND ISNULL(co.califSub_id, 0) <= 0
 				AND cs.cam_id = @cam_id
 				AND (wt.callout_id IS NULL OR wt.cal_status = 1)
 				GROUP BY co.callout_id
 
-				UPDATE cs SET cs.cal_status = 0, cs.recycledByCalif = 1, cs.recycleType = 1
+				UPDATE cs SET cs.cal_status = 0, cs.recycledByDisposition = 1, cs.recycleType = 1
 				FROM ccoCallsOutSource cs
 				INNER JOIN #tmpCalloutId tc on cs.callout_id = tc.callout_id
 

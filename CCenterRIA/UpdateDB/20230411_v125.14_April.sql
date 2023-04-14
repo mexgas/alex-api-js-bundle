@@ -828,7 +828,7 @@ BEGIN
 		end
 		-------------------SUBCALIFICACIONES OUT-------------------
 		else if @type = 4 begin
-			
+			IF OBJECT_ID(''tempdb..#tempSub'') IS NOT NULL DROP TABLE #tempSub;
 			DECLARE @count INT = 0;
 		    select 0 as Type,co.cam_id as CampId,
 		    case when co.statuscall_id = 13
@@ -859,16 +859,17 @@ BEGIN
 				RETURN 0;
 			END
 
-			IF NOT EXISTS(SELECT * FROM cctipoSubCalifRel WHERE calif_id = @calif_id)
+			IF NOT EXISTS(SELECT 1 FROM cctipoSubCalifRel WHERE calif_id = @calif_id)
 			BEGIN
 				DELETE FROM #tempSub WHERE [id] = 0;
 			END
 
 			SELECT * FROM #tempSub;
+			IF OBJECT_ID(''tempdb..#tempSub'') IS NOT NULL DROP TABLE #tempSub;
 			RETURN 0;
 		end
 
-		drop table #tempSub
+
 		drop table #CalifTemp
 		set nocount off
 	'

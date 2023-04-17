@@ -183,7 +183,7 @@ BEGIN
 			END
 
 			IF(@Action = 2) BEGIN --Count registers to recycle by Calif
-				SELECT DISTINCT COUNT(*) OVER() AS TotalRecords
+				SELECT COUNT(DISTINCT co.callout_id) AS TotalRecords
 				FROM ccoCallsOut co
 				INNER JOIN ccoCallsOutSource cs 
 				ON cs.callout_id = co.callout_id and cs.cam_id = co.cam_id
@@ -196,12 +196,11 @@ BEGIN
 				AND ISNULL(co.califSub_id, 0) <= 0
 				AND cs.cam_id = @cam_id
 				AND (wt.callout_id IS NULL OR wt.cal_status = 1)
-				GROUP BY co.callout_id
 				RETURN 0;
 			END
 
 			IF(@Action = 3) BEGIN --Count registers to recycle by CalifSub
-				SELECT DISTINCT COUNT(*) OVER() AS TotalRecords
+				SELECT COUNT(DISTINCT co.callout_id) AS TotalRecords
 				FROM ccoCallsOut co
 				INNER JOIN ccoCallsOutSource cs 
 				ON cs.callout_id = co.callout_id and cs.cam_id = co.cam_id
@@ -214,7 +213,6 @@ BEGIN
 				AND co.califSub_id = @subDisposition_id
 				AND cs.cam_id = @cam_id
 				AND (wt.callout_id IS NULL OR wt.cal_status = 1)
-				GROUP BY co.callout_id
 				RETURN 0;
 			END
 

@@ -840,6 +840,15 @@ BEGIN
 		            END'
 		EXEC(@sql)
 
+	set @process = ' Drop column sched_id from table ccSmsSchedules'
+	set @sql = '
+	if exists (select * from sys.columns where name = N''sched_id'' and Object_ID = Object_ID(N''ccSmsSchedules''))
+    begin
+        alter table ccSmsSchedules drop column sched_id
+    end
+	'
+    EXEC(@sql)
+
 		-------------------------------------------- END IVAN K020099 OUTBOUND TEMPLATES   ------------------------------
 		
 ----------------------------------------------------------------------------------------------------------------------------

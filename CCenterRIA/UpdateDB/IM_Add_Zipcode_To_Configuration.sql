@@ -272,18 +272,20 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'Create new procedure ccsp_RIAUpdateCamConfigExtend, which will update the new column zipCodeSchedule in ccCampsExtend table.'
-		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
-						@cam_id smallint,
-						@zipCodeSchedule BIT = NULL
-					AS
-					BEGIN
-						SET NOCOUNT ON;
-						UPDATE ccCampsExtend SET
-						zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-						Where cam_id = @cam_id
-						return(0)
-						set nocount off
-					END'
+		SET @sql = 'if not exists (select * from sys.procedures where name = N''ccsp_RIAUpdateCamConfigExtend'') begin
+						CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+							@cam_id smallint,
+							@zipCodeSchedule BIT = NULL
+						AS
+						BEGIN
+							SET NOCOUNT ON;
+							UPDATE ccCampsExtend SET
+							zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
+							Where cam_id = @cam_id
+							return(0)
+							set nocount off
+						END
+					end'
 		EXEC(@sql)
 		
 		SET @process = 'Adding parameter ZipCodeSchedule to ccsp_RIAConfCamp as well as inner join with new table ccCampsExtend. Lines (228 and 234)'

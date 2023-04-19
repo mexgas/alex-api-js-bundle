@@ -67,7 +67,7 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Alter Procedure ccsp_RIA_ABCCamps to add new record on ccCampsExtend. Lines (79 and 84)'
+		SET @process = 'Alter Procedure ccsp_RIA_ABCCamps to add new record on ccCampsExtend. Lines (151 and 84)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 					@option smallint,
 					@UserId int = null,
@@ -290,7 +290,7 @@ BEGIN
 					end'
 		EXEC(@sql)
 		
-		SET @process = 'Adding parameter ZipCodeSchedule to ccsp_RIAConfCamp as well as inner join with new table ccCampsExtend. Lines (228 and 234)'
+		SET @process = 'Adding parameter ZipCodeSchedule to ccsp_RIAConfCamp as well as left join with new table ccCampsExtend. Lines (228 and 234)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
 					AS
 					SET NOCOUNT ON
@@ -453,13 +453,14 @@ BEGIN
 						,ISNULL(cam_tPreview, 0) AS CamTPreview
 						,ISNULL(timesPreview, 0) AS TimesPreview
 						,isnull(timesDiscard, 0) TimesDiscard
+						,ISNULL(recordHold, 0) recordHold
 						,isnull(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule
 					FROM ccCamps a1
 					INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
 					INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
 					INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
 					LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
-					INNER JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
+					LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
 					ORDER BY cam_descripcion
 
 					RETURN (0)

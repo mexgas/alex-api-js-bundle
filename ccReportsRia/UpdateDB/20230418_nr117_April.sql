@@ -48,12 +48,6 @@ BEGIN
 
 	set @process = 'KR051000 ccspRepCallbackQueue CREATE SP'
 	set @sql = '
-		USE [CCReportsRIA]
-		GO
-		SET ANSI_NULLS ON
-		GO
-		SET QUOTED_IDENTIFIER ON
-		GO
 		CREATE PROCEDURE [dbo].[ccspRepCallbackQueue]
 		@action as tinyint,
 		@from as datetime = null,

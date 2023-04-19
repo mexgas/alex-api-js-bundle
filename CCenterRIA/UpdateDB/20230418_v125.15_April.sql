@@ -333,19 +333,23 @@ BEGIN
 							inbound.descripcion AS Name,
 							ISNULL(configuration.conexionInfo, '''') AS Phone,
 							CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-							inbound.tNotas AS WrapUpTime
+							inbound.tNotas AS WrapUpTime,
+							 CAST(graphics.graphic_id AS INT) AS GraphicId
 							FROM  ccInbound inbound
+							INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
 							INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
 						end
 						else begin
 						SELECT
-							CAST(inbound.cam_id AS INT) AS Id,
-							inbound.cam_descripcion AS Name,
+							CAST(campaign.cam_id AS INT) AS Id,
+							campaign.cam_descripcion AS Name,
 							ISNULL(configuration.conexionInfo, '''') AS Phone,
 							CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
-							cast(inbound.cam_tnotas as int) AS WrapUpTime
-							FROM  ccCamps inbound
-							INNER JOIN  contactMeanOut configuration ON (inbound.cam_id = configuration.camp_id and inbound.cam_id = @inboundId)
+							cast(campaign.cam_tnotas as int) AS WrapUpTime,
+							CAST(graphics.graphic_id AS INT) AS GraphicId
+							FROM  ccCamps campaign
+							INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+							INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
 						end
 					END
 					ELSE IF(@Option = 4)
@@ -840,17 +844,17 @@ BEGIN
 		            END'
 		EXEC(@sql)
 
-	set @process = ' Drop column sched_id from table ccSmsSchedules'
-	set @sql = '
-	if exists (select * from sys.columns where name = N''sched_id'' and Object_ID = Object_ID(N''ccSmsSchedules''))
-    begin
-        alter table ccSmsSchedules drop column sched_id
-    end
-	'
-    EXEC(@sql)
-
 		-------------------------------------------- END IVAN K020099 OUTBOUND TEMPLATES   ------------------------------
 		
+		set @process = ' Drop column sched_id from table ccSmsSchedules'
+		set @sql = '
+		if exists (select * from sys.columns where name = N''sched_id'' and Object_ID = Object_ID(N''ccSmsSchedules''))
+		begin
+		    alter table ccSmsSchedules drop column sched_id
+		end
+		'
+		EXEC(@sql)
+
 ----------------------------------------------------------------------------------------------------------------------------
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */

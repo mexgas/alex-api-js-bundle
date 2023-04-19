@@ -279,10 +279,12 @@ BEGIN
 						AS
 						BEGIN
 							SET NOCOUNT ON;
-							UPDATE ccCampsExtend SET
-							zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-							Where cam_id = @cam_id
-							return(0)
+							if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
+								UPDATE ccCampsExtend SET
+								zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
+								Where cam_id = @cam_id
+								return(0)
+							end
 							set nocount off
 						END
 					end'

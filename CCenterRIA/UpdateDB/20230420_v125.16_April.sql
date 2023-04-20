@@ -287,8 +287,10 @@ BEGIN
 	if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
 		UPDATE ccCampsExtend SET
 		zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-		Where cam_id = @cam_id
-		return(0)
+		Where cam_id = @cam_id	
+	end
+	else begin
+		INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule) values (@cam_id,@zipCodeSchedule)
 	end
 	set nocount off
 END'

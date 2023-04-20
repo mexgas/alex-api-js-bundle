@@ -52,7 +52,7 @@ BEGIN
 	select @version,@actualVersion,@versioMajer
 END
 
-IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
+IF @version >= @actualVersion -- and @versionfix >= @actualVersionFix 
 BEGIN
 	BEGIN TRAN
 
@@ -272,22 +272,26 @@ set nocount off'
 EXEC(@sql)
 
 SET @process = 'Create new procedure ccsp_RIAUpdateCamConfigExtend, which will update the new column zipCodeSchedule in ccCampsExtend table.'
-SET @sql = 'if not exists (select * from sys.procedures where name = N''ccsp_RIAUpdateCamConfigExtend'') begin
-	CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
-		@cam_id smallint,
-		@zipCodeSchedule BIT = NULL
-	AS
-	BEGIN
-		SET NOCOUNT ON;
-		if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
-			UPDATE ccCampsExtend SET
-			zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-			Where cam_id = @cam_id
-			return(0)
-		end
-		set nocount off
-	END
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateCamConfigExtend'') begin
+	Drop PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
 end'
+		EXEC(@sql)
+
+SET @process = 'Create new procedure ccsp_RIAUpdateCamConfigExtend, which will update the new column zipCodeSchedule in ccCampsExtend table.'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+	@cam_id smallint,
+	@zipCodeSchedule BIT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
+	if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
+		UPDATE ccCampsExtend SET
+		zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
+		Where cam_id = @cam_id
+		return(0)
+	end
+	set nocount off
+END'
 		EXEC(@sql)
 		
 		SET @process = 'Adding parameter ZipCodeSchedule to ccsp_RIAConfCamp as well as left join with new table ccCampsExtend. Lines (228 and 234)'
@@ -1539,84 +1543,102 @@ FOR INSERT,UPDATE
 AS
 SET NOCOUNT ON
 begin
-
 declare @country as tinyint,@zipCodeSchedule bit 
-declare  @cp varchar(100),@iZonaHoraria int,@iZonaHoraria_verano int
+declare @tableCpZoneSchedule table(callout_id	int primary key,iZonaHoraria int,iZonaHoraria_verano int)
 
 select @country =convert(tinyint, valor) from ccSettings with(nolock) where setting_id = 104
 if @country =1 begin
-	select @zipCodeSchedule=zipCodeSchedule from ccCampsExtend
+	select @zipCodeSchedule=zipCodeSchedule from ccCampsExtend where cam_id in(select top 1 cam_id from inserted)
 end
 if @zipCodeSchedule is null begin
 	set @zipCodeSchedule=0
 end
 
 if @zipCodeSchedule = 1 begin
-	select @iZonaHoraria=inv.tz_id,@iZonaHoraria_verano=v.tz_id from ccTimeZoneAreaCPTest zoneCp with(nolock) 
+	
+	insert into @tableCpZoneSchedule
+	select cs.callout_id, inv.tz_id,v.tz_id
+	from ccTimeZoneAreaCP zoneCp with(nolock) 
+	inner join inserted cs on zoneCp.c_CodigoPostal=cs.Dato1	
 	inner join ccTimeZones V on V.tz_offset=zoneCp.Diferencia_Horaria_Verano
 	inner join ccTimeZones inv on inv.tz_offset=zoneCp.Diferencia_Horaria_Invierno
-	where zoneCp.c_CodigoPostal=@cp
+	
 
 end
 
 
 if update(cal_telefono) begin
 	update ccoCallsOutSource 
-	set iZonaHoraria =case when @zipCodeSchedule=1 then @iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono,0) end,
-	iZonaHoraria_verano =case when @zipCodeSchedule=1 then @iZonaHoraria_verano else dbo.fnGetTimeZone(cs.cal_telefono,1) end
+	set iZonaHoraria =case when @zipCodeSchedule=1 then cp.iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono,0) end,
+	iZonaHoraria_verano =case when @zipCodeSchedule=1 then cp.iZonaHoraria_verano else dbo.fnGetTimeZone(cs.cal_telefono,1) end
 	from ccoCallsOutSource cs 
 	inner join inserted i
+	left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
 	on cs.callout_id = i.callout_id
 end
 
 if update(cal_telefono2) begin
 	update ccoCallsOutSource 
-	set iZonaHoraria2 = case when @zipCodeSchedule=1 then @iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono2,0) end,
-	iZonaHoraria_verano2 = case when @zipCodeSchedule=1 then @iZonaHoraria_verano else  dbo.fnGetTimeZone(cs.cal_telefono2,1) end
+	set iZonaHoraria2 = case when @zipCodeSchedule=1 then cp.iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono2,0) end,
+	iZonaHoraria_verano2 = case when @zipCodeSchedule=1 then cp.iZonaHoraria_verano else  dbo.fnGetTimeZone(cs.cal_telefono2,1) end
 	from ccoCallsOutSource cs 
-	inner join inserted i
-	on cs.callout_id = i.callout_id
+	inner join inserted i on cs.callout_id = i.callout_id
+	left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
+	
 end
 
 if update(cal_telefono3) begin
 	update ccoCallsOutSource 
-	set iZonaHoraria3 =  case when @zipCodeSchedule=1 then @iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono3,0) end,
-	iZonaHoraria_verano3 = case when @zipCodeSchedule=1 then @iZonaHoraria_verano else  dbo.fnGetTimeZone(cs.cal_telefono3,1) end
+	set iZonaHoraria3 =  case when @zipCodeSchedule=1 then cp.iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono3,0) end,
+	iZonaHoraria_verano3 = case when @zipCodeSchedule=1 then cp.iZonaHoraria_verano else  dbo.fnGetTimeZone(cs.cal_telefono3,1) end
 	from ccoCallsOutSource cs 
-	inner join inserted i
-	on cs.callout_id = i.callout_id
+	inner join inserted i on cs.callout_id = i.callout_id
+	left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
 end
 
 if update(cal_telefono4) begin
 	update ccoCallsOutSource 
-	set iZonaHoraria4 = case when @zipCodeSchedule=1 then @iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono4,0) end,
-	iZonaHoraria_verano4 = case when @zipCodeSchedule=1 then @iZonaHoraria_verano else   dbo.fnGetTimeZone(cs.cal_telefono4,1) end
+	set iZonaHoraria4 = case when @zipCodeSchedule=1 then cp.iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono4,0) end,
+	iZonaHoraria_verano4 = case when @zipCodeSchedule=1 then cp.iZonaHoraria_verano else   dbo.fnGetTimeZone(cs.cal_telefono4,1) end
 	from ccoCallsOutSource cs 
-	inner join inserted i
-	on cs.callout_id = i.callout_id
+	inner join inserted i on cs.callout_id = i.callout_id
+	left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
 end
 
 if update(cal_telefono5) begin
 	update ccoCallsOutSource 
-	set iZonaHoraria5 = case when @zipCodeSchedule=1 then @iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono5,0) end,
-	iZonaHoraria_verano5 = case when @zipCodeSchedule=1 then @iZonaHoraria_verano else   dbo.fnGetTimeZone(cs.cal_telefono5,1) end
+	set iZonaHoraria5 = case when @zipCodeSchedule=1 then cp.iZonaHoraria else dbo.fnGetTimeZone(cs.cal_telefono5,0) end,
+	iZonaHoraria_verano5 = case when @zipCodeSchedule=1 then cp.iZonaHoraria_verano else   dbo.fnGetTimeZone(cs.cal_telefono5,1) end
 	from ccoCallsOutSource cs 
-	inner join inserted i
-	on cs.callout_id = i.callout_id	
+	inner join inserted i on cs.callout_id = i.callout_id
+	left join @tableCpZoneSchedule cp on cp.callout_id= i.callout_id
 end
 end'
 		EXEC(@sql)
 
-		SET @process = ''
-		SET @sql = ''
+		SET @process = 'Alter function Limpia se quita la recursividad'
+		SET @sql = 'ALTER FUNCTION [dbo].[Limpia](@Cadena varchar(32))
+RETURNS varchar(32) AS  
+BEGIN
+declare @tel varchar(32),@digit varchar(1)
+declare @i int,@count int
+
+select @i=1,@count=len(@Cadena),@tel=''''
+while @i<=@count begin
+	set @digit=SUBSTRING(@cadena,@i,1)
+	set @tel=@tel+case when CHARINDEX(@digit, ''1234567890'')=0 then '''' else @digit end	
+	set @i=@i+1
+end
+return @tel
+end'
 		EXEC(@sql)
 
 		
 		----------------------------------------------------------------------------------------------------------------------------
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
-		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+		--EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+		--EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
 		COMMIT TRAN
 	END TRY

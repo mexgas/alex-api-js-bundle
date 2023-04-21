@@ -134,7 +134,7 @@ if @option = 2 --Insert
 		return(0)  
 		end
 
-	-- ODC: la campa?a siempre esta activa
+	-- ODC: la campaña siempre esta activa
 	set @Activa = 1
 	declare @pref int
 	select  @pref = valor from ccSettings where setting_id = 201
@@ -287,8 +287,10 @@ BEGIN
 	if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
 		UPDATE ccCampsExtend SET
 		zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-		Where cam_id = @cam_id
-		return(0)
+		Where cam_id = @cam_id	
+	end
+	else begin
+		INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule) values (@cam_id,@zipCodeSchedule)
 	end
 	set nocount off
 END'
@@ -640,7 +642,7 @@ SET NOCOUNT OFF'
 					END'
 		EXEC(@sql)
 
-		SET @process = ' Modification on Option 2 to include ZipCodeSchedule in ccsp_GalateaAdminCampaigns (lines 691 and 695)'
+		SET @process = 'KR083000 ALTER PROCEDURE Modification on Option 2 to include ZipCodeSchedule in ccsp_GalateaAdminCampaigns (lines 691 and 695)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] 
 @Option AS      SMALLINT, 
 @CampType AS    SMALLINT = 0, 
@@ -1193,7 +1195,7 @@ BEGIN
 					END;'
 		EXEC(@sql)
 		-------------------------------------------- END IVAN ZIPCODE CONFIGURATION ------------------------------
-		SET @process = 'Se agregan columnas '
+		SET @process = 'Se agregan columnas ccRIALogPhones keyTranslate,regsNotLoadedCp,telsNotLoadedCp'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''keyTranslate'' and Object_ID = Object_ID(N''ccRIALogPhones''))
 begin
     alter table ccRIALogPhones add keyTranslate varchar(max)
@@ -1212,18 +1214,18 @@ end'
 		SET @process = 'Create table ccTimeZoneAreaCP'
 		SET @sql = 'if not exists(select * from sys.tables where name=''ccTimeZoneAreaCP'')begin
 	create table ccTimeZoneAreaCP(
-		c_CodigoPostal varchar(30) not null,
-		c_Estado  varchar(5)  not null,
-		c_Municipio varchar(5)  null,
-		c_Localidad varchar(5)  null,
-		FechaInici DateTime not null,
-		Descripcion varchar(500)  not null,
-		Mes_Inicio_Horario_Verano varchar(50)  NULL,
-		Día_Inicio_Horario_Verano varchar(50)  NULL,
-		Diferencia_Horaria_Verano int not null,
-		Mes_Inicio_Horario_Invierno varchar(50)  NULL,
-		Día_Inicio_Horario_Invierno varchar(50)  null,
-		Diferencia_Horaria_Invierno int not null,
+		ZipCode varchar(30) not null,
+		State  varchar(5)  not null,
+		Municipality varchar(5)  null,
+		Location varchar(5)  null,
+		StartDate DateTime not null,
+		Description varchar(500)  not null,
+		StartMonthSummerTime varchar(50)  NULL,
+		StartDaySummerTime varchar(50)  NULL,
+		SummerTimeDifference int not null,
+		StartMonthWinterHours varchar(50)  NULL,
+		StartDayWinterHours varchar(50)  null,
+		WinterTimeDifference int not null,
 	)
 end'
 		EXEC(@sql)
@@ -1548,7 +1550,7 @@ AS
 SET NOCOUNT ON
 begin
 declare @country as tinyint,@zipCodeSchedule bit 
-declare @tableCpZoneSchedule table(callout_id	int primary key,iZonaHoraria int,iZonaHoraria_verano int)
+declare @tableCpZoneSchedule table(callout_id int primary key,iZonaHoraria int,iZonaHoraria_verano int)
 
 select @country =convert(tinyint, valor) from ccSettings with(nolock) where setting_id = 104
 if @country =1 begin
@@ -1563,9 +1565,9 @@ if @zipCodeSchedule = 1 begin
 	insert into @tableCpZoneSchedule
 	select cs.callout_id, inv.tz_id,v.tz_id
 	from ccTimeZoneAreaCP zoneCp with(nolock) 
-	inner join inserted cs on zoneCp.c_CodigoPostal=cs.Dato1	
-	inner join ccTimeZones V on V.tz_offset=zoneCp.Diferencia_Horaria_Verano
-	inner join ccTimeZones inv on inv.tz_offset=zoneCp.Diferencia_Horaria_Invierno
+	inner join inserted cs on zoneCp.ZipCode=cs.Dato1	
+	inner join ccTimeZones V on V.tz_offset=zoneCp.SummerTimeDifference
+	inner join ccTimeZones inv on inv.tz_offset=zoneCp.WinterTimeDifference
 	
 
 end
@@ -1641,8 +1643,8 @@ end'
 		----------------------------------------------------------------------------------------------------------------------------
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
-		--EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-		--EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
 		COMMIT TRAN
 	END TRY

@@ -207,7 +207,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'IM-K020099 Add template filter to get its content lines(404 and 407). Add Inner join in options 0 and 1 to get GraphicId lines(227,229,243,245)'
-SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
     @Option AS SMALLINT,
     @inboundId AS SMALLINT = 0,
     @conversationId AS INT = 0,
@@ -250,6 +250,8 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
 
     ELSE IF(@Option = 2)
     BEGIN
+
+
         DECLARE @OldAgentId INT = 0
         DECLARE @OldConversationId INT = 0
         if @campType =0 begin --ACD
@@ -259,34 +261,34 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
             RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
             WHERE rel.conversationIdAfter = @conversationId
 
-		SELECT
-            cast(i.chat as int) AS ServiceType,
-            cast(c.conversationId as int) as ConversationID,
-            c.clientId as ClientId,
-            cm.conexionInfo as [To],
-            cast(i.Inbound_id as int) as ACDId,
-            i.descripcion as ACDName,
-            cast(g.graphic_id as int) as ACDGraphicId,
-            cast(cm.closeConversationTime as int) as [TimeOut],
-            cast(cm.answerTimeOut as int) as [TimeOutWarning],
-            i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-            i.tNotas as [WrapUpTime],
-            i.ShowCalifWnd,
-            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-            isnull(permission.AllowUnassign,0) as AllowUnassign,
-            isnull(permission.AllowSpam,0) as AllowSpam,
-            ISNULL(@OldAgentId, 0) AS OldAgentId,
-            ISNULL(@OldConversationId, 0) AS OldConversationId,
-            c.agentId AS AgentId
-     from ccWhatsAppConversations c
-    left join ccInbound i on c.inboundId = i.Inbound_id 
-    left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
-    LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+        SELECT
+        cast(i.chat as int) AS ServiceType,
+        cast(c.conversationId as int) as ConversationID,
+        c.clientId as ClientId,
+        cm.conexionInfo as [To],
+        cast(i.Inbound_id as int) as ACDId,
+        i.descripcion as ACDName,
+        cast(g.graphic_id as int) as ACDGraphicId,
+        cast(cm.closeConversationTime as int) as [TimeOut],
+        cast(cm.answerTimeOut as int) as [TimeOutWarning],
+        i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+        i.tNotas as [WrapUpTime],
+        i.ShowCalifWnd,
+        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+        isnull(permission.AllowUnassign,0) as AllowUnassign,
+        isnull(permission.AllowSpam,0) as AllowSpam,
+        ISNULL(@OldAgentId, 0) AS OldAgentId,
+        ISNULL(@OldConversationId, 0) AS OldConversationId,
+        c.agentId AS AgentId
+        from ccWhatsAppConversations c
+        left join ccInbound i on c.inboundId = i.Inbound_id 
+        left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
+        LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+        LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-    where c.conversationId = @conversationId
+        where c.conversationId = @conversationId
 
             
         End
@@ -298,33 +300,33 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
             WHERE rel.conversationIdAfter = @conversationId
 
             SELECT
-                    cast(i.CampType as int) AS ServiceType,
-                    cast(c.conversationId as int) as ConversationID,
-                    c.clientId as ClientId,
-                    cm.conexionInfo as [To],
-                    cast(i.cam_id as int) as ACDId,
-                    i.cam_descripcion as ACDName,
-                    cast(g.graphic_id as int) as ACDGraphicId,
-                    cast(cm.closeConversationTime as int) as [TimeOut],
-                    cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-                    i.exitAssisted as [ExitWrapUpDisposition],              
-                    cast(i.cam_tnotas as int) [WrapUpTime],
-                    i.cam_ShowCalifWnd as ShowCalifWnd, 
-                    cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                    ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                    isnull(permission.AllowUnassign,0) as AllowUnassign,
-                    isnull(permission.AllowSpam,0) as AllowSpam,
-                    ISNULL(@OldAgentId, 0) AS OldAgentId,
-                    ISNULL(@OldConversationId, 0) AS OldConversationId,
-                    c.agentId AS AgentId
+            cast(i.CampType as int) AS ServiceType,
+            cast(c.conversationId as int) as ConversationID,
+            c.clientId as ClientId,
+            c.phoneCamp as [To],
+            cast(i.cam_id as int) as ACDId,
+            i.cam_descripcion as ACDName,
+            cast(g.graphic_id as int) as ACDGraphicId,
+            cast(cm.closeConversationTime as int) as [TimeOut],
+            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
+            i.exitAssisted as [ExitWrapUpDisposition],              
+            cast(i.cam_tnotas as int) [WrapUpTime],
+            i.cam_ShowCalifWnd as ShowCalifWnd, 
+            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+            isnull(permission.AllowUnassign,0) as AllowUnassign,
+            isnull(permission.AllowSpam,0) as AllowSpam,
+            ISNULL(@OldAgentId, 0) AS OldAgentId,
+            ISNULL(@OldConversationId, 0) AS OldConversationId,
+            c.agentId AS AgentId
             FROM  ccWhatsAppConversationsOut c
-                LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
-				LEFT JOIN  contactMeanOut cm  ON i.cam_id = c.camId                
-                LEFT JOIN ccRIACampsGraph g on g.cam_id = i.cam_id
-                LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
-                LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
+            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
+            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
+            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
+            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-             where c.conversationId = @conversationId
+            where c.conversationId = @conversationId
         END
     END
     ELSE IF(@Option = 3)

@@ -1233,7 +1233,8 @@ END;
 						PRIMARY KEY (TemplateId));
 					END'
 		EXEC(@sql)
-		
+	
+	--------------------------------------- Begin Charls ----------------------------------------------------
 		
 	set @process = 'CW-7898 Drop SP ccsp_RIAADMGetCalifDayForced'
 	set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RIAADMGetCalifDayForced'')
@@ -1241,6 +1242,7 @@ END;
                 DROP PROCEDURE [dbo].[ccsp_RIAADMGetCalifDayForced]
             END'
     EXEC(@sql)
+
 
 	set @process = 'CW-7898 Create SP ccsp_RIAADMGetCalifDayForced'
 	set @sql = '
@@ -1403,6 +1405,47 @@ END;
 		set nocount off
 	'
     EXEC(@sql)
+
+	--------------------------------------- End Charls ----------------------------------------------------
+
+	--------------------------------------- Begin Rod Salazar ---------------------------------------------
+
+	SET @process = 'CW-7879 Drop procedure if exists'
+		SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsptelefonosTransferencia'')
+					BEGIN
+						DROP PROCEDURE ccsptelefonosTransferencia;
+					END'
+		EXEC(@sql)
+
+		SET @process = 'CW-7879 Create new procedure ccsptelefonosTransferencia'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsptelefonosTransferencia]
+        @userID INT
+        as
+        set nocount on
+
+        BEGIN
+        declare @value bit
+        declare @IDArea int
+        set @value = 0
+        set @IDArea =1
+        select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+        select @IDArea =IDArea from ccUsers where User_id =@userID
+        if @value = 1
+            begin
+                select numtra_id id, nombre as  name, tel as number, isnull(IDArea,@IDArea) as id_area,  allowsConference 
+                from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre asc 
+            end
+            else
+            begin
+                select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' | ''+  nombre , nombre ) as name, 
+                tel as number, isnull(IDArea,@IDArea) as id_area,  allowsConference
+                from telefonosTransferencia  order by nombre asc
+            end
+        END'
+		EXEC(@sql)
+
+		--------------------------------------- Begin Rod Salazar ---------------------------------------------
 
 
 		/* End script release */

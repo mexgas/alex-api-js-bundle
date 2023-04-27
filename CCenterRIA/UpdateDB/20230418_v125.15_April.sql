@@ -207,7 +207,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'IM-K020099 Add template filter to get its content lines(404 and 407). Add Inner join in options 0 and 1 to get GraphicId lines(227,229,243,245)'
-SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
     @Option AS SMALLINT,
     @inboundId AS SMALLINT = 0,
     @conversationId AS INT = 0,
@@ -250,6 +250,8 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
 
     ELSE IF(@Option = 2)
     BEGIN
+
+
         DECLARE @OldAgentId INT = 0
         DECLARE @OldConversationId INT = 0
         if @campType =0 begin --ACD
@@ -259,34 +261,34 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
             RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
             WHERE rel.conversationIdAfter = @conversationId
 
-		SELECT
-            cast(i.chat as int) AS ServiceType,
-            cast(c.conversationId as int) as ConversationID,
-            c.clientId as ClientId,
-            cm.conexionInfo as [To],
-            cast(i.Inbound_id as int) as ACDId,
-            i.descripcion as ACDName,
-            cast(g.graphic_id as int) as ACDGraphicId,
-            cast(cm.closeConversationTime as int) as [TimeOut],
-            cast(cm.answerTimeOut as int) as [TimeOutWarning],
-            i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-            i.tNotas as [WrapUpTime],
-            i.ShowCalifWnd,
-            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-            isnull(permission.AllowUnassign,0) as AllowUnassign,
-            isnull(permission.AllowSpam,0) as AllowSpam,
-            ISNULL(@OldAgentId, 0) AS OldAgentId,
-            ISNULL(@OldConversationId, 0) AS OldConversationId,
-            c.agentId AS AgentId
-     from ccWhatsAppConversations c
-    left join ccInbound i on c.inboundId = i.Inbound_id 
-    left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
-    LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+        SELECT
+        cast(i.chat as int) AS ServiceType,
+        cast(c.conversationId as int) as ConversationID,
+        c.clientId as ClientId,
+        cm.conexionInfo as [To],
+        cast(i.Inbound_id as int) as ACDId,
+        i.descripcion as ACDName,
+        cast(g.graphic_id as int) as ACDGraphicId,
+        cast(cm.closeConversationTime as int) as [TimeOut],
+        cast(cm.answerTimeOut as int) as [TimeOutWarning],
+        i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+        i.tNotas as [WrapUpTime],
+        i.ShowCalifWnd,
+        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+        isnull(permission.AllowUnassign,0) as AllowUnassign,
+        isnull(permission.AllowSpam,0) as AllowSpam,
+        ISNULL(@OldAgentId, 0) AS OldAgentId,
+        ISNULL(@OldConversationId, 0) AS OldConversationId,
+        c.agentId AS AgentId
+        from ccWhatsAppConversations c
+        left join ccInbound i on c.inboundId = i.Inbound_id 
+        left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
+        LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+        LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-    where c.conversationId = @conversationId
+        where c.conversationId = @conversationId
 
             
         End
@@ -298,33 +300,33 @@ SET @sql = 'Alter PROCEDURE [dbo].[ccsp_MultimediaCommon]
             WHERE rel.conversationIdAfter = @conversationId
 
             SELECT
-                    cast(i.CampType as int) AS ServiceType,
-                    cast(c.conversationId as int) as ConversationID,
-                    c.clientId as ClientId,
-                    cm.conexionInfo as [To],
-                    cast(i.cam_id as int) as ACDId,
-                    i.cam_descripcion as ACDName,
-                    cast(g.graphic_id as int) as ACDGraphicId,
-                    cast(cm.closeConversationTime as int) as [TimeOut],
-                    cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-                    i.exitAssisted as [ExitWrapUpDisposition],              
-                    cast(i.cam_tnotas as int) [WrapUpTime],
-                    i.cam_ShowCalifWnd as ShowCalifWnd, 
-                    cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                    ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                    isnull(permission.AllowUnassign,0) as AllowUnassign,
-                    isnull(permission.AllowSpam,0) as AllowSpam,
-                    ISNULL(@OldAgentId, 0) AS OldAgentId,
-                    ISNULL(@OldConversationId, 0) AS OldConversationId,
-                    c.agentId AS AgentId
+            cast(i.CampType as int) AS ServiceType,
+            cast(c.conversationId as int) as ConversationID,
+            c.clientId as ClientId,
+            c.phoneCamp as [To],
+            cast(i.cam_id as int) as ACDId,
+            i.cam_descripcion as ACDName,
+            cast(g.graphic_id as int) as ACDGraphicId,
+            cast(cm.closeConversationTime as int) as [TimeOut],
+            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
+            i.exitAssisted as [ExitWrapUpDisposition],              
+            cast(i.cam_tnotas as int) [WrapUpTime],
+            i.cam_ShowCalifWnd as ShowCalifWnd, 
+            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+            isnull(permission.AllowUnassign,0) as AllowUnassign,
+            isnull(permission.AllowSpam,0) as AllowSpam,
+            ISNULL(@OldAgentId, 0) AS OldAgentId,
+            ISNULL(@OldConversationId, 0) AS OldConversationId,
+            c.agentId AS AgentId
             FROM  ccWhatsAppConversationsOut c
-                LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
-				LEFT JOIN  contactMeanOut cm  ON i.cam_id = c.camId                
-                LEFT JOIN ccRIACampsGraph g on g.cam_id = i.cam_id
-                LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
-                LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
+            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
+            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
+            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
+            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-             where c.conversationId = @conversationId
+            where c.conversationId = @conversationId
         END
     END
     ELSE IF(@Option = 3)
@@ -1233,6 +1235,219 @@ END;
 						PRIMARY KEY (TemplateId));
 					END'
 		EXEC(@sql)
+	
+	--------------------------------------- Begin Charls ----------------------------------------------------
+		
+	set @process = 'CW-7898 Drop SP ccsp_RIAADMGetCalifDayForced'
+	set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RIAADMGetCalifDayForced'')
+            BEGIN
+                DROP PROCEDURE [dbo].[ccsp_RIAADMGetCalifDayForced]
+            END'
+    EXEC(@sql)
+
+
+	set @process = 'CW-7898 Create SP ccsp_RIAADMGetCalifDayForced'
+	set @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_RIAADMGetCalifDayForced]
+		@type smallint,
+		@cam_id smallint,
+		@calif_id smallint = null
+		AS 
+		set nocount on
+		create table #CalifTemp (id int identity,
+		tipo integer, 
+		Cam_id varchar(50), 
+		Calificacion varchar(60), 
+		subCalificacion varchar(60) null,
+		calif_id smallint null,
+		Total int,
+		GraphColor varchar(15),
+		IsSubDisp BIT) 
+
+		declare @today datetime
+		set @today = convert(datetime, convert (varchar(11), getdate(), 101))
+		--set @today =convert(datetime, convert (varchar(11), ''2015-10-01 17:50:20.470'', 101))
+
+		-- Seleccion de idioma -- 
+		declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+		select @nIdioma = case valor when 0 then ''Sin calificación Otros'' else ''No disposition Others'' end
+		from ccsettings where setting_id = 27 -- 0esp
+
+		select @nIdiomaSub = case valor when 0 then ''Sin Subcalificación'' else ''No Subdisposition'' end
+		from ccsettings where setting_id = 27 -- 0 esp
+
+		if @type=0 
+		insert into #CalifTemp 
+		select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13
+				then case when description is not null 
+							then description 
+							else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+							end
+		else case when sll.descripcion is not null then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end end as Calificacion,
+		case when count(co.califSub_id) > 0 then 1 else 0 end as Subcalificacion,co.calif_id as calif_id,count(*) cantidad,
+		ISNULL(GraphColor,''1DB4E2'') GraphColor,
+		CASE WHEN ISNULL(rel.calif_id, 0) = 0 THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END AS IsSubDisp
+		from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+		left join ccTipoCalifOut ca on co.calif_id = ca.calif_id
+		LEFT join cctipoSubCalifRel rel on rel.calif_id = ca.calif_id
+		left join ccTipoCalifSubOUT tcsout on co.califSub_id = tcsout.califSub_id
+		left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+		left join ccCamps ci on ci.cam_id = co.cam_id 
+		where co.cal_inicio > @today
+		and co.cam_id = @cam_id
+		group by  co.cam_id, co.statuscall_id,description,descripcion,co.calif_id,GraphColor, rel.calif_id
+
+
+
+		if @type=1 
+		insert into #CalifTemp 
+		select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+		else @nIdioma-- substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		end as Calificacion,count(ci.califSub_id) as subCalificacion,ci.calif_id,count(*)  as total,
+		ISNULL(GraphColor,''1DB4E2'') GraphColor,
+		0 as IsSubDisp
+		from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) 
+		left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+		left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+		where ci.cal_inicio > @today
+		and ci.inbound_id = @cam_id
+		and statuscall_id = 13 
+		group by description, cci.inbound_id,ci.califSub_id,ci.calif_id,GraphColor
+
+
+
+		-- Se corrigio suma de totales -- 
+		Alter table #CalifTemp add iTotal4Campaign int null
+
+		if (select valor from ccSettings where setting_id = 78) = 0
+		update #CalifTemp set iTotal4Campaign = 0
+
+		else	
+		update #CalifTemp set iTotal4Campaign = t.iTotal4Campaign 
+		from (select cam_id, sum(A.Total) iTotal4Campaign
+		from #CalifTemp A group by cam_id) t join #CalifTemp c
+		on t.cam_id = c.cam_id
+
+		if @type=1 
+		select tipo as Type, cast(cam_id as varchar) as CampId, calificacion as Calification, cast(subCalificacion as varchar) as SubCalificationQuantity, cast(calif_id as smallint) as CalificationId, sum( total ) as Total, GraphColor from (
+			select 1 as tipo, inboundId as Cam_id, case when description is not null then description 
+			 else @nIdioma --substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			 end as Calificacion,0 as subCalificacion ,0 as calif_id,count(disposition) as Total,ISNULL(GraphColor,''1DB4E2'') GraphColor--,0 as iTotal4Campaign
+			from ccriachats a left join ccTipoCalif b 
+			on a.disposition=b.calif_id 
+			where a.chatDate > @today
+			and a.inboundId = @cam_id
+			group by inboundId, Description, GraphColor
+	
+			union all
+	
+	
+			select tipo,Cam_id,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma --substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end as Calificacion,
+			case when count(subCalificacion) > 0 then 1 else 0 end subCalificacion,calif_id,sum(Total) as Total, ISNULL(GraphColor,''1DB4E2'') GraphColor  --iTotal4Campaign -- para ver total por campaña
+			from #CalifTemp 
+			group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			then calificacion 
+			else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+			end, Cam_id,calif_id, iTotal4Campaign, GraphColor
+		)  as a group by tipo, cam_id, calificacion,subCalificacion,calif_id,GraphColor order by tipo,cam_id 
+		if @type=0 
+
+		select tipo as Type,Cam_id as CampId,case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end as Calification,subCalificacion as SubCalificationQuantity, calif_id as CalificationId,sum(Total) as Total, ISNULL(GraphColor,''1DB4E2'') GraphColor -- , iTotal4Campaign -- para ver total por campaña
+		,IsSubDisp
+		from #CalifTemp 
+		group by tipo, case when total > iTotal4Campaign / 100 or calificacion = @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+		then calificacion 
+		else @nIdioma--substring(@nIdioma, charindex(''@'', @nIdioma)+1, len(@nIdioma)) 
+		end, Cam_id,subCalificacion, calif_id, iTotal4Campaign, GraphColor, IsSubDisp
+
+
+
+		if @type = 3 begin -----entrada acd''s
+			select 1 as tipo,cci.inbound_id as cam_id, case when description is not null then description 
+			else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end as Calificacion,isnull(ctcs.califSubDesc,@nIdiomaSub) as subCalificacion, count(*) as totales 
+			from ccCallsIn ci with(nolock, index(IX_ccCallsIn)) left join ccTipoCalif ca on ci.calif_id = ca.calif_id 
+			left join ccInbound cci on cci.inbound_id = ci.inbound_id 
+			left join ccTipoCalifSub ctcs on ci.califSub_id = ctcs.califSub_id
+			where ci.cal_inicio > @today
+			and ci.inbound_id = @cam_id
+			and statuscall_id = 13 
+			and ci.calif_id = @calif_id
+			group by description, cci.inbound_id,ctcs.califSubDesc,ci.calif_id 
+		end
+
+		if @type = 4 begin --salida campañas
+				select 0 as tipo,co.cam_id as cam_id, case when co.statuscall_id = 13 
+					then case when description is not null 
+								then description 
+								else @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+								end
+			else case when sll.descripcion is not null 
+			then ''cw:'' + sll.descripcion else ''cw:'' + @nIdioma--substring(@nIdioma, 1, charindex(''@'', @nIdioma)-1) 
+			end end as Calificacion,isnull(cso.califSubDesc,@nIdiomaSub) ,count(*) cantidad 
+			from ccoCallsOut co with(nolock, index(IX_ccoCallsOut_2))
+			left join ccTipoCalifOut ca on co.calif_id = ca.calif_id 
+			left join ccTipoCalifSubOUT cso on co.califSub_id = cso.califSub_id
+			left join ccstatusllamada sll on sll.statuscall_id = co.statuscall_id
+			left join ccCamps ci on ci.cam_id = co.cam_id 
+			where co.cal_inicio > @today
+			and co.cam_id = @cam_id
+			group by  co.cam_id, co.statuscall_id,description,descripcion,cso.califSubDesc
+		end 
+ 
+
+		drop table #CalifTemp 
+		set nocount off
+	'
+    EXEC(@sql)
+
+	--------------------------------------- End Charls ----------------------------------------------------
+
+	--------------------------------------- Begin Rod Salazar ---------------------------------------------
+
+	SET @process = 'CW-7879 Drop procedure if exists'
+		SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsptelefonosTransferencia'')
+					BEGIN
+						DROP PROCEDURE ccsptelefonosTransferencia;
+					END'
+		EXEC(@sql)
+
+		SET @process = 'CW-7879 Create new procedure ccsptelefonosTransferencia'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsptelefonosTransferencia]
+        @userID INT
+        as
+        set nocount on
+
+        BEGIN
+        declare @value bit
+        declare @IDArea int
+        set @value = 0
+        set @IDArea =1
+        select @value = case when valor=''1'' then 1 else 0 end from ccSettings where setting_id = 191
+
+        select @IDArea =IDArea from ccUsers where User_id =@userID
+        if @value = 1
+            begin
+                select numtra_id id, nombre as  name, tel as number, isnull(IDArea,@IDArea) as id_area,  allowsConference 
+                from telefonosTransferencia where idarea= @IDArea or IDArea is null order by nombre asc 
+            end
+            else
+            begin
+                select numtra_id id, isnull(cast(IDArea as varchar(20) )+'' | ''+  nombre , nombre ) as name, 
+                tel as number, isnull(IDArea,@IDArea) as id_area,  allowsConference
+                from telefonosTransferencia  order by nombre asc
+            end
+        END'
+		EXEC(@sql)
+
+		--------------------------------------- Begin Rod Salazar ---------------------------------------------
 
 
 		/* End script release */

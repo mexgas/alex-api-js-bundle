@@ -893,6 +893,62 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id A
 	SET NOCOUNT OFF'
 EXEC (@sql);
 -------------------------------------------- END MARCO GARCIA DEV3-345 proceso para guardar los registros nuevos en la tabla smsWorkingTable------------------------------
+SET @process = 'Insert into ccMenus menu_id 13000'
+	SET @sql = '
+	if not exists(select menu_id from ccMenus where menu_id = 13000)
+			begin
+			insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF,release) values (13000,''SMS|SMS'',13000,''A'',12,3,'''',''d108a7f110b9d54d296cb729b6e11f92'')
+			end'
+	EXEC(@sql)
+
+	SET @process = 'Insert into ccMenus menu_id 13010'
+	SET @sql = '
+	if not exists(select menu_id from ccMenus where menu_id = 13010)
+			begin
+			insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF,release) values (13010,''Detalle de mensajes recibidos|Received Messages Detail'',13000,''B'',12,3,'''',''c52ae15116ddecd653ac7b2f660e4c46032ff614b634f1915e0f7f212a52943a83df5bf0619d99a3a303031a13230ee885b38c3701c2d075cf6f9099d22a0af8'')
+			end'
+	EXEC(@sql)
+
+	SET @process = 'Insert into ccMenus menu_id 13020'
+	SET @sql = '
+	if not exists(select menu_id from ccMenus where menu_id = 13020)
+			begin
+			insert into ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF,release) values (13020,''Detalle de mensajes enviados|Sent Messages Detail'',13000,''B'',12,3,'''',''c52ae15116ddecd653ac7b2f660e4c4687844bcbc5259b1f9ad3fde279181a449ed8f11ad1596ecc4311c4471dff08146fcd2fb13f94e5c06032e70312406c2c'')
+			end'
+	EXEC(@sql)
+
+	SET @process = 'Insert into ccMenuUser 13000'
+	SET @sql = '
+	if not exists(select * from ccMenuUser where id_Menu= 13000 and id_User=1)
+	begin 
+		insert into ccMenuUser values(1,13000,3)
+	end'
+	EXEC(@sql)
+
+	SET @process = 'Insert into ccMenuUser 13010'
+	SET @sql = '
+	if not exists(select * from ccMenuUser where id_Menu= 13010 and id_User=1)
+	begin 
+		insert into ccMenuUser values(1,13010,3)
+	end'
+	EXEC(@sql)
+
+	SET @process = 'Insert into ccMenuUser 13020'
+	SET @sql = '
+	if not exists(select * from ccMenuUser where id_Menu= 13020 and id_User=1)
+	begin 
+		insert into ccMenuUser values(1,13020,3)
+	end'
+	EXEC(@sql)
+
+	
+		
+		----------------------------------------------------------------------------------------------------------------------------
+		/* End script release */
+		/* Upgrade database version (first and the last number of setting 77) */
+		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

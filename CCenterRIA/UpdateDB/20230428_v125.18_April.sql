@@ -921,7 +921,7 @@ SET @process = 'Insert into ccMenus menu_id 13000'
 	SET @sql = '
 	if not exists(select * from ccMenuUser where id_Menu= 13000 and id_User=1)
 	begin 
-		insert into ccMenuUser values(1,13000,3)
+		insert into ccMenuUser (id_User,id_Menu,type)  values(1,13000,3)
 	end'
 	EXEC(@sql)
 
@@ -929,7 +929,7 @@ SET @process = 'Insert into ccMenus menu_id 13000'
 	SET @sql = '
 	if not exists(select * from ccMenuUser where id_Menu= 13010 and id_User=1)
 	begin 
-		insert into ccMenuUser values(1,13010,3)
+		insert into ccMenuUser (id_User,id_Menu,type)  values(1,13010,3)
 	end'
 	EXEC(@sql)
 
@@ -937,7 +937,7 @@ SET @process = 'Insert into ccMenus menu_id 13000'
 	SET @sql = '
 	if not exists(select * from ccMenuUser where id_Menu= 13020 and id_User=1)
 	begin 
-		insert into ccMenuUser values(1,13020,3)
+		insert into ccMenuUser (id_User,id_Menu,type)  values(1,13020,3)
 	end'
 	EXEC(@sql)
 

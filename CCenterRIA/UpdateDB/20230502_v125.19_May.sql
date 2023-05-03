@@ -60,8 +60,6 @@ BEGIN
 		-------------------------------------------- BEGIN JONATHAN RAMIREZ (ACTIVITY LOG)------------------------------
 		SET @process = '1 - Insert New Modules Areas, Operations and Relation with this module'
 		SET @sql = '
-USE [CCenterRIA]
-
 IF NOT EXISTS(SELECT * FROM ccGalateaModules WHERE ModuleId = 3) INSERT INTO ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) VALUES (3, ''Áreas'', ''Areas'', ''Áreas'');
 
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 17) BEGIN 
@@ -238,8 +236,6 @@ END
 
 		SET @process = '2 - Insert Identifiers in ccGalateaIdentifiers'
 		SET @sql = '
-USE [CCenterRIA]
-
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_NAME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_NAME'', ''Nombre'', ''Name'', ''Nome'')
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CAMPAIGN'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_CAMPAIGN'', ''Campaña predeterminada'', ''Default campaign'', ''Campanha padrão'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_CHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_MAX_CHATS'', ''Conversaciones de chat por agente'', ''Chat conversations per agent'', ''Conversas de chat por agente'');
@@ -418,7 +414,6 @@ IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''SETTINGS
 
 		SET @process = '3 - Create Table relationTableColumnIdentifiers and Insert Relation Table Column - Identifier'
 		SET @sql = '
-USE CCenterRIA;
 IF NOT EXISTS(SELECT * FROM sys.tables WHERE name=''relationTableColumnIdentifiers'') BEGIN
 
 CREATE TABLE relationTableColumnIdentifiers(
@@ -426,9 +421,6 @@ CREATE TABLE relationTableColumnIdentifiers(
 	tableName VARCHAR(255), 
 	colunName VARCHAR(255)
 );
-END
-
-TRUNCATE TABLE relationTableColumnIdentifiers;
 
 INSERT INTO relationTableColumnIdentifiers
 VALUES (''T&EDIT_NAME'', ''cccamps'', ''cam_description'')
@@ -553,13 +545,13 @@ INSERT INTO relationTableColumnIdentifiers VALUES (''OUT_CALL_EDIT_NAME'',''ccCa
 
 --ZIPCODE
 INSERT INTO relationTableColumnIdentifiers VALUES (''SETTINGS_CHANGED_AREAS_ZIP'',''ccCampsExtend'',''zipCodeSchedule'');
+END
 		'
 		EXEC(@sql)
 
 
 SET @process = '4 - Create Table sipDataIdentifier and Insert KEY - VALUE'
 		SET @sql = '
-USE CCenterRIA;
 IF NOT EXISTS(SELECT * FROM sys.tables WHERE name=''sipDataIdentifier'') BEGIN
 
 CREATE TABLE sipDataIdentifier(
@@ -594,7 +586,7 @@ EXEC(@sql);
 
 SET @process = '5.1 - Create Defined Function GetDateByLangHistory'
 		SET @sql = '
-	CREATE OR ALTER FUNCTION [dbo].[GetDateByLangHistory] (@date VARCHAR(MAX), @lang INT)
+	CREATE FUNCTION [dbo].[GetDateByLangHistory] (@date VARCHAR(MAX), @lang INT)
 	RETURNS VARCHAR (MAX)
 	AS
 	BEGIN
@@ -646,7 +638,7 @@ EXEC(@sql);
 		
 SET @process = '6.1 - Create Defined Function GetSipLangHistory'
 		SET @sql = '
-	CREATE OR ALTER FUNCTION [dbo].[GetSipLangHistory] (@sip VARCHAR(MAX), @lang INT)
+	CREATE FUNCTION [dbo].[GetSipLangHistory] (@sip VARCHAR(MAX), @lang INT)
 	RETURNS VARCHAR (MAX)
 	AS
 	BEGIN
@@ -667,9 +659,9 @@ SET @process = '6.1 - Create Defined Function GetSipLangHistory'
 		'
 		EXEC(@sql)
 
-SET @process = '7 - ccsp_GalateaChangeHistory - SP Edited, to get new formats on dates and tags'
+SET @process = '7 - ccsp_GalateaChangeHistory (Option 2) - SP Edited, to get new formats on dates and tags'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
 	@option TINYINT,
 	@loginLst VARCHAR(max) = NULL,
 	@moduleWithOperation varchar(max) = NULL,
@@ -826,7 +818,7 @@ EXEC(@sql);
 
 SET @process = '8 - InsertLogAdminGalatea - New SP, created to get the difference of one record table after after be updated'
 		SET @sql = '
-CREATE OR ALTER procedure [dbo].[InsertLogAdminGalatea]
+CREATE procedure [dbo].[InsertLogAdminGalatea]
 	@action int 
 	,@tableName VARCHAR(255)
 	,@columnNameId VARCHAR(255)
@@ -967,9 +959,9 @@ end
 		EXEC(@sql)
 
 
-SET @process = '9 - ccsp_GalateaAreas - SP Edited, edited to add records to Activity Log, (Crear, Editar, Eliminar Area)'
+SET @process = '9 - ccsp_GalateaAreas (option 3, 4 y 5)- SP Edited, edited to add records to Activity Log, (Crear, Editar, Eliminar Area)'
 		SET @sql = '
-CREATE OR ALTER procedure [dbo].[ccsp_GalateaAreas] 
+ALTER procedure [dbo].[ccsp_GalateaAreas] 
 	@option int = 2,
 	@IDArea smallint = 0,
 	@Descripcion varchar(40) = NULL,
@@ -1230,9 +1222,9 @@ SET NOCOUNT ON;
 		'
 		EXEC(@sql)
 
-		SET @process = '10 - ccsp_GalateaAdminWorkgroups - SP Edited, edited to add records to Activity Log, (Crear, Eliminar Grupo de trabajo)'
+		SET @process = '10 - ccsp_GalateaAdminWorkgroups (Option 5 y 6) - SP Edited, edited to add records to Activity Log, (Crear, Eliminar Grupo de trabajo)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
+ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
 	@Option AS SMALLINT,
 	@AdminId AS INT = 0,
 	@WorkgroupId AS INT = 0,
@@ -1380,7 +1372,7 @@ END
 
 		SET @process = '11 - ccsp_GalateaCreateUser - SP Edited, edited to add records to Activity Log, (Crear Agente / Administrador)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
+ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
 					@UserId int,
 					@Login varchar(40),
 					@Nombres varchar(45),
@@ -1519,9 +1511,9 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
 		EXEC(@sql)
 
 
-		SET @process = '12 - ccsp_GalateaManageWG - SP Edited, edited to add records to Activity Log, (Asignar/Desasignar Agente/Administrador/Campaña, Cambiar Agente/Administrador de Area)'
+		SET @process = '12 - ccsp_GalateaManageWG (Option 1, 2, 3, 4 y 5 ) - SP Edited, edited to add records to Activity Log, (Asignar/Desasignar Agente/Administrador/Campaña, Cambiar Agente/Administrador de Area)'
 		SET @sql = '
-CREATE OR ALTER PROCedure [dbo].[ccsp_GalateaManageWG]
+ALTER PROCedure [dbo].[ccsp_GalateaManageWG]
 @option smallint,
 @IDWG smallint,
 @Type smallint = 0,
@@ -1980,7 +1972,7 @@ set nocount off
 
 		SET @process = '13 - ccsp_GalateaUpdateUser - SP Edited, edited to add records to Activity Log, (Editar Agente/Administrador)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
 @UserId int,
 @Login varchar(40),
 @Nombres varchar(45),
@@ -2080,9 +2072,9 @@ select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
 		EXEC(@sql)
 
 
-		SET @process = '14 - InsertLogAdminGalatea - SP Edited, edited to add records to Activity Log, (Cambiar contraseña Agente/Administrador)'
+		SET @process = '14 - ccsp_GalateaUpdatePassword - SP Edited, edited to add records to Activity Log, (Cambiar contraseña Agente/Administrador)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
 		@UserId smallint,
 		@Login varchar(40),
 		@Password varchar(33),
@@ -2142,7 +2134,7 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
 
 		SET @process = '15 - ccsp_RIAManageAreas - SP Edited, edited to add records to Activity Log, (Eliminar Agente/administrador)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIAManageAreas]
+ALTER PROCEDURE [dbo].[ccsp_RIAManageAreas]
 @option tinyint,
 @IDArea smallint = 0,
 @InsertUserId smallint =null,
@@ -2440,9 +2432,9 @@ set nocount off
 		'
 		EXEC(@sql)
 
-		SET @process = '16 - InsertLogAdminGalatea - SP Edited, edited to add records to Activity Log, (Crear camapaña de entrada (Llamada/WhatsApp))'
+		SET @process = '16 - ccsp_RIA_ABCACDGroups (Option 2) - SP Edited, edited to add records to Activity Log, (Crear camapaña de entrada (Llamada/WhatsApp))'
 		SET @sql = '
-CREATE OR ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
+ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
 @option smallint,
 @userid int,
 @descripcion varchar(40),
@@ -2642,9 +2634,9 @@ set nocount off
 		EXEC(@sql)
 
 
-		SET @process = '17 - InsertLogAdminGalatea - SP Edited, edited to add records to Activity Log, (Crear camapaña de entrada (Llamada/WhatsApp))'
+		SET @process = '17 - ccsp_RIAUpdateEspecConfig - SP Edited, edited to add records to Activity Log, (Crear camapaña de entrada (Llamada/WhatsApp))'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALLINT, 
+ALTER PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALLINT, 
                                                   @descripcion             VARCHAR(50)  = NULL, 
                                                   @Status                  TINYINT      = NULL, 
                                                   @tNotas                  INT          = NULL, 
@@ -2786,10 +2778,6 @@ AS
             END
         END;
 
-    --IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) --Esto es necesario? Posterior se ejecuta esta este SP ccsp_UpdateACDWhatsappConfig
-    --    BEGIN
-    --       UPDATE contactMeanIn set name = @descripcion where inboundId = @inbound_id;
-    --    END
      IF NOT EXISTS
      (
          SELECT inbound_id
@@ -2849,15 +2837,9 @@ AS
 		EXEC(@sql)
 
 
-		SET @process = '18 - ccsp_GalateacampaingManager - SP Edited, the propoertie MediaType was added to SP'
+		SET @process = '18 - ccsp_GalateacampaingManager - SP Edited, the propertie MediaType was added to SP'
 		SET @sql = '
--- =============================================
--- Author:		UEspinosa
--- Create date: 26/11/20
--- Description:	<Description,,>
--- =============================================
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateacampaingManager] 
---declare
+ALTER PROCEDURE [dbo].[ccsp_GalateacampaingManager] 
 @option           SMALLINT, 
 @Activa           SMALLINT     = NULL, 
 @Descripcion      VARCHAR(40) = '''', 
@@ -2949,7 +2931,7 @@ AS
 
 		SET @process = '19 - ccsp_GalateaDeleteCampaignAndACD - SP Edited, edited to add records to Activity Log, (Eliminar Campaña Salida (Llamada/VP/WhatsApp/IA/SMS), Eliminar Campaña Entrada (Llamada/WhatsApp))'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
+ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
 			@userId           SMALLINT,
 			@DeleteCamId      VARCHAR(MAX),
 			@DeleteACDGroupId VARCHAR(MAX),
@@ -3146,7 +3128,7 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
 
 		SET @process = '20 - ccsp_UpdateACDWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña Entrada WhatsApp)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
+ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
     @ConexionInfo varchar(400),
     @inbound_id int,
     @ConnUser varchar(60),
@@ -3258,9 +3240,9 @@ CREATE OR ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
 		'
 		EXEC(@sql)
 
-		SET @process = '21 - ccsp_RIA_ABCCamps - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña de Salida (Llamada/VP/WhatsApp/IA/SMS))'
+		SET @process = '21 - ccsp_RIA_ABCCamps (Option 2, 3) - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña de Salida (Llamada/VP/WhatsApp/IA/SMS))'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
+ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 					@option smallint,
 					@UserId int = null,
 					@Descripcion varchar(40) = null,
@@ -3421,8 +3403,6 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 
 							DECLARE @PrevFrame SMALLINT = (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id);
 
-							SELECT * FROM ccRIACampsGraph
-
 							update ccRIACampsGraph with(rowlock)
 							set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
 							where cam_id = @Cam_id
@@ -3505,7 +3485,7 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 
 		SET @process = '22 - ccsp_RIAUpdateCamConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña de Salida (Llamada/VP/WhatsApp/IA/SMS))'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 @cam_id smallint,
 @cam_descripcion varchar(40) = null,
 @cam_tnotas smallint = null,
@@ -3861,7 +3841,7 @@ set nocount off
 
 		SET @process = '23 - ccsp_UpdateOutWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear Campaña de Salida WhatsApp)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
+ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
 					@ConexionInfo varchar(400),
 					@outbound_id int,
 					@descripcion varchar(400), 
@@ -3980,14 +3960,12 @@ CREATE OR ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig]
 					SELECT @outbound_id;
 
 					set nocount off
-
-SELECT * FROM ContactMeanOut
 		'
 		EXEC(@sql)
 
 		SET @process = '24 - ccspConfigSMSCamp - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña Salida SMS)'
 		SET @sql = '
-		CREATE OR ALTER procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strIDates nvarchar(max),@strFDates nvarchar(max),
+ALTER procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strIDates nvarchar(max),@strFDates nvarchar(max),
 	@userId				   SMALLINT, 
 	@idArea				   SMALLINT, 
 	@isCreating			   SMALLINT
@@ -4097,9 +4075,6 @@ SELECT * FROM ContactMeanOut
 		IF EXISTS(SELECT * FROM @ccSmsSchedulesUpdate) BEGIN
 			DELETE FROM @ccSmsSchedulesUpdate WHERE status = 0;
 
-			--SELECT * FROM @ccSmsSchedulesUpdate
-			--SELECT * FROM ccSmsSchedules
-
 			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
 				SELECT 
 					@AreaName,
@@ -4123,7 +4098,7 @@ SELECT * FROM ContactMeanOut
 
 		SET @process = '25 - ccsp_GalateaUpdateVoiceConfiguration - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña Entrada Llamada)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateVoiceConfiguration]
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateVoiceConfiguration]
 	@inboundId				smallint,
 	@frame					smallint	= null,
 	@description			varchar(50) = null,
@@ -4277,7 +4252,7 @@ END
 
 		SET @process = '26 - InsertLogAdminGalatea - SP Edited, edited to add records to Activity Log, (Editar Campaña Entrada WhatsApp)'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
         @inboundId        smallint,
         @frame          smallint  = null,
         @description      varchar(50) = null,
@@ -4459,7 +4434,7 @@ CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
 
 		SET @process = '27 - ccsp_RIAUpdateCamConfigExtend - SP Edited, edited to add records to Activity Log, (Crear/Editar Campaña de Salida (Llamada/VP/WhatsApp/IA/SMS))'
 		SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
 	@cam_id smallint,
 	@zipCodeSchedule BIT = NULL,
 	@userId	SMALLINT = NULL,
@@ -4533,8 +4508,6 @@ BEGIN
 	end
 	set nocount off
 END
-
-SELECT * FROM ccCamps
 		'
 		EXEC(@sql)
 

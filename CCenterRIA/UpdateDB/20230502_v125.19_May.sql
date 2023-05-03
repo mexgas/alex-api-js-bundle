@@ -866,7 +866,6 @@ SELECT --case when A.AreaName=B.AreaName then 1 else 0 end AreaName
 
 FROM sys.columns AS c WITH (NOWAIT)
 INNER JOIN sys.types AS tp WITH (NOWAIT) ON c.user_type_id = tp.user_type_id
---inner join @tableColumn T on c.name=T.columnName
 LEFT JOIN sys.computed_columns AS cc WITH (NOWAIT) ON c.object_id = cc.object_id
 	AND c.column_id = cc.column_id
 LEFT JOIN sys.default_constraints AS dc WITH (NOWAIT) ON c.default_object_id != 0
@@ -879,9 +878,6 @@ WHERE c.object_id = @object_id
 	AND c.name <> ''rowguid''
 ORDER BY c.column_id
 
---select @columns3,len(@columns3)
---select @columns2,len(@columns2)
---select @columns,len(@columns)
 
 SET @columns =  SUBSTRING(@columns, 2, len(@columns))
 SET @pivot = SUBSTRING(@pivot, 2, len(@pivot))
@@ -921,8 +917,6 @@ where dataInfo<>''''''''
 )
 ''+@insertTable
 );
-
---EXEC sp_executesql (
 
 exec(
 '';WITH result AS (
@@ -1141,11 +1135,6 @@ SET NOCOUNT ON;
 	end
 	if @option = 5 -- update Areas
 	begin
-		--if(@Descripcion is null)
-		--begin
-		--	Update ccRIACat_Areas set maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),defCampaing=@defCampaing where IDArea=@IDArea
-		--end
-		--else 
 		if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion and IDArea <> @IDArea)
 			begin
 				select -1 as result
@@ -4197,8 +4186,7 @@ BEGIN
 				WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'') THEN
 					CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 				ELSE CCIT.dataInfo END
-		--ELSE '''' END,	
-			ELSE CCIT.dataInfo + ''/'' + CCIT.columnInfo END, 
+		ELSE '''' END,
 		CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
 	FROM #ccInboundTable AS CCIT;
 

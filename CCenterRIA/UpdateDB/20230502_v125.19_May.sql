@@ -4250,7 +4250,7 @@ END
 		'
 		EXEC(@sql)
 
-		SET @process = '26 - InsertLogAdminGalatea - SP Edited, edited to add records to Activity Log, (Editar Campaña Entrada WhatsApp)'
+		SET @process = '26 - ccsp_GalateaUpdateWhatsAppConfiguration - SP Edited, edited to add records to Activity Log, (Editar Campaña Entrada WhatsApp)'
 		SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
         @inboundId        smallint,

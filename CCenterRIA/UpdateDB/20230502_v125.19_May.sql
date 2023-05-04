@@ -3672,6 +3672,8 @@ Where cam_id = @cam_id
                     CASE
                         WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN
                             CASE WHEN @isCreating = 1 THEN '''' ELSE CCCT.identifierInfo END
+                        WHEN CCCT.identifierInfo = ''OUT_EXIT_ASSISTED'' THEN 
+                            CASE WHEN @CampType = 5 THEN ''OUT_WHATS_EXIT_ASSISTED'' ELSE CCCT.identifierInfo END
                         ELSE
                             CCCT.identifierInfo
                         END
@@ -3853,8 +3855,7 @@ where cam_id = @cam_id
 select 2
 return(0)
 
-set nocount off
-        
+set nocount off        
         '
         EXEC(@sql)
 
@@ -4422,12 +4423,29 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
                 (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
         END
 
+        DECLARE @prevCalif BIT = (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId);
+
         IF @showCalifWnd = 1
           BEGIN
           IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
               BEGIN
+
             UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
                   WHERE inbound_id = @inboundId
+
+            IF(@prevCalif <> @showCalifWnd) BEGIN
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                SELECT 
+                    (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+                    getDate(), 
+                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                    53, 
+                    3,
+                    ''IN_SHOW_DISPOSITIONS'',
+                    CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
+                    (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+            END
+
             SELECT 1 [Result]
             RETURN(0)
               END
@@ -4438,6 +4456,19 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
            ELSE
          BEGIN
           UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
+
+          IF(@prevCalif <> @showCalifWnd) BEGIN
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                SELECT 
+                    (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+                    getDate(), 
+                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                    53, 
+                    3,
+                    ''IN_SHOW_DISPOSITIONS'',
+                    CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
+                    (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+            END
          END
 
          SELECT 1 [Result]

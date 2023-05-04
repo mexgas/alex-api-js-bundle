@@ -57,7 +57,7 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
-		-------------------------------------------- BEGIN MARCO GARCIA KR078000-Dashboard campaña de salida-Mostrar registro en estado Procesando------------------------------
+		-------------------------------------------- BEGIN MARCO GARCIA CW-7905 Registros a Marcar No toma los registros activos correctos------------------------------
 		SET @process = 'KR078000-Dashboard campaña de salida-Mostrar registro en estado Procesando delete store procedure [ccsp_OUTGetNewJobs]'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_OUTGetNewJobs'')
 		BEGIN
@@ -281,6 +281,8 @@ BEGIN
 					order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
 					 -- TOMA EN CUENTA LOS REGISTROS PROCESANDOSE
 			END
+
+			select @sql=@sql+nchar(13)+ ''SET rowcount 0''
 
 
 			select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,

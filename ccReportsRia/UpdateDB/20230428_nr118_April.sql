@@ -35,6 +35,8 @@ BEGIN
 
 	set @process = 'Create table RepOutSMSSentMessagesDetail'
 	set @sql = '
+	if not exists (select * from sys.tables where name = N''RepOutSMSSentMessagesDetail'')
+	begin
 	create table RepOutSMSSentMessagesDetail
 			(	
 				recordId varchar(255),
@@ -46,6 +48,7 @@ BEGIN
 				messageId varchar(255),
 				
 			)
+	end
 	'
 	EXEC(@sql)
 

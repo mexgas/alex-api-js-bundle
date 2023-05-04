@@ -3883,7 +3883,7 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig]
                         INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments)
                         VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL);
 
-                    END ELSE BEGIN
+                    END
 
                                 IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
@@ -3931,7 +3931,6 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig]
                                 IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
                                 UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
-                    END;
 
                     IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
                     BEGIN

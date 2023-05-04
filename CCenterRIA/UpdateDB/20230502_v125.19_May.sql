@@ -48,31 +48,31 @@ declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
 
 IF @version > @actualVersion 
 BEGIN 
-	SET @actualVersionFix = 0
-	select @version,@actualVersion,@versioMajer
+    SET @actualVersionFix = 0
+    select @version,@actualVersion,@versioMajer
 END
 
 IF @version >= @actualVersion  and @versionfix >= @actualVersionFix 
 BEGIN
-	BEGIN TRAN
+    BEGIN TRAN
 
-	BEGIN TRY
-		-------------------------------------------- BEGIN JONATHAN RAMIREZ (ACTIVITY LOG)------------------------------
-		SET @process = '1 - Insert New Modules Areas, Operations and Relation with this module'
-		SET @sql = '
-IF NOT EXISTS(SELECT * FROM ccGalateaModules WHERE ModuleId = 3) INSERT INTO ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) VALUES (3, ''¡reas'', ''Areas'', ''¡reas'');
+    BEGIN TRY
+        -------------------------------------------- BEGIN JONATHAN RAMIREZ (ACTIVITY LOG)------------------------------
+        SET @process = '1 - Insert New Modules Areas, Operations and Relation with this module'
+        SET @sql = '
+IF NOT EXISTS(SELECT * FROM ccGalateaModules WHERE ModuleId = 3) INSERT INTO ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) VALUES (3, ''√Åreas'', ''Areas'', ''√Åreas'');
 
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 17) BEGIN 
-	INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (17, ''Crear ·rea'', ''Create area'', ''Criar ·rea'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (17, ''Crear √°rea'', ''Create area'', ''Criar √°rea'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 17);
 END
 
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 18) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (18, ''Editar ·rea'', ''Edit area'', ''Editar ·rea'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (18, ''Editar √°rea'', ''Edit area'', ''Editar √°rea'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 18);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 19) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (19, ''Eliminar ·rea'', ''Delete area'', ''Excluir ·rea'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (19, ''Eliminar √°rea'', ''Delete area'', ''Excluir √°rea'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 19);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 20) BEGIN 
@@ -92,7 +92,7 @@ IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 23) BEGIN
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 23);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 24) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (24, ''Desasignar agente'', ''Unassign agent'', ''Cancelar atribuiÁ„o de agente'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (24, ''Desasignar agente'', ''Unassign agent'', ''Cancelar atribui√ß√£o de agente'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 24);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 25) BEGIN 
@@ -100,11 +100,11 @@ IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 25) BEGIN
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 25);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 26) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (26, ''Cambiar contraseÒa de agente'', ''Reset agent''''''''s password'', ''Alterar senha de agente'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (26, ''Cambiar contrase√±a de agente'', ''Reset agent''''''''s password'', ''Alterar senha de agente'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 26);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 27) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (27, ''Cambiar agente de ·rea'', ''Change agent''''''''s area'', ''Mudar agente de ·rea'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (27, ''Cambiar agente de √°rea'', ''Change agent''''''''s area'', ''Mudar agente de √°rea'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 27);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 28) BEGIN 
@@ -120,7 +120,7 @@ IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 30) BEGIN
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 30);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 31) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (31, ''Desasignar administrador'', ''Unassign administrator'', ''Cancelar atribuiÁ„o de administrador'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (31, ''Desasignar administrador'', ''Unassign administrator'', ''Cancelar atribui√ß√£o de administrador'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 31);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 32) BEGIN 
@@ -128,11 +128,11 @@ IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 32) BEGIN
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 32);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 33) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (33, ''Cambiar contraseÒa de administrador'', ''Reset administrator''''''''s password'', ''Alterar senha de administrador'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (33, ''Cambiar contrase√±a de administrador'', ''Reset administrator''''''''s password'', ''Alterar senha de administrador'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 33);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 34) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (34, ''Cambiar administrador de ·rea'', ''Change administrator''''''''s area'', ''Mudar administrador de ·rea'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (34, ''Cambiar administrador de √°rea'', ''Change administrator''''''''s area'', ''Mudar administrador de √°rea'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 34);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 35) BEGIN 
@@ -140,230 +140,230 @@ IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 35) BEGIN
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 35);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 36) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (36, ''Asignar campaÒa'', ''Assign campaign'', ''Atribuir campanha'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (36, ''Asignar campa√±a'', ''Assign campaign'', ''Atribuir campanha'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 36);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 40) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (40, ''Crear campaÒa (WhatsApp de entrada)'', ''Create campaign (inbound WhatsApp)'', ''Criar campanha (WhatsApp de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (40, ''Crear campa√±a (WhatsApp de entrada)'', ''Create campaign (inbound WhatsApp)'', ''Criar campanha (WhatsApp de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 40);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 41) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (41, ''Eliminar campaÒa (WhatsApp de entrada)'', ''Delete campaign (inbound WhatsApp)'', ''Excluir campanha (WhatsApp de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (41, ''Eliminar campa√±a (WhatsApp de entrada)'', ''Delete campaign (inbound WhatsApp)'', ''Excluir campanha (WhatsApp de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 41);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 42) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (42, ''Crear campaÒa (llamada de salida)'', ''Create campaign (outbound call)'', ''Criar campanha (chamada de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (42, ''Crear campa√±a (llamada de salida)'', ''Create campaign (outbound call)'', ''Criar campanha (chamada de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 42);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 43) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (43, ''Eliminar campaÒa (llamada de salida)'', ''Delete campaign (outbound call)'', ''Excluir campanha (chamada de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (43, ''Eliminar campa√±a (llamada de salida)'', ''Delete campaign (outbound call)'', ''Excluir campanha (chamada de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 43);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 44) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (44, ''Crear campaÒa (llamada de salida VP)'', ''Create campaign (preview outbound call)'', ''Criar campanha (chamada de saÌda V)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (44, ''Crear campa√±a (llamada de salida VP)'', ''Create campaign (preview outbound call)'', ''Criar campanha (chamada de sa√≠da V)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 44);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 45) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (45, ''Eliminar campaÒa (llamada de salida VP)'', ''Delete campaign (preview outbound call)'', ''Excluir campanha (chamada de saÌda V)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (45, ''Eliminar campa√±a (llamada de salida VP)'', ''Delete campaign (preview outbound call)'', ''Excluir campanha (chamada de sa√≠da V)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 45);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 46) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (46, ''Crear campaÒa (WhatsApp de salida)'', ''Create campaign (outbound WhatsApp)'', ''Criar campanha (WhatsApp de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (46, ''Crear campa√±a (WhatsApp de salida)'', ''Create campaign (outbound WhatsApp)'', ''Criar campanha (WhatsApp de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 46);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 47) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (47, ''Eliminar campaÒa (WhatsApp de salida)'', ''Delete campaign (outbound WhatsApp)'', ''Excluir campanha (WhatsApp de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (47, ''Eliminar campa√±a (WhatsApp de salida)'', ''Delete campaign (outbound WhatsApp)'', ''Excluir campanha (WhatsApp de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 47);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 48) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (48, ''Crear campaÒa (llamada de salida IA)'', ''Create campaign (AI outbound call)'', ''Criar campanha (chamada de saÌda IA)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (48, ''Crear campa√±a (llamada de salida IA)'', ''Create campaign (AI outbound call)'', ''Criar campanha (chamada de sa√≠da IA)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 48);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 49) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (49, ''Eliminar campaÒa (llamada de salida IA)'', ''Delete campaign (AI outbound call)'', ''Excluir campanha (chamada de saÌda IA)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (49, ''Eliminar campa√±a (llamada de salida IA)'', ''Delete campaign (AI outbound call)'', ''Excluir campanha (chamada de sa√≠da IA)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 49);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 50) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (50, ''Crear campaÒa (SMS de salida)'', ''Create campaign (outbound SMS)'', ''Criar campanha (SMS de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (50, ''Crear campa√±a (SMS de salida)'', ''Create campaign (outbound SMS)'', ''Criar campanha (SMS de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 50);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 51) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (51, ''Eliminar campaÒa (SMS de salida)'', ''Delete campaign (outbound SMS)'', ''Excluir campanha (SMS de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (51, ''Eliminar campa√±a (SMS de salida)'', ''Delete campaign (outbound SMS)'', ''Excluir campanha (SMS de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 51);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 52) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (52, ''Editar campaÒa (llamada de entrada)'', ''Edit campaign (inbound call)'', ''Editar campanha (chamada de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (52, ''Editar campa√±a (llamada de entrada)'', ''Edit campaign (inbound call)'', ''Editar campanha (chamada de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 52);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 53) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (53, ''Editar campaÒa (WhatsApp de entrada)'', ''Edit campaign (inbound WhatsApp)'', ''Editar campanha (WhatsApp de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (53, ''Editar campa√±a (WhatsApp de entrada)'', ''Edit campaign (inbound WhatsApp)'', ''Editar campanha (WhatsApp de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 53);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 54) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (54, ''Editar campaÒa (llamada de salida)'', ''Edit campaign (outbound call)'', ''Editar campanha (chamada de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (54, ''Editar campa√±a (llamada de salida)'', ''Edit campaign (outbound call)'', ''Editar campanha (chamada de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 54);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 55) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (55, ''Editar campaÒa (llamada de salida VP)'', ''Edit campaign (preview outbound call)'', ''Editar campanha (chamada de saÌda V)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (55, ''Editar campa√±a (llamada de salida VP)'', ''Edit campaign (preview outbound call)'', ''Editar campanha (chamada de sa√≠da V)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 55);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 56) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (56, ''Editar campaÒa (WhatsApp de salida)'', ''Edit campaign (outbound WhatsApp)'', ''Editar campanha (WhatsApp de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (56, ''Editar campa√±a (WhatsApp de salida)'', ''Edit campaign (outbound WhatsApp)'', ''Editar campanha (WhatsApp de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 56);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 57) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (57, ''Editar campaÒa (llamada de salida IA)'', ''Edit campaign (AI outbound call)'', ''Editar campanha (chamada de saÌda IA)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (57, ''Editar campa√±a (llamada de salida IA)'', ''Edit campaign (AI outbound call)'', ''Editar campanha (chamada de sa√≠da IA)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 57);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 58) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (58, ''Editar campaÒa (SMS de salida)'', ''Edit campaign (outbound SMS)'', ''Editar campanha (SMS de saÌda)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (58, ''Editar campa√±a (SMS de salida)'', ''Edit campaign (outbound SMS)'', ''Editar campanha (SMS de sa√≠da)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 58);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 59) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (59, ''Desasignar campaÒa'', ''Unassign campaign'', ''Cancelar atribuiÁ„o de campanha'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (59, ''Desasignar campa√±a'', ''Unassign campaign'', ''Cancelar atribui√ß√£o de campanha'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 59);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 60) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (60, ''Crear campaÒa (llamada de entrada)'', ''Create campaign (inbound call)'', ''Criar campanha (chamada de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (60, ''Crear campa√±a (llamada de entrada)'', ''Create campaign (inbound call)'', ''Criar campanha (chamada de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 60);
 END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 61) BEGIN 
-    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (61, ''Eliminar campaÒa (llamada de entrada)'', ''Delete campaign (inbound call)'', ''Excluir campanha (chamada de entrada)'');
+    INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (61, ''Eliminar campa√±a (llamada de entrada)'', ''Delete campaign (inbound call)'', ''Excluir campanha (chamada de entrada)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 61);
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '2 - Insert Identifiers in ccGalateaIdentifiers'
-		SET @sql = '
+        SET @process = '2 - Insert Identifiers in ccGalateaIdentifiers'
+        SET @sql = '
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_NAME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_NAME'', ''Nombre'', ''Name'', ''Nome'')
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CAMPAIGN'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_CAMPAIGN'', ''CampaÒa predeterminada'', ''Default campaign'', ''Campanha padr„o'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CAMPAIGN'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_CAMPAIGN'', ''Campa√±a predeterminada'', ''Default campaign'', ''Campanha padr√£o'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_CHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_MAX_CHATS'', ''Conversaciones de chat por agente'', ''Chat conversations per agent'', ''Conversas de chat por agente'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_MAILS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_MAX_MAILS'', ''Conversaciones de correo por agente'', ''Email conversations per agent'', ''Conversas de e-mail por agente'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_TWITTER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&SET_MAX_TWITTER'', ''Conversaciones de Twitter por agente'', ''Twitter conversations per agent'', ''Conversas de Twitter por agente'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_NAME_USER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_NAME_USER'', ''Nombre'', ''Name'', ''Nome'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_MIDDLE_NAME_USER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_MIDDLE_NAME_USER'', ''Segundo nombre'', ''Middle name'', ''Segundo nome'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_LAST_NAME_USER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_LAST_NAME_USER'', ''Apellido'', ''Last name'', ''Sobrenome'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_GENDER_USER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_GENDER_USER'', ''GÈnero'', ''Gender'', ''GÍnero'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_GENDER_USER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_GENDER_USER'', ''G√©nero'', ''Gender'', ''G√™nero'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_GENDER_USER_M'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_GENDER_USER_M'', ''Masculino'', ''Male'', ''Masculino'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_GENDER_USER_F'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_GENDER_USER_F'', ''Femenino'', ''Female'', ''Feminino'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&COMMON_NONE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&COMMON_NONE'', ''Ninguna'', ''None'', ''Nenhuma'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&CHANGE_USER_AREA'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&CHANGE_USER_AREA'', ''¡rea'', ''Area'', ''¡rea'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''T&CHANGE_USER_AREA'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&CHANGE_USER_AREA'', ''√Årea'', ''Area'', ''√Årea'');
 
 ----Create campaign (inbound call)****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_WAIT_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_WAIT_TIME'', ''Tiempo m·ximo de espera'', ''Maximum wait time'', ''Tempo m·ximo de espera'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_WAIT_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_WAIT_TIME'', ''Tiempo m√°ximo de espera'', ''Maximum wait time'', ''Tempo m√°ximo de espera'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_WAIT_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_WAIT_TIME'', ''Destino (tiempo de espera excedido)'', ''Destination (wait time exceeded)'', ''Destino (tempo de espera excedido)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_CALLS_QUEUE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_CALLS_QUEUE'', ''N˙mero m·ximo en espera'', ''Maximum calls in queue'', ''N˙mero m·ximo na fila'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_QUEUE_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_QUEUE_TIME'', ''Destino (n˙mero en espera excedido)'', ''Destination (queue limit exceeded)'', ''Destino (limite da fila excedido)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_OUT_SERVIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_OUT_SERVIVE'', ''Destino (fuera de servicio)'', ''Destination (out of service)'', ''Destino (fora de serviÁo)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_OUT_SCHEDULE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_OUT_SCHEDULE'', ''Destino (fuera de horario)'', ''Destination (out of schedule)'', ''Destino (fora de hor·rio)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_FORWADING_PREFIX'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_FORWADING_PREFIX'', ''Prefijo de desvÌo'', ''Call forwarding prefix'', ''Prefixo de encaminhamento'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_PLAY_QUEUE_AUDIO'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_PLAY_QUEUE_AUDIO'', ''Reproducir opciÛn de cola virtual'', ''Play virtual queue audio'', ''Reproduzir ·udio de fila virtual'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_PLAY_QUEUE_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_PLAY_QUEUE_ORDER'', ''Reproducir orden en cola'', ''Play queue order audio'', ''Reproduzir ·udio de ordem da fila'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_STOP_RECORDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_STOP_RECORDING'', ''Detener grabaciÛn despuÈs de transferir'', ''Stop recording after transfer'', ''Parar de gravar depois de transferir'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_CALLS_QUEUE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_CALLS_QUEUE'', ''N√∫mero m√°ximo en espera'', ''Maximum calls in queue'', ''N√∫mero m√°ximo na fila'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_QUEUE_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_QUEUE_TIME'', ''Destino (n√∫mero en espera excedido)'', ''Destination (queue limit exceeded)'', ''Destino (limite da fila excedido)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_OUT_SERVIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_OUT_SERVIVE'', ''Destino (fuera de servicio)'', ''Destination (out of service)'', ''Destino (fora de servi√ßo)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_DESTINATION_OUT_SCHEDULE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_DESTINATION_OUT_SCHEDULE'', ''Destino (fuera de horario)'', ''Destination (out of schedule)'', ''Destino (fora de hor√°rio)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_FORWADING_PREFIX'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_FORWADING_PREFIX'', ''Prefijo de desv√≠o'', ''Call forwarding prefix'', ''Prefixo de encaminhamento'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_PLAY_QUEUE_AUDIO'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_PLAY_QUEUE_AUDIO'', ''Reproducir opci√≥n de cola virtual'', ''Play virtual queue audio'', ''Reproduzir √°udio de fila virtual'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_PLAY_QUEUE_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_PLAY_QUEUE_ORDER'', ''Reproducir orden en cola'', ''Play queue order audio'', ''Reproduzir √°udio de ordem da fila'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_STOP_RECORDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_STOP_RECORDING'', ''Detener grabaci√≥n despu√©s de transferir'', ''Stop recording after transfer'', ''Parar de gravar depois de transferir'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_WRAP_UP_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_WRAP_UP_TIME'', ''Tiempo de notas'', ''Wrap-up time'', ''Tempo de notas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_SHOW_DISPOSITIONS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_SHOW_DISPOSITIONS'', ''Mostrar calificaciones'', ''Show dispositions'', ''Mostrar classificaÁıes'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_SHOW_DISPOSITIONS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_SHOW_DISPOSITIONS'', ''Mostrar calificaciones'', ''Show dispositions'', ''Mostrar classifica√ß√µes'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_KEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CALL_KEY'', ''Editar clave de llamada'', ''Edit call key'', ''Editar chave de chamada'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ANI_FORWARDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ANI_FORWARDING'', ''ANI (para desvÌo)'', ''ANI (on call forwarding)'', ''ANI (para encaminhamento)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ANI_FORWARDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ANI_FORWARDING'', ''ANI (para desv√≠o)'', ''ANI (on call forwarding)'', ''ANI (para encaminhamento)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CONDUCT_SURVEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CONDUCT_SURVEY'', ''Aplicar encuesta'', ''Conduct survey'', ''Executar pesquisa'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CONDUCT_CALLBACK_SURVEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CONDUCT_CALLBACK_SURVEY'', ''Aplicar encuesta reprogramada'', ''Conduct callback survey'', ''Executar pesquisa reagendada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_RECEIVE_DTMF_TONES'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_RECEIVE_DTMF_TONES'', ''Recibir tonos DTMF'', ''Receive DTMF tones'', ''Receber tons DTMF'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_BACK'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CALL_BACK'', ''Devolver llamada (Reminder)'', ''Call back (Reminder)'', ''Retornar chamada (Reminder)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_RECORD_ON_HOLD'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_RECORD_ON_HOLD'', ''Grabar llamada en espera'', ''Record call on hold'', ''Gravar chamada em espera'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_CAMPAIGN'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_CAMPAIGN'', ''CampaÒa asociada'', ''Associated campaign'', ''Campanha associada'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_CAMPAIGN'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_CAMPAIGN'', ''Campa√±a asociada'', ''Associated campaign'', ''Campanha associada'');
 
 ----Create campaign (inbound whatsapp)****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_PHONE_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_PHONE_WHATS'', ''TelÈfono asociado'', ''Associated phone number'', ''Telefone associado'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_ANSWER_AGENT_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_ANSWER_AGENT_WHATS'', ''Tiempo m·ximo de respuesta (agente) (min)'', ''Maximum answer time (agent) (min)'', ''Tempo m·ximo de resposta (agente) (min)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_ANSWER_CONTACT_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_ANSWER_CONTACT_WHATS'', ''Tiempo m·ximo de respuesta (contacto) (min)'', ''Maximum answer time (contact) (min)'', ''Tempo m·ximo de resposta (contato) (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_PHONE_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_PHONE_WHATS'', ''Tel√©fono asociado'', ''Associated phone number'', ''Telefone associado'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_ANSWER_AGENT_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_ANSWER_AGENT_WHATS'', ''Tiempo m√°ximo de respuesta (agente) (min)'', ''Maximum answer time (agent) (min)'', ''Tempo m√°ximo de resposta (agente) (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_MAX_ANSWER_CONTACT_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_MAX_ANSWER_CONTACT_WHATS'', ''Tiempo m√°ximo de respuesta (contacto) (min)'', ''Maximum answer time (contact) (min)'', ''Tempo m√°ximo de resposta (contato) (min)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ATTACH_FILES_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ATTACH_FILES_WHATS'', ''Adjuntar archivos'', ''Attach files'', ''Anexar arquivos'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_WRAP_UP_TIME_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_WRAP_UP_TIME_WHATS'', ''Tiempo de notas'', ''Wrap-up time'', ''Tempo de notas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_WRAP_ON_DIPOSITION_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_WRAP_ON_DIPOSITION_WHATS'', ''Finalizar tiempo de notas al calificar'', ''Exit wrap-up status on disposition'', ''Terminar o tempo de notas ao atribuir classificaÁ„o'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_SHOW_DISPOSITIONS_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_SHOW_DISPOSITIONS_WHATS'', ''Mostrar calificaciones'', ''Show dispositions'', ''Mostrar classificaÁıes'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_CAMPAIGN_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_CAMPAIGN_WHATS'', ''CampaÒa asociada'', ''Associated campaign'', ''Campanha associada'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_WRAP_ON_DIPOSITION_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_WRAP_ON_DIPOSITION_WHATS'', ''Finalizar tiempo de notas al calificar'', ''Exit wrap-up status on disposition'', ''Terminar o tempo de notas ao atribuir classifica√ß√£o'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_SHOW_DISPOSITIONS_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_SHOW_DISPOSITIONS_WHATS'', ''Mostrar calificaciones'', ''Show dispositions'', ''Mostrar classifica√ß√µes'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_ASSOCIATED_CAMPAIGN_WHATS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_ASSOCIATED_CAMPAIGN_WHATS'', ''Campa√±a asociada'', ''Associated campaign'', ''Campanha associada'');
 
-----Crear campaÒa (llamada de salida)****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAX_DIALING_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAX_DIALING_TIME'', ''Tiempo m·ximo de marcaciÛn'', ''Maximum dialing time'', ''Tempo m·ximo de discagem'');
+----Crear campa√±a (llamada de salida)****
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAX_DIALING_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAX_DIALING_TIME'', ''Tiempo m√°ximo de marcaci√≥n'', ''Maximum dialing time'', ''Tempo m√°ximo de discagem'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIAL_BEFORE_WRAP_UP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIAL_BEFORE_WRAP_UP'', ''Marcar antes de fin de notas'', ''Dial before wrap-up timeout'', ''Discar antes do fim de notas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_NOT_ANSWERED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_NOT_ANSWERED'', ''Reintentos en no contestadas'', ''Retries on not answered'', ''Tentativas em n„o atendidas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_NOT_ANSWERED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_NOT_ANSWERED'', ''Intervalo en no contestadas (min)'', ''Interval on not answered (min)'', ''Intervalo em n„o atendidas (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_NOT_ANSWERED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_NOT_ANSWERED'', ''Reintentos en no contestadas'', ''Retries on not answered'', ''Tentativas em n√£o atendidas'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_NOT_ANSWERED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_NOT_ANSWERED'', ''Intervalo en no contestadas (min)'', ''Interval on not answered (min)'', ''Intervalo em n√£o atendidas (min)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_BUSY_LINE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_BUSY_LINE'', ''Reintentos en ocupado'', ''Retries on busy line'', ''Tentativas em ocupado'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_BUSY_LINE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_BUSY_LINE'', ''Intervalo en ocupado (min)'', ''Interval on busy line (min)'', ''Intervalo em ocupado (min)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_FAX_MODEM'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_FAX_MODEM'', ''Reintentos en fax/mÛdem'', ''Retries on fax/modem'', ''Tentativas em fax/modem'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_FAX_MODEM'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_FAX_MODEM'', ''Intervalo en fax/mÛdem (min)'', ''Interval on fax/modem (min)'', ''Intervalo em fax/modem (min)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_AM_VOICEMAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_AM_VOICEMAIL'', ''Reintentos en m·quina/buzÛn'', ''Retries on AM/voicemail'', ''Tentativas em s. eletrÙnica/c. postal'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_AM_VOICEMAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_AM_VOICEMAIL'', ''Intervalo en m·quina/buzÛn (min)'', ''Interval on AM/voicemail (min)'', ''Intervalo em s. eletrÙnica/c. postal (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_FAX_MODEM'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_FAX_MODEM'', ''Reintentos en fax/m√≥dem'', ''Retries on fax/modem'', ''Tentativas em fax/modem'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_FAX_MODEM'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_FAX_MODEM'', ''Intervalo en fax/m√≥dem (min)'', ''Interval on fax/modem (min)'', ''Intervalo em fax/modem (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RETRIES_AM_VOICEMAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RETRIES_AM_VOICEMAIL'', ''Reintentos en m√°quina/buz√≥n'', ''Retries on AM/voicemail'', ''Tentativas em s. eletr√¥nica/c. postal'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_AM_VOICEMAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_AM_VOICEMAIL'', ''Intervalo en m√°quina/buz√≥n (min)'', ''Interval on AM/voicemail (min)'', ''Intervalo em s. eletr√¥nica/c. postal (min)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTERVAL_CANCELLED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTERVAL_CANCELLED'', ''Intervalo de reintentos en canceladas (min)'', ''Retry interval on cancelled (min)'', ''Intervalo de tentativas em canceladas (min)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANI'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANI'', ''ANI'', ''ANI'', ''ANI'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_PREDICTIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_PREDICTIVE'', ''Prefijo de marcaciÛn predictiva'', ''Dialing prefix (predictive calls)'', ''Prefixo de discagem preditiva'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_MANUAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_MANUAL'', ''Prefijo de marcaciÛn (llamada manual)'', ''Dialing prefix (manual calls)'', ''Prefixo de discagem (chamada manual)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_TRANFERS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_TRANFERS'', ''Prefijo de marcaciÛn (transferencia)'', ''Dialing prefix (transfers)'', ''Prefixo de discagem (transferÍncia)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_AUTO_CALLBACK_INTERVAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_AUTO_CALLBACK_INTERVAL'', ''Intervalo de devoluciÛn autom·tica de llamada (min)'', ''Automatic callback interval (min)'', ''Intervalo de retorno autom·tico de chamada (min)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAX_CALLS_QUEUE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAX_CALLS_QUEUE'', ''N˙mero m·ximo en cola'', ''Maximum calls in queue'', ''N˙mero m·ximo em fila'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_ORDER'',''Orden de marcaciÛn'',''Dialing order'',''Ordem de discagem'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANSWER_MACHINE_DETC'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANSWER_MACHINE_DETC'',''DetecciÛn de m·quina contestadora'',''Answering machine detection'',''DetecÁ„o de secret·ria eletrÙnica'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_PREDICTIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_PREDICTIVE'', ''Prefijo de marcaci√≥n predictiva'', ''Dialing prefix (predictive calls)'', ''Prefixo de discagem preditiva'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_MANUAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_MANUAL'', ''Prefijo de marcaci√≥n (llamada manual)'', ''Dialing prefix (manual calls)'', ''Prefixo de discagem (chamada manual)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_PREFIX_TRANFERS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_PREFIX_TRANFERS'', ''Prefijo de marcaci√≥n (transferencia)'', ''Dialing prefix (transfers)'', ''Prefixo de discagem (transfer√™ncia)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_AUTO_CALLBACK_INTERVAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_AUTO_CALLBACK_INTERVAL'', ''Intervalo de devoluci√≥n autom√°tica de llamada (min)'', ''Automatic callback interval (min)'', ''Intervalo de retorno autom√°tico de chamada (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAX_CALLS_QUEUE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAX_CALLS_QUEUE'', ''N√∫mero m√°ximo en cola'', ''Maximum calls in queue'', ''N√∫mero m√°ximo em fila'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_ORDER'',''Orden de marcaci√≥n'',''Dialing order'',''Ordem de discagem'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANSWER_MACHINE_DETC'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANSWER_MACHINE_DETC'',''Detecci√≥n de m√°quina contestadora'',''Answering machine detection'',''Detec√ß√£o de secret√°ria eletr√¥nica'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANI_MODE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANI_MODE'',''Modalidad de ANI'',''ANI mode'',''Modalidade de ANI'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANI_LIST'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANI_LIST'',''Lista de ANI'',''ANI list'',''Lista de ANI'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SELECT_ANI_ON_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SELECT_ANI_ON_DIALING'',''Seleccionar ANI en marcaciÛn manual'',''Select ANI on manual dialing'',''Selecionar ANI em discagem manual'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_MODE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_MODE'',''Modo de marcaciÛn'',''Dialing mode'',''Modo de discagem'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MANUAL_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MANUAL_DIALING'',''MarcaciÛn manual'',''Manual dialing'',''Discagem manual'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MANUAL_DIALING_ON_CHAT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MANUAL_DIALING_ON_CHAT'',''MarcaciÛn manual en chat'',''Manual dialing on chat'',''Discagem manual em chat'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_TIME_ZONE_VALIDATION_MANUAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_TIME_ZONE_VALIDATION_MANUAL'',''ValidaciÛn de zona horaria en marcaciÛn manual'',''Time zone validation on manual dialing'',''ValidaÁ„o de fuso hor·rio em discagem manual'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTENSIVE_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTENSIVE_DIALING'',''MarcaciÛn intensiva'',''Intensive dialing'',''Discagem intensiva'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALLBACK_EXCLUSIVE_AGENT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALLBACK_EXCLUSIVE_AGENT'',''DevoluciÛn de llamada (agente exclusivo)'',''Callback (exclusive agent)'',''Retorno de chamada (agente exclusivo)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_VOIEMAIL_DETECTION'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_VOIEMAIL_DETECTION'',''DetecciÛn de buzÛn de voz'',''Voicemail detection'',''DetecÁ„o de caixa postal'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALLBACK_FAILED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALLBACK_FAILED'',''DevoluciÛn de llamada (evento fallido)'',''Callback (failed attempt)'',''Retorno de chamada (tentativa com falha)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_EXIT_ASSISTED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_EXIT_ASSISTED'',''Salir del modo de marcaciÛn asistida'',''Exit assisted dialing mode'',''Sair do modo de discagem assistida'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SELECT_ANI_ON_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SELECT_ANI_ON_DIALING'',''Seleccionar ANI en marcaci√≥n manual'',''Select ANI on manual dialing'',''Selecionar ANI em discagem manual'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_DIALING_MODE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_DIALING_MODE'',''Modo de marcaci√≥n'',''Dialing mode'',''Modo de discagem'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MANUAL_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MANUAL_DIALING'',''Marcaci√≥n manual'',''Manual dialing'',''Discagem manual'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MANUAL_DIALING_ON_CHAT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MANUAL_DIALING_ON_CHAT'',''Marcaci√≥n manual en chat'',''Manual dialing on chat'',''Discagem manual em chat'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_TIME_ZONE_VALIDATION_MANUAL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_TIME_ZONE_VALIDATION_MANUAL'',''Validaci√≥n de zona horaria en marcaci√≥n manual'',''Time zone validation on manual dialing'',''Valida√ß√£o de fuso hor√°rio em discagem manual'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_INTENSIVE_DIALING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_INTENSIVE_DIALING'',''Marcaci√≥n intensiva'',''Intensive dialing'',''Discagem intensiva'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALLBACK_EXCLUSIVE_AGENT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALLBACK_EXCLUSIVE_AGENT'',''Devoluci√≥n de llamada (agente exclusivo)'',''Callback (exclusive agent)'',''Retorno de chamada (agente exclusivo)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_VOIEMAIL_DETECTION'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_VOIEMAIL_DETECTION'',''Detecci√≥n de buz√≥n de voz'',''Voicemail detection'',''Detec√ß√£o de caixa postal'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALLBACK_FAILED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALLBACK_FAILED'',''Devoluci√≥n de llamada (evento fallido)'',''Callback (failed attempt)'',''Retorno de chamada (tentativa com falha)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_EXIT_ASSISTED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_EXIT_ASSISTED'',''Salir del modo de marcaci√≥n asistida'',''Exit assisted dialing mode'',''Sair do modo de discagem assistida'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WRAP_UP_TIME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WRAP_UP_TIME'',''Tiempo de notas'',''Wrap-up time'',''Tempo de notas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SHOW_DISPOSITIONS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SHOW_DISPOSITIONS'',''Mostrar calificaciones'',''Show dispositions'',''Mostrar classificaÁıes'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SHOW_DISPOSITIONS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SHOW_DISPOSITIONS'',''Mostrar calificaciones'',''Show dispositions'',''Mostrar classifica√ß√µes'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_EDIT_CALL_KEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_EDIT_CALL_KEY'',''Editar clave de llamada'',''Edit call key'',''Editar chave de chamada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_LISTEN_TONE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_LISTEN_TONE'',''Escuchar tonos en llamada manual'',''Listen to dial tone on manual call'',''Escutar tons em chamada manual'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_STOP_RECORDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_STOP_RECORDING'',''Detener grabaciÛn despuÈs de transferir'',''Stop recording after transfer'',''Parar de gravar depois de transferir'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_STOP_RECORDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_STOP_RECORDING'',''Detener grabaci√≥n despu√©s de transferir'',''Stop recording after transfer'',''Parar de gravar depois de transferir'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_LEAVE_PRERECORDED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_LEAVE_PRERECORDED'',''Dejar mensaje pregrabado manualmente'',''Leave prerecorded message manually'',''Deixar mensagem gravada manualmente'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RECORD_ON_HOLD'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RECORD_ON_HOLD'',''Grabar llamada en espera'',''Record call on hold'',''Gravar chamada em espera'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CONDUCT_SURVEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CONDUCT_SURVEY'',''Aplicar encuesta'',''Conduct survey'',''Executar pesquisa'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CONDUCT_CALLBACK_SURVEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CONDUCT_CALLBACK_SURVEY'',''Aplicar encuesta reprogramada'',''Conduct callback survey'',''Executar pesquisa reagendada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_RECEIVE_DTMF'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_RECEIVE_DTMF'',''Recibir tonos DTMF'',''Receive DTMF tones'',''Receber tons DTMF'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SIP_IDENTIFIER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SIP_IDENTIFIER'',''Identificador SIP personalizado'',''Custom SIP identifier'',''Identificador SIP personalizado'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ADD_VARIABLES_SIP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ADD_VARIABLES_SIP'',''AÒadir variables a identificador SIP personalizado'',''Add variables to custom SIP identifier'',''Adicionar vari·veis ‡ identificador SIP personalizado'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANI_TRANSFERS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANI_TRANSFERS'',''ANI (para transferencia)'',''ANI (on transfer)'',''ANI (para transferÍncia)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ASSOCIATED_CAMP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ASSOCIATED_CAMP'',''CampaÒa asociada'',''Associated campaign'',''Campanha associada'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ADD_VARIABLES_SIP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ADD_VARIABLES_SIP'',''A√±adir variables a identificador SIP personalizado'',''Add variables to custom SIP identifier'',''Adicionar vari√°veis √† identificador SIP personalizado'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ANI_TRANSFERS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ANI_TRANSFERS'',''ANI (para transferencia)'',''ANI (on transfer)'',''ANI (para transfer√™ncia)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_ASSOCIATED_CAMP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_ASSOCIATED_CAMP'',''Campa√±a asociada'',''Associated campaign'',''Campanha associada'');
 
 ----PREVIEW TAGS*****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_PREVIEW'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_PREVIEW'',''Tiempo m·ximo de previsualizaciÛn'',''Maximum preview time'',''Tempo m·ximo de visualizaÁ„o'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_ASSIGNMENT_ATTEMPS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_ASSIGNMENT_ATTEMPS'',''N˙mero m·ximo de asignaciones'',''Maximum assignment attempts'',''N˙mero m·ximo de atribuiÁıes'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_UNASSIGNMENT_ATTEMPS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_UNASSIGNMENT_ATTEMPS'',''N˙mero m·ximo de desasignaciones'',''Maximum unassignment attempts'',''Limite de cancelamento de atribuiÁ„o'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_UNASSIGN_RECORDS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_UNASSIGN_RECORDS'',''Desasignar registros'',''Unassign records'',''Cancelar atribuiÁ„o de registros'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_PREVIEW'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_PREVIEW'',''Tiempo m√°ximo de previsualizaci√≥n'',''Maximum preview time'',''Tempo m√°ximo de visualiza√ß√£o'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_ASSIGNMENT_ATTEMPS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_ASSIGNMENT_ATTEMPS'',''N√∫mero m√°ximo de asignaciones'',''Maximum assignment attempts'',''N√∫mero m√°ximo de atribui√ß√µes'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_MAXIMUN_UNASSIGNMENT_ATTEMPS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_MAXIMUN_UNASSIGNMENT_ATTEMPS'',''N√∫mero m√°ximo de desasignaciones'',''Maximum unassignment attempts'',''Limite de cancelamento de atribui√ß√£o'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_UNASSIGN_RECORDS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_UNASSIGN_RECORDS'',''Desasignar registros'',''Unassign records'',''Cancelar atribui√ß√£o de registros'');
 
 ---OUT WHATSAPP TAGS****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_ASSOCIATED_PHONE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_ASSOCIATED_PHONE'',''TelÈfono asociado'',''Associated phone number'',''Telefone associado'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_MAX_ANSWER_AGENT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_MAX_ANSWER_AGENT'',''Tiempo m·ximo de respuesta (agente) (min)'',''Maximum answer time (agent) (min)'',''Tempo m·ximo de resposta (agente) (min)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_MAX_ANSWER_CONTACT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_MAX_ANSWER_CONTACT'',''Tiempo m·ximo de respuesta (contacto) (min)'',''Maximum answer time (contact) (min)'',''Tempo m·ximo de resposta (contato) (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_ASSOCIATED_PHONE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_ASSOCIATED_PHONE'',''Tel√©fono asociado'',''Associated phone number'',''Telefone associado'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_MAX_ANSWER_AGENT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_MAX_ANSWER_AGENT'',''Tiempo m√°ximo de respuesta (agente) (min)'',''Maximum answer time (agent) (min)'',''Tempo m√°ximo de resposta (agente) (min)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_MAX_ANSWER_CONTACT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_MAX_ANSWER_CONTACT'',''Tiempo m√°ximo de respuesta (contacto) (min)'',''Maximum answer time (contact) (min)'',''Tempo m√°ximo de resposta (contato) (min)'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_ATTACH_FILES'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_ATTACH_FILES'',''Adjuntar archivos'',''Attach files'',''Anexar arquivos'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_EXIT_ASSISTED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_EXIT_ASSISTED'',''Finalizar tiempo de notas al calificar'',''Exit wrap-up status on disposition'',''Terminar o tempo de notas ao atribuir classificaÁ„o'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_WHATS_EXIT_ASSISTED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_WHATS_EXIT_ASSISTED'',''Finalizar tiempo de notas al calificar'',''Exit wrap-up status on disposition'',''Terminar o tempo de notas ao atribuir classifica√ß√£o'');
 
 ---OUT SMS TAGS****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SMS_START_CAMP_AUTO'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SMS_START_CAMP_AUTO'',''Iniciar campaÒa autom·ticamente'',''Start campaign automatically'',''Iniciar a campanha automaticamente'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SMS_MESSAGING_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SMS_MESSAGING_ORDER'',''Orden de envÌo'',''Messaging order'',''Ordem de envio'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SMS_START_CAMP_AUTO'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SMS_START_CAMP_AUTO'',''Iniciar campa√±a autom√°ticamente'',''Start campaign automatically'',''Iniciar a campanha automaticamente'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_SMS_MESSAGING_ORDER'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_SMS_MESSAGING_ORDER'',''Orden de env√≠o'',''Messaging order'',''Ordem de envio'');
 
 
 ---EDITAR LLAMADA ENTRADA
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_EDIT_NAME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CALL_EDIT_NAME'',''Nombre'',''Name'',''Nome'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_EDIT_ICON'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CALL_EDIT_ICON'',''Õcono'',''Icon'',''Õcone'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''IN_CALL_EDIT_ICON'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''IN_CALL_EDIT_ICON'',''√çcono'',''Icon'',''√çcone'');
 
 ---EDITAR LLAMADA SALIDA
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALL_EDIT_NAME'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALL_EDIT_NAME'',''Nombre'',''Name'',''Nome'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALL_EDIT_ICON'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALL_EDIT_ICON'',''Õcono'',''Icon'',''Õcone'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''OUT_CALL_EDIT_ICON'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''OUT_CALL_EDIT_ICON'',''√çcono'',''Icon'',''√çcone'');
 
 ----Common Tags****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VOICE_MAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VOICE_MAIL'', ''BuzÛn de voz'', ''Voicemail'', ''Caixa postal'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VOICE_MAIL'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VOICE_MAIL'', ''Buz√≥n de voz'', ''Voicemail'', ''Caixa postal'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ENABLED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ENABLED'', ''Habilitado'', ''Enabled'', ''Ativado'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DISABLED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DISABLED'', ''Deshabilitado'', ''Disabled'', ''Desativado'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_CALLBACK'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_CALLBACK'', ''Reprogramada'', ''Callback'', ''Reagendada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_IMMEDIATE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_IMMEDIATE'', ''Inmediata'', ''Immediate'', ''Imediata'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ASCENDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ASCENDING'', ''Ascendente'', ''Ascending'', ''Crescente'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DESCENDING'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DESCENDING'', ''Descendente'', ''Descending'', ''Decrescente'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_BASIC'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_BASIC'', ''B·sica'', ''Basic'', ''B·sica'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_BASIC'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_BASIC'', ''B√°sica'', ''Basic'', ''B√°sica'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_LIGHT'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_LIGHT'', ''Ligera'', ''Light'', ''Leve'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_MODERATE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_MODERATE'', ''Moderada'', ''Moderate'', ''Moderada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_HIGH'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_HIGH'', ''Alta'', ''High'', ''Alta'');
@@ -374,52 +374,52 @@ IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_A
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_PREDICTIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_PREDICTIVE'', ''Predictiva'', ''Predictive'', ''Preditiva'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_PROGRESIVE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_PROGRESIVE'', ''Progresiva'', ''Progressive'', ''Progressiva'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ASSISTED'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ASSISTED'', ''Asistida'', ''Assisted'', ''Assistida'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_KEYPAD_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_KEYPAD_LOG'', ''VÌa teclado e historial'', ''Via keypad and log'', ''Via teclado e histÛrico'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_CALLS_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_CALLS_LOG'', ''VÌa historial de llamadas'', ''Via calls log'', ''Via histÛrico de chamadas'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_CALLS_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_CALLS_LOG'', ''VÌa dato en teclado'', ''Via data in keypad'', ''Via dado no teclado'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_CAMPAIGN_ID'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_CAMPAIGN_ID'', ''ID de campaÒa'', ''Campaign ID'', ''ID de campanha'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_KEYPAD_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_KEYPAD_LOG'', ''V√≠a teclado e historial'', ''Via keypad and log'', ''Via teclado e hist√≥rico'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_CALLS_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_CALLS_LOG'', ''V√≠a historial de llamadas'', ''Via calls log'', ''Via hist√≥rico de chamadas'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_VIA_CALLS_LOG'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_VIA_CALLS_LOG'', ''V√≠a dato en teclado'', ''Via data in keypad'', ''Via dado no teclado'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_CAMPAIGN_ID'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_CAMPAIGN_ID'', ''ID de campa√±a'', ''Campaign ID'', ''ID de campanha'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_CALL_KEY'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_CALL_KEY'', ''Clave de llamada'', ''Call key'', ''Chave de chamada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATA_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATA_1'', ''Dato 1'', ''Data 1'', ''Dado 1'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATA_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATA_2'', ''Dato 2'', ''Data 2'', ''Dado 2'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATA_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATA_3'', ''Dato 3'', ''Data 3'', ''Dado 3'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATA_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATA_4'', ''Dato 4'', ''Data 4'', ''Dado 4'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATA_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATA_5'', ''Dato 5'', ''Data 5'', ''Dado 5'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_PBX_IP_ADDRESS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_PBX_IP_ADDRESS'', ''DirecciÛn IP de PBX'', ''PBX IP address'', ''EndereÁo IP de PBX'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_PBX_IP_ADDRESS'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_PBX_IP_ADDRESS'', ''Direcci√≥n IP de PBX'', ''PBX IP address'', ''Endere√ßo IP de PBX'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_CALL_ID'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_CALL_ID'', ''ID de llamada'', ''Call ID'', ''ID de chamada'');
 IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_SIP_DATE'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_SIP_DATE'', ''Fecha'', ''Date'', ''Data'');
 
 ----Common Date Tags****
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_1'', ''Fecha de inicio y fin (horario 1)'', ''Start and end date (schedule 1)'', ''Data de inÌcio e tÈrmino (hor·rio 1)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_2'', ''Fecha de inicio y fin (horario 2)'', ''Start and end date (schedule 2)'', ''Data de inÌcio e tÈrmino (hor·rio 2)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_3'', ''Fecha de inicio y fin (horario 3)'', ''Start and end date (schedule 3)'', ''Data de inÌcio e tÈrmino (hor·rio 3)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_4'', ''Fecha de inicio y fin (horario 4)'', ''Start and end date (schedule 4)'', ''Data de inÌcio e tÈrmino (hor·rio 4)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_5'', ''Fecha de inicio y fin (horario 5)'', ''Start and end date (schedule 5)'', ''Data de inÌcio e tÈrmino (hor·rio 5)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_1'', ''Fecha de inicio y fin (horario 1)'', ''Start and end date (schedule 1)'', ''Data de in√≠cio e t√©rmino (hor√°rio 1)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_2'', ''Fecha de inicio y fin (horario 2)'', ''Start and end date (schedule 2)'', ''Data de in√≠cio e t√©rmino (hor√°rio 2)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_3'', ''Fecha de inicio y fin (horario 3)'', ''Start and end date (schedule 3)'', ''Data de in√≠cio e t√©rmino (hor√°rio 3)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_4'', ''Fecha de inicio y fin (horario 4)'', ''Start and end date (schedule 4)'', ''Data de in√≠cio e t√©rmino (hor√°rio 4)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DATE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DATE_5'', ''Fecha de inicio y fin (horario 5)'', ''Start and end date (schedule 5)'', ''Data de in√≠cio e t√©rmino (hor√°rio 5)'');
 
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_1'', ''AÒadir horario (horario 1)'', ''Add schedule (schedule 1)'', ''Adicionar hor·rio (hor·rio 1)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_2'', ''AÒadir horario (horario 2)'', ''Add schedule (schedule 2)'', ''Adicionar hor·rio (hor·rio 2)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_3'', ''AÒadir horario (horario 3)'', ''Add schedule (schedule 3)'', ''Adicionar hor·rio (hor·rio 3)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_4'', ''AÒadir horario (horario 4)'', ''Add schedule (schedule 4)'', ''Adicionar hor·rio (hor·rio 4)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_5'', ''AÒadir horario (horario 5)'', ''Add schedule (schedule 5)'', ''Adicionar hor·rio (hor·rio 5)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_1'', ''A√±adir horario (horario 1)'', ''Add schedule (schedule 1)'', ''Adicionar hor√°rio (hor√°rio 1)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_2'', ''A√±adir horario (horario 2)'', ''Add schedule (schedule 2)'', ''Adicionar hor√°rio (hor√°rio 2)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_3'', ''A√±adir horario (horario 3)'', ''Add schedule (schedule 3)'', ''Adicionar hor√°rio (hor√°rio 3)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_4'', ''A√±adir horario (horario 4)'', ''Add schedule (schedule 4)'', ''Adicionar hor√°rio (hor√°rio 4)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_ADD_SCHEDULE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_ADD_SCHEDULE_5'', ''A√±adir horario (horario 5)'', ''Add schedule (schedule 5)'', ''Adicionar hor√°rio (hor√°rio 5)'');
 
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_1'', ''Eliminar horario (horario 1)'', ''Delete schedule (schedule 1)'', ''Excluir hor·rio (hor·rio 1)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_2'', ''Eliminar horario (horario 2)'', ''Delete schedule (schedule 2)'', ''Excluir hor·rio (hor·rio 2)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_3'', ''Eliminar horario (horario 3)'', ''Delete schedule (schedule 3)'', ''Excluir hor·rio (hor·rio 3)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_4'', ''Eliminar horario (horario 4)'', ''Delete schedule (schedule 4)'', ''Excluir hor·rio (hor·rio 4)'');
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_5'', ''Eliminar horario (horario 5)'', ''Delete schedule (schedule 5)'', ''Excluir hor·rio (hor·rio 5)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_1'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_1'', ''Eliminar horario (horario 1)'', ''Delete schedule (schedule 1)'', ''Excluir hor√°rio (hor√°rio 1)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_2'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_2'', ''Eliminar horario (horario 2)'', ''Delete schedule (schedule 2)'', ''Excluir hor√°rio (hor√°rio 2)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_3'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_3'', ''Eliminar horario (horario 3)'', ''Delete schedule (schedule 3)'', ''Excluir hor√°rio (hor√°rio 3)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_4'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_4'', ''Eliminar horario (horario 4)'', ''Delete schedule (schedule 4)'', ''Excluir hor√°rio (hor√°rio 4)'');
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''COMMON_DELETE_SCHEDULE_5'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''COMMON_DELETE_SCHEDULE_5'', ''Eliminar horario (horario 5)'', ''Delete schedule (schedule 5)'', ''Excluir hor√°rio (hor√°rio 5)'');
 
 --ZIPCODE
-IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''SETTINGS_CHANGED_AREAS_ZIP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''SETTINGS_CHANGED_AREAS_ZIP'', ''Validar zona horaria por cÛdigo postal'', ''Validate time zone by ZIP code'', ''Validar fuso hor·rio por CEP'');
-		'
-		EXEC(@sql)
+IF NOT EXISTS (SELECT * FROM ccGalateaIdentifiers WHERE Description = ''SETTINGS_CHANGED_AREAS_ZIP'') INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''SETTINGS_CHANGED_AREAS_ZIP'', ''Validar zona horaria por c√≥digo postal'', ''Validate time zone by ZIP code'', ''Validar fuso hor√°rio por CEP'');
+        '
+        EXEC(@sql)
 
-		SET @process = '3 - Create Table relationTableColumnIdentifiers and Insert Relation Table Column - Identifier'
-		SET @sql = '
+        SET @process = '3 - Create Table relationTableColumnIdentifiers and Insert Relation Table Column - Identifier'
+        SET @sql = '
 IF NOT EXISTS(SELECT * FROM sys.tables WHERE name=''relationTableColumnIdentifiers'') BEGIN
 
 CREATE TABLE relationTableColumnIdentifiers(
-	Identifiers VARCHAR(255),
-	tableName VARCHAR(255), 
-	colunName VARCHAR(255)
+    Identifiers VARCHAR(255),
+    tableName VARCHAR(255), 
+    colunName VARCHAR(255)
 );
 
 INSERT INTO relationTableColumnIdentifiers
@@ -435,7 +435,7 @@ INSERT INTO relationTableColumnIdentifiers
 VALUES (''T&SET_MAX_MAILS'', ''ccRIACat_Areas'', ''maxMails'')
 
 INSERT INTO relationTableColumnIdentifiers
-VALUES (''T&SET_MAX_TWITTER'', ''ccRIACat_Areas'', ''maxTwets'')
+VALUES (''T&SET_MAX_TWITTER'', ''ccRIACat_Areas'', ''maxTweets'')
 
 INSERT INTO relationTableColumnIdentifiers
 VALUES (''T&SET_CAMPAIGN'', ''ccRIACat_Areas'', ''defCampaing'')
@@ -546,34 +546,34 @@ INSERT INTO relationTableColumnIdentifiers VALUES (''OUT_CALL_EDIT_NAME'',''ccCa
 --ZIPCODE
 INSERT INTO relationTableColumnIdentifiers VALUES (''SETTINGS_CHANGED_AREAS_ZIP'',''ccCampsExtend'',''zipCodeSchedule'');
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
 SET @process = '4 - Create Table sipDataIdentifier and Insert KEY - VALUE'
-		SET @sql = '
+        SET @sql = '
 IF NOT EXISTS(SELECT * FROM sys.tables WHERE name=''sipDataIdentifier'') BEGIN
 
 CREATE TABLE sipDataIdentifier(
-	dataId VARCHAR(30) PRIMARY KEY NOT NULL,
-	identifier VARCHAR(MAX)
+    dataId VARCHAR(30) PRIMARY KEY NOT NULL,
+    identifier VARCHAR(MAX)
 )
 
 INSERT INTO sipDataIdentifier (dataId, identifier) 
 VALUES  (''CAMID'', ''COMMON_SIP_CAMPAIGN_ID''),
-		(''KEY'', ''COMMON_SIP_CALL_KEY''),
-		(''D1'', ''COMMON_SIP_DATA_1''),
-		(''D2'', ''COMMON_SIP_DATA_2''),
-		(''D3'', ''COMMON_SIP_DATA_3''),
-		(''D4'', ''COMMON_SIP_DATA_4''),
-		(''D5'', ''COMMON_SIP_DATA_5''),
-		(''PBXIP'', ''COMMON_SIP_PBX_IP_ADDRESS''),
-		(''CALLOUT'', ''COMMON_SIP_CALL_ID''),
-		(''TS'', ''COMMON_SIP_DATE'')
+        (''KEY'', ''COMMON_SIP_CALL_KEY''),
+        (''D1'', ''COMMON_SIP_DATA_1''),
+        (''D2'', ''COMMON_SIP_DATA_2''),
+        (''D3'', ''COMMON_SIP_DATA_3''),
+        (''D4'', ''COMMON_SIP_DATA_4''),
+        (''D5'', ''COMMON_SIP_DATA_5''),
+        (''PBXIP'', ''COMMON_SIP_PBX_IP_ADDRESS''),
+        (''CALLOUT'', ''COMMON_SIP_CALL_ID''),
+        (''TS'', ''COMMON_SIP_DATE'')
 
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 SET @process = '5.0 - Drop Create Defined Function GetDateByLangHistory'
 SET @sql = '
@@ -585,47 +585,47 @@ if exists (select * from sys.objects where object_id = OBJECT_ID(''GetDateByLang
 EXEC(@sql);
 
 SET @process = '5.1 - Create Defined Function GetDateByLangHistory'
-		SET @sql = '
-	CREATE FUNCTION [dbo].[GetDateByLangHistory] (@date VARCHAR(MAX), @lang INT)
-	RETURNS VARCHAR (MAX)
-	AS
-	BEGIN
-		DECLARE @index INT
-		DECLARE @charToFind INT
-		SET @index = CHARINDEX(''&'', @date);
-		IF(@index <= 0)BEGIN
-			RETURN @date;
-		END
+        SET @sql = '
+    CREATE FUNCTION [dbo].[GetDateByLangHistory] (@date VARCHAR(MAX), @lang INT)
+    RETURNS VARCHAR (MAX)
+    AS
+    BEGIN
+        DECLARE @index INT
+        DECLARE @charToFind INT
+        SET @index = CHARINDEX(''&'', @date);
+        IF(@index <= 0)BEGIN
+            RETURN @date;
+        END
 
-		DECLARE @iDate VARCHAR(MAX);
-		DECLARE @eDate VARCHAR(MAX);
+        DECLARE @iDate VARCHAR(MAX);
+        DECLARE @eDate VARCHAR(MAX);
 
-		SET @iDate = SUBSTRING(@date,1,@index-1);
-		SET @eDate = SUBSTRING(@date,@index+1,LEN(@date)-@index);
+        SET @iDate = SUBSTRING(@date,1,@index-1);
+        SET @eDate = SUBSTRING(@date,@index+1,LEN(@date)-@index);
 
-		DECLARE @formatDate DATETIME;
-		DECLARE @formatDateToUse SMALLINT = CASE WHEN (@lang = 2 OR @lang = 0) THEN 103 ELSE 101 END;
+        DECLARE @formatDate DATETIME;
+        DECLARE @formatDateToUse SMALLINT = CASE WHEN (@lang = 2 OR @lang = 0) THEN 103 ELSE 101 END;
 
-		DECLARE @iDateFormated VARCHAR(MAX);
-		DECLARE @eDateFormated VARCHAR(MAX);
-		DECLARE @iHourFormated VARCHAR(MAX);
-		DECLARE @eHourFormated VARCHAR(MAX);
+        DECLARE @iDateFormated VARCHAR(MAX);
+        DECLARE @eDateFormated VARCHAR(MAX);
+        DECLARE @iHourFormated VARCHAR(MAX);
+        DECLARE @eHourFormated VARCHAR(MAX);
 
-		----Initial Date
-		SET @formatDate = CONVERT(DATETIME, @iDate, 120);
-		SET @iDateFormated = CONVERT(VARCHAR(MAX), @formatDate, @formatDateToUse);
-		SET @iHourFormated = CONVERT(VARCHAR(MAX), @formatDate, 108);
+        ----Initial Date
+        SET @formatDate = CONVERT(DATETIME, @iDate, 120);
+        SET @iDateFormated = CONVERT(VARCHAR(MAX), @formatDate, @formatDateToUse);
+        SET @iHourFormated = CONVERT(VARCHAR(MAX), @formatDate, 108);
 
-		----End Date
-		SET @formatDate = CONVERT(DATETIME, @eDate, 120);
-		SET @eDateFormated = CONVERT(VARCHAR(MAX), @formatDate, @formatDateToUse);
-		SET @eHourFormated = CONVERT(VARCHAR(MAX), @formatDate, 108);
+        ----End Date
+        SET @formatDate = CONVERT(DATETIME, @eDate, 120);
+        SET @eDateFormated = CONVERT(VARCHAR(MAX), @formatDate, @formatDateToUse);
+        SET @eHourFormated = CONVERT(VARCHAR(MAX), @formatDate, 108);
 
-		RETURN @iDateFormated + '' '' + @iHourFormated + RIGHT(@iDate, 2) + '' - '' + @eDateFormated + '' '' + @eHourFormated + RIGHT(@eDate, 2)
+        RETURN @iDateFormated + '' '' + @iHourFormated + RIGHT(@iDate, 2) + '' - '' + @eDateFormated + '' '' + @eHourFormated + RIGHT(@eDate, 2)
 
-	END;
-		'
-		EXEC(@sql)
+    END;
+        '
+        EXEC(@sql)
 
 SET @process = '6.0 - DROP Defined Function GetSipLangHistory'
 SET @sql = '
@@ -635,181 +635,181 @@ if exists (select * from sys.objects where object_id = OBJECT_ID(''GetSipLangHis
     end
 '
 EXEC(@sql);
-		
+        
 SET @process = '6.1 - Create Defined Function GetSipLangHistory'
-		SET @sql = '
-	CREATE FUNCTION [dbo].[GetSipLangHistory] (@sip VARCHAR(MAX), @lang INT)
-	RETURNS VARCHAR (MAX)
-	AS
-	BEGIN
+        SET @sql = '
+    CREATE FUNCTION [dbo].[GetSipLangHistory] (@sip VARCHAR(MAX), @lang INT)
+    RETURNS VARCHAR (MAX)
+    AS
+    BEGIN
 
-		DECLARE @stringFormated VARCHAR(MAX) = '''';
+        DECLARE @stringFormated VARCHAR(MAX) = '''';
 
-		SELECT  @stringFormated = @stringFormated + '' - '' + CASE WHEN B.identifier IS NULL THEN A.Value WHEN @lang = 0 THEN C.TagEs WHEN @lang = 2 THEN C.TagPt ELSE C.TagEn END
-		FROM dbo.fn_RIASplitDelimited(@sip, ''_'') AS A 
-		LEFT JOIN sipDataIdentifier AS B ON A.Value = B.dataId
-		LEFT JOIN ccGalateaIdentifiers AS C ON B.identifier = C.Description
-		WHERE Value <> ''''
+        SELECT  @stringFormated = @stringFormated + '' - '' + CASE WHEN B.identifier IS NULL THEN A.Value WHEN @lang = 0 THEN C.TagEs WHEN @lang = 2 THEN C.TagPt ELSE C.TagEn END
+        FROM dbo.fn_RIASplitDelimited(@sip, ''_'') AS A 
+        LEFT JOIN sipDataIdentifier AS B ON A.Value = B.dataId
+        LEFT JOIN ccGalateaIdentifiers AS C ON B.identifier = C.Description
+        WHERE Value <> ''''
 
-		SET @stringFormated = RIGHT(@stringFormated, LEN(@stringFormated)-3)
+        SET @stringFormated = RIGHT(@stringFormated, LEN(@stringFormated)-3)
 
-		RETURN @stringFormated
+        RETURN @stringFormated
 
-	END;
-		'
-		EXEC(@sql)
+    END;
+        '
+        EXEC(@sql)
 
 SET @process = '7 - ccsp_GalateaChangeHistory (Option 2) - SP Edited, to get new formats on dates and tags'
-		SET @sql = '
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
-	@option TINYINT,
-	@loginLst VARCHAR(max) = NULL,
-	@moduleWithOperation varchar(max) = NULL,
-	@operationDateIni SMALLDATETIME = NULL,
-	@operationDateFin SMALLDATETIME = NULL,
-	@top INT = 0
-	AS
-	SET NOCOUNT ON
+    @option TINYINT,
+    @loginLst VARCHAR(max) = NULL,
+    @moduleWithOperation varchar(max) = NULL,
+    @operationDateIni SMALLDATETIME = NULL,
+    @operationDateFin SMALLDATETIME = NULL,
+    @top INT = 0
+    AS
+    SET NOCOUNT ON
 
-	DECLARE @lang TINYINT
+    DECLARE @lang TINYINT
 
-	SELECT @lang = valor
-	FROM ccsettings
-	WHERE setting_id = 27
+    SELECT @lang = valor
+    FROM ccsettings
+    WHERE setting_id = 27
 
-	IF @option = 1 -- Catalogo de modulos
-	BEGIN
-		WITH Catalog AS(
-		SELECT m.ModuleId as module_id, o.OperationId as operationType, 
-		CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS mDescripcion, 
-		CASE @lang WHEN 0 THEN OpTagEs WHEN 2 THEN OpTagPt ELSE OpTagEn END AS oDescripcion
-		FROM ccGalateaOperations o WITH (INDEX (IX_ccGalateaOperations_Op))
-		JOIN ccGalateaModOpRelation r ON o.OperationId = r.OperationId
-		JOIN ccGalateaModules m WITH (INDEX (IX_ccGalateaModules_Mod)) ON r.ModuleId = m.ModuleId --WITH (INDEX (IX_ccGalateaModules_Mod))
+    IF @option = 1 -- Catalogo de modulos
+    BEGIN
+        WITH Catalog AS(
+        SELECT m.ModuleId as module_id, o.OperationId as operationType, 
+        CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS mDescripcion, 
+        CASE @lang WHEN 0 THEN OpTagEs WHEN 2 THEN OpTagPt ELSE OpTagEn END AS oDescripcion
+        FROM ccGalateaOperations o WITH (INDEX (IX_ccGalateaOperations_Op))
+        JOIN ccGalateaModOpRelation r ON o.OperationId = r.OperationId
+        JOIN ccGalateaModules m WITH (INDEX (IX_ccGalateaModules_Mod)) ON r.ModuleId = m.ModuleId --WITH (INDEX (IX_ccGalateaModules_Mod))
 
-		UNION
+        UNION
 
-		SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
+        SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
 
-		UNION
+        UNION
 
-		SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+        SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
 
-		UNION
+        UNION
 
-		SELECT ModuleId as module_id, 0, CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, 
-		CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
-		FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod))
+        SELECT ModuleId as module_id, 0, CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, 
+        CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod))
 
-		UNION
+        UNION
 
-		SELECT ModuleId as module_id, - 1 , CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, '' - ''
-		FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod)))
+        SELECT ModuleId as module_id, - 1 , CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, '' - ''
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod)))
 
-		SELECT module_id,operationType,mDescripcion,oDescripcion 
-		FROM Catalog
-		ORDER BY mDescripcion, oDescripcion
+        SELECT module_id,operationType,mDescripcion,oDescripcion 
+        FROM Catalog
+        ORDER BY mDescripcion, oDescripcion
 
-		RETURN (0)
-	END
+        RETURN (0)
+    END
 
-	IF @option = 2 -- Muestra informacion por filtros
-	BEGIN
+    IF @option = 2 -- Muestra informacion por filtros
+    BEGIN
 
-		declare @sql as nvarchar(max)
-		DECLARE @table TABLE(id int,value varchar(max))
-		declare @id int
-		declare @moduleId varchar(max)
-		declare @operationLst varchar(max)
-		declare @query varchar(max) = '' and (''
-		declare @value varchar(max)
-		declare @first int = 1
-		declare @pos int
+        declare @sql as nvarchar(max)
+        DECLARE @table TABLE(id int,value varchar(max))
+        declare @id int
+        declare @moduleId varchar(max)
+        declare @operationLst varchar(max)
+        declare @query varchar(max) = '' and (''
+        declare @value varchar(max)
+        declare @first int = 1
+        declare @pos int
 
-		insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
-		while exists(select * from @table)
-		begin
-			select top 1 @id = id, @value = value from @table
-			set @pos = charindex('':'', @value)
-			if(@pos <> 0)
-			begin
-				set @moduleId = substring(@value, 1, @pos-1)
-				set @operationLst = replace(substring(@value, @pos+1, len(@value)), ''-'', '','')
-				if(@first = 1)
-				begin
-					set @query = @query + ''l.module_id='' + @moduleId + '' and l.operationType in ('' + @operationLst + '')''
-					set @first = 0
-				end
-				else
-				begin
-					set @query = @query + '' or l.module_id='' + @moduleId + '' and l.operationType in ('' + @operationLst + '')''
-				end
-			end
+        insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
+        while exists(select * from @table)
+        begin
+            select top 1 @id = id, @value = value from @table
+            set @pos = charindex('':'', @value)
+            if(@pos <> 0)
+            begin
+                set @moduleId = substring(@value, 1, @pos-1)
+                set @operationLst = replace(substring(@value, @pos+1, len(@value)), ''-'', '','')
+                if(@first = 1)
+                begin
+                    set @query = @query + ''l.module_id='' + @moduleId + '' and l.operationType in ('' + @operationLst + '')''
+                    set @first = 0
+                end
+                else
+                begin
+                    set @query = @query + '' or l.module_id='' + @moduleId + '' and l.operationType in ('' + @operationLst + '')''
+                end
+            end
 
-			delete @table where id = @id
-		end
-		set @query = @query + '')''
-
-
-		SET ROWCOUNT @top
-
-		set @sql =
-		''DECLARE @tableLogin TABLE(id int,value varchar(255))
-		insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
-
-		SELECT L.LogId as log_id, L.Area as areaName, L.ActivityDate as operationDate,
-		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN O.OpTagEs WHEN 2 THEN O.OpTagPt ELSE O.OpTagEn END operationType,
-		L.LOGIN,
-		CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN M.MTagEs WHEN 2 THEN M.MTagPt ELSE M.MTagEn END module_id,
-		CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
-		CASE WHEN i.description IS NULL THEN L.Identifier ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN i.TagEs WHEN 2 THEN i.TagPt ELSE i.TagEn END END +
-		CASE WHEN L.Identifier<>'''''''' AND L.Value<>'''''''' THEN '''': '''' ELSE '''''''' END +
-
-		CASE WHEN V.description IS NULL 
-			THEN 
-				CASE 
-					WHEN L.Identifier<>'''''''' AND (L.Identifier LIKE ''''COMMON_DELETE_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_ADD_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_DATE%'''')
-						THEN dbo.GetDateByLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
-					''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''OUT_SIP_IDENTIFIER'''' THEN dbo.GetSipLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
-			''ELSE L.value END
-			ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.TagEs WHEN 2 THEN v.TagPt ELSE v.TagEn END END AS value
-
-		FROM ccGalateaActivityLog L
-		JOIN ccGalateaModules M WITH (INDEX (IX_ccGalateaModules_Mod)) ON L.ModuleId = M.ModuleId
-		JOIN ccGalateaOperations O WITH (INDEX (IX_ccGalateaOperations_Op)) ON L.OperationId = O.OperationId
-		LEFT JOIN targetRecord t ON t.targetT = L.target
-		LEFT JOIN ccGalateaIdentifiers i ON i.Description = L.Identifier
-		LEFT JOIN ccGalateaIdentifiers v ON v.Description = L.Value
-		LEFT JOIN ccUsers CU ON CU.Login = L.login
-		WHERE 1=1 
-		AND
-		CU.TipoUser_id = 2''
-		+
-		case isnull(@loginLst, '''') when '''' then '''' else
-		'' AND L.LOGIN in (select value from @tableLogin) ''
-		END
-		+
-		case isnull(@moduleWithOperation, '''') when '''' then '''' else
-		@query
-		end
-		+ case ISNULL(@operationDateIni, '''') when '''' then '''' else
-		''AND L.ActivityDate >= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull('''''' + convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, -1, '''''' + convert(varchar(19), @operationDateIni, 121) + '''''') ELSE L.ActivityDate END ''
-		+ '' AND L.ActivityDate <= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull(''''''+ convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, 1, '''''' + convert(varchar(19), @operationDateFin, 121) + '''''') ELSE L.ActivityDate END''
-		end
-		+
-		'' ORDER BY L.ActivityDate DESC''
-		execute sp_executesql @sql
-		--print @sql
-	END
+            delete @table where id = @id
+        end
+        set @query = @query + '')''
 
 
-	SET NOCOUNT OFF
-		'
-		EXEC(@sql)
+        SET ROWCOUNT @top
+
+        set @sql =
+        ''DECLARE @tableLogin TABLE(id int,value varchar(255))
+        insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
+
+        SELECT L.LogId as log_id, L.Area as areaName, L.ActivityDate as operationDate,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN O.OpTagEs WHEN 2 THEN O.OpTagPt ELSE O.OpTagEn END operationType,
+        L.LOGIN,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN M.MTagEs WHEN 2 THEN M.MTagPt ELSE M.MTagEn END module_id,
+        CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
+        CASE WHEN i.description IS NULL THEN L.Identifier ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN i.TagEs WHEN 2 THEN i.TagPt ELSE i.TagEn END END +
+        CASE WHEN L.Identifier<>'''''''' AND L.Value<>'''''''' THEN '''': '''' ELSE '''''''' END +
+
+        CASE WHEN V.description IS NULL 
+            THEN 
+                CASE 
+                    WHEN L.Identifier<>'''''''' AND (L.Identifier LIKE ''''COMMON_DELETE_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_ADD_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_DATE%'''')
+                        THEN dbo.GetDateByLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+                    ''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''OUT_SIP_IDENTIFIER'''' THEN dbo.GetSipLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+            ''ELSE L.value END
+            ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.TagEs WHEN 2 THEN v.TagPt ELSE v.TagEn END END AS value
+
+        FROM ccGalateaActivityLog L
+        JOIN ccGalateaModules M WITH (INDEX (IX_ccGalateaModules_Mod)) ON L.ModuleId = M.ModuleId
+        JOIN ccGalateaOperations O WITH (INDEX (IX_ccGalateaOperations_Op)) ON L.OperationId = O.OperationId
+        LEFT JOIN targetRecord t ON t.targetT = L.target
+        LEFT JOIN ccGalateaIdentifiers i ON i.Description = L.Identifier
+        LEFT JOIN ccGalateaIdentifiers v ON v.Description = L.Value
+        LEFT JOIN ccUsers CU ON CU.Login = L.login
+        WHERE 1=1 
+        AND
+        CU.TipoUser_id = 2''
+        +
+        case isnull(@loginLst, '''') when '''' then '''' else
+        '' AND L.LOGIN in (select value from @tableLogin) ''
+        END
+        +
+        case isnull(@moduleWithOperation, '''') when '''' then '''' else
+        @query
+        end
+        + case ISNULL(@operationDateIni, '''') when '''' then '''' else
+        ''AND L.ActivityDate >= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull('''''' + convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, -1, '''''' + convert(varchar(19), @operationDateIni, 121) + '''''') ELSE L.ActivityDate END ''
+        + '' AND L.ActivityDate <= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull(''''''+ convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, 1, '''''' + convert(varchar(19), @operationDateFin, 121) + '''''') ELSE L.ActivityDate END''
+        end
+        +
+        '' ORDER BY L.ActivityDate DESC''
+        execute sp_executesql @sql
+        --print @sql
+    END
+
+
+    SET NOCOUNT OFF
+        '
+        EXEC(@sql)
 
 SET @process = '8.0 - DROP SP InsertLogAdminGalatea'
 SET @sql = '
-	if exists (select * from sys.procedures where name = ''InsertLogAdminGalatea'')
+    if exists (select * from sys.procedures where name = ''InsertLogAdminGalatea'')
     begin
         DROP PROCEDURE InsertLogAdminGalatea;
     end
@@ -817,20 +817,20 @@ SET @sql = '
 EXEC(@sql);
 
 SET @process = '8 - InsertLogAdminGalatea - New SP, created to get the difference of one record table after after be updated'
-		SET @sql = '
+        SET @sql = '
 CREATE procedure [dbo].[InsertLogAdminGalatea]
-	@action int 
-	,@tableName VARCHAR(255)
-	,@columnNameId VARCHAR(255)
-	,@valueId VARCHAR(255)
-	,@userId int
-	,@tableTemp varchar(255)=null
+    @action int 
+    ,@tableName VARCHAR(255)
+    ,@columnNameId VARCHAR(255)
+    ,@valueId VARCHAR(255)
+    ,@userId int
+    ,@tableTemp varchar(255)=null
 as
 SET NOCOUNT ON;
 
     -- Insert statements for procedure here
-	declare @sql varchar(max),@sql2 varchar(max)
-	DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+    declare @sql varchar(max),@sql2 varchar(max)
+    DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
 if @action =1 begin --Antes del cambio
 
  set @sql=''
@@ -841,41 +841,41 @@ exec(@sql)
 
 end
 else if @action=2 begin
-	DECLARE @object_name SYSNAME, @object_id INT;
-	DECLARE @columns nVARCHAR(max) = '''',@columns2 nVARCHAR(max) = '''',@columns3 nVARCHAR(max) = ''''
-	, @pivot NVARCHAR(max) = ''''
-	,@maxLength int=4000
+    DECLARE @object_name SYSNAME, @object_id INT;
+    DECLARE @columns nVARCHAR(max) = '''',@columns2 nVARCHAR(max) = '''',@columns3 nVARCHAR(max) = ''''
+    , @pivot NVARCHAR(max) = ''''
+    ,@maxLength int=4000
 SELECT @object_name = ''['' + s.name + ''].['' + o.name + '']'', @object_id = o.object_id
 FROM sys.objects AS o WITH (NOWAIT)
 INNER JOIN sys.schemas AS s WITH (NOWAIT) ON o.schema_id = s.schema_id
 WHERE o.name = @tableName
-	AND o.type = ''U''
-	AND o.is_ms_shipped = 0;
+    AND o.type = ''U''
+    AND o.is_ms_shipped = 0;
 
 SELECT --case when A.AreaName=B.AreaName then 1 else 0 end AreaName
 @columns3 =@columns3+  case when len( @columns2)>@maxLength and len( @columns2)>=@maxLength then '',case when A.['' + c.name + '']=B.['' + c.name + '']then''''''''else convert(varchar(300),A.['' + c.name + '']) end '' 
-	+ c.name else '''' end
-	,@columns2 =@columns2+  case when len( @columns)>=@maxLength and len( @columns2)<=@maxLength  then '',case when A.['' + c.name + '']=B.['' + c.name + '']then''''''''else convert(varchar(300),A.['' + c.name + '']) end '' 
-	+ c.name else '''' end
-	,@columns =@columns+  case when len( @columns)<=@maxLength then '',case when A.['' + c.name + '']=B.['' + c.name + '']then''''''''else convert(varchar(300),A.['' + c.name + '']) end '' 
-	+ c.name else '''' end
+    + c.name else '''' end
+    ,@columns2 =@columns2+  case when len( @columns)>=@maxLength and len( @columns2)<=@maxLength  then '',case when A.['' + c.name + '']=B.['' + c.name + '']then''''''''else convert(varchar(300),A.['' + c.name + '']) end '' 
+    + c.name else '''' end
+    ,@columns =@columns+  case when len( @columns)<=@maxLength then '',case when A.['' + c.name + '']=B.['' + c.name + '']then''''''''else convert(varchar(300),A.['' + c.name + '']) end '' 
+    + c.name else '''' end
 
-	
+    
 
-	,@pivot=case when len( @pivot)<=@maxLength then @pivot+'',['' + c.name + '']'' else '''' end
+    ,@pivot=case when len( @pivot)<=@maxLength then @pivot+'',['' + c.name + '']'' else '''' end
 
 FROM sys.columns AS c WITH (NOWAIT)
 INNER JOIN sys.types AS tp WITH (NOWAIT) ON c.user_type_id = tp.user_type_id
 LEFT JOIN sys.computed_columns AS cc WITH (NOWAIT) ON c.object_id = cc.object_id
-	AND c.column_id = cc.column_id
+    AND c.column_id = cc.column_id
 LEFT JOIN sys.default_constraints AS dc WITH (NOWAIT) ON c.default_object_id != 0
-	AND c.object_id = dc.parent_object_id
-	AND c.column_id = dc.parent_column_id
+    AND c.object_id = dc.parent_object_id
+    AND c.column_id = dc.parent_column_id
 LEFT JOIN sys.identity_columns AS ic WITH (NOWAIT) ON c.is_identity = 1
-	AND c.object_id = ic.object_id
-	AND c.column_id = ic.column_id
+    AND c.object_id = ic.object_id
+    AND c.column_id = ic.column_id
 WHERE c.object_id = @object_id
-	AND c.name <> ''rowguid''
+    AND c.name <> ''rowguid''
 ORDER BY c.column_id
 
 
@@ -889,7 +889,7 @@ set @insertTable='' select A.columnInfo,A.dataInfo,isnull(B.Identifiers,''''''''
 left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName and B.tableName=''''''+@tableName+''''''''
 
 if @tableTemp is not null and @tableTemp<>'''' begin
-	set @insertTable= ''insert into ''+@tableTemp +'' ''+	@insertTable
+    set @insertTable= ''insert into ''+@tableTemp +'' ''+   @insertTable
 end
 
 
@@ -901,10 +901,10 @@ print(
 '')
 print( @columns3+ '' FROM '' + @tableName + '' A
 inner join '' + @tableNameTmp + '' B on A.['' + @columnNameId + '']=B.['' + 
-	@columnNameId + '']
+    @columnNameId + '']
 ),
 rowInfo as (
-	SELECT columnInfo,dataInfo
+    SELECT columnInfo,dataInfo
 FROM
 (
   SELECT ''+@pivot+'' FROM result
@@ -922,10 +922,10 @@ exec(
 '';WITH result AS (
 SELECT '' + @columns  + @columns2+@columns3+ '' FROM '' + @tableName + '' A
 inner join '' + @tableNameTmp + '' B on A.['' + @columnNameId + '']=B.['' + 
-	@columnNameId + '']
+    @columnNameId + '']
 ),
 rowInfo as (
-	SELECT columnInfo,dataInfo
+    SELECT columnInfo,dataInfo
 FROM
 (
   SELECT ''+@pivot+'' FROM result
@@ -944,282 +944,282 @@ end
 else if @action =3 begin
 
  set @sql=''
-IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp	
+IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp  
 
 --print(@sql)
 exec(@sql)
 end
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
 SET @process = '9 - ccsp_GalateaAreas (option 3, 4 y 5)- SP Edited, edited to add records to Activity Log, (Crear, Editar, Eliminar Area)'
-		SET @sql = '
+        SET @sql = '
 ALTER procedure [dbo].[ccsp_GalateaAreas] 
-	@option int = 2,
-	@IDArea smallint = 0,
-	@Descripcion varchar(40) = NULL,
-	@maxMails smallint = 3,
-	@maxChats smallint = 3,
-	@maxTweets smallint = 3,
-	@defCampaing smallint = 0,
-	@movesfromArea bit = 0,
-	@userId int = NULL,
-	@groupAreas varchar (MAX) = NULL
+    @option int = 2,
+    @IDArea smallint = 0,
+    @Descripcion varchar(40) = NULL,
+    @maxMails smallint = 3,
+    @maxChats smallint = 3,
+    @maxTweets smallint = 3,
+    @defCampaing smallint = 0,
+    @movesfromArea bit = 0,
+    @userId int = NULL,
+    @groupAreas varchar (MAX) = NULL
 AS
 
 SET NOCOUNT ON;
-	
-	declare @opt int = @option -1
-	
-	DECLARE @userLogin as varchar(40);
-	SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @userId);
+    
+    declare @opt int = @option -1
+    
+    DECLARE @userLogin as varchar(40);
+    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @userId);
 
-	if @option = 1 --Superuser info
-	begin
-		create table #campsIds(
-			id int,
-			cadena varchar(max)
-		)
-			
-		declare @sql varchar(max),@idPivots varchar(max),@idConcat varchar(max)
-			
-		set @idPivots =''''
-		set @idConcat=''''
-			
-		select @idPivots=@idPivots+Id+'','',
-			@idConcat=@idConcat+''case when ''+id+'' is not null then convert(varchar(max),''+ id+'') + '''','''' else '''''''' end + 
-			''
-			from (
-			select distinct ''[''+convert(varchar(max),cam_id)+'']'' as Id from ccCamps   
-			)x
-			
-		set @idPivots =SUBSTRING(@idPivots,0,len(@idPivots))
-		set @idConcat =SUBSTRING(@idConcat,0,len(@idConcat)-7)
-			
-		set @sql=''
-			select IDArea,''+@idConcat+'' from 
-			(	select IDArea, cam_id from ccCamps) as T
-			PIVOT (
-			max(cam_id) for cam_id in (''+@idPivots+'') ) as P''
+    if @option = 1 --Superuser info
+    begin
+        create table #campsIds(
+            id int,
+            cadena varchar(max)
+        )
+            
+        declare @sql varchar(max),@idPivots varchar(max),@idConcat varchar(max)
+            
+        set @idPivots =''''
+        set @idConcat=''''
+            
+        select @idPivots=@idPivots+Id+'','',
+            @idConcat=@idConcat+''case when ''+id+'' is not null then convert(varchar(max),''+ id+'') + '''','''' else '''''''' end + 
+            ''
+            from (
+            select distinct ''[''+convert(varchar(max),cam_id)+'']'' as Id from ccCamps   
+            )x
+            
+        set @idPivots =SUBSTRING(@idPivots,0,len(@idPivots))
+        set @idConcat =SUBSTRING(@idConcat,0,len(@idConcat)-7)
+            
+        set @sql=''
+            select IDArea,''+@idConcat+'' from 
+            (   select IDArea, cam_id from ccCamps) as T
+            PIVOT (
+            max(cam_id) for cam_id in (''+@idPivots+'') ) as P''
 
-		insert into #campsIds
-		exec(@sql)
-			
-		select a.IDArea Id, 
-			a.AreaName Name, 
-			a.StatusArea Status, 
-			a.maxMails Mails, 
-			a.maxChats Chats, 
-			a.maxTweets Tweets, 
-			a.CreateDate as CreateDate,			
-			ISNULL(b.cadena, 0) as CampaignIds  
-		from ccRIACat_Areas a --Falta el datetime 
-		left join #campsIds b on a.IDArea = b.id
+        insert into #campsIds
+        exec(@sql)
+            
+        select a.IDArea Id, 
+            a.AreaName Name, 
+            a.StatusArea Status, 
+            a.maxMails Mails, 
+            a.maxChats Chats, 
+            a.maxTweets Tweets, 
+            a.CreateDate as CreateDate,         
+            ISNULL(b.cadena, 0) as CampaignIds  
+        from ccRIACat_Areas a --Falta el datetime 
+        left join #campsIds b on a.IDArea = b.id
 
-		drop table #campsIds
-	end
-	if @option = 2 -- Select de las areas
-	begin
-		IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
-		Create table #Areas(
-			IDArea smallint,
-			AreaName varchar(MAX),
-			maxChats tinyint ,
-			maxMails tinyint ,
-			users int,
-			admins int,
-			camps int,
-			acds int,
-			maxTweets tinyint
-		)
-		insert into #Areas
-		EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@defCampaing=@defCampaing
-		select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
-		from #Areas a
-		inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
-	end
-	if @option = 3 -- Insert new area
-	begin
-	IF OBJECT_ID(''tempdb..#InsertAreas'') IS NOT NULL DROP TABLE #InsertAreas;
-		Create table #InsertAreas(
-			result int,
-			idAreas decimal
-		)
-		insert into #InsertAreas
-		EXEC ccsp_RIA_ABCAreas 
-			@option = @opt,
-			@IDArea=@IDArea,
-			@Descripcion=@Descripcion,
-			@maxMails=@maxMails,
-			@maxChats=@maxChats,
-			@maxTweets=@maxTweets,
-			@defCampaing=@defCampaing
-		if (select result from #InsertAreas) = 1
-			begin
+        drop table #campsIds
+    end
+    if @option = 2 -- Select de las areas
+    begin
+        IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
+        Create table #Areas(
+            IDArea smallint,
+            AreaName varchar(MAX),
+            maxChats tinyint ,
+            maxMails tinyint ,
+            users int,
+            admins int,
+            camps int,
+            acds int,
+            maxTweets tinyint
+        )
+        insert into #Areas
+        EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@defCampaing=@defCampaing
+        select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
+        from #Areas a
+        inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
+    end
+    if @option = 3 -- Insert new area
+    begin
+    IF OBJECT_ID(''tempdb..#InsertAreas'') IS NOT NULL DROP TABLE #InsertAreas;
+        Create table #InsertAreas(
+            result int,
+            idAreas decimal
+        )
+        insert into #InsertAreas
+        EXEC ccsp_RIA_ABCAreas 
+            @option = @opt,
+            @IDArea=@IDArea,
+            @Descripcion=@Descripcion,
+            @maxMails=@maxMails,
+            @maxChats=@maxChats,
+            @maxTweets=@maxTweets,
+            @defCampaing=@defCampaing
+        if (select result from #InsertAreas) = 1
+            begin
 
-				--INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD AL CREAR UN AREA
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@Descripcion, getDate(), @userLogin, 17, 3, '''', '''', @Descripcion);
+                --INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD AL CREAR UN AREA
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@Descripcion, getDate(), @userLogin, 17, 3, '''', '''', @Descripcion);
 
-				if(@movesfromArea = 1) begin
-					Update ccUsers set IDArea = (select idAreas from #InsertAreas), status = 1 where User_id = @userId
-				end
-			end
-		Select * from #InsertAreas
-	end
-	if @option = 4 -- Delete Areas
-	begin
-		IF OBJECT_ID(''tempdb..#AreasDelete'') IS NOT NULL DROP TABLE #AreasDelete;
-		SELECT value As IDArea into #AreasDelete FROM fn_RIASplitDelimited(@groupAreas, '','')
-		
-		
-		if (exists(select IDArea from ccUsers where IDArea=(Select top 1 IDArea from #AreasDelete)) or exists(select IDArea from ccCamps where IDArea = (Select top 1 IDArea from #AreasDelete))
-		  or exists(select IDArea from ccInbound where IDArea=(Select top 1 IDArea from #AreasDelete))) and (select valor from ccSettings where setting_id=95)<>1
-		BEGIN
-			Select -1 as result
-		END
-		ELSE
-		BEGIN
-			declare @DWorkGroups as varchar(500)
-			insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-			select user_id,cam_id,prioridad,skill,rel_id,IDWG
-			from ccCampsAgente
-			where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+                if(@movesfromArea = 1) begin
+                    Update ccUsers set IDArea = (select idAreas from #InsertAreas), status = 1 where User_id = @userId
+                end
+            end
+        Select * from #InsertAreas
+    end
+    if @option = 4 -- Delete Areas
+    begin
+        IF OBJECT_ID(''tempdb..#AreasDelete'') IS NOT NULL DROP TABLE #AreasDelete;
+        SELECT value As IDArea into #AreasDelete FROM fn_RIASplitDelimited(@groupAreas, '','')
+        
+        
+        if (exists(select IDArea from ccUsers where IDArea=(Select top 1 IDArea from #AreasDelete)) or exists(select IDArea from ccCamps where IDArea = (Select top 1 IDArea from #AreasDelete))
+          or exists(select IDArea from ccInbound where IDArea=(Select top 1 IDArea from #AreasDelete))) and (select valor from ccSettings where setting_id=95)<>1
+        BEGIN
+            Select -1 as result
+        END
+        ELSE
+        BEGIN
+            declare @DWorkGroups as varchar(500)
+            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+            select user_id,cam_id,prioridad,skill,rel_id,IDWG
+            from ccCampsAgente
+            where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-			insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
-			select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
-			from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+            insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+            select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
+            from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-			Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
-			Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+            Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+            Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-			insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
-			select user_id,cam_id,tipo,IDWG,monitored
-			from ccSupervisorCam
-			where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+            insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+            select user_id,cam_id,tipo,IDWG,monitored
+            from ccSupervisorCam
+            where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-			Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+            Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-			delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
-			delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
-			delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
-			where cam_id in (select cam_id from ccCamps where IDArea in (Select IDArea from #AreasDelete)))
+            delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+            delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+            delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
+            where cam_id in (select cam_id from ccCamps where IDArea in (Select IDArea from #AreasDelete)))
 
-			Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
-			Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+            Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+            Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
 
-			Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
-			Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
-			Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+            Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+            Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+            Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
 
-			select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
-			Delete from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+            select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+            Delete from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
 
-			if (select valor from ccSettings where setting_id=95)=1
-			begin
-			Update ccInbound set IDArea=NULL, status=0 where IDArea in (Select IDArea from #AreasDelete)
-			Update ccCamps set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
-			Update ccUsers set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
-			end
+            if (select valor from ccSettings where setting_id=95)=1
+            begin
+            Update ccInbound set IDArea=NULL, status=0 where IDArea in (Select IDArea from #AreasDelete)
+            Update ccCamps set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+            Update ccUsers set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+            end
 
-			Update ccRIACat_Areas set StatusArea=0 where IDArea in (Select IDArea from #AreasDelete)
+            Update ccRIACat_Areas set StatusArea=0 where IDArea in (Select IDArea from #AreasDelete)
 
-			--INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA AREA ELIMINADA
-			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-			SELECT AreaName, getDate(), @userLogin, 19, 3, '''', '''', AreaName
-			FROM ccRIACat_Areas 
-			WHERE IDArea in (Select IDArea from #AreasDelete);
+            --INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA AREA ELIMINADA
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            SELECT AreaName, getDate(), @userLogin, 19, 3, '''', '''', AreaName
+            FROM ccRIACat_Areas 
+            WHERE IDArea in (Select IDArea from #AreasDelete);
 
-			select 1 as result
-		END
-	end
-	if @option = 5 -- update Areas
-	begin
-		if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion and IDArea <> @IDArea)
-			begin
-				select -1 as result
-				return
-			end
-		else
-			begin
+            select 1 as result
+        END
+    end
+    if @option = 5 -- update Areas
+    begin
+        if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion and IDArea <> @IDArea)
+            begin
+                select -1 as result
+                return
+            end
+        else
+            begin
 
-				--INICIO - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
+                --INICIO - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
 
-				DECLARE @PrevDescription AS VARCHAR(50);
-				DECLARE @SelectedArea AS VARCHAR(10) = CAST(@IDArea AS varchar(10));
+                DECLARE @PrevDescription AS VARCHAR(50);
+                DECLARE @SelectedArea AS VARCHAR(10) = CAST(@IDArea AS varchar(10));
 
-				SELECT @PrevDescription = AreaName
-				FROM ccRIACat_Areas 
-				WHERE IDArea = @IDArea;
+                SELECT @PrevDescription = AreaName
+                FROM ccRIACat_Areas 
+                WHERE IDArea = @IDArea;
 
-				EXEC InsertLogAdminGalatea @action=1, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
+                EXEC InsertLogAdminGalatea @action=1, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
 
-				DECLARE @AreasTable TABLE 
-				(
-					columnInfo VARCHAR(255),
-					dataInfo VARCHAR(255),
-					identifierInfo VARCHAR(255)
-				)
+                DECLARE @AreasTable TABLE 
+                (
+                    columnInfo VARCHAR(255),
+                    dataInfo VARCHAR(255),
+                    identifierInfo VARCHAR(255)
+                )
 
-				update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),defCampaing=isnull(@defCampaing, 0) where IDArea=@IDArea
+                update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),defCampaing=isnull(@defCampaing, 0) where IDArea=@IDArea
 
-				INSERT INTO @AreasTable EXEC InsertLogAdminGalatea @action=2, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId;
+                INSERT INTO @AreasTable EXEC InsertLogAdminGalatea @action=2, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId;
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				SELECT 
-					CASE WHEN AT.identifierInfo IS NOT NULL THEN
-						CASE 
-							WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
-					ELSE '''' END,
-					getDate(), 
-					@userLogin, 
-					18, 
-					3, 
-					AT.identifierInfo,
-					CASE WHEN AT.identifierInfo IS NOT NULL THEN
-						CASE 
-							WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @Descripcion
-							WHEN AT.identifierInfo = ''T&SET_CAMPAIGN'' THEN 
-								CASE 
-									WHEN @defCampaing IS NOT NULL AND @defCampaing <> 0 THEN
-										(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @defCampaing)
-									ELSE ''T&COMMON_NONE'' END
-							ELSE AT.dataInfo END
-					ELSE '''' END, 
-					CASE WHEN AT.identifierInfo IS NOT NULL THEN
-						CASE 
-							WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
-					ELSE '''' END
-				FROM @AreasTable AS AT;
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                SELECT 
+                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
+                        CASE 
+                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
+                    ELSE '''' END,
+                    getDate(), 
+                    @userLogin, 
+                    18, 
+                    3, 
+                    AT.identifierInfo,
+                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
+                        CASE 
+                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @Descripcion
+                            WHEN AT.identifierInfo = ''T&SET_CAMPAIGN'' THEN 
+                                CASE 
+                                    WHEN @defCampaing IS NOT NULL AND @defCampaing <> 0 THEN
+                                        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @defCampaing)
+                                    ELSE ''T&COMMON_NONE'' END
+                            ELSE AT.dataInfo END
+                    ELSE '''' END, 
+                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
+                        CASE 
+                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
+                    ELSE '''' END
+                FROM @AreasTable AS AT;
 
-				EXEC InsertLogAdminGalatea @action=3, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
+                EXEC InsertLogAdminGalatea @action=3, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
 
-				--FIN - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
+                --FIN - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
 
-			end
-		if @maxChats is not null
-			begin
-				Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
-			end
-		if @movesfromArea = 1
-		Begin
-			Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
-		End
-		select 1 as result
-	end
+            end
+        if @maxChats is not null
+            begin
+                Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
+            end
+        if @movesfromArea = 1
+        Begin
+            Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
+        End
+        select 1 as result
+    end
 SET NOCOUNT ON;
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '10 - ccsp_GalateaAdminWorkgroups (Option 5 y 6) - SP Edited, edited to add records to Activity Log, (Crear, Eliminar Grupo de trabajo)'
-		SET @sql = '
+        SET @process = '10 - ccsp_GalateaAdminWorkgroups (Option 5 y 6) - SP Edited, edited to add records to Activity Log, (Crear, Eliminar Grupo de trabajo)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaAdminWorkgroups] 
-	@Option AS SMALLINT,
-	@AdminId AS INT = 0,
-	@WorkgroupId AS INT = 0,
-	@idArea AS INT = NULL,
-	@Descripcion AS varchar(40) = null,
-	@groupList as varchar (MAX) = NULL
+    @Option AS SMALLINT,
+    @AdminId AS INT = 0,
+    @WorkgroupId AS INT = 0,
+    @idArea AS INT = NULL,
+    @Descripcion AS varchar(40) = null,
+    @groupList as varchar (MAX) = NULL
 
 AS
 declare @users as int
@@ -1228,280 +1228,280 @@ declare @sql as varchar(max)
 
 BEGIN
 
-	DECLARE @userLogin AS VARCHAR(40) = '''';
-	DECLARE @areaName AS VARCHAR(40) = '''';
+    DECLARE @userLogin AS VARCHAR(40) = '''';
+    DECLARE @areaName AS VARCHAR(40) = '''';
 
-	IF @Option = 1
-	BEGIN 
-		if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
-		BEGIN
-			select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
-			from ccRIACat_WorkGroup wg
-			where StatusWorkGroup = 1
-		END
+    IF @Option = 1
+    BEGIN 
+        if exists (select * from ccUsers_Roles where User_id = @AdminId and Rol_id = (select Rol_id from ccRoles where Level = 7))
+        BEGIN
+            select  CAST(wg.IDWG as int)  as Id, wg.WGName Name, wg.StatusWorkGroup Status
+            from ccRIACat_WorkGroup wg
+            where StatusWorkGroup = 1
+        END
 
-		ELSE
-		BEGIN
-			SELECT @AdminId = ISNULL(@AdminId, 0)			
-		
-			SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
-			JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
-			WHERE User_id = @AdminId
-		END		
-					
-	END
-	IF @Option = 2
-	BEGIN 
-		SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)			
-		
-		SELECT CAST(wg.IDWG AS INT) AS Id,
-				WGName Name,
-				StatusWorkGroup Status  
-		FROM 
-		ccRIACat_WorkGroup wg 
-		WHERE IDWG = @WorkgroupId
-					
-	END
+        ELSE
+        BEGIN
+            SELECT @AdminId = ISNULL(@AdminId, 0)           
+        
+            SELECT CAST(wg.IDWG AS INT) AS Id, WGName Name, StatusWorkGroup Status  FROM ccRIAWorkGroupUsers wgu
+            JOIN  ccRIACat_WorkGroup wg ON wg.IDWG = wgu.IDWG
+            WHERE User_id = @AdminId
+        END     
+                    
+    END
+    IF @Option = 2
+    BEGIN 
+        SELECT @WorkgroupId = ISNULL(@WorkgroupId, 0)           
+        
+        SELECT CAST(wg.IDWG AS INT) AS Id,
+                WGName Name,
+                StatusWorkGroup Status  
+        FROM 
+        ccRIACat_WorkGroup wg 
+        WHERE IDWG = @WorkgroupId
+                    
+    END
 
-	IF @Option = 3 --Lista de wg 
-	BEGIN 
-	
-		SELECT cast(IDWG as int) Id, WGName as Name
-		FROM ccRIACat_WorkGroup
-		WHERE StatusWorkGroup =1
-					
-	END
+    IF @Option = 3 --Lista de wg 
+    BEGIN 
+    
+        SELECT cast(IDWG as int) Id, WGName as Name
+        FROM ccRIACat_WorkGroup
+        WHERE StatusWorkGroup =1
+                    
+    END
 
-	IF @Option = 4 --Lista de wg por area
-	BEGIN 
-		SELECT @idArea = ISNULL(@idArea, 0)	
+    IF @Option = 4 --Lista de wg por area
+    BEGIN 
+        SELECT @idArea = ISNULL(@idArea, 0) 
 
-		SELECT CAST(IDWG as int) IDWG 
-		FROM 
-		ccRIAAreaWorkGroup
-		WHERE IDArea = @idArea
-					
-	END
+        SELECT CAST(IDWG as int) IDWG 
+        FROM 
+        ccRIAAreaWorkGroup
+        WHERE IDArea = @idArea
+                    
+    END
 
-	IF @Option = 5 --Delete WG
-	BEGIN
-		--revisar tablas con relacion de grupos de trabajo
-		IF OBJECT_ID(''tempdb..#WGDelete'') IS NOT NULL DROP TABLE #WGDelete;
-		SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, '','')
+    IF @Option = 5 --Delete WG
+    BEGIN
+        --revisar tablas con relacion de grupos de trabajo
+        IF OBJECT_ID(''tempdb..#WGDelete'') IS NOT NULL DROP TABLE #WGDelete;
+        SELECT value As IDwg into #WGDelete FROM fn_RIASplitDelimited(@groupList, '','')
 
-		SELECT @camps=count(IdCampEsp) 
-		FROM ccRIACampEspWG 
-		where IDWG in  (select IDwg from #WGDelete)
+        SELECT @camps=count(IdCampEsp) 
+        FROM ccRIACampEspWG 
+        where IDWG in  (select IDwg from #WGDelete)
 
-		SELECT @users=count(User_id) 
-		FROM ccRIAWorkGroupUsers 
-		where IDWG in (select IDwg from #WGDelete)
+        SELECT @users=count(User_id) 
+        FROM ccRIAWorkGroupUsers 
+        where IDWG in (select IDwg from #WGDelete)
 
-		if @users>0 or @camps >0 
-		begin
-			select -1
-		end
-		else
-		begin
-			Delete from ccRIAAreaWorkGroup where IDWG in (select IDwg from #WGDelete)
-			Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG in (select IDwg from #WGDelete)
+        if @users>0 or @camps >0 
+        begin
+            select -1
+        end
+        else
+        begin
+            Delete from ccRIAAreaWorkGroup where IDWG in (select IDwg from #WGDelete)
+            Update ccRIACat_WorkGroup set StatusWorkGroup = 0 where IDWG in (select IDwg from #WGDelete)
 
-			SET @userLogin = (SELECT [Login] from ccUsers WHERE User_id = @AdminId);
-			SET @areaName = (SELECT [AreaName] from ccRIACat_Areas WHERE IDArea = @IDArea);
+            SET @userLogin = (SELECT [Login] from ccUsers WHERE User_id = @AdminId);
+            SET @areaName = (SELECT [AreaName] from ccRIACat_Areas WHERE IDArea = @IDArea);
 
-			IF (@userLogin <> '''' AND @areaName <> '''')
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				SELECT @areaName, getDate(), @userLogin, 21, 3, '''', '''', WGName
-				FROM ccRIACat_WorkGroup 
-				WHERE IDWG in (Select IDwg from #WGDelete);
+            IF (@userLogin <> '''' AND @areaName <> '''')
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+                SELECT @areaName, getDate(), @userLogin, 21, 3, '''', '''', WGName
+                FROM ccRIACat_WorkGroup 
+                WHERE IDWG in (Select IDwg from #WGDelete);
 
-			select 1
-		end
-		
+            select 1
+        end
+        
 
-	END
+    END
 
-	if @option = 6 -- Verifica si existe el grupo
-		 begin
-		  	select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
-			 then 1 else 0 end
-		 
-		 	if isnull(@IDArea,0)=0
-			 begin
-				select @WorkgroupId
-				return(0)
-			 end
+    if @option = 6 -- Verifica si existe el grupo
+         begin
+            select @WorkgroupId = case when exists(select WGName from ccRIACat_WorkGroup where StatusWorkGroup=1 and WGName=@Descripcion)
+             then 1 else 0 end
+         
+            if isnull(@IDArea,0)=0
+             begin
+                select @WorkgroupId
+                return(0)
+             end
 
-		 	if @WorkgroupId=1
-			 begin
-			 set @WorkgroupId = -1
-				select @WorkgroupId
-				return(0)
-			 end
+            if @WorkgroupId=1
+             begin
+             set @WorkgroupId = -1
+                select @WorkgroupId
+                return(0)
+             end
 
-			insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
+            insert into ccRIACat_WorkGroup (WGName) values (@Descripcion)
 
-			if @@rowcount = 1
-				select @WorkgroupId = scope_identity()
+            if @@rowcount = 1
+                select @WorkgroupId = scope_identity()
 
-			SET @userLogin = (SELECT [Login] from ccUsers WHERE User_id = @AdminId);
-			SET @areaName = (SELECT [AreaName] from ccRIACat_Areas WHERE IDArea = @IDArea);
-			IF (@userLogin <> '''' AND @areaName <> '''')
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 20, 3, '''', '''', @Descripcion);
+            SET @userLogin = (SELECT [Login] from ccUsers WHERE User_id = @AdminId);
+            SET @areaName = (SELECT [AreaName] from ccRIACat_Areas WHERE IDArea = @IDArea);
+            IF (@userLogin <> '''' AND @areaName <> '''')
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 20, 3, '''', '''', @Descripcion);
 
-			insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
-			select @WorkgroupId
-			return(0)
-		 end
+            insert into ccRIAAreaWorkGroup (IDWG, IDArea) values (@WorkgroupId, @IDArea)
+            select @WorkgroupId
+            return(0)
+         end
 
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
-		SET @process = '11 - ccsp_GalateaCreateUser - SP Edited, edited to add records to Activity Log, (Crear Agente / Administrador)'
-		SET @sql = '
+        SET @process = '11 - ccsp_GalateaCreateUser - SP Edited, edited to add records to Activity Log, (Crear Agente / Administrador)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
-					@UserId int,
-					@Login varchar(40),
-					@Nombres varchar(45),
-					@LastName varchar(45),
-					@NombreOpcionalExtra varchar(45),-- para espaÒol es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
-					@Password varchar(200),
-					@Sexo bit,
-					@canChangeStatus bit,
-					@AreaId int,
-					@UserType tinyint,
-					@AdminId int
-					as
+                    @UserId int,
+                    @Login varchar(40),
+                    @Nombres varchar(45),
+                    @LastName varchar(45),
+                    @NombreOpcionalExtra varchar(45),-- para espa√±ol es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+                    @Password varchar(200),
+                    @Sexo bit,
+                    @canChangeStatus bit,
+                    @AreaId int,
+                    @UserType tinyint,
+                    @AdminId int
+                    as
 
-					Declare @ApellidoMaterno varchar(45)
-					Declare @ApellidoPaterno varchar(45)
+                    Declare @ApellidoMaterno varchar(45)
+                    Declare @ApellidoPaterno varchar(45)
 
-					--Obtiene el idioma de de Centerware
-					Declare @lenguageXion varchar
-					select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espaÒol, 1 para ingles, 2 para portugues
+                    --Obtiene el idioma de de Centerware
+                    Declare @lenguageXion varchar
+                    select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espa√±ol, 1 para ingles, 2 para portugues
 
-					--se acondiciona los apellidos con el nombre opcional dependiendo del idioma
-						if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para espaÒol y portugues
-						begin
-							set @ApellidoPaterno = @LastName
-							set @ApellidoMaterno = @NombreOpcionalExtra
-						end
-						else-- es idioma ingles
-						begin
-							set @ApellidoPaterno = @NombreOpcionalExtra 
-							set @ApellidoMaterno = @LastName
-						end
+                    --se acondiciona los apellidos con el nombre opcional dependiendo del idioma
+                        if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para espa√±ol y portugues
+                        begin
+                            set @ApellidoPaterno = @LastName
+                            set @ApellidoMaterno = @NombreOpcionalExtra
+                        end
+                        else-- es idioma ingles
+                        begin
+                            set @ApellidoPaterno = @NombreOpcionalExtra 
+                            set @ApellidoMaterno = @LastName
+                        end
 
-					-- validaciones 
-						if exists(select Login from ccUsers where Login=@Login)
-						begin
-						select -1 as ResponseCode--,''Login en Uso''
-						return(0)
-						end
+                    -- validaciones 
+                        if exists(select Login from ccUsers where Login=@Login)
+                        begin
+                        select -1 as ResponseCode--,''Login en Uso''
+                        return(0)
+                        end
 
-						if exists(select Login from ccUsers_Consulta where Login = @Login)
-						begin
-						select -4 as ResponseCode -- ''Login en Uso aunque el usuario ya se halla borrado de la base de datos'' -- quiza falta la validacion cuando el usuario ya se ha borrado pero mediante borrado logico
-						return(0)
-						end
+                        if exists(select Login from ccUsers_Consulta where Login = @Login)
+                        begin
+                        select -4 as ResponseCode -- ''Login en Uso aunque el usuario ya se halla borrado de la base de datos'' -- quiza falta la validacion cuando el usuario ya se ha borrado pero mediante borrado logico
+                        return(0)
+                        end
 
-						if exists(select Nombres from ccUsers where Nombres=@Nombres
-						and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
-						begin
-						select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
-						return(0)
-						end
-
-
-					--insert
-					IF( select isnull(max(user_id),0) from ccusers) > 32700
-					BEGIN
-						set @UserId = null
-						SELECT @UserId = d.rn FROM (SELECT d.rn, ROW_NUMBER() OVER (ORDER BY d.rn) AS recID
-						FROM (SELECT ROW_NUMBER() OVER (ORDER BY user_id) AS rn FROM ccusers) AS d
-						LEFT JOIN ccusers AS s ON s.user_id = d.rn WHERE s.user_id IS NULL ) AS d
-						INNER JOIN ( SELECT  user_id, ROW_NUMBER() OVER (ORDER BY user_id DESC) AS recID
-						FROM ccusers) AS w ON w.recID = d.recID
-
-						if @UserId is null
-						begin
-						select -3 as ResponseCode --Error_when_inserting_user
-						return(0)
-						end
-
-						set identity_insert ccusers on
-						insert into ccUsers(user_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id, Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
-						select @UserId, @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
-						set identity_insert ccusers off
-
-						delete ccMenuUser where id_User = @UserId
-						delete ccRIAUserRole where user_id = @UserId
-
-						exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
-
-						--Insert Agent into ccRIAAgentsPermissions
-						IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
-						BEGIN
-						IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
-						BEGIN 
-							INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
-							VALUES (@UserId, 0, 0, 1)
-						END
-						END
-
-					END
-					ELSE
-					BEGIN
-						insert into ccUsers(Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
-						Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
-						select @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
-						1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
-
-						if @@rowcount=1
-						select @UserId=scope_identity()
-						else
-						begin
-						select -2--insert Error
-						return(0)
-						end
-
-						--INSERT INTO ACTIVITY LOG, CREATE AGENT
-						DECLARE @areaName AS VARCHAR(40);
-						DECLARE @userLogin AS VARCHAR(40);
-						SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId);
-
-						IF(@AreaId <> 0) BEGIN
-							SET @areaName = (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId);
-						END
-
-						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-						VALUES (CASE WHEN @AreaID = 0 THEN NULL ELSE @areaName END, getDate(), @userLogin, CASE WHEN @UserType = 1 THEN 22 ELSE 29 END, 3, '''', '''', @Login);
-
-					END
-						insert into ccMenuUser(id_User,id_Menu,type) select @UserId,id_Menu,1 from ccRIARoleMenu where Role_id=3
-						insert into ccMenuUser(id_User,id_Menu,type)values(@UserId,40,1)
-						insert into ccRIAUserRole(User_id,Role_id,type)values(@UserId,3,1)
-						--Menu para roles RepotsRia
-						exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
-
-						--Insert Agent into ccRIAAgentsPermissions
-						IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
-						BEGIN
-						IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
-						BEGIN 
-							INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
-							VALUES (@UserId, 0, 0, 1)
-						END 
-						END
-					select 200 as ResponseCode -- indica que se agrego correctamente un nuevo usuario
-		'
-		EXEC(@sql)
+                        if exists(select Nombres from ccUsers where Nombres=@Nombres
+                        and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+                        begin
+                        select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+                        return(0)
+                        end
 
 
-		SET @process = '12 - ccsp_GalateaManageWG (Option 1, 2, 3, 4 y 5 ) - SP Edited, edited to add records to Activity Log, (Asignar/Desasignar Agente/Administrador/CampaÒa, Cambiar Agente/Administrador de Area)'
-		SET @sql = '
+                    --insert
+                    IF( select isnull(max(user_id),0) from ccusers) > 32700
+                    BEGIN
+                        set @UserId = null
+                        SELECT @UserId = d.rn FROM (SELECT d.rn, ROW_NUMBER() OVER (ORDER BY d.rn) AS recID
+                        FROM (SELECT ROW_NUMBER() OVER (ORDER BY user_id) AS rn FROM ccusers) AS d
+                        LEFT JOIN ccusers AS s ON s.user_id = d.rn WHERE s.user_id IS NULL ) AS d
+                        INNER JOIN ( SELECT  user_id, ROW_NUMBER() OVER (ORDER BY user_id DESC) AS recID
+                        FROM ccusers) AS w ON w.recID = d.recID
+
+                        if @UserId is null
+                        begin
+                        select -3 as ResponseCode --Error_when_inserting_user
+                        return(0)
+                        end
+
+                        set identity_insert ccusers on
+                        insert into ccUsers(user_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id, Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
+                        select @UserId, @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
+                        set identity_insert ccusers off
+
+                        delete ccMenuUser where id_User = @UserId
+                        delete ccRIAUserRole where user_id = @UserId
+
+                        exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+                        --Insert Agent into ccRIAAgentsPermissions
+                        IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
+                        BEGIN
+                        IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
+                        BEGIN 
+                            INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
+                            VALUES (@UserId, 0, 0, 1)
+                        END
+                        END
+
+                    END
+                    ELSE
+                    BEGIN
+                        insert into ccUsers(Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
+                        Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
+                        select @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
+                        1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
+
+                        if @@rowcount=1
+                        select @UserId=scope_identity()
+                        else
+                        begin
+                        select -2--insert Error
+                        return(0)
+                        end
+
+                        --INSERT INTO ACTIVITY LOG, CREATE AGENT
+                        DECLARE @areaName AS VARCHAR(40);
+                        DECLARE @userLogin AS VARCHAR(40);
+                        SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId);
+
+                        IF(@AreaId <> 0) BEGIN
+                            SET @areaName = (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId);
+                        END
+
+                        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+                        VALUES (CASE WHEN @AreaID = 0 THEN NULL ELSE @areaName END, getDate(), @userLogin, CASE WHEN @UserType = 1 THEN 22 ELSE 29 END, 3, '''', '''', @Login);
+
+                    END
+                        insert into ccMenuUser(id_User,id_Menu,type) select @UserId,id_Menu,1 from ccRIARoleMenu where Role_id=3
+                        insert into ccMenuUser(id_User,id_Menu,type)values(@UserId,40,1)
+                        insert into ccRIAUserRole(User_id,Role_id,type)values(@UserId,3,1)
+                        --Menu para roles RepotsRia
+                        exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+                        --Insert Agent into ccRIAAgentsPermissions
+                        IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
+                        BEGIN
+                        IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
+                        BEGIN 
+                            INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
+                            VALUES (@UserId, 0, 0, 1)
+                        END 
+                        END
+                    select 200 as ResponseCode -- indica que se agrego correctamente un nuevo usuario
+        '
+        EXEC(@sql)
+
+
+        SET @process = '12 - ccsp_GalateaManageWG (Option 1, 2, 3, 4 y 5 ) - SP Edited, edited to add records to Activity Log, (Asignar/Desasignar Agente/Administrador/Campa√±a, Cambiar Agente/Administrador de Area)'
+        SET @sql = '
 ALTER PROCedure [dbo].[ccsp_GalateaManageWG]
 @option smallint,
 @IDWG smallint,
@@ -1551,11 +1551,11 @@ select @count = count(user_id) from #UsersList
 
 IF(@option = 1 OR @option = 2) BEGIN
 
-	DECLARE @areaName VARCHAr(50);
-	DECLARE @userLogin VARCHAR(40);
-	DECLARE @workGroupName VARCHAR(40);
-	DECLARE @userToAffect VARCHAR(40);
-	DECLARE @campName VARCHAR(40);
+    DECLARE @areaName VARCHAr(50);
+    DECLARE @userLogin VARCHAR(40);
+    DECLARE @workGroupName VARCHAR(40);
+    DECLARE @userToAffect VARCHAR(40);
+    DECLARE @campName VARCHAR(40);
 
 END
 
@@ -1581,12 +1581,12 @@ if @option = 1 -- Insert Agente-Supervisor in WorkGroup
                          begin
                             insert into ccRIAWorkGroupUsers(IDWG, User_id) values(@IDWG,@user)
 
-							--INSERT LOG RECORD (ASSIGN AGENT)
-							SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
-							SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-							SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+                            --INSERT LOG RECORD (ASSIGN AGENT)
+                            SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
 
-							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 23, 3, '''', @userToAffect, @workGroupName);
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 23, 3, '''', @userToAffect, @workGroupName);
 
                             select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
                             --insert skill media
@@ -1612,12 +1612,12 @@ if @option = 1 -- Insert Agente-Supervisor in WorkGroup
                     -- -Supervisor  @Type in (2,6)
                     insert into ccRIAWorkGroupUsers(IDWG, User_id) values (@IDWG, @user)
 
-					--INSERT LOG RECORD (ASSIGN ADMIN)
-					SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
-					SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-					SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+                    --INSERT LOG RECORD (ASSIGN ADMIN)
+                    SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                    SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
 
-					INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 30, 3, '''', @userToAffect, @workGroupName);
+                    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 30, 3, '''', @userToAffect, @workGroupName);
 
                     select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
                     if not exists(select * from ccRIAWorkGroupUsersConsulta where IDWG=@IDWG and User_id=@user) begin
@@ -1680,13 +1680,13 @@ if @option = 2 -- Delete Agent-Supervisor from WorkGroup
             if @Type = 1 -- Agente
              begin
 
-				--INSERT LOG RECORD (UNASSIGN AGENT)
+                --INSERT LOG RECORD (UNASSIGN AGENT)
 
-				SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
-				SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-				SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 24, 3, '''', @userToAffect, @workGroupName);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 24, 3, '''', @userToAffect, @workGroupName);
 
                 select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
                 insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG   from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
@@ -1707,13 +1707,13 @@ if @option = 2 -- Delete Agent-Supervisor from WorkGroup
              else if @Type in(2, 6) -- Supervisor
              begin
 
-				--INSERT LOG RECORD (UNASSIGN ADMIN)
+                --INSERT LOG RECORD (UNASSIGN ADMIN)
 
-				SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
-				SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-				SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 31, 3, '''', @userToAffect, @workGroupName);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 31, 3, '''', @userToAffect, @workGroupName);
 
                 select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
                 insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
@@ -1757,22 +1757,22 @@ if @option = 3 -- Insert WorkGroup in Camp or ACDGroup
                                 insert into ccRIACampEspWGConsulta (IDWG, Tipo, IdCampEsp) values (@IDWG, @Type, @IDCampEsp)
                             end   
 
-							SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-							
-							IF((SELECT [Tipo] FROM ccRIACampEspWG WHERE IdCampEsp = @IDCampEsp) = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
-							ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
-							 
-							INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-							VALUES (
-								(SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
-								getDate(), 
-								@userLogin, 
-								36, 
-								3, 
-								'''', 
-								@campName,
-								(SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
-							);
+                            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            
+                            IF(@Type = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
+                            ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
+                             
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            VALUES (
+                                (SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
+                                getDate(), 
+                                @userLogin, 
+                                36, 
+                                3, 
+                                '''', 
+                                @campName,
+                                (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
+                            );
 
                             exec ccsp_RIACalcula_WGPriority @IDWG, @IDCampEsp, @Type
                             if @Type in (0, 1) -- ACDGroup
@@ -1872,22 +1872,22 @@ select @count = count(CampEsp) from #CampsInOutList
 
         --Delete WokGroup from ACD or Camp 
 
-		SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
-							
-		IF((SELECT [Tipo] FROM ccRIACampEspWG WHERE IdCampEsp = @IDCampEsp) = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
-		ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
-							 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		VALUES (
-			(SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
-			getDate(), 
-			@userLogin, 
-			59, 
-			3, 
-			'''', 
-			@campName,
-			(SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
-		);
+        SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            
+        IF(@Type = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
+        ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
+                             
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        VALUES (
+            (SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
+            getDate(), 
+            @userLogin, 
+            59, 
+            3, 
+            '''', 
+            @campName,
+            (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
+        );
 
 
          set @sql = ''exec ccsp_RIA_ABCWorkGroups @option=7,@IDWG=''+cast(@IDWG as varchar(4))+'',@IDCampEsp=''''''+cast(@IDCampEsp as varchar(4))+'''''',@Type=''+cast(@Type as varchar(4))+''''
@@ -1918,11 +1918,11 @@ select @Type = TipoUser_id from ccUsers where User_id = @user_id
             end
             else
 
-				SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
-				SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				VALUES (@areaName, getDate(), @userLogin, 27, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                VALUES (@areaName, getDate(), @userLogin, 27, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
 
                 update ccUsers set IDArea = @idNewArea where user_id = @user_id
         end
@@ -1939,11 +1939,11 @@ select @Type = TipoUser_id from ccUsers where User_id = @user_id
         end
         else
 
-			SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
-			SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+            SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
+            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
 
-			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-			VALUES (@areaName, getDate(), @userLogin, 34, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+            VALUES (@areaName, getDate(), @userLogin, 34, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
 
             update ccUsers set IDArea = @idNewArea where user_id = @user_id
     end
@@ -1955,18 +1955,18 @@ select @Type = TipoUser_id from ccUsers where User_id = @user_id
 end
 
 set nocount off
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
-		SET @process = '13 - ccsp_GalateaUpdateUser - SP Edited, edited to add records to Activity Log, (Editar Agente/Administrador)'
-		SET @sql = '
+        SET @process = '13 - ccsp_GalateaUpdateUser - SP Edited, edited to add records to Activity Log, (Editar Agente/Administrador)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
 @UserId int,
 @Login varchar(40),
 @Nombres varchar(45),
 @LastName varchar(45),
-@NombreOpcionalExtra varchar(45),-- para espaÒol es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+@NombreOpcionalExtra varchar(45),-- para espa√±ol es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
 @Sexo bit,
 @canChangeStatus bit,
 @AdminId int,
@@ -1979,150 +1979,150 @@ Declare @userIdOnDb int
 Declare @LoginOnDb varchar(40)
 --Obtiene el idioma de Centerware
 Declare @lenguageXion varchar
-select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espaÒol, 1 para ingles, 2 para portugues
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espa√±ol, 1 para ingles, 2 para portugues
 
 --se acondiciona los apellidos con el nombre opcional dependiendo del idioma
-	if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para espaÒol y portugues
-		begin
-			set @ApellidoPaterno = @LastName
-			set @ApellidoMaterno = @NombreOpcionalExtra
-		end
-	else-- es idioma ingles
-		begin
-			set @ApellidoPaterno = @NombreOpcionalExtra 
-			set @ApellidoMaterno = @LastName
-		end
+    if @lenguageXion= ''0'' or @lenguageXion= ''2'' --para espa√±ol y portugues
+        begin
+            set @ApellidoPaterno = @LastName
+            set @ApellidoMaterno = @NombreOpcionalExtra
+        end
+    else-- es idioma ingles
+        begin
+            set @ApellidoPaterno = @NombreOpcionalExtra 
+            set @ApellidoMaterno = @LastName
+        end
 
--- validaciones	
-	if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
-		begin
-		select -5 as ResponseCode--,''el usuario no existe''
-		return(0)
-		end
+-- validaciones 
+    if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+        begin
+        select -5 as ResponseCode--,''el usuario no existe''
+        return(0)
+        end
 
   if exists(select Nombres from ccUsers where Nombres=@Nombres
   and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
     begin
 
-		select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
-	  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+        select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
 
-	  	select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
-	  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+        select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
 
-	  if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
-		begin
-			select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
-			return(0)
-		end
+      if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+        begin
+            select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+            return(0)
+        end
     end
 
 --update and insert into activity log a record for each modified property
 
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
 
-	Update ccUsers set 
-	Nombres=@Nombres,
-	ApellidoPaterno=@ApellidoPaterno,
-	ApellidoMaterno=@ApellidoMaterno,
-	Sexo=@Sexo,
-	canChangeStatus=@canChangeStatus
-	where User_id=@UserId
+    Update ccUsers set 
+    Nombres=@Nombres,
+    ApellidoPaterno=@ApellidoPaterno,
+    ApellidoMaterno=@ApellidoMaterno,
+    Sexo=@Sexo,
+    canChangeStatus=@canChangeStatus
+    where User_id=@UserId
 
-	DECLARE @CCUsersTable TABLE 
-	(
-		columnInfo VARCHAR(255),
-		dataInfo VARCHAR(255),
-		identifierInfo VARCHAR(255)
-	)
+    DECLARE @CCUsersTable TABLE 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
 
-	INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
+    INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
 
-	INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-	SELECT 
-		(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
-		getDate(), 
-		(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
-		CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
-		3, 
-		CUT.identifierInfo,
-		CASE WHEN CUT.identifierInfo IS NOT NULL THEN
-			CASE 
-				WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
-				ELSE CUT.dataInfo END
-		ELSE '''' END, 
-		(SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
-	FROM @CCUsersTable AS CUT;
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+        CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
+        3, 
+        CUT.identifierInfo,
+        CASE WHEN CUT.identifierInfo IS NOT NULL THEN
+            CASE 
+                WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
+                ELSE CUT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+    FROM @CCUsersTable AS CUT;
 
-	EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
+    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
 
 select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
-		SET @process = '14 - ccsp_GalateaUpdatePassword - SP Edited, edited to add records to Activity Log, (Cambiar contraseÒa Agente/Administrador)'
-		SET @sql = '
+        SET @process = '14 - ccsp_GalateaUpdatePassword - SP Edited, edited to add records to Activity Log, (Cambiar contrase√±a Agente/Administrador)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdatePassword]
-		@UserId smallint,
-		@Login varchar(40),
-		@Password varchar(33),
-		@AdminId int,
-		@AreaId int
-		as
-	
-		-- validaciones	
-			if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
-				begin
-					select -5 as ResponseCode--el usuario no existe
-					return(0)
-				end
+        @UserId smallint,
+        @Login varchar(40),
+        @Password varchar(33),
+        @AdminId int,
+        @AreaId int
+        as
+    
+        -- validaciones 
+            if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+                begin
+                    select -5 as ResponseCode--el usuario no existe
+                    return(0)
+                end
 
-			if  @Password <> '''' 
-				begin 
-					declare @date datetime = GETDATE()
-					declare @setting207 int = (select valor from ccSettings where setting_id=207)
+            if  @Password <> '''' 
+                begin 
+                    declare @date datetime = GETDATE()
+                    declare @setting207 int = (select valor from ccSettings where setting_id=207)
 
-					if (@setting207 = 1 and exists(select Password from ccPasswordHistory where Password=@Password and User_id=@UserId))
-					 begin
-						select -7 as ResponseCode -- La contraseÒa ya existe
-					 end
-					else
-					 begin
-						Update ccUsers set Password=@Password, LastPasswordChange = @date, isBlocked=0, LoginAttempts=0 where User_id=@UserId	and Login=@Login
+                    if (@setting207 = 1 and exists(select Password from ccPasswordHistory where Password=@Password and User_id=@UserId))
+                     begin
+                        select -7 as ResponseCode -- La contrase√±a ya existe
+                     end
+                    else
+                     begin
+                        Update ccUsers set Password=@Password, LastPasswordChange = @date, isBlocked=0, LoginAttempts=0 where User_id=@UserId   and Login=@Login
 
-						--BEGIN Insert record to activity log - Change Password
-						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-						SELECT 
-							(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
-							getDate(), 
-							(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
-							CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId AND Login = @Login) = 1 THEN 26 ELSE 33 END, 
-							3, 
-							'''',
-							'''', 
-							(SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
-						--END Insert record to activity log - Change Password
-				
-						if @setting207 = 1
-						 begin
-							insert into ccPasswordHistory(User_id, Password, PasswdDate)
-							values (@UserId, @Password, @date)
-						 end
+                        --BEGIN Insert record to activity log - Change Password
+                        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                        SELECT 
+                            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+                            getDate(), 
+                            (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                            CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId AND Login = @Login) = 1 THEN 26 ELSE 33 END, 
+                            3, 
+                            '''',
+                            '''', 
+                            (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+                        --END Insert record to activity log - Change Password
+                
+                        if @setting207 = 1
+                         begin
+                            insert into ccPasswordHistory(User_id, Password, PasswdDate)
+                            values (@UserId, @Password, @date)
+                         end
 
-						select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
-					 end
-				end
-			else
-				begin 
-					select -6 as ResponseCode -- la nueva contraseÒa es vacia
-				end
-		'
-		EXEC(@sql)
+                        select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+                     end
+                end
+            else
+                begin 
+                    select -6 as ResponseCode -- la nueva contrase√±a es vacia
+                end
+        '
+        EXEC(@sql)
 
 
-		SET @process = '15 - ccsp_RIAManageAreas - SP Edited, edited to add records to Activity Log, (Eliminar Agente/administrador)'
-		SET @sql = '
+        SET @process = '15 - ccsp_RIAManageAreas - SP Edited, edited to add records to Activity Log, (Eliminar Agente/administrador)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAManageAreas]
 @option tinyint,
 @IDArea smallint = 0,
@@ -2287,20 +2287,20 @@ if @option in (2, 9, 10, 11)
                     
     if @option <> 11 BEGIN
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		VALUES (
-			(SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccUsers AS CCU WHERE CCU.User_id = @DeleteUserId AND CCRA.IDArea = CCU.IDArea),
-			getDate(),
-			(SELECT [Login] FROM ccUsers WHERE User_id = @AdminId),
-			CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @DeleteUserId) = 1 THEN 28 ELSE 35 END,
-			3,
-			'''', 
-			'''',
-			(SELECT [Login] FROM ccUsers WHERE User_id = @DeleteUserId)
-		);
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        VALUES (
+            (SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccUsers AS CCU WHERE CCU.User_id = @DeleteUserId AND CCRA.IDArea = CCU.IDArea),
+            getDate(),
+            (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId),
+            CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @DeleteUserId) = 1 THEN 28 ELSE 35 END,
+            3,
+            '''', 
+            '''',
+            (SELECT [Login] FROM ccUsers WHERE User_id = @DeleteUserId)
+        );
 
         update ccUsers set IDArea = null where user_id = @DeleteUserId
-	END
+    END
                     
     select @UserWG, @Type
     return(0)
@@ -2418,11 +2418,11 @@ if @option = 8 --Delete ACDGroup area
 
 return(0)
 set nocount off
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '16 - ccsp_RIA_ABCACDGroups (Option 2) - SP Edited, edited to add records to Activity Log, (Crear camapaÒa de entrada (Llamada/WhatsApp))'
-		SET @sql = '
+        SET @process = '16 - ccsp_RIA_ABCACDGroups (Option 2) - SP Edited, edited to add records to Activity Log, (Crear camapa√±a de entrada (Llamada/WhatsApp))'
+        SET @sql = '
 ALTER procedure [dbo].[ccsp_RIA_ABCACDGroups]
 @option smallint,
 @userid int,
@@ -2438,193 +2438,193 @@ declare @new_inbound_id smallint, @graph_id smallint
 
 if @option = 0 -- all acd
  begin
-	 select acd.inbound_id, acd.descripcion, isnull(acd.idarea,0) as idarea,
-	isnull(areas.areaname,'''') as areaname
-	 from ccinbound as acd with(nolock)
-	 left join dbo.ccriacat_areas as areas with(nolock) on acd.idarea = areas.idarea
-	 return(0)
+     select acd.inbound_id, acd.descripcion, isnull(acd.idarea,0) as idarea,
+    isnull(areas.areaname,'''') as areaname
+     from ccinbound as acd with(nolock)
+     left join dbo.ccriacat_areas as areas with(nolock) on acd.idarea = areas.idarea
+     return(0)
  end
 
 if @option = 1 -- select acd
  begin
-	 select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id,
-	 prefijo as Prefijo
-	 from ccinbound a1 
-	  inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)
-	  inner join ccriagraphics a3 on (a2.graphic_id=a3.graphic_id)
-	 where a3.type_id = 1 and a1.inbound_id = (cast(@inbound_id as int))
-	 order by descripcion
-	 return(0)
+     select a1.inbound_id, a1.descripcion, a3.frame, a1.showcalifwnd, a1.starttimeronhangup, isnull(a1.idarea,0), isnull(a1.cam_id,0) cam_id,
+     prefijo as Prefijo
+     from ccinbound a1 
+      inner join ccriainboundgraph a2 on (a1.inbound_id=a2.inbound_id)
+      inner join ccriagraphics a3 on (a2.graphic_id=a3.graphic_id)
+     where a3.type_id = 1 and a1.inbound_id = (cast(@inbound_id as int))
+     order by descripcion
+     return(0)
  end
 
 if @option = 2 -- insert
  begin
  
-	if exists (select descripcion from ccinbound where descripcion = @descripcion and status = 1)
-	 begin
-			select -1--, ''nombre en uso''
-			
-			return(0)
-	 end
-	
-	if @idarea = 0
-	set @idarea = null
+    if exists (select descripcion from ccinbound where descripcion = @descripcion and status = 1)
+     begin
+            select -1--, ''nombre en uso''
+            
+            return(0)
+     end
+    
+    if @idarea = 0
+    set @idarea = null
 
 
-	declare @pref int
-	select  @pref = valor from ccSettings where setting_id = 201
-	if (@pref = 0)
-		set @Prefijo = ''''
-	
-	DECLARE @tempDesc VARCHAR(40);
-	SET @tempDesc = CASE WHEN @MediaType = 5 THEN @descripcion ELSE @descripcion+''Tmp'' END;
+    declare @pref int
+    select  @pref = valor from ccSettings where setting_id = 201
+    if (@pref = 0)
+        set @Prefijo = ''''
+    
+    DECLARE @tempDesc VARCHAR(40);
+    SET @tempDesc = CASE WHEN @MediaType = 5 THEN @descripcion ELSE @descripcion+''Tmp'' END;
 
-	insert into ccinbound (descripcion, starttimeronhangup, idarea, showcalifwnd,prefijo)
-	select @tempDesc, 1, @idarea,case when exists(select calif_id from cctipocalif) then 1 else 0 end
-	 , @Prefijo
-	
-	if @@rowcount = 1
-		select @new_inbound_id = inbound_id from ccinbound where descripcion = @tempDesc and status = 1
+    insert into ccinbound (descripcion, starttimeronhangup, idarea, showcalifwnd,prefijo)
+    select @tempDesc, 1, @idarea,case when exists(select calif_id from cctipocalif) then 1 else 0 end
+     , @Prefijo
+    
+    if @@rowcount = 1
+        select @new_inbound_id = inbound_id from ccinbound where descripcion = @tempDesc and status = 1
 
-	else
-	 begin
-		select -2 -- Error al insertar
-		return(0)
-	 end
+    else
+     begin
+        select -2 -- Error al insertar
+        return(0)
+     end
 
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @new_inbound_id, @userId= @userid
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @new_inbound_id, @userId= @userid
 
-	 UPDATE ccInbound SET 
-		descripcion = @descripcion,
-		ShowCalifWnd = case when exists(select calif_id from cctipocalif) then 1 else 0 end
-	WHERE Inbound_id = @new_inbound_id
+     UPDATE ccInbound SET 
+        descripcion = @descripcion,
+        ShowCalifWnd = case when exists(select calif_id from cctipocalif) then 1 else 0 end
+    WHERE Inbound_id = @new_inbound_id
 
-	IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-	Create table #ccInboundTable 
-	(
-		columnInfo VARCHAR(255),
-		dataInfo VARCHAR(255),
-		identifierInfo VARCHAR(255)
-	)
+    Create table #ccInboundTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
 
-	EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @new_inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';	
-	
-	INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-	SELECT 
-		(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-		getDate(), 
-		(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		CASE WHEN @MediaType = 5 THEN 40 ELSE 60 END, 
-		3, 
-		CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
-				CASE WHEN @MediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
-			 WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN ''''
-		ELSE
-			CCIT.identifierInfo
-		END,
-		CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-			CASE 
-				WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
-					CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-				WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN ''''
-				ELSE CCIT.dataInfo END
-		ELSE '''' END, 
-		(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @new_inbound_id)
-	FROM #ccInboundTable AS CCIT;
+    EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @new_inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';    
+    
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        CASE WHEN @MediaType = 5 THEN 40 ELSE 60 END, 
+        3, 
+        CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
+                CASE WHEN @MediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
+             WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN ''''
+        ELSE
+            CCIT.identifierInfo
+        END,
+        CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+            CASE 
+                WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
+                    CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN ''''
+                ELSE CCIT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @new_inbound_id)
+    FROM #ccInboundTable AS CCIT;
 
-	EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @new_inbound_id, @userId = @userid;
+    EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @new_inbound_id, @userId = @userid;
 
-	IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-	insert into cccalifcamp (calif_id, cam_id, tipo) select calif_id, @new_inbound_id, 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
+    insert into cccalifcamp (calif_id, cam_id, tipo) select calif_id, @new_inbound_id, 0 from cctipocalif where CanReprogram=0 and Calif_Status = 1
 
-	if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like ''%\Default%''))
-	 begin
-		insert into ccInboundMsgs (msg_id, inbound_id, orden, type, queue)
-		select msg_id, @new_inbound_id, 0, cast(substring(msgFile, 19,3) as integer),0 from ccMsgFiles where msgFile like ''%\Default%''
-	 end
+    if not exists (select msg_id from ccInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccMsgFiles where msgFile like ''%\Default%''))
+     begin
+        insert into ccInboundMsgs (msg_id, inbound_id, orden, type, queue)
+        select msg_id, @new_inbound_id, 0, cast(substring(msgFile, 19,3) as integer),0 from ccMsgFiles where msgFile like ''%\Default%''
+     end
 
-	if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like ''%\Default%''))
-	 begin
-		insert into ccRIAChatInboundMsgs (msg_id, inbound_id, orden, type)
-		select msg_id, @new_inbound_id, 0, cast(substring(Descripcion, 19,3) as integer) from ccRIAChatMsg where Descripcion like ''%\Default%''
-	 end
+    if not exists (select msg_id from ccRIAChatInboundMsgs where Inbound_id=@new_inbound_id and msg_id in (select msg_id from ccRIAChatMsg where Descripcion like ''%\Default%''))
+     begin
+        insert into ccRIAChatInboundMsgs (msg_id, inbound_id, orden, type)
+        select msg_id, @new_inbound_id, 0, cast(substring(Descripcion, 19,3) as integer) from ccRIAChatMsg where Descripcion like ''%\Default%''
+     end
 
-	if not exists(select frame from ccriagraphics where frame = @frame and type_id = 1)
-	 insert into ccriagraphics (frame,type_id) values (@frame,1)
-	
-	 select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
-	 
-	 insert into ccriainboundgraph(Inbound_id,graphic_id) values(@new_inbound_id,@graph_id)
-	 select @new_inbound_id
-	 return(0) 
+    if not exists(select frame from ccriagraphics where frame = @frame and type_id = 1)
+     insert into ccriagraphics (frame,type_id) values (@frame,1)
+    
+     select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
+     
+     insert into ccriainboundgraph(Inbound_id,graphic_id) values(@new_inbound_id,@graph_id)
+     select @new_inbound_id
+     return(0) 
  end
 
 if @option = 3 -- update
  begin
-	 if not exists (select frame from ccriagraphics where frame=@frame and type_id=1)
-		insert into ccriagraphics (frame, type_id) values (@frame, 1)
+     if not exists (select frame from ccriagraphics where frame=@frame and type_id=1)
+        insert into ccriagraphics (frame, type_id) values (@frame, 1)
 
-	 select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
-	 update ccinbound set descripcion = @descripcion where inbound_id = (cast(@inbound_id as int))
-	 update ccriainboundgraph set graphic_id = @graph_id where inbound_id = (cast(@inbound_id as int))
-	 return(0)
+     select @graph_id = graphic_id from ccriagraphics where frame = @frame and type_id = 1
+     update ccinbound set descripcion = @descripcion where inbound_id = (cast(@inbound_id as int))
+     update ccriainboundgraph set graphic_id = @graph_id where inbound_id = (cast(@inbound_id as int))
+     return(0)
  end
 
 if @option = 4 -- delete
  begin
-	 delete cccalifcamp where cam_id = @inbound_id and tipo = 0
-	 delete ccinboundhorarios where inbound_id = @inbound_id
-	 delete ccriainboundgraph where inbound_id = @inbound_id
-	 delete ccInboundMsgs where inbound_id = @inbound_id
-	 delete ccRIAChatInboundMsgs where inbound_id = @inbound_id
-	 delete ccinbound where inbound_id = @inbound_id
-	 return(0)
+     delete cccalifcamp where cam_id = @inbound_id and tipo = 0
+     delete ccinboundhorarios where inbound_id = @inbound_id
+     delete ccriainboundgraph where inbound_id = @inbound_id
+     delete ccInboundMsgs where inbound_id = @inbound_id
+     delete ccRIAChatInboundMsgs where inbound_id = @inbound_id
+     delete ccinbound where inbound_id = @inbound_id
+     return(0)
  end
 
-if @option = 5 -- asignar campaÒa a ACD
+if @option = 5 -- asignar campa√±a a ACD
  begin
-	if not exists (select inbound_id from ccInbound where inbound_id=@inbound_id) or
-	 (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
-		not exists (select cam_id from ccCamps where cam_id=@descripcion))
-	 begin
-		select -3 -- CampaÒa o ACD invalido
-		return(0)
-	 end
-	
-	if @descripcion=0 begin
+    if not exists (select inbound_id from ccInbound where inbound_id=@inbound_id) or
+     (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+        not exists (select cam_id from ccCamps where cam_id=@descripcion))
+     begin
+        select -3 -- Campa√±a o ACD invalido
+        return(0)
+     end
+    
+    if @descripcion=0 begin
 
-		set @descripcion = null
-		--quitamos calificaciones relacionadas a la campaÒa
-		DELETE c FROM ccCalifCamp c
-		INNER JOIN ccTipoCalif ci ON  ci.calif_id=c.calif_id
-		Where c.cam_id=@inbound_id and ci.CanReprogram =1
-		--quitamos subcalificaciones relacionadas a la calificacion
-		DELETE rel FROM ccCalifCamp c
-		INNER JOIN ccTipoCalif ci ON  ci.calif_id=c.calif_id and tipo=0
-		inner join cctipoSubCalifRel rel on rel.calif_id=ci.calif_id and rel.tipoSubRel=1
-		left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-		Where c.cam_id=@inbound_id and sb.canReprogram=1
-				
-	end
-	
-	update ccInbound set cam_id = @descripcion where Inbound_id = @inbound_id
-		
-	if @@rowcount=0
-		select -4 -- Error al actualizar
+        set @descripcion = null
+        --quitamos calificaciones relacionadas a la campa√±a
+        DELETE c FROM ccCalifCamp c
+        INNER JOIN ccTipoCalif ci ON  ci.calif_id=c.calif_id
+        Where c.cam_id=@inbound_id and ci.CanReprogram =1
+        --quitamos subcalificaciones relacionadas a la calificacion
+        DELETE rel FROM ccCalifCamp c
+        INNER JOIN ccTipoCalif ci ON  ci.calif_id=c.calif_id and tipo=0
+        inner join cctipoSubCalifRel rel on rel.calif_id=ci.calif_id and rel.tipoSubRel=1
+        left join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
+        Where c.cam_id=@inbound_id and sb.canReprogram=1
+                
+    end
+    
+    update ccInbound set cam_id = @descripcion where Inbound_id = @inbound_id
+        
+    if @@rowcount=0
+        select -4 -- Error al actualizar
 
-	return(0)
+    return(0)
  end
 set nocount off
 
         
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
-		SET @process = '17 - ccsp_RIAUpdateEspecConfig - SP Edited, edited to add records to Activity Log, (Crear camapaÒa de entrada (Llamada/WhatsApp))'
-		SET @sql = '
+        SET @process = '17 - ccsp_RIAUpdateEspecConfig - SP Edited, edited to add records to Activity Log, (Crear camapa√±a de entrada (Llamada/WhatsApp))'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALLINT, 
                                                   @descripcion             VARCHAR(50)  = NULL, 
                                                   @Status                  TINYINT      = NULL, 
@@ -2657,14 +2657,14 @@ ALTER PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] @inbound_id              SMALL
                                                   @editableDtmf            BIT          = NULL, 
                                                   @prefijo                 VARCHAR(MAX) = NULL, 
                                                   @addDataCallBackReminder BIT          = NULL,
-												  @recordHold			   BIT     	    = NULL,
-                                                  @userId				   SMALLINT     = NULL, 
-                                                  @idArea				   SMALLINT     = NULL, 
-                                                  @isCreating			   BIT          = NULL
+                                                  @recordHold              BIT          = NULL,
+                                                  @userId                  SMALLINT     = NULL, 
+                                                  @idArea                  SMALLINT     = NULL, 
+                                                  @isCreating              BIT          = NULL
 AS
      SET NOCOUNT ON;
 
-	 EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
+     EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
 
      UPDATE ccInbound
        SET 
@@ -2703,52 +2703,52 @@ AS
            editableDtmf = ISNULL(@editableDtmf, editableDtmf), 
            prefijo = ISNULL(@prefijo, prefijo), 
            addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder),
-		   recordHold = ISNULL(@recordHold, recordHold)
+           recordHold = ISNULL(@recordHold, recordHold)
      WHERE inbound_id = @inbound_id;
 
-	 IF(@chat <> 5) BEGIN
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+     IF(@chat <> 5) BEGIN
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-		Create table #ccInboundTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
-	
-		IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
+        Create table #ccInboundTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
+    
+        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
 
-		DELETE FROM #ccInboundTable WHERE columnInfo IN (''bnocturno'');
+        DELETE FROM #ccInboundTable WHERE columnInfo IN (''bnocturno'');
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			60, 
-			3, 
-			CCIT.identifierInfo,
-			CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-				CASE 
-					WHEN CCIT.identifierInfo IN (''IN_DESTINATION_WAIT_TIME'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
-						CASE WHEN CCIT.dataInfo = ''VOICEMAIL'' 
-							THEN ''COMMON_VOICE_MAIL'' 
-							ELSE 
-								CASE WHEN CCIT.dataInfo IS NOT NULL THEN CCIT.dataInfo ELSE ''T&COMMON_NONE'' END 
-							END
-					WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'') THEN
-						CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					WHEN CCIT.identifierInfo = ''IN_CONDUCT_SURVEY'' THEN
-						CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
-					ELSE CCIT.dataInfo END
-			ELSE '''' END, 
-			(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inbound_id)
-		FROM #ccInboundTable AS CCIT;
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            60, 
+            3, 
+            CCIT.identifierInfo,
+            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+                CASE 
+                    WHEN CCIT.identifierInfo IN (''IN_DESTINATION_WAIT_TIME'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
+                        CASE WHEN CCIT.dataInfo = ''VOICEMAIL'' 
+                            THEN ''COMMON_VOICE_MAIL'' 
+                            ELSE 
+                                CASE WHEN CCIT.dataInfo IS NOT NULL THEN CCIT.dataInfo ELSE ''T&COMMON_NONE'' END 
+                            END
+                    WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'') THEN
+                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    WHEN CCIT.identifierInfo = ''IN_CONDUCT_SURVEY'' THEN
+                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
+                    ELSE CCIT.dataInfo END
+            ELSE '''' END, 
+            (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inbound_id)
+        FROM #ccInboundTable AS CCIT;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
 
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
-	END
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    END
 
      IF @chat = 5 
         BEGIN
@@ -2756,14 +2756,14 @@ AS
             BEGIN
                 INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) values (@chat, @descripcion, @inbound_id, (select status from ccInbound where Inbound_id = @inbound_id));
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				VALUES (
-					(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-					getDate(), 
-					(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-					40, 
-					3,'''','''', 
-					@descripcion);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                VALUES (
+                    (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+                    getDate(), 
+                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                    40, 
+                    3,'''','''', 
+                    @descripcion);
             END
         END;
 
@@ -2822,12 +2822,12 @@ AS
      SELECT 2;
      RETURN(0);
      SET NOCOUNT OFF;
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
 
-		SET @process = '18 - ccsp_GalateacampaingManager - SP Edited, the propertie MediaType was added to SP'
-		SET @sql = '
+        SET @process = '18 - ccsp_GalateacampaingManager - SP Edited, the propertie MediaType was added to SP'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateacampaingManager] 
 @option           SMALLINT, 
 @Activa           SMALLINT     = NULL, 
@@ -2839,26 +2839,26 @@ ALTER PROCEDURE [dbo].[ccsp_GalateacampaingManager]
 @Type             SMALLINT, 
 @userId           SMALLINT, 
 @moduleId         SMALLINT    = 49,
-@MediaType		  SMALLINT
+@MediaType        SMALLINT
 AS
     BEGIN
         IF(@option = 2)
             BEGIN
-				IF EXISTS(select top 1 cam_id from ccCamps where cam_descripcion = @Descripcion)
-				BEGIN
-					Select -1
-					return
-				END
+                IF EXISTS(select top 1 cam_id from ccCamps where cam_descripcion = @Descripcion)
+                BEGIN
+                    Select -1
+                    return
+                END
                 IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
                 CREATE TABLE #Campaing(IdCampaing INT)
 
-				 IF OBJECT_ID(''ccInboundTableTmp'') IS NOT NULL DROP TABLE ccInboundTableTmp
-				create TABLE ccInboundTableTmp  
-	(
-		columnInfo VARCHAR(255),
-		dataInfo VARCHAR(255),
-		identifierInfo VARCHAR(255)
-	)
+                 IF OBJECT_ID(''ccInboundTableTmp'') IS NOT NULL DROP TABLE ccInboundTableTmp
+                create TABLE ccInboundTableTmp  
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
 
                 IF @type = 1
                     BEGIN
@@ -2871,8 +2871,8 @@ AS
                              @IDArea = @IDArea, 
                              @frame = @frame, 
                              @Prefijo = @Prefijo,
-							 @UserId = @userId,
-							 @MediaType = @MediaType
+                             @UserId = @userId,
+                             @MediaType = @MediaType
 
                 END
                     ELSE
@@ -2888,11 +2888,11 @@ AS
                                  @idarea = @IDArea, 
                                  @frame = @frame, 
                                  @Prefijo = @Prefijo,
-								 @userid = @userId,
-								 @MediaType = @MediaType
+                                 @userid = @userId,
+                                 @MediaType = @MediaType
                     END
 
-					IF OBJECT_ID(''ccInboundTableTmp'') IS NOT NULL DROP TABLE ccInboundTableTmp
+                    IF OBJECT_ID(''ccInboundTableTmp'') IS NOT NULL DROP TABLE ccInboundTableTmp
                 IF((SELECT TOP 1 IdCampaing FROM #Campaing ) > 0)
                     BEGIN
                         INSERT INTO ccRIALog
@@ -2910,213 +2910,213 @@ AS
                         @Descripcion
                         )
                 END
-				SELECT TOP 1 IdCampaing FROM #Campaing
-				IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
+                SELECT TOP 1 IdCampaing FROM #Campaing
+                IF OBJECT_ID(''tempdb..#Campaing'') IS NOT NULL DROP TABLE #Campaing
         END
     END
 
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '19 - ccsp_GalateaDeleteCampaignAndACD - SP Edited, edited to add records to Activity Log, (Eliminar CampaÒa Salida (Llamada/VP/WhatsApp/IA/SMS), Eliminar CampaÒa Entrada (Llamada/WhatsApp))'
-		SET @sql = '
+        SET @process = '19 - ccsp_GalateaDeleteCampaignAndACD - SP Edited, edited to add records to Activity Log, (Eliminar Campa√±a Salida (Llamada/VP/WhatsApp/IA/SMS), Eliminar Campa√±a Entrada (Llamada/WhatsApp))'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaDeleteCampaignAndACD]
-			@userId           SMALLINT,
-			@DeleteCamId      VARCHAR(MAX),
-			@DeleteACDGroupId VARCHAR(MAX),
-			@moduleId         SMALLINT = 49
-		AS
-		BEGIN
+            @userId           SMALLINT,
+            @DeleteCamId      VARCHAR(MAX),
+            @DeleteACDGroupId VARCHAR(MAX),
+            @moduleId         SMALLINT = 49
+        AS
+        BEGIN
 
-			IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
-				SELECT value As DeleteCamId, c.IDArea AS IDAreaCamp, 1 AS CampTypeCamp, ISNULL(wg.IDWG,0) as IDWG, ISNULL(m.meanContactTypeId, 0) AS MediaType
-				INTO #CampsDelete
-				FROM fn_RIASplitDelimited(@DeleteCamId, '','') a
-				inner join ccCamps c on  a.value = c.cam_id and c.IDArea IS NOT NULL
-				left join ccRIACampEspWG wg on a.Value = wg.IdCampEsp and wg.Tipo=1
-				left join contactMeanOut m on c.cam_id = m.camp_id
-			IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
-				SELECT value As DeleteACDId, c.IDArea AS IDAreaACD, 0 AS CampTypeACD, ISNULL(wg.IDWG,0) as IDWG, ISNULL(m.meanContactTypeId, 0) AS MediaType
-				INTO #ACDDelete
-				FROM fn_RIASplitDelimited(@DeleteACDGroupId, '','') a
-				inner join ccInbound c on  a.value = c.Inbound_id and c.IDArea IS NOT NULL
-				left join ccRIACampEspWG wg on a.Value = wg.IdCampEsp and wg.Tipo=0
-				left join contactMeanIn m on c.Inbound_id = m.inboundId
+            IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+                SELECT value As DeleteCamId, c.IDArea AS IDAreaCamp, 1 AS CampTypeCamp, ISNULL(wg.IDWG,0) as IDWG, ISNULL(m.meanContactTypeId, 0) AS MediaType
+                INTO #CampsDelete
+                FROM fn_RIASplitDelimited(@DeleteCamId, '','') a
+                inner join ccCamps c on  a.value = c.cam_id and c.IDArea IS NOT NULL
+                left join ccRIACampEspWG wg on a.Value = wg.IdCampEsp and wg.Tipo=1
+                left join contactMeanOut m on c.cam_id = m.camp_id
+            IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+                SELECT value As DeleteACDId, c.IDArea AS IDAreaACD, 0 AS CampTypeACD, ISNULL(wg.IDWG,0) as IDWG, ISNULL(m.meanContactTypeId, 0) AS MediaType
+                INTO #ACDDelete
+                FROM fn_RIASplitDelimited(@DeleteACDGroupId, '','') a
+                inner join ccInbound c on  a.value = c.Inbound_id and c.IDArea IS NOT NULL
+                left join ccRIACampEspWG wg on a.Value = wg.IdCampEsp and wg.Tipo=0
+                left join contactMeanIn m on c.Inbound_id = m.inboundId
 
-			IF  not Exists (select * from #CampsDelete union select * from #ACDDelete )
-			begin
-				select ''-1'' AS Result
-				return
-			end
+            IF  not Exists (select * from #CampsDelete union select * from #ACDDelete )
+            begin
+                select ''-1'' AS Result
+                return
+            end
 
-			IF datalength(@DeleteCamId) > 0
-				BEGIN
+            IF datalength(@DeleteCamId) > 0
+                BEGIN
 
-				if exists(select cam_id from ccInbound where cam_id in (select DeleteCamId from #CampsDelete)) begin
-					--Borra las calificacion con reprogramacion
-					delete ccCalifCamp from ccInbound A
-					inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
-					inner join ccTipoCalif C on B.calif_id=C.calif_id and C.CanReprogram=1
-					where A.cam_id in (select DeleteCamId from #CampsDelete)
-					--Borra las subcalificacion con reprogramacion
-					delete rel from ccInbound A
-					inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
-					inner join ccTipoCalif C on B.calif_id=C.calif_id
-					inner join cctipoSubCalifRel rel on rel.calif_id=C.calif_id and rel.tipoSubRel=1
-					inner join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
-					where A.cam_id in (select DeleteCamId from #CampsDelete) and sb.canReprogram=1
+                if exists(select cam_id from ccInbound where cam_id in (select DeleteCamId from #CampsDelete)) begin
+                    --Borra las calificacion con reprogramacion
+                    delete ccCalifCamp from ccInbound A
+                    inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                    inner join ccTipoCalif C on B.calif_id=C.calif_id and C.CanReprogram=1
+                    where A.cam_id in (select DeleteCamId from #CampsDelete)
+                    --Borra las subcalificacion con reprogramacion
+                    delete rel from ccInbound A
+                    inner join ccCalifCamp B on A.Inbound_id=B.cam_id and  B.tipo=0
+                    inner join ccTipoCalif C on B.calif_id=C.calif_id
+                    inner join cctipoSubCalifRel rel on rel.calif_id=C.calif_id and rel.tipoSubRel=1
+                    inner join ccTipoCalifSub sb on rel.califsub_id=sb.califsub_id
+                    where A.cam_id in (select DeleteCamId from #CampsDelete) and sb.canReprogram=1
 
-					update ccInbound set cam_id = null where cam_id in (select DeleteCamId from #CampsDelete)
+                    update ccInbound set cam_id = null where cam_id in (select DeleteCamId from #CampsDelete)
 
-				end
+                end
 
-				insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-				select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete)
+                insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+                select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete)
 
-				delete from ccCampsAgente where cam_id in (select DeleteCamId from #CampsDelete)
-				insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
-				select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete) and A.tipo = 1
+                delete from ccCampsAgente where cam_id in (select DeleteCamId from #CampsDelete)
+                insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+                select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.cam_id in (select DeleteCamId from #CampsDelete) and A.tipo = 1
 
-				delete from ccSupervisorCam where cam_id in (select DeleteCamId from #CampsDelete) and tipo = 1
-				delete from ccRIACampEspWG where IdCampEsp in (select DeleteCamId from #CampsDelete) and tipo = 1
+                delete from ccSupervisorCam where cam_id in (select DeleteCamId from #CampsDelete) and tipo = 1
+                delete from ccRIACampEspWG where IdCampEsp in (select DeleteCamId from #CampsDelete) and tipo = 1
 
-				IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
-				SELECT ca.AreaName,
-					   GETDATE() operationDate,
-					   27 operationType,
-					   (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
-					   @moduleId module_id,
-					   c.cam_descripcion value,
-					   ca.AreaName AS target
-				INTO #CampLog
-				FROM ccRIACat_Areas ca
-				Inner join ccCamps c with(nolock) on ca.IDArea = c.IDArea
-				WHERE c.cam_id in (select DeleteCamId from #CampsDelete)
+                IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
+                SELECT ca.AreaName,
+                       GETDATE() operationDate,
+                       27 operationType,
+                       (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                       @moduleId module_id,
+                       c.cam_descripcion value,
+                       ca.AreaName AS target
+                INTO #CampLog
+                FROM ccRIACat_Areas ca
+                Inner join ccCamps c with(nolock) on ca.IDArea = c.IDArea
+                WHERE c.cam_id in (select DeleteCamId from #CampsDelete)
 
-				DECLARE @MediaType SMALLINT;
-				SET @MediaType = (SELECT [CampType] FROM ccCamps WHERE cam_id = @DeleteCamId);
+                DECLARE @MediaType SMALLINT;
+                SET @MediaType = (SELECT [CampType] FROM ccCamps WHERE cam_id = @DeleteCamId);
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				SELECT 
-					(SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccCamps AS CCA WHERE CCRA.IDArea = CCA.IDArea AND CCA.cam_id = @DeleteCamId),
-					getDate(), 
-					(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-					CASE 
-						WHEN @MediaType = 6 THEN 45
-						WHEN @MediaType = 5 THEN 47
-						WHEN @MediaType = 4 THEN 49
-						WHEN @MediaType = 7 THEN 51
-					ELSE 43 END, 
-					3, 
-					'''',
-					'''', 
-					(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @DeleteCamId);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                SELECT 
+                    (SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccCamps AS CCA WHERE CCRA.IDArea = CCA.IDArea AND CCA.cam_id = @DeleteCamId),
+                    getDate(), 
+                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                    CASE 
+                        WHEN @MediaType = 6 THEN 45
+                        WHEN @MediaType = 5 THEN 47
+                        WHEN @MediaType = 4 THEN 49
+                        WHEN @MediaType = 7 THEN 51
+                    ELSE 43 END, 
+                    3, 
+                    '''',
+                    '''', 
+                    (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @DeleteCamId);
 
 
-				Update ccCamps set IDArea = null where cam_id in (select DeleteCamId from #CampsDelete)
-		
-				update contactMeanOut set name = '''', conexionInfo = '''', connUser = '''', isActive = 0
-				where camp_id in (SELECT DeleteCamId FROM #CampsDelete) and meanContactTypeId=5
+                Update ccCamps set IDArea = null where cam_id in (select DeleteCamId from #CampsDelete)
         
-				update ccWhatsAppNumbers set camp_id = 0 where camp_id in (select DeleteCamId from #CampsDelete)
+                update contactMeanOut set name = '''', conexionInfo = '''', connUser = '''', isActive = 0
+                where camp_id in (SELECT DeleteCamId FROM #CampsDelete) and meanContactTypeId=5
+        
+                update ccWhatsAppNumbers set camp_id = 0 where camp_id in (select DeleteCamId from #CampsDelete)
         
 
-			END
-			IF datalength(@DeleteACDGroupId) > 0
-				BEGIN
+            END
+            IF datalength(@DeleteACDGroupId) > 0
+                BEGIN
 
-				if exists(select top 1 cam_id from ccInbound where Inbound_id in (select DeleteACDId from #ACDDelete))
-					begin
-						update ccInbound set cam_id = null where Inbound_id in (select DeleteACDId from #ACDDelete)
-				end
+                if exists(select top 1 cam_id from ccInbound where Inbound_id in (select DeleteACDId from #ACDDelete))
+                    begin
+                        update ccInbound set cam_id = null where Inbound_id in (select DeleteACDId from #ACDDelete)
+                end
 
-				IF OBJECT_ID(''tempdb..#AllWGACD'') IS NOT NULL DROP TABLE #AllWGACD
-				SELECT DISTINCT(IDWG)
-				INTO #AllWGACD
-				FROM ccRIACampEspWG ce
-				WHERE IDCampEsp in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+                IF OBJECT_ID(''tempdb..#AllWGACD'') IS NOT NULL DROP TABLE #AllWGACD
+                SELECT DISTINCT(IDWG)
+                INTO #AllWGACD
+                FROM ccRIACampEspWG ce
+                WHERE IDCampEsp in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
 
-				insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
-				select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG
-				from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id
-				where B.User_id is null and A.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+                select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG
+                from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id
+                where B.User_id is null and A.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
-				delete ccInboundHorarios Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
-				delete ccInboundMsgs Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
-				delete ccInboundDnis where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                delete ccInboundHorarios Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                delete ccInboundMsgs Where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                delete ccInboundDnis where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
-				insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-				select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG
-				from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id
-				where B.User_id is null and A.cam_id in (SELECT DeleteACDId FROM #ACDDelete)
+                insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+                select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG
+                from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id
+                where B.User_id is null and A.cam_id in (SELECT DeleteACDId FROM #ACDDelete)
 
-				delete ccSupervisorCam where cam_id in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
-				delete ccInboundAgentes where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
-				delete ccRIACampEspWG where IdCampEsp  in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+                delete ccSupervisorCam where cam_id in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
+                delete ccInboundAgentes where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                delete ccRIACampEspWG where IdCampEsp  in (SELECT DeleteACDId FROM #ACDDelete) and tipo = 0
 
 
-				IF OBJECT_ID(''tempdb..#ACDLog'') IS NOT NULL DROP TABLE #ACDLog
-				SELECT ca.AreaName,
-						GETDATE() operationDate,
-						28 operationType,
-						(SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
-						@moduleId module_id,
-						i.descripcion value,
-						ca.AreaName AS target
-				INTO #ACDLog
-				FROM ccRIACat_Areas ca
-				inner join ccInbound i with(nolock) on ca.IDArea = i.IDArea
-				WHERE i.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                IF OBJECT_ID(''tempdb..#ACDLog'') IS NOT NULL DROP TABLE #ACDLog
+                SELECT ca.AreaName,
+                        GETDATE() operationDate,
+                        28 operationType,
+                        (SELECT Login FROM ccUsers WHERE User_Id = @userId) login,
+                        @moduleId module_id,
+                        i.descripcion value,
+                        ca.AreaName AS target
+                INTO #ACDLog
+                FROM ccRIACat_Areas ca
+                inner join ccInbound i with(nolock) on ca.IDArea = i.IDArea
+                WHERE i.Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				SELECT 
-					(SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccInbound AS CCI WHERE CCRA.IDArea = CCI.IDArea AND CCI.Inbound_id = @DeleteACDGroupId),
-					getDate(), 
-					(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-					CASE WHEN (SELECT [chat] FROM ccInbound WHERE Inbound_id = @DeleteACDGroupId) = 5 THEN 41 ELSE 61 END, 
-					3, 
-					'''',
-					'''', 
-					(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @DeleteACDGroupId);
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                SELECT 
+                    (SELECT [AreaName] FROM ccRIACat_Areas AS CCRA, ccInbound AS CCI WHERE CCRA.IDArea = CCI.IDArea AND CCI.Inbound_id = @DeleteACDGroupId),
+                    getDate(), 
+                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                    CASE WHEN (SELECT [chat] FROM ccInbound WHERE Inbound_id = @DeleteACDGroupId) = 5 THEN 41 ELSE 61 END, 
+                    3, 
+                    '''',
+                    '''', 
+                    (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @DeleteACDGroupId);
 
-				Update ccInbound set IDArea = null, status = 0 where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
+                Update ccInbound set IDArea = null, status = 0 where Inbound_id in (SELECT DeleteACDId FROM #ACDDelete)
 
-				if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
-					begin
-						update ContactMeanIn set name = '''', conexionInfo = ''usuarioID|token|tokenSecret|1|0'', connUser = '''', isActive = 0
-						where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=2
-				end
-				if exists(select * from ContactMeanIn where meanContactTypeId=1 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
-					begin
-						update ContactMeanIn set name = '''', conexionInfo = '''', connUser = '''', connpass='''', isActive = 0 where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=1
-				end
-				update ccinbound set chatDomain = '''' where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)--para desasociar el dominio del chat
+                if exists(select * from ContactMeanIn where meanContactTypeId=2 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                    begin
+                        update ContactMeanIn set name = '''', conexionInfo = ''usuarioID|token|tokenSecret|1|0'', connUser = '''', isActive = 0
+                        where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=2
+                end
+                if exists(select * from ContactMeanIn where meanContactTypeId=1 and inboundId in (SELECT DeleteACDId FROM #ACDDelete))--Si encuentra un registro en contactMeanIn de tipo twitter asociado al ACD
+                    begin
+                        update ContactMeanIn set name = '''', conexionInfo = '''', connUser = '''', connpass='''', isActive = 0 where inboundId in (SELECT DeleteACDId FROM #ACDDelete) and meanContactTypeId=1
+                end
+                update ccinbound set chatDomain = '''' where inbound_id in (SELECT DeleteACDId FROM #ACDDelete)--para desasociar el dominio del chat
 
-				if exists (SELECT inboundId FROM contactMeanIn WHERE inboundId in (select DeleteACDId from #ACDDelete))
-					begin
-						update contactMeanIn set isActive = 0 where inboundId in (select DeleteACDId from #ACDDelete)
-				end            
-				update ccWhatsAppNumbers set inboundId = 0 where inboundId in (select DeleteACDId from #ACDDelete)
+                if exists (SELECT inboundId FROM contactMeanIn WHERE inboundId in (select DeleteACDId from #ACDDelete))
+                    begin
+                        update contactMeanIn set isActive = 0 where inboundId in (select DeleteACDId from #ACDDelete)
+                end            
+                update ccWhatsAppNumbers set inboundId = 0 where inboundId in (select DeleteACDId from #ACDDelete)
         
-			END
+            END
 
-			IF datalength(@DeleteCamId) > 0
-				Insert into ccRIALog Select * from #CampLog
-			IF datalength(@DeleteACDGroupId) > 0
-				Insert into ccRIALog Select * from #ACDLog
+            IF datalength(@DeleteCamId) > 0
+                Insert into ccRIALog Select * from #CampLog
+            IF datalength(@DeleteACDGroupId) > 0
+                Insert into ccRIALog Select * from #ACDLog
 
-			SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result, cast(IDWG as smallint) IDWG, MediaType FROM #CampsDelete
-			UNION
-			SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result, cast(IDWG as smallint) IDWG, MediaType FROM #ACDDelete
-			IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
-			IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
-			IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
-		END
-		'
-		EXEC(@sql)
+            SELECT DeleteCamId AS DeleteId,IDAreaCamp AS IDArea,CampTypeCamp AS CampType,''1'' AS Result, cast(IDWG as smallint) IDWG, MediaType FROM #CampsDelete
+            UNION
+            SELECT DeleteACDId,IDAreaACD,CampTypeACD,''1'' AS Result, cast(IDWG as smallint) IDWG, MediaType FROM #ACDDelete
+            IF OBJECT_ID(''tempdb..#CampsDelete'') IS NOT NULL DROP TABLE #CampsDelete
+            IF OBJECT_ID(''tempdb..#ACDDelete'') IS NOT NULL DROP TABLE #ACDDelete
+            IF OBJECT_ID(''tempdb..#CampLog'') IS NOT NULL DROP TABLE #CampLog
+        END
+        '
+        EXEC(@sql)
 
-		SET @process = '20 - ccsp_UpdateACDWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa Entrada WhatsApp)'
-		SET @sql = '
+        SET @process = '20 - ccsp_UpdateACDWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a Entrada WhatsApp)'
+        SET @sql = '
 ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
     @ConexionInfo varchar(400),
     @inbound_id int,
@@ -3126,54 +3126,54 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
     @ShowCalifWnd bit,
     @ExitWrapUpDisposition bit,
     @MUTimeOutClient int,
-	@allowFileAttachments bit,
-	@userId SMALLINT, 
-	@idArea SMALLINT, 
-	@isCreating BIT
+    @allowFileAttachments bit,
+    @userId SMALLINT, 
+    @idArea SMALLINT, 
+    @isCreating BIT
 
     AS
     set nocount on
     IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
     BEGIN
 
-		UPDATE contactMeanIn SET ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 where inboundId = @inbound_id;
+        UPDATE contactMeanIn SET ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 where inboundId = @inbound_id;
 
-		EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inbound_id, @userId= @userid
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inbound_id, @userId= @userid
 
-		IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+        IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
-		Create table #contactMeanInTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
+        Create table #contactMeanInTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
 
         UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = @closeConversationTime, answerTimeoutClient = @MUTimeOutClient, allowFileAttachments = @allowFileAttachments        
         where inboundId = @inbound_id;
 
-		IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#contactMeanInTable'';
+        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#contactMeanInTable'';
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			CASE WHEN @isCreating = 1 THEN 40 ELSE 53 END, 
-			3, 
-			CMIT.identifierInfo,
-			CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
-				CASE
-					WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
-						CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					ELSE CMIT.dataInfo END
-			ELSE '''' END, 
-			(SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
-		FROM #contactMeanInTable AS CMIT;
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            CASE WHEN @isCreating = 1 THEN 40 ELSE 53 END, 
+            3, 
+            CMIT.identifierInfo,
+            CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
+                CASE
+                    WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
+                        CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    ELSE CMIT.dataInfo END
+            ELSE '''' END, 
+            (SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
+        FROM #contactMeanInTable AS CMIT;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid;
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid;
 
-		IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+        IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
         UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
 
@@ -3182,298 +3182,298 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
 
     IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
     BEGIN
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
 
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-		Create table #ccInboundTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
+        Create table #ccInboundTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
 
         UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
 
-		IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
+        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			40, 
-			3, 
-			CASE 
-				WHEN CCIT.identifierInfo = ''IN_WRAP_UP_TIME'' THEN ''IN_WRAP_UP_TIME_WHATS''
-				WHEN CCIT.identifierInfo = ''IN_SHOW_DISPOSITIONS'' THEN ''IN_SHOW_DISPOSITIONS_WHATS'' 
-				ELSE  CCIT.identifierInfo 
-			END,
-			CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-				CASE
-					WHEN CCIT.identifierInfo IN (''IN_WRAP_UP_TIME'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
-						CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					ELSE CCIT.dataInfo END
-			ELSE '''' END, 
-			(SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
-		FROM #ccInboundTable AS CCIT;
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            40, 
+            3, 
+            CASE 
+                WHEN CCIT.identifierInfo = ''IN_WRAP_UP_TIME'' THEN ''IN_WRAP_UP_TIME_WHATS''
+                WHEN CCIT.identifierInfo = ''IN_SHOW_DISPOSITIONS'' THEN ''IN_SHOW_DISPOSITIONS_WHATS'' 
+                ELSE  CCIT.identifierInfo 
+            END,
+            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+                CASE
+                    WHEN CCIT.identifierInfo IN (''IN_WRAP_UP_TIME'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
+                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    ELSE CCIT.dataInfo END
+            ELSE '''' END, 
+            (SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
+        FROM #ccInboundTable AS CCIT;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
 
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
     END;
     SELECT @inbound_id;
     return(@inbound_id)
 
     set nocount off
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '21 - ccsp_RIA_ABCCamps (Option 2, 3) - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa de Salida (Llamada/VP/WhatsApp/IA/SMS))'
-		SET @sql = '
+        SET @process = '21 - ccsp_RIA_ABCCamps (Option 2, 3) - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a de Salida (Llamada/VP/WhatsApp/IA/SMS))'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
-					@option smallint,
-					@UserId int = null,
-					@Descripcion varchar(40) = null,
-					@Cam_id varchar(1000),
-					@Activa tinyint = null,
-					@IDArea smallint = null,
-					@frame tinyint = null, 
-					@MirrorInbound_Id smallint = null,
-					@Prefijo varchar(40) = null,
-					@MediaType int = null,
-					@isCreating int = null
-					as
-					set nocount on
+                    @option smallint,
+                    @UserId int = null,
+                    @Descripcion varchar(40) = null,
+                    @Cam_id varchar(1000),
+                    @Activa tinyint = null,
+                    @IDArea smallint = null,
+                    @frame tinyint = null, 
+                    @MirrorInbound_Id smallint = null,
+                    @Prefijo varchar(40) = null,
+                    @MediaType int = null,
+                    @isCreating int = null
+                    as
+                    set nocount on
 
-					if @option = 0
-						begin
-							select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
-							from ccCamps as CAMP with(nolock) 
-							left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
-							return(0)
-						end
+                    if @option = 0
+                        begin
+                            select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
+                            from ccCamps as CAMP with(nolock) 
+                            left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
+                            return(0)
+                        end
 
-					if @option = 1 -- select Camp
-						begin
-							select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
-							prefijo as Prefijo
-							from ccCamps a1 with(nolock) 
-							inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
-							inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
-							where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
-							return(0)
-						end
+                    if @option = 1 -- select Camp
+                        begin
+                            select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
+                            prefijo as Prefijo
+                            from ccCamps a1 with(nolock) 
+                            inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
+                            inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+                            where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
+                            return(0)
+                        end
 
-					if @option = 4 --Delete
-						begin
-							if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
-							begin
-							declare @error varchar(70)
-							Select @error=case valor when 0 then ''No es posible eliminar la campa?a, esta asociada a una especialidad''
-								else ''Campaign can not be deleted, it has an association with an ACD'' end
-							from ccsettings with(nolock) where setting_id = 27
-							raiserror (@error,18,1)		
-							return(0)
-							end
+                    if @option = 4 --Delete
+                        begin
+                            if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
+                            begin
+                            declare @error varchar(70)
+                            Select @error=case valor when 0 then ''No es posible eliminar la campa?a, esta asociada a una especialidad''
+                                else ''Campaign can not be deleted, it has an association with an ACD'' end
+                            from ccsettings with(nolock) where setting_id = 27
+                            raiserror (@error,18,1)     
+                            return(0)
+                            end
 
-							delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
-							insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
-							Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
-							Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
-							delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
-							delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
-							return(0)
-						end
+                            delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
+                            insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
+                            Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
+                            Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
+                            delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
+                            delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id  
+                            return(0)
+                        end
 
-					if @option = 2 --Insert
-						begin
-						declare @new_cam_id smallint
-						declare @isAssingPortbyCam bit
+                    if @option = 2 --Insert
+                        begin
+                        declare @new_cam_id smallint
+                        declare @isAssingPortbyCam bit
 
-						DECLARE @CampTypeNormal INT = 1
+                        DECLARE @CampTypeNormal INT = 1
 
-						if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
-							begin
-							select -1 --, ''Nombre en Uso''
-							return(0)  
-							end
+                        if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
+                            begin
+                            select -1 --, ''Nombre en Uso''
+                            return(0)  
+                            end
 
-						-- ODC: la campa?a siempre esta activa
-						set @Activa = 1
-						declare @pref int
-						select  @pref = valor from ccSettings where setting_id = 201
-						if (@pref = 0)
-							set @Prefijo = ''''
+                        -- ODC: la campa?a siempre esta activa
+                        set @Activa = 1
+                        declare @pref int
+                        select  @pref = valor from ccSettings where setting_id = 201
+                        if (@pref = 0)
+                            set @Prefijo = ''''
 
 
-						Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo, CampType)
-						select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
-						case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end, @Prefijo, @CampTypeNormal
+                        Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo, CampType)
+                        select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
+                        case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end, @Prefijo, @CampTypeNormal
 
-						if @@rowcount = 1 BEGIN
-						select @new_cam_id = scope_identity()
+                        if @@rowcount = 1 BEGIN
+                        select @new_cam_id = scope_identity()
 
-						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-						SELECT 
-							(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-							getDate(), 
-							(SELECT [Login] FROM ccUsers WHERE User_id = @UserId), 
-							CASE 
-								WHEN @MediaType = 6 THEN 44
-								WHEN @MediaType = 5 THEN 46
-								WHEN @MediaType = 4 THEN 48
-								WHEN @MediaType = 7 THEN 50
-								ELSE 42 END, 
-							3, 
-							'''',
-							'''', 
-							(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @new_cam_id);
+                        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                        SELECT 
+                            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+                            getDate(), 
+                            (SELECT [Login] FROM ccUsers WHERE User_id = @UserId), 
+                            CASE 
+                                WHEN @MediaType = 6 THEN 44
+                                WHEN @MediaType = 5 THEN 46
+                                WHEN @MediaType = 4 THEN 48
+                                WHEN @MediaType = 7 THEN 50
+                                ELSE 42 END, 
+                            3, 
+                            '''',
+                            '''', 
+                            (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @new_cam_id);
 
-						END else
-							begin
-							select -2 --, ''Error al crear campa?a''
-							return(0)
-							end
+                        END else
+                            begin
+                            select -2 --, ''Error al crear campa?a''
+                            return(0)
+                            end
 
-						if isnull(@MirrorInbound_Id, 0)<>0
-							begin
-							if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
-								begin
-								select -3 -- Error al asignar campa?a a ACD, el ACD no existe o no pertenece a la misma area
-								return(0)
-								end
+                        if isnull(@MirrorInbound_Id, 0)<>0
+                            begin
+                            if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
+                                begin
+                                select -3 -- Error al asignar campa?a a ACD, el ACD no existe o no pertenece a la misma area
+                                return(0)
+                                end
 
-							update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
-							update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
-							end
-						set @isAssingPortbyCam=1
+                            update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
+                            update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
+                            end
+                        set @isAssingPortbyCam=1
 
-						select @isAssingPortbyCam=valor from ccSettings where setting_id=232
+                        select @isAssingPortbyCam=valor from ccSettings where setting_id=232
 
-						if @isAssingPortbyCam=1 begin
-							insert into ccoDialerCamp (dialer_id, cam_id) 
-							select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
-						end
+                        if @isAssingPortbyCam=1 begin
+                            insert into ccoDialerCamp (dialer_id, cam_id) 
+                            select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+                        end
 
-						insert into ccCalifCamp (calif_id, cam_id, tipo) 
-						select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
+                        insert into ccCalifCamp (calif_id, cam_id, tipo) 
+                        select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
 
-						update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
+                        update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
 
-						If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-							begin
-							insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
-							end
+                        If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+                            begin
+                            insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
+                            end
 
-						insert into ccRIACampsGraph (cam_id, graphic_id)
-						select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
+                        insert into ccRIACampsGraph (cam_id, graphic_id)
+                        select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
 
-						--inserta la lista negra por default
-						if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
-						begin
-							declare @tempId as int = 0
-							select @tempId = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
-							exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
-						end
+                        --inserta la lista negra por default
+                        if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
+                        begin
+                            declare @tempId as int = 0
+                            select @tempId = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+                            exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
+                        end
 
-						--select * from cctiposlistanegra
+                        --select * from cctiposlistanegra
 
-						select @new_cam_id
-						return(0)
-						end
+                        select @new_cam_id
+                        return(0)
+                        end
 
-					if @option = 3 -- Update
-						begin
-							if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-							insert into ccRIAGraphics (frame,type_id) values (@frame,1)
+                    if @option = 3 -- Update
+                        begin
+                            if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+                            insert into ccRIAGraphics (frame,type_id) values (@frame,1)
 
-							Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
+                            Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
 
-							DECLARE @PrevFrame SMALLINT = (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id);
+                            DECLARE @PrevFrame SMALLINT = (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id);
 
-							update ccRIACampsGraph with(rowlock)
-							set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
-							where cam_id = @Cam_id
+                            update ccRIACampsGraph with(rowlock)
+                            set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+                            where cam_id = @Cam_id
 
-							IF(@isCreating IS NOT NULL AND @isCreating = 2 AND @PrevFrame <> (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id)) BEGIN
-								DECLARE @Media INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @Cam_id);
+                            IF(@isCreating IS NOT NULL AND @isCreating = 2 AND @PrevFrame <> (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id)) BEGIN
+                                DECLARE @Media INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @Cam_id);
 
-								INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-								SELECT 
-									(SELECT CRA.[AreaName] FROM ccRIACat_Areas AS CRA, ccCamps AS CCC WHERE CRA.IDArea = CCC.IDArea AND CCC.cam_id = @Cam_id),
-									getDate(), 
-									(SELECT [Login] FROM ccUsers WHERE User_id = @UserId), 
-									CASE
-										WHEN @Media = 6 THEN 55
-										WHEN @Media = 5 THEN 56
-										WHEN @Media = 4 THEN 57
-										WHEN @Media = 7 THEN 58
-										ELSE 54 END, 
-									3, 
-									'''',
-									''OUT_CALL_EDIT_ICON'', 
-									(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @Cam_id);
-							END
+                                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                                SELECT 
+                                    (SELECT CRA.[AreaName] FROM ccRIACat_Areas AS CRA, ccCamps AS CCC WHERE CRA.IDArea = CCC.IDArea AND CCC.cam_id = @Cam_id),
+                                    getDate(), 
+                                    (SELECT [Login] FROM ccUsers WHERE User_id = @UserId), 
+                                    CASE
+                                        WHEN @Media = 6 THEN 55
+                                        WHEN @Media = 5 THEN 56
+                                        WHEN @Media = 4 THEN 57
+                                        WHEN @Media = 7 THEN 58
+                                        ELSE 54 END, 
+                                    3, 
+                                    '''',
+                                    ''OUT_CALL_EDIT_ICON'', 
+                                    (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @Cam_id);
+                            END
 
-							return(0)
-						end
+                            return(0)
+                        end
 
-						if @option = 5 --Obtener relaciones de campa?as - campa?as
-						begin
-							if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
-							(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
-							not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
-							begin
-							select -3 -- Campa?a invalida
-							return(0)
-							end
-									
-						if @descripcion=0
-							set @descripcion = null
+                        if @option = 5 --Obtener relaciones de campa?as - campa?as
+                        begin
+                            if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
+                            (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+                            not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
+                            begin
+                            select -3 -- Campa?a invalida
+                            return(0)
+                            end
+                                    
+                        if @descripcion=0
+                            set @descripcion = null
 
-						update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
-						if @@rowcount=0
-							select -4 -- Error al actualizar
-										
-						else
-							begin
-							delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+                        update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
+                        if @@rowcount=0
+                            select -4 -- Error al actualizar
+                                        
+                        else
+                            begin
+                            delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
 
-							end
+                            end
 
-						return(0)
-						end
+                        return(0)
+                        end
 
-					if @option = 6
-						begin
-							select cam_id, isnull(surveycamid,0)
-							from cccamps with(index(PK_ccCamps),nolock)
-							where cam_id = @Cam_id
-							return(0)
-						end
+                    if @option = 6
+                        begin
+                            select cam_id, isnull(surveycamid,0)
+                            from cccamps with(index(PK_ccCamps),nolock)
+                            where cam_id = @Cam_id
+                            return(0)
+                        end
 
-					if @option = 7 -- Checa si la campa?a no tiene grabaciones y se puede modificar el prefijo
-						begin	
-							select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
-							--select 0 as Grabaciones	
-						end
+                    if @option = 7 -- Checa si la campa?a no tiene grabaciones y se puede modificar el prefijo
+                        begin   
+                            select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
+                            --select 0 as Grabaciones   
+                        end
 
-					if @option = 8 -- Checa si la campa?a tiene asignada una campa?a tipo encuesta
-						begin	
-							SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
-							from cccamps with(index(PK_ccCamps),nolock)
-							where cam_id = @Cam_id
-							return(0)
-						end
+                    if @option = 8 -- Checa si la campa?a tiene asignada una campa?a tipo encuesta
+                        begin   
+                            SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
+                            from cccamps with(index(PK_ccCamps),nolock)
+                            where cam_id = @Cam_id
+                            return(0)
+                        end
 
-					return(0)
-					set nocount off
-		'
-		EXEC(@sql)
+                    return(0)
+                    set nocount off
+        '
+        EXEC(@sql)
 
-		SET @process = '22 - ccsp_RIAUpdateCamConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa de Salida (Llamada/VP/WhatsApp/IA/SMS))'
-		SET @sql = '
+        SET @process = '22 - ccsp_RIAUpdateCamConfig - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a de Salida (Llamada/VP/WhatsApp/IA/SMS))'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 @cam_id smallint,
 @cam_descripcion varchar(40) = null,
@@ -3543,15 +3543,15 @@ ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 @messagingOrder bit = null,
 @autoStart bit = null,
 @recordHold bit = null,
-@userId				   SMALLINT     = NULL, 
-@idArea				   SMALLINT     = NULL, 
-@isCreating			   SMALLINT          = NULL
+@userId                SMALLINT     = NULL, 
+@idArea                SMALLINT     = NULL, 
+@isCreating            SMALLINT          = NULL
 as
 set nocount on
 DECLARE @timesDiscardActual int = (SELECT timesDiscard FROM ccCamps WHERE cam_id = @cam_id)
 DECLARE @CheckCamp int = (Select case when cam_procesando=0 and progDial=3 then 1 else 0 end from ccCamps where cam_id=@cam_id)
-	DECLARE @PrevName VARCHAR(MAX) = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
+    DECLARE @PrevName VARCHAR(MAX) = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
 
 UPDATE ccCamps SET
  cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
@@ -3621,187 +3621,187 @@ UPDATE ccCamps SET
 
 Where cam_id = @cam_id
 
-		IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+        IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
-		Create table #ccCampsTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
+        Create table #ccCampsTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
 
-		DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
-																	CASE 
-																		WHEN @Camptype = 6	THEN 44
-																		WHEN @Camptype = 5	THEN 46
-																		WHEN @Camptype = 4	THEN 48
-																		WHEN @Camptype = 7	THEN 50
-																		ELSE 42 END
-																ELSE 
-																	CASE 
-																		WHEN @Camptype = 6	THEN 55
-																		WHEN @Camptype = 5	THEN 56
-																		WHEN @Camptype = 4	THEN 57
-																		WHEN @Camptype = 7	THEN 58
-																		ELSE 54 END
-																END;
-	
-		IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsTable'';
+        DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
+                                                                    CASE 
+                                                                        WHEN @Camptype = 6  THEN 44
+                                                                        WHEN @Camptype = 5  THEN 46
+                                                                        WHEN @Camptype = 4  THEN 48
+                                                                        WHEN @Camptype = 7  THEN 50
+                                                                        ELSE 42 END
+                                                                ELSE 
+                                                                    CASE 
+                                                                        WHEN @Camptype = 6  THEN 55
+                                                                        WHEN @Camptype = 5  THEN 56
+                                                                        WHEN @Camptype = 4  THEN 57
+                                                                        WHEN @Camptype = 7  THEN 58
+                                                                        ELSE 54 END
+                                                                END;
+    
+        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsTable'';
 
-		IF(@isCreating = 1) DELETE FROM #ccCampsTable WHERE columnInfo IN (''cam_descripcion'');
-		
-		DELETE FROM #ccCampsTable WHERE columnInfo IN (''startStopRecording'');
-		DELETE FROM #ccCampsTable WHERE dataInfo = '''''''';
-		
-		IF(@CampType = 6) DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'', ''cam_fDialOnWU'', ''sipHdrFormat'', ''ProgDial'');
-		ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
-		ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
-		ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
+        IF(@isCreating = 1) DELETE FROM #ccCampsTable WHERE columnInfo IN (''cam_descripcion'');
+        
+        DELETE FROM #ccCampsTable WHERE columnInfo IN (''startStopRecording'');
+        DELETE FROM #ccCampsTable WHERE dataInfo = '''''''';
+        
+        IF(@CampType = 6) DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'', ''cam_fDialOnWU'', ''sipHdrFormat'', ''ProgDial'');
+        ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
+        ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
+        ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
-		IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
+        IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			@operation, 
-			3,
-			CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> ''''
-				THEN
-					CASE
-						WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN
-							CASE WHEN @isCreating = 1 THEN '''' ELSE CCCT.identifierInfo END
-						ELSE
-							CCCT.identifierInfo
-						END
-				ELSE
-				''''
-				END,
-			CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
-				CASE 
-					WHEN CCCT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
-						CASE WHEN CCCT.dataInfo = ''VOICEMAIL'' 
-							THEN ''COMMON_VOICE_MAIL'' 
-							ELSE 
-								CASE WHEN CCCT.dataInfo IS NOT NULL THEN CCCT.dataInfo ELSE ''T&COMMON_NONE'' END 
-							END
-					WHEN CCCT.identifierInfo = ''OUT_DIALING_ORDER'' THEN 
-						CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_DESCENDING'' ELSE ''COMMON_ASCENDING'' END
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            @operation, 
+            3,
+            CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> ''''
+                THEN
+                    CASE
+                        WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN
+                            CASE WHEN @isCreating = 1 THEN '''' ELSE CCCT.identifierInfo END
+                        ELSE
+                            CCCT.identifierInfo
+                        END
+                ELSE
+                ''''
+                END,
+            CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
+                CASE 
+                    WHEN CCCT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
+                        CASE WHEN CCCT.dataInfo = ''VOICEMAIL'' 
+                            THEN ''COMMON_VOICE_MAIL'' 
+                            ELSE 
+                                CASE WHEN CCCT.dataInfo IS NOT NULL THEN CCCT.dataInfo ELSE ''T&COMMON_NONE'' END 
+                            END
+                    WHEN CCCT.identifierInfo = ''OUT_DIALING_ORDER'' THEN 
+                        CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_DESCENDING'' ELSE ''COMMON_ASCENDING'' END
 
-					WHEN CCCT.identifierInfo = ''OUT_SMS_MESSAGING_ORDER'' THEN 
-						CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ASCENDING'' ELSE ''COMMON_DESCENDING'' END
+                    WHEN CCCT.identifierInfo = ''OUT_SMS_MESSAGING_ORDER'' THEN 
+                        CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ASCENDING'' ELSE ''COMMON_DESCENDING'' END
 
-					WHEN CCCT.identifierInfo = ''OUT_ANSWER_MACHINE_DETC'' THEN 
-						CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_BASIC'' 
-							 WHEN CCCT.dataInfo = 1 THEN ''COMMON_LIGHT''
-							 WHEN CCCT.dataInfo = 2 THEN ''COMMON_MODERATE''
-							 WHEN CCCT.dataInfo = 3 THEN ''COMMON_HIGH''
-							 ELSE ''T&COMMON_NONE'' END
+                    WHEN CCCT.identifierInfo = ''OUT_ANSWER_MACHINE_DETC'' THEN 
+                        CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_BASIC'' 
+                             WHEN CCCT.dataInfo = 1 THEN ''COMMON_LIGHT''
+                             WHEN CCCT.dataInfo = 2 THEN ''COMMON_MODERATE''
+                             WHEN CCCT.dataInfo = 3 THEN ''COMMON_HIGH''
+                             ELSE ''T&COMMON_NONE'' END
 
-					WHEN CCCT.identifierInfo = ''OUT_ANI_MODE'' THEN 
-						CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_ANI_LOCAL'' 
-							 WHEN CCCT.dataInfo = 1 THEN ''COMMON_ANI_ROTATIVE''
-							 WHEN CCCT.dataInfo = 2 THEN ''COMMON_ANI_ROTATIVE_REG''
-							 WHEN CCCT.dataInfo = 3 THEN ''COMMON_ANI_ROTATIVE_SMART''
-							 ELSE ''T&COMMON_NONE'' END
+                    WHEN CCCT.identifierInfo = ''OUT_ANI_MODE'' THEN 
+                        CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_ANI_LOCAL'' 
+                             WHEN CCCT.dataInfo = 1 THEN ''COMMON_ANI_ROTATIVE''
+                             WHEN CCCT.dataInfo = 2 THEN ''COMMON_ANI_ROTATIVE_REG''
+                             WHEN CCCT.dataInfo = 3 THEN ''COMMON_ANI_ROTATIVE_SMART''
+                             ELSE ''T&COMMON_NONE'' END
 
-					WHEN CCCT.identifierInfo = ''OUT_DIALING_MODE'' THEN 
-						CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_PREDICTIVE'' 
-							 WHEN CCCT.dataInfo = 1 THEN ''COMMON_PROGRESIVE''
-							 ELSE ''COMMON_ASSISTED'' END
+                    WHEN CCCT.identifierInfo = ''OUT_DIALING_MODE'' THEN 
+                        CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_PREDICTIVE'' 
+                             WHEN CCCT.dataInfo = 1 THEN ''COMMON_PROGRESIVE''
+                             ELSE ''COMMON_ASSISTED'' END
 
-					WHEN CCCT.identifierInfo = ''OUT_MANUAL_DIALING'' THEN
-						CASE WHEN  @CampType = 5 THEN 
-							CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-						ELSE
-							CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_VIA_KEYPAD_LOG''
-								 WHEN CCCT.dataInfo = 2 THEN ''COMMON_VIA_CALLS_LOG''
-								 WHEN CCCT.dataInfo = 3 THEN ''COMMON_VIA_CALLS_LOG''
-								 ELSE ''T&COMMON_NONE'' END
-						END
+                    WHEN CCCT.identifierInfo = ''OUT_MANUAL_DIALING'' THEN
+                        CASE WHEN  @CampType = 5 THEN 
+                            CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                        ELSE
+                            CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_VIA_KEYPAD_LOG''
+                                 WHEN CCCT.dataInfo = 2 THEN ''COMMON_VIA_CALLS_LOG''
+                                 WHEN CCCT.dataInfo = 3 THEN ''COMMON_VIA_CALLS_LOG''
+                                 ELSE ''T&COMMON_NONE'' END
+                        END
 
-					WHEN CCCT.identifierInfo = ''OUT_ANI_LIST'' THEN
-								ISNULL((SELECT [description] FROM ccRotativeANIList WHERE id_RAniList = CCCT.dataInfo), CCCT.dataInfo)
+                    WHEN CCCT.identifierInfo = ''OUT_ANI_LIST'' THEN
+                                ISNULL((SELECT [description] FROM ccRotativeANIList WHERE id_RAniList = CCCT.dataInfo), CCCT.dataInfo)
 
-					WHEN CCCT.identifierInfo = ''OUT_CONDUCT_SURVEY'' THEN
-						CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
-					WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING_ON_CHAT'', ''OUT_TIME_ZONE_VALIDATION_MANUAL'', ''OUT_INTENSIVE_DIALING'', ''OUT_CALLBACK_EXCLUSIVE_AGENT'', ''OUT_VOIEMAIL_DETECTION'',
-												 ''OUT_CALLBACK_FAILED'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'', ''OUT_EDIT_CALL_KEY'', ''OUT_STOP_RECORDING'', ''OUT_LEAVE_PRERECORDED'',
-												 ''OUT_CONDUCT_CALLBACK_SURVEY'', ''OUT_RECEIVE_DTMF'', ''OUT_SELECT_ANI_ON_DIALING'', ''OUT_SMS_START_CAMP_AUTO'', ''OUT_RECORD_ON_HOLD'', ''OUT_LISTEN_TONE'', ''OUT_UNASSIGN_RECORDS'') THEN
-						CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					
-					ELSE CCCT.dataInfo END
-			ELSE '''' END, 
-			CASE WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN @PrevName ELSE (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id) END
-		FROM #ccCampsTable AS CCCT;
+                    WHEN CCCT.identifierInfo = ''OUT_CONDUCT_SURVEY'' THEN
+                        CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
+                    WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING_ON_CHAT'', ''OUT_TIME_ZONE_VALIDATION_MANUAL'', ''OUT_INTENSIVE_DIALING'', ''OUT_CALLBACK_EXCLUSIVE_AGENT'', ''OUT_VOIEMAIL_DETECTION'',
+                                                 ''OUT_CALLBACK_FAILED'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'', ''OUT_EDIT_CALL_KEY'', ''OUT_STOP_RECORDING'', ''OUT_LEAVE_PRERECORDED'',
+                                                 ''OUT_CONDUCT_CALLBACK_SURVEY'', ''OUT_RECEIVE_DTMF'', ''OUT_SELECT_ANI_ON_DIALING'', ''OUT_SMS_START_CAMP_AUTO'', ''OUT_RECORD_ON_HOLD'', ''OUT_LISTEN_TONE'', ''OUT_UNASSIGN_RECORDS'') THEN
+                        CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    
+                    ELSE CCCT.dataInfo END
+            ELSE '''' END, 
+            CASE WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN @PrevName ELSE (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id) END
+        FROM #ccCampsTable AS CCCT;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
-		IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
+        IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
 if (@timesDiscard < @timesDiscardActual and @CheckCamp=1)
 begin
-	EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
+    EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
 end
 
 IF (@CampType IS NOT NULL)
 BEGIN
-	IF NOT EXISTS(SELECT camp_id FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id)
-	BEGIN
-		SELECT 0
-		RETURN(0)
-	END
+    IF NOT EXISTS(SELECT camp_id FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id)
+    BEGIN
+        SELECT 0
+        RETURN(0)
+    END
 
-	IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
+    IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
-	Create table #contactMeanOutTable 
-	(
-		columnInfo VARCHAR(255),
-		dataInfo VARCHAR(255),
-		identifierInfo VARCHAR(255)
-	)
+    Create table #contactMeanOutTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
 
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanOut'', @columnNameId=''camp_id'', @valueId= @cam_id, @userId= @userid
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanOut'', @columnNameId=''camp_id'', @valueId= @cam_id, @userId= @userid
 
-	set @ConexionInfo = case when  @ConexionInfo is null or @ConexionInfo in('''',''0'',''None'',''Ninguno'') then '''' else @ConexionInfo end
-	UPDATE contactMeanOut SET conexionInfo = @ConexionInfo, ConnPass = @ConexionInfo, connUser = @ConexionInfo,
-							  closeConversationTime = @agentCloseConversationTime, answerTimeoutClient = @adminCloseConversationTime,
-							  allowFileAttachments = @allowFileAttachments
-	WHERE @CampType = meanContactTypeId AND camp_id = @cam_id
+    set @ConexionInfo = case when  @ConexionInfo is null or @ConexionInfo in('''',''0'',''None'',''Ninguno'') then '''' else @ConexionInfo end
+    UPDATE contactMeanOut SET conexionInfo = @ConexionInfo, ConnPass = @ConexionInfo, connUser = @ConexionInfo,
+                              closeConversationTime = @agentCloseConversationTime, answerTimeoutClient = @adminCloseConversationTime,
+                              allowFileAttachments = @allowFileAttachments
+    WHERE @CampType = meanContactTypeId AND camp_id = @cam_id
 
-	
-	IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
-	
-	DELETE FROM #contactMeanOutTable WHERE columnInfo IN (''conexionInfo'', ''ConnPass'', ''connUser'') AND dataInfo = '''''''';
+    
+    IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
+    
+    DELETE FROM #contactMeanOutTable WHERE columnInfo IN (''conexionInfo'', ''ConnPass'', ''connUser'') AND dataInfo = '''''''';
 
-	INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-	SELECT 
-		(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-		getDate(), 
-		(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		@operation, 
-		3, 
-		CMOT.identifierInfo,
-		CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
-			CASE
-				WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
-					CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					
-				ELSE CMOT.dataInfo END
-		ELSE '''' END, 
-		(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
-	FROM #contactMeanOutTable AS CMOT;
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        @operation, 
+        3, 
+        CMOT.identifierInfo,
+        CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
+            CASE
+                WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
+                    CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    
+                ELSE CMOT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+    FROM #contactMeanOutTable AS CMOT;
 
-	EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @cam_id, @userId = @userid;
-	IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
+    EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @cam_id, @userId = @userid;
+    IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
-	IF @CampType = 5 BEGIN
-		update ccWhatsAppNumbers set camp_id=0 where camp_id=@cam_id
-		IF(@ConexionInfo <> '''')
-		BEGIN 
-			UPDATE ccWhatsAppNumbers SET camp_id = @cam_id WHERE number = @ConexionInfo
-		END
-	END
+    IF @CampType = 5 BEGIN
+        update ccWhatsAppNumbers set camp_id=0 where camp_id=@cam_id
+        IF(@ConexionInfo <> '''')
+        BEGIN 
+            UPDATE ccWhatsAppNumbers SET camp_id = @cam_id WHERE number = @ConexionInfo
+        END
+    END
 END 
 
 if @cam_ShowCalifWnd = 1
@@ -3825,135 +3825,135 @@ select 2
 return(0)
 
 set nocount off
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '23 - ccsp_UpdateOutWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear CampaÒa de Salida WhatsApp)'
-		SET @sql = '
+        SET @process = '23 - ccsp_UpdateOutWhatsappConfig - SP Edited, edited to add records to Activity Log, (Crear Campa√±a de Salida WhatsApp)'
+        SET @sql = '
 ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig] 
-					@ConexionInfo varchar(400),
-					@outbound_id int,
-					@descripcion varchar(400), 
-					@ConnUser varchar(60),
-					@tNotas int,
-					@closeConversationTime tinyint,
-					@ShowCalifWnd bit,
-					@ExitAssisted bit,
-					@MUTimeOutClient int,
-					@allowFileAttachments bit,
-					@userId SMALLINT, 
-					@idArea SMALLINT, 
-					@isCreating SMALLINT
+                    @ConexionInfo varchar(400),
+                    @outbound_id int,
+                    @descripcion varchar(400), 
+                    @ConnUser varchar(60),
+                    @tNotas int,
+                    @closeConversationTime tinyint,
+                    @ShowCalifWnd bit,
+                    @ExitAssisted bit,
+                    @MUTimeOutClient int,
+                    @allowFileAttachments bit,
+                    @userId SMALLINT, 
+                    @idArea SMALLINT, 
+                    @isCreating SMALLINT
 
-					AS
-					set nocount on
-					IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
-							BEGIN
+                    AS
+                    set nocount on
+                    IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
+                            BEGIN
 
-								INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments)
-								VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL);
+                                INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments)
+                                VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL);
 
-								IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
+                                IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
-								Create table #contactMeanOutTable 
-								(
-									columnInfo VARCHAR(255),
-									dataInfo VARCHAR(255),
-									identifierInfo VARCHAR(255)
-								)
+                                Create table #contactMeanOutTable 
+                                (
+                                    columnInfo VARCHAR(255),
+                                    dataInfo VARCHAR(255),
+                                    identifierInfo VARCHAR(255)
+                                )
 
-								EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanOut'', @columnNameId=''camp_id'', @valueId= @outbound_id, @userId= @userid
+                                EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanOut'', @columnNameId=''camp_id'', @valueId= @outbound_id, @userId= @userid
 
 
-								UPDATE contactMeanOut SET
-									conexionInfo = @conexionInfo,
-									connUser = @connUser,
-									closeConversationTime = @closeConversationTime,
-									answerTimeoutClient = @MUTimeOutClient,
-									allowFileAttachments = @allowFileAttachments
-								WHERE camp_id = @outbound_id
+                                UPDATE contactMeanOut SET
+                                    conexionInfo = @conexionInfo,
+                                    connUser = @connUser,
+                                    closeConversationTime = @closeConversationTime,
+                                    answerTimeoutClient = @MUTimeOutClient,
+                                    allowFileAttachments = @allowFileAttachments
+                                WHERE camp_id = @outbound_id
 
-								IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
+                                IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
 
-								DELETE FROM #contactMeanOutTable WHERE dataInfo = '''''''';
+                                DELETE FROM #contactMeanOutTable WHERE dataInfo = '''''''';
 
-								INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-								SELECT 
-									(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-									getDate(), 
-									(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-									46, 
-									3, 
-									CMOT.identifierInfo,
-									CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
-										CASE
-											WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
-												CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					
-											ELSE CMOT.dataInfo END
-									ELSE '''' END, 
-									(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
-								FROM #contactMeanOutTable AS CMOT;
+                                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                                SELECT 
+                                    (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+                                    getDate(), 
+                                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                                    46, 
+                                    3, 
+                                    CMOT.identifierInfo,
+                                    CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
+                                        CASE
+                                            WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
+                                                CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    
+                                            ELSE CMOT.dataInfo END
+                                    ELSE '''' END, 
+                                    (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
+                                FROM #contactMeanOutTable AS CMOT;
 
-								EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid;
-								IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
+                                EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @outbound_id, @userId = @userid;
+                                IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
-								UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
-						END;
+                                UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
+                        END;
 
-					IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
-					BEGIN
+                    IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
+                    BEGIN
 
-								IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+                                IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
-								Create table #ccCampsTable 
-								(
-									columnInfo VARCHAR(255),
-									dataInfo VARCHAR(255),
-									identifierInfo VARCHAR(255)
-								)
+                                Create table #ccCampsTable 
+                                (
+                                    columnInfo VARCHAR(255),
+                                    dataInfo VARCHAR(255),
+                                    identifierInfo VARCHAR(255)
+                                )
 
-								EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @outbound_id, @userId= @userid
+                                EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @outbound_id, @userId= @userid
 
-								UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitAssisted, CampType = 5 where cam_id = @outbound_id;
+                                UPDATE ccCamps SET cam_tnotas = @tNotas, cam_ShowCalifWnd = @ShowCalifWnd, exitAssisted = @ExitAssisted, CampType = 5 where cam_id = @outbound_id;
 
-								IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#ccCampsTable'';
+                                IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid, @tableTemp=''#ccCampsTable'';
 
-								DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'');
+                                DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'');
 
-								INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-								SELECT 
-									(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
-									getDate(), 
-									(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-									46, 
-									3, 
-									CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
-										CASE WHEN CCCT.identifierInfo = ''OUT_EXIT_ASSISTED'' THEN ''OUT_WHATS_EXIT_ASSISTED''
-										ELSE CCCT.identifierInfo END
-									ELSE CCCT.identifierInfo END,
-									CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
-										CASE
-											WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'') THEN
-												CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					
-											ELSE CCCT.dataInfo END
-									ELSE '''' END, 
-									(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
-								FROM #ccCampsTable AS CCCT;
+                                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                                SELECT 
+                                    (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+                                    getDate(), 
+                                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                                    46, 
+                                    3, 
+                                    CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
+                                        CASE WHEN CCCT.identifierInfo = ''OUT_EXIT_ASSISTED'' THEN ''OUT_WHATS_EXIT_ASSISTED''
+                                        ELSE CCCT.identifierInfo END
+                                    ELSE CCCT.identifierInfo END,
+                                    CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
+                                        CASE
+                                            WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'') THEN
+                                                CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    
+                                            ELSE CCCT.dataInfo END
+                                    ELSE '''' END, 
+                                    (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @outbound_id)
+                                FROM #ccCampsTable AS CCCT;
 
-								EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid;
-								IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+                                EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCamps'', @columnNameId = ''cam_id'', @valueId = @outbound_id, @userId = @userid;
+                                IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
-					END;
-					SELECT @outbound_id;
+                    END;
+                    SELECT @outbound_id;
 
-					set nocount off
-		'
-		EXEC(@sql)
+                    set nocount off
+        '
+        EXEC(@sql)
 
-		SET @process = '24 - ccspConfigSMSCamp - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa Salida SMS)'
-		SET @sql = '
+        SET @process = '24 - ccspConfigSMSCamp - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a Salida SMS)'
+        SET @sql = '
 ALTER procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strIDates nvarchar(max),@strFDates nvarchar(max),
 	@userId				   SMALLINT, 
 	@idArea				   SMALLINT, 
@@ -4051,17 +4051,15 @@ ALTER procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strID
 				@CamDesc
 			FROM @ccSmsSchedulesDelete AS SD WHERE SD.status = 2;
 
-			--DELETE ccSS, ccSDEL FROM USING ccSmsSchedules AS ccSS, @ccSmsSchedulesDelete AS ccSDEL WHERE ccSS.iDate = ccSDEL.iDate LIMIT 1;
-			DELETE TOP(1) FROM ccSmsSchedules 
-				WHERE 
-					iDate = (SELECT [iDate] FROM @ccSmsSchedulesDelete WHERE status = 2)
-				AND
-					fDate = (SELECT [fDate] FROM @ccSmsSchedulesDelete WHERE status = 2);
-			--DELETE FROM ccSmsSchedules WHERE sched_id IN (SELECT sched_id FROM @ccSmsSchedulesDelete WHERE status = 2);
+			DELETE ccSS 
+			FROM ccSmsSchedules ccSS
+			INNER JOIN @ccSmsSchedulesDelete ccSDEL ON ccSS.cam_id = ccSDEL.cam_id
+			WHERE ccSDEL.iDate = ccSS.iDate AND ccSDEL.fDate = ccSS.fDate AND ccSDEL.status = 2
 
 		END
 
 		IF EXISTS(SELECT * FROM @ccSmsSchedulesUpdate) BEGIN
+
 			DELETE FROM @ccSmsSchedulesUpdate WHERE status = 0;
 
 			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
@@ -4079,167 +4077,166 @@ ALTER procedure [dbo].[ccspConfigSMSCamp] (@process int, @cam_id smallint,@strID
 				INSERT INTO ccSmsSchedules (cam_id, iDate, fDate)  
 				SELECT cam_id, iDate, fDate FROM @ccSmsSchedulesUpdate
 
-				--alter table ccSmsSchedules alter column sched_id bigint
 		END
 	end
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '25 - ccsp_GalateaUpdateVoiceConfiguration - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa Entrada Llamada)'
-		SET @sql = '
+        SET @process = '25 - ccsp_GalateaUpdateVoiceConfiguration - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a Entrada Llamada)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateVoiceConfiguration]
-	@inboundId				smallint,
-	@frame					smallint	= null,
-	@description			varchar(50) = null,
-	@mediaType				tinyint		= null,
-	@status					smallint	= null,
-	@tNotas					int			= null,
-	@tMaxWaitCall			smallint	= null,
-	@nMaxQue				smallint	= null,
-	@tel_maxwait			varchar(15) = null,
-	@tel_maxqueue			varchar(15) = null,
-	@tel_outservice			varchar(15) = null,
-	@tel_noct				varchar(15) = null,
-	@showCalifWnd			bit			= null,
-	@editableCallKey		bit			= null,
-	@queuePosition			bit			= null,
-	@tMaxQueueCallBack		smallint	= null,
-	@stopRecording			bit			= null,
-	@dialPrefixOverflow		varchar(10) = null,
-	@callerIdDesc			varchar(15) = null,
-	@startStopRecording		bit			= null,
-	@callBackSurveyAgent	bit			= null,
-	@callBackSurveyClient	bit			= null,
-	@editableDtmf			bit			= null,
-	@addDataCallBackReminder bit		= null,
-	@recordHold				bit			= null,
-	@userId 				smallint	= null
+    @inboundId              smallint,
+    @frame                  smallint    = null,
+    @description            varchar(50) = null,
+    @mediaType              tinyint     = null,
+    @status                 smallint    = null,
+    @tNotas                 int         = null,
+    @tMaxWaitCall           smallint    = null,
+    @nMaxQue                smallint    = null,
+    @tel_maxwait            varchar(15) = null,
+    @tel_maxqueue           varchar(15) = null,
+    @tel_outservice         varchar(15) = null,
+    @tel_noct               varchar(15) = null,
+    @showCalifWnd           bit         = null,
+    @editableCallKey        bit         = null,
+    @queuePosition          bit         = null,
+    @tMaxQueueCallBack      smallint    = null,
+    @stopRecording          bit         = null,
+    @dialPrefixOverflow     varchar(10) = null,
+    @callerIdDesc           varchar(15) = null,
+    @startStopRecording     bit         = null,
+    @callBackSurveyAgent    bit         = null,
+    @callBackSurveyClient   bit         = null,
+    @editableDtmf           bit         = null,
+    @addDataCallBackReminder bit        = null,
+    @recordHold             bit         = null,
+    @userId                 smallint    = null
 AS
 BEGIN
-	SET NOCOUNT ON;
-	DECLARE @graph_id smallint
+    SET NOCOUNT ON;
+    DECLARE @graph_id smallint
 
 
-	EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
 
-	IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-	Create table #ccInboundTable 
-	(
-		columnInfo VARCHAR(255),
-		dataInfo VARCHAR(255),
-		identifierInfo VARCHAR(255)
-	)
-	
-	DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
+    Create table #ccInboundTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
+    
+    DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
 
-	UPDATE ccInbound SET
-		descripcion = ISNULL(@description, descripcion),
-		chat = ISNULL(@mediaType, chat),
-		Status = ISNULL(@status, Status),
-		tNotas = ISNULL(@tNotas, tNotas),
-		tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall),
-		nMaxQue = ISNULL(@nMaxQue, nMaxQue),
-		tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait),
-		tel_maxqueue = ISNULL(@tel_maxqueue, tel_maxqueue),
-		tel_outservice = ISNULL(@tel_outservice, tel_outservice),
-		tel_noct = ISNULL(@tel_noct, tel_noct),
-		bnocturno = CASE WHEN ISNULL(@tel_noct, 0) = ''0'' OR @tel_noct = '''' THEN ''0'' ELSE ''1'' END,
-		editableCallKey = ISNULL(@editableCallKey, editableCallKey),
-		queuePosition = ISNULL(@queuePosition, queuePosition),
-		tMaxQueueCallBack = ISNULL(@tMaxQueueCallBack, tMaxQueueCallBack),
-		stopRecording = ISNULL(@stopRecording, stopRecording),
-		dialPrefixOverflow = ISNULL(@dialPrefixOverflow, dialPrefixOverflow),
-		callerIdDesc = ISNULL(@callerIdDesc, callerIdDesc),
-		startStopRecording = ISNULL(@startStopRecording, startStopRecording),
-		callBackSurveyAgent = ISNULL(@callBackSurveyAgent, callBackSurveyAgent),
-		callBackSurveyClient = ISNULL(@callBackSurveyClient, callBackSurveyClient),
-		editableDtmf = ISNULL(@editableDtmf, editableDtmf),
-		addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder),
-		recordHold = ISNULL(@recordHold, recordHold)
-	WHERE Inbound_id = @inboundId
+    UPDATE ccInbound SET
+        descripcion = ISNULL(@description, descripcion),
+        chat = ISNULL(@mediaType, chat),
+        Status = ISNULL(@status, Status),
+        tNotas = ISNULL(@tNotas, tNotas),
+        tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall),
+        nMaxQue = ISNULL(@nMaxQue, nMaxQue),
+        tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait),
+        tel_maxqueue = ISNULL(@tel_maxqueue, tel_maxqueue),
+        tel_outservice = ISNULL(@tel_outservice, tel_outservice),
+        tel_noct = ISNULL(@tel_noct, tel_noct),
+        bnocturno = CASE WHEN ISNULL(@tel_noct, 0) = ''0'' OR @tel_noct = '''' THEN ''0'' ELSE ''1'' END,
+        editableCallKey = ISNULL(@editableCallKey, editableCallKey),
+        queuePosition = ISNULL(@queuePosition, queuePosition),
+        tMaxQueueCallBack = ISNULL(@tMaxQueueCallBack, tMaxQueueCallBack),
+        stopRecording = ISNULL(@stopRecording, stopRecording),
+        dialPrefixOverflow = ISNULL(@dialPrefixOverflow, dialPrefixOverflow),
+        callerIdDesc = ISNULL(@callerIdDesc, callerIdDesc),
+        startStopRecording = ISNULL(@startStopRecording, startStopRecording),
+        callBackSurveyAgent = ISNULL(@callBackSurveyAgent, callBackSurveyAgent),
+        callBackSurveyClient = ISNULL(@callBackSurveyClient, callBackSurveyClient),
+        editableDtmf = ISNULL(@editableDtmf, editableDtmf),
+        addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder),
+        recordHold = ISNULL(@recordHold, recordHold)
+    WHERE Inbound_id = @inboundId
 
-	EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#ccInboundTable'';	
+    EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#ccInboundTable''; 
 
-	DELETE FROM #ccInboundTable WHERE columnInfo IN (''bnocturno'');
+    DELETE FROM #ccInboundTable WHERE columnInfo IN (''bnocturno'');
 
-	INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-	SELECT 
-		(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		getDate(), 
-		(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		52, 
-		3,
-		CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
-			CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
-		ELSE
-			CCIT.identifierInfo
-		END,
-		CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-			CASE 
-				WHEN CCIT.identifierInfo IN (''IN_DESTINATION_WAIT_TIME'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
-						CASE WHEN CCIT.dataInfo = ''VOICEMAIL'' 
-							THEN ''COMMON_VOICE_MAIL'' 
-							ELSE 
-								CASE WHEN CCIT.dataInfo IS NOT NULL AND CCIT.dataInfo <> '''' THEN CCIT.dataInfo ELSE ''T&COMMON_NONE'' END 
-							END
-				WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'') THEN
-					CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-				ELSE CCIT.dataInfo END
-		ELSE '''' END,
-		CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
-	FROM #ccInboundTable AS CCIT;
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        52, 
+        3,
+        CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
+            CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
+        ELSE
+            CCIT.identifierInfo
+        END,
+        CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+            CASE 
+                WHEN CCIT.identifierInfo IN (''IN_DESTINATION_WAIT_TIME'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
+                        CASE WHEN CCIT.dataInfo = ''VOICEMAIL'' 
+                            THEN ''COMMON_VOICE_MAIL'' 
+                            ELSE 
+                                CASE WHEN CCIT.dataInfo IS NOT NULL AND CCIT.dataInfo <> '''' THEN CCIT.dataInfo ELSE ''T&COMMON_NONE'' END 
+                            END
+                WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'') THEN
+                    CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                ELSE CCIT.dataInfo END
+        ELSE '''' END,
+        CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
+    FROM #ccInboundTable AS CCIT;
 
-	EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
+    EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
 
-	IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-	IF @frame IS NOT NULL
-	BEGIN
-		SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
-		UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
-
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			CASE WHEN @mediaType = 5 THEN 40 ELSE 52 END, 
-			3,
-			'''',
-			''IN_CALL_EDIT_ICON'', 
-			(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
-
-	END
-
-	IF @showCalifWnd = 1
+    IF @frame IS NOT NULL
     BEGIN
-		IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
+        SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
+        UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
+
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            CASE WHEN @mediaType = 5 THEN 40 ELSE 52 END, 
+            3,
+            '''',
+            ''IN_CALL_EDIT_ICON'', 
+            (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+
+    END
+
+    IF @showCalifWnd = 1
+    BEGIN
+        IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
         BEGIN
-			UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
+            UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
             WHERE inbound_id = @inboundId
-			SELECT 1 [Result]
-			RETURN(0)
+            SELECT 1 [Result]
+            RETURN(0)
         END
 
         SELECT -1 [Result]
         RETURN(0)
      END
      ELSE
-	 BEGIN
-		UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
-	 END
+     BEGIN
+        UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
+     END
 
-	SELECT 1 [Result]
-	RETURN(0);
+    SELECT 1 [Result]
+    RETURN(0);
 
-	SET NOCOUNT OFF;
+    SET NOCOUNT OFF;
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '26 - ccsp_GalateaUpdateWhatsAppConfiguration - SP Edited, edited to add records to Activity Log, (Editar CampaÒa Entrada WhatsApp)'
-		SET @sql = '
+        SET @process = '26 - ccsp_GalateaUpdateWhatsAppConfiguration - SP Edited, edited to add records to Activity Log, (Editar Campa√±a Entrada WhatsApp)'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
         @inboundId        smallint,
         @frame          smallint  = null,
@@ -4252,26 +4249,26 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
         @tNotas         int     = null,
         @exitWrapUpDisposition  bit     = null,
         @showCalifWnd     bit     = null,
-		@allowFileAttachments bit    = null,
-		@userId 				smallint	= null
+        @allowFileAttachments bit    = null,
+        @userId                 smallint    = null
 
       AS
       BEGIN
         SET NOCOUNT ON;
         DECLARE @graph_id smallint
 
-		EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
 
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-		Create table #ccInboundTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
-	
-		DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
+        Create table #ccInboundTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
+    
+        DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
 
         UPDATE ccInbound SET
           descripcion = ISNULL(@description, descripcion),
@@ -4281,34 +4278,34 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
           ExitWrapUpDisposition = ISNULL(@exitWrapUpDisposition, ExitWrapUpDisposition)
         WHERE Inbound_id = @inboundId
 
-		EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#ccInboundTable'';	
+        EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#ccInboundTable''; 
 
-		DELETE FROM #ccInboundTable WHERE columnInfo IN (''tel_maxwait'', ''tel_maxqueue'', ''tel_outservice'', ''tel_noct'');
+        DELETE FROM #ccInboundTable WHERE columnInfo IN (''tel_maxwait'', ''tel_maxqueue'', ''tel_outservice'', ''tel_noct'');
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			53, 
-			3,
-			CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
-				CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
-			ELSE
-				CCIT.identifierInfo
-			END,
-			CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-				CASE 
-					WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
-						CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					ELSE CCIT.dataInfo END
-			ELSE '''' END, 
-			CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
-		FROM #ccInboundTable AS CCIT;
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            53, 
+            3,
+            CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
+                CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
+            ELSE
+                CCIT.identifierInfo
+            END,
+            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+                CASE 
+                    WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
+                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    ELSE CCIT.dataInfo END
+            ELSE '''' END, 
+            CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
+        FROM #ccInboundTable AS CCIT;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
 
-		IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
         DECLARE @descUpdate varchar(50)
         DECLARE @statusCCInbound smallint
@@ -4322,58 +4319,58 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
 
         IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inboundId) 
           BEGIN
-		  
-		  set @number = case when  @number is null or @number in('''',''0'') then '''' else @number end
+          
+          set @number = case when  @number is null or @number in('''',''0'') then '''' else @number end
 
-		  EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inboundId, @userId= @userId
+          EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inboundId, @userId= @userId
 
-			IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+            IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
-			Create table #contactMeanInTable 
-			(
-				columnInfo VARCHAR(255),
-				dataInfo VARCHAR(255),
-				identifierInfo VARCHAR(255)
-			)
+            Create table #contactMeanInTable 
+            (
+                columnInfo VARCHAR(255),
+                dataInfo VARCHAR(255),
+                identifierInfo VARCHAR(255)
+            )
 
 
           UPDATE contactMeanIn set name=@descUpdate, conexionInfo=ISNULL(@number, conexionInfo)
-		  ,connUser=ISNULL(@number, connUser)
-		  ,ConnPass=ISNULL(@number, ConnPass) 
+          ,connUser=ISNULL(@number, connUser)
+          ,ConnPass=ISNULL(@number, ConnPass) 
           ,closeConversationTime = ISNULL(@maxAnswerTime, closeConversationTime),
           answerTimeoutClient = ISNULL(@muTimeOutClient, answerTimeoutClient),
-		  allowFileAttachments = ISNULL(@allowFileAttachments, allowFileAttachments)
+          allowFileAttachments = ISNULL(@allowFileAttachments, allowFileAttachments)
           where inboundId = @inboundId;
 
-		EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#contactMeanInTable'';	
+        EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#contactMeanInTable'';  
 
-		DELETE FROM #contactMeanInTable WHERE columnInfo IN (''name'')
+        DELETE FROM #contactMeanInTable WHERE columnInfo IN (''name'')
 
-			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-			SELECT 
-				(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-				getDate(), 
-				(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-				53, 
-				3, 
-				CMIT.identifierInfo,
-				CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
-					CASE
-						WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
-							CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-						ELSE CMIT.dataInfo END
-				ELSE '''' END, 
-				(SELECT [name] FROM contactMeanIn WHERE inboundId = @inboundId)
-			FROM #contactMeanInTable AS CMIT;
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+            SELECT 
+                (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+                getDate(), 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                53, 
+                3, 
+                CMIT.identifierInfo,
+                CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
+                    CASE
+                        WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
+                            CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                        ELSE CMIT.dataInfo END
+                ELSE '''' END, 
+                (SELECT [name] FROM contactMeanIn WHERE inboundId = @inboundId)
+            FROM #contactMeanInTable AS CMIT;
 
-			EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId;
+            EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId;
 
-			IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+            IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
-		  update ccWhatsAppNumbers set inboundId=0 where inboundId=@inboundId
-		  if @number <> '''' begin
-			update ccWhatsAppNumbers set inboundId=@inboundId where inboundId=0 and number=@number
-		  end
+          update ccWhatsAppNumbers set inboundId=0 where inboundId=@inboundId
+          if @number <> '''' begin
+            update ccWhatsAppNumbers set inboundId=@inboundId where inboundId=0 and number=@number
+          end
 
           END
 
@@ -4382,16 +4379,16 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
           SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
           UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
 
-		  INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		  SELECT 
-				(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-				getDate(), 
-				(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-				53, 
-				3,
-				'''',
-				''IN_CALL_EDIT_ICON'', 
-				(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+          INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+          SELECT 
+                (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+                getDate(), 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                53, 
+                3,
+                '''',
+                ''IN_CALL_EDIT_ICON'', 
+                (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
         END
 
         IF @showCalifWnd = 1
@@ -4417,103 +4414,103 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
 
         SET NOCOUNT OFF;
       END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		SET @process = '27 - ccsp_RIAUpdateCamConfigExtend - SP Edited, edited to add records to Activity Log, (Crear/Editar CampaÒa de Salida (Llamada/VP/WhatsApp/IA/SMS))'
-		SET @sql = '
+        SET @process = '27 - ccsp_RIAUpdateCamConfigExtend - SP Edited, edited to add records to Activity Log, (Crear/Editar Campa√±a de Salida (Llamada/VP/WhatsApp/IA/SMS))'
+        SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
-	@cam_id smallint,
-	@zipCodeSchedule BIT = NULL,
-	@userId	SMALLINT = NULL,
-	@idArea SMALLINT = NULL, 
-	@isCreating SMALLINT = NULL
+    @cam_id smallint,
+    @zipCodeSchedule BIT = NULL,
+    @userId SMALLINT = NULL,
+    @idArea SMALLINT = NULL, 
+    @isCreating SMALLINT = NULL
 AS
 BEGIN
-	SET NOCOUNT ON;
-	if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
+    SET NOCOUNT ON;
+    if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
 
-		EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCampsExtend'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCampsExtend'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
 
-		IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+        IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
-		Create table #ccCampsExtendTable 
-		(
-			columnInfo VARCHAR(255),
-			dataInfo VARCHAR(255),
-			identifierInfo VARCHAR(255)
-		)
+        Create table #ccCampsExtendTable 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
 
-		DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
-		DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
-																	CASE 
-																		WHEN @Camptype = 6	THEN 44
-																		WHEN @Camptype = 5	THEN 46
-																		WHEN @Camptype = 4	THEN 48
-																		WHEN @Camptype = 7	THEN 50
-																		ELSE 42 END
-																ELSE 
-																	CASE 
-																		WHEN @Camptype = 6	THEN 55
-																		WHEN @Camptype = 5	THEN 56
-																		WHEN @Camptype = 4	THEN 57
-																		WHEN @Camptype = 7	THEN 58
-																		ELSE 54 END
-																END;
+        DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
+        DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
+                                                                    CASE 
+                                                                        WHEN @Camptype = 6  THEN 44
+                                                                        WHEN @Camptype = 5  THEN 46
+                                                                        WHEN @Camptype = 4  THEN 48
+                                                                        WHEN @Camptype = 7  THEN 50
+                                                                        ELSE 42 END
+                                                                ELSE 
+                                                                    CASE 
+                                                                        WHEN @Camptype = 6  THEN 55
+                                                                        WHEN @Camptype = 5  THEN 56
+                                                                        WHEN @Camptype = 4  THEN 57
+                                                                        WHEN @Camptype = 7  THEN 58
+                                                                        ELSE 54 END
+                                                                END;
 
-		UPDATE ccCampsExtend SET
-			zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
-		Where cam_id = @cam_id	
+        UPDATE ccCampsExtend SET
+            zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule)
+        Where cam_id = @cam_id  
 
-		IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsExtendTable'';
+        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsExtendTable'';
 
-		IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
+        IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
 
-		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		SELECT 
-			(SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
-			getDate(), 
-			(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-			@operation, 
-			3, 
-			CCCE.identifierInfo,
-			CASE WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
-				CASE 
-					WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'') THEN
-						CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-					
-					ELSE CCCE.dataInfo END
-			ELSE '''' END, 
-			(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
-		FROM #ccCampsExtendTable AS CCCE;
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        SELECT 
+            (SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            @operation, 
+            3, 
+            CCCE.identifierInfo,
+            CASE WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
+                CASE 
+                    WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'') THEN
+                        CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                    
+                    ELSE CCCE.dataInfo END
+            ELSE '''' END, 
+            (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+        FROM #ccCampsExtendTable AS CCCE;
 
-		EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
-		IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable
+        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
+        IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable
 
-	end
-	else begin
-		INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule) values (@cam_id,@zipCodeSchedule)
-	end
-	set nocount off
+    end
+    else begin
+        INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule) values (@cam_id,@zipCodeSchedule)
+    end
+    set nocount off
 END
-		'
-		EXEC(@sql)
+        '
+        EXEC(@sql)
 
-		----------------------------------------------------------------------------------------------------------------------------
-		/* End script release */
-		/* Upgrade database version (first and the last number of setting 77) */
-		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+        ----------------------------------------------------------------------------------------------------------------------------
+        /* End script release */
+        /* Upgrade database version (first and the last number of setting 77) */
+        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
-		COMMIT TRAN
-	END TRY
+        COMMIT TRAN
+    END TRY
 
-	BEGIN CATCH
-		/* Error generated based on sintax */
-		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+    BEGIN CATCH
+        /* Error generated based on sintax */
+        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
 
-		RAISERROR (@errorGenerated, 11, 1)
+        RAISERROR (@errorGenerated, 11, 1)
 
-		ROLLBACK TRAN
-	END CATCH
+        ROLLBACK TRAN
+    END CATCH
 END

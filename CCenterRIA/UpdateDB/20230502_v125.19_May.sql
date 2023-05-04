@@ -3211,7 +3211,7 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
             END,
             CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
                 CASE
-                    WHEN CCIT.identifierInfo IN (''IN_WRAP_UP_TIME'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
+                    WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_UP_TIME'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
                         CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
                     ELSE CCIT.dataInfo END
             ELSE '''' END, 
@@ -3653,8 +3653,8 @@ Where cam_id = @cam_id
         DELETE FROM #ccCampsTable WHERE columnInfo IN (''startStopRecording'');
         DELETE FROM #ccCampsTable WHERE dataInfo = '''''''';
         
-        IF(@CampType = 6) DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'', ''cam_fDialOnWU'', ''sipHdrFormat'', ''ProgDial'');
-        ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'');
+        IF(@CampType = 6) DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
+        ELSE IF(@CampType = 5) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''exitAssisted'');
         ELSE IF(@CampType = 7) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''messagingOrder'', ''autoStart'', ''rotativeAlgo'', ''id_anilist'', ''cam_descripcion'');
         ELSE DELETE FROM #ccCampsTable WHERE columnInfo IN (''previewDiscard'', ''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 
@@ -3803,6 +3803,7 @@ BEGIN
         END
     END
 END 
+DECLARE @prevCalif BIT = (SELECT [cam_ShowCalifWnd] FROM ccCamps WHERE cam_id = @cam_id);
 
 if @cam_ShowCalifWnd = 1
 begin
@@ -3814,6 +3815,20 @@ begin
 
  UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
  where cam_id = @cam_id
+
+ IF(@prevCalif <> @cam_ShowCalifWnd) BEGIN
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        @operation, 
+        3, 
+        ''OUT_SHOW_DISPOSITIONS'',
+        CASE WHEN (SELECT [cam_ShowCalifWnd] FROM ccCamps WHERE cam_id = @cam_id) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END, 
+        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id);
+ END
+
  select 1
  return(0)
 end
@@ -3821,10 +3836,25 @@ end
 UPDATE ccCamps SET
 cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
 where cam_id = @cam_id
+
+ IF(@prevCalif <> @cam_ShowCalifWnd) BEGIN
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        @operation, 
+        3, 
+        ''OUT_SHOW_DISPOSITIONS'',
+        CASE WHEN (SELECT [cam_ShowCalifWnd] FROM ccCamps WHERE cam_id = @cam_id) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END, 
+        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id);
+ END
+
 select 2
 return(0)
 
 set nocount off
+        
         '
         EXEC(@sql)
 
@@ -3847,11 +3877,12 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig]
 
                     AS
                     set nocount on
-                    IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) 
-                            BEGIN
+                    IF NOT EXISTS (SELECT camp_id FROM ContactMeanOut WHERE camp_id = @outbound_id) BEGIN
 
-                                INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments)
-                                VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL);
+                        INSERT INTO contactMeanOut (meanContactTypeId, name, camp_id, isActive, numMessages,conexionInfo,connUser,closeConversationTime,ConnPass,answerTimeoutClient,allowFileAttachments)
+                        VALUES (5, @descripcion, @outbound_id, (select cam_activo  from ccCamps where cam_id = @outbound_id), 3, NULL, NULL, NULL, ''N/A'', NULL, NULL);
+
+                    END ELSE BEGIN
 
                                 IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
@@ -3899,7 +3930,7 @@ ALTER PROCEDURE  [dbo].[ccsp_UpdateOutWhatsappConfig]
                                 IF OBJECT_ID(N''tempdb..#contactMeanOutTable'') IS NOT NULL DROP TABLE #contactMeanOutTable
 
                                 UPDATE ccWhatsAppNumbers SET camp_id = @outbound_id WHERE number = @conexionInfo
-                        END;
+                    END;
 
                     IF EXISTS (SELECT cam_id FROM ccCamps WHERE cam_id = @outbound_id) 
                     BEGIN

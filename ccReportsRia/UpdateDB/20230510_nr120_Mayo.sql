@@ -727,9 +727,9 @@ select
 		WHEN raqv.answerType5 IS NOT NULL THEN raqv.answerType5
 	ELSE ''''
 	END AS etiquetas,
-	re.totalPoints AS Dispositions, 
-	re.totalPoints AS Dispositions2, 
-	re.totalPoints AS avgDisposition,
+	raqv.points AS Dispositions, 
+	raqv.points AS Dispositions2, 
+	raqv.points AS avgDisposition,
 	rg.cam_id AS cam_id,
 	rg.tipo_llamada AS tipoLlamada,
 	(CASE WHEN rg.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) AS campaignAcd,

@@ -461,6 +461,7 @@ DECLARE @timesDiscardActual int = (SELECT timesDiscard FROM ccCamps WHERE cam_id
 DECLARE @CheckCamp int = (Select case when cam_procesando=0 and progDial=3 then 1 else 0 end from ccCamps where cam_id=@cam_id)
 
 UPDATE ccCamps SET
+ cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd),
  cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
  cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
  cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
@@ -563,15 +564,11 @@ begin
   return(0)
   end
 
- UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
- where cam_id = @cam_id
  select 1
  return(0)
 end
 
-UPDATE ccCamps SET
-cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
-where cam_id = @cam_id
+
 select 2
 return(0)
 

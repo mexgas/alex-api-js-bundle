@@ -583,7 +583,7 @@ if @Tipo in (1,2) begin
 		begin Tran updateccCampsNvosCB
 
 			insert into @TotalNew
-			select CampNvosCB.id,isnull(CASE WHEN CampNvosCB.OverallTotalNew = 0 THEN NULL ELSE CampNvosCB.OverallTotalNew END,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+			select CampNvosCB.id,isnull(CampNvosCB.OverallTotalNew,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
 			where CampNvosCB.id = tcamp.cam_id
 
 			delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
@@ -599,7 +599,16 @@ if @Tipo in (1,2) begin
 			isNull(wt.Fin,0) Fin,
 			isNull(cams.cantidad,0) cantidad,
 			getdate(),
-			isnull(T.OverallTotalNew,0)  as OverallTotalNew
+			--isnull(T.OverallTotalNew,0)  as OverallTotalNew
+			isnull(
+			case T.OverallTotalNew
+			when 0 then 
+				case cams.cam_tipojobs
+				when 0 then wt.New + wt.Cb
+				when 1 then wt.Cb
+				else wt.New end 
+			else T.OverallTotalNew end
+			,0)  as OverallTotalNew
 			FROM #Tcamps2 cams with(nolock)
 			LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
 			LEFT JOIN #tempoutsource cs on cams.cam_id = cs.cam_id

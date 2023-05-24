@@ -41,3 +41,4 @@ print('---------------------------publicationTableCCRecorderRIA-----------------
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSTemplatesRate',0)
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSTemplates',0)	
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSRecordings',0)
+insert into publicationTableCCRecorderRIA(publicationName,status) values(N'RecordingEvaluation',0)

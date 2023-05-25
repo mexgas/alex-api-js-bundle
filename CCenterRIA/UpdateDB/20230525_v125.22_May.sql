@@ -175,6 +175,20 @@ BEGIN
 		 '
 	EXEC(@sql)
 
+	---------------------------------------BEGIN JONATHAN RAMIREZ ---------------------------------------------------------
+
+
+	SET @process = 'CW-7925, CW-7926 JR Error de comillas dobles tagEN, se corrige haciendo la actualización de estos registros en ccGalateaOperations'
+	SET @sql = '
+    UPDATE ccGalateaOperations SET OpTagEn = ''Reset agent''''s password'' WHERE OperationId = 26;
+    UPDATE ccGalateaOperations SET OpTagEn = ''Change agent''''s area'' WHERE OperationId = 27;
+    UPDATE ccGalateaOperations SET OpTagEn = ''Reset administrator''''s password'' WHERE OperationId = 33;
+    UPDATE ccGalateaOperations SET OpTagEn = ''Change administrator''''s area'' WHERE OperationId = 34;
+	'
+
+	EXEC(@sql)
+
+	---------------------------------------END JONATHAN RAMIREZ ---------------------------------------------------------
 
 	
 		/* End script release */

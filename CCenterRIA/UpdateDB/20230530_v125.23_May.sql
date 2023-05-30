@@ -110,18 +110,18 @@ BEGIN
 
 		select 
 		domain,
-		isnull(proxy,'') proxy,
+		isnull(proxy,'''') proxy,
 		[user],
-		isnull(authName,'') authName,
-		isnull(encPassword,'') encPassword,
-		isnull(realm,'') realm,
+		isnull(authName,'''') authName,
+		isnull(encPassword,'''') encPassword,
+		isnull(realm,'''') realm,
 		ttl,
-		isnull(ipNatOut,'') ipNatOut,
-		isnull(sipAgent,'') sipAgent,
-		isnull(fixedDomain,'') fixedDomain,
+		isnull(ipNatOut,'''') ipNatOut,
+		isnull(sipAgent,'''') sipAgent,
+		isnull(fixedDomain,'''') fixedDomain,
 		isnull(allowReinvite,0) allowReinvite,
 		isnull(options,0) options,
-		isnull(calloutHdr,'') calloutHdr,
+		isnull(calloutHdr,'''') calloutHdr,
 		isnull(sipId,1) sipId,
 		isnull(sipPriority,1) sipPriority
 		from ccTrunkConfiguration nolock 

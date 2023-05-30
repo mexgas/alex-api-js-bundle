@@ -635,6 +635,560 @@ if @Type=3
 set nocount off';
 	EXEC(@sql);
 	---------------------------------------END Gabriela ---------------------------------------------------------
+	---------------------------------------BEGIN Frida ---------------------------------------------------------
+	SET @process = ''
+	SET @sql = 'if not exists (select * from sys.columns where name = N''allowSelectCamp'' and Object_ID = Object_ID(N''ccusers''))
+    begin
+	   alter table ccUsers add allowSelectCamp bit null
+    end'
+	EXEC(@sql);
+
+	SET @process = ' DROP PROCEDURE ccsp_GalateaAdminGetPermissions'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminGetPermissions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminGetPermissions
+    end'
+	EXEC(@sql);
+
+	SET @process = 'create sp ccsp_GalateaAdminGetPermissions'
+	SET @sql = 'Create PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
+	@user_id varchar(255),
+	@Type int
+	AS
+	set nocount on
+
+	declare @isRoot int;
+
+	if exists (Select Rol_id from ccUsers A join ccUsers_Roles B on A.User_id = B.User_id where A.User_id = @user_id and rol_id = 7) set @isRoot = 1 else set @isRoot = 0;
+	print @isRoot
+
+	IF @isRoot = 1
+	BEGIN
+		Select 
+		User_id as AgentId, 
+		Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
+		cast(dialMask & 1 as int) as AllowCellPhoneCalls,
+		cast( (dialMask & 2) /2 as int) as AllowLongDistanceCalls, 
+		cast((dialMask & 4) / 4 as int) as AllowLocalCalls,
+		cast( xfermask as int) as AllowTransferCalls, 
+		cast(CanChangeStatus as tinyint) CanChangeStatus,
+		cast(XferAgents as tinyint) XferAgents,
+		ISNULL(cast(startStopRecording as tinyint), 0) startStopRecording,
+		cast(AllowChangeDialingMode as int) as AgentPermissionDailing,
+		ISNULL(cast( DialingMode & 1 as int), 0) as DailingMode,
+		ISNULL(agentsPermissions.AllowUnassign, 0) AS AllowUnassign,
+		ISNULL(agentsPermissions.AllowSpam, 0 ) AS AllowSpam,
+		ISNULL(agentsPermissions.AllowPlayRecordsOnCallHistory, 0) AS AllowPlayRecordsOnCallHistory,
+		cast(AllowDeleteRecord as int) as AgentPermissionDelete,
+		AllowMarks as AllowMarks,
+		ISNULL(allowSelectCamp,0) as AllowSelectCamp
+	from 
+		ccUsers users
+		left join ccRIAAgentsPermissions agentsPermissions on
+		users.User_id = agentsPermissions.AgentId
+	where 
+	   tipoUser_id = 1
+	return(0)
+	END
+	ELSE
+	BEGIN
+		Select distinct 
+		A.User_id as AgentId, 
+		Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
+		cast(dialMask & 1 as int) as AllowCellPhoneCalls,
+		cast( (dialMask & 2) /2 as int) as AllowLongDistanceCalls, 
+		cast((dialMask & 4) / 4 as int) as AllowLocalCalls,
+		cast( xfermask as int) as AllowTransferCalls, 
+		cast(CanChangeStatus as tinyint) CanChangeStatus,
+		cast(XferAgents as tinyint) XferAgents,
+		ISNULL(cast(startStopRecording as tinyint), 0) startStopRecording,
+		cast(AllowChangeDialingMode as int) as AgentPermissionDailing,
+		ISNULL(cast( DialingMode & 1 as int), 0) as DailingMode,
+		ISNULL(agentsPermissions.AllowUnassign, 0) AS AllowUnassign,
+		ISNULL(agentsPermissions.AllowSpam, 0 ) AS AllowSpam,
+		ISNULL(agentsPermissions.AllowPlayRecordsOnCallHistory, 0) AS AllowPlayRecordsOnCallHistory,
+		cast(AllowDeleteRecord as int) as AgentPermissionDelete,
+		AllowMarks as AllowMarks,
+		ISNULL(allowSelectCamp,0) as AllowSelectCamp
+	from 
+		ccUsers A
+	join ccRIAWorkGroupUsers B on 
+		A.user_id = B.user_id
+	left join ccRIAAgentsPermissions agentsPermissions on
+		A.User_id = agentsPermissions.AgentId
+	where 
+		tipoUser_id = 1 and 
+		IDWG in (select IDWG from ccRIAWorkGroupUsers where user_id = @user_id)
+	return(0)
+	END
+	set nocount off
+	'
+	EXEC(@sql);
+
+	SET @process = 'Drop sp ccsp_GalateaAdminSetPermissions'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSetPermissions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminSetPermissions
+    end'
+	EXEC(@sql);
+
+	SET @process = 'create sp ccsp_GalateaAdminSetPermissions'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
+	@adminId SMALLINT,
+	@areaId SMALLINT,
+	@agentsIds VARCHAR(MAX),
+	@allAgentsSelected BIT, 
+	@permissionName VARCHAR(255),
+	@permissionValue INT
+	AS
+	SET NOCOUNT ON
+
+
+	declare @changeBitTable table(permissionName VARCHAR(255), valueBit int)
+
+	insert into @changeBitTable values(''AllowCellPhoneCalls'',1)
+	insert into @changeBitTable values(''startStopRecording'',1)
+	insert into @changeBitTable values(''XferManual'',1)
+	insert into @changeBitTable values(''AllowTransferCalls'',1)
+	insert into @changeBitTable values(''AgentPermissionDailing'',1)
+	insert into @changeBitTable values(''DailingMode'',1)
+	insert into @changeBitTable values(''AgentPermissionDelete'',1)
+	insert into @changeBitTable values(''AllowSelectCamp'',1)
+
+	insert into @changeBitTable values(''AllowLongDistanceCalls'',2)
+	insert into @changeBitTable values(''XferExt'',2)
+
+	insert into @changeBitTable values(''AllowLocalCalls'',4)
+	insert into @changeBitTable values(''XferCamps'',4)
+
+	insert into @changeBitTable values(''XferAgents'',8)
+
+	DECLARE @changeBit INT
+
+	set @changeBit=0
+
+	select @changeBit=valueBit from @changeBitTable where permissionName=@permissionName
+
+	--print(@changeBit)
+	IF @agentsIds IS NOT NULL
+	BEGIN
+		DECLARE @AgentIdsTemp TABLE (AgentId INT, Status BIT)
+		INSERT INTO @AgentIdsTemp SELECT VALUE, 0 FROM dbo.fn_RIASplitDelimited(@agentsIds,'','')
+
+		IF @permissionName = ''AllowUnassign'' 
+		BEGIN                       
+			UPDATE permissions SET permissions.AllowUnassign = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+		IF @permissionName = ''AllowSpam''
+		BEGIN 
+			UPDATE permissions SET permissions.AllowSpam = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowSpam, AllowUnassign, AllowPlayRecordsOnCallHistory)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+
+		IF @permissionName = ''AllowPlayRecordsOnCallHistory''
+		BEGIN 
+			UPDATE permissions SET permissions.AllowPlayRecordsOnCallHistory = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowPlayRecordsOnCallHistory, AllowSpam, AllowUnassign)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+
+		UPDATE
+			ccUsers
+		SET DialMask =
+			CASE
+			WHEN @permissionName = ''AllowCellPhoneCalls''
+			OR @permissionName = ''AllowLongDistanceCalls''
+			OR @permissionName = ''AllowLocalCalls''
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (DialMask & @changeBit) <> @changeBit
+					THEN DialMask ^ @changeBit
+					ELSE DialMask
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (DialMask & @changeBit) = @changeBit
+					THEN DialMask ^ @changeBit
+					ELSE DialMask
+					END
+				END 
+			ELSE DialMask
+			END,
+							
+			XferMask =
+			CASE
+			WHEN @permissionName = ''AllowTransferCalls''
+			THEN
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (XferMask & @changeBit) <> @changeBit
+					THEN XferMask ^ @changeBit
+					ELSE XferMask
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (XferMask & @changeBit) = @changeBit
+					THEN XferMask ^ @changeBit
+					ELSE XferMask
+					END
+				END
+			ELSE XferMask
+			END,
+
+			XferAgents =
+			CASE
+			WHEN @permissionName = ''XferAgents''
+			OR @permissionName = ''XferCamps'' 
+			OR @permissionName = ''XferExt'' 
+			OR @permissionName = ''XferManual'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (XferAgents & @changeBit) <> @changeBit
+					THEN XferAgents ^ @changeBit
+					ELSE XferAgents
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (XferAgents & @changeBit) = @changeBit
+					THEN XferAgents ^ @changeBit
+					ELSE XferAgents
+					END
+				END
+			ELSE XferAgents
+			END,
+
+			startStopRecording =
+			CASE
+			WHEN @permissionName = ''startStopRecording'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE startStopRecording
+			END,
+
+			DialingMode = 
+			CASE
+			WHEN @permissionName = ''DailingMode'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (DialingMode & @changeBit) <> @changeBit
+					THEN DialingMode ^ @changeBit
+					ELSE DialingMode
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (DialingMode & @changeBit) = @changeBit
+					THEN DialingMode ^ @changeBit
+					ELSE DialingMode
+					END
+				END 
+			ELSE DialingMode
+			END,
+			AllowChangeDialingMode = 
+			CASE
+			WHEN @permissionName = ''AgentPermissionDailing'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE AllowChangeDialingMode
+			END,
+			AllowDeleteRecord= 
+			CASE
+			WHEN @permissionName = ''AgentPermissionDelete'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE AllowDeleteRecord
+			END,
+			AllowMarks= 
+			CASE
+			WHEN @permissionName = ''AllowMarks'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1 THEN 1
+				WHEN @permissionValue = 0 THEN 0
+				END
+			ELSE AllowMarks
+			END,
+			allowselectcamp=
+			CASE
+			WHEN @permissionName = ''AllowSelectCamp'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE allowselectcamp
+			END
+		WHERE User_id IN (SELECT AgentId FROM @AgentIdsTemp)
+
+					
+		DECLARE @Login VARCHAR(20) = (SELECT Login FROM ccUsers WHERE User_id = @adminId)
+		DECLARE @AreaName VARCHAR(50) = (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @areaId)
+		DECLARE @OperationType TINYINT = (SELECT CASE WHEN @permissionValue = 1 THEN 33 ELSE 35 END)
+		DECLARE @Language TINYINT = (SELECT valor FROM ccSettings WHERE setting_id = 27)
+		DECLARE @Tag varchar(100) = (SELECT PermissionTag FROM ccRIAAgentsPermissionsTags WHERE PermissionName = @permissionName)        
+		DECLARE @Value VARCHAR(250) = (SELECT permissions.Value 
+										FROM  dbo.fn_RIASplitDelimited(@Tag,''|'') permissions
+										WHERE permissions.Id = @Language + 1)
+
+		DECLARE @AgentId INT = 0
+		DECLARE @AgentName VARCHAR(20) = ''''
+
+		set @Value = isnull(@Value,@permissionName)
+
+		IF @allAgentsSelected = 0
+		BEGIN
+			WHILE EXISTS(SELECT * FROM @AgentIdsTemp WHERE Status = 0)
+			BEGIN 
+				SELECT TOP 1 @AgentId = AgentId FROM @AgentIdsTemp WHERE Status = 0
+				SET @AgentName = (SELECT Login FROM ccUsers WHERE User_id = @AgentId)
+						
+				EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+				@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+							
+				UPDATE @AgentIdsTemp SET Status = 1 WHERE AgentId = @AgentId
+			END
+		END
+		ELSE
+		BEGIN
+			SET @AgentName = (SELECT AllAgentsTag FROM ccRIAUserPermissionsStatusTags WHERE Language = @Language)
+						
+			EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+			@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+							
+			UPDATE @AgentIdsTemp SET Status = 1
+		END
+
+
+	END
+
+	SET NOCOUNT OFF
+'
+	EXEC(@sql);
+
+	SET @process = 'add column FinishRecordPreview'
+	SET @sql = '
+	if not exists (select * from sys.columns where name = N''FinishRecordPreview'' and Object_ID = Object_ID(N''ccTipoCalifOUT''))
+    begin
+        alter table ccTipoCalifOUT add FinishRecordPreview bit null
+    end'
+	EXEC(@sql);
+
+	SET @process = ''
+	SET @sql = 'if exists (select * from sys.procedures where name = N''nameSP'')
+    begin
+        DROP PROCEDURE ccsp_AgentDataACD;
+    end'
+	EXEC(@sql);
+
+	SET @process = 'create ccsp_GalateaAdminDispositions'
+	SET @sql = 'create PROCEDURE [dbo].[ccsp_GalateaAdminDispositions]
+            @command int,
+            @calif_id smallint = null,
+            @califIdLst varchar(8000) = null,
+            @description varchar(60)=null,
+            @order tinyint=null,
+            @canReprogram bit = null,
+            @graphColor varchar(15) = null,
+            @endConversation bit=null,
+            @keepDial bit=null,
+            @autoCB bit=null,
+            @contactOwner bit=null,
+            @finishPreview bit = 0,
+            @allNumbersToBlacklist bit = 0,
+			@FinishRecordPreview bit = 0
+            AS
+            set nocount on
+            declare @inserted table (ID smallint)
+
+            if @command=1 -- Load Inbound Dispositions
+            begin
+              Select C.calif_id, C.Description, C.orden, C.canReprogram, cast(0 as bit) as contactOwner, 
+              cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.EndConversation,0) conversationEnd, graphColor
+              from cctipoCalif C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 1
+              where C.Calif_Status=1
+              group by C.calif_id, C.Description, C.orden, C.canReprogram, C.EndConversation, graphColor
+              order by 2
+              return(0)
+            end
+
+            If @command=2 -- Load Outbound Dispositions
+            begin
+              Select C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback,  
+              cast(count(R.califRel_id)as tinyint) hasSub, IsNull(C.contactOwner,0) as contactOwner, 
+              IsNull(C.finishPreview,0) as finishPreview, graphColor, allNumbersToBlacklist, ISNULL(C.FinishRecordPreview,0) as FinishRecordPreview
+              from cctipoCalifOUT C left join cctipoSubCalifRel R on C.calif_id = R.calif_id and R.tipoSubRel = 0
+              where C.CalifOut_Status=1
+              group by C.calif_id, C.Description, C.canReprogram, C.orden, C.keepDial, C.autocallback, 
+              C.contactOwner, C.finishPreview, graphColor, allNumbersToBlacklist, C.FinishRecordPreview
+              order by 2
+              return(0)
+            end
+
+            If @command=3 -- New ccTipoCalif
+            begin
+              If exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@description)
+                begin
+                  select cast(-1 as smallint) [result]  -- Disposition already exists
+                  return(0)
+                end
+
+              If exists(select calif_id from ccTipoCalif where Calif_Status=0 and description=@description)
+              begin
+                select top 1 @calif_id = calif_id from ccTipoCalif where Calif_Status=0 and description=@description order by calif_id desc
+                update ccTipoCalif set orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), EndConversation=isnull(@endConversation,0), 
+                graphColor=isnull(@graphColor, ''1DB4E2''), Calif_Status=1
+                output inserted.calif_id into @inserted
+                where calif_id=@calif_id
+                select ID [result] from @inserted 
+                return(0)
+              end
+
+              insert into ccTipoCalif (calif_id, description, orden, CanReprogram, EndConversation , graphColor)
+              output inserted.calif_id into @inserted
+              select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), isnull(@canReprogram,0), isnull(@endConversation,0), isnull(@graphColor, ''1DB4E2'') from ccTipoCalif
+              select ID [result] from @inserted
+              return(0)
+            end
+
+            If @command=4 -- New ccTipoCalifOUT
+            begin
+              If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=1 and description=@description)
+              begin
+              select cast(-1 as smallint) [result]  -- Disposition already exists
+              return(0)
+              end
+
+             If exists(select calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description)
+             begin
+                select top 1 @calif_id = calif_id from ccTipoCalifOut where CalifOut_Status=0 and description=@description order by calif_id desc
+                update ccTipoCalifOut set autoTime=0, orden=isnull(@order,0), CanReprogram=isnull(@canReprogram,0), idTipoLista=0,
+                Califout_Status=1, keepDial=isnull(@keepDial,0), autocallback=isnull(@autoCB,0), contactOwner=isnull(@contactOwner,0), 
+                finishPreview=isnull(@finishPreview,0), graphColor=isnull(@graphColor, ''1DB4E2''), FinishRecordPreview = isnull(@FinishRecordPreview,0)
+                output inserted.calif_id into @inserted
+                where calif_id=@calif_id
+                select ID [result] from @inserted 
+                return(0)
+             end
+
+             insert into ccTipoCalifOut (calif_id, description, orden, autoTime, CanReprogram, keepDial, autocallback, contactOwner, finishPreview, graphColor, allNumbersToBlacklist,FinishRecordPreview)
+             output inserted.calif_id into @inserted
+             select isnull(max(calif_id), 0) + 1, @description, isnull(@order,0), 0, isnull(@canReprogram,0), isnull(@keepDial,0), 
+             isnull(@autoCB,0), isnull(@contactOwner,0), isnull(@finishPreview,0), isnull(@graphColor, ''1DB4E2''), ISNULL(@allNumbersToBlacklist,0), FinishRecordPreview = isnull(@FinishRecordPreview,0) from ccTipoCalifOut
+             select ID [result] from @inserted 
+             return(0)
+            end
+            If @command=5 -- Delete Inbound Dispositions
+            begin
+                delete from ccCalifCamp where tipo=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                delete from cctipoSubCalifRel where tipoSubRel=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                update ccTipoCalif set Calif_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                return(0)
+            end
+            if @command=6 -- Delete Outbound Disposition
+            begin
+                delete from ccCalifCamp where tipo=1 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                delete from cctipoSubCalifRel where tipoSubRel=0 and calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                update ccTipoCalifOUT set CalifOut_Status=0 where calif_id in (select value from dbo.fn_RIASplitDelimited(@califIdLst, '',''))
+                update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+                return(0)
+            end
+            if @command=7 -- Update Inbound Disposition
+            begin
+                if(exists(select calif_id from ccTipoCalif where Calif_Status=1 and description=@Description and calif_id<>@calif_id))
+                begin
+                    select cast(-1 as smallint) [result]    -- Disposition already exists
+                    return(0)
+                end
+
+                UPDATE ccTipoCalif set Description=isnull(@Description, Description), orden=isnull(@order, orden),
+                canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  
+                EndConversation=isnull(@endConversation,EndConversation)
+                output inserted.calif_id into @inserted
+                where calif_id=@calif_id
+
+                delete ccCalifCamp where cam_id in (select inbound_id from ccInbound where cam_id is null) and
+                tipo=0 and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+                select ID [result] from @inserted
+                return(0)
+            end
+            if @command=8 -- Update Outbound Disposition
+            begin
+                if(exists(select calif_id from ccTipoCalifOUT where CalifOut_Status=1 and Description=@description and calif_id<>@calif_id))
+                begin
+                    select cast(-1 as smallint) [result]    -- Disposition already exists
+                    return(0)
+                end
+
+                UPDATE ccTipoCalifOUT set Description=isnull(@Description, Description), Orden=isnull(@Order, Orden),
+                canReprogram=isnull(@canReprogram, canReprogram), GraphColor = isnull(@graphColor, GraphColor),  keepDial=isnull(@keepDial,keepDial), 
+                autocallback = isnull(@autoCB,autocallback), contactOwner = isnull(@contactOwner,contactOwner), 
+                finishPreview = isnull(@finishPreview,finishPreview), allNumbersToBlacklist = isnull(@allNumbersToBlacklist, allNumbersToBlacklist),  FinishRecordPreview = isnull(@FinishRecordPreview,FinishRecordPreview)
+                output inserted.calif_id into @inserted
+                where calif_id=@calif_id
+
+                if @keepDial is not null
+                begin
+                    update ccCamps set keepDial=dbo.fn_keepDial_Camps(cam_id)
+                end
+
+                select ID [result] from @inserted
+                return(0) 
+                end
+
+            set nocount off
+select * from ccTipoCalifOUT
+'
+	EXEC(@sql);
+
+
+	---------------------------------------END Frida ---------------------------------------------------------
 
 
 	

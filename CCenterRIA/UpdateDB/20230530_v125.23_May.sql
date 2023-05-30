@@ -574,16 +574,16 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'Drop SP ccsp_RIAUpdateCamConfigExtend'
-	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RIAUpdateCamConfigExtend'')
+	SET @process = 'Drop SP ccsp_GalateaConfAggrFct'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_GalateaConfAggrFct'')
 			BEGIN
-				DROP PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+				DROP PROCEDURE [dbo].[ccsp_GalateaConfAggrFct]
 			END'
 	EXEC(@sql);
 
 
 	SET @process = 'K049003 Add identifier calls by agent'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaConfAggrFct]
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaConfAggrFct]
 @Type tinyint,    -- 1:Muestra | 2:Actualiza Camp | 3:Actualiza Todas por Usuario
 @cam_id varchar(255) = null,
 @User_id int = null,

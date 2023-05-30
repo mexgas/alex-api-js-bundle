@@ -1019,10 +1019,10 @@ set nocount off';
     end'
 	EXEC(@sql);
 
-	SET @process = ''
-	SET @sql = 'if exists (select * from sys.procedures where name = N''nameSP'')
+	SET @process = 'drop sp ccsp_GalateaAdminDispositions'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminDispositions'')
     begin
-        DROP PROCEDURE ccsp_AgentDataACD;
+        DROP PROCEDURE ccsp_GalateaAdminDispositions;
     end'
 	EXEC(@sql);
 

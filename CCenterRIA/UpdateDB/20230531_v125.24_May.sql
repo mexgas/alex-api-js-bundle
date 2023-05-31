@@ -525,26 +525,29 @@ BEGIN
 	EXEC(@sql)
 
 	set @process = 'Create setting 248'
-	set @sql = 'IF NOT EXISTS (SELECT * FROM ccSettings WHERE setting_id = 248) INSERT INTO [dbo].[ccSettings]
-           ([setting_id]
-           ,[valor]
-           ,[descripcion]
-           ,[Status]
-           ,[Tipo]
-           ,[detalle]
-           ,[description]
-           ,[bLoadSettings]
-           ,[validate])
-     VALUES
-           (248
-           ,0
-           ,''Permite determinar la forma en que deben ser asignados los registros al tener configurada la campaña con vista simultánea de registros >1''
-           ,1
-           ,''X''
-           ,''0: Asignar registros hasta que el agente termine de atender los registros que tiene asignados por el sistema (valor default). 1: Asignar registros conforme el agente libere registros previamente asignados (dependiendo de cómo tenga configurado el parámetro vista simultánea de registros la campaña que está trabajando el agente)''
-           ,''It allows determining the way records should be assigned when the campaign is configured with simultaneous viewing of records >1''
-           ,0
-           ,''.*'')'
+	set @sql = 'IF NOT EXISTS (SELECT * FROM ccSettings WHERE setting_id = 248) 
+	BEGIN
+		INSERT INTO [dbo].[ccSettings]
+			([setting_id]
+			,[valor]
+			,[descripcion]
+			,[Status]
+			,[Tipo]
+			,[detalle]
+			,[description]
+			,[bLoadSettings]
+			,[validate])
+		VALUES
+			(248
+			,0
+			,''Permite determinar la forma en que deben ser asignados los registros al tener configurada la campaña con vista simultánea de registros >1''
+			,1
+			,''X''
+			,''0: Asignar registros hasta que el agente termine de atender los registros que tiene asignados por el sistema (valor default). 1: Asignar registros conforme el agente libere registros previamente asignados (dependiendo de cómo tenga configurado el parámetro vista simultánea de registros la campaña que está trabajando el agente)''
+			,''It allows determining the way records should be assigned when the campaign is configured with simultaneous viewing of records >1''
+			,0
+			,''.*'')
+	END'
     EXEC(@sql)
 
 	---------------------------------------END Ricardo ---------------------------------------------------------

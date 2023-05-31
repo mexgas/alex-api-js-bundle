@@ -566,7 +566,7 @@ BEGIN
 	EXEC(@sql);
 
 	
-	SET @process = 'K049003 Add identifier calls by agent'
+	SET @process = 'Add identifier calls by agent'
 	SET @sql = 'if not exists (select * from ccGalateaIdentifiers where Description like ''%T$NUMBER_CALLS%'')
 	begin
 	  insert into ccGalateaIdentifiers(Description,TagEs,TagEn,TagPt) values (''T$NUMBER_CALLS'',''Número de llamadas'',''Number of calls'',''Número de chamadas'')
@@ -582,7 +582,7 @@ BEGIN
 	EXEC(@sql);
 
 
-	SET @process = 'K049003 Add identifier calls by agent'
+	SET @process = 'Create SP ccsp_GalateaConfAggrFct'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaConfAggrFct]
 @Type tinyint,    -- 1:Muestra | 2:Actualiza Camp | 3:Actualiza Todas por Usuario
 @cam_id varchar(255) = null,

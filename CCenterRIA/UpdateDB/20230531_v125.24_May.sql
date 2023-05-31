@@ -524,7 +524,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'KR082000 Drop SP ccspGalatea_Finder'
+	set @process = 'Create setting 248'
 	set @sql = 'IF NOT EXISTS (SELECT * FROM ccSettings WHERE setting_id = 248) INSERT INTO [dbo].[ccSettings]
            ([setting_id]
            ,[valor]

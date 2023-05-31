@@ -428,7 +428,7 @@ BEGIN
 	,timesDiscard TimesDiscard
 	,recordHold RecordHold
 	,zipCodeSchedule ZipCodeSchedule
-	,SimultaneousRecs, SimultaneousRecs
+	,simultaneousRecs SimultaneousRecs
 	FROM @AllCampaigns
 	WHERE cam_id = @campID
 	END

@@ -57,7 +57,7 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
-	---------------------------------------BEGIN Jonathan Ramirez ---------------------------------------------------------
+	---------------------------------------BEGIN Jonathan Ramirez K020101, K020102, K020103 Whatsapp Out---------------------------------------------------------
 	SET @process = '0 - JR - The module Settings was added and the relation with their operations '
 	SET @sql = '
 IF NOT EXISTS (SELECT * FROM ccGalateaModules WHERE ModuleId = 5) INSERT INTO ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) VALUES (5, ''Ajustes'', ''Settings'', ''Ajustes'');
@@ -1212,6 +1212,88 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
       END
 	'
 	EXEC(@sql)
+
+    SET @process = '6 - JR - ccsp_RIAUpdateCamConfigExtend - The property @simultaneousRecs was added to the insert, to detect correctly changes and set them on the activity log'
+    SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+        @cam_id smallint,
+        @zipCodeSchedule BIT = NULL,
+        @userId SMALLINT = NULL,
+        @idArea SMALLINT = NULL, 
+        @isCreating SMALLINT = NULL,
+        @simultaneousRecs SMALLINT = NULL,
+        @module INT = -1
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+        if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
+
+            EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCampsExtend'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
+
+            IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+
+            Create table #ccCampsExtendTable 
+            (
+                columnInfo VARCHAR(255),
+                dataInfo VARCHAR(255),
+                identifierInfo VARCHAR(255)
+            )
+
+            DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
+            DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
+                                                                        CASE 
+                                                                            WHEN @Camptype = 6  THEN 44
+                                                                            WHEN @Camptype = 5  THEN 46
+                                                                            WHEN @Camptype = 4  THEN 48
+                                                                            WHEN @Camptype = 7  THEN 50
+                                                                            ELSE 42 END
+                                                                    ELSE 
+                                                                        CASE 
+                                                                            WHEN @Camptype = 6  THEN 55
+                                                                            WHEN @Camptype = 5  THEN 56
+                                                                            WHEN @Camptype = 4  THEN 57
+                                                                            WHEN @Camptype = 7  THEN 58
+                                                                            ELSE 54 END
+                                                                    END;
+
+            UPDATE ccCampsExtend SET
+                zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule),
+                simultaneousRecs = isnull(@simultaneousRecs,simultaneousRecs)
+            Where cam_id = @cam_id  
+
+            IF(@isCreating > 0 AND @module > -1) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsExtendTable'';
+
+            IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
+
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+            SELECT 
+                (SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
+                getDate(), 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+                @operation, 
+                @module, 
+                CCCE.identifierInfo,
+                CASE WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
+                    CASE 
+                        WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'') THEN
+                            CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                        
+                        ELSE CCCE.dataInfo END
+                ELSE '''' END,
+                (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+            FROM #ccCampsExtendTable AS CCCE;
+
+            EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
+            IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable
+
+        end
+        else begin
+            INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule,SimultaneousRecs) values (@cam_id,@zipCodeSchedule,@simultaneousRecs)
+        end
+        set nocount off
+    END
+    '
+    EXEC(@sql)
 	
 	---------------------------------------END Jonathan Ramirez -----------------------------------------------------------
 	

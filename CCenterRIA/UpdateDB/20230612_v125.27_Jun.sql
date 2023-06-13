@@ -72,6 +72,7 @@ END
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 64) BEGIN 
     INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) VALUES (64, ''Editar campaña (chat)'', ''Edit campaign (chat)'', ''Editar campanha (chat)'');
     INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (3, 64);
+	INSERT INTO ccGalateaModOpRelation (ModuleId, OperationId) VALUES (5, 64);
 END
 
 IF NOT EXISTS(SELECT * FROM ccGalateaOperations WHERE OperationId = 65) BEGIN 
@@ -728,12 +729,15 @@ END'
 	@chatDomain				varchar(500)= null,
 	@chatTimeOverflow		smallint	= null,
 	@chatQueueOverflow		smallint	= null,
-    @userId                 smallint    = null
+    @userId                 smallint    = null,
+	@module					int 		= -1
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @graph_id smallint
 	DECLARE @returnValue int = 1
+	
+	set @module = case when @module = -1 then 3 else @module end
 
     EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
 	
@@ -756,7 +760,7 @@ BEGIN
 			if @chatDomain = ''''
 			BEGIN
 				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-				SELECT AreaName, getDate(), (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 64, 3, ''T&CHAT_DOMAIN'', ''COMMON_NONE_O'', [descripcion]
+				SELECT AreaName, getDate(), (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 64, @module, ''T&CHAT_DOMAIN'', ''COMMON_NONE_O'', [descripcion]
 				FROM ccInbound i inner join ccRIACat_Areas c on i.IDArea = c.IDArea WHERE inbound_id = @inboundId
 			END
 		END
@@ -805,7 +809,7 @@ BEGIN
         getDate(), 
         (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
         64, 
-        3,
+        @module,
         CCIT.identifierInfo,
         CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
             CASE
@@ -833,7 +837,7 @@ BEGIN
             getDate(), 
             (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
             64,
-            3,
+            @module,
             ''IN_CALL_EDIT_ICON'', 
 			'''',
             (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)

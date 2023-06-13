@@ -86,8 +86,8 @@ BEGIN
 	registryClient varchar(60) not null,
 	SystemApiId varchar(100) not null,
 	statusSystemsId int not null,
-	bill int not null,
-	providerId int not null
+	Bill float not null,
+	ProviderId int not null
 	)
 end'
 	EXEC(@sql)

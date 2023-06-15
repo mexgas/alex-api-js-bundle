@@ -73,7 +73,7 @@ SET @process = 'K054000 Insert operation Assign unavailable option in ccGalateaO
 SET @sql = '
 	IF not exists (select * from ccGalateaOperations where OperationId = 70)
 	BEGIN
-		insert into ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt) values (70, ''Asignar estado No disponible'', ''Assign unavailable option'', ''Atribuir tipo de Não disponível''), 
+		insert into ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt) values (70, ''Asignar estado No disponible'', ''Assign unavailable option'', ''Atribuir tipo de Não disponível'')
 	END
 '
 EXEC(@sql)
@@ -89,7 +89,7 @@ EXEC(@sql)
 
 SET @process = 'K054000 Insert relation moduleId = 8, OperationId = 70 in ccGalateaModOpRelation'
 SET @sql = '
-	IF not exists (select * from ccGalateaModOpRelation where moduleId = 8 && OperationId = 70)
+	IF not exists (select * from ccGalateaModOpRelation where moduleId = 8 and OperationId = 70)
 	BEGIN
 		insert into ccGalateaModOpRelation values (8, 70)
 	END
@@ -98,7 +98,7 @@ EXEC(@sql)
 
 SET @process = 'K054000 Insert relation moduleId = 8, OperationId = 71 in ccGalateaModOpRelation'
 SET @sql = '
-	IF not exists (select * from ccGalateaModOpRelation where moduleId = 8 && OperationId = 71)
+	IF not exists (select * from ccGalateaModOpRelation where moduleId = 8 and OperationId = 71)
 	BEGIN
 		insert into ccGalateaModOpRelation values (8, 71)
 	END

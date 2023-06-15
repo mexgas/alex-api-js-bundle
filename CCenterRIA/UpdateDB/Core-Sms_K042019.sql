@@ -67,6 +67,7 @@ BEGIN
 	 *		ccsp_OUTGetNewJobsSMS	-> Carga de registros si estan en horario disponible para el envio de mensajes
 	 * 		ccsp_InsertDNCListSms	-> Coloca en la lista negra y elimina los nu
 	 *		ccsp_GetHourLaw			-> Obtiene el horario de ley para que se ocupen en campañas de salida
+	 * 		ccspLoadCampsOutbound -> Se crea para las consultas de carga de campañas en el outbound y quitar los query directos 
 	 *	Alter SP 
 	 * 		ccsp_OUTGetNewJobsSMS	-> Se refactoriza para que la cadena de salida sea la misma y solo se divida por los status y la fecha para marcar
 	 * 		ccsp_OUTcheckTimeZone	-> Se agrega @isReturnSelect por que sql no permite que se envie a una tabla temporal y no fallen otros SP y se agrega la consulta del SP ccsp_GetHourLaw
@@ -138,8 +139,11 @@ end'
 	SET @sql = ''
 	EXEC(@sql)
 
-	SET @process = 'Core-Sms_K042019'
-	SET @sql = ''
+	SET @process = 'Core-Sms_K042019 DROP PROCEDURE ccspLoadCampsOutbound'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspLoadCampsOutbound'')
+		BEGIN
+			DROP PROCEDURE ccspLoadCampsOutbound
+		END'
 	EXEC(@sql)
 
 	SET @process = 'Core-Sms_K042019 DROP PROCEDURE ccspOutboundSmsMessage'
@@ -203,7 +207,8 @@ EXEC(@sql)
 @smsoutIds varchar(max)=null,
 @SystemApiId varchar(100)=null,
 @statusSystemsId int =null,
-@InsufficientBalance int=null
+@InsufficientBalance int=null,
+@date datetime =null
 as
 declare @sql varchar(max)
 if @action=1 begin
@@ -1169,8 +1174,71 @@ SELECT @hourStart as hourStart, @minStart as minStart, @hourEnd as hourEnd, @min
 	EXEC(@sql)
 
 
-	SET @process = 'Core-Sms_K042019'
-	SET @sql = ''
+	SET @process = 'Core-Sms_K042019 CREATE ccspLoadCampsOutbound'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccspLoadCampsOutbound] @action int,  @nTipo INT=0,@agentId int=0
+AS
+declare @sql nvarchar(max)
+
+if @action= 0 begin
+
+	set @sql=''SELECT cam_id
+,cam_descripcion
+,cam_activo
+,cam_ModoManual
+,cam_modpredictivo
+,cam_callratio
+,cam_procesando
+,convert(VARCHAR(8), cast(cam_maxdlrxage AS FLOAT))
+,cam_fDialOnWU
+,cam_fDialOnDLG
+,cam_tDialAfterWU
+,cam_tDialBeforeReady
+,cam_tDialAfterDLG
+,compliance
+,progDial
+,excCallBack
+,aggressionFactor
+,listenManualCall
+,tDialOnWrapUp
+,callsbySurvey
+,ivrscript
+,cam_tNoContesta
+,cam_inter_cancelled
+	''
+	set @sql=@sql+'' ,isnull(CampType,0) as CampType''
+	
+	
+	set @sql=@sql+'' FROM ccCamps NOLOCK ''
+	if @nTipo=2 
+		set @sql=@sql+'' WHERE cam_bNew = 2 ''
+	else if @nTipo=3
+		set @sql=@sql+'' WHERE cam_bNew in (1,2) ''
+	set @sql=@sql+'' ORDER BY cam_descripcion''
+	print(@sql)
+	exec (@sql)
+end
+else if @action= 1 begin
+	set @sql=''SELECT distinct C.cam_id, C.cam_descripcion, Prioridad, A.Login, A.User_id, Skill
+ from ccCamps C (nolock) join ccCampsAgente CA on C.cam_id = CA.cam_id
+  join ccUsers A (nolock) on A.User_id = CA.User_id and A.TipoUser_id =1 AND A.Status=1
+  ''
+  if @nTipo=2 
+		set @sql=@sql+'' and C.cam_bNew=2''
+	else if @nTipo=3
+		set @sql=@sql+'' and C.cam_bNew in (1,2)''
+	set @sql=@sql+'' order by C.cam_id, CA.Prioridad''
+	print(@sql)
+	exec (@sql)
+end
+else if @action= 2 begin
+	set @sql=''select distinct A.Login, Prioridad, C.cam_id, Skill
+ from ccCamps C join ccCampsAgente CA on C.cam_id = CA.cam_id
+ join ccUsers A  on A.User_id = CA.User_id and A.TipoUser_id =1 AND A.Status=1
+ Where A.User_id = @agentId
+ order by C.cam_id, CA.Prioridad''
+	print(@sql)
+	exec sp_executesql @sql, N''@agentId int'', @agentId
+end'
 	EXEC(@sql)
 
 	SET @process = 'Core-Sms_K042019 Alter PROCEDURE ccsp_OUTcheckTimeZone'

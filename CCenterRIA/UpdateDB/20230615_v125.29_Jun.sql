@@ -61,8 +61,10 @@ BEGIN
 
 	SET @process = 'Insert new setting into ccSettings (setting_id 250) Transferencias Ciegas';
 	SET @sql = '
-INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
-VALUES(250, 1, ''Habilitar transferencias ciegas'', 1, ''AGT'', ''Habilitar tranferencia ciega (1 Habilitado, 0 Deshabilitado)'', ''Enable blind transfers'', 1, ''^[0-1]$'')
+		IF NOT EXISTS (SELECT * FROM ccSettings where setting_id = 250) BEGIN
+			INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
+			VALUES(250, 1, ''Habilitar transferencias ciegas'', 1, ''AGT'', ''Habilitar tranferencia ciega (1 Habilitado, 0 Deshabilitado)'', ''Enable blind transfers'', 1, ''^[0-1]$'')
+		END
 	'
 	EXEC(@sql);
 	

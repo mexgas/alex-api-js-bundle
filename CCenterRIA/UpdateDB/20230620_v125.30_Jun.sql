@@ -64,7 +64,7 @@ BEGIN
 						INSERT INTO ccSettings(setting_id, valor, descripcion, [Status], tipo, detalle, description, bLoadSettings, validate)
 						VALUES
 						(249,
-						30,
+						60,
 						''Command Timeout para busqueda en AVRS recordings manager'',
 						1,
 						''X'',

@@ -28,7 +28,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 125 --**********actualizar a 124 sin fix
-SET @versionfix = 27
+SET @versionfix = 31
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -125,7 +125,7 @@ end'
 	SET @process = 'Core-Sms_K042019 Insert setting 247'
 	SET @sql = 'if not exists(select * from ccsettings where setting_id=247) begin
 	insert into ccSettings(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
-	values(247,''http://192.168.1.47/SmsApi|20|10|UserSmsCore|PasswordMD5'',''Configuracion para el envio de mensajes|Tiempo entre cada envio|Cantidad de registros'',
+	values(247,''http://192.168.1.47/SmsApi|20|10|UserSmsCore|Password'',''Configuracion para el envio de mensajes|Tiempo entre cada envio|Cantidad de registros'',
 	1,''GRL'',''UrlEndpointApi|TimeSend|AccountRegistrybyCamp|UserName|Password'',
 	''Configuration for sending messages | Time between each sending | Number of records'',0,''.*'')
 end'

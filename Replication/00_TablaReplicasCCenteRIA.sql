@@ -183,6 +183,13 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversationsRelationship',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'contactMeanIn',@idInt,0)	
 
+set @idInt=@idInt+1
+insert into publicationTableCCenterRIA(publicationName,status) values(N'SMS',0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsccoLogDial',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsOutSource',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsoutSourceMessage',@idInt,0)
+
+
 
 
 print('----------------------------- subcripcionTableCCReportsRIA --------------')
@@ -211,6 +218,8 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conver
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conversationtweet',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsApp',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
+
 
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')
 

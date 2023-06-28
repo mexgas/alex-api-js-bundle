@@ -20,17 +20,23 @@ BEGIN
 
 
 	set @process = 'Delete from ccSMSResult'
-	set @Sql= 'delete from ccSMSResult'
+	set @Sql= 'if exists (select * from sys.tables where name = N''ccSMSResult'')
+    begin
+        delete from ccSMSResult
+    end'
 	EXEC(@Sql)	
 
 	set @process = 'Add information to ccSSMSResult'
 	set @Sql= '
-	insert into ccSMSResult (resultId,description,translatedDesc) values (0,''sent'',''systemTranslated_sent'')
-	insert into ccSMSResult (resultId,description,translatedDesc) values (1,''delivered'',''systemTranslated_delivered'')
-	insert into ccSMSResult (resultId,description,translatedDesc) values (2,''notDelivered'',''systemTranslated_notDelivered'')
-	insert into ccSMSResult (resultId,description,translatedDesc) values (3,''rejectedByrecipient'',''systemTranslated_rejectedR'')
-	insert into ccSMSResult (resultId,description,translatedDesc) values (4,''rejectedByCarrier'',''systemTranslated_rejectedC'')
-	insert into ccSMSResult (resultId,description,translatedDesc) values (5,''rejectedByBalance'',''systemTranslated_rejectedB'')
+	if exists (select * from sys.tables where name = N''ccSMSResult'')
+    begin
+		insert into ccSMSResult (resultId,description,translatedDesc) values (0,''sent'',''systemTranslated_sent'')
+		insert into ccSMSResult (resultId,description,translatedDesc) values (1,''delivered'',''systemTranslated_delivered'')
+		insert into ccSMSResult (resultId,description,translatedDesc) values (2,''notDelivered'',''systemTranslated_notDelivered'')
+		insert into ccSMSResult (resultId,description,translatedDesc) values (3,''rejectedByrecipient'',''systemTranslated_rejectedR'')
+		insert into ccSMSResult (resultId,description,translatedDesc) values (4,''rejectedByCarrier'',''systemTranslated_rejectedC'')
+		insert into ccSMSResult (resultId,description,translatedDesc) values (5,''rejectedByBalance'',''systemTranslated_rejectedB'')
+	end
 	'
 	EXEC(@Sql)	
 

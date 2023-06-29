@@ -117,8 +117,8 @@ CREATE TABLE [dbo].[ccHistoryBlacklistSms](
 	[Phone] [varchar](32) NOT NULL,
 	[Date] [datetime] NOT NULL DEFAULT (getdate()),
 	[cam_id] [smallint] NULL,
-	[idtipomov] [int] NOT NULL,
-	[idtipolista] [int] NULL
+	[movTypeId] [int] NOT NULL,
+	[listTypeId] [int] NULL
 )
 end'
 	EXEC(@sql)
@@ -531,7 +531,7 @@ begin
 	REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.sms_dateDial < dateadd(mi, 5, getdate())'')
 		,''STATUS_REPLACE_QUERY'',''W.sms_status=0'')
 	select @sql=@sql+nchar(13)+'' order by W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
-	print(@sql)
+	--print(@sql)
 end -- TOMA EN CUENTA LAS NUEVAS
 
 if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
@@ -561,7 +561,7 @@ FROM #NEW_JOBS where len(Phone)>0
 ''
 
 
-print (@sql)
+--print (@sql)
 
 exec sp_executesql  @sql,@parameters,
 @CAMPID=@CAMPID
@@ -717,7 +717,7 @@ begin
 	UPDATE_SMS_WT_QUERY
 
 	--insertar el historial
-	insert ccHistoryBlacklistSms (smsout_id,Phone,cam_id,idtipomov,idtipolista)
+	insert ccHistoryBlacklistSms (smsout_id,Phone,cam_id,movTypeId,listTypeId)
 	select * from #mytempSms
 
 	-- Eliminamos el telefono1 de CS
@@ -742,7 +742,7 @@ end''
 		,''AND_DELETE_WT'',@sqlDeleteWorking)
 		,''CASE_UPDATE_WT'',@sqlCaseWorking
 		)
-	print(@sqlWithReplace)	
+	--print(@sqlWithReplace)
 	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech	
 
 	/******************/
@@ -1013,7 +1013,7 @@ end''
 		,''AND_DELETE_WT'',@sqlDeleteWorking)
 		,''CASE_UPDATE_WT'',@sqlCaseWorking
 		)
-	print(@sqlWithReplace)	
+	--print(@sqlWithReplace)	
 	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech	
 
 	/******************/
@@ -1172,7 +1172,7 @@ SELECT @hourStart as hourStart, @minStart as minStart, @hourEnd as hourEnd, @min
 
 
 	SET @process = 'Core-Sms_K042019 CREATE ccspLoadCampsOutbound'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccspLoadCampsOutbound] @action int,  @nTipo INT=0,@agentId int=0
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccspLoadCampsOutbound] @action int,  @nType INT=0,@agentId int=0
 AS
 declare @sql nvarchar(max)
 
@@ -1206,9 +1206,9 @@ if @action= 0 begin
 	
 	
 	set @sql=@sql+'' FROM ccCamps NOLOCK ''
-	if @nTipo=2 
+	if @nType=2 
 		set @sql=@sql+'' WHERE cam_bNew = 2 ''
-	else if @nTipo=3
+	else if @nType=3
 		set @sql=@sql+'' WHERE cam_bNew in (1,2) ''
 	set @sql=@sql+'' ORDER BY cam_descripcion''
 	--print(@sql)
@@ -1219,9 +1219,9 @@ else if @action= 1 begin
  from ccCamps C (nolock) join ccCampsAgente CA on C.cam_id = CA.cam_id
   join ccUsers A (nolock) on A.User_id = CA.User_id and A.TipoUser_id =1 AND A.Status=1
   ''
-  if @nTipo=2 
+  if @nType=2 
 		set @sql=@sql+'' and C.cam_bNew=2''
-	else if @nTipo=3
+	else if @nType=3
 		set @sql=@sql+'' and C.cam_bNew in (1,2)''
 	set @sql=@sql+'' order by C.cam_id, CA.Prioridad''
 	--print(@sql)
@@ -1233,7 +1233,7 @@ else if @action= 2 begin
  join ccUsers A  on A.User_id = CA.User_id and A.TipoUser_id =1 AND A.Status=1
  Where A.User_id = @agentId
  order by C.cam_id, CA.Prioridad''
-	print(@sql)
+	--print(@sql)
 	exec sp_executesql @sql, N''@agentId int'', @agentId
 end'
 	EXEC(@sql)
@@ -1901,7 +1901,7 @@ begin
 	IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
 	IF OBJECT_ID(N''tempdb..#AI_NEW_JOBS'') IS NOT NULL  DROP TABLE #AI_NEW_JOBS
 
-	print (@sql)
+	--print (@sql)
 
 		return(@total)
 end
@@ -1936,7 +1936,7 @@ if @campType<>7 and exists(SELECT * FROM #NEW_JOBS)
 ''
 END
 
-print (@sql)
+--print (@sql)
 
 exec sp_executesql  @sql,@parameters,
 @CAMPID=@CAMPID

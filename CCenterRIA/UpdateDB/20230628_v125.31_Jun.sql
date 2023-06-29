@@ -427,7 +427,6 @@ from camSch
 )
 
 select distinct
---id,HoraInicio,MinInicio,HoraFin,MinFin
  dateadd(mi,(HoraInicio*60)+MinInicio ,idate) [Start]
 , dateadd(ss,-(2*@timeMaxContestacion), dateadd(mi,(horaFin*60)+MinFin ,idate)) [End]
 from camSchLaw Sch
@@ -1212,7 +1211,7 @@ if @action= 0 begin
 	else if @nTipo=3
 		set @sql=@sql+'' WHERE cam_bNew in (1,2) ''
 	set @sql=@sql+'' ORDER BY cam_descripcion''
-	print(@sql)
+	--print(@sql)
 	exec (@sql)
 end
 else if @action= 1 begin
@@ -1225,7 +1224,7 @@ else if @action= 1 begin
 	else if @nTipo=3
 		set @sql=@sql+'' and C.cam_bNew in (1,2)''
 	set @sql=@sql+'' order by C.cam_id, CA.Prioridad''
-	print(@sql)
+	--print(@sql)
 	exec (@sql)
 end
 else if @action= 2 begin
@@ -1396,7 +1395,7 @@ END
 '
 	EXEC(@sql)
 
-	SET @process = 'Core-Sms_K042019 CREATE PROCEDURE ccsp_OUTGetNewJobsSMS'
+	SET @process = 'Core-Sms_K042019 CREATE PROCEDURE ccsp_GalateaGetRecordsInfoBySMSCamp'
 	SET @sql = 'ALTER proc [dbo].[ccsp_GalateaGetRecordsInfoBySMSCamp]
 @cam_id integer = 0, @user_id int = 0
 as
@@ -1413,7 +1412,7 @@ inner join ccCamps B on A.id=B.cam_id'
 	EXEC(@sql)
 
 
-	SET @process = 'Core-Sms_K042019 CREATE PROCEDURE ccsp_OUTGetNewJobsSMS'
+	SET @process = 'Core-Sms_K042019 CREATE PROCEDURE ccsp_GalateaGetCampsNvosCB'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCampsNvosCB]
 @cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
 @regval int =0, @tcpa int=0

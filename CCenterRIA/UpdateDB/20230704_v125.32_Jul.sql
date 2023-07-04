@@ -5,11 +5,11 @@
 Author:
 
 
-Date: 2022/11/19
-Description: Cambios para estados de email
+Date: 2023/07/04
+Description: K053000
 
 Database: CCenterRia
-Required version: 124
+Required version: 125.31
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -193,7 +193,7 @@ BEGIN
 				END'
 	EXEC(@sql)
 
-	SET @process = '053000 RIA'
+	SET @process = '053000 Alter spGalateaRIALog'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaRIALog]
 				@userId           SMALLINT,
 				@OperationType    VARCHAR(MAX)= '''',
@@ -256,8 +256,8 @@ BEGIN
 	
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */
-		--EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-		--EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
 		COMMIT TRAN
 	END TRY

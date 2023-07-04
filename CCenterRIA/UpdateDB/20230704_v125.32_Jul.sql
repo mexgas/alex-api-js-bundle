@@ -63,21 +63,21 @@ BEGIN
 	 * 		ccsp_UnassignedElementsInAreas  -> Se agrega nuevo SP para Componentes Sin Area	 
 	 * ****************************************************************************/
 	SET @process = '053000 Insert New Operations'
-	SET @sql = 'IF NOT EXISTS (SELECT OperationId from c where OperationId in (63, 64, 65, 66, 67, 68)) 
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId in (72, 73, 74, 75, 76, 77)) 
 				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(63, ''Añadir administrador a área'', ''Add administrator to area'', ''Adicionar administrador à área'')
+					VALUES(72, ''Añadir administrador a área'', ''Add administrator to area'', ''Adicionar administrador a área'')
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(64, ''Añadir agente a área'', ''Add agent to area'', ''Adicionar agente à área'')
+					VALUES(73, ''Añadir agente a área'', ''Add agent to area'', ''Adicionar agente a área'')
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(65, ''Añadir campaña a área'', ''Add campaign to area'', ''Adicionar campanha à área'')
+					VALUES(74, ''Añadir campaña a área'', ''Add campaign to area'', ''Adicionar campaña a área'')
 
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(66, ''Remover administrador de área'', ''Remove administrator from area'', ''Remover administrador da área'')
+					VALUES(75, ''Remover administrador de área'', ''Remove administrator from area'', ''Remover administrador de área'')
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(67, ''Remover agente de área'', ''Remove agent from area'', ''Remover agente da área'')
+					VALUES(76, ''Remover agente de área'', ''Remove agent from area'', ''Remover agente de área'')
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
-					VALUES(68, ''Remover campaña de área'', ''Remove campaign from area'', ''Remover campanha da área'')
+					VALUES(77, ''Remover campaña de área'', ''Remove campaign from area'', ''Remover campaña de área'')
 				END'
 	EXEC(@sql)
 

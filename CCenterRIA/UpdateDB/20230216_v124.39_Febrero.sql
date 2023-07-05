@@ -891,7 +891,7 @@ END';
 	end'
 	EXEC(@sql)
 
-		SET @process = 'TT4479 -adminKolob - En adminKolob muestra la campaña como chat'
+		SET @process = 'TT4479 -adminKolob - En adminKolob muestra la campaña como chat y se agrega condicion para el ticket TT5694'
 		SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 				@cam_id smallint,
@@ -1032,7 +1032,7 @@ ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 					EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
 				end
 
-				IF (@CampType IS NOT NULL)
+				IF (@CampType IS NOT NULL AND @CampType IN (3, 5))
 				BEGIN
 					IF NOT EXISTS(SELECT camp_id FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id)
 					BEGIN

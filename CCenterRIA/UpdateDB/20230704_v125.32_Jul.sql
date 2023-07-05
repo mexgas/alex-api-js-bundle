@@ -62,20 +62,49 @@ BEGIN
 	 * Creacion de SP 
 	 * 		ccsp_UnassignedElementsInAreas  -> Se agrega nuevo SP para Componentes Sin Area	 
 	 * ****************************************************************************/
-	SET @process = '053000 Insert New Operations'
-	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId in (72, 73, 74, 75, 76, 77)) 
+	SET @process = '053000 Insert New Operations ID 72'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 72) 
 				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(72, ''Añadir administrador a área'', ''Add administrator to area'', ''Adicionar administrador a área'')
+				END'
+	EXEC(@sql)
+
+	SET @process = '053000 Insert New Operations ID 73'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 73) 
+				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(73, ''Añadir agente a área'', ''Add agent to area'', ''Adicionar agente a área'')
+				END'
+	EXEC(@sql)
+
+	SET @process = '053000 Insert New Operations ID 74'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 74) 
+				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(74, ''Añadir campaña a área'', ''Add campaign to area'', ''Adicionar campaña a área'')
+				END'
+	EXEC(@sql)
 
+	SET @process = '053000 Insert New Operations ID 75'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 75) 
+				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(75, ''Remover administrador de área'', ''Remove administrator from area'', ''Remover administrador de área'')
+				END'
+	EXEC(@sql)
+
+	SET @process = '053000 Insert New Operations ID 76'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 76) 
+				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(76, ''Remover agente de área'', ''Remove agent from area'', ''Remover agente de área'')
+				END'
+	EXEC(@sql)
+
+	SET @process = '053000 Insert New Operations ID 77'
+	SET @sql = 'IF NOT EXISTS (SELECT OperationId from ccGalateaOperations where OperationId = 77) 
+				BEGIN
 					INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
 					VALUES(77, ''Remover campaña de área'', ''Remove campaign from area'', ''Remover campaña de área'')
 				END'

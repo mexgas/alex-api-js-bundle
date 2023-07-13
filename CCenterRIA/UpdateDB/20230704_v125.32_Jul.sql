@@ -821,7 +821,7 @@ BEGIN
 							SELECT DISTINCT 
 							CAST(inb.Inbound_id AS INT) AS Id, inb.descripcion AS Name,isnull( CAST(graph.graphic_id AS INT),1) AS Frame, CAST(0 AS SMALLINT) AS Type, CAST(inb.STATUS AS BIT) IsStarted, 
 							ISNULL(a.AreaName, '''') AS Area, 
-							CAST(ISNULL(inb.IDArea, '''') AS INT) as AreaId, inb.chat AS InboundType, 0 as OutboundType
+							CAST(ISNULL(inb.IDArea, 0) AS INT) as AreaId, inb.chat AS InboundType, 0 as OutboundType
 							FROM ccInbound inb
 									LEFT JOIN ccRIAInboundGraph graph ON inb.Inbound_id = graph.Inbound_id
 									LEFT JOIN ccRIACat_Areas a ON a.IDArea = inb.IDArea

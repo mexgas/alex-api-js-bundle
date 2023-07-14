@@ -1665,14 +1665,7 @@ if @option = 8 -- Checa si la campa?a tiene asignada una campa?a tipo encuesta
 return(0)
 set nocount off'
 EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
+	
 		
 		----------------------------------------------------------------------------------------------------------------------------
 		/* End script release */

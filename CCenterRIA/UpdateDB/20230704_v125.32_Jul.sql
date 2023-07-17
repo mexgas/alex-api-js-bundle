@@ -1464,7 +1464,8 @@ ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
 @MirrorInbound_Id smallint = null,
 @Prefijo varchar(40) = null,
 @MediaType int = null,
-@isCreating int = null
+@isCreating int = null,
+@module int = -1
 as
 set nocount on
 
@@ -1618,7 +1619,7 @@ if @option = 3 -- Update
         set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
         where cam_id = @Cam_id
 
-        IF(@isCreating IS NOT NULL AND @isCreating = 2 AND @PrevFrame <> (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id)) BEGIN
+		IF(@isCreating IS NOT NULL AND @isCreating = 2 AND @PrevFrame <> (SELECT [graphic_id] FROM ccRIACampsGraph WHERE cam_id = @Cam_id) AND @module = 3) BEGIN
             DECLARE @Media INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @Cam_id);
 
             INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
@@ -1691,7 +1692,7 @@ if @option = 8 -- Checa si la campa?a tiene asignada una campa?a tipo encuesta
 
 return(0)
 set nocount off
-        '
+	'
         EXEC(@sql)
 	---------------------------------------END Jesus Gallardo---------------------------------------------------------
 	

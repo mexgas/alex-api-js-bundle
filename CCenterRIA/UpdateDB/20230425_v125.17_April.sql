@@ -1138,6 +1138,535 @@ SET NOCOUNT OFF
 						end'
 		EXEC(@sql)
 		-------------------------------------------- END URIEL CABRERA TT4259_Finder Bug ---------------------------------
+		
+-------------------------------------------- Daniel Hernandez CW-7873 ------------------------------
+	SET @process = 'Delete stored procedure if it exists'
+	SET @sql = 'if exists (select * from sys.procedures where name =''ccsp_GalateaGetCampsNvosCB'')
+				begin
+					DROP PROCEDURE ccsp_GalateaGetCampsNvosCB
+				end'
+	EXEC(@sql)
+
+	SET @process = 'Create SP ccsp_GalateaGetCampsNvosCB FIX-Set a default value to the Overraltotalnew column when the value is null and prevent it from being zero when there are records in the campaign'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetCampsNvosCB]
+	@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+	@regval int =0, @tcpa int=0
+	as
+
+	declare @TipoJobs as int, @isExecOutbound bit
+
+	set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+	-- Actualiza todas las camps
+	if @Tipo in (1,2) begin
+
+		declare @id AS INTEGER
+
+		CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
+		CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int,dateUpdate datetime)
+
+		create table #temccocallsoutsource (cam_id int,Pend  int)
+
+		create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+		if @cam_id = 0 begin
+			if @user_id > 0 and not exists (select * from ccUsers_Roles where User_id = @user_id and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+				insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+				select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+				from ccCamps cam with(nolock) join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+				where user_id = @user_id and tipo = 1
+			end
+			else begin
+				insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+				select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+				from ccCamps cam (nolock)
+			end
+		end
+		else begin
+			if @Tipo = 2
+				insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+				select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+				from ccCamps cam with(nolock) 
+				where cam.cam_id = @cam_id
+			else
+				if @user_id > 0 and not exists (select * from ccUsers_Roles where User_id = @user_id and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+					insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+					select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+					from ccCamps cam with(nolock) join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+					where user_id = @user_id and tipo = 1
+				end
+				else begin
+					insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
+					select cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+					from ccCamps cam (nolock) 
+					where cam_activo=1 
+				end
+		end
+
+
+
+		insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,dateUpdate)
+		select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0,max(dateUpdate) from(
+		select A.*,dateUpdate from #Tcamps A
+		left join ccCampsNvosCB B (nolock) on A.cam_id=B.id
+		where datediff(ss,B.dateUpdate,getdate())> case @tcpa when 1 then 1 else 5 end or B.dateUpdate is null)X
+		group by cam_id
+
+
+		
+		if (select count(*) from #Tcamps2)>0 begin
+
+			insert into #temccocallsoutsource(cam_id,Pend)
+			SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+			FROM ccocallsoutsource ccos with(index(IX_ccoCallsOutSource_17),nolock)
+			join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+			WHERE cal_status in(0, 7)
+			GROUP BY ccos.cam_id
+
+			insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+			SELECT A.cam_id,
+			count(case cal_status when 0 then 1 else null end) as New,
+			count(case cal_status when 1 then 1 else null end) as Cb,
+			count(case cal_status when 2 then 1 else null end) as Pro,
+			count(case cal_status when 3 then 1 else null end) as Fin
+			FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+			join #Tcamps2 B on A.cam_id = B.cam_id
+			GROUP BY A.cam_id	
+
+		
+			if (@regval = 0 and @cam_id >0 and @Tipo =2) or @tcpa = 1 begin
+			update #Tcamps2 set status =1,cantidad=0  where cam_id = @cam_id
+			end
+			else begin
+				While exists(select * from #Tcamps2 where status = 0 and ( datediff(ss,dateUpdate,getdate())>60 or dateUpdate is null))  Begin
+					set rowcount 1
+					select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+					set rowcount 0
+					EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+					update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+				end
+			end
+
+			declare @TotalNew table(
+					cam_id int primary key,
+					OverallTotalNew int 
+				)
+			
+
+			begin Tran updateccCampsNvosCB
+
+				insert into @TotalNew
+				select CampNvosCB.id,isnull(CampNvosCB.OverallTotalNew,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+				where CampNvosCB.id = tcamp.cam_id
+
+				delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+				where CampNvosCB.id = tcamp.cam_id
+
+				INSERT into ccCampsNvosCB 
+				SELECT cams.cam_id, cams.cam_descripcion,
+				isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+				isNull(cs.Pend,0) as pend,
+				isNull(wt.Pro,0) as pro,
+				isNull(cams.procesando,0) cam_procesando,
+				isNull(cams.cam_tipojobs,0) cam_tipojobs,
+				isNull(wt.Fin,0) Fin,
+				isNull(cams.cantidad,0) cantidad,
+				getdate(),
+				--isnull(T.OverallTotalNew,0)  as OverallTotalNew
+				isnull(
+				case T.OverallTotalNew
+				when 0 then 
+					case cams.cam_tipojobs
+					when 0 then wt.New + wt.Cb
+					when 1 then wt.Cb
+					else wt.New end 
+				else T.OverallTotalNew end
+				,0)  as OverallTotalNew
+				FROM #Tcamps2 cams with(nolock)
+				LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+				LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
+				LEFT JOIN @TotalNew  T on T.cam_id = cams.cam_id
+
+			COMMIT TRAN updateccCampsNvosCB
+		end
+
+		if @isExecOutbound = 0 begin
+
+		if @Tipo = 2 begin
+			-- devuelve resultado de la taba, solo las camps del usuario
+			SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
+			isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor, OverallTotalNew
+			FROM #Tcamps tcam
+			left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
+			LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
+			inner join cccamps cc (nolock) on res.id=cc.cam_id
+		end
+		else 
+			SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,
+			cc.aggressionFactor, OverallTotalNew
+			FROM ccCampsNvosCB res (nolock)
+			LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
+			inner join cccamps cc (nolock) on res.id=cc.cam_id
+			WHERE res.id = @cam_id
+		end
+
+		drop table #Tcamps
+		drop table #Tcamps2
+		drop table #temccocallsoutsource
+		drop table #temWorkinTable
+
+		return(0)
+
+	end'
+	EXEC(@sql)
+-------------------------------------------------------------------------------------------------------
+	SET @process = 'Alter SP ccsp_Multimedia2 Se agrega parametro @multimediaType'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL
+, @senderId INT = NULL,@camType bit=0
+,@multimediaType int =null
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --Lista Cam Or  ACD
+		if @camType=0 begin		
+			SELECT DISTINCT A.inbound_id AS Id, A.chat AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets,
+			cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+			FROM ccInbound A
+			INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+			WHERE (@inboundId IS NULL OR @inboundId = A.Inbound_id)
+			and (@multimediaType is null or @multimediaType =-1 or A.chat=@multimediaType)
+		end
+		else begin
+			SELECT DISTINCT A.cam_id AS Id,convert(tinyint, case when A.CampType =5  then A.CampType else 1 end) AS Mode, C.maxMails MaxMails, cast(isnull(C.maxTweets, 3) AS TINYINT) AS MaxTweets,
+			cast(isnull(C.maxWhats, 3) AS TINYINT) AS MaxWhats, A.IDArea AS AreaId
+			FROM ccCamps A
+			INNER JOIN ccRIACat_Areas C ON A.IDArea = C.IDArea
+			WHERE (@inboundId IS NULL OR @inboundId = A.cam_id)
+			and (@multimediaType is null or @multimediaType =-1 or A.CampType=@multimediaType)
+		end
+	END
+	ELSE IF @action = 2
+	BEGIN --Lista Agentes
+		if @camType=0 begin
+			SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+			FROM ccRIAWorkGroupUsers A
+			INNER JOIN ccusers B ON A.User_id = B.User_id
+			INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG -- AND C.Tipo = 0
+			INNER JOIN ccInbound D ON C.idCampEsp = D.inbound_id  and D.IDArea is not null
+			LEFT JOIN ccskills S ON S.inbound_id = D.inbound_id AND S.user_id = B.user_id
+			WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+			and (@multimediaType is null or @multimediaType =-1 or D.chat=@multimediaType)
+			ORDER BY A.User_id
+		end
+		else begin
+			SELECT DISTINCT A.User_id AS [Id], C.idCampEsp AcdId, isnull(skill, 8) Skill
+			FROM ccRIAWorkGroupUsers A
+			INNER JOIN ccusers B ON A.User_id = B.User_id
+			INNER JOIN ccRIACampEspWG C ON C.IDWG = A.IDWG -- AND C.Tipo = 0
+			INNER JOIN ccCamps D ON C.idCampEsp = D.cam_id  and D.IDArea is not null
+			LEFT JOIN ccskills S ON S.inbound_id = D.cam_id AND S.user_id = B.user_id
+			WHERE B.TipoUser_id = 1 AND (@userId IS NULL OR @userId = A.User_id)
+			and (@multimediaType is null or @multimediaType =-1 or D.CampType=@multimediaType)
+			ORDER BY A.User_id
+		end
+	END
+	ELSE IF @action = 3
+	BEGIN --List Sender Mail
+		SELECT A.contactMeanOutId AS Id, ISNULL(R.inboundId, 0) AS AcdId, A.isActive AS IsActive
+		FROM contactMeanOut A
+		LEFT JOIN relationContactMeanOutInbound R ON A.contactMeanOutId = R.contactMeanOutId
+		WHERE (@senderId IS NULL OR @senderId = A.contactMeanOutId) and A.meanContactTypeId = 1
+	END
+	ELSE IF @action = 4
+	BEGIN --List ACD Whatsapp
+		if @camType=0 begin
+			SELECT cast(Inbound_id as int) AS Id
+			FROM ccInbound
+			WHERE chat=5
+		end
+		else begin
+			SELECT cast(cam_id as int) AS Id
+			FROM ccCamps
+			WHERE CampType = 5
+		end
+	END
+END'
+	EXEC(@sql)
+
+	SET @process = 'Alter SP ccsp_GetInfoDash Se modifica para que se valide que inserta la informacion y no tenga flujo repetido'
+	SET @sql = 'ALTER procedure [dbo].[ccsp_GetInfoDash]
+@CampId as smallint
+as
+set nocount on				
+declare @upd_date as datetime
+declare @cps  as int 
+declare @today datetime
+
+select @cps = [valor] from ccSettings  where setting_id=238
+select
+	@upd_date = date_update
+from ccCampsInfo with(nolock) where cam_id = @CampId
+
+set @today=convert(date,getdate(),121)
+
+if @upd_date is null begin
+	insert into ccCampsInfo(cam_id,contact_reg,dial_retries,date_update,calls_per_second)
+	values(@CampId,0,0,getdate(),@cps)
+
+	set @upd_date=@today
+end
+
+select @today,datediff(ss, @upd_date, getdate())
+
+if (datediff(ss, @upd_date, getdate()) > 300) begin
+	if not exists(select cam_id from ccocallsout with(nolock)
+	where cam_id=@CampId and statuscall_id=13 and cal_inicio>= @today)
+	begin
+		update ccCampsInfo
+			set contact_reg=0, dial_retries=0, date_update = getdate(), calls_per_second=@cps
+		where cam_id = @CampId		
+	end else
+	begin
+
+		declare @vop1 decimal(5,2)
+		declare @vop2 decimal(5,2)
+		declare @vop3 decimal(5,2)
+		declare @vop4 decimal(5,2)
+
+		select @vop1 = count(distinct(callout_id)) from ccocallsout with(nolock)
+		where cam_id = @CampId and statuscall_id=13 and cal_inicio>= @today
+		group by cam_id
+		select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials with(nolock) 
+		where cam_id = @CampId and fecha >= @today
+		group by cam_id
+		select @vop3 = count(distinct telefono) from ccoLogDials with(nolock) 
+		where cam_id = @CampId and fecha >= @today
+		group by cam_id, Telefono having count(1) > 1
+		
+		select @vop1,@vop2,@vop3,@vop4
+		update ccCampsInfo set
+			 contact_reg=case when @vop2=0 then 0 else (@vop1/@vop2)*100 end
+			, dial_retries=case when @vop4=0 then 0 else(@vop3/@vop4)*100 end
+			, date_update=getdate()
+	end
+end
+
+select
+cam_id, contact_reg, dial_retries, date_update, calls_per_second
+from ccCampsInfo
+where cam_id = @CampId
+
+
+set nocount off'
+	EXEC(@sql)
+
+	SET @process = 'Alter Procedure ccsp_RIA_ABCCamps DECLARE @CampTypeNormal INT = 0 se pone default cero'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCCamps]
+@option smallint,
+@UserId int = null,
+@Descripcion varchar(40) = null,
+@Cam_id varchar(1000),
+@Activa tinyint = null,
+@IDArea smallint = null,
+@frame tinyint = null, 
+@MirrorInbound_Id smallint = null,
+@Prefijo varchar(40) = null
+as
+set nocount on
+
+if @option = 0
+	begin
+		select cam_id,ISNULL(cam_descripcion,'''''''') as cam_descripcion,ISNULL(CAMP.IDArea,0) as IDArea, ISNULL(AREas.AreaName,'''') as AreaName
+		from ccCamps as CAMP with(nolock) 
+		left join ccRIACat_Areas as AREas with(nolock) on CAMP.IDArea = AREas.IDArea
+		return(0)
+	end
+
+if @option = 1 -- select Camp
+	begin
+		select a1.cam_id, cam_descripcion, cam_ShowCalifWnd,cam_StartTimeronHangUp, frame, cam_activo, isnull(IDArea,0) as Area_Id,
+		prefijo as Prefijo
+		from ccCamps a1 with(nolock) 
+		inner join ccRIACampsGraph a2 on (a1.cam_id = a2.cam_id)
+		inner join ccRIAGraphics a3 on (a2.graphic_id = a3.graphic_id)
+		where a3.type_id = 1 and a1.cam_id = (CasT(@Cam_id as smallint))
+		return(0)
+	end
+
+if @option = 4 --Delete
+	begin
+		if exists (select inbound_id from ccInbound with(nolock) where cam_id = @Cam_id)
+		begin
+		declare @error varchar(70)
+		Select @error=case valor when 0 then ''No es posible eliminar la campa?a, esta asociada a una especialidad''
+			else ''Campaign can not be deleted, it has an association with an ACD'' end
+		from ccsettings with(nolock) where setting_id = 27
+		raiserror (@error,18,1)		
+		return(0)
+		end
+
+		delete ccCampsHorarios with(rowlock) where cam_id = @Cam_id
+		insert into ccCampsMovs (cam_id, TipoMov, NewRecords, CBRecords, user_id) Values(@Cam_id, 5, 0, 0, @UserId)
+		Delete ccCalifCamp with(rowlock) where cam_id = @Cam_id and tipo = 1
+		Delete ccRIACampsGraph with(rowlock) where cam_id = @Cam_id
+		delete ccHistorialListaNegra with(rowlock) where cam_id = @Cam_id
+		delete ccRIARegistryLists with(rowlock) where cam_id = @Cam_id	
+		return(0)
+	end
+
+if @option = 2 --Insert
+	begin
+	declare @new_cam_id smallint
+	declare @isAssingPortbyCam bit
+
+	DECLARE @CampTypeNormal INT = 0
+
+	if exists(select cam_descripcion from ccCamps with(nolock) where cam_descripcion = @Descripcion)
+		begin
+		select -1 --, ''Nombre en Uso''
+		return(0)  
+		end
+
+	-- ODC: la campaña siempre esta activa
+	set @Activa = 1
+	declare @pref int
+	select  @pref = valor from ccSettings where setting_id = 201
+	if (@pref = 0)
+		set @Prefijo = ''''
+
+
+	Insert into ccCamps (cam_descripcion, cam_StartTimeronHangUp, cam_activo ,IDArea, cam_bNew, cam_ShowCalifWnd,prefijo, CampType)
+	select @Descripcion, 1, @Activa, case @IDArea when 0 then null else @IDArea end, 1,
+	case when exists (select calif_id from ccTipoCalifOUT) then 1 else 0 end, @Prefijo, @CampTypeNormal
+
+	if @@rowcount = 1 begin
+		select @new_cam_id = scope_identity()
+		if not exists (select * from ccCampsExtend where cam_id = @new_cam_id) begin
+			Insert into ccCampsExtend (cam_id) values (@new_cam_id);
+		end
+	end
+	else
+		begin
+		select -2 --, ''Error al crear campa?a''
+		return(0)
+		end
+
+	if isnull(@MirrorInbound_Id, 0)<>0
+		begin
+		if not exists(select inbound_id from ccInbound with(nolock) where inbound_id=@MirrorInbound_Id)
+			begin
+			select -3 -- Error al asignar campa?a a ACD, el ACD no existe o no pertenece a la misma area
+			return(0)
+			end
+
+		update ccinbound with(rowlock) set cam_id=@new_cam_id where inbound_id=@MirrorInbound_Id -- and isnull(idarea, 0)=isnull(@IDArea, 0)
+		update cccamps with(rowlock) set idarea = (select idarea from ccinbound where inbound_id=@MirrorInbound_Id) where cam_id=@new_cam_id
+		end
+	set @isAssingPortbyCam=1
+
+	select @isAssingPortbyCam=valor from ccSettings where setting_id=232
+
+	if @isAssingPortbyCam=1 begin
+		insert into ccoDialerCamp (dialer_id, cam_id) 
+		select dialer_id, @new_cam_id from ccoDialers with(nolock) where status = 1
+	end
+
+	insert into ccCalifCamp (calif_id, cam_id, tipo) 
+	select calif_id, @new_cam_id, 1 from ccTipoCalifOUT with(nolock) where CalifOut_Status = 1
+
+	update ccCamps set keepDial=dbo.fn_keepDial_Camps(@new_cam_id) where cam_id=@new_cam_id
+
+	If not exists (select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		begin
+		insert into ccRIAGraphics (frame, type_id) values (@frame, 1)
+		end
+
+	insert into ccRIACampsGraph (cam_id, graphic_id)
+	select @new_cam_id, graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock)  where frame = @frame and type_id = 1
+
+	--inserta la lista negra por default
+	if (select valor from ccsettings with(nolock) where setting_id=152)=''1''
+	begin
+		declare @tempId as int = 0
+		select @tempId = idtipolista from cctiposlistanegra where Tipolista = ''defaultList/General''
+		exec ccsp_RIABlackListCamp 4, @IDArea, @new_cam_id, @tempId, null
+	end
+
+	--select * from cctiposlistanegra
+
+	select @new_cam_id
+	return(0)
+	end
+
+if @option = 3 -- Update
+	begin
+		if not exists(select frame from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		insert into ccRIAGraphics (frame,type_id) values (@frame,1)
+
+		Update ccCamps with(rowlock) set cam_descripcion = @Descripcion, cam_activo = @Activa where cam_id = @Cam_id
+
+		update ccRIACampsGraph with(rowlock)
+		set graphic_id = (select graphic_id from ccRIAGraphics with(index(IX_ccRIAGraphics_I),nolock) where frame = @frame and type_id = 1)
+		where cam_id = @Cam_id
+
+		return(0)
+	end
+
+	if @option = 5 --Obtener relaciones de campa?as - campa?as
+	begin
+		if not exists (select cam_id from ccCamps with(nolock) where cam_id = @Cam_id) or
+		(@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
+		not exists (select cam_id from ccCamps with(nolock) where cam_id=@descripcion))
+		begin
+		select -3 -- Campa?a invalida
+		return(0)
+		end
+				
+	if @descripcion=0
+		set @descripcion = null
+
+	update ccCamps with(rowlock) set surveyCamId = @descripcion where cam_id = @Cam_id
+	if @@rowcount=0
+		select -4 -- Error al actualizar
+					
+	else
+		begin
+		delete cccalifcamp with(rowlock) where tipo=0 and cam_id=@Cam_id and calif_id in (select calif_id from ccTipoCalif where CanReprogram=1)
+
+		end
+
+	return(0)
+	end
+
+if @option = 6
+	begin
+		select cam_id, isnull(surveycamid,0)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
+	end
+
+if @option = 7 -- Checa si la campa?a no tiene grabaciones y se puede modificar el prefijo
+	begin	
+		select count(*) as Grabaciones from ccoCallsOut where cam_id = @Cam_id
+		--select 0 as Grabaciones	
+	end
+
+if @option = 8 -- Checa si la campa?a tiene asignada una campa?a tipo encuesta
+	begin	
+		SELECT CAST(CASE WHEN  isnull(surveycamid,0) != 0 THEN 1 ELSE 0 END AS bit)
+		from cccamps with(index(PK_ccCamps),nolock)
+		where cam_id = @Cam_id
+		return(0)
+	end
+
+return(0)
+set nocount off'
+EXEC(@sql)
+	
+		
 		----------------------------------------------------------------------------------------------------------------------------
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */

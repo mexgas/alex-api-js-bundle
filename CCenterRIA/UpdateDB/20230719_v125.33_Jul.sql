@@ -58,6 +58,21 @@ BEGIN
 	BEGIN TRY
 
 	---------------------------------------BEGIN Marco Garcia & Marco Chagolla K039000 Destinatario de grabaciones (envío de grabaciones en finder a correos dados de alta en el sistema)---------------------------------------------------------
+
+SET @process = 'K039000 Destinatario de grabaciones (envío de grabaciones en finder a correos dados de alta en el sistema) update lenght  of email column in ccsp_RIA_AddressBook table'
+SET @sql = 'IF exists
+	(
+	SELECT *
+	FROM INFORMATION_SCHEMA.COLUMNS
+	WHERE COLUMN_NAME = ''email'' AND TABLE_NAME = ''ccRIACat_AddressBook''
+	)
+	BEGIN
+	  ALTER TABLE dbo.ccRIACat_AddressBook ALTER COLUMN  email VARCHAR(255)
+	END'
+	EXEC(@sql)
+
+
+
 	SET @process = 'K039000 Destinatario de grabaciones (envío de grabaciones en finder a correos dados de alta en el sistema) delete store procedure ccsp_RIA_AddressBook'
 SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RIA_AddressBook'')
 		BEGIN
@@ -68,7 +83,7 @@ EXEC(@sql)
 SET @process = 'K039000 Destinatario de grabaciones (envío de grabaciones en finder a correos dados de alta en el sistema) create store procedure [ccsp_RIA_AddressBook]'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_AddressBook]
 			@action smallint,
-			@Email varchar(100) = '''',
+			@Email varchar(255) = '''',
 			@Name varchar(100) = '''',
 			@Organization varchar(100) = '''',
 			@Department varchar(100) = '''',

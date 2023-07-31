@@ -53,6 +53,8 @@ if @Version_Actual >= @Version
 
 	declare @publicationName varchar(100),@articleName varchar(100)
 	declare @publicationId int,@articleId int
+	declare @force_invalidate_snapshot int= 0
+	declare @existPublication bit=0
 
 	update publicationTableCCRecorderRIA set status=0
 	update articleTableCCRecorderRIA set status=0 
@@ -107,12 +109,19 @@ if @Version_Actual >= @Version
 		@active_end_date = 0, 
 		@publisher_security_mode = 0,
 		@publisher_login = @publisherLogin, 
-		@publisher_password = @publisherPassword 		
+		@publisher_password = @publisherPassword
+		end 
+		else begin
+			set @force_invalidate_snapshot=1
+			set @existPublication=1
+		end  
+
 
 		while exists(select articleName from articleTableCCRecorderRIA where publicationId=@publicationId and status=0) begin
 			select top 1 @articleName=articleName,@articleId=id from articleTableCCRecorderRIA where publicationId=@publicationId and status=0
-
+			select  @publicationName,@articleName
 			-- Adding articles
+		IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = @articleName) begin
 			use [CCRecorderRIA]
 			exec sp_addmergearticle @publication = @publicationName, 
 			@article = @articleName, 
@@ -137,9 +146,12 @@ if @Version_Actual >= @Version
 			@delete_tracking = N'true', 
 			@compensate_for_errors = N'false', 
 			@stream_blob_columns = N'false', 
-			@partition_options = 0
-
-			update articleTableCCRecorderRIA set status=1 where id=@articleId 
+			@partition_options = 0,
+			@force_invalidate_snapshot=@force_invalidate_snapshot
+		end
+			update articleTableCCRecorderRIA set status=1 where id=@articleId
+			if @existPublication=0 begin
+				exec sp_grant_publication_access @publication = @publicationName,  @login = @publisherLogin
 		end	
 
 --		-- Add login to the PAL

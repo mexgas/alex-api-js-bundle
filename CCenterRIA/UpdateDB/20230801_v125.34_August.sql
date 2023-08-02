@@ -1014,8 +1014,182 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
         set nocount off
         '
         EXEC(@sql)
+
+
 	
 	------------------------------------------- End JCL -------------------------------------------------------
+
+	------------------------------------------- Start HEL -------------------------------------------------------
+
+	SET @process = 'DEV2-216-Drop SP ccsp_RIACampsManualCall'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RIACampsManualCall'')
+			BEGIN
+				DROP PROCEDURE [dbo].[ccsp_RIACampsManualCall]
+			END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-CREATE ccsp_RIACampsManualCall'
+    SET @sql = '-- Se crearon las variables @IdArea y @DialogMode, se llenaron respectivamente
+			-- Se hicieron dos validaciones en la línea 32
+			-- una para evitar que solo se contemplen las llamadas manuales en el select
+			-- otra para que cuando el agente está en modo campañas preview, se muestren las campañas de tipo preview
+
+			CREATE PROCEDURE [dbo].[ccsp_RIACampsManualCall]
+			@option int,
+			@UserID int = 0,
+			@onChat int = 0,
+			@campId int = 0
+			AS
+			set nocount on
+
+			if(@option = 1)
+			begin
+				if (@onChat = 0)
+				begin
+					declare @mod smallint
+					declare @IdArea smallint
+					declare @DialingMode tinyint
+
+					select @IdArea = IDArea, @DialingMode = DialingMode from ccUsers where User_id = @UserID
+
+					select @mod = defCampaing from ccRIACat_Areas A
+					where A.IDArea = @IdArea 
+
+					select distinct c.cam_id, c.cam_descripcion, case when ca.cam_id=@mod then 1 else 0 end [isDefault],  g.graphic_id, c.cam_ModoManual, 
+					isnull(c.selectRotativeANI, 0) selectRotativeANI
+					, isnull(c.CampType,0) as CampType,
+					CASE WHEN @DialingMode = 1 THEN (select count(1) from ccoWorkingTable where cam_id = c.cam_id) ELSE 0 END AS countJobs,
+					isnull(c.timesPreview, 0) timesPreview
+					from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+					join ccRIACampsGraph g ON g.cam_id = c.cam_id
+					where ca.user_id = @UserID and cam_ModoManual = case when @DialingMode = 1 OR (@DialingMode = 0 AND cam_ModoManual in (1,3)) then cam_ModoManual else -1 end AND CampType = CASE WHEN @DialingMode = 1 THEN 6 ELSE CampType END
+					order by cam_descripcion
+				end
+				else 
+				begin 
+					select distinct c.cam_id, c.cam_descripcion,  g.graphic_id,  c.cam_ModoManual
+					, isnull(c.CampType,0) as CampType
+					from ccCamps c with(index(PK_ccCamps)) join ccCampsAgente ca on c.cam_id=ca.cam_id
+
+					join ccRIACampsGraph g ON g.cam_id = c.cam_id
+					where ca.user_id = @UserID and manualCallOnChat = 1
+					order by cam_descripcion
+					SET NOCOUNT OFF;
+				end
+			end
+
+			if(@option = 2)
+			begin
+				declare @aniList int 
+				declare @rotativeAniListId int
+				select @aniList = id_anilist, @rotativeAniListId  = rotativeAlgo from ccCamps where cam_id = @campId
+
+				if @rotativeAniListId >0 begin
+					select telAni from ccRotativeANIListDetail where id_RAniList = @aniList
+				end
+				else begin
+					select top 0 '''' telAni 
+				end					
+			end'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-Drop SP ccsp_RegProcessPreviewRecord'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RegProcessPreviewRecord'')
+			BEGIN
+				DROP PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord]
+			END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-CREATE ccsp_RegProcessPreviewRecord'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
+			@process smallint,
+			@callout_id int,
+			@agent_id smallint,
+			@camId int,
+			@previewTime smallint,
+			@callId int)
+			AS
+			DECLARE @result_callout_id INT
+			DECLARE @result_maxtimespreview INT = 0
+			DECLARE @result_maxtimesdiscard INT = 0
+			DECLARE @insert_date DATETIME = SYSDATETIME()
+			DECLARE @process_insert int =  @process
+
+			if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
+				set @result_callout_id =1
+			end
+
+			IF (@process=1 AND @result_callout_id > 0)
+			BEGIN
+				DELETE ccoWorkingTable WHERE callout_id = @callout_id
+			END
+
+			IF (@process NOT IN (1, 7, 13))
+			BEGIN
+			DECLARE @first_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
+				if(
+					(SELECT COUNT(process) FROM RegProcessPreviewRecord 
+					WHERE reg_date BETWEEN @first_date AND @insert_date
+					and (process NOT IN (1, 7, 9, 13)) 
+					and (callout_id=@callout_id)
+					)
+					>=
+					(SELECT timesPreview FROM ccCamps WHERE cam_id = @camId)
+					)
+				begin
+						set @result_maxtimespreview = 1
+						set @process_insert = 8
+						DELETE ccoWorkingTable WHERE callout_id = @callout_id
+				end
+			END
+
+			IF (@process NOT IN (1, 5, 7, 8, 13))
+			BEGIN
+				update ccoWorkingTable set timesDiscard+=1 where callout_id=@callout_id
+			END
+
+			IF (@result_callout_id > 0 or @process in (4, 5, 7, 13))
+			BEGIN
+				INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview,callID) VALUES (@agent_id,@process_insert,@callout_id,@camId,@insert_date,@previewTime,@callId)
+			END
+
+			CREATE TABLE #result (result INT);
+			INSERT INTO #result
+			exec ccsp_CheckTimesDiscard @action=1,@camId=@camId, @calloutId=@callout_id
+			select @result_maxtimesdiscard=result from #result
+			DROP TABLE #result
+
+			select case when @result_maxtimespreview = 1 or @result_maxtimesdiscard = 1 then 1 else 0 end as ''value'''
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Add Llamadas por agente'
+    SET @sql = 'if exists(select top 1 1 from ccsettings where setting_id=251)
+		begin
+			delete ccsettings where setting_id=251
+		end
+		INSERT INTO [dbo].[ccSettings]
+			   ([setting_id]
+			   ,[valor]
+			   ,[descripcion]
+			   ,[Status]
+			   ,[Tipo]
+			   ,[detalle]
+			   ,[description]
+			   ,[bLoadSettings]
+			   ,[validate])
+		 VALUES
+			   (251
+			   ,3
+			   ,''Permite configurar la cantidad máxima de marcaciones que el agente puede realizar en simultáneo de vista previa''
+			   ,1
+			   ,''X''
+			   ,''Valor indica la cantidad máxima de marcaciones que el agente puede realizar en simultáneo de vista previa''
+			   ,''Allows configuring the maximum number of simultaneous preview dialing attempts the agent can make''
+			   ,0
+			   ,''^(10|[0-9])$'')'
+	EXEC(@sql)
+
+	------------------------------------------- End HEL -------------------------------------------------------
 
 	
 	/* End script release */

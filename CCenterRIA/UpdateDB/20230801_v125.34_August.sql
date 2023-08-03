@@ -949,11 +949,21 @@ ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
 		return(0)
         '
         EXEC(@sql)
+	------------------------------------------- End JCL -------------------------------------------------------
 
+	------------------------------------------- Begin Rod Salazar -------------------------------------------------------
 
-SET @process = 'DEV2-223-Add typePreview MultiJob'
+SET @process = 'K054000 Drop procedure ccsp_GalateaGetPreviewData'
+SET @sql = '
+	IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaGetPreviewData'')
+	BEGIN
+		DROP PROCEDURE ccsp_GalateaGetPreviewData
+	END
+'
+EXEC(@sql)
+SET @process = 'DEV2-223-Create sp ccsp_GalateaGetPreviewData'
         SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
         @option int = null,
 		@callout_id int = null,
         @user_id smallint = null
@@ -1002,20 +1012,13 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
 
 		if(@option = 2)
 		begin
-			if exists (select * from ccoCallsOutSource (nolock) where callout_id = @callout_id)
-			begin
-				select 1
-			end
-			else
-			begin
-				select 0
-			end
+			select COUNT(*) from ccoCallsOutSource where callout_id = @callout_id
 		end
         set nocount off
         '
         EXEC(@sql)
+	------------------------------------------- Begin Rod Salazar -------------------------------------------------------
 	
-	------------------------------------------- End JCL -------------------------------------------------------
 
 	
 	/* End script release */

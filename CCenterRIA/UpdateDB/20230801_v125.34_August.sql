@@ -64,7 +64,7 @@ BEGIN
 	 * para eliminar las campañas de ccCamps y registrarlas en la tabla ccCamps_Consulta
 	 * ****************************************************************************/
 	SET @process = 'CW-8007 ccsp_UnassignedElementsInAreas se agregan las líneas 158, 159 y 165'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UnassignedElementsInAreas]   
+	SET @sql = 'ALTER PROCEDURE [ccsp_UnassignedElementsInAreas]   
 									@Action INT,   
 									@AreaId INT = 0,
 									@Ids VARCHAR(MAX) = ''''
@@ -1017,7 +1017,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
         set nocount off
         '
         EXEC(@sql)
-	------------------------------------------- Begin Rod Salazar -------------------------------------------------------
+	------------------------------------------- End Rod Salazar -------------------------------------------------------
 	
 
 	

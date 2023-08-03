@@ -953,7 +953,7 @@ ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
 
 	------------------------------------------- Begin Rod Salazar -------------------------------------------------------
 
-SET @process = 'K054000 Drop procedure ccsp_GalateaGetPreviewData'
+SET @process = 'DEV2-223 Drop procedure ccsp_GalateaGetPreviewData'
 SET @sql = '
 	IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaGetPreviewData'')
 	BEGIN

@@ -1002,7 +1002,7 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
 
 		if(@option = 2)
 		begin
-			if exists (select * from ccoCallsOutSource where callout_id = @callout_id)
+			if exists (select * from ccoCallsOutSource (nolock) where callout_id = @callout_id)
 			begin
 				select 1
 			end

@@ -27,8 +27,8 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 123 --**********actualizar a 122 sin fix
-SET @versionfix = 23
+SET @version = 125 --**********actualizar a 122 sin fix
+SET @versionfix = 17
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD' 
 
@@ -43,7 +43,7 @@ FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 4;
 
 IF (@actualVersion = @version and @actualVersionFix >= @versionfix - 1) or
-@actualVersion = @version +1
+@actualVersion >= @version 
 BEGIN
     BEGIN TRAN
 

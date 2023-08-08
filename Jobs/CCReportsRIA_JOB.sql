@@ -138,7 +138,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Generat
         @retry_attempts=0, 
         @retry_interval=0, 
         @os_run_priority=0, @subsystem=N''TSQL'', 
-        @command=N''EXEC ReportsMasterProcessPublicationHighLoadPublicationHighLoad'', 
+        @command=N''EXEC ReportsMasterProcessPublicationHighLoad'', 
         @database_name=N''CCReportsRIA'', 
         @flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback

@@ -416,7 +416,7 @@ BEGIN
                     set nocount off'
 	EXEC(@sql)
 
-	SET @process = 'CW-8007 ccsp_RIA_ABCACDGroups se quita delete del option 4 pues ya se agrego en los otros sps '
+	SET @process = 'CW-8007 ccsp_RIA_ABCACDGroups se quita delete del option 4 pues ya se agrego en los otros sps y se agrega borrado de la relacion con ccSkills'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCACDGroups]
 				@option smallint,
 				@userid int,
@@ -581,6 +581,7 @@ BEGIN
 				     delete ccriainboundgraph where inbound_id = @inbound_id
 				     delete ccInboundMsgs where inbound_id = @inbound_id
 				     delete ccRIAChatInboundMsgs where inbound_id = @inbound_id
+					 delete ccSkills where inbound_id = @inbound_id
 				     return(0)
 				 end
 

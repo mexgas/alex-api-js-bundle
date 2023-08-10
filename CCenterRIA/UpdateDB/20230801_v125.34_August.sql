@@ -1133,7 +1133,7 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
 				if(
 					(SELECT COUNT(process) FROM RegProcessPreviewRecord 
 					WHERE reg_date BETWEEN @first_date AND @insert_date
-					and (process NOT IN (1, 7, 9, 13)) 
+					and (process = 5) 
 					and (callout_id=@callout_id)
 					)
 					>=
@@ -1190,6 +1190,241 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetPreviewData]
 			   ,''Allows configuring the maximum number of simultaneous preview dialing attempts the agent can make''
 			   ,0
 			   ,''^(10|[0-9])$'')'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Init AllowSelectCamp'
+    SET @sql = 'UPDATE ccusers SET AllowSelectCamp=0 WHERE AllowSelectCamp IS NULL'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Check default constraint AllowSelectCamp'
+    SET @sql = 'IF EXISTS(SELECT 
+			OBJECT_NAME(OBJECT_ID) AS NameofConstraint
+				,SCHEMA_NAME(schema_id) AS SchemaName
+				,OBJECT_NAME(parent_object_id) AS TableName
+				,type_desc AS ConstraintType
+			FROM sys.objects
+			WHERE type_desc LIKE ''%CONSTRAINT''
+				AND OBJECT_NAME(OBJECT_ID)=''DF_ccUsers_AllowSelectCamp'')
+		BEGIN
+			ALTER TABLE ccusers DROP DF_ccUsers_AllowSelectCamp
+		END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Create default constraint AllowSelectCamp'
+    SET @sql = 'ALTER TABLE ccusers ADD CONSTRAINT DF_ccUsers_AllowSelectCamp DEFAULT 0 FOR AllowSelectCamp;'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Drop function GetHourLaw'
+    SET @sql = 'If EXISTS (select * from sysobjects where name = ''GetHourLaw'')
+		begin
+			drop function dbo.GetHourLaw
+		end'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-223-Create function GetHourLaw'
+    SET @sql = 'CREATE FUNCTION GetHourLaw ()
+		returns @t TABLE (hourStart tinyint, minStart tinyint, hourEnd tinyint, minEnd tinyint)  AS
+		begin
+			DECLARE @isShudulerLey BIT
+			DECLARE @valueShudulerLey VARCHAR(max), @hourStart INT, @hourEnd INT, @minStart INT, @minEnd INT
+			DECLARE @shourStart VARCHAR(max), @shourEnd VARCHAR(max)
+
+			SELECT @valueShudulerLey = valor
+			FROM ccsettings
+			WHERE setting_id = 166
+
+			SELECT @isShudulerLey = cast(substring(@valueShudulerLey, 0, charindex(''|'', @valueShudulerLey)) AS INT), @valueShudulerLey = substring(
+					@valueShudulerLey, charindex(''|'', @valueShudulerLey) + 1, len(@valueShudulerLey))
+
+			IF @valueShudulerLey = ''''
+			BEGIN
+				SET @valueShudulerLey = ''0|07:00|22:00''
+			END
+
+			IF @isShudulerLey = 1
+			BEGIN
+				SELECT @shourStart = substring(@valueShudulerLey, 0, charindex(''|'', @valueShudulerLey)), 
+				@shourEnd = substring(@valueShudulerLey, charindex(''|'', 
+							@valueShudulerLey) + 1, len(@valueShudulerLey))
+
+				SELECT @hourStart = substring(@shourStart, 0, charindex('':'', @shourStart)), 
+				@minStart = substring(@shourStart, charindex('':'', @shourStart) + 1, len(
+							@shourStart))
+
+				SELECT @hourEnd = substring(@shourEnd, 0, charindex('':'', @shourEnd)), 
+				@minEnd = substring(@shourEnd, charindex('':'', @shourEnd) + 1, len(@shourEnd))
+			END
+			ELSE
+			BEGIN
+				SELECT @hourStart = 0, @minStart = 0, @hourEnd = 23, @minEnd = 59
+			END
+
+			INSERT @t
+			SELECT @hourStart as hourStart, @minStart as minStart, @hourEnd as hourEnd, @minEnd minEnd
+
+			return
+		end'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-Drop SP ccsp_OUTcheckTimeZone'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_OUTcheckTimeZone'')
+			BEGIN
+				DROP PROCEDURE [dbo].[ccsp_OUTcheckTimeZone]
+			END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-Create SP ccsp_OUTcheckTimeZone'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_OUTcheckTimeZone] @cam_id AS INT,@isReturnSelect bit=1
+			AS
+			SET NOCOUNT ON
+
+			DECLARE @horaUniversal DATETIME, @revHorario BIT, @isShudulerLey BIT, @dateNow DATETIME
+			DECLARE @hourStart INT, @hourEnd INT, @minStart INT, @minEnd INT
+			DECLARE @timeMaxContestacion INT, @campType INT;
+
+			SET @timeMaxContestacion = 60
+
+			SELECT @revHorario = valor
+			FROM ccsettings
+			WHERE setting_id = 112
+
+			SELECT @timeMaxContestacion = (cam_tNoContesta * 2)
+			FROM cccamps
+			WHERE cam_id = @cam_id
+
+			SET @timeMaxContestacion = CEILING(cast(@timeMaxContestacion AS DECIMAL(10, 2)) / cast(60 AS DECIMAL(10, 2)))
+
+			SELECT @hourStart = hourStart, @minStart = minStart, @hourEnd = hourEnd, @minEnd = minEnd from dbo.GetHourLaw()
+
+			SELECT @campType = CampType
+			FROM ccCamps
+			WHERE cam_id = @cam_id;
+
+			SET DATEFIRST 1
+			SET @horaUniversal = getutcdate()
+			SET @dateNow = getdate()
+			declare @iZonas int
+			-- Si la campaña no tiene horarios asignados, marcar todas las zonas
+			IF @revHorario = 0
+			BEGIN
+				IF NOT EXISTS (
+						SELECT cam_id
+						FROM ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios))
+						WHERE cam_id = @cam_id
+						)
+				BEGIN
+					SELECT @iZonas=sum(DISTINCT tz_id)
+					FROM (
+						SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha, 
+						datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora, 
+						datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto, 
+						datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+						FROM ccTimeZones
+						) zonas
+					WHERE (
+							hora > @hourStart OR ( hora = @hourStart AND minuto >= @minStart)
+							)
+						AND (
+							hora < @hourEnd OR ( hora = @hourEnd AND minuto <= @minEnd)
+							)
+
+				if @isReturnSelect=1 begin
+					select @iZonas as iZonas
+				end
+				return @iZonas
+				END
+			END
+
+			IF @campType <> 7
+			BEGIN
+	
+				WITH sch
+					AS (
+						SELECT HoraInicio, MinInicio, HoraFin, MinFin, Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo
+						FROM cchorarios h
+						INNER JOIN ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios)) ON h.horario_id = ccCampsHorarios.horario_id
+						AND ccCampsHorarios.cam_id = @cam_id
+						), daysch
+					AS (
+						SELECT CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+						, CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart AND MinInicio >= @minStart	)
+										) THEN MinInicio ELSE @minStart END MinInicio
+						, CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+						, CASE WHEN ((	horaFin < @hourEnd OR (	horaFin = @hourEnd AND MinFin <= @minEnd))
+										) THEN MinFin ELSE @minEnd END MinFin, Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo
+						FROM sch
+						), zonas
+					AS (
+						SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha
+						, datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora
+						, datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto
+						, datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+						FROM ccTimeZones
+						)
+					SELECT @iZonas=isnull(sum(DISTINCT B.tz_id), 0)
+					FROM daysch A
+					INNER JOIN zonas B ON (
+							hora > HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+							)
+						AND (
+							hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+							)
+						AND (
+							Lunes = dia
+							OR Martes * 2 = dia
+							OR Miercoles * 3 = dia
+							OR Jueves * 4 = dia
+							OR Viernes * 5 = dia
+							OR Sabado * 6 = dia
+							OR domingo * 7 = dia
+							)
+
+				if @isReturnSelect=1 begin
+					select @iZonas as iZonas
+				end
+				return @iZonas
+			END
+			ELSE
+			BEGIN
+					;
+
+				WITH sch
+				AS (
+					SELECT DATEPART(hh, idate) AS HoraInicio, DATEPART(mi, iDate) AS MinInicio, 
+					DATEPART(hh, fdate) HoraFin, DATEPART(mi, fdate) MinFin
+					FROM ccSmsSchedules
+					WHERE cam_id = @cam_id
+						AND @dateNow BETWEEN iDate AND fDate
+					), daysch
+				AS (
+					SELECT CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+					, CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart AND MinInicio >= @minStart	)
+									) THEN MinInicio ELSE @minStart END MinInicio
+					, CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+					, CASE WHEN ((	horaFin < @hourEnd OR (	horaFin = @hourEnd AND MinFin <= @minEnd))
+									) THEN MinFin ELSE @minEnd END MinFin
+					FROM sch
+					), zonas
+				AS (
+					SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha
+					, datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora
+					, datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto
+					FROM ccTimeZones
+					)
+				SELECT @iZonas=isnull(sum(DISTINCT B.tz_id), 0)
+				FROM daysch A
+				INNER JOIN zonas B ON (
+						hora > HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+						)
+					AND (
+						hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+						)
+
+				if @isReturnSelect=1 begin
+					select @iZonas as iZonas
+				end
+				return @iZonas
+			END'
 	EXEC(@sql)
 
 	------------------------------------------- End HEL -------------------------------------------------------

@@ -91,6 +91,17 @@ BEGIN
 	'
 	EXEC(@sql)
 
+	set @process = 'CW-7888 Se crea Index para ccspRepMKTIntervalosSalidas'
+	set @sql = '
+		IF EXISTS (SELECT name FROM sys.indexes WHERE name = N''IX_tmpccLogAgentesDia_TipoStatusAge_id'')   
+		DROP INDEX IX_tmpccLogAgentesDia_TipoStatusAge_id ON [dbo].[tmpccLogAgentesDia] 
+
+		CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id, sysname,>]
+		ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
+		INCLUDE ([tStatus],[timeGroupNext])
+	'
+	EXEC(@sql)
+
 	----------------------------------------------------- END B. Dunzz -----------------------------------------------------------------
 
 -------------------------------------------- Daniel Hernandez y Jesus Gallardo CW-7842 Zendere------------------------------

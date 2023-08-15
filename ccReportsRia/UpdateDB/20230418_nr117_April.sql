@@ -492,7 +492,6 @@ SET @sql = '
 
 		IF @action = 1
 		BEGIN
-			--EXEC ccspRepIVRDetail 1, @from, @to
 
 			DECLARE @tab TABLE (callId INT PRIMARY KEY, [Dato1] VARCHAR(255), [Dato2] VARCHAR(255), [Dato3] VARCHAR(255), [Dato4] VARCHAR(255), [Dato5] VARCHAR(255))
 			DECLARE @fechaSUM DATETIME
@@ -633,15 +632,12 @@ SET @sql = '
 	UPDATE
 		TranslatedReports
 	SET
-		''whoHangUp|fileMoved|recibeCallBy|statusCallByIVR''
+		columns = ''whoHangUp|fileMoved|recibeCallBy|statusCallByIVR''
 	WHERE
 		id = 3010
 '
 
 EXEC(@sql)
-
-
-
 
 -------------------------------------------- END Roberto Nava -------------------------------------------------------
 

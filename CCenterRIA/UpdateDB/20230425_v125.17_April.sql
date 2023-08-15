@@ -2551,6 +2551,7 @@ SET NOCOUNT ON;'
 
 EXEC (@sql)
 ------------------------------------------------------END MACL----------------------------------------------------
+------------------------------------------------------Begin Roberto Nava ----------------------------------------------------
 SET @process = 'CW-8013 Se agregan los tiempos finales de las llamadas de entrada'
 SET @sql = '
 	IF NOT EXISTS

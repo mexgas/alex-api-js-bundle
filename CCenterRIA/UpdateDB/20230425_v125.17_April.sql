@@ -2551,7 +2551,7 @@ SET NOCOUNT ON;'
 
 EXEC (@sql)
 ------------------------------------------------------END MACL----------------------------------------------------
-SET @process = ''
+SET @process = 'CW-8013 Se agregan los tiempos finales de las llamadas de entrada'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -2568,7 +2568,7 @@ SET @sql = '
 EXEC(@sql)
 
 
-SET @process = ''
+SET @process = 'CW-8013 Se valida SP ccsp_IVRUpdateCallEndNew para la fecha final de las llamadas de entrada'
 SET @sql = '
 	IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_IVRUpdateCallEndNew'')
 	BEGIN
@@ -2578,7 +2578,7 @@ SET @sql = '
 
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-8013 Se modifica SP ccsp_IVRUpdateCallEndNew para la fecha final de las llamadas de entrada'
 SET @sql = '
 CREATE PROCEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
 	@cal_id INT,

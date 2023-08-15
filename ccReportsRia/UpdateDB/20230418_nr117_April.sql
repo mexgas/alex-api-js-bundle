@@ -273,7 +273,7 @@ SET @sql = '
 '
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-7976 Se agregan columnas nuevas (statusCallByIVR)'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -290,7 +290,7 @@ SET @sql = '
 EXEC(@sql)
 
 
-SET @process = ''
+SET @process = 'CW-7976 Se agregan columnas nuevas (IVR_ID)'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -306,7 +306,7 @@ SET @sql = '
 '
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-7976 Se agregan columnas nuevas (callHung)'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -323,7 +323,7 @@ SET @sql = '
 EXEC(@sql)
 
 
-SET @process = ''
+SET @process = 'CW-7976 Se agregan columnas nuevas (recibeCallBy)'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -339,7 +339,7 @@ SET @sql = '
 '
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-8013 Almacenar en BD tiempo inicial y final de la llamada de entrada'
 SET @sql = '
 	IF NOT EXISTS
 	(
@@ -355,7 +355,7 @@ SET @sql = '
 '
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-7976 Validación para SP SupportReportCallInIVR para agregar datos de IVR a llamadas de entradas'
 SET @sql = '
 	IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''SupportReportCallInIVR'')
 	BEGIN
@@ -365,7 +365,7 @@ SET @sql = '
 
 EXEC(@sql)
 
-SET @process = ''
+SET @process = 'CW-7976 Generación de un SP SupportReportCallInIVR para agregar datos de IVR a llamadas de entradas'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[SupportReportCallInIVR] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 	AS
@@ -455,7 +455,7 @@ SET @sql = '
 EXEC(@sql)
 
 
-SET @process = ''
+SET @process = 'CW-7976 Se elimina SP ccspRepInCallsDetail'
 SET @sql = '
 	IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspRepInCallsDetail'')
 	BEGIN
@@ -466,7 +466,7 @@ SET @sql = '
 EXEC(@sql)
 
 
-SET @process = ''
+SET @process = 'CW-7976 Llamadas IVR que no son transferidas a campañas de entrada'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccspRepInCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 		AS

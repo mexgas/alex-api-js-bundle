@@ -268,7 +268,7 @@ END'
 
 
 ------------------------------------------- Begin Roberto Nava ------------------------------------------------------
-SET @process = ''
+SET @process = 'CW-8013 Se agrega la columna cal_final de ccCallsIn en ReportsRIA'
 SET @sql = '
 	IF NOT EXISTS
 	(

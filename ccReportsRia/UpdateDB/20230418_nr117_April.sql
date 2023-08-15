@@ -628,6 +628,21 @@ SET @sql = '
 
 EXEC(@sql)
 
+SET @process = 'CW-7976 Se agregan filtros para los reportes de llamada de entrada'
+SET @sql = '
+	UPDATE
+		TranslatedReports
+	SET
+		''whoHangUp|fileMoved|recibeCallBy|statusCallByIVR''
+	WHERE
+		id = 3010
+'
+
+EXEC(@sql)
+
+
+
+
 -------------------------------------------- END Roberto Nava -------------------------------------------------------
 
 

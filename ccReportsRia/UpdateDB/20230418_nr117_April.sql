@@ -268,6 +268,8 @@ END'
 
 
 ------------------------------------------- Begin Roberto Nava ------------------------------------------------------
+
+
 SET @process = 'CW-7976 Se agregan columnas nuevas (statusCallByIVR)'
 SET @sql = '
 	IF NOT EXISTS

@@ -503,6 +503,37 @@ END'
 
 
 ------------------------------------------- Begin Roberto Nava ------------------------------------------------------
+
+set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+SET @process = 'CW-7976 Se agregan columnas nuevas para ccCallsIn para ReportsRIA (cal_final)'
+SET @sql = '
+	IF NOT EXISTS
+	(
+		SELECT *
+		FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_NAME = ''ccCallsIn''
+		AND COLUMN_NAME = ''cal_final''
+	)
+	BEGIN
+		ALTER TABLE ccCallsIn
+		ADD cal_final DATETIME NULL
+	END
+'
+EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
 SET @process = 'CW-7976 Se agregan columnas nuevas para RepIVRDetails (ivrName)'
 SET @sql = '
 	IF NOT EXISTS

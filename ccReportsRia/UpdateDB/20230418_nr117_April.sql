@@ -268,21 +268,7 @@ END'
 
 
 ------------------------------------------- Begin Roberto Nava ------------------------------------------------------
-SET @process = 'CW-8013 Se agrega la columna cal_final de ccCallsIn en ReportsRIA'
-SET @sql = '
-	IF NOT EXISTS
-	(
-		SELECT *
-		FROM INFORMATION_SCHEMA.COLUMNS
-		WHERE TABLE_NAME = ''ccCallsIn''
-		AND COLUMN_NAME = ''cal_final''
-	)
-	BEGIN
-		ALTER TABLE ccCallsIn
-		ADD cal_final DATETIME NULL
-	END
-'
-EXEC(@sql)
+
 
 SET @process = 'CW-7976 Se agregan columnas nuevas (statusCallByIVR)'
 SET @sql = '

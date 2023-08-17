@@ -1139,7 +1139,81 @@ EXEC (@sql)
 ------------------------------------------------------END MACL----------------------------------------------------
 /************************************************************************ End FIX 125.20230425.0.5 **************************************************************/
 
+------------------------------------------------------Begin Roberto Nava ----------------------------------------------------
+SET @process = 'CW-8013 Se agregan los tiempos finales de las llamadas de entrada'
+SET @sql = '
+	IF NOT EXISTS
+	(
+		SELECT *
+		FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_NAME = ''ccCallsIn''
+		AND COLUMN_NAME = ''cal_final''
+	)
+	BEGIN
+		ALTER TABLE ccCallsIn
+		ADD cal_final DATETIME NULL
+	END
+'
+EXEC(@sql)
 
+
+SET @process = 'CW-8013 Se valida SP ccsp_IVRUpdateCallEndNew para la fecha final de las llamadas de entrada'
+SET @sql = '
+	IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_IVRUpdateCallEndNew'')
+	BEGIN
+	    DROP PROCEDURE ccsp_IVRUpdateCallEndNew;
+	END
+'
+
+EXEC(@sql)
+
+SET @process = 'CW-8013 Se modifica SP ccsp_IVRUpdateCallEndNew para la fecha final de las llamadas de entrada'
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_IVRUpdateCallEndNew]
+	@cal_id INT,
+	@cal_tIVRCallDuration INT,
+	@statuscal_id TINYINT, 
+	@cal_opciones VARCHAR(10),
+	@cal_colgada TINYINT,
+	@User_id SMALLINT,
+	@cal_extension VARCHAR(7),
+	@tWait SMALLINT,
+	@cbPhone VARCHAR(20)
+	AS
+	SET NOCOUNT ON
+
+	UPDATE ccCallsIn 
+	SET statusCall_id = 
+		CASE 
+			WHEN @statuscal_id IN (2, 3, 4, 7, 8) THEN @statuscal_id 
+			ELSE 
+				CASE 
+					WHEN statusCall_id = 5 THEN 6 
+					ELSE statuscall_id 
+				END 
+		END, 
+		user_id = 
+		CASE 
+			WHEN user_id = 0 AND @User_id > 0 THEN @User_id 
+			ELSE user_id 
+		END, 
+	cal_extension = 
+		CASE 
+			WHEN LEN(cal_extension) = 0 AND LEN(@cal_extension) > 0 THEN @cal_extension 
+			ELSE cal_extension 
+		END, 
+	cal_tWait = @tWait, 
+	cal_final = getdate() 
+	WHERE cal_id=@cal_id
+
+	EXEC ccsp_RIAUpdateCallBack_Abandon @cal_id, @statuscal_id, @cbPhone
+	EXEC ccsp_EngineLogTransfers 2, @cal_id, 2, 2, null, @tWait, @cal_tIVRCallDuration
+
+	SET NOCOUNT OFF 
+'
+
+EXEC(@sql)
+-------------------------------------------- END Roberto Nava -------------------------------------------------------
 
 		/* End script release */
 		/* Upgrade database version (first and the last number of setting 77) */

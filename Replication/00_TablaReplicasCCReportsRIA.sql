@@ -35,9 +35,12 @@ insert into publicationTableCCenterRIA(publicationName,status) values(N'Conversa
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Conversationtweet',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsApp',0)
+insert into publicationTableCCenterRIA(publicationName,status) values(N'SMS',0)
+
 
 print('---------------------------publicationTableCCRecorderRIA---------------------------')
 
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSTemplatesRate',0)
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSTemplates',0)	
 insert into publicationTableCCRecorderRIA(publicationName,status) values(N'AVRSRecordings',0)
+insert into publicationTableCCRecorderRIA(publicationName,status) values(N'RecordingEvaluation',0)

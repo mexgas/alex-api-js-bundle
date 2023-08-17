@@ -769,7 +769,7 @@ end'
 
 	set @process = 'KR085000 ccspRepInCallsDetail CREATE SP'
 	set @sql = '
-		CREATE PROCEDURE [dbo].[ccspRepInCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
+			CREATE PROCEDURE [dbo].[ccspRepInCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 		AS
 
 		SET NOCOUNT ON
@@ -782,8 +782,9 @@ end'
 
 		IF @action = 1
 		BEGIN
-			DECLARE @tab TABLE (callId INT PRIMARY KEY, [Dato1] VARCHAR(255), [Dato2] VARCHAR(255), [Dato3] VARCHAR(255), [Dato4] VARCHAR(255), [Dato5] VARCHAR(255))
 
+			DECLARE @tab TABLE (callId INT PRIMARY KEY, [Dato1] VARCHAR(255), [Dato2] VARCHAR(255), [Dato3] VARCHAR(255), [Dato4] VARCHAR(255), [Dato5] VARCHAR(255))
+			DECLARE @fechaSUM DATETIME
 			INSERT INTO @tab
 			SELECT callId, [Dato 1], [Dato 2], [Dato 3], [Dato 4], [Dato 5]
 			FROM (
@@ -797,11 +798,13 @@ end'
 			--Borrar lo que esta para no repetir
 			DELETE
 			FROM RepInCallsDetail
-			WHERE DATE >= @from AND DATE < @to
+			WHERE [date] >= @from AND [date] < @to
 
-			INSERT INTO RepInCallsDetail (DATE, callid, inboundId, ACDGroup, callStatusId, callStatus, dispositionId, disposition, subDispositionId, subDisposition, dnisId, dnis, userId, [user], callKey, ANI, queueTime, xferTime, ringingTime, dialogTime, extension, agentName, whoHangUp, mohTime, year, month, day, hour, minutes, provedorId, provider, trunk, fileMoved, twrapup, AverageHandleTime, Dato1, Dato2, Dato3, Dato4, Dato5, grabId, nameDNI, numDNI, collectCall, timeTotalInCallSec, timeTotalInCallMin)
-			SELECT cal_inicio, 
-			   a.cal_id, 
+			
+			INSERT INTO RepInCallsDetail (DATE, callid, inboundId, ACDGroup, callStatusId, callStatus, dispositionId, disposition, subDispositionId, subDisposition, dnisId, dnis, userId, [user], callKey, ANI, queueTime, xferTime, ringingTime, dialogTime, extension, agentName, whoHangUp, mohTime, year, month, day, hour, minutes, provedorId, provider, trunk, fileMoved, twrapup, AverageHandleTime, Dato1, Dato2, Dato3, Dato4, Dato5, grabId, nameDNI, numDNI, collectCall, timeTotalInCallSec, timeTotalInCallMin, statusCallByIVR, IVR_ID, callHung, recibeCallBy, cal_final)
+			SELECT 
+			   a.cal_inicio AS cal_ini, 
+			   a.cal_id,
 			   a.Inbound_id,
 			   ISNULL(ccIn.descripcion, '''') AS Inbound, 
 			   a.statusCall_id, 
@@ -815,7 +818,7 @@ end'
 			   a.user_id, 
 			   ISNULL(LOGIN, '''') AS [user], 
 			   ISNULL(a.cal_key, '''') as cal_key, 
-			   cal_ANI, 
+			   a.cal_ANI, 
 			   cal_tWait, 
 			   cal_tXfer, 
 			   cal_tRing, 
@@ -857,13 +860,40 @@ end'
 					 WHEN statusLlamada.descripcion IS NOT NULL THEN ''Si''
 					 ELSE ''No''
 			   END AS collectCall,
-			   ( CAST(cal_tDialog AS INT) + CAST(cal_tXfer AS INT) + CAST(cal_tWait AS INT) + CAST(cal_tRing AS INT)) AS timeTotalInCallSec,
-			   (FLOOR( ( CAST(cal_tDialog AS INT) + CAST(cal_tXfer AS INT) + CAST(cal_tWait AS INT) + CAST(cal_tRing AS INT) )/ 60) + 
-					CASE 
-						WHEN CEILING(( CAST(cal_tDialog AS INT) + CAST(cal_tXfer AS INT) + CAST(cal_tWait AS INT) + CAST(cal_tRing AS INT) ) % 60) != 0 THEN 1 
-						ELSE 0 
-					END) AS timeTotalInCallMin
-		FROM cccallsin a
+			   CASE
+					WHEN A.cal_final IS NULL THEN 0
+					ELSE CAST( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) AS INT)
+			   END AS timeTotalInCallSec,
+			   CASE
+					WHEN A.cal_final IS NULL THEN 0
+					ELSE CAST( FLOOR( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) / 60 ) AS INT) 
+			   END + 
+			   CASE
+					WHEN A.cal_final IS NULL THEN 0
+					ELSE
+						CASE
+							WHEN CAST(CEILING( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) ) AS INT) % 60 != 0 THEN 1
+							ELSE 0
+						END
+			   END AS timeTotalInCallMin,
+			   CASE 
+					WHEN a.IVR_id != 0 and ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_AbandonedInIVR''
+					WHEN a.statusCall_id = 13 THEN ''systemTranslated_Answered''
+					WHEN a.statusCall_id != 13 THEN ''''
+					ELSE ''''
+				END AS statusCallByIVR,
+				ISNULL(ivrCIN.IVR_ID, 0) AS IVR,
+				CASE
+					WHEN ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_ClientSystem''
+					ELSE ''''
+				END AS statusCallByIVR,
+				CASE
+					WHEN ivrCIN.callid = a.cal_id THEN ''systemTranslated_SystemIVR''
+					WHEN a.IVR_id = 0 THEN ''systemTranslated_CallInbound'' 
+					ELSE ''''
+				END AS [recibeCallBy], 
+				ISNULL(a.cal_final, NULL) AS cal_final
+		FROM cccallsin A   
 			 LEFT JOIN ccoDialers di ON di.dialer_id = a.cal_puerto
 			 LEFT JOIN cstoProvedor prov ON di.provedor_id = prov.provedor_id
 			 LEFT JOIN @tab tab ON tab.callId = a.cal_id
@@ -874,8 +904,12 @@ end'
 			 LEFT JOIN cctipocalifsub subDisposition ON a.califSub_id = subDisposition.califSub_id
 			 LEFT JOIN ccdnis dnis ON a.dni_id = dnis.dni_id
 			 LEFT JOIN ccUserView ccuser ON a.User_id = ccuser.user_id
-		WHERE cal_inicio >= @from
-			  AND cal_inicio < @to;
+			 LEFT JOIN repIVRDetail ivrCIN ON a.IVR_id = ivrCIN.IVR_ID 
+		WHERE a.cal_inicio >= @from
+			  AND a.cal_inicio < @to
+
+
+		EXEC SupportReportCallInIVR 1, @from, @to
 
 		END
 	'

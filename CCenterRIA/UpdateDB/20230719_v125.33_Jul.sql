@@ -191,9 +191,9 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_AddressBook]
 	/****************************************************************************
 	 * CW-8007
 	 * Se modifican Sps ccsp_UnassignedElementsInAreas, ccsp_RIA_ABCCamps y ccsp_RIA_ABCACDGroups
-	 * para eliminar las campañas de ccCamps y registrarlas en la tabla ccCamps_Consulta
+	 * para eliminar las campanas de ccCamps y registrarlas en la tabla ccCamps_Consulta
 	 * ****************************************************************************/
-	SET @process = 'CW-8007 ccsp_UnassignedElementsInAreas se agregan las líneas 158, 159 y 165'
+	SET @process = 'CW-8007 ccsp_UnassignedElementsInAreas se agregan las lineas 158, 159 y 165'
 	SET @sql = 'ALTER PROCEDURE [ccsp_UnassignedElementsInAreas]   
 									@Action INT,   
 									@AreaId INT = 0,
@@ -715,20 +715,20 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_AddressBook]
 				     return(0)
 				 end
 
-				if @option = 5 -- asignar campaña a ACD
+				if @option = 5 -- asignar campana a ACD
 				 begin
 				    if not exists (select inbound_id from ccInbound where inbound_id=@inbound_id) or
 				     (@descripcion is not null and @descripcion <> '''' and @descripcion <> ''0'' and 
 				        not exists (select cam_id from ccCamps where cam_id=@descripcion))
 				     begin
-				        select -3 -- Campaña o ACD invalido
+				        select -3 -- Campana o ACD invalido
 				        return(0)
 				     end
 				    
 				    if @descripcion=0 begin
 
 				        set @descripcion = null
-				        --quitamos calificaciones relacionadas a la campaña
+				        --quitamos calificaciones relacionadas a la campana
 				        DELETE c FROM ccCalifCamp c
 				        INNER JOIN ccTipoCalif ci ON  ci.calif_id=c.calif_id
 				        Where c.cam_id=@inbound_id and ci.CanReprogram =1
@@ -842,7 +842,7 @@ END;
     SELECT @logDial_id as LogDialId'
 	EXEC(@sql)
 
-	SET @process = 'DEV1-335 Alter SP ccsp_GetAgentECRelations se agrega parametro @camId para filtrar por la campaña'
+	SET @process = 'DEV1-335 Alter SP ccsp_GetAgentECRelations se agrega parametro @camId para filtrar por la campana'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentECRelations]
 @User_id smallint,@action int =0,@camId int=0
 AS
@@ -885,7 +885,7 @@ else begin
 end'
 	EXEC(@sql)
 
-	SET @process = 'DEV1-335 Alter SP ccsp_GetAllAgentsECRelations se agrega parametro @camId para filtrar por la campaña'
+	SET @process = 'DEV1-335 Alter SP ccsp_GetAllAgentsECRelations se agrega parametro @camId para filtrar por la campana'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GetAllAgentsECRelations]
 @User_id varchar(max),@camId int=0
 AS
@@ -921,7 +921,7 @@ select distinct
 '
 	EXEC(@sql)
 
-	SET @process = 'DEV1-335 Alter SP ccsp_OUTResetJobs se agrega parametro @today para buscar solo desde la ultima vez que se inicio la campaña en lugar del inicio del dia'
+	SET @process = 'DEV1-335 Alter SP ccsp_OUTResetJobs se agrega parametro @today para buscar solo desde la ultima vez que se inicio la campana en lugar del inicio del dia'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_OUTResetJobs] 
 @camid AS INT= 0,@today DATETIME=null
 AS
@@ -1203,7 +1203,7 @@ as
 
 --Obtiene el idioma de de Centerware
 Declare @lenguageXion varchar
-select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espanol, 1 para ingles, 2 para portugues
 
 IF @option = 1 --Agentes/supervisores de un Area
 BEGIN
@@ -1324,7 +1324,7 @@ BEGIN
 	Return(0)
 END
 
-IF @option = 5 --Usuarios inactivos por mas de 60 días por área
+IF @option = 5 --Usuarios inactivos por mas de 60 dias por area
 	BEGIN
 		SELECT [User_id] as UserId,
 		LOGIN as Username

@@ -294,6 +294,15 @@ END'
 
 
 	----------------------------------------------------- B. Dunzz -----------------------------------------------------------------
+	set @process = 'CW-7888 DROP SP ccspTimesccLogAgentesDia'
+	set @sql = '
+		IF exists (select * from sys.procedures where name = N''ccspTimesccLogAgentesDia'')
+		begin
+			DROP PROCEDURE ccspTimesccLogAgentesDia;
+		end
+	'
+	EXEC(@sql)
+	
 	set @process = 'CW-7888 CREATE SP ccspTimesccLogAgentesDia con Index'
 	set @sql = '
 		CREATE PROCEDURE [dbo].[ccspTimesccLogAgentesDia] @from AS SMALLDATETIME

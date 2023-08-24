@@ -100,7 +100,7 @@ BEGIN
 					left join ccoLogDials ld on co.callout_id = ld.callout_id
 					left join cctipoResultadoDial trd ON ld.tipoResDial_id = trd.tiporesdial_id
 					LEFT JOIN cctipocalifout tco ON tco.calif_id = co.calif_id
-					where co.callout_id = @callOut_Id and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13
+					where co.callout_id = @callOut_Id and co.cal_id = ld.cal_id  and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13
 					and cast(co.cal_Inicio as varchar) = cast(ld.fecha as varchar)
 
 					union 

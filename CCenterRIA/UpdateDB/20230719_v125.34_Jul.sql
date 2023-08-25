@@ -2173,7 +2173,7 @@ SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_OUTGetN
 	END'
 EXEC(@sql)
 
-SET @process = 'CREATE Sp ccsp_OUTGetNewJobs se agrega condición para cuando sea @test = 2'
+SET @process = 'CREATE Sp ccsp_OUTGetNewJobs se agrega condición para cuando sea @test diferente a  2'
 SET @sql = '
 CREATE procedure [dbo].[ccsp_OUTGetNewJobs]
 @CAMPID INT,

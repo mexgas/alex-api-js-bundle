@@ -2164,6 +2164,369 @@ select A.inboundId,@UserId,8 as Skill from (
 end'
 		EXEC(@sql)
 
+
+		/*Fix para la visualizción de los datos al cargar una base de datos a la campaña*/
+		SET @process = 'DROP Sp ccsp_OUTGetNewJobs'
+SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_OUTGetNewJobs'')
+	BEGIN
+	    DROP PROCEDURE ccsp_OUTGetNewJobs;
+	END'
+EXEC(@sql)
+
+SET @process = 'CREATE Sp ccsp_OUTGetNewJobs se agrega condición para cuando sea @test diferente a  2'
+SET @sql = '
+CREATE procedure [dbo].[ccsp_OUTGetNewJobs]
+@CAMPID INT,
+@test INT=0,
+@nAgentsLogin INT=1,
+@iZonas INT = NULL,
+@isDashboardApi BIT = 0
+as
+set nocount on
+DECLARE @total INT
+DECLARE @topCount smallINT, @bIsDaylight bit, @revHorario bit
+DECLARE @country_id INT, @TipoJobs INT
+
+DECLARE @sql nvarchar(MAX), @Order_Asc_Desc char(4)
+declare @sqlInsertGeneric nvarchar(MAX)
+declare @parameters nvarchar(MAX)
+DECLARE @camSurvey INT, @campType INT;
+SELECT @camSurvey = 0
+
+SELECT @camSurvey = cam_id from cccamps  where cam_id = @CAMPID  and isnull(callsBySurvey,0) > 0  and isnull(ivrScript,0) > 0;
+SELECT @campType = CampType FROM ccCamps WHERE cam_id =  @CAMPID;
+		
+-- VALIDAMOS EL IDIOMA Y LADA CONFIGURADA --
+SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
+SELECT @revHorario=valor from ccsettings where setting_id = 112
+-- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
+SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@CAMPID
+SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
+
+SET DATEFIRST 1
+--Checamos si es horario de verano
+SELECT @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+
+if @iZonas is null begin
+	exec @iZonas= ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0		
+--Checamos si la campaña tiene horarios configurados
+	IF(@test <> 2)
+	BEGIN
+		if exists(SELECT cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
+		begin
+			if @iZonas = 0 begin
+				SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+				return
+			end
+		end
+		else begin
+			if @camSurvey > 0
+			begin
+				SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+				return
+			end
+		END
+	END
+end
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+IF OBJECT_ID(N''tempdb..#AI_NEW_JOBS'') IS NOT NULL  DROP TABLE #AI_NEW_JOBS
+
+CREATE TABLE #NEW_JOBS (
+	callout_id INT
+	,cam_id INT
+	,cal_telefono VARCHAR(15) collate SQL_Latin1_General_CP1_CI_AS
+	,cal_status TINYINT
+	,cal_fechaDial DATETIME
+	,user_id INT
+	,tz INT
+	,tz2 INT
+	,tz3 INT
+	,tz4 INT
+	,tz5 INT
+	,list_id INT
+	,sequence SMALLINT
+	,calkey VARCHAR(max)
+	,nDescartes INT
+	,name_agent VARCHAR(max)
+	,status_for_ai TINYINT
+	)
+select * into #AI_NEW_JOBS from  #NEW_JOBS where 1=0
+
+
+set @sql=''''
+
+-------------------------- IA -------------------
+DECLARE @IsCampAi BIT = 0;
+DECLARE @new_calls_date VARCHAR(max) = '''';
+
+
+SELECT @IsCampAi = CASE WHEN CampType = 4 THEN 1 ELSE 0 END FROM ccCamps where cam_id = @CAMPID 
+
+DECLARE @select_table VARCHAR(50);
+SET @select_table = (CASE WHEN @IsCampAi = 1 THEN ''#AI_NEW_JOBS'' ELSE ''#NEW_JOBS'' END);
+		
+-------------------------- IA -------------------
+
+-- 0=Ambas, 1=CallBacks, 2=Nuevas
+SELECT @topCount=valor from ccSettings where setting_id=94
+
+if isnull(@topCount,0)=0
+SELECT @topCount=case when @nAgentsLogin<3 then 30
+		when @nAgentsLogin>=3 and @nAgentsLogin<6 then 70
+		when @nAgentsLogin>=6 and @nAgentsLogin<10 then 120
+		when @nAgentsLogin>=10 and @nAgentsLogin<16 then 180
+		when @nAgentsLogin>=16 then 240 else 20 end
+		
+SELECT @sql=@sql+nchar(13) + ''DECLARE @topCountNewToday INT=0,@topCountNewLastDay INT=0,@topCountCb INT=0,@totalNewToday INT=0
+,@totalNewLastDay INT=0,@totalCallbacks INT=0,@stateIa INT=0
+DECLARE @newCallsPercentage FLOAT=0.7,@lastDayNewCallsPercentage FLOAT= 0.15,@callbacksPercentage FLOAT=0.15;
+SELECT @topCountNewToday = CEILING(@topCount* @newCallsPercentage),
+@topCountNewLastDay = CEILING(@topCount* @lastDayNewCallsPercentage), 
+@topCountCb = CEILING(@topCount* @callbacksPercentage),@stateIa=0
+,@topCountNewToday=case when @IsCampAi=1 then @topCountNewToday else  @topCount/2 end''
+
+SELECT @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
+
+DECLARE @isVerano varchar(max)
+set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' END
+
+IF(@campType = 7)
+BEGIN
+	set @isVerano = ''W.iTimeZone'' + case @bIsDaylight when 1 then ''_summer'' else '''' END
+
+	select @sqlInsertGeneric=nchar(13)+ ''INSERT ''+@select_table+'' 
+SELECT top(@topCount) W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
++@isVerano+'',''
++@isVerano+''2,''
++@isVerano+''3,''
++@isVerano+''4,''
++@isVerano+''5,
+W.list_id, isNull(R.sequence,0) as sequence,
+sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
+isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent
+,@stateIa status_for_ai
+FROM smsWorkingTable W 
+left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
+left join ccUsers us (nolock) on us.User_id=w.user_id
+WHERE STATUS_REPLACE_QUERY
+and DATE_REPLACE_QUERY
+and W.cam_id=@CAMPID
+and (
+   ( (''+@isVerano+''  & @iZonas)>0 or ''+@isVerano+''=0) 
+or ( (''+@isVerano+''2 & @iZonas)>0 or ''+@isVerano+''2=0) 
+or ( (''+@isVerano+''3 & @iZonas)>0 or ''+@isVerano+''3=0) 
+or ( (''+@isVerano+''4 & @iZonas)>0 or ''+@isVerano+''4=0)
+or ( (''+@isVerano+''5 & @iZonas)>0 or ''+@isVerano+''5=0)
+)
+and isnull(R.status,2) in(0,2)''
+
+END
+else begin
+	select @sqlInsertGeneric=nchar(13)+ ''INSERT ''+@select_table+'' 
+SELECT top(@topCountNewToday) W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
++@isVerano+'',''
++@isVerano+''2,''
++@isVerano+''3,''
++@isVerano+''4,''
++@isVerano+''5,
+W.list_id, isNull(R.sequence,0) as sequence,
+cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
+,W.nDescartes,isnull(us.nombres, '''''''')+'''' ''''+isnull(us.ApellidoPaterno, '''''''')+'''' ''''+isnull(us.ApellidoMaterno, '''''''') Name_agent
+,@stateIa status_for_ai
+FROM ccoWorkingTable W 
+left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+left join ccUsers us (nolock) on us.User_id=w.user_id
+WHERE STATUS_REPLACE_QUERY
+AND DATE_REPLACE_QUERY
+and W.cam_id=@CAMPID
+and (
+   ( (''+@isVerano+''  & @iZonas)>0 or ''+@isVerano+''=0) 
+or ( (''+@isVerano+''2 & @iZonas)>0 or ''+@isVerano+''2=0) 
+or ( (''+@isVerano+''3 & @iZonas)>0 or ''+@isVerano+''3=0) 
+or ( (''+@isVerano+''4 & @iZonas)>0 or ''+@isVerano+''4=0)
+or ( (''+@isVerano+''5 & @iZonas)>0 or ''+@isVerano+''5=0)
+)
+and isnull(R.status,2) = 2''
+end
+
+if @TipoJobs in(0,2)--** INCLUIR LOS NUEVAS
+begin			
+	IF(@campType = 7)
+	BEGIN
+
+		select @sql=@sql+nchar(13)+''--INCLUIR LAS NUEVAS--''
+		select @sql=@sql+REPLACE(
+		REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.sms_dateDial < dateadd(mi, 5, getdate())'')
+			,''STATUS_REPLACE_QUERY'',''W.sms_status=0'')
+		select @sql=@sql+nchar(13)+'' order by R.sequence, W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
+						
+	END
+	ELSE 
+	BEGIN			
+
+		SET @new_calls_date = (CASE WHEN @IsCampAi = 1
+			THEN '' W.cal_fechaDial BETWEEN CONVERT(DATE, getdate()) AND DATEADD(mi, 5, getdate()) '' 
+			ELSE '' W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora '' END);					
+	
+		select @sql=@sql+nchar(13)+''--INCLUIR LAS NUEVAS--''
+		select @sql=@sql+REPLACE(
+			REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',@new_calls_date)
+				,''STATUS_REPLACE_QUERY'',''W.cal_status=0'')
+		select @sql=@sql+nchar(13)+'' order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
+	END
+
+end -- TOMA EN CUENTA LAS NUEVAS
+
+if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
+begin
+	IF(@campType = 7)
+	BEGIN				
+		select @sql=@sql+nchar(13)+''--INCLUIR LOS CALLBACKS--''
+		select @sql=@sql+nchar(13)+REPLACE(
+			REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.cal_fechaDial<dateadd(mi, 5, getdate())'')
+		,''STATUS_REPLACE_QUERY'',''W.sms_status=1 -- CallBacks'')
+		select @sql=@sql+nchar(13)+'' order by priority_cb desc, W.sms_dateDial ''  + @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+	END
+	ELSE
+	BEGIN
+		select @sql=@sql+nchar(13)+''--INCLUIR LOS CALLBACKS--''
+		select @sql=@sql+nchar(13)+REPLACE(
+			REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.cal_fechaDial<dateadd(mi, 5, getdate())'')
+		,''STATUS_REPLACE_QUERY'',''W.cal_status=1'')
+		select @sql=@sql+nchar(13)+'' order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+	END
+					
+end -- TOMA EN CUENTA LOS CALLBACKS
+
+IF @IsCampAi = 1 -- NUEVOS REZAGADOS
+BEGIN	
+	select @sql=@sql+nchar(13)+''--NUEVOS REZAGADOS--''
+	select @sql=@sql+REPLACE(
+		REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.cal_fechaDial<convert(date,getdate())'')
+		,''STATUS_REPLACE_QUERY'',''W.cal_status=0'')
+	select @sql=@sql+nchar(13)+'' order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+END -- TOMA EN CUENTA LOS NUEVOS REZAGADOS
+
+
+		
+----------------------- CASO DE IA------------------------------------------------------
+IF @IsCampAi = 1 
+BEGIN
+
+SELECT @sql=@sql+nchar(13) + ''select @totalNewToday = count(*) from #AI_NEW_JOBS where status_for_ai = 0
+select @totalCallbacks = count(*) from #AI_NEW_JOBS where status_for_ai = 1
+select @totalNewLastDay = count(*) from #AI_NEW_JOBS where status_for_ai = 2	
+insert into #NEW_JOBS
+select top(@topCountNewToday) callout_id,cam_id,cal_telefono,cal_status,cal_fechaDial,user_id,tz,tz2,tz3,tz4,tz5,list_id,sequence,calkey,nDescartes,name_agent
+,status_for_ai
+from #AI_NEW_JOBS where status_for_ai=0
+if @totalNewToday< @topCountNewToday begin
+	set @topCountNewLastDay=@topCountNewLastDay+(@topCountNewToday-@totalNewToday)
+end
+insert into #NEW_JOBS
+select top(@topCountNewLastDay) callout_id,cam_id,cal_telefono,cal_status,cal_fechaDial,user_id,tz,tz2,tz3,tz4,tz5
+,list_id,sequence,calkey,nDescartes,name_agent
+,status_for_ai
+from #AI_NEW_JOBS where status_for_ai=2	
+if @totalNewToday+@totalNewLastDay < @topCountNewToday+@topCountCb begin
+	set @topCountCb=@topCountCb+@topCountNewToday+@topCountCb-@totalNewToday-@totalNewLastDay
+end
+insert into #NEW_JOBS
+select top(@topCountCb) callout_id,cam_id,cal_telefono,cal_status,cal_fechaDial,user_id,tz,tz2,tz3,tz4,tz5
+,list_id,sequence,calkey,nDescartes,name_agent
+,status_for_ai
+from #AI_NEW_JOBS where status_for_ai=1''
+
+END
+----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
+set @parameters=''@CAMPID int,@topCount int,@IsCampAi BIT,@iZonas int,@campType int''		
+
+if @Test=0
+begin
+	IF(@campType = 7) begin
+		SELECT @sql=@sql+nchar(13)+ ''UPDATE smsWorkingTable with (rowlock) SET sms_status=2 --CALLBACK IN PROGRESS
+	WHERE smsout_id in(SELECT callout_id from '' + @select_table +'')''
+	end
+	else begin
+		SELECT @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
+	WHERE callout_id in(SELECT callout_id from '' + @select_table +'')''
+	end
+	
+end
+
+if @Test = 2
+begin
+	SELECT @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM '' + @select_table +'' where len(cal_telefono)>0''
+	DECLARE @nSQL nvarchar(max)
+	set @nSQL=cast(@sql as nvarchar(max))
+	set @parameters=@parameters+N'',@outA int OUTPUT''
+
+	exec sp_executesql @nSQL, @parameters
+	,@CAMPID=@CAMPID
+	,@topCount=@topCount
+	,@IsCampAi=@IsCampAi
+	,@iZonas=@iZonas
+	,@campType=@campType
+	,@outA=@total OUTPUT
+
+	IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+	IF OBJECT_ID(N''tempdb..#AI_NEW_JOBS'') IS NOT NULL  DROP TABLE #AI_NEW_JOBS
+
+	--print (@sql)
+
+		return(@total)
+end
+else
+BEGIN
+	IF(@isDashboardApi = 1)
+	BEGIN
+			
+	-- TOMA EN CUENTA LOS REGISTROS PROCESANDOSE
+	select @sql=@sql+nchar(13)+''--Procesando--''
+	select @sql=@sql+REPLACE(
+		REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora'')
+		,''STATUS_REPLACE_QUERY'',''W.cal_status=2'')
+	select @sql=@sql+nchar(13)+'' order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
+
+	END
+		
+	select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,
+user_id, tz, tz2, tz3, tz4, tz5,
+case when tz is null then '''''''' else cal_telefono end as tel,
+case when tz2 is null then '''''''' else cal_telefono end as tel2,
+case when tz3 is null then '''''''' else cal_telefono end as tel3,
+case when tz4 is null then '''''''' else cal_telefono end as tel4,
+case when tz5 is null then '''''''' else cal_telefono end as tel5,
+NULL as dialOrder, list_id, sequence, calkey,
+0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type
+FROM #NEW_JOBS where len(cal_telefono)>0
+
+---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
+if @campType<>7 and exists(SELECT * FROM #NEW_JOBS)
+	exec ccsp_GetCampsNvosCB @cam_id=@CAMPID,@Tipo=0,@user_id=0
+''
+END
+
+--print (@sql)
+
+exec sp_executesql  @sql,@parameters,
+@CAMPID=@CAMPID
+,@topCount=@topCount
+,@IsCampAi=@IsCampAi
+,@iZonas=@iZonas
+,@campType=@campType
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+IF OBJECT_ID(N''tempdb..#AI_NEW_JOBS'') IS NOT NULL  DROP TABLE #AI_NEW_JOBS
+
+
+return(0)'
+
+EXEC(@sql)
+
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
 		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

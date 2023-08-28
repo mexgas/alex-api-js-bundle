@@ -147,7 +147,7 @@ return @call_record_cam
 END'
 EXEC(@sql)
 
-SET @process = 'KR091000 ALTER SP ccspAgent_GetLastCalls Se cambia Tabla por que al repetir fallaba el SP por CTE'
+SET @process = 'KR091000 ALTER SP ccspAgent_GetLastCalls @lastCallAgt--> PRIMARY KEY(id,tipo)'
 SET @sql = 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id INT
 AS
 SET NOCOUNT ON;

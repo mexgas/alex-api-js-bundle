@@ -57,7 +57,896 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
-	---------------------------------------BEGIN KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
+---------------------------------------BEGIN KR091000 Register_setting_in_BD_and_update_path Ivan Martin---------------------------------------------------------
+
+	SET @process = 'Add column RecordCalls to ccCampsExtend'
+	SET @sql = 'IF NOT EXISTS( SELECT * FROM sys.columns WHERE name = N''RecordCalls'' AND Object_ID = Object_ID(N''ccCampsExtend''))
+				BEGIN
+					ALTER TABLE ccCampsExtend ADD RecordCalls TINYINT NOT NULL DEFAULT(1);
+				END'
+	EXEC(@sql)
+---------------------------------------END KR091000 Register_setting_in_BD_and_update_path Ivan Martin---------------------------------------------------------
+
+	SET @process = 'Create table ccInboundExtend'
+	SET @sql = 'if not exists (select * from sys.tables where name = N''ccInboundExtend'') begin
+					CREATE TABLE [dbo].[ccInboundExtend] (
+					Inbound_id INT NOT NULL PRIMARY key,
+					RecordCalls TINYINT NULL,
+				)
+				end'
+	EXEC(@sql)
+
+	---------------------------------------BEGIN KR091000 Uriel Cabrera - Ivan Martin Identifiers and Relations ---------------------------------------------------------
+
+	SET @process = 'Insert new labels into ccGalateaIdentifiers'
+	SET @sql = 'IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_INTERNATIONAL_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''COMMON_INTERNATIONAL_RECORD_CALLS'',''Grabar llamadas'',''Record calls'',''Gravar chamadas'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''IN_COMMON_INTERNATIONAL_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''IN_COMMON_INTERNATIONAL_RECORD_CALLS'',''Grabar llamadas'',''Record calls'',''Gravar chamadas'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''COMMON_USA_RECORD_CALLS'',''Grabar llamadas por clave LADA'',''Record calls by area code'',''Gravar chamadas por código de área'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS_MODE_ALL'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''COMMON_USA_RECORD_CALLS_MODE_ALL'',''Todas las claves (automático)'',''All area codes (automatic)'',''Todos os códigos (automático)'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS_MODE_AUTH'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''COMMON_USA_RECORD_CALLS_MODE_AUTH'',''Solo claves autorizadas (automático)'',''Allowed area codes only (automatic)'',''Somente códigos permitidos (automático)'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS__MODE_NOAUTH'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''COMMON_USA_RECORD_CALLS_MODE_NOAUTH'',''Claves no autorizadas (manual)'',''Not allowed area codes (manual)'',''Códigos não permitidos (manual)'');
+				END
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''IN_COMMON_USA_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+					VALUES (''IN_COMMON_USA_RECORD_CALLS'',''Grabar llamadas por clave LADA'',''Record calls by area code'',''Gravar chamadas por código de área'');
+				END'
+	EXEC(@sql)
+
+	SET @process = 'Insert relation between new column and identifiers'
+	SET @sql = 'IF NOT EXISTS( SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = N''COMMON_INTERNATIONAL_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) 
+					VALUES (''COMMON_INTERNATIONAL_RECORD_CALLS'',''ccCampsExtend'',''RecordCalls'');
+				END
+				IF NOT EXISTS( SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = N''IN_COMMON_INTERNATIONAL_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) 
+					VALUES (''IN_COMMON_INTERNATIONAL_RECORD_CALLS'',''ccInboundExtend'',''RecordCalls'');
+				END
+				IF NOT EXISTS( SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = N''COMMON_USA_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) 
+					VALUES (''COMMON_USA_RECORD_CALLS'',''ccCampsExtend'',''RecordCalls'');
+				END
+				IF NOT EXISTS( SELECT * FROM relationTableColumnIdentifiers WHERE Identifiers = N''IN_COMMON_USA_RECORD_CALLS'')
+				BEGIN
+					INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) 
+					VALUES (''IN_COMMON_USA_RECORD_CALLS'',''ccInboundExtend'',''RecordCalls'');
+				END'
+	EXEC(@sql)
+
+	---------------------------------------END KR091000 Uriel Cabrera - Ivan Martin Identifiers and Relations ---------------------------------------------------------
+	---------------------------------------BEGIN KR091000 Uriel Cabrera Setting configurations and utilities ---------------------------------------------------------
+	SET @process = 'Drop update acd procedure'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateACDConfigExtend'') begin
+					Drop PROCEDURE [dbo].[ccsp_RIAUpdateACDConfigExtend]
+				end'
+	EXEC(@sql)
+
+	SET @process = 'Create procedure RIAUpdateACDConfigExtend'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAUpdateACDConfigExtend] @inbound_id smallint,
+					@recordCalls tinyint = NULL,
+					@userId smallint = NULL,
+					@idArea smallint = NULL,
+					@isCreating smallint = NULL,
+					@module int = -1
+					AS
+					BEGIN
+					  SET NOCOUNT ON;
+					  DECLARE @country INT = (select valor from ccSettings where setting_id = 104); 
+					  DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''IN_COMMON_INTERNATIONAL_RECORD_CALLS'' ELSE ''IN_COMMON_USA_RECORD_CALLS'' END;
+					  EXEC InsertLogAdminGalatea @action = 1,
+												 @tableName = ''ccInboundExtend'',
+												 @columnNameId = ''inbound_id'',
+												 @valueId = @inbound_id,
+												 @userId = @userid
+					  CREATE TABLE #ccInboundExtendTable (
+						columnInfo varchar(255),
+						dataInfo varchar(255),
+						identifierInfo varchar(255)
+					  )
+
+					  DECLARE @operation smallint = CASE
+						WHEN @isCreating = 1 THEN 60
+						ELSE 52
+					  END;
+
+					  IF EXISTS (SELECT * FROM ccInboundExtend WHERE Inbound_id = @inbound_id)
+					  BEGIN
+						UPDATE ccInboundExtend
+						SET RecordCalls = ISNULL(@recordCalls, RecordCalls)
+						WHERE Inbound_id = @inbound_id
+					  END
+					  ELSE
+					  BEGIN
+						INSERT INTO ccInboundExtend (Inbound_id, RecordCalls)
+						  VALUES (@inbound_id, @recordCalls)
+					  END
+					  IF (@isCreating > 0
+						  AND @module > -1) BEGIN
+						  EXEC InsertLogAdminGalatea @action = 2,
+													 @tableName = ''ccInboundExtend'',
+													 @columnNameId = ''Inbound_id'',
+													 @valueId = @inbound_id,
+													 @userId = @userid,
+													 @tableTemp = ''#ccInboundExtendTable''
+						END
+						ELSE BEGIN
+						IF (@recordCalls != 1)
+						  EXEC InsertLogAdminGalatea @action = 2,
+													 @tableName = ''ccInboundExtend'',
+													 @columnNameId = ''Inbound_id'',
+													 @valueId = @inbound_id,
+													 @userId = @userid,
+													 @tableTemp = ''#ccInboundExtendTable'';
+						END
+					  INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+						SELECT (SELECT
+								 [AreaName]
+							   FROM ccRIACat_Areas
+							   WHERE IDArea = @idArea),
+							   GETDATE(),
+							   (SELECT
+								 [Login]
+							   FROM ccUsers
+							   WHERE User_id = @userid),
+							   @operation,
+							   CASE WHEN @isCreating = 1 THEN 3 ELSE @module END,
+							   CCIE.identifierInfo,
+							   CASE
+								 WHEN CCIE.identifierInfo IS NOT NULL AND
+								   CCIE.identifierInfo <> '''' THEN CASE
+									 WHEN CCIE.identifierInfo IN (''IN_COMMON_INTERNATIONAL_RECORD_CALLS'') THEN CASE
+										 WHEN CCIE.dataInfo = 1 THEN ''COMMON_ENABLED''
+										 ELSE ''COMMON_DISABLED''
+									   END
+									WHEN CCIE.identifierInfo IN (''IN_COMMON_USA_RECORD_CALLS'') THEN
+												CASE WHEN CCIE.dataInfo = 1 THEN ''COMMON_USA_RECORD_CALLS_MODE_ALL''
+													WHEN CCIE.dataInfo = 2 THEN ''COMMON_USA_RECORD_CALLS_MODE_AUTH''
+													WHEN CCIE.dataInfo = 4 THEN ''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''
+													ELSE ''COMMON_DISABLED'' END
+									 ELSE CCIE.dataInfo
+								   END
+								 ELSE ''''
+							   END,
+							   (SELECT
+								 [descripcion]
+							   FROM ccInbound
+							   WHERE inbound_id = @inbound_id)
+						FROM #ccInboundExtendTable AS CCIE where CCIE.identifierInfo != @excludeIdentifier;
+					  EXEC InsertLogAdminGalatea @action = 3,
+												 @tableName = ''ccInboundExtend'',
+												 @columnNameId = ''Inbound_id'',
+												 @valueId = @inbound_id,
+												 @userId = @userid;
+					  IF OBJECT_ID(N''tempdb..#ccInboundExtendTable'') IS NOT NULL
+						DROP TABLE #ccInboundExtendTable
+					  SET NOCOUNT OFF;
+					END'
+	EXEC(@sql)
+
+	SET @process = 'Update ccsp_GalateaGetInboundConfiguration'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
+				@command int,
+				@inboundId int
+				AS
+				BEGIN
+
+				SET NOCOUNT ON;
+
+				if @command=0
+				begin
+				select descripcion from ccInbound where Inbound_id = @inboundId
+				end
+				if @command=1 -- Voice campaign
+				begin
+					select 
+					A.Inbound_id [InboundId],
+					A.descripcion [Description],
+					A.chat [MediaType],
+					A.Status,
+					isnull(gra.graphic_id,1) [Frame],
+					A.tNotas,
+					A.tMaxWaitCall,
+					A.nMaxQue,
+					A.tel_maxwait,
+					A.tel_maxqueue,
+					A.tel_outservice,
+					A.tel_noct,
+					A.ShowCalifWnd,
+					A.editableCallKey [EditableCallKey],
+					A.queuePosition [QueuePosition],
+					A.tMaxQueueCallBack,
+					A.stopRecording [StopRecording],
+					A.dialPrefixOverflow [DialPrefixOverflow],
+					isnull(A.callerIdDesc, '''') [CallerIdDesc],
+					isnull(A.startStopRecording,0) [StartStopRecording],
+					case when A.cam_id > 0  and C.callsBySurvey>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
+					case when A.cam_id > 0  and C.callsBySurvey>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
+					case when A.cam_id > 0  and C.callsBySurvey>0 then cast(1 as bit) else cast(0 as bit) end [IsRelationSurvey],
+					isnull(A.editableDtmf,0) [EditableDtmf],
+					isnull(A.addDataCallBackReminder,0) [AddDataCallBackReminder],
+					isnull(A.recordHold, 0) [RecordHold],
+					isnull(AE.RecordCalls, 1) [RecordCalls]
+					from ccInbound A
+					left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+					left join ccInboundExtend AE on AE.Inbound_id = @inboundId
+					left join ccCamps C on C.cam_id=A.cam_id
+					where A.Inbound_id=@inboundId
+				end
+				if @command=2 -- WhatsApp campaign
+				begin
+					declare @numbers varchar(max)
+					select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
+
+					select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
+					ISNULL(c.conexionInfo,'''') [Number],
+					ISNULL(@numbers,'''') [FreeNumbersStr],
+					ISNULL(c.closeConversationTime, 0) [MaxAnswerTime],
+					ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
+					ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],
+					i.tNotas [tNotas],
+					i.ExitWrapUpDisposition,
+					i.ShowCalifWnd
+					from ccInbound i left join ccRIAInboundGraph g on i.Inbound_id = g.Inbound_id
+					left join contactMeanIn c on i.Inbound_id = c.inboundId and i.chat = 5 and c.meanContactTypeId = 5
+					where i.Inbound_id=@inboundId
+				end
+				if @command=3 -- Email campaign
+				begin
+					select 
+					A.Inbound_id [InboundId],
+					A.descripcion [Description],
+					A.chat [MediaType],
+					A.Status,
+					isnull(gra.graphic_id,1) [Frame],
+					A.tNotas,
+					A.ShowCalifWnd,
+					C.conexionInfo [ConnInfo],
+					C.connUser  [ConnUserName],
+					C.ConnPass [ConnPwd],
+					C.isActive [IsActive],
+					C.timeAlertMessage,
+					C.closeConversationTime [CloseConversationTime],
+					C.answerTimeOut [AnswerTimeOut],
+					C.name [SenderName]
+					from ccInbound A
+					left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+					left join contactMeanIn C on A.Inbound_id = C.inboundId and C.meanContactTypeId=1
+					where A.Inbound_id=@inboundId
+				end
+				if @command=4 -- Chat campaign
+				begin
+					select 
+					i.Inbound_id [InboundId],
+					i.descripcion [Description],
+					i.chat [MediaType],
+					i.Status,
+					isnull(ig.graphic_id,1) [Frame],
+					i.tNotas,
+					i.ShowCalifWnd,
+					i.inactiveChatTime [InactiveChatTime],
+					i.chatDomain [ChatDomain],
+					i.chatTimeOverflow [ChatTimeOverflow],
+					i.chatQueueOverflow [ChatQueueOverflow]
+					from ccInbound i
+					left join ccRIAInboundGraph ig on ig.Inbound_id=i.Inbound_id
+					where i.Inbound_id =@inboundId
+				end
+
+				RETURN(0)
+
+				SET NOCOUNT OFF;    
+				END'
+	EXEC(@sql)
+
+	SET @process = 'Update ccsp_GalateaGetOutboundConfiguration'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT
+	,@campID INT
+	AS
+	BEGIN
+	DECLARE @AllCampaigns TABLE (
+	cam_id SMALLINT
+	,cam_Descripcion VARCHAR(60)
+	,cam_tNotas SMALLINT
+	,cam_ocupado SMALLINT
+	,cam_noInt_ocupado SMALLINT
+	,cam_inter_ocupado SMALLINT
+	,cam_nocontesto SMALLINT
+	,cam_noInt_nocontesto SMALLINT
+	,cam_inter_nocontesto SMALLINT
+	,cam_fax SMALLINT
+	,cam_noInt_fax SMALLINT
+	,cam_inter_fax SMALLINT
+	,cam_modomanual SMALLINT
+	,ANI VARCHAR(15)
+	,cam_ShowCalifWnd BIT
+	,cam_StartTimerOnHangUp BIT
+	,editableCallKey BIT
+	,cam_tNoContesta SMALLINT
+	,iTipoDial SMALLINT
+	,detectAnswerMachine SMALLINT
+	,detectVoiceMail SMALLINT
+	,compliance SMALLINT
+	,cam_inter_graba SMALLINT
+	,cam_noint_graba SMALLINT
+	,progDial SMALLINT
+	,excCallBack SMALLINT
+	,dialOrder SMALLINT
+	,dialPrefix VARCHAR(10)
+	,dialPrefixMan VARCHAR(10)
+	,dialPrefixXfe VARCHAR(10)
+	,listenManualCall BIT
+	,stopRecording BIT
+	,abandonCallback BIT
+	,frame SMALLINT
+	,t_autoCB SMALLINT
+	,id_anilist INT
+	,tDialonWrapUp SMALLINT
+	,viewMode TINYINT
+	,queSize SMALLINT
+	,DNCScrub INT
+	,callerIdDesc VARCHAR(15)
+	,timeZoneRule INT
+	,callsBySurvey INT
+	,ivrScript INT
+	,surveyPctg INT
+	,call_record SMALLINT
+	,startStopRecording BIT
+	,leaveRecMessage BIT
+	,manualCallOnChat BIT
+	,callBackSurveyAgent BIT
+	,callBackSurveyClient BIT
+	,isRelationSurvey BIT
+	,funcEspDtmf INT
+	,sipHdrFormat VARCHAR(255)
+	,cam_inter_cancelled SMALLINT
+	,prefijo VARCHAR(40)
+	,enbleprefix BIT
+	,exitAssisted BIT
+	,previewDiscard BIT
+	,CampType INT
+	,conexionInfo VARCHAR(50)
+	,connUser VARCHAR(15)
+	,closeConversationTime INT
+	,answerTimeoutClient INT
+	,allowFileAttachments BIT
+	,selectRotativeANI INT
+	,rotativeAlgo TINYINT
+	,autoStart BIT
+	,messagingOrder BIT
+	,CamTPreview SMALLINT
+	,TimesPreview TINYINT
+	,timesDiscard TINYINT
+	,recordHold BIT
+	,zipCodeSchedule BIT
+	,RecordCalls tinyint
+	,simultaneousRecs smallint
+	)
+	DECLARE @numbers VARCHAR(max)
+
+	SELECT @numbers = COALESCE(@numbers + '''''''', '''''''', '''''''''''''''') + number
+	FROM ccWhatsAppNumbers
+	WHERE camp_id = 0
+	AND STATUS = 1
+
+	INSERT INTO @AllCampaigns
+	EXEC ccsp_RIAConfCamp @adminID
+	,@campID
+
+	SELECT dialPrefixMan DialPrefixMan
+	,dialPrefixXfe DialPrefixXfe
+	,listenManualCall ListenManualCall
+	,stopRecording StopRecording
+	,abandonCallback AbandonCallBack
+	,t_autoCB AutoCB
+	,id_anilist IdIstANI
+	,tDialonWrapUp TDialOnWrapup
+	,queSize Quesize
+	,DNCScrub
+	,callerIdDesc CallerIdDesc
+	,timeZoneRule TimeZoneRule
+	,callsBySurvey CallsBySurvey
+	,ivrScript IvrScript
+	,surveyPctg SurveyPctg
+	,call_record CallRecord
+	,startStopRecording StartStopRecording
+	,leaveRecMessage LeaveRecMessage
+	,manualCallOnChat ManualCallOnChat
+	,callBackSurveyClient CallBackSurveyClient
+	,callBackSurveyAgent CallBackSurveyAgent
+	,funcEspDtmf FuncEspDtmf
+	,sipHdrFormat SipHdrsCfg
+	,dialPrefix DialPrefix
+	,prefijo Prefix
+	,dialOrder DialOrder
+	,progDial ProgDial
+	,cam_Descripcion CamDescription
+	,cam_tNotas CamTnotas
+	,cam_ocupado CamBusy
+	,cam_noInt_ocupado CamNoIntBusy
+	,cam_inter_ocupado CamInterBusy
+	,cam_nocontesto CamNoAnswer
+	,cam_noInt_nocontesto CamNoIntNoAnswer
+	,cam_inter_nocontesto CamInterNoAnswer
+	,(cam_inter_cancelled / 60) CamInterCancelled
+	,cam_fax CamFax
+	,cam_noInt_fax CamNoIntFax
+	,cam_inter_fax CamInterFax
+	,cam_modomanual CamModoManual
+	,ANI
+	,cam_StartTimerOnHangUp CamStartTimerOnHangUp
+	,editableCallKey EditableCallKey
+	,cam_tNoContesta CamTNoAnswer
+	,iTipoDial CamIntensiveDialing
+	,detectAnswerMachine DetectAnswerMachine
+	,detectVoiceMail DetectVoiceMail
+	,compliance Compliance
+	,cam_inter_graba CamInterRecord
+	,cam_noint_graba CamNoIntRecord
+	,excCallBack ExcCallBack
+	,cam_ShowCalifWnd CamShowCalifWnd
+	,frame Frame
+	,exitAssisted ExitAssistedDialMode
+	,previewDiscard PreviewDiscard
+	,CampType
+	,conexionInfo ConexionInfo
+	,connUser ConnUser
+	,closeConversationTime CloseConversationTime
+	,answerTimeoutClient MUTimeOutClient
+	,allowFileAttachments AllowFileAttachments
+	,CamTPreview
+	,CAST(TimesPreview AS SMALLINT) TimesPreview
+	,@numbers AS FreeNumbers
+	,selectRotativeANI SelectRotativeANIManualCall
+	,rotativeAlgo RotativeAlgo
+	,autoStart AutoStart
+	,messagingOrder MessagingOrder
+	,timesDiscard TimesDiscard
+	,recordHold RecordHold
+	,zipCodeSchedule ZipCodeSchedule
+	,RecordCalls RecordCalls
+	,simultaneousRecs SimultaneousRecs
+	FROM @AllCampaigns
+	WHERE cam_id = @campID
+	END'
+	EXEC(@sql)
+
+	SET @process = 'Update ccsp_RIAConfCamp'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
+	AS
+	SET NOCOUNT ON
+
+	DECLARE @tableExistsRec TABLE (
+		camId INT PRIMARY KEY
+		,existRec BIT
+		)
+	DECLARE @camByUser TABLE (
+		camId INT PRIMARY KEY
+		,isCheck BIT
+		)
+	DECLARE @camId INT
+		,@id INT;
+
+	IF NOT EXISTS (
+			SELECT *
+			FROM ccUsers_Roles
+			WHERE User_id = @User_id
+				AND Rol_id = 7
+			)
+	BEGIN
+		INSERT INTO @camByUser
+		SELECT *
+			,0
+		FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
+		WHERE @campID IS NULL
+			OR cam_id = @campID
+	END
+	ELSE
+	BEGIN
+		INSERT INTO @camByUser
+		SELECT cam_id
+			,0
+		FROM ccCamps
+		WHERE (
+				IDArea > 0
+				OR IDArea IS NULL
+				)
+			AND (
+				@campID IS NULL
+				OR cam_id = @campID
+				)
+	END
+
+	WHILE EXISTS (
+			SELECT *
+			FROM @camByUser
+			WHERE isCheck = 0
+			)
+	BEGIN
+		SELECT TOP 1 @camId = camId
+		FROM @camByUser
+		WHERE isCheck = 0
+
+		IF EXISTS (
+				SELECT cam_id
+				FROM ccoCallsOut
+				WHERE cam_id = @camId
+				)
+		BEGIN
+			INSERT INTO @tableExistsRec
+			VALUES (
+				@camId
+				,1
+				)
+		END
+		ELSE
+		BEGIN
+			INSERT INTO @tableExistsRec
+			VALUES (
+				@camId
+				,0
+				)
+		END
+
+		UPDATE @camByUser
+		SET isCheck = 1
+		WHERE camId = @camId
+	END
+
+	SELECT a1.cam_id
+		,cam_Descripcion
+		,cam_tNotas
+		,cast(cam_ocupado AS INT) AS cam_ocupado
+		,cam_noInt_ocupado
+		,cam_inter_ocupado
+		,cast(cam_nocontesto AS INT) AS cam_nocontesto
+		,cam_noInt_nocontesto
+		,cam_inter_nocontesto
+		,cast(cam_fax AS INT) AS cam_fax
+		,cam_noInt_fax
+		,cam_inter_fax
+		,cast(cam_modomanual AS INT) AS cam_modomanual
+		,ANI
+		,cam_ShowCalifWnd
+		,cam_StartTimerOnHangUp
+		,editableCallKey
+		,cam_tNoContesta
+		,iTipoDial
+		,detectAnswerMachine
+		,detectVoiceMail
+		,compliance
+		,cam_inter_graba
+		,cam_noint_graba
+		,cast(progDial AS TINYINT) progDial
+		,cast(excCallBack AS TINYINT) excCallBack
+		,dialOrder
+		,dialPrefix
+		,dialPrefixMan
+		,dialPrefixXfe
+		,listenManualCall
+		,stopRecording
+		,cast(abandonCallback AS TINYINT) abandonCallback
+		,a3.frame
+		,a1.t_autoCB
+		,a1.id_anilist
+		,a1.tDialonWrapUp
+		,dbo.fn_viewMode(@User_id, 10) viewMode
+		,cam_maxqueue AS queSize
+		,DNCScrub
+		,callerIdDesc
+		,timeZoneRule
+		,callsBySurvey
+		,ivrScript
+		,surveyPctg
+		,isnull(a1.call_record, 1) AS call_record
+		,cast(startStopRecording AS TINYINT) startStopRecording
+		,leaveRecMessage
+		,manualCallOnChat
+		,callBackSurveyAgent
+		,callBackSurveyClient
+		,CASE 
+			WHEN surveycamid IS NULL
+				OR surveycamid = 0
+				THEN 0
+			ELSE 1
+			END isRelationSurvey
+		,isnull(a1.funcEspDtmf, 0)
+		,isnull(sipHdrFormat, '''') sipHdrFormat
+		,cam_inter_cancelled
+		,prefijo
+		,enbleprefix = CASE 
+			WHEN existRec = 0
+				THEN 1
+			ELSE 0
+			END
+		,isnull(exitAssisted, 0) exitAssisted
+		,isnull(previewDiscard, 0) PreviewDiscard	
+		,isnull(CampType, 0) CampType
+		,isnull(contact.conexionInfo, '''') conexionInfo
+		,isnull(contact.connUser, '''') connUser
+		,isnull(contact.closeConversationTime, 0) closeConversationTime
+		,isnull(contact.answerTimeoutClient, 0) answerTimeoutClient
+		,isnull(contact.allowFileAttachments, 0) allowFileAttachments
+		,isnull(selectRotativeANI, 0) selectRotativeANI
+		,ISNULL(rotativeAlgo, 0) rotativeAlgo
+		,isnull(autoStart, 0) autoStart
+		,isnull(messagingOrder, 0) messagingOrder
+		,ISNULL(cam_tPreview, 0) AS CamTPreview
+		,ISNULL(timesPreview, 0) AS TimesPreview
+		,isnull(timesDiscard, 0) TimesDiscard
+		,ISNULL(recordHold, 0) recordHold
+		,isnull(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule
+		,isnull(campsExtention.RecordCalls, 1) RecordCalls
+		,isnull(campsExtention.simultaneousRecs, 1) simultaneousRecs
+	FROM ccCamps a1
+	INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+	INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+	INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
+	LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
+	LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
+	ORDER BY cam_descripcion
+
+	RETURN (0)
+
+	SET NOCOUNT OFF'
+	EXEC(@sql)
+
+	SET @process = 'Update ccsp_RIAUpdateCamConfigExtend'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfigExtend]
+					@cam_id smallint,
+					@zipCodeSchedule BIT = NULL,
+					@userId SMALLINT = NULL,
+					@idArea SMALLINT = NULL, 
+					@isCreating SMALLINT = NULL,
+					@simultaneousRecs SMALLINT = NULL,
+					@module INT = -1,
+					@recordCalls tinyint = 1
+				AS
+				BEGIN
+					SET NOCOUNT ON;
+					DECLARE @country INT = (select valor from ccSettings where setting_id = 104); 
+					DECLARE @excludeIdentifier VARCHAR(255) = CASE WHEN @country = 4 THEN ''COMMON_INTERNATIONAL_RECORD_CALLS'' ELSE ''COMMON_USA_RECORD_CALLS'' END;
+					if exists(select * from ccCampsExtend where cam_id=@cam_id) begin
+
+						EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCampsExtend'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
+
+						IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
+
+						Create table #ccCampsExtendTable 
+						(
+							columnInfo VARCHAR(255),
+							dataInfo VARCHAR(255),
+							identifierInfo VARCHAR(255)
+						)
+
+						DECLARE @Camptype INT = (SELECT [CampType] FROM ccCamps WHERE cam_id = @cam_id);
+						DECLARE @operation SMALLINT = CASE WHEN @isCreating = 1 THEN 
+																					CASE 
+																						WHEN @Camptype = 6  THEN 44
+																						WHEN @Camptype = 5  THEN 46
+																						WHEN @Camptype = 4  THEN 48
+																						WHEN @Camptype = 7  THEN 50
+																						ELSE 42 END
+																				ELSE 
+																					CASE 
+																						WHEN @Camptype = 6  THEN 55
+																						WHEN @Camptype = 5  THEN 56
+																						WHEN @Camptype = 4  THEN 57
+																						WHEN @Camptype = 7  THEN 58
+																						ELSE 54 END
+																				END;
+
+						UPDATE ccCampsExtend SET
+							zipCodeSchedule = isnull(@zipCodeSchedule,zipCodeSchedule),
+							simultaneousRecs = isnull(@simultaneousRecs,simultaneousRecs),
+							RecordCalls = ISNULL(@recordCalls, RecordCalls)
+						Where cam_id = @cam_id  
+
+						IF(@isCreating > 0 AND @module > -1) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#ccCampsExtendTable'';
+
+						IF(@idArea IS NULL OR @idArea = -1) SET @idArea = (SELECT [IDArea] FROM ccCamps WHERE cam_id = @cam_id)
+
+						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+						SELECT 
+							(SELECT [AreaName] FROM ccRIACat_Areas  WHERE IDArea = @idArea),
+							getDate(), 
+							(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+							@operation, 
+							@module, 
+							CCCE.identifierInfo,
+							CASE WHEN CCCE.identifierInfo IS NOT NULL AND CCCE.identifierInfo <> '''' THEN
+								CASE 
+									WHEN CCCE.identifierInfo IN (''SETTINGS_CHANGED_AREAS_ZIP'', ''COMMON_INTERNATIONAL_RECORD_CALLS'') THEN
+										CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+									WHEN CCCE.identifierInfo IN (''COMMON_USA_RECORD_CALLS'') THEN
+										CASE WHEN CCCE.dataInfo = 1 THEN ''COMMON_USA_RECORD_CALLS_MODE_ALL''
+											WHEN CCCE.dataInfo = 2 THEN ''COMMON_USA_RECORD_CALLS_MODE_AUTH''
+											WHEN CCCE.dataInfo = 4 THEN ''COMMON_USA_RECORD_CALLS_MODE_NOAUTH''
+											ELSE ''COMMON_DISABLED'' END
+									ELSE CCCE.dataInfo END
+							ELSE '''' END,
+							(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
+						FROM #ccCampsExtendTable AS CCCE where CCCE.identifierInfo != @excludeIdentifier;
+
+						EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccCampsExtend'', @columnNameId = ''cam_id'', @valueId = @cam_id, @userId = @userid;
+						IF OBJECT_ID(N''tempdb..#ccCampsExtendTable'') IS NOT NULL DROP TABLE #ccCampsExtendTable
+
+					end
+					else begin
+						INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule,SimultaneousRecs, RecordCalls) values (@cam_id,@zipCodeSchedule,@simultaneousRecs, @recordCalls)
+					end
+
+					update ccCamps set call_record = @recordCalls where cam_id = @cam_id
+
+					set nocount off
+				END'
+	EXEC(@sql)
+
+	SET @process = 'alter procedure ccsp_UnassignedElementsInAreas'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UnassignedElementsInAreas]   
+					@Action INT,   
+					@AreaId INT = 0,
+					@Ids VARCHAR(MAX) = ''''
+				AS    
+				BEGIN
+					DECLARE @IdsTemp TABLE (Id INT);
+					DECLARE @Id VARCHAR(MAX);
+					INSERT INTO @IdsTemp SELECT VALUE FROM dbo.fn_RIASplitDelimited(@Ids,'','')
+
+					-- Return results 
+					IF @Action IN (0, 3, 6)	-- User names 
+					BEGIN 
+						SELECT ISNULL(login,'''')  AS ElementNames
+						FROM @IdsTemp ids
+						INNER JOIN ccUsers users ON users.User_id = ids.Id
+					END
+
+					IF @Action IN (1, 4, 7)	-- Campaign names
+					BEGIN 
+						SELECT ISNULL(cam_descripcion,'''')  AS ElementNames
+						FROM @IdsTemp ids
+						INNER JOIN ccCamps campaign ON campaign.cam_id = ids.Id
+					END
+
+					IF @Action IN (2, 5, 8)	-- Acd names
+					BEGIN 
+						SELECT ISNULL(descripcion,'''') AS ElementNames
+						FROM @IdsTemp ids
+						INNER JOIN ccInbound acd ON acd.Inbound_id = ids.Id
+					END
+					-------------------------------------------------------
+					IF @Action = 0 -- Assign Users to Unassigned area 
+					BEGIN
+						UPDATE ccUsers
+						SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+							status = 1
+						FROM @IdsTemp ids
+						WHERE ccUsers.User_id = ids.Id
+						AND NOT EXISTS (SELECT 1 FROM ccUsers WHERE IDArea = @AreaId AND User_id = ids.Id)
+					END
+
+					IF @Action = 1 -- Assign Users to Campaigns area 
+					BEGIN
+						UPDATE ccCamps
+						SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END
+						FROM @IdsTemp ids
+						WHERE ccCamps.cam_id = ids.Id
+						AND NOT EXISTS (SELECT 1 FROM ccCamps WHERE IDArea = @AreaId AND cam_id = ids.Id)
+					END
+
+					IF @Action = 2 -- Assign Users to Acds area 
+					BEGIN		
+						UPDATE ccInbound
+						SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+							status = 1
+						FROM @IdsTemp ids
+						WHERE ccInbound.Inbound_id = ids.Id
+						AND NOT EXISTS (SELECT 1 FROM ccInbound WHERE IDArea = @AreaId AND Inbound_Id = ids.Id)
+					END
+
+					IF @Action in (3, 4, 5, 6, 7, 8)
+					BEGIN 
+						SET @Id = ''0''
+						WHILE EXISTS( SELECT Id FROM @IdsTemp ) 
+						BEGIN
+							SELECT TOP 1 @Id =Id FROM @IdsTemp 
+
+							IF @Action = 3 -- Unassign Users from area 
+							BEGIN
+								EXEC ccsp_RIAManageAreas @option = 2, @DeleteUserId = @Id
+							END
+
+							IF @Action = 4 -- Unassign Campaigns from area 
+							BEGIN
+								EXEC ccsp_RIAManageAreas @option=4, @DeleteCamId = @Id
+							END 
+
+							IF @Action = 5 -- Unassign Acds from area 
+							BEGIN
+								EXEC ccsp_RIAManageAreas @option = 6, @DeleteACDGroupId = @Id
+							END
+
+							IF @Action = 6 -- Delete Users from area 
+							BEGIN
+								EXEC ccsp_RIA_ABCAgents @option=4, @UserId = @Id, @Login = '''', @Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,@AreaId=0,@UserType=0,@IDWG=0
+							END
+
+							IF @Action = 7 -- Delete Campaigns from area 
+							BEGIN
+								EXEC ccsp_RIA_ABCCamps @option = 4, @UserId = 0, @Descripcion = '''', @Cam_id = @Id, @Activa = 0, @IDArea = 0, @frame = 0
+								delete ccCamps with(rowlock) where cam_id = @Id
+								delete ccCampsExtend with(rowlock) where cam_id = @Id
+							END
+
+							IF @Action = 8 -- Delete Acds from area 
+							BEGIN
+								EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
+								delete ccInbound with(rowlock) where Inbound_id = @Id
+								delete ccInboundExtend with(rowlock) whwre Inbound_Id = @Id
+							END
+
+							DELETE FROM @IdsTemp WHERE Id = @Id
+						END
+					END
+				END'
+	EXEC(@sql)
+	
+	SET @process = 'Drop call setting procedure'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAACDCallParams'') begin
+					Drop PROCEDURE [dbo].[ccsp_RIAACDCallParams]
+				end'
+	EXEC(@sql)
+
+	SET @process = 'Create ccsp_RIAACDCallParams'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAACDCallParams]
+				@option int,
+				@campId int = 0
+				AS
+				BEGIN
+					SET NOCOUNT ON;
+
+				if(@option = 1)
+				begin
+					select RecordCalls from ccInboundExtend where Inbound_id = @campId				
+				end
+
+				if(@option = 2)
+				begin
+					select RecordCalls from ccCampsExtend where cam_id = @campId				
+				end
+
+
+					SET NOCOUNT OFF;
+				END'
+	EXEC(@sql)
+
+---------------------------------------END KR091000 Uriel Cabrera Setting configurations and utilities --------------------------------------------------------
+	---------------------------------------BEGIN Jesus Gallardo KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
 
 set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
 set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
@@ -382,7 +1271,7 @@ set @prefix =''''
 -- Prefijo por puerto
 select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
 
--- Prefijo por campa�a,
+-- Prefijo por campa�a,
 if @prefix =''''
 	select @prefix = dialPrefixMan from ccCamps where cam_id = @cam_id
 
@@ -551,32 +1440,8 @@ BEGIN
 END'
 EXEC(@sql)
 
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
+---------------------------------------END Jesus Gallardo KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
 
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
-
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
-
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
-
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
-
-SET @process = 'KR091000 ALTER SP'
-SET @sql = ''
-EXEC(@sql)
-
-
----------------------------------------END KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
 		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

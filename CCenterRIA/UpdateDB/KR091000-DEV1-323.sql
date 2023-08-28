@@ -67,15 +67,6 @@ BEGIN
 	EXEC(@sql)
 ---------------------------------------END KR091000 Register_setting_in_BD_and_update_path Ivan Martin---------------------------------------------------------
 
-	SET @process = 'Create table ccInboundExtend'
-	SET @sql = 'if not exists (select * from sys.tables where name = N''ccInboundExtend'') begin
-					CREATE TABLE [dbo].[ccInboundExtend] (
-					Inbound_id INT NOT NULL PRIMARY key,
-					RecordCalls TINYINT NULL,
-				)
-				end'
-	EXEC(@sql)
-
 	---------------------------------------BEGIN KR091000 Uriel Cabrera - Ivan Martin Identifiers and Relations ---------------------------------------------------------
 
 	SET @process = 'Insert new labels into ccGalateaIdentifiers'
@@ -141,6 +132,15 @@ BEGIN
 
 	---------------------------------------END KR091000 Uriel Cabrera - Ivan Martin Identifiers and Relations ---------------------------------------------------------
 	---------------------------------------BEGIN KR091000 Uriel Cabrera Setting configurations and utilities ---------------------------------------------------------
+	SET @process = 'Create table ccInboundExtend'
+	SET @sql = 'if not exists (select * from sys.tables where name = N''ccInboundExtend'') begin
+					CREATE TABLE [dbo].[ccInboundExtend] (
+					Inbound_id INT NOT NULL PRIMARY key,
+					RecordCalls TINYINT NULL,
+				)
+				end'
+	EXEC(@sql)
+	
 	SET @process = 'Drop update acd procedure'
 	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateACDConfigExtend'') begin
 					Drop PROCEDURE [dbo].[ccsp_RIAUpdateACDConfigExtend]

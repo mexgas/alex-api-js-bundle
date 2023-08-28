@@ -100,7 +100,7 @@ BEGIN
 					left join ccoLogDials ld on co.callout_id = ld.callout_id
 					left join cctipoResultadoDial trd ON ld.tipoResDial_id = trd.tiporesdial_id
 					LEFT JOIN cctipocalifout tco ON tco.calif_id = co.calif_id
-					where co.callout_id = @callOut_Id and co.cal_id = ld.cal_id  and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13
+					where co.callout_id = @callOut_Id and co.cal_id = ld.cal_id  and ld.fecha >= @initialDate and ld.fecha <=@finalDate and ld.tipoResDial_id != 13  and (ld.tipoResDial_id != 14 and ld.canceledNoAgents=1)
 					and cast(co.cal_Inicio as varchar) = cast(ld.fecha as varchar)
 
 					union 
@@ -110,7 +110,7 @@ BEGIN
 					rppr.reg_date
 					from RegProcessPreviewRecord rppr
 					join ccTypeProcessPreview tpp on rppr.process= tpp.typeProcess_id
-					where rppr.process NOT IN (1,5,7) and rppr.callout_id = @callOut_Id and rppr.reg_date >= @initialDate and rppr.reg_date <=@finalDate
+					where rppr.process NOT IN (1,5,7,14) and rppr.callout_id = @callOut_Id and rppr.reg_date >= @initialDate and rppr.reg_date <=@finalDate
 			
 
 		SELECT  * FROM    

@@ -121,7 +121,7 @@ BEGIN
 			FROM RegProcessPreviewRecord reg(NOLOCK)
 			left join ccoCallsOut ccoa (NOLOCK) ON reg.callout_id = ccoa.callout_id
 			left join ccTypeProcessPreview cctyp (NOLOCK) ON  cctyp.typeProcess_id = reg.process
-			WHERE reg.reg_date >= @from AND reg.reg_date < @to AND reg.process not in (5,7)
+			WHERE reg.reg_date >= @from AND reg.reg_date < @to AND reg.process not in (5,7,13,14)
 			)
 	
 				select distinct cast(codeSip as int) as codeSip,disconnectCause into #codeSip from #dials where codeSip<>'''' and IsNumeric(codeSip)=1
@@ -135,7 +135,9 @@ BEGIN
 				,case when dials.cal_key is null or  cs.cal_key is null then '''' when dials.cal_key is not null then dials.cal_key else cs.cal_key end cal_key
 				,ISNULL(telefono,'''') telephone
 				,dials.tiporesdial_id as tiporesdialId
-				,ISNULL(dials.resultDialDesc, '''')  dialResult
+				,CASE WHEN dials.tipoResDial_id = 14 THEN 
+						CASE WHEN camps.campType = 6 THEN ''systemTranslated_CancelledByEngaged'' ELSE ''systemTranslated_CancelledBySystem'' END
+					ELSE ISNULL(dials.resultDialDesc, '') END AS dialResult
 				,ISNULL(dials.[cam_id],'''')campaignId
 				,ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') AS campaign
 				,dials.tbusy AS timeMessage

@@ -6,7 +6,7 @@ declare @Sql varchar(max)
 declare @errorGenerated varchar(max)
 declare @process varchar(max)
 ---------------- VERSION ----------------
-    Set @Version = 93
+    Set @Version = 94
     Set @Version_Actual = (select par_valor from trec_parametros where par_id = 30)
 
 if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva version
@@ -274,24 +274,6 @@ END'
 	SET @process = 'KR091000 '
 	SET @sql = ''
 	EXEC(@sql)
-
-	SET @process = 'KR091000 '
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'KR091000 '
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'KR091000 '
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'KR091000 '
-	SET @sql = ''
-	EXEC(@sql)
-
-
 
 
 ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------

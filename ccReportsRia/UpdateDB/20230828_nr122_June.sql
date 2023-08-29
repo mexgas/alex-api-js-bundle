@@ -7,7 +7,7 @@ DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 
 /* Version to release (use the version of your own databse)*/
-SET @version = 121
+SET @version = 122
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -18,11 +18,7 @@ BEGIN
 
 	BEGIN TRY
 
----------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
-	set @process = 'KR091000 '
-	set @Sql= ''
-	EXEC(@Sql)	
-
+---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------	
 	
 	SET @process = 'KR091000 Alter Column ccoCallsout.file_moved tinyint'
 	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
@@ -404,17 +400,7 @@ END'
 	set @Sql= ''
 	EXEC(@Sql)	
 
-	set @process = 'KR091000 '
-	set @Sql= ''
-	EXEC(@Sql)	
-
-	set @process = 'KR091000 '
-	set @Sql= ''
-	EXEC(@Sql)	
-
-	set @process = 'KR091000 '
-	set @Sql= ''
-	EXEC(@Sql)	
+	
 ---------------------------------------END KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

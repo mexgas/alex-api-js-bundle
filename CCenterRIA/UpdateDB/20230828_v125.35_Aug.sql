@@ -907,7 +907,7 @@ BEGIN
 							BEGIN
 								EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
 								delete ccInbound with(rowlock) where Inbound_id = @Id
-								delete ccInboundExtend with(rowlock) whwre Inbound_Id = @Id
+								delete ccInboundExtend with(rowlock) where Inbound_Id = @Id
 							END
 
 							DELETE FROM @IdsTemp WHERE Id = @Id
@@ -948,12 +948,6 @@ BEGIN
 ---------------------------------------END KR091000 Uriel Cabrera Setting configurations and utilities --------------------------------------------------------
 	---------------------------------------BEGIN Jesus Gallardo KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
 
-set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
-set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-    begin
-    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-    end'
-EXEC(@sql)
 
 SET @process = 'KR091000 Alter Column ccoCallsout.file_moved tinyint'
 SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
@@ -975,12 +969,7 @@ begin
 end'
 EXEC(@sql)
 
-set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
-set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-        begin
-        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-        end'
-EXEC(@sql)
+
 
 SET @process = 'KR091000 Alter SP getPrefixByAcdId Add parameter @phone'
 SET @sql = 'ALTER procedure [dbo].[getPrefixByAcdId] 

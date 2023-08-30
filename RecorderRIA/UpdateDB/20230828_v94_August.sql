@@ -267,13 +267,11 @@ BEGIN
 	SET node = @xml, [status] = 2
 	WHERE grab_id = @grabId
 END
-		--select @xml
+	
 END'
 	EXEC(@sql)
 
-	SET @process = 'KR091000 '
-	SET @sql = ''
-	EXEC(@sql)
+	
 
 
 ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------

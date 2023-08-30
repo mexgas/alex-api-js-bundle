@@ -396,10 +396,6 @@ DELETE FROM RepOutDialDetail WHERE date >= @from            AND date < @to
 END'
 	EXEC(@Sql)	
 
-	set @process = 'KR091000 '
-	set @Sql= ''
-	EXEC(@Sql)	
-
 	
 ---------------------------------------END KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
 	

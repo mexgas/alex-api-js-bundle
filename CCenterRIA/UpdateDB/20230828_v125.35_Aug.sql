@@ -907,7 +907,7 @@ BEGIN
 							BEGIN
 								EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
 								delete ccInbound with(rowlock) where Inbound_id = @Id
-								delete ccInboundExtend with(rowlock) whwre Inbound_Id = @Id
+								delete ccInboundExtend with(rowlock) where Inbound_Id = @Id
 							END
 
 							DELETE FROM @IdsTemp WHERE Id = @Id
@@ -948,12 +948,6 @@ BEGIN
 ---------------------------------------END KR091000 Uriel Cabrera Setting configurations and utilities --------------------------------------------------------
 	---------------------------------------BEGIN Jesus Gallardo KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------
 
-set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
-set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-    begin
-    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-    end'
-EXEC(@sql)
 
 SET @process = 'KR091000 Alter Column ccoCallsout.file_moved tinyint'
 SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
@@ -975,12 +969,7 @@ begin
 end'
 EXEC(@sql)
 
-set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
-set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
-        begin
-        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
-        end'
-EXEC(@sql)
+
 
 SET @process = 'KR091000 Alter SP getPrefixByAcdId Add parameter @phone'
 SET @sql = 'ALTER procedure [dbo].[getPrefixByAcdId] 
@@ -1325,14 +1314,7 @@ AS
 SET NOCOUNT ON
 
 IF @action = 1
-BEGIN
-	DECLARE @countrId INT
-
-	SET @countrId = 1
-
-	SELECT @countrId = valor
-	FROM ccSettings
-	WHERE setting_id = 104;
+BEGIN	
 
 	WITH callsIn
 	AS (
@@ -1438,6 +1420,118 @@ BEGIN
 	END	
 	return 0
 END'
+EXEC(@sql)
+
+SET @process = 'KR091000 ALTER SP ccsp_AvrsSyncronization change column isCallRecord convert(bit, case when isnull(calls.file_moved,1)=2 then 0 else 1 end)  AS isCallRecord'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization] @action SMALLINT, @maxRecordsToTransfer INT = 10, @id INT = 0
+AS
+SET NOCOUNT ON
+
+IF @action = 1
+BEGIN
+	DECLARE @countrId INT
+
+	SET @countrId = 1
+
+	SELECT @countrId = valor
+	FROM ccSettings
+	WHERE setting_id = 104;
+
+	WITH callsIn
+	AS (
+		SELECT TOP (@maxRecordsToTransfer) 
+		calls.cal_id, user_id, calls.Inbound_id, calls.calif_id 
+		, cast(cal_extension AS INT) AS cal_extension, cal_inicio, cal_ANI AS phone
+		, isnull(cal_tDialog - cal_tMoh, 0) + CASE WHEN stopRecording = 0 THEN isnull(trans.tDespuesXfer, 0) ELSE 0 END AS duration
+		, cal_key, 0 AS cal_manual, cal_puerto
+		, calls.dni_id, fvalida, cal_whohung
+		, isnull(cast(califSub_id AS SMALLINT), 0) AS califSub_id
+		, CASE WHEN trans.tAntesXfer IS NULL THEN cal_tMoh WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 ELSE cal_tMoh - trans.tAntesXfer END AS cal_tMoh
+		, dateadd(ss, isnull(cal_tDialog, 0), cal_inicio) dateEnd, avrs.tipo + 1 AS callType, avrs.id AS avrsId, ccInbound.prefijo
+		
+		, convert(bit, case when isnull(calls.file_moved,1)=2 then 0 else 1 end)  AS isCallRecord
+		, isnull(dni.dni_numero, '''') AS DNIS, dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG
+		
+		FROM ccCallsIn  AS  calls 	with(nolock)
+		INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
+		INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id	AND avrs.tipo = 0
+		LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
+		left join ccInboundExtend inbExt on inbExt.Inbound_id=calls.Inbound_id
+		LEFT JOIN (
+			SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
+			FROM ccLogTransfers
+			WHERE tipo = 1
+			GROUP BY cal_id, tipo
+			) trans ON calls.cal_id = trans.cal_id
+		WHERE calls.User_id > 0
+		), callsOut
+	AS (
+		SELECT TOP (@maxRecordsToTransfer) 
+		calls.cal_id AS CallId, user_id AS UserId, calls.cam_id AS camAcdId
+		, cast(calls.calif_id AS SMALLINT) AS califId, cast(cal_extension AS INT) AS extension, cal_inicio, cal_telefono
+		, isnull(cal_tDialog - cal_tMoh, 0) + CASE WHEN stopRecording = 0 THEN isnull(trans.tDespuesXfer, 0) ELSE 0 END AS duration
+		, cal_key, cal_manual, cal_puerto, 0 AS dni_id, fvalida, cal_whohung
+		, isnull(cast(califSub_id AS SMALLINT), 0) AS califSub_id
+		, CASE WHEN trans.tAntesXfer IS NULL THEN cal_tMoh WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 ELSE cal_tMoh - trans.tAntesXfer END AS cal_tMoh
+		, dateadd(ss, isnull(cal_tDialog, 0), cal_inicio) dateEnd, avrs.tipo + 1 AS callType, avrs.id AS avrsId, camps.prefijo
+		
+		, convert(bit, case when isnull(calls.file_moved,1)=2 then 0 else 1 end)  AS isCallRecord
+		, '''' AS DNIS, dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG
+		FROM ccoCallsOut AS calls with(nolock)
+		INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
+		INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
+		LEFT JOIN (
+			SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
+			FROM ccLogTransfers
+			WHERE tipo = 2
+			GROUP BY cal_id, tipo
+			) trans ON calls.cal_id = trans.cal_id
+		WHERE calls.User_id > 0
+		)
+
+		select * from callsIn
+		union 
+		select * from callsOut
+		
+END
+ELSE IF @action = 2
+BEGIN
+	DELETE
+	FROM ccAVRSTransfer
+	WHERE id = @id
+END
+'
+EXEC(@sql)
+
+SET @process = 'KR091000 ALTER SP ccsp_recordingStatus @action=1 and @callType=1 ccoCallsOut and @callType=0 ccCallsIn'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_recordingStatus]
+@callType int,
+@id int,
+@action int ,
+@recordLocalization int
+AS
+begin
+
+SET NOCOUNT ON
+	if @action=0 begin
+		declare @time int
+		if @callType=0 begin
+			select @time=cal_tDialog from ccoCallsOut with(nolock) where cal_id=@id
+		end
+		else begin
+			select @time=cal_tDialog from ccCallsIn with(nolock) where cal_id=@id
+		end
+		select case when @time>0 then 1 else 0 end as result
+	end
+	else if @action=1 begin
+		if @callType=1 begin
+			update ccoCallsOut with(rowlock) set file_moved=@recordLocalization where cal_id=@id
+		end
+		else begin
+			update ccCallsIn with(rowlock) set file_moved=@recordLocalization where cal_id=@id
+		end
+	end
+end'
 EXEC(@sql)
 
 ---------------------------------------END Jesus Gallardo KR091000 Setting grabar llamadas por campa�a ---------------------------------------------------------

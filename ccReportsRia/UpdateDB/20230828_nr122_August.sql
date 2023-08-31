@@ -19,7 +19,14 @@ BEGIN
 	BEGIN TRY
 
 ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------	
-	
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+
+
 	SET @process = 'KR091000 Alter Column ccoCallsout.file_moved tinyint'
 	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
 	FROM INFORMATION_SCHEMA.COLUMNS 
@@ -40,8 +47,15 @@ BEGIN
 	end'
 	EXEC(@sql)
 
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
 	set @process = 'KR091000 Alter SP ccspRepInCallsDetail add WHEN a.file_moved = 2 THEN ''systemTranslated_noRecordingCamp'''
-	set @Sql= 'CREATE PROCEDURE [dbo].[ccspRepInCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
+	set @Sql= 'Alter PROCEDURE [dbo].[ccspRepInCallsDetail] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 		AS
 
 		SET NOCOUNT ON

@@ -2527,6 +2527,63 @@ return(0)'
 
 EXEC(@sql)
 
+-----------------------------------------------------BEGIN Jesus Gallardo hotfix/125.20230719.0.2-----------------------------------------------------------------
+
+	set @process = 'hotfix/125.20230719.0.2 Alter SP ccsp_smsCampSchedule correcion rango de fechas dateadd(ss,-(2*@timeMaxContestacion), dateadd(mi,(horaFin*60)+MinFin ,fDate)) [End]'
+	set @Sql= 'ALTER PROCEDURE [dbo].[ccsp_smsCampSchedule]
+@camId as int
+AS
+
+declare @horaUniversal datetime
+declare @hourStart int,@hourEnd int,@minStart int,@minEnd int
+declare @timeMaxContestacion tinyint
+
+set @timeMaxContestacion=30
+
+select @timeMaxContestacion=cam_tNoContesta from cccamps where cam_id=@camId
+declare @schLaw table (hourStart int not null,minStart int not null,hourEnd int not null,minEnd int not null)
+
+insert into @schLaw
+exec ccsp_GetHourLaw
+SELECT @hourStart = hourStart, @minStart = minStart, @hourEnd = hourEnd, @minEnd = minEnd from @schLaw
+
+SET DATEFIRST 1
+set @horaUniversal = getutcdate()
+
+;with camSch as(
+select ROW_NUMBER() OVER(ORDER BY idate DESC) AS id
+,DATEPART(hh,idate) HoraInicio, DATEPART(mi,idate) as MinInicio
+,DATEPART(hh,fDate) horaFin, DATEPART(mi,fDate) as MinFin
+,idate,fDate
+from ccSmsSchedules where cam_id= @camId 
+) 
+, camSchLaw as(
+select id,
+case when HoraInicio>@hourStart then HoraInicio else @hourStart end HoraInicio,
+ case when (horaInicio>@hourStart or (horaInicio=@hourStart and MinInicio>=@minStart) ) then MinInicio  else @minStart end MinInicio,
+ case when horaFin<@hourEnd then horaFin else @hourEnd end HoraFin,
+ case when ((horaFin < @hourEnd or (horaFin=@hourEnd and MinFin<=@minEnd) )) then MinFin  else @minEnd end MinFin
+ ,convert(datetime, CONVERT(date, idate)) as idate,convert(datetime,convert(date,fDate)) as fDate
+ ,@hourStart hourStart
+from camSch
+), timeZone as(
+ select tz_id,
+ dateadd(mi, tz_offset*60, @horaUniversal) as fecha
+ from ccTimeZones
+)
+
+select distinct
+ dateadd(mi,(HoraInicio*60)+MinInicio ,idate) [Start]
+, dateadd(ss,-(2*@timeMaxContestacion), dateadd(mi,(horaFin*60)+MinFin ,fDate)) [End]
+from camSchLaw Sch
+inner join timeZone t on 
+t.fecha between dateadd(mi,(HoraInicio*60)+MinInicio ,idate)  and dateadd(mi,(horaFin*60)+MinFin ,fDate)
+
+'
+	EXEC(@Sql)	
+
+-----------------------------------------------------END Jesus Gallardo hotfix/125.20230719.0.2-----------------------------------------------------------------
+
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
 		EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

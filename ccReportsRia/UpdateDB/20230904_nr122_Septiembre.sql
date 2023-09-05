@@ -1618,6 +1618,10 @@ BEGIN
 		,callId INT,
 		primary key (id,userId)
 		);
+
+		CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id]
+		ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
+		INCLUDE ([tStatus],[timeGroupNext])
 END
 ELSE
 BEGIN

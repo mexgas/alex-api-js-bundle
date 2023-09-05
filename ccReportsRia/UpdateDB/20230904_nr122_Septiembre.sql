@@ -543,7 +543,7 @@ end
 		EXEC sp_rename ''RepAgentSummary.xferTime'', ''transferStatus'', ''COLUMN'';
 	end
 	'
-	--EXEC(@sql)
+	EXEC(@sql)
 
 	set @process = 'DEV1-339 Rename columns RepAgentSummary.ringingTime-> ringingTime'
 	set @sql = 'if exists (select * from sys.columns where name = N''ringingTime'' and Object_ID = Object_ID(N''RepAgentSummary''))

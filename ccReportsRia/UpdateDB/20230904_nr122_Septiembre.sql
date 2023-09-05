@@ -2455,9 +2455,16 @@ columns=''userId|max([user]):user|max([login]):login|sum([tlog]):tlog|sum([tunkn
 
 -----------------------------------------------------END Jesus Gallardo hotfix/125.20230719.0.2-----------------------------------------------------------------
 
+-----------------------------------------------------BEGIN Enrique Ruiz hotfix/125.20230719.0.2-----------------------------------------------------------------
 
+	set @process = 'DEV1-303, DEV1-332  Generación y Optimización Reportes XLSX y PDF, Se añade un Setting'
+	set @sql = 'if not exists(select * from ccsettings where setting_id=44) begin
+	insert into ccsettings values(44,''100000|1000000|2500000|10000|250000|2500000|44'',''Registros por worksheet|Registros por query XLSX|Registros por zip XLSZ|Registros por archivo PDF|Registros por query PDF|Registros por zip PDF'',1,''X'')
+		end'
 
+	EXEC(@sql)
 
+-----------------------------------------------------END Enrique Ruiz hotfix/125.20230719.0.2-----------------------------------------------------------------
 
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

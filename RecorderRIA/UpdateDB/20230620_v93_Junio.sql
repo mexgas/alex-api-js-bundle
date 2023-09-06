@@ -465,7 +465,135 @@ else if @action = 17 begin  -- Get Inbound and Outbound cal_ids
 end
 
 END'
-  	EXEC(@sql)      
+  	EXEC(@sql) 
+
+	set @process = 'Alter SP trsp_muevegrabaciones por que inserta por fecha pero borra por grabId '
+	set @sql = 'ALTER PROCEDURE [dbo].[trsp_muevegrabaciones]
+AS
+BEGIN
+Set NOCOUNT ON
+
+declare @fecha datetime
+declare @Integrado as int
+
+select @integrado = par_valor from trec_parametros where par_id = 29
+set @fecha = CAST(CONVERT(VARCHAR(8), DATEADD(DD,-30,GETDATE()), 1) AS DATETIME)
+declare @top int
+set @top=3000
+
+declare @sql nvarchar(max) 
+set @sql=''declare @RIA_GRABACION table(	
+[grab_id] [bigint] NOT NULL,
+[cli_id] [int] NULL,
+[age_id] [int] NULL,
+[puerto_id] [int] NULL,
+[tipo_grab_id] [tinyint] NULL,
+[age_id_rec] [int] NULL,
+[ffin] [datetime] NOT NULL,
+[finicio] [datetime] NOT NULL,
+[ani] [varchar](30) NOT NULL,
+[dni] [varchar](15) NULL,
+[tamano] [int] NULL,
+[duracion] [int] NULL,
+[pos_pc] [varchar](25) NULL,
+[extension] [varchar](25) NULL,
+[razon_id] [tinyint] NULL,
+[nombre_archivo] [varchar](20) NULL,
+[info1] [varchar](50) NULL,
+[info2] [varchar](50) NULL,
+[info3] [varchar](50) NULL,
+[info4] [varchar](50) NULL,
+[info5] [varchar](50) NULL,
+[id_repositorio] [tinyint] NULL,
+[id_nivel_grito] [int] NULL,
+[tipo_llamada] [smallint] NULL,
+[cam_id] [smallint] NULL,
+[calif_id] [smallint] NULL,
+[cal_id] [int] NULL,
+[cal_key] [varchar](40) NOT NULL,
+[cal_manual] [tinyint] NULL,
+[cal_extension] [int] NULL,
+[cal_whoHung] [smallint] NULL,
+[cal_whoRec] [int] NULL,
+[id_plantilla] [smallint] NULL,
+[fvalida] [datetime] NULL,
+[fvalida2] [datetime] NULL,
+[borra_id] [bit] NULL,
+[cal_fcallback] [smalldatetime] NULL,
+[dni_id] [smallint] NULL,
+[extra_info] [varchar](50) NULL,
+[extra_info2] [varchar](50) NULL,
+[id_rep_video] [tinyint] NULL,
+[video] [int] NOT NULL,
+[IDWG] [varchar](800) NULL,
+[califSub_id] [smallint] NOT NULL,
+[cal_tMoh] [smallint] NOT NULL,
+[Prefijo] [varchar](max) NULL,
+primary key (grab_id)
+)
+''
+
+--AVRS XION
+if (@integrado = 2) BEGIN
+		set @sql=@sql+''  
+insert into @RIA_GRABACION
+(grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)
+SELECT top(@top) grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+	info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+	cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo
+FROM [RIA_GRABACION] with(nolock, index(IX_RIA_GRABACION_3)) WHERE [finicio] < @fecha;
+
+INSERT INTO [RIA_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)
+
+select A.grab_id,A.cli_id,A.age_id,A.puerto_id,A.tipo_grab_id,A.age_id_rec,A.ffin,A.finicio,A.ani,A.dni,A.tamano,A.duracion,A.pos_pc,A.extension,A.razon_id,A.nombre_archivo,A.info1,A.info2,A.info3,A.info4,A.
+info5,A.id_repositorio,A.id_nivel_grito,A.tipo_Llamada,A.cam_id,A.calif_id,A.cal_id,A.cal_key,A.cal_manual,A.cal_extension,A.cal_whoHung,A.cal_whoRec,A.id_plantilla,A.fvalida,A.fvalida2,A.borra_id,A.
+cal_fcallback,A.dni_id,A.extra_info,A.extra_info2,A.id_rep_video,A.video,A.IDWG,A.califSub_id,A.cal_tMoh,A.Prefijo
+from @RIA_GRABACION A
+left join RIA_GRABACIONCONSULTA B on A.grab_id=B.grab_id
+where A.grab_id is null
+
+delete A from RIA_GRABACION A 
+inner join @RIA_GRABACION B on A.grab_id=B.grab_id
+		''
+END
+else BEGIN  --AVRS Integrada ó AVRS Stand Alone
+	
+	set @sql=@sql+''
+SET IDENTITY_INSERT TREC_GRABACIONCONSULTA ON
+
+insert into @RIA_GRABACION
+(grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)		  
+SELECT grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+	info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+	cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG
+FROM [TREC_GRABACION] with(nolock, index(IX_TREC_GRABACION_3)) WHERE [finicio] < @fecha;
+
+INSERT INTO [TREC_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG)
+select grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG
+from @RIA_GRABACION
+
+SET IDENTITY_INSERT TREC_GRABACIONCONSULTA OFF
+
+delete A from TREC_GRABACION A 
+inner join @RIA_GRABACION B on A.grab_id=B.grab_id''
+	
+END
+
+exec sp_executesql @sql, N''@top int, @fecha datetime'', @top,@fecha
+print(@sql)
+END'
+	EXEC(@sql)
+
       -------------------------------------------- END Jesus Gallardo -------------------------------------------------------------------------------
 
 

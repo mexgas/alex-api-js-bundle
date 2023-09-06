@@ -2763,8 +2763,7 @@ t.fecha between dateadd(mi,(HoraInicio*60)+MinInicio ,idate)  and dateadd(mi,(ho
 
 ---------------------------------------BEGIN Enrique Ruiz  hotfix/125.20230719.0.2---------------------------------------------------------
 	SET @process = 'hotfix/125.20230719.0.2 CW-TT6327 ALTER SP ccsp_RIAUpdateCamConfig actualizar cam_ShowCalifWnd solo si tiene calificaciones asignadas, de lo contrario termina'
-	SET @sql = '	
-ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 @cam_id smallint,
 @cam_descripcion varchar(40) = null,
 @cam_tnotas smallint = null,
@@ -3108,21 +3107,17 @@ BEGIN
 END 
 DECLARE @prevCalif BIT = (SELECT [cam_ShowCalifWnd] FROM ccCamps WHERE cam_id = @cam_id);
 
-IF @cam_ShowCalifWnd = 1
-BEGIN
-  IF not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1)
-    BEGIN
-      select 0
-    return(0)
-  END
-END
-ELSE
-BEGIN
-  UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
-  where cam_id = @cam_id
-  select 1
-  return(0)
-end
+if @cam_ShowCalifWnd = 1 begin
+	If not exists(select cam_id from ccCalifCamp where cam_id = @cam_id and tipo = 1) begin
+		select 0
+		return(0)
+	end
+	ELSE BEGIN
+		UPDATE ccCamps SET cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd, cam_ShowCalifWnd)
+		where cam_id = @cam_id
+		select 1
+		return(0)
+	end
   
 UPDATE ccCamps SET
 cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)

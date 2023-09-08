@@ -152,7 +152,9 @@ BEGIN
 				,ISNULL(cs.Dato2, '''') AS data2
 				,ISNULL(cs.Dato3, '''') AS data3
 				,ISNULL(cs.Dato4, '''') AS data4
-				,ISNULL(cs.Dato5, '''') AS data5
+				,CASE WHEN dials.[file_moved] = 1 THEN ''systemTranslated_Remoto'' 
+					WHEN dials.file_moved = 2 THEN ''systemTranslated_noRecordingCamp''
+					ELSE ''Local'' END AS fileMoved
 				,CASE WHEN dials.[file_moved] = 1 THEN ''systemTranslated_Remoto'' ELSE ''Local'' END AS fileMoved
 				,dials.disconnectCause
 				,COALESCE(dat.description, descripcion, ''N/A'') DCCustomer

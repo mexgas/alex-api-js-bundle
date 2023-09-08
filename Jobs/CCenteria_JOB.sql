@@ -384,9 +384,10 @@ callout_id int not null primary key
 )
 
 insert into #ccoCallsOutSourceIds (callout_id)
-select callout_id
-from ccoCallsOutSource
-where cal_fechadial < dateadd(dd, -@days, getdate())
+select distinct A.callout_id
+from ccoCallsOutSource A
+inner join ccoLogDials b on A.callout_id = b.callout_id
+where b.fecha < dateadd(dd, -@days, getdate())
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''truncate table ccBorrardasReciclaje'''', 0, 0)
@@ -539,8 +540,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:
-'
+EndSave:'
     EXEC(@sql)
 
     set @process = 'CREATE JOB CW Stop inactive campaigns'

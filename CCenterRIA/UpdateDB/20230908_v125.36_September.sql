@@ -9,7 +9,7 @@ Date: 2023/07/04
 Description: K053000
 
 Database: CCenterRia
-Required version: 125.31
+Required version: 125.36
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -28,7 +28,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 125 --**********actualizar a 124 sin fix
-SET @versionfix = 34
+SET @versionfix = 36
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 

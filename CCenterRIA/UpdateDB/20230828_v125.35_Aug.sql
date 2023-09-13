@@ -366,174 +366,174 @@ BEGIN
 
 	SET @process = 'Update ccsp_GalateaGetOutboundConfiguration'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT
-	,@campID INT
-	AS
-	BEGIN
-	DECLARE @AllCampaigns TABLE (
-	cam_id SMALLINT
-	,cam_Descripcion VARCHAR(60)
-	,cam_tNotas SMALLINT
-	,cam_ocupado SMALLINT
-	,cam_noInt_ocupado SMALLINT
-	,cam_inter_ocupado SMALLINT
-	,cam_nocontesto SMALLINT
-	,cam_noInt_nocontesto SMALLINT
-	,cam_inter_nocontesto SMALLINT
-	,cam_fax SMALLINT
-	,cam_noInt_fax SMALLINT
-	,cam_inter_fax SMALLINT
-	,cam_modomanual SMALLINT
-	,ANI VARCHAR(15)
-	,cam_ShowCalifWnd BIT
-	,cam_StartTimerOnHangUp BIT
-	,editableCallKey BIT
-	,cam_tNoContesta SMALLINT
-	,iTipoDial SMALLINT
-	,detectAnswerMachine SMALLINT
-	,detectVoiceMail SMALLINT
-	,compliance SMALLINT
-	,cam_inter_graba SMALLINT
-	,cam_noint_graba SMALLINT
-	,progDial SMALLINT
-	,excCallBack SMALLINT
-	,dialOrder SMALLINT
-	,dialPrefix VARCHAR(10)
-	,dialPrefixMan VARCHAR(10)
-	,dialPrefixXfe VARCHAR(10)
-	,listenManualCall BIT
-	,stopRecording BIT
-	,abandonCallback BIT
-	,frame SMALLINT
-	,t_autoCB SMALLINT
-	,id_anilist INT
-	,tDialonWrapUp SMALLINT
-	,viewMode TINYINT
-	,queSize SMALLINT
-	,DNCScrub INT
-	,callerIdDesc VARCHAR(15)
-	,timeZoneRule INT
-	,callsBySurvey INT
-	,ivrScript INT
-	,surveyPctg INT
-	,call_record SMALLINT
-	,startStopRecording BIT
-	,leaveRecMessage BIT
-	,manualCallOnChat BIT
-	,callBackSurveyAgent BIT
-	,callBackSurveyClient BIT
-	,isRelationSurvey BIT
-	,funcEspDtmf INT
-	,sipHdrFormat VARCHAR(255)
-	,cam_inter_cancelled SMALLINT
-	,prefijo VARCHAR(40)
-	,enbleprefix BIT
-	,exitAssisted BIT
-	,previewDiscard BIT
-	,CampType INT
-	,conexionInfo VARCHAR(50)
-	,connUser VARCHAR(15)
-	,closeConversationTime INT
-	,answerTimeoutClient INT
-	,allowFileAttachments BIT
-	,selectRotativeANI INT
-	,rotativeAlgo TINYINT
-	,autoStart BIT
-	,messagingOrder BIT
-	,CamTPreview SMALLINT
-	,TimesPreview TINYINT
-	,timesDiscard TINYINT
-	,recordHold BIT
-	,zipCodeSchedule BIT
-	,RecordCalls tinyint
-	,simultaneousRecs smallint
-	)
-	DECLARE @numbers VARCHAR(max)
+,@campID INT
+AS
+BEGIN
+DECLARE @AllCampaigns TABLE (
+cam_id SMALLINT
+,cam_Descripcion VARCHAR(60)
+,cam_tNotas SMALLINT
+,cam_ocupado SMALLINT
+,cam_noInt_ocupado SMALLINT
+,cam_inter_ocupado SMALLINT
+,cam_nocontesto SMALLINT
+,cam_noInt_nocontesto SMALLINT
+,cam_inter_nocontesto SMALLINT
+,cam_fax SMALLINT
+,cam_noInt_fax SMALLINT
+,cam_inter_fax SMALLINT
+,cam_modomanual SMALLINT
+,ANI VARCHAR(15)
+,cam_ShowCalifWnd BIT
+,cam_StartTimerOnHangUp BIT
+,editableCallKey BIT
+,cam_tNoContesta SMALLINT
+,iTipoDial SMALLINT
+,detectAnswerMachine SMALLINT
+,detectVoiceMail SMALLINT
+,compliance SMALLINT
+,cam_inter_graba SMALLINT
+,cam_noint_graba SMALLINT
+,progDial SMALLINT
+,excCallBack SMALLINT
+,dialOrder SMALLINT
+,dialPrefix VARCHAR(10)
+,dialPrefixMan VARCHAR(10)
+,dialPrefixXfe VARCHAR(10)
+,listenManualCall BIT
+,stopRecording BIT
+,abandonCallback BIT
+,frame SMALLINT
+,t_autoCB SMALLINT
+,id_anilist INT
+,tDialonWrapUp SMALLINT
+,viewMode TINYINT
+,queSize SMALLINT
+,DNCScrub INT
+,callerIdDesc VARCHAR(15)
+,timeZoneRule INT
+,callsBySurvey INT
+,ivrScript INT
+,surveyPctg INT
+,call_record SMALLINT
+,startStopRecording BIT
+,leaveRecMessage BIT
+,manualCallOnChat BIT
+,callBackSurveyAgent BIT
+,callBackSurveyClient BIT
+,isRelationSurvey BIT
+,funcEspDtmf INT
+,sipHdrFormat VARCHAR(255)
+,cam_inter_cancelled SMALLINT
+,prefijo VARCHAR(40)
+,enbleprefix BIT
+,exitAssisted BIT
+,previewDiscard BIT
+,CampType INT
+,conexionInfo VARCHAR(50)
+,connUser VARCHAR(15)
+,closeConversationTime INT
+,answerTimeoutClient INT
+,allowFileAttachments BIT
+,selectRotativeANI INT
+,rotativeAlgo TINYINT
+,autoStart BIT
+,messagingOrder BIT
+,CamTPreview SMALLINT
+,TimesPreview TINYINT
+,timesDiscard TINYINT
+,recordHold BIT
+,zipCodeSchedule BIT
+,RecordCalls tinyint
+,simultaneousRecs smallint
+)
+DECLARE @numbers VARCHAR(max)
 
-	SELECT @numbers = COALESCE(@numbers + '''''''', '''''''', '''''''''''''''') + number
-	FROM ccWhatsAppNumbers
-	WHERE camp_id = 0
-	AND STATUS = 1
+SELECT @numbers = COALESCE(@numbers + '''', '''', '''''''') + number
+FROM ccWhatsAppNumbers
+WHERE camp_id = 0
+AND STATUS = 1
 
-	INSERT INTO @AllCampaigns
-	EXEC ccsp_RIAConfCamp @adminID
-	,@campID
+INSERT INTO @AllCampaigns
+EXEC ccsp_RIAConfCamp @adminID
+,@campID
 
-	SELECT dialPrefixMan DialPrefixMan
-	,dialPrefixXfe DialPrefixXfe
-	,listenManualCall ListenManualCall
-	,stopRecording StopRecording
-	,abandonCallback AbandonCallBack
-	,t_autoCB AutoCB
-	,id_anilist IdIstANI
-	,tDialonWrapUp TDialOnWrapup
-	,queSize Quesize
-	,DNCScrub
-	,callerIdDesc CallerIdDesc
-	,timeZoneRule TimeZoneRule
-	,callsBySurvey CallsBySurvey
-	,ivrScript IvrScript
-	,surveyPctg SurveyPctg
-	,call_record CallRecord
-	,startStopRecording StartStopRecording
-	,leaveRecMessage LeaveRecMessage
-	,manualCallOnChat ManualCallOnChat
-	,callBackSurveyClient CallBackSurveyClient
-	,callBackSurveyAgent CallBackSurveyAgent
-	,funcEspDtmf FuncEspDtmf
-	,sipHdrFormat SipHdrsCfg
-	,dialPrefix DialPrefix
-	,prefijo Prefix
-	,dialOrder DialOrder
-	,progDial ProgDial
-	,cam_Descripcion CamDescription
-	,cam_tNotas CamTnotas
-	,cam_ocupado CamBusy
-	,cam_noInt_ocupado CamNoIntBusy
-	,cam_inter_ocupado CamInterBusy
-	,cam_nocontesto CamNoAnswer
-	,cam_noInt_nocontesto CamNoIntNoAnswer
-	,cam_inter_nocontesto CamInterNoAnswer
-	,(cam_inter_cancelled / 60) CamInterCancelled
-	,cam_fax CamFax
-	,cam_noInt_fax CamNoIntFax
-	,cam_inter_fax CamInterFax
-	,cam_modomanual CamModoManual
-	,ANI
-	,cam_StartTimerOnHangUp CamStartTimerOnHangUp
-	,editableCallKey EditableCallKey
-	,cam_tNoContesta CamTNoAnswer
-	,iTipoDial CamIntensiveDialing
-	,detectAnswerMachine DetectAnswerMachine
-	,detectVoiceMail DetectVoiceMail
-	,compliance Compliance
-	,cam_inter_graba CamInterRecord
-	,cam_noint_graba CamNoIntRecord
-	,excCallBack ExcCallBack
-	,cam_ShowCalifWnd CamShowCalifWnd
-	,frame Frame
-	,exitAssisted ExitAssistedDialMode
-	,previewDiscard PreviewDiscard
-	,CampType
-	,conexionInfo ConexionInfo
-	,connUser ConnUser
-	,closeConversationTime CloseConversationTime
-	,answerTimeoutClient MUTimeOutClient
-	,allowFileAttachments AllowFileAttachments
-	,CamTPreview
-	,CAST(TimesPreview AS SMALLINT) TimesPreview
-	,@numbers AS FreeNumbers
-	,selectRotativeANI SelectRotativeANIManualCall
-	,rotativeAlgo RotativeAlgo
-	,autoStart AutoStart
-	,messagingOrder MessagingOrder
-	,timesDiscard TimesDiscard
-	,recordHold RecordHold
-	,zipCodeSchedule ZipCodeSchedule
-	,RecordCalls RecordCalls
-	,simultaneousRecs SimultaneousRecs
-	FROM @AllCampaigns
-	WHERE cam_id = @campID
-	END'
+SELECT dialPrefixMan DialPrefixMan
+,dialPrefixXfe DialPrefixXfe
+,listenManualCall ListenManualCall
+,stopRecording StopRecording
+,abandonCallback AbandonCallBack
+,t_autoCB AutoCB
+,id_anilist IdIstANI
+,tDialonWrapUp TDialOnWrapup
+,queSize Quesize
+,DNCScrub
+,callerIdDesc CallerIdDesc
+,timeZoneRule TimeZoneRule
+,callsBySurvey CallsBySurvey
+,ivrScript IvrScript
+,surveyPctg SurveyPctg
+,call_record CallRecord
+,startStopRecording StartStopRecording
+,leaveRecMessage LeaveRecMessage
+,manualCallOnChat ManualCallOnChat
+,callBackSurveyClient CallBackSurveyClient
+,callBackSurveyAgent CallBackSurveyAgent
+,funcEspDtmf FuncEspDtmf
+,sipHdrFormat SipHdrsCfg
+,dialPrefix DialPrefix
+,prefijo Prefix
+,dialOrder DialOrder
+,progDial ProgDial
+,cam_Descripcion CamDescription
+,cam_tNotas CamTnotas
+,cam_ocupado CamBusy
+,cam_noInt_ocupado CamNoIntBusy
+,cam_inter_ocupado CamInterBusy
+,cam_nocontesto CamNoAnswer
+,cam_noInt_nocontesto CamNoIntNoAnswer
+,cam_inter_nocontesto CamInterNoAnswer
+,(cam_inter_cancelled / 60) CamInterCancelled
+,cam_fax CamFax
+,cam_noInt_fax CamNoIntFax
+,cam_inter_fax CamInterFax
+,cam_modomanual CamModoManual
+,ANI
+,cam_StartTimerOnHangUp CamStartTimerOnHangUp
+,editableCallKey EditableCallKey
+,cam_tNoContesta CamTNoAnswer
+,iTipoDial CamIntensiveDialing
+,detectAnswerMachine DetectAnswerMachine
+,detectVoiceMail DetectVoiceMail
+,compliance Compliance
+,cam_inter_graba CamInterRecord
+,cam_noint_graba CamNoIntRecord
+,excCallBack ExcCallBack
+,cam_ShowCalifWnd CamShowCalifWnd
+,frame Frame
+,exitAssisted ExitAssistedDialMode
+,previewDiscard PreviewDiscard
+,CampType
+,conexionInfo ConexionInfo
+,connUser ConnUser
+,closeConversationTime CloseConversationTime
+,answerTimeoutClient MUTimeOutClient
+,allowFileAttachments AllowFileAttachments
+,CamTPreview
+,CAST(TimesPreview AS SMALLINT) TimesPreview
+,@numbers AS FreeNumbers
+,selectRotativeANI SelectRotativeANIManualCall
+,rotativeAlgo RotativeAlgo
+,autoStart AutoStart
+,messagingOrder MessagingOrder
+,timesDiscard TimesDiscard
+,recordHold RecordHold
+,zipCodeSchedule ZipCodeSchedule
+,RecordCalls RecordCalls
+,simultaneousRecs SimultaneousRecs
+FROM @AllCampaigns
+WHERE cam_id = @campID
+END'
 	EXEC(@sql)
 
 	SET @process = 'Update ccsp_RIAConfCamp'
@@ -1893,7 +1893,7 @@ BEGIN
 
     set @ConexionInfo = case when  @ConexionInfo is null or @ConexionInfo in('''',''0'',''None'',''Ninguno'') then CASE WHEN @isCreating > 0 AND @PrevConexionInfo <> '''' THEN ''Ninguno'' ELSE '''' END else @ConexionInfo end
     UPDATE contactMeanOut SET conexionInfo = @ConexionInfo, ConnPass = @ConexionInfo, connUser = @ConexionInfo,
-                              closeConversationTime = @agentCloseConversationTime, answerTimeoutClient = @adminCloseConversationTime,
+				                              closeConversationTime = CAST(@agentCloseConversationTime AS INT), answerTimeoutClient = @adminCloseConversationTime,
                               allowFileAttachments = @allowFileAttachments
     WHERE @CampType = meanContactTypeId AND camp_id = @cam_id
 

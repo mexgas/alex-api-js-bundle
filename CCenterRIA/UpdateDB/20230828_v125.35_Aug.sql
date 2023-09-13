@@ -306,7 +306,7 @@ BEGIN
 					select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
 					ISNULL(c.conexionInfo,'''') [Number],
 					ISNULL(@numbers,'''') [FreeNumbersStr],
-					ISNULL(c.closeConversationTime, 0) [MaxAnswerTime],
+					CAST(ISNULL(c.closeConversationTime, 0) AS INT) [MaxAnswerTime],
 					ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
 					ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],
 					i.tNotas [tNotas],

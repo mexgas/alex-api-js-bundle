@@ -137,9 +137,9 @@ BEGIN
 				,dials.tiporesdial_id as tiporesdialId
 				,CASE WHEN dials.tipoResDial_id = 14 THEN 
 						CASE WHEN camps.campType = 6 THEN ''systemTranslated_CancelledByEngaged'' ELSE ''systemTranslated_CancelledBySystem'' END
-					ELSE ISNULL(dials.resultDialDesc, '') END AS dialResult
+					ELSE ISNULL(dials.resultDialDesc, '''') END AS dialResult
 				,ISNULL(dials.[cam_id],'''')campaignId
-				,ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') AS campaign
+				,ISNULL(RTRIM(LTRIM(camps.cam_descripcion)),''systemTranslated_NoCampaign'') AS campaign
 				,dials.tbusy AS timeMessage
 				,DATEPART(yyyy, fecha) year	
 				,DATEPART(mm, fecha) month	

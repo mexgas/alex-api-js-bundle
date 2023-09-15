@@ -479,6 +479,81 @@ BEGIN
 	EXEC(@sql)
 	
 	--------------------------------------------------------------------START HL----------------------------------------------------------------------------------------
+	SET @process = 'DEV2-216-Drop SP ccsp_RegProcessPreviewRecord'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_RegProcessPreviewRecord'')
+			BEGIN
+				DROP PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord]
+			END'
+	EXEC(@sql)
+
+	SET @process = 'DEV2-216-Create SP ccsp_RegProcessPreviewRecord'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RegProcessPreviewRecord](
+			@process smallint,
+			@callout_id int,
+			@agent_id smallint,
+			@camId int,
+			@previewTime smallint,
+			@callId int)
+			AS
+			DECLARE @result_callout_id INT
+			DECLARE @result_maxtimespreview INT = 0
+			DECLARE @result_maxtimesdiscard INT = 0
+			DECLARE @insert_date DATETIME = SYSDATETIME()
+			DECLARE @process_insert int =  @process
+
+			if(exists(select top 1 1 from ccoWorkingTable nolock where callout_id = @callout_id)) begin
+				set @result_callout_id =1
+			end
+
+			IF ((@process=1 OR @process=16 or @process=15) AND @result_callout_id > 0)
+			BEGIN
+				DELETE ccoWorkingTable WHERE callout_id = @callout_id
+			END
+
+			IF (@process=16 or @process=15)
+			BEGIN
+				select 1 ''value''
+				return
+			END
+
+			IF (@process NOT IN (1, 7, 13))
+			BEGIN
+			DECLARE @first_date DATETIME = DATEADD(hh, 00, DATEADD(dd, DATEDIFF(dd, 0, GETDATE()), 0))
+				if(
+					(SELECT COUNT(process) FROM RegProcessPreviewRecord 
+					WHERE reg_date BETWEEN @first_date AND @insert_date
+					and (process = 5) 
+					and (callout_id=@callout_id)
+					)
+					>=
+					(SELECT timesPreview FROM ccCamps WHERE cam_id = @camId)
+					)
+				begin
+						set @result_maxtimespreview = 1
+						set @process_insert = 8
+						DELETE ccoWorkingTable WHERE callout_id = @callout_id
+				end
+			END
+
+			IF (@process NOT IN (1, 5, 7, 8, 13))
+			BEGIN
+				update ccoWorkingTable set timesDiscard+=1 where callout_id=@callout_id
+			END
+
+			IF (@result_callout_id > 0 or @process in (4, 5, 7, 13))
+			BEGIN
+				INSERT INTO RegProcessPreviewRecord(userId,process,callout_id,camId,reg_date,tPreview,callID) VALUES (@agent_id,@process_insert,@callout_id,@camId,@insert_date,@previewTime,@callId)
+			END
+
+			CREATE TABLE #result (result INT);
+			INSERT INTO #result
+			exec ccsp_CheckTimesDiscard @action=1,@camId=@camId, @calloutId=@callout_id
+			select @result_maxtimesdiscard=result from #result
+			DROP TABLE #result
+
+			select case when @result_maxtimespreview = 1 or @result_maxtimesdiscard = 1 then 1 else 0 end as ''value'''
+	EXEC(@sql)
+
 	SET @process = 'DEV2-253 DROP PROCEDURE ccsp_AgentSetCallStatus '
 	SET @sql = '
 	if exists (select * from sys.procedures where name = N''ccsp_AgentSetCallStatus'')

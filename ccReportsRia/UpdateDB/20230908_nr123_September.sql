@@ -132,7 +132,7 @@ BEGIN
 		--Inserta informacon de reporte  
 			INSERT INTO RepOutDialDetail
 				SELECT fecha as [date]
-				,case when dials.cal_key is null or  cs.cal_key is null then '''' when dials.cal_key is not null then dials.cal_key else cs.cal_key end cal_key
+				,case when dials.cal_key is null and cs.cal_key is null then '''' when dials.cal_key is not null then dials.cal_key else cs.cal_key end cal_key
 				,ISNULL(telefono,'''') telephone
 				,dials.tiporesdial_id as tiporesdialId
 				,CASE WHEN dials.tipoResDial_id = 14 THEN 

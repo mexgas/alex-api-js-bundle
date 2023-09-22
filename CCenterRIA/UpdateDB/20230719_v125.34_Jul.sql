@@ -4313,6 +4313,290 @@ set nocount off'
 				set nocount off'
 	EXEC(@sql)
 	---------------------------------------------------------------------- END IVAN MARTIN hotfix/IM-CW-8012_Wrong_Datatype_in_WhatsApp_Config_Release_Branch ----------------------------------------------------------------------
+	------------------------BEGIN JONATHAN RAMIREZ------------------------------------------------------------------------------------------
+	SET @process = 'JR 1 - Update settings description (166, 253)';
+	SET @sql = '
+		IF EXISTS (SELECT * FROM ccSettings WHERE setting_id = 166) BEGIN
+			UPDATE ccSettings SET 
+			descripcion = ''Llamada - Marcar sólo en horarios permitidos por ley.'',
+			description = ''Call - Dial only during compliance schedules.''
+			WHERE setting_id = 166
+		END
+
+		IF EXISTS (SELECT * FROM ccSettings WHERE setting_id = 253) BEGIN
+			UPDATE ccSettings SET 
+			descripcion = ''SMS - Marcar sólo en horarios permitidos por ley.'',
+			description = ''SMS - Dial only during compliance schedules.''
+			WHERE setting_id = 253
+		END
+	';
+	EXEC(@sql);
+
+	SET @process = 'JR 2 - Se modifica ccsp_GetHourLaw, se añade parametro @isSms, para saber de que setting tomar el horario ley.';
+	SET @sql='
+	ALTER PROCEDURE [dbo].[ccsp_GetHourLaw] @isSms BIT = 0
+	AS
+	SET NOCOUNT ON
+
+	DECLARE @isShudulerLey BIT
+	DECLARE @valueShudulerLey VARCHAR(max), @hourStart INT, @hourEnd INT, @minStart INT, @minEnd INT
+	DECLARE @shourStart VARCHAR(max), @shourEnd VARCHAR(max)
+
+	DECLARE @settingId int = CASE WHEN @isSms = 0 THEN 166 ELSE 253 END
+
+	SELECT @valueShudulerLey = valor
+	FROM ccsettings
+	WHERE setting_id = @settingId
+
+	SELECT @isShudulerLey = cast(substring(@valueShudulerLey, 0, charindex(''|'', @valueShudulerLey)) AS INT), @valueShudulerLey = substring(
+	        @valueShudulerLey, charindex(''|'', @valueShudulerLey) + 1, len(@valueShudulerLey))
+
+	IF @valueShudulerLey = ''''
+	BEGIN
+	    SET @valueShudulerLey = ''0|07:00|22:00''
+
+	    UPDATE ccsettings
+	    SET valor = @valueShudulerLey
+	    WHERE setting_id = @settingId
+	END
+
+	IF @isShudulerLey = 1
+	BEGIN
+	    SELECT @shourStart = substring(@valueShudulerLey, 0, charindex(''|'', @valueShudulerLey)), 
+	    @shourEnd = substring(@valueShudulerLey, charindex(''|'', 
+	                @valueShudulerLey) + 1, len(@valueShudulerLey))
+
+	    SELECT @hourStart = substring(@shourStart, 0, charindex('':'', @shourStart)), 
+	    @minStart = substring(@shourStart, charindex('':'', @shourStart) + 1, len(
+	                @shourStart))
+
+	    SELECT @hourEnd = substring(@shourEnd, 0, charindex('':'', @shourEnd)), 
+	    @minEnd = substring(@shourEnd, charindex('':'', @shourEnd) + 1, len(@shourEnd))
+	END
+	ELSE
+	BEGIN
+	    SELECT @hourStart = 0, @minStart = 0, @hourEnd = 23, @minEnd = 59
+	END
+
+	SELECT @hourStart as hourStart, @minStart as minStart, @hourEnd as hourEnd, @minEnd minEnd
+	';
+	EXEC(@sql);
+
+	SET @process = 'JR 3 - Correccion SP ccsp_smsCampSchedule, Se obtiene el horario ley con base en tipo de campaña';
+	SET @sql = '
+	ALTER PROCEDURE [dbo].[ccsp_smsCampSchedule]
+	@camId as int
+	AS
+
+	declare @horaUniversal datetime
+	declare @hourStart int,@hourEnd int,@minStart int,@minEnd int
+	declare @timeMaxContestacion tinyint
+
+	set @timeMaxContestacion=30
+
+	select @timeMaxContestacion=cam_tNoContesta from cccamps where cam_id=@camId
+	declare @schLaw table (hourStart int not null,minStart int not null,hourEnd int not null,minEnd int not null)
+
+	insert into @schLaw
+	exec ccsp_GetHourLaw @isSms = 1
+	SELECT @hourStart = hourStart, @minStart = minStart, @hourEnd = hourEnd, @minEnd = minEnd from @schLaw
+
+	SET DATEFIRST 1
+	set @horaUniversal = getutcdate()
+
+	;with camSch as(
+	select ROW_NUMBER() OVER(ORDER BY idate DESC) AS id
+	,DATEPART(hh,idate) HoraInicio, DATEPART(mi,idate) as MinInicio
+	,DATEPART(hh,fDate) horaFin, DATEPART(mi,fDate) as MinFin
+	,idate,fDate
+	from ccSmsSchedules where cam_id= @camId 
+	) 
+	, camSchLaw as(
+	select id,
+	case when HoraInicio>@hourStart then HoraInicio else @hourStart end HoraInicio,
+	case when (horaInicio>@hourStart or (horaInicio=@hourStart and MinInicio>=@minStart) ) then MinInicio  else @minStart end MinInicio,
+	case when horaFin<@hourEnd then horaFin else @hourEnd end HoraFin,
+	case when ((horaFin < @hourEnd or (horaFin=@hourEnd and MinFin<=@minEnd) )) then MinFin  else @minEnd end MinFin
+	,convert(datetime, CONVERT(date, idate)) as idate,convert(datetime,convert(date,fDate)) as fDate
+	,@hourStart hourStart
+	from camSch
+	), timeZone as(
+	select tz_id,
+	dateadd(mi, tz_offset*60, @horaUniversal) as fecha
+	from ccTimeZones
+	)
+
+	select distinct
+	dateadd(mi,(HoraInicio*60)+MinInicio ,idate) [Start]
+	, dateadd(ss,-(2*@timeMaxContestacion), dateadd(mi,(horaFin*60)+MinFin ,fDate)) [End]
+	from camSchLaw Sch
+	inner join timeZone t on 
+	t.fecha between dateadd(mi,(HoraInicio*60)+MinInicio ,idate)  and dateadd(mi,(horaFin*60)+MinFin ,fDate)
+	';
+	EXEC(@sql);
+
+	SET @process = 'JR 4 - Se agrega variable para saber si el tipo de campaña es SMS @isSmsCamp';
+	SET @sql = '
+	ALTER PROCEDURE [dbo].[ccsp_OUTcheckTimeZone] @cam_id AS INT,@isReturnSelect bit=1
+	AS
+	SET NOCOUNT ON
+
+	DECLARE @horaUniversal DATETIME, @revHorario BIT, @isShudulerLey BIT, @dateNow DATETIME
+	DECLARE @hourStart INT, @hourEnd INT, @minStart INT, @minEnd INT
+	DECLARE @timeMaxContestacion INT, @campType INT;
+
+	SET @timeMaxContestacion = 60
+
+	SELECT @revHorario = valor
+	FROM ccsettings
+	WHERE setting_id = 112
+
+	SELECT @timeMaxContestacion = (cam_tNoContesta * 2)
+	FROM cccamps
+	WHERE cam_id = @cam_id
+
+	SET @timeMaxContestacion = CEILING(cast(@timeMaxContestacion AS DECIMAL(10, 2)) / cast(60 AS DECIMAL(10, 2)))
+
+	declare @schLaw table (hourStart int not null,minStart int not null,hourEnd int not null,minEnd int not null)
+
+	SELECT @campType = CampType
+	FROM ccCamps
+	WHERE cam_id = @cam_id;
+
+	DECLARE @isSmsCamp BIT = CASE WHEN @campType = 7 THEN 1 ELSE 0 END;
+
+	insert into @schLaw
+	exec ccsp_GetHourLaw @isSms = @isSmsCamp
+	SELECT @hourStart = hourStart, @minStart = minStart, @hourEnd = hourEnd, @minEnd = minEnd from @schLaw
+
+	SET DATEFIRST 1
+	SET @horaUniversal = getutcdate()
+	SET @dateNow = getdate()
+	declare @iZonas int
+	-- Si la campaña no tiene horarios asignados, marcar todas las zonas
+	IF @revHorario = 0
+	BEGIN
+	    IF NOT EXISTS (
+	            SELECT cam_id
+	            FROM ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios))
+	            WHERE cam_id = @cam_id
+	            )
+	    BEGIN
+	        SELECT @iZonas=sum(DISTINCT tz_id)
+	        FROM (
+	            SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha, 
+	            datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora, 
+	            datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto, 
+	            datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+	            FROM ccTimeZones
+	            ) zonas
+	        WHERE (
+	                hora > @hourStart OR ( hora = @hourStart AND minuto >= @minStart)
+	                )
+	            AND (
+	                hora < @hourEnd OR ( hora = @hourEnd AND minuto <= @minEnd)
+	                )
+
+	    if @isReturnSelect=1 begin
+	        select @iZonas as iZonas
+	    end
+	    return @iZonas
+	    END
+	END
+
+	IF @campType <> 7
+	BEGIN
+	    
+	    SELECT h.horario_id, Descripcion, CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+	    , CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart    AND MinInicio >= @minStart) ) THEN MinInicio ELSE @minStart END MinInicio
+	    , CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+	    , CASE WHEN (
+	        (horaFin < @hourEnd OR (horaFin = @hourEnd AND MinFin <= @minEnd)
+	            )
+	        ) THEN MinFin ELSE @minEnd END MinFin, Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo
+	    INTO #tempCamp
+	    FROM cchorarios h
+	    INNER JOIN ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios)) ON h.horario_id = ccCampsHorarios.horario_id
+	        AND ccCampsHorarios.cam_id = @cam_id
+
+	    SELECT @iZonas=isnull(sum(DISTINCT tz_id), 0)
+	    FROM (
+	        SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha, 
+	        datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora, 
+	        datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto, 
+	        datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+	        FROM ccTimeZones
+	        ) zonas
+	    INNER JOIN #tempCamp ON (
+	            (
+	                hora > HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+	                )
+	            AND (
+	                hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+	                )
+	            AND (
+	                Lunes = dia
+	                OR Martes * 2 = dia
+	                OR Miercoles * 3 = dia
+	                OR Jueves * 4 = dia
+	                OR Viernes * 5 = dia
+	                OR Sabado * 6 = dia
+	                OR domingo * 7 = dia
+	                )
+	            )
+
+	    DROP TABLE #tempCamp
+	    if @isReturnSelect=1 begin
+	        select @iZonas as iZonas
+	    end
+	    return @iZonas
+	END
+	ELSE
+	BEGIN
+	        ;
+
+	    WITH sch
+	    AS (
+	        SELECT DATEPART(hh, idate) AS HoraInicio, DATEPART(mi, iDate) AS MinInicio, 
+	        DATEPART(hh, fdate) HoraFin, DATEPART(mi, fdate) MinFin
+	        FROM ccSmsSchedules
+	        WHERE cam_id = @cam_id
+	            AND @dateNow BETWEEN iDate AND fDate
+	        ), daysch
+	    AS (
+	        SELECT CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+	        , CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart AND MinInicio >= @minStart )
+	                        ) THEN MinInicio ELSE @minStart END MinInicio
+	        , CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+	        , CASE WHEN ((  horaFin < @hourEnd OR ( horaFin = @hourEnd AND MinFin <= @minEnd))
+	                        ) THEN MinFin ELSE @minEnd END MinFin
+	        FROM sch
+	        ), zonas
+	    AS (
+	        SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha
+	        , datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora
+	        , datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto
+	        FROM ccTimeZones
+	        )
+	    SELECT @iZonas=isnull(sum(DISTINCT B.tz_id), 0)
+	    FROM daysch A
+	    INNER JOIN zonas B ON (
+	            hora > HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+	            )
+	        AND (
+	            hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+	            )
+
+	    if @isReturnSelect=1 begin
+	        select @iZonas as iZonas
+	    end
+	    return @iZonas
+	END
+	';
+	EXEC(@sql);
+
+
+	------------------------END JONATHAN RAMIREZ------------------------------------------------------------------------------------------
 
 
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */

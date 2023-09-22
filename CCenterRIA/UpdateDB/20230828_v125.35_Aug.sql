@@ -95,7 +95,7 @@ BEGIN
 					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
 					VALUES (''COMMON_USA_RECORD_CALLS_MODE_AUTH'',''Solo claves autorizadas (automático)'',''Allowed area codes only (automatic)'',''Somente códigos permitidos (automático)'');
 				END
-				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS__MODE_NOAUTH'')
+				IF NOT EXISTS( SELECT * FROM ccGalateaIdentifiers WHERE Description = N''COMMON_USA_RECORD_CALLS_MODE_NOAUTH'')
 				BEGIN
 					INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
 					VALUES (''COMMON_USA_RECORD_CALLS_MODE_NOAUTH'',''Claves no autorizadas (manual)'',''Not allowed area codes (manual)'',''Códigos não permitidos (manual)'');

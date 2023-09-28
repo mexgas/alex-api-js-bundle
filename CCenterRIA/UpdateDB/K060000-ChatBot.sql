@@ -57,6 +57,51 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
+	SET @sql = 'if not exists(select * from sys.tables where name=''PinnedChatBots'') begin
+	CREATE TABLE [dbo].[PinnedChatBots](
+	[chatBotId] int not null,
+	[AdminId] int not null
+	)
+	end'
+
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNode'') begin
+	CREATE TABLE [dbo].[ccChatBotNode](
+		[conversationId] [int] NOT NULL primary key,
+		[node] [xml] NULL,
+		[dateIn] [datetime] NULL,
+		[dateOut] [datetime] NULL,
+		[status] [smallint] NULL
+	)
+
+	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT (NULL) FOR [dateOut]
+	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT ((0)) FOR [status]
+	end'
+	EXEC(@sql)
+
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNodeHistory'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNodeHistory'') begin
+	CREATE TABLE [dbo].[ccChatBotNodeHistory](
+		[conversationId] [int] NOT NULL,
+		[node] [xml] NULL,
+		[dateIn] [datetime] NULL,
+		[dateOut] [datetime] NULL,
+		[status] [smallint] NULL
+	)
+	end'
+	EXEC(@sql)
+
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Insert Finder ChatBot'
+	SET @sql = 'SET IDENTITY_INSERT ccFinderServices ON
+	if not exists(select * from ccFinderServices where name=''ChatBot'') begin
+		insert into ccFinderServices (id,[name],ref,tableName,tableNameHistory,columnId,isActive)
+		values(7,''ChatBot'',''R07'',''ccChatBotNode'',''ccChatBotNodeHistory'',''conversationId'',1)
+	end
+
+	SET IDENTITY_INSERT ccFinderServices OFF'
+	EXEC(@sql)
+
 
 	SET @process = 'K060008- Create Table ccChatBotConversationsResult'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotConversationsResult'') begin
@@ -115,7 +160,7 @@ end'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChatBotAdmin]
 @action int,@userId int=0,@chatBotId int=0,@camId int=0,@camType int=0,
 @chatBotConversationId bigint=0, @WAConversationId int=0,
-@IsPinned bit =null
+@IsPinned bit = 0, @AdminId int = 0
 AS
 set nocount on
 
@@ -133,13 +178,13 @@ end
 
 if @action=1 begin --Relation los que estan dados de alto con algun numero 
 	select A.id,A.ProjectName,B.ContactName from AzureKnowledge A 
-	inner join ChatBotRelation B on A.id=B.AzureKnowledgeId 
+	inner join ChatBotRelation B on A.id=B.AzureKnowledgeId
 end
 else if @action=2 begin --Lista de campañas de entrada whats y Campaña de voz Normal
 	;with WgRelationUser as(
 	select Wgu.IDWG,WgC.IdCampEsp,WgC.Tipo from ccRIAWorkGroupUsers Wgu
 	inner join ccRIACampEspWG WgC on WgC.IDWG =Wgu.IDWG
-	where User_id=@userId 
+	where User_id=@userId
 	)
 	select CAST( A.IdCampEsp as int) as CamId,descripcion as [Description],CAST( A.Tipo as int) as CampTypeInOut 
 	from WgRelationUser A 
@@ -161,7 +206,6 @@ else if @action=3 begin --Relacion de Chatbot con alguna campaña entrada/salida
 	where (@chatBotId=0 or chatBotId=@chatBotId)
 end
 else if @action=4 begin --Add Campaing
-	--set @chatBotId=@chatBotId/0
 	if not exists(select * from ChatBotCampaign where chatBotId=@chatBotId and campId=@camId and campType=@camType) begin
 		insert into ChatBotCampaign values(@chatBotId,@camId,@camType)
 		
@@ -170,7 +214,6 @@ else if @action=4 begin --Add Campaing
 	end
 end
 else if @action=5 begin --delete Campaing
-	--set @chatBotId=@chatBotId/0
 	delete from ChatBotCampaign where chatBotId=@chatBotId and campId=@camId and campType=@camType
 	exec ccsp_GalateaActivityLog @UserId=34,@Operations=79,@Identifiers='''',@Values=@chatBotName,@Module=9,
 	@Target=@camDescription
@@ -182,43 +225,64 @@ ELSE IF @action = 6 BEGIN --Add relation of Chatbot-WA conversations
 	END
 END
 ELSE IF @action = 7 BEGIN --Get chatbotConversationId value if it exists
-	SELECT B.ChatBotConversationId, A.phoneACD AS ContactName, A.clientID AS ClientNumber FROM ccWhatsAppConversations A
+	SELECT B.ChatBotConversationId, A.phoneACD AS ContactName, A.clientID AS ClientNumber, cbc.ChatBotName FROM ccWhatsAppConversations A
 	JOIN ChatBotWhatsAppConversation B ON B.WhatsAppConversationId = A.conversationId
+	JOIN dbo.ChatBotConversation AS cbc ON b.ChatBotConversationId = cbc.ChatBotConversationId
 	WHERE B.WhatsAppConversationId = @WAConversationId AND CampType = @camType;
 END
 ELSE IF @action = 8 BEGIN --GET AzureKnoledge bots
-	select A.id as ChatBotId, A.ProjectName, ISNULL(A.IsPinned, 0) as IsPinned from AzureKnowledge A
+	select A.id as ChatBotId, A.ProjectName, CASE WHEN ISNULL(P.chatBotId, 0) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END as IsPinned 
+	from AzureKnowledge A
+	left join PinnedChatBots P on A.id = P.chatBotId and  P.AdminId = @AdminId
 END
 ELSE IF @action = 9 BEGIN
-	UPDATE AzureKnowledge set IsPinned = @IsPinned where id = @chatBotId
-	select A.id as ChatBotId, A.ProjectName, ISNULL(A.IsPinned, 0) as IsPinned from AzureKnowledge A where A.id = @chatBotId
+	IF(@IsPinned = 0)
+	BEGIN
+		DELETE FROM PinnedChatBots where chatBotId = @chatBotId and AdminId = @AdminId
+	END
+	ELSE
+	BEGIN
+		IF NOT EXISTS (select * from PinnedChatBots where chatBotId = @chatBotId and AdminId = @AdminId)
+		BEGIN
+			INSERT INTO PinnedChatBots values(@chatBotId, @AdminId)
+		END
+	END
+
+	select A.id as ChatBotId, A.ProjectName, CASE WHEN ISNULL(P.chatBotId, 0) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END as IsPinned 
+	from AzureKnowledge A
+	left join PinnedChatBots P on A.id = P.chatBotId and P.AdminId = @AdminId
+	WHERE a.id = @chatBotId
 END
 set nocount off'
 	EXEC(@sql)
 
 	-------------------------------------------- BEGIN Enrique Ruiz ---------------------------------------------------------------------------------
 	SET @process = 'K060005 Create table ChatBotWhatsAppConversation which contains the relation of ids from ChatBot and WhatsApp conversations'
-	SET @sql = 'CREATE TABLE [dbo].ChatBotWhatsAppConversation(
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotWhatsAppConversation'') begin
+	CREATE TABLE [dbo].ChatBotWhatsAppConversation(
 					ChatBotConversationId [bigint] NULL,
 					WhatsAppConversationId [int] NULL,
 					CampType [tinyint] NULL
 				) ON [PRIMARY]
-				GO'
+	END'
 	EXEC(@sql)
 
 	SET @process = 'Create table AzureKnowledge adding Language data'
-	SET @sql = 'CREATE TABLE AzureKnowledge (
+	SET @sql = 'if not exists(select * from sys.tables where name=''AzureKnowledge'') begin
+	CREATE TABLE AzureKnowledge (
 					id int NOT NULL IDENTITY(1,1) PRIMARY KEY,
 					ProjectName varchar(255) NOT NULL,
 					EndPoint varchar(255) NOT NULL,
 					SubscriptionKey varchar(255) NOT NULL,
 					DeploymentName varchar(255) NOT NULL,
 					Language varchar(50) NOT NULL
-				)'
+				)
+				END'
 	EXEC(@sql)
 
 	SET @process = 'K060006 Create table ChatBotConversationEndStatus which contains the different manners a conversation can end'
-	SET @sql = 'CREATE TABLE [dbo].[ChatBotConversationEndStatus](
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversationEndStatus'') begin
+	CREATE TABLE [dbo].[ChatBotConversationEndStatus](
 					[id] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
 					[name] [varchar](30) NOT NULL,
 					[description] [varchar](100) NOT NULL,
@@ -228,7 +292,7 @@ set nocount off'
 					[id] ASC
 				)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 				) ON [PRIMARY]
-				GO'
+				END'
 	EXEC(@sql)
 
 	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'
@@ -280,7 +344,20 @@ set nocount off'
 					truncate table ccChatBotConversationsAbandoned
 				end
 				else if @action=4 begin --GetChatBotConversationsResult
-					select  * from ccChatBotConversationsResult where chatBotId=@chatBotId
+					DECLARE @AverageTime varchar(8)
+					DECLARE @timeInSeconds int
+
+					select  @timeInSeconds = SUM(ConversationTime)/COUNT(ConversationTime) from ChatBotConversation
+					WHERE EndStatus > 0 and FirstMessageTime >= CAST(CAST(GETDATE() AS date) AS datetime)
+					AND ConversationTime > 0 and ChatBotId = @ChatBotId
+
+					SELECT @AverageTime =
+						RIGHT(''00''+CONVERT(VARCHAR(10),@timeInSeconds/3600),2)  
+						+'':'' 
+						+ RIGHT(''00''+CONVERT(VARCHAR(2),(@timeInSeconds%3600)/60),2) 
+						+'':'' 
+						+ RIGHT(''00''+CONVERT(VARCHAR(2),@timeInSeconds%60),2) 
+					select  *, @AverageTime AS AverageTime from ccChatBotConversationsResult where chatBotId=@chatBotId
 				end
 				else if @action=5 begin --GetChartAbandoned
 					select CONVERT(varchar(5),dateadd(mi,-(DATEPART(MINUTE,Date) % 10),Date),108) [Hour]
@@ -1051,6 +1128,336 @@ set nocount off'
 	SET @sql = ''
 	EXEC(@sql)
 
+	-----------------------------------------------BEGIN MARCO CHAGOLLA-------------------------------------------
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agreca type 7 para guardar los nodos del chatbot'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_CreateNodeMultimedia] @conversationId BIGINT
+							, @supervisor     VARCHAR(255) = ''''
+							, @template       VARCHAR(255) = ''''
+							, @ScoreTemplate  INT          = 0
+							, @type           INT                                                
+	AS
+	BEGIN
+
+	DECLARE @xml XML, @dateStart DATETIME;
+	DECLARE @info VARCHAR(255);
+	DECLARE @infoEscape VARCHAR(MAX);
+	DECLARE @charEscape VARCHAR(255), @charReplace VARCHAR(MAX);
+	SET @charEscape = ''"|''''''''|<|>|&'';
+	SET @charReplace = ''&quot;|&apos;|&lt;|&gt;|&amp;'';
+
+	DECLARE @existAttached BIT, @numInteracion SMALLINT;
+	IF @type = 1
+	BEGIN--CHAT
+		SELECT @xml = CONVERT(XML, ''<R01 CDATE="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(chatDate, requestDate), 126))) 
+			+ ''" CID="'' + CONVERT(VARCHAR(MAX), ccRIAChats.inboundid) 
+		+ ''" CType="1'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), chatId) 
+		+ ''" C02="'' + CONVERT(VARCHAR(MAX), ISNULL(ccinbound.descripcion, '''')) 
+		+ ''" C03="'' + CONVERT(VARCHAR(MAX), domain) 
+		+ ''" C04="'' + CONVERT(VARCHAR(MAX), ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno, ''N/A'')) 
+		+ ''" C05="'' + CONVERT(VARCHAR(MAX), tchatting) 
+		+ ''" C06="'' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalif.[Description], ''N/A'')) 
+		+ ''" C07="'' + CONVERT(VARCHAR(MAX), ISNULL(cctipocalifsub.califSubdesc, ''N/A'')) 
+		+ ''" C08="'' + CONVERT(VARCHAR(MAX), clientname) 
+		+ ''" C09="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(chatDate, requestDate), 126))) 
+		+ ''" C10="'' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '''')) 
+		+ ''" C11="'' + CONVERT(VARCHAR(MAX), ISNULL(@template, '''')) 
+		+ ''" C12="'' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+		+ ''" C13="'' + CONVERT(VARCHAR(MAX), ISNULL(ccusers.[Login], '''')) 
+		+ ''"/>'')
+				, @dateStart = ISNULL(chatDate, requestDate) FROM ccRIAChats
+																LEFT OUTER JOIN ccinbound ON ccinbound.inbound_id = ccRIAChats.inboundid
+																LEFT OUTER JOIN ccusers ON ccusers.user_id = ccRIAChats.userid
+																LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = ccRIAChats.disposition
+																LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = ccRIAChats.subdisposition
+																									AND ccRIAChats.subdisposition <> 0
+		WHERE chatId = @conversationId
+				AND chatStatus = 4              
+
+	END;
+	ELSE IF @type = 3
+	BEGIN--EMAIL
+		SELECT @existAttached = CASE WHEN COUNT(*) > 0
+								THEN 1 ELSE 0
+								END FROM attached
+		WHERE messageId IN(SELECT messageId FROM message WHERE conversationId = @conversationId);
+		SELECT @numInteracion = COUNT(*) FROM message WHERE conversationId = @conversationId;
+		--Replaza los caracteres por los comunes
+		SELECT @info = info FROM conversation WHERE conversationId = @conversationId;
+		SELECT @info = replace(@info, A.Value, B.Value) FROM dbo.fn_RIASplitDelimited(@charEscape, ''|'') A
+																INNER JOIN dbo.fn_RIASplitDelimited(@charReplace, ''|'') B ON A.Id = B.Id;
+
+		SELECT @xml = CONVERT(XML, ''<R03 CDATE="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(MAX(b.tsend), GETDATE()), 126))) 
+			+ ''" CID="'' + CONVERT(VARCHAR(MAX), a.inboundid) 
+		+ ''" CType="1'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), a.conversationId) 
+		+ ''" C02="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), ISNULL(MAX(b.tsend), GETDATE()), 126))) 
+		+ ''" C03="'' + CONVERT(VARCHAR(MAX), MAX(c.descripcion)) 
+		+ ''" C04="'' + CONVERT(VARCHAR, MAX(ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno, ''''))) 
+		+ ''" C05="'' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalif.[Description], ''N/A''))) 
+		+ ''" C06="'' + CONVERT(VARCHAR, MAX(replace(replace(a.mailClient, ''<'', '' ''), ''>'', '' ''))) 
+		+ ''" C07="'' + CONVERT(VARCHAR(MAX), SUM(b.tRetention + b.tResponse + b.tWrapup)) 
+		+ ''" C08="'' + CONVERT(VARCHAR(MAX), MIN(ISNULL(@info, ''''))) 
+		+ ''" C09="'' + CONVERT(VARCHAR(MAX), MAX(b.messageStatusid)) 
+		+ ''" C10="'' + CONVERT(VARCHAR(MAX), ISNULL(@numInteracion, 0)) 
+		+ ''" C11="'' + CONVERT(VARCHAR(MAX), @existAttached) 
+		+ ''" C12="'' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '''')) 
+		+ ''" C13="'' + CONVERT(VARCHAR(MAX), ISNULL(@template, '''')) 
+		+ ''" C14="'' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+		+ ''" C15="'' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalifsub.califSubdesc, ''N/A''))) 
+		+ ''" C16="'' + CONVERT(VARCHAR(MAX), ISNULL(MAX(d.[Login]), '''')) 
+		+ ''"/>'')
+				, @dateStart = ISNULL(MAX(b.tsend), GETDATE()) FROM conversation a
+																	INNER JOIN message b ON a.conversationid = b.conversationid
+																	LEFT OUTER JOIN ccinbound c ON c.inbound_id = a.inboundid
+																	LEFT OUTER JOIN ccusers d ON d.user_id = b.userid
+																	LEFT OUTER JOIN relationmessageDisposition e ON e.messageId = b.messageId
+																	LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = e.dispositionId
+																	LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = e.subdispositionId
+																									AND e.subdispositionId <> 0
+		WHERE a.conversationId = @conversationId
+		GROUP BY a.conversationId
+				, a.inboundid;
+
+	END;
+	ELSE IF @type = 4
+	BEGIN--Twitter
+		SELECT @numInteracion = SUM(ninteration) FROM messageOutTwitter
+		WHERE conversationTwitterId = @conversationId;
+
+		SELECT @xml = CONVERT(XML, ''<R04 CDATE="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), MIN(b.date), 126))) 
+			+ ''" CID="'' + CONVERT(VARCHAR(MAX), a.inboundid) 
+		+ ''" CType="1'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), a.conversationTwitterId) 
+		+ ''" C02="'' + RTRIM(LTRIM(CONVERT(VARCHAR(23), MIN(b.date), 126))) 
+		+ ''" C03="'' + CONVERT(VARCHAR(MAX), MAX(c.descripcion)) 
+		+ ''" C04="'' + CONVERT(VARCHAR, MAX(ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno, ''''))) 
+		+ ''" C05="'' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalif.[Description], ''N/A''))) 
+		+ ''" C06="'' + MAX(a.screenNameClient) 
+		+ ''" C07="'' + CONVERT(VARCHAR(MAX), SUM(b.tRetention + b.tResponse + b.tWrapup)) 
+		+ ''" C08="'' + MAX(a.screenNameInbound) 
+		+ ''" C09="'' + CONVERT(VARCHAR(MAX), MAX(b.messageStatusid)) 
+		+ ''" C10="'' + CONVERT(VARCHAR(MAX), ISNULL(@numInteracion, 0)) 
+		+ ''" C11="'' + CONVERT(VARCHAR(MAX), ISNULL(@supervisor, '''')) 
+		+ ''" C12="'' + CONVERT(VARCHAR(MAX), ISNULL(@template, '''')) 
+		+ ''" C13="'' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+		+ ''" C14="'' + CONVERT(VARCHAR, MAX(ISNULL(cctipocalifsub.califSubdesc, ''N/A''))) 
+		+ ''" C15="'' + CONVERT(VARCHAR(MAX), ISNULL(MAX(d.[Login]), '''')) 
+		+ ''"/>'')
+				, @dateStart = ISNULL(MIN(b.date), GETDATE()) FROM conversationTwitter a
+																INNER JOIN messageOutTwitter b ON a.conversationTwitterId = b.conversationTwitterId
+																LEFT OUTER JOIN ccinbound c ON c.inbound_id = a.inboundid
+																LEFT OUTER JOIN ccusers d ON d.user_id = b.userid
+																LEFT OUTER JOIN relationMessageDispositionTwit e ON e.messageOutTwitterId = b.messageOutTwitterId
+																LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = e.dispositionId
+																LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = e.subdispositionId
+																									AND e.subdispositionId <> 0
+		WHERE a.conversationTwitterId = @conversationId
+		GROUP BY a.conversationTwitterId
+				, a.inboundid;
+	END;
+	ELSE IF @type = 5 BEGIN --WhatsApp In
+		SELECT @xml = CONVERT(XML, ''<R05 CDATE="'' + CONVERT(VARCHAR(23), ISNULL(conversationDate, requestDate), 126) 
+			+ ''" CID="'' + CONVERT(VARCHAR(MAX), A.inboundid) 
+		+ ''" CType="5'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), A.conversationId) 
+		+ ''" C02="'' + ISNULL(inbound.descripcion, '''') 
+		+ ''" C03="'' + ISNULL(ccusers.[Login], '''') 
+		+ ''" C04="'' + ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno, ''N/A'') 
+		+ ''" C05="'' + clientId 
+		+ ''" C06="'' + CONVERT(VARCHAR(MAX), tConversation) 
+		+ ''" C07="'' + ISNULL(cctipocalif.[Description], ''N/A'') 
+		+ ''" C08="'' + ISNULL(cctipocalifsub.califSubdesc, ''N/A'') 
+		+ ''" C09="'' + CONVERT(VARCHAR(MAX), A.agentId) 
+		+ ''" C10="'' + phoneACD 
+		+ ''" C11="'' + CONVERT(VARCHAR(MAX), A.agentId) 
+		+ ''" C12="'' + ISNULL(@supervisor, '''') 
+		+ ''" C13="'' + ISNULL(@template, '''') 
+		+ ''" C14="'' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+		+ ''" C15="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotConversationId, 0))
+		+ ''" C16="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotId, 0))
+		+ ''" C17="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotName, 0))
+		+ ''"/>'')
+				, @dateStart = ISNULL(conversationDate, requestDate) FROM ccWhatsAppConversations A
+																		LEFT OUTER JOIN ccinbound inbound ON inbound.inbound_id = A.inboundid
+																		LEFT OUTER JOIN ccusers ON ccusers.user_id = A.agentId
+																		LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+																		LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+																		LEFT OUTER JOIN ChatBotWhatsAppConversation cbwac ON cbwac.WhatsAppConversationId = a.conversationId and cbwac.CampType = 0
+																		LEFT OUTER JOIN ChatBotConversation cbc ON cbc.ChatBotConversationId = cbwac.ChatBotConversationId
+		  WHERE A.conversationId = @conversationId;
+
+	END;
+	ELSE IF @type = 6 BEGIN --WhatsApp Out
+
+		SELECT @xml = CONVERT(XML, ''<R06 CDATE="'' + CONVERT(VARCHAR(23), ISNULL(conversationDate, requestDate), 126) 
+			+ ''" CID="'' + CONVERT(VARCHAR(MAX), A.camId) 
+		+ ''" CType="6'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), A.conversationId) 
+		+ ''" C02="'' + ISNULL(c.cam_descripcion, '''') 
+		+ ''" C03="'' + ISNULL(ccusers.[Login], '''') 
+		+ ''" C04="'' + ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMAterno, ''N/A'') 
+		+ ''" C05="'' + clientId 
+		+ ''" C06="'' + CONVERT(VARCHAR(MAX), isnull(tConversation,0)) 
+		+ ''" C07="'' + ISNULL(disposition.[Description], ''N/A'') 
+		+ ''" C08="'' + ISNULL(subDisposition.califSubdesc, ''N/A'') 
+		+ ''" C09="'' + CONVERT(VARCHAR(MAX), A.agentId) 
+		+ ''" C10="'' + phoneCamp 
+		+ ''" C11="'' + CONVERT(VARCHAR(MAX), A.agentId) 
+		+ ''" C12="'' + ISNULL(@supervisor, '''') 
+		+ ''" C13="'' + ISNULL(@template, '''') 
+		+ ''" C14="'' + CONVERT(VARCHAR(MAX), ISNULL(@ScoreTemplate, 0)) 
+		+ ''"/>'')
+				, @dateStart = ISNULL(conversationDate, requestDate) FROM ccWhatsAppConversationsOut A
+																		LEFT OUTER JOIN ccCamps c ON c.cam_id=A.camId
+																		LEFT OUTER JOIN ccusers ON ccusers.user_id = A.agentId
+																		LEFT OUTER JOIN ccTipoCalifOUT disposition ON disposition.calif_id= A.disposition
+																		LEFT OUTER JOIN ccTipoCalifSubOUT subDisposition ON subDisposition.califSub_id = A.subdisposition
+		WHERE A.conversationId = @conversationId;
+
+	END;
+	ELSE IF @type = 7 BEGIN --ChatBotIn
+		SELECT @xml = CONVERT(XML, ''<R07 CDATE="'' + CONVERT(VARCHAR(23), cbc.FirstMessageTime, 126) 
+			+ ''" CID="N/A'' 
+		+ ''" CType="7'' 
+		+ ''" C01="'' + CONVERT(VARCHAR(MAX), cbc.ChatBotConversationId) 
+		+ ''" C02="N/A''
+		+ ''" C03="N/A''
+		+ ''" C04="N/A''
+		+ ''" C05="'' + cbc.ClientNumber 
+		+ ''" C06="'' + CONVERT(VARCHAR(MAX), ConversationTime) 
+		+ ''" C07="N/A'' 
+		+ ''" C08="N/A''
+		+ ''" C09="'' 
+		+ ''" C10="'' 
+		+ ''" C11="''
+		+ ''" C12="''
+		+ ''" C13="''
+		+ ''" C14="''
+		+ ''" C15="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotConversationId, 0))
+		+ ''" C16="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotId, 0))
+		+ ''" C17="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotName, 0))
+		+ ''"/>'')
+				, @dateStart = cbc.FirstMessageTime FROM ChatBotConversation cbc 
+													LEFT OUTER JOIN ChatBotWhatsAppConversation cbwac 
+													ON cbc.ChatBotConversationId = cbwac.ChatBotConversationId
+		  WHERE cbc.ChatBotConversationId = @conversationId;
+
+	END;
+
+	DECLARE @sql NVARCHAR(MAX), @tableName NVARCHAR(MAX), @columnId NVARCHAR(MAX), @tableNameHistory NVARCHAR(MAX);
+	DECLARE @parameterDefinition NVARCHAR(MAX);
+
+	SELECT @tableName = tableName
+			, @tableNameHistory = tableNameHistory
+			, @columnId = columnId FROM ccFinderServices
+	WHERE id =  @type;
+
+	SET @parameterDefinition = N''@conversationId bigint,@xml xml,@dateStart datetime'';
+
+	IF @xml IS NOT NULL
+	BEGIN        
+
+		SET @sql = ''IF EXISTS(SELECT * FROM '' + @tableNameHistory + '' WHERE ''+@columnId+'' = @conversationId)
+		BEGIN
+			UPDATE '' + @tableNameHistory + '' SET node = @xml ,dateIn=@dateStart, STATUS = 2 WHERE ''+@columnId+'' = @conversationId;
+		END
+		else IF EXISTS(SELECT * FROM '' + @tableName + '' WHERE ''+@columnId+'' = @conversationId)
+		BEGIN
+			UPDATE '' + @tableName + '' SET node = @xml ,dateIn=@dateStart, STATUS = 2 WHERE ''+@columnId+'' = @conversationId;
+		END
+		else begin
+			INSERT INTO '' + @tableName + '' (''+@columnId+'', node, dateIn, STATUS) VALUES(@conversationId, @xml, @dateStart, 0);
+		end     
+		'';
+                            
+	END
+	else begin
+			SET @sql ='' IF EXISTS(SELECT * FROM '' + @tableName + '' WHERE ''+@columnId+'' = @conversationId)
+		BEGIN
+			UPDATE '' + @tableName + '' SET node = @xml ,dateIn=@dateStart, STATUS = -1 WHERE ''+@columnId+'' = @conversationId;
+		END
+		else begin
+			INSERT INTO '' + @tableName + '' (''+@columnId+'', node, dateIn, STATUS) VALUES(@conversationId, @xml, @dateStart, -1);
+		end '';
+	end
+
+
+		EXECUTE sp_executesql
+				@sql
+				, @parameterDefinition
+				, @conversationId = @conversationId
+				, @xml = @xml
+				, @dateStart = @dateStart;
+
+	END;'
+	EXEC(@sql)
+
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agrega condicion para crear nodo multimedia'
+	SET @sql = 'CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation]
+	@option int,
+	@clientNumber VARCHAR(15),
+	@clientName VARCHAR(50),
+	@chatBotId INT,
+	@chatBotName VARCHAR(255),
+	@chatBotNumber VARCHAR(30),
+	@chatBotDomain VARCHAR(50),
+	@campIdTransfered INT,
+	@conversationStatus VARCHAR(30),
+	@conversationTime INT,
+	@endStatus VARCHAR(50),
+	@queueTime INT,
+	@firstMessageTime DATETIME,
+	@ChatBotConversationId int = 0
+
+	as set nocount on
+
+	IF(@option = 1) BEGIN
+
+		INSERT INTO ChatBotConversation(
+		ClientNumber,
+		ClientName,
+		ChatBotId,
+		ChatBotName,
+		ChatBotNumber,
+		ChatBotDomain,
+		CampIdTransfered,
+		ConversationStatus,
+		ConversationTime,
+		EndStatus,
+		QueueTime,
+		FirstMessageTime
+		) 
+		VALUES (
+		@clientNumber,
+		@clientName,
+		@chatBotId,
+		@chatBotName,
+		@chatBotNumber,
+		@chatBotDomain,
+		@campIdTransfered,
+		@conversationStatus,
+		@conversationTime,
+		@endStatus,
+		@queueTime,
+		@firstMessageTime
+		);
+
+		SELECT @ChatBotConversationId = SCOPE_IDENTITY();
+		IF @ChatBotConversationId > 0
+		BEGIN
+			EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
+		END
+
+	END
+	IF @option = 2
+	BEGIN
+		EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
+	END
+
+	set nocount off'
+	EXEC(@sql)
+	------------------------------------------------END MARCO CHAGOLLA--------------------------------------------
 
 		
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */

@@ -192,6 +192,27 @@ BEGIN
 
 
 	--------------------------------------------------------------------START HL----------------------------------------------------------------------------------------
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+			DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+ 
+	SET @process = 'KR093000-add column callerAni into ccLogTransfers'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''callerAni'' and Object_ID = Object_ID(N''ccLogTransfers''))
+		begin
+			alter table ccLogTransfers add callerAni varchar(50) null
+		end'
+	EXEC(@sql)
+ 
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+				ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
 	SET @process = 'KR093000-add column clientPhoneNumber into RepCallXfer'
 	SET @sql = 'if not exists (select * from sys.columns where name = N''clientPhoneNumber'' and Object_ID = Object_ID(N''RepCallXfer''))
 		begin

@@ -786,6 +786,82 @@ BEGIN
              SET NOCOUNT OFF;'
 	EXEC(@sql)
 
+	SET @process = 'KR096000 alter table ccFinderServices'
+	SET @sql = '
+		if not exists (select * from sys.columns where name = N''tableNameOrigin'' and Object_ID = Object_ID(N''ccFinderServices''))
+		begin
+			Alter table ccFinderServices ADD tableNameOrigin varchar(255) null;		
+		end'
+	EXEC(@sql)
+
+	SET @process = 'KR096000 update table ccFinderServices'
+	SET @sql = '
+		if exists (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ''dbo'' AND TABLE_NAME = ''ccFinderServices'')
+		begin
+			update ccFinderServices set tableNameOrigin=''chat'' where id=1
+			update ccFinderServices set tableNameOrigin=''ria_grabacion'' where id=2
+			update ccFinderServices set tableNameOrigin=''conversation'' where id=3
+			update ccFinderServices set tableNameOrigin=''conversationTwitter'' where id=4
+			update ccFinderServices set tableNameOrigin=''ccWhatsAppConversations'' where id=5
+			update ccFinderServices set tableNameOrigin=''ccWhatsAppConversationsOut'' where id=6
+		end '
+	EXEC(@sql)
+
+	SET @process = 'KR096000 drop procedure ccsp_SaveDispositionsMultimedia'
+	SET @sql = '
+		if exists(select * from sys.procedures where name = ''ccsp_SaveDispositionsMultimedia'')
+		begin
+			DROP PROCEDURE ccsp_SaveDispositionsMultimedia
+		end'
+	EXEC(@sql)
+
+	SET @process = 'KR096000 CREATE procedure ccsp_SaveDispositionsMultimedia'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_SaveDispositionsMultimedia] @action         INT
+										, @conversationId bigint      = 0
+										, @disposition    SMALLINT = 0
+										, @subDisposition SMALLINT = 0
+										, @tWrapUp        SMALLINT = 0
+										, @mediaType      SMALLINT = 0
+										, @campType bit =0
+	AS
+	BEGIN
+
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --Califica la conversación y pone el tiempo Notas
+		DECLARE @Temp NVARCHAR(1000),@tableName NVARCHAR(255),@type int
+		declare @mediaTypeTmp SMALLINT
+
+		set @mediaTypeTmp=@mediaType
+	
+		if @mediaType = 6 begin --Chat Revisar el back para poner 1
+			set @mediaType=1
+		end
+		else if @mediaType=5 and @campType=1 begin --ccWhatsAppConversationsOut
+			set @mediaType=6
+		end
+	
+		select @tableName=tableNameOrigin from ccFinderServices where id =@mediaType
+	
+
+		set @Temp= N''UPDATE '' +
+				@tableName + '' SET disposition= @disposition ,subDisposition= @subDisposition ,tWrapUp= @tWrapUp WHERE conversationId= @conversationId;'';
+		EXEC sp_executesql
+				@temp
+			, N''@disposition SMALLINT, @subDisposition SMALLINT, @tWrapUp SMALLINT, @conversationId INT''
+			, @disposition
+			, @subDisposition
+			, @tWrapUp
+			, @conversationId;
+	
+		exec ccsp_CreateNodeMultimedia @conversationId=@conversationId, @type= @mediaType
+
+	END;
+	END;'
+	EXEC(@sql)
+
 
 
 	---------------------------------------END Rodrigo Salazar-----------------------------------------------------------

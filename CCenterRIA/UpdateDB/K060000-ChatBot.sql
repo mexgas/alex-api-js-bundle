@@ -871,7 +871,7 @@ set nocount off'
 				            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
 				            WHERE rel.conversationIdAfter = @conversationId
 
-							CREATE TABLE #ChatBotRelation (ChatBotConversationId INT, ContactName VARCHAR(50), ClientNumber VARCHAR(25));
+							CREATE TABLE #ChatBotRelation (ChatBotConversationId INT, ContactName VARCHAR(50), ClientNumber VARCHAR(25), ChatBotName VARCHAR(255));
 							INSERT INTO #ChatBotRelation EXEC ccsp_GalateaChatBotAdmin @action = 7,
 							@WAConversationId = @conversationId, @camType = @CampType;
 

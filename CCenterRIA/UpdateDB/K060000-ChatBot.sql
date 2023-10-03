@@ -1487,7 +1487,7 @@ set nocount off'
 	@endStatus VARCHAR(50),
 	@queueTime INT,
 	@firstMessageTime DATETIME,
-	@ChatBotConversationId int = 0
+	@ChatBotConversationId numeric(18,0) = 0
 
 	as set nocount on
 
@@ -1527,11 +1527,13 @@ set nocount off'
 		BEGIN
 			EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
 		END
+		SELECT @ChatBotConversationId
 
 	END
 	IF @option = 2
 	BEGIN
 		EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
+		SELECT @ChatBotConversationId
 	END
 
 	set nocount off'

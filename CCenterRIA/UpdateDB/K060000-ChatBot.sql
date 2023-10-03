@@ -295,6 +295,13 @@ set nocount off'
 				END'
 	EXEC(@sql)
 
+	SET @process = 'K060006 Insert the EndStatus in the table'
+	SET @sql = ' TRUNCATE TABLE ChatBotConversationEndStatus;
+				INSERT INTO ChatBotConversationEndStatus ([name],[description])
+				VALUES (''Finish'',''Finished by client''), (''Fail'',''Finished by system fail''), (''Transfer'',''Transfered to WhatsApp campaign''),
+				(''Callback'',''Transfered to callback''), (''Abandon'',''Abandoned by client'');'
+	EXEC(@sql)
+
 	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'
 	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaChatBotConversationsResult]
 				@action int,@chatBotId int,@status int=0,
@@ -371,7 +378,7 @@ set nocount off'
 
 				set nocount off'
 	EXEC(@sql)
-	SET @process = 'K060005 Create or Alter procedure ccsp_Get_ChatBot_Relations to return related inbound campaigns'
+	SET @process = 'K060026 Create or Alter procedure ccsp_Get_ChatBot_Relations to return related inbound campaigns'
 	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_Get_ChatBot_Relations]
 				@option int, @chatbotId int = null
 				as set nocount on
@@ -379,8 +386,18 @@ set nocount off'
 				IF(@option = 1) BEGIN --All relations of Azure Knowledge and Phone Number
 					SELECT b.AzureKnowledgeId,A.ProjectName,B.ContactName FROM AzureKnowledge A 
 					INNER JOIN ChatBotRelation B ON A.id = B.AzureKnowledgeId
+				END
+
+				ELSE IF(@option = 2) BEGIN  --Inbound Campaigns that have a ChatBot associated
+					SELECT  CAST(ROW_NUMBER() OVER(ORDER BY A.inboundId ASC) AS INT) AS rowId, 
+					A.inboundId AS campId, A.name AS campName, A.connUser AS campNumber,
+					CAST(B.campType AS tinyint) AS campType, B.chatBotId, CAST(0 AS SMALLINT) AS validSchedule
+					from contactMeanIn A
+					JOIN ChatBotCampaign B ON A.inboundId = B.campId
+					WHERE B.chatBotId = @chatbotId AND B.campType = 0;
 				END 
-				ELSE IF(@option = 2 OR @option = 3) BEGIN  --Ibound Campaigns Active and in Schedule
+				ELSE IF(@option = 3) BEGIN 
+					--To do: Retornar lista de Campañas de Voz de Salida Habilitadas y en Horario, en este momento retorna lo mismo que opcion 2
 
 					CREATE TABLE #ActiveCampaigns (
 						rowId INT,
@@ -426,13 +443,6 @@ set nocount off'
 					DROP TABLE #ActiveSchedule;
 					DROP TABLE #ActiveCampaigns;
 				END 
-				/*
-				ELSE IF(@option = 3) BEGIN 
-					--To do: Retornar lista de Campañas de Voz de Salida Habilitadas y en Horario, en este momento retorna lo mismo que opcion 2
-					SELECT null AS rowId,
-					null AS campId,  null AS campName,  null AS campType,  null AS chatBotId
-				END */
-
 				set nocount off'
 	EXEC(@sql)
 
@@ -1100,25 +1110,94 @@ set nocount off'
 				            FROM [CCenterRIA].[dbo].[ccUsers]
 				        WHERE [User_id] = @agentId
 				    END
+					ELSE IF(@Option = 7)--  Get ChatBotCampaigns Configuration List
+				    BEGIN    
+				        SELECT --inbound.chat AS ServiceType,
+				        CAST(inbound.Inbound_id AS INT) AS Id,
+				        inbound.descripcion AS [Name],
+				        cbr.ContactName AS Phone,
+				        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+				        inbound.tNotas AS WrapUpTime,
+				        CAST(graphics.graphic_id AS INT) AS GraphicId
+						--,cbr.ContactName AS ChatBotNumber
+				        FROM  ccInbound inbound
+				        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+				        INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
+						INNER JOIN ChatBotCampaign cbc ON inbound.Inbound_id = cbc.campId
+						INNER JOIN ChatBotRelation cbr ON cbc.chatBotId = cbr.AzureKnowledgeId
+						WHERE cbc.campType = 0 AND inbound.Status != 0
+						ORDER BY Id ASC
+				    END
 				    END'
 	EXEC(@sql)
-	---------------------------------------- BEGIN Enrique Ruiz ---------------------------------------------------------------------------------
 
-	SET @process = ''
-	SET @sql = ''
+		SET @process = 'K0026 Add A SELECT for default Messages'
+	SET @sql = 'CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Get_Azure_Knowledge]
+				@option int
+				as set nocount on
+
+				IF(@option = 1) BEGIN 
+					SELECT * FROM AzureKnowledge;
+				END
+				ELSE IF(@option = 2) BEGIN 
+					SELECT * FROM ChatBotDefaultMessages;
+				END 
+
+				set nocount off'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'K060026 Create Table for default Chatbot messages'
+	SET @sql = 'CREATE OR ALTER TABLE [dbo].ChatBotDefaultMessages(
+				[MessageTagName] [varchar](50) PRIMARY KEY NOT NULL,
+				[MeTagES] [varchar](250) NOT NULL,
+				[MeTagEN] [varchar](250) NOT NULL,
+				[MeTagPT] [varchar](250) NOT NULL,
+			);'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'K060026 Insert Default Messages into Chatbot Table'
+	SET @sql = 'TRUNCATE TABLE ChatBotDefaultMessages;
+				INSERT INTO ChatBotDefaultMessages (MessageTagName, MeTagES, MeTagEN, MeTagPT)
+				VALUES
+					(''no-answer-found'', ''Lo siento, no entendí la respuesta.'', ''Sorry, I didn’t get that.'', ''Desculpe, não entendi.''),
+					(''continue-prompt'', ''¿Intentamos otra vez?'', ''Do you want to continue?'', ''Tentar de novo?''),
+					(''option-continue'', ''Intentar'', ''Continue'', ''Tentar''),
+					(''option-main-menu'', ''Volver a menú principal'', ''Return to main menu'', ''Retornar ao menu principal''),
+
+					(''option-transfer-to-agent'', ''Transferir a un agente en WhatsApp'', ''Chat with an agent on WhatsApp'', ''Transferir para um agente no WhatsApp''),
+					(''mssg-campaign-out-of-schedule'', ''Error al transferir. La campaña de WhatsApp {0} está fuera de horario.'',
+						''Unable to connect. The WhatsApp campaign {0} is out of schedule.'', ''Erro ao transferir. A campanha de WhatsApp {0} está fora de horário.''),
+					(''mssg-campaign-out-of-service'', ''Error al transferir. La campaña de WhatsApp {0} está fuera de servicio.'',
+						''Unable to connect. The WhatsApp campaign {0} is out of service.'', ''Erro ao transferir. A campanha de WhatsApp {0} está fora de serviço.''),
+					(''mssg-no-ready-agents-found'', ''Error al transferir. No hay agentes disponibles en este momento.'',
+						''Unable to connect. There are no ready agents at this time.'', ''Erro ao transferir. Não há agentes disponíveis neste momento.''),
+					(''mssg-unexpected-error'', ''Ocurrió un error inesperado.'', ''An unexpected error occurred.'', ''Ocorreu um erro inesperado.''),
+
+					(''option-speak-with-agent'', ''Hablar con un agente por teléfono'', ''Speak with an agent over the phone'', ''Falar com um agente pelo telefone''),
+					(''prompt-phone-number'', ''Proporcionar número telefónico'', ''Type your phone number'', ''Digitar o número de telefone''),
+					(''prompt-validation'', ''¿El número {0} es correcto?'', ''Is the number {0} correct?'', ''O número {0} está correto?''),
+					(''option-correct'', ''Sí'', ''Yes'', ''Sim''),
+					(''option-not-correct'', ''No'', ''No'', ''Não''),
+					(''mssg-success'', ''La llamada fue programada correctamente. Un agente se pondrá en contacto en breve.'',
+						''Call programmed successfully. An agent will contact you shortly.'', ''A chamada foi programada com êxito. Um agente entrará em contato em breve.''),
+					(''mssg-error-out-of-schedule'', ''Error al programar llamada. La campaña de marcación está fuera de horario.'',
+						''Unable to program call. The dialing campaign is out of schedule.'', ''Erro ao programar a chamada. A campanha de discagem está fora de horário.''),
+					(''mssg-error-out-of-service'', ''Error al programar llamada. La campaña de marcación está fuera de servicio.'',
+						''Unable to program call. The dialing campaign is out of service.'', ''Erro ao programar a chamada. A campanha de discagem está fora de serviço.''),
+					(''mssg-error-no-agents-found'', ''Error al programar llamada. No hay agentes disponibles en este momento.'',
+						''Unable to program call. There are no ready agents at this time.'', ''Erro ao programar a chamada. Não há agentes disponíveis neste momento.''),
+					(''mssg-error-generic'', ''Ocurrió un error inesperado.'', ''An unexpected error occurred.'', ''Ocorreu um erro inesperado.'')
+				;'
 	EXEC(@sql)
 	
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'K060026 Create table for the relation of campaigns with the registered chatbots'
+	SET @sql = 'CREATE OR ALTER TABLE ChatBotCampaign (
+				chatBotId int NOT NULL,
+				campId int NOT NULL,
+				campType tinyint NOT NULL,
+			);'
 	EXEC(@sql)
+	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
 
 	SET @process = ''
 	SET @sql = ''

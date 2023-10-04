@@ -64,6 +64,7 @@ BEGIN
 	[AdminId] int not null
 	)
 	end'
+	EXEC(@sql)
 
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNode'') begin
@@ -906,7 +907,7 @@ set nocount off'
 							ISNULL(@OldAgentId, 0) AS OldAgentId,
 							ISNULL(@OldConversationId, 0) AS OldConversationId,
 							c.agentId AS AgentId,
-							c.IsAgentLoggingOut AS IsAgentLoggingOut
+							ISNULL(c.IsAgentLoggingOut,0) AS IsAgentLoggingOut
 							from ccWhatsAppConversations c
 							left join ccInbound i on c.inboundId = i.Inbound_id 
 							left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
@@ -1199,13 +1200,513 @@ set nocount off'
 	EXEC(@sql)
 	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
 
-	SET @process = ''
-	SET @sql = ''
+	---------------------------------------- BEGIN MARCO GARCIA ------------------------------------
+	SET @process = 'K060011-WhatsApp entrada->Histórico al asignar conversación de ChatBot a número de WhatsApp entrada, se agrega la consulta
+	para obtener las conversaciones del chatbot'
+	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat] 
+					@option SMALLINT, 
+					@clientNum VARCHAR(15) = '''', 
+					@conversationId AS INT = 0, 
+					@inboundId AS SMALLINT = 0, 
+					@serviceType AS SMALLINT = 0,
+					@campType AS INT = 0
+		            AS
+		            BEGIN
+		                IF @option = 1 --whatsapp, get conversation ids
+		                BEGIN
+							DECLARE @tempId INT = 0
+							IF @campType = 0 -- INBOUND
+							BEGIN
+								SELECT conversationId AS ConversationId,
+									   @campType AS CampType,
+									   assignDate AS Date
+								FROM ccWhatsAppConversations
+								WHERE clientId = @clientNum AND assignDate IS NOT NULL
+								GROUP BY conversationId, assignDate
+							END
+							ELSE
+							BEGIN  -- OUTBOUND
+								SELECT conversationId AS ConversationId,
+									   @campType AS CampType,
+									   assignDate AS Date
+								FROM ccWhatsAppConversationsOut
+								WHERE clientId = @clientNum AND assignDate IS NOT NULL
+								GROUP BY conversationId, assignDate
+							END
+		                END
+
+		                IF @option = 2 --whatsapp, get acdId by conversation id
+		                BEGIN
+							IF @campType = 0
+							BEGIN
+								SELECT CAST(inboundId AS INT)
+								FROM [CCenterRIA].[dbo].[ccWhatsAppConversations]
+								WHERE conversationId = @conversationId
+							END
+							ELSE
+							BEGIN
+								SELECT CAST(camId AS INT)
+								FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsOut]
+								WHERE conversationId = @conversationId
+							END
+		                END
+
+		                IF @option = 3 --get data conversation
+		                BEGIN
+		                    DECLARE @OldAgentId INT = 0
+		                    DECLARE @OldConversationId INT = 0
+
+		                    SELECT @OldAgentId = conv.agentId, @OldConversationId = rel.conversationIdBefore
+		                    FROM ccWhatsAppConversationsRelationship rel
+		                    RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+		                    WHERE rel.conversationIdAfter = @conversationId
+
+		                    SELECT cast(i.chat AS INT) AS ServiceType, cast(c.conversationId AS INT) AS ConversationID, c.clientId AS ClientId, cm.conexionInfo AS [To], cast(i.Inbound_id AS INT) AS ACDId, i.descripcion AS ACDName, cast(g.
+		                            graphic_id AS INT) AS ACDGraphicId, cast(cm.closeConversationTime AS INT) AS [TimeOut], cast(cm.answerTimeOut AS INT) AS [TimeOutWarning], i.ExitWrapUpDisposition AS [ExitWrapUpDisposition], i.tNotas AS 
+		                        [WrapUpTime], i.ShowCalifWnd, cast(ISNULL(answerTimeoutClient, 30) AS INT) AS [AnswerTimeoutClient], ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent), 0) AS 
+		                        [SecTimeOutLastMessageAgent], isnull(permission.AllowUnassign, 0) AS AllowUnassign, isnull(permission.AllowSpam, 0) AS AllowSpam, ISNULL(@OldAgentId, 0) AS OldAgentId, ISNULL(@OldConversationId, 0) AS 
+		                        OldConversationId, c.agentId AS AgentId
+		                    FROM ccInbound i
+		                    INNER JOIN contactMeanIn cm ON i.Inbound_id = cm.inboundId
+		                    INNER JOIN ccWhatsAppConversations c ON (
+		                            c.inboundId = i.Inbound_id
+		                            AND c.conversationId = @conversationId
+		                            )
+		                    INNER JOIN ccRIAInboundGraph g ON g.Inbound_id = i.Inbound_id
+		                    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+		                    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+		                    WHERE i.chat = @serviceType
+		                        AND i.Inbound_id = @inboundId
+
+		                END
+
+		                IF @option = 4 --get messages from conversation id
+		                BEGIN
+							DECLARE @filetype AS VARCHAR(5)
+							DECLARE @camp_acd_id INT = 0, @conversationChatBotId BIGINT = 0;
+							DECLARE @tmpChatbotRelation TABLE (ConversationChatBotId BIGINT, ContactName VARCHAR(150), ClientNumber VARCHAR(200), ChatBotName VARCHAR(255) );
+
+							IF @campType = 0
+							BEGIN
+								INSERT INTO @tmpChatbotRelation 
+								EXEC dbo.ccsp_GalateaChatBotAdmin @action=7,
+								@camType=0, -- int
+								@WAConversationId=@conversationId
+
+								SET @camp_acd_id = (SELECT inboundId FROM ccWhatsAppConversations WHERE conversationId = @conversationId)
+								SET @conversationChatBotId = (SELECT tcr.ConversationChatBotId FROM @tmpChatbotRelation AS tcr)
+
+								SELECT CAST(cbcm.MessageId AS VARCHAR(MAX)) AS MessageId
+								, cbcm.MessageStatus AS STATUS
+								, cbcm.OriginType AS Origin
+								,CASE 
+								WHEN originType = ''Client''
+									THEN 3
+								WHEN originType = ''Chatbot''
+									THEN 4
+								ELSE 0
+								END AS OriginType,
+								cbcm.Date AS Timestamp,
+								CASE 
+								WHEN typeMessage <> ''text''
+									THEN ''''
+								ELSE cbcm.Message
+								END AS Content
+								,cbcm.TypeMessage AS Type
+								,CASE 
+				                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then cbcm.Message
+				                    else
+				                        case
+				                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(cbcm.Message,''|'') where id = 1),'':'') where id=2) 
+				                                    else '''' end
+				                    end as Caption
+								,CASE 
+								WHEN originType = ''Client''
+									THEN CASE 
+											WHEN cbcm.TypeMessage = ''text''
+												OR cbcm.TypeMessage = ''location''
+												THEN ''''
+											ELSE CHAR(92) + CHAR(92) + ''ChatBot'' + CHAR(92) + CHAR(92) + ''INBOUND'' + CHAR(92) + CHAR(92) + cast(cbcm.ConversationChatBotId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(cbcm.ConversationChatBotId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
+												cbcm.TypeMessage + CHAR(92) + CHAR(92) + CAST(cbcm.MessageId AS VARCHAR(MAX))  + CASE 
+													WHEN cbcm.TypeMessage = ''video''
+														THEN ''.mp4''
+													WHEN cbcm.TypeMessage = ''image''
+														THEN ''.jpg''
+													WHEN cbcm.TypeMessage = ''audio''
+														THEN ''.mp3''
+													WHEN cbcm.TypeMessage = ''file''
+														THEN (
+																select substring(cbcm.Message, LEN(cbcm.Message) - CHARINDEX(''.'',REVERSE(cbcm.Message))+1, len(cbcm.Message))
+																)
+													ELSE ''''
+													END
+											END
+									ELSE 
+									CASE 
+									WHEN cbcm.TypeMessage = ''text''
+										OR cbcm.TypeMessage = ''location''
+										THEN ''''
+									ELSE cbcm.Message
+									END
+									END AS [Url]
+									,CASE 
+									WHEN cbcm.TypeMessage = ''location''
+										THEN (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 1
+															), '':'')
+												WHERE id = 2
+												)
+									ELSE ''''
+									END AS [Address]
+									,CASE 
+									WHEN cbcm.TypeMessage = ''location''
+										THEN (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 2
+															), '':'')
+												WHERE id = 2
+												)
+									ELSE ''''
+									END AS [Lat]
+									,CASE 
+									WHEN typeMessage = ''location''
+										THEN (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 3
+															), '':'')
+												WHERE id = 2
+												)
+									ELSE ''''
+									END AS [Long]
+									,CASE 
+									WHEN typeMessage = ''location''
+										THEN (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 4
+															), '':'')
+												WHERE id = 2
+												)
+									ELSE ''''
+									END AS [Name]
+									,CASE 
+									WHEN typeMessage = ''location''
+										THEN ''https://www.google.com/maps/search/'' + (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 2
+															), '':'')
+												WHERE id = 2
+												) + '','' + (
+												SELECT value
+												FROM dbo.fn_RIASplitDelimited((
+															SELECT value
+															FROM dbo.fn_RIASplitDelimited(cbcm.Message, ''|'')
+															WHERE id = 3
+															), '':'')
+												WHERE id = 2
+												)
+									ELSE ''''
+									END AS [LocationURL]
+									,crig.graphic_id AS GraphicId,
+									CAST(1 AS TINYINT) AS ChatBot
+								FROM dbo.ChatBotConversationMessage AS cbcm 
+								LEFT JOIN dbo.ccRIAInboundGraph AS crig ON crig.Inbound_id = @camp_acd_id
+								WHERE cbcm.ConversationChatBotId = @conversationChatBotId
+								UNION
+								SELECT messageId AS MessageId, messageStatus AS STATUS, originType AS Origin, CASE 
+		                        WHEN originType = ''Client''
+		                            THEN 3
+		                        WHEN originType = ''Agent''
+		                            THEN 2
+		                        WHEN originType = ''Admin''
+		                            THEN 1
+		                        ELSE 0
+		                        END AS OriginType, timeStampMessage AS [Timestamp], CASE 
+		                        WHEN typeMessage <> ''text''
+		                            THEN ''''
+		                        ELSE content
+		                        END AS Content, typeMessage AS Type, 
+								CASE 
+				                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
+				                    else
+				                        case
+				                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
+				                                    else '''' end
+				                    end as Caption, CASE 
+		                        WHEN originType = ''Client''
+		                            THEN CASE 
+		                                    WHEN typeMessage = ''text''
+		                                        OR typeMessage = ''location''
+		                                        THEN ''''
+		                                    ELSE CHAR(92) + CHAR(92) + ''WhatsApp'' + CHAR(92) + CHAR(92) + ''INBOUND'' + CHAR(92) + CHAR(92) + cast(conversationId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(conversationId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
+		                                        typeMessage + CHAR(92) + CHAR(92) + messageId + CASE 
+		                                            WHEN typeMessage = ''video''
+		                                                THEN ''.mp4''
+		                                            WHEN typeMessage = ''image''
+		                                                THEN ''.jpg''
+		                                            WHEN typeMessage = ''audio''
+		                                                THEN ''.mp3''
+		                                            WHEN typeMessage = ''file''
+		                                                THEN (
+																select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content))
+		                                                        )
+		                                            ELSE ''''
+		                                            END
+		                                    END
+		                        ELSE CASE 
+		                                WHEN typeMessage = ''text''
+		                                    OR typeMessage = ''location''
+		                                    THEN ''''
+		                                ELSE content
+		                                END
+		                        END AS [Url], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 1
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Address], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 2
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Lat], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 3
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Long], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 4
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Name], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN ''https://www.google.com/maps/search/'' + (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 2
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    ) + '','' + (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 3
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [LocationURL],
+								graphics.graphic_id AS GraphicId,
+								CAST(0 AS TINYINT) AS ChatBot
+								FROM ccWAMessagesConversations
+								LEFT JOIN ccRIAInboundGraph graphics ON Inbound_id = @camp_acd_id
+								WHERE conversationId = @conversationId
+								ORDER BY TIMESTAMP ASC
+							END
+							ELSE
+							BEGIN
+								SET @camp_acd_id = (SELECT camId FROM ccWhatsAppConversationsOut WHERE conversationId = @conversationId)
+
+								SELECT messageId AS MessageId, messageStatus AS STATUS, originType AS Origin, CASE 
+		                        WHEN originType = ''Client''
+		                            THEN 3
+		                        WHEN originType = ''Agent''
+		                            THEN 2
+		                        WHEN originType = ''Admin''
+		                            THEN 1
+		                        ELSE 0
+		                        END AS OriginType, timeStampMessage AS [Timestamp], CASE 
+		                        WHEN typeMessage IN (''text'', ''template'')
+		                            THEN content 
+		                        ELSE ''''
+		                        END AS Content, typeMessage AS Type, CASE 
+		                        WHEN typeMessage NOT IN (''text'', ''location'', ''template'')
+		                            THEN content
+		                        ELSE ''''
+		                        END AS Caption, CASE 
+		                        WHEN originType = ''Client''
+		                            THEN CASE 
+		                                    WHEN typeMessage = ''text''
+		                                        OR typeMessage = ''location''
+		                                        THEN ''''
+		                                    ELSE CHAR(92) + CHAR(92) + ''WhatsApp'' + CHAR(92) + CHAR(92) + cast(conversationId / 1000 AS VARCHAR(30)) + CHAR(92) + CHAR(92) + cast(conversationId AS VARCHAR(20)) + CHAR(92) + CHAR(92) + 
+		                                        typeMessage + CHAR(92) + CHAR(92) + messageId + ''.'' + CASE 
+		                                            WHEN typeMessage = ''video''
+		                                                THEN ''mp4''
+		                                            WHEN typeMessage = ''image''
+		                                                THEN ''jpg''
+		                                            WHEN typeMessage = ''audio''
+		                                                THEN ''mp3''
+		                                            WHEN typeMessage = ''file''
+		                                                THEN (
+		                                                        SELECT substring(content, CHARINDEX(''.'', content) + 1, len(content))
+		                                                        )
+		                                            ELSE ''''
+		                                            END
+		                                    END
+		                        ELSE CASE 
+		                                WHEN typeMessage = ''text''
+		                                    OR typeMessage = ''location''
+											OR typeMessage = ''template''
+		                                    THEN ''''
+		                                ELSE content
+		                                END
+		                        END AS [Url], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 1
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Address], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 2
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Lat], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 3
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Long], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 4
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [Name], CASE 
+		                        WHEN typeMessage = ''location''
+		                            THEN ''https://www.google.com/maps/search/'' + (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 2
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    ) + '','' + (
+		                                    SELECT value
+		                                    FROM dbo.fn_RIASplitDelimited((
+		                                                SELECT value
+		                                                FROM dbo.fn_RIASplitDelimited(content, ''|'')
+		                                                WHERE id = 3
+		                                                ), '':'')
+		                                    WHERE id = 2
+		                                    )
+		                        ELSE ''''
+		                        END AS [LocationURL],
+								graphics.graphic_id AS GraphicId
+								
+								FROM ccWAMessagesConversationsOut
+								LEFT JOIN ccRIACampsGraph graphics ON cam_id = @camp_acd_id
+								WHERE conversationId = @conversationId
+								ORDER BY TIMESTAMP ASC
+							END
+		                    
+		                END
+
+		                IF @option = 5 --get if conversation is reassigned
+		                BEGIN
+							IF @campType = 0
+							BEGIN
+								SELECT CASE 
+		                            WHEN EXISTS (
+		                                    SELECT *
+		                                    FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationship]
+		                                    WHERE conversationIdAfter = @conversationId
+		                                    )
+		                                THEN CAST(1 AS BIT)
+		                            ELSE CAST(0 AS BIT)
+		                            END
+							END
+							ELSE
+							BEGIN
+								SELECT CASE 
+		                            WHEN EXISTS (
+		                                    SELECT *
+		                                    FROM [CCenterRIA].[dbo].[ccWhatsAppConversationsRelationshipOut]
+		                                    WHERE conversationIdAfter = @conversationId
+		                                    )
+		                                THEN CAST(1 AS BIT)
+		                            ELSE CAST(0 AS BIT)
+		                            END
+							END
+		                END
+		            END'
 	EXEC(@sql)
-	
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
+	--------------------------------------------- END MARCO GARCIA ----------------------------------------------
 
 	-----------------------------------------------BEGIN MARCO CHAGOLLA-------------------------------------------
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agreca type 7 para guardar los nodos del chatbot'

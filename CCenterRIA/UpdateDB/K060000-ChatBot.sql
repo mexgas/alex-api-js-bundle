@@ -312,7 +312,7 @@ set nocount off'
 				set nocount on
 
 				IF @action=0 BEGIN --Insertar estado de finalización en Tabla de Conversaciones
-					UPDATE ChatBotConversation SET EndStatus=@status, CampIdTransfered=@campaignId WHERE ChatBotConversationId = @conversationId;
+					UPDATE ChatBotConversation SET EndStatus=@status, CampIdTransfered=@campaignId, ConversationTime =  DATEDIFF(ss, ISNULL(FirstMessageTime, GETDATE()), GETDATE()) WHERE ChatBotConversationId = @conversationId;
 
 					IF @status = 5
 					BEGIN

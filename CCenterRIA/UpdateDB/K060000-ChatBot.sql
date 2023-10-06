@@ -1148,12 +1148,14 @@ set nocount off'
 	EXEC(@sql)
 
 	SET @process = 'K060026 Create Table for default Chatbot messages'
-	SET @sql = 'CREATE OR ALTER TABLE [dbo].ChatBotDefaultMessages(
-				[MessageTagName] [varchar](50) PRIMARY KEY NOT NULL,
-				[MeTagES] [varchar](250) NOT NULL,
-				[MeTagEN] [varchar](250) NOT NULL,
-				[MeTagPT] [varchar](250) NOT NULL,
-			);'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotDefaultMessages'') begin
+	CREATE TABLE ChatBotDefaultMessages(
+		[MessageTagName] [varchar](50) PRIMARY KEY NOT NULL,
+		[MeTagES] [varchar](250) NOT NULL,
+		[MeTagEN] [varchar](250) NOT NULL,
+		[MeTagPT] [varchar](250) NOT NULL,
+	)
+	end';
 	EXEC(@sql)
 
 	SET @process = 'K060026 Insert Default Messages into Chatbot Table'
@@ -1192,11 +1194,13 @@ set nocount off'
 	EXEC(@sql)
 	
 	SET @process = 'K060026 Create table for the relation of campaigns with the registered chatbots'
-	SET @sql = 'CREATE OR ALTER TABLE ChatBotCampaign (
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotCampaign'') begin
+	CREATE TABLE ChatBotCampaign (
 				chatBotId int NOT NULL,
 				campId int NOT NULL,
 				campType tinyint NOT NULL,
-			);'
+			);
+	END'
 	EXEC(@sql)
 	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
 
@@ -1917,6 +1921,7 @@ set nocount off'
 		+ ''" C15="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotConversationId, 0))
 		+ ''" C16="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotId, 0))
 		+ ''" C17="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.ChatBotName, 0))
+		+ ''" C18="'' + CONVERT(VARCHAR(MAX), ISNULL(cbc.CampIdTransfered, 0))
 		+ ''"/>'')
 				, @dateStart = cbc.FirstMessageTime FROM ChatBotConversation cbc 
 													LEFT OUTER JOIN ChatBotWhatsAppConversation cbwac 
@@ -2038,6 +2043,131 @@ set nocount off'
 	END
 
 	set nocount off'
+	EXEC(@sql)
+
+		SET @process = 'K060015-Buscador Conversaciones ChatBot transferidas a campaña WhatsApp de entrada, se agrega action 6 y 7 '
+	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspGalatea_Finder] 
+				@action INT, 
+				@userId INT = 0, 
+				@conversationId BIGINT = 0,
+				@isSuperUser bit=0
+				AS
+				IF @action = 1
+				    BEGIN--trae el nombre de la base de datos en BX
+				    if @isSuperUser =0 begin
+
+				            SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value], CAST(WGCam.Tipo AS INT) + 1 AS callType, c.cam_descripcion AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+				                INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+				                                        AND WGCam.Tipo = 1
+				            WHERE Wguser.User_id = @userId
+				            UNION
+				            SELECT CAST(WGCam.IdCampEsp AS INT) AS [Value], CAST(WGCam.Tipo AS INT) + 1 AS callType, inb.descripcion AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+				                INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+				                                            AND WGCam.Tipo = 0
+				            WHERE Wguser.User_id = @userId;
+				        end
+				        else begin
+				        SELECT CAST(c.cam_id AS INT) AS [Value], CAST(2 AS INT) AS callType, c.cam_descripcion AS label FROM ccCamps c
+				        UNION
+				        SELECT CAST(inb.Inbound_id AS INT) AS [Value], CAST(1 AS INT) AS callType, inb.descripcion AS label FROM ccInbound inb;
+				        end
+				        RETURN 0;
+				END;
+				IF @action = 2
+				    BEGIN
+				    if @isSuperUser =0 begin
+				        WITH WgId
+				            AS (SELECT IDWG
+				                FROM ccRIAWorkGroupUsers Wguser
+				                WHERE Wguser.User_id = @userId)
+				            SELECT DISTINCT 
+				                    CAST(Wguser.User_id AS INT) AS [Value], CONCAT(ccUsers.Nombres, '' '', ccUsers.ApellidoPaterno, '' '', ccUsers.ApellidoMaterno)  AS label
+				            FROM ccRIAWorkGroupUsers Wguser
+				                INNER JOIN WgId ON Wguser.IDWG = WgId.IDWG
+				                INNER JOIN ccUsers ON ccUsers.User_id = Wguser.User_id
+				                                        AND TipoUser_id = 1;
+				end
+				else begin
+				        select CAST(ccUsers.User_id AS INT) AS [Value], CONCAT(ccUsers.Nombres, '' '', ccUsers.ApellidoPaterno, '' '', ccUsers.ApellidoMaterno)  AS label
+				        from ccUsers where TipoUser_id = 1;
+				end
+				        RETURN 0;
+				END;
+				IF @action = 3
+				         BEGIN--Informacion de la conversacion de whatsApp
+				               SELECT A.ConversationID, A.inboundId AS AcdId, ISNULL(graph.graphic_id, 1) AS GraphicId, A.phoneACD AS PhoneAcd, A.clientId AS PhoneClient, ISNULL(B.descripcion, ''N/A'') AS AcdName, ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, ISNULL(conversationDate, requestDate) DateStart, ISNULL(A.agentId, 0) AgentID, C.Login AS UserName
+				                        ,(cast(sum(A.tConversation) / 3600 as varchar(10)) + '':'' + 
+				                        right(''0'' + cast((sum(A.tConversation) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                        right(''0'' + cast(sum(A.tConversation) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccWhatsAppConversations A
+				                  LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccRIAInboundGraph graph ON graph.Inbound_id = A.inboundId
+				                  LEFT JOIN ccUsers C ON A.agentId = C.User_id
+				             WHERE A.conversationId = @conversationId
+				             group by A.conversationId, A.inboundId, graph.graphic_id, A.phoneACD, A.clientId, B.descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc, conversationDate, requestDate, A.agentId, C.Login;
+
+				             RETURN 0;
+				     END;
+				IF @action = 4
+				         BEGIN--Informacion de la conversacion de whatsApp out
+				               SELECT A.ConversationID, A.camId AS AcdId, ISNULL(graph.graphic_id, 1) AS GraphicId, A.phoneCamp AS PhoneAcd, A.clientId AS PhoneClient, ISNULL(B.cam_descripcion, ''N/A'') AS AcdName, ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, ISNULL(conversationDate, requestDate) DateStart, ISNULL(A.agentId, 0) AgentID, C.Login AS UserName
+				                        ,(cast(sum(A.tConversation) / 3600 as varchar(10)) + '':'' + 
+				                        right(''0'' + cast((sum(A.tConversation) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                        right(''0'' + cast(sum(A.tConversation) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccWhatsAppConversationsOut A
+				                  LEFT JOIN ccCamps B ON A.camId = B.cam_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = A.camId
+				                  LEFT JOIN ccUsers C ON A.agentId = C.User_id
+				             WHERE A.conversationId = @conversationId
+				             group by A.conversationId, A.camid, graph.graphic_id, A.phoneCamp, A.clientId, B.cam_descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc, conversationDate, requestDate, A.agentId, C.Login;
+
+				             RETURN 0;
+				     END;
+				IF @action = 5
+				         BEGIN--Informacion de la conversacion de Chat
+				                SELECT A.ChatId AS ConversationID, A.inboundId AS CampaignId, A.userId AS AgentID, ISNULL(B.descripcion, ''N/A'') AS CampaignName,
+							   ISNULL(cctipocalif.[Description], ''N/A'') AS Disposition, ISNULL(cctipocalifsub.califSubdesc, ''N/A'') AS SubDisposition, 
+							   C.Login AS UserName, A.clientName as Client, ISNULL(A.chatDate, A.requestDate) as DateStart,
+							   (cast(sum(A.tChatting) / 3600 as varchar(10)) + '':'' + 
+				                right(''0'' + cast((sum(A.tChatting) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				                right(''0'' + cast(sum(A.tChatting) % 60 as varchar(10)), 2)) as Duration
+				             FROM ccRIAChats A
+				                  LEFT JOIN ccInbound B ON A.inboundId = B.Inbound_id
+				                  LEFT OUTER JOIN cctipocalif ON cctipocalif.calif_id = A.disposition
+				                  LEFT OUTER JOIN cctipocalifsub ON cctipocalifsub.califsub_id = A.subdisposition
+				                  LEFT JOIN ccUsers C ON A.userId = C.User_id
+				             WHERE A.chatId = @conversationId
+				             group by A.chatId, A.inboundId, A.userId, A.userId, B.descripcion, cctipocalif.[Description], cctipocalifsub.califSubdesc,
+							 chatDate, requestDate, A.userId, C.Login, tChatting, clientName;
+
+				             RETURN 0;
+				     END;
+				IF @action = 6
+				         BEGIN--Informacion de la conversacion de chatbot
+							SELECT A.ChatBotConversationId AS conversationId, A.ChatBotNumber AS contactName, 
+							A.ClientNumber AS clientNumber, a.ChatBotId as chatBotId, a.ChatBotName AS chatBotName, 
+							A.CampIdTransfered AS campIdTransfered, A.FirstMessageTime as firstMessageTime
+							,(cast(sum(A.conversationTime) / 3600 as varchar(10)) + '':'' + 
+				            right(''0'' + cast((sum(A.conversationTime) % 3600) / 60 as varchar(10)), 2) + '':'' + 
+				            right(''0'' + cast(sum(A.conversationTime) % 60 as varchar(10)), 2)) as conversationTime,
+							B.whatsAppConversationId 
+							FROM  ChatBotConversation A
+							LEFT JOIN ChatBotWhatsAppConversation B on A.ChatBotConversationId = B.ChatBotConversationId
+				            WHERE A.ChatBotConversationId = @conversationId
+				            group by A.ChatBotConversationId, A.ChatBotNumber,  A.ClientNumber, a.ChatBotId, a.ChatBotName, A.CampIdTransfered, A.FirstMessageTime, B.WhatsAppConversationId 
+				            RETURN 0;
+				     END;
+				IF @action = 7 BEGIN
+					select id as ChatBotId, projectName as ChatBotName from AzureKnowledge
+				END;'
 	EXEC(@sql)
 	------------------------------------------------END MARCO CHAGOLLA--------------------------------------------
 

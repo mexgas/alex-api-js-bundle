@@ -1013,7 +1013,7 @@ set nocount off'
 				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
 				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
 				                messageStatus) 
-				                select messageId, conversationId, timeStampMessage, originType
+				                select messageId, conversationId, timeStampMessageUTC, originType
 				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
 				                messageStatus
 				                FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
@@ -1023,7 +1023,7 @@ set nocount off'
 				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
 				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
 				                messageStatus) 
-				                select messageId, conversationId, timeStampMessage, originType
+				                select messageId, conversationId, timeStampMessageUTC, originType
 				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
 				                messageStatus
 				                FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)

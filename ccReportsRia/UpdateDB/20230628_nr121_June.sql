@@ -293,254 +293,6 @@ END'
 	EXEC(@Sql)	
 
 
-	----------------------------------------------------- B. Dunzz -----------------------------------------------------------------
-	set @process = 'CW-7888 DROP SP ccspTimesccLogAgentesDia'
-	set @sql = '
-		IF exists (select * from sys.procedures where name = N''ccspTimesccLogAgentesDia'')
-		begin
-			DROP PROCEDURE ccspTimesccLogAgentesDia;
-		end
-	'
-	EXEC(@sql)
-	
-	set @process = 'CW-7888 CREATE SP ccspTimesccLogAgentesDia con Index'
-	set @sql = '
-		CREATE PROCEDURE [dbo].[ccspTimesccLogAgentesDia] @from AS SMALLDATETIME
-	,@to AS SMALLDATETIME
-AS
-SET NOCOUNT ON
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia'', N''U'') IS NOT NULL
-	DROP TABLE #tempccLogAgentesDia
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
-	DROP TABLE #tempccLogAgentesDia2
-
-IF NOT EXISTS (
-		SELECT *
-		FROM sys.tables
-		WHERE name = ''tmpccLogAgentesDia''
-		)
-BEGIN
-	CREATE TABLE tmpccLogAgentesDia (
-		id INT NOT NULL IDENTITY PRIMARY KEY
-		,userId INT NOT NULL
-		,TipoStatusAge_id TINYINT NOT NULL
-		,tStatus FLOAT NOT NULL
-		,dateIni DATETIME NOT NULL
-		,dateEnd DATETIME NOT NULL
-		,currentStatus INT NOT NULL
-		,timeGroup DATETIME NOT NULL
-		,timeGroupNext DATETIME NOT NULL
-		,camId SMALLINT
-		,camType SMALLINT
-		,callId INT
-		);
-END
-ELSE
-BEGIN
-	TRUNCATE TABLE tmpccLogAgentesDia
-		--drop table tmpccLogAgentesDia
-END
-
-IF EXISTS (SELECT name FROM sys.indexes WHERE name = N''IX_tmpccLogAgentesDia_TipoStatusAge_id'')   
-DROP INDEX IX_tmpccLogAgentesDia_TipoStatusAge_id ON [dbo].[tmpccLogAgentesDia] 
-
-CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id]
-ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
-INCLUDE ([tStatus],[timeGroupNext])
-
-CREATE TABLE #tempccLogAgentesDia (
-	row INT NOT NULL
-	,user_id INT NOT NULL
-	,TipoStatusAge_id TINYINT NOT NULL
-	,tStatus FLOAT NOT NULL
-	,dateIni DATETIME NOT NULL
-	,dateEnd DATETIME NOT NULL
-	,currentStatus INT
-	,timeGroup DATETIME NOT NULL
-	,timeGroupNext DATETIME NOT NULL
-	,camId SMALLINT
-	,camType SMALLINT
-	,callId INT
-	);;
-
-WITH tmpLog
-AS (
-	SELECT User_id AS userId
-		,TipoStatusAge_id
-		,tStatus
-		,DATEADD(ss, - tStatus, fecha) dateIni
-		,fecha dateEnd
-		,ISNULL(currentStatus, 0) AS currentStatus
-		,dbo.GetTimeGroup(DATEADD(ss, - tStatus, fecha), 0) AS timegroup
-		,dbo.GetTimeGroup(fecha, 1) AS timegroup_next
-		,IdCampEsp AS camId
-		,Tipo AS camType
-		,callId
-	FROM ccLogAgentesDia
-	WHERE DATEADD(ss, - tStatus, fecha) BETWEEN @from AND @to 
-	)
-INSERT INTO #tempccLogAgentesDia
-SELECT ROW_NUMBER() OVER (
-		PARTITION BY userId ORDER BY dateIni
-		) AS Row
-	,userId
-	,TipoStatusAge_id
-	,tStatus
-	,dateIni
-	,dateEnd
-	,currentStatus
-	,timegroup
-	,timegroup_next
-	,camId
-	,camType
-	,callId
-FROM tmpLog
-
-DELETE A
-FROM (
-	SELECT CASE WHEN A.tStatus > S.tStatus THEN S.row ELSE A.row END row
-		,A.user_id
-	FROM #tempccLogAgentesDia A
-	LEFT JOIN #tempccLogAgentesDia S ON A.Row = S.Row - 1
-		AND A.user_id = S.user_id
-	WHERE A.dateIni >= @from
-		AND A.dateIni < @to
-		AND A.TipoStatusAge_id = S.TipoStatusAge_id
-		AND (
-			S.dateEnd BETWEEN A.dateIni
-				AND A.dateEnd
-			OR S.dateIni BETWEEN A.dateIni
-				AND A.dateEnd
-			)
-		AND ABS(DATEDIFF(ss, A.dateEnd, S.dateIni)) > 1
-	) x
-INNER JOIN #tempccLogAgentesDia A ON A.row = x.row
-	AND A.user_id = x.user_id;
-
------------Se agrega el estado actual
-DECLARE @dateNow DATETIME
-	,@date DATE
-	,@maxLogout DATETIME;
-
-SET @dateNow = GETDATE();
-
-SELECT @maxLogout = MAX(logout)
-FROM TmpSessionTimeGroup;
-
-IF CONVERT(DATE, @dateNow, 121) = CONVERT(DATE, @to, 121)
-BEGIN
-
-	declare @today date
-
-	set @today=convert(DATE, @to, 121)
-		;
-
-	WITH tempAgentLastStatus
-	AS (
-		SELECT User_id AS userId
-			,MAX(fecha) AS fecha
-		FROM ccLogAgentesDia
-		WHERE fecha BETWEEN @today AND @to
-		GROUP BY User_id
-		)		
-
-	INSERT INTO #tempccLogAgentesDia
-	SELECT 0
-		,A.user_id
-		,A.currentStatus
-		,DATEDIFF(ss, A.dateEnd, @dateNow) AS tStatus
-		,A.dateEnd
-		,@dateNow
-		,A.currentStatus
-		,dbo.GetTimeGroup(B.fecha, 0) AS timegroup
-		,dbo.GetTimeGroup(@dateNow, 1) AS timegroup_next
-		,A.camId
-		,A.camType
-		,A.callId
-	FROM #tempccLogAgentesDia A
-	INNER JOIN tempAgentLastStatus B ON A.dateEnd = B.fecha
-		AND A.User_id = B.userId
-	WHERE A.dateIni BETWEEN convert(DATE, @to, 121)
-			AND @to
-		AND A.currentStatus NOT IN (- 2, - 1, 0);
-END
-
-SELECT *
-INTO #tempccLogAgentesDia2
-FROM #tempccLogAgentesDia
-WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15
-
-DELETE #tempccLogAgentesDia
-WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15;
-
-INSERT INTO #tempccLogAgentesDia
-SELECT 1
-	,t.user_id
-	,TipoStatusAge_id
-	,dbo.TimeInterval(th.start, th.stop, dateIni, dateEnd) AS tStatus
-	,dateIni
-	,dateEnd
-	,currentStatus
-	,th.start AS timegroup
-	,th.stop AS timegroup_next
-	,t.camId
-	,t.camType
-	,t.callId
-FROM #tempccLogAgentesDia2 t
-INNER JOIN TmpTimesInterval th ON (
-		t.timegroup > th.Start
-		AND t.timegroup < th.stop
-		)
-	OR th.Start BETWEEN t.timegroup
-		AND t.timeGroupNext
-WHERE DATEDIFF(ss, th.start, timeGroupNext) > 0
-	AND th.Start BETWEEN @from
-		AND @to;
-
-INSERT INTO tmpccLogAgentesDia (
-	userId
-	,TipoStatusAge_id
-	,tStatus
-	,dateIni
-	,dateEnd
-	,currentStatus
-	,timeGroup
-	,timeGroupNext
-	,camId
-	,camType
-	,callId
-	)
-SELECT user_id AS userId
-	,TipoStatusAge_id
-	,SUM(tStatus) tStatus
-	,MIN(dateIni) dateIni
-	,MIN(dateEnd) dateEnd
-	,currentStatus
-	,timeGroup
-	,timeGroupNext
-	,min(camId) AS camId
-	,min(camType) AS camType
-	,min(callId) AS callId
-FROM #tempccLogAgentesDia
-GROUP BY timeGroup
-	,user_id
-	,TipoStatusAge_id
-	,currentStatus
-	,timeGroupNext
-ORDER BY dateIni
-	,userId
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia'', N''U'') IS NOT NULL
-	DROP TABLE #tempccLogAgentesDia
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
-	DROP TABLE #tempccLogAgentesDia2
-	'
-	EXEC(@sql)
-	----------------------------------------------------- END B. Dunzz -----------------------------------------------------------------
-
 
 
 ------------------------------------------- Begin Roberto Nava ------------------------------------------------------
@@ -1891,6 +1643,222 @@ begin
 end'
 	EXEC(@sql)
 
+	set @process = 'DEV1-339,CW-7888, CW-8096 Alter Sp ccspTimesccLogAgentesDia Se modifica para que le ms para ajustar los tiempos y se mas cercanos y se quita los datos son
+	repetidos por los eventos de desconexion '
+	set @sql = 'ALTER PROCEDURE [dbo].[ccspTimesccLogAgentesDia] @from AS SMALLDATETIME, @to AS SMALLDATETIME
+AS
+SET NOCOUNT ON
+
+IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL Begin
+	DROP TABLE #tempccLogAgentesDia2
+End
+
+IF NOT EXISTS (SELECT *	FROM sys.tables	WHERE name = ''tmpccLogAgentesDia'')
+BEGIN
+	CREATE TABLE tmpccLogAgentesDia (
+		id INT NOT NULL 
+		,userId INT NOT NULL
+		,TipoStatusAge_id TINYINT NOT NULL
+		,tStatus FLOAT NOT NULL
+		,dateIni DATETIME NOT NULL
+		,dateEnd DATETIME NOT NULL
+		,currentStatus INT NOT NULL
+		,timeGroup DATETIME NOT NULL
+		,timeGroupNext DATETIME NOT NULL
+		,camId SMALLINT
+		,camType SMALLINT
+		,callId INT,
+		primary key (id,userId)
+		);
+
+		CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id]
+		ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
+		INCLUDE ([tStatus],[timeGroupNext])
+END
+ELSE
+BEGIN
+	TRUNCATE TABLE tmpccLogAgentesDia	
+	--drop table tmpccLogAgentesDia
+END
+
+IF not EXISTS (SELECT name FROM sys.indexes WHERE name = N''IX_tmpccLogAgentesDia_TipoStatusAge_id'')   Begin
+	CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id]
+	ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
+	INCLUDE ([tStatus],[timeGroupNext])
+end
+
+CREATE TABLE #tempccLogAgentesDia2 (
+	rowId INT NOT NULL
+	,userId INT NOT NULL
+	,TipoStatusAge_id TINYINT NOT NULL
+	,tStatus FLOAT NOT NULL
+	,dateIni DATETIME NOT NULL
+	,dateEnd DATETIME NOT NULL
+	,currentStatus INT
+	,timeGroup DATETIME NOT NULL
+	,timeGroupNext DATETIME NOT NULL
+	,camId SMALLINT
+	,camType SMALLINT
+	,callId INT
+	);
+
+WITH tmpLog
+AS (
+	SELECT User_id AS userId
+		,TipoStatusAge_id
+		,tStatus
+		,DATEADD(ms, - tStatus*1000, fecha) dateIni
+		,fecha dateEnd
+		,ISNULL(currentStatus, 0) AS currentStatus
+		,dbo.GetTimeGroup(DATEADD(ms, - tStatus*1000, fecha), 0) AS timegroup
+		,dbo.GetTimeGroup(fecha, 1) AS timegroup_next
+		,IdCampEsp AS camId
+		,Tipo AS camType
+		,callId
+	FROM ccLogAgentesDia
+	WHERE DATEADD(ss, - tStatus, fecha) BETWEEN @from AND @to 	
+	)
+, cteLogAgentesDia as (
+
+SELECT ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId
+	,userId
+	,TipoStatusAge_id
+	,tStatus
+	,dateIni
+	,dateEnd
+	,currentStatus
+	,timegroup
+	,timegroup_next
+	,camId
+	,camType
+	,callId
+FROM tmpLog
+)
+insert into tmpccLogAgentesDia
+select * from cteLogAgentesDia
+
+/***** Elimina los repetidos ******/
+; with regDeleteRepLogout as(
+SELECT 
+	case when A.dateIni<S.dateIni or A.currentStatus<0 then S.id else A.Id end [rowId]	
+	, A.userId		
+	FROM tmpccLogAgentesDia A
+	LEFT JOIN tmpccLogAgentesDia S ON A.Id = S.Id - 1
+		AND A.userId = S.userId
+	WHERE A.tStatus >0 and S.tStatus >0
+		AND A.TipoStatusAge_id = S.TipoStatusAge_id
+		AND A.TipoStatusAge_id>0	
+		and (A.dateEnd between S.dateIni and S.dateEnd
+		or S.dateEnd between A.dateIni and A.dateEnd
+		)
+		and ABS( A.tStatus-S.tStatus)<=2
+),
+rowReconnectLogout as(
+select ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId,* 
+from tmpccLogAgentesDia where currentStatus in(30,-2) and tStatus>0
+)
+,
+regDeleteReconnect as( 
+ select 
+case when A.currentStatus=-2 then S.Id else A.Id end [rowId], A.userId
+--,A.userId,S.userId,A.RowId,S.RowId,A.timeGroup,S.timeGroupNext,A.id,S.id,A.TipoStatusAge_id,S.TipoStatusAge_id,A.tStatus,S.tStatus
+--,A.dateIni,A.dateEnd,S.dateIni,S.dateEnd
+--,ABS(A.tStatus-S.tStatus)
+from rowReconnectLogout A
+inner join rowReconnectLogout S on A.userId=S.userId and A.RowId=S.RowId-1 
+and A.TipoStatusAge_id=S.TipoStatusAge_id 
+where ( A.dateIni between S.dateIni and S.dateEnd or S.dateIni between A.dateIni and A.dateEnd)
+ )
+ , rowDelete as(
+ select * from regDeleteRepLogout
+ union 
+ select * from regDeleteReconnect
+ )
+
+			
+--SELECT A.*
+Delete A
+from tmpccLogAgentesDia A
+inner join rowDelete X  ON A.id = x.rowId AND A.userId = x.userId;
+
+/***** Revisa si es el dia actual para calcular el tiempo del estado ******/
+declare @today date,@dateNow datetime
+SET @today = convert(DATE, GETDATE(), 121)
+SET @dateNow=GETDATE()
+
+
+IF @today = CONVERT(DATE, @to, 121)
+BEGIN
+	;	
+	WITH tmpAgentLastStatus
+	AS (
+		SELECT userId ,MAX(dateEnd) AS dateStart
+		FROM tmpccLogAgentesDia
+		WHERE dateEnd BETWEEN @today AND @to
+		GROUP BY userId
+		)			
+
+	INSERT INTO tmpccLogAgentesDia
+	SELECT 0
+		,A.userId
+		,A.currentStatus
+		,DATEDIFF(ss, A.dateEnd, @dateNow) AS tStatus
+		,B.dateStart
+		,@dateNow
+		,A.currentStatus
+		,dbo.GetTimeGroup(B.dateStart, 0) AS timegroup
+		,dbo.GetTimeGroup(@dateNow, 1) AS timegroup_next
+		,A.camId
+		,A.camType
+		,A.callId
+	FROM tmpccLogAgentesDia A
+	INNER JOIN tmpAgentLastStatus B ON A.dateEnd = B.dateStart AND A.userId = B.userId
+	WHERE A.dateIni BETWEEN @today AND @to
+		AND A.currentStatus NOT IN (- 2, - 1, 0);
+END
+
+
+/***** Separa los estados para tenerlos en intervalos 15 minutos para algunos reportes ******/
+INSERT INTO #tempccLogAgentesDia2
+SELECT * FROM tmpccLogAgentesDia
+WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15
+
+
+DELETE tmpccLogAgentesDia
+WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15;
+
+
+
+INSERT INTO tmpccLogAgentesDia
+SELECT-1* ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId
+	,t.userId
+	,TipoStatusAge_id
+	,dbo.TimeInterval(th.start, th.stop, dateIni, dateEnd) AS tStatus
+	,dateIni
+	,dateEnd
+	,currentStatus
+	,th.start AS timegroup
+	,th.stop AS timegroup_next
+	,t.camId
+	,t.camType
+	,t.callId
+FROM #tempccLogAgentesDia2 t
+INNER JOIN TmpTimesInterval th ON (
+		t.timegroup > th.Start
+		AND t.timegroup < th.stop
+		)
+	OR th.Start BETWEEN t.timegroup
+		AND t.timeGroupNext
+WHERE DATEDIFF(ss, th.start, timeGroupNext) > 0
+	AND th.Start BETWEEN @from
+		AND @to
+order by dateIni,timegroup
+
+
+IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
+	DROP TABLE #tempccLogAgentesDia2'
+	EXEC(@sql)
+
 	set @process = 'DEV1-339 Alter Sp ReportsMasterProcessWIthOnlyGenerate'
 	set @sql = 'ALTER PROCEDURE [dbo].[ReportsMasterProcessWIthOnlyGenerate] @from AS DATETIME = NULL
 	,@to AS DATETIME = NULL
@@ -2057,140 +2025,162 @@ END
 DROP TABLE #tmpProcedureReports'
 	EXEC(@sql)
 
-	set @process = 'DEV1-339 Alter Sp ccspGenSession se verifica los login y logout sean los mismos'
+	set @process = 'DEV1-339,CW-8096 Alter Sp ccspGenSession se verifica los login y logout sean los mismos se busca completar cuando hay doble login y logout con ccloAgentDia'
 	set @sql = 'ALTER PROCEDURE [dbo].[ccspGenSession]
 @from AS SMALLDATETIME,
 @to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
 
-DECLARE @date DATETIME
+DECLARE @date DATETIME,@today datetime
 
-CREATE TABLE #tempccGenSession ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, [login] [datetime] NOT NULL, [logout] [datetime] NULL, [extension] [varchar](7) NOT NULL, PRIMARY KEY (fila, user_id))
-CREATE TABLE #temUserIdLogoutNull ([user_id] [smallint] NOT NULL)
-CREATE TABLE #temIdMaxLogoutNull ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, PRIMARY KEY (fila, user_id))
+IF OBJECT_ID(''tempdb..#tempccGenSession'') IS NOT NULL DROP TABLE #tempccGenSession
 
+
+CREATE TABLE #tempccGenSession ([fila] INT NOT NULL, [user_id] [smallint] NOT NULL, [login] [datetime] NULL, [logout] [datetime] NULL, [extension] [varchar](7) NOT NULL, PRIMARY KEY (fila, user_id))
+
+
+declare @dataLoginLogout table(Fila int not null,User_id int not null,Extension [varchar](7),TipoMov int not null,fecha datetime not null)
 
 ;with dataLoginLogout as(
 select ROW_NUMBER() OVER (
 PARTITION BY user_id ORDER BY FECHA, tipoMov
 ) Fila
 ,User_id,Extension,TipoMov,
-case when TipoMov =1 then
-dateadd(ms, - DATEPART(ms, fecha), fecha) 
-else fecha  end 
 fecha 
 from ccLogLogin where fecha between @from and @to 
+--
+)
+, filterLoginLogout as(
+select A.Fila,  A.User_id
+,A.fecha LOGIN,  S.fecha logout
+, A.Extension
+from dataLoginLogout A
+left join dataLoginLogout S on A.Fila =S.Fila-1 AND A.User_id = S.User_id
+and A.TipoMov=1 and S.TipoMov=0
+where A.TipoMov=1
+union
+select A.Fila,A.User_id
+,case when  A.TipoMov=1 then A.fecha end LOGIN
+,case when  S.TipoMov=0 then S.fecha  end logout
+, A.Extension
+from dataLoginLogout A
+inner join dataLoginLogout S on A.Fila =S.Fila-1 AND A.User_id = S.User_id
+and A.TipoMov=S.TipoMov
 )
 
 INSERT INTO #tempccGenSession
-select A.Fila, A.User_id
-,dateadd(ms, - DATEPART(ms, A.fecha), A.fecha) LOGIN,  S.fecha logout
-, A.Extension
-from dataLoginLogout A
-left join dataLoginLogout S on A.Fila =S.Fila-1 and A.TipoMov=1 and S.TipoMov=0 AND A.User_id = S.User_id
-where A.TipoMov=1
+select ROW_NUMBER() OVER (
+PARTITION BY user_id ORDER BY Fila
+) Fila,User_id,LOGIN,logout,Extension from 
+filterLoginLogout A
+--where User_id=@userId
+
+;with dataLoginNull as(
+select A.Fila,A.user_id,S.Logout, A.Logout Logout2
+from #tempccGenSession A 
+left join #tempccGenSession S on A.fila=S.fila+1 and A.user_id=S.user_id 
+where A.login is null
+), dataLoginRecovery as(
+select A.Fila,A.user_id,
+(
+select min( fecha) from ccLogAgentesDia B
+where B.fecha between A.Logout and A.Logout2
+	and B.User_id=A.user_id
+	and currentStatus>=0
+) as Login
+from dataLoginNull A
+)
+
+update B set B.Login=A.Login
+from dataLoginRecovery A
+inner join #tempccGenSession B on A.fila=B.fila and A.user_id=B.user_id
+where A.Login is not null
+
+
+
+;with dataLogoutNull as(
+select A.Fila,A.user_id,A.login,S.login login2
+from #tempccGenSession A 
+left join #tempccGenSession S on A.fila=S.fila-1 and A.user_id=S.user_id 
+where A.logout is null
+)
+, dataLogoutRecovery as(
+select A.Fila,A.user_id,
+A.login, A.login2,
+(
+select max( fecha) from ccLogAgentesDia B
+where B.fecha between A.login and A.login2
+	and B.User_id=A.user_id
+	and currentStatus<=0
+) as logout
+from dataLogoutNull A
+)
+
+update B set B.logout=A.logout
+from dataLogoutRecovery A
+inner join #tempccGenSession B on A.fila=B.fila and A.user_id=B.user_id
+where A.logout is not null
+
+
+set @today=CONVERT(date,getdate(),121)
+set @date=GETDATE()
+
+--Revisa el ultimo Login que tenga Logout para poner GETDATE()
+if @today=CONVERT(date,@to,121) begin
 	
-
-UPDATE x
-SET x.fila = x.row
-FROM (
-	SELECT fila, ROW_NUMBER() OVER (
-			PARTITION BY user_id ORDER BY LOGIN
-			) row
-	FROM #tempccGenSession
-	) x
-
-INSERT INTO #temUserIdLogoutNull
-	SELECT user_id
-	FROM #tempccGenSession
-	WHERE logout IS NULL
-	GROUP BY user_id
-
-INSERT INTO #temIdMaxLogoutNull
-	SELECT A.fila, A.user_id
-	FROM #tempccGenSession A
-	INNER JOIN (
-		SELECT max(fila) fila, user_id
+	;with LastLoginToday as(
+	SELECT MAX(login) login, user_id
 		FROM #tempccGenSession
-		WHERE user_id IN (
-				SELECT user_id
-				FROM #temUserIdLogoutNull
-				)
+		WHERE login>@today --and logout IS NULL 
 		GROUP BY user_id
-		) B
-		ON A.fila = B.fila
-			AND A.user_id = B.user_id
-	WHERE A.logout IS NULL
-
-
-
-SET @date = GETDATE()
-
-UPDATE A
-	SET A.logout = CASE WHEN @to < @date THEN @to ELSE @date END
-	FROM #tempccGenSession A
-	INNER JOIN #temIdMaxLogoutNull B
-		ON A.user_id = B.user_id
-			AND A.fila = B.fila
-
-	;with logoutAgentDia as(
-	select A.fila,A.user_id,A.login, A.extension,
-	(
-	select max( fecha) from ccLogAgentesDia where fecha between A.login and B.login
-	and User_id=A.user_id 
-	) logout2
-	FROM #tempccGenSession A
-	LEFT JOIN #tempccGenSession B
-		ON A.fila = B.fila - 1
-			AND A.user_id = B.user_id
-	WHERE A.logout IS NULL
 	)
+	update B
+	set B.logout=@date
+	from LastLoginToday A
+	inner join #tempccGenSession B on A.login=B.login and A.user_id=B.user_id
+	where B.logout is null	
+end
 
-	update A set A.logout=B.logout2
-	--select A.fila,A.user_id,A.login,B.logout2 as logout, A.extension 
-	from #tempccGenSession A
-	inner join logoutAgentDia B on A.fila=B.fila and A.user_id=B.user_id 
-	where A.logout is null
+;with registryDelete as(
+select A.fila,A.user_id
+from #tempccGenSession A 
+left join #tempccGenSession S on A.fila=S.fila-1 and A.user_id=S.user_id 
+and A.logout is null
+where DATEDIFF(ss,A.login,S.login) =0
+)
 
-DELETE
-FROM #tempccGenSession
-WHERE LOGIN = logout
+----Borra los registros que tienen menos de un 1 segundo y que el logout es null
+Delete B
+from registryDelete A
+inner join #tempccGenSession B on A.fila=B.fila and A.user_id=B.user_id
 
-DELETE A
-FROM #tempccGenSession A
-INNER JOIN (
-	SELECT user_id, [login], logout
+delete from #tempccGenSession where login is null
+delete from #tempccGenSession where logout is null
+
+;with updateRow as(
+select ROW_NUMBER() OVER (
+PARTITION BY user_id ORDER BY Fila
+) Filanew, fila,user_id, login,logout, extension
+from #tempccGenSession A
+) 
+
+update B set
+B.fila=A.Filanew
+from updateRow A
+inner join #tempccGenSession B on A.fila=B.fila and A.user_id=B.user_id
+
+;WITH tmpccGenSession
+AS (
+	SELECT user_id, [login], [logout], extension
+	, dbo.GetTimeGroup([login], 0) AS timeGroup, dbo.GetTimeGroup([logout], 1) AS timeGroupNext
 	FROM #tempccGenSession
-	GROUP BY user_id, [login], logout
-	HAVING count(*) > 1
-	) B
-	ON A.user_id = B.user_id
-		AND A.LOGIN = B.LOGIN
-		AND A.logout = B.logout
+	)
+SELECT A.*, datediff(ss, [login], [logout]) AS tlog
+FROM tmpccGenSession A
 
-UPDATE a
-WITH (ROWLOCK)
+IF OBJECT_ID(''tempdb..#tempccGenSession'') IS NOT NULL DROP TABLE #tempccGenSession
 
-SET a.logout = b.logout
-FROM #tempccGenSession b
-INNER JOIN #tempccGenSession a
-	ON a.user_id = b.user_id
-		AND a.LOGIN = b.LOGIN
-		AND a.logout <> b.logout;
-
-	;WITH tmpccGenSession
-	AS (
-		SELECT user_id, [login], [logout], extension
-		, dbo.GetTimeGroup([login], 0) AS timeGroup, dbo.GetTimeGroup([logout], 1) AS timeGroupNext
-		FROM #tempccGenSession
-		)
-	SELECT A.*, datediff(ss, [login], [logout]) AS tlog
-	FROM tmpccGenSession A
-
-DROP TABLE #tempccGenSession
-DROP TABLE #temUserIdLogoutNull
-DROP TABLE #temIdMaxLogoutNull
 
 SET NOCOUNT OFF'
 	EXEC(@sql)
@@ -2649,215 +2639,7 @@ IF OBJECT_ID(N''tempdb..#outboundData2'', N''U'') IS NOT NULL
 	EXEC(@sql)
 	
 
-	set @process = 'DEV1-339 Alter Sp ccspTimesccLogAgentesDia Se modifica para que le ms para ajustar los tiempos y se mas cercanos y se quita los datos son
-	repetidos por los eventos de desconexion '
-	set @sql = 'ALTER PROCEDURE [dbo].[ccspTimesccLogAgentesDia] @from AS SMALLDATETIME, @to AS SMALLDATETIME
-AS
-SET NOCOUNT ON
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL Begin
-	DROP TABLE #tempccLogAgentesDia2
-End
-
-IF NOT EXISTS (SELECT *	FROM sys.tables	WHERE name = ''tmpccLogAgentesDia'')
-BEGIN
-	CREATE TABLE tmpccLogAgentesDia (
-		id INT NOT NULL 
-		,userId INT NOT NULL
-		,TipoStatusAge_id TINYINT NOT NULL
-		,tStatus FLOAT NOT NULL
-		,dateIni DATETIME NOT NULL
-		,dateEnd DATETIME NOT NULL
-		,currentStatus INT NOT NULL
-		,timeGroup DATETIME NOT NULL
-		,timeGroupNext DATETIME NOT NULL
-		,camId SMALLINT
-		,camType SMALLINT
-		,callId INT,
-		primary key (id,userId)
-		);
-
-		CREATE NONCLUSTERED INDEX [IX_tmpccLogAgentesDia_TipoStatusAge_id]
-		ON [dbo].[tmpccLogAgentesDia] ([TipoStatusAge_id])
-		INCLUDE ([tStatus],[timeGroupNext])
-END
-ELSE
-BEGIN
-	TRUNCATE TABLE tmpccLogAgentesDia		
-END
-
-CREATE TABLE #tempccLogAgentesDia2 (
-	rowId INT NOT NULL
-	,userId INT NOT NULL
-	,TipoStatusAge_id TINYINT NOT NULL
-	,tStatus FLOAT NOT NULL
-	,dateIni DATETIME NOT NULL
-	,dateEnd DATETIME NOT NULL
-	,currentStatus INT
-	,timeGroup DATETIME NOT NULL
-	,timeGroupNext DATETIME NOT NULL
-	,camId SMALLINT
-	,camType SMALLINT
-	,callId INT
-	);
-
-WITH tmpLog
-AS (
-	SELECT User_id AS userId
-		,TipoStatusAge_id
-		,tStatus
-		,DATEADD(ms, - tStatus*1000, fecha) dateIni
-		,fecha dateEnd
-		,ISNULL(currentStatus, 0) AS currentStatus
-		,dbo.GetTimeGroup(DATEADD(ms, - tStatus*1000, fecha), 0) AS timegroup
-		,dbo.GetTimeGroup(fecha, 1) AS timegroup_next
-		,IdCampEsp AS camId
-		,Tipo AS camType
-		,callId
-	FROM ccLogAgentesDia
-	WHERE DATEADD(ss, - tStatus, fecha) BETWEEN @from AND @to 	
-	)
-, cteLogAgentesDia as (
-
-SELECT ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId
-	,userId
-	,TipoStatusAge_id
-	,tStatus
-	,dateIni
-	,dateEnd
-	,currentStatus
-	,timegroup
-	,timegroup_next
-	,camId
-	,camType
-	,callId
-FROM tmpLog
-)
-insert into tmpccLogAgentesDia
-select * from cteLogAgentesDia
-
-
-/***** Elimina los repetidos ******/
-; with regDeleteRepLogout as(
-SELECT 
-	case when A.currentStatus=-2 then S.Id else A.Id end [rowId], A.userId	
-	FROM tmpccLogAgentesDia A
-	LEFT JOIN tmpccLogAgentesDia S ON A.Id = S.Id - 1
-		AND A.userId = S.userId
-	WHERE A.dateIni >= @from
-		AND A.dateIni < @to
-		AND A.tStatus >0 and S.tStatus >0
-		AND A.TipoStatusAge_id = S.TipoStatusAge_id
-		AND A.TipoStatusAge_id>0		
-		AND ABS(DATEDIFF(ss, A.dateEnd, S.dateIni)) > 1				
-),
-rowReconnectLogout as(
-select ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId,* 
-from tmpccLogAgentesDia where currentStatus in(30,-2) and tStatus>0
-)
-,
-regDeleteReconnect as( 
- select 
-case when A.currentStatus=-2 then S.Id else A.Id end [rowId], A.userId
---,A.userId,S.userId,A.RowId,S.RowId,A.timeGroup,S.timeGroupNext,A.id,S.id,A.TipoStatusAge_id,S.TipoStatusAge_id,A.tStatus,S.tStatus
---,A.dateIni,A.dateEnd,S.dateIni,S.dateEnd
---,ABS(A.tStatus-S.tStatus)
-from rowReconnectLogout A
-inner join rowReconnectLogout S on A.userId=S.userId and A.RowId=S.RowId-1 
-and A.TipoStatusAge_id=S.TipoStatusAge_id 
-where ( A.dateIni between S.dateIni and S.dateEnd or S.dateIni between A.dateIni and A.dateEnd)
- )
- , rowDelete as(
- select * from regDeleteRepLogout
- union 
- select * from regDeleteReconnect
- )
-
---SELECT A.*
-Delete A
-from tmpccLogAgentesDia A
-inner join rowDelete X  ON A.id = x.rowId AND A.userId = x.userId;
-
 	
-/***** Revisa si es el dia actual para calcular el tiempo del estado ******/
-declare @today date,@dateNow datetime
-SET @today = convert(DATE, GETDATE(), 121)
-SET @dateNow=GETDATE()
-
-
-IF @today = CONVERT(DATE, @to, 121)
-BEGIN
-	;	
-	WITH tmpAgentLastStatus
-	AS (
-		SELECT userId ,MAX(dateEnd) AS dateStart
-		FROM tmpccLogAgentesDia
-		WHERE dateEnd BETWEEN @today AND @to
-		GROUP BY userId
-		)			
-
-	INSERT INTO tmpccLogAgentesDia
-	SELECT 0
-		,A.userId
-		,A.currentStatus
-		,DATEDIFF(ss, A.dateEnd, @dateNow) AS tStatus
-		,B.dateStart
-		,@dateNow
-		,A.currentStatus
-		,dbo.GetTimeGroup(B.dateStart, 0) AS timegroup
-		,dbo.GetTimeGroup(@dateNow, 1) AS timegroup_next
-		,A.camId
-		,A.camType
-		,A.callId
-	FROM tmpccLogAgentesDia A
-	INNER JOIN tmpAgentLastStatus B ON A.dateEnd = B.dateStart AND A.userId = B.userId
-	WHERE A.dateIni BETWEEN @today AND @to
-		AND A.currentStatus NOT IN (- 2, - 1, 0);
-END
-
-
-/***** Separa los estados para tenerlos en intervalos 15 minutos para algunos reportes ******/
-INSERT INTO #tempccLogAgentesDia2
-SELECT * FROM tmpccLogAgentesDia
-WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15
-
-
-DELETE tmpccLogAgentesDia
-WHERE DATEDIFF(mi, timegroup, timeGroupNext) > 15;
-
-
-
-INSERT INTO tmpccLogAgentesDia
-SELECT-1* ROW_NUMBER() OVER (PARTITION BY userId ORDER BY dateIni) AS RowId
-	,t.userId
-	,TipoStatusAge_id
-	,dbo.TimeInterval(th.start, th.stop, dateIni, dateEnd) AS tStatus
-	,dateIni
-	,dateEnd
-	,currentStatus
-	,th.start AS timegroup
-	,th.stop AS timegroup_next
-	,t.camId
-	,t.camType
-	,t.callId
-FROM #tempccLogAgentesDia2 t
-INNER JOIN TmpTimesInterval th ON (
-		t.timegroup > th.Start
-		AND t.timegroup < th.stop
-		)
-	OR th.Start BETWEEN t.timegroup
-		AND t.timeGroupNext
-WHERE DATEDIFF(ss, th.start, timeGroupNext) > 0
-	AND th.Start BETWEEN @from
-		AND @to
-order by dateIni,timegroup
-
-
-IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
-	DROP TABLE #tempccLogAgentesDia2
-
-'
-	EXEC(@sql)
 
 	set @process = 'DEV1-339 Alter FN TimeInterval Se modifica para regresar float'
 	set @sql = 'ALTER FUNCTION [dbo].[TimeInterval] (@start datetime,@stop datetime,@state1 datetime,@state2 datetime)  
@@ -3240,9 +3022,10 @@ END'
 	EXEC(@sql)
 
 
-	set @process = 'DEV1-339  Alter SP ccspRepAgentGI se modifica para quitar el detalle y reutilizar las tablas tmpccLogAgentesDia,tmpTimesInboundData,tmpTimesOutboundData y TmpSessionTimeGroup'
-	set @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentGI] 
-@action AS TINYINT ,@from AS DATETIME ,@to AS DATETIME
+	set @process = 'DEV1-339,CW-8096  Alter SP ccspRepAgentGI se modifica para quitar el detalle y reutilizar las tablas tmpccLogAgentesDia,tmpTimesInboundData,tmpTimesOutboundData y TmpSessionTimeGroup, se agrega tiempo de notas de llamdas fallidas y que paso directo tiempo de notas'
+	set @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentGI] @action AS TINYINT
+	,@from AS DATETIME
+	,@to AS DATETIME
 AS
 SET ANSI_WARNINGS OFF;
 SET NOCOUNT ON;
@@ -3272,6 +3055,7 @@ BEGIN
 		,sum(CASE WHEN tipostatusage_id = 32 THEN tStatus ELSE 0 END) AS tPreview
 		,sum(CASE WHEN tipostatusage_id = 33 THEN tStatus ELSE 0 END) AS tAssisted
 		,sum(CASE WHEN tipostatusage_id = 34 THEN tStatus ELSE 0 END) AS tDialogoWhatsApp
+		,sum(CASE WHEN tipostatusage_id = 6 and callId=0 and camType=1 THEN tStatus ELSE 0 END) AS tDispositionOut
 		FROM tmpccLogAgentesDia A
 		group by A.userId,A.timegroup
 	)	
@@ -3319,7 +3103,7 @@ BEGIN
 			,sum(txfer) AS txferOut			
 		FROM tmpTimesOutboundData
 		WHERE user_id > 0
-			AND cal_manual IN (0, 2, 3)
+			--AND cal_manual IN (0, 2, 3)
 			group by timegroup,user_id
 		)
 	
@@ -3339,6 +3123,7 @@ BEGIN
 		,isnull(atgStatus.tchatting,0) as tchatting
 		,isnull(A.tlog-( 
 		isnull(atgStatus.tunknown+atgStatus.tReady+atgStatus.tNotReady+atgStatus.tother+atgStatus.tprob+atgStatus.tchatting+atgStatus.tmanualcall,0)
+		+ ISNULL(atgStatus.tDispositionOut,0)
 		+isnull( txferin+tringin+tdialogin+tnotesIn,0)
 		+isnull(txferout+tringout+tdialogout+tnotesout,0)
 		
@@ -3368,7 +3153,7 @@ BEGIN
 		,isnull(outTime.nnoAnswerOut, 0) AS nnoAnswerOut
 		,isnull(outTime.nlostOut, 0) AS nlostOut
 		,ISNULL(outTime.tdialogOut, 0) tdialogOut
-		,ISNULL(outTime.tnotesOut, 0) tnotesOut
+		,ISNULL(outTime.tnotesOut, 0)+ISNULL(atgStatus.tDispositionOut,0) tnotesOut
 		,ISNULL(outTime.tringOut, 0) tringOut
 		,ISNULL(outTime.txferOut, 0) txferOut
 		
@@ -3397,6 +3182,7 @@ BEGIN
 	left join outboundCount outTime ON outTime.timegroup = A.timegroup AND outTime.userId = A.User_id
 		
 END;
+
 '
 	EXEC(@sql)
 

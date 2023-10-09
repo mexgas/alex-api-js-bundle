@@ -4903,6 +4903,942 @@ SET NOCOUNT OFF;
 END'
 	EXEC(@sql)
 	------------------------End Jesus Gallardo 125.20230719.0.4------------------------------------------------------------------------------------------
+---------------------------------------BEGIN Jesus Gallardo hotfix/125.20230719.0.6 ---------------------------------------------------------
+	SET @process = 'DEV1-397 ALTER column ccCallsIn.cal_tXfer float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccCallsIn'' and COLUMN_NAME=''cal_tXfer'' and DATA_TYPE=''tinyint''
+)
+begin
+	ALTER TABLE ccCallsIn DROP CONSTRAINT DF_ccCallsIn_cal_tXfer;
+    alter table ccCallsIn alter column cal_tXfer float;
+	ALTER TABLE ccCallsIn ADD CONSTRAINT DF_ccCallsIn_cal_tXfer DEFAULT 0 FOR cal_tXfer;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccCallsIn.cal_tRing float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccCallsIn'' and COLUMN_NAME=''cal_tRing'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccCallsIn DROP CONSTRAINT DF_ccCallsIn_cal_tRing;
+    alter table ccCallsIn alter column cal_tRing float;
+	ALTER TABLE ccCallsIn ADD CONSTRAINT DF_ccCallsIn_cal_tRing DEFAULT 0 FOR cal_tRing;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccCallsIn.cal_tDialog float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccCallsIn'' and COLUMN_NAME=''cal_tDialog'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccCallsIn DROP CONSTRAINT DF_ccCallsIn_cal_tDialog;
+    alter table ccCallsIn alter column cal_tDialog float;
+	ALTER TABLE ccCallsIn ADD CONSTRAINT DF_ccCallsIn_cal_tDialog DEFAULT 0 FOR cal_tDialog;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccCallsIn.cal_tNotas float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccCallsIn'' and COLUMN_NAME=''cal_tNotas'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccCallsIn DROP CONSTRAINT DF_ccCallsIn_cal_tNotas;
+    alter table ccCallsIn alter column cal_tNotas float;
+	ALTER TABLE ccCallsIn ADD CONSTRAINT DF_ccCallsIn_cal_tNotas DEFAULT 0 FOR cal_tNotas;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccoCallsOut.cal_tXfer float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccoCallsOut'' and COLUMN_NAME=''cal_tXfer'' and DATA_TYPE=''tinyint''
+)
+begin
+	ALTER TABLE ccoCallsOut DROP CONSTRAINT DF_ccoCallsOut_cal_tXfer;
+    alter table ccoCallsOut alter column cal_tXfer float;
+	ALTER TABLE ccoCallsOut ADD CONSTRAINT DF_ccoCallsOut_cal_tXfer DEFAULT 0 FOR cal_tXfer;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccoCallsOut.cal_tRing float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccoCallsOut'' and COLUMN_NAME=''cal_tRing'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccoCallsOut DROP CONSTRAINT DF_ccoCallsOut_cal_tRing;
+    alter table ccoCallsOut alter column cal_tRing float;
+	ALTER TABLE ccoCallsOut ADD CONSTRAINT DF_ccoCallsOut_cal_tRing DEFAULT 0 FOR cal_tRing;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccoCallsOut.cal_tDialog float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccoCallsOut'' and COLUMN_NAME=''cal_tDialog'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccoCallsOut DROP CONSTRAINT DF_ccoCallsOut_cal_tDialog;
+    alter table ccoCallsOut alter column cal_tDialog float;
+	ALTER TABLE ccoCallsOut ADD CONSTRAINT DF_ccoCallsOut_cal_tDialog DEFAULT 0 FOR cal_tDialog;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER column ccoCallsOut.cal_tNotas float'
+	SET @sql = 'if exists (SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = ''ccoCallsOut'' and COLUMN_NAME=''cal_tNotas'' and DATA_TYPE=''smallint''
+)
+begin
+	ALTER TABLE ccoCallsOut DROP CONSTRAINT DF_ccoCallsOut_cal_tNotas;
+    alter table ccoCallsOut alter column cal_tNotas float;
+	ALTER TABLE ccoCallsOut ADD CONSTRAINT DF_ccoCallsOut_cal_tNotas DEFAULT 0 FOR cal_tNotas;
+end'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER Sp ccsp_AgentSetCallStatus @cal_tXfer, @cal_tring type float '
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentSetCallStatus] 
+	@callout_id INT, 
+    @cal_id     INT, 
+    @TipoCall   TINYINT, -- 1= IN,  2=Out
+    @TipoMov    TINYINT, -- 4 OnDialog, 7=OFFHook_OnXfer, 9=CallNoAnswered
+    @cal_tXfer  float    = 0, 
+    @cal_tring  float   = 0, 
+    @user_id    SMALLINT   = 0, 
+    @extension  VARCHAR(5) = '''', 
+    @isChatCall BIT        = 0
+AS
+     SET NOCOUNT ON
+     DECLARE @RecicleSIC TINYINT
+
+     SELECT @RecicleSIC = ISNULL(valor, 0)
+     FROM ccSettings
+     WHERE setting_id = 60
+
+     DECLARE @ANI_x VARCHAR(19)
+     DECLARE @cal_inicio DATETIME
+     DECLARE @callout_id_IN INT
+     DECLARE @cal_key VARCHAR(20)
+     DECLARE @cam_id INT
+     DECLARE @cal_telefono VARCHAR(30)
+     DECLARE @surveycamid INT
+     DECLARE @inbound_id INT
+     IF @TipoMov = 4 OR @TipoMov = 14 -- DIALOG OnDialog
+         BEGIN
+             IF @TipoCall = 2
+                 BEGIN
+                     IF @TipoMov = 4
+                         BEGIN
+                             UPDATE ccoCallsOUT WITH(ROWLOCK)
+                               SET cal_Inicio = GETDATE(), 
+                                   statusCall_id = 13, 
+                                   cal_manual = CASE
+                                                    WHEN @isChatCall = 1
+                                                    THEN 3
+                                                    ELSE cal_manual
+                                                END
+                             WHERE cal_id = @cal_id
+                     END
+                         ELSE
+                         IF @TipoMov = 14
+                             UPDATE ccoCallsOUT WITH(ROWLOCK)
+                               SET statusCall_id = 13, 
+                                   cal_tRing = @cal_tring, 
+                                   user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                                   cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
+                             WHERE cal_id = @cal_id
+                     IF @RecicleSIC = 0
+                         BEGIN
+                             DELETE ccoWorkingTable WITH(ROWLOCK)
+                             WHERE callout_id = @callout_id
+
+                             DELETE ccoCallPriorityOrder WITH(ROWLOCK)
+                             WHERE callout_id = @callout_id
+                     END
+                     UPDATE ccoCallBacks
+                       SET [status] = 1, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 13
+
+                     -- calcula el costo de la llamada
+                     EXEC ccsp_CstoCalculaCosto @cal_id
+
+                     RETURN(0)
+             END
+             IF @TipoMov = 4
+                 UPDATE ccCallsIN WITH(ROWLOCK)
+                   SET statusCall_id = 13
+                 WHERE cal_id = @cal_id
+
+                 ELSE
+                 IF @TipoMov = 14
+                     UPDATE ccCallsIN WITH(ROWLOCK)
+                       SET statusCall_id = 13, 
+                           cal_tRing = @cal_tring, 
+                           user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
+                           cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
+                     WHERE cal_id = @cal_id
+
+             -- Elimina callback generado por abandono
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN = callout_id
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 1, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             DELETE ccoWorkingTable WITH(ROWLOCK)
+             WHERE callout_id IN
+             (
+                 SELECT DISTINCT
+                        (callout_id)
+                 FROM ccRIAUpdateCallBack_Abandon WITH(ROWLOCK)
+                 WHERE cal_ani = @ANI_x
+             )
+
+             DELETE ccRIAUpdateCallBack_Abandon WITH(ROWLOCK)
+             WHERE cal_ANI = @ANI_x
+
+             RETURN(0)
+     END
+     IF @TipoMov = 7 --OTHER OFFHook_OnXfer
+         BEGIN
+             IF @cal_id <= 0
+                 RETURN(0)
+             IF @TipoCall = 2
+                 BEGIN
+                     UPDATE ccoCallsOUT WITH(ROWLOCK)
+                       SET statusCall_id = 16
+                     WHERE cal_id = @cal_id
+                     -- calcula el costo de la llamada
+
+                     UPDATE ccoCallBacks
+                       SET [status] = 2, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 16
+
+                     EXEC ccsp_CstoCalculaCosto 
+                          @cal_id
+
+                     RETURN(0)
+             END
+             UPDATE ccCallsIN WITH(ROWLOCK)
+               SET statusCall_id = 16
+             WHERE cal_id = @cal_id
+
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 2, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             RETURN(0)
+     END
+     IF @TipoMov = 9 --RING CallNoAnswered
+         BEGIN
+             IF @TipoCall = 2
+                 BEGIN
+                     UPDATE ccoCallsOUT WITH(ROWLOCK)
+                       SET statusCall_id = 15, 
+                           cal_tXFer = @cal_txFer, 
+                           cal_tRing = @cal_tring
+                     WHERE cal_id = @cal_id
+
+                     -- calcula el costo de la llamada
+
+                     UPDATE ccoCallBacks
+                       SET [status] = 2, 
+                           schedulerStatus = 1, 
+                           cal_fcallback = cal_inicio
+                     FROM ccoCallBacks a WITH (INDEX(IX_ccoCallBacks), NOLOCK), ccoCallsOUT b WITH (INDEX(IX_ccoCallsOut_11), NOLOCK)
+                     WHERE a.callout_id = b.callout_id
+                           AND b.callout_id = @callout_id
+                           AND b.cal_id = @cal_id
+                           AND [status] = 0
+                           AND statusCall_id = 15
+
+                     EXEC ccsp_CstoCalculaCosto @cal_id
+             END
+
+             UPDATE ccCallsIN WITH(ROWLOCK)
+               SET statusCall_id = 15, 
+                   cal_tXFer = @cal_txFer, 
+                   cal_tRing = @cal_tring
+             WHERE cal_id = @cal_id
+
+             SELECT @ANI_x = cal_ani, 
+                    @cal_inicio = cal_inicio
+             FROM cccallsin WITH (INDEX(PK_ccCallsIn))
+             WHERE cal_id = @cal_id
+
+             SELECT @callout_id_IN
+             FROM ccRIAUpdateCallBack_Abandon
+             WHERE cal_ani = @ANI_x
+
+             UPDATE ccoCallBacks WITH(ROWLOCK)
+               SET [status] = 2, 
+                   schedulerStatus = 1, 
+                   cal_fcallback = @cal_inicio
+             WHERE callout_id = @callout_id_IN
+                   AND [status] = 0
+
+             RETURN(0)
+     END
+     SET NOCOUNT OFF'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER SP ccsp_AgentUpdateCallTimes, @cal_tXfer,@cal_tRing,@cal_tDialog,@cal_tNotas type float'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentUpdateCallTimes]
+@IDCall int,
+@cal_tXfer float,
+@cal_tDialog float,
+@cal_tNotas float,
+@TipoCall tinyint,
+@cal_tRing float=0,
+@mtmoh smallint = 0,
+@isChatCall bit = 0,
+@isErroManualCall bit =0,
+@isTransferEngine bit =0
+AS
+set nocount on
+if @IDCall<=0 
+	return(0)
+
+declare @tMinAVRS smallint
+declare @cal_manual int
+declare @minimoDialogo tinyint 
+select @minimoDialogo = valor from ccSettings where setting_id = 13
+
+set @cal_manual=0
+
+if @TipoCall=1 begin--INBOUND
+	if @cal_tDialog < @minimoDialogo and @isTransferEngine =1 begin
+	--el status 18 es para llamada cortada con transferencia en Reminder
+	exec ccsp_RIAUpdateCallBack_Abandon @cal_id = @IDCall, @nStatus = 18
+	end
+	Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, 
+	cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+	cal_tNotas=@cal_tNotas, 
+	cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+	cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+	Where cal_id= @IDCall
+
+	--Actualizar tiempo total de llamada
+	exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
+
+	-- Elimina callback generado por abandono
+  
+	if @isTransferEngine = 0  begin
+	Declare @ANI_x varchar(19)
+	select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+
+	DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+	DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+	end
+end
+else if @TipoCall=2 begin--OUTBOUND 
+	
+
+	Update ccoCallsOUT with(rowlock) Set cal_tXfer=case when @cal_tXfer > 0 then @cal_tXfer else cal_tXfer end, 
+	cal_tRing=case when @cal_tRing > 0 then @cal_tRing else cal_tRing end, 
+	cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+	
+	cal_tNotas=case when @cal_tNotas > 0 then @cal_tNotas else cal_tNotas end, 
+	cal_tMoh=case when @mtmoh > 0 then @mtmoh else cal_tMoh end,
+	
+	cal_manual=case when @isChatCall=1 then 3 else cal_manual end,
+	cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end,
+	totalCall_Time=case when totalCall_Time is null then @cal_tDialog else totalCall_Time end 
+	Where cal_id=@IDCall
+	
+	-- calcula el costo de la llamada
+	exec ccsp_CstoCalculaCosto @IDCall
+	select @cal_manual=cal_manual from ccoCallsOUT with(nolock) Where cal_id=@IDCall
+
+	end
+
+select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+if @cal_tDialog >= @tMinAVRS and @cal_manual<>1
+	and not exists(select * from ccAVRSTransfer where cal_id=@IDCall and tipo=@TipoCall - 1) 
+	begin 
+		insert ccAVRSTransfer (cal_id, tipo) values (@IDCall, @TipoCall - 1)
+end
+
+return(0)
+
+set nocount off'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER SP ccsp_GalateaAdminInbound --> DlgsAveTime =CONVERT(int, ISNULL(SUM (CASE WHEN statusCall_id = 13 THEN cal_tDialog + cal_tNotas ELSE 0 END), 0)),'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminInbound] @Option AS SMALLINT, 
+                                            @InboundId AS SMALLINT = 0,
+											@User_id AS SMALLINT = 0,
+											@OutboundID AS SMALLINT = 0,
+											@multi_cam as varchar(max) = null
+AS
+BEGIN
+	set nocount on;
+
+	if(@Option = 1) -- Por campaña 
+	begin
+	    select 
+	        ISNULL(count (*), 0) as Calls,
+	        ISNULL(count (case when statusCall_id = 13 and (cal_tDialog >= 5) then 1 else null end), 0) as Answer,
+	        ISNULL(count (CASE WHEN (statuscall_id = 6 AND (cal_que > 0) AND (cal_xfer IS NULL)) THEN 1 ELSE NULL END), 0) as Abandon,
+	        ISNULL(count (case when statusCall_id in (7,8) then 1 else null end), 0) as OverflowedCalls,
+	        ISNULL(count (case when statusCall_id = 2 then 1 else null end), 0) as OutOfScheduleCalls,
+	        ISNULL(count (case when statusCall_id = 3 then 1 else null end), 0) as OutOfServiceCalls,
+	        ISNULL(count (case when statusCall_id = 4 then 1 else null end), 0) as NoAgentsCalls, -- sin agentes firmados
+	        ISNULL(count (case when statusCall_id = 1 OR statusCall_id = 13 AND (cal_tDialog < 5) then 1 else null end), 0) as InterruptedCalls,
+	        ISNULL(count (case when statusCall_id = 15 OR statusCall_id = 11 then 1 else null end), 0) as NoAnswer,
+	        ISNULL(COUNT (CASE WHEN statusCall_id in (2, 3, 4) THEN 1 WHEN statusCall_id = 1 OR statusCall_id = 13 AND (cal_tDialog < 5) 
+	        THEN 1 ELSE NULL END), 0) AS Other
+	    from ccCallsIn a (nolock)
+	    where cal_inicio > CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106)) and a.inbound_id = @InboundId
+
+	end
+
+	if(@Option = 2) -- Todas las campañas 
+	begin
+	    select 
+			inbound.Inbound_id as IDEspec,
+			inbound.descripcion as Name,
+	        ISNULL(count (*), 0) as Calls,
+	        ISNULL(count (case when statusCall_id = 13 and (cal_tDialog >= 5) then 1 else null end), 0) as Answer,
+	        ISNULL(count (CASE WHEN (statuscall_id = 6 AND (cal_que > 0) AND (cal_xfer IS NULL)) THEN 1 ELSE NULL END), 0) as Abandon,
+	        ISNULL(count (case when statusCall_id in (7,8) then 1 else null end), 0) as OverflowedCalls,
+	        ISNULL(count (case when statusCall_id = 2 then 1 else null end), 0) as OutOfScheduleCalls,
+	        ISNULL(count (case when statusCall_id = 3 then 1 else null end), 0) as OutOfServiceCalls,
+	        ISNULL(count (case when statusCall_id = 4 then 1 else null end), 0) as NoAgentsCalls, -- sin agentes firmados
+	        ISNULL(count (case when statusCall_id = 1 OR statusCall_id = 13 AND (cal_tDialog < 5) then 1 else null end), 0) as InterruptedCalls,
+	        ISNULL(count (case when statusCall_id = 15 OR statusCall_id = 11 then 1 else null end), 0) as NoAnswer,
+	        ISNULL(COUNT (CASE WHEN statusCall_id in (2, 3, 4) THEN 1 WHEN statusCall_id = 1 OR statusCall_id = 13 AND (cal_tDialog < 5) 
+	        THEN 1 ELSE NULL END), 0) AS Other
+	    from ccCallsIn a (nolock)
+		left join ccInbound inbound on a.inbound_id = inbound.Inbound_id
+	    where cal_inicio > CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106)) 
+		group by inbound.Inbound_id, inbound.descripcion
+	end
+
+	if(@Option = 3) -- Obtiene los datos de las llamadas de todos los ACD, datos que se muestran en el tablero de información del administrador 
+	begin
+		SELECT 
+			a.inbound_id, calls = ISNULL(COUNT(*), 0), -- calls
+			Dialogs = ISNULL(COUNT (CASE WHEN statusCall_id = 13 THEN 1 ELSE NULL END), 0), -- Answered
+			DlgsAveTime =CONVERT(int, ISNULL(SUM (CASE WHEN statusCall_id = 13 THEN cal_tDialog + cal_tNotas ELSE 0 END), 0)),
+			QueueAveTime =ISNULL( avg( CASE WHEN cal_que > 0 THEN cal_tWait ELSE NULL END), 0) ,
+			abandon = ISNULL(COUNT(CASE WHEN (statuscall_id = 6 AND (cal_que > 0) AND (cal_xfer IS NULL)) THEN 1 ELSE NULL END), 0), -- Abandoned
+			OverFlowQueue = ISNULL(COUNT (CASE WHEN statusCall_id =8 THEN 1 ELSE NULL END), 0),
+			OverFlowTimeOut = ISNULL(COUNT (CASE WHEN statusCall_id =7 THEN 1 ELSE NULL END), 0), -- OverFlowQueue+OverFlowTimeOut = not answered
+			outOfSchedule = ISNULL(COUNT (CASE WHEN statusCall_id =2 THEN 1 ELSE NULL END), 0), -- fuera de horario
+			outOfService = ISNULL(COUNT (CASE WHEN statusCall_id =3 THEN 1 ELSE NULL END), 0), -- fuera de servicio
+			noAgentsLoggedIn = ISNULL(COUNT (CASE WHEN statusCall_id =4 THEN 1 ELSE NULL END), 0), -- sin agentes firmados
+			assigned = ISNULL(COUNT (CASE WHEN statusCall_id =11 THEN 1 ELSE NULL END), 0), -- asignada
+			--assignedAndNotAnswered = ISNULL(COUNT (CASE WHEN statusCall_id =15 THEN 1 ELSE NULL END), 0), -- asignada y no contestada
+			--assignedAndTookLine = ISNULL(COUNT (CASE WHEN statusCall_id =16 THEN 1 ELSE NULL END), 0), -- asignada y toma linea
+			callsQueue = ISNULL(count (case when cal_que > 0 then 1 else null end), 0)
+			--onQueue = ISNULL(COUNT(CASE WHEN statusCall_id = 5 THEN 1 ELSE NULL END), 0)
+			--initCalls = CAST(ISNULL(COUNT(CASE WHEN statusCall_id = 1 THEN 1 ELSE NULL END), 0) AS varchar(7))+''|''+
+			--			ISNULL((SELECT STUFF((SELECT ''|'' + cast(ci.cal_id AS varchar(7))
+			--			FROM ccCallsin ci (nolock) WHERE cal_inicio > dateadd(mi,-5,getdate()) AND ci.inbound_id=a.inbound_id
+			--			FOR XML PATH('''')) ,1,1,'''')),''0'')
+		FROM ccCallsIn a (nolock)
+		WHERE cal_inicio > CONVERT(datetime,CONVERT(varchar(20),GETDATE(),106))
+				--and a.inbound_id in (select cam_id from ccSupervisorCam where user_id = @User_id and tipo = 0)
+		GROUP BY a.inbound_id
+	--	SET nocount off
+	--	return(0)
+	end
+
+	if(@Option = 4) -- Carga los ACD del administrador mandado
+	begin
+		SELECT cam_id 
+		FROM ccSupervisorCam  nolock
+		WHERE user_id = @User_id and tipo = 0
+		SET nocount off
+		return(0)
+	end
+
+	IF(@Option = 5) -- Relate the inbound campaign with the outbound campaign
+	BEGIN
+		IF(@multi_cam is not null)
+		BEGIN
+			UPDATE ccInbound SET cam_id = @OutboundID WHERE Inbound_id IN (
+				SELECT value from dbo.fn_RIASplitDelimited(@multi_cam,'',''))
+			SELECT 1;
+			RETURN 1;
+		END
+		IF((SELECT ISNULL(cam_id,-1) AS outboundId FROM ccInbound nolock WHERE Inbound_id = @InboundId) != -1)
+			BEGIN
+				SELECT -1;
+				RETURN -1;
+			END;
+		ELSE
+			BEGIN
+				UPDATE ccInbound SET cam_id = @OutboundID WHERE Inbound_id = @InboundID;
+				SELECT 1;
+				RETURN 1;
+			END;
+	END;        
+	IF(@Option = 6) -- Delete the relation between inbound and outbound campaigns
+	BEGIN
+		UPDATE ccInbound SET cam_id = null WHERE Inbound_id = @InboundId;
+		SELECT 1;
+		RETURN 1;
+	END;
+	IF(@Option = 7) -- Check if the inbound Campaign is related
+	BEGIN
+		SELECT CAST(ISNULL(cam_id,-1) AS INT) AS outboundId FROM ccInbound nolock WHERE Inbound_id = @InboundId;
+	END
+	IF(@Option = 8) -- Delete the relation between inbound campaings which are related to outdbound campaign
+	BEGIN
+		UPDATE ccInbound SET cam_id = null WHERE cam_id = @OutboundID;
+		SELECT 1;
+		RETURN 1;
+	END
+END'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER SP ccsp_GetAgentIndividualCounters convert(int,sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end)) tDialog,
+	sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end) tWrapup,'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentIndividualCounters]
+@type as int, @sup_id as int = 0 as
+set nocount on
+
+declare @fecha_ini datetime
+select @fecha_ini = convert(datetime,convert(varchar(11),getdate()))
+
+if @type = 1 --Session time
+    begin
+        SELECT User_id, case
+            WHEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) > 0
+                THEN sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov))
+            ELSE sum(convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), fecha, 14)))*(1-2*tipomov)) +
+                convert(int,DateDiff(second, ''00:00'', Convert(VARCHAR(30), getdate(), 14)))
+            END as logintime
+        FROM ccLogLogin a with(nolock,index(IX_ccLogLogin_4)), ccGenViewRelsSupsAgent b
+        where fecha >= @fecha_ini
+        and a.User_id = b.agt
+        and b.sup = @sup_id
+        GROUP BY User_id
+    end
+
+else if @type = 2 begin--Status agent
+    
+    ;
+    WITH TableUserAgent (userId)
+    AS
+    (
+        select distinct wgAgt.User_id as userId --,usr.login 
+        from ccriaworkgroupusers wgAdmin
+        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+        where 
+        wgAdmin.User_id=@sup_id
+    )
+
+    select User_id,TipoStatusAge_id,sum(segundos) as segundos from (
+    SELECT User_id, TipoStatusAge_id, tStatus As segundos
+    FROM ccLogAgentesDia a with(nolock,index(IX_ccLogAgentesDia_4))
+    inner join TableUserAgent b  on  a.User_id = b.userId   
+    WHERE fecha >= @fecha_ini   
+    union all   
+    select A.User_id,
+    case when A.TipoStatusAge_id in(0,1) then 3
+    when A.currentStatus in (21,5,9) then 4
+    else A.currentStatus end as TipoStatusAge_id,
+    DATEDIFF(ss,A.fecha,getdate()) as seconds   
+    from ccLogAgentesDia A with(nolock)
+    inner join
+    (select max(fecha) fecha,USER_ID from ccLogAgentesDia D with(nolock,index(IX_ccLogAgentesDia_4))
+    inner join TableUserAgent C on D.User_id=C.userId
+    where fecha >= @fecha_ini    
+        group by User_id) B
+    on A.User_id=B.User_id and A.fecha=B.fecha and A.currentStatus not in (0,-2)
+
+    )x
+    group by User_id,TipoStatusAge_id
+    ORDER BY User_id
+
+end
+
+else if @type = 3 begin
+
+    ;
+    WITH TableUserAgent (userId)
+    AS
+    (
+        select distinct wgAgt.User_id as userId --,usr.login 
+        from ccriaworkgroupusers wgAdmin
+        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+        where 
+        wgAdmin.User_id=@sup_id
+    )
+
+    select calls.user_id, calls.total_calls, calls.type_calls, users.login, calls.nCalls, calls.tDialog, calls.tWrapup, calls.tHold 
+    from ccusers As users ,
+        (
+            select calls.User_id, count(*) AS ''total_calls'',
+            CASE
+            WHEN statuscall_id = 15 THEN 5  --OutBound Asignada pero no contestada
+            WHEN cal_manual = 2 THEN 3      --OutBound llamada manual
+            ELSE 2                          --Llamada de OutBound
+            END AS ''type_calls'',      
+            count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+            convert(int,sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end)) tDialog,
+            convert(int,sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end)) tWrapup,
+            sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+            from TableUserAgent as tAgent
+            inner join ccoCallsOut calls WITH (NOLOCK index(IX_ccoCallsOut_10))   
+            on tAgent.userId=calls.User_id
+            WHERE statuscall_id <> 11  --OutBound sin estado definitivo
+            AND cal_inicio >= @fecha_ini
+            GROUP BY User_id, statuscall_id, cal_manual--,tAgent.login
+        
+            union
+
+            select calls.User_id, count(*) AS ''total_calls'',
+            CASE
+            WHEN statuscall_id = 15 THEN 4  --InBound Asignada pero no contestada
+            ELSE 1                          --Llamada de InBound
+            END AS ''type_calls'',      
+            count(case when statuscall_id=13 and cal_tdialog>0 then 1 else null end) nCalls,
+            convert(int,sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tdialog else 0 end)) tDialog,
+            convert(int,sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tnotas else 0 end)) tWrapup,
+            sum(case when statuscall_id=13 and cal_tdialog>0 then cal_tMoh else 0 end) tHold
+
+            from TableUserAgent as tAgent
+            inner join ccCallsIn calls WITH (NOLOCK index(IX_ccCallsIn_5)) 
+            on tAgent.userId=calls.User_id
+            WHERE statuscall_id <> 11  --OutBound sin estado definitivo
+            AND cal_inicio >= @fecha_ini
+            GROUP BY User_id, statuscall_id--,tAgent.login
+        ) AS calls
+        where users.user_id = calls.user_id     
+
+    end
+
+else if @type = 4
+    begin
+        
+        ;
+    WITH TableUserAgent (userId)
+    AS
+    (
+        select distinct wgAgt.User_id as userId --,usr.login 
+        from ccriaworkgroupusers wgAdmin
+        inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+        inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+        where 
+        wgAdmin.User_id=@sup_id
+    )
+
+
+        select a.user_id, a.login
+        from ccusers a (nolock)--, ccGenViewRelsSupsAgent b
+        inner join TableUserAgent b on a.User_id=b.userId       
+    end
+else if @type = 5
+    begin          
+	declare @users table(userId int primary key)
+
+
+	if exists(select * from ccUsers_Roles where User_id=@sup_id and Rol_id=1 ) begin
+		insert into @users
+		select user_id from ccUsers where TipoUser_id=1
+	end
+	else begin
+		
+		insert into @users
+		select distinct wgAgt.User_id as userId --,usr.login 
+		from ccriaworkgroupusers wgAdmin
+		inner join ccriaworkgroupusers wgAgt on wgAdmin.IDWG=wgAgt.IDWG 
+		inner join ccUsers usr on usr.User_id = wgAgt.User_id and usr.TipoUser_id=1
+		where 
+		wgAdmin.User_id=@sup_id 
+	end
+
+	SELECT cast(User_id AS INT) UserId
+		,sum(CASE WHEN TipoStatusAge_id = 2 THEN tStatus ELSE 0 END) NotReady
+		,sum(CASE WHEN TipoStatusAge_id = 3 THEN tStatus ELSE 0 END) Ready
+		,sum(CASE WHEN TipoStatusAge_id = 4 THEN tStatus ELSE 0 END) Dialog
+		,sum(CASE WHEN TipoStatusAge_id = 5 THEN tStatus ELSE 0 END) XFer
+		,sum(CASE WHEN TipoStatusAge_id = 6 THEN tStatus ELSE 0 END) Wrapup
+		,sum(CASE WHEN TipoStatusAge_id = 7 THEN tStatus ELSE 0 END) Other
+		,sum(CASE WHEN TipoStatusAge_id = 9 THEN tStatus ELSE 0 END) Ringing
+		,sum(CASE WHEN TipoStatusAge_id = 11 THEN tStatus ELSE 0 END) Problem
+		FROM ccLogAgentesDia A with(nolock)
+		inner join @users B on A.User_id=B.userId
+		WHERE fecha >= @fecha_ini
+			AND TipoStatusAge_id > 0
+		GROUP BY User_id 
+
+  
+    end
+set nocount on'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-397 ALTER SP ccsp_SaveStatusAgent'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
+@User_id smallint,
+@TipoStatusAge_id tinyint,
+@TipoNotReady tinyint,
+@tStatus float,
+@TipoCall  tinyint,
+@Camp smallint,
+--@isTransferSurvey bit=0, --0 Callback, 1 Realiza Transferencia inmediata
+@callout_id int=0,
+@call_id int=0,
+@isLogout smallint=0, --Agrega el tiempo cuando esta dialogo y se desloguea
+@tDialog float =0 ,
+@currentStatus int =-2,--NUEVO PAR?METRO PARA LA NUEVA COLUMNA
+@Fecha4 datetime=null,
+@tMusicHold int =0,
+@isTransferEngine bit = 0
+AS
+
+if @Fecha4 is null set @Fecha4 = getdate()
+
+if @TipoCall > 0 set @TipoCall = @TipoCall - 1
+
+if (@User_id > 0 ) begin
+
+declare @cam_id int,@surveycamId int
+declare @cal_telefono varchar(30)
+declare @cal_key varchar(40)
+declare @inbound_id int
+declare @callBackSurveyClients bit
+declare @cal_whoHung tinyint
+declare @cal_tDialog int
+declare @cal_tNotas float
+declare @cal_tNotaOri int
+declare @tMinAVRS smallint
+declare @calInicio datetime
+declare @sumCall float
+declare @cal_manual int 
+
+set @cal_tNotas =0
+set @cal_tNotaOri=0
+
+if @TipoStatusAge_id=32 set @tStatus=CONVERT(DECIMAL(10,2), ROUND(@tStatus, 0, 1))
+--4 Dialog,6 Notas, 27 Notas Fallida
+if @TipoStatusAge_id in (4,6,27) and @call_id>0 begin
+if @TipoStatusAge_id=4  set @tDialog=@tStatus --Dialogo
+if @TipoStatusAge_id=6  set @cal_tNotas=@tStatus --Notas
+
+
+set @cal_manual =0
+
+if @TipoCall = 0 begin --IN
+
+select @calInicio=cal_Xfer,@sumCall=cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas, @Camp=Inbound_id, @cal_tDialog=cal_tDialog,@cal_tNotaOri=cal_tNotas, @cal_key = cal_Key, @inbound_id = inbound_id, @cal_telefono = cal_ani ,@cal_whoHung=cal_whoHung
+        from ccCallsIN with(index(IX_ccCallsIn_6),nolock) where cal_id = @call_id and statusCall_id = 13
+
+if @cal_tDialog = 0 and @tDialog >0  and @isLogout=1  begin
+    if @Fecha4<DATEADD(ms,( @sumCall+@tDialog+@cal_tNotas)*1000,@calInicio) begin
+    set @tStatus= case when @tStatus>0 then @tStatus-1 else @tStatus end
+    if @TipoStatusAge_id=4 set @tDialog=@tDialog-1
+    if @TipoStatusAge_id=6  begin
+        if @cal_tNotas>0 set @cal_tNotas=@cal_tNotas-1
+        else  set @tDialog=@tDialog-1
+    end
+    end
+    update ccCallsIN with(rowlock) set cal_tDialog=@tDialog,cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
+end
+end
+else begin --OUT
+select @calInicio=cal_inicio,@sumCall=cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,
+@cam_id = cam_id,@cal_tDialog=cal_tDialog,@cal_tNotaOri=cal_tNotas from ccoCallsOut where cal_id = @call_id
+set @Camp=@cam_id
+
+if @cal_tDialog = 0 and @tDialog>0 and @isLogout=1  begin
+    if @Fecha4<DATEADD(ms,( @sumCall+@tDialog+@cal_tNotas)*1000,@calInicio) begin
+    set @tStatus= case when @tStatus>0 then @tStatus-1 else @tStatus end
+    if @TipoStatusAge_id=4 set @tDialog=@tDialog-1
+    if @TipoStatusAge_id=6  begin
+        if @cal_tNotas>0 set @cal_tNotas=@cal_tNotas-1
+        else  set @tDialog=@tDialog-1
+    end
+    end
+
+    update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog, cal_tNotas=@cal_tNotas,cal_tMoh=@tMusicHold where cal_id = @call_id and statusCall_id = 13
+end
+else if @TipoStatusAge_id=4 and @cal_tDialog = 0 and @tDialog>0
+    update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog  where cal_id = @call_id
+else if @TipoStatusAge_id=6 and @cal_tNotaOri = 0 and @cal_tNotas>0
+    update ccoCallsOut with(rowlock) set cal_tNotas=@cal_tNotas where cal_id = @call_id
+end
+
+select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+if (@cal_tDialog>=@tMinAVRS or @tDialog>=@tMinAVRS) and @isLogout=1 and @cal_manual<>1 begin
+    insert ccAVRSTransfer (cal_id, tipo) values (@call_id, @TipoCall)
+end
+
+if @TipoStatusAge_id in(6,27)  and @isLogout=1  begin
+--Valida que el agente no pudo guardar el status antes de desloguear
+if not exists(select  * from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=4 and fecha between dateadd(ss,-@tDialog-@tStatus-@cal_tNotaOri-2,@Fecha4) and @Fecha4 )
+    INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo,currentStatus,callID ) VALUES( @User_id, 4, @tDialog, DATEADD(ss,-@tStatus, @Fecha4), @Camp, @TipoCall,@TipoStatusAge_id,@call_id )
+end
+
+
+end
+
+
+if (@TipoStatusAge_id=4) begin-- 4 = Dialogo
+declare @tStatus3 float, @Fecha3 datetime
+select top 1 @tStatus3=tstatus, @Fecha3=fecha from ccLogAgentesDia with(nolock) where TipoStatusAge_id=3 and user_id=@User_id order by fecha desc
+insert into ccLogAgentesDia_Dialog (User_id,Cam_id,fecha_Calc_ms,tStatus_Dispo,fecha_Dispo,tStatus_Dialog,fecha_Dialog)
+select @User_id, cam_id, datediff(ms, dateadd(ms, -(@tStatus3*1000), @Fecha3), dateadd(ms, -(@tStatus3*1000), @Fecha4)), @tStatus3, @Fecha3, @tStatus, @Fecha4
+from cccampsagente where user_id = @User_id
+
+
+---Agregar callback en caso de este activo setting en campa?as o acd y tenga relacion de campa?a de encuesta
+if @call_id>0 begin
+if @TipoCall = 0 begin --IN
+
+    select @surveycamid = isnull(cam_id,0),@callBackSurveyClients = callBackSurveyClient  from ccinbound where inbound_id = @inbound_id
+
+    if @surveycamId>0  and (@callBackSurveyClients=1 or @cal_whoHung=1) begin
+        if exists (select cam_id from cccamps where cam_id = @surveycamid and isnull(callsBySurvey,0) > 0 and isnull(ivrScript,0) > 0)
+        begin
+            if (select surveyPctg from ccCamps where cam_id = @surveycamid) >= rand() *100
+            begin
+            insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial)
+            values(right((cast(@call_id as varchar) + '''' + @cal_Key),40),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()) )
+            end
+        end
+    end
+end --@TipoCall = 0
+else begin  --OUT
+
+
+
+    select @surveycamId = isnull(surveycamid,0),@callBackSurveyClients= callBackSurveyClient from cccamps where cam_id = @cam_id
+    select @cal_key = cal_Key, @cam_id = cam_id, @cal_telefono = cal_telefono,@cal_whoHung=cal_whoHung
+    from ccoCallsOUT with(index(IX_ccoCallsOut_11),nolock)
+    where callout_id = @callout_id and statusCall_id = 13 and cal_id = @call_id
+
+    if @surveycamId>0 and (@callBackSurveyClients=1 or @cal_whoHung=1) begin
+    if (select surveyPctg from ccCamps where cam_id = @surveycamId) >= rand() *100
+    begin
+        insert into ccoCallsOUTSource(cal_Key,cam_id,cal_telefono,cal_status, cal_fechaDial)
+        values(right((cast(@call_id as varchar) + '''' + @cal_Key),40),@surveycamid,@cal_telefono,0, dateadd(mi, 6, getdate()))
+    end
+    end
+end
+end--@isTransferSurvey = 0 and @callout_id>0
+
+
+end
+
+if @TipoCall = 0 and @isLogout = 1  and @isTransferEngine = 1 begin --IN
+declare @minimoDialogo tinyint 
+select  @minimoDialogo = valor from ccSettings where setting_id = 13
+if @cal_tDialog < @minimoDialogo
+    begin
+    --el status 18 es para llamada cortada con transferencia en Reminder
+    exec ccsp_RIAUpdateCallBack_Abandon @cal_id = @call_id, @nStatus = 18
+end
+
+end 
+
+if @TipoStatusAge_id =6  and @isLogout=0
+begin
+--Valida que el ccserver no haya guardado antes el status antes al desloguear
+if not exists(select  * from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=4 and fecha between dateadd(ss,-10,@Fecha4) and @Fecha4 and tStatus = @tStatus+1)
+    INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus,callID)  VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall,@currentStatus,@call_id )
+end
+else
+INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus,callID)  VALUES( @User_id, @TipoStatusAge_id, @tStatus, @Fecha4, @Camp, @TipoCall,@currentStatus,@call_id )
+
+if ( @TipoStatusAge_id = 2 )   -- 2 = No Disponible
+begin
+INSERT ccLogAgentesNotReady  ( User_id, TipoNotReady_id, tStatus, fecha, IdCampEsp, Tipo )
+VALUES( @User_id, @TipoNotReady, @tStatus, @Fecha4, @Camp, @TipoCall )
+
+---Para Agente RIA: OAYC
+INSERT ccRIALogAgentesNotReady  ( User_id, TipoNotReady_id, tStatus, fecha )
+VALUES( @User_id, @TipoNotReady, @tStatus, @Fecha4 )
+end
+
+-- Actualiza para reporte de tiempos especiales (Boan)
+if @Camp > 0
+begin
+if exists (select * from ccLogAgentesDia with(index(IX_ccLogAgentesDia_5),nolock)
+        where IdCampEsp = 0 and user_id = @User_id)
+    begin
+    update ccLogAgentesDia with(rowlock)
+    set IdCampEsp = @Camp, Tipo = @TipoCall
+    where IdCampEsp = 0
+    and user_id = @User_id
+    end
+
+if exists (select * from ccLogAgentesNotReady with(index(IX_ccLogAgentesNotReady_4),nolock)
+        where IdCampEsp = 0 and user_id = @User_id)
+    begin
+    update ccLogAgentesNotReady with(rowlock)
+    set IdCampEsp = @Camp, Tipo = @TipoCall
+    where IdCampEsp = 0
+    and user_id = @User_id
+    end
+end
+
+if ( @TipoStatusAge_id = 34  and @call_id > 0) -- Dialogo WhatsApp
+begin
+	if @TipoCall=0 begin
+		update ccWhatsAppConversations set tChatting = (tChatting + @tStatus) where conversationId = @call_id;
+		set @Camp = (select inboundId from ccWhatsAppConversations  where conversationId = @call_id);
+		EXEC ccsp_WhatsAppInformation @Option = 2, @InboundId = @Camp
+	end
+	else begin
+		update ccWhatsAppConversationsOut set tChatting = (tChatting + @tStatus) where conversationId = @call_id;
+		set @Camp = (select camId from ccWhatsAppConversationsOut  where conversationId = @call_id);
+		EXEC ccsp_WhatsAppInformationOut @Option = 2, @camId = @Camp
+	end
+end
+end'
+	EXEC(@sql)
+
+
+	---------------------------------------END Jesus Gallardo hotfix/125.20230719.0.6-----------------------------------------------------------
 
 
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */

@@ -5615,7 +5615,7 @@ else if @type = 5
 set nocount on'
 	EXEC(@sql)
 
-	SET @process = 'DEV1-397 ALTER SP ccsp_SaveStatusAgent'
+	SET @process = 'DEV1-397 ALTER SP ccsp_SaveStatusAgent @tStatus y  @tDialog'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,

@@ -287,7 +287,6 @@ set nocount off'
 					[id] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
 					[name] [varchar](30) NOT NULL,
 					[description] [varchar](100) NOT NULL,
-					[rowguid] [uniqueidentifier] ROWGUIDCOL NULL,
 				PRIMARY KEY CLUSTERED 
 				(
 					[id] ASC

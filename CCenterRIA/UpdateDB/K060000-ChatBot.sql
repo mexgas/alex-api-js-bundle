@@ -57,6 +57,40 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
+	SET @process = 'K060000-Se crea Tabla ChatBotConversation'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversation'') begin
+	CREATE TABLE ChatBotConversation (
+	ChatBotConversationId BIGINT IDENTITY(1,1) PRIMARY KEY, 
+    ClientNumber VARCHAR(15),
+    ClientName VARCHAR(50),
+    ChatBotId INT,
+    ChatBotName VARCHAR(255),
+    ChatBotNumber VARCHAR(30),
+    ChatBotDomain VARCHAR(50),
+    CampIdTransfered INT,
+    ConversationStatus VARCHAR(30),
+    ConversationTime INT,
+    EndStatus INT,
+    QueueTime INT,
+    FirstMessageTime DATETIME
+	);
+	end'
+	EXEC(@sql)
+
+		SET @process = 'K060000-Se crea Tabla ChatBotConversationMessage'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversationMessage'') begin
+	CREATE TABLE ChatBotConversationMessage (
+	MessageId UNIQUEIDENTIFIER PRIMARY KEY default NEWID(),
+    ConversationChatBotId BIGINT NOT NULL,
+    OriginType VARCHAR(50),
+    MessageStatus VARCHAR(50),
+	Date DATETIME,
+    TypeMessage VARCHAR(50),
+    Message VARCHAR(255)
+	);
+	end'
+	EXEC(@sql)
+
 	SET @process = 'K060000-Se crea Tabla ccssetings 2'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccSettings2'') begin
 	CREATE TABLE ccSettings2(

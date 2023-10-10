@@ -58,6 +58,15 @@ BEGIN
 	BEGIN TRY
 
 	SET @process = 'K060000-Se crea Tabla ChatBotConversation'
+	SET @sql = 'if not exists(SELECT * FROM ccSettings WHERE setting_id = 252) begin
+
+INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
+VALUES (252, ''127.0.0.1'', ''Ubicacicion del Chatbot'', 1, ''GRL'', ''IP del servidor donde se encuentra el chatbot'', ''Chatbot Service location'', 1, ''^(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}(25[0-5]|[01]?\d\d?|2[0-4]\d)$'')
+
+end'
+	EXEC(@sql)
+
+	SET @process = 'K060000-Se crea Tabla ChatBotConversation'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversation'') begin
 	CREATE TABLE ChatBotConversation (
 	ChatBotConversationId BIGINT IDENTITY(1,1) PRIMARY KEY, 

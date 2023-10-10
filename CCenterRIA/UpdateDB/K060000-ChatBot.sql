@@ -100,6 +100,44 @@ end'
 	end'
 	EXEC(@sql)
 
+	SET @process = 'K060000-Se crea SP ccsp_Save_ChatBot_Conversation_Message'
+	SET @sql = '
+	CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation_Message]
+	@option int,
+	@conversationChatBotId BIGINT,
+	@originType VARCHAR(50),
+	@messageStatus VARCHAR(50),
+	@date DateTime,
+	@typeMessage VARCHAR(50),
+	@message VARCHAR(255)
+
+	as set nocount on
+
+	IF(@option = 1) BEGIN
+
+		INSERT INTO ChatBotConversationMessage(
+		ConversationChatBotId,
+		OriginType,
+		MessageStatus,
+		Date,
+		TypeMessage,
+		Message
+		) 
+		VALUES (
+		@conversationChatBotId,
+		@originType,
+		@messageStatus,
+		@date,
+		@typeMessage,
+		@message
+		);
+
+		SELECT SCOPE_IDENTITY()
+	END 
+
+	set nocount off'
+	EXEC(@sql)
+
 	SET @process = 'K060000-Se crea Tabla ccssetings 2'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccSettings2'') begin
 	CREATE TABLE ccSettings2(

@@ -57,6 +57,40 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
+		SET @process = 'K060000-Se crea Tabla ccssetings 2'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccSettings2'') begin
+	CREATE TABLE ccSettings2(
+	setting_id smallint NOT NULL,
+	valor varchar(300),
+	descripcion varchar(150) NOT NULL,
+	Status tinyint,
+	Tipo varchar(3),
+	detalle varchar(600),
+	description varchar(600),
+	bLoadSettings bit,
+	validate varchar(255)
+	);
+	end'
+	EXEC(@sql)
+
+	SET @process = 'K060000-Se inserta setting 256 Ruta para guardar conversaciones de chatbot'
+	SET @sql = 'if not exists(select * ccSettings2 where setting_id=256) begin
+	INSERT INTO ccSettings2 (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
+	VALUES (256, ''C:\Multimedia\Conversations\Chatbot'', ''Ruta donde se guardarán las conversaciones de Chatbot'', 1, ''GRL'', ''Se guardan los archivos .json separados por carpetas'', ''Path for saving Chatbot conversations'', 1, ''.{0,99}'');
+	end'
+	EXEC(@sql)
+
+	SET @process = 'K060000-Se crea vista de los settings'
+	SET @sql = 'IF NOT EXISTS(select * from sys.views where name=''VIEW_SETTINGS'')
+	BEGIN
+		CREATE VIEW [dbo].[VIEW_SETTINGS]
+		AS
+		select setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate from ccSettings 
+		union
+		select setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate from ccSettings2
+	END'
+	EXEC(@sql)
+
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
 	SET @sql = 'if not exists(select * from sys.tables where name=''PinnedChatBots'') begin
 	CREATE TABLE [dbo].[PinnedChatBots](

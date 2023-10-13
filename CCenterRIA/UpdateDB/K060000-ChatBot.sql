@@ -344,7 +344,7 @@ end
 ELSE IF @action = 6 BEGIN --Add relation of Chatbot-WA conversations
 	IF NOT EXISTS(SELECT * FROM ChatBotWhatsAppConversation WHERE ChatBotConversationId = @chatBotConversationId
 	AND WhatsAppConversationId = @WAConversationId AND CampType = @camType) BEGIN
-		INSERT INTO ChatBotWhatsAppConversation VALUES (@chatBotConversationId, @WAConversationId, @camType)
+		INSERT INTO ChatBotWhatsAppConversation (ChatBotConversationId, WhatsAppConversationId, CampType) VALUES (@chatBotConversationId, @WAConversationId, @camType)
 	END
 END
 ELSE IF @action = 7 BEGIN --Get chatbotConversationId value if it exists

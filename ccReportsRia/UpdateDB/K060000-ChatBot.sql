@@ -37,7 +37,8 @@ BEGIN
 	SET @sql = 'IF NOT EXISTS(SELECT * FROM SYS.TABLES WHERE NAME = N''RepChatbotConversationsTransferredWA'')
 				BEGIN
 					CREATE TABLE RepChatbotConversationsTransferredWA
-						(	chatbotId INT NOT NULL,
+						(	dateChatbot DATETIME NOT NULL,
+							chatbotId INT NOT NULL,
 							conversationIdChatbot BIGINT NOT NULL,
 							chatbotName VARCHAR(255) NOT NULL,
 							conversationEndStatusChatbot VARCHAR(100) NOT NULL,
@@ -45,10 +46,10 @@ BEGIN
 							inboundId INT NOT NULL,
 							campaign VARCHAR(30) NOT NULL,
 							date DATE NOT NULL,
-							dispositionId SMALLINT NOT NULL,
-							disposition VARCHAR(60) NOT NULL,
-							subDispositionId SMALLINT NOT NULL,
-							subDisposition VARCHAR(60) NOT NULL,
+							dispositionId SMALLINT,
+							disposition VARCHAR(60),
+							subDispositionId SMALLINT,
+							subDisposition VARCHAR(60),
 							conversationTimeWhatsApp INT NOT NULL
 						)
 
@@ -59,12 +60,12 @@ BEGIN
 	SET @process = 'K060017 Add the relation of the filters to the corresponding report'
 	SET @sql = 'IF NOT EXISTS (SELECT * FROM ReportsFilters WHERE id = 15030 AND filterName = ''acds'')
 				BEGIN
-					INSERT INTO ReportsFilters (reportName, filterName, id) VALUES (''Transferred Conversations (WhatsApp)'', ''acds'', 15030)
+					INSERT INTO ReportsFilters (reportName, filterName, id) VALUES (''Transferred Conversations to WhatsApp'', ''acds'', 15030)
 				END
 
 				IF NOT EXISTS (SELECT * FROM ReportsFilters WHERE id = 15030 AND filterName = ''chatbots'')
 				BEGIN
-					INSERT INTO ReportsFilters (reportName, filterName, id) VALUES (''Transferred Conversations (WhatsApp)'', ''chatbots'', 15030)
+					INSERT INTO ReportsFilters (reportName, filterName, id) VALUES (''Transferred Conversations to WhatsApp'', ''chatbots'', 15030)
 				END'
 	EXEC(@sql)
 
@@ -420,10 +421,11 @@ BEGIN
 					
 				if @action = 1	begin
 
-					DELETE FROM ccspRepChatbotConversationsTransferredWA  WITH(ROWLOCK) WHERE [date] >= @from AND [date] < @to;
+					DELETE FROM RepChatbotConversationsTransferredWA  WITH(ROWLOCK) WHERE [date] >= @from AND [date] < @to;
 
 					INSERT INTO RepChatbotConversationsTransferredWA
-					SELECT  A.id AS chatbotId,
+					SELECT  CAST(B.FirstMessageTime AS DATETIME) AS [dateChatbot],
+							A.id AS chatbotId,
 							B.ChatBotConversationId AS conversationIdChatbot,
 							A.ProjectName AS chatbotName,
 							C.description AS conversationEndStatusChatbot,
@@ -451,8 +453,12 @@ BEGIN
 
 	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'K060017 Add the conversation end status to the translation table'
+	SET @sql = 'IF NOT EXISTS (SELECT * FROM TranslatedReports WHERE id = 15030)
+				BEGIN
+					INSERT INTO TranslatedReports (id, columns) VALUES (15030,
+                    ''Finished by contact|Finished on failure|Transferred to WhatsApp|Transferred to call|Abandoned'')
+				END'
 	EXEC(@sql)
 	
 	SET @process = ''

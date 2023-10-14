@@ -420,8 +420,8 @@ set nocount off'
 	SET @process = 'K060006 Insert the EndStatus in the table'
 	SET @sql = ' TRUNCATE TABLE ChatBotConversationEndStatus;
 				INSERT INTO ChatBotConversationEndStatus ([name],[description])
-				VALUES (''Finish'',''Finished by client''), (''Fail'',''Finished by system fail''), (''Transfer'',''Transfered to WhatsApp campaign''),
-				(''Callback'',''Transfered to callback''), (''Abandon'',''Abandoned by client'');'
+				VALUES (''Finish'',''Finished by contact''), (''Fail'',''Finished on failure''), (''Transfer'',''Transferred to WhatsApp''),
+				(''Callback'',''Transferred to call''), (''Abandon'',''Abandoned'');'
 	EXEC(@sql)
 
 	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'

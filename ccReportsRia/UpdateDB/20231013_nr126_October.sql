@@ -358,7 +358,7 @@ BEGIN
 				-- Both
 				IF NOT EXISTS(SELECT * FROM TranslatedReports WHERE id IN(14010, 14020))
 				BEGIN
-					INSERT INTO TranslatedReports VALUES(14010, ''contactCountry|billedWhatsApp|isBilled|isNotBilled'')
+					INSERT INTO TranslatedReports VALUES(14010, ''contactCountry|billedWhatsApp'')
 					INSERT INTO TranslatedReports VALUES(14020, ''contactCountry'')
 				END'
 	EXEC(@sql)

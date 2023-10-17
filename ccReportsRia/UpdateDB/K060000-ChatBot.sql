@@ -26,6 +26,33 @@ BEGIN
 	BEGIN TRY
 
 	-------------------------------------------- BEGIN Enrique Ruiz ---------------------------------------------------------------------------------
+	SET @process = 'K060017 Insert the new Reports into the Menu list'
+	SET @sql = 'IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 15000)
+				BEGIN
+					INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF) VALUES
+					(15000, ''Chatbot|Chatbot'', 15000, ''A'', 12, 3, ''33b95227bffa5d65c9153de6446d153bd6852b9bf809975e12d665594f21f41b'')
+				END
+
+				IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 15010)
+				BEGIN
+					INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF) VALUES
+					(15010, ''Detalle de conversaciones|Conversations Detail'', 15000, ''B'', 12, 3, ''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370'')
+				END
+
+				IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 15020)
+				BEGIN
+					INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF) VALUES
+					(15020, ''Conversaciones por chatbot|Conversations by Chatbot'', 15000, ''B'', 12, 3, ''2605c8244920fb599fb936a4bf94521abfec097ca281c5864874691fe77a9dcb497d9428f876069fee726e663efa2ea23fd5c333b0be8fbc714d53e1fcb087c8'')
+				END
+
+				IF NOT EXISTS (SELECT * FROM ccMenus WHERE menu_id = 15030)
+				BEGIN
+					INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF) VALUES
+					(15030, ''Conversaciones transferidas a WhatsApp|Transferred Conversations to WhatsApp'', 15000, ''B'', 12, 3,
+					''2605c8244920fb599fb936a4bf94521ac1d8958f95ce9d3d1dcfbee594bd612c14c53787eec7f5671ec8aeeced55be43d4aafdd18714a1f51cd96626558813a4e4e0613c02e23f40e9f6b8341c44cf20'')
+				END'		
+	EXEC(@sql)
+	
 	SET @process = 'K060017 Add the new filter to the available list'
 	SET @sql = 'IF NOT EXISTS (SELECT * FROM Filters WHERE id = 33 AND name = ''chatbots'')
 				BEGIN
@@ -451,15 +478,17 @@ BEGIN
 				END'
 	EXEC(@sql)
 
-	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
-
 	SET @process = 'K060017 Add the conversation end status to the translation table'
 	SET @sql = 'IF NOT EXISTS (SELECT * FROM TranslatedReports WHERE id = 15030)
 				BEGIN
 					INSERT INTO TranslatedReports (id, columns) VALUES (15030,
-                    ''Finished by contact|Finished on failure|Transferred to WhatsApp|Transferred to call|Abandoned'')
+                    ''conversationEndStatusChatbot'')
 				END'
 	EXEC(@sql)
+
+	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
+
+	
 	
 	SET @process = ''
 	SET @sql = ''

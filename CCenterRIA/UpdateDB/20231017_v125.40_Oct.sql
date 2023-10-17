@@ -56,6 +56,17 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
+	-----------------------------------------------------BEGIN JCL -----------------------------------------------------------------
+
+		SET @process = 'CW-7958 Historial movimientos calificaciones'
+		SET @Sql = 'if not exists (select * from ccGalateaOperations where OperationId=78)
+    begin
+		insert into ccGalateaOperations(OpTagEs, OpTagEn, OpTagPt, OperationId)
+		values(''Editar calificación de salida'', ''Edit outbound disposition'', ''Editar classificação de saída'', 78)
+  	end'
+
+		EXEC (@Sql)
+	-----------------------------------------------------END JCL -----------------------------------------------------------------s
 
 	-----------------------------------------------------BEGIN KR089000 Notificación recepción y finalización de llamada -----------------------------------------------------------------
 	
@@ -458,7 +469,7 @@ end
 	
 END';
 	EXEC (@sql);
-
+-----------------------------------------------------END KR089000 Notificación recepción y finalización de llamada -----------------------------------------------------------------
 -- BEGIN CW-8113 -----------------------------------------------------------------
 
 	SET @process = 'CW-8113 Drop proc ccsp_AgentGetCalificaciones'
@@ -660,39 +671,6 @@ AS (SELECT DISTINCT
 
 	-- END CW-8113 -----------------------------------------------------------------
 
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	SET @process = 'KR089000 ';
-	SET @sql = '';
-	EXEC (@sql);
-
-	-----------------------------------------------------END KR089000 Notificación recepción y finalización de llamada -----------------------------------------------------------------
 
 	/* End script release */
 	/* Upgrade database version (first and the last number of setting 77) */

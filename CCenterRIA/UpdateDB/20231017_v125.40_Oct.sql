@@ -56,6 +56,7 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
+
 	-----------------------------------------------------BEGIN JCL -----------------------------------------------------------------
 
 		SET @process = 'CW-7958 Historial movimientos calificaciones'
@@ -670,7 +671,6 @@ AS (SELECT DISTINCT
 	EXEC (@sql);
 
 	-- END CW-8113 -----------------------------------------------------------------
-
 
 	/* End script release */
 	/* Upgrade database version (first and the last number of setting 77) */

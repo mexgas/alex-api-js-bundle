@@ -71,11 +71,22 @@ BEGIN
 
 	-----------------------------------------------------BEGIN KR089000 Notificación recepción y finalización de llamada -----------------------------------------------------------------
 	
-	SET @process = 'KR089000 Alter Table Add Column ccAgentMsgRelationFiles.MsgType';
-	SET @sql = 'IF NOT EXISTS( SELECT * FROM sys.columns WHERE name = N''MsgType'' AND Object_ID = Object_ID(N''ccAgentMsgRelationFiles''))
-BEGIN
-	ALTER TABLE ccAgentMsgRelationFiles ADD MsgType TINYINT;
-END';
+	SET @process = 'KR089000 DROP ccAgentMsgRelationFiles';
+	SET @sql = 'if exists(select * from sys.tables where name=''ccAgentMsgRelationFiles'') begin
+					DROP TABLE [dbo].[ccAgentMsgRelationFiles]
+				end';
+	EXEC (@sql);
+
+	SET @process = 'KR089000 CREATE ccAgentMsgRelationFiles add column PK MsgType';
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccAgentMsgRelationFiles'') begin
+					CREATE TABLE [dbo].[ccAgentMsgRelationFiles](
+						[MsgId] [int] NOT NULL FOREIGN KEY REFERENCES ccAgentMsgFiles(MsgId),
+						[CamId] [int] NOT NULL,
+						[CamType] [tinyint] NOT NULL,
+						[MsgType] [tinyint],
+						primary key([MsgId],[CamId],[CamType],[MsgType])  
+						)       
+					end';
 	EXEC (@sql);
 
 	SET @process = 'KR089000 Alter Table Add Column ccAgentMsgFiles.idArea';
@@ -413,7 +424,7 @@ begin
 				select @idCampUnassign =CamId from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType and MsgType = @messageType
 			end
 
-        delete from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType 
+        delete from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType and MsgType = @messageType
         select @campName
 end
 

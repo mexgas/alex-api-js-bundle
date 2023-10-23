@@ -6261,7 +6261,7 @@ set @ret = 1
 select @ret'
 	EXEC(@sql)
 
-	SET @process = 'DEV1-436 Alter SP CofetelUpdateData'
+	SET @process = 'DEV1-436 Alter SP CofetelUpdateData Valida que este vacia Series para insertar los registros @type = 1'
 	SET @sql = '
 ALTER PROCEDURE [dbo].[CofetelUpdateData]
 @type tinyint
@@ -6279,10 +6279,7 @@ set @ret = 1
 		
 select @ret'
 	EXEC(@sql)
-
-	SET @process = ' Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
+	
 	---------------------------------------END Jesus Gallardo hotfix/125.20230719.0.7-----------------------------------------------------------
 
 

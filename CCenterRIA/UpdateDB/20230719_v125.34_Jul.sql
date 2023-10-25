@@ -6270,7 +6270,7 @@ select @ret'
 					FROM smsWorkingTable wt
 					JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
 					LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
-					WHERE wt.sms_status = 2 AND os.sms_status = 2
+					WHERE wt.sms_status IN(1,2) 
 					AND cco.smsout_id IS NULL;
 
 					UPDATE wt

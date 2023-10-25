@@ -5840,6 +5840,449 @@ end'
 
 	---------------------------------------END Jesus Gallardo hotfix/125.20230719.0.6-----------------------------------------------------------
 
+	---------------------------------------Begin Jesus Gallardo hotfix/125.20230719.0.7-----------------------------------------------------------
+	SET @process = 'CW-8077 Alter SP ccsp_InsertDNCList se agrega validacion para no insertar telefonos vacios select * from #mytempCall where [telefono]<>@phoneEmpty'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_InsertDNCList]
+@telephone as varchar(30),
+@ln_id as integer,
+@hashCalKey bigint=NULL,
+@calKey VARCHAR(40) = NULL
+WITH RECOMPILE
+AS
+
+
+declare @pais varchar(2), @ld varchar(5), @tel as varchar(30)
+,@tel10 as varchar(30),@tel11 as varchar(30)
+
+insert into cclistanegra(telefono,idtipolista,HashKey, calKey) values(@telephone, @ln_id,@hashCalKey, @calKey)
+
+IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+IF OBJECT_ID(N''tempdb..#myprincipaltempCall'') IS NOT NULL drop table #myprincipaltempCall
+IF OBJECT_ID(N''tempdb..#mytempCall'') IS NOT NULL drop table #mytempCall
+
+
+CREATE TABLE [dbo].[#mycamps] (	[campsid] [int] NULL)
+
+CREATE CLUSTERED INDEX [IX_mycamps] ON [dbo].[#mycamps]([campsid]) 
+
+insert #mycamps
+select A.cam_id from Camplistanegra A
+Inner join ccCamps B on A.cam_id=B.cam_id
+where A.idtipolista = @ln_id and B.CampType not in(7,5)
+
+CREATE TABLE [dbo].[#myprincipaltempCall](
+	[callout_id] [int] NULL, 
+	[cam_id] [smallint] NULL ,
+	[tipomov] [int] NULL,
+	[idtipolista] [int] NULL,
+	[cal_telefono] [varchar] (15) NULL ,
+	[cal_telefono2] [varchar] (15) NULL ,
+	[cal_telefono3] [varchar] (15) NULL ,
+	[cal_telefono4] [varchar] (15) NULL ,
+	[cal_telefono5] [varchar] (15) NULL
+	)
+
+CREATE CLUSTERED INDEX [IX_myprincipaltemp] ON [dbo].[#myprincipaltempCall]([callout_id]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp2] ON [dbo].[#myprincipaltempCall]([cal_telefono]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp3] ON [dbo].[#myprincipaltempCall]([cal_telefono2]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp4] ON [dbo].[#myprincipaltempCall]([cal_telefono3]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp5] ON [dbo].[#myprincipaltempCall]([cal_telefono4]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp6] ON [dbo].[#myprincipaltempCall]([cal_telefono5]) 
+
+CREATE TABLE [dbo].[#mytempCall](
+	[callout_id] [int] NULL, 
+	[telefono] [varchar] (15) NULL ,
+	[cam_id] [smallint] NULL ,
+	[tipomov] [int] NULL,
+	[idtipolista] [int] NULL
+)
+
+CREATE CLUSTERED INDEX [IX_mytemp] ON [dbo].[#mytempCall]([callout_id]) 
+
+select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @ld = valor from ccSettings with(nolock) where setting_id = 17
+select @tel = dbo.completa(@telephone, @pais, @ld)
+
+set @tel10=RIGHT(@tel,10)
+set @tel11=RIGHT(@tel,11)
+
+declare @fech datetime = getdate()-30
+if @hashCalKey is not null and @hashCalKey > 0
+begin
+
+	insert into [#myprincipaltempCall] 
+	SELECT a.callout_id as callout_id, a.cam_id,3,@ln_id as idtipolista , a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+	FROM [ccoCallsOutSource] as a, #mycamps as b with(nolock) 
+	WHERE a.cam_id = b.campsid 
+	AND dbo.hashList(cal_Key) = @hashCalKey and  cal_fechadial > @fech  
+end
+else begin
+	insert into [#myprincipaltempCall]
+	SELECT a.callout_id as callout_id, a.cam_id,''3'',cast(@ln_id as nvarchar) as idtipolista , a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+	FROM [ccoCallsOutSource] as a, #mycamps as b with(nolock) 
+	WHERE a.cam_id = b.campsid	
+	and (@tel  IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) 
+	or @tel10 IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5]) 
+	or @tel11 IN ([cal_telefono] , [cal_telefono2], [cal_telefono3], [cal_telefono4], [cal_telefono5])) 
+	and  cal_fechadial > @fech  
+end
+
+
+if EXISTS (select * from #myprincipaltempCall)
+begin
+	declare @column nvarchar(max), @sql nvarchar(max)
+	,@sqlDeleteWorking nvarchar(max)
+	,@sqlUpdateWorking nvarchar(max)
+	,@sqlCaseWorking nvarchar(max)
+	,@params nvarchar(max)
+	,@phoneEmpty varchar(1)
+	,@sqlWithReplace nvarchar(max)
+
+	set @phoneEmpty=''''
+	set @column=''cal_telefono''
+	set @params=''@tel varchar(30),@tel10 varchar(30),@tel11 varchar(30),@phoneEmpty varchar(1),@fech datetime''
+	set @sqlDeleteWorking=''and cs.cal_telefono2=@phoneEmpty
+	and cs.cal_telefono3=@phoneEmpty
+	and cs.cal_telefono4=@phoneEmpty
+	and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono2<>@phoneEmpty then cs.cal_telefono2 
+	when cs.cal_telefono3<>@phoneEmpty then cs.cal_telefono3 
+	when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+	when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+	else @phoneEmpty end ''
+
+	set @sqlUpdateWorking=''-- Actualizamos WT al siguiente telefono disponbile (cuando no es el unico telefono)
+	update wt 
+	set cal_telefono = CASE_UPDATE_WT
+	from ccoCallsOutSource cs 
+	inner join ccoWOrkingTable wt on cs.callout_id = wt.callout_id
+	inner join #mytempCall t on cs.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech and cs.COLUMN_CHECK= wt.cal_telefono''
+
+	set @sql=''insert #mytempCall
+select callout_id,COLUMN_CHECK,cam_id,tipomov,idtipolista
+from [#myprincipaltempCall] with(nolock)
+where cal_telefono in(@tel,@tel10,@tel11)
+
+if EXISTS (select * from #mytempCall)
+begin		
+	-- Borramos de WT todos los registros en los que el telefono1 sea el unico telefono y este en la lista negra
+	delete wt with(rowlock)
+	from ccoWOrkingTable wt 
+	inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+	inner join #mytempCall t on wt.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech and
+	cs.COLUMN_CHECK = wt.cal_telefono
+	AND_DELETE_WT
+
+	UPDATE_SMS_WT_QUERY
+
+	--insertar el historial
+	insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+	select * from #mytempCall where [telefono]<>@phoneEmpty
+
+	-- Eliminamos el telefono1 de CS
+	update ccoCallsOutSource 
+	set COLUMN_CHECK = @phoneEmpty
+	from ccoCallsOutSource cs 
+	inner join #mytempCall t on cs.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech		
+
+	truncate table #mytempCall
+end''
+
+	
+	/******************/
+	/*** Telefono 1 ***/
+	/******************/
+	
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)	
+	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech	
+
+	/******************/
+	/*** Telefono 2 ***/
+	/******************/
+	set @column=''cal_telefono2''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono3=@phoneEmpty
+		and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono3<>@phoneEmpty then cs.cal_telefono3 
+		when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech
+
+	/******************/
+	/*** Telefono 3 ***/
+	/******************/
+	set @column=''cal_telefono3''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech
+	
+	/******************/
+	/*** Telefono 4 ***/
+	/******************/	
+	
+	set @column=''cal_telefono4''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech
+	
+	/******************/
+	/*** Telefono 5 ***/
+	/******************/
+
+	set @column=''cal_telefono5''	
+	set @sqlDeleteWorking='' and cs.cal_telefono5=@phoneEmpty''	
+	set @sqlCaseWorking=''''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',''''),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @tel,@tel10,@tel11,@phoneEmpty,@fech
+
+end
+
+IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+IF OBJECT_ID(N''tempdb..#myprincipaltempCall'') IS NOT NULL drop table #myprincipaltempCall
+IF OBJECT_ID(N''tempdb..#mytempCall'') IS NOT NULL drop table #mytempCall'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-436 Alter SP CofetelActions se valida @type = 2 que no este vacia para truncate table Series'
+	SET @sql = 'ALTER PROCEDURE [dbo].[CofetelActions]
+@type tinyint
+as
+if @type = 1
+begin
+	truncate table SeriesTmp
+end
+		
+if @type = 2
+begin
+	if exists(select * from SeriesTmp) begin
+		truncate table Series
+	end
+end
+		
+declare @ret bit
+set @ret = 1
+		
+select @ret'
+	EXEC(@sql)
+
+	SET @process = 'DEV1-436 Alter SP CofetelUpdateData Valida que este vacia Series para insertar los registros @type = 1'
+	SET @sql = '
+ALTER PROCEDURE [dbo].[CofetelUpdateData]
+@type tinyint
+as
+if @type = 1
+begin
+	if not exists(select * from Series) begin
+		insert into Series
+		select * from SeriesTmp
+	end
+end
+		
+declare @ret bit
+set @ret = 1
+		
+select @ret'
+	EXEC(@sql)
+	
+	---------------------------------------END Jesus Gallardo hotfix/125.20230719.0.7-----------------------------------------------------------
+	---------------------------------------Begin Ivan Martin hotfix/125.20230719.0.7-----------------------------------------------------------
+	SET @process = 'Se quita procedure ccspOutboundSmsMessage'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspOutboundSmsMessage'')
+				BEGIN
+				    DROP PROCEDURE ccspOutboundSmsMessage;
+				END'
+	EXEC(@sql)
+
+	SET @process = 'Se agrega action 9 para revertir el status de mensajes que no se procesaron bien'
+	SET @sql = 'CREATE procedure [dbo].[ccspOutboundSmsMessage] 
+				@action int,
+				@camId int = null,
+				@SentMsg int=null,
+				@smsoutIds varchar(max)=null,
+				@SystemApiId varchar(100)=null,
+				@statusSystemsId int =null,
+				@InsufficientBalance int=null,
+				@date datetime =null
+				as
+				declare @sql varchar(max)
+				if @action=1 begin
+					select cast(cam_id as int) as CamId,cam_descripcion as [Name],cam_procesando as [Start] 
+					from ccCamps where CampType=7 and IDArea is not null and( @camId is null or cam_id=@camId)
+				end
+				else if @action=2 begin
+					select tz_offset from ccTimeZones ORDER BY tz_id
+				end
+				else if @action=3 begin
+					select cast(camId as int) CamId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected 
+					from ccSmsConversationsResult where ( @camId is null or camId=@camId)
+				end
+				else if @action=4 begin
+					truncate table ccSmsConversationsResult
+				end
+				else if @action=5 begin
+					if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+						insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
+					end
+					else begin
+						update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
+						,InsufficientBalance=InsufficientBalance+@InsufficientBalance
+						where camId=@camId
+					end
+				end
+				else if @action=6 begin	
+					set @sql=''declare @listCamId table(camId int,status bit)
+
+				declare @camId int
+				insert into @listCamId
+				select distinct cam_id,0 from smsWorkingTable with(nolock) where smsout_id in(''+@smsoutIds+'')
+
+				while exists(select * from @listCamId where status=0)begin
+					select top 1 @camId=CamId from @listCamId where status=0
+					
+					exec ccsp_GalateaGetCampsNvosCB @cam_id=@camId,@Tipo=2,@regval=1
+					update @listCamId set status=1 where status=0 and @camId=CamId 
+				end
+				delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')
+					''
+					exec (@sql)
+				end
+				else if @action=7 begin
+					declare @statusSystemsIdOld int
+					declare @ccSmsConversationsResult table(camId int,statusSystemsId int,description varchar(255), value int)
+					select top(1) @camId =cam_id,@statusSystemsIdOld=statusSystemsId from smsccoLogDial with(nolock) where SystemApiId=@SystemApiId
+					update smsccoLogDial set statusSystemsId=@statusSystemsId where SystemApiId=@SystemApiId
+					
+					insert into @ccSmsConversationsResult
+					select camId, ROW_NUMBER() OVER(ORDER BY camId ASC)-1 AS statusSystemsId, description,value
+					from ccSmsConversationsResult
+					unpivot
+					(
+						value
+						for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+					) unpiv
+					where camId= @camId
+
+					update @ccSmsConversationsResult set value =case when value>0 then value-1 else 0 end where statusSystemsId=@statusSystemsIdOld
+					update @ccSmsConversationsResult set value =value+1 where statusSystemsId=@statusSystemsId
+					
+					;with res as(
+					select * from 
+					(
+						select camId, description, value
+						from @ccSmsConversationsResult 
+					) src
+					pivot
+					(
+					sum(value)
+					for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+					) piv
+					)
+
+					update B 
+					set B.SentMsg=A.SentMsg
+					,B.Delivered=A.Delivered
+					,B.NotDelivered=A.NotDelivered
+					,B.RecipientRejected=A.RecipientRejected
+					,B.CarrierRejected=A.CarrierRejected
+					,B.InsufficientBalance=A.InsufficientBalance
+					from
+					res A
+					inner join ccSmsConversationsResult B on A.camId=B.camId
+				end
+				else if @action=8 begin
+					update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(4,5)
+				end
+				else if @action=9 begin
+					CREATE TABLE #TempSmsOutIds (
+				    smsout_id INT
+					);
+
+					INSERT INTO #TempSmsOutIds (smsout_id)
+					SELECT DISTINCT wt.smsout_id
+					FROM smsWorkingTable wt
+					JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
+					LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
+					WHERE wt.sms_status IN(1,2) 
+					AND cco.smsout_id IS NULL;
+
+					UPDATE wt
+					SET wt.sms_status = 0
+					FROM smsWorkingTable wt
+					JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
+
+					DROP TABLE #TempSmsOutIds;
+				end'
+	EXEC(@sql)
+	---------------------------------------End Ivan Martin hotfix/125.20230719.0.7-----------------------------------------------------------
+
 
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */
 		EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

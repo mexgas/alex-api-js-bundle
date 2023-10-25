@@ -6153,6 +6153,135 @@ select @ret'
 	EXEC(@sql)
 	
 	---------------------------------------END Jesus Gallardo hotfix/125.20230719.0.7-----------------------------------------------------------
+	---------------------------------------Begin Ivan Martin hotfix/125.20230719.0.7-----------------------------------------------------------
+	SET @process = 'Se quita procedure ccspOutboundSmsMessage'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspOutboundSmsMessage'')
+				BEGIN
+				    DROP PROCEDURE ccspOutboundSmsMessage;
+				END'
+	EXEC(@sql)
+
+	SET @process = 'Se agrega action 9 para revertir el status de mensajes que no se procesaron bien'
+	SET @sql = 'CREATE procedure [dbo].[ccspOutboundSmsMessage] 
+				@action int,
+				@camId int = null,
+				@SentMsg int=null,
+				@smsoutIds varchar(max)=null,
+				@SystemApiId varchar(100)=null,
+				@statusSystemsId int =null,
+				@InsufficientBalance int=null,
+				@date datetime =null
+				as
+				declare @sql varchar(max)
+				if @action=1 begin
+					select cast(cam_id as int) as CamId,cam_descripcion as [Name],cam_procesando as [Start] 
+					from ccCamps where CampType=7 and IDArea is not null and( @camId is null or cam_id=@camId)
+				end
+				else if @action=2 begin
+					select tz_offset from ccTimeZones ORDER BY tz_id
+				end
+				else if @action=3 begin
+					select cast(camId as int) CamId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected 
+					from ccSmsConversationsResult where ( @camId is null or camId=@camId)
+				end
+				else if @action=4 begin
+					truncate table ccSmsConversationsResult
+				end
+				else if @action=5 begin
+					if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+						insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
+					end
+					else begin
+						update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
+						,InsufficientBalance=InsufficientBalance+@InsufficientBalance
+						where camId=@camId
+					end
+				end
+				else if @action=6 begin	
+					set @sql=''declare @listCamId table(camId int,status bit)
+
+				declare @camId int
+				insert into @listCamId
+				select distinct cam_id,0 from smsWorkingTable with(nolock) where smsout_id in(''+@smsoutIds+'')
+
+				while exists(select * from @listCamId where status=0)begin
+					select top 1 @camId=CamId from @listCamId where status=0
+					
+					exec ccsp_GalateaGetCampsNvosCB @cam_id=@camId,@Tipo=2,@regval=1
+					update @listCamId set status=1 where status=0 and @camId=CamId 
+				end
+				delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')
+					''
+					exec (@sql)
+				end
+				else if @action=7 begin
+					declare @statusSystemsIdOld int
+					declare @ccSmsConversationsResult table(camId int,statusSystemsId int,description varchar(255), value int)
+					select top(1) @camId =cam_id,@statusSystemsIdOld=statusSystemsId from smsccoLogDial with(nolock) where SystemApiId=@SystemApiId
+					update smsccoLogDial set statusSystemsId=@statusSystemsId where SystemApiId=@SystemApiId
+					
+					insert into @ccSmsConversationsResult
+					select camId, ROW_NUMBER() OVER(ORDER BY camId ASC)-1 AS statusSystemsId, description,value
+					from ccSmsConversationsResult
+					unpivot
+					(
+						value
+						for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+					) unpiv
+					where camId= @camId
+
+					update @ccSmsConversationsResult set value =case when value>0 then value-1 else 0 end where statusSystemsId=@statusSystemsIdOld
+					update @ccSmsConversationsResult set value =value+1 where statusSystemsId=@statusSystemsId
+					
+					;with res as(
+					select * from 
+					(
+						select camId, description, value
+						from @ccSmsConversationsResult 
+					) src
+					pivot
+					(
+					sum(value)
+					for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+					) piv
+					)
+
+					update B 
+					set B.SentMsg=A.SentMsg
+					,B.Delivered=A.Delivered
+					,B.NotDelivered=A.NotDelivered
+					,B.RecipientRejected=A.RecipientRejected
+					,B.CarrierRejected=A.CarrierRejected
+					,B.InsufficientBalance=A.InsufficientBalance
+					from
+					res A
+					inner join ccSmsConversationsResult B on A.camId=B.camId
+				end
+				else if @action=8 begin
+					update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(4,5)
+				end
+				else if @action=9 begin
+					CREATE TABLE #TempSmsOutIds (
+				    smsout_id INT
+					);
+
+					INSERT INTO #TempSmsOutIds (smsout_id)
+					SELECT DISTINCT wt.smsout_id
+					FROM smsWorkingTable wt
+					JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
+					LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
+					WHERE wt.sms_status IN(1,2) 
+					AND cco.smsout_id IS NULL;
+
+					UPDATE wt
+					SET wt.sms_status = 0
+					FROM smsWorkingTable wt
+					JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
+
+					DROP TABLE #TempSmsOutIds;
+				end'
+	EXEC(@sql)
+	---------------------------------------End Ivan Martin hotfix/125.20230719.0.7-----------------------------------------------------------
 
 
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */

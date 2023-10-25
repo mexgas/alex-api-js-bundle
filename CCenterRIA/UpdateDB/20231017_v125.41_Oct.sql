@@ -99,7 +99,7 @@ END';
 	SET @process = 'KR089000 Alter Table Add Column ccAgentMsgFiles.messageType';
 	SET @sql = 'IF NOT EXISTS( SELECT * FROM sys.columns WHERE name = N''messageType'' AND Object_ID = Object_ID(N''ccAgentMsgFiles''))
 BEGIN
-	ALTER TABLE ccAgentMsgFiles ADD messageType tinyint NOT NULL DEFAULT(-1);
+	ALTER TABLE ccAgentMsgFiles ADD messageType tinyint NOT NULL DEFAULT(0);
 END';
 	EXEC (@sql);
 

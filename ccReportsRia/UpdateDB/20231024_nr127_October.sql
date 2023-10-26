@@ -20,18 +20,24 @@ BEGIN
 
 	-----------------------------------------------------BEGIN Rod Salazar -----------------------------------------------------------------
 
-	set @process = 'CW-8143 Agregar columna nueva a reporte RepOutManagementBase y actualizamos los reportes'
+	set @process = 'CW-8143 Agregar columna nueva a reporte RepOutManagementBase'
 	set @sql='
 	if not exists (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''RepOutManagementBase'' AND COLUMN_NAME = ''campaignId'')
 	begin
 		alter table RepOutManagementBase add campaignId int null
+	end'
+	EXEC(@sql)
 
+	set @process = 'CW-8143 Actualizar valor de columna campaignId en tabla RepOutManagementBase'
+	set @sql='
+	if exists (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''RepOutManagementBase'' AND COLUMN_NAME = ''campaignId'')
+	begin
 		update RepOutManagementBase 
 		set campaignId = ISNULL(c.cam_id, 0)
 		from RepOutManagementBase rep
 		left join cccamps c on rep.Campaigns = c.cam_descripcion
-
-	end'
+	end
+	'
 	EXEC(@sql)
 
 	set @process = 'CW-8143 Borrar sp ccspRepOutManagementBase'

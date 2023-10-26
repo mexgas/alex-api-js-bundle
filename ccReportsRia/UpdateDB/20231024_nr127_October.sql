@@ -36,8 +36,7 @@ BEGIN
 		set campaignId = ISNULL(c.cam_id, 0)
 		from RepOutManagementBase rep
 		left join cccamps c on rep.Campaigns = c.cam_descripcion
-	end
-	'
+	end'
 	EXEC(@sql)
 
 	set @process = 'CW-8143 Borrar sp ccspRepOutManagementBase'

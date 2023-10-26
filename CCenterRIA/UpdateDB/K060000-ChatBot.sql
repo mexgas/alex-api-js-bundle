@@ -100,6 +100,23 @@ end'
 	end'
 	EXEC(@sql)
 
+	SET @process = 'K060033 - Se agregan campos para validad si ya fueron procesados los mensajes en azure'
+	SET @sql = '
+	IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
+		WHERE  TABLE_NAME = ''ChatBotConversationMessage''
+		AND COLUMN_NAME = ''PendingToAzure'')
+	BEGIN
+		ALTER TABLE ChatBotConversationMessage ADD PendingToAzure smallint
+	END
+
+	IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
+		WHERE  TABLE_NAME = ''ChatBotConversationMessage''
+		AND COLUMN_NAME = ''message_uuid'')
+	BEGIN
+		ALTER TABLE ChatBotConversationMessage ADD message_uuid smallint
+	END'
+	EXEC(@sql)
+
 	SET @process = 'K060000-Se crea SP ccsp_Save_ChatBot_Conversation_Message'
 	SET @sql = '
 	CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation_Message]
@@ -109,13 +126,15 @@ end'
 	@messageStatus VARCHAR(50),
 	@date DateTime,
 	@typeMessage VARCHAR(50),
-	@message VARCHAR(255)
+	@message VARCHAR(255),
+	@message_uuid varchar(50)
 
 	as set nocount on
 
 	IF(@option = 1) BEGIN
 
 		INSERT INTO ChatBotConversationMessage(
+		message_uuid,
 		ConversationChatBotId,
 		OriginType,
 		MessageStatus,
@@ -124,6 +143,7 @@ end'
 		Message
 		) 
 		VALUES (
+		@message_uuid,
 		@conversationChatBotId,
 		@originType,
 		@messageStatus,
@@ -408,7 +428,7 @@ set nocount off'
 	CREATE TABLE [dbo].[ChatBotConversationEndStatus](
 					[id] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
 					[name] [varchar](30) NOT NULL,
-					[description] [varchar](100) NOT NULL,
+					[description] [varchar](100) NOT NULL
 				PRIMARY KEY CLUSTERED 
 				(
 					[id] ASC
@@ -418,11 +438,39 @@ set nocount off'
 	EXEC(@sql)
 
 	SET @process = 'K060006 Insert the EndStatus in the table'
-	SET @sql = ' TRUNCATE TABLE ChatBotConversationEndStatus;
+	SET @sql = 'TRUNCATE TABLE ChatBotConversationEndStatus;
 				INSERT INTO ChatBotConversationEndStatus ([name],[description])
-				VALUES (''Finish'',''Finished by contact''), (''Fail'',''Finished on failure''), (''Transfer'',''Transferred to WhatsApp''),
-				(''Callback'',''Transferred to call''), (''Abandon'',''Abandoned'');'
+				VALUES 
+				(''Finish'',''Finished by contact''), 
+				(''Fail'',''Finished on failure''), 
+				(''Transfer'',''Transferred to WhatsApp''),
+				(''Callback'',''Transferred to call''), 
+				(''Abandon'',''Abandoned'');'
 	EXEC(@sql)
+
+	SET @process = 'K060014 se agregan etiquetas correspindientes para los estatus'
+	SET @sql = 'IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
+	WHERE  TABLE_NAME = ''ChatBotConversationEndStatus''
+	AND COLUMN_NAME = ''tag'')
+	BEGIN
+		alter table ChatBotConversationEndStatus 
+		add [tag] [varchar](50),
+			[es] [varchar](100),
+			[en] [varchar](100),
+			[pt] [varchar](100)
+	END
+
+
+
+	UPDATE ChatBotConversationEndStatus SET [tag] = ''finished-by-contact'', es =''Finalizada por contacto'', en = ''Finished by contact'',pt =''Encerrada pelo contato'' where id = 1
+	UPDATE ChatBotConversationEndStatus SET [tag] = ''finished-on-failure'', es = ''Finalizada por falla'', en = ''Finished on failure'', pt = ''Encerrada após falha'' where id = 2
+	UPDATE ChatBotConversationEndStatus SET [tag] = ''transferred-to-whatsapp'', es = ''Transferida a WhatsApp'', en = ''Transferred to WhatsApp'', pt = ''Transferida para WhatsApp'' where id = 3
+	UPDATE ChatBotConversationEndStatus SET [tag] = ''transferred-to-call'', es = ''Transferida a llamada'', en = ''Transferred to call'', pt = ''Transferida para chamada'' where id = 4
+	UPDATE ChatBotConversationEndStatus SET [tag] = ''abandoned'', es = ''Abandonada'', en = ''Abandoned'', pt = ''Abandonada'' where id = 5
+	'
+	EXEC(@sql)
+
+
 
 	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'
 	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaChatBotConversationsResult]
@@ -2292,14 +2340,14 @@ set nocount off'
 				             RETURN 0;
 				     END;
 				IF @action = 6
-				         BEGIN--Informacion de la conversacion de chatbot
+					BEGIN--Informacion de la conversacion de chatbot
 							SELECT A.ChatBotConversationId AS conversationId, A.ChatBotNumber AS contactName, 
 							A.ClientNumber AS clientNumber, a.ChatBotId as chatBotId, a.ChatBotName AS chatBotName, 
 							A.CampIdTransfered AS campIdTransfered, A.FirstMessageTime as firstMessageTime
 							,(cast(sum(A.conversationTime) / 3600 as varchar(10)) + '':'' + 
 				            right(''0'' + cast((sum(A.conversationTime) % 3600) / 60 as varchar(10)), 2) + '':'' + 
 				            right(''0'' + cast(sum(A.conversationTime) % 60 as varchar(10)), 2)) as conversationTime,
-							B.whatsAppConversationId 
+							ISNULL(B.whatsAppConversationId,0) as whatsAppConversationId
 							FROM  ChatBotConversation A
 							LEFT JOIN ChatBotWhatsAppConversation B on A.ChatBotConversationId = B.ChatBotConversationId
 				            WHERE A.ChatBotConversationId = @conversationId
@@ -2310,6 +2358,57 @@ set nocount off'
 					select id as ChatBotId, projectName as ChatBotName from AzureKnowledge
 				END;'
 	EXEC(@sql)
+
+	SET @process = 'K060033- Se crea tabla ccUnsentWAMessagesToAzureKnowledge para guardar mensajes pendientes para envíar a azure knowledge'
+	SET @sql = 'if not exists(select * from sys.tables where name=''ccUnsentWAMessagesToAzureKnowledge'') begin
+		CREATE TABLE ccUnsentWAMessagesToAzureKnowledge(
+			message_uuid VARCHAR(50) PRIMARY KEY,
+			MessageJson VARCHAR(MAX) NOT NULL,
+			[timestamp] datetime NOT NULL
+		)
+	END'
+	EXEC(@sql)
+
+	SET @process = 'K060033- Se crea SP ccsp_UnsentMessagesToAzureKnowledge para gestionar mensajes pendientes para envíar a azure knowledge'
+	SET @sql = 'CREATE OR ALTER PROCEDURE ccsp_UnsentMessagesToAzureKnowledge
+	@action INT, 
+	@MessageJson VARCHAR(max) = NULL, 
+	@timestamp datetime = NULL,
+	@message_uuid varchar(50) = null
+	AS
+	BEGIN
+		IF @action = 1
+		BEGIN
+			DECLARE @ConversationId bigint = 0;
+			IF EXISTS (SELECT ConversationChatBotId FROM ChatBotConversationMessage  where ISNULL(PendingToAzure, 0) = 0 and message_uuid = @message_uuid)
+			BEGIN
+				UPDATE ChatBotConversationMessage SET PendingToAzure = 1 WHERE message_uuid = @message_uuid;
+				INSERT INTO ccUnsentWAMessagesToAzureKnowledge(message_uuid, MessageJson, [timestamp]) values(@message_uuid, @MessageJson, @timestamp)
+				SELECT @ConversationId = ConversationChatBotId FROM ChatBotConversationMessage  where PendingToAzure = 1 and message_uuid = @message_uuid;
+			END
+			Select @ConversationId as ConversationId
+			RETURN 0;
+		END
+		IF @action = 2
+		BEGIN
+			--SELECT MessageId, MessageJson from ccUnsentWAMessagesToAzureKnowledge ORDER BY [timestamp] asc
+			SELECT a.Message_uuid, a.ConversationChatBotId as ConversationId, b.MessageJson from 
+			ChatBotConversationMessage a
+			INNER JOIN ccUnsentWAMessagesToAzureKnowledge b on a.message_uuid = b.message_uuid
+			WHERE PendingToAzure = 1
+			ORDER BY [timestamp] asc
+			RETURN 0;
+		END
+		IF @action = 3
+		BEGIN
+			DELETE  FROM ccUnsentWAMessagesToAzureKnowledge WHERE message_uuid = @message_uuid
+			UPDATE ChatBotConversationMessage set PendingToAzure = 2 WHERE PendingToAzure = 1 and  message_uuid = @message_uuid
+			RETURN 0;
+		END
+	END'
+	EXEC(@sql)
+
+
 	------------------------------------------------END MARCO CHAGOLLA--------------------------------------------
 
 		

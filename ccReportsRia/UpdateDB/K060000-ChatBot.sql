@@ -9,7 +9,6 @@ Description: K060000-ChatBot
 
 Database: CCReportsRia
 */
-*/
 SET NOCOUNT ON
 
 DECLARE @version INT, @versionFix INT
@@ -487,9 +486,111 @@ BEGIN
 	EXEC(@sql)
 
 	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
+	---------------------------------------- BEGIN MARCO CHAGOLLA -----------------------------------------------------------
+	SET @process = 'K060012 Create the table and index with the structure to the report with 15010'
+	SET @sql = 'IF NOT EXISTS(SELECT * FROM SYS.TABLES WHERE NAME = N''RepChatbotConversationDetail'')
+				BEGIN
+					CREATE TABLE [dbo].[RepChatbotConversationDetail](
+					[date] [datetime] NOT NULL,
+					[chatbotId] [int] NOT NULL,
+					[conversationIdChatbot] [bigint] NOT NULL,
+					[chatbotName] [varchar](255) NOT NULL,
+					[conversationEndStatusChatbot] [varchar](100) NOT NULL,
+					[contactPhoneNumberChatbot] [varchar](40) NOT NULL,
+					[contactNameChatbot] [varchar](100) NOT NULL,
+					[contactCountry] [varchar](50) NOT NULL,
+					[waitTimeChatbot] [int] NOT NULL,
+					[conversationTimeChatbot] [int] NOT NULL,
+					[chatbotMessagesCount] [int] NOT NULL,
+					[clientMessagesCount] [int] NOT NULL,
+					[year] [smallint] NOT NULL,
+					[month] [smallint] NOT NULL,
+					[day] [smallint] NOT NULL,
+					[hour] [smallint] NOT NULL,
+					[minutes] [smallint] NOT NULL
+					)
+					CREATE INDEX IX_RepChatBotDetailConversation ON RepChatbotConversationDetail([date] ASC, [conversationIdChatbot], chatbotId);
+				END'
+	EXEC(@sql)
 
+	SET @process = 'K060012 - Inserting Filter Menu, Reports Filters, TranslatedReports'
+	SET @sql = 'IF NOT EXISTS(SELECT * FROM ReportsFiltersMenus WHERE idReport = 15010)
+				BEGIN
+					INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(15010,N''date'')
+				INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(15010,N''filterby'')
+				END
+
+				IF NOT EXISTS(SELECT * FROM ReportsFilters WHERE id = 15010)
+				BEGIN
+					insert into ReportsFilters values(''Conversation Detail'',''chatbots'',15010)
+				END
+
+				IF NOT EXISTS (select * from TranslatedReports where id = 15010)
+				BEGIN
+					INSERT INTO TranslatedReports
+					VALUES (15010, ''contactCountry|conversationEndStatusChatbot'')
+				END'
+	EXEC(@sql)
 	
 	
+	SET @process = 'K060012 - se crea sp ccspRepChatbotConversationDetail para generar el reporte'
+	SET @sql = 'CREATE OR ALTER procedure [dbo].[ccspRepChatbotConversationDetail]
+				@action as tinyint,
+				@from as datetime = null,
+				@to as datetime = null
+
+				AS
+				if @from is null
+					select @from = convert(datetime,convert(varchar(11),getdate()))
+					set @from=DATEADD(dd,-1,@from)
+				if @to is null
+					select @to = getdate()
+
+				if @action = 1	begin
+
+					delete from RepChatbotConversationDetail WITH (ROWLOCK) WHERE [date] >= @from AND [date] < @to
+
+					SELECT ConversationChatBotId, count(ConversationChatBotId) as clientMessagesCount
+					INTO #clientMessages
+					from ChatBotConversationMessage
+					WHERE OriginType = ''Client'' and  [date] between @from AND @to
+					GROUP BY ConversationChatBotId
+
+					SELECT ConversationChatBotId, count(ConversationChatBotId) as chatbotMessagesCount
+					INTO #chatbotMessages
+					from ChatBotConversationMessage
+					WHERE OriginType = ''Chatbot'' and  [date] between @from AND @to
+					GROUP BY ConversationChatBotId
+
+					INSERT INTO RepChatbotConversationDetail
+					select c.FirstMessageTime as [date],
+					c.ChatBotId as chatbotId,
+					c.ChatBotConversationId as conversationIdChatbot,
+					c.ChatBotName as chatbotName,
+					ISNULL(''systemTranslated_'' + REPLACE(es.description, '' '', ''''),''N/A'') as conversationEndStatusChatbot,
+					CASE WHEN LTRIM(RTRIM(ISNULL(c.ClientNumber, ''N/A''))) = '''' THEN ''N/A'' ELSE LTRIM(RTRIM(ISNULL(c.ClientNumber, ''N/A'')))  END as contactPhoneNumberChatbot,
+					CASE WHEN LTRIM(RTRIM(ISNULL(c.ClientName, ''N/A''))) = '''' THEN ''N/A'' ELSE LTRIM(RTRIM(ISNULL(c.ClientName, ''N/A'')))  END as contactNameChatbot,
+					dbo.GetCountryWhatsApp(c.ClientNumber) as contactCountry,
+					c.QueueTime as waitTimeChatbot,
+					c.ConversationTime as conversationTimeChatbot,
+					ISNULL(cbm.chatbotMessagesCount, 0) as chatbotMessagesCount,
+					ISNULL(cm.clientMessagesCount, 0) as clientMessagesCount,
+					DATEPART(yyyy,c.FirstMessageTime) [year],
+					datepart(mm,c.FirstMessageTime) [month],
+					datepart(dd,c.FirstMessageTime) [day],
+					datepart(hh,c.FirstMessageTime) [hour],
+					datepart(mi,c.FirstMessageTime) [minutes]
+					from ChatBotConversation c
+					left join #clientMessages cm on c.ChatBotConversationId = cm.ConversationChatBotId
+					left join #chatbotMessages cbm on c.ChatBotConversationId = cbm.ConversationChatBotId
+					left join ChatBotConversationEndStatus es on es.id=c.EndStatus
+					where c.FirstMessageTime between @from AND @to
+
+					DROP TABLE #clientMessages
+					DROP TABLE #chatbotMessages
+				end'
+	EXEC(@sql)
+
 	SET @process = ''
 	SET @sql = ''
 	EXEC(@sql)

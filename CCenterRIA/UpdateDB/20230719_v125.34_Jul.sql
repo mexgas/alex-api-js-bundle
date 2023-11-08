@@ -5615,7 +5615,7 @@ else if @type = 5
 set nocount on'
 	EXEC(@sql)
 
-	SET @process = 'DEV1-397 ALTER SP ccsp_SaveStatusAgent @tStatus y  @tDialog'
+	SET @process = 'CW-8145, DEV1-397 ALTER SP ccsp_SaveStatusAgent @tStatus y  @tDialog, else if @TipoStatusAge_id=6 and @cal_tNotas>0 and (@cal_tNotaOri = 0 or @cal_tNotas>@cal_tNotaOri)'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,
@@ -5702,7 +5702,7 @@ if @cal_tDialog = 0 and @tDialog>0 and @isLogout=1  begin
 end
 else if @TipoStatusAge_id=4 and @cal_tDialog = 0 and @tDialog>0
     update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog  where cal_id = @call_id
-else if @TipoStatusAge_id=6 and @cal_tNotaOri = 0 and @cal_tNotas>0
+else if @TipoStatusAge_id=6 and @cal_tNotas>0 and (@cal_tNotaOri = 0 or @cal_tNotas>@cal_tNotaOri)
     update ccoCallsOut with(rowlock) set cal_tNotas=@cal_tNotas where cal_id = @call_id
 end
 
@@ -7183,19 +7183,19 @@ END;
 ';
 	EXEC(@sql);
 
-	SET @process = 'DEV1-444 Asembis Alter SP ';
+	SET @process = 'CW-8145 Muñoz Alter SP ';
 	SET @sql = '';
 	EXEC(@sql);
 
-	SET @process = 'DEV1-444 Asembis Alter SP ';
+	SET @process = 'CW-8145 Muñoz Alter SP ';
 	SET @sql = '';
 	EXEC(@sql);
 
-	SET @process = 'DEV1-444 Asembis Alter SP ';
+	SET @process = 'CW-8145 Muñoz Alter SP ';
 	SET @sql = '';
 	EXEC(@sql);
 
-	SET @process = 'DEV1-444 Asembis Alter SP ';
+	SET @process = 'CW-8145 Muñoz Alter SP ';
 	SET @sql = '';
 	EXEC(@sql);
 

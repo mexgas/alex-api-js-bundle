@@ -57,7 +57,7 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
-	-----------------------------------------------------BEGIN Rodrigo Salazar -----------------------------------------------------------------
+	-----------------------------------------------------BEGIN Gaby -----------------------------------------------------------------
 	SET @process = 'CW-8148 drop sp ccsp_GalateaGetPreviewData'
 	SET @sql = '
 		if exists(select * from sys.procedures where name = ''ccsp_GalateaGetPreviewData'')
@@ -125,7 +125,7 @@ BEGIN
         set nocount off'
 	EXEC(@sql);
 
-	-----------------------------------------------------END Rodrigo Salazar -----------------------------------------------------------------s
+	-----------------------------------------------------END Gaby -----------------------------------------------------------------s
 	/* End script release */
 	/* Upgrade database version (first and the last number of setting 77) */
 	EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

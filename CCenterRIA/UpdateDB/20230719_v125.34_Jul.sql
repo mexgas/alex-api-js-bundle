@@ -7187,17 +7187,6 @@ END;
 	SET @sql = '';
 	EXEC(@sql);
 
-	SET @process = 'DEV1-444 Asembis Alter SP ';
-	SET @sql = '';
-	EXEC(@sql);
-
-	SET @process = 'DEV1-444 Asembis Alter SP ';
-	SET @sql = '';
-	EXEC(@sql);
-
-	SET @process = 'DEV1-444 Asembis Alter SP ';
-	SET @sql = '';
-	EXEC(@sql);
 
 	---------------------------------------End Jesus Gallardo hotfix/125.20230719.0.10-----------------------------------------------------------
 

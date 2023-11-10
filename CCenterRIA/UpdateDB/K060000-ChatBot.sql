@@ -113,7 +113,7 @@ end'
 		WHERE  TABLE_NAME = ''ChatBotConversationMessage''
 		AND COLUMN_NAME = ''message_uuid'')
 	BEGIN
-		ALTER TABLE ChatBotConversationMessage ADD message_uuid smallint
+		ALTER TABLE ChatBotConversationMessage ADD message_uuid varchar(50)
 	END'
 	EXEC(@sql)
 

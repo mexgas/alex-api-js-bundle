@@ -550,16 +550,15 @@ BEGIN
 
 					delete from RepChatbotConversationDetail WITH (ROWLOCK) WHERE [date] >= @from AND [date] < @to
 
-					SELECT ConversationChatBotId, count(ConversationChatBotId) as clientMessagesCount
-					INTO #clientMessages
+					DECLARE @messages TABLE (ConversationChatBotId bigint, clientMessagesCount int,
+					chatbotMessagesCount int)
+					
+					INSERT INTO @messages
+					SELECT ConversationChatBotId, 
+					SUM(CASE WHEN OriginType = ''Client'' THEN 1 ELSE 0 END) as clientsMessagesCount,
+					SUM(CASE WHEN OriginType = ''Chatbot'' THEN 1 ELSE 0 END) as chatbotMessagesCount
 					from ChatBotConversationMessage
-					WHERE OriginType = ''Client'' and  [date] between @from AND @to
-					GROUP BY ConversationChatBotId
-
-					SELECT ConversationChatBotId, count(ConversationChatBotId) as chatbotMessagesCount
-					INTO #chatbotMessages
-					from ChatBotConversationMessage
-					WHERE OriginType = ''Chatbot'' and  [date] between @from AND @to
+					WHERE  [date] between @from AND @to
 					GROUP BY ConversationChatBotId
 
 					INSERT INTO RepChatbotConversationDetail
@@ -573,16 +572,15 @@ BEGIN
 					dbo.GetCountryWhatsApp(c.ClientNumber) as contactCountry,
 					c.QueueTime as waitTimeChatbot,
 					c.ConversationTime as conversationTimeChatbot,
-					ISNULL(cbm.chatbotMessagesCount, 0) as chatbotMessagesCount,
-					ISNULL(cm.clientMessagesCount, 0) as clientMessagesCount,
+					ISNULL(m.chatbotMessagesCount, 0) as chatbotMessagesCount,
+					ISNULL(m.clientMessagesCount, 0) as clientMessagesCount,
 					DATEPART(yyyy,c.FirstMessageTime) [year],
 					datepart(mm,c.FirstMessageTime) [month],
 					datepart(dd,c.FirstMessageTime) [day],
 					datepart(hh,c.FirstMessageTime) [hour],
 					datepart(mi,c.FirstMessageTime) [minutes]
 					from ChatBotConversation c
-					left join #clientMessages cm on c.ChatBotConversationId = cm.ConversationChatBotId
-					left join #chatbotMessages cbm on c.ChatBotConversationId = cbm.ConversationChatBotId
+					left join @messages m on c.ChatBotConversationId = m.ConversationChatBotId
 					left join ChatBotConversationEndStatus es on es.id=c.EndStatus
 					where c.FirstMessageTime between @from AND @to
 
@@ -591,8 +589,92 @@ BEGIN
 				end'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'K060016 - Inserting Filter Menu, Reports Filters, TranslatedReports'
+	SET @sql = 'IF NOT EXISTS(SELECT * FROM ReportsFiltersMenus WHERE idReport = 15020)
+				BEGIN
+					INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(15020,N''date'')
+				INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(15020,N''filterby'')
+				END
+
+				IF NOT EXISTS(SELECT * FROM ReportsFilters WHERE id = 15020)
+				BEGIN
+					insert into ReportsFilters values(''Conversations by Chatbot'',''chatbots'',15020)
+				END
+
+				IF NOT EXISTS (select * from TranslatedReports where id = 15020)
+				BEGIN
+					INSERT INTO TranslatedReports
+					VALUES (15020, ''contactCountry'')
+				END'
+	EXEC(@sql)
+
+	SET @process = 'K060016 - Se crea SP ccspRepChatbotConversationsByChatbot para generar el reporte'
+	SET @sql = 'CREATE OR ALTER procedure [dbo].[ccspRepChatbotConversationsByChatbot]
+				@action as tinyint,
+				@from as datetime = null,
+				@to as datetime = null
+
+				AS
+				if @from is null
+					select @from = convert(datetime,convert(varchar(11),getdate()))
+				if @to is null
+					select @to = getdate()
+
+				if @action = 1	begin
+
+					delete from RepChatbotConversationsByChatbot WITH (ROWLOCK) WHERE [date] >= @from AND [date] < @to
+
+					DECLARE @statusCount TABLE 
+					(finishedByContactChatbot int, finishedOnFailureChatbot int, 
+					abandonedChatbot int, conversationsCount int, 
+					contactCountry varchar(50), 
+					chatbotId int)
+
+					DECLARE @messages TABLE (ConversationChatBotId bigint, clientsMessagesCount int,
+					chatbotMessagesCount int)
+
+					INSERT INTO @statusCount
+					SELECT SUM(CASE WHEN EndStatus = 1 THEN 1 ELSE 0 END) AS finishedByContactChatbot,
+					SUM(CASE WHEN EndStatus = 2 THEN 1 ELSE 0 END) AS finishedOnFailureChatbot,
+					SUM(CASE WHEN EndStatus = 5 THEN 1 ELSE 0 END) AS abandonedChatbot,
+					SUM(CASE WHEN EndStatus >= 0 THEN 1 ELSE 0 END) AS conversationsCount,
+					dbo.GetCountryWhatsApp(ClientNumber)  contactCountry, ChatBotId as chatbotId
+					FROM ChatBotConversation where FirstMessageTime between @from AND @to
+					GROUP BY dbo.GetCountryWhatsApp(ClientNumber), ChatBotId
+
+					INSERT INTO @messages
+					SELECT ConversationChatBotId, 
+					SUM(CASE WHEN OriginType = ''Client'' THEN 1 ELSE 0 END) as clientsMessagesCount,
+					SUM(CASE WHEN OriginType = ''Chatbot'' THEN 1 ELSE 0 END) as chatbotMessagesCount
+					from ChatBotConversationMessage
+					WHERE  [date] between @from AND @to
+					GROUP BY ConversationChatBotId
+
+					INSERT INTO RepChatbotConversationsByChatbot
+					select @from as [date],
+					c.ChatBotId as chatbotId,
+					c.ChatBotName as chatbotName,
+					SUM(m.chatbotMessagesCount) as chatbotMessagesCount,
+					SUM(m.clientsMessagesCount) as clientsMessagesCount,
+					sc.contactCountry as contactCountry,
+					sc.conversationsCount,
+					sc.abandonedChatbot,
+					sc.finishedByContactChatbot,
+					sc.finishedOnFailureChatbot,
+					DATEPART(yyyy,@from) [year],
+					datepart(mm,@from) [month],
+					datepart(dd,@from) [day],
+					datepart(hh,@from) [hour],
+					datepart(mi,@from) [minutes]
+					from ChatBotConversation c
+					left join @messages m on c.ChatBotConversationId = m.ConversationChatBotId
+					left join @statusCount sc on c.ChatBotId = sc.chatbotId
+					where c.FirstMessageTime between @from AND @to
+					GROUP BY sc.contactCountry, c.ChatBotId,
+					c.ChatBotName, sc.abandonedChatbot, sc.conversationsCount,
+					sc.finishedByContactChatbot, sc.finishedOnFailureChatbot
+
+				end'
 	EXEC(@sql)
 
 		

@@ -9028,7 +9028,564 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
 	
 end';
 	EXEC(@sql);
+	
+	SET @process = 'CW-8180 ALTER PROCEDURE ccsp_GalateaGetCampsNvosCB se agrega filtro cam.cam_id = @cam_id'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCampsNvosCB]
+@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
+@regval int =0, @tcpa int=0
+as
+set nocount on
 
+declare @TipoJobs as int, @isExecOutbound bit
+
+set @isExecOutbound= case when @regval=0 then 0 else 1 end
+
+-- Actualiza todas las camps
+if @Tipo in (1,2) begin
+
+	declare @id AS INTEGER;
+
+	CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int,campType INT)
+	CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int,dateUpdate datetime,campType INT)
+
+	create table #tempoutsource (cam_id int,Pend  int)
+
+	create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
+
+	if @cam_id = 0 begin
+		if @user_id > 0 and not exists (select * from ccUsers_Roles where User_id = @user_id and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,campType)
+			select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+			,isnull(cam.CampType,0) as CampType
+			from ccCamps cam with(nolock) join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+			where user_id = @user_id and tipo = 1
+		end
+		else begin
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,campType)
+			select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+			,isnull(cam.CampType,0) as CampType
+			from ccCamps cam (nolock)
+		end
+	end
+	else begin
+		if @Tipo = 2
+			insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,campType)
+			select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
+			,isnull(cam.CampType,0) as CampType
+			from ccCamps cam with(nolock) 
+			where cam.cam_id = @cam_id
+		else
+			if @user_id > 0 and not exists (select * from ccUsers_Roles where User_id = @user_id and Rol_id = (select Rol_id from ccRoles where Level = 7)) begin
+				insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,campType)
+				select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
+				,isnull(cam.CampType,0) as CampType
+				from ccCamps cam with(nolock) 
+				inner join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
+				where user_id = @user_id and tipo = 1 and cam.cam_id = @cam_id
+			end
+			else begin
+				insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,campType)
+				select cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
+				,isnull(cam.CampType,0) as CampType
+				from ccCamps cam (nolock) 
+				where cam_activo=1  and cam.cam_id = @cam_id
+			end
+	end
+	
+	;with ccCampsNvosCBTmp as(
+	select A.*,dateUpdate from #Tcamps A
+	left join ccCampsNvosCB B (nolock) on A.cam_id=B.id
+	where datediff(ss,B.dateUpdate,getdate())> case @tcpa when 1 then 1 else 5 end or B.dateUpdate is null
+	)
+	insert into #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,dateUpdate,campType)
+	select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0,max(dateUpdate),max(campType) as campType 
+	from ccCampsNvosCBTmp
+	group by cam_id
+
+	if exists(select * from #Tcamps2) BEGIN
+
+		if exists(select * from #Tcamps2 where campType=7) BEGIN
+			insert into #tempoutsource(cam_id,Pend)
+			SELECT sos.cam_id, count(sos.cam_id) as Pend
+			FROM dbo.smsOutSource AS sos  with(index(IX_smsOutSource_1),nolock)
+			inner join #Tcamps2 tcam on sos.cam_id = tcam.cam_id
+			WHERE tcam.campType=7 and sos.sms_status in(0, 7)
+			GROUP BY sos.cam_id
+
+			insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+			SELECT swt.cam_id,
+			count(case swt.sms_status when 0 then 1 else null end) as New,
+			count(case swt.sms_status when 1 then 1 else null end) as Cb,
+			count(case swt.sms_status when 2 then 1 else null end) as Pro,
+			count(case swt.sms_status when 3 then 1 else null end) as Fin
+			FROM dbo.smsWorkingTable AS swt  with(index(IX_smsWorkingTable_1),nolock)
+			inner join #Tcamps2 B on swt.cam_id = B.cam_id 
+			where B.campType=7
+			GROUP BY swt.cam_id	
+		end
+			insert into #tempoutsource(cam_id,Pend)
+			SELECT ccos.cam_id, count(ccos.cam_id) as Pend
+			FROM ccocallsoutsource ccos with(index(IX_ccoCallsOutSource_17),nolock)
+			join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
+			WHERE tcam.campType<>7 and cal_status in(0, 7)
+			GROUP BY ccos.cam_id
+
+			insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
+			SELECT A.cam_id,
+			count(case cal_status when 0 then 1 else null end) as New,
+			count(case cal_status when 1 then 1 else null end) as Cb,
+			count(case cal_status when 2 then 1 else null end) as Pro,
+			count(case cal_status when 3 then 1 else null end) as Fin
+			FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
+			inner join #Tcamps2 B on A.cam_id = B.cam_id
+			WHERE B.campType<>7 
+			GROUP BY A.cam_id	
+		
+		if (@regval = 0 and @cam_id >0 and @Tipo =2) or @tcpa = 1 begin
+			update #Tcamps2 set status =1,cantidad=0  where cam_id = @cam_id
+		end
+		else begin
+			While exists(select * from #Tcamps2 where status = 0 and ( datediff(ss,dateUpdate,getdate())>60 or dateUpdate is null))  Begin
+				set rowcount 1
+				select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
+				set rowcount 0
+				EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
+				update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
+			end
+		end
+
+		declare @TotalNew table(
+			cam_id int primary key,
+			OverallTotalNew int 
+			)
+		
+
+		begin Tran updateccCampsNvosCB
+
+			insert into @TotalNew
+			select CampNvosCB.id,isnull(CASE WHEN CampNvosCB.OverallTotalNew = 0 THEN NULL ELSE CampNvosCB.OverallTotalNew END,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+			where CampNvosCB.id = tcamp.cam_id
+
+			delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
+			where CampNvosCB.id = tcamp.cam_id
+
+			INSERT into ccCampsNvosCB 
+			SELECT cams.cam_id, cams.cam_descripcion,
+			isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
+			isNull(cs.Pend,0) as pend,
+			isNull(wt.Pro,0) as pro,
+			isNull(cams.procesando,0) cam_procesando,
+			isNull(cams.cam_tipojobs,0) cam_tipojobs,
+			isNull(wt.Fin,0) Fin,
+			isNull(cams.cantidad,0) cantidad,
+			getdate(),
+			isnull(T.OverallTotalNew,0)  as OverallTotalNew
+			FROM #Tcamps2 cams with(nolock)
+			LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
+			LEFT JOIN #tempoutsource cs on cams.cam_id = cs.cam_id
+			LEFT JOIN @TotalNew  T on T.cam_id = cams.cam_id
+
+		COMMIT TRAN updateccCampsNvosCB
+	end
+
+	if @isExecOutbound = 0 begin
+
+	if @Tipo = 2 begin
+		-- devuelve resultado de la taba, solo las camps del usuario
+		SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
+		isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor, OverallTotalNew
+		FROM #Tcamps tcam
+		left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
+		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
+		inner join cccamps cc (nolock) on res.id=cc.cam_id
+	end
+	else 
+		SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,
+		cc.aggressionFactor, OverallTotalNew
+		FROM ccCampsNvosCB res (nolock)
+		LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
+		inner join cccamps cc (nolock) on res.id=cc.cam_id
+		WHERE res.id = @cam_id
+	end
+
+	drop table #Tcamps
+	drop table #Tcamps2
+	drop table #tempoutsource
+	drop table #temWorkinTable
+
+	return(0)
+
+end
+
+set nocount off'
+	EXEC(@sql)
+	
+	SET @process = 'CW-8180 ALTER PROCEDURE ccsp_OUTUpdateDialJob se agrega validacion ExistePriorityOrder'
+	SET @sql = '
+	ALTER PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
+	@callout_id     INT,
+	@CallResultDial TINYINT,
+	@isTCPA         BIT     = 0
+AS
+	SET NOCOUNT ON
+
+	/*1:Contesto | 2:Ocupada | 3:No contestada | 4:Fax/Modem | 5:No Dial Tone | 7:Colgado durante transferencia
+	++8:short call | ++9:Otro | 8:Other | 10:NoService | 11:Machine	*/
+
+	DECLARE @nOcupado TINYINT, @nNoContesta TINYINT, @nFax TINYINT, @nContestadora TINYINT
+	DECLARE @nShortCall TINYINT, @nOtro TINYINT, @cam_NoInt_ocupado TINYINT, @cam_NoInt_graba TINYINT
+	DECLARE @cam_ocupado SMALLINT, @cam_inter_ocupado SMALLINT, @cam_nocontesto SMALLINT
+	DECLARE @cam_graba SMALLINT, @cam_inter_graba SMALLINT, @cam_inter_nocontesto SMALLINT
+	DECLARE @cam_fax SMALLINT, @cam_inter_fax SMALLINT
+	DECLARE @DateNextDial SMALLDATETIME, @DateNewDial SMALLDATETIME, @cam_id SMALLINT
+	DECLARE @ExisteWT TINYINT, @cam_NoInt_fax TINYINT, @cam_NoInt_nocontesto TINYINT, @cal_status TINYINT
+	DECLARE @sSQL NVARCHAR(MAX), @Telefono VARCHAR(15), @prioridadLlamada CHAR(8)
+	DECLARE @ExistePriorityOrder TINYINT
+	
+	SELECT 
+		@cam_id = cam_id,
+		@nOcupado = ISNULL(nOcupado, 0),
+		@nNoContesta = ISNULL(nNoContesta, 0),
+		@nFax = ISNULL(nFax, 0),
+		@nContestadora = ISNULL(nContestadora, 0),
+		@nShortCall = ISNULL(nShortCall, 0),
+		@nOtro = ISNULL(nOtro, 0),
+		@DateNextDial = cal_fechaDial
+	FROM ccoWorkingTable WITH(NOLOCK)
+	WHERE callout_id = @callout_id
+
+	SELECT @ExisteWT = CASE WHEN @cam_id IS NOT NULL THEN 1 ELSE 0 END
+	SELECT @cal_status = CASE WHEN @isTCPA = 1 THEN 0 ELSE 1 END -- Si esta en modo TCPA no gene|rar callbacks
+
+	IF @CallResultDial = 20 BEGIN-- CONTACTADO
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial = 1 BEGIN-- CONTESTO
+		IF @isTCPA = 1 BEGIN
+			UPDATE ccoWorkingTable WITH(ROWLOCK) 
+			SET 
+				cal_status = @cal_status 
+			WHERE callout_id = @callout_id
+		END
+		ELSE BEGIN
+			IF (SELECT abandonCallback FROM ccCamps WITH(NOLOCK) WHERE  cam_id = @cam_id) = 1 BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 1, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+			END
+			ELSE BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+			END
+		END
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial IN(2, 12) BEGIN -- OCUPADO
+		SELECT 
+			@cam_ocupado = cam_ocupado,
+			@cam_inter_ocupado = cam_inter_ocupado,
+			@cam_NoInt_ocupado = cam_NoInt_ocupado,
+			@nOcupado = @nOcupado + 1
+		FROM ccCamps WITH(NOLOCK)
+		WHERE cam_id = @cam_id
+
+		IF @cam_ocupado = 1 BEGIN -- Opcion Ocupado HABILITADA
+			IF @nOcupado > @cam_NoInt_ocupado OR @nShortCall > 4 BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			SELECT 
+				@prioridadLlamada = priorityCall ,
+				@ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END 
+			FROM 
+				ccoCallPriorityOrder WITH(NOLOCK) 
+			WHERE callout_id = @callout_id
+
+			IF @ExistePriorityOrder IS NULL BEGIN
+				SELECT 
+					@prioridadLlamada = Prioridad 
+				FROM ccCampsPrioridadTel WITH(NOLOCK)
+				WHERE cam_id = @cam_id
+
+				INSERT INTO ccoCallPriorityOrder 
+				VALUES (@callout_id,@prioridadLlamada)
+			END
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource WITH(ROWLOCK)
+			SET 
+				nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1 ELSE nNoContesta END
+			WHERE callout_id = @callout_id
+
+			SET @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
+
+			UPDATE ccoCallPriorityOrder WITH(ROWLOCK) 
+			SET 
+				priorityCall = @prioridadLlamada 
+			WHERE callout_id = @callout_id
+
+			SELECT @sSQL = ''SELECT @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+			+ ''+''''         ''''),13)) FROM ccoCallsOutSource WITH(NOLOCK) WHERE callout_id=''
+			+ CAST(@callout_id AS VARCHAR(15))
+
+			EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_ocupado, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			IF @DateNewDial > @DateNextDial BEGIN -- Nueva fecha de Call BACk
+				UPDATE ccoWorkingTable WITH(ROWLOCK) 
+				SET 
+					nOcupado = @nOcupado, 
+					cal_fechaDial = @DateNewDial, 
+					cal_status = @cal_status
+				WHERE callout_id = @callout_id
+				RETURN(0)
+			END
+			-- Mantiene la fecha de Call BACK
+			UPDATE ccoWorkingTable WITH(ROWLOCK) 
+			SET 
+				nOcupado = @nOcupado, 
+				cal_status = @cal_status, 
+				cal_telefono = @Telefono
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- ELSE: Opcion Ocupado DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial IN(3, 5, 8) BEGIN-- NO CONTESTA
+	--Select NO Contesta
+		SELECT 
+			@cam_nocontesto = cam_nocontesto,
+			@cam_inter_nocontesto = cam_inter_nocontesto,
+			@cam_NoInt_nocontesto = cam_NoInt_nocontesto,
+			@nNoContesta = @nNoContesta + 1
+		FROM 
+			ccCamps WITH(NOLOCK)
+		WHERE cam_id = @cam_id
+
+		IF @cam_nocontesto = 1 BEGIN-- Opcion NoContesta HABILITADA
+			IF @nNoContesta > @cam_NoInt_nocontesto OR @nShortCall > 4 BEGIN --select No Contesta Habilitada
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			SELECT 
+				@prioridadLlamada = priorityCall ,
+				@ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END 
+			FROM ccoCallPriorityOrder WITH(NOLOCK) 
+			WHERE callout_id = @callout_id
+			
+			IF @ExistePriorityOrder IS NULL BEGIN
+				SELECT 
+					@prioridadLlamada = Prioridad 
+				FROM ccCampsPrioridadTel WITH(NOLOCK) 
+				WHERE cam_id = @cam_id
+				
+				INSERT INTO ccoCallPriorityOrder 
+				VALUES (@callout_id,@prioridadLlamada)
+			END
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource WITH(ROWLOCK) 
+			SET 
+				nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1 ELSE nNoContesta END
+			WHERE callout_id = @callout_id
+
+
+			SET @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
+			UPDATE ccoCallPriorityOrder WITH(ROWLOCK) 
+			SET 
+				priorityCall = @prioridadLlamada 
+			WHERE callout_id = @callout_id
+
+			SELECT @sSQL = ''SELECT @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+			+ ''+''''         ''''),13)) FROM ccoCallsOutSource WITH(NOLOCK) WHERE callout_id=''
+			+ CAST(@callout_id AS VARCHAR(15))
+
+			EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_nocontesto, GETDATE())
+
+			UPDATE ccoWorkingTable WITH(ROWLOCK) 
+			SET 
+				nNoContesta = @nNoContesta, 
+				cal_status = @cal_status, 
+				cal_telefono = @Telefono,
+				cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion NoContesta DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial = 4 BEGIN-- Fax/Modem
+		SELECT 
+			@cam_fax = cam_fax,
+			@cam_inter_fax = cam_inter_fax,
+			@cam_NoInt_fax = cam_NoInt_fax,
+			@nFax = @nFax + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_fax = 1 BEGIN-- Opcion Fax/Modem HABILITADA
+			IF @nFax > @cam_NoInt_fax OR @nShortCall > 4 BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			SELECT 
+				@prioridadLlamada = priorityCall ,
+				@ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END 
+			FROM ccoCallPriorityOrder WITH(NOLOCK) 
+			WHERE callout_id = @callout_id
+			
+			IF @ExistePriorityOrder IS NULL BEGIN
+				SELECT 
+					@prioridadLlamada = Prioridad 
+				FROM ccCampsPrioridadTel WITH(NOLOCK) 
+				WHERE cam_id = @cam_id
+				
+				INSERT INTO ccoCallPriorityOrder 
+				VALUES (@callout_id,@prioridadLlamada)
+			END
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource WITH(ROWLOCK) 
+			SET 
+				nFax = CASE WHEN nFax < 255 THEN ISNULL(nFax, 0) + 1 ELSE nFax END
+			WHERE callout_id = @callout_id
+
+			SET @prioridadLlamada = dbo.ChangePriorityCall(@prioridadLlamada)
+			
+			UPDATE ccoCallPriorityOrder WITH(ROWLOCK) 
+			SET 
+				priorityCall = @prioridadLlamada 
+			WHERE callout_id = @callout_id
+
+			SELECT @sSQL = ''SELECT @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+			+ ''+''''         ''''),13)) FROM ccoCallsOutSource WITH(NOLOCK) WHERE callout_id=''
+			+ CAST(@callout_id AS VARCHAR(15))
+
+			EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_fax, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			UPDATE ccoWorkingTable WITH(ROWLOCK) 
+			SET 
+				nFax = @nFax, 
+				cal_status = @cal_status, 
+				cal_telefono = @Telefono,
+				cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion Fax/Modem DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial = 11 BEGIN-- Maquina Contestadora
+		SELECT 
+			@cam_graba = cam_graba,
+			@cam_inter_graba = cam_inter_graba,
+			@cam_NoInt_graba = cam_NoInt_graba,
+			@nContestadora = @nContestadora + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_graba = 1 BEGIN-- Opcion Maquina Contestadora HABILITADA
+			IF @nContestadora > @cam_NoInt_graba OR @nShortCall > 4 BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			SELECT 
+				@prioridadLlamada = priorityCall ,
+				@ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END 
+			FROM ccoCallPriorityOrder WITH(NOLOCK) 
+			WHERE callout_id = @callout_id
+
+			IF @ExistePriorityOrder IS NULL BEGIN
+				SELECT 
+					@prioridadLlamada = Prioridad 
+				FROM ccCampsPrioridadTel WITH(NOLOCK) 
+				WHERE cam_id = @cam_id
+				
+				INSERT INTO ccoCallPriorityOrder 
+				VALUES (@callout_id,@prioridadLlamada)
+			END
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource WITH(ROWLOCK)
+			SET 
+				nContestadora = CASE WHEN nContestadora < 255 THEN ISNULL(nContestadora, 0) + 1 ELSE nContestadora END
+			WHERE callout_id = @callout_id
+
+			SET @prioridadLlamada=dbo.ChangePriorityCall(@prioridadLlamada)
+
+			UPDATE ccoCallPriorityOrder WITH(ROWLOCK)
+			SET 
+				priorityCall = @prioridadLlamada 
+			WHERE callout_id = @callout_id
+
+			SELECT @sSQL = ''SELECT @outA=rtrim(left(ltrim(cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+			+ ''+''''         ''''+'' + ''cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+			+ ''+''''         ''''),13)) FROM ccoCallsOutSource WITH(NOLOCK) WHERE callout_id=''
+			+ CAST(@callout_id AS VARCHAR(15))
+
+			EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_graba, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			UPDATE ccoWorkingTable WITH(ROWLOCK) 
+			SET 
+				nContestadora = @nContestadora, 
+				cal_status = @cal_status, 
+				cal_telefono = @Telefono,
+				cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion Maquina Contestadora DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial IN(10, 90) BEGIN--No Dial Tone, otros, NoService
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	ELSE IF @CallResultDial > 13 AND @CallResultDial <> 51   BEGIN--Dial Result not register
+		EXEC ccsp_OUTUpdateDialJob @callout_id = @callout_id, @CallResultDial = 8, @isTCPA = @isTCPA
+	END
+
+	RETURN(0)
+SET NOCOUNT OFF
+	'
+	EXEC(@sql)
+	
 	SET @process = 'CW-8145 Muñoz Alter SP ';
 	SET @sql = '';
 	EXEC(@sql);

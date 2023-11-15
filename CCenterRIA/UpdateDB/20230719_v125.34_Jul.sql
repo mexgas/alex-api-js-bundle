@@ -6026,13 +6026,15 @@ else if @action=3 begin
 	,dash.DispotitionId as DispotitionId
 	,count(*) Amount
 	,ISNULL(GraphColor,''1DB4E2'') GraphColor
+	,CASE WHEN ISNULL(rel.calif_id, 0) = 0 THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END AS IsSubDisp
 	from ccDispositionDashboardResultOut dash with(nolock)
 	left join ccTipoCalifOut ca on dash.DispotitionId = ca.calif_id 
 	left join ccTipoCalifSubOUT tcsout on dash.SubDispotitionId = tcsout.califSub_id
 	left join ccstatusllamada sll on sll.statuscall_id = dash.statusCallId
 	left join ccCamps ci on ci.cam_id = dash.CamId
+	LEFT join cctipoSubCalifRel rel on rel.calif_id = ca.calif_id and dash.SubDispotitionId = rel.califSub_id and tipoSubRel = 0
 	where CamId=@camId
-	group by  dash.CamId, dash.statusCallId,ca.[description],sll.descripcion,dash.DispotitionId,GraphColor
+	group by  dash.CamId, dash.statusCallId,ca.[description],sll.descripcion,dash.DispotitionId,GraphColor,rel.calif_id
 
 end
 else if @action=4 begin	
@@ -6043,6 +6045,7 @@ else if @action=4 begin
 	,dash.DispotitionId
 	,count(*)  as Amount
 	,ISNULL(GraphColor,''1DB4E2'') GraphColor
+	,0 IsSubDisp
 	from ccDispositionDashboardResultIn dash with(nolock)
 	left join ccTipoCalif ca on dash.DispotitionId = ca.calif_id 
 	left join ccInbound cci on cci.inbound_id = dash.CamId 

@@ -7541,7 +7541,6 @@ SELECT @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
 DECLARE @isVerano varchar(max)
 DECLARE @CsisVerano varchar(max)
 set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' END
-set @CsisVerano = ''cs.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' END
 
 IF(@campType = 7)
 BEGIN
@@ -7557,12 +7556,12 @@ SELECT top(@topCount) W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.
 W.list_id, isNull(R.sequence,0) as sequence,
 sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
 isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent
-,@stateIa status_for_ai,''
-+@CsisVerano+'',''
-+@CsisVerano+''2,''
-+@CsisVerano+''3,''
-+@CsisVerano+''4,''
-+@CsisVerano+''5,
+,@stateIa status_for_ai,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
 FROM smsWorkingTable W 
 left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
@@ -7591,12 +7590,12 @@ SELECT top(@topCountNewToday) W.callout_id, W.cam_id, W.cal_telefono, W.cal_stat
 W.list_id, isNull(R.sequence,0) as sequence,
 cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey
 ,W.nDescartes,isnull(us.nombres, '''''''')+'''' ''''+isnull(us.ApellidoPaterno, '''''''')+'''' ''''+isnull(us.ApellidoMaterno, '''''''') Name_agent
-,@stateIa status_for_ai,''
-+@CsisVerano+'',''
-+@CsisVerano+''2,''
-+@CsisVerano+''3,''
-+@CsisVerano+''4,''
-+@CsisVerano+''5,
+,@stateIa status_for_ai,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
 FROM ccoWorkingTable W 
 left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id

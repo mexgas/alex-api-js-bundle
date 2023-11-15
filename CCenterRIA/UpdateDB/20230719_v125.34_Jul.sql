@@ -6301,7 +6301,15 @@ select @ret'
 	';
 	EXEC(@sql)
 
-	SET @process = '2 - HU(KR098000) - 0719.0.8 - JR - Create new view VIEW_SETTINGS';
+	set @process = '2.1 - DROP VIEW VIEW_SETTINGS'
+    set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.VIEW_SETTINGS'') AND type = ''V'')
+        BEGIN
+            DROP VIEW dbo.VIEW_SETTINGS
+        END
+    ';
+    EXEC(@sql);
+
+	SET @process = '2.2 - HU(KR098000) - 0719.0.8 - JR - Create new view VIEW_SETTINGS';
 	SET @sql = '
 	CREATE VIEW [dbo].[VIEW_SETTINGS]
 		AS

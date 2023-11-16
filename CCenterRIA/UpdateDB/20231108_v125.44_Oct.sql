@@ -229,7 +229,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select OperationId from ccGalateaOperations where OperationId = 90)
 	begin
-		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (90,''Habilitar permiso'',''Enable permission'',''Ativar permissão'')
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (90,''Habilitar permiso'',''Enable permission'',''Ativar permissÃ£o'')
 	end
 	'
 	EXEC(@sql);
@@ -238,7 +238,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select OperationId from ccGalateaOperations where OperationId = 91)
 	begin
-		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (91,''Deshabilitar permiso'',''Disable permission'',''Desativar permissão'')
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (91,''Deshabilitar permiso'',''Disable permission'',''Desativar permissÃ£o'')
 	end
 	'
 	EXEC(@sql);
@@ -247,7 +247,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select ModuleId from ccGalateaModules where ModuleId = 11)
 	begin
-		insert into ccGalateaModules (ModuleId,MTagEs,MTagEn,MTagPt) values (11,''Permisos de agente'',''Agent permissions'',''Permissões de agente'')
+		insert into ccGalateaModules (ModuleId,MTagEs,MTagEn,MTagPt) values (11,''Permisos de agente'',''Agent permissions'',''PermissÃµes de agente'')
 	end
 	'
 	EXEC(@sql);
@@ -274,7 +274,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSelectCamp'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSelectCamp'',''Gestionar marcación de vista previa (seleccionar campaña)'',''Manage preview dialing (select campaign)'',''Gerenciar discagem de visualização (Selecionar campanha)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSelectCamp'',''Gestionar marcaciÃ³n de vista previa (seleccionar campaÃ±a)'',''Manage preview dialing (select campaign)'',''Gerenciar discagem de visualizaÃ§Ã£o (Selecionar campanha)'')
 	end
 	'
 	EXEC(@sql);
@@ -283,7 +283,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowCellPhoneCalls'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowCellPhoneCalls'',''Llamar manualmente (a teléfonos celulares)'',''Dial numbers manually (mobile numbers)'',''Discar manualmente (para telefones celulares)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowCellPhoneCalls'',''Llamar manualmente (a telÃ©fonos celulares)'',''Dial numbers manually (mobile numbers)'',''Discar manualmente (para telefones celulares)'')
 	end
 	'
 	EXEC(@sql);
@@ -292,7 +292,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLongDistanceCalls'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLongDistanceCalls'',''Llamar manualmente (a teléfonos de LD)'',''Dial numbers manually (LD numbers)'',''Discar manualmente (para telefones de LD)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLongDistanceCalls'',''Llamar manualmente (a telÃ©fonos de LD)'',''Dial numbers manually (LD numbers)'',''Discar manualmente (para telefones de LD)'')
 	end
 	'
 	EXEC(@sql);
@@ -301,7 +301,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLocalCalls'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLocalCalls'',''Llamar manualmente (a teléfonos locales)'',''Dial numbers manually (local numbers)'',''Discar manualmente (para telefones locais)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLocalCalls'',''Llamar manualmente (a telÃ©fonos locales)'',''Dial numbers manually (local numbers)'',''Discar manualmente (para telefones locais)'')
 	end
 	'
 	EXEC(@sql);
@@ -310,7 +310,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowTransferCalls'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowTransferCalls'',''Recibir transferencias'',''Accept transfers'',''Receber transferências
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowTransferCalls'',''Recibir transferencias'',''Accept transfers'',''Receber transferÃªncias
 	'')
 	end
 	'
@@ -329,7 +329,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferCamps'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferCamps'',''Transferir llamadas (a campañas)'',''Transfer calls (to campaigns)'',''Transferir chamadas (para campanhas)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferCamps'',''Transferir llamadas (a campaÃ±as)'',''Transfer calls (to campaigns)'',''Transferir chamadas (para campanhas)'')
 	end
 	'
 	EXEC(@sql);
@@ -338,7 +338,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferExt'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferExt'',''Transferir llamadas (a teléfonos externos)'',''Transfer calls (to external lines)'',''Transferir chamadas (para telefones externos)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferExt'',''Transferir llamadas (a telÃ©fonos externos)'',''Transfer calls (to external lines)'',''Transferir chamadas (para telefones externos)'')
 	end
 	'
 	EXEC(@sql);
@@ -347,7 +347,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferManual'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferManual'',''Transferir llamadas (a teléfonos manuales)'',''Transfer calls (to manual dials)'',''Transferir chamadas (para telefones digitados)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferManual'',''Transferir llamadas (a telÃ©fonos manuales)'',''Transfer calls (to manual dials)'',''Transferir chamadas (para telefones digitados)'')
 	end
 	'
 	EXEC(@sql);
@@ -356,7 +356,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''startStopRecording'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''startStopRecording'',''Pausar y reanudar grabación'',''Pause and resume recording'',''Pausar e continuar gravação'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''startStopRecording'',''Pausar y reanudar grabaciÃ³n'',''Pause and resume recording'',''Pausar e continuar gravaÃ§Ã£o'')
 	end
 	'
 	EXEC(@sql);
@@ -365,7 +365,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowPlayRecordsOnCallHistory'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowPlayRecordsOnCallHistory'',''Reproducir grabaciones en historial'',''Play back recordings in log'',''Reproduzir gravações no histórico'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowPlayRecordsOnCallHistory'',''Reproducir grabaciones en historial'',''Play back recordings in log'',''Reproduzir gravaÃ§Ãµes no histÃ³rico'')
 	end
 	'
 	EXEC(@sql);
@@ -374,7 +374,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowMarks'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowMarks'',''Añadir marcas a grabaciones'',''Add marks to recordings'',''Adicionar marcas às gravações'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowMarks'',''AÃ±adir marcas a grabaciones'',''Add marks to recordings'',''Adicionar marcas Ã s gravaÃ§Ãµes'')
 	end
 	'
 	EXEC(@sql);
@@ -383,7 +383,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModeDefault'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModeDefault'',''Visualizar interfaz (predeterminada)'',''Use layout mode (default)'',''Usar layout de campanha (padrão)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModeDefault'',''Visualizar interfaz (predeterminada)'',''Use layout mode (default)'',''Usar layout de campanha (padrÃ£o)'')
 	end
 	'
 	EXEC(@sql);
@@ -392,7 +392,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModePreview'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModePreview'',''Visualizar interfaz (vista previa)'',''Use layout mode (preview)'',''Usar layout de campanha (visualização)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModePreview'',''Visualizar interfaz (vista previa)'',''Use layout mode (preview)'',''Usar layout de campanha (visualizaÃ§Ã£o)'')
 	end
 	'
 	EXEC(@sql);
@@ -401,7 +401,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDailing'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDailing'',''Cambiar tipo de campaña'',''Change campaign type'',''Alterar tipo de campanha'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDailing'',''Cambiar tipo de campaÃ±a'',''Change campaign type'',''Alterar tipo de campanha'')
 	end
 	'
 	EXEC(@sql);
@@ -410,7 +410,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDelete'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDelete'',''Gestionar marcación de vista previa (eliminar registros)'',''Manage preview dialing (delete records)'',''Gerenciar discagem de visualização (excluir registros)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDelete'',''Gestionar marcaciÃ³n de vista previa (eliminar registros)'',''Manage preview dialing (delete records)'',''Gerenciar discagem de visualizaÃ§Ã£o (excluir registros)'')
 	end
 	'
 	EXEC(@sql);
@@ -428,7 +428,7 @@ BEGIN
 	SET @sql = '
 	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowUnassign'')
 	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowUnassign'',''Gestionar conversaciones (desasignar)'',''Manage conversations (unassign)'',''Gerenciar conversas (cancelar atribuição)'')
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowUnassign'',''Gestionar conversaciones (desasignar)'',''Manage conversations (unassign)'',''Gerenciar conversas (cancelar atribuiÃ§Ã£o)'')
 	end
 	'
 	EXEC(@sql);

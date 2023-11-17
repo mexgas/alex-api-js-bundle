@@ -3116,6 +3116,7 @@ IF @TipoMov in(4 ,14) BEGIN-- DIALOG OnDialog
                                user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
                                cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
                          WHERE cal_id = @cal_id
+          end
                 SELECT @cam_id=cam_id FROM ccoWorkingTable nolock WHERE callout_id = @callout_id
                 IF @RecicleSIC = 0 AND (SELECT campType FROM ccCamps WHERE cam_id = @cam_id) != 6
                 BEGIN
@@ -3289,7 +3290,7 @@ IF @TipoMov = 9 BEGIN--RING CallNoAnswered
          RETURN(0)
  END
  SET NOCOUNT OFF'
-    EXEC(@sql)   
+    --EXEC(@sql)   
     -------------------------------------End Jesus Gallardo hotfix/125.20230719.0.9-----------------------------------------------------------
 	
 	SET @process = 'CW-8180 DROP PROCEDURE ccsp_OUTUpdateDialJob se agrega validacion ExistePriorityOrder'

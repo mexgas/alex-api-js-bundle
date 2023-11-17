@@ -3675,7 +3675,7 @@ SET @process = 'CW-8180 CREATE PROCEDURE ccsp_OUTUpdateDialJob se agrega validac
 	'
 	EXEC(@sql);
 
-	SET @process = ''
+	SET @process = 'Insert OperationId = 90'
 	SET @sql = '
 	if not exists(select OperationId from ccGalateaOperations where OperationId = 90)
 	begin

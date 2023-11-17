@@ -184,256 +184,7 @@ BEGIN
 	EXEC(@sql);
 
 	-----------------------------------------------------END Gaby -----------------------------------------------------------------
-	-----------------------------------------------------Begin Fri ----------------------------------------------------------------
-	SET @process = 'Drop sp ccsp_GalateaPermissionsActivityLog'
-	SET @sql = '
-	if exists (select * from sys.procedures where name = N''ccsp_GalateaPermissionsActivityLog'')
-    begin
-        DROP PROCEDURE ccsp_GalateaPermissionsActivityLog;
-    end
-	'
-	EXEC(@sql);
 
-	SET @process = 'create sp ccsp_GalateaPermissionsActivityLog'
-	SET @sql = '
-	CREATE procedure ccsp_GalateaPermissionsActivityLog
-	@UserId           SMALLINT,
-	@Operations       VARCHAR(MAX)= '''',
-	@Identifiers	  VARCHAR(MAX) = '''',
-	@Values			  VARCHAR(MAX) = '''',
-	@Module			  SMALLINT = 0,
-	@Target			  VARCHAR(40) = ''''
-	AS
-	BEGIN
-
-	DECLARE @AgentIdsTemp TABLE (i int, AgentId int)
-	insert @AgentIdsTemp select * from dbo.fn_RIASplitDelimited (@Target, '','') agentsId
-
-	declare @i int, @n int, @id int, @login varchar(40)
-	select @i = 1 , @n = COUNT(AgentId) from @AgentIdsTemp
-
-
-	while (@i <= @n)
-	begin
-		select @id =  AgentId from @AgentIdsTemp where i = @i
-		select @login = Login from ccUsers where User_id= @id
-		exec ccsp_GalateaActivityLog @UserId,@Operations,@Identifiers,@Values,@Module,@login
-		set @i = @i + 1
-	end
-
-	END
-	'
-	EXEC(@sql);
-
-	SET @process = ''
-	SET @sql = '
-	if not exists(select OperationId from ccGalateaOperations where OperationId = 90)
-	begin
-		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (90,''Habilitar permiso'',''Enable permission'',''Ativar permissão'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert OperationId = 91'
-	SET @sql = '
-	if not exists(select OperationId from ccGalateaOperations where OperationId = 91)
-	begin
-		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (91,''Deshabilitar permiso'',''Disable permission'',''Desativar permissão'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert ModuleId = 11'
-	SET @sql = '
-	if not exists(select ModuleId from ccGalateaModules where ModuleId = 11)
-	begin
-		insert into ccGalateaModules (ModuleId,MTagEs,MTagEn,MTagPt) values (11,''Permisos de agente'',''Agent permissions'',''Permissões de agente'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert ModuleId=11 and OperationId=90'
-	SET @sql = '
-	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=90)
-	begin
-		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,90)
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert ModuleId=11 and OperationId=91'
-	SET @sql = '
-	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=91)
-	begin
-		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,91)
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowSelectCamp in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSelectCamp'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSelectCamp'',''Gestionar marcación de vista previa (seleccionar campaña)'',''Manage preview dialing (select campaign)'',''Gerenciar discagem de visualização (Selecionar campanha)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowCellPhoneCalls in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowCellPhoneCalls'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowCellPhoneCalls'',''Llamar manualmente (a teléfonos celulares)'',''Dial numbers manually (mobile numbers)'',''Discar manualmente (para telefones celulares)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowLongDistanceCalls in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLongDistanceCalls'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLongDistanceCalls'',''Llamar manualmente (a teléfonos de LD)'',''Dial numbers manually (LD numbers)'',''Discar manualmente (para telefones de LD)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowLocalCalls in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLocalCalls'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLocalCalls'',''Llamar manualmente (a teléfonos locales)'',''Dial numbers manually (local numbers)'',''Discar manualmente (para telefones locais)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowTransferCalls in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowTransferCalls'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowTransferCalls'',''Recibir transferencias'',''Accept transfers'',''Receber transferências
-	'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert XferAgents in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferAgents'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferAgents'',''Transferir llamadas (a agentes)'',''Transfer calls (to agents)'',''Transferir chamadas (para agentes)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert XferCamps in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferCamps'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferCamps'',''Transferir llamadas (a campañas)'',''Transfer calls (to campaigns)'',''Transferir chamadas (para campanhas)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert XferExt in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferExt'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferExt'',''Transferir llamadas (a teléfonos externos)'',''Transfer calls (to external lines)'',''Transferir chamadas (para telefones externos)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert XferManual in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferManual'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferManual'',''Transferir llamadas (a teléfonos manuales)'',''Transfer calls (to manual dials)'',''Transferir chamadas (para telefones digitados)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert startStopRecording in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''startStopRecording'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''startStopRecording'',''Pausar y reanudar grabación'',''Pause and resume recording'',''Pausar e continuar gravação'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowPlayRecordsOnCallHistory in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowPlayRecordsOnCallHistory'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowPlayRecordsOnCallHistory'',''Reproducir grabaciones en historial'',''Play back recordings in log'',''Reproduzir gravações no histórico'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowMarks in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowMarks'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowMarks'',''Añadir marcas a grabaciones'',''Add marks to recordings'',''Adicionar marcas às gravações'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert LayoutModeDefault in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModeDefault'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModeDefault'',''Visualizar interfaz (predeterminada)'',''Use layout mode (default)'',''Usar layout de campanha (padrão)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert LayoutModePreview in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModePreview'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModePreview'',''Visualizar interfaz (vista previa)'',''Use layout mode (preview)'',''Usar layout de campanha (visualização)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AgentPermissionDailing in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDailing'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDailing'',''Cambiar tipo de campaña'',''Change campaign type'',''Alterar tipo de campanha'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AgentPermissionDelete in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDelete'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDelete'',''Gestionar marcación de vista previa (eliminar registros)'',''Manage preview dialing (delete records)'',''Gerenciar discagem de visualização (excluir registros)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowSpam in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSpam'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSpam'',''Gestionar conversaciones (marcar como spam)'',''Manage conversations (mark as spam)'',''Gerenciar conversas (marcar como spam)'')
-	end
-	'
-	EXEC(@sql);
-
-	SET @process = 'Insert AllowUnassign in ccGalateaIdentifiers'
-	SET @sql = '
-	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowUnassign'')
-	begin
-		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowUnassign'',''Gestionar conversaciones (desasignar)'',''Manage conversations (unassign)'',''Gerenciar conversas (cancelar atribuição)'')
-	end
-	'
-	EXEC(@sql);
-
-	-----------------------------------------------------END Fri ------------------------------------------------------------------
 ---------------------------------------Begin Jesus Gallardo hotfix/125.20230719.0.9-----------------------------------------------------------
 
     SET @process = 'DEV1-409 Milla Alter SP ccsp_RIARegistryLists --return SELECT 200 as ReturnValue y se agrega withNolock'
@@ -3883,8 +3634,258 @@ SET @process = 'CW-8180 CREATE PROCEDURE ccsp_OUTUpdateDialJob se agrega validac
 		SET NOCOUNT OFF'
 	EXEC(@sql)
 	-------------------------------------End Omar Mejia hotfix/125.20230719.0.9-----------------------------------------------------------
+	-----------------------------------------------------Begin Fri ----------------------------------------------------------------
+	SET @process = 'Drop sp ccsp_GalateaPermissionsActivityLog'
+	SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaPermissionsActivityLog'')
+    begin
+        DROP PROCEDURE ccsp_GalateaPermissionsActivityLog;
+    end
+	'
+	EXEC(@sql);
 
-    
+	SET @process = 'create sp ccsp_GalateaPermissionsActivityLog'
+	SET @sql = '
+	CREATE procedure ccsp_GalateaPermissionsActivityLog
+	@UserId           SMALLINT,
+	@Operations       VARCHAR(MAX)= '''',
+	@Identifiers	  VARCHAR(MAX) = '''',
+	@Values			  VARCHAR(MAX) = '''',
+	@Module			  SMALLINT = 0,
+	@Target			  VARCHAR(40) = ''''
+	AS
+	BEGIN
+
+	DECLARE @AgentIdsTemp TABLE (i int, AgentId int)
+	insert @AgentIdsTemp select * from dbo.fn_RIASplitDelimited (@Target, '','') agentsId
+
+	declare @i int, @n int, @id int, @login varchar(40)
+	select @i = 1 , @n = COUNT(AgentId) from @AgentIdsTemp
+
+
+	while (@i <= @n)
+	begin
+		select @id =  AgentId from @AgentIdsTemp where i = @i
+		select @login = Login from ccUsers where User_id= @id
+		exec ccsp_GalateaActivityLog @UserId,@Operations,@Identifiers,@Values,@Module,@login
+		set @i = @i + 1
+	end
+
+	END
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert OperationId = 90'
+	SET @sql = '
+	if not exists(select OperationId from ccGalateaOperations where OperationId = 90)
+	begin
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (90,''Habilitar permiso'',''Enable permission'',''Ativar permissão'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert OperationId = 91'
+	SET @sql = '
+	if not exists(select OperationId from ccGalateaOperations where OperationId = 91)
+	begin
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (91,''Deshabilitar permiso'',''Disable permission'',''Desativar permissão'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId = 11'
+	SET @sql = '
+	if not exists(select ModuleId from ccGalateaModules where ModuleId = 11)
+	begin
+		insert into ccGalateaModules (ModuleId,MTagEs,MTagEn,MTagPt) values (11,''Permisos de agente'',''Agent permissions'',''Permissões de agente'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId=11 and OperationId=90'
+	SET @sql = '
+	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=90)
+	begin
+		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,90)
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId=11 and OperationId=91'
+	SET @sql = '
+	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=91)
+	begin
+		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,91)
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowSelectCamp in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSelectCamp'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSelectCamp'',''Gestionar marcación de vista previa (seleccionar campaña)'',''Manage preview dialing (select campaign)'',''Gerenciar discagem de visualização (Selecionar campanha)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowCellPhoneCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowCellPhoneCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowCellPhoneCalls'',''Llamar manualmente (a teléfonos celulares)'',''Dial numbers manually (mobile numbers)'',''Discar manualmente (para telefones celulares)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowLongDistanceCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLongDistanceCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLongDistanceCalls'',''Llamar manualmente (a teléfonos de LD)'',''Dial numbers manually (LD numbers)'',''Discar manualmente (para telefones de LD)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowLocalCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLocalCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLocalCalls'',''Llamar manualmente (a teléfonos locales)'',''Dial numbers manually (local numbers)'',''Discar manualmente (para telefones locais)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowTransferCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowTransferCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowTransferCalls'',''Recibir transferencias'',''Accept transfers'',''Receber transferências
+	'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferAgents in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferAgents'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferAgents'',''Transferir llamadas (a agentes)'',''Transfer calls (to agents)'',''Transferir chamadas (para agentes)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferCamps in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferCamps'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferCamps'',''Transferir llamadas (a campañas)'',''Transfer calls (to campaigns)'',''Transferir chamadas (para campanhas)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferExt in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferExt'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferExt'',''Transferir llamadas (a teléfonos externos)'',''Transfer calls (to external lines)'',''Transferir chamadas (para telefones externos)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferManual in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferManual'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferManual'',''Transferir llamadas (a teléfonos manuales)'',''Transfer calls (to manual dials)'',''Transferir chamadas (para telefones digitados)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert startStopRecording in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''startStopRecording'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''startStopRecording'',''Pausar y reanudar grabación'',''Pause and resume recording'',''Pausar e continuar gravação'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowPlayRecordsOnCallHistory in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowPlayRecordsOnCallHistory'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowPlayRecordsOnCallHistory'',''Reproducir grabaciones en historial'',''Play back recordings in log'',''Reproduzir gravações no histórico'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowMarks in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowMarks'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowMarks'',''Añadir marcas a grabaciones'',''Add marks to recordings'',''Adicionar marcas às gravações'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert LayoutModeDefault in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModeDefault'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModeDefault'',''Visualizar interfaz (predeterminada)'',''Use layout mode (default)'',''Usar layout de campanha (padrão)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert LayoutModePreview in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModePreview'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModePreview'',''Visualizar interfaz (vista previa)'',''Use layout mode (preview)'',''Usar layout de campanha (visualização)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AgentPermissionDailing in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDailing'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDailing'',''Cambiar tipo de campaña'',''Change campaign type'',''Alterar tipo de campanha'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AgentPermissionDelete in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDelete'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDelete'',''Gestionar marcación de vista previa (eliminar registros)'',''Manage preview dialing (delete records)'',''Gerenciar discagem de visualização (excluir registros)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowSpam in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSpam'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSpam'',''Gestionar conversaciones (marcar como spam)'',''Manage conversations (mark as spam)'',''Gerenciar conversas (marcar como spam)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowUnassign in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowUnassign'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowUnassign'',''Gestionar conversaciones (desasignar)'',''Manage conversations (unassign)'',''Gerenciar conversas (cancelar atribuição)'')
+	end
+	'
+	EXEC(@sql);
+
+	-----------------------------------------------------END Fri ------------------------------------------------------------------
+
+ 
     SET @process = 'DEV1-444 Asembis Alter SP ccsp_LoadGraphics se cambia inner a left join ccCampsExtend a4 on (a1.cam_id = a4.cam_id)';
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_LoadGraphics]
 @Id as smallint,
@@ -3968,20 +3969,22 @@ select @RecordCalls RecordCalls
 END';
     EXEC(@sql);
 
-	/* End script release */
-	/* Upgrade database version (first and the last number of setting 77) */
-	EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-	EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
-	COMMIT TRAN
-	END TRY
 
-	BEGIN CATCH
-		/* Error generated based on sintax */
-		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
 
-		RAISERROR (@errorGenerated, 11, 1)
+        /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
+        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
 
-		ROLLBACK TRAN
-	END CATCH
-END
+        COMMIT TRAN
+    END TRY
+
+    BEGIN CATCH
+        /* Error generated based on sintax */
+        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+
+        RAISERROR (@errorGenerated, 11, 1)
+
+        ROLLBACK TRAN
+    END CATCH
+END 

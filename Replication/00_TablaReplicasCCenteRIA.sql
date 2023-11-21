@@ -195,7 +195,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'Az
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotConversation',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotConversationEndStatus',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotWhatsAppConversation',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotConversationMessage',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatbotCalloutRelation',@idInt,0)
 
 
 

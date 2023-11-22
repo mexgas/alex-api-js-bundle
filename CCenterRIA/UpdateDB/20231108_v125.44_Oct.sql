@@ -185,15 +185,6 @@ BEGIN
 
 	-----------------------------------------------------END Gaby -----------------------------------------------------------------
 
-	
-
-
-    
-
-
-  
-
-
 ---------------------------------------Begin Jesus Gallardo hotfix/125.20230719.0.9-----------------------------------------------------------
 
     SET @process = 'DEV1-409 Milla Alter SP ccsp_RIARegistryLists --return SELECT 200 as ReturnValue y se agrega withNolock'
@@ -3125,6 +3116,7 @@ IF @TipoMov in(4 ,14) BEGIN-- DIALOG OnDialog
                                user_id = case when user_id=0 and @user_id>0 then @user_id else user_id end, 
                                cal_extension = case when cal_extension=0 and @extension>0 then @extension else cal_extension end
                          WHERE cal_id = @cal_id
+          end
                 SELECT @cam_id=cam_id FROM ccoWorkingTable nolock WHERE callout_id = @callout_id
                 IF @RecicleSIC = 0 AND (SELECT campType FROM ccCamps WHERE cam_id = @cam_id) != 6
                 BEGIN
@@ -3643,7 +3635,629 @@ SET @process = 'CW-8180 CREATE PROCEDURE ccsp_OUTUpdateDialJob se agrega validac
 		SET NOCOUNT OFF'
 	EXEC(@sql)
 	-------------------------------------End Omar Mejia hotfix/125.20230719.0.9-----------------------------------------------------------
+	-----------------------------------------------------Begin Fri ----------------------------------------------------------------
+	SET @process = 'Drop sp ccsp_GalateaPermissionsActivityLog'
+	SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaPermissionsActivityLog'')
+    begin
+        DROP PROCEDURE ccsp_GalateaPermissionsActivityLog;
+    end
+	'
+	EXEC(@sql);
 
+	SET @process = 'create sp ccsp_GalateaPermissionsActivityLog'
+	SET @sql = '
+	CREATE procedure ccsp_GalateaPermissionsActivityLog
+	@UserId           SMALLINT,
+	@Operations       VARCHAR(MAX)= '''',
+	@Identifiers	  VARCHAR(MAX) = '''',
+	@Values			  VARCHAR(MAX) = '''',
+	@Module			  SMALLINT = 0,
+	@Target			  VARCHAR(40) = ''''
+	AS
+	BEGIN
+
+	DECLARE @AgentIdsTemp TABLE (i int, AgentId int)
+	insert @AgentIdsTemp select * from dbo.fn_RIASplitDelimited (@Target, '','') agentsId
+
+	declare @i int, @n int, @id int, @login varchar(40)
+	select @i = 1 , @n = COUNT(AgentId) from @AgentIdsTemp
+
+
+	while (@i <= @n)
+	begin
+		select @id =  AgentId from @AgentIdsTemp where i = @i
+		select @login = Login from ccUsers where User_id= @id
+		exec ccsp_GalateaActivityLog @UserId,@Operations,@Identifiers,@Values,@Module,@login
+		set @i = @i + 1
+	end
+
+	END
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert OperationId = 90'
+	SET @sql = '
+	if not exists(select OperationId from ccGalateaOperations where OperationId = 90)
+	begin
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (90,''Habilitar permiso'',''Enable permission'',''Ativar permissão'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert OperationId = 91'
+	SET @sql = '
+	if not exists(select OperationId from ccGalateaOperations where OperationId = 91)
+	begin
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (91,''Deshabilitar permiso'',''Disable permission'',''Desativar permissão'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId = 11'
+	SET @sql = '
+	if not exists(select ModuleId from ccGalateaModules where ModuleId = 11)
+	begin
+		insert into ccGalateaModules (ModuleId,MTagEs,MTagEn,MTagPt) values (11,''Permisos de agente'',''Agent permissions'',''Permissões de agente'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId=11 and OperationId=90'
+	SET @sql = '
+	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=90)
+	begin
+		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,90)
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert ModuleId=11 and OperationId=91'
+	SET @sql = '
+	if not exists(select * from ccGalateaModOpRelation where ModuleId=11 and OperationId=91)
+	begin
+		insert into ccGalateaModOpRelation (ModuleId,OperationId) values (11,91)
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowSelectCamp in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSelectCamp'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSelectCamp'',''Gestionar marcación de vista previa (seleccionar campaña)'',''Manage preview dialing (select campaign)'',''Gerenciar discagem de visualização (Selecionar campanha)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowCellPhoneCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowCellPhoneCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowCellPhoneCalls'',''Llamar manualmente (a teléfonos celulares)'',''Dial numbers manually (mobile numbers)'',''Discar manualmente (para telefones celulares)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowLongDistanceCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLongDistanceCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLongDistanceCalls'',''Llamar manualmente (a teléfonos de LD)'',''Dial numbers manually (LD numbers)'',''Discar manualmente (para telefones de LD)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowLocalCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowLocalCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowLocalCalls'',''Llamar manualmente (a teléfonos locales)'',''Dial numbers manually (local numbers)'',''Discar manualmente (para telefones locais)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowTransferCalls in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowTransferCalls'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowTransferCalls'',''Recibir transferencias'',''Accept transfers'',''Receber transferências
+	'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferAgents in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferAgents'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferAgents'',''Transferir llamadas (a agentes)'',''Transfer calls (to agents)'',''Transferir chamadas (para agentes)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferCamps in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferCamps'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferCamps'',''Transferir llamadas (a campañas)'',''Transfer calls (to campaigns)'',''Transferir chamadas (para campanhas)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferExt in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferExt'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferExt'',''Transferir llamadas (a teléfonos externos)'',''Transfer calls (to external lines)'',''Transferir chamadas (para telefones externos)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert XferManual in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''XferManual'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''XferManual'',''Transferir llamadas (a teléfonos manuales)'',''Transfer calls (to manual dials)'',''Transferir chamadas (para telefones digitados)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert startStopRecording in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''startStopRecording'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''startStopRecording'',''Pausar y reanudar grabación'',''Pause and resume recording'',''Pausar e continuar gravação'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowPlayRecordsOnCallHistory in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowPlayRecordsOnCallHistory'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowPlayRecordsOnCallHistory'',''Reproducir grabaciones en historial'',''Play back recordings in log'',''Reproduzir gravações no histórico'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowMarks in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowMarks'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowMarks'',''Añadir marcas a grabaciones'',''Add marks to recordings'',''Adicionar marcas às gravações'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert LayoutModeDefault in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModeDefault'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModeDefault'',''Visualizar interfaz (predeterminada)'',''Use layout mode (default)'',''Usar layout de campanha (padrão)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert LayoutModePreview in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''LayoutModePreview'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''LayoutModePreview'',''Visualizar interfaz (vista previa)'',''Use layout mode (preview)'',''Usar layout de campanha (visualização)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AgentPermissionDailing in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDailing'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDailing'',''Cambiar tipo de campaña'',''Change campaign type'',''Alterar tipo de campanha'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AgentPermissionDelete in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AgentPermissionDelete'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AgentPermissionDelete'',''Gestionar marcación de vista previa (eliminar registros)'',''Manage preview dialing (delete records)'',''Gerenciar discagem de visualização (excluir registros)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowSpam in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowSpam'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowSpam'',''Gestionar conversaciones (marcar como spam)'',''Manage conversations (mark as spam)'',''Gerenciar conversas (marcar como spam)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'Insert AllowUnassign in ccGalateaIdentifiers'
+	SET @sql = '
+	if not exists(select Description from ccGalateaIdentifiers where Description = ''AllowUnassign'')
+	begin
+		insert into ccGalateaIdentifiers (Description,TagEs,TagEn,TagPt) values (''AllowUnassign'',''Gestionar conversaciones (desasignar)'',''Manage conversations (unassign)'',''Gerenciar conversas (cancelar atribuição)'')
+	end
+	'
+	EXEC(@sql);
+
+	SET @process = 'DROP PROCEDURE ccsp_GalateaAdminSetPermissions'
+	SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSetPermissions'')
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminSetPermissions;
+    end
+	'
+	EXEC(@sql);
+
+	SET @process = 'create produre ccsp_GalateaAdminSetPermissions'
+	SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_GalateaAdminSetPermissions]
+	@adminId SMALLINT,
+	@areaId SMALLINT,
+	@agentsIds VARCHAR(MAX),
+	@allAgentsSelected BIT, 
+	@permissionName VARCHAR(255),
+	@permissionValue INT
+	AS
+	SET NOCOUNT ON
+
+
+	declare @changeBitTable table(permissionName VARCHAR(255), valueBit int)
+
+	insert into @changeBitTable values(''AllowCellPhoneCalls'',1)
+	insert into @changeBitTable values(''startStopRecording'',1)
+	insert into @changeBitTable values(''XferManual'',1)
+	insert into @changeBitTable values(''AllowTransferCalls'',1)
+	insert into @changeBitTable values(''AgentPermissionDailing'',1)
+	insert into @changeBitTable values(''DailingMode'',1)
+	insert into @changeBitTable values(''AgentPermissionDelete'',1)
+	insert into @changeBitTable values(''AllowSelectCamp'',1)
+
+	insert into @changeBitTable values(''AllowLongDistanceCalls'',2)
+	insert into @changeBitTable values(''XferExt'',2)
+
+	insert into @changeBitTable values(''AllowLocalCalls'',4)
+	insert into @changeBitTable values(''XferCamps'',4)
+
+	insert into @changeBitTable values(''XferAgents'',8)
+
+	DECLARE @changeBit INT
+
+	set @changeBit=0
+
+	select @changeBit=valueBit from @changeBitTable where permissionName=@permissionName
+
+	--print(@changeBit)
+	IF @agentsIds IS NOT NULL
+	BEGIN
+		DECLARE @AgentIdsTemp TABLE (AgentId INT, Status BIT)
+		INSERT INTO @AgentIdsTemp SELECT VALUE, 0 FROM dbo.fn_RIASplitDelimited(@agentsIds,'','')
+
+		IF @permissionName = ''AllowUnassign'' 
+		BEGIN                       
+			UPDATE permissions SET permissions.AllowUnassign = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+		else IF @permissionName = ''AllowSpam''
+		BEGIN 
+			UPDATE permissions SET permissions.AllowSpam = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowSpam, AllowUnassign, AllowPlayRecordsOnCallHistory)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+
+	else IF @permissionName = ''AllowPlayRecordsOnCallHistory''
+		BEGIN 
+			UPDATE permissions SET permissions.AllowPlayRecordsOnCallHistory = @permissionValue FROM @AgentIdsTemp agentIds
+			INNER JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+
+			INSERT INTO ccRIAAgentsPermissions(AgentId, AllowPlayRecordsOnCallHistory, AllowSpam, AllowUnassign)
+			SELECT agentIds.AgentId , @permissionValue, 0, 0 FROM @AgentIdsTemp agentIds
+			LEFT JOIN ccRIAAgentsPermissions permissions ON agentIds.AgentId = permissions.AgentId
+			WHERE permissions.AgentId IS NULL
+		END
+	else begin
+		UPDATE
+			ccUsers
+		SET DialMask =
+			CASE
+			WHEN @permissionName = ''AllowCellPhoneCalls''
+			OR @permissionName = ''AllowLongDistanceCalls''
+			OR @permissionName = ''AllowLocalCalls''
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (DialMask & @changeBit) <> @changeBit
+					THEN DialMask ^ @changeBit
+					ELSE DialMask
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (DialMask & @changeBit) = @changeBit
+					THEN DialMask ^ @changeBit
+					ELSE DialMask
+					END
+				END 
+			ELSE DialMask
+			END,
+                        
+			XferMask =
+			CASE
+			WHEN @permissionName = ''AllowTransferCalls''
+			THEN
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (XferMask & @changeBit) <> @changeBit
+					THEN XferMask ^ @changeBit
+					ELSE XferMask
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (XferMask & @changeBit) = @changeBit
+					THEN XferMask ^ @changeBit
+					ELSE XferMask
+					END
+				END
+			ELSE XferMask
+			END,
+
+			XferAgents =
+			CASE
+			WHEN @permissionName = ''XferAgents''
+			OR @permissionName = ''XferCamps'' 
+			OR @permissionName = ''XferExt'' 
+			OR @permissionName = ''XferManual'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (XferAgents & @changeBit) <> @changeBit
+					THEN XferAgents ^ @changeBit
+					ELSE XferAgents
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (XferAgents & @changeBit) = @changeBit
+					THEN XferAgents ^ @changeBit
+					ELSE XferAgents
+					END
+				END
+			ELSE XferAgents
+			END,
+
+			startStopRecording =
+			CASE
+			WHEN @permissionName = ''startStopRecording'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE startStopRecording
+			END,
+
+			DialingMode = 
+			CASE
+			WHEN @permissionName = ''DailingMode'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN
+					CASE
+					WHEN (DialingMode & @changeBit) <> @changeBit
+					THEN DialingMode ^ @changeBit
+					ELSE DialingMode
+					END
+				WHEN @permissionValue = 0
+				THEN
+					CASE
+					WHEN (DialingMode & @changeBit) = @changeBit
+					THEN DialingMode ^ @changeBit
+					ELSE DialingMode
+					END
+				END 
+			ELSE DialingMode
+			END,
+			AllowChangeDialingMode = 
+			CASE
+			WHEN @permissionName = ''AgentPermissionDailing'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 3
+				THEN 1
+				WHEN @permissionValue = 2
+				THEN 0
+				END
+			ELSE AllowChangeDialingMode
+			END,
+			AllowDeleteRecord= 
+			CASE
+			WHEN @permissionName = ''AgentPermissionDelete'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE AllowDeleteRecord
+			END,
+			AllowMarks= 
+			CASE
+			WHEN @permissionName = ''AllowMarks'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1 THEN 1
+				WHEN @permissionValue = 0 THEN 0
+				END
+			ELSE AllowMarks
+			END,
+			allowselectcamp=
+			CASE
+			WHEN @permissionName = ''AllowSelectCamp'' 
+			THEN 
+				CASE
+				WHEN @permissionValue = 1
+				THEN 1
+				WHEN @permissionValue = 0
+				THEN 0
+				END
+			ELSE allowselectcamp
+			END
+		WHERE User_id IN (SELECT AgentId FROM @AgentIdsTemp)
+		end
+                
+		DECLARE @Login VARCHAR(20) = (SELECT Login FROM ccUsers WHERE User_id = @adminId)
+		DECLARE @AreaName VARCHAR(50) = (SELECT AreaName FROM ccRIACat_Areas WHERE IDArea = @areaId)
+		DECLARE @OperationType TINYINT = (SELECT CASE WHEN @permissionValue = 1 THEN 33 ELSE 35 END)
+		DECLARE @Language TINYINT = (SELECT valor FROM ccSettings WHERE setting_id = 27)
+		DECLARE @Tag varchar(100) = (SELECT PermissionTag FROM ccRIAAgentsPermissionsTags WHERE PermissionName = @permissionName)        
+		DECLARE @Value VARCHAR(250) = (SELECT permissions.Value 
+										FROM  dbo.fn_RIASplitDelimited(@Tag,''|'') permissions
+										WHERE permissions.Id = @Language + 1)
+
+		DECLARE @AgentId INT = 0
+		DECLARE @AgentName VARCHAR(20) = ''''
+
+		set @Value = isnull(@Value,@permissionName)
+
+		IF @allAgentsSelected = 0
+		BEGIN
+			WHILE EXISTS(SELECT * FROM @AgentIdsTemp WHERE Status = 0)
+			BEGIN 
+				SELECT TOP 1 @AgentId = AgentId FROM @AgentIdsTemp WHERE Status = 0
+				SET @AgentName = (SELECT Login FROM ccUsers WHERE User_id = @AgentId)
+                    
+				EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+				@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+                        
+				UPDATE @AgentIdsTemp SET Status = 1 WHERE AgentId = @AgentId
+			END
+		END
+		ELSE
+		BEGIN
+			SET @AgentName = (SELECT AllAgentsTag FROM ccRIAUserPermissionsStatusTags WHERE Language = @Language)
+                    
+			EXEC ccsp_RIA_ABCLog @option = 2, @areaName = @AreaName, @operationType = @OperationType, 
+			@login = @Login, @moduleId = 4, @value = @Value , @target = @AgentName
+                        
+			UPDATE @AgentIdsTemp SET Status = 1
+		END
+
+
+	END
+
+	SET NOCOUNT OFF
+	'
+	EXEC(@sql);
+
+	-----------------------------------------------------END Fri ------------------------------------------------------------------
+
+ 
+    SET @process = 'DEV1-444 Asembis Alter SP ccsp_LoadGraphics se cambia inner a left join ccCampsExtend a4 on (a1.cam_id = a4.cam_id)';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_LoadGraphics]
+@Id as smallint,
+@callType as smallint,
+@UserId as smallint,
+@phone varchar(50)=null
+AS
+BEGIN
+        
+    SET NOCOUNT ON  
+    DECLARE @realValue int      
+    exec @realValue= ccsp_AgentGetStartStopPermission @age_id=@UserId, @cam_id=@Id, @call_type=@callType,@phone=@phone
+    
+    if (@callType=1)
+    begin
+        DECLARE @canReprogram bit  
+        create table #canReprogram (canReprogram bit)
+        insert into #canReprogram
+        exec ccsp_AgentGetCampReprogramData @Id, @callType
+        select @canReprogram = canReprogram from #canReprogram
+        drop table #canReprogram
+
+        select a1.Inbound_id id, a2.descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey, 0 as leaveRecMessage , a2.EditableContactData,
+        case when isnull(a4.callsBySurvey,0) > 0 then 1 else 0 end isRelationSurvey ,
+        isnull(a2.callBackSurveyAgent,1) callBackSurveyAgent,isnull(a2.callBackSurveyClient,1) callBackSurveyClient,
+        a2.ShowCalifWnd as ShowDisposition,
+        isnull(a2.startStopRecording,0) as StartStopRecording,
+        @realValue as IsStartStopRecording,
+        isnull(a2.editableDtmf, 0) as isEditDtmf,
+        @canReprogram  CanReprogram
+        from ccRIAInboundGraph a1 
+        inner join ccInbound a2 on (a1.inbound_id=a2.inbound_id)
+         inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id) 
+         left join ccCamps a4 on a4.cam_id=a2.cam_id  where a1.inbound_id=@Id and type_id in(1,2,3) order by type_id        
+     end    
+     else
+     begin
+        select a1.cam_id Id, a2.cam_descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey,
+        case when msgFile <> '''' and leaveRecMessage = 1 then 1 else 0 end as leaveRecMessage, 
+        case when isnull(a2.surveyCamId,0) >0 then 1 else 0 end isRelationSurvey ,
+        a2.cam_ShowCalifWnd as ShowDisposition,
+        a2.callBackSurveyAgent,a2.callBackSurveyClient,
+        isnull(a2.startStopRecording,0) as StartStopRecording,
+        @realValue as IsStartStopRecording,
+        ISNULL( a4.EditableContactData,0) as EditableContactData
+        from ccRIACampsGraph a1 
+        inner join ccCamps a2 on (a1.cam_id=a2.cam_id)
+        inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id)
+        left join ccCampsExtend a4 on (a1.cam_id = a4.cam_id)
+        left outer join (select top 1 M.cam_id, coalesce(msgFile+'''','''','''') as msgFile 
+        from ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id 
+        where M.cam_id = @Id and type = 8) b 
+        on (a2.cam_id = b.cam_id) 
+        where a1.cam_id=@Id and type_id in(1,2,3) order by type_id
+     end    
+END
+    ';
+    EXEC(@sql);
+
+    SET @process = 'DEV1-444 Asembis Alter SP ccsp_RIAACDCallParams se cambia para dar un valor fijo @RecordCalls';
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAACDCallParams]
+@option int,
+@campId int = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+declare @RecordCalls tinyint
+set @RecordCalls=0
+if(@option = 1)
+begin
+    select @RecordCalls= RecordCalls from ccInboundExtend where Inbound_id = @campId                
+end
+
+else if(@option = 2)
+begin
+    select @RecordCalls= RecordCalls from ccCampsExtend where cam_id = @campId              
+end
+select @RecordCalls RecordCalls
+
+    SET NOCOUNT OFF;
+END';
+    EXEC(@sql);
 
 
 
@@ -3663,23 +4277,4 @@ SET @process = 'CW-8180 CREATE PROCEDURE ccsp_OUTUpdateDialJob se agrega validac
 
         ROLLBACK TRAN
     END CATCH
-END
-
-
-	/* End script release */
-	/* Upgrade database version (first and the last number of setting 77) */
-	EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-	EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
-
-	COMMIT TRAN
-	END TRY
-
-	BEGIN CATCH
-		/* Error generated based on sintax */
-		SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
-
-		RAISERROR (@errorGenerated, 11, 1)
-
-		ROLLBACK TRAN
-	END CATCH
-END
+END 

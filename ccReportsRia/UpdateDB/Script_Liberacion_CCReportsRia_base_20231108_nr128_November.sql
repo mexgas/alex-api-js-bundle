@@ -183,8 +183,8 @@ SET @sql = 'CREATE PROCEDURE [dbo].[SupportReportCallInIVR] @action AS TINYINT, 
 			ISNULL(dnis.dni_Descripcion,'''') AS nameDNI,
 			ISNULL(dnis.dni_numero,'''') AS dni,
 			CASE
-					WHEN B.statusTime > 0 THEN ''collectCallYes''
-					ELSE ''collectCallNo''
+					WHEN B.statusTime > 0 THEN ''systemTranslated_collectCallYes''
+					ELSE ''systemTranslated_collectCallNo''
 			END AS collectCall,
 			B.statusTime  AS timeTotalInCallSec,
 			(FLOOR( ( B.statusTime )/ 60) + 
@@ -358,8 +358,8 @@ cal_final)
 		ISNULL(dni_Descripcion, '''') AS nameDNI,
 		ISNULL(dnis.dni_numero, '''') AS dni,
 		CASE
-				WHEN statusLlamada.descripcion IS NOT NULL THEN ''collectCallYes''
-				ELSE ''collectCallNo''
+				WHEN statusLlamada.descripcion IS NOT NULL THEN ''systemTranslated_collectCallYes''
+				ELSE ''systemTranslated_collectCallNo''
 		END AS collectCall,
 		CASE
 			WHEN A.cal_final IS NULL THEN 0

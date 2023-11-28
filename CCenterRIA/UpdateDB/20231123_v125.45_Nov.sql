@@ -1025,6 +1025,71 @@ SET NOCOUNT ON;
 		SET @process = 'KR102000 '
 		SET @sql = ''
 		EXEC(@sql);
+
+		SET @process = 'KR102000 Se agrega extended.SurveyCamId>0 en linea 1049 y se agrega linea 1060'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_LoadGraphics]
+					@Id as smallint,
+					@callType as smallint,
+					@UserId as smallint,
+					@phone varchar(50)=null
+					AS
+					BEGIN
+					        
+					    SET NOCOUNT ON  
+					    DECLARE @realValue int      
+					    exec @realValue= ccsp_AgentGetStartStopPermission @age_id=@UserId, @cam_id=@Id, @call_type=@callType,@phone=@phone
+					    set @realValue=isnull(@realValue,0);
+
+					    if (@callType=1)
+					    begin
+					        DECLARE @canReprogram bit  
+					        create table #canReprogram (canReprogram bit)
+					        insert into #canReprogram
+					        exec ccsp_AgentGetCampReprogramData @Id, @callType
+					        select @canReprogram = canReprogram from #canReprogram
+					        drop table #canReprogram
+
+					        select a1.Inbound_id id, a2.descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey, 0 as leaveRecMessage , a2.EditableContactData,
+					        case when isnull(a4.callsBySurvey,0) > 0 or extended.SurveyCamId>0 then 1 else 0 end isRelationSurvey ,
+					        isnull(a2.callBackSurveyAgent,1) callBackSurveyAgent,isnull(a2.callBackSurveyClient,1) callBackSurveyClient,
+					        a2.ShowCalifWnd as ShowDisposition,
+					        isnull(a2.startStopRecording,0) as StartStopRecording,
+					        @realValue as IsStartStopRecording,
+					        isnull(a2.editableDtmf, 0) as isEditDtmf,
+					        @canReprogram  CanReprogram
+					        from ccRIAInboundGraph a1 
+					        inner join ccInbound a2 on (a1.inbound_id=a2.inbound_id)
+					        inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id) 
+					        left join ccCamps a4 on a4.cam_id=a2.cam_id 
+							left join ccInboundExtend extended on extended.Inbound_id = a1.Inbound_id
+							where a1.inbound_id=@Id and type_id in(1,2,3) order by type_id        
+					     end    
+					     else
+					     begin
+					        select a1.cam_id Id, a2.cam_descripcion description, a1.graphic_id, a3.type_id, a3.frame, a2.EditableCallKey,
+					        case when msgFile <> '''' and leaveRecMessage = 1 then 1 else 0 end as leaveRecMessage, 
+					        case when isnull(a2.surveyCamId,0) >0 then 1 else 0 end isRelationSurvey ,
+					        a2.cam_ShowCalifWnd as ShowDisposition,
+					        a2.callBackSurveyAgent,a2.callBackSurveyClient,
+					        isnull(a2.startStopRecording,0) as StartStopRecording,
+					        @realValue as IsStartStopRecording,
+					        isnull(a4.EditableContactData,0) as EditableContactData
+					        from ccRIACampsGraph a1 
+					        inner join ccCamps a2 on (a1.cam_id=a2.cam_id)
+					        inner join ccRIAGraphics a3 on (a1.graphic_id=a3.graphic_id)
+					        left join ccCampsExtend a4 on (a1.cam_id = a4.cam_id)
+					        left outer join (select top 1 M.cam_id, coalesce(msgFile+'''','''','''') as msgFile 
+					        from ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id 
+					        where M.cam_id = @Id and type = 8) b 
+					        on (a2.cam_id = b.cam_id) 
+					        where a1.cam_id=@Id and type_id in(1,2,3) order by type_id
+					     end    
+					END'
+		EXEC(@sql);
+
+		SET @process = 'KR102000 '
+		SET @sql = ''
+		EXEC(@sql);
 		-----------------------------------------------------END Jonathan Ramirez ----------------------------------------------------------------
 
 		-----------------------------------------------------BEGIN Uriel Cabrera ----------------------------------------------------------------
@@ -1034,14 +1099,9 @@ SET NOCOUNT ON;
 		-----------------------------------------------------END Uriel Cabrera ----------------------------------------------------------------
 
 		-----------------------------------------------------BEGIN Ivan Martin ----------------------------------------------------------------
-		SET @process = 'KR102000  Drop procedure ccsp_GalateaGetHangUpData'
-		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetHangUpData'')
-				    begin
-				        DROP PROCEDURE ccsp_GalateaGetHangUpData;
-				    end'
 
 		SET @process = 'KR102000 Se agrega relacion con nueva coluna para encuestas en campañas de entrada (lineas 1051 y 1057)'
-		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
 					@cam_id int,
 					@type int
 					AS BEGIN
@@ -1074,9 +1134,466 @@ SET NOCOUNT ON;
 				END'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 '
-		SET @sql = ''
+		SET @process = 'KR102000 Se agregan las lineas(1129 a 1132, 1139)'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
+					@command int,
+					@inboundId int
+					AS
+					BEGIN
+
+					SET NOCOUNT ON;
+
+					if @command=0
+					begin
+					select descripcion from ccInbound where Inbound_id = @inboundId
+					end
+					if @command=1 -- Voice campaign
+					begin
+						select 
+						A.Inbound_id [InboundId],
+						A.descripcion [Description],
+						A.chat [MediaType],
+						A.Status,
+						isnull(gra.graphic_id,1) [Frame],
+						A.tNotas,
+						A.tMaxWaitCall,
+						A.nMaxQue,
+						A.tel_maxwait,
+						A.tel_maxqueue,
+						A.tel_outservice,
+						A.tel_noct,
+						A.ShowCalifWnd,
+						A.editableCallKey [EditableCallKey],
+						A.queuePosition [QueuePosition],
+						A.tMaxQueueCallBack,
+						A.stopRecording [StopRecording],
+						A.dialPrefixOverflow [DialPrefixOverflow],
+						AE.SurveyCamId [SurveyCamId],
+						isnull(A.callerIdDesc, '''') [CallerIdDesc],
+						isnull(A.startStopRecording,0) [StartStopRecording],
+						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
+						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
+						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then cast(1 as bit) else cast(0 as bit) end [IsRelationSurvey],
+						isnull(A.editableDtmf,0) [EditableDtmf],
+						isnull(A.addDataCallBackReminder,0) [AddDataCallBackReminder],
+						isnull(A.recordHold, 0) [RecordHold],
+						isnull(AE.RecordCalls, 1) [RecordCalls],
+						isnull(A.EditableContactData, 0) [EditableContactData]
+						from ccInbound A
+						left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+						left join ccInboundExtend AE on AE.Inbound_id = @inboundId
+						left join ccCamps C on C.cam_id=A.cam_id
+						where A.Inbound_id=@inboundId
+					end
+					if @command=2 -- WhatsApp campaign
+					begin
+						declare @numbers varchar(max)
+						select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
+
+						select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
+						ISNULL(c.conexionInfo,'''') [Number],
+						ISNULL(@numbers,'''') [FreeNumbersStr],
+						CAST(ISNULL(c.closeConversationTime, 0) AS INT) [MaxAnswerTime],
+						ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
+						ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],
+						i.tNotas [tNotas],
+						i.ExitWrapUpDisposition,
+						i.ShowCalifWnd
+						from ccInbound i left join ccRIAInboundGraph g on i.Inbound_id = g.Inbound_id
+						left join contactMeanIn c on i.Inbound_id = c.inboundId and i.chat = 5 and c.meanContactTypeId = 5
+						where i.Inbound_id=@inboundId
+					end
+					if @command=3 -- Email campaign
+					begin
+						select 
+						A.Inbound_id [InboundId],
+						A.descripcion [Description],
+						A.chat [MediaType],
+						A.Status,
+						isnull(gra.graphic_id,1) [Frame],
+						A.tNotas,
+						A.ShowCalifWnd,
+						C.conexionInfo [ConnInfo],
+						C.connUser  [ConnUserName],
+						C.ConnPass [ConnPwd],
+						C.isActive [IsActive],
+						C.timeAlertMessage,
+						C.closeConversationTime [CloseConversationTime],
+						C.answerTimeOut [AnswerTimeOut],
+						C.name [SenderName]
+						from ccInbound A
+						left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+						left join contactMeanIn C on A.Inbound_id = C.inboundId and C.meanContactTypeId=1
+						where A.Inbound_id=@inboundId
+					end
+					if @command=4 -- Chat campaign
+					begin
+						select 
+						i.Inbound_id [InboundId],
+						i.descripcion [Description],
+						i.chat [MediaType],
+						i.Status,
+						isnull(ig.graphic_id,1) [Frame],
+						i.tNotas,
+						i.ShowCalifWnd,
+						i.inactiveChatTime [InactiveChatTime],
+						i.chatDomain [ChatDomain],
+						i.chatTimeOverflow [ChatTimeOverflow],
+						i.chatQueueOverflow [ChatQueueOverflow]
+						from ccInbound i
+						left join ccRIAInboundGraph ig on ig.Inbound_id=i.Inbound_id
+						where i.Inbound_id =@inboundId
+					end
+
+					RETURN(0)
+
+					SET NOCOUNT OFF;    
+					END'
 		EXEC(@sql);
+
+		SET @process = 'KR102000 Se agregan lineas 1326 y 1328'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_IVRChecaInboundHorario]
+					@inbound_id int
+					AS
+					set nocount on
+					declare @fecha datetime
+					declare @dia smallint
+					declare @hora smallint
+					declare @minuto smallint
+					declare @Cuantos smallint
+					declare @bnocturno smallint
+					declare @tel_noct varchar(14)
+					declare @tel_maxqueue varchar(14)
+					declare @tel_maxwait varchar(14)
+					declare @tel_outservice varchar(14)
+					declare @tHoldCall int
+					declare @OutOFService tinyint
+					declare @Active tinyint
+					declare @stopRecording bit
+					declare @MohFiles varchar(8000)
+					declare @ivr_script smallint, @surveycamid int
+					declare @callBackCustomPhone tinyint
+					declare @callBackCustomKey bit
+
+						SET DATEFIRST 1
+
+						select @fecha =  getdate()
+						select @surveycamid = 0, @ivr_script = 0
+						select @dia = datepart(dw,@fecha), @hora = datepart(hh,@fecha), @minuto = datepart(mi,@fecha)
+						if ( @dia=1 )     --LUNES
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND LUNES = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=2   --MARTES
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND MARTES = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=3   --MIERCOLES
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND MIERCOLES = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=4   --JUEVES
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND JUEVES = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=5   --VIERNES
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND VIERNES = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=6   --SABADO
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND SABADO = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+						if @dia=7   --DOMINGO
+						begin
+							  select @Cuantos = count(*)
+							  from ccInbound I join ccInboundHorarios IH
+							  on I.Inbound_id = IH.Inbound_id
+							  join ccHorarios H on IH.horario_id = H.Horario_id
+							  Where I.Inbound_id = @inbound_id
+							  AND DOMINGO = 1
+							  AND ( @hora > HoraInicio OR ( @hora = HoraInicio AND @minuto >= MinInicio ) )
+							  AND ( @hora < HoraFin OR ( @hora = HoraFin AND @minuto <= MinFin ) )
+						end
+
+						select @Active=0, @OutOFService=0
+						select 
+						@Active=case when status=1 then 1 else 0 end, --Activa
+						@OutOFService=case when standby=0 then 1 else 0 end , --En operacion
+						@tHoldCall = tMaxWaitCall, @bnocturno =bnocturno, @stopRecording=stopRecording, 
+						@callBackCustomPhone=callBackCustomPhone, @callBackCustomKey=callBackCustomKey,
+						@tel_noct=tel_noct, @tel_maxqueue=tel_maxqueue, @tel_maxwait=tel_maxwait, @tel_outservice=tel_outservice, @surveycamid = isnull(extend.SurveyCamId,0)
+						from ccInbound i  
+						left join ccInboundExtend extend on extend.Inbound_id = i.Inbound_id
+						where i.Inbound_id=@inbound_id
+
+						IF ( @OutOFService =1 AND @Active=1 and (select valor from ccsettings where setting_id = 4) = 1)
+						BEGIN
+					--        SI ESTA EN SERVICO
+							  if @surveycamid > 0
+									select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+							  --Custom MOH Files
+							  SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+							  FROM ccInboundMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE Inbound_id = @Inbound_ID and TYPE = 15 ORDER BY orden
+						END
+						ELSE
+						BEGIN
+							  IF ( @OutOFService = 0 and (select valor from ccsettings where setting_id = 4) = 1)
+							  BEGIN -- ESPECIALIDAD NO ACTIVA
+									select @Cuantos= -1, @tHoldCall=0, @bnocturno='''', @tel_noct='''', @tel_maxqueue='''', @tel_maxwait='''', @tel_outservice='''', @MohFiles=''''
+							  END
+							  IF ( @Active = 0 )
+							  BEGIN -- ESPECIALIDAD FUERA DE SERVICIO TEMPORAL
+									select @Cuantos= -2, @tHoldCall=0, @bnocturno='''', @tel_noct='''', @tel_maxqueue='''', @tel_maxwait='''', @MohFiles=''''
+							  END 
+						END
+						SET DATEFIRST 7
+
+						select ''Cuantos''=@Cuantos, ''tHoldCall''=@tHoldCall, ''bNocturno''=1, ''tel_MaxWait''=@tel_maxwait, ''tel_MaxQueue''=@tel_maxqueue, ''tel_Noct''=@tel_noct, ''tel_outservice''=@tel_outservice, ''stopRecording''=@stopRecording, ''mohFiles''=isnull(@MohFiles,''''), ''ivrScript''=@ivr_script, isnull(@callBackCustomPhone,0) cbCustomPhone, isnull(@callBackCustomKey,0) cbCustomKey
+					set nocount off'
+		EXEC(@sql);
+
+		SET @process = 'KR102000 Se agregan lineas 1069, y 1073'
+		SET @sql = 'ALTER procedure [dbo].[ccsp_RIAUpdateCallBack_Abandon]
+					@cal_id int,
+					@nStatus tinyint,
+					@cbPhone varchar(20) = NULL
+					as
+					set nocount on
+					declare @ANI varchar(13), @cam_id int, @inbound_id int, @fechadial varchar(40), @callout_id int, 
+					 @statuscall_id_Array varchar(1000), @minCallBackAbandon smallint, @pais varchar(2), @ld varchar(5), @telFormat tinyint
+
+					declare @lenExt int
+					DECLARE @whoHungUp TINYINT = (SELECT cal_whoHung FROM ccCallsIn WHERE cal_id = @cal_id);
+
+					select @ANI=C.cal_ANI, 
+						   --@cam_id=I.cam_id, 
+						   @cam_id = CASE WHEN @nStatus = 13 AND ((@whoHungUp = 2 AND ISNULL(extend.SurveyCamId,0) > 0) OR (@whoHungUp = 0 AND ISNULL(i.callBackSurveyClient,0) > 0)) THEN extend.SurveyCamId ELSE I.cam_id END,
+						   @inbound_id=I.inbound_id, 
+					@statuscall_id_Array=statuscall_id_Array, @minCallBackAbandon=minCallBackAbandon,@telFormat = I.telFormato
+					from cccallsin C 
+					join ccInbound I on I.Inbound_id=C.Inbound_id
+					left join ccInboundExtend extend on extend.Inbound_id = I.Inbound_id
+					where cal_id=@cal_id
+
+					if datalength(isnull(@cbPhone,'''')) > 0
+					begin
+						set @ANI=@cbPhone
+					end
+
+					select @fechadial=convert(varchar(16), dateadd(minute, @minCallBackAbandon, getdate()), 121)
+
+					select @pais = valor from ccSettings with(nolock) where setting_id = 104
+					select @ld = valor from ccSettings with(nolock) where setting_id = 17
+					select @lenExt = case when valor=''''then 0 else valor end from ccSettings with(nolock) where setting_id = 108
+					if @nStatus not in (select value from dbo.fn_RIASplitDelimited(@statuscall_id_Array, '','')) or isnull(@cal_id,0)=0
+					 return(0)
+			 
+					if isnull(@cam_id, 0)=0
+					  return(0)
+
+			  
+					--set @ANI =dbo.Limpia(@ANI)
+					--if @lenExt<>len(@ANI)
+					--  select @ANI = dbo.completa(@ANI, @pais, @ld)
+
+					  if @telFormat = 0
+					  set @ANI =dbo.Limpia(@ANI)
+					  else if @telFormat = 1
+					  select @ANI = dbo.completa(@ANI, @pais, @ld)
+
+					if (select substring(@ANI,1,1))= ''E''
+					  return(0)
+
+					if exists (select cal_ANI from ccRIAUpdateCallBack_Abandon where cal_ANI=@ANI)
+					  return(0)
+
+					 begin try
+					  insert ccRIAUpdateCallBack_Abandon (cal_id, cal_ANI, cam_id, callout_id, inbound_id, minCallBackAbandon)
+					  select @cal_id, @ANI, @cam_id, @callout_id, @inbound_id, @fechadial
+					  declare @dato1 varchar (max),  @dato2 varchar (max), @dato3 varchar (max), @dato4 varchar (max), @dato5 varchar (max)
+					  set @dato1 = '''' set @dato2 = '''' set @dato3 = '''' set @dato4 = '''' set @dato5 = ''''
+			  
+					  declare @datosToAgent varchar(max)
+					  select @datosToAgent= addDataCallBackReminder from ccInbound where Inbound_id = @inbound_id
+			  
+					  if(@datosToAgent = 1)
+					  begin
+						select @dato1 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 1''
+						select @dato2 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 2''
+						select @dato3 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 3''
+						select @dato4 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 4''
+						select @dato5 = Isnull(Data,'''') from DataCallIn where CallId = @cal_id and Description = ''Dato 5''
+					  end 
+					  exec ccsp_INInsertaCallBack @cal_id, @cam_id, @ANI, @fechadial, @dato1,@dato2,@dato3,@dato4,@dato5, 1, 0, 1
+
+					  select top 1 @callout_id=callout_id from ccoWorkingTable WITH(INDEX(PK_ccoWorkingTable)) WHERE cal_telefono=@ANI
+					  select @fechadial=dateadd(minute, minCallBackAbandonXpire, @fechadial) from ccInbound where Inbound_id=@inbound_id
+					  update ccRIAUpdateCallBack_Abandon set callout_id=@callout_id, minCallBackAbandonXpire=@fechadial where cal_id=@cal_id
+					  return(0)
+					 end try
+
+					 begin catch
+					  return(0)
+					 end catch
+					set nocount off'
+		EXEC(@sql);
+
+		SET @process = 'KR102000 Se agrega logica para recibir errores de la ejecucion de ccsp_RIAManageAreas lineas (1429, 1497)'
+		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UnassignedElementsInAreas]   
+					@Action INT,   
+					@AreaId INT = 0,
+					@Ids VARCHAR(MAX) = ''''
+					AS    
+					BEGIN
+						DECLARE @IdsTemp TABLE (Id INT);
+						DECLARE @Id VARCHAR(MAX);
+						DECLARE @Result VARCHAR(MAX);
+						INSERT INTO @IdsTemp SELECT VALUE FROM dbo.fn_RIASplitDelimited(@Ids,'','')
+
+						-- Return results 
+						IF @Action IN (0, 3, 6)	-- User names 
+						BEGIN 
+							SET @Result = (SELECT ISNULL(login,'''')  AS ElementNames
+							FROM @IdsTemp ids
+							INNER JOIN ccUsers users ON users.User_id = ids.Id)
+						END
+
+						IF @Action IN (1, 4, 7)	-- Campaign names
+						BEGIN 
+							SET @Result = (SELECT ISNULL(cam_descripcion,'''')  AS ElementNames
+							FROM @IdsTemp ids
+							INNER JOIN ccCamps campaign ON campaign.cam_id = ids.Id)
+						END
+
+						IF @Action IN (2, 5, 8)	-- Acd names
+						BEGIN 
+							SET @Result = (SELECT ISNULL(descripcion,'''') AS ElementNames
+							FROM @IdsTemp ids
+							INNER JOIN ccInbound acd ON acd.Inbound_id = ids.Id)
+						END
+						-------------------------------------------------------
+						IF @Action = 0 -- Assign Users to Unassigned area 
+						BEGIN
+							UPDATE ccUsers
+							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+								status = 1
+							FROM @IdsTemp ids
+							WHERE ccUsers.User_id = ids.Id
+							AND NOT EXISTS (SELECT 1 FROM ccUsers WHERE IDArea = @AreaId AND User_id = ids.Id)
+						END
+
+						IF @Action = 1 -- Assign Users to Campaigns area 
+						BEGIN
+							UPDATE ccCamps
+							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END
+							FROM @IdsTemp ids
+							WHERE ccCamps.cam_id = ids.Id
+							AND NOT EXISTS (SELECT 1 FROM ccCamps WHERE IDArea = @AreaId AND cam_id = ids.Id)
+						END
+
+						IF @Action = 2 -- Assign Users to Acds area 
+						BEGIN		
+							UPDATE ccInbound
+							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+								status = 1
+							FROM @IdsTemp ids
+							WHERE ccInbound.Inbound_id = ids.Id
+							AND NOT EXISTS (SELECT 1 FROM ccInbound WHERE IDArea = @AreaId AND Inbound_Id = ids.Id)
+						END
+
+						IF @Action in (3, 4, 5, 6, 7, 8)
+						BEGIN 
+							SET @Id = ''0''
+							WHILE EXISTS( SELECT Id FROM @IdsTemp ) 
+							BEGIN
+								SELECT TOP 1 @Id =Id FROM @IdsTemp 
+
+								IF @Action = 3 -- Unassign Users from area 
+								BEGIN
+									EXEC ccsp_RIAManageAreas @option = 2, @DeleteUserId = @Id
+								END
+
+								IF @Action = 4 -- Unassign Campaigns from area 
+								BEGIN
+									EXEC @Result = ccsp_RIAManageAreas @option=4, @DeleteCamId = @Id
+								END 
+
+								IF @Action = 5 -- Unassign Acds from area 
+								BEGIN
+									EXEC ccsp_RIAManageAreas @option = 6, @DeleteACDGroupId = @Id
+								END
+
+								IF @Action = 6 -- Delete Users from area 
+								BEGIN
+									EXEC ccsp_RIA_ABCAgents @option=4, @UserId = @Id, @Login = '''', @Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,@AreaId=0,@UserType=0,@IDWG=0
+								END
+
+								IF @Action = 7 -- Delete Campaigns from area 
+								BEGIN
+									EXEC ccsp_RIA_ABCCamps @option = 4, @UserId = 0, @Descripcion = '''', @Cam_id = @Id, @Activa = 0, @IDArea = 0, @frame = 0
+									delete ccCamps with(rowlock) where cam_id = @Id
+									delete ccCampsExtend with(rowlock) where cam_id = @Id
+								END
+
+								IF @Action = 8 -- Delete Acds from area 
+								BEGIN
+									EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
+									delete ccInbound with(rowlock) where Inbound_id = @Id
+									delete ccInboundExtend with(rowlock) where Inbound_Id = @Id
+								END
+
+								DELETE FROM @IdsTemp WHERE Id = @Id
+							END
+						END
+
+						SELECT @Result
+					END'
+		EXEC(@sql);
+
 		-----------------------------------------------------END Ivan Martin ----------------------------------------------------------------
 
 		-----------------------------------------------------END KR102000 Callback automatico para llamadas con encuestas asignadas ----------------------------------------------------------------

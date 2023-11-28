@@ -1019,8 +1019,67 @@ SET NOCOUNT ON;
 	EXEC(@sql);
 
 	-----------------------------------------------------END JCL ----------------------------------------------------------------
+		-----------------------------------------------------BEGIN KR102000 Callback automatico para llamadas con encuestas asignadas ----------------------------------------------------------------
 
+		-----------------------------------------------------BEGIN Jonathan Ramirez ----------------------------------------------------------------
+		SET @process = 'KR102000 '
+		SET @sql = ''
+		EXEC(@sql);
+		-----------------------------------------------------END Jonathan Ramirez ----------------------------------------------------------------
 
+		-----------------------------------------------------BEGIN Uriel Cabrera ----------------------------------------------------------------
+		SET @process = 'KR102000 '
+		SET @sql = ''
+		EXEC(@sql);
+		-----------------------------------------------------END Uriel Cabrera ----------------------------------------------------------------
+
+		-----------------------------------------------------BEGIN Ivan Martin ----------------------------------------------------------------
+		SET @process = 'KR102000  Drop procedure ccsp_GalateaGetHangUpData'
+		set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetHangUpData'')
+				    begin
+				        DROP PROCEDURE ccsp_GalateaGetHangUpData;
+				    end'
+
+		SET @process = 'KR102000 Se agrega relacion con nueva coluna para encuestas en campañas de entrada (lineas 1051 y 1057)'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
+					@cam_id int,
+					@type int
+					AS BEGIN
+					IF(@type = 1)
+					BEGIN
+						SELECT  0 leaveRecMessage,
+								CASE WHEN isnull(c.callsBySurvey,0) > 0 or ISNULL(extend.SurveyCamId,0) > 0 THEN 1 ELSE 0 END isRelationSurvey,
+								isnull(i.callBackSurveyAgent,1) callBackSurveyAgent,
+								isnull(i.callBackSurveyClient,1) callBackSurveyClient,
+								I.ShowCalifWnd showDisposition
+				       FROM ccInbound i
+				       LEFT JOIN ccCamps c on c.cam_id=i.cam_id
+					   LEFT JOIN ccInboundExtend extend ON extend.Inbound_id = i.Inbound_id 
+				       WHERE i.inbound_id=@cam_id
+
+					END
+					ELSE
+					BEGIN 
+						SELECT
+							   CASE WHEN msgFile <> '''' and leaveRecMessage = 1 THEN 1 ELSE 0 END leaveRecMessage,
+							   CASE WHEN isnull(c.surveyCamId,0) >0 THEN 1 ELSE 0 END isRelationSurvey,
+							   c.callBackSurveyAgent,c.callBackSurveyClient, c.cam_ShowCalifWnd showDisposition
+						FROM ccCamps c
+						LEFT OUTER JOIN (SELECT TOP 1 M.cam_id, coalesce(T.msgFile+'','','''')  msgFile
+										 FROM ccCampsMsgs M join ccMsgFiles T on M.Msg_id=T.msg_id
+										 WHERE M.cam_id =@cam_id and type = 8) b
+						on (c.cam_id = b.cam_id)
+						where c.cam_id=@cam_id
+					END
+				END'
+		EXEC(@sql);
+
+		SET @process = 'KR102000 '
+		SET @sql = ''
+		EXEC(@sql);
+		-----------------------------------------------------END Ivan Martin ----------------------------------------------------------------
+
+		-----------------------------------------------------END KR102000 Callback automatico para llamadas con encuestas asignadas ----------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

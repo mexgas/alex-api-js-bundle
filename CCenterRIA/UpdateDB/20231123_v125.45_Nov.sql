@@ -2721,7 +2721,7 @@ END
 
 		-----------------------------------------------------BEGIN Ivan Martin ----------------------------------------------------------------
 
-		SET @process = 'KR102000 Se agrega relacion con nueva coluna para encuestas en campañas de entrada (lineas 1051 y 1057)'
+		SET @process = 'KR102000 Se agrega relacion con nueva coluna para encuestas en campañas de entrada (lineas 2732 y 2738)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetHangUpData]
 					@cam_id int,
 					@type int
@@ -2755,7 +2755,7 @@ END
 				END'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 Se agregan las lineas(1129 a 1132, 1139)'
+		SET @process = 'KR102000 Se agregan las lineas(2795 a 2797, 2805)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
 					@command int,
 					@inboundId int
@@ -2872,7 +2872,7 @@ END
 					END'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 Se agregan lineas 1326 y 1328'
+		SET @process = 'KR102000 Se agregan lineas 2988 y 2990'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_IVRChecaInboundHorario]
 					@inbound_id int
 					AS
@@ -3017,7 +3017,7 @@ END
 					set nocount off'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 Se agregan lineas 1069, y 1073'
+		SET @process = 'KR102000 Se agregan lineas 3031, y 3034'
 		SET @sql = 'ALTER procedure [dbo].[ccsp_RIAUpdateCallBack_Abandon]
 					@cal_id int,
 					@nStatus tinyint,
@@ -3031,7 +3031,6 @@ END
 					DECLARE @whoHungUp TINYINT = (SELECT cal_whoHung FROM ccCallsIn WHERE cal_id = @cal_id);
 
 					select @ANI=C.cal_ANI, 
-						   --@cam_id=I.cam_id, 
 						   @cam_id = CASE WHEN @nStatus = 13 AND ((@whoHungUp = 2 AND ISNULL(extend.SurveyCamId,0) > 0) OR (@whoHungUp = 0 AND ISNULL(i.callBackSurveyClient,0) > 0)) THEN extend.SurveyCamId ELSE I.cam_id END,
 						   @inbound_id=I.inbound_id, 
 					@statuscall_id_Array=statuscall_id_Array, @minCallBackAbandon=minCallBackAbandon,@telFormat = I.telFormato
@@ -3103,7 +3102,7 @@ END
 					set nocount off'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 Se agrega logica para recibir errores de la ejecucion de ccsp_RIAManageAreas lineas (1429, 1497)'
+		SET @process = 'KR102000 Se agrega logica para recibir errores de la ejecucion de ccsp_RIAManageAreas lineas (3114, 3182)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UnassignedElementsInAreas]   
 					@Action INT,   
 					@AreaId INT = 0,

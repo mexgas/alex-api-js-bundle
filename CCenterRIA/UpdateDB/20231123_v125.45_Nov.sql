@@ -3224,7 +3224,7 @@ END
 							VALUES (92,''Eliminar campaña (llamada de salida encuesta)'',''Delete campaign (survey outbound call)'',''Delete campaign (survey outbound call)'');
 						END'
 		EXEC(@sql);
-		SET @process = 'KR102000 Se modifica la opción 2 para evaluar si una campaña es de encuesta (Linea 1632)'
+		SET @process = 'KR102000 Se modifica la opción 2 para evaluar si una campaña es de encuesta (Linea 3253)'
 		SET @sql = ' ALTER PROCEDURE [dbo].[ccsp_RIALoadCamps] @option SMALLINT, @AreaId SMALLINT = NULL, @Sup SMALLINT = NULL, @WGID SMALLINT = NULL
 							AS
 							SET NOCOUNT ON
@@ -3378,7 +3378,7 @@ END
 							SET NOCOUNT OFF
 								'
 		EXEC(@sql);
-		SET @process = 'KR102000 Se agrega el surveyCamId a la obtencion (Linea 1892)'
+		SET @process = 'KR102000 Se agrega el surveyCamId a la obtencion (Linea 3513)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
 						AS
 						SET NOCOUNT ON
@@ -3560,7 +3560,7 @@ END
 						SET NOCOUNT OFF
 						'
 		EXEC(@sql);
-		SET @process = 'KR102000 Se agrega nueva operacion para el historial de eliminacion'
+		SET @process = 'KR102000 Se agrega evaluacion para el tipo de campaña (Linea 3583)'
 		SET @sql = '			ALTER PROCEDURE [dbo].[ccsp_RIACampsManualCall]
 			@option int,
 			@UserID int = 0,
@@ -3613,7 +3613,7 @@ END
 				end					
 			end'
 		EXEC(@sql);
-		SET @process = 'KR102000 Se agrega el surveycamId para la obtencion (Linea 2052, 2113)'
+		SET @process = 'KR102000 Se agrega el surveycamId para la obtencion (Linea 3674, 3734)'
 		SET @sql = ' 
 	ALTER PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT
 			,@campID INT
@@ -3790,7 +3790,7 @@ END
 			END
 				'
 		EXEC(@sql);
-		SET @process = 'KR102000 Se agrega el surveycamId para la obtencion (linea 2206)'
+		SET @process = 'KR102000 Se agrega el surveycamId para la obtencion (linea 3827)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
 				@command int,
 				@inboundId int

@@ -2527,116 +2527,121 @@ END
                     set nocount off'
 		EXEC(@sql);
 
-		SET @process = 'KR102000 Se agrega logica para recibir errores de la ejecucion de ccsp_RIAManageAreas lineas (3114, 3182)'
+		SET @process = 'KR102000 Se agrega logica para recibir errores de la ejecucion de ccsp_RIAManageAreas lineas (3114, 3182, 2607 - 2612)'
 		SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_UnassignedElementsInAreas]   
-					@Action INT,   
-					@AreaId INT = 0,
-					@Ids VARCHAR(MAX) = ''''
-					AS    
-					BEGIN
-						DECLARE @IdsTemp TABLE (Id INT);
-						DECLARE @Id VARCHAR(MAX);
-						DECLARE @Result VARCHAR(MAX);
-						INSERT INTO @IdsTemp SELECT VALUE FROM dbo.fn_RIASplitDelimited(@Ids,'','')
+                    @Action INT,   
+                    @AreaId INT = 0,
+                    @Ids VARCHAR(MAX) = ''''
+                    AS    
+                    BEGIN
+                        DECLARE @IdsTemp TABLE (Id INT);
+                        DECLARE @Id VARCHAR(MAX);
+                        DECLARE @Result VARCHAR(MAX);
+                        INSERT INTO @IdsTemp SELECT VALUE FROM dbo.fn_RIASplitDelimited(@Ids,'','')
 
-						-- Return results 
-						IF @Action IN (0, 3, 6)	-- User names 
-						BEGIN 
-							SET @Result = (SELECT ISNULL(login,'''')  AS ElementNames
-							FROM @IdsTemp ids
-							INNER JOIN ccUsers users ON users.User_id = ids.Id)
-						END
+                        -- Return results 
+                        IF @Action IN (0, 3, 6) -- User names 
+                        BEGIN 
+                            SET @Result = (SELECT ISNULL(login,'''')  AS ElementNames
+                            FROM @IdsTemp ids
+                            INNER JOIN ccUsers users ON users.User_id = ids.Id)
+                        END
 
-						IF @Action IN (1, 4, 7)	-- Campaign names
-						BEGIN 
-							SET @Result = (SELECT ISNULL(cam_descripcion,'''')  AS ElementNames
-							FROM @IdsTemp ids
-							INNER JOIN ccCamps campaign ON campaign.cam_id = ids.Id)
-						END
+                        IF @Action IN (1, 4, 7) -- Campaign names
+                        BEGIN 
+                            SET @Result = (SELECT ISNULL(cam_descripcion,'''')  AS ElementNames
+                            FROM @IdsTemp ids
+                            INNER JOIN ccCamps campaign ON campaign.cam_id = ids.Id)
+                        END
 
-						IF @Action IN (2, 5, 8)	-- Acd names
-						BEGIN 
-							SET @Result = (SELECT ISNULL(descripcion,'''') AS ElementNames
-							FROM @IdsTemp ids
-							INNER JOIN ccInbound acd ON acd.Inbound_id = ids.Id)
-						END
-						-------------------------------------------------------
-						IF @Action = 0 -- Assign Users to Unassigned area 
-						BEGIN
-							UPDATE ccUsers
-							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
-								status = 1
-							FROM @IdsTemp ids
-							WHERE ccUsers.User_id = ids.Id
-							AND NOT EXISTS (SELECT 1 FROM ccUsers WHERE IDArea = @AreaId AND User_id = ids.Id)
-						END
+                        IF @Action IN (2, 5, 8) -- Acd names
+                        BEGIN 
+                            SET @Result = (SELECT ISNULL(descripcion,'''') AS ElementNames
+                            FROM @IdsTemp ids
+                            INNER JOIN ccInbound acd ON acd.Inbound_id = ids.Id)
+                        END
+                        -------------------------------------------------------
+                        IF @Action = 0 -- Assign Users to Unassigned area 
+                        BEGIN
+                            UPDATE ccUsers
+                            SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+                                status = 1
+                            FROM @IdsTemp ids
+                            WHERE ccUsers.User_id = ids.Id
+                            AND NOT EXISTS (SELECT 1 FROM ccUsers WHERE IDArea = @AreaId AND User_id = ids.Id)
+                        END
 
-						IF @Action = 1 -- Assign Users to Campaigns area 
-						BEGIN
-							UPDATE ccCamps
-							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END
-							FROM @IdsTemp ids
-							WHERE ccCamps.cam_id = ids.Id
-							AND NOT EXISTS (SELECT 1 FROM ccCamps WHERE IDArea = @AreaId AND cam_id = ids.Id)
-						END
+                        IF @Action = 1 -- Assign Users to Campaigns area 
+                        BEGIN
+                            UPDATE ccCamps
+                            SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END
+                            FROM @IdsTemp ids
+                            WHERE ccCamps.cam_id = ids.Id
+                            AND NOT EXISTS (SELECT 1 FROM ccCamps WHERE IDArea = @AreaId AND cam_id = ids.Id)
+                        END
 
-						IF @Action = 2 -- Assign Users to Acds area 
-						BEGIN		
-							UPDATE ccInbound
-							SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
-								status = 1
-							FROM @IdsTemp ids
-							WHERE ccInbound.Inbound_id = ids.Id
-							AND NOT EXISTS (SELECT 1 FROM ccInbound WHERE IDArea = @AreaId AND Inbound_Id = ids.Id)
-						END
+                        IF @Action = 2 -- Assign Users to Acds area 
+                        BEGIN       
+                            UPDATE ccInbound
+                            SET IDArea = CASE @AreaId WHEN 0 THEN NULL ELSE @AreaId END,
+                                status = 1
+                            FROM @IdsTemp ids
+                            WHERE ccInbound.Inbound_id = ids.Id
+                            AND NOT EXISTS (SELECT 1 FROM ccInbound WHERE IDArea = @AreaId AND Inbound_Id = ids.Id)
+                        END
 
-						IF @Action in (3, 4, 5, 6, 7, 8)
-						BEGIN 
-							SET @Id = ''0''
-							WHILE EXISTS( SELECT Id FROM @IdsTemp ) 
-							BEGIN
-								SELECT TOP 1 @Id =Id FROM @IdsTemp 
+                        IF @Action in (3, 4, 5, 6, 7, 8)
+                        BEGIN 
+                            SET @Id = ''0''
+                            WHILE EXISTS( SELECT Id FROM @IdsTemp ) 
+                            BEGIN
+                                SELECT TOP 1 @Id =Id FROM @IdsTemp 
 
-								IF @Action = 3 -- Unassign Users from area 
-								BEGIN
-									EXEC ccsp_RIAManageAreas @option = 2, @DeleteUserId = @Id
-								END
+                                IF @Action = 3 -- Unassign Users from area 
+                                BEGIN
+                                    EXEC ccsp_RIAManageAreas @option = 2, @DeleteUserId = @Id
+                                END
 
-								IF @Action = 4 -- Unassign Campaigns from area 
-								BEGIN
-									EXEC @Result = ccsp_RIAManageAreas @option=4, @DeleteCamId = @Id
-								END 
+                                IF @Action = 4 -- Unassign Campaigns from area 
+                                BEGIN
+                                    DECLARE @TempResult INT;
+                                    EXEC @TempResult = ccsp_RIAManageAreas @option=4, @DeleteCamId = @Id;
+                                    IF @TempResult = -4 
+                                    BEGIN
+                                        SET @Result = ''-1'';
+                                    END
+                                END 
 
-								IF @Action = 5 -- Unassign Acds from area 
-								BEGIN
-									EXEC ccsp_RIAManageAreas @option = 6, @DeleteACDGroupId = @Id
-								END
+                                IF @Action = 5 -- Unassign Acds from area 
+                                BEGIN
+                                    EXEC ccsp_RIAManageAreas @option = 6, @DeleteACDGroupId = @Id
+                                END
 
-								IF @Action = 6 -- Delete Users from area 
-								BEGIN
-									EXEC ccsp_RIA_ABCAgents @option=4, @UserId = @Id, @Login = '''', @Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,@AreaId=0,@UserType=0,@IDWG=0
-								END
+                                IF @Action = 6 -- Delete Users from area 
+                                BEGIN
+                                    EXEC ccsp_RIA_ABCAgents @option=4, @UserId = @Id, @Login = '''', @Nombres='''',@ApellidoPaterno='''',@ApellidoMaterno='''',@Password='''',@Sexo=0,@canChangeStatus=0,@AreaId=0,@UserType=0,@IDWG=0
+                                END
 
-								IF @Action = 7 -- Delete Campaigns from area 
-								BEGIN
-									EXEC ccsp_RIA_ABCCamps @option = 4, @UserId = 0, @Descripcion = '''', @Cam_id = @Id, @Activa = 0, @IDArea = 0, @frame = 0
-									delete ccCamps with(rowlock) where cam_id = @Id
-									delete ccCampsExtend with(rowlock) where cam_id = @Id
-								END
+                                IF @Action = 7 -- Delete Campaigns from area 
+                                BEGIN
+                                    EXEC ccsp_RIA_ABCCamps @option = 4, @UserId = 0, @Descripcion = '''', @Cam_id = @Id, @Activa = 0, @IDArea = 0, @frame = 0
+                                    delete ccCamps with(rowlock) where cam_id = @Id
+                                    delete ccCampsExtend with(rowlock) where cam_id = @Id
+                                END
 
-								IF @Action = 8 -- Delete Acds from area 
-								BEGIN
-									EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
-									delete ccInbound with(rowlock) where Inbound_id = @Id
-									delete ccInboundExtend with(rowlock) where Inbound_Id = @Id
-								END
+                                IF @Action = 8 -- Delete Acds from area 
+                                BEGIN
+                                    EXEC ccsp_RIA_ABCACDGroups @option = 4, @UserId = 0, @Descripcion = '''', @Inbound_id = @Id, @IDArea = 0, @frame = 0
+                                    delete ccInbound with(rowlock) where Inbound_id = @Id
+                                    delete ccInboundExtend with(rowlock) where Inbound_Id = @Id
+                                END
 
-								DELETE FROM @IdsTemp WHERE Id = @Id
-							END
-						END
+                                DELETE FROM @IdsTemp WHERE Id = @Id
+                            END
+                        END
 
-						SELECT @Result
-					END'
+                        SELECT @Result
+                    END'
 		EXEC(@sql);
 
 		-----------------------------------------------------END Ivan Martin ----------------------------------------------------------------
@@ -3441,6 +3446,25 @@ END
                     end
                     end'
         EXEC(@sql);
+
+        set @process = 'Se agrega cast en ultimo select para ahora el tipo de dato smallint'
+        set @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminSettings]
+                    AS
+                    BEGIN
+                        CREATE TABLE #Settings (setting_id tinyint , valor varchar(300), ip_host tinyint)
+
+                        INSERT INTO #Settings 
+                        EXEC  ccsp_RIAADMLoadSettings @ip_admin =''''
+
+                        INSERT INTO #Settings (setting_id,valor) 
+                        SELECT setting_id, valor 
+                        FROM ccSettings
+                        WHERE setting_id in(160, 199, 53, 63, 64)
+                     
+                        SELECT distinct cast(setting_id as smallint) setting_id, valor from #Settings ORDER BY setting_id 
+
+                        DROP TABLE #Settings;
+                    END'
 
         -----------------------------------------------------BEGIN Ivan Martin ----------------------------------------------------------------
 

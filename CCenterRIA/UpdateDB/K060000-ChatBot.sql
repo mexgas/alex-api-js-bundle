@@ -119,15 +119,15 @@ end'
 
 	SET @process = 'K060000-Se crea SP ccsp_Save_ChatBot_Conversation_Message'
 	SET @sql = '
-	CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation_Message]
+	CREATE OR ALTER PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation_Message]
 	@option int,
-	@conversationChatBotId BIGINT,
-	@originType VARCHAR(50),
-	@messageStatus VARCHAR(50),
-	@date DateTime,
-	@typeMessage VARCHAR(50),
-	@message VARCHAR(255),
-	@message_uuid varchar(50)
+	@conversationChatBotId BIGINT = null,
+	@originType VARCHAR(50) = null,
+	@messageStatus VARCHAR(50) = null,
+	@date DateTime = null,
+	@typeMessage VARCHAR(50) = null,
+	@message VARCHAR(255) = null,
+	@message_uuid varchar(50) = null
 
 	as set nocount on
 
@@ -154,6 +154,18 @@ end'
 
 		SELECT SCOPE_IDENTITY()
 	END 
+	IF(@option = 2)
+	BEGIN
+		UPDATE ChatBotConversationMessage SET message_uuid = @message_uuid
+		WHERE ConversationChatBotId = @conversationChatBotId and ISNULL(message_uuid, '''') = ''''
+		AND OriginType = @originType
+	END
+	IF(@option = 3)
+	BEGIN
+		UPDATE ChatBotConversationMessage SET MessageStatus = @messageStatus
+		WHERE ConversationChatBotId = @conversationChatBotId AND message_uuid = @message_uuid
+		AND OriginType = @originType
+	END
 
 	set nocount off'
 	EXEC(@sql)
@@ -2406,6 +2418,120 @@ set nocount off'
 			RETURN 0;
 		END
 	END'
+	EXEC(@sql)
+
+	SET @process = 'K060024-Id global Chatbot-WhatsApp se actualiza SP para crear y actualizar los IDs globales del chatbot'
+	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_WhatsAppGlobalIds]  
+					 @ConversationType TINYINT = -1,
+					 @ConversationId INT = 0,
+					 @MessageId VARCHAR(MAX) = '''',
+					 @AssociatedNumber VARCHAR (30), 
+					 @ClientNumber VARCHAR(30)
+				AS  
+				SET NOCOUNT ON;  
+
+					IF @ConversationType = 0 AND NOT EXISTS(SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
+					BEGIN
+						RAISERROR(''ERROR. No existe una conversación de entrada con el id especificado'', 18, 1);
+						RETURN(0);
+					END;
+					ELSE IF @ConversationType = 1 AND NOT EXISTS(SELECT * FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
+					BEGIN
+						RAISERROR(''ERROR. No existe una conversación de salida con el id especificado'', 18, 1);
+						RETURN(0);
+					END;
+					ELSE IF @ConversationType = 2 AND NOT EXISTS(SELECT * FROM ChatBotConversation WHERE ChatBotConversationId = @ConversationId)
+					BEGIN
+						RAISERROR(''ERROR. No existe una conversación de chatbot con el id especificado'', 18, 1);
+						RETURN(0);
+					END;
+					ELSE
+					BEGIN
+						DECLARE @originType VARCHAR(20) = '''';
+						DECLARE @firstMessageDateFromAgent DATETIME = NULL;
+						DECLARE @messageStatus VARCHAR(20) = '''';
+						DECLARE @firstMessageConversationIdFromAgent INT = NULL;
+						DECLARE @firstMessageConversationTypeFromAgent TINYINT = NULL;
+						DECLARE @isBilled BIT = 0;
+
+						IF @ConversationType = 0 
+						BEGIN
+							SET @originType = (SELECT originType FROM ccWAMessagesConversations WHERE messageId = @MessageId);
+							SELECT @firstMessageDateFromAgent = timeStampMessage, @messageStatus = messageStatus
+							FROM ccWAMessagesConversations
+							WHERE messageId = @MessageId AND @originType = ''Agent'';
+						END;
+						ELSE IF @ConversationType = 1 
+						BEGIN
+							SET @originType = (SELECT originType FROM ccWAMessagesConversationsOut WHERE messageId = @MessageId);
+							SELECT @firstMessageDateFromAgent = timeStampMessage, @messageStatus = messageStatus
+							FROM ccWAMessagesConversationsOut
+							WHERE messageId = @MessageId AND @originType = ''Agent'';
+						END;
+						ELSE IF @ConversationType = 2 
+						BEGIN
+							SET @originType = (SELECT originType FROM ChatBotConversationMessage WHERE message_uuid = @MessageId);
+							SELECT @firstMessageDateFromAgent = [Date], @messageStatus = messageStatus
+							FROM ChatBotConversationMessage
+							WHERE message_uuid = @MessageId AND @originType = ''Chatbot'';
+						END;
+
+						DECLARE @globalId INT = (SELECT MAX(GlobalId) FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @AssociatedNumber AND ClientNumber = @ClientNumber);
+
+						IF (@originType = ''Agent'' OR @originType = ''Chatbot'')  AND @messageStatus NOT IN(''rejected'', ''undeliverable'', ''submitted'')
+						BEGIN
+							SET @firstMessageConversationIdFromAgent = @ConversationId;
+							SET @firstMessageConversationTypeFromAgent = @ConversationType;
+							SET @isBilled = 1;
+						END
+						ELSE
+						BEGIN
+							SET @firstMessageDateFromAgent = NULL
+						END
+
+						IF @globalId IS NULL
+						BEGIN
+							INSERT INTO ccWhatsAppGlobalIds (AssociatedNumber, ClientNumber, FirstMessageDateFromAgent, FirstMessageConversationIdFromAgent, FirstMessageConversationTypeFromAgent, IsBilled)
+							VALUES (@AssociatedNumber, @ClientNumber, @firstMessageDateFromAgent, @firstMessageConversationIdFromAgent, @firstMessageConversationTypeFromAgent, @isBilled);
+
+							SET @globalId = SCOPE_IDENTITY();
+						END
+
+						DECLARE @TempFirstMessageDate DATETIME = (SELECT FirstMessageDateFromAgent FROM ccWhatsAppGlobalIds WHERE GlobalId = @globalId);
+						
+						--Update if message status changes
+						IF(@originType = ''Agent'' OR @originType = ''Chatbot'') AND @messageStatus NOT IN(''rejected'', ''undeliverable'', ''submitted'') AND @globalId IS NOT NULL
+						BEGIN
+							UPDATE ccWhatsAppGlobalIds SET IsBilled = 1 WHERE GlobalId = @globalId
+						END
+
+						IF DATEDIFF(HOUR, @TempFirstMessageDate, GETDATE()) >= 24 
+						BEGIN 
+							INSERT INTO ccWhatsAppGlobalIds (AssociatedNumber, ClientNumber, FirstMessageDateFromAgent, FirstMessageConversationIdFromAgent, FirstMessageConversationTypeFromAgent, IsBilled)
+							VALUES (@AssociatedNumber, @ClientNumber, @firstMessageDateFromAgent, @firstMessageConversationIdFromAgent, @firstMessageConversationTypeFromAgent, @isBilled);
+
+							SET @globalId = SCOPE_IDENTITY();	
+						END
+
+						-- If the message is from agent or chatbot update the date 
+						IF (@originType = ''Agent'' OR @originType = ''Chatbot'') AND @TempFirstMessageDate IS NULL
+						BEGIN
+							UPDATE ccWhatsAppGlobalIds SET FirstMessageDateFromAgent = @firstMessageDateFromAgent,
+														   FirstMessageConversationIdFromAgent =  @ConversationId,
+														   FirstMessageConversationTypeFromAgent = @ConversationType,
+														   IsBilled = @isBilled
+							WHERE GlobalId = @globalId;
+						END
+						-- Insert into ccWhatsAppGlobalIdsRelationship
+						IF @globalId != 0 AND NOT EXISTS(SELECT GlobalId FROM ccWhatsAppGlobalIdsRelationship WHERE GlobalId = @globalId AND ConversationId = @ConversationId AND @ConversationType = ConversationType)
+						BEGIN
+							INSERT INTO ccWhatsAppGlobalIdsRelationship(GlobalId, ConversationId, ConversationType)
+							VALUES (@globalId, @ConversationId, @ConversationType)
+						END
+
+						RETURN(1)
+					END
+				SET NOCOUNT OFF'
 	EXEC(@sql)
 
 

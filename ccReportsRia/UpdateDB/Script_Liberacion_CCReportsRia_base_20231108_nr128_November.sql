@@ -20,6 +20,19 @@ BEGIN
 
 	----------------------------------------------------------------------------------------------------------------------
 
+
+SET @process = 'K061008 Create table ReportsFilteredByHourRange '
+SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ReportsFilteredByHourRange'')
+BEGIN
+	CREATE TABLE ReportsFilteredByHourRange
+	(
+		id INT PRIMARY KEY NOT NULL,
+		reportName NVARCHAR(100) NOT NULL
+	)
+END'
+EXEC(@sql)
+
+
 SET @process = 'K061001 DROP VIEW RepViewInCallsDetail'
 SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RepViewInCallsDetail'') AND type = ''V'')
     BEGIN
@@ -86,6 +99,13 @@ FROM
 RepInCallsDetail NOLOCK'
 EXEC(@sql)
 
+
+SET @process = 'K061008 Insert into ReportsFilteredByHourRange report 3010'
+SET @sql = 'IF NOT EXISTS (SELECT * FROM ReportsFilteredByHourRange WHERE id = 3010) 
+BEGIN
+	INSERT INTO ReportsFilteredByHourRange VALUES (3010, ''RepViewInCallsDetail'')
+END'
+EXEC(@sql)
 
 
 SET @process = 'K061001 Update ReportsTotals id 3010'

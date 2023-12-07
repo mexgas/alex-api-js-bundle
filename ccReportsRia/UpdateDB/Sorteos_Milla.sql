@@ -37,7 +37,9 @@ end'
     EXEC(@sql)
 
     set @process = 'DEV1-459 insert ReportHighUse'
-    set @sql='insert into ReportHighUse values(''ccspRepAgentSessionByInterval'')
+    set @sql='
+	if not exists(select * from ReportHighUse) begin
+	insert into ReportHighUse values(''ccspRepAgentSessionByInterval'')
 
 
 insert into ReportHighUse values(''ccspRepAgentKPI'')
@@ -74,7 +76,8 @@ insert into ReportHighUse values(''ccspRepOutDispositions'')
 insert into ReportHighUse values(''ccspRepOutDispositionsContacOwner'')
 insert into ReportHighUse values(''ccspRepOutKPI'')
 
-insert into ReportHighUse values(''ccspRepOutSubDispositions'')'
+insert into ReportHighUse values(''ccspRepOutSubDispositions'')
+end'
     EXEC(@sql)
 
     set @process = 'DEV1-459 '

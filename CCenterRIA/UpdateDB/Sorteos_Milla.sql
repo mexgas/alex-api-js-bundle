@@ -52,7 +52,7 @@ BEGIN
 	select @version,@actualVersion,@versioMajer
 END
 
-IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
+IF 1=1--@version >= @actualVersion and @versionfix >= @actualVersionFix 
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY

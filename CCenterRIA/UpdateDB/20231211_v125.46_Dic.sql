@@ -202,7 +202,7 @@ BEGIN
                         end
 
                         else if @action=10 begin
-                            IF(SELECT COUNT(*) FROM smsWorkingTable WHERE cam_id = @camId) = 0
+                            IF EXISTS(SELECT * FROM smsWorkingTable WHERE cam_id = @camId)
                             BEGIN
                                 UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
                                 SELECT CAST(0 AS BIT) 

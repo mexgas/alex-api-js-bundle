@@ -388,8 +388,8 @@ select distinct A.callout_id
 from ccoCallsOutSource A
 inner join ccoLogDials b on A.callout_id = b.callout_id
 where b.fecha < dateadd(dd, -@days, getdate())
-and callout_id not  in (select callout_id from ccoCallsOut  where cal_inicio > dateadd(dd, -@days, getdate() ))
-and callout_id not  in (select callout_id from ccoLogDials where fecha > dateadd(dd, -@days, getdate() ))
+and A.callout_id not  in (select callout_id from ccoCallsOut  where cal_inicio > dateadd(dd, -@days, getdate() ))
+and A.callout_id not  in (select callout_id from ccoLogDials where fecha > dateadd(dd, -@days, getdate() ))
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''truncate table ccBorrardasReciclaje'''', 0, 0)
@@ -414,6 +414,10 @@ values (''''delete ccPosicionEspecialidad where Fecha < dateadd(dd, -'''' + cast
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccRIAlog where operationDate < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < dateadd(dd, -'' + cast(@days as nvarchar(max)) + '', getdate())'', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccRiaChat_log where fecha_chat < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)

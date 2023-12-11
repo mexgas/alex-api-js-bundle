@@ -60,7 +60,7 @@ BEGIN
 	    -----------------------------------------------------BEGIN K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
 
         SET @process = 'K042023 Se crea setting 258 para creditos globales de SMS'
-        SET @sql = 'IF NOT EXISTS(SELECT * FROM ccSettings2 WHERE setting_id = 258)
+        SET @sql = 'IF NOT EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 258)
                     BEGIN
                         INSERT INTO ccSettings2(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
                         VALUES(258, ''0'', ''Contador global de créditos para campañas SMS'', 1, ''ADM'', ''Contador global de créditos para campañas SMS'',
@@ -96,7 +96,7 @@ BEGIN
                             truncate table ccSmsConversationsResult
                         end
                         else if @action=5 begin
-                            if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+                            if not exists(select 1 from ccSmsConversationsResult where camId=@camId) begin
                                 insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
                             end
                             else begin
@@ -112,7 +112,7 @@ BEGIN
                         insert into @listCamId
                         select distinct cam_id,0 from smsWorkingTable with(nolock) where smsout_id in(''+@smsoutIds+'')
 
-                        while exists(select * from @listCamId where status=0)begin
+                        while exists(select 1 from @listCamId where status=0)begin
                             select top 1 @camId=CamId from @listCamId where status=0
                             
                             exec ccsp_GalateaGetCampsNvosCB @cam_id=@camId,@Tipo=2,@regval=1
@@ -202,7 +202,7 @@ BEGIN
                         end
 
                         else if @action=10 begin
-                            IF NOT EXISTS(SELECT * FROM smsWorkingTable WHERE cam_id = @camId)
+                            IF NOT EXISTS(SELECT 1 FROM smsWorkingTable WHERE cam_id = @camId)
                             BEGIN
                                 UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
                                 SELECT CAST(0 AS BIT) 

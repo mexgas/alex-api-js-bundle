@@ -202,12 +202,15 @@ BEGIN
                         end
 
                         else if @action=10 begin
-                            IF EXISTS(SELECT * FROM smsWorkingTable WHERE cam_id = @camId)
+                            IF NOT EXISTS(SELECT * FROM smsWorkingTable WHERE cam_id = @camId)
                             BEGIN
                                 UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
                                 SELECT CAST(0 AS BIT) 
                             END
-                            SELECT CAST(1 AS BIT) -- Has unsent messages 
+                            ELSE
+                            BEGIN
+                                SELECT CAST(1 AS BIT) -- Has unsent messages 
+                            END
                         end'
         EXEC(@sql);
 

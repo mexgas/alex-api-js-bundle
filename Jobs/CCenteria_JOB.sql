@@ -5,11 +5,11 @@
 Author:
 
 
-Date: 2021/07/01
+Date: 2023/12/13
 Description:
 
 Database: CCenterRia
-Required version: 123.14
+Required version: 125.17
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -134,7 +134,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''CleanNod
         @active_start_date=20180911, 
         @active_end_date=99991231, 
         @active_start_time=0, 
-        @active_end_time=235959
+        @active_end_time=55959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -417,7 +417,7 @@ values (''''delete ccRIAlog where operationDate < dateadd(dd, -'''' + cast(@days
 
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < dateadd(dd, -'' + cast(@days as nvarchar(max)) + '', getdate())'', 0, 0)
+values (''''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccRiaChat_log where fecha_chat < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)

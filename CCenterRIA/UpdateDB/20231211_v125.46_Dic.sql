@@ -574,6 +574,11 @@ BEGIN
 	IF EXISTS (SELECT * from ccListaNegra where idtipolista = @ln_id and telefono = @telephone and HashKey = dbo.hashList(@calKey))
 		RETURN 0;
 
+	IF @calKey = ''''
+		SET @calKey = ''''''''''''
+	ELSE
+		SET @calKey = '''''''' + @calKey + ''''''''
+
 	set @tmpTableName = ''TMP_BLACKLIST_'' + @telephone;
 	SET @dropTmpPhone = ''if exists (select * from sys.tables where name = N'''''' + @tmpTableName + '''''') drop table '' + @tmpTableName;
 

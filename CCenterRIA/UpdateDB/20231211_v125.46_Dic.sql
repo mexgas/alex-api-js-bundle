@@ -1191,6 +1191,8 @@ IF OBJECT_ID(N''tempdb..#myprincipaltempSms'') IS NOT NULL drop table #myprincip
 IF OBJECT_ID(N''tempdb..#mytempSms'') IS NOT NULL drop table #mytempSms
 IF OBJECT_ID(N''tempdb..#helpTempSms]'') IS NOT NULL drop table #helpTempSms
 '
+EXEC(@sql)
+------------------------------------------------FIN MACL------------------------------------------------------
 -------------------------------------Ulises-------------------------------------------------------------------
 	SET @process = 'CW-8193 ALTER PROCEDURE ccsp_GalateaGetCampsNvosCB'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetCampsNvosCB]
@@ -1383,7 +1385,6 @@ end
 set nocount off'
     EXEC(@sql)
 ------------------------------------------------------------------UlisesEnd-----------------------------------------------------------------
-        EXEC(@sql);
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -12,9 +12,7 @@ if @Version_Actual >= @Version
 
 	---------------- INICIO SCRIPT ----------------
 
-	set @Sql = 'use [CCRecorderRIA]
-
-	IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''MigrationAVRSReports'')
+	set @Sql = 'IF NOT EXISTS (SELECT * FROM dbo.sysobjects WHERE [name] = ''MigrationAVRSReports'')
 	BEGIN
 		CREATE TABLE [dbo].[MigrationAVRSReports](
 		[id] [int] NOT NULL,
@@ -29,11 +27,10 @@ if @Version_Actual >= @Version
 
 	insert into MigrationAVRSReports
 SELECT ROW_NUMBER() OVER(ORDER BY name desc)+99 AS id, P.name as [description],0 as status,'''' as error,''1901-01-01'' as dateStart,''1901-01-01'' as dateEnd FROM dbo.sysmergepublications P
-left join MigrationAVRSReports M on P.name=M.[description]
-where  P.publisher_db=''CCRecorderRIA'' and M.[description] is null 
+where  P.publisher_db=''CCRecorderRIA'' 
 	'
 
-		EXEC(@Sql)
+		EXEC(@Sql)		
 
 			set @Sql='USE [msdb]
 
@@ -84,9 +81,18 @@ declare @dateStart datetime,@dateNow datetime
 declare @status int
 declare @maxId int,@minId int
 
-select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*)
-,@dateNow =getdate(),@i=0
-FROM MigrationAVRSReports
+--delete from MigrationAVRSReports
+
+select @maxId=isnull(max(id),99),@dateNow =getdate(),@i=0 FROM MigrationAVRSReports
+
+insert into MigrationAVRSReports
+SELECT ROW_NUMBER() OVER(ORDER BY name desc)+@maxId AS id, P.name as [description],0 as status,'''''''' as error,''''1901-01-01'''' as dateStart,''''1901-01-01'''' as dateEnd FROM dbo.sysmergepublications P
+left join MigrationAVRSReports M on P.name=M.[description]
+where  P.publisher_db=''''CCRecorderRIA'''' and M.[description] is null 
+
+select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*) FROM MigrationAVRSReports
+
+select * FROM MigrationAVRSReports
 
 if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
 
@@ -136,11 +142,6 @@ if exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
 	end
 
 end
-
-if not exists(select * FROM MigrationAVRSReports where status in(0,1)) begin
-	exec msdb..sp_update_job @job_name = ''''AVRSReports Merge Replication'''', @enabled = 0 --Disable
-end
-
 '', 
 		@database_name=N''CCRecorderRIA'', 
 		@flags=0

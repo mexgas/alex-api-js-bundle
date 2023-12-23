@@ -41,10 +41,8 @@ if @Version_Actual >= @Version
 	from dbo.sysmergepublications where publisher_db=''CCenterRia''
 
 	'
-
-		EXEC(@Sql)
-
-
+	EXEC(@Sql)
+	
 	set @Sql='USE [msdb]
 
 /****** Object:  Job [CW Merge Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/
@@ -93,9 +91,18 @@ declare @dateStart datetime,@dateNow datetime
 declare @status int
 declare @maxId int,@minId int
 
-select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*) 
-,@dateNow =getdate(),@i=0
-FROM migration
+--delete from migration
+
+select @maxId=isnull(max(id),99),@dateNow =getdate(),@i=0 FROM migration
+
+insert into migration
+SELECT ROW_NUMBER() OVER(ORDER BY name desc)+@maxId AS id, P.name as [description],0 as status,'''''''' as error,''''1901-01-01'''' as dateStart,''''1901-01-01'''' as dateEnd FROM dbo.sysmergepublications P
+left join migration M on P.name=M.[description]
+where  P.publisher_db=''''CCenterRia'''' and M.[description] is null 
+
+select @minId=ISNULL(min(id),99), @maxId=isnull(max(id),99),@count=COUNT(*) FROM migration
+
+select * FROM migration
 
 if exists(select * FROM migration where status in(0,1)) begin
 
@@ -146,11 +153,6 @@ if exists(select * FROM migration where status in(0,1)) begin
 	end
 
 end
-
-if not exists(select * FROM migration where status in(0,1)) begin
-	exec msdb..sp_update_job @job_name = ''''CW Merge Replication'''', @enabled = 0 --Disable
-end
-
 '', 
 		@database_name=N''CCenterRia'', 
 		@flags=0

@@ -1246,7 +1246,7 @@ set nocount off'
 ------------------------------------------------------------------UlisesEnd-----------------------------------------------------------------
 
         -----------------------------------------------------BEGIN HOTFIX K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
-        SET @process = 'HOTFIX K042023 Se mejora accesos a ccSettings2.  Línea (1456). Y se hace merge con sql anterior (no hubo diferencia mas que una linea que yo puse que ya no va)'
+        SET @process = 'HOTFIX K042023 Se mejora accesos a ccSettings2.  Línea (1307). Y se hace merge con sql anterior (no hubo diferencia mas que una linea que yo puse que ya no va). Se agrega estado 6 en linea 1353. Se agrega linea 1366'
         SET @sql = 'ALTER procedure [dbo].[ccspOutboundSmsMessage] 
                         @action int,
                         @camId int = null,
@@ -1350,7 +1350,7 @@ set nocount off'
                             inner join ccSmsConversationsResult B on A.camId=B.camId
                         end
                         else if @action=8 begin
-                            update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(4,5)
+                            update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(4,5,6)
                         end
                         else if @action=9 begin
                             CREATE TABLE #TempSmsOutIds (
@@ -1363,7 +1363,7 @@ set nocount off'
                             JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
                             LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
                             WHERE wt.sms_status IN(1,2) 
-                            AND cco.smsout_id IS NULL;
+                            AND wt.cam_id = @camId;
 
                             UPDATE wt
                             SET wt.sms_status = 0

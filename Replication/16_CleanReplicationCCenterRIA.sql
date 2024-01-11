@@ -96,8 +96,7 @@ set @dateEnd=GETDATE()
 insert into replicationMergeClean
 select @dateStart,@dateEnd,
 @num_genhistory_rows num_genhistory_rows,@num_contents_rows num_contents_rows,@num_tombstone_rows num_tombstone_rows
-,@num_genhistory_rows num_genhistory_rows,@MSmerge_genhistory MSmerge_genhistory
-,@MSmerge_tombstone MSmerge_tombstone
+,@MSmerge_genhistory MSmerge_genhistory ,@MSmerge_tombstone MSmerge_tombstone
 
 ', 
 		@database_name=N'CCenterRIA', 

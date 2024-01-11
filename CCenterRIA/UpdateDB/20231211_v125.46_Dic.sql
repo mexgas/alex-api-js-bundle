@@ -1425,7 +1425,7 @@ set nocount off'
                                 end
                             end
                             select cast(0 as bit)
-                            update ccCamps set cam_procesando=0 where cam_id=4
+                            update ccCamps set cam_procesando=0 where cam_id=@camId
                         end'
         EXEC(@sql);
 

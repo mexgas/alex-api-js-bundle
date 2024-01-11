@@ -1,3 +1,18 @@
+/*******************************/
+/***** NUXIBA TECHNOLOGIES *****/
+/*******************************/
+/*
+Author:
+
+
+Date: 2023/12/13
+Description:
+
+Database: CCRecorderRIA
+Required version: 82
+
+IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+*/
 set nocount on
 declare @Version int
 declare @Version_Actual int
@@ -68,7 +83,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''CleanNod
         @active_start_date=20180911, 
         @active_end_date=99991231, 
         @active_start_time=0,  
-        @active_end_time=235959
+        @active_end_time=55959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -159,7 +174,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessAVRS'', 
-        @enabled=1, 
+        @enabled=0, 
         @notify_level_eventlog=0,
         @notify_level_email=0,
         @notify_level_netsend=0,
@@ -223,7 +238,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessAVRSPublicationHighLoad'', 
-        @enabled=1, 
+        @enabled=0, 
         @notify_level_eventlog=0,
         @notify_level_email=0,
         @notify_level_netsend=0,
@@ -287,7 +302,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''ReportsMasterProcessAVRSPublicationLowLoad'', 
-        @enabled=1, 
+        @enabled=0, 
         @notify_level_eventlog=0,
         @notify_level_email=0,
         @notify_level_netsend=0,

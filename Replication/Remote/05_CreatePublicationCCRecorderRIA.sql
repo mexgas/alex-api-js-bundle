@@ -56,10 +56,15 @@ if @Version_Actual >= @Version
 	
 
 	declare @retentionDay int
-	set @retentionDay=7
-
-	declare @publicationName varchar(100),@articleName varchar(100)
-	declare @publicationId int,@articleId int
+	set @retentionDay=2
+	
+	/****************/
+	/*** Publicaciones ***/
+	/****************/
+	
+	declare @publicationId int,@publicationName varchar(100)
+	declare @articleId int,@articleName varchar(100)
+	declare @force_invalidate_snapshot int 
 	
 	update publicationTableCCRecorderRIA set status=0
 	update articleTableCCRecorderRIA set status=0
@@ -91,7 +96,7 @@ if @Version_Actual >= @Version
 		@max_concurrent_merge = 0,
 		@max_concurrent_dynamic_snapshots = 0, 
 		@use_partition_groups = null, 
-		@publication_compatibility_level = N'90RTM', 
+		@publication_compatibility_level = N'100RTM', 
 		@replicate_ddl = 1,
 		@allow_subscriber_initiated_snapshot = N'false', 
 		@allow_web_synchronization = N'false', 
@@ -113,6 +118,8 @@ if @Version_Actual >= @Version
 		@active_end_time_of_day = 235959, 
 		@active_start_date = 0, 
 		@active_end_date = 0, 
+		@job_login = @jobLogin, 
+		@job_password = @jobPassword,
 		@publisher_security_mode = 0,
 		@publisher_login = @publisherLogin, 
 		@publisher_password = @publisherPassword 		
@@ -122,6 +129,11 @@ if @Version_Actual >= @Version
 
 			-- Adding articles
 			use [CCRecorderRIA]
+			set @force_invalidate_snapshot=0
+			IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'DataCallIn')
+			BEGIN
+				set @force_invalidate_snapshot=1
+			END
 			exec sp_addmergearticle @publication = @publicationName, 
 			@article = @articleName, 
 			@source_owner = N'dbo', 
@@ -130,7 +142,7 @@ if @Version_Actual >= @Version
 			@description = N'', 
 			@creation_script = null, 
 			@pre_creation_cmd = N'drop', 
-			@schema_option = 0x000000000C034FD1, 
+			@schema_option = 0x000000000800B311, 
 			@identityrangemanagementoption = N'manual', 
 			@destination_owner = N'dbo', 
 			@force_reinit_subscription = 1, 
@@ -145,13 +157,18 @@ if @Version_Actual >= @Version
 			@delete_tracking = N'true', 
 			@compensate_for_errors = N'false', 
 			@stream_blob_columns = N'false', 
-			@partition_options = 0
+			@partition_options = 0,
+			@force_invalidate_snapshot = @force_invalidate_snapshot
 
 			update articleTableCCRecorderRIA set status=1 where id=@articleId 
 		end	
 
 --		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = @publicationName,  @login = @publisherLogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = @publicationName and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = @publicationName, @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 		update publicationTableCCRecorderRIA set status=1 where id=@publicationId

@@ -56,7 +56,7 @@ if @Version_Actual >= @Version
 	set @publisherPassword =  isnull(@passwordSQL,'replication')
 
 	declare @retentionDay int
-	set @retentionDay=7
+	set @retentionDay=2
 
 	/****************/
 	/*** Publicaciones ***/
@@ -65,6 +65,7 @@ if @Version_Actual >= @Version
 	
 	declare @publicationId int,@publicationName varchar(100)
 	declare @articleId int,@articleName varchar(100)
+	declare @force_invalidate_snapshot int 
 
 	update publicationTableCCenterRIA set status=0
 	update articleTableCCenterRIA set status=0
@@ -95,7 +96,7 @@ if @Version_Actual >= @Version
 		@max_concurrent_merge = 0,
 		@max_concurrent_dynamic_snapshots = 0, 
 		@use_partition_groups = null, 
-		@publication_compatibility_level = N'90RTM', 
+		@publication_compatibility_level = N'100RTM', 
 		@replicate_ddl = 1,
 		@allow_subscriber_initiated_snapshot = N'false', 
 		@allow_web_synchronization = N'false', 
@@ -128,6 +129,13 @@ if @Version_Actual >= @Version
 
 			-- Adding articles
 			use [CCenterRia]
+
+			set @force_invalidate_snapshot=0
+			IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'DataCallIn')
+			BEGIN
+				set @force_invalidate_snapshot=1
+			END
+
 			exec sp_addmergearticle @publication = @publicationName, 
 			@article = @articleName, 
 			@source_owner = N'dbo', 
@@ -136,7 +144,7 @@ if @Version_Actual >= @Version
 			@description = N'', 
 			@creation_script = null, 
 			@pre_creation_cmd = N'drop', 
-			@schema_option = 0x000000000C034FD1, 
+			@schema_option = 0x000000000800B311, 
 			@identityrangemanagementoption = N'manual', 
 			@destination_owner = N'dbo', 
 			@force_reinit_subscription = 1, 
@@ -147,17 +155,22 @@ if @Version_Actual >= @Version
 			@allow_interactive_resolver = N'false', 
 			@fast_multicol_updateproc = N'true', 
 			@check_permissions = 0, 
-			@subscriber_upload_options = 1, 
+			@subscriber_upload_options = 2, 
 			@delete_tracking = N'true', 
 			@compensate_for_errors = N'false', 
 			@stream_blob_columns = N'false', 
-			@partition_options = 0
+			@partition_options = 0,
+			@force_invalidate_snapshot = @force_invalidate_snapshot
 
 			update articleTableCCenterRIA set status=1 where id=@articleId 
 		end	
 
 --		-- Add login to the PAL
 		exec sp_grant_publication_access @publication = @publicationName,  @login = @publisherLogin
+	END
+	IF EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = @publicationName and [retention]<>@retentionDay)
+	BEGIN
+		exec sp_changemergepublication @publication = @publicationName, @property='retention',  @value=@retentionDay, @force_reinit_subscription=1
 	END
 
 		update publicationTableCCenterRIA set status=1 where id=@publicationId

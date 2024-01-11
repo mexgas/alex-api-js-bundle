@@ -1298,7 +1298,7 @@ set nocount off'
                             truncate table ccSmsConversationsResult
                         end
                         else if @action=5 begin
-                            if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+                            if not exists(select 1 from ccSmsConversationsResult where camId=@camId) begin
                                 insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
                             end
                             else begin
@@ -1416,9 +1416,9 @@ set nocount off'
                             FROM smsWorkingTable wt with (rowlock) WHERE smsout_id = @smsOutId;
                         end
                         else if @action=12 begin
-                            if exists(select * from ccSmsSchedules with(nolock) where cam_id = @camId and getdate() between iDate and fDate)
+                            if exists(select 1 from ccSmsSchedules with(nolock) where cam_id = @camId and getdate() between iDate and fDate)
                             begin
-                                if exists(select * from smsWorkingTable with(nolock) where cam_id = @camId)
+                                if exists(select 1 from smsWorkingTable with(nolock) where cam_id = @camId)
                                 begin
                                     select cast(1 as bit)
                                     return

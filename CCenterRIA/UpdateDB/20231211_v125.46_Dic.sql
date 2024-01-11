@@ -1246,7 +1246,27 @@ set nocount off'
 ------------------------------------------------------------------UlisesEnd-----------------------------------------------------------------
 
         -----------------------------------------------------BEGIN HOTFIX K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
-        SET @process = 'HOTFIX K042023 Se mejora accesos a ccSettings2.  Línea (1307). Y se hace merge con sql anterior (no hubo diferencia mas que una linea que yo puse que ya no va). Se agrega estado 6 en linea 1353. Se agrega linea 1366'
+        SET @process = 'HOTFIX K042023 Se agrega columna Exception a la tabla de ccSmsConversationsResult'
+        SET @sql = 'if not exists (select * from sys.columns where name = N''Exception'' and Object_ID = Object_ID(N''ccSmsConversationsResult''))
+                    begin
+                        alter table ccSmsConversationsResult add Exception int null
+                    end'
+        EXEC(@sql);
+
+        SET @process = 'HOTFIX K042023 Se ponen valores en 0 de la nueva columna'
+        SET @sql = 'UPDATE ccSmsConversationsResult set Exception=0 where Exception is null'
+
+        EXEC(@sql);
+
+        SET @process = 'HOTFIX K042023:
+                        Se modifica action 1 para solo regresar campañas si tienen registros en nuevos. 
+                        Se mejora accesos a ccSettings2.  Línea (1311).
+                        Y se hace merge con sql anterior (no hubo diferencia mas que una linea que yo puse que ya no va). 
+                        Se agrega estado 6 en linea 1364. 
+                        Se agregan action 11 y 12.
+                        Se agrega linea 1361
+                        Se agrega estado de Exception en lugares correspondientes'
+
         SET @sql = 'ALTER procedure [dbo].[ccspOutboundSmsMessage] 
                         @action int,
                         @camId int = null,
@@ -1256,12 +1276,16 @@ set nocount off'
                         @statusSystemsId int =null,
                         @InsufficientBalance int=null,
                         @date datetime =null,
-                        @IsCharged BIT = null
+                        @IsCharged BIT = null,
+                        @smsOutId INT = NULL
                         as
                         declare @sql varchar(max)
                         if @action=1 begin
-                            select cast(cam_id as int) as CamId,cam_descripcion as [Name],cam_procesando as [Start] 
-                            from ccCamps where CampType=7 and IDArea is not null and( @camId is null or cam_id=@camId)
+                            select distinct cast(c. cam_id as int) as CamId,cam_descripcion as [Name],cam_procesando as [Start] 
+                            from ccCamps c with(nolock)
+                            left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+                            where CampType=7 and c.IDArea is not null and( @camId is null or c.cam_id=@camId) and w.new >0
+    
                         end
                         else if @action=2 begin
                             select tz_offset from ccTimeZones ORDER BY tz_id
@@ -1274,8 +1298,8 @@ set nocount off'
                             truncate table ccSmsConversationsResult
                         end
                         else if @action=5 begin
-                            if not exists(select 1 from ccSmsConversationsResult where camId=@camId) begin
-                                insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance)
+                            if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+                                insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
                             end
                             else begin
                                 update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
@@ -1309,7 +1333,7 @@ set nocount off'
 
                             declare @statusSystemsIdOld int
                             declare @ccSmsConversationsResult table(camId int,statusSystemsId int,description varchar(255), value int)
-                            select top(1) @camId =cam_id,@statusSystemsIdOld=statusSystemsId from smsccoLogDial with(nolock) where SystemApiId=@SystemApiId
+                            select top(1) @camId =cam_id,@statusSystemsIdOld=statusSystemsId, @smsOutId=smsout_id from smsccoLogDial with(nolock) where SystemApiId=@SystemApiId
                             update smsccoLogDial set statusSystemsId=@statusSystemsId where SystemApiId=@SystemApiId
                             
                             insert into @ccSmsConversationsResult
@@ -1318,7 +1342,7 @@ set nocount off'
                             unpivot
                             (
                                 value
-                                for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+                                for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected, Exception, InsufficientBalance)
                             ) unpiv
                             where camId= @camId
 
@@ -1334,7 +1358,7 @@ set nocount off'
                             pivot
                             (
                             sum(value)
-                            for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance)
+                            for description in (SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected, Exception, InsufficientBalance)
                             ) piv
                             )
 
@@ -1344,13 +1368,16 @@ set nocount off'
                             ,B.NotDelivered=A.NotDelivered
                             ,B.RecipientRejected=A.RecipientRejected
                             ,B.CarrierRejected=A.CarrierRejected
+                            ,B.Exception=A.Exception
                             ,B.InsufficientBalance=A.InsufficientBalance
                             from
                             res A
                             inner join ccSmsConversationsResult B on A.camId=B.camId
+
+                            exec ccspOutboundSmsMessage @action = 11, @smsOutId=@smsOutId
                         end
                         else if @action=8 begin
-                            update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(4,5,6)
+                            update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(3,4,5,6)
                         end
                         else if @action=9 begin
                             CREATE TABLE #TempSmsOutIds (
@@ -1366,7 +1393,7 @@ set nocount off'
                             AND wt.cam_id = @camId;
 
                             UPDATE wt
-                            SET wt.sms_status = 0
+                            SET wt.sms_status = 0, sms_dateDial = DATEADD(mi,30,GETDATE())
                             FROM smsWorkingTable wt
                             JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
 
@@ -1374,15 +1401,31 @@ set nocount off'
                         end
 
                         else if @action=10 begin
-                            IF NOT EXISTS(SELECT 1 FROM smsWorkingTable WHERE cam_id = @camId)
-                            BEGIN
+                            IF NOT EXISTS(SELECT 1 FROM smsWorkingTable WHERE cam_id = @camId) BEGIN
                                 UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
                                 SELECT CAST(0 AS BIT) 
                             END
-                            ELSE
-                            BEGIN
+                            ELSE BEGIN
                                 SELECT CAST(1 AS BIT) -- Has unsent messages 
                             END
+                        end
+
+                        else if @action=11 begin
+                            UPDATE wt
+                            SET sms_status = 0, sms_dateDial = DATEADD(mi,30,GETDATE())
+                            FROM smsWorkingTable wt with (rowlock) WHERE smsout_id = @smsOutId;
+                        end
+                        else if @action=12 begin
+                            if exists(select * from ccSmsSchedules with(nolock) where cam_id = @camId and getdate() between iDate and fDate)
+                            begin
+                                if exists(select * from smsWorkingTable with(nolock) where cam_id = @camId)
+                                begin
+                                    select cast(1 as bit)
+                                    return
+                                end
+                            end
+                            select cast(0 as bit)
+                            update ccCamps set cam_procesando=0 where cam_id=4
                         end'
         EXEC(@sql);
 

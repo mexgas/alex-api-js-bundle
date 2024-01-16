@@ -1,5 +1,4 @@
 USE [msdb]
-GO
 
 /****** Object:  Job [CleanReplicationCCenterRIA]    Script Date: 19/12/2023 09:20:22 p. m. ******/
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N'CW Delete old records') begin

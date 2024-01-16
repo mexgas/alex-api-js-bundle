@@ -67,12 +67,12 @@ if @Version_Actual >= @Version
 	declare @articleId int,@articleName varchar(100)
 	declare @force_invalidate_snapshot int 
 
-	update publicationTableCCenterRIA set status=0
-	update articleTableCCenterRIA set status=0
+	--update publicationTableCCenterRIA set status=0
+	--update articleTableCCenterRIA set status=0
 
 	while exists(select publicationName from publicationTableCCenterRIA where status=0) begin
 		select top 1 @publicationName=publicationName,@publicationId=Id from publicationTableCCenterRIA where status=0
-
+		
 		IF NOT EXISTS (SELECT * FROM dbo.sysmergepublications WHERE [name] = @publicationName) BEGIN
 		-- Adding the merge publication
 		exec sp_addmergepublication @publication = @publicationName, 
@@ -96,7 +96,7 @@ if @Version_Actual >= @Version
 		@max_concurrent_merge = 0,
 		@max_concurrent_dynamic_snapshots = 0, 
 		@use_partition_groups = null, 
-		@publication_compatibility_level = N'100RTM', 
+		@publication_compatibility_level = N'90RTM', 
 		@replicate_ddl = 1,
 		@allow_subscriber_initiated_snapshot = N'false', 
 		@allow_web_synchronization = N'false', 
@@ -105,7 +105,7 @@ if @Version_Actual >= @Version
 		@conflict_logging = N'both', 
 		@automatic_reinitialization_policy = 0,
 		@generation_leveling_threshold=0
-
+		select 'sp_addmergepublication'
 
 		exec sp_addpublication_snapshot @publication =@publicationName, 
 		@frequency_type = 1, 
@@ -131,7 +131,7 @@ if @Version_Actual >= @Version
 			use [CCenterRia]
 
 			set @force_invalidate_snapshot=0
-			IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] = N'DataCallIn')
+			IF NOT EXISTS (SELECT * FROM dbo.sysmergearticles WHERE [name] =@articleName)
 			BEGIN
 				set @force_invalidate_snapshot=1
 			END

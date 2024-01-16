@@ -417,7 +417,7 @@ values (''''delete ccPosicionEspecialidad where Fecha < @date'''', 0, 0)
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccRIAlog where operationDate < @date'''', 0, 0)
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccRiaChat_log where fecha_chat < @date'''', 0, 0)

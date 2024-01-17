@@ -80,7 +80,7 @@ BEGIN
     Drop TABLE tmpTimesOutboundData'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 ALTER TABLE PublicationLowLoad.active'
+    set @process = 'DEV1-459 ALTER TABLE Add Column PublicationLowLoad.active'
     set @sql='if not exists (select * from sys.columns where name = N''active'' and Object_ID = Object_ID(N''PublicationLowLoad''))
 begin
     ALTER TABLE PublicationLowLoad ADD active bit NULL;
@@ -88,7 +88,7 @@ end
 '
     EXEC(@sql)
 
-	 set @process = 'DEV1-459 CREATE TABLE [dbo].[ReportHighUse]'
+	 set @process = 'DEV1-459 CREATE TABLE [dbo].[replicationMergeClean]'
     set @sql='if not exists (select * from sys.tables where name = N''replicationMergeClean'') begin
 CREATE TABLE [dbo].[replicationMergeClean](
     [dateStart] [datetime] not null,
@@ -228,7 +228,7 @@ END'
     end'
         EXEC (@sql)
 
-    SET @process = 'Replication DROP PROCEDURE ccSpCreateIndexReport'
+    SET @process = 'Replication CREATE PROCEDURE ccSpCreateIndexReport para las replications'
     SET @sql = 'CREATE PROCEDURE ccSpCreateIndexReport  
 AS
 BEGIN   
@@ -871,7 +871,7 @@ END
 '
         EXEC (@sql)
    
-    set @process = 'DEV1-459 Alter SP ccspTimesInboundData'
+    set @process = 'DEV1-459 Alter SP ccspTimesInboundData se quita la creacion de la tabla tmpTimesInboundData'
     set @sql='ALTER PROCEDURE [dbo].[ccspTimesInboundData]
 @from AS SMALLDATETIME, @to AS SMALLDATETIME
 AS
@@ -1089,7 +1089,7 @@ IF OBJECT_ID(N''tempdb..#inboundData2'', N''U'') IS NOT NULL
 '
     EXEC(@sql)
 
-     set @process = 'DEV1-459 Alter SP ccspTimesccLogAgentesDia'
+     set @process = 'DEV1-459 Alter SP ccspTimesccLogAgentesDia se quita la creacion tabla tmpccLogAgentesDia'
     set @sql='ALTER PROCEDURE [dbo].[ccspTimesccLogAgentesDia] @from AS SMALLDATETIME, @to AS SMALLDATETIME
 AS
 SET NOCOUNT ON
@@ -1279,7 +1279,7 @@ IF OBJECT_ID(N''tempdb..#tempccLogAgentesDia2'', N''U'') IS NOT NULL
     EXEC(@sql)
 
 
-    set @process = 'DEV1-459 Alter Sp ccspTmpSessionTimeGroup'
+    set @process = 'DEV1-459 Alter Sp ccspTmpSessionTimeGroup ajustes de los timepos con logout o login faltantes'
     set @sql='ALTER PROCEDURE [dbo].[ccspTmpSessionTimeGroup]
 @from as smalldatetime,
 @to as smalldatetime 
@@ -1334,7 +1334,7 @@ set nocount off'
     EXEC(@sql)
 
 
-    set @process = 'DEV1-459 Alter Sp ccspTimesOutboundData'
+    set @process = 'DEV1-459 Alter Sp ccspTimesOutboundData se quita la creacion tabla tmpTimesOutboundData'
     set @sql='ALTER PROCEDURE [dbo].[ccspTimesOutboundData] 
 @from AS SMALLDATETIME, @to AS SMALLDATETIME
 AS
@@ -1529,7 +1529,7 @@ IF OBJECT_ID(N''tempdb..#outboundData2'', N''U'') IS NOT NULL
     EXEC(@sql)
 
    
-    set @process = 'DEV1-459 alter SP ccspRepOutAnswCalls'
+    set @process = 'DEV1-459 alter SP ccspRepOutAnswCalls se quita with index '
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls]
 
 @action as tinyint,
@@ -1586,7 +1586,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepOutCallBilling'
+    set @process = 'DEV1-459 alter SP ccspRepOutCallBilling se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallBilling]
     @action AS TINYINT,
     @from AS DATETIME= null,
@@ -1892,7 +1892,7 @@ BEGIN
 END'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepOutCallsDetail'
+    set @process = 'DEV1-459 alter SP ccspRepOutCallsDetail se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutCallsDetail] 
 @action as tinyint,
 @from as datetime = NULL,
@@ -1998,7 +1998,7 @@ BEGIN
 END'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepOutKPI'
+    set @process = 'DEV1-459 alter SP ccspRepOutKPI se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutKPI]
 @action as tinyint,
 @from as datetime = null,
@@ -2060,7 +2060,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpececialAbnd'
+    set @process = 'DEV1-459 alter SP ccspRepSpececialAbnd se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAbnd]
 @action as tinyint,
 @from AS datetime = null,
@@ -2102,7 +2102,7 @@ end
     '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndPercentage'
+    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndPercentage se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAbndPercentage]
 @action as tinyint,
 @from AS smalldatetime = null,
@@ -2148,7 +2148,7 @@ end
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndProfiles'
+    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndProfiles se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAbndProfiles]
 @action as tinyint,
 @from AS smalldatetime = null,
@@ -2194,7 +2194,7 @@ end
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndTimes'
+    set @process = 'DEV1-459 alter SP ccspRepSpececialAbndTimes se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAbndTimes]
 @action as tinyint,
 @from AS smalldatetime = null,
@@ -2241,7 +2241,7 @@ end
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpececialAgtPerformance'
+    set @process = 'DEV1-459 alter SP ccspRepSpececialAgtPerformance se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpececialAgtPerformance]
 @action as tinyint,
 @from AS datetime = null,
@@ -2291,7 +2291,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpecialAbndCamp'
+    set @process = 'DEV1-459 alter SP ccspRepSpecialAbndCamp se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialAbndCamp]
 @action as tinyint,
 @from AS datetime = null,
@@ -2328,7 +2328,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpecialTelephoneNumbersByRegistry'
+    set @process = 'DEV1-459 alter SP ccspRepSpecialTelephoneNumbersByRegistry se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByRegistry]
 @action as tinyint,
 @from as datetime = null,
@@ -2414,7 +2414,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepSpecialTelephoneNumbersByState'
+    set @process = 'DEV1-459 alter SP ccspRepSpecialTelephoneNumbersByState se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTelephoneNumbersByState]
 @action as tinyint,
 @from as datetime = null,
@@ -2461,7 +2461,7 @@ end
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInChangeFlow'
+    set @process = 'DEV1-459 alter SP ccspRepInChangeFlow se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInChangeFlow]
     @action as tinyint,
     @from AS datetime = NULL,
@@ -2521,7 +2521,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInDIDResume'
+    set @process = 'DEV1-459 alter SP ccspRepInDIDResume se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInDIDResume]
 @action as tinyint,
 @from as datetime = null,
@@ -2730,7 +2730,7 @@ end'
     EXEC(@sql)
 
 
-    set @process = 'DEV1-459 alter SP ccspRepMKTAgentes'
+    set @process = 'DEV1-459 alter SP ccspRepMKTAgentes se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepMKTAgentes]
 @action as tinyint,
 @from as datetime = null,
@@ -2916,7 +2916,7 @@ end
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepChatsAndCallsGeneral'
+    set @process = 'DEV1-459 alter SP ccspRepChatsAndCallsGeneral se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepChatsAndCallsGeneral]
 @action as tinyint,
 @from as datetime = null,
@@ -3195,7 +3195,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInAnsw'
+    set @process = 'DEV1-459 alter SP ccspRepInAnsw se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInAnsw]
 @action as tinyint,
 @from AS datetime = null,
@@ -3269,7 +3269,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInBill01900'
+    set @process = 'DEV1-459 alter SP ccspRepInBill01900 se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInBill01900]
 @action as tinyint,
 @from as datetime = null,
@@ -3391,7 +3391,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInCalls'
+    set @process = 'DEV1-459 alter SP ccspRepInCalls se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInCalls]
 @action as tinyint,
 @from as datetime = null,
@@ -3722,7 +3722,7 @@ end
     EXEC(@sql)
 
 
-    set @process = 'DEV1-459 Alter SP ccspRepOutDialDetail'
+    set @process = 'DEV1-459 Alter SP ccspRepOutDialDetail se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail] 
 
 @action AS TINYINT, 
@@ -3934,7 +3934,7 @@ DELETE FROM RepOutDialDetail WHERE date >= @from AND date < @to
 END'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 Alter SP ccspRepSpecialTimes'
+    set @process = 'DEV1-459 Alter SP ccspRepSpecialTimes se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTimes] @action AS TINYINT
     ,@from AS DATETIME = NULL
     ,@to AS DATETIME = NULL
@@ -4128,7 +4128,7 @@ END
     EXEC(@sql)
 
 
- set @process = 'DEV1-459 Alter SP ReportsMasterProcessWIthOnlyGenerate'
+ set @process = 'DEV1-459 Alter SP ReportsMasterProcessWIthOnlyGenerate se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ReportsMasterProcessWIthOnlyGenerate] @from AS DATETIME = NULL
 ,@to AS DATETIME = NULL
 ,@scheduleTime INT = 10
@@ -4278,7 +4278,7 @@ END
 DROP TABLE #tmpProcedureReports'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ReportsMasterProcessPublicationLowLoad'
+    set @process = 'DEV1-459 alter SP ReportsMasterProcessPublicationLowLoad se quita with index'
     set @sql='ALTER procedure [dbo].[ReportsMasterProcessPublicationLowLoad]
 as
 
@@ -4376,7 +4376,7 @@ drop table #replications
 '
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ReportsMasterSubProcess'
+    set @process = 'DEV1-459 alter SP ReportsMasterSubProcess se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ReportsMasterSubProcess]               
 AS
 
@@ -4440,7 +4440,7 @@ EXEC ReportsMasterProcessWIthOnlyGenerate @from=@from,@to=@to,@scheduleTime=@sch
 END'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepAgentKPI'
+    set @process = 'DEV1-459 alter SP ccspRepAgentKPI se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentKPI]
 @action as tinyint,
 @from as datetime = null,
@@ -4511,7 +4511,7 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepDetailAgent'
+    set @process = 'DEV1-459 alter SP ccspRepDetailAgent se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepDetailAgent]
 @action as tinyint,
 @from as datetime = null,
@@ -4623,7 +4623,7 @@ end
 END'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP ccspRepInAbnd'
+    set @process = 'DEV1-459 alter SP ccspRepInAbnd se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepInAbnd]
 @action as tinyint,
 @from AS datetime = null,
@@ -4694,9 +4694,6 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = 'DEV1-459 alter SP'
-    set @sql=''
-    EXEC(@sql)
    
 	---------------------------------------BEGIN Jesus Gallardo hotfix/125.20230719.0.9---------------------------------------------------------
 

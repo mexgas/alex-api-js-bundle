@@ -1223,9 +1223,6 @@ else if @action=6 begin
 end
 '
         EXEC(@sql);
-
-       
-
        
 
         SET @process = 'Alter SP ccsp_GalateaGetCampsNvosCB Se quita proceso que no ocupa Kolob y se agrega agrupacion para no poner datos dobles @TotalNew'
@@ -4181,11 +4178,6 @@ if not exists( select * from ccTipoStatusAgente where TipoStatusAge_id in(34,36)
 	end
 end
 '       EXEC(@sql);
-
-        SET @process = ''
-        SET @sql = ''
-        EXEC(@sql);
-
 
         -----------------------------------------------------BEGIN hotfix/125.20231211.0.4 Jesus Gallardo  ----------------------------------------------------------------
 

@@ -39,6 +39,32 @@ BEGIN
 	BEGIN TRY
 
 	---------------------------------------BEGIN Jesus Gallardo hotfix/125.20230719.0.9---------------------------------------------------------
+     set @process = 'Add PublicationLowLoad no se modifica a menudo'
+    set @sql='if not exists( select * from PublicationLowLoad where namePublication=''ConversationWhatsApp'' ) begin
+    insert into PublicationLowLoad values(''ConversationWhatsApp'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''ConversationWhatsAppOut'' ) begin
+    insert into PublicationLowLoad values(''ConversationWhatsAppOut'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''MenuReportsRia'' ) begin
+    insert into PublicationLowLoad values(''MenuReportsRia'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''CallsPreviewData'' ) begin
+    insert into PublicationLowLoad values(''CallsPreviewData'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''RecordingEvaluation'' ) begin
+    insert into PublicationLowLoad values(''RecordingEvaluation'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''AVRSTemplates'' ) begin
+    insert into PublicationLowLoad values(''AVRSTemplates'',1)
+end
+if not exists( select * from PublicationLowLoad where namePublication=''AVRSTemplatesRate'' ) begin
+    insert into PublicationLowLoad values(''AVRSTemplatesRate'',1)
+end
+'
+    EXEC(@sql)
+
+
     set @process = 'DEV1-459 alter table RepOutManagementBase.calKey varchar(40)'
     set @sql='alter table RepOutManagementBase Alter Column calKey varchar(40)'
     EXEC(@sql)

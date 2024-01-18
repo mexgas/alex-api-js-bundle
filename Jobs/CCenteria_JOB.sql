@@ -480,17 +480,21 @@ insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoWorkingTable as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete a from ccocallbacks as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 1)
+values (''''delete a from ccocallbacks as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id and cal_fecha<@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallsOut as a  inner join #ccoCallsOutSourceIds b on  a.callout_id = b.callout_id where a.cal_Inicio<@date'''', 0, 1)
 
-insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete a from ccoLogDials as a  inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and fecha<@date'''', 0, 1)
-
 --quita los calloutId que existen registros recientes
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete A from #ccoCallsOutSourceIds A inner join ccoLogDials B on A.callout_id=B.callout_id where fecha>@date'''', 0, 1)
+values ('''';with logDialsMax as(
+select b.callout_id,MAX(b.fecha) fecha from #ccoCallsOutSourceIds A
+inner join ccoLogDials b on A.callout_id = b.callout_id
+group by b.callout_id
+)
+delete B from logDialsMax A
+inner join #ccoCallsOutSourceIds B on A.callout_id=B.callout_id
+where @date>A.fecha'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1)

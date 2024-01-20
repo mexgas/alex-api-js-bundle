@@ -60,43 +60,6 @@ EXEC sp_mergemetadataretentioncleanup
    ,@num_tombstone_rows= @num_tombstone_rows out
    ,@aggressive_cleanup_only= @aggressive_cleanup_only
 
-
-
-SELECT 
- 	@num_genhistory_rows= case when X.[name]=''MSmerge_contents'' then  X.[rows] else @num_genhistory_rows end
-    ,@MSmerge_genhistory= case when X.[name]=''MSmerge_genhistory'' then X.[rows] else  @MSmerge_genhistory end
-	,@MSmerge_tombstone= case when X.[name]=''MSmerge_tombstone'' then X.[rows] else @MSmerge_tombstone end
-FROM 
-(SELECT 
-    CAST(object_name(id) AS varchar(50)) 
-        AS [name], 
-    SUM(CASE WHEN indid < 2 THEN CONVERT(bigint, [rows]) END) 
-        AS [rows],
-    SUM(CONVERT(bigint, reserved)) * 8 
-        AS reserved, 
-    SUM(CONVERT(bigint, dpages)) * 8 
-        AS data, 
-    SUM(CONVERT(bigint, used) - CONVERT(bigint, dpages)) * 8 
-        AS index_size, 
-    SUM(CONVERT(bigint, reserved) - CONVERT(bigint, used)) * 8 
-        AS unused 
-    FROM sysindexes WITH (NOLOCK) 
-    WHERE sysindexes.indid IN (0, 1, 255) 
-        AND sysindexes.id > 100 
-        AND object_name(sysindexes.id) <> ''dtproperties'' 
-    GROUP BY sysindexes.id WITH ROLLUP
-) AS X
-WHERE X.[name] is not null
-and x.name in(''MSmerge_contents'',''MSmerge_genhistory'',''MSmerge_tombstone'')
-ORDER BY x.rows desc  
-
-set @dateEnd=GETDATE()
-
-insert into replicationMergeClean
-select @dateStart,@dateEnd,
-@num_genhistory_rows num_genhistory_rows,@num_contents_rows num_contents_rows,@num_tombstone_rows num_tombstone_rows
-,@MSmerge_genhistory MSmerge_genhistory ,@MSmerge_tombstone MSmerge_tombstone
-
 ', 
 		@database_name=N'CCenterRIA', 
 		@flags=0
@@ -123,7 +86,3 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
-
-GO
-
-

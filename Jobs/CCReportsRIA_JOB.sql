@@ -115,7 +115,7 @@ QuitWithRollback:
 EndSave:'
     EXEC(@sql)
 
-    set @process = 'CREATE JOB ReportsMasterProcessPublicationHighLoadPublicationHighLoad'
+    set @process = 'CREATE JOB ReportsMasterProcessPublicationHighLoad'
     set @sql = 'USE [msdb]
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''ReportsMasterProcessPublicationHighLoad'') begin
     EXEC msdb.dbo.sp_delete_job @job_name=N''ReportsMasterProcessPublicationHighLoad'', @delete_unused_schedule=1

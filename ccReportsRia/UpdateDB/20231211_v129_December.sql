@@ -5024,7 +5024,7 @@ select @count=count(*) from #replications
 
 while(
 select count(*) from #replications with(nolock) where flag = 0) > 0
-)
+
 begin
     set rowcount 1
         select @replicationName = [name]

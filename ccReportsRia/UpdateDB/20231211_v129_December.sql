@@ -1013,7 +1013,7 @@ end
 
 if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
 begin
-CREATE NONCLUSTERED INDEX IX_ccCallsIn_1
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
 ON [dbo].[ccCallsIn] ([cal_Inicio])
 INCLUDE ([cal_id])
 end

@@ -1,25 +1,57 @@
-set nocount on
+/*******************************/
+/***** NUXIBA TECHNOLOGIES *****/
+/*******************************/
+/*
+Author:
 
-use [CCenterRia]
 
-declare @Version int, @Version_Actual int
----------------- VERSION ----------------
-Set @Version = '119'
+Date: 2023/12/13
+Description:
 
-create table #temp([version] int)
-insert into #temp
-exec @Version_Actual = dbo.ccsp_getVersion 'BD'
+Database: CCenterRia
+Required version: 125.17
 
-drop table #temp
+IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
+*/
+SET NOCOUNT ON
 
-if @Version_Actual >= @Version
- begin
-	declare @Sql nvarchar(max)
+DECLARE @version INT, @versionFix INT
+DECLARE @actualVersion INT, @actualVersionFix INT
+DECLARE @sql VARCHAR(max)
+DECLARE @errorGenerated VARCHAR(max)
+DECLARE @process VARCHAR(max)
+DECLARE @versionALL VARCHAR(max);
 
-	---------------- INICIO SCRIPT ----------------
-	
-	
-	set @Sql='USE [msdb]
+/* Version to release (use the version of your own databse)*/
+/*******************************************************************************************************
+Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
+set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
+sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
+SET @version = 125 --**********actualizar a 122 sin fix
+SET @versionfix = 17
+/* Actual version (use your own script to do it)*/
+EXEC @actualVersion = ccsp_getVersion 'BD' 
+
+EXEC @actualVersionFix = ccsp_getVersion 'BDF'
+
+SELECT @versionALL = valor
+FROM ccsettings
+WHERE setting_id = 77;
+
+SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
+FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
+WHERE id = 4;
+
+IF (@actualVersion = @version and @actualVersionFix >= @versionfix - 1) or
+@actualVersion >= @version 
+BEGIN
+    BEGIN TRAN
+
+    BEGIN TRY
+
+  
+    set @process = 'CREATE JOB CleanReplicationCCenterRIA'
+    set @sql = 'USE [msdb]
 
 /****** Object:  Job [CleanReplicationCCenterRIA]    Script Date: 19/12/2023 09:20:22 p. m. ******/
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW Delete old records'') begin
@@ -107,18 +139,17 @@ GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:'
+    EXEC(@sql)
 
-		EXEC(@Sql)
+        COMMIT TRAN
+    END TRY
 
-	------------------ FIN SCRIPT @Sql ------------------
+    BEGIN CATCH
+        /* Error generated based on sintax */
+        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
 
-	select 'Merge Snapshots Finished'
- end
+        RAISERROR (@errorGenerated, 11, 1)
 
-else
- begin
-	select 'Version incorrecta de base de datos, version actual: '
-	+ cast(@Version_Actual as varchar(5))
-	+ ', version que desea ingresar: ' + cast(@Version as varchar(5))
- end
-set nocount off
+        ROLLBACK TRAN
+    END CATCH
+END

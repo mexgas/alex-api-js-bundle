@@ -54,7 +54,7 @@ BEGIN
     set @sql = 'USE [msdb]
 
 /****** Object:  Job [CleanReplicationCCenterRIA]    Script Date: 19/12/2023 09:20:22 p. m. ******/
-if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW Delete old records'') begin
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CleanReplicationCCenterRIA'') begin
     EXEC msdb.dbo.sp_delete_job @job_name=N''CleanReplicationCCenterRIA'', @delete_unused_schedule=1
 end
 

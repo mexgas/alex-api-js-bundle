@@ -41,10 +41,8 @@ if @Version_Actual >= @Version
 	from dbo.sysmergepublications where publisher_db=''CCenterRia''
 
 	'
-
-		EXEC(@Sql)
-
-
+	EXEC(@Sql)
+	
 	set @Sql='USE [msdb]
 
 /****** Object:  Job [CW Merge Replication]    Script Date: 23/06/2018 11:12:45 a.m. ******/

@@ -22,8 +22,12 @@ if @Version_Actual >= @Version
 
 	select @publicationServer = substring(@publicationServer, 0, charindex('|',@publicationServer))
 
+	declare @jobLogin nvarchar(max)
+	declare @jobPassword nvarchar(max)
 	declare @userNameSQL nvarchar(50)
 	declare @passwordSQL nvarchar(50)
+	declare @userNameWin nvarchar(50)
+	declare @passwordWin nvarchar(50)
 
 	declare @settingBD nvarchar(100)
 
@@ -36,11 +40,15 @@ if @Version_Actual >= @Version
 	insert into @temp
 	 select id,Value from fn_RIASplitDelimited(@settingBD,'|')
 
-	
+	select @userNameWin = value  from @temp where id = 1
+	select @passwordWin = value  from @temp where id = 2
 	select @userNameSQL = value  from @temp where id = 3
 	select @passwordSQL = value  from @temp where id = 4
 	select @hostName = value  from @temp where id = 5
 
+	-----agregado de credenciales WINDOWS-----
+	set @jobLogin = isnull(@userNameWin,@hostName+'\SnapshotReplication')
+	set @jobPassword = isnull(@passwordWin,'Nuxiba2010')
 
 	-----agregado de credenciales SQL SERVER-----
 	set @publDistLogin = isnull(@userNameSQL,'replication')

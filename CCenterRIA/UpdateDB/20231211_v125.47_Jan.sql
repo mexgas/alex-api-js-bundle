@@ -73,18 +73,12 @@ BEGIN
 					BEGIN
 						SET NOCOUNT ON;
 						IF @Option = 1 BEGIN
-							IF @Type = 2 BEGIN
-								SELECT distinct C.cam_id, C.cam_descripcion, prioridad, A.Login, A.User_id, skill 
-								FROM ccCamps C JOIN ccCampsAgente CA ON C.cam_id = CA.cam_id 
-								JOIN ccUsers A  ON A.User_id = CA.User_id AND A.TipoUser_id=1 AND A.Status = 1 AND cam_activo=1 and A.IDArea = C.IDArea and cam_bNew = 2
-								ORDER BY C.cam_id, CA.prioridad
-							END
-							ELSE BEGIN
-								SELECT distinct C.cam_id, C.cam_descripcion, prioridad, A.Login, A.User_id, skill 
-								FROM ccCamps C JOIN ccCampsAgente CA ON C.cam_id = CA.cam_id 
-								JOIN ccUsers A  ON A.User_id = CA.User_id AND A.TipoUser_id=1 AND A.Status = 1 AND cam_activo=1 and A.IDArea = C.IDArea
-								ORDER BY C.cam_id, CA.prioridad
-							END
+							SELECT C.cam_id, C.cam_descripcion, CA.prioridad, A.Login, A.User_id, CA.skill 
+                            FROM ccCamps AS C
+                            JOIN ccCampsAgente AS CA ON C.cam_id = CA.cam_id 
+                            JOIN ccUsers AS A  ON A.User_id = CA.User_id AND A.TipoUser_id=1 AND A.Status = 1 AND C.cam_activo=1 and A.IDArea = C.IDArea
+                            WHERE (@Type = 2 AND C.cam_bNew = 2) OR @Type != 2
+                            ORDER BY C.cam_id, CA.prioridad
 						END
 						ELSE IF @Option = 2 BEGIN
 							SELECT distinct I.Inbound_id, I.descripcion, prioridad, A.Login, A.User_id, skill

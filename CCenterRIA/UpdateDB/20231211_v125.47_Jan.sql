@@ -279,7 +279,7 @@ BEGIN
                         end
 
 						else if @action=13 begin
-							SELECT cam_id AS CampaingId, U.statusSystemsId AS StatusSystemsId, COUNT(*) AS TotalMessages
+							SELECT cam_id AS CampaignId, U.statusSystemsId AS StatusSystemsId, COUNT(*) AS TotalMessages
 							FROM smsccoLogDial S
 							INNER JOIN UnchangedStatusSmsMessages U ON S.SystemApiId = U.SystemApiId
 							GROUP BY S.cam_id, U.statusSystemsId

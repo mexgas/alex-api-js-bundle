@@ -105,10 +105,10 @@ BEGIN
         EXEC(@sql);
 
         SET @process = 'Hotfix SMS - Adding indexes'
-        SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_'' and object_id = OBJECT_ID(N''smsccoLogDial''))
-				    begin
-				        CREATE INDEX IX_smsccoLogDial_ 2 ON smsccoLogDial(smsDate,statusSystemsId);
-				    end'
+        SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+                    begin
+                        CREATE INDEX IX_smsccoLogDial_2 ON smsccoLogDial(smsDate,statusSystemsId);
+                    end'
         EXEC(@sql);
 
         SET @process = 'Hotfix SMS - Addition of actions 13 and 14 to update sms status when they are not updated correctly'

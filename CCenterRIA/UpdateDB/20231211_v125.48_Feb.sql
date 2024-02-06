@@ -421,7 +421,7 @@ BEGIN
                     ) -- Add more for multimediaTypes
 
 			;with stateDialog as(
-			SELECT cast(value as int) as CurrentState FROM dbo.fn_RIASplitDelimited(@StateIds,',')
+			SELECT cast(value as int) as CurrentState FROM dbo.fn_RIASplitDelimited(@StateIds,'','')
 	)
             INSERT INTO @AgentStatus
             SELECT A.camId, A.userId, B.CurrentState,

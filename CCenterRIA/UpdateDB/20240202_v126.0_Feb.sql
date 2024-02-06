@@ -661,7 +661,7 @@ BEGIN
 		SET @process = 'KR110000 CREATE SP ccsp_GalateaGetRecordsImportStatus'
         SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
-		-- @Type = 1:Detalle general de carga de registros | 2:Detalle especÌfico de carga de registros | 3:Porcentaje de carga de registros
+		-- @Type = 1:Detalle general de carga de registros | 2:Detalle espec√≠fico de carga de registros | 3:Porcentaje de carga de registros
 		@action tinyint, 
 		@loadID int = NULL, 
 		@userID smallint = NULL
@@ -707,7 +707,7 @@ BEGIN
 		return(0)
 		END
 
-		if @action=2 -- Detalle especÌfico de carga de registros
+		if @action=2 -- Detalle espec√≠fico de carga de registros
 		BEGIN
 		if not exists(SELECT load_id FROM ccRIALoading)
 		 BEGIN
@@ -760,7 +760,7 @@ BEGIN
         SET @sql = '
 		if not exists(select tag from tableLangueDbLoader where tag = ''type-camp-no-international-port'' and languageId=2)
 		begin
-			insert into tableLangueDbLoader (languageId,tag, translate) values (2,''type-camp-no-international-port'',''Porta internacional n„o encontrada'')
+			insert into tableLangueDbLoader (languageId,tag, translate) values (2,''type-camp-no-international-port'',''Porta internacional n√£o encontrada'')
 		end'
         EXEC(@sql);
 

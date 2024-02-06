@@ -60,8 +60,7 @@ BEGIN
         -----------------------------------------------------BEGIN TT8053 Enrique Ruiz ----------------------------------------------------------------
 
         SET @process = 'TT8053 Create ccLogAgentesDiaViewLast for better access to last status by agent'
-        SET @sql = 'USE [CCenterRIA]
-                    IF NOT EXISTS(SELECT * FROM sys.views WHERE name=''ccLogAgentesDiaViewLast'')
+        SET @sql = 'IF NOT EXISTS(SELECT * FROM sys.views WHERE name=''ccLogAgentesDiaViewLast'')
                     BEGIN
                     EXEC(''
                         CREATE VIEW ccLogAgentesDiaViewLast AS
@@ -421,20 +420,19 @@ BEGIN
                                     ''23'' ELSE ''4,5,6,9'' END
                     ) -- Add more for multimediaTypes
 
+			;with stateDialog as(
+			SELECT cast(value as int) as CurrentState FROM dbo.fn_RIASplitDelimited(@StateIds,',')
+	)
             INSERT INTO @AgentStatus
-            SELECT A.camId, A.userId, B.CurrentState, (
-                    CASE WHEN @chatType = 1 THEN CASE WHEN B.CurrentState IN (
-                                            SELECT value
-                                            FROM dbo.fn_RIASplitDelimited(@StateIds, '','')
-                                            ) THEN @CampType ELSE CASE WHEN B.CurrentState IN (
-                                                    SELECT value
-                                                    FROM dbo.fn_RIASplitDelimited(
-                                                            @StateIds, '','')
-                                                    )
-                                                AND B.IdCampEsp = A.camId
-                                                AND B.camType = @CampType THEN @CampType ELSE 
-                                                NULL END END END
-                    ) AS isCampDialog, B.camType
+            SELECT A.camId, A.userId, B.CurrentState,
+			(CASE
+				WHEN @chatType = 1 THEN
+					CASE WHEN B.CurrentState IN (SELECT CurrentState FROM stateDialog) THEN 1 ELSE 0 END
+				ELSE
+					CASE WHEN B.CurrentState IN (SELECT CurrentState FROM stateDialog) AND B.IdCampEsp = A.camId AND B.camType = @CampType THEN 1 ELSE 0
+                END
+			END) AS isCampDialog, B.camType
+
             FROM @tmpCamAgent A
             INNER JOIN @CurrentStatus B ON A.userId = B.userId
             WHERE (

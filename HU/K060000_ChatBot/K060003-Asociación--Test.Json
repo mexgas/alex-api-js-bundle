@@ -1,0 +1,53 @@
+Envio
+{
+    "Action": "ChatBot",
+    "subAction": "CHAT_BOT_INITIALIZE_KNOWLEDGE",
+    "UserID": 34
+}
+
+Recepcion
+
+{"Module":"ChatBot","Action":"CHAT_BOT_INITIALIZE_KNOWLEDGE","Data":{"ChatBotKnowledgeDtos":[{"Id":1,"ProjectName":"botwhatsapp","ContactName":"14157386170"}],"RelationCamWithAdmin":[{"CamId":3,"Description":"VoiceOut","CampTypeInOut":1},{"CamId":3,"Description":"WhatsIn","CampTypeInOut":0},{"CamId":4,"Description":"WhatsIn2","CampTypeInOut":0}],"ChatBotId":1,"RelationCamWithChatBotFirt":[{"ChatBotId":1,"CamId":3,"CampTypeInOut":0}]}} 
+
+
+
+Envio
+
+{
+    "Action": "ChatBot",
+    "subAction": "CHAT_BOT_RELATION_CAMP_KNOWLEDGE",
+    "UserID": 34,
+    "ChatBotId":1
+}
+
+Recepcion
+{"Module":"ChatBot","Action":"CHAT_BOT_RELATION_CAMP_KNOWLEDGE","Data":[{"ChatBotId":1,"CamId":3,"CampTypeInOut":0}]}
+
+
+Envio
+
+{
+    "Action": "ChatBot",
+    "subAction": "CHAT_BOT_ADD_CAMP_RELATION_KNOWLEDGE",
+    "UserID": 34,
+    "ChatBotId":1,
+    "CamId":4,
+    "CamType":1
+}
+
+Recepcion
+{"Module":"ChatBot","Action":"CHAT_BOT_ADD_CAMP_RELATION_KNOWLEDGE","Data":true} 
+
+
+Envio
+{
+    "Action": "ChatBot",
+    "subAction": "CHAT_BOT_DELETE_CAMP_RELATION_KNOWLEDGE",
+    "UserID": 34,
+    "ChatBotId":1,
+    "CamId":4,
+    "CamType":1
+}
+
+Recepcion
+{"Module":"ChatBot","Action":"CHAT_BOT_DELETE_CAMP_RELATION_KNOWLEDGE","Data":true}

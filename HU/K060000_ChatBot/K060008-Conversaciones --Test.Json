@@ -1,0 +1,12 @@
+Envio
+{
+    "Action": "ChatBotDashboard",
+    "subAction": "CHAT_BOT_DASHBOARD_GET_DATA",
+    "UserID": 34
+}
+
+Recepcion
+
+{"Module":"ChatBot","Action":"CHAT_BOT_DASHBOARD_GET_DATA","Data":{"ChatBotConversations":{"ActiveConversations":1,"FinishedByClient":1,"FinishedBySystemFail":2,"TransferWhatsAppCampaign":0,"TransferCallBack":10},"ChartAbandoneds":[{"Hour":"10:10","Amount":1},{"Hour":"11:10","Amount":2},{"Hour":"12:20","Amount":3}]}} 
+
+

@@ -217,7 +217,7 @@ BEGIN
         EXEC(@sql);
 
         SET @process = 'KR110001 ADD COLUMN DialingType'
-        SET @sql = 'if not exists (select * from sys.columns where name = N''Exception'' and Object_ID = Object_ID(N''DialingType''))
+        SET @sql = 'if not exists (select * from sys.columns where name = N''DialingType'' and Object_ID = Object_ID(N''ccoDialers''))
                     begin
                         alter table ccoDialers add DialingType bit not null default 1, IdCode int not null default 0
                     end'

@@ -27,7 +27,8 @@ BEGIN
 	CREATE TABLE ReportsFilteredByHourRange
 	(
 		id INT PRIMARY KEY NOT NULL,
-		reportName NVARCHAR(100) NOT NULL
+		reportName NVARCHAR(100) NOT NULL,
+		groupDayWithHHmm bit NOT NULL
 	)
 END'
 EXEC(@sql)
@@ -103,7 +104,7 @@ EXEC(@sql)
 SET @process = 'K061008 Insert into ReportsFilteredByHourRange report 3010'
 SET @sql = 'IF NOT EXISTS (SELECT * FROM ReportsFilteredByHourRange WHERE id = 3010) 
 BEGIN
-	INSERT INTO ReportsFilteredByHourRange VALUES (3010, ''RepViewInCallsDetail'')
+	INSERT INTO ReportsFilteredByHourRange (id, reportName, groupDayWithHHmm) VALUES (3010, ''RepViewInCallsDetail'', 0)
 END'
 EXEC(@sql)
 
@@ -443,7 +444,7 @@ if not exists (select * from Filters  where id = 33) begin
 	values (33, ''inboundCamps'', ''33'', ''InboundCamps'', ''InboundCamp'')
 end
 
-update ReportsFilters set filterName = ''inboundCamps'' where id=3010
+update ReportsFilters set filterName = ''inboundCamps'' where id=3010 and filterName = ''acds''
 '
 	EXEC (@sql)
 
@@ -787,9 +788,404 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 EXEC(@sql)
 
 
-
 	
-	----------------------------------------------------------------------------------------------------------------------
+	---------------------------------------------Tiempos Abandonadas -------------------------------------------------------------------------
+	
+
+set @process = 'Alter table RepInAbnd alter column workgroup'
+set @sql = '
+if EXISTS(
+	select column_name
+	from information_schema.columns  
+	where table_name = ''RepInAbnd'' AND column_name = ''workgroup''
+	AND character_maximum_length = 255
+)
+BEGIN
+	ALTER TABLE RepInAbnd ALTER COLUMN workgroup VARCHAR(1020) NOT NULL;
+END'
+EXEC(@sql)
+
+
+set @process = 'Alter table RepInAbnd add workgroupIds'
+set @sql = '
+if not exists (select * from sys.columns where name = N''workgroupIds'' and Object_ID = Object_ID(N''RepInAbnd''))
+BEGIN
+	ALTER TABLE RepInAbnd add workgroupIds varchar(120) null
+END'
+EXEC(@sql)
+
+---------------------------------------
+
+set @process = 'Drop procedure ccspRepInAbnd'
+set @sql = 'if exists (select * from sys.procedures where name = N''ccspRepInAbnd'')
+    BEGIN
+        DROP PROCEDURE ccspRepInAbnd;
+    END'
+EXEC(@sql)
+
+
+set @process = 'Create procedure ccspRepInAbnd'
+set @sql = '
+CREATE PROCEDURE [dbo].[ccspRepInAbnd]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+if @action = 1
+begin
+	if @from is null
+		select @from = convert(datetime,convert(varchar(11),getdate()))
+	if @to is null	
+		select @to = getdate()
+
+	 delete [RepInAbnd] with(rowlock) where [date] between @from and @to
+		
+	;WITH WGS AS (
+		SELECT i.Inbound_id,
+		(select isnull(STUFF((select '','' + cast(wg.idwg as varchar(5)) from ccRIACampEspWG wg 
+		where Tipo = 0 and wg.IdCampEsp = i.Inbound_id for xml path ('''')),1,1,''''), 0)) [workgroupIds],
+		(select isnull(STUFF((select '','' + c.WGName from ccRIACampEspWG wg left join ccriacat_workgroup c on wg.IDWG = c.IDWG and Tipo = 0
+		where wg.IdCampEsp = i.Inbound_id for xml path ('''')),1,1,''''), '''')) [workgroups]
+		FROM ccinbound i 
+		WHERE chat = 0
+	),
+	xCalls AS (
+		SELECT [Start] timegroup
+		, cal_inicio
+		, inbound_id				
+		, statuscall_id
+		, (CASE WHEN (statuscall_id IN (5,6) AND (cal_que > 0)
+			AND (isnull(cal_xfer,''1900-01-01 00:00:00'') = ''1900-01-01 00:00:00''))  THEN 1 ELSE NULL END) AS abnd 
+		, (cal_twait + cal_txfer + cal_tring) AS tAbnd
+		FROM ccCallsIn ci with(nolock) JOIN TmpTimesInterval th on cal_inicio between [Start] and [Stop]
+		WHERE cal_inicio >= @from AND cal_inicio < @to
+		AND INBOUND_ID > 0
+	), 
+	Rep AS (
+		SELECT timegroup [date]		
+			, xCalls.inbound_id
+			, COUNT(cal_inicio) AS amount
+			, MAX(tAbnd) AS time_max
+			, SUM(tAbnd) AS time_tot
+			, COUNT(CASE WHEN tAbnd < 10  THEN 1 ELSE NULL END) as [LT10]
+			, COUNT(CASE WHEN tAbnd BETWEEN 10 AND 19  THEN 1 ELSE NULL END) as [LT20]
+			, COUNT(CASE WHEN tAbnd BETWEEN 20 AND 29  THEN 1 ELSE NULL END) as [LT30]
+			, COUNT(CASE WHEN tAbnd BETWEEN 30 AND 39  THEN 1 ELSE NULL END) as [LT40]
+			, COUNT(CASE WHEN tAbnd BETWEEN 40 AND 49  THEN 1 ELSE NULL END) as [LT50]
+			, COUNT(CASE WHEN tAbnd BETWEEN 50 AND 59  THEN 1 ELSE NULL END) as [LT60]
+			, COUNT(CASE WHEN tAbnd BETWEEN 60 AND 119  THEN 1 ELSE NULL END) as [LT120]
+			, COUNT(CASE WHEN tAbnd BETWEEN 120 AND 179  THEN 1 ELSE NULL END) as [LT180]
+			, COUNT(CASE WHEN tAbnd BETWEEN 180 AND 239  THEN 1 ELSE NULL END) as [LT240]
+			, COUNT(CASE WHEN tAbnd BETWEEN 240 AND 299  THEN 1 ELSE NULL END) as [LT300]
+			, COUNT(CASE WHEN tAbnd >= 300  THEN 1 ELSE NULL END) as [GT300]
+			, datepart(yyyy,timegroup) [year], datepart(mm,timegroup) [month], datepart(dd,timegroup) [day]
+			, datepart(hh,timegroup) [hour], datepart(mi,timegroup) [minutes]
+		 FROM xCalls
+		 WHERE (abnd IS NOT NULL) 
+		 GROUP BY timegroup, xCalls.inbound_id
+	 )
+
+	 insert into RepInAbnd
+	 select [date]
+	 ,isnull(Ib.IDArea,0) areaId
+	 ,isnull(Area.AreaName,'''') area
+	 ,0 as workgroupId
+	 , case when len(isnull(WGS.workgroups,'''')) > 1020 then substring(isnull(WGS.workgroups,''''), 0, 1020-1) else isnull(WGS.workgroups,'''') end [workgroup]
+	 ,Rep.Inbound_id,isnull(Ib.descripcion,'''') inbound, amount, time_max
+	 ,time_tot, LT10, LT20, LT30, LT40, LT50, LT60, LT120, LT180, LT240, LT300, GT300, [year], [month], [day], [hour], [minutes]
+	 , case when len(isnull(WGS.workgroupIds,''0'')) > 120 then substring(isnull(WGS.workgroupIds,''0''), 0, 120-1) else isnull(WGS.workgroupIds,''0'') end [workgroupIds]
+	 from Rep 
+	 left join ccInbound Ib ON Ib.inbound_id=Rep.inbound_id and Ib.chat=0
+	 left join ccriacat_areas Area on Area.IDArea=Ib.IDArea
+	 left join WGS on WGS.Inbound_id=Rep.Inbound_id
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+set @process = 'DROP VIEW RepViewInAbnd'
+set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RepViewInAbnd'') AND type = ''V'')
+    BEGIN
+        DROP VIEW dbo.RepViewInAbnd
+    END'
+EXEC(@sql)
+
+
+
+set @process = 'CREATE VIEW RepViewInAbnd'
+set @sql = '
+CREATE VIEW [dbo].[RepViewInAbnd] AS
+SELECT
+	[date],
+	areaId,
+	area,
+	workgroupIds,
+	workgroup [WgOrWgs],
+	inboundId [inboundCamp],
+	inbound [campaign],
+	amount [abandonedCalls],
+	timeMax [abandonedMaxWaitTime],
+	timeTot [accumulatedAbandonTime],
+	LT10 [LT10s],
+	LT20 [LT20s],
+	LT30 [LT30s],
+	LT40 [LT40s],
+	LT50 [LT50s],
+	LT60 [LT60s],
+	LT120 [LT120s],
+	LT180 [LT180s],
+	LT240 [LT240s],
+	LT300 [LT300s],
+	GT300 [GT300s],
+	[year],
+	[month],
+	[day],
+	[hour],
+	[minutes]
+FROM
+RepInAbnd NOLOCK'
+EXEC(@sql)
+
+---------------------------------------
+
+SET @process = 'Delete workgroups filter from ReportsFilters where id = 3141'
+SET @sql = 'if exists(select 1 from ReportsFilters where reportName = ''Abandoned'' and id = 3141 and filterName = ''workgroups'')
+begin
+	delete ReportsFilters where reportName = ''Abandoned'' and id = 3141 and filterName = ''workgroups''
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+SET @process = 'Insert into GroupByReports report 3141'
+SET @sql = 'if not exists(select * from GroupByReports where id=3141)
+begin
+	insert into GroupByReports (id, columns, groupByColumns) values
+	(3141,''areaId|max(area):area|workgroupIds|max(WgOrWgs):WgOrWgs|inboundCamp|max(campaign):campaign|sum(abandonedCalls):abandonedCalls|max(abandonedMaxWaitTime):abandonedMaxWaitTime|
+	sum(accumulatedAbandonTime):accumulatedAbandonTime|sum(LT10s):LT10s|sum(LT20s):LT20s|sum(LT30s):LT30s|sum(LT40s):LT40s|sum(LT50s):LT50s|sum(LT60s):LT60s|sum(LT120s):LT120s|
+	sum(LT180s):LT180s|sum(LT240s):LT240s|sum(LT300s):LT300s|sum(GT300s):GT300s'',''areaId|workgroupIds|inboundCamp'')
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+SET @process = 'Update ReportsFilters where id = 3141'
+SET @sql = 'update ReportsFilters set filterName = ''inboundCamps'' where id = 3141 and filterName = ''acds'' '
+EXEC (@sql)
+
+---------------------------------------
+
+SET @process = 'Insert into ReportsFilteredByHourRange report 3141'
+SET @sql = 'IF NOT EXISTS (SELECT * FROM ReportsFilteredByHourRange WHERE id = 3141) 
+BEGIN
+	INSERT INTO ReportsFilteredByHourRange (id, reportName, groupDayWithHHmm) VALUES (3141, ''RepViewInAbnd'', 1)
+END'
+EXEC(@sql)
+
+
+	---------------------------------------------Tiempos Contestadas -------------------------------------------------------------------------	
+
+
+set @process = 'Alter table RepInAnsw alter column workgroup'
+set @sql = '
+if EXISTS(
+	select column_name
+	from information_schema.columns  
+	where table_name = ''RepInAnsw'' AND column_name = ''workgroup''
+	AND character_maximum_length = 255
+)
+BEGIN
+	ALTER TABLE RepInAnsw ALTER COLUMN workgroup VARCHAR(1020) NOT NULL;
+END'
+EXEC(@sql)
+
+
+set @process = 'Alter table RepInAnsw add workgroupIds'
+set @sql = '
+if not exists (select name from sys.columns where name = N''workgroupIds'' and Object_ID = Object_ID(N''RepInAnsw''))
+BEGIN
+	ALTER TABLE RepInAnsw add workgroupIds VARCHAR(120) NULL
+END'
+EXEC(@sql)
+
+
+---------------------------------------
+
+set @process = 'Drop procedure ccspRepInAnsw'
+set @sql = 'if exists (select * from sys.procedures where name = N''ccspRepInAnsw'')
+    BEGIN
+        DROP PROCEDURE ccspRepInAnsw;
+    END'
+EXEC(@sql)
+
+
+set @process = 'Create procedure ccspRepInAnsw'
+set @sql = '
+CREATE PROCEDURE [dbo].[ccspRepInAnsw]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+DECLARE @tresDialog AS smallint
+EXEC @tresDialog = ccspConfigTresDialog
+
+if @action = 1
+begin
+    if @from is null
+        select @from = convert(datetime,convert(varchar(11),getdate()))
+    if @to is null  
+        select @to = getdate()
+
+	delete [RepInAnsw] with(rowlock) where [date] between @from and @to
+        
+	;WITH WGS AS (
+		SELECT i.Inbound_id,
+		(select isnull(STUFF((select '','' + cast(wg.idwg as varchar(5)) from ccRIACampEspWG wg 
+		where Tipo = 0 and wg.IdCampEsp = i.Inbound_id for xml path ('''')),1,1,''''), 0)) [workgroupIds],
+		(select isnull(STUFF((select '','' + c.WGName from ccRIACampEspWG wg left join ccriacat_workgroup c on wg.IDWG = c.IDWG and Tipo = 0
+		where wg.IdCampEsp = i.Inbound_id for xml path ('''')),1,1,''''), '''')) [workgroups]
+		FROM ccinbound i 
+		WHERE chat = 0
+
+	),
+	xCalls AS (
+		SELECT start timegroup
+        , cal_inicio
+        , inbound_id                
+        , statuscall_id
+        , (CASE WHEN ((statuscall_id = 13) AND (cal_tdialog  > @tresDialog)) THEN 1 ELSE NULL END) AS answer
+        , (cal_twait + cal_txfer + cal_tring) AS tAnsw
+        FROM ccCallsIn ci with(nolock) JOIN TmpTimesInterval th on cal_inicio between [Start] and [Stop]
+        WHERE cal_inicio >= @from AND  cal_inicio < @to
+        AND INBOUND_ID > 0
+	),
+	Rep AS (
+		SELECT timegroup [date]
+        , xCalls.inbound_id
+        , COUNT(cal_inicio) AS amount
+        , MAX(tAnsw) AS time_max
+        , SUM(tAnsw) AS time_tot
+        , COUNT(CASE WHEN tAnsw < 10  THEN 1 ELSE NULL END) as [LT10]
+        , COUNT(CASE WHEN tAnsw BETWEEN 10 AND 19  THEN 1 ELSE NULL END) as [LT20]
+        , COUNT(CASE WHEN tAnsw BETWEEN 20 AND 29  THEN 1 ELSE NULL END) as [LT30]
+        , COUNT(CASE WHEN tAnsw BETWEEN 30 AND 39  THEN 1 ELSE NULL END) as [LT40]
+        , COUNT(CASE WHEN tAnsw BETWEEN 40 AND 49  THEN 1 ELSE NULL END) as [LT50]
+        , COUNT(CASE WHEN tAnsw BETWEEN 50 AND 59  THEN 1 ELSE NULL END) as [LT60]
+        , COUNT(CASE WHEN tAnsw BETWEEN 60 AND 119  THEN 1 ELSE NULL END) as [LT120]
+        , COUNT(CASE WHEN tAnsw BETWEEN 120 AND 179  THEN 1 ELSE NULL END) as [LT180]
+        , COUNT(CASE WHEN tAnsw BETWEEN 180 AND 239  THEN 1 ELSE NULL END) as [LT240]
+        , COUNT(CASE WHEN tAnsw BETWEEN 240 AND 299  THEN 1 ELSE NULL END) as [LT300]
+        , COUNT(CASE WHEN tAnsw >= 300  THEN 1 ELSE NULL END) as [GT300]
+        , datepart(yyyy,timegroup) [year], datepart(mm,timegroup) [month], datepart(dd,timegroup) [day]
+        , datepart(hh,timegroup) [hour], datepart(mi,timegroup) [minutes]
+		FROM xCalls
+		WHERE (answer IS NOT NULL)
+		GROUP BY timegroup, xCalls.Inbound_id
+	 )
+
+	 insert into RepInAnsw
+	 select [date]
+	 ,isnull(Ib.IDArea,0) areaId
+	 ,isnull(Area.AreaName,'''') area
+	 ,0 as workgroupId
+	 , case when len(isnull(WGS.workgroups,'''')) > 1020 then substring(isnull(WGS.workgroups,''''), 0, 1020-1) else isnull(WGS.workgroups,'''') end [workgroup]
+	 ,Rep.Inbound_id,isnull(Ib.descripcion,'''') inbound, amount, time_max
+	 ,time_tot, LT10, LT20, LT30, LT40, LT50, LT60, LT120, LT180, LT240, LT300, GT300, [year], [month], [day], [hour], [minutes]
+	 , case when len(isnull(WGS.workgroupIds,''0'')) > 120 then substring(isnull(WGS.workgroupIds,''0''), 0, 120-1) else isnull(WGS.workgroupIds,''0'') end [workgroupIds]
+	 from Rep 
+	 left join ccInbound Ib ON Ib.inbound_id=Rep.inbound_id and Ib.chat=0
+	 left join ccriacat_areas Area on Area.IDArea=Ib.IDArea
+	 left join WGS on WGS.Inbound_id=Rep.Inbound_id
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+
+set @process = 'DROP VIEW RepViewInAnsw'
+set @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''dbo.RepViewInAnsw'') AND type = ''V'')
+    BEGIN
+        DROP VIEW dbo.RepViewInAnsw
+    END'
+EXEC(@sql)
+
+
+
+set @process = 'CREATE VIEW RepViewInAnsw'
+set @sql = '
+CREATE VIEW [dbo].[RepViewInAnsw] AS
+SELECT
+	[date],
+	areaId,
+	area,
+	workgroupIds,
+	workgroup [WgOrWgs],
+	inboundId [inboundCamp],
+	inbound [campaign],
+	amount [LlamadasAtendidas],
+	timeMax [maximumAnswerTime],
+	timeTot [accumulatedAnswerTime],
+	LT10 [LT10s],
+	LT20 [LT20s],
+	LT30 [LT30s],
+	LT40 [LT40s],
+	LT50 [LT50s],
+	LT60 [LT60s],
+	LT120 [LT120s],
+	LT180 [LT180s],
+	LT240 [LT240s],
+	LT300 [LT300s],
+	GT300 [GT300s],
+	[year],
+	[month],
+	[day],
+	[hour],
+	[minutes]
+FROM
+RepInAnsw NOLOCK'
+EXEC(@sql)
+
+
+---------------------------------------
+
+
+SET @process = 'Delete workgroups filter from ReportsFilters where id = 3142'
+SET @sql = 'if exists(select 1 from ReportsFilters where reportName = ''Answered'' and id = 3142 and filterName = ''workgroups'')
+begin
+	delete ReportsFilters where reportName = ''Answered'' and id = 3142 and filterName = ''workgroups''
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+SET @process = 'Insert into GroupByReports report 3142'
+SET @sql = 'if not exists(select * from GroupByReports where id=3142)
+begin
+	insert into GroupByReports (id, columns, groupByColumns) values
+	(3142,''areaId|max(area):area|workgroupIds|max(WgOrWgs):WgOrWgs|inboundCamp|max(campaign):campaign|sum(LlamadasAtendidas):LlamadasAtendidas|max(maximumAnswerTime):maximumAnswerTime|
+	sum(accumulatedAnswerTime):accumulatedAnswerTime|sum(LT10s):LT10s|sum(LT20s):LT20s|sum(LT30s):LT30s|sum(LT40s):LT40s|sum(LT50s):LT50s|sum(LT60s):LT60s|sum(LT120s):LT120s|
+	sum(LT180s):LT180s|sum(LT240s):LT240s|sum(LT300s):LT300s|sum(GT300s):GT300s'',''areaId|workgroupIds|inboundCamp'')
+end'
+EXEC(@sql)
+
+---------------------------------------
+
+SET @process = 'Update ReportsFilters where id = 3142'
+SET @sql = 'update ReportsFilters set filterName = ''inboundCamps'' where id = 3142 and filterName = ''acds'' '
+EXEC (@sql)
+
+---------------------------------------
+
+SET @process = 'Insert into ReportsFilteredByHourRange report 3142'
+SET @sql = 'IF NOT EXISTS (SELECT * FROM ReportsFilteredByHourRange WHERE id = 3142) 
+BEGIN
+	INSERT INTO ReportsFilteredByHourRange (id, reportName, groupDayWithHHmm) VALUES (3142, ''RepViewInAnsw'', 1)
+END'
+EXEC(@sql)
+
+	----------------------------------------------------------------------------------------------------------------------	
 
 	
 	

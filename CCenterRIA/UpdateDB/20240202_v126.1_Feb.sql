@@ -293,7 +293,7 @@ BEGIN
                         
 
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
-                        p.descrip as ProviderDescription, Puerto, XferType, DialingType
+                        p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
                         from ccoDialers d
                         inner join cstoProvedor p on p.provedor_id=d.provedor_id
                         where Puerto in (select portId from #tempPortTable)

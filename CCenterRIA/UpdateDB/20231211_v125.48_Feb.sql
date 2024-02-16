@@ -720,6 +720,37 @@ BEGIN
 
         ----------------------------------------------------- END TT8053 Enrique Ruiz  ----------------------------------------------------------------
 
+		--------------------------------------------------- START DEV2-380 Hugo Longoria -------------------------------------------------------------
+
+		set @process = 'DROP FUNCTION fn_getSIPHeaderCfg'
+        set @sql = 'IF EXISTS (SELECT 1 FROM sys.objects 
+                       WHERE Name = ''fn_getSIPHeaderCfg'' 
+                         AND Type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+            BEGIN
+                DROP FUNCTION dbo.fn_getSIPHeaderCfg
+            END'
+        EXEC(@sql)
+
+        set @process = 'CREATE FUNCTION fn_getSIPHeaderCfg'
+		set @sql = 'CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
+			returns varchar(500)
+			as
+			begin
+				declare @result varchar(500)
+				DECLARE @col varchar(MAX);
+				SELECT @col = coalesce(@col,'''')+case when charindex(value,@format)>0 then value else '''' end
+				FROM dbo.fn_RIASplitDelimited(''_CAMID_|_KEY_|_D1_|_D2_|_D3_|_D4_|_D5_|_CALLOUT_'',''|'')
+				if len(isnull(@col,'''')) = 0 return isnull(@format,'''')
+
+				SELECT 
+					@result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
+				FROM ccocallsoutsource nolock where callout_id=@callout_id
+
+				return isnull(@result,'''')
+			end'
+		EXEC(@sql)
+
+		---------------------------------------------------- END DEV2-380 Hugo Longoria --------------------------------------------------------------
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

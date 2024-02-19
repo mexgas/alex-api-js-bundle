@@ -5302,6 +5302,10 @@ begin
 END'
     EXEC(@sql)
 
+    set @process = 'CW-8302 update ReportsTotals empty id=4010'
+    set @sql='update  ReportsTotals set totalColumns='''' where id=4010'
+    EXEC(@sql)
+
 
 
     ---------------------------------------End Jesus Gallardo hotfix/125.20231211.0.7---------------------------------------------------------

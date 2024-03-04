@@ -157,11 +157,11 @@ BEGIN
 		nDescartes int,
 		name_agent varchar(max),
 		SimultaneousRecs int,
-		,tz_tmp int
-		,tz2_tmp int
-		,tz3_tmp int
-		,tz4_tmp int
-		,tz5_tmp int
+		tz_tmp int,
+		tz2_tmp int,
+		tz3_tmp int,
+		tz4_tmp int,
+		tz5_tmp int
 		)''
 
 
@@ -287,7 +287,12 @@ BEGIN
 						+@isVerano+''5,
 						W.list_id, isNull(R.sequence,0) as sequence,
 						sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
-						isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs
+						isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
+						sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
+						sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
+						sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
+						sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
+						sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
 						FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 						left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
 						left join ccUsers us (nolock) on us.User_id=w.user_id
@@ -319,7 +324,12 @@ BEGIN
 						+@isVerano+''5,
 						W.list_id, isNull(R.sequence,0) as sequence,
 						cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-						isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs
+						isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+						cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+						cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+						cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+						cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+						cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
 						FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 						left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
 						left join ccUsers us (nolock) on us.User_id=w.user_id
@@ -375,7 +385,12 @@ BEGIN
 					+@isVerano+''5,
 					W.list_id, isNull(R.sequence,0) as sequence,
 					cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-					isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs
+					isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+					cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+					cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+					cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+					cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+					cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
 					FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
 					left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
 					left join ccUsers us (nolock) on us.User_id=w.user_id

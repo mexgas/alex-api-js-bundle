@@ -469,42 +469,59 @@ update ReportsFilters set filterName = ''inboundCamps'' where id=3010 and filter
 EXEC (@sql)
 
 
-SET @process = 'K061001 Alter procedure ccspRepCatalogos'
-SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
+	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  Modificacion ccspRepCatalogos'
+	set @sql='
+	CREATE OR ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 	@type as tinyint,
 	@action tinyint = 0 -- 0 Filter select; 1 Filters Range
 	,@userId int =0 ---- se agrega parametro para filtros
+	,@menuId INT = 0
 
 	AS
 	declare @tablatemp table (id int, description varchar(100) null)
 	declare @tempwork table (idwg int)
+	DECLARE @SQL NVARCHAR(MAX);
+	DECLARE @condition NVARCHAR(300) = '''';
+	DECLARE @columnName NVARCHAR(100) = '''';
+	DECLARE @consult NVARCHAR (2000) = '''';
 
 	if @action = 0
-	begin
-
+	BEGIN
+	IF OBJECT_ID(''TEMPDB..#filters'') IS NULL
+	BEGIN
+		CREATE TABLE #filters ([Type] VARCHAR(200))
+	END
 
 		-- CAMPAIGNS
-	if @type = 1 begin
+	IF @type = 1 BEGIN
 
-		if @userId <> 0 begin
+		INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId
+		IF EXISTS (SELECT * FROM #filters)
+		BEGIN
+			SET @condition = '' WHERE camp.campType IN (SELECT * FROM #filters)''
+			SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''campaigns'' AND ReportId = @menuId;
+		END
+		ELSE BEGIN
+			SET @columnName =	''campaignId'';
+		END
 
-			insert into @tablatemp
-			select distinct caesp.IdCampEsp,'' '' as description  from ccUserView us
-			inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
-			inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=1
-			where us.[User_id] = @userId
+		SET @consult = N'' SELECT cam_id as id, cam_descripcion as description, @columnName as dbColumn FROM ccCamps camp''
 
-			SELECT cam_id as id, cam_descripcion as description, ''campaignId'' as dbColumn
-				from ccCamps camp
-				inner join @tablatemp A on camp.cam_id = A.id
+		IF @userId <> 0 BEGIN
 
-		end
-		else begin
-			SELECT cam_id as id, cam_descripcion as description, ''campaignId'' as dbColumn
-				from ccCamps camp
-
-		end
-	end
+			SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null)	
+				insert into @tablatemp
+				select distinct caesp.IdCampEsp,'''' '''' as description  from ccUserView us
+				inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
+				inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=1
+				where us.[User_id] = @userId ''
+				+ @consult + '' inner join @tablatemp A on camp.cam_id = A.id'' + @condition;
+		END
+		ELSE BEGIN
+			SET @SQL = @consult + @condition;
+		END
+		EXEC sp_executesql @SQL, N''@userId AS int = 0, @columnName AS NVARCHAR(100)'', @userId=@userId, @columnName=@columnName;
+	END
 
 
 		-- DIAL RESULTS
@@ -586,25 +603,35 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 	end
 
 		-- ACDS**************
-	if @type = 7 begin
-		if @userId <> 0 begin
+	IF @type = 7 BEGIN
 
+		INSERT INTO #filters SELECT [Category] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId
+		IF EXISTS (SELECT * FROM #filters)
+		BEGIN
+			SET @condition = '' WHERE B.chat IN (SELECT * FROM #filters)''
+			SELECT @columnName = [dbColumn] FROM ReportsFiltersCategory WHERE FilterName = ''acds'' AND ReportId = @menuId;
+		END
+		ELSE BEGIN
+			SET @columnName = ''inboundId'';
+		END
+
+		SET @consult = N'' SELECT inbound_id AS id, descripcion AS description, @columnName AS dbColumn
+			FROM ccinbound B''
+
+		IF @userId <> 0 BEGIN
+
+			SET @SQL = '' declare @tablatemp table (id int, description varchar(100) null)
 				insert into @tablatemp
-				select distinct caesp.IdCampEsp,'''' as description  from ccUserView us
+				select distinct caesp.IdCampEsp,'''''''' as description  from ccUserView us
 				inner join ccRIAWorkGroupUsers wgu on us.User_id = wgu.User_id
 				inner join ccRIACampEspWG caesp on wgu.IDWG = caesp.IDWG and caesp.Tipo=0
-				where us.[User_id] = @userId
-
-
-				SELECT inbound_id as id, descripcion as description, ''inboundId'' as dbColumn
-					from ccinbound B
-					inner join @tablatemp A on B.inbound_id = A.id
-					return
-			end
-			else begin
-				select inbound_id as id, descripcion as description, ''inboundId'' as dbColumn
-					from ccinbound
-			end
+				where us.[User_id] = @userId;''
+				+ @consult + '' inner join @tablatemp A on B.inbound_id = A.id'' + @condition + '' return;'';		
+		END
+		ELSE BEGIN
+			SET @SQL = @consult + @condition;
+		END
+		EXEC sp_executesql @SQL, N''@userId INT = 0, @columnName AS NVARCHAR(100)'',@userId=@userId, @columnName=@columnName;
 	end
 
 		-- DIDS
@@ -664,7 +691,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 		order by [description]
 	end
 
-		 --AVRS TEMPLATE-SECTION
+		--AVRS TEMPLATE-SECTION
 	if @type = 15 	begin
 		SELECT fc.id as id, (rf.nombre +'' ''+ rc.con_descripcion)+'' ''+convert(varchar(10),fc.id) as description, ''templateSectionId'' as dbColumn
 		FROM RIA_FORMATOCONCEPTO fc
@@ -679,7 +706,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 
 	--exec dbo.ccspRepCatalogos @type=15,@action=0
 
-		 --AVRS TEMPLATES
+		--AVRS TEMPLATES
 	if @type = 16 	begin
 		SELECT f.id_formato as id, f.nombre as description, ''templateId'' as dbColumn
 		FROM RIA_FORMATOS f INNER JOIN (SELECT id_formato,MAX(version) as version
@@ -690,7 +717,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 		order by f.nombre
 	end
 
-		 --AVRS TEMPLATES
+		--AVRS TEMPLATES
 	if @type = 31 	begin
 		SELECT c.id_concepto as id, c.con_descripcion as description, ''sectionId'' as dbColumn
 		FROM RIA_CONCEPTOS c INNER JOIN (SELECT id_concepto,MAX(version) as version
@@ -700,7 +727,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 		order by c.con_descripcion
 	END
 
-		 --AVRS QUESTIONS
+		--AVRS QUESTIONS
 	if @type = 23 	begin
 		SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
 		FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
@@ -711,7 +738,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 	END
 
 
-	 --AVRS QUESTIONS CHAT
+	--AVRS QUESTIONS CHAT
 	if @type = 24 	begin
 		SELECT p.id_pregunta as id, p.enunciado_pregunta as description, ''questionId'' as dbColumn
 		FROM RIA_PREGUNTAS p INNER JOIN (SELECT id_pregunta
@@ -777,8 +804,13 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 			from ccinbound where chat = 0
 		end
 	end
+	end --Action 0
 
-	end
+	IF OBJECT_ID(''TEMPDB..#filters'') IS NOT NULL
+	BEGIN
+		DROP TABLE #filters;
+	END
+
 	-----------------------------------------------------------
 	if @action = 1 begin
 		-- TRUNKS
@@ -805,7 +837,7 @@ SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepCatalogos]
 			SELECT 0 as [min], 100 as [max],''avgDisposition'' as dbColumn
 		end
 	end'
-EXEC(@sql)
+	EXEC(@sql)
 
 	
 	---------------------------------------------Llamadas de Entrada->Tiempos->Abandonadas -------------------------------------------------------------------------
@@ -1678,7 +1710,52 @@ WHERE
 EXEC(@sql)
 	
 	---------------------------------------End Frida Orta release/126.20240304.0.0---------------------------------------------------------
+-----------------------------------------------------BEGIN Enrique Ruiz -----------------------------------------------------------------
 
+	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  Agregar tabla ReportsFiltersCategory'
+	set @sql='IF NOT EXISTS(SELECT * FROM SYS.TABLES WHERE NAME=''ReportsFiltersCategory'')
+	BEGIN
+		CREATE TABLE ReportsFiltersCategory (
+			ReportId SMALLINT NOT NULL,
+			FilterName VARCHAR(100) NOT NULL,
+			Category VARCHAR(200) NOT NULL,
+			dbColumn VARCHAR(100) NOT NULL,
+			Description VARCHAR(500)
+		)
+	END'
+	EXEC(@sql)
+
+	set @process = 'K063001-K063005 Add view RepViewSpececialAbnd to support the campaign index management'
+	set @sql='IF NOT EXISTS(SELECT * FROM SYS.VIEWS WHERE NAME=''RepViewSpececialAbnd'')
+	BEGIN
+		EXEC(''CREATE VIEW [dbo].[RepViewSpececialAbnd] AS
+		SELECT
+		[date],
+		CASE
+			WHEN [campaignId] = 0 THEN [inboundId]
+			ELSE [campaignId]
+		END AS [inboundId],
+		[inboundId] AS [inboundId2],
+		[campaignId] AS [campaignId2],
+		[campACDDescription],
+		[total],
+		[abandonedCalls],
+		[abandonedCallsPctg]
+		FROM [dbo].[RepSpececialAbnd]'')
+	END'
+	EXEC(@sql)
+
+	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  ReportsFiltersCategory Insert'
+	set @sql='TRUNCATE TABLE ReportsFiltersCategory
+			INSERT INTO ReportsFiltersCategory (ReportId, FilterName, Category, dbColumn, Description) VALUES
+				(7010, ''acds'', 0, ''inboundId2'', ''Inbound Voice''),
+				(7010, ''campaigns'', 0, ''campaignId2'', ''Outbound Voice''),
+				(7010, ''campaigns'', 4, ''campaignId2'', ''Outbound AI''),
+				(7010, ''campaigns'', 6, ''campaignId2'', ''Outbound Preview'')
+			'
+	EXEC(@sql)
+
+	-----------------------------------------------------END Enrique Ruiz -----------------------------------------------------------------
 
 
 

@@ -1022,7 +1022,7 @@ SET @sql='DECLARE @language INT;
 
 		if not exists (select * from ccStatusLLamada where statusCall_id = 12) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (12,''Mensagem compareceram'')
 		if not exists (select * from ccStatusLLamada where statusCall_id = 13) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (13,''Atendida'')
-		if not exists (select * from ccStatusLLamada where statusCall_id = 14) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14,''Cancelled Message'')			-- Preguntar a Liz
+		if not exists (select * from ccStatusLLamada where statusCall_id = 14) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (14,''Cancelled Message'')
 		if not exists (select * from ccStatusLLamada where statusCall_id = 15) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (15,''Atribuída e perdida'')
 		if not exists (select * from ccStatusLLamada where statusCall_id = 16) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (16,''Atribuída em tom de linha'')
 		if not exists (select * from ccStatusLLamada where statusCall_id = 18) INSERT [dbo].[ccStatusLLamada] ([statusCall_id], [descripcion]) VALUES (18,''Abandonada (Reminder)'')

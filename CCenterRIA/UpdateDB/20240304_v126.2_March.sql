@@ -959,12 +959,6 @@ SET @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosPortugues]
 			INSERT [dbo].[ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (2, ''Deixe um recado '', 0, 1, 2)
 			INSERT [dbo].[ccTipoCalifOUT] ([calif_id], [Description], [autoTime], [CanReprogram], [orden]) VALUES (3, ''Wrong Number'', 0, 1, 3)
 
-			--Pendiente validar rpoveedores portugal
-			--Print ''Estableciendo proveedores''
-			--Delete [dbo].[cstoProvedor]
-			--DBCC CHECKIDENT (''[cstoProvedor]'', RESEED, 0)
-			--INSERT [dbo].[cstoProvedor] ([descrip]) VALUES (''Carrier 1'')
-
 			Print ''Tipo Msg ChatLog'' -- No se hace delete ni truncate ya que se perderia la integridad si ya hay registros, los id ya deberian estar creados por lo cual se genera el update
 			Update ccRIAChat_TipoMsg set MsgDetalle=''Administrador escreve única mensagem para um agente'' where TipoMsgChat=1
 			Update ccRIAChat_TipoMsg set MsgDetalle=''Agente escreve uma mensagem para o Administrador'' where TipoMsgChat=2

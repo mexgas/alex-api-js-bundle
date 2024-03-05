@@ -1757,7 +1757,7 @@ EXEC(@sql)
 
 	-----------------------------------------------------END Enrique Ruiz -----------------------------------------------------------------
 
-	-----------------------------------------------------START Gaby--------------------------------------------------------------------------
+	-----------------------------------------------------BEGIN Gaby--------------------------------------------------------------------------
 	
 	SET @process = 'Drop procedure ccspRepInEffectiveness '
 	SET @sql = '
@@ -2000,16 +2000,16 @@ END'
 	FROM RepInEffectiveness NOLOCK'
 	EXEC(@sql)
 
-	set @process = 'Alter table ccspRepOutAnswAndXferCalls alter column iva'
+	set @process = 'Alter table RepOutAnswAndXferCalls alter column iva'
 	set @sql = '
 	if EXISTS(
 		select column_name
 		from information_schema.columns  
-		where table_name = ''ccspRepOutAnswAndXferCalls'' AND column_name = ''iva''
+		where table_name = ''RepOutAnswAndXferCalls'' AND column_name = ''iva''
 		AND DATA_TYPE = ''int''
 	)
 	BEGIN
-		alter table ccspRepOutAnswAndXferCalls alter column iva varchar(5)
+		alter table RepOutAnswAndXferCalls alter column iva varchar(5)
 	END'
 	EXEC(@sql)
 

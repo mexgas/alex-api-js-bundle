@@ -1,6 +1,6 @@
 USE [CCenterRia]
 GO
-/****** Object:  StoredProcedure [dbo].[ccsp_OUTcheckTimeZone]    Script Date: 01/03/2024 11:16:23 a. m. ******/
+/****** Object:  StoredProcedure [dbo].[ccsp_OUTcheckTimeZone]    Script Date: 02/03/2024 08:42:00 p. m. ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -130,7 +130,7 @@ GO
 	        DATEPART(hh, fdate) HoraFin, DATEPART(mi, fdate) MinFin
 	        FROM ccSmsSchedules
 	        WHERE cam_id = @cam_id
-	            AND @dateNow BETWEEN dateadd(dd,-1,iDate) AND dateadd(dd,1,fDate)
+	            AND @dateNow BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
 	        ), daysch
 	    AS (
 	        SELECT CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio

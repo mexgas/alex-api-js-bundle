@@ -1223,6 +1223,30 @@ EXEC(@sql)
 
 	---------------------------------------------Llamadas de salida->Detalle de marcacion -------------------------------------------------------------------------
 
+set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+
+set @process = 'Alter table ccStatusLlamada add descTranslated'
+set @sql = 'if not exists (select * from sys.columns where name = N''descTranslated'' and Object_ID = Object_ID(N''ccStatusLlamada''))
+BEGIN
+	alter table ccStatusLlamada add descTranslated varchar(100) null
+END'
+EXEC(@sql)
+ 
+
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
+
 SET @process = 'Insert into ReportsFilteredByHourRange report 4010'
 SET @sql = 'IF NOT EXISTS (SELECT id FROM ReportsFilteredByHourRange WHERE id = 4010) 
 BEGIN

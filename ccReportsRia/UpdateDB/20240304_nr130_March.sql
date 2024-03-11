@@ -1769,13 +1769,16 @@ EXEC(@sql)
 	END'
 	EXEC(@sql)
 
-	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  ReportsFiltersCategory Insert'
+	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  ReportsFiltersCategory Insert & K061006-K062010  ReportsFiltersCategory for RepOutCallsDetail'
 	set @sql='TRUNCATE TABLE ReportsFiltersCategory
 			INSERT INTO ReportsFiltersCategory (ReportId, FilterName, Category, dbColumn, Description) VALUES
 				(7010, ''acds'', 0, ''inboundId2'', ''Inbound Voice''),
 				(7010, ''campaigns'', 0, ''campaignId2'', ''Outbound Voice''),
 				(7010, ''campaigns'', 4, ''campaignId2'', ''Outbound AI''),
-				(7010, ''campaigns'', 6, ''campaignId2'', ''Outbound Preview'')
+				(7010, ''campaigns'', 6, ''campaignId2'', ''Outbound Preview''),
+				(4020, ''campaigns'', 0, ''campaignId'', ''Outbound Voice''),
+				(4020, ''campaigns'', 4, ''campaignId'', ''Outbound AI''),
+				(4020, ''campaigns'', 6, ''campaignId'', ''Outbound Preview'')
 			'
 	EXEC(@sql)
 

@@ -68,6 +68,7 @@ SET @sql = '
 CREATE VIEW [dbo].[RepViewInCallsDetail] AS
 SELECT
 	[date] as receptionDate,
+	cal_final,
 	inboundId as inboundCamp,
 	ACDGroup as campaign,
 	callStatusId,
@@ -92,6 +93,7 @@ SELECT
 	extension,
 	agentName,
 	whoHangUp as endedBy,
+	recibeCallBy,
 	year,
 	month,
 	day,
@@ -115,9 +117,7 @@ SELECT
 	timeTotalInCallMin,
 	statusCallByIVR,
 	IVR_ID,
-	callHung,
-	recibeCallBy,
-	cal_final
+	callHung
 FROM
 RepInCallsDetail NOLOCK'
 EXEC(@sql)

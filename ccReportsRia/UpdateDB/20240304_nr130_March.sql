@@ -1476,7 +1476,7 @@ select
 	[data14]  ,
 	[data15]  ,
 	[preview_Time]  ,
-	[login]  
+	[login] as [user]
 	from RepOutDialDetail NOLOCK'
 EXEC(@sql)
 

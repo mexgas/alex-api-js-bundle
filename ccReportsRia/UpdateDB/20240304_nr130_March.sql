@@ -2064,7 +2064,7 @@ IF @from IS NULL
 IF @to IS NULL
 	SELECT @to = GETDATE()
 
-DECLARE @IVA INT
+DECLARE @IVA VARCHAR(3)
 DECLARE @country AS TINYINT
 SELECT @IVA = ISNULL(valor,0) FROM ccsettings WHERE setting_id = 25
 --SELECT @IVA = CONVERT(INT,ISNULL(valor,0)) FROM ccsettings WHERE setting_id = 25
@@ -2097,7 +2097,9 @@ SELECT COALESCE([Call].cal_inicio,ccld.fecha) AS [date],
 	ccld.telefono AS [telephone],
 	ISNULL(Call.cal_manual,0) AS [dialId],
 	ISNULL(dialType.[description],''systemTranslated_Auto'') AS [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+	case when CHARINDEX(''local'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX(''fijo'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_fijo''
+	when CHARINDEX(''movil'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX(''cel'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_cellPhone''
+	else ''systemTranslated_Indefinite'' end AS [CallTypes],
 	CASE 
 		WHEN provedor_id IS NOT NULL THEN dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),COALESCE(Call.provedor_id,ccld.proBIDs),
 			dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country)
@@ -2158,7 +2160,9 @@ SELECT clt.[date],
 	END AS [telephone],
 	3 AS [dialId],
 	@descriptionXfer AS [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+	case when CHARINDEX( ''local'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX( ''fijo'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_fijo''
+	when CHARINDEX( ''movil'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX( ''cel'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_cellPhone''
+	else ''systemTranslated_Indefinite'' end AS [CallTypes],
 	CASE 
 		WHEN tarifa.provedor_id IS NOT NULL THEN ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
 			dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0) ,@country), 0) 

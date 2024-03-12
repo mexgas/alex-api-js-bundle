@@ -68,6 +68,7 @@ SET @sql = '
 CREATE VIEW [dbo].[RepViewInCallsDetail] AS
 SELECT
 	[date] as receptionDate,
+	cal_final,
 	inboundId as inboundCamp,
 	ACDGroup as campaign,
 	callStatusId,
@@ -92,6 +93,7 @@ SELECT
 	extension,
 	agentName,
 	whoHangUp as endedBy,
+	recibeCallBy,
 	year,
 	month,
 	day,
@@ -115,9 +117,7 @@ SELECT
 	timeTotalInCallMin,
 	statusCallByIVR,
 	IVR_ID,
-	callHung,
-	recibeCallBy,
-	cal_final
+	callHung
 FROM
 RepInCallsDetail NOLOCK'
 EXEC(@sql)
@@ -1223,6 +1223,30 @@ EXEC(@sql)
 
 	---------------------------------------------Llamadas de salida->Detalle de marcacion -------------------------------------------------------------------------
 
+set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+
+set @process = 'Alter table ccStatusLlamada add descTranslated'
+set @sql = 'if not exists (select * from sys.columns where name = N''descTranslated'' and Object_ID = Object_ID(N''ccStatusLlamada''))
+BEGIN
+	alter table ccStatusLlamada add descTranslated varchar(100) null
+END'
+EXEC(@sql)
+ 
+
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
+
+
 SET @process = 'Insert into ReportsFilteredByHourRange report 4010'
 SET @sql = 'IF NOT EXISTS (SELECT id FROM ReportsFilteredByHourRange WHERE id = 4010) 
 BEGIN
@@ -1452,7 +1476,7 @@ select
 	[data14]  ,
 	[data15]  ,
 	[preview_Time]  ,
-	[login]  
+	[login] as [user]
 	from RepOutDialDetail NOLOCK'
 EXEC(@sql)
 
@@ -1745,13 +1769,16 @@ EXEC(@sql)
 	END'
 	EXEC(@sql)
 
-	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  ReportsFiltersCategory Insert'
+	set @process = 'K063001-K063005 Reportes de abandono - Modificar filtros de campaña ->  ReportsFiltersCategory Insert & K061006-K062010  ReportsFiltersCategory for RepOutCallsDetail'
 	set @sql='TRUNCATE TABLE ReportsFiltersCategory
 			INSERT INTO ReportsFiltersCategory (ReportId, FilterName, Category, dbColumn, Description) VALUES
 				(7010, ''acds'', 0, ''inboundId2'', ''Inbound Voice''),
 				(7010, ''campaigns'', 0, ''campaignId2'', ''Outbound Voice''),
 				(7010, ''campaigns'', 4, ''campaignId2'', ''Outbound AI''),
-				(7010, ''campaigns'', 6, ''campaignId2'', ''Outbound Preview'')
+				(7010, ''campaigns'', 6, ''campaignId2'', ''Outbound Preview''),
+				(4020, ''campaigns'', 0, ''campaignId'', ''Outbound Voice''),
+				(4020, ''campaigns'', 4, ''campaignId'', ''Outbound AI''),
+				(4020, ''campaigns'', 6, ''campaignId'', ''Outbound Preview'')
 			'
 	EXEC(@sql)
 
@@ -2037,7 +2064,7 @@ IF @from IS NULL
 IF @to IS NULL
 	SELECT @to = GETDATE()
 
-DECLARE @IVA INT
+DECLARE @IVA VARCHAR(3)
 DECLARE @country AS TINYINT
 SELECT @IVA = ISNULL(valor,0) FROM ccsettings WHERE setting_id = 25
 --SELECT @IVA = CONVERT(INT,ISNULL(valor,0)) FROM ccsettings WHERE setting_id = 25
@@ -2070,7 +2097,9 @@ SELECT COALESCE([Call].cal_inicio,ccld.fecha) AS [date],
 	ccld.telefono AS [telephone],
 	ISNULL(Call.cal_manual,0) AS [dialId],
 	ISNULL(dialType.[description],''systemTranslated_Auto'') AS [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+	case when CHARINDEX(''local'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX(''fijo'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_fijo''
+	when CHARINDEX(''movil'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX(''cel'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_cellPhone''
+	else ''systemTranslated_Indefinite'' end AS [CallTypes],
 	CASE 
 		WHEN provedor_id IS NOT NULL THEN dbo.fnGetCstoTarifa(COALESCE(Call.tipoLlamada_id, ccld.CallType),COALESCE(Call.provedor_id,ccld.proBIDs),
 			dbo.tDialog(Call.totalCall_Time, ccld.tdialing, cal_tMsg), @country)
@@ -2131,7 +2160,9 @@ SELECT clt.[date],
 	END AS [telephone],
 	3 AS [dialId],
 	@descriptionXfer AS [dialType],
-	ISNULL(tl.descrip, ''systemTranslated_Indefinite'') AS [CallTypes],
+	case when CHARINDEX( ''local'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX( ''fijo'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_fijo''
+	when CHARINDEX( ''movil'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 or CHARINDEX( ''cel'', tl.descrip COLLATE Latin1_General_CI_AS) > 0 then ''systemTranslated_cellPhone''
+	else ''systemTranslated_Indefinite'' end AS [CallTypes],
 	CASE 
 		WHEN tarifa.provedor_id IS NOT NULL THEN ISNULL(dbo.fnGetCstoTarifa(clt.CallType, channel.proveedorId,
 			dbo.tDialog(clt.tAntesXfer,clt.tDespuesXfer,0) ,@country), 0) 

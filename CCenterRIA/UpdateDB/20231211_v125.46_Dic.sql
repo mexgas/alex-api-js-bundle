@@ -4181,6 +4181,1367 @@ end
 
         -----------------------------------------------------BEGIN hotfix/125.20231211.0.4 Jesus Gallardo  ----------------------------------------------------------------
 
+ ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.9---------------------------------------------------------
+
+    set @process = 'Dineria -- alter Table smsccoLogDial add Message'
+    set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))
+begin
+    alter Table smsccoLogDial add Message varchar(200) null
+end
+'
+    EXEC(@sql)
+
+    set @process = 'Dineria --  Add Column smsccoLogDial.Bill decimal'
+    set @sql='if not exists (select * from sys.columns c 
+inner join sys.types t on c.system_type_id=t.system_type_id
+where c.name = N''Bill'' and c.Object_ID = Object_ID(N''smsccoLogDial'')
+and t.name=''float''
+)
+begin
+   alter Table smsccoLogDial alter Column Bill decimal(10,2) not null
+end'
+    EXEC(@sql)
+
+    set @process = 'Dineria -- CREATE IX_smsccoLogDial_3 '
+    set @sql='if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_3'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+    begin
+        CREATE NONCLUSTERED INDEX IX_smsccoLogDial_3
+ON [dbo].[smsccoLogDial] ([SystemApiId])
+    end
+'
+    EXEC(@sql)
+
+    set @process = 'Raccon --  Alter SP ccsp_DLRInsertCall Quitar Costo'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
+@callout_id int,
+@cam_id smallint,
+@cal_Key varchar(20),
+@cal_Telefono varchar(14),
+@Puerto smallint,
+@logDial_id int=0
+AS
+declare @fecha as datetime
+declare @cal_id as int
+
+select @fecha=getdate()
+INSERT ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id ) --''Status 6=Pide Agente
+  VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto,  @fecha, 6 )
+
+select @cal_id = scope_identity()
+
+insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
+where wg.Tipo=1 and wg.idcampesp=@cam_id
+
+
+exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=6
+
+-- calcula el costo de la llamada
+--exec ccsp_CstoCalculaCosto @cal_id --Se quita por que es una llamada nueva
+
+select @cal_id as cal_id
+'
+    EXEC(@sql)
+
+    set @process = 'Raccon -- Alter SP ccsp_DLRGetDialInfo se modifica para agergar  datos a tabla temporal para no repetir consulta @tmpccoCallsOutSource'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
+@callout_id int,
+@cam_id smallint=0,
+@iPortNumber smallint = 0
+AS
+set nocount on
+declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
+declare @prefix as varchar(15)
+declare @prefixCalKey as varchar(30)
+declare @tNoContesta as tinyint
+declare @ani as varchar(32)
+declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint, @rotativeAlgo tinyint
+declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
+declare @ivr_script smallint, @surveycamid int
+declare @call_record_cam as tinyint
+declare @pais as tinyint 
+declare @sipHdrFormat varchar(255)
+declare @PrefixRec varchar(40)
+declare @recordHold bit
+
+set @prefix =''''
+set @tNoContesta = 25
+set @ani=''''
+set @iTipoDial = 0
+set @detectAnswerMachine = 0
+set @detectVoiceMail =1
+set @cam_tnotas = 30
+set @keepDial = 0
+
+select @pais = valor from ccsettings where setting_id = 104
+
+-- Mensajes
+select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
+from dbo.fn_ccCamps_SelMessage(@cam_id)
+
+-- Prefijo por puerto
+select @prefix = prefix from cstoProvedor nolock where provedor_id = (select provedor_id from ccodialers nolock where puerto = @iPortNumber )
+-- Prefijo por campa?a
+if @prefix =''''
+    select @prefix = dialPrefix from ccCamps nolock where cam_id = @cam_id
+-- Prefijo general, si es que esta habilitado
+if @prefix ='''' and ((select cast(valor as int) from ccsettings nolock where setting_id =102) & 1 = 1)
+    select @prefix = valor from ccsettings nolock where setting_id =101
+
+select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
+
+-- Propiedades de campa?a
+select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
+@detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
+@call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0), @rotativeAlgo=isnull(rotativeAlgo,0), @recordHold=ISNULL(recordHold,0)
+,@PrefixRec=ISNULL(prefijo,'''')
+from ccCamps C (nolock) where C.cam_id=@cam_id
+
+if @surveycamid > 0
+    select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+--Custom MOH Files
+DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
+SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+--Agrega prefijo Marcacion con directo
+declare @mainPrefix varchar(1), @phones varchar(max)
+set @prefixCalKey=''''
+select @mainPrefix = valor from ccSettings where setting_id=202
+declare @tmpccoCallsOutSource table(callout_id int primary key,dialPrefix   varchar(30) null
+,cal_Key    varchar(40)
+,cal_telefono   varchar(30),cal_telefono2   varchar(30),cal_telefono3   varchar(30),cal_telefono4   varchar(30),cal_telefono5   varchar(30)
+,Dato1  varchar(255),Dato2  varchar(255),Dato3  varchar(255),Dato4  varchar(255),Dato5  varchar(255)
+,recyclePhone   smallint,recycleType bit
+)
+insert into @tmpccoCallsOutSource
+select callout_id,dialPrefix,cal_Key,
+cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,
+Dato1,Dato2,Dato3,Dato4,Dato5,
+recyclePhone,recycleType
+FROM ccoCallsOutSource NOLOCK WHERE callout_id=@callout_id 
+
+
+SELECT @prefixCalKey=CASE WHEN @mainPrefix=''1'' THEN isnull(dialPrefix,'''') ELSE '''' END,
+    @phones=cal_telefono+'';''+cal_telefono2+'';''+cal_telefono3+'';''+cal_telefono4+'';''+cal_telefono5
+FROM @tmpccoCallsOutSource
+
+if @iPortNumber >= 0 
+begin
+    declare @Anis table(id int, pid varchar(2), phone varchar(32), ani varchar(32))
+
+    insert @Anis
+    exec ccsp_DLRGetRotativeANI @callout_id=@callout_id,@phones=@phones,@aniList=@lista_id,@algo=@rotativeAlgo
+
+    SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+    
+    SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)
+    , ISNULL(cpt.Prioridad,''12345NNN'') dial_tels
+    , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 1) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE C.cal_telefono  END cal_telefono
+    , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 2) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono2 END cal_telefono2
+    , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 3) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono3 END cal_telefono3
+    , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 4) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono4 END cal_telefono4
+    , CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 5) AND ISNULL(recycleType, 1) = 0) THEN '''' Else c.cal_telefono5 END cal_telefono5
+    , isnull(@message_name, '''') as message_name
+    , @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
+    , case when anis.p1 <> '''' then anis.p1 else @ani end ani
+    , case when anis.p2 <> '''' then anis.p2 else @ani end ani2
+    , case when anis.p3 <> '''' then anis.p3 else @ani end ani3
+    , case when anis.p4 <> '''' then anis.p4 else @ani end ani4
+    , case when anis.p5 <> '''' then anis.p5 else @ani end ani5
+    , @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
+    , @cam_tnotas cam_tnotas, @keepDial keepDial
+    , isnull(@messageDNCL_name, '''') as messageDNCL_name
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
+    ,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
+    , isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
+    , isnull(@MohFiles,'''') as mohFiles
+    ,@ivr_script ivrScript
+    ,@sipheader data
+    ,@PrefixRec as Prefijo,
+    dbo.GetCarrierByTel(C.cal_telefono) carrier1, 
+    dbo.GetCarrierByTel(cal_telefono2) carrier2, 
+    dbo.GetCarrierByTel(cal_telefono3) carrier3, 
+    dbo.GetCarrierByTel(cal_telefono4) carrier4, 
+    dbo.GetCarrierByTel(cal_telefono5) carrier5,
+    @recordHold as recordHold
+    FROM @tmpccoCallsOutSource C
+    left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
+    left join ccCampsPrioridadTel cpt on cpt.cam_id = @cam_id
+    left join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
+    WHERE C.callout_id = @callout_id
+    return
+end 
+set nocount off
+    '
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- Alter SP ccsp_AgentOutGetTels valida @callout_id=0 y se evita consulta doble '
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_AgentOutGetTels]
+@callout_id int
+AS
+
+declare @sSQL varchar(500)
+declare @telefono1 varchar(20)
+declare @telefono2 varchar(20)
+declare @telefono3 varchar(20)
+declare @telefono4 varchar(20)
+declare @telefono5 varchar(20)
+declare @i tinyint
+declare @idioma as bit
+
+Select @idioma = isnull(valor,0) from ccSettings where setting_id = 27
+
+set @i = 1
+if @callout_id=0 begin
+    if @idioma = 1 begin
+        select ''Other'' Other
+    end
+    else begin
+        select ''Otro'' Other
+    end
+    
+    return 
+end
+
+
+select @Telefono1=cal_telefono, @Telefono2=cal_telefono2, @Telefono3=cal_telefono3, @Telefono4=cal_telefono4, @Telefono5=cal_telefono5
+from ccoCallsOutSource with(nolock)
+where callout_id=@callout_id
+select @sSql = ''select ''
+if (@telefono1 is not null and @telefono1 > '''') select @ssql = @ssql + '' ''''Telefono 1 - '' + @Telefono1 + '''''' as Telefono1,''
+if (@telefono2 is not null and @telefono2 > '''') select @ssql = @ssql + '' ''''Telefono 2 - '' + @Telefono2 + '''''' as Telefono2,''
+if (@telefono3 is not null and @telefono3 > '''') select @ssql = @ssql + '' ''''Telefono 3 - '' + @Telefono3 + '''''' as Telefono3,''
+if (@telefono4 is not null and @telefono4 > '''') select @ssql = @ssql + '' ''''Telefono 4 - '' + @Telefono4 + '''''' as Telefono4,''
+if (@telefono5 is not null and @telefono5 > '''') select @ssql = @ssql + '' ''''Telefono 5 - '' + @Telefono5 + '''''' as Telefono5,''
+
+select @ssql = @ssql + '' ''''Otro'''' as Other ''
+
+if @idioma = 1
+begin
+set @ssql = replace(@ssql, ''Telefono'', ''Telephone'')
+set @ssql = replace(@ssql, ''Otro'', ''Other'')
+end
+
+--print(@ssql)
+exec(@ssql)'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- DROP PROCEDURE ccsp_AgentOutGetTelsKolob'
+    set @sql='if exists (select * from sys.procedures where name = N''ccsp_AgentOutGetTelsKolob'')
+    begin
+        DROP PROCEDURE ccsp_AgentOutGetTelsKolob;
+    end'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- CREATE SP ccsp_AgentOutGetTelsKolob'
+    set @sql='CREATE PROCEDURE [dbo].[ccsp_AgentOutGetTelsKolob]
+@callout_id int
+AS
+if @callout_id=0 begin
+    select ''Other'' Other
+    return 
+end
+declare @telefono1 varchar(30)
+declare @telefono2 varchar(30)
+declare @telefono3 varchar(30)
+declare @telefono4 varchar(30)
+declare @telefono5 varchar(30)
+
+select @Telefono1=cal_telefono, @Telefono2=cal_telefono2, @Telefono3=cal_telefono3, @Telefono4=cal_telefono4, @Telefono5=cal_telefono5
+from ccoCallsOutSource with(nolock)
+where callout_id=@callout_id
+
+
+select @Telefono1 Phone1,@Telefono2 Phone2,@Telefono3 Phone3,@Telefono4 Phone4,@Telefono5 Phone5,''Other'' Other'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- Alter Table ccsp_Callbacks with(nolock)'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_Callbacks]
+@cam_id as int
+AS
+select año,mes,dia,hora, callbacks from ccRIACallbacks with(nolock)
+
+where cam_id=@cam_id order by año,mes,dia,hora'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- ALTER SP  ccsp_DLRGetRotativeANI se valida @aniList es cero o menor'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRGetRotativeANI]
+@callout_id int,
+@phones varchar(max),
+@aniList int,
+@algo tinyint
+AS
+set nocount on
+DECLARE @Tels table (id int, pid varchar(2), phone varchar(32), ani varchar(32))
+if @aniList<=0 begin
+    SELECT * FROM @Tels
+    return(0)
+end
+
+DECLARE @aniIdx varchar(500), @aniCnt smallint, @aniCurList int, @usedAniCnt int, @phoneCnt int, @ani varchar(32), @idx varchar(8)
+DECLARE @id_phone INT, @phone varchar(32), @usedAni varchar(30)
+
+SELECT @aniCnt = count(*) FROM ccRotativeAniListDetail NOLOCK WHERE id_RAniList = @aniList          
+SELECT @aniCurList=isnull(id_RAniList,0),@aniIdx=isnull(ani_idx,'''') FROM ccoWorkingTable NOLOCK WHERE callout_id = @callout_id
+
+IF @aniList != @aniCurList SET @aniIdx = ''''
+
+IF isnull(@aniCnt,0) > 0
+BEGIN
+    INSERT @Tels 
+    SELECT id,''p''+cast(id as varchar(1)),value,'''' FROM fn_RIASplitDelimited(@phones, '';'') WHERE len(value)>0
+
+    IF OBJECT_ID(''tempdb..#UsedAniList'') IS NOT NULL DROP TABLE #UsedAniList;
+    SELECT * INTO #UsedAniList FROM fn_RIASplitDelimited(@aniIdx, '','') WHERE len(value)>0
+    SELECT @usedAniCnt=count(*) FROM #UsedAniList
+
+    IF @algo = 3 and @usedAniCnt > 0 and @usedAniCnt < 2
+    SELECT @usedAni = telAni FROM RowRotativeAniListDetail NOLOCK WHERE id_RAniList = @aniList AND RowNum=(SELECT TOP 1 value from #UsedAniList)
+
+    DECLARE CUR_TEST CURSOR FAST_FORWARD FOR SELECT Id, phone FROM @Tels ORDER BY Id;
+    OPEN CUR_TEST FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+            
+        IF @usedAniCnt >= @aniCnt SET @aniIdx = ''''
+
+        IF @algo = 0
+        BEGIN
+            SELECT @ani = dbo.TelAni(@phone,@aniList)
+        END
+        ELSE IF @algo = 1
+        BEGIN
+            SELECT TOP 1 @ani=telAni, @idx=idx FROM fnGetRotativeANI(@aniList, @aniIdx, default, default)
+        END
+        ELSE IF @algo = 2 or @algo = 3
+        BEGIN
+            DECLARE @cld varchar(3), @serie varchar(4), @cldCnt smallint
+            IF len(@phone) < 10
+            BEGIN
+                FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+                CONTINUE
+            END
+            IF @algo = 3 and @usedAniCnt > 0 and @usedAniCnt < 2
+            BEGIN
+                IF EXISTS(SELECT TOP 1 1 FROM Series NOLOCK WHERE CLD=left(@usedAni, 2))
+                    SELECT @serie = substring(@usedAni, 3, 4)
+                ELSE
+                    SELECT @serie = substring(@usedAni, 4, 3)
+            END
+            IF @algo = 2 or (@algo = 3 and @usedAniCnt < 2)
+            BEGIN
+                IF EXISTS(SELECT TOP 1 1 FROM Series NOLOCK WHERE CLD=left(@phone, 2))
+                    SET @cld = left(@phone, 2)
+                ELSE
+                    SET @cld = left(@phone, 3)
+            END
+            SELECT @cldCnt = count(*) 
+            FROM ccRotativeAniListDetail NOLOCK 
+            WHERE id_RAniList = @aniList 
+                AND (((@algo = 2 or (@algo = 3 and @usedAniCnt < 2)) and left(telAni, len(@cld))=@cld) or (@algo = 3 and @usedAniCnt >= 2))
+                AND (@algo = 2 OR @usedAni is null OR left(telAni, 6) != left(@usedAni, 6) OR @usedAniCnt >= 2)
+            IF @cldCnt > 0 and @usedAniCnt >= @cldCnt and @algo = 2 SET @aniIdx = ''''
+            SELECT TOP 1 @ani=telAni, @idx=idx 
+            FROM fnGetRotativeANI(@aniList, @aniIdx
+                , case when @cldCnt > 0 and (@algo = 2 or (@algo = 3 and @usedAniCnt < 2)) then @cld else '''' end
+                , case when @algo = 2 then '''' when @usedAniCnt = 1 and @serie is not null then @serie else '''' end)
+        END
+
+        SELECT @aniIdx = @aniIdx+'',''+@idx, @usedAniCnt = @usedAniCnt+1, @usedAni = @ani
+
+        UPDATE @Tels SET ani=@ani WHERE id=@id_phone
+
+        FETCH NEXT FROM CUR_TEST INTO @id_phone, @phone
+    END
+    CLOSE CUR_TEST
+    DEALLOCATE CUR_TEST
+
+    UPDATE ccoWorkingTable SET id_RAniList=@aniList, ani_idx=isnull(@aniIdx,'''') WHERE callout_id=@callout_id
+END
+
+SELECT * FROM @Tels
+
+set nocount off'
+    EXEC(@sql)
+
+   
+    set @process = 'Sorteos -- Alter SP ccsp_GalateaCallbacksDays'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_GalateaCallbacksDays]
+@userID int
+AS
+declare @currentDay datetime,@rangeDays int 
+declare @daysAdd datetime
+
+
+
+set @currentDay =getdate()
+set @dateadd=dateadd(dd,@rangeDays,getdate())
+
+select @rangeDays=valor from ccSettings where setting_id=35
+
+-- Returns days with callbacks made by an agent
+SELECT cal_fusercallback Day
+FROM ccoCallBacks cb with(nolock)
+WHERE user_id = @userID
+and cal_fusercallback between @currentDay and @dateadd
+order by Day'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- ALTER SP ccsp_RIA_ABCAgents if @option=4--Delete'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
+@option smallint,
+@UserId int,
+@Login varchar(40)='''',
+@Nombres varchar(25)=null,
+@ApellidoPaterno varchar(25)='''',
+@ApellidoMaterno varchar(25)='''',
+@Password varchar(33)='''',
+@Sexo bit=null,
+@canChangeStatus bit=null,
+@AreaId int=null,
+@UserType tinyint=1,
+@IDWG int=0,
+@DeleteUsers int=1,
+@inOut int=null,
+@IDCampEsp int=null,
+@multipleUsers varchar(1000)=null
+as
+set nocount on
+
+if @option=0--All Users
+  begin
+  select User_id,Login,ISnull(AREas.AreaName,'''')as AreaName
+
+from ccusers as users with(nolock)
+    left join ccRIACat_Areas as areas with(nolock)
+    on users.IDArea=areas.IDArea
+  return(0)
+  end
+
+if @option=1--selected User
+  begin
+  select User_id,Login,Nombres,isnull(apellidoPaterno,''''),
+    isnull(ApellidoMaterno,''''),Sexo,canChangeStatus,isnull(IDArea,0),tipouser_id
+  from ccusers where User_id=@UserId
+  order by IDArea,Nombres,ApellidoPaterno,User_id
+  return(0)
+  end
+
+if @option=2--insert
+  begin
+  if exists(select Login from ccUsers where Login=@Login)
+    begin
+    select -1--,''Login en Uso''
+    return(0)
+    end
+
+  if exists(select Login from ccUsers_Consulta where Login = @Login)
+  begin
+    select -4 -- ''Login habia estado en Uso''
+    return(0)
+  end
+
+  if exists(select Nombres from ccUsers where Nombres=@Nombres
+  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+    begin
+    select -2--,''Nombre en Uso''
+    return(0)
+    end
+
+IF( select isnull(max(user_id),0) from ccusers) > 32700
+BEGIN
+  set @UserId = null
+  SELECT @UserId = d.rn FROM (SELECT d.rn, ROW_NUMBER() OVER (ORDER BY d.rn) AS recID
+  FROM (SELECT ROW_NUMBER() OVER (ORDER BY user_id) AS rn FROM ccusers) AS d
+  LEFT JOIN ccusers AS s ON s.user_id = d.rn WHERE s.user_id IS NULL ) AS d
+  INNER JOIN ( SELECT  user_id, ROW_NUMBER() OVER (ORDER BY user_id DESC) AS recID
+  FROM ccusers) AS w ON w.recID = d.recID
+
+  if @UserId is null
+  begin
+    select -2--insert Error
+    return(0)
+  end
+
+  set identity_insert ccusers on
+  insert into ccUsers(user_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
+    Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
+  select @UserId, @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
+    1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
+  set identity_insert ccusers off
+
+  delete ccMenuUser where id_User = @UserId
+  delete ccRIAUserRole where user_id = @UserId
+
+  exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+END
+ELSE
+BEGIN
+  insert into ccUsers(Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
+    Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
+  select @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
+    1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
+
+  if @@rowcount=1
+    select @UserId=scope_identity()
+  else
+    begin
+    select -2--insert Error
+    return(0)
+    end
+END
+  insert into ccMenuUser(id_User,id_Menu,type) select @UserId,id_Menu,1 from ccRIARoleMenu where Role_id=3
+  insert into ccMenuUser(id_User,id_Menu,type)values(@UserId,40,1)
+  insert into ccRIAUserRole(User_id,Role_id,type)values(@UserId,3,1)
+  --Menu para roles RepotsRia
+  exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+  select @UserId,'' Usuario '' + @Login + '' Dado de Alta''
+  return(0)
+  end
+
+if @option=3--Update
+  begin
+  if @Login='''' and @Password <> ''''
+    begin
+    Update ccUsers set Password=@Password, LastPasswordChange = GETDATE() where User_id=@UserId
+    return(0)
+    end
+
+  Update ccUsers
+  set Login= case when @Login <> '''' then @Login else Login end,
+  Nombres=@Nombres,
+  ApellidoPaterno=@ApellidoPaterno,ApellidoMaterno=@ApellidoMaterno,
+  Password=case when @Password <> '''' then @Password else Password end,
+  Sexo=@Sexo,canChangeStatus=@canChangeStatus
+  where User_id=@UserId
+  return(0)
+  end
+
+if @option=4--Delete
+  begin
+  delete from ccSkills where user_id =@UserId
+  delete from ccMenu_ViewsUser where user_id =@UserId
+  delete from dbo.ccRIAWorkGroupUsers where user_id =@UserId
+delete from ccRIAAgentsPermissions where AgentId=@UserId
+  delete from ccUsers where user_id=@UserId
+  return(0)
+  end
+
+declare @Type tinyint, @users int,@sql varchar(8000), @NinOut nvarchar(10)
+
+if @option=5--insert Agente-Supervisor in WorkGroup
+  begin
+  select @Type=TipoUser_id from ccUsers where User_id=@UserId
+
+  if @Type not in(1,2,6)
+    return(0)
+
+  if @Type=1 and((select count(User_id)from ccRIAWorkGroupUsers where User_id=@UserId)>=(select valor from ccSettings where setting_id=63))
+    begin
+    select 3
+    return(0)
+    end
+
+  if exists(select @UserId from ccRIAWorkGroupUsers where User_id=@UserId and IDWG=@IDWG)
+    begin
+    select 1
+    return(0)
+    end
+
+  insert into ccRIAWorkGroupUsers(IDWG,User_id)values(@IDWG,@UserId)
+
+  if @Type=1
+    begin
+
+    if @IDWG is null or @IDWG = 0
+      begin
+      select 28
+      return(0)
+      end
+    insert into cccampsAgente(user_id,cam_id,prioridad,skill,IDWG)
+
+    select @UserId,idCampEsp,dbo.fn_Calcula_UsrPriority(@UserId,0),1,@IDWG
+    from ccRIACampEspWG where tipo=1 and IDWG=@IDWG
+      and idCampEsp not in(select cam_id from cccampsAgente where user_id=@UserId and IDWG=@IDWG)
+
+    insert into ccinboundAgentes(User_id,Inbound_id,cli_id,prioridad,skill,IDWG)
+    select @UserId,idCampEsp,0,dbo.fn_Calcula_UsrPriority(@UserId,0),1,@IDWG
+    from ccRIACampEspWG where tipo=0 and IDWG=@IDWG
+      and idCampEsp not in(select inbound_id from ccinboundAgentes where user_id=@UserId and IDWG=@IDWG)
+
+    return(0)
+    end
+
+--else @Type=2 or @Type=6--Supervisor
+  insert into ccSupervisorCam(user_id,cam_id,tipo,IDWG)
+  select @UserId,idCampEsp,0,@IDWG
+  from ccRIACampEspWG where tipo=0 and IDWG=@IDWG
+    and idCampEsp not in(select cam_id from ccSupervisorCam where user_id=@UserId and tipo=0 and IDWG=@IDWG)
+
+  insert into ccSupervisorCam(user_id,cam_id,tipo,IDWG)
+  select @UserId,idCampEsp,1,@IDWG
+  from ccRIACampEspWG where tipo=1 and IDWG=@IDWG
+    and idCampEsp not in(select cam_id from ccSupervisorCam where user_id=@UserId and tipo=1 and IDWG=@IDWG)
+  return(0)
+  end
+
+if @option=6--Delete Agent-Supervisor from WorkGroup
+  begin
+  if isnull(@UserId, 0) = 0 and CHARINDEX('','', @multipleUsers)=0
+    select @UserId = @multipleUsers
+
+        else if isnull(@UserId, 0) = 0 and CHARINDEX('','', @multipleUsers)>0
+          select @UserId = cast(substring(@multipleUsers, 1,
+          CHARINDEX('','', @multipleUsers)-1) as int)
+
+    select @Type=case when @UserType <> 0 then @UserType else TipoUser_id end,
+    @multipleUsers=isnull(@multipleUsers,cast(@Userid as varchar(10)))
+  from ccUsers where User_id=@UserId
+
+  Declare @sqlDelete nvarchar(4000)
+  if @Type in(1,2,6)--1:Agente / 2,6:Supervisor
+    begin
+    set @sqlDelete=N''Delete from '' + case @Type when 1 then ''cccampsagente where '' else ''ccSupervisorCam where tipo=0 and '' end
+    + ''user_id in(''+ isnull(@multipleUsers,''user_id'') + '') and IDWG=''+cast(@IDWG as varchar(10))
+    + '' Delete from '' + case @Type when 1 then ''ccinboundagentes where '' else ''ccSupervisorCam where tipo=1 and '' end
+    + ''user_id in(''+ isnull(@multipleUsers,''user_id'') + '') and IDWG=''+cast(@IDWG as varchar(10))
+    exec(@sqlDelete)
+    end
+
+  if isnull(@UserId, 0) = 0 or isnull(@multipleUsers, ''0'') = ''0''
+    begin
+    select -9 -- Se ingreso mal el id del usuario
+    --delete ccinboundagentes where idwg=@IDWG
+    --delete cccampsagente where idwg=@IDWG
+    --delete ccSupervisorCam where idwg=@IDWG
+    end
+
+  if @DeleteUsers=1
+    Delete ccRIAWorkGroupUsers where IDWG=@IDWG and User_id=@UserId
+
+  return(0)
+  end
+
+if @option=7--Delete Agent from WorkGroup
+  begin
+  select @NinOut=case when @inOut <> 1 then ''0'' else ''1'' end
+  set @sql=''delete '' + case @NinOut when ''1'' then ''ccCampsAgente'' else ''ccInboundAgentes'' end +
+    '' where user_id in('' + isnull(@multipleUsers, ''0'') +'') and '' + case @NinOut when ''1'' then ''cam_id'' else ''inbound_id'' end +
+    ''='' + cast(@IDCampEsp as varchar(10)) + '' and IDWG='' + cast(@IDWG as varchar(10)) +
+    '' delete ccRIACampEspWG where tipo='' + @NinOut + '' and IDWG='' + cast(@IDWG as varchar(10)) + '' and IdCampEsp='' + cast(@IDCampEsp as varchar(10))
+  exec(@sql)
+  --update preview permission
+  set @sql = ''update ccusers set 
+      AllowChangeDialingMode=(case when assigned is null then 0 else 1 end),
+      DialingMode=(case when assigned is null then 0 else 1 end) from ccusers us (nolock) left join (
+      select count(1) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
+      where progDial=3 and user_id in ('' + isnull(@multipleUsers, ''0'') +'') group by user_id)c on us.User_id=c.user_id
+      where us.user_id in ('' + isnull(@multipleUsers, ''0'') +'')''
+  exec(@sql)
+return(0)
+  end
+
+if @option=8--Delete Supervisor from WorkGroup
+  begin
+  select @NinOut=case when @inOut <> 1 then ''0'' else ''1'' end
+
+        set @sql=''delete ccSupervisorCam where tipo='' + @NinOut + '' and user_id in('' + isnull(@multipleUsers, ''0'') + '') and cam_id=''
+          + cast(@IDCampEsp as varchar(10)) + '' and IDWG='' +cast(@IDWG as varchar(10)) + ''
+          delete ccRIACampEspWG where tipo='' + @NinOut + '' and IDWG='' + cast(@IDWG as varchar(10)) + '' and IdCampEsp='' + cast(@IDCampEsp as varchar(10))
+        exec(@sql)
+
+  set @sql=''delete ccSupervisorCam where tipo='' + @NinOut + '' and cam_id='' + cast(@IDCampEsp as varchar(10)) + ''and '' +
+    ''user_id in ('' + isnull(@multipleUsers, ''0'') + '') and IDWG='' + cast(@IDWG as varchar(10))
+  exec(@sql)
+  return(0)
+  end
+
+if @option=9
+  begin
+
+  update ccusers set NotReadyRestricted=@canChangeStatus where [User_id]=@UserId
+
+select Login from ccUsers where [User_id]=@UserId
+  return(0)
+  end
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- Alter SP ccsp_RIAADMgetAbandonoSalida_Fix'
+    set @sql='ALTER procedure [dbo].[ccsp_RIAADMgetAbandonoSalida_Fix]
+as
+set nocount on
+declare @to smalldatetime, @from smalldatetime
+declare @interval int
+declare @i int
+declare @row int
+
+declare @tempChart table(
+cam_id  int,
+countAbnd int,
+countAll int,
+timestamp   smalldatetime
+)
+
+set @interval=10
+set @to = convert(datetime, convert(varchar(13), getdate(), 121)+'':00:00'',121)
+
+set @to = dateadd(mi,10,@to)
+set @from = dateadd( mi, -@interval*30, @to)
+
+set @row=DATEDIFF(mi,@from,@to)
+select @row=ABS( CEILING(1.0*@row/@interval))
+
+
+;WITH Numbers AS
+(
+    SELECT TOP (@row) n = CONVERT(INT, ROW_NUMBER() OVER (ORDER BY s1.[object_id]))
+    FROM sys.all_objects AS s1 CROSS JOIN sys.all_objects AS s2
+)
+, times as(
+    SELECT  ROW_NUMBER() OVER (ORDER BY n) as [ID], DATEADD(MINUTE,@interval* (n-1), @from) as [Start], DATEADD(MINUTE,@interval* (n), @from) as [Stop]
+    FROM Numbers
+), tempChart as(
+    select cam_id,case statuscall_id when 6 then 1 end  as countAbnd
+    ,convert(datetime,  convert(varchar(15), cal_inicio, 121)+''0:00'',121) as timeSpam     
+    from ccoCallsOut
+    with( index(IX_ccoCallsOut_2),nolock )
+    where cal_manual in (0,2 ) and cal_inicio between @from and @to
+),timeCamps as(
+    select c.cam_id,t.Start as timeSpam from times t
+    cross join ccCamps c
+    where c.IDArea is not null
+),tempChartGroup as(
+    select cam_id,count(countAbnd) as countAbnd,
+    COUNT(*) as countAll,timeSpam
+    from tempChart
+    group by cam_id,timeSpam
+)
+
+insert into @tempChart
+select tCamp.cam_id,isnull(countAbnd,0) as countAbnd,isnull(countAll,0) countAll
+,tCamp.timeSpam from timeCamps tCamp
+left join tempChartGroup chart on tCamp.cam_id=chart.cam_id and tCamp.timeSpam=chart.timeSpam
+
+truncate table ccAbandonoSalida_Chart
+
+insert into ccAbandonoSalida_Chart
+select cam_id,
+CONVERT(decimal(10,2),
+case when countAll=0 then 0 else countAbnd*100.00/countAll end
+),[timestamp]
+  from @tempChart order by cam_id 
+
+truncate table ccAbandonoSalida  
+  
+ insert into ccAbandonoSalida
+ select cam_id,
+ CONVERT(decimal(10,2),
+ case when sum(countAll) =0 then 0 else 
+ SUM(countAbnd*100.0)/sum(countAll) end 
+ ) as AbndPctg 
+
+ from @tempChart
+ group by cam_id
+ 
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'Sorteos -- Alter SP ccsp_RIAAgentGetDialMask if @mask=0 begin'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAAgentGetDialMask]
+@user_id integer,
+@tel varchar(15)
+AS
+declare @mask integer, @idioma integer, @value integer, @lada integer
+declare @country as tinyint
+
+set @value = 0
+select @mask = isnull(dialmask,7) from ccusers where user_id=@user_id
+select @country = valor from ccsettings where setting_id = 104
+
+if @mask=0 begin
+	select @value Response
+	return
+end
+
+-- Restricciones por pais 1:Mexico 2:Argentina 3:Colombia 4:USA 5:Chile 6:Venezuela 7:uk 8:Arabia Saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador
+if @country = 1
+	begin
+
+	DECLARE @specialDialPlan TINYINT, @phoneType TINYINT
+	SELECT @specialDialPlan = valor, @phoneType = 0
+	FROM ccsettings WITH (NOLOCK)
+	WHERE setting_id = 195
+
+	if @specialDialPlan = 1 select @phoneType=dbo.fnGetCallType(@tel)
+
+	--Restringe celulares
+	if (@mask & 1)>0
+		begin
+		if ((left(ltrim(rtrim(@tel)),3) = ''044'' Or left(ltrim(rtrim(@tel)),3) = ''045'') and len(ltrim(rtrim(@tel))) = 13) or (@specialDialPlan = 1 and (@phoneType=3 or @phoneType=4))
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if ((left(ltrim(rtrim(@tel)),2) = ''01'') and len(ltrim(rtrim(@tel))) = 12) or (@specialDialPlan = 1 and @phoneType=2)
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if (Len(@lada) + Len(ltrim(rtrim(@tel))) = 10 and @specialDialPlan = 0) or (@specialDialPlan = 1 and @phoneType=1)
+				begin
+				set @value = 6
+				end
+			end
+		end
+	end
+
+-- Argentina
+if @country = 2
+	begin
+	--Restringe celulares
+	if ((@mask & 1) > 0)
+		begin
+		if (left(@tel,2)=''15'') or (len(@tel)>=13 and substring(@tel,1,1)=''0'' and
+			(substring(@tel,4,2)=''15'' or substring(@tel,5,2)=''15'' or substring(@tel,3,2)=''15''))
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if ((left(ltrim(rtrim(@tel)),2) =''0'') and len(ltrim(rtrim(@tel))) = 11)
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask&4)>0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+				begin
+				set @value=6
+				end
+			end
+		end
+	end
+
+if @country = 3 --Colombia
+	begin
+	--Restringe Celulares
+	if ((@mask & 1) > 0)
+		begin
+		if len(@tel) > 8
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if len(@tel) = 8 or left(@tel,1) = ''0''
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+				begin
+				set @value = 6
+				end
+			end
+		end
+	end
+
+if @country = 4 --USA
+	begin
+	--Restringe larga distancia usa
+	if ((@mask & 2) > 0)
+		begin
+		if len(ltrim(rtrim(@tel))) >= 11  and (left(ltrim(rtrim(@tel)),1) = ''1'')
+			begin
+			set @value = 5
+			end
+		end
+
+	--Restringe locales usa
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			--if Len(ltrim(rtrim(@tel))) = 7
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+				begin
+				set @value = 6
+			end
+			end
+		end
+	end
+
+--Chile
+if @country = 5
+	begin
+
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+		begin
+		if len(@tel) >= 10 and left(@tel,2) = ''09''
+			begin
+			set @value = 4
+			end
+		end
+
+		--Restringe Locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			if Len(@tel) in (6,7)
+				begin
+				set @value = 6
+				end
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if len(@tel) >= 8 and len(@tel) < 10
+				begin
+				set @value = 5
+				end
+			end
+		end
+	end
+
+--Venezuela
+if @country = 6
+begin
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+		begin
+		if len(@tel) >= 10 and left(@tel,2) = ''04''
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if len(@tel) >= 10 and left(@tel,1) = ''0''
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+				begin
+				set @value = 6
+				end
+			end
+		end
+
+end
+
+--United Kingdom
+if @country = 7
+begin
+		--Restringe Celulares
+	if ((@mask & 1) > 0)
+		begin
+		if (len(@tel) >= 9) and left(@tel,2) = ''07''
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if len(@tel) >= 9 and left(@tel,1) = ''0''
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			if len(@tel) >= 9 and left(@tel,1) <> ''0''
+				begin
+				set @value = 6
+				end
+			end
+		end
+
+end
+
+--arabia saudita
+if @country = 8
+begin
+
+	--Restringe celulares
+	if (@mask & 1)>0
+		begin
+		if (left(ltrim(rtrim(@tel)),2) = ''05'' and len(ltrim(rtrim(@tel))) = 10 )
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if ( left(ltrim(rtrim(@tel)),2) <> ''05'' and len(ltrim(rtrim(@tel))) in (11, 9))
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+				begin
+				set @value = 6
+				end
+			end
+		end
+end
+
+--Australia
+if @country = 9
+begin
+
+	--Restringe celulares
+	if (@mask & 1)>0
+		begin
+		if (left(ltrim(rtrim(@tel)),2) = ''04'' and len(ltrim(rtrim(@tel))) = 10)
+			begin
+			set @value = 4
+			end
+		end
+
+	--Restringe larga distancia
+	if(@value=0)
+		begin
+		if ((@mask & 2) > 0)
+			begin
+			if ( left(ltrim(rtrim(@tel)),2) <> ''04'' and len(ltrim(rtrim(@tel))) = 10)
+				begin
+				set @value = 5
+				end
+			end
+		end
+
+	--Restringe locales
+	if(@value=0)
+		begin
+		if ((@mask & 4) > 0)
+			begin
+			select @lada=valor from ccSettings WHERE setting_id=17
+			if ((Len(ltrim(rtrim(@tel))) = 8) or
+				(''0'' + left(ltrim(rtrim(@tel)),1) = @lada and Len(ltrim(rtrim(@tel))) = 9) or
+				(left(ltrim(rtrim(@tel)),2) = @lada and Len(ltrim(rtrim(@tel))) = 10))
+				begin
+				set @value = 6
+				end
+			end
+		end
+end
+
+--Brasil
+if @country = 10
+	begin
+		declare @lon int
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			set @lon=len(@tel)
+			if
+				(@lon in(7,8) and left(@tel,1) in (''6'',''7'',''8'',''9'') )
+				or (@lon=9 and left(@tel,1) = ''9'' )
+				or (@lon=10 and substring(@tel,3,1) in (''6'',''7'',''8'',''9'') )
+				or (@lon=11 and substring(@tel,3,1) = ''9'')
+				--or (@lon=12 and substring(@tel,5,1) in (''6'',''7'',''8'',''9'') )
+				--or (@lon=13 and substring(@tel,5,1) = ''9'' )
+				--or (@lon=13 and substring(@tel,5,1) = ''9'' )
+				begin
+					set @value = 4
+				end
+		end
+
+		--Restringe larga distancia
+		if(@value=0)
+		begin
+			if ((@mask & 2) > 0)
+			begin
+				select @lada=valor from ccSettings WHERE setting_id=17
+				set @tel=ltrim(rtrim(@tel))
+				set @lon=len(@tel)
+				if  @lon>=10 and left(@tel,2) <> @lada
+				begin
+					set @value = 5
+				end
+			end
+		end
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				select @lada=valor from ccSettings WHERE setting_id=17
+				set @tel=ltrim(rtrim(@tel))
+				set @lon=len(@tel)
+				if @lon in (7,8,9) or (@lon in (10,11) and left(@tel,2)= @lada)
+				begin
+					set @value = 6
+				end
+			end
+		end
+
+		--Restringe por cobrar
+		if(@value=0)
+		begin
+			declare @llamadasPorCobrar varchar(4);
+			select @llamadasPorCobrar= valor from ccSettings where setting_id=126
+			set @tel=ltrim(rtrim(@tel))
+			set @lon=len(@tel)
+			if @lon >= 12 and  left(@tel,2) = ''90'' and @llamadasPorCobrar=''0''
+			begin
+				set @value = 10 -- pone para llamadas por cobrar
+			end
+		end
+
+	end -- Termina Brasil
+
+
+--Guatemala
+if @country = 11
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''3,4,5'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2,6,7'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Guatemala
+
+--Costa Rica
+if @country = 12
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''5,6,7,8'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2,3,4'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Costa Rica
+
+--Salvador
+if @country = 13
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''6,7'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''2'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Salvador
+
+--Spain
+if @country = 14
+	begin
+		--Restringe celulares
+		if (@mask & 1)>0
+		begin
+			set @tel=ltrim(rtrim(@tel))
+			if charindex(substring(@tel,1,1),''6,7'') > 0
+				set @value = 4
+		end
+
+		--Restringe locales
+		if(@value=0)
+		begin
+			if ((@mask & 4) > 0)
+			begin
+				set @tel=ltrim(rtrim(@tel))
+				if charindex(substring(@tel,1,1),''8,9'') > 0
+					set @value = 6
+			end
+		end
+
+	end -- Termina Spain
+
+select @value Response'
+    EXEC(@sql)
+
+    set @process = 'Sorteos --  Alter Sp ccsp_RIAGetNotReadyHistory'
+    set @sql='ALTER  procedure [dbo].[ccsp_RIAGetNotReadyHistory]
+@user_id int = 0
+AS
+set nocount on
+-- Para horarios depues de las 12 de la noche
+declare @fStart datetime, @fEnd datetime
+declare @inicioTurno int, @AcumTime int
+declare @fecha smalldatetime
+
+set @inicioTurno = 2 --Cambio de dia a las 2 de la mañana
+set @fecha = getdate()
+
+if datepart(hh,@fecha)>@inicioTurno-1
+ begin	
+	set @fStart=convert(datetime, convert(varchar(11), @fecha, 121) + cast(@inicioTurno as varchar) +'':00'', 121)
+	set @fEnd=dateadd(d,1,@fstart)
+ end
+
+else
+ begin
+	set @fEnd=convert(datetime, convert(varchar(11), @fecha, 121) + cast(@inicioTurno as varchar) +'':00'', 121)
+	set @fStart=dateadd(d,-1,@fEnd)
+ end
+
+select 
+	l.tiponotready_id, Descripcion, frame, 
+	CONVERT(CHAR(8),DATEADD(second,sum(tStatus),0),108) as Tiempo,
+	count(l.tiponotready_id) as veces, ''1900-01-01 00:00:00'' as fecha, time_Acum,time_xEv,
+	CONVERT(CHAR(8),DATEADD(second,time_Acum,0),108) as maxTimeAcum
+	from ccLogAgentesNotReady l with(nolock)
+	inner join ccTipoNotReady t on l.tiponotready_id = t.tiponotready_id
+	inner join ccRIAnotreadyGraph a2 on (t.tiponotready_id=a2.tiponotready_id)
+	inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+	where fecha between @fStart and @fEnd and user_id = @user_id
+	group by t.descripcion, l.tiponotready_id, frame,time_Acum,time_xEv
+
+union all
+
+select l.TipoNotReady_id, Descripcion, 0 as frame,
+CONVERT(CHAR(8),DATEADD(second,tStatus,0),108) as Tiempo, 
+ 0 as veces, fecha, 0 as time_Acum,0  as time_xEv, ''00:00:00'' as maxTimeAcum
+from ccLogAgentesNotReady l with(nolock)
+inner join ccTipoNotReady t on l.tiponotready_id = t.tiponotready_id
+where fecha between @fStart and @fEnd and (user_id = @user_id)
+order by l.TipoNotReady_id, fecha
+
+set nocount off'
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.9---------------------------------------------------------
+
+
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

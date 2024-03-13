@@ -12,6 +12,8 @@ begin
    alter Table smsccoLogDial alter Column Bill decimal(10,2) not null
 end
 
-
-CREATE NONCLUSTERED INDEX IX_smsccoLogDial_3
+if not exists (select * from sys.indexes where name = N'IX_smsccoLogDial_3' and object_id = OBJECT_ID(N'smsccoLogDial'))
+    begin
+        CREATE NONCLUSTERED INDEX IX_smsccoLogDial_3
 ON [dbo].[smsccoLogDial] ([SystemApiId])
+    end

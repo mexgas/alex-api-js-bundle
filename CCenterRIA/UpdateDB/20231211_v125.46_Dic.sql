@@ -6301,18 +6301,333 @@ END;
 	END;
 END;'
     EXEC(@sql)
+    ---------------------------------------BEGIN Ivan Martin hotfix/125.20231211.0.9---------------------------------------------------------
 
-    set @process = ''
-    set @sql=''
+    set @process = 'Dineria Hotfix se agrega sigo de igual para que tome tambien las horas en linea 6451'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_OUTcheckTimeZone] @cam_id AS INT,@isReturnSelect bit=1
+			AS
+			SET NOCOUNT ON
+
+			DECLARE @horaUniversal DATETIME, @revHorario BIT, @isShudulerLey BIT, @dateNow DATETIME
+			DECLARE @hourStart INT, @hourEnd INT, @minStart INT, @minEnd INT
+			DECLARE @timeMaxContestacion INT, @campType INT;
+
+			SET @timeMaxContestacion = 60
+
+			SELECT @revHorario = valor
+			FROM ccsettings
+			WHERE setting_id = 112
+
+			SELECT @timeMaxContestacion = (cam_tNoContesta * 2)
+			FROM cccamps
+			WHERE cam_id = @cam_id
+
+			SET @timeMaxContestacion = CEILING(cast(@timeMaxContestacion AS DECIMAL(10, 2)) / cast(60 AS DECIMAL(10, 2)))
+
+			declare @schLaw table (hourStart int not null,minStart int not null,hourEnd int not null,minEnd int not null)
+
+			SELECT @campType = CampType
+			FROM ccCamps
+			WHERE cam_id = @cam_id;
+
+			DECLARE @isSmsCamp BIT = CASE WHEN @campType = 7 THEN 1 ELSE 0 END;
+
+			insert into @schLaw
+			exec ccsp_GetHourLaw @isSms = @isSmsCamp
+			SELECT @hourStart = hourStart, @minStart = minStart, @hourEnd = hourEnd, @minEnd = minEnd from @schLaw
+
+			SET DATEFIRST 1
+			SET @horaUniversal = getutcdate()
+			SET @dateNow = getdate()
+			declare @iZonas int
+			-- Si la campaña no tiene horarios asignados, marcar todas las zonas
+			IF @revHorario = 0
+			BEGIN
+			    IF NOT EXISTS (
+			            SELECT cam_id
+			            FROM ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios))
+			            WHERE cam_id = @cam_id
+			            )
+			    BEGIN
+			        SELECT @iZonas=sum(DISTINCT tz_id)
+			        FROM (
+			            SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha, 
+			            datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora, 
+			            datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto, 
+			            datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+			            FROM ccTimeZones
+			            ) zonas
+			        WHERE (
+			                hora > @hourStart OR ( hora = @hourStart AND minuto >= @minStart)
+			                )
+			            AND (
+			                hora < @hourEnd OR ( hora = @hourEnd AND minuto <= @minEnd)
+			                )
+
+			    if @isReturnSelect=1 begin
+			        select @iZonas as iZonas
+			    end
+			    return @iZonas
+			    END
+			END
+
+			IF @campType <> 7
+			BEGIN
+			    
+			    SELECT h.horario_id, Descripcion, CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+			    , CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart    AND MinInicio >= @minStart) ) THEN MinInicio ELSE @minStart END MinInicio
+			    , CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+			    , CASE WHEN (
+			        (horaFin < @hourEnd OR (horaFin = @hourEnd AND MinFin <= @minEnd)
+			            )
+			        ) THEN MinFin ELSE @minEnd END MinFin, Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo
+			    INTO #tempCamp
+			    FROM cchorarios h
+			    INNER JOIN ccCampsHorarios WITH (INDEX (IX_ccCampsHorarios)) ON h.horario_id = ccCampsHorarios.horario_id
+			        AND ccCampsHorarios.cam_id = @cam_id
+
+			    SELECT @iZonas=isnull(sum(DISTINCT tz_id), 0)
+			    FROM (
+			        SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha, 
+			        datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora, 
+			        datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto, 
+			        datepart(dw, dateadd(mi, tz_offset * 60, @horaUniversal)) AS dia
+			        FROM ccTimeZones
+			        ) zonas
+			    INNER JOIN #tempCamp ON (
+			            (
+			                hora > HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+			                )
+			            AND (
+			                hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+			                )
+			            AND (
+			                Lunes = dia
+			                OR Martes * 2 = dia
+			                OR Miercoles * 3 = dia
+			                OR Jueves * 4 = dia
+			                OR Viernes * 5 = dia
+			                OR Sabado * 6 = dia
+			                OR domingo * 7 = dia
+			                )
+			            )
+
+			    DROP TABLE #tempCamp
+			    if @isReturnSelect=1 begin
+			        select @iZonas as iZonas
+			    end
+			    return @iZonas
+			END
+			ELSE
+			BEGIN
+			        ;
+
+			    WITH sch
+			    AS (
+			        SELECT DATEPART(hh, idate) AS HoraInicio, DATEPART(mi, iDate) AS MinInicio, 
+			        DATEPART(hh, fdate) HoraFin, DATEPART(mi, fdate) MinFin
+			        FROM ccSmsSchedules
+			        WHERE cam_id = @cam_id
+			            AND @dateNow BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+			        ), daysch
+			    AS (
+			        SELECT CASE WHEN HoraInicio > @hourStart THEN HoraInicio ELSE @hourStart END HoraInicio
+			        , CASE WHEN (horaInicio > @hourStart OR (horaInicio = @hourStart AND MinInicio >= @minStart )
+			                        ) THEN MinInicio ELSE @minStart END MinInicio
+			        , CASE WHEN horaFin < @hourEnd THEN horaFin ELSE @hourEnd END HoraFin
+			        , CASE WHEN ((  horaFin < @hourEnd OR ( horaFin = @hourEnd AND MinFin <= @minEnd))
+			                        ) THEN MinFin ELSE @minEnd END MinFin
+			        FROM sch
+			        ), zonas
+			    AS (
+			        SELECT tz_id, dateadd(mi, tz_offset * 60, @horaUniversal) AS fecha
+			        , datepart(hh, dateadd(mi, tz_offset * 60, @horaUniversal)) AS hora
+			        , datepart(mi, dateadd(mi, tz_offset * 60, @horaUniversal)) AS minuto
+			        FROM ccTimeZones
+			        )
+			    SELECT @iZonas=isnull(sum(DISTINCT B.tz_id), 0)
+			    FROM daysch A
+			    INNER JOIN zonas B ON (
+			            hora >= HoraInicio OR ( hora = HoraInicio AND minuto >= MinInicio)
+			            )
+			        AND (
+			            hora < HoraFin OR (hora = HoraFin AND minuto <= (MinFin - @timeMaxContestacion))
+			            )
+
+			    if @isReturnSelect=1 begin
+			        select @iZonas as iZonas
+			    end
+			    return @iZonas
+			END
+	'
     EXEC(@sql)
 
-    set @process = ''
-    set @sql=''
+    set @process = 'Dineria: Se crea nueva tabla de ProcessingSmsStatusUpdates'
+    set @sql='IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = N''ProcessingSmsStatusUpdates'') BEGIN
+				CREATE TABLE ProcessingSmsStatusUpdates (
+			    SystemApiId VARCHAR(100) PRIMARY KEY,
+			    StatusSystemsId INT);
+			  END'
     EXEC(@sql)
 
-    set @process = ''
-    set @sql=''
+    set @process = 'Dineria: Se cambia action 1 para que regrese solo campañas con horario valido. Se cambia completamente action 7 para que actualice los estados en paquetes de la tabla ProcessingSmsStatusUpdates'
+    set @sql='
+		ALTER procedure [dbo].[ccspOutboundSmsMessage] 
+		@action int,
+		@camId int = null,
+		@SentMsg int=null,
+		@smsoutIds varchar(max)=null,
+		@SystemApiId varchar(100)=null,
+		@statusSystemsId int =null,
+		@InsufficientBalance int=null,
+		@date datetime =null,
+		@addingCampaign bit = null
+		as
+		declare @sql varchar(max)
+		if @action=1 begin
+			set @date=getdate()
+
+			if @addingCampaign = 1 begin
+				select distinct cast(c. cam_id as int) as CamId,
+								cam_descripcion as [Name],
+								cam_procesando as [Start],
+								0 AS MessageQuantity
+				from ccCamps c
+				where CampType=7 and c.IDArea is not null and c.cam_id=@camId
+			end
+			else begin
+				SELECT DISTINCT CAST(c. cam_id AS INT) AS CamId,
+								cam_descripcion AS Name,
+								cam_procesando AS Start,
+								ISNULL((w.new + w.pro),0) AS MessageQuantity
+				FROM ccCamps c
+				LEFT JOIN ccSmsSchedules s ON s.cam_id = c.cam_id
+				LEFT JOIN ccCampsNvosCB  w on c.cam_id = w.id
+				WHERE CampType=7 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+				AND @date BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+			end
+		end
+		else if @action=2 begin
+			select tz_offset from ccTimeZones ORDER BY tz_id
+		end
+		else if @action=3 begin
+			select cast(camId as int) CamId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected 
+			from ccSmsConversationsResult where ( @camId is null or camId=@camId)
+		end
+		else if @action=4 begin
+			truncate table ccSmsConversationsResult
+		end
+		else if @action=5 begin
+			if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+				insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
+			end
+			else begin
+				update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
+				,InsufficientBalance=InsufficientBalance+@InsufficientBalance
+				where camId=@camId
+			end
+		end
+		else if @action=6 begin	
+			set @sql=''delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')''
+			exec (@sql)
+		end
+		else if @action=7 begin
+			DECLARE @TemporalProcessingSmsStatusUpdates TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, StatusSystemsId INT)
+			INSERT INTO @TemporalProcessingSmsStatusUpdates
+			SELECT SystemApiId, StatusSystemsId FROM ProcessingSmsStatusUpdates
+
+			DECLARE @UpdatingSmsWorkingTable TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, OldStatusSystemsId INT, NewStatusSystemsId INT, CampaignId INT)
+			INSERT INTO @UpdatingSmsWorkingTable
+			SELECT S.SystemApiId, S.StatusSystemsId, T.StatusSystemsId, S.cam_id FROM smsccoLogDial S
+			INNER JOIN @TemporalProcessingSmsStatusUpdates T ON S.SystemApiId = T.SystemApiId
+			
+			;WITH CTE AS (
+		    SELECT
+		        CampaignId,
+		        COUNT(CASE WHEN NewStatusSystemsId = 0 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 0 THEN 1 END) AS SentMsg,
+			    COUNT(CASE WHEN NewStatusSystemsId = 1 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 1 THEN 1 END) AS Delivered,
+			    COUNT(CASE WHEN NewStatusSystemsId = 2 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 2 THEN 1 END) AS NotDelivered,
+			    COUNT(CASE WHEN NewStatusSystemsId = 3 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 3 THEN 1 END) AS RecipientRejected,
+			    COUNT(CASE WHEN NewStatusSystemsId = 4 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 4 THEN 1 END) AS CarrierRejected,
+			    COUNT(CASE WHEN NewStatusSystemsId = 5 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 5 THEN 1 END) AS Exception,
+			    COUNT(CASE WHEN NewStatusSystemsId = 6 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 6 THEN 1 END) AS InsufficientBalance
+
+		    FROM @UpdatingSmsWorkingTable
+		    GROUP BY CampaignId
+			)
+
+			MERGE INTO ccSmsConversationsResult AS Target
+			USING CTE AS Source ON Target.camId = Source.CampaignId
+			WHEN MATCHED THEN
+				UPDATE SET
+					Target.SentMsg = CASE WHEN (Target.SentMsg + Source.SentMsg) < 0 THEN 0 ELSE (Target.SentMsg + Source.SentMsg) END,
+					Target.Delivered = CASE WHEN (Target.Delivered + Source.Delivered) < 0 THEN 0 ELSE (Target.Delivered + Source.Delivered) END,
+					Target.NotDelivered = CASE WHEN (Target.NotDelivered + Source.NotDelivered) < 0 THEN 0 ELSE (Target.NotDelivered + Source.NotDelivered) END,
+					Target.RecipientRejected = CASE WHEN (Target.RecipientRejected + Source.RecipientRejected) < 0 THEN 0 ELSE (Target.RecipientRejected + Source.RecipientRejected) END,
+					Target.CarrierRejected = CASE WHEN (Target.CarrierRejected + Source.CarrierRejected) < 0 THEN 0 ELSE (Target.CarrierRejected + Source.CarrierRejected) END,
+					Target.Exception = CASE WHEN (Target.Exception + Source.Exception) < 0 THEN 0 ELSE (Target.Exception + Source.Exception) END,
+					Target.InsufficientBalance = CASE WHEN (Target.InsufficientBalance + Source.InsufficientBalance) < 0 THEN 0 ELSE (Target.InsufficientBalance + Source.InsufficientBalance) END
+
+			WHEN NOT MATCHED BY TARGET THEN
+		    INSERT (camId, SentMsg, Delivered, NotDelivered, RecipientRejected, CarrierRejected, Exception, InsufficientBalance)
+		    VALUES (Source.CampaignId, Source.SentMsg, Source.Delivered, Source.NotDelivered, Source.RecipientRejected, Source.CarrierRejected, Source.Exception, Source.InsufficientBalance);
+
+			UPDATE smsccoLogDial SET Bill = (CASE WHEN T.StatusSystemsId IN (0, 1, 2) THEN 0.7 ELSE 0 END),
+									 statusSystemsId = T.StatusSystemsId
+			FROM smsccoLogDial S
+			INNER JOIN @TemporalProcessingSmsStatusUpdates T ON T.SystemApiId = S.SystemApiId
+
+			DELETE FROM ProcessingSmsStatusUpdates 
+			WHERE SystemApiId IN (SELECT SystemApiId FROM @TemporalProcessingSmsStatusUpdates);
+
+			SELECT @@ROWCOUNT;
+		end
+		else if @action=8 begin
+			update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(3,4,5,6)
+		end
+		else if @action=9 begin
+			CREATE TABLE #TempSmsOutIds (
+			smsout_id INT
+			);
+
+			INSERT INTO #TempSmsOutIds (smsout_id)
+			SELECT DISTINCT wt.smsout_id
+			FROM smsWorkingTable wt
+			JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
+			LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
+			WHERE wt.cam_id=@camId and wt.sms_status IN(1,2) 
+			AND cco.smsout_id IS NULL;
+			
+
+			UPDATE wt
+			SET wt.sms_status = 0
+			FROM smsWorkingTable wt
+			JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
+
+			DROP TABLE #TempSmsOutIds;
+		end
+		else if @action=10 begin
+			SELECT COUNT(*) FROM smsWorkingTable with (NOLOCK) WHERE cam_id = @camId
+		end
+		else if @action=12 begin
+		    IF EXISTS (SELECT 1 FROM ccSmsSchedules WITH (NOLOCK) WHERE cam_id = @camId 
+			AND GETDATE() BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+			)
+			AND EXISTS (SELECT 1 FROM smsWorkingTable WITH (NOLOCK) WHERE cam_id = @camId)
+			BEGIN
+				SELECT CAST(0 AS BIT);
+				RETURN;
+			END
+			ELSE BEGIN
+				UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
+				SELECT CAST(1 AS BIT);
+				RETURN;
+			END
+		end'
     EXEC(@sql)
+
+    ---------------------------------------END Ivan Martin hotfix/125.20231211.0.9---------------------------------------------------------
+
 
     set @process = ''
     set @sql=''

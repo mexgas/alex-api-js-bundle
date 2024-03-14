@@ -5261,14 +5261,7 @@ set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altert
         begin
         ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
         end'
-EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
     EXEC(@sql)
-
-   
-
 
     set @process = 'Alter SP ccspRepOutSMSAnswDetailByCamp Se agrega columna smsccoLogDial.message'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 

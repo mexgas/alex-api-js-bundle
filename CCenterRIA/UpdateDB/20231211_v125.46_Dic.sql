@@ -5714,6 +5714,614 @@ END
 SET NOCOUNT OFF'
     EXEC(@sql)
 
+    set @process = 'Dineria Alter Sp ccsp_OUTGetNewJobsSMS se agrega and msg.message is not null'
+    set @sql='ALTER procedure [dbo].[ccsp_OUTGetNewJobsSMS]
+@CAMPID INT,
+@action INT=0, --0 select and update, 1 select registry
+@topCount INT=50
+
+as
+set nocount on
+DECLARE @iZonas INT = NULL
+DECLARE @bIsDaylight bit, @revHorario bit
+DECLARE @country_id INT, @TipoJobs INT
+
+DECLARE @sql nvarchar(MAX), @Order_Asc_Desc char(4)
+declare @sqlInsertGeneric nvarchar(MAX)
+declare @parameters nvarchar(MAX)
+		
+-- VALIDAMOS EL IDIOMA Y LADA CONFIGURADA --
+SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
+SELECT @revHorario=valor from ccsettings where setting_id = 112
+-- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
+SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@CAMPID
+SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
+
+SET DATEFIRST 1
+--Checamos si es horario de verano
+SELECT @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+
+exec @iZonas= ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0
+
+if exists(SELECT cam_id from ccSmsSchedules where cam_id=@campid)
+begin
+	if @iZonas = 0 begin
+		print ''Sin Zona horaria''
+		SELECT 0 as SmsOutId, 0 as CamId, '''' as Phone, 0 as SmsStatus, '''' as DateDial, 0 as user_id, 0 as tz where 1=0		
+		return
+	end
+end
+
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+
+CREATE TABLE #NEW_JOBS (
+	SmsOutId INT
+	,CamId INT
+	,Phone VARCHAR(30) collate SQL_Latin1_General_CP1_CI_AS
+	,SmsStatus TINYINT
+	,DateDial DATETIME
+	,Tz1 INT
+	,Tz2 INT
+	,Tz3 INT
+	,Tz4 INT
+	,Tz5 INT
+	,CallKey VARCHAR(40)
+	,Message VARCHAR(255)
+	)
+set @sql=''''
+
+DECLARE @new_calls_date VARCHAR(max) = '''';
+		
+
+SELECT @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
+
+DECLARE @isVerano varchar(max)
+
+	set @isVerano = ''W.iTimeZone'' + case @bIsDaylight when 1 then ''_summer'' else '''' END
+
+	select @sqlInsertGeneric=nchar(13)+ ''INSERT #NEW_JOBS
+SELECT top(@topCount) W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial,''
++@isVerano+'',''
++@isVerano+''2,''
++@isVerano+''3,''
++@isVerano+''4,''
++@isVerano+''5,
+sos.callkey as CallKey
+,msg.message as Message
+FROM smsWorkingTable W with(nolock)
+left join smsOutSource sos with(nolock) on sos.smsout_id=W.smsout_id
+left join smsoutSourceMessage msg with(nolock) on msg.smsout_id =W.smsout_id
+WHERE STATUS_REPLACE_QUERY
+and DATE_REPLACE_QUERY
+and W.cam_id=@CAMPID
+and msg.message is not null
+and (
+   ( (''+@isVerano+''  & @iZonas)>0 or ''+@isVerano+''=0) 
+or ( (''+@isVerano+''2 & @iZonas)>0 or ''+@isVerano+''2=0) 
+or ( (''+@isVerano+''3 & @iZonas)>0 or ''+@isVerano+''3=0) 
+or ( (''+@isVerano+''4 & @iZonas)>0 or ''+@isVerano+''4=0)
+or ( (''+@isVerano+''5 & @iZonas)>0 or ''+@isVerano+''5=0)
+)''
+
+if @TipoJobs in(0,2)--** INCLUIR LOS NUEVAS
+begin				
+	select @sql=@sql+nchar(13)+''--INCLUIR LAS NUEVAS--''
+	select @sql=@sql+REPLACE(
+	REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.sms_dateDial < dateadd(mi, 5, getdate())'')
+		,''STATUS_REPLACE_QUERY'',''W.sms_status=0'')
+	select @sql=@sql+nchar(13)+'' order by W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
+	--print(@sql)
+end -- TOMA EN CUENTA LAS NUEVAS
+
+if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
+begin
+	select @sql=@sql+nchar(13)+''--INCLUIR LOS CALLBACKS--''
+	select @sql=@sql+nchar(13)+REPLACE(
+		REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.sms_dateDial<dateadd(mi, 5, getdate())'')
+	,''STATUS_REPLACE_QUERY'',''W.sms_status=1 -- CallBacks'')
+	select @sql=@sql+nchar(13)+'' order by priority_cb desc, W.sms_dateDial ''  + @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+		
+					
+end -- TOMA EN CUENTA LOS CALLBACKS
+----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
+set @parameters=''@CAMPID int,@topCount int,@iZonas int''		
+
+if @action=0
+begin	
+	SELECT @sql=@sql+nchar(13)+ ''UPDATE smsWorkingTable with (rowlock) SET sms_status=2 --CALLBACK IN PROGRESS
+	WHERE smsout_id in(SELECT SmsOutId from #NEW_JOBS)''	
+end
+
+		
+	select @sql=@sql+nchar(13)+ ''SELECT SmsOutId, CamId, Phone, SmsStatus, DateDial,
+Tz1,Tz2,Tz3,Tz4,Tz5,CallKey as RegistryClient,Message
+FROM #NEW_JOBS where len(Phone)>0
+''
+
+
+--print (@sql)
+--print ''@iZonas:'' +convert(varchar(max),@iZonas)
+
+exec sp_executesql  @sql,@parameters,
+@CAMPID=@CAMPID
+,@topCount=@topCount
+,@iZonas=@iZonas
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+
+return(0)'
+    EXEC(@sql)
+
+
+    set @process = 'CW-8341 El Valor de registros contactados no cambia de 0.0% Alter Sp ccsp_GetInfoDash correcion @vop3 cuando es null'
+    set @sql='ALTER procedure [dbo].[ccsp_GetInfoDash]
+@CampId as smallint
+as
+set nocount on				
+declare @upd_date as datetime
+declare @cps  as int 
+declare @today datetime
+
+select @cps = [valor] from ccSettings  where setting_id=238
+select
+	@upd_date = date_update
+from ccCampsInfo with(nolock) where cam_id = @CampId
+
+set @today=convert(date,getdate(),121)
+
+if @upd_date is null begin
+	insert into ccCampsInfo(cam_id,contact_reg,dial_retries,date_update,calls_per_second)
+	values(@CampId,0,0,getdate(),@cps)
+
+	set @upd_date=@today
+end
+
+if (datediff(ss, @upd_date, getdate()) > 300) begin
+	if not exists(select cam_id from ccocallsout with(nolock)
+	where cam_id=@CampId and statuscall_id=13 and cal_inicio>= @today)
+	begin
+		update ccCampsInfo
+			set contact_reg=0, dial_retries=0, date_update = getdate(), calls_per_second=@cps
+		where cam_id = @CampId		
+	end else
+	begin
+
+		declare @vop1 decimal(5,2)
+		declare @vop2 decimal(5,2)
+		declare @vop3 decimal(5,2)
+		declare @vop4 decimal(5,2)
+
+		select @vop1 = count(distinct(callout_id)) from ccocallsout with(nolock)
+		where cam_id = @CampId and statuscall_id=13 and cal_inicio>= @today
+		group by cam_id
+		select @vop2 = count(distinct(callout_id)), @vop4 = count(distinct telefono) from ccoLogDials with(nolock) 
+		where cam_id = @CampId and fecha >= @today
+		group by cam_id
+		select @vop3 = count(distinct telefono) from ccoLogDials with(nolock) 
+		where cam_id = @CampId and fecha >= @today
+		group by cam_id, Telefono having count(1) > 1
+		
+		if @vop3 is null 
+			set @vop3=0
+	
+		update ccCampsInfo set
+			 contact_reg=case when @vop2=0 then 0 else (@vop1/@vop2)*100 end
+			, dial_retries=case when @vop4=0 then 0 else(@vop3/@vop4)*100 end
+			, date_update=getdate()
+	end
+end
+
+select
+cam_id, contact_reg, dial_retries, date_update, calls_per_second
+from ccCampsInfo
+where cam_id = @CampId
+
+
+set nocount off'
+    EXEC(@sql)
+
+    set @process = 'Alter Sp ccsp_ConversationWASave IF @action = 6'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+                    , @conversationId     INT         = 0
+                    , @inboundId          SMALLINT    = NULL
+                    , @phoneACD           VARCHAR(50) = NULL
+                    , @clientId           VARCHAR(25) = NULL
+                    , @conversationStatus SMALLINT    = 0
+                    , @tChatting          FLOAT    = 0
+                    , @tWrapUp            SMALLINT    = 0
+                    , @finishedBy         TINYINT     = 0
+                    , @onQueue            BIT         = NULL
+                    , @tQueue             SMALLINT    = 0
+                    , @tTimeout           INT         = 0
+                    , @disposition        SMALLINT    = 0
+                    , @subDisposition     SMALLINT    = 0
+                    , @agentId            INT         = 0
+                    --VAR MESSAGES
+                    , @messageId          VARCHAR(50) = NULL
+                    , @messageIdUi        INT         = NULL
+                    , @clientNum          VARCHAR(15) = NULL
+                    , @vonageNum          VARCHAR(15) = NULL
+                    , @typeMessage        VARCHAR(25) = ''''
+                    , @content            NVARCHAR(MAX)= NULL
+                    , @timeStampMessage   DATETIME    = NULL
+                    , @timeStampMessageUTC DATETIME   = NULL
+                    , @originType         VARCHAR(15) = NULL
+                    , @currency           VARCHAR(10) = ''-''
+                    , @price              VARCHAR(10) = ''0.00''
+                    , @messageStatus      VARCHAR(15) = ''N/A''
+                    , @listConversationsIds   VARCHAR(MAX) = NULL
+					, @IsAgentLoggingOut  BIT = 0
+AS
+BEGIN
+	DECLARE @isEndConversation BIT;
+	DECLARE @meanContactTypeId SMALLINT;
+	DECLARE @conversationIdNew INT;
+	SET @meanContactTypeId = 1;
+	SET NOCOUNT ON;
+
+	IF @action = 1
+	BEGIN --new Conversation
+		IF NOT EXISTS
+			(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A
+			WHERE A.conversationId = @conversationId
+			)
+		BEGIN
+			INSERT INTO [ccWhatsAppConversations]
+			(inboundId
+			, phoneACD
+			, clientId
+			, conversationStatus
+			, tChatting
+			, tWrapUp
+			, finishedBy
+			, onQueue
+			, tQueue
+			, tTimeout
+			, disposition
+			, subDisposition
+			, agentId
+			)
+			VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+
+			IF NOT EXISTS (SELECT WhatsAppSpamId FROM ccWhatsAppSpam WHERE NumberClient = @clientId and InboundId = @inboundId) BEGIN
+				SELECT @conversationId = SCOPE_IDENTITY();
+				SELECT @conversationId AS ConversationId;
+			END
+			ELSE BEGIN
+
+				declare @conversationIdTemporal     INT;
+				SELECT @conversationIdTemporal = SCOPE_IDENTITY();
+				EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationIdTemporal, @conversationStatus = 13
+				SELECT 0 AS ConversationId;
+			END;
+
+			--Save new request
+			IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @inboundId)
+				BEGIN
+					INSERT INTO ccWAOperatingSummary (InboundId, Request) VALUES (@inboundId, 1);
+				END
+			ELSE
+				BEGIN
+					UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+				END
+
+
+
+			RETURN(0);
+		END
+		ELSE
+		BEGIN
+			DECLARE @conversationStatusTemp INT = @conversationStatus;
+			IF @conversationStatus in(17,18) BEGIN
+				SET @conversationStatusTemp = 1
+			END
+				INSERT INTO [ccWhatsAppConversations]
+			(inboundId
+			, phoneACD
+			, clientId
+			, conversationStatus
+			, tChatting
+			, tWrapUp
+			, finishedBy
+			, onQueue
+			, tQueue
+			, tTimeout
+			, disposition
+			, subDisposition
+			, agentId
+			)
+			VALUES(@inboundId, @phoneACD, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+			SELECT @conversationIdNew = SCOPE_IDENTITY();
+
+			INSERT INTO ccWhatsAppConversationsRelationship (conversationIdBefore
+					                                            , conversationIdAfter)
+				VALUES (@conversationId, @conversationIdNew);
+			--Save new request by reassign
+			UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+
+		EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
+
+		SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
+		RETURN(0);
+	END;
+END;
+
+IF @action = 2
+BEGIN --save conversation Times
+	DECLARE @conversationIdTemp INT;
+	DECLARE @TablaTemp TABLE (conversationId INT, status bit);
+
+	IF @listConversationsIds IS NOT NULL begin
+		INSERT INTO @TablaTemp
+		SELECT value,0
+		FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+		where value is not null and value<>''''
+	end
+	else begin
+		INSERT INTO @TablaTemp values(@conversationId,0)
+	end
+
+	UPDATE ccWhatsAppConversations
+	SET
+	conversationStatus = @conversationStatus
+	, finishedBy = case when @conversationStatus = 10 then 2
+		when @conversationStatus = 17 then 2
+		when @conversationStatus = 18 then 2
+		else 1 end
+	, tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
+	,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
+	,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+	WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
+
+		WHILE exists(SELECT conversationId FROM @TablaTemp where status=0)
+	BEGIN
+		select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
+		exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
+
+		IF @conversationStatus in(13,10,17,18,11) BEGIN
+			DECLARE @conversationDateTemp INT;
+			select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end from ccWhatsAppConversations where conversationId = @conversationId;
+
+			IF @conversationStatus = 13 BEGIN
+				IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+					INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationId, @clientId);
+				END
+			END
+			ELSE IF @conversationStatus in(10,17,18) BEGIN --Save conversation Ended by system
+				IF @conversationDateTemp > 0 BEGIN
+					UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+				END
+				ELSE BEGIN
+					    UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1) WHERE InboundId = @inboundId
+				END
+			END
+			ELSE IF @conversationStatus = 11 BEGIN --Save conversation Ended by AGENT
+				UPDATE ccWAOperatingSummary SET Attended = (Attended + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+			END
+		END
+		update @TablaTemp set status=1 where conversationId=@conversationIdTemp
+	END
+
+END;
+
+IF @action = 3
+BEGIN --save conversation Status
+	UPDATE ccWhatsAppConversations
+			SET
+				--conversationDate = GETDATE(),
+				conversationStatus = @conversationStatus
+	WHERE conversationId = @conversationId;
+END;
+
+IF @action = 4 BEGIN --save messages from conversation
+	IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+		AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
+	BEGIN
+		IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
+			(SELECT messageIdUi
+				FROM ccWAMessagesConversations
+				WHERE originType IN (''Agent'', ''Admin'')
+				AND conversationId = @conversationId)
+			BEGIN
+				UPDATE ccWhatsAppConversations
+					SET FirstMessageAgent = @timeStampMessage
+					WHERE conversationId = @conversationId;
+			END
+
+		INSERT INTO [ccWAMessagesConversations](
+					                        messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
+					                        (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+		SELECT @messageId=SCOPE_IDENTITY()
+		SELECT @messageId as MessageId
+		RETURN (0)
+	END
+	ELSE BEGIN
+		SELECT 0 AS MessageId
+		RETURN (0)
+	END
+END;
+
+	IF @action = 5
+	BEGIN --save onQueue
+		UPDATE ccWhatsAppConversations
+				SET onQueue = 1,
+				conversationStatus = @conversationStatus
+		WHERE conversationId = @conversationId;
+		SELECT @inboundId = inboundId FROM ccWhatsAppConversations where conversationId=@conversationId;
+		UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue + 1) WHERE InboundId = @inboundId
+	END;
+
+IF @action = 6
+BEGIN --save agent, assigdate and tqueue
+	declare @agentIdTmp int
+	SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A where A.conversationId = @conversationId
+
+	IF (@agentIdTmp is null or @agentIdTmp=0)
+	BEGIN
+		UPDATE ccWhatsAppConversations
+				SET agentId = @agentId,
+				assignDate = getdate(),
+				conversationStatus = @conversationStatus
+				,tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+		WHERE conversationId = @conversationId;
+
+		SELECT @conversationId as conversationId
+	SELECT @inboundId = inboundId,  @onQueue = onQueue FROM ccWhatsAppConversations where conversationId=@conversationId;
+	declare @onQueueInt int
+
+	IF @onQueue = 1 BEGIN
+		UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue - 1),@onQueueInt =OnQueue WHERE InboundId = @inboundId
+		if @onQueueInt<=0 or exists(select * from ccWAOperatingSummary WHERE InboundId = @inboundId and OnQueue<0)begin
+
+			select			
+			@onQueueInt=count(case when onQueue =1 then 1 end) onQueue			
+			from ccWhatsAppConversations with(nolock)
+			where inboundId= @inboundId
+			and requestDate>=convert(date,getdate(),121)
+
+			UPDATE ccWAOperatingSummary SET OnQueue = @onQueueInt WHERE InboundId = @inboundId
+
+		end
+
+	END
+	END
+END;
+
+	IF @action = 7
+	BEGIN --update price message
+		UPDATE ccWAMessagesConversations
+				SET price = @price,
+					currency = @currency
+		WHERE messageId = @messageId;
+	END;
+
+	IF @action = 8
+	BEGIN --update status message
+		IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+			UPDATE ccWAMessagesConversations
+					SET messageStatus = @messageStatus
+			WHERE messageId = @messageId;
+		END;
+	END;
+
+	IF @action = 9
+	BEGIN --Save last message time by conversationID
+		IF not exists(SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversation A WHERE A.conversationId=@conversationId) BEGIN
+			INSERT INTO ccLastMessageAgentByConversation (conversationId,timeStampLastMessageAgent) VALUES (@conversationId,getDate())
+		END;
+		ELSE
+			BEGIN
+				UPDATE ccLastMessageAgentByConversation
+					SET timeStampLastMessageAgent = getDate()
+				WHERE conversationId = @conversationId;
+			END;
+	END;
+
+	IF @action = 10
+	BEGIN --drop and insert register by conversationID
+		DELETE FROM ccLastMessageAgentByConversation WHERE conversationId = @conversationId;
+	END;
+
+	IF @action = 11
+	BEGIN --register desconnection agent by conversationID
+		UPDATE ccLastMessageAgentByConversation SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
+	END;
+
+	IF @action = 12
+	BEGIN --Obtain conversationsWA post MCS reset
+
+		declare @disconnectionIdTemp int = (select top 1 disconnectionId from ccDisconnectionMCS where timeStampConnection is null order by timeStampDisconnection desc);
+		UPDATE ccDisconnectionMCS SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
+
+		declare @from as datetime;-- = ''01-07-2022'';
+		select @from = convert(datetime,convert(varchar(11),getdate()))
+		set @from=DATEADD(dd,-1,@from);
+			select A.conversationId, A.inboundId, A.phoneACD, A.clientId, A.conversationStatus, A.requestDate, isnull(A.conversationDate,'''') conversationDate, A.onQueue, A.agentId, isnull(B.timeStampMessage,'''') timeStampMessage, isnull(B.originType,'''') originType, isnull(B.price,'''') price, isnull(B.messageIdUi,'''') messageIdUi, isnull(B.messageId,'''') messageId, isnull(B.typeMessage,'''') typeMessage, isnull(B.content,'''') content, isnull(B.messageStatus,'''') messageStatus
+			,isnull(C.timeStampDisconnection,'''') timeStampDisconnection, isnull(C.timeStampConnection,'''') timeStampConnection
+			from ccWhatsAppConversations A
+			left join ccWAMessagesConversations B on A.conversationId = B.conversationId
+			left join ccDisconnectionMCS C on C.disconnectionId = @disconnectionIdTemp
+			--where B.conversationId is null
+			where A.requestDate >= @from 
+				and A.conversationStatus not in (4, 10, 11, 13, 17, 18)
+			order by agentId desc, requestDate,timeStampMessage, inboundId, clientId 
+	END;
+	IF @action = 13
+	BEGIN ---Obtain agents ON STATUS READY
+		WITH agents
+		AS(
+			SELECT c.User_id, c.fecha, c.currentStatus
+			FROM ccLogAgentesDia c
+			INNER JOIN 
+			(
+				SELECT User_id, MAX(fecha) max_time
+				FROM ccLogAgentesDia
+				GROUP BY User_id
+			) AS t
+			ON c.fecha = t.max_time
+			AND c.User_id=t.User_id AND currentStatus in (3,34)
+		), usersByCampigns
+		AS (
+			select IdCampEsp, User_id from ccRIACampEspWG A
+			Inner join ccRIAWorkGroupUsers B
+			on A.IDWG = B.IDWG
+			Inner join contactMeanIn C
+			ON A.idCampEsp = C.inboundId
+			where A.IDWG = 1 and A.Tipo = 0
+			AND C.meanContactTypeId = 5
+		)
+
+		select DISTINCT A.User_Id from agents A
+		left join usersByCampigns B on A.User_Id = B.User_Id
+	END;
+
+	IF @action = 14
+	BEGIN --register desconnection MCS
+		INSERT INTO ccDisconnectionMCS (timeStampDisconnection) VALUES(GETDATE());
+	END;
+
+	IF @action = 15
+	BEGIN --update content message
+		IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+			UPDATE ccWAMessagesConversations
+					SET content = @content
+			WHERE messageId = @messageId;
+		END;
+	END;
+
+	IF @action = 16
+	BEGIN --update agent status for reassigning error message
+		IF EXISTS(SELECT 0 FROM ccWhatsAppConversations WHERE conversationId = @conversationId)
+		BEGIN
+			UPDATE ccWhatsAppConversations
+			SET IsAgentLoggingOut = @IsAgentLoggingOut
+			WHERE conversationId = @conversationId;
+		END;
+	END;
+END;'
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
     set @process = ''
     set @sql=''
     EXEC(@sql)

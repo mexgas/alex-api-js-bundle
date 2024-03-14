@@ -7167,9 +7167,15 @@ set nocount off'
 			exec (@sql)
 		end
 		else if @action=7 begin
-			DECLARE @TemporalProcessingSmsStatusUpdates TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, StatusSystemsId INT)
+			DECLARE @TemporalProcessingSmsStatusUpdates TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, StatusSystemsId INT, IsCharged BIT)
 			INSERT INTO @TemporalProcessingSmsStatusUpdates
-			SELECT SystemApiId, StatusSystemsId FROM ProcessingSmsStatusUpdates
+			SELECT SystemApiId, StatusSystemsId, IsCharged FROM ProcessingSmsStatusUpdates
+
+			DECLARE @ChargedMessages INT = (SELECT SUM(CASE WHEN IsCharged = 1 THEN 1 ELSE 0 END) FROM @TemporalProcessingSmsStatusUpdates)
+			IF @ChargedMessages <> 0
+            BEGIN
+                UPDATE ccSettings2 WITH(TABLOCK) SET valor = valor - @ChargedMessages WHERE setting_id = 258 AND valor > 0;
+            END
 
 			DECLARE @UpdatingSmsWorkingTable TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, OldStatusSystemsId INT, NewStatusSystemsId INT, CampaignId INT)
 			INSERT INTO @UpdatingSmsWorkingTable

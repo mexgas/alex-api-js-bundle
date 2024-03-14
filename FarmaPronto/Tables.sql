@@ -1,0 +1,1 @@
+Create table ccRelationIvrWorkingTable(IVR_id int not null,callout_id int not null,callFechaDial datetime not null)

@@ -1595,6 +1595,7 @@ BEGIN
 		WHEN ld.TipoDialingMode IN (''00001000'',''00010000'') THEN ''systemTranslated_Callback'' 
 		WHEN RIGHT(ld.TipoDialingMode, 3) = ''100'' THEN ''systemTranslated_Auto'' 
 		WHEN RIGHT(ld.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' 
+		WHEN ld.TipoDialingMode = ''000000000'' THEN ''systemTranslated_Auto''
 		END AS [dialType], 
 		CASE 
 			WHEN Call.cal_whoHung = 0 THEN ''systemTranslated_Client'' 

@@ -7105,7 +7105,9 @@ set nocount off'
 			  END'
     EXEC(@sql)
 
-    set @process = 'Dineria: Se cambia action 1 para que regrese solo campañas con horario valido. Se cambia completamente action 7 para que actualice los estados en paquetes de la tabla ProcessingSmsStatusUpdates'
+    set @process = 'Dineria: Se cambia action 1 para que regrese solo campañas con horario valido. 
+    						 Se cambia completamente action 7 para que actualice los estados en paquetes de la tabla ProcessingSmsStatusUpdates.
+    						 Se agrega WITH(NOLOCK) en acceso a tablas smsOutSource/smsccoLogDial en actions 7 y 9'
     set @sql='
 		ALTER procedure [dbo].[ccspOutboundSmsMessage] 
 		@action int,
@@ -7137,7 +7139,7 @@ set nocount off'
 								ISNULL((w.new + w.pro),0) AS MessageQuantity
 				FROM ccCamps c
 				LEFT JOIN ccSmsSchedules s ON s.cam_id = c.cam_id
-				LEFT JOIN ccCampsNvosCB  w on c.cam_id = w.id
+				LEFT JOIN ccCampsNvosCB  w ON c.cam_id = w.id
 				WHERE CampType=7 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
 				AND @date BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
 			end
@@ -7179,7 +7181,7 @@ set nocount off'
 
 			DECLARE @UpdatingSmsWorkingTable TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, OldStatusSystemsId INT, NewStatusSystemsId INT, CampaignId INT)
 			INSERT INTO @UpdatingSmsWorkingTable
-			SELECT S.SystemApiId, S.StatusSystemsId, T.StatusSystemsId, S.cam_id FROM smsccoLogDial S
+			SELECT S.SystemApiId, S.StatusSystemsId, T.StatusSystemsId, S.cam_id FROM smsccoLogDial S WITH(NOLOCK)
 			INNER JOIN @TemporalProcessingSmsStatusUpdates T ON S.SystemApiId = T.SystemApiId
 			
 			;WITH CTE AS (
@@ -7215,7 +7217,7 @@ set nocount off'
 
 			UPDATE smsccoLogDial SET Bill = (CASE WHEN T.StatusSystemsId IN (0, 1, 2) THEN 0.7 ELSE 0 END),
 									 statusSystemsId = T.StatusSystemsId
-			FROM smsccoLogDial S
+			FROM smsccoLogDial S WITH(NOLOCK)
 			INNER JOIN @TemporalProcessingSmsStatusUpdates T ON T.SystemApiId = S.SystemApiId
 
 			DELETE FROM ProcessingSmsStatusUpdates 
@@ -7234,8 +7236,8 @@ set nocount off'
 			INSERT INTO #TempSmsOutIds (smsout_id)
 			SELECT DISTINCT wt.smsout_id
 			FROM smsWorkingTable wt
-			JOIN smsOutSource os ON wt.smsout_id = os.smsout_id
-			LEFT JOIN smsccoLogDial cco ON wt.smsout_id = cco.smsout_id
+			JOIN smsOutSource os WITH(NOLOCK) ON wt.smsout_id = os.smsout_id
+			LEFT JOIN smsccoLogDial cco WITH(NOLOCK) ON wt.smsout_id = cco.smsout_id
 			WHERE wt.cam_id=@camId and wt.sms_status IN(1,2) 
 			AND cco.smsout_id IS NULL;
 			

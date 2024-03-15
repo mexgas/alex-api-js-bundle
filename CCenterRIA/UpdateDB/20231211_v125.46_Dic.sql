@@ -63,6 +63,23 @@ BEGIN
                     end'
         EXEC(@sql);
 
+        SET @process = 'Hotfix SMS - Create new table for messages without a status update'
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''UnchangedStatusSmsMessages'')
+                    BEGIN
+                        CREATE TABLE UnchangedStatusSmsMessages (
+                            SystemApiId VARCHAR(100) NOT NULL,
+                            StatusSystemsId INT NOT NULL
+                        );
+                    END;'
+        EXEC(@sql);
+
+        SET @process = 'Hotfix SMS - Adding indexes'
+        SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+                    begin
+                        CREATE INDEX IX_smsccoLogDial_2 ON smsccoLogDial(smsDate,statusSystemsId);
+                    end'
+        EXEC(@sql);
+
 	    -----------------------------------------------------BEGIN K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
 
         SET @process = 'K042023 Se crea setting 258 para creditos globales de SMS'
@@ -7634,7 +7651,249 @@ END'
         EXEC(@sql);
 
     -----------------------------------------------------END CW-8321 Cambiar Tipo de Campaña Uriel Cabrera ----------------------------------------------------------------
+     -----------------------------------------------------BEGIN TT7955 Uriel Cabrera ----------------------------------------------------------------
 
+        SET @process = 'TT7955 Se elimina si existe ccsp_GalateaGetAgentsRelations'
+        SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetAgentsRelations'')
+                    begin
+                        DROP PROCEDURE ccsp_GalateaGetAgentsRelations;
+                    end'
+        EXEC(@sql);
+        
+        SET @process = 'TT7955 Se crea prcedimeinto para relaciones de campañas agente en GalateaAgent'
+        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetAgentsRelations] @Option AS SMALLINT,
+                    @Type AS SMALLINT = 0
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+                        IF @Option = 1 BEGIN
+                            SELECT C.cam_id, C.cam_descripcion, CA.prioridad, A.Login, A.User_id, CA.skill 
+                            FROM ccCamps AS C
+                            JOIN ccCampsAgente AS CA ON C.cam_id = CA.cam_id 
+                            JOIN ccUsers AS A  ON A.User_id = CA.User_id AND A.TipoUser_id=1 AND A.Status = 1 AND C.cam_activo=1 and A.IDArea = C.IDArea
+                            WHERE (@Type = 2 AND C.cam_bNew = 2) OR @Type != 2
+                            ORDER BY C.cam_id, CA.prioridad
+                        END
+                        ELSE IF @Option = 2 BEGIN
+                            SELECT distinct I.Inbound_id, I.descripcion, prioridad, A.Login, A.User_id, skill
+                            FROM ccInboundAgentes G JOIN ccInbound I ON G.Inbound_id = I.Inbound_id
+                            JOIN ccUsers A  ON A.user_id = G.user_id AND A.Status = 1 AND I.IDArea = A.IDArea
+                            ORDER BY I.Inbound_id, Prioridad
+                        END
+                    END
+                    '
+        EXEC(@sql);
+
+        -----------------------------------------------------END TT7955 Uriel Cabrera ----------------------------------------------------------------
+
+
+        -----------------------BEGIN hotfix TT7668 -AgenteKolob - Configuración en el tiempo de notas Marco Garcia--------------------------------------------
+set @process = 'Delete if exist sp ccsp_RIAUpdateEspecConfig TT7668 -AgenteKolob - Configuración en el tiempo de notas'
+set @Sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAUpdateEspecConfig'')
+        begin
+        DROP PROCEDURE ccsp_RIAUpdateEspecConfig;
+        end'
+EXEC(@Sql)
+    
+set @process = 'Create sp ccsp_RIAUpdateEspecConfig TT7668 -AgenteKolob - Configuración en el tiempo de notas'
+SET @sql = '
+    CREATE PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] 
+    @inbound_id              SMALLINT, 
+    @descripcion             VARCHAR(50)  = NULL, 
+    @Status                  TINYINT      = NULL, 
+    @tNotas                  INT          = NULL, 
+    @tMaxWaitCall            INT          = NULL, 
+    @nMaxQue                 INT          = NULL, 
+    @tel_maxwait             VARCHAR(15)  = NULL, 
+    @tel_MaxQueue            VARCHAR(15)  = NULL, 
+    @tel_outservice          VARCHAR(15)  = NULL, 
+    @tel_noct                VARCHAR(15)  = NULL, 
+    @ShowCalifWnd            BIT          = NULL, 
+    @StartTimerOnHangUp      BIT          = NULL, 
+    @editableCallKey         BIT          = NULL, 
+    @queuePosition           BIT          = NULL, 
+    @tMaxQueueCallBack       SMALLINT     = NULL, 
+    @stopRecording           BIT          = NULL, 
+    @dialPrefixOverflow      VARCHAR(10)  = NULL, 
+    @OpriorityT              SMALLINT     = NULL, 
+    @callerIdDesc            VARCHAR(15)  = NULL, 
+    @chat                    TINYINT      = NULL, 
+    @inactiveChatTime        SMALLINT     = NULL, 
+    @maxChats                TINYINT      = NULL, 
+    @chatDomain              VARCHAR(MAX) = NULL, 
+    @chatQueue               SMALLINT     = NULL, 
+    @chatTime                SMALLINT     = NULL, 
+    @dRestrictPlay           BIT          = NULL, 
+    @callBackSurveyAgent     BIT          = NULL, 
+    @callBackSurveyClient    BIT          = NULL, 
+    @agts_notavailable       VARCHAR(15)  = NULL, 
+    @editableDtmf            BIT          = NULL, 
+    @prefijo                 VARCHAR(MAX) = NULL, 
+    @addDataCallBackReminder BIT          = NULL,
+    @recordHold              BIT          = NULL,
+    @editableContactData     BIT          = NULL,
+    @userId                  SMALLINT     = NULL, 
+    @idArea                  SMALLINT     = NULL, 
+    @isCreating              BIT          = NULL
+AS
+SET NOCOUNT ON;
+
+declare @domainInUse bit = 0
+declare @returnValue int = 2
+
+EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
+
+UPDATE ccInbound
+SET 
+    descripcion = ISNULL(@descripcion, descripcion), 
+    STATUS = ISNULL(@status, STATUS), 
+    tNotas = ISNULL(CASE WHEN @chat <> 5  OR @chat IS NULL THEN @tNotas ELSE 10 END, tNotas),
+    tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall), 
+    nMaxQue = ISNULL(@nMaxQue, nMaxQue), 
+    tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait), 
+    tel_MaxQueue = ISNULL(@tel_MaxQueue, tel_MaxQueue), 
+    tel_outservice = ISNULL(@tel_outservice, tel_outservice), 
+    tel_noct = ISNULL(@tel_noct, tel_noct), 
+    bnocturno = CASE
+                    WHEN ISNULL(@tel_noct, 0) = ''0''
+                        OR @tel_noct = ''''
+                    THEN ''0''
+                    ELSE ''1''
+                END, 
+    StartTimerOnHangUp = ISNULL(@StartTimerOnHangUp, StartTimerOnHangUp), 
+    editableCallKey = ISNULL(@editableCallKey, editableCallKey), 
+    queuePosition = ISNULL(@queuePosition, queuePosition), 
+    tMaxQueueCallBack = ISNULL(@tMaxQueueCallBack, tMaxQueueCallBack), 
+    stopRecording = ISNULL(@stopRecording, stopRecording), 
+    dialPrefixOverflow = ISNULL(@dialPrefixOverflow, dialPrefixOverflow), 
+    OpriorityT = ISNULL(@OpriorityT, OpriorityT), 
+    callerIdDesc = ISNULL(@callerIdDesc, callerIdDesc), 
+    chat = ISNULL(@chat, chat), 
+    inactiveChatTime = ISNULL(@inactiveChatTime, inactiveChatTime), 
+    maxChats = ISNULL(@maxChats, maxChats), 
+    chatQueueOverflow = ISNULL(@chatQueue, ISNULL(chatQueueOverflow, 15)), 
+    chatTimeOverflow = ISNULL(@chatTime, ISNULL(chatTimeOverflow, 300)), 
+    startStopRecording = ISNULL(@dRestrictPlay, startStopRecording), 
+    callBackSurveyAgent = ISNULL(@callBackSurveyAgent, callBackSurveyAgent), 
+    callBackSurveyClient = ISNULL(@callBackSurveyClient, callBackSurveyClient), 
+    agts_notavailable = ISNULL(@agts_notavailable, agts_notavailable), 
+    editableDtmf = ISNULL(@editableDtmf, editableDtmf), 
+    prefijo = ISNULL(@prefijo, prefijo), 
+    addDataCallBackReminder = ISNULL(@addDataCallBackReminder, addDataCallBackReminder),
+    recordHold = ISNULL(@recordHold, recordHold),
+    EditableContactData = ISNULL(@editableContactData, EditableContactData)
+WHERE inbound_id = @inbound_id;
+
+
+IF NOT EXISTS (SELECT inbound_id FROM ccinbound WHERE inbound_id <> @inbound_id AND chatDomain = @chatDomain AND chatDomain <> '''')
+BEGIN
+    IF @chatDomain IS NOT NULL
+    BEGIN
+        UPDATE ccinbound SET chatDomain = @chatDomain WHERE inbound_id = @inbound_id
+    END
+END
+ELSE
+BEGIN
+    UPDATE ccinbound SET chatDomain = '''' WHERE inbound_id = @inbound_id
+    set @domainInUse = 1
+END
+
+
+IF @ShowCalifWnd = 1
+BEGIN
+    IF EXISTS (SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inbound_id AND tipo = 0)
+    BEGIN
+        UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inbound_id;
+        SET @returnValue = 1
+    END
+    ELSE
+    BEGIN
+        SET @returnValue = 0
+    END
+END;
+ELSE
+    UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inbound_id;
+
+
+
+IF(@chat <> 5) 
+BEGIN
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+    Create table #ccInboundTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
+    
+    IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
+
+    DELETE FROM #ccInboundTable WHERE columnInfo IN (''bnocturno'');
+
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+        CASE
+            WHEN @chat = 1 THEN 63
+            ELSE 60 END,
+        3, 
+        CCIT.identifierInfo,
+        CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+            CASE 
+                WHEN CCIT.identifierInfo IN (''IN_DESTINATION_WAIT_TIME'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
+                    CASE WHEN CCIT.dataInfo = ''VOICEMAIL'' 
+                        THEN ''COMMON_VOICE_MAIL'' 
+                        ELSE 
+                            CASE WHEN CCIT.dataInfo IS NOT NULL THEN CCIT.dataInfo ELSE ''T&COMMON_NONE'' END 
+                        END
+                WHEN CCIT.identifierInfo IN (''IN_RECORD_ON_HOLD'',''IN_PLAY_QUEUE_ORDER'', ''IN_STOP_RECORDING'', ''IN_SHOW_DISPOSITIONS'', ''IN_CALL_KEY'', ''IN_CONDUCT_CALLBACK_SURVEY'', ''IN_RECEIVE_DTMF_TONES'', ''IN_CALL_BACK'', ''EDIT_CALL_DATASET'') THEN
+                    CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+                WHEN CCIT.identifierInfo = ''IN_CONDUCT_SURVEY'' THEN
+                    CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
+                ELSE CCIT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inbound_id)
+    FROM #ccInboundTable AS CCIT;
+
+    EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
+
+    IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+END
+
+IF @chat = 5 
+BEGIN
+    IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+    BEGIN
+        INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) values (@chat, @descripcion, @inbound_id, (select status from ccInbound where Inbound_id = @inbound_id));
+
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        VALUES (
+            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+            getDate(), 
+            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+            40, 
+            3,'''','''', 
+            @descripcion);
+    END
+END;
+
+if (@domainInUse = 1)
+BEGIN
+    RAISERROR(''Domain already in another ACD Group'', 15, 4)
+END
+
+if(@returnValue <> 2)
+    SELECT @returnValue
+ELSE
+    SELECT 2
+RETURN(0)
+
+SET NOCOUNT OFF
+    ';
+EXEC(@sql)
+	-----------------------END hotfix TT7668 -AgenteKolob - Configuración en el tiempo de notas Marco Garcia--------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

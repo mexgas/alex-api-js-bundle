@@ -56,6 +56,12 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
 	BEGIN TRAN
 	BEGIN TRY
+		SET @process = 'HOTFIX K042023 Se agrega columna Exception a la tabla de ccSmsConversationsResult'
+        SET @sql = 'if not exists (select * from sys.columns where name = N''Exception'' and Object_ID = Object_ID(N''ccSmsConversationsResult''))
+                    begin
+                        alter table ccSmsConversationsResult add Exception int null
+                    end'
+        EXEC(@sql);
 
 	    -----------------------------------------------------BEGIN K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
 
@@ -792,12 +798,7 @@ EXEC(@sql)
 ------------------------------------------------FIN MACL------------------------------------------------------
 
         -----------------------------------------------------BEGIN HOTFIX K042023-Indicador de creditos Ivan Martin ----------------------------------------------------------------
-        SET @process = 'HOTFIX K042023 Se agrega columna Exception a la tabla de ccSmsConversationsResult'
-        SET @sql = 'if not exists (select * from sys.columns where name = N''Exception'' and Object_ID = Object_ID(N''ccSmsConversationsResult''))
-                    begin
-                        alter table ccSmsConversationsResult add Exception int null
-                    end'
-        EXEC(@sql);
+        
 
         SET @process = 'HOTFIX K042023 Se ponen valores en 0 de la nueva columna'
         SET @sql = 'UPDATE ccSmsConversationsResult set Exception=0 where Exception is null'
@@ -4581,7 +4582,7 @@ declare @daysAdd datetime
 
 
 set @currentDay =getdate()
-set @dateadd=dateadd(dd,@rangeDays,getdate())
+set @daysAdd=dateadd(dd,@rangeDays,getdate())
 
 select @rangeDays=valor from ccSettings where setting_id=35
 
@@ -4589,7 +4590,7 @@ select @rangeDays=valor from ccSettings where setting_id=35
 SELECT cal_fusercallback Day
 FROM ccoCallBacks cb with(nolock)
 WHERE user_id = @userID
-and cal_fusercallback between @currentDay and @dateadd
+and cal_fusercallback between @currentDay and @daysAdd
 order by Day'
     EXEC(@sql)
 
@@ -6175,7 +6176,7 @@ BEGIN --save agent, assigdate and tqueue
 		if @onQueueInt<=0 or exists(select * from ccWAOperatingSummary WHERE InboundId = @inboundId and OnQueue<0)begin
 
 			select			
-			@onQueueInt=count(case when onQueue =1 then 1 end) onQueue			
+			@onQueueInt=count(case when onQueue =1 then 1 end)
 			from ccWhatsAppConversations with(nolock)
 			where inboundId= @inboundId
 			and requestDate>=convert(date,getdate(),121)
@@ -7100,15 +7101,13 @@ set nocount off'
     set @sql='IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = N''ProcessingSmsStatusUpdates'') BEGIN
 				CREATE TABLE ProcessingSmsStatusUpdates (
 			    SystemApiId VARCHAR(100) PRIMARY KEY,
-			    StatusSystemsId INT);
+			    StatusSystemsId INT,
+				IsCharged bit);
 			  END'
     EXEC(@sql)
 
-    set @process = 'Dineria: Se cambia action 1 para que regrese solo campañas con horario valido. 
-    						 Se cambia completamente action 7 para que actualice los estados en paquetes de la tabla ProcessingSmsStatusUpdates.
-    						 Se agrega WITH(NOLOCK) en acceso a tablas smsOutSource/smsccoLogDial en actions 7 y 9'
-    set @sql='
-		ALTER procedure [dbo].[ccspOutboundSmsMessage] 
+    set @process = 'Dineria: Se cambia action 1 para que regrese solo campañas con horario valido. Se cambia completamente action 7 para que actualice los estados en paquetes de la tabla ProcessingSmsStatusUpdates. Se agrega WITH(NOLOCK) en acceso a tablas smsOutSource/smsccoLogDial en actions 7 y 9'
+    set @sql='ALTER procedure [dbo].[ccspOutboundSmsMessage] 
 		@action int,
 		@camId int = null,
 		@SentMsg int=null,

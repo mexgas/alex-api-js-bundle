@@ -57,6 +57,10 @@ BEGIN
     BEGIN TRAN
     BEGIN TRY
 
+        SET @process = 'update ccCamps set CampType =0 where CampType is null'
+        SET @sql = 'update ccCamps set CampType =0 where CampType is null'
+        EXEC(@sql);
+
         -----------------------------------------------------BEGIN TT8053 Enrique Ruiz ----------------------------------------------------------------
 
         SET @process = 'TT8053 Create ccLogAgentesDiaViewLast for better access to last status by agent'

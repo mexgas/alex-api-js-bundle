@@ -1447,7 +1447,7 @@ IF @action = 1
                                                                 , conversationIdAfter)
                 VALUES (@conversationId, @conversationIdNew);
             --Save new request by reassign
-            UPDATE ccWAOperatingSummary SET Request = (Request + 1), Assigned = (Assigned - 1),EndedBySystem=EndedBySystem+1
+            UPDATE ccWAOperatingSummary SET Request = (Request + 1)
             WHERE InboundId = @inboundId
 
         EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
@@ -1795,7 +1795,7 @@ BEGIN --new Conversation
         INSERT INTO ccWhatsAppConversationsRelationshipOut (conversationIdBefore, conversationIdAfter)
         VALUES (@conversationId, @conversationIdNew);
         --Save new request by reassign
-        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1), Assigned = (Assigned - 1),EndedBySystem=EndedBySystem+1
+        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1)
         WHERE camId = @camId
 
     EXEC ccsp_ConversationWASaveOut @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
@@ -2360,27 +2360,27 @@ BEGIN
                 and (OnQueue<0 or Assigned<0)
                 ) begin
                 
-                    set @Today =convert(date,getdate(),121)
+            set @Today =convert(date,getdate(),121)
 
-                    ;with waOperationSummary as(
-                    select 
-                    CamId
-                    ,count(case when finishedBy=1 then 1 end) Attended
-                    ,count(case when onQueue=1 and finishedBy=0 then 1 end) onQueue
-                    ,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
-                    ,count(*) Request
-                    ,count(case when finishedBy=2 then 1 end) EndedBySystem
-                    from ccWhatsAppConversationsOut with(nolock)
-                    where camId = @camId and requestDate>=@Today
-                    group by CamId
-                    )
-                    update A 
-                    set A.Attended=B.Attended, A.Assigned=B.Assigned
-                    
-                    ,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
-                    from ccWAOperatingSummaryOut A 
-                    inner join waOperationSummary B on A.CamId=B.CamId
-                end
+            ;with waOperationSummary as(
+            select 
+            CamId
+            ,count(case when finishedBy=1 then 1 end) Attended
+            ,count(case when onQueue=1 and finishedBy=0 then 1 end) onQueue
+            ,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
+            ,count(*) Request
+            ,count(case when finishedBy=2 then 1 end) EndedBySystem
+            from ccWhatsAppConversationsOut with(nolock)
+            where camId = @camId and requestDate>=@Today
+            group by CamId
+            )
+            update A 
+            set A.Attended=B.Attended, A.Assigned=B.Assigned
+            
+            ,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
+            from ccWAOperatingSummaryOut A 
+            inner join waOperationSummary B on A.CamId=B.CamId
+    end
 
     SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
             ISNULL(AverageDialogTime, 0) AS AverageDialogTime,

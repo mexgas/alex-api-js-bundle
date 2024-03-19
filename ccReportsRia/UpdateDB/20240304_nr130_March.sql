@@ -1763,7 +1763,7 @@ EXEC(@sql)
 		[inboundId] AS [inboundId2],
 		[campaignId] AS [campaignId2],
 		[campACDDescription],
-		[total],
+		[total] AS [totalInOutCalls],
 		[abandonedCalls],
 		[abandonedCallsPctg]
 		FROM [dbo].[RepSpececialAbnd]'')

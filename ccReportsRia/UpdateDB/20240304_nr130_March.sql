@@ -1595,6 +1595,7 @@ BEGIN
 		WHEN ld.TipoDialingMode IN (''00001000'',''00010000'') THEN ''systemTranslated_Callback'' 
 		WHEN RIGHT(ld.TipoDialingMode, 3) = ''100'' THEN ''systemTranslated_Auto'' 
 		WHEN RIGHT(ld.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' 
+		WHEN ld.TipoDialingMode = ''000000000'' THEN ''systemTranslated_Auto''
 		END AS [dialType], 
 		CASE 
 			WHEN Call.cal_whoHung = 0 THEN ''systemTranslated_Client'' 
@@ -1667,12 +1668,12 @@ campaign,
 duration,
 ncost,
 iva,
-total ,
+total as totalRow,
 ByCarrier,
 Calltypes,
 dialType,
 whoHangUp,
-dialResult,
+dialResult as callStatus,
 calId,
 year,
 month,
@@ -1762,7 +1763,7 @@ EXEC(@sql)
 		[inboundId] AS [inboundId2],
 		[campaignId] AS [campaignId2],
 		[campACDDescription],
-		[total],
+		[total] AS [totalInOutCalls],
 		[abandonedCalls],
 		[abandonedCallsPctg]
 		FROM [dbo].[RepSpececialAbnd]'')

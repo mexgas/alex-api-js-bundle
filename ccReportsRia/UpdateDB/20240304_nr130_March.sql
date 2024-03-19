@@ -2215,6 +2215,232 @@ end'
 			'
 	EXEC(@sql)
 
+	--CCReportzRIA
+	------------------------ BEGIN fix/125.20231211.0.9 ----------------------------------------
+set @process = 'CW-8302 Alter SP ccspRepAnsweredCallsByDialingRetries Se agrega with(nolock)'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepAnsweredCallsByDialingRetries]
+@action as tinyint,
+@from AS datetime = null,
+@to AS datetime = null
+AS
+
+SET NOCOUNT ON
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if @action = 1
+begin   
+    --Borrar lo que esta para no repetir
+    delete from RepAnsweredCallsByDialingRetries where date >= @from and date < @to
+
+    ;
+    with logExtension as(
+        select user_id,max(Extension) ext from ccLogLogin where fecha between @from and @to
+        group by user_id
+    )
+
+    INSERT INTO RepAnsweredCallsByDialingRetries
+    select
+    A.cal_Inicio as [date],
+    A.cal_id as [calId],
+    A.cal_telefono as [telephone],
+    isnull(B.tipoResDial_id,0) as [dialResultId],
+    isnull(resDial.descripcion,''N/A'') as [dialResult],
+    isnull(C.cal_intentos,0) as [tries],
+    A.cam_id as [campaignId],
+    E.cam_descripcion as [campaign],
+    A.User_id as [userId],
+    ISnull(D.Nombres + '' '' + D.ApellidoPaterno + '' '' + D.ApellidoMaterno,''systemTranslated_NoName'') as [agentName],
+    isnull(logExtension.ext ,'''') as [extension],
+    convert(varchar(12),A.cal_Inicio,108) as [startHour],
+    convert(varchar(12),dateadd(ss,A.cal_tXfer+cal_tRing+cal_tDialog+cal_tNotas,A.cal_Inicio),108) as [endHour],
+    cal_tDialog as [dialogTime],
+    isnull(A.calif_id,0) as [dispositionId],
+    isnull(A.califSub_id,0) as [subDispositionId],
+    isnull(disp.Description,''systemTranslated_Dispositionless'') as [disposition],
+    isnull(subDisp.califSubDesc,''systemTranslated_NoSubDisposition'') as [subDisposition],
+    A.cal_tNotas as [wrapup],
+    datepart(yyyy,cal_Inicio) AS [year],
+    datepart(mm,cal_Inicio) as [month],
+    datepart(dd,cal_Inicio) as [day],
+    datepart(hh,cal_Inicio) as [hour],
+    datepart(mi,cal_Inicio) as [minutes]
+    from ccoCallsOut A with(nolock)
+    left join ccoLogDials B with(nolock) on A.cal_id=B.cal_id
+    left join ccoCallsOutSource C with(nolock) on C.callout_id=A.callout_id
+    left join ccUserView D on A.User_id=D.User_id
+    left join ccCamps E on A.cam_id=E.cam_id
+    left join ccTipoCalifOUT disp On disp.calif_id=A.calif_id
+    left join ccTipoCalifSubOUT subDisp On subDisp.califSub_id=A.califSub_id
+    left join ccTipoResultadoDial resDial on resDial.tipoResDial_id=B.tipoResDial_id
+    left join logExtension on logExtension.user_id=A.User_id
+
+    where A.cal_Inicio >= @from
+    and A.cal_Inicio < @to
+    and A.cal_manual in(0,2)
+    order by date
+END'
+    EXEC(@sql)
+
+
+    ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.9---------------------------------------------------------
+    set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+ 
+    set @process = 'alter Table smsccoLogDial add Message'
+    set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))
+begin
+    alter Table smsccoLogDial add Message varchar(200) null
+end
+'
+    EXEC(@sql)
+ 
+set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+    EXEC(@sql)
+
+    set @process = 'Alter SP ccspRepOutSMSAnswDetailByCamp Se agrega columna smsccoLogDial.message'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepOutSMSAnswDetailByCamp] 
+@action as tinyint,
+@from as datetime = NULL,
+@to as datetime = NULL
+AS
+
+IF @from IS NULL
+    SELECT @from = convert(DATETIME, convert(VARCHAR(11), getdate()))
+
+IF @to IS NULL
+    SELECT @to = getdate()
+
+IF @action = 1
+BEGIN
+    --Borrar lo que esta para no repetir
+    DELETE
+    FROM RepOutSMSAnswDetailByCamp WITH (ROWLOCK)
+    WHERE date >= @from AND date < @to
+
+    INSERT INTO RepOutSMSAnswDetailByCamp
+    SELECT smsDate date, cam.cam_id camId, cam_descripcion campaignName,isnull(smslog.Message,src.message) message, phone senderNumber, cam.cam_id campaignId
+    FROM smsccoLogDial smslog (nolock)
+        LEFT JOIN cccamps cam on cam.cam_id=smslog.cam_id
+        LEFT JOIN smsoutSourceMessage src on src.smsout_id=smslog.smsout_id
+    WHERE smsDate >= @from AND smsDate < @to
+    ORDER BY smsDate
+END
+'
+    EXEC(@sql)
+
+    
+
+    set @process = 'Dineria -- Add Column RepAgentKPI.callsAvgTimeCustom'
+    set @sql='if not exists (select * from sys.columns where name = N''callsAvgTimeCustom'' and Object_ID = Object_ID(N''RepAgentKPI''))
+begin
+    ALTER TABLE RepAgentKPI ADD callsAvgTimeCustom [decimal](10, 0) NULL;
+end'
+    EXEC(@sql)
+
+     set @process = 'DEV1-459 alter SP ccspRepAgentKPI se quita with index Add Column callsAvgTimeCustom'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentKPI]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+
+SET NOCOUNT ON
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null
+    select @to = getdate()
+
+if(@to = convert(datetime,convert(varchar(11),getdate(),121)+''03:00:00'',121)) AND @from = DATEADD(dd,-1,@to)
+BEGIN   
+    select @from = convert(datetime,convert(varchar(11),@from))
+END
+
+if @action = 1
+begin
+   delete RepAgentKPI with(rowlock) where date >= @from AND date < @to
+    
+    ;with callTemp as(  
+    select  User_id, statusCall_id, cal_tDialog, convert(date, cal_Inicio, 121) as cal_Inicio, cal_whoHung, 0  as callType
+    from ccoCallsOut with(nolock)
+    where cal_inicio between @from and @to and cal_manual < 3
+    union all
+    select  User_id, statusCall_id, cal_tDialog, convert(date, cal_Inicio, 121) as cal_Inicio, cal_whoHung, 1 as callType
+    from ccCallsIn with(nolock)
+    where cal_inicio between @from and @to 
+    ) 
+    , Conteos as(
+    select user_id, cal_Inicio, 1 Total, case callType when 1 then 1 else 0 end Cin, case callType when 0 then 1 else 0 end Cout,
+    case when statusCall_id in (11,13,15,16,17) and cal_tDialog<10 then 1 else 0 end C10,
+    case when statusCall_id in (11,13,15,16,17) and cal_tDialog<20 then 1 else 0 end C20,
+    case when statusCall_id in (11,13,15,16,17) and cal_tDialog<30 then 1 else 0 end C30,
+    cal_whoHung from callTemp
+    ), logAgentDialogDistinct as(
+    
+    select distinct User_id,fecha_Calc_ms/1000.0 as fecha_Calc_ms,fecha_Dispo,fecha_Dialog
+    from ccLogAgentesDia_Dialog 
+    where fecha_Dialog between @from and @to     
+    )
+    , Trd as(   
+    select  User_id, cast(AVG(fecha_Calc_ms) as decimal(10,0)) avg_fCalc
+    , CONVERT(date,fecha_Dialog,121) as fecha_Dispo
+    ,sum(fecha_Calc_ms) sum_fCalc
+    from logAgentDialogDistinct with(nolock)
+    where fecha_Dialog between @from and @to 
+    group by User_id,CONVERT(date,fecha_Dialog,121)
+    )
+    , Snd as(
+    select user_id, cal_Inicio, sum(Total) Total, sum(Cin) Cin, sum(Cout) Cout,
+    sum(C10) C10, sum(C20) C20, sum(C30) C30, sum(cal_whoHung) cal_whoHung
+    from Conteos group by user_id, cal_Inicio
+    ), timeAgtDontDialog as(
+    select A.User_id,convert(date,fecha) date
+    ,sum(case when A.TipoStatusAge_id not in(0,4,5,6,9,37) then tStatus else 0 end) tDontDialog 
+    ,sum(case when A.TipoStatusAge_id in(3,31) then tStatus else 0 end) tready
+    from ccLogAgentesDia A with(nolock)
+    where fecha between @from and @to
+    group by A.User_id,convert(date,fecha)
+    
+    )
+
+
+    insert into RepAgentKPI
+    select Snd.cal_Inicio,Fst.Login as login , Fst.user_id as [userId]
+    ,Nombres + isnull('' ''+ApellidoPaterno, '''') + isnull('' ''+ApellidoMaterno, '''') as [user]
+    ,Total as totalCalls, Cin as callsIn
+    ,Cout as callsOut, C10 as [finishedCalls10], C20 as [finishedCalls20], C30 as [finishedCalls30], cal_whoHung as whoHung
+    ,isnull(avg_fCalc, 0) as callsAvgTime
+    ,datepart(yyyy,Snd.cal_Inicio) [year]
+    ,datepart(mm,Snd.cal_Inicio) [mounth]
+    ,datepart(dd,Snd.cal_Inicio) [day]
+    ,0 as [hour]
+    ,0 as [minute]
+    ,convert(decimal(10,0),agtTime.tDontDialog/Total) as [callsAvgTimeCustom]   
+    from Snd
+    inner join ccUserView Fst on Fst.User_id = Snd.User_id
+    left join Trd on Trd.User_id=Snd.User_id and Trd.fecha_Dispo=Snd.cal_Inicio
+    left join timeAgtDontDialog agtTime on agtTime.User_id=Snd.User_id and agtTime.date=Snd.cal_Inicio
+    order by cal_Inicio
+
+    
+
+end'
+    EXEC(@sql)
+	------------------------ END fix/125.20231211.0.9 ----------------------------------------
+
 
 
 

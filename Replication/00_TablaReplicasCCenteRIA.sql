@@ -80,6 +80,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cccallsreject',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogtransfers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccChannelTransfer',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccChannelTransfer',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'IVR',0)	
@@ -199,6 +200,10 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'sm
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsOutSource',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsoutSourceMessage',@idInt,0)
 
+set @idInt=@idInt+1
+insert into publicationTableCCenterRIA(publicationName,status) values(N'AuxiliarReady',0)	
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'TipoReadyAuxiliar',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogAgentesAuxiliarReady',@idInt,0)
 
 
 
@@ -230,6 +235,7 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGr
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsApp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AuxiliarReady',0)
 
 
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')

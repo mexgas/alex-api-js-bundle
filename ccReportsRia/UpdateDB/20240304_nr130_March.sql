@@ -1438,44 +1438,44 @@ EXEC(@sql)
 set @process = 'CREATE VIEW RepOutDialDetailView'
 set @sql = 'CREATE VIEW RepOutDialDetailView as 
 select
-	[date]  ,
-	[callKey]  ,
+	[date],
+	[callKey],
 	[telephone],
-	[dialResultId]  ,
-	[dialResult]  ,
-	[campaignId]  ,
-	[campaign]  ,
-	[timeMessage]  ,
-	[year]  ,
-	[month]  ,
-	[day]  ,
-	[hour]  ,
-	[minutes]  ,
-	[listName] ,
-	[billed]  ,
-	[data1]  ,
-	[data2]  ,
-	[data3]  ,
-	[data4]  ,
-	[data5]  ,
+	[dialResultId],
+	[dialResult],
+	[campaignId],
+	[campaign],
+	[timeMessage],
+	[year],
+	[month],
+	[day],
+	[hour],
+	[minutes],
+	[listName],
+	[billed],
+	[data1] [Dato1],
+	[data2] [Dato2],
+	[data3] [Dato3],
+	[data4] [Dato4],
+	[data5] [Dato5],
 	[fileMoved],
-	[DCCustomer]  ,
-	[disconnectCause]  ,
-	[dialType]  ,
-	[TipoTel]  ,
-	[CallDisposition]  ,
-	[CallSubDisposition]  ,
-	[data6]  ,
-	[data7]  ,
-	[data8]  ,
-	[data9]  ,
-	[data10]  ,
-	[data11]  ,
-	[data12]  ,
-	[data13]  ,
-	[data14]  ,
-	[data15]  ,
-	[preview_Time]  ,
+	[DCCustomer],
+	[disconnectCause],
+	[dialType],
+	[TipoTel],
+	[CallDisposition],
+	[CallSubDisposition],
+	[data6],
+	[data7],
+	[data8],
+	[data9],
+	[data10],
+	[data11],
+	[data12],
+	[data13],
+	[data14],
+	[data15],
+	[preview_Time],
 	[login] as [user]
 	from RepOutDialDetail NOLOCK'
 EXEC(@sql)
@@ -1649,7 +1649,8 @@ EXEC(@sql)
 
 
 set @process = 'CREATE VIEW RepViewOutCallsDetail'
-set @sql = 'CREATE VIEW RepViewOutCallsDetail AS SELECT
+set @sql = 'CREATE VIEW [dbo].[RepViewOutCallsDetail] AS 
+SELECT
 date,
 callKey,
 telephone,
@@ -1661,8 +1662,8 @@ CallDisposition,
 subDisposition,
 extension,
 userId,
-login,
-username,
+[login] [userName],
+username [login],
 campaignId,
 campaign,
 duration,
@@ -1681,11 +1682,11 @@ day,
 hour,
 minutes,
 trunk,
-data1,
-data2,
-data3,
-data4,
-data5,
+data1 [Dato1],
+data2 [Dato2],
+data3 [Dato3],
+data4 [Dato4],
+data5 [Dato5],
 MessageTime,
 grabId  
 FROM RepOutCallsDetail nolock'
@@ -1697,7 +1698,7 @@ SET @sql = '
 	UPDATE
 		TranslatedReports
 	SET
-		columns = ''login|campaign|ByCarrier|Calltypes|dialType|whoHangUp|subDisposition|dialResult''
+		columns = ''login|campaign|ByCarrier|Calltypes|dialType|whoHangUp|subDisposition|callStatus''
 	WHERE
 		id = 4020
 '
@@ -1781,6 +1782,24 @@ EXEC(@sql)
 				(4020, ''campaigns'', 4, ''campaignId'', ''Outbound AI''),
 				(4020, ''campaigns'', 6, ''campaignId'', ''Outbound Preview'')
 			'
+	EXEC(@sql)
+
+	set @process = 'K063007-K063009 Add view RepViewSpececialAgtPerformance to support the campaign index management'
+	set @sql='IF NOT EXISTS(SELECT * FROM SYS.VIEWS WHERE NAME=''RepViewSpececialAgtPerformance'')
+	BEGIN
+		EXEC(''CREATE VIEW [dbo].[RepViewSpececialAgtPerformance] AS
+		SELECT
+		[date],
+		[userId],
+		[user] AS [userName],
+		[login],
+		[Answered],
+		[promises],
+		[promisesPctg],
+		[avgCallTime],
+		[avgWrapupTime]
+		FROM [dbo].[RepSpececialAgtPerformance]'')
+	END'
 	EXEC(@sql)
 
 	-----------------------------------------------------END Enrique Ruiz -----------------------------------------------------------------

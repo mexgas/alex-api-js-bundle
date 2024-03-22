@@ -101,7 +101,7 @@ case when a.tipo_llamada=2 then  isnull( subOut.califSubDesc ,'''') else isnull(
 a.cal_tMoh as cal_tMoh,repositorios.ruta_repositorio,
 @encrypted as IsEncrypted, A.Prefijo as Prefix
 INTO #tmpRecords
-from RIA_GRABACION A
+from RIA_GRABACION A with(nolock)
 inner join #userAgent on #userAgent.userId=A.age_id
 inner join trec_repositorios repositorios on repositorios.id_repositorio=A.id_repositorio
 left join ccPosicion P on A.cal_extension * -1 =P.pos_id
@@ -162,7 +162,7 @@ convert(varchar(8),DATEADD(ss, duracion, 0),114) as formato_duracion,A.grab_id,
 case when a.tipo_llamada=2 then  isnull( subOut.califSubDesc ,'''') else isnull( subIn.califSubDesc ,'''') end  AS califSub_id,
 a.cal_tMoh as cal_tMoh,repositorios.ruta_repositorio,
 @encrypted as IsEncrypted, A.Prefijo as Prefix 
-from RIA_GRABACIONConsulta A
+from RIA_GRABACIONConsulta A with(nolock)
 inner join #userAgent on #userAgent.userId=A.age_id
 inner join trec_repositorios repositorios on repositorios.id_repositorio=A.id_repositorio
 left join ccPosicion P on A.cal_extension * -1 =P.pos_id

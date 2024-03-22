@@ -84,6 +84,45 @@ SET @sql = '
 			update  tableLangueDbLoader set translate= ''Porta de discagem não encontrada''  where tag = ''type-camp-no-international-port'' and languageId=2
 		end'
 EXEC(@sql);
+
+SET @process = 'CW-831 Drop SP ccsp_GetDialingCodesByCamp'
+SET @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GetDialingCodesByCamp'')
+    begin
+        DROP PROCEDURE ccsp_GetDialingCodesByCamp;
+    end
+	'
+EXEC(@sql);
+
+SET @process = 'CW-831 Create SP ccsp_GetDialingCodesByCamp'
+SET @sql = '
+Create procedure ccsp_GetDialingCodesByCamp
+@cam_id int
+as
+if((select COUNT(*) from 
+(
+	select idCode from ccoDialers a
+	inner join ccoDialerCamp b
+	on b.dialer_id = a.dialer_id
+	where a.IdCode=0 and b.cam_id=@cam_id and a.DialingType=0
+)
+result)>0)
+begin
+	select 0 as Code
+end
+else
+begin
+	select  replace(Code,''-'','''') from CodesInterDialing a 
+	inner join ccoDialers b 
+	inner join ccoDialerCamp c 
+	on c.dialer_id = b.dialer_id 
+	on b.IdCode = a.id 
+	where c.cam_id = @cam_id and  b.DialingType=0 
+end
+
+
+	'
+EXEC(@sql);
         ----------------------------------------------------- END Frida Orta----------------------------------------------------------------
  
 

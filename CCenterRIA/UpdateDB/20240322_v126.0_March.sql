@@ -80,22 +80,6 @@ SET @process = 'CW-831 Create SP ccsp_GetDialingCodesByCamp'
 SET @sql = '
 Create procedure ccsp_GetDialingCodesByCamp
 create procedure [dbo].[ccsp_GetDialingCodesByCamp]
-
-
-Jesús Castro Lares
-15 hours ago
-Se crea SP de acuerdo a los últimos cambios establecidos en producto, se agrega left join para simplificar los casos de todos los paises.
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
 @cam_id int
 as
 if((select COUNT(*) from 
@@ -182,22 +166,6 @@ nDescartes int,
 name_agent varchar(max),
 SimultaneousRecs int,
 international int,
-
-
-Jesús Castro Lares
-15 hours ago
-Se modifico tipo de dato bool a int, ya que se devuelve el idcode del registro cargado en base internacional o 0 en los nacionales
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
 tz_tmp int,
 tz2_tmp int,
 tz3_tmp int,
@@ -522,22 +490,6 @@ SET @sql = '
                         
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
                         p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
-
-
-Jesús Castro Lares
-15 hours ago
-Se retorna IDCode ya que no devolvia dato al aplicarse el insert
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
                         from ccoDialers d
                         inner join cstoProvedor p on p.provedor_id=d.provedor_id
                         where Puerto in (select portId from #tempPortTable)
@@ -556,44 +508,10 @@ Create Jira issue
                         xfertype = case @XferType when 0 then xfertype else @XferType end,
                         DialingType = case when @DialingType = 0 then DialingType when @DialingType = 2 then 0 else @DialingType end,
                         IdCode = case when @DialingType = 1 then 0 when @idDialingCode != IdCode then @idDialingCode else IdCode end
-
-
-Jesús Castro Lares
-15 hours ago
-cambia a 0 dialing code cuando el dialingtype es 1
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
                         where Dialer_id=cast(@DialerId as int)
                         
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
                         p.descrip as ProviderDescription, Puerto, XferType, DialingType, case when DialingType = 1 then 0 else IdCode end as DialingCode
-
-
-Jesús Castro Lares
-15 hours ago
-Se retorna IDCode ya que no devolvia dato al aplicarse el update
-
- 
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
                         from ccoDialers d
                         inner join cstoProvedor p on p.provedor_id=d.provedor_id
                         where dialer_id=@DialerId
@@ -637,24 +555,6 @@ SET @sql = '
                     declare @language tinyint
                     select @language = valor from ccSettings nolock where setting_id = 27
                     select 
-
-
-Jesús Castro Lares
-15 hours ago
-Se agrega la opción de todos los países de acuerdo al idioma y se hace union con el resto de los codigos
-
- 
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
                     0
                     , case
                         when @language = 0 then ''Todos los países''
@@ -676,44 +576,12 @@ EXEC(@sql);
 set @process = 'Se agrega tabla de areasCode'
 set @sql='IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = N''AreaCode'') BEGIN
 CREATE TABLE AreaCode (
-
-
-Jesús Castro Lares
-15 hours ago
-Se creatabla de AreaCode para relacionar los codigos de marcacion que se repiten
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
     IdArea INT,
     IdCode INT,
     Estado VARCHAR(100),
     Numero INT
 );
 INSERT INTO AreaCode (IdArea, IdCode, Estado, Numero)
-
-
-Jesús Castro Lares
-15 hours ago
-Se realiza insert de informacion
-
-
-Reply
-
-Resolve
-
-Delete
-
-Like
-
-Create Jira issue
 VALUES
 (1, 1, ''Alabama'', 205),
 (2, 1, ''Alabama'', 251),

@@ -3,25 +3,19 @@
 /*******************************/
 /*
 Author:
-
-
 Date: 2023/07/04
 Description: K089000
-
 Database: CCenterRia
 Required version: 125.37
-
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
 SET NOCOUNT ON
-
 DECLARE @version INT, @versionFix INT
 DECLARE @actualVersion INT, @actualVersionFix INT
 DECLARE @sql VARCHAR(max)
 DECLARE @errorGenerated VARCHAR(max)
 DECLARE @process VARCHAR(max)
 DECLARE @versionALL VARCHAR(max);
-
 /* Version to release (use the version of your own databse)*/
 /*******************************************************************************************************
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
@@ -31,35 +25,25 @@ SET @version = 126 --**********actualizar a 124 sin fix
 SET @versionfix = 0
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
-
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
-
 SELECT @versionALL = valor
 FROM ccsettings
 WHERE setting_id = 77;
-
 SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 5;
-
 --- Validacion para cuando pasamos a una nueva version LTS
 declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
-
-
 IF @version > @actualVersion 
 BEGIN 
     SET @actualVersionFix = 0
     select @version,@actualVersion,@versioMajer
 END
-
 IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
 BEGIN
     BEGIN TRAN
     BEGIN TRY
-
         ----------------------------------------------------- BEGIN Frida Orta----------------------------------------------------------------
-
-
 SET @process = 'DEV2-405 update tableLangueDbLoader'
 SET @sql = '
 		if  exists(select tag from tableLangueDbLoader where tag = ''type-camp-no-international-port'' and languageId=0)
@@ -68,7 +52,6 @@ SET @sql = '
 		end
 		'
 EXEC(@sql);
-
 SET @process = 'DEV2-405 update tableLangueDbLoader'
 SET @sql = '
 	if  exists(select tag from tableLangueDbLoader where tag = ''type-camp-no-international-port'' and languageId=1)
@@ -76,7 +59,6 @@ SET @sql = '
 			update tableLangueDbLoader set translate=''Dialing port not found'' where tag = ''type-camp-no-international-port'' and languageId=1
 		end'
 EXEC(@sql);
-
 SET @process = 'DEV2-405 update tableLangueDbLoader'
 SET @sql = '
 	if  exists(select tag from tableLangueDbLoader where tag = ''type-camp-no-international-port'' and languageId=2)
@@ -84,10 +66,7 @@ SET @sql = '
 			update  tableLangueDbLoader set translate= ''Porta de discagem não encontrada''  where tag = ''type-camp-no-international-port'' and languageId=2
 		end'
 EXEC(@sql);
-
         ----------------------------------------------------- END Frida Orta----------------------------------------------------------------
-
-
         ----------------------------------------------------- BEGIN JCL----------------------------------------------------------------
 SET @process = 'CW-831 Drop SP ccsp_GetDialingCodesByCamp'
 SET @sql = '
@@ -97,22 +76,32 @@ SET @sql = '
     end
 	'
 EXEC(@sql);
-
 SET @process = 'CW-831 Create SP ccsp_GetDialingCodesByCamp'
 SET @sql = '
-create procedure [dbo].[ccsp_GetDialingCodesByCamp]
+create procedure ccsp_GetDialingCodesByCamp
 @cam_id int
 as
-begin
-	select isnull(id, 0) as id, isnull(Code, 0 ) as Code from ccoDialers a
+if((select COUNT(*) from 
+(
+	select idCode from ccoDialers a
 	inner join ccoDialerCamp b
-		on a.dialer_id = b.dialer_id
-	left join CodesInterDialing c
-		on a.IdCode = c.id
-	where a.DialingType = 0 and b.cam_id = @cam_id
+	on b.dialer_id = a.dialer_id
+	where a.IdCode=0 and b.cam_id=@cam_id and a.DialingType=0
+)
+result)>0)
+begin
+	select 0 as Code
+end
+else
+begin
+	select  replace(Code,''-'','''') from CodesInterDialing a 
+	inner join ccoDialers b 
+	inner join ccoDialerCamp c 
+	on c.dialer_id = b.dialer_id 
+	on b.IdCode = a.id 
+	where c.cam_id = @cam_id and  b.DialingType=0 
 end'
 EXEC(@sql);
-
 SET @process = 'CW-831 change type bool to int'
 SET @sql = '
 ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
@@ -132,24 +121,19 @@ declare @camSurvey INT, @campType INT;
 select @camSurvey = 0
 DECLARE @iZonasTable TABLE (value int)
 declare @maxRecs varchar(3) = 0
-
 select @maxRecs = valor from ccsettings (nolock) where setting_id = 251 and Status = 1		
 select @camSurvey = cam_id from cccamps  where cam_id = @CAMPID  and isnull(callsBySurvey,0) > 0  and isnull(ivrScript,0) > 0;
 SELECT @campType = cc.CampType FROM dbo.ccCamps AS cc WHERE cc.cam_id =  @CAMPID;
-
 -- VALIDAMOS EL IDIOMA Y LADA CONFIGURADA --
 SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
 select @revHorario=valor from ccsettings where setting_id = 112
 -- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
 SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@CAMPID
 SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
-
 SET DATEFIRST 1
 --Checamos si es horario de verano
 select @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
-
 if @iZonas is null begin
-
 exec @iZonas=ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0              
 --Checamos si la campaña tiene horarios configurados
 	if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
@@ -167,7 +151,6 @@ exec @iZonas=ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0
 				end
 	end
 end
-
 set @sql=''CREATE TABLE #NEW_JOBS
 (callout_id int,
 	cam_id int,
@@ -193,36 +176,25 @@ tz3_tmp int,
 tz4_tmp int,
 tz5_tmp int
 )''
-
-
 -- 0=Ambas, 1=CallBacks, 2=Nuevas
 select @topCount=valor from ccSettings where setting_id=94
-
 if isnull(@topCount,0)=0
 select @topCount=case when @nAgentsLogin<3 then 30
 when @nAgentsLogin>=3 and @nAgentsLogin<6 then 70
 when @nAgentsLogin>=6 and @nAgentsLogin<10 then 120
 when @nAgentsLogin>=10 and @nAgentsLogin<16 then 180
 when @nAgentsLogin>=16 then 240 else 20 end
-
 select @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
-
 declare @isVerano varchar(max)
 set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' END
-
 IF(@campType = 7)
 BEGIN
 set @isVerano = ''W.iTimeZone'' + case @bIsDaylight when 1 then ''_summer'' else '''' END
 END
-
-
 if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
 begin
-
 select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
-
 select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
-
 IF(@campType = 7)
 BEGIN
 	select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
@@ -301,13 +273,10 @@ cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
 END
 										
 end -- TOMA EN CUENTA LOS CALLBACKS
-
 if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
 begin
 			select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
-
 			select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
-
 			IF(@campType = 7)
 			BEGIN
 				select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
@@ -383,7 +352,6 @@ cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
 				and isnull(R.status,2) = 2
 				order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
 			END
-
 end -- TOMA EN CUENTA LAS NUEVAS
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
 select @sql=@sql+nchar(13)+ ''SET rowcount 0''
@@ -392,7 +360,6 @@ if @Test=0
 			select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
 			WHERE callout_id in(select callout_id from #NEW_JOBS)''
 end
-
 if @Test = 2
 begin
 	select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
@@ -406,7 +373,6 @@ BEGIN
 	IF(@isDashboardApi = 1)
 	BEGIN
 			select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
-
 			select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
 			SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
 			+@isVerano+'',''
@@ -445,7 +411,6 @@ cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
 			order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
 			-- TOMA EN CUENTA LOS REGISTROS PROCESANDOSE
 	END
-
 	select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial,
 	user_id,
 case when tz>0  then tz  else tz_tmp end as tz,
@@ -461,22 +426,18 @@ case when tz5>0 then tz5 else tz5_tmp end as tz5,
 	NULL as dialOrder, list_id, sequence, calkey,
 	0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type, nDescartes, name_agent, SimultaneousRecs,'' + @maxRecs + '' maxRecs, international
 	FROM #NEW_JOBS where len(cal_telefono)>0
-
 	---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
 	declare @regval int
 	SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
 	
 	''
 end
-
 set @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''
 --print (@sql)
 exec(@sql)
-
 return(0)
 	'
 EXEC(@sql);
-
 SET @process = 'CW-8305 se modifica update para planchar dialingType'
 SET @sql = '
                     ALTER PROCEDURE [dbo].[ccsp_GalateaDialer]
@@ -492,19 +453,15 @@ SET @sql = '
                     @dialer_ids varchar(2000)='''',
                     @DialingType tinyint = 0,
                     @idDialingCode int = 0
-
                     AS
                     set nocount on
-
                     if @action=1
                     begin
                         select provedor_id as ProviderId, descrip as ProviderName  from cstoProvedor
                     end
-
                     if @action=2 --Insert
                     begin
                         create table #tempPortTable( portId int primary key)
-
                         if @PortEnd>0 begin
                             begin transaction
                                 while @PortNumber<=@portEnd begin
@@ -523,29 +480,22 @@ SET @sql = '
                             select -1 as ResponseCode
                             return(0)
                         end
-
                         Insert ccoDialers (Descripcion, Puerto, Status, provedor_id, xfertype, DialingType, IdCode) 
                         Select @Description+''_''+CAST(portId as varchar(5)), portId, @Status, @Provider, @XferType, case @DialingType when 2 then 0 else @DialingType end, @idDialingCode from #tempPortTable t
-                        
-
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
                         p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
                         from ccoDialers d
                         inner join cstoProvedor p on p.provedor_id=d.provedor_id
                         where Puerto in (select portId from #tempPortTable)
-
                         drop table #tempPortTable
                     end
-
                     if @action=3 --Update
                     begin
-
                         if exists(select Puerto from ccoDialers where Puerto=@PortNumber and dialer_id <> @DialerId)
                         begin
                             select -1 as ResponseCode ---Port already exists
                             return(0)
                         end
-
                         Update ccoDialers set Descripcion=case @Description when '''' then Descripcion else @Description+''_''+cast(@PortNumber as varchar(5)) end,
                         Puerto=case @PortNumber when '''' then Puerto else @PortNumber end, Status=case @Status when '''' then Status else @status end,
                         provedor_id=case @Provider when '''' then provedor_id else @Provider end,
@@ -560,29 +510,23 @@ SET @sql = '
                         inner join cstoProvedor p on p.provedor_id=d.provedor_id
                         where dialer_id=@DialerId
                     end
-
                     if @action=4 --Delete
                     begin
-
                         if exists(select Dialer_id from ccoDialerCamp where
                             Dialer_id in (select Value from dbo.fn_RIASplitDelimited (@dialer_ids, '','')))
                         begin
                             select -2 as ResponseCode --Existe alguna campaña que esta utilizando este dialer
                             return(0)
                         end
-                        
                         declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15))
-
                         insert @portsDelete (DialerId,Port,PortDescription)
                         select Value, Puerto,Descripcion from dbo.fn_RIASplitDelimited (@dialer_ids, '','') 
                         inner join ccoDialers on dialer_id=Value
-
                         delete from ccoDialers Where Dialer_id in (select DialerId from @portsDelete)
                         
                         select 200 as ResponseCode, DialerId, PortDescription
                         from @portsDelete
                     end
-
                     if @action=5 --Ports Info
                     begin
                         select dc.cam_id as CampId, c.cam_descripcion as CampName, graphic_id as Frame, c.IDArea, a.AreaName
@@ -591,24 +535,18 @@ SET @sql = '
                         inner join ccRIACat_Areas a on a.IDArea=c.IDArea
                         inner join ccRIACampsGraph cg on c.cam_id=cg.cam_id
                         where dc.dialer_id=@DialerId
-
                         return(0)
                     end
-
                     set nocount off
 	'
 EXEC(@sql);
-
 SET @process = 'CW-8305 Agregar opcion todos los paises'
 SET @sql = '
                     ALTER PROCEDURE [dbo].[GetInterDialing]
-
                     AS
                     BEGIN
-
                     declare @language tinyint
                     select @language = valor from ccSettings nolock where setting_id = 27
-
                     select 
                     0
                     , case
@@ -616,9 +554,7 @@ SET @sql = '
                         when @language = 1 then ''All countries''
                         else ''Todos os países'' end description
                     , ''0'' Code
-
 					union
-
                     select 
                     id
                     , case
@@ -627,11 +563,9 @@ SET @sql = '
                         else PT end description
                     , Code 
                     from CodesInterDialing nolock
-
                     END
 	'
 EXEC(@sql);
-
 set @process = 'Se agrega tabla de areasCode'
 set @sql='IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = N''AreaCode'') BEGIN
 CREATE TABLE AreaCode (
@@ -640,7 +574,6 @@ CREATE TABLE AreaCode (
     Estado VARCHAR(100),
     Numero INT
 );
-
 INSERT INTO AreaCode (IdArea, IdCode, Estado, Numero)
 VALUES
 (1, 1, ''Alabama'', 205),
@@ -985,21 +918,417 @@ VALUES
 EXEC(@sql)
  
          ----------------------------------------------------- END JCL----------------------------------------------------------------
+		 		         ------------------------------------------------------ BEGIN Gaby------------------------------------------------------------------------------
+SET @process = 'Drop SP ccsp_RIAConfCamp'
+SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_RIAConfCamp'')
+    begin
+        DROP PROCEDURE ccsp_RIAConfCamp;
+    end
+    '
+EXEC(@sql);
+SET @process = 'Create SP ccsp_RIAConfCamp'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID INT = NULL
+        AS
+        SET NOCOUNT ON
+        DECLARE @tableExistsRec TABLE (
+            camId INT PRIMARY KEY
+            ,existRec BIT
+            )
+        DECLARE @camByUser TABLE (
+            camId INT PRIMARY KEY
+            ,isCheck BIT
+            )
+        DECLARE @camId INT
+            ,@id INT;
+        DEClARE @intenationalDialingPorts bit, @nationalDialingPorts bit;
+        declare @tempInternationalCode int
  
+        if((select COUNT(*) from ( select top 1 IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=0  ) result ) > 0)
+        BEGIN
+            set @intenationalDialingPorts = 1
+        END
+        ElSE
+        BEGIN
+            set @intenationalDialingPorts = 0;
+        END
+        if((select COUNT(*) from ( select top 1  IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=1  ) result ) > 0)
+        BEGIN
+            set @nationalDialingPorts = 1
+        END
+        ElSE
+        BEGIN
+            set @nationalDialingPorts = 0;
+        END
+        IF NOT EXISTS (
+                SELECT *
+                FROM ccUsers_Roles
+                WHERE User_id = @User_id
+                    AND Rol_id = 7
+                )
+        BEGIN
+            INSERT INTO @camByUser
+            SELECT *
+                ,0
+            FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
+            WHERE @campID IS NULL
+                OR cam_id = @campID
+        END
+        ELSE
+        BEGIN
+            INSERT INTO @camByUser
+            SELECT cam_id
+                ,0
+            FROM ccCamps
+            WHERE (
+                    IDArea > 0
+                    OR IDArea IS NULL
+                    )
+                AND (
+                    @campID IS NULL
+                    OR cam_id = @campID
+                    )
+        END
+        WHILE EXISTS (
+                SELECT *
+                FROM @camByUser
+                WHERE isCheck = 0
+                )
+        BEGIN
+            SELECT TOP 1 @camId = camId
+            FROM @camByUser
+            WHERE isCheck = 0
+            IF EXISTS (
+                    SELECT cam_id
+                    FROM ccoCallsOut
+                    WHERE cam_id = @camId
+                    )
+            BEGIN
+                INSERT INTO @tableExistsRec
+                VALUES (
+                    @camId
+                    ,1
+                    )
+            END
+            ELSE
+            BEGIN
+                INSERT INTO @tableExistsRec
+                VALUES (
+                    @camId
+                    ,0
+                    )
+            END
+            UPDATE @camByUser
+            SET isCheck = 1
+            WHERE camId = @camId
+        END
+        SELECT a1.cam_id
+            ,cam_Descripcion
+            ,cam_tNotas
+            ,cast(cam_ocupado AS INT) AS cam_ocupado
+            ,cam_noInt_ocupado
+            ,cam_inter_ocupado
+            ,cast(cam_nocontesto AS INT) AS cam_nocontesto
+            ,cam_noInt_nocontesto
+            ,cam_inter_nocontesto
+            ,cast(cam_fax AS INT) AS cam_fax
+            ,cam_noInt_fax
+            ,cam_inter_fax
+            ,cast(cam_modomanual AS INT) AS cam_modomanual
+            ,ANI
+            ,cam_ShowCalifWnd
+            ,cam_StartTimerOnHangUp
+            ,editableCallKey
+            ,cam_tNoContesta
+            ,iTipoDial
+            ,detectAnswerMachine
+            ,detectVoiceMail
+            ,compliance
+            ,cam_inter_graba
+            ,cam_noint_graba
+            ,cast(progDial AS TINYINT) progDial
+            ,cast(excCallBack AS TINYINT) excCallBack
+            ,dialOrder
+            ,dialPrefix
+            ,dialPrefixMan
+            ,dialPrefixXfe
+            ,listenManualCall
+            ,stopRecording
+            ,cast(abandonCallback AS TINYINT) abandonCallback
+            ,a3.frame
+            ,a1.t_autoCB
+            ,a1.id_anilist
+            ,a1.tDialonWrapUp
+            ,dbo.fn_viewMode(@User_id, 10) viewMode
+            ,cam_maxqueue AS queSize
+            ,DNCScrub
+            ,callerIdDesc
+            ,timeZoneRule
+            ,callsBySurvey
+            ,ivrScript
+            ,surveyPctg
+            ,isnull(a1.call_record, 1) AS call_record
+            ,cast(startStopRecording AS TINYINT) startStopRecording
+            ,leaveRecMessage
+            ,manualCallOnChat
+            ,callBackSurveyAgent
+            ,callBackSurveyClient
+            ,CASE 
+                WHEN surveycamid IS NULL
+                    OR surveycamid = 0
+                    THEN 0
+                ELSE 1
+                END isRelationSurvey
+            ,isnull(a1.funcEspDtmf, 0)
+            ,isnull(sipHdrFormat, '''') sipHdrFormat
+            ,cam_inter_cancelled
+            ,prefijo
+            ,enbleprefix = CASE 
+                WHEN existRec = 0
+                    THEN 1
+                ELSE 0
+                END
+            ,isnull(exitAssisted, 0) exitAssisted
+            ,isnull(previewDiscard, 0) PreviewDiscard   
+            ,isnull(CampType, 0) CampType
+            ,isnull(contact.conexionInfo, '''') conexionInfo
+            ,isnull(contact.connUser, '''') connUser
+            ,isnull(contact.closeConversationTime, 0) closeConversationTime
+            ,isnull(contact.answerTimeoutClient, 0) answerTimeoutClient
+            ,isnull(contact.allowFileAttachments, 0) allowFileAttachments
+            ,isnull(selectRotativeANI, 0) selectRotativeANI
+            ,ISNULL(rotativeAlgo, 0) rotativeAlgo
+            ,isnull(autoStart, 0) autoStart
+            ,isnull(messagingOrder, 0) messagingOrder
+            ,ISNULL(cam_tPreview, 0) AS CamTPreview
+            ,ISNULL(timesPreview, 0) AS TimesPreview
+            ,isnull(timesDiscard, 0) TimesDiscard
+            ,ISNULL(recordHold, 0) recordHold
+            ,isnull(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule
+            ,isnull(campsExtention.RecordCalls, 1) RecordCalls
+            ,isnull(campsExtention.simultaneousRecs, 1) simultaneousRecs
+            ,isnull(campsExtention.EditableContactData, 0) EditableContactData
+            ,@intenationalDialingPorts intenationalDialingPorts 
+            ,@nationalDialingPorts nationalDialingPorts
+        FROM ccCamps a1
+        INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+        INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
+        INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
+        LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
+        LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
+        ORDER BY cam_descripcion
+        RETURN (0)
+        SET NOCOUNT OFF
+'
+EXEC(@sql);
+ 
+ SET @process = 'Drop SP ccsp_GalateaGetOutboundConfiguration'
+SET @sql = '
+    if exists (select * from sys.procedures where name = N''ccsp_GalateaGetOutboundConfiguration'')
+    begin
+        DROP PROCEDURE ccsp_GalateaGetOutboundConfiguration;
+    end
+    '
+EXEC(@sql);
+SET @process = 'Create SP ccsp_GalateaGetOutboundConfiguration'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration] @adminID INT
+        ,@campID INT
+        AS
+        BEGIN
+        DECLARE @AllCampaigns TABLE (
+        cam_id SMALLINT
+        ,cam_Descripcion VARCHAR(60)
+        ,cam_tNotas SMALLINT
+        ,cam_ocupado SMALLINT
+        ,cam_noInt_ocupado SMALLINT
+        ,cam_inter_ocupado SMALLINT
+        ,cam_nocontesto SMALLINT
+        ,cam_noInt_nocontesto SMALLINT
+        ,cam_inter_nocontesto SMALLINT
+        ,cam_fax SMALLINT
+        ,cam_noInt_fax SMALLINT
+        ,cam_inter_fax SMALLINT
+        ,cam_modomanual SMALLINT
+        ,ANI VARCHAR(15)
+        ,cam_ShowCalifWnd BIT
+        ,cam_StartTimerOnHangUp BIT
+        ,editableCallKey BIT
+        ,cam_tNoContesta SMALLINT
+        ,iTipoDial SMALLINT
+        ,detectAnswerMachine SMALLINT
+        ,detectVoiceMail SMALLINT
+        ,compliance SMALLINT
+        ,cam_inter_graba SMALLINT
+        ,cam_noint_graba SMALLINT
+        ,progDial SMALLINT
+        ,excCallBack SMALLINT
+        ,dialOrder SMALLINT
+        ,dialPrefix VARCHAR(10)
+        ,dialPrefixMan VARCHAR(10)
+        ,dialPrefixXfe VARCHAR(10)
+        ,listenManualCall BIT
+        ,stopRecording BIT
+        ,abandonCallback BIT
+        ,frame SMALLINT
+        ,t_autoCB SMALLINT
+        ,id_anilist INT
+        ,tDialonWrapUp SMALLINT
+        ,viewMode TINYINT
+        ,queSize SMALLINT
+        ,DNCScrub INT
+        ,callerIdDesc VARCHAR(15)
+        ,timeZoneRule INT
+        ,callsBySurvey INT
+        ,ivrScript INT
+        ,surveyPctg INT
+        ,call_record SMALLINT
+        ,startStopRecording BIT
+        ,leaveRecMessage BIT
+        ,manualCallOnChat BIT
+        ,callBackSurveyAgent BIT
+        ,callBackSurveyClient BIT
+        ,isRelationSurvey BIT
+        ,funcEspDtmf INT
+        ,sipHdrFormat VARCHAR(255)
+        ,cam_inter_cancelled SMALLINT
+        ,prefijo VARCHAR(40)
+        ,enbleprefix BIT
+        ,exitAssisted BIT
+        ,previewDiscard BIT
+        ,CampType INT
+        ,conexionInfo VARCHAR(50)
+        ,connUser VARCHAR(15)
+        ,closeConversationTime INT
+        ,answerTimeoutClient INT
+        ,allowFileAttachments BIT
+        ,selectRotativeANI INT
+        ,rotativeAlgo TINYINT
+        ,autoStart BIT
+        ,messagingOrder BIT
+        ,CamTPreview SMALLINT
+        ,TimesPreview TINYINT
+        ,timesDiscard TINYINT
+        ,recordHold BIT
+        ,zipCodeSchedule BIT
+        ,RecordCalls tinyint
+        ,simultaneousRecs smallint
+        ,EditableContactData bit
+        ,internationalDialingPortsAssigned bit
+        ,nationalDialingPortsAssigned bit
+        )
+        DECLARE @numbers VARCHAR(max)
+        SELECT @numbers = COALESCE(@numbers + '''', '''', '''''''') + number
+        FROM ccWhatsAppNumbers
+        WHERE camp_id = 0
+        AND STATUS = 1
+        INSERT INTO @AllCampaigns
+        EXEC ccsp_RIAConfCamp @adminID
+        ,@campID
+        SELECT dialPrefixMan DialPrefixMan
+        ,dialPrefixXfe DialPrefixXfe
+        ,listenManualCall ListenManualCall
+        ,stopRecording StopRecording
+        ,abandonCallback AbandonCallBack
+        ,t_autoCB AutoCB
+        ,id_anilist IdIstANI
+        ,tDialonWrapUp TDialOnWrapup
+        ,queSize Quesize
+        ,DNCScrub
+        ,callerIdDesc CallerIdDesc
+        ,timeZoneRule TimeZoneRule
+        ,callsBySurvey CallsBySurvey
+        ,ivrScript IvrScript
+        ,surveyPctg SurveyPctg
+        ,call_record CallRecord
+        ,startStopRecording StartStopRecording
+        ,leaveRecMessage LeaveRecMessage
+        ,manualCallOnChat ManualCallOnChat
+        ,callBackSurveyClient CallBackSurveyClient
+        ,callBackSurveyAgent CallBackSurveyAgent
+        ,funcEspDtmf FuncEspDtmf
+        ,sipHdrFormat SipHdrsCfg
+        ,dialPrefix DialPrefix
+        ,prefijo Prefix
+        ,dialOrder DialOrder
+        ,progDial ProgDial
+        ,cam_Descripcion CamDescription
+        ,cam_tNotas CamTnotas
+        ,cam_ocupado CamBusy
+        ,cam_noInt_ocupado CamNoIntBusy
+        ,cam_inter_ocupado CamInterBusy
+        ,cam_nocontesto CamNoAnswer
+        ,cam_noInt_nocontesto CamNoIntNoAnswer
+        ,cam_inter_nocontesto CamInterNoAnswer
+        ,(cam_inter_cancelled / 60) CamInterCancelled
+        ,cam_fax CamFax
+        ,cam_noInt_fax CamNoIntFax
+        ,cam_inter_fax CamInterFax
+        ,cam_modomanual CamModoManual
+        ,ANI
+        ,cam_StartTimerOnHangUp CamStartTimerOnHangUp
+        ,editableCallKey EditableCallKey
+        ,cam_tNoContesta CamTNoAnswer
+        ,iTipoDial CamIntensiveDialing
+        ,detectAnswerMachine DetectAnswerMachine
+        ,detectVoiceMail DetectVoiceMail
+        ,compliance Compliance
+        ,cam_inter_graba CamInterRecord
+        ,cam_noint_graba CamNoIntRecord
+        ,excCallBack ExcCallBack
+        ,cam_ShowCalifWnd CamShowCalifWnd
+        ,frame Frame
+        ,exitAssisted ExitAssistedDialMode
+        ,previewDiscard PreviewDiscard
+        ,CampType
+        ,conexionInfo ConexionInfo
+        ,connUser ConnUser
+        ,closeConversationTime CloseConversationTime
+        ,answerTimeoutClient MUTimeOutClient
+        ,allowFileAttachments AllowFileAttachments
+        ,CamTPreview
+        ,CAST(TimesPreview AS SMALLINT) TimesPreview
+        ,@numbers AS FreeNumbers
+        ,selectRotativeANI SelectRotativeANIManualCall
+        ,rotativeAlgo RotativeAlgo
+        ,autoStart AutoStart
+        ,messagingOrder MessagingOrder
+        ,timesDiscard TimesDiscard
+        ,recordHold RecordHold
+        ,zipCodeSchedule ZipCodeSchedule
+        ,RecordCalls RecordCalls
+        ,simultaneousRecs SimultaneousRecs
+        ,EditableContactData EditableContactData
+        ,internationalDialingPortsAssigned internationalDialingPortsAssigned
+        ,nationalDialingPortsAssigned nationalDialingPortsAssigned
+        FROM @AllCampaigns
+        WHERE cam_id = @campID
+        END
+'
+EXEC(@sql);
+SET @process = 'Alter table ccoCallsOutSource alter column international'
+SET @sql = '
+    if EXISTS(
+        select column_name
+        from information_schema.columns  
+        where table_name = ''ccoCallsOutSource'' AND column_name = ''international''
+        AND DATA_TYPE = ''tinyint''
+    )
+    BEGIN
+        alter table ccoCallsOutSource alter column international int
+    END'
+EXEC(@sql)
+------------------------------------------------------------------------------ END Gaby -------------------------------------------------------------------
 
+ 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
-
         COMMIT TRAN
     END TRY
-
     BEGIN CATCH
         /* Error generated based on sintax */
         SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
-
         RAISERROR (@errorGenerated, 11, 1)
-
         ROLLBACK TRAN
     END CATCH
 END 

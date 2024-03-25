@@ -78,24 +78,28 @@ SET @sql = '
 EXEC(@sql);
 SET @process = 'CW-831 Create SP ccsp_GetDialingCodesByCamp'
 SET @sql = '
-Create procedure ccsp_GetDialingCodesByCamp
-create procedure [dbo].[ccsp_GetDialingCodesByCamp]
+create procedure ccsp_GetDialingCodesByCamp
 @cam_id int
 as
 if((select COUNT(*) from 
 (
 	select idCode from ccoDialers a
-begin
-	select isnull(id, 0) as id, isnull(Code, 0 ) as Code from ccoDialers a
 	inner join ccoDialerCamp b
 	on b.dialer_id = a.dialer_id
 	where a.IdCode=0 and b.cam_id=@cam_id and a.DialingType=0
 )
 result)>0)
-		on a.dialer_id = b.dialer_id
-	left join CodesInterDialing c
-		on a.IdCode = c.id
-	where a.DialingType = 0 and b.cam_id = @cam_id
+begin
+	select 0 as Code
+end
+else
+begin
+	select  replace(Code,''-'','''') from CodesInterDialing a 
+	inner join ccoDialers b 
+	inner join ccoDialerCamp c 
+	on c.dialer_id = b.dialer_id 
+	on b.IdCode = a.id 
+	where c.cam_id = @cam_id and  b.DialingType=0 
 end'
 EXEC(@sql);
 SET @process = 'CW-831 change type bool to int'
@@ -271,7 +275,6 @@ END
 end -- TOMA EN CUENTA LOS CALLBACKS
 if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
 begin
-	select 0 as Code
 			select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
 			select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
 			IF(@campType = 7)
@@ -357,15 +360,8 @@ if @Test=0
 			select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
 			WHERE callout_id in(select callout_id from #NEW_JOBS)''
 end
-else
 if @Test = 2
 begin
-	select  replace(Code,''-'','''') from CodesInterDialing a 
-	inner join ccoDialers b 
-	inner join ccoDialerCamp c 
-	on c.dialer_id = b.dialer_id 
-	on b.IdCode = a.id 
-	where c.cam_id = @cam_id and  b.DialingType=0 
 	select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
 	declare @nSQL nvarchar(4000)
 	set @nSQL=cast(@sql as nvarchar(4000))
@@ -442,7 +438,6 @@ exec(@sql)
 return(0)
 	'
 EXEC(@sql);
-        ----------------------------------------------------- END Frida Orta----------------------------------------------------------------
 SET @process = 'CW-8305 se modifica update para planchar dialingType'
 SET @sql = '
                     ALTER PROCEDURE [dbo].[ccsp_GalateaDialer]
@@ -487,7 +482,6 @@ SET @sql = '
                         end
                         Insert ccoDialers (Descripcion, Puerto, Status, provedor_id, xfertype, DialingType, IdCode) 
                         Select @Description+''_''+CAST(portId as varchar(5)), portId, @Status, @Provider, @XferType, case @DialingType when 2 then 0 else @DialingType end, @idDialingCode from #tempPortTable t
-                        
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 
                         p.descrip as ProviderDescription, Puerto, XferType, DialingType, IdCode as DialingCode
                         from ccoDialers d
@@ -524,7 +518,6 @@ SET @sql = '
                             select -2 as ResponseCode --Existe alguna campaña que esta utilizando este dialer
                             return(0)
                         end
-                        
                         declare @portsDelete table(DialerId int, Port int,PortDescription varchar(15))
                         insert @portsDelete (DialerId,Port,PortDescription)
                         select Value, Puerto,Descripcion from dbo.fn_RIASplitDelimited (@dialer_ids, '','') 
@@ -925,7 +918,7 @@ VALUES
 EXEC(@sql)
  
          ----------------------------------------------------- END JCL----------------------------------------------------------------
-		         ------------------------------------------------------ BEGIN Gaby------------------------------------------------------------------------------
+		 		         ------------------------------------------------------ BEGIN Gaby------------------------------------------------------------------------------
 SET @process = 'Drop SP ccsp_RIAConfCamp'
 SET @sql = '
     if exists (select * from sys.procedures where name = N''ccsp_RIAConfCamp'')
@@ -1325,7 +1318,6 @@ SET @sql = '
     END'
 EXEC(@sql)
 ------------------------------------------------------------------------------ END Gaby -------------------------------------------------------------------
-
 
  
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

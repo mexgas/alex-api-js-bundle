@@ -551,7 +551,7 @@ SET @sql = '
                         provedor_id=case @Provider when '''' then provedor_id else @Provider end,
                         xfertype = case @XferType when 0 then xfertype else @XferType end,
                         DialingType = case when @DialingType = 0 then DialingType when @DialingType = 2 then 0 else @DialingType end,
-                        IdCode = case @idDialingCode when 0 then IdCode else @idDialingCode end
+                        IdCode = case when @DialingType = 1 then 0 when @idDialingCode != IdCode then @idDialingCode else IdCode end
                         where Dialer_id=cast(@DialerId as int)
                         
                         select 200 as ResponseCode, dialer_id as DialerId, Descripcion as PortDescription, 

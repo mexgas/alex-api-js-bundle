@@ -944,7 +944,9 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID
         DEClARE @intenationalDialingPorts bit, @nationalDialingPorts bit;
         declare @tempInternationalCode int
  
-        if((select COUNT(*) from ( select top 1 IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=0  ) result ) > 0)
+        if exists(select IdCode from ccoDialers ccoDial with(nolock) 
+        inner join ccoDialerCamp ccoDialCamp with(nolock) on ccoDialCamp.dialer_id = ccoDial.dialer_id 
+        where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=0)
         BEGIN
             set @intenationalDialingPorts = 1
         END
@@ -952,7 +954,9 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp] @User_id SMALLINT, @campID
         BEGIN
             set @intenationalDialingPorts = 0;
         END
-        if((select COUNT(*) from ( select top 1  IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=1  ) result ) > 0)
+        if exists(select IdCode from ccoDialers ccoDial with(nolock) 
+        inner join ccoDialerCamp ccoDialCamp with(nolock) on ccoDialCamp.dialer_id = ccoDial.dialer_id 
+        where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=1)
         BEGIN
             set @nationalDialingPorts = 1
         END

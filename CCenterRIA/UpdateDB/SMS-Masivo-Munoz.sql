@@ -378,7 +378,8 @@ BEGIN
   Password as Password,
   Sexo as IsMan,
   CanChangeStatus as EnableNotReady,
-  isnull(IDArea, 0) as AreaId
+  isnull(IDArea, 0) as AreaId,
+  notificationEmail
   FROM ccusers
   WHERE isnull(IDArea, 0) = isnull(@AreaId, 0) AND TipoUser_id & 2 = CASE @UserType WHEN 1 THEN 0 ELSE 2 END AND STATUS = 1
 	AND DATEDIFF(dd, LastLoginAttempt, getdate()) < 60
@@ -433,7 +434,8 @@ BEGIN
   Password as Password,
   Sexo as IsMan,
   CanChangeStatus as EnableNotReady,
-  isnull(IDArea, 0) as AreaId
+  isnull(IDArea, 0) as AreaId,
+  notificationEmail
   FROM ccusers
   WHERE user_id=@userId
 

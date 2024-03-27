@@ -489,4 +489,52 @@ IF @option = 5 --Usuarios inactivos por mas de 60 dias por area
 	END'
 EXEC(@sql)
 
+set @process = 'Insert Permissions'
+set @sql = 'if not exists (select 1 from ccPermissions where Description = ''Gestionar Segmentos'' )
+begin
+	Insert into ccPermissions values((SELECT MAX(Permissions_id) + 1
+	FROM ccPermissions),''Gestionar Segmentos'',''RolesPermissionManageSegments'',0,0,0,''N/A'',1)
+end
+
+if not exists (select 1 from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = (select Permissions_Id from ccPermissions where Description = ''Gestionar Segmentos''))
+begin
+	INSERT INTO ccRoles_Permissions values (1,(select Permissions_Id from ccPermissions where Description = ''Gestionar Segmentos''))
+end
+
+
+if not exists (select 1 from ccPermissions where Description = ''Cargar registros SMS por segmento'' )
+begin
+	Insert into ccPermissions values((SELECT MAX(Permissions_id) + 1
+	FROM ccPermissions),''Cargar registros SMS por segmento'',''RolesPermissionLoadSMSSegments'',0,0,0,''N/A'',1)
+end
+
+if not exists (select 1 from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = (select Permissions_Id from ccPermissions where Description = ''Cargar registros SMS por segmento''))
+begin
+	INSERT INTO ccRoles_Permissions values (1,(select Permissions_Id from ccPermissions where Description = ''Cargar registros SMS por segmento''))
+end
+
+if not exists (select 1 from ccPermissions where Description = ''Validaciones SMS Masivo'' )
+begin
+	Insert into ccPermissions values((SELECT MAX(Permissions_id) + 1
+	FROM ccPermissions),''Validaciones SMS Masivo'',''RolesPermissionMassSMSValidation'',0,0,0,''N/A'',1)
+end
+
+if not exists (select 1 from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = (select Permissions_Id from ccPermissions where Description = ''Validaciones SMS Masivo''))
+begin
+	INSERT INTO ccRoles_Permissions values (1,(select Permissions_Id from ccPermissions where Description = ''Validaciones SMS Masivo''))
+end
+
+if not exists (select 1 from ccPermissions where Description = ''Plantillas SMS Masivo'' )
+begin
+	Insert into ccPermissions values((SELECT MAX(Permissions_id) + 1
+	FROM ccPermissions),''Plantillas SMS Masivo'',''RolesPermissionBulkSMSTemplates'',0,0,0,''N/A'',1)
+end
+
+if not exists (select 1 from ccRoles_Permissions where Rol_Id = 1 and Permissions_Id = (select Permissions_Id from ccPermissions where Description = ''Plantillas SMS Masivo''))
+begin
+	INSERT INTO ccRoles_Permissions values (1,(select Permissions_Id from ccPermissions where Description = ''Plantillas SMS Masivo''))
+end
+'
+EXEC(@sql)
+
 --------------------------------------------------------- END KR134021 AND KR134022 -------------------------------------------------------------------

@@ -78,29 +78,16 @@ SET @sql = '
 EXEC(@sql);
 SET @process = 'CW-831 Create SP ccsp_GetDialingCodesByCamp'
 SET @sql = '
-create procedure ccsp_GetDialingCodesByCamp
+CREATE PROCEDURE ccsp_GetDialingCodesByCamp
 @cam_id int
 as
-if((select COUNT(*) from 
-(
-	select idCode from ccoDialers a
-	inner join ccoDialerCamp b
-	on b.dialer_id = a.dialer_id
-	where a.IdCode=0 and b.cam_id=@cam_id and a.DialingType=0
-)
-result)>0)
 begin
-	select 0 as Code
-end
-else
-begin
-	select  replace(Code,''-'','''') from CodesInterDialing a 
-	inner join ccoDialers b 
-	inner join ccoDialerCamp c 
-	on c.dialer_id = b.dialer_id 
-	on b.IdCode = a.id 
-	where c.cam_id = @cam_id and  b.DialingType=0 
+	select isnull(id, 0) as id, isnull(Code, 0 ) as Code from ccoDialers a
+	inner join ccoDialerCamp b on a.dialer_id = b.dialer_id
+	left join CodesInterDialing c on a.IdCode = c.id
+	where a.DialingType = 0 and b.cam_id = @cam_id 
 end'
+
 EXEC(@sql);
 SET @process = 'CW-831 change type bool to int'
 SET @sql = '
@@ -539,16 +526,26 @@ SET @sql = '
                     end
                     set nocount off
 	'
+
+	SET @process = 'Drop SP GetInterDialing'
+SET @sql = '
+	if exists (select * from sys.procedures where name = N''GetInterDialing'')
+    begin
+        DROP PROCEDURE GetInterDialing;
+    end
+	'
+EXEC(@sql);
+
 EXEC(@sql);
 SET @process = 'CW-8305 Agregar opcion todos los paises'
 SET @sql = '
-                    ALTER PROCEDURE [dbo].[GetInterDialing]
+                    CREATE PROCEDURE GetInterDialing
                     AS
                     BEGIN
                     declare @language tinyint
                     select @language = valor from ccSettings nolock where setting_id = 27
                     select 
-                    0
+                    0 as id
                     , case
                         when @language = 0 then ''Todos los países''
                         when @language = 1 then ''All countries''
@@ -565,6 +562,7 @@ SET @sql = '
                     from CodesInterDialing nolock
                     END
 	'
+
 EXEC(@sql);
 set @process = 'Se agrega tabla de areasCode'
 set @sql='IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = N''AreaCode'') BEGIN

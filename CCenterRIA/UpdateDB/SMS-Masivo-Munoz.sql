@@ -718,6 +718,101 @@ else if @action=13 begin
 end';
 EXEC (@sql);
 
+SET @process = 'KR134016 CREATE SP ccspLoadRegistrySegments';
+SET @sql = 'CREATE procedure [dbo].[ccspLoadRegistrySegments] 
+@action int,
+@camId int = null,
+@typeTemplate int=2, --1 Segmentos, 2 Plantillas Archivos
+@phone varchar(32)=null,
+@templateId int=null,
+@callKey varchar(60)=null,
+@userId int=0,
+@msg varchar(160)=null,
+@smsout_id int=null,
+@SystemApiId varchar(100)=null,
+@statusSystemsId int=null
+as
 
+DECLARE @columns VARCHAR(max), @sql VARCHAR(max)
+
+if @action=1 begin --List Segments
+    select SegmentId,Name from ccSmsSegments where IsGlobal=1 or CampaignId=@camId
+end
+else if @action=2 begin  --ListColumnsTable
+    SELECT name
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''SmsRemesasMuñozView'')
+    and name like ''phone[0-9]%''
+end
+else if @action=3 begin --List Plantillas
+    select TemplateId,Description as Name,MessageTemplate from ccSmsTemplate where Type=@typeTemplate
+end
+else if @action=4 begin
+    Select iDate DateStart,fDate DateEnd from ccSmsSchedules where cam_id=@camId
+end
+else if @action=5 begin
+    select top 1 * from SmsRemesasMuñozView
+end
+else if @action=6 begin
+    SET @columns = ''''
+    SELECT @columns = @columns + ''isnull(max(len('' + COLUMN_NAME + '')),0)as '' + COLUMN_NAME + '',''
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = ''SmsRemesasMuñozView''
+    AND DATA_TYPE IN (''varchar'', ''nvarchar'', ''char'', ''nchar'');
+
+    SET @columns = SUBSTRING(@columns, 0, len(@columns))
+    SET @sql = ''select '' + @columns + '' from SmsRemesasMuñozView''
+
+    PRINT (@sql)
+    EXEC (@sql)
+
+end
+else if @action=7 begin
+    declare @valueInt int, @value varchar(100)
+    select @valueInt=valor from ccSettings where setting_id=104
+    select @value=valor from ccSettings where setting_id=17     
+
+    select @phone= dbo.Verifica2(@phone,@valueInt,@value,1)
+    if LEFT(@phone, 1)=''E'' begin
+        select -1 as Result,''is not cellPhone''
+        return -1;
+    end
+    select @valueInt=valor from ccSettings2 where setting_id=258
+    if @valueInt<=0 begin
+        select -2 as Result,''Credit Sms Zero''
+    end
+    select @value=valor from ccSettings where setting_id=247
+
+    select 1 as Result,@value as ApiBackBone
+    ,MessageTemplate
+    from ccSmsTemplate where TemplateId=@templateId
+end
+else if @action=8 begin --smsOutSource
+    insert into smsOutSource (callkey,cam_id,sms_phoneNumber,sms_status,sms_attemps,user_id,sms_dateDial,dial_tels)
+    values (@callKey,@camId,@phone,0,0,@userId,getdate(),''12345NNN'')
+    select @smsout_id=SCOPE_IDENTITY()
+
+    insert into smsoutSourceMessage(smsout_id,message)
+    values(@smsout_id,@msg)
+
+    select @smsout_id as smsoutId
+end
+else if @action=9 begin --smsccoLogDial
+    insert into smsccoLogDial (smsout_id,cam_id,phone,smsDate,registryClient,SystemApiId,statusSystemsId,Bill,ProviderId)
+    values (@smsout_id,@camId,@phone,getdate(),@callKey,@SystemApiId,@statusSystemsId,
+    case when @statusSystemsId=0 then 0.7 else 0 end,0
+    )
+
+
+end';
+EXEC (@sql);
+
+SET @process = 'KR134016';
+SET @sql = '';
+EXEC (@sql);
+
+SET @process = 'KR134016';
+SET @sql = '';
+EXEC (@sql);
 
 --------------------------------------------------------- END KR134016-Campaña SMS-Eliminar registros de día anterior -------------------------------------------------------------------

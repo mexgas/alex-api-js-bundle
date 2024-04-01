@@ -552,6 +552,17 @@ end
 ';
 EXEC (@sql);
 
+SET @process = 'KR134016 Create table ccSmsValidateRegistryWeek';
+SET @sql = 'if not exists(select * from sys.tables where name='' ccSmsValidateRegistryWeek'' ) begin
+    Create table ccSmsValidateRegistryWeek(
+        registryClient varchar(60) primary key not null,
+        total int not null,
+        totaltoDay int not null,
+        loadRegistry int not null
+        )
+end';
+EXEC (@sql);
+
 SET @process = 'KR134016 CREATE TABLE ccSmsSegments';
 SET @sql = 'ALTER procedure [dbo].[ccspOutboundSmsMessage] 
 @action int,
@@ -730,10 +741,20 @@ SET @sql = 'CREATE procedure [dbo].[ccspLoadRegistrySegments]
 @msg varchar(160)=null,
 @smsout_id int=null,
 @SystemApiId varchar(100)=null,
-@statusSystemsId int=null
+@statusSystemsId int=null,
+@dateStart datetime=null,
+@dateEnd datetime=null,
+@segmentIds varchar(max)='' '' ,
+@columns varchar(max)='' *'' 
 as
 
-DECLARE @columns VARCHAR(max), @sql VARCHAR(max)
+SET NOCOUNT ON;
+SET ANSI_WARNINGS OFF;
+
+DECLARE @sql VARCHAR(max)
+declare @today date=convert(date,getdate(),121)
+declare @monday datetime
+
 
 if @action=1 begin --List Segments
     select SegmentId,Name from ccSmsSegments where IsGlobal=1 or CampaignId=@camId
@@ -741,8 +762,8 @@ end
 else if @action=2 begin  --ListColumnsTable
     SELECT name
     FROM sys.columns
-    WHERE object_id = OBJECT_ID(''SmsRemesasMuñozView'')
-    and name like ''phone[0-9]%''
+    WHERE object_id = OBJECT_ID('' SmsRemesasMuñoz'' )
+    and name like '' TELEFONOS[0-9]%'' 
 end
 else if @action=3 begin --List Plantillas
     select TemplateId,Description as Name,MessageTemplate from ccSmsTemplate where Type=@typeTemplate
@@ -751,19 +772,19 @@ else if @action=4 begin
     Select iDate DateStart,fDate DateEnd from ccSmsSchedules where cam_id=@camId
 end
 else if @action=5 begin
-    select top 1 * from SmsRemesasMuñozView
+    select top 1 * from SmsRemesasMuñoz
 end
 else if @action=6 begin
-    SET @columns = ''''
-    SELECT @columns = @columns + ''isnull(max(len('' + COLUMN_NAME + '')),0)as '' + COLUMN_NAME + '',''
+    SET @columns = '' '' 
+    SELECT @columns = @columns + '' isnull(max(len(''  + COLUMN_NAME + '' )),0)as ''  + COLUMN_NAME + '' ,'' 
     FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_NAME = ''SmsRemesasMuñozView''
-    AND DATA_TYPE IN (''varchar'', ''nvarchar'', ''char'', ''nchar'');
+    WHERE TABLE_NAME = '' SmsRemesasMuñoz'' 
+    AND DATA_TYPE IN ('' varchar'' , '' nvarchar'' , '' char'' , '' nchar'' );
 
     SET @columns = SUBSTRING(@columns, 0, len(@columns))
-    SET @sql = ''select '' + @columns + '' from SmsRemesasMuñozView''
+    SET @sql = '' select ''  + @columns + ''  from SmsRemesasMuñoz'' 
 
-    PRINT (@sql)
+    --PRINT (@sql)
     EXEC (@sql)
 
 end
@@ -773,13 +794,13 @@ else if @action=7 begin
     select @value=valor from ccSettings where setting_id=17     
 
     select @phone= dbo.Verifica2(@phone,@valueInt,@value,1)
-    if LEFT(@phone, 1)=''E'' begin
-        select -1 as Result,''is not cellPhone''
+    if LEFT(@phone, 1)='' E''  begin
+        select -1 as Result,'' is not cellPhone'' 
         return -1;
     end
     select @valueInt=valor from ccSettings2 where setting_id=258
     if @valueInt<=0 begin
-        select -2 as Result,''Credit Sms Zero''
+        select -2 as Result,'' Credit Sms Zero'' 
     end
     select @value=valor from ccSettings where setting_id=247
 
@@ -789,7 +810,7 @@ else if @action=7 begin
 end
 else if @action=8 begin --smsOutSource
     insert into smsOutSource (callkey,cam_id,sms_phoneNumber,sms_status,sms_attemps,user_id,sms_dateDial,dial_tels)
-    values (@callKey,@camId,@phone,0,0,@userId,getdate(),''12345NNN'')
+    values (@callKey,@camId,@phone,0,0,@userId,getdate(),'' 12345NNN'' )
     select @smsout_id=SCOPE_IDENTITY()
 
     insert into smsoutSourceMessage(smsout_id,message)
@@ -801,15 +822,129 @@ else if @action=9 begin --smsccoLogDial
     insert into smsccoLogDial (smsout_id,cam_id,phone,smsDate,registryClient,SystemApiId,statusSystemsId,Bill,ProviderId)
     values (@smsout_id,@camId,@phone,getdate(),@callKey,@SystemApiId,@statusSystemsId,
     case when @statusSystemsId=0 then 0.7 else 0 end,0
-    )
+    )   
+end
+else if @action=10 begin --ChangeSchedule
+    delete from ccSmsSchedules where cam_id=@camId
+    insert into ccSmsSchedules(cam_id,iDate,fDate) values(@camId,@dateStart,@dateEnd)
+end
+else if @action=11 begin --Carga los registros cargados
+    truncate table ccSmsValidateRegistryWeek;
+    SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
+    ---------------Revisa la lista de registros es necesario moverlo a otro proceso para que lo tenga en la carga---------------------
+    insert into ccSmsValidateRegistryWeek(registryClient,total,totaltoDay,loadRegistry)
+    select registryClient,count(*) total,
+    count(case when smsDate>=@today  then 1 end) totaltoday,
+    0 loadRegistry
+    from smsccoLogDial with(nolock)
+    where smsDate>=@monday
+    group by registryClient
 
+end
+else if @action in(12,13) begin --Validar Carga
+    declare @segmentTable table(id int, status bit)
+    declare @conditionTable table(conditionId int,smsCondition varchar(max),DailyLimit int,WeeklyLimit int,status bit)
+    --declare @SmsRemesasId table (credictId int)
+    create table #SmsRemesasId(credictId int)
 
+    insert into @segmentTable
+    select value,0 status from dbo.fn_RIASplitDelimited(@segmentIds,'' ,'' )
+    
+    declare @subQuery nvarchar(max)
+    
+    SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
+    
+    if not exists(select * from ccSmsValidateRegistryWeek)begin
+        exec ccspLoadRegistrySegments @action=11
+    end
+    
+
+    declare @conditionId int,@segmentId int,@SubConditionId int
+    declare @conditionWhere varchar(max)
+    declare @SubConditionWhere varchar(max),@LogicConector varchar(20)
+    declare @DailyLimit int,@WeeklyLimit int
+
+    DECLARE @Params NVARCHAR(MAX)
+    SET @Params = N'' @WeeklyLimit int,@DailyLimit int'' ;
+    
+---Lista de @segmentIds
+
+while exists(select * from @segmentTable where status=0) begin
+    select top 1 @segmentId=id from @segmentTable where status=0        
+    set @conditionId=0
+    -------------------------------- Revisa las condiciones por segmentId --------------------------------
+    while exists(select * from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId) begin
+        
+        select top 1
+        @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit,@conditionId=ConditionId,
+        @conditionWhere= PrimaryField+LogicOperator
+        +case when isnull(ComparisonValue,'' '' ) <>'' ''  then ComparisonValue else'' ('' + ComparisonField end                    
+        +case when isnull(ComparisonValue,'' '' ) <>'' ''  or  isnull(ArithmeticOperator,'' '' )='' ''  or isnull(Value,'' '' )='' '' then '' ''  else isnull(ArithmeticOperator,'' '' )+isnull(Value,'' '' ) end 
+        +case when isnull(ComparisonValue,'' '' ) <>'' ''  then '' ''  else'' )''  end 
+        from ccSmsConditions where @SegmentId=@segmentId and ConditionId>@conditionId
+        
+        set @SubConditionId=0
+        while exists(select * from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId) 
+        begin
+        
+            select top 1
+            @LogicConector=LogicConector,
+            @SubConditionId=SubconditionId,
+            @SubConditionWhere=
+            PrimaryField+LogicOperator
+            +case when isnull(ComparisonValue,'' '' ) <>'' ''  then ComparisonValue else'' ('' + ComparisonField end                    
+            +case when isnull(ComparisonValue,'' '' ) <>'' ''  or  isnull(ArithmeticOperator,'' '' )='' ''  or isnull(Value,'' '' )='' ''  then '' ''  else isnull(ArithmeticOperator,'' '' )+isnull(Value,'' '' ) end
+            +case when isnull(ComparisonValue,'' '' ) <>'' ''  then '' ''  else'' )''  end 
+            from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId
+
+            set @conditionWhere=@conditionWhere+''  '' + @LogicConector+''  ''  +@SubConditionWhere
+
+            
+        end
+            
+        insert into @conditionTable values(@conditionId,@conditionWhere,@DailyLimit,@WeeklyLimit,0)     
+    end 
+    -------------------------------- Termina las condiciones por segmentId --------------------------------
+    update @segmentTable set status=1 where id=@segmentId
+end
+while exists(select * from @conditionTable where status=0) begin        
+    select top 1 
+    @conditionId=conditionId, @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit, @conditionWhere=smsCondition
+    from @conditionTable 
+    where status=0
+    
+    set @subQuery= '' select A.id_credito from SmsRemesasMuñoz A with(nolock)
+    left join ccSmsValidateRegistryWeek B on A.credito=B.registryClient and B.total<@WeeklyLimit and B.totaltoDay<@DailyLimit
+    where '' +@conditionWhere   
+    print(@subQuery)
+    insert into #SmsRemesasId
+    EXEC sp_executesql @subQuery,@Params,@WeeklyLimit,@DailyLimit;
+    update @conditionTable set status=1 where @conditionId=conditionId
+end
+
+if @action=12 begin
+    declare @countValidate int,@total int
+    select @countValidate=count(*) from SmsRemesasMuñoz A with(nolock) where A.id_credito in(select * from #SmsRemesasId)
+    select @total=count(*) from SmsRemesasMuñoz A with(nolock)
+
+    select @countValidate as ValidRecords,@total-@countValidate as InvalidRecords
+end
+else begin
+    
+    set @sql='' select '' +@columns+'' ,0 PhoneStatus,0 callout_id,id_credito as Record_id,convert(varchar(100),'' '' '' '' ) as DataPhone
+    into TEMPO_'' +convert(varchar(30),@camId)+'' 
+    from SmsRemesasMuñoz A with(nolock) where A.id_credito in(select * from #SmsRemesasId)'' 
+    print(@sql)
+    exec(@sql)
+end
+drop table #SmsRemesasId
+end
+else if @action =14 begin --Validar Carga
+    select MessageTemplate from ccSmsTemplate where TemplateId=@templateId
 end';
 EXEC (@sql);
 
-SET @process = 'KR134016';
-SET @sql = '';
-EXEC (@sql);
+
 
 SET @process = 'KR134016';
 SET @sql = '';

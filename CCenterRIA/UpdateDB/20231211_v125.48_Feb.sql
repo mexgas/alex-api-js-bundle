@@ -2476,11 +2476,45 @@ END
     
 SET NOCOUNT OFF'
         EXEC(@sql)
-
-     SET @process = ''
-     SET @sql = ''
+    ---------------------------------- Begin fix/125.20231211.0.10 ----------------------------------
+     SET @process = 'Alter SP CofetelActions'
+     SET @sql = 'ALTER PROCEDURE [dbo].[CofetelActions]
+@type tinyint
+as
+if @type = 1
+begin
+    truncate table SeriesTmp
+end
+        
+if @type = 2
+begin
+    if exists(select * from SeriesTmp) begin
+        truncate table Series
+    end
+end'
      EXEC(@sql);
 
+      SET @process = 'ALTER Sp CofetelUpdateData Add Transaction'
+     SET @sql = 'ALTER PROCEDURE [dbo].[CofetelUpdateData]
+@type tinyint
+as
+if @type = 1
+begin
+
+    BEGIN TRAN  
+        exec CofetelActions @type=2     
+        if not exists(select * from Series) begin
+            insert into Series
+            select * from SeriesTmp
+        end     
+    COMMIT TRAN
+end'
+     EXEC(@sql);
+
+      SET @process = ''
+     SET @sql = ''
+     EXEC(@sql);
+    ---------------------------------- Begin fix/125.20231211.0.10 ----------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

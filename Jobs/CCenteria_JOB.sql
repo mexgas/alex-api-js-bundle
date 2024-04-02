@@ -146,7 +146,7 @@ EndSave:
 '
     EXEC(@sql)
 
-    set @process = 'CREATE JOB CW (AutoStart),(Callback/abandoned update),(Campaign summary)'
+    set @process = 'CREATE JOB CW (Callback/abandoned update),(Campaign summary)'
     set @sql = 'USE [msdb]
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'') begin
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1

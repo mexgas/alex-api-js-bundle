@@ -527,6 +527,8 @@ SET @sql = '
                     set nocount off
 	'
 
+EXEC(@sql)
+
 	SET @process = 'Drop SP GetInterDialing'
 SET @sql = '
 	if exists (select * from sys.procedures where name = N''GetInterDialing'')

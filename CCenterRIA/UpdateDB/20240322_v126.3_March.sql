@@ -82,7 +82,7 @@ CREATE PROCEDURE ccsp_GetDialingCodesByCamp
 @cam_id int
 as
 begin
-	select isnull(id, 0) as id, isnull(Code, 0 ) as Code from ccoDialers a
+	select distinct isnull(id, 0) as id, isnull(Code, 0 ) as Code from ccoDialers a
 	inner join ccoDialerCamp b on a.dialer_id = b.dialer_id
 	left join CodesInterDialing c on a.IdCode = c.id
 	where a.DialingType = 0 and b.cam_id = @cam_id 

@@ -2294,6 +2294,20 @@ END
 '
 EXEC(@sql);
 
+
+SET @process = 'KR123015 - Se agrega menu para reporte'
+SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenus where menu_id = 2120)
+BEGIN
+	INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
+	VALUES(2120, ''Detalle auxiliares por agente|Auxiliary details by agent'',2100, ''B'', 2, 3, '''', '''' )
+
+	INSERT INTO ccMenuUser(id_User, id_Menu, type) VALUES (1, 2120,3)
+END
+'
+EXEC(@sql);
+
+
+
 		
 
 

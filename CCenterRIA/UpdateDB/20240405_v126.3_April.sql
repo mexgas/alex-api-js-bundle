@@ -108,6 +108,30 @@ if not exists (select * from sys.columns where name = N''Color'' and Object_ID =
 
 EXEC(@sql)
 
+----------------------------------------------------- Begin Ulises  ------------------------------------------------------------
+
+	set @process = ''
+	set @sql = 'IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ''ccLogAgentesAuxiliarReady'')
+	BEGIN
+		CREATE TABLE [dbo].[ccLogAgentesAuxiliarReady]
+        (
+              [User_id] SMALLINT NOT NULL
+            , [TipoAuxiliarReady_id] SMALLINT NOT NULL DEFAULT((0))
+            , [tStatus] FLOAT NULL
+            , [fecha] DATETIME NULL DEFAULT(getdate())
+        )
+	END'
+	EXEC(@sql)
+
+	set @process = 'Se agrega el estatus Disponible Auxiliar'
+	set @sql = 'if not exists (select 1 from ccTipoStatusAgente where TipoStatusAge_id = 37)
+	begin
+		insert into ccTipoStatusAgente values (37, ''Disponible auxiliar'')
+	end'
+	EXEC(@sql)
+
+----------------------------------------------------- End Ulises  ------------------------------------------------------------		
+
 SET @process = 'KR123000 Se creo la tabla ccAdmin_Aux para la relación del auxiliar con el administrador'
 SET @sql = '
 if not exists (select * from sys.tables where name = N''ccAdmin_Aux'')

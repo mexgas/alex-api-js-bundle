@@ -1507,7 +1507,6 @@ FROM timeSessionByHour A
 INNER JOIN ccUserView uv ON A.userId = uv.User_id
 LEFT JOIN auxGroupbyHour auxReady	ON auxReady.userId = A.userId AND A.timegroup = auxReady.timegroup 
 LEFT JOIN TipoReadyAuxiliar d	ON auxReady.auxiliar = d.Description
-select * from RepAuxiliariesByAgentDet where Date between @from and @to
 
 IF OBJECT_ID(''tempdb..#auxReady'') IS NOT NULL
 	DROP TABLE #auxReady

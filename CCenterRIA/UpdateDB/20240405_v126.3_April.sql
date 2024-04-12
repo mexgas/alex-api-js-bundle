@@ -2220,7 +2220,7 @@ begin
 	declare @NextTipoReadyAuxiliar_Id int;
     select @NextTipoReadyAuxiliar_Id = ISNULL(MAX(TipoReadyAuxiliar_Id), 0) + 1 from TipoReadyAuxiliar;
 
-	 if exists(select TRIM(Description) from TipoReadyAuxiliar where StatusAux=1 and Description=TRIM(@name)) begin
+	 if exists(select Description from TipoReadyAuxiliar where StatusAux=1 and Description= @name) begin
 	  select -1 as result
 	  return(0)
 	 end
@@ -2232,7 +2232,7 @@ end
 
 if @Type=4 --Update auxiliar state
 begin
-	if not exists(select TRIM(Description) from TipoReadyAuxiliar where StatusAux=1 and Description=TRIM(@name) and TipoReadyAuxiliar_Id <> @TipoReadyAuxiliar_Id) begin
+	if not exists(select Description from TipoReadyAuxiliar where StatusAux=1 and Description= @name and TipoReadyAuxiliar_Id <> @TipoReadyAuxiliar_Id) begin
 	 update TipoReadyAuxiliar set Description = @name, AdminPasswordRequired = @AdminPasswordRequired where TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id  
 	 select 1 as RESULT
 	 return(0)

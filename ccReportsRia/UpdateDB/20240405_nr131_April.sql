@@ -1802,6 +1802,16 @@ WHERE id = 2090;
 '
 EXEC(@sql)
 
+SET @process = 'KR123000 se agrega la columna tauxiliarready a la tabla RepSpececialAgent'
+SET @sql = 'if not exists (select * from sys.columns where name = N''tauxiliarready'' and Object_ID = Object_ID(N''RepSpececialAgent''))
+begin
+ALTER TABLE RepSpececialAgent  ADD tauxiliarready smallint  NULL 
+
+update RepSpececialAgent set [tauxiliarready]=0 where [tauxiliarready] is null
+end';
+
+EXEC (@sql);
+
 SET @process = 'KR123000 se modifica el sp ccspRepSpececialAgent'
 SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspRepSpececialAgent] @action AS TINYINT
 	,@from AS DATETIME = NULL
@@ -1910,16 +1920,6 @@ END
 '
 	EXEC(@sql)
 
-
-SET @process = 'KR123000 se agrega la columna tauxiliarready a la tabla RepSpececialAgent'
-SET @sql = 'if not exists (select * from sys.columns where name = N''tauxiliarready'' and Object_ID = Object_ID(N''RepSpececialAgent''))
-begin
-ALTER TABLE RepSpececialAgent  ADD tauxiliarready smallint  NULL 
-
-update RepSpececialAgent set [tauxiliarready]=0 where [tauxiliarready] is null
-end';
-
-EXEC (@sql);
 
 SET @process = 'KR123000 se elimina la vista RepViewSpececialAgent'
 SET @sql = 'IF EXISTS(select * FROM sys.views where name = ''RepViewSpececialAgent'')

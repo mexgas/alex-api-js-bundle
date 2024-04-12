@@ -1537,9 +1537,6 @@ SET @process = 'KR123017 - Auxiliar - Reporte Información General (Especial)'
 
 EXEC (@sql);
 
-set @process = 'KR123017 - Auxiliar - Reporte Información General (Especial)'
-	set @sql = 'update RepAgentGI set [tauxiliarready]=0 where [tauxiliarready] is null'
-	EXEC(@sql)
 
 SET @process = 'KR123017 - Auxiliar - Reporte Información General (Especial)'
 SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspRepAgentGI] 
@@ -1721,7 +1718,7 @@ SELECT date,
        tprob,
        tChatting,
        tundefined,
-       tauxiliarready,
+       isnull(tauxiliarready,0) as tauxiliarready,
        nxferin,
        nanswerin,
        nabndxferin,
@@ -1789,7 +1786,7 @@ tundefined AS tundefinedxxx,
 tav AS tavNum,
 0.0 AS tTalkNum,
 tnotav AS tnotavNum,
-tauxiliarready AS tauxNum,
+isnull(tauxiliarready,0) AS tauxNum,
 0.0 AS TotalNum,
 year,month,day,hour,minutes FROM RepAgentGI
 '
@@ -1811,12 +1808,6 @@ end';
 
 EXEC (@sql);
 
-
-SET @process = 'KR123000 se agrega la columna tauxiliarready a la tabla RepSpececialAgent'
-SET @sql = ' UPDATE RepSpececialAgent set [tauxiliarready]=0 where [tauxiliarready] is null'
-;
-
-EXEC (@sql);
 
 SET @process = 'KR123000 se modifica el sp ccspRepSpececialAgent'
 SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspRepSpececialAgent] @action AS TINYINT
@@ -1946,7 +1937,7 @@ SELECT date,
     logoutTime,
     dialogTime,
     ndTime,
-    tauxiliarready,
+    isnull(tauxiliarready, 0) as tauxiliarready,
     callsOut,
     callsIn,
     abandonedCalls,
@@ -1969,9 +1960,6 @@ SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 
 EXEC (@sql);
 
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [auxiliaryReadyTime]=0 where [auxiliaryReadyTime] is null'
-	EXEC(@sql)
 
 
 SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
@@ -1982,9 +1970,6 @@ SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 
 EXEC (@sql);
 
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [readyTime]=0 where [readyTime] is null'
-	EXEC(@sql)
 
 	SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''otherTime'' and Object_ID = Object_ID(N''RepDetailAgent''))
@@ -1994,9 +1979,6 @@ set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 
 EXEC (@sql);
 
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [otherTime]=0 where [otherTime] is null'
-	EXEC(@sql)
 
 	SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''auxiliaryReadyPercent'' and Object_ID = Object_ID(N''RepDetailAgent''))
@@ -2006,9 +1988,7 @@ set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 
 EXEC (@sql);
 
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [auxiliaryReadyPercent]=0 where [auxiliaryReadyPercent] is null'
-	EXEC(@sql)
+
 
 	SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''unavaiblePercent'' and Object_ID = Object_ID(N''RepDetailAgent''))
@@ -2018,9 +1998,6 @@ set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 
 EXEC (@sql);
 
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [unavaiblePercent]=0 where [unavaiblePercent] is null'
-	EXEC(@sql)
 
 	SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
 		SET @sql = 'if not exists (select * from sys.columns where name = N''otherPercent'' and Object_ID = Object_ID(N''RepDetailAgent''))
@@ -2029,10 +2006,6 @@ set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
     end';
 
 EXEC (@sql);
-
-set @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
-	set @sql = 'update RepDetailAgent set [otherPercent]=0 where [otherPercent] is null'
-	EXEC(@sql)
 
 
 SET @process = 'KR123019 - Auxiliar - Reporte Detalle de Agente por Día'
@@ -2175,17 +2148,17 @@ CREATE VIEW RepViewDetailAgent AS
 				[sessionTime],
 				[activeTime],
 				[talkingtTime],
-				[readyTime] AS readyInTime,
+				isnull(readyTime,0) AS readyInTime,
 				[holdTime],
 				[unavaibleTime],
-				[auxiliaryReadyTime],
-				[otherTime],
+				isnull(auxiliaryReadyTime,0) as auxiliaryReadyTime,
+				isnull(otherTime,0) as otherTime,
 				[talkingPercent],
 				[readyPercent],
 				[waitpercent],
-				[unavaiblePercent],
-				[auxiliaryReadyPercent],
-				[otherPercent],
+				isnull(unavaiblePercent,0) as unavaiblePercent,
+				isnull(auxiliaryReadyPercent,0) as auxiliaryReadyPercent,
+				isnull(otherPercent,0) as otherPercent,
 				[adherencia],
 				[totalCalls],
 				[callsByHour],
@@ -2211,14 +2184,6 @@ end';
 
 EXEC (@sql);
 
-
-SET @process = 'KR123029 - Auxiliar - Reporte Resumen de intervalo de tiempos totales'
-SET @sql = '
-update RepMKTTiemposTotales set [TPromAuxiliar]=0 where [TPromAuxiliar] is null
-update RepMKTTiemposTotales set [tauxiliarRdy]=0 where [tauxiliarRdy] is null
-update RepMKTTiemposTotales set [nauxiliar]=0 where [nauxiliar] is null'
-
-EXEC (@sql);
 
 
 SET @process = 'KR123029 - Auxiliar - Reporte Resumen de intervalo de tiempos totales'
@@ -2246,7 +2211,7 @@ SELECT date,
     tPromSalidaExt,
     TPromDispon,
     TPromRing,
-    TPromAuxiliar,
+    isnull(TPromAuxiliar,0) as TPromAuxiliar,
     AHT,
     tacd,
     tacw,
@@ -2259,8 +2224,8 @@ SELECT date,
     ndispo,
     tring,
     nring,
-    tauxiliarRdy,
-    nauxiliar,
+    isnull(tauxiliarRdy,0) as tauxiliarRdy,
+    isnull(nauxiliar,0) as nauxiliar,
     accountUserId,
     year,
     month,
@@ -2477,12 +2442,6 @@ end';
 exec (@sql)
 
 
-SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
-	SET @sql = '
-    update RepAgentHSBCKPI set [AvgAuxiliarySeconds]=0 where [AvgAuxiliarySeconds] is null
-';
-
-exec (@sql)
 
 SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 SET @sql = 'IF EXISTS(select * FROM sys.views where name = ''RepViewAgentHSBCKPI'')
@@ -2501,7 +2460,7 @@ SELECT date,
     PaidHours,
     OffLineActivities,
     SignIn,
-    AvgAuxiliarySeconds,
+    isnull(AvgAuxiliarySeconds,0) as AvgAuxiliarySeconds,
     AvgIdleSeconds,
     AvgTalkSeconds,
     AvgWrapSeconds,
@@ -2614,11 +2573,6 @@ ALTER TABLE RepSpecialTimes  ADD auxiliaryReadyTime [int] NULL
 end';
 EXEC (@sql);
 
-SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
-SET @sql = '
-update RepSpecialTimes set [auxiliaryReadyTime]=0 where [auxiliaryReadyTime] is null';
-EXEC (@sql);
-
 
 SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 SET @sql = 'IF EXISTS(select * FROM sys.views where name = ''RepViewSpecialTimes'')
@@ -2637,7 +2591,7 @@ campACDDescription,
 sessionTime,
 readyTime,
 dialogTime,
-auxiliaryReadyTime,
+isnull(auxiliaryReadyTime,0) as auxiliaryReadyTime,
 notReadyTime,
 other,
 descripcion,

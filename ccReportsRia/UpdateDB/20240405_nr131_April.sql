@@ -358,6 +358,12 @@ END'
 	EXEC(@sql)
 
 	----------------------------- Begin TEAM Nuevos Rec -------------------
+SET @process = 'KR123000 Se inserta el menu de auxiliar a la tabla Filters'
+SET @sql = 'IF NOT EXISTS (SELECT 1 FROM Filters where id = 34)
+BEGIN
+	INSERT INTO Filters(id,[name], [type], xmlParentNode, xmlChildNode) VALUES(34,N''auxiliar'', 34, ''Auxiliar'', ''Auxiliar'')
+END'
+EXEC(@sql)
 
 SET @process = 'KR123000 Se agregan los filtros correspondientes'
 SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ReportsFiltersMenus where idReport = 2130)
@@ -366,13 +372,6 @@ BEGIN
 	INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(2130,N''filterby'')
 	INSERT INTO ReportsFilters values(''Special Detail (Auxiliary)'',''users'',2130)
 	INSERT INTO ReportsFilters values(''Special Detail (Auxiliary)'',''auxiliar'',2130)
-END'
-EXEC(@sql)
-
-SET @process = 'KR123000 Se inserta el menu de auxiliar a la tabla Filters'
-SET @sql = 'IF NOT EXISTS (SELECT 1 FROM Filters where id = 34)
-BEGIN
-	INSERT INTO Filters(id,[name], [type], xmlParentNode, xmlChildNode) VALUES(34,N''auxiliar'', 34, ''Auxiliar'', ''Auxiliar'')
 END'
 EXEC(@sql)
 

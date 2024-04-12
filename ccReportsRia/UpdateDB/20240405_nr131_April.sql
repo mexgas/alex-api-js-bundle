@@ -1802,13 +1802,19 @@ WHERE id = 2090;
 '
 EXEC(@sql)
 
+
 SET @process = 'KR123000 se agrega la columna tauxiliarready a la tabla RepSpececialAgent'
 SET @sql = 'if not exists (select * from sys.columns where name = N''tauxiliarready'' and Object_ID = Object_ID(N''RepSpececialAgent''))
 begin
 ALTER TABLE RepSpececialAgent  ADD tauxiliarready smallint  NULL 
-
-update RepSpececialAgent set [tauxiliarready]=0 where [tauxiliarready] is null
 end';
+
+EXEC (@sql);
+
+
+SET @process = 'KR123000 se agrega la columna tauxiliarready a la tabla RepSpececialAgent'
+SET @sql = ' UPDATE RepSpececialAgent set [tauxiliarready]=0 where [tauxiliarready] is null'
+;
 
 EXEC (@sql);
 
@@ -2201,10 +2207,16 @@ ALTER TABLE RepMKTTiemposTotales  ADD TPromAuxiliar int  NULL
 ALTER TABLE RepMKTTiemposTotales  ADD tauxiliarRdy int  NULL 
 ALTER TABLE RepMKTTiemposTotales  ADD nauxiliar int  NULL 
 
+end';
+
+EXEC (@sql);
+
+
+SET @process = 'KR123029 - Auxiliar - Reporte Resumen de intervalo de tiempos totales'
+SET @sql = '
 update RepMKTTiemposTotales set [TPromAuxiliar]=0 where [TPromAuxiliar] is null
 update RepMKTTiemposTotales set [tauxiliarRdy]=0 where [tauxiliarRdy] is null
-update RepMKTTiemposTotales set [nauxiliar]=0 where [nauxiliar] is null
-end';
+update RepMKTTiemposTotales set [nauxiliar]=0 where [nauxiliar] is null'
 
 EXEC (@sql);
 
@@ -2460,11 +2472,17 @@ SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 	SET @sql = 'if not exists (select * from sys.columns where name = N''AvgAuxiliarySeconds'' and Object_ID = Object_ID(N''RepAgentHSBCKPI''))
 begin
     ALTER TABLE RepAgentHSBCKPI  ADD AvgAuxiliarySeconds [DECIMAL](10, 3) NULL
-
-	update RepAgentHSBCKPI set [AvgAuxiliarySeconds]=0 where [AvgAuxiliarySeconds] is null
 end';
 
-EXEC (@sql);
+exec (@sql)
+
+
+SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
+	SET @sql = '
+    update RepAgentHSBCKPI set [AvgAuxiliarySeconds]=0 where [AvgAuxiliarySeconds] is null
+';
+
+exec (@sql)
 
 SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 SET @sql = 'IF EXISTS(select * FROM sys.views where name = ''RepViewAgentHSBCKPI'')
@@ -2593,11 +2611,14 @@ SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 SET @sql = 'if not exists (select * from sys.columns where name = N''auxiliaryReadyTime'' and Object_ID = Object_ID(N''RepSpecialTimes''))
 begin
 ALTER TABLE RepSpecialTimes  ADD auxiliaryReadyTime [int] NULL
-
-update RepSpecialTimes set [auxiliaryReadyTime]=0 where [auxiliaryReadyTime] is null
 end';
-
 EXEC (@sql);
+
+SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
+SET @sql = '
+update RepSpecialTimes set [auxiliaryReadyTime]=0 where [auxiliaryReadyTime] is null';
+EXEC (@sql);
+
 
 SET @process = 'KR123030 - Auxiliar - Reporte KPIs Especiales Agente'
 SET @sql = 'IF EXISTS(select * FROM sys.views where name = ''RepViewSpecialTimes'')

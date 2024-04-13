@@ -80,7 +80,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cccallsreject',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogtransfers',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccChannelTransfer',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccChannelTransfer',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'IVR',0)	

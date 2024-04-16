@@ -1397,7 +1397,7 @@ BEGIN
 	AgentName varchar(80),
     	userId smallint,
     	Login varchar(40),
-    	SessionTime time,
+    	SessionTime int,
 	descripcion varchar(50),
 	descripcion_count varchar(50),
 	count smallint,

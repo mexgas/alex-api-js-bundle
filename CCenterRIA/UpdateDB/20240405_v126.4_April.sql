@@ -2483,12 +2483,11 @@ if @Type=17
 begin
 	if not exists(select 1 from TipoReadyAuxiliar where TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id and StatusAux = 1) begin
 	select 0 as RESULT
-	return(0)
 	end
 	else begin
 	 select 1 as result
-	 return(0)
 	end
+	return(0)
 end'
 EXEC(@sql)
 

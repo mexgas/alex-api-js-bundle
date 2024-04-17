@@ -1361,7 +1361,7 @@ SET @process = 'KR123000 se realiza la inserción en la tabla PivotReports'
 SET @sql = 'IF NOT EXISTS (SELECT 1 FROM PivotReports where id = 2120)
 BEGIN
 	INSERT INTO PivotReports (id, columns, complementColumns, pivotFunction, isGroupPivot)
-		VALUES (2120, ''descripcion_count|descripcion_time'', ''Date|AgentName|userId|Login|SessionTime'', ''max'', 1);
+		VALUES (2120, ''descripcion_count|descripcion_time'', ''Date|AgentName|userId|Login|sessionTime'', ''max'', 1);
 END'
 EXEC(@sql)
 
@@ -1395,9 +1395,9 @@ BEGIN
 	create TABLE RepAuxiliariesByAgentDet (
 	Date datetime,
 	AgentName varchar(80),
-    	userId smallint,
-    	Login varchar(40),
-    	SessionTime int,
+    userId smallint,
+    Login varchar(40),
+    sessionTime int,
 	descripcion varchar(50),
 	descripcion_count varchar(50),
 	count smallint,

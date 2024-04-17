@@ -2232,6 +2232,10 @@ end
 
 if @Type=4 --Update auxiliar state
 begin
+	if not exists(select 1 from TipoReadyAuxiliar where TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id and StatusAux = 1) begin
+	 select -2 as RESULT
+	 return(0)
+	end
 	if not exists(select LTRIM(RTRIM(Description)) from TipoReadyAuxiliar where StatusAux=1 and Description=LTRIM(RTRIM(@name)) and TipoReadyAuxiliar_Id <> @TipoReadyAuxiliar_Id) begin
 	 update TipoReadyAuxiliar set Description = @name, AdminPasswordRequired = @AdminPasswordRequired where TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id  
 	 select 1 as RESULT
@@ -2473,7 +2477,18 @@ BEGIN
 	SELECT [Description] FROM TipoReadyAuxiliar
 	WHERE TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id
 	return(0)
-END'
+END
+
+if @Type=17 
+begin
+	if not exists(select 1 from TipoReadyAuxiliar where TipoReadyAuxiliar_Id = @TipoReadyAuxiliar_Id and StatusAux = 1) begin
+	select 0 as RESULT
+	end
+	else begin
+	 select 1 as result
+	end
+	return(0)
+end'
 EXEC(@sql)
 
 

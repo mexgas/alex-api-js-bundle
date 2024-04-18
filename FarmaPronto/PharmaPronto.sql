@@ -49,7 +49,30 @@ BEGIN
 begin
     Create table ccRelationIvrWorkingTable(IVR_id int not null,callout_id int not null,callFechaDial datetime not null)
 end'
-	exec(@sql)    
+	exec(@sql)
+
+	SET @process = 'CREATE Sp ccRelationIvrWorkingTable'
+	SET @sql = 'if not exists (select * from sys.tables where name = N''ccLogAgentesDiaLast'')
+begin
+    CREATE TABLE [dbo].[ccLogAgentesDiaLast]
+(
+	  [User_id] SMALLINT NOT NULL
+	, [TipoStatusAge_id] TINYINT NOT NULL
+	, [tStatus] FLOAT NULL
+	, [fecha] DATETIME NOT NULL
+	, [IdCampEsp] SMALLINT NULL
+	, [Tipo] SMALLINT NULL
+	, [currentStatus] INT NULL
+	, [callID] INT NULL
+	, CONSTRAINT [PK__ccLogAgentesDiaLast__206A9DF893323245] PRIMARY KEY ([User_id] ASC)
+)
+
+
+ALTER TABLE [dbo].[ccLogAgentesDiaLast] WITH CHECK ADD CONSTRAINT [FK_ccLogAgentesDiaLast_ccTipoStatusAgente] FOREIGN KEY([TipoStatusAge_id]) REFERENCES [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id])
+ALTER TABLE [dbo].[ccLogAgentesDiaLast] CHECK CONSTRAINT [FK_ccLogAgentesDiaLast_ccTipoStatusAgente]
+
+end'
+	exec(@sql)
 
 	SET @process = 'Alter SP ccsp_AgentUpdateCallTimes se agrega la eliminacion del callback si ya se realizo el callback'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentUpdateCallTimes]

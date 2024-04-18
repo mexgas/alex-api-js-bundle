@@ -152,11 +152,10 @@ if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (Au
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
 end
 
-if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'') begin
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (Callback/abandoned update),(Campaign summary)'') begin
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
 end
 
-/****** Object:  Job [CW (AutoStart),(Callback/abandoned update),(Campaign summary)]    Script Date: 11/10/2021 11:02:12 a. m. ******/
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0

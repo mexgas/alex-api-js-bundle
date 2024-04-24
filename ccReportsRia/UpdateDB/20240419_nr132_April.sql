@@ -544,7 +544,7 @@ BEGIN
 			a.phone as Phone,
 			''systemTranslated_Resultado_ID_'' + cast(srm.RESULTADO_ID as varchar)  resultado,
 			''systemTranslated_Resultado_Envio_'' + cast(a.statusSystemsId as varchar)  resultado_de_envio		
-	from smsccoLogDial a
+	from smsccoLogDial a with (nolock)
 	inner join SmsRemesasMuñozDay srm on srm.TDCT = a.callkey
 	inner join ccSmsSegments ss on ss.name = srm.SegmentoMC
 	where a.smsDate between @from and @to

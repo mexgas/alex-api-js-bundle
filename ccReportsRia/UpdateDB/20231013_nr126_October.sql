@@ -32,7 +32,7 @@ BEGIN
 	SET @process = 'K002084 Se agrega la nueva columna globalid en la tabla RepWhatsAppDetailConversationIn'
 	SET @sql = 'IF NOT EXISTS(SELECT * FROM sys.columns WHERE  name = N''globalid'' AND Object_ID = Object_ID(N''RepWhatsAppDetailConversationIn''))
 				BEGIN
-					ALTER TABLE RepWhatsAppDetailConversationIn ADD globalid INT DEFAULT 0;
+					ALTER TABLE RepWhatsAppDetailConversationIn ADD globalid INT;
 				END'
 	EXEC(@sql)
 

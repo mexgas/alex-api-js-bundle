@@ -997,11 +997,6 @@ end
 	'
 	EXEC(@sql)
 
-	set @process = 'DEV1-339 update RepAgentSummary'
-	set @sql = 'update RepAgentSummary set [transferStatus]=0,[ringingTime]=0,[unknownStatus]=0,[otherStatus]=0
-,[failureStatus]=0,[chatTengaged]=0,[dialingStatus]=0 
-where [dialingStatus] is null'
-	EXEC(@sql)
 
 	set @process = 'DEV1-339 Rename Table -> RepAgentGI RepAgentGI_VersionOld'
 	set @sql = 'if not exists(select * from sys.tables where name=''RepAgentGI_VersionOld'') begin
@@ -1070,10 +1065,7 @@ else begin
 end
 '
 	EXEC(@sql)
-
-	set @process = 'DEV1-339 Rename Table -> RepAgentGI RepAgentGI_VersionOld'
-	set @sql = 'update RepAgentGI set [tManual]=0 where [tManual] is null'
-	EXEC(@sql)
+	
 
 	set @process = 'DEV1-339 DEV1-339 sp_rename INDEX IX_RepAgentGI -> IX_RepAgentGI_VersionOld'
 	set @sql = 'if  exists (select * from sys.indexes where name = N''IX_RepAgentGI'' and object_id = OBJECT_ID(N''RepAgentGI_VersionOld''))

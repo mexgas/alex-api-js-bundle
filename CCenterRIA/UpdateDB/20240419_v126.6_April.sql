@@ -121,7 +121,7 @@ BEGIN
 	)
 	BEGIN
 	    ALTER TABLE ccUsers
-	    ADD notificationEmail NVARCHAR(255) NULL;
+	    ADD notificationEmail NVARCHAR(255) DEFAULT '''' NOT NULL;
 	END;'
 	EXEC(@sql)
 

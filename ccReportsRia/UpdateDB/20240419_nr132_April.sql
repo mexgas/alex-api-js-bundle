@@ -408,7 +408,14 @@ BEGIN
 			from ccinbound where chat = 0
 		end
 	end
-	IF @type = 34 	BEGIN
+	IF @type = 34 	
+	BEGIN
+		SELECT DISTINCT TipoReadyAuxiliar_Id AS id, [Description] AS description, ''auxiliarId'' AS dbcolumn
+		FROM TipoReadyAuxiliar
+		ORDER BY [description]
+	END
+	IF @type = 35 	
+	BEGIN
 		select SegmentId as Id,Name as description, ''SegmentId'' as dbColumn from ccSmsSegments
 	END
 	end --Action 0
@@ -493,7 +500,6 @@ BEGIN
 	resultado10 varchar(50),
 	resultado_de_envio10 varchar(50)
 ) ON [PRIMARY]
-GO
 END;'
 	EXEC(@sql)
 

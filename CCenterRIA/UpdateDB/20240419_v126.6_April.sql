@@ -972,9 +972,6 @@ BEGIN
 
 	--------------------------------------------------------- END KR134016-Campaña SMS-Eliminar registros de día anterior -------------------------------------------------------------------
 
-	DECLARE @process varchar(max)
-	DECLARE @sql varchar(max)
-
 	-------------------------------------------------------------BEGIN MACL----------------------------------------------------
 	-----------------------------Templates-------------------------
 	SET @process = 'KR134006-7 se agregan operaciones, modulos e identificadores para el historial de actividad'

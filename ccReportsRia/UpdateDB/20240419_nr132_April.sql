@@ -493,7 +493,6 @@ BEGIN
 	resultado10 varchar(50),
 	resultado_de_envio10 varchar(50)
 ) ON [PRIMARY]
-GO
 END;'
 	EXEC(@sql)
 

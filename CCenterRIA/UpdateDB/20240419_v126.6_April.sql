@@ -2296,6 +2296,22 @@ BEGIN
 	END;';
 	EXEC (@sql);
 	----------------------------------------------------- END KR134001-Módulo de segmentos  ----------------------------------------------------------------
+	----------------------------------------------- Ulises Espinosa Begin ----------------------------------------------------------------------------------
+	set @process = 'insertar ccMenus'
+	set @sql = 'if not exists (select 1 from ccMenus where menu_id = 13030)
+	begin
+		INSERT INTO ccMenus (menu_id, menu_descrip, parent, nivel, ordengral, [type], HelpSWF, release)
+		VALUES(13030, ''Detalle de segmentos'',13000, ''B'', 12, 3, '''', '''' )
+	end'
+	EXEC(@sql)
+
+	set @process = 'Insert relation user-menu'
+	set @sql = 'IF not exists (select 1 from ccMenuUser where id_User = 1 and id_Menu = 13030)
+	BEGIN
+		INSERT INTO ccMenuUser(id_User, id_Menu, type) VALUES (1, 13030,3)
+	END'
+	EXEC(@sql)
+	-------------------------------------------------- Ulises Espinosa End -----------------------------------------------------------------------------------
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

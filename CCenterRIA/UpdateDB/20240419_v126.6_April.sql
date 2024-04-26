@@ -50,6 +50,76 @@ BEGIN
 	----------------------------------------------------- BEGIN KR134001-Módulo de segmentos  ----------------------------------------------------------------
 
 
+	SET @process = 'KR134001 CREATE TABLE SmsRemesasMuñoz';
+	SET @sql = '
+	IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''SmsRemesasMuñoz'') BEGIN
+	    CREATE TABLE [dbo].[SmsRemesasMuñoz](
+		[id_credito] [bigint] NOT NULL,
+		[fecha_actualizacion] [datetime] NULL,
+		[id_Cartera] [bigint] NULL,
+		[credito] [nvarchar](40) NOT NULL,
+		[COMPRAS_DISPMONEDA] [decimal](9, 0) NULL,
+		[DIA_CORTE] [nvarchar](255) NULL,
+		[DIA_CORTE_NUM] [int] NULL,
+		[DIAACTUAL] [varchar](15) NULL,
+		[DIAMASCINCO] [varchar](15) NULL,
+		[DIAMASCUATRO] [varchar](15) NULL,
+		[DIAMASDOS] [varchar](15) NULL,
+		[DIAMASTRES] [varchar](15) NULL,
+		[DIAMASUNO] [varchar](15) NULL,
+		[ETIQUETA_BASE_RECOM] [varchar](100) NULL,
+		[FECHACORTE] [varchar](255) NULL,
+		[IMPORTE_1ERPAGO_MULTIPAYMENT] [real] NULL,
+		[IMPORTE_2DOPAGO_MULTIPAYMENT] [real] NULL,
+		[IMPORTE_3ERPAGO_MULTIPAYMENT] [real] NULL,
+		[IMPORTE_ENDOSPAGOS] [real] NULL,
+		[IMPORTE_PAGO_ONESHOT] [real] NULL,
+		[IMPORTE_PAGO_ONESHOT_2] [real] NULL,
+		[IMPORTE_PAGOBON_ONESHOT] [real] NULL,
+		[INTERES_IVA_COMISION] [real] NULL,
+		[MESES_VENCIDOS] [int] NULL,
+		[MINIMOPAGARPESOS] [real] NULL,
+		[NoSMS] [varchar](25) NULL,
+		[PQC_MULTIPAYMENT_SIMULACION] [varchar](25) NULL,
+		[PQC_ONESHOT_SIMULACION] [varchar](25) NULL,
+		[PRODUCTO_GENERAL] [varchar](25) NULL,
+		[Quita_capital_3Pagos] [real] NULL,
+		[Quita_capital_ONESHOT] [real] NULL,
+		[RCV7DESCPRODUCTO] [varchar](30) NULL,
+		[RCV7MV0_MONEDA] [varchar](50) NULL,
+		[RCV7MV1_FILTRO] [real] NULL,
+		[RCV7MV1_MONEDA] [varchar](50) NULL,
+		[RCV7MV2_FILTRO] [real] NULL,
+		[RCV7MV2_MONEDA] [varchar](50) NULL,
+		[RCV7MV3_MONEDA] [varchar](50) NULL,
+		[SALDO_ACTUALMONEDA] [decimal](18, 0) NULL,
+		[SALDO_CAPITAL] [decimal](9, 0) NULL,
+		[SALDO_DEUDOR] [decimal](9, 0) NULL,
+		[SALDO_VENCIDOMONEDA] [decimal](18, 0) NULL,
+		[SEG_CUENTA] [varchar](15) NULL,
+		[SegmentoMC] [varchar](8) NULL,
+		[SumaMultiPayment] [float] NULL,
+		[TDCT] [varchar](255) NOT NULL,
+		[TELEFONOS1] [nvarchar](50) NULL,
+		[TERMINACION] [varchar](4) NULL,
+		[CAMPAÑABENJAMIN] [varchar](150) NULL,
+		[TIPO_TELEFONO] [varchar](20) NULL,
+		[N_EMAIL] [varchar](150) NULL,
+		[TEL_POSICION] [varchar](10) NULL,
+		[SALDO_DEUDOR_FILTRO] [decimal](18, 0) NULL,
+		[NUM_CUENTA] [varchar](20) NULL,
+		[INTERES_IVA_COMISION_FILTRO] [decimal](18, 0) NULL,
+		[STATUS] [varchar](100) NULL,
+		[PROMESA] [varchar](10) NULL,
+		[FILA] [varchar](100) NULL,
+		[LOCACION] [varchar](20) NULL,
+		[ESTADO_FUNCIONAL] [varchar](100) NULL,
+		[CORTE_REAL] [varchar](20) NULL,
+		[CORTE] [varchar](20) NULL
+	)
+	END';
+	EXEC (@sql);
+
 	SET @process = 'KR134001 CREATE TABLE ccSmsSegments';
 	SET @sql = '
 	IF NOT EXISTS(SELECT * FROM sys.tables WHERE name = ''ccSmsSegments'') BEGIN

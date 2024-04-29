@@ -5425,7 +5425,7 @@ END'
     EXEC(@sql)
 
 
-     set @process = 'Create View RepViewAgentGIUnion'
+    set @process = 'Create View RepViewAgentGIUnion'
     set @sql='if not exists (select * FROM sys.views where name = N''RepViewAgentGIUnion'')
     begin
        
@@ -5524,10 +5524,82 @@ end'
     EXEC(@sql)
 
 
-     set @process = ''
-    set @sql=''
+    set @process = 'Create View RepViewSummary'
+    set @sql='if not exists (select * FROM sys.views where name = N''RepViewSummary'')
+    begin
+       
+CREATE VIEW [dbo].[RepViewSummary] AS
+select 
+[date]
+,[login]
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,0 callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,0 avgCallTengaged
+,twrapup
+,userId
+,0 TypeNotReady
+,'' descripcion
+,'_Time' descripcion_time
+,0 [time]
+,0 transferStatus
+,0 ringingTime
+,0 unknownStatus
+,0 otherStatus
+,0 failureStatus
+,0 chatTengaged
+,0 undefinedTime
+,0 dialingStatus
+--,null TipoReadyAuxiliarId
+--,'' auxiliarRedy_descripcion
+--,'' descripcion_auxiliarRedyTime_time
+--,0 auxiliarRedyTime
+from RepAgentSummary_VersionAmatech
+union
+select date
+,login
+,user
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,avgCallTengaged
+,twrapup
+,userId
+,TypeNotReady
+,descripcion
+,descripcion_time
+,time
+,transferStatus
+,ringingTime
+,unknownStatus
+,otherStatus
+,failureStatus
+,chatTengaged
+,undefinedTime
+,dialingStatus
+--,TipoReadyAuxiliarId
+--,auxiliarRedy_descripcion
+--,descripcion_auxiliarRedyTime_time
+--,auxiliarRedyTime
+from RepAgentSummary'
     EXEC(@sql)
-
      set @process = ''
     set @sql=''
     EXEC(@sql)

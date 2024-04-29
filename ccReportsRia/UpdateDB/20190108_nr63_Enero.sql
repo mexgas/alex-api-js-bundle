@@ -865,7 +865,7 @@ end
 		SET @Sql = 'if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccLogTransfers''))
 	begin
 		alter table ccLogTransfers
-		add tipoLlamada_id smallint 
+		add tipoLlamada_id smallint default(0)
 	end'
 
 		EXEC (@Sql)
@@ -874,7 +874,7 @@ end
 	SET @Sql = 'if not exists(select * from sys.columns where [name] = N''tipoLlamada_id'' and Object_ID = Object_ID(N''ccologdials''))
 	begin
 		alter table ccologdials
-		add tipoLlamada_id smallint 
+		add tipoLlamada_id smallint default(0)
 	end'
 		
 	EXEC (@Sql)

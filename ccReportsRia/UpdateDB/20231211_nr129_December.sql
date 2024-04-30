@@ -5247,6 +5247,24 @@ set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altert
     DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
     end'
 EXEC(@sql)
+
+    set @process = 'alter Table smsccoLogDial add Message'
+    set @sql='if not exists(select * from sys.tables where name = N''smsccoLogDial'') begin
+    CREATE TABLE [dbo].[smsccoLogDial](
+    [logId] [bigint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+    [smsout_id] [int] NOT NULL,
+    [cam_id] [int] NOT NULL,
+    [phone] [varchar](32) NOT NULL,
+    [smsDate] [datetime] NOT NULL,
+    [registryClient] [varchar](60) NOT NULL,
+    [SystemApiId] [varchar](100) NOT NULL,
+    [statusSystemsId] [int] NOT NULL,
+    [Bill] [float] NOT NULL,
+    [ProviderId] [int] NOT NULL,
+    [Message] [varchar](200) NULL
+) 
+end'
+    EXEC(@sql)
  
     set @process = 'alter Table smsccoLogDial add Message'
     set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))

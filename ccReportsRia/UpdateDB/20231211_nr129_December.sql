@@ -5425,11 +5425,23 @@ END'
     EXEC(@sql)
 
 
-    set @process = 'Create View RepViewAgentGIUnion'
-    set @sql='if not exists (select * FROM sys.views where name = N''RepViewAgentGIUnion'')
+	set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='if exists (select * FROM sys.views where name = N''RepViewAgentGIUnion'')
     begin
-       
-CREATE VIEW [dbo].[RepViewAgentGIUnion] AS
+	DROP VIEW [RepViewAgentGIUnion];
+	end'
+	EXEC(@sql)
+
+	set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='if exists (select * FROM sys.views where name = N''RepViewSummary'')
+    begin
+	DROP VIEW [RepViewSummary];
+	end'
+	EXEC(@sql)
+
+
+    set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='CREATE VIEW [dbo].[RepViewAgentGIUnion] AS
 select [date],userId,[user],[login]
 ,sum(tlog) tlog
 ,sum(tunknown) tunknown
@@ -5519,16 +5531,12 @@ select [date],userId,[user],[login]
 ,tManual
 ,0 tauxiliarready
 from RepAgentGI
-
-end'
+'
     EXEC(@sql)
 
 
     set @process = 'Create View RepViewSummary'
-    set @sql='if not exists (select * FROM sys.views where name = N''RepViewSummary'')
-    begin
-       
-CREATE VIEW [dbo].[RepViewSummary] AS
+    set @sql='CREATE VIEW [dbo].[RepViewSummary] AS
 select 
 [date]
 ,[login]
@@ -5548,8 +5556,8 @@ select
 ,twrapup
 ,userId
 ,0 TypeNotReady
-,'' descripcion
-,'_Time' descripcion_time
+,'''' descripcion
+,''_Time'' descripcion_time
 ,0 [time]
 ,0 transferStatus
 ,0 ringingTime
@@ -5600,14 +5608,12 @@ select date
 --,auxiliarRedyTime
 from RepAgentSummary'
     EXEC(@sql)
-     set @process = ''
+    
+	set @process = ''
     set @sql=''
     EXEC(@sql)
 
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
+    
      set @process = ''
     set @sql=''
     EXEC(@sql)

@@ -3095,6 +3095,1365 @@ EXEC(@sql)
 
      ----------------------------------------------------------------------------------- END Ivan Martin Fix Numeros Duplicados WhatsApp --------------------------------------------------------------------------
 
+
+	 ----------------------------------------------------------------------------------- BEGIN Marco García --------------------------------------------------------------------------
+	 
+
+--------------- TT9016-AdminKolob-Eroor en listas negras ---------
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras eliminar función Completa si existe'
+		SET @sql = 'IF EXISTS (SELECT *
+           FROM   sys.objects
+           WHERE  object_id = OBJECT_ID(N''[dbo].[Completa]'')
+                  AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+			BEGIN
+			  DROP FUNCTION [dbo].[Completa]
+			END'
+		EXEC(@sql)
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras crea función Completa si existe, se modificó el apartado de Guatemala'
+		SET @sql = 'CREATE FUNCTION [dbo].[Completa] (@phone VARCHAR(32), @pais VARCHAR(2) = '''', @cldLocal VARCHAR(5) = '''')
+RETURNS VARCHAR(32)
+AS
+BEGIN
+	DECLARE @resultado VARCHAR(32)
+	DECLARE @ld VARCHAR(7)
+	DECLARE @isLocal BIT
+	IF @pais = ''''
+	BEGIN
+		SELECT @pais = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 104
+	END
+	IF @cldLocal = ''''
+	BEGIN
+		SELECT @cldLocal = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 17
+	END
+	SELECT @phone = dbo.limpia(@phone)
+	SELECT @resultado = @phone
+	DECLARE @lenPhone INT, @lenLd INT
+	SET @lenPhone = len(@resultado)
+	SET @lenLd = len(@cldLocal)
+	IF @pais = 1
+	BEGIN --Empieza Mexico 		
+		IF @lenPhone < 10
+		BEGIN
+			RETURN ''E_NV_Longitud'';
+		END
+		IF @lenPhone = 12 AND left(@phone, 2) <> ''01''
+		BEGIN
+			RETURN ''E_NV_Longitud'';
+		END
+		IF @lenPhone = 13 AND left(@phone, 3) NOT IN (''044'', ''045'')
+		BEGIN
+			RETURN ''E_NV_Longitud'';
+		END
+		SET @resultado = right(@resultado, 10)
+		SET @isLocal = 0
+		DECLARE @specialDialPlan TINYINT
+		SELECT @specialDialPlan = valor
+		FROM ccsettings WITH (NOLOCK)
+		WHERE setting_id = 195
+		IF EXISTS (
+				SELECT TOP 1 area
+				FROM ccRiaArecode NOLOCK
+				WHERE area = left(@resultado, 3)
+				)
+			SELECT @ld = left(@resultado, 3), @isLocal = 1
+		ELSE IF EXISTS (
+				SELECT TOP 1 area
+				FROM ccRiaArecode NOLOCK
+				WHERE area = left(@resultado, 2)
+				)
+			SELECT @ld = left(@resultado, 2), @isLocal = 1
+		ELSE
+		BEGIN
+			SET @ld = @cldLocal
+			IF left(@resultado, len(@ld)) = @ld
+			BEGIN
+				SET @isLocal = 1
+			END
+		END
+		SET @lenLd = len(@ld)
+		IF @specialDialPlan = 1
+		BEGIN
+			--Number local 10 digit
+			--Number LD 12 digit
+			--Number Cell 13 digit
+			SELECT @resultado = CASE WHEN @lenPhone = 10 THEN CASE WHEN @isLocal = 1 THEN @resultado ELSE ''01'' + @resultado END --10 Dig Local, LD
+					WHEN @lenPhone = 12 THEN CASE WHEN @isLocal = 1 THEN @resultado ELSE @phone END --12 Dig Local, LD
+					WHEN @lenPhone = 13 THEN CASE WHEN @isLocal = 1 THEN ''044'' + @resultado ELSE ''045'' + @resultado END --13 Dig Local, LD
+					ELSE ''E_NV_Longitud'' END --Other Long
+		END
+		ELSE IF @specialDialPlan = 0
+		BEGIN
+			--Number local 7 o 8 digit
+			--Number LD 12 digit
+			--Number Cell 13 digit
+			SELECT @resultado = CASE WHEN @lenPhone = 10 THEN CASE WHEN @isLocal = 1 THEN right(@resultado, 10 - @lenLd) ELSE ''01'' + @resultado END --10 Dig Local, LD
+					WHEN @lenPhone = 12 THEN CASE WHEN @isLocal = 1 THEN right(@resultado, 10 - @lenLd) ELSE @phone END --12 Dig Local, LD							
+					WHEN @lenPhone = 13 THEN CASE WHEN @isLocal = 1 THEN ''044'' + @resultado ELSE ''045'' + @resultado END --13 Dig Local, LD
+					ELSE ''E_NV_Longitud'' END
+		END
+		--Termina Mexico
+		RETURN @resultado
+	END
+	ELSE IF @pais = 2
+	BEGIN -- Empieza Argentina
+		SELECT @resultado = CASE WHEN (@lenPhone = 7 AND @lenLd = 3) OR (@lenPhone = 6 AND @lenLd = 4) THEN @resultado
+						-- cuando son 8 digitos y la lada es de 2 digitos, se regresa el telefono tal cual
+						-- cuando la lada es de 4 digitos, se revisa la posibiidad de que sea un celular, si es asi se regresa
+				WHEN @lenPhone = 8 THEN CASE WHEN @lenLd = 4 THEN CASE WHEN left(@resultado, 2) = ''15'' THEN @resultado END ELSE CASE WHEN @lenLd = 2 THEN @resultado END END
+						-- Este caso solamente es cuando el telefono es un celular y la lada es de 3 digitos
+				WHEN @lenPhone = 9 THEN CASE WHEN left(@resultado, 2) = ''15'' THEN @resultado ELSE ''E_NV_Cel'' END
+						-- Cuando son 10 numeros y la lada es igual, solo se marcan los numeros restantes para llamada local
+						-- Si es diferente se le agrega un 0 para llamadas de larga distancia
+				WHEN @lenPhone = 10 THEN CASE WHEN left(@resultado, @lenLd) = @cldLocal THEN right(@resultado, 10 - @lenLd) ELSE CASE WHEN left(@resultado, 2) = ''15'' THEN @resultado ELSE ''0'' + @resultado END END
+						-- Cuando el numero telefonico viene con un 0 al inicio, se verifica la lada
+						-- si no es la misma lada, pero el telefono empieza con 0, se regresa tal cual
+				WHEN @lenPhone = 11 THEN CASE WHEN left(@resultado, 1) = ''0'' THEN CASE WHEN substring(@resultado, 2, @lenLd) = @cldLocal THEN right(@resultado, 10 - @lenLd) ELSE @resultado END ELSE ''E_NV_LD'' END
+						-- Celular, si tiene 12 numeros y el numero es local, solo se marca el 15 y el numero
+						-- si no es local se le agrega el 0 y se marca el numero
+				WHEN @lenPhone = 12 THEN CASE WHEN left(@resultado, @lenLd) = @cldLocal THEN CASE WHEN substring(@resultado, @lenLd + 1, 2) = ''15'' THEN right(@resultado, 12 - @lenLd) ELSE ''E_NV_Cel'' END ELSE ''0'' + @resultado END
+						-- Celular, con 0 al inicio si es local, quita el area y marca apartir del 15, si no, lo regresa igual
+				WHEN @lenPhone = 13 THEN CASE WHEN left(@resultado, 1) = ''0'' THEN CASE WHEN substring(@resultado, 2, @lenLd) = @cldLocal THEN substring(@resultado, @lenLd + 2, 12 - @lenLd) ELSE @resultado END ELSE ''E_NV_Cel'' END ELSE ''E_NV_Longitud'' END
+		--Termina Argentina
+		RETURN @resultado
+	END
+	ELSE IF @pais = 3
+	BEGIN --Empieza colombia
+		SELECT @resultado = CASE 
+				--Si son 7 digitos, se regresa igual
+				WHEN @lenPhone = 7 THEN @resultado
+						--Cuando son 8 digitos si la lada es igual se quita y se regresan 7 numeros
+				WHEN @lenPhone = 8 THEN CASE WHEN left(@resultado, 1) = @cldLocal THEN right(@resultado, 7) ELSE @resultado END
+						-- Cuando son 10 digitos, se revisa que tenga prefijo celular y se agrega un 0
+				WHEN @lenPhone = 10 THEN CASE WHEN left(@resultado, 3) IN (''300'', ''301'', ''302'', ''303'', ''304'', ''305'', ''310'', ''311'', ''312'', ''313'', ''314'', ''315'', ''316'', ''317'', ''318'', ''319'', ''320'') THEN ''0'' + @resultado ELSE ''E_NV_Cel'' END
+						--Cuando son 11 digitos, se revisa que el primer numero sea un 0 y que los siguientes 3 numeros sean
+						--prefijo de celular
+				WHEN @lenPhone = 11 THEN CASE WHEN left(@resultado, 1) = ''0'' THEN CASE WHEN substring(@resultado, 2, 3) IN (''300'', ''301'', ''302'', ''303'', ''304'', ''305'', ''310'', ''311'', ''312'', ''313'', ''314'', ''315'', ''316'', ''317'', ''318'', ''319'', ''320'') THEN @resultado ELSE ''E_NV_Cel'' END ELSE ''E_NV_Cel'' END ELSE ''E_NV_Longitud'' END
+		-- Termina Colombia
+		RETURN @resultado
+	END
+	ELSE IF @pais = 4
+	BEGIN --Empieza USA
+		SELECT @resultado = CASE @lenPhone WHEN 3 THEN CASE @resultado WHEN ''911'' THEN @resultado ELSE ''E_NV_Longitud'' END WHEN 7 THEN @resultado WHEN 10 THEN CASE WHEN left(@resultado, @lenLd) = @cldLocal THEN right(@resultado, 10 - @lenLd) ELSE ''1'' + @resultado END WHEN 11 THEN CASE WHEN left(@resultado, 1) = ''1'' THEN CASE WHEN substring(@resultado, 2, @lenLd) = @cldLocal THEN right(@resultado, 10 - @lenLd) ELSE @resultado END ELSE ''E_NV_LD'' END ELSE ''E_NV_Longitud'' END
+		--Termina USA
+		RETURN @resultado
+	END
+	ELSE IF @pais = 5
+	BEGIN --5:Chile
+		SELECT @resultado = CASE @lenPhone WHEN 6 THEN @resultado WHEN 7 THEN @resultado
+						-- se revisa si es un celular, si es asi se le agrega el 09 excepto con los prefijos que se mezclan con ladas
+				WHEN 8 THEN CASE WHEN @cldLocal = left(@resultado, @lenLd) THEN right(@resultado, 8 - @lenLd) ELSE CASE WHEN left(@resultado, 1) IN (8, 9) THEN ''09'' + @resultado ELSE CASE WHEN left(@resultado, 1) = ''6'' THEN CASE WHEN left(@resultado, 2) IN (61, 63, 64, 65, 67) THEN @resultado ELSE ''09'' + @resultado END ELSE CASE WHEN left(@resultado, 1) = ''7'' THEN CASE WHEN left(@resultado, 2) IN (71, 72, 73, 75) THEN @resultado ELSE ''09'' + @resultado END ELSE @resultado END END END END
+						-- Se revisa que sea la lada permitida a 9 numeros, si es asi se regresa igual, si tiene el prefijo
+						-- de telefonia voIp se le agrega el 0 al inicio
+				WHEN 9 THEN CASE WHEN @cldLocal = left(@resultado, 2) THEN right(@resultado, 7) ELSE CASE WHEN left(@resultado, 2) IN (41, 32, 65) THEN @resultado ELSE CASE WHEN left(@resultado, 2) = ''44'' THEN ''0'' + @resultado ELSE CASE WHEN left(@resultado, 1) = ''9'' AND substring(@resultado, 2, 1) IN (6, 7, 8, 9) THEN ''0'' + @resultado ELSE ''E_NV_Longitud'' END END END END WHEN 10 THEN CASE WHEN left(@resultado, 2) = ''09'' THEN @resultado ELSE ''E_NV_Cel'' END ELSE ''E_NV_Longitud'' END
+		-- Termina Chile
+		RETURN @resultado
+	END
+	IF @pais = 6
+	BEGIN -- Venezuela
+		SELECT @resultado = CASE @lenPhone WHEN 7 THEN @resultado WHEN 10 THEN ''0'' + @resultado WHEN 11 THEN CASE WHEN left(@resultado, 1) = ''0'' THEN @resultado ELSE ''E_NV_Longitud'' END ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END
+			--Termina Venezuela
+	ELSE IF @pais = 7
+	BEGIN --7: Reino Unido
+		SELECT @resultado = CASE @lenPhone WHEN 11 THEN CASE left(@resultado, 1) WHEN ''0'' THEN @resultado ELSE ''E_NV_Longitud'' END WHEN 10 THEN CASE left(@resultado, 1) WHEN ''0'' THEN @resultado ELSE ''0'' + @resultado END WHEN 9 THEN CASE WHEN left(@resultado, 1) <> ''0'' THEN ''0'' + @resultado ELSE ''E_NV_Longitud'' END WHEN 8 THEN CASE WHEN substring(@resultado, 1, 2) = ''08'' THEN @resultado ELSE ''E_NV_Longitud'' END WHEN 7 THEN CASE WHEN left(@resultado, 1) = ''8'' THEN ''0'' + @resultado ELSE ''E_NV_Longitud'' END ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END
+			-- Termina UK
+	ELSE IF @pais = 8
+	BEGIN -- arabia saudita
+		SELECT @resultado = CASE @lenPhone WHEN 7 THEN @resultado WHEN 8 THEN CASE substring(@resultado, 1, 1) WHEN @cldLocal THEN right(@resultado, 7) ELSE ''0'' + @resultado END WHEN 9 THEN CASE substring(@resultado, 1, 1) WHEN ''5'' THEN ''0'' + @resultado WHEN ''0'' THEN CASE substring(@resultado, 2, 1) WHEN @cldLocal THEN right(@resultado, 7) ELSE @resultado END ELSE ''E_NV_Longitud'' END WHEN 10 THEN CASE substring(@resultado, 2, 1) WHEN ''5'' THEN @resultado ELSE ''E_NV_Longitud'' END WHEN 11 THEN CASE substring(@resultado, 2, 1) WHEN ''8'' THEN CASE substring(@resultado, 3, 3) WHEN ''111'' THEN @resultado ELSE ''E_NV_Longitud'' END ELSE CASE WHEN substring(@resultado, 3, 3) = ''510'' OR substring(@resultado, 3, 3) = ''511'' THEN @resultado ELSE ''E_NV_Longitud'' END END WHEN 13 THEN @resultado ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END -- arabia saudita
+	ELSE IF @pais = 9
+	BEGIN --Australia
+		SELECT @resultado = CASE @lenPhone WHEN 8 THEN
+						/*case when exists (select AreaCode
+              from SeriesAU
+              where convert(int,LD) = convert(int,@cldLocal)
+              and convert(int,AreaCode) = convert(int,substring(@resultado, 1, 2))) then*/
+						CASE substring(@resultado, 1, 4) WHEN ''5550'' THEN ''E_NV_LD'' ELSE @cldLocal + @resultado END
+						/*else case when exists (select AreaCode
+              from SeriesAU
+              where convert(int,LD) = convert(int,''04'')
+              and convert(int,AreaCode) = convert(int,substring(@resultado, 1, 2))) then
+    ''04'' +  @resultado
+    else ''E_NV_Cel'' end end*/
+				WHEN 9 THEN CASE WHEN left(@resultado, 1) <> ''0'' THEN CASE substring(@resultado, 2, 4) WHEN ''5550'' THEN ''E_NV_LD'' ELSE ''0'' + @resultado END ELSE ''E_NV_LD'' END WHEN 10 THEN CASE substring(@resultado, 3, 4) WHEN ''5550'' THEN ''E_NV_LD'' ELSE @resultado END ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END
+	ELSE IF @pais = 10
+	BEGIN --Brasil
+		SELECT @resultado = CASE @lenPhone
+				--llamada local fijo o celular
+				WHEN 8 THEN @resultado WHEN 9 THEN @resultado WHEN 10 THEN -- Numero nacional
+						CASE WHEN left(@resultado, 2) = @cldLocal THEN right(@resultado, 8) ELSE @resultado END WHEN 11 THEN -- Este caso solomente es para numero celular
+						CASE WHEN left(@resultado, 2) = @cldLocal THEN right(@resultado, 9) ELSE @resultado END WHEN 12 THEN -- llamadas por cobrar local
+						CASE WHEN (left(@resultado, 4) = ''9090'') THEN right(@resultado, 8) ELSE ''E_NV_PC'' END WHEN 13 THEN CASE WHEN left(@resultado, 4) = ''9090'' THEN right(@resultado, 9) -- llamadas por cobrar local celular
+							WHEN left(@resultado, 1) = ''0'' THEN CASE WHEN substring(@resultado, 4, 2) = @cldLocal THEN right(@resultado, 8) ELSE right(@resultado, 10) END -- llamadas de LDN
+							ELSE ''E_NV_Longitud'' END WHEN 14 THEN CASE WHEN left(@resultado, 2) = ''90'' THEN -- llamadas por cobrar larga distancia
+									CASE WHEN substring(@resultado, 5, 2) = @cldLocal THEN right(@resultado, 8) ELSE right(@resultado, 11) END WHEN left(@resultado, 1) = ''0'' THEN --llamada larga distancia a celular
+									CASE WHEN substring(@resultado, 4, 2) = @cldLocal THEN right(@resultado, 9) ELSE right(@resultado, 11) END ELSE ''E_NV_Longitud'' END WHEN 15 THEN CASE WHEN left(@resultado, 2) = ''90'' THEN -- Llamadas por cobrar a celular LD
+									CASE WHEN substring(@resultado, 5, 2) = @cldLocal THEN right(@resultado, 9) ELSE right(@resultado, 11) END ELSE ''E_NV_Longitud'' END ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END
+	ELSE IF @pais = 11
+	BEGIN --Guatemala
+		if @lenPhone <> 8 BEGIN
+			SELECT @resultado = ''E_NV_Longitud''
+		END
+		ELSE IF CHARINDEX(substring(@resultado, 1, 1), ''2,3,4,5,6,7,8,9'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END		
+		RETURN @resultado
+	END
+	ELSE IF @pais = 12
+	BEGIN --Costa Rica
+		IF @lenPhone = 8 AND charindex(substring(@resultado, 1, 1), ''2,3,4,5,6,7,8'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		ELSE IF @lenPhone = 10 AND charindex(substring(@resultado, 1, 3), ''800,900,905'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		ELSE IF charindex(substring(@resultado, 1, 2), ''00,08'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		RETURN @resultado
+	END
+	ELSE IF @pais = 13
+	BEGIN --Salvador
+		IF @lenPhone = 8 AND charindex(substring(@resultado, 1, 1), ''2,6,7'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		ELSE IF charindex(substring(@resultado, 1, 2), ''00'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		RETURN @resultado
+	END
+	ELSE IF @pais = 14
+	BEGIN --Spain
+		IF @lenPhone = 9 AND charindex(substring(@resultado, 1, 1), ''5,6,7,8,9'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		ELSE IF charindex(substring(@resultado, 1, 2), ''00'') <= 0
+		BEGIN
+			SELECT @resultado = ''E_'' + @resultado
+		END
+		RETURN @resultado
+	END
+	ELSE IF @pais = 15
+	BEGIN --Peru
+		SELECT @resultado = CASE WHEN (@lenPhone = 7 AND @lenLd = 1) OR (@lenPhone = 6 AND @lenLd = 2) THEN @resultado WHEN @lenPhone = 8 THEN CASE WHEN substring(@resultado, 1, @lenLd) = @cldLocal THEN right(@resultado, 8 - @lenLd) ELSE ''0'' + @resultado END WHEN @lenPhone = 9 THEN CASE WHEN left(@resultado, 1) = ''0'' AND substring(@resultado, 2, @lenLd) = @cldLocal THEN right(@resultado, 8 - @lenLd) ELSE @resultado END ELSE ''E_NV_Longitud'' END
+		RETURN @resultado
+	END --Termina Peru
+	ELSE IF @pais = 16
+	BEGIN --Panama
+		SELECT @resultado = CASE WHEN (@lenPhone = 7) THEN CASE WHEN substring(@resultado, 1, 1) IN (''2'', ''3'', ''4'', ''5'', ''7'', ''9'') THEN @resultado ELSE ''E_'' + @resultado END WHEN (@lenPhone = 8) THEN CASE WHEN substring(@resultado, 1, 1) = ''6'' THEN @resultado ELSE ''E_'' + @resultado END ELSE CASE WHEN substring(@resultado, 1, 2) = ''00'' THEN @resultado ELSE ''E_'' + @resultado END END
+		RETURN @resultado
+	END
+	-- Termina
+	RETURN @resultado
+END'
+		EXEC(@sql)
+
+		
+
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras eliminar sp ccsp_InsertDNCList si existe'
+		SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_InsertDNCList'')
+			BEGIN
+				DROP PROCEDURE ccsp_InsertDNCList
+			END'
+		EXEC(@sql)
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras crear sp ccsp_InsertDNCList,  se modifico para el proceso de insertar telefono indivual para lista negra'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_InsertDNCList]
+@telephone as varchar(30)=null,
+@ln_id as integer,
+@hashCalKey bigint=NULL,
+@calKey VARCHAR(40) = NULL
+
+AS
+
+Set nocount on
+
+
+declare @pais varchar(2), @ld varchar(5), @tel as varchar(30)
+,@tel10 as varchar(30),@tel11 as varchar(30), @sqlcmd nvarchar(max), @tmpTableName varchar(40), @sqlcmd_replace nvarchar(max),
+@dropTmpPhone varchar(max) = null
+
+SET @tmpTableName = ''TMP_BLACKLIST_'' + CAST(@ln_id as varchar(10));
+
+if (@telephone is not null) -- Para insertar un solo numero cuando se manda a BL por calificación
+BEGIN
+	IF EXISTS (SELECT * from ccListaNegra where idtipolista = @ln_id and telefono = @telephone and HashKey = dbo.hashList(@calKey)) begin
+		RETURN 0;
+	end
+
+	set @tmpTableName = ''TMP_BLACKLIST_'' + @telephone;
+	SET @dropTmpPhone = ''if exists (select * from sys.tables where name = N'''''' + @tmpTableName + '''''') drop table '' + @tmpTableName;
+
+	SET @sqlcmd = ''CREATE TABLE '' + @tmpTableName + ''(
+	[phoneNumber] VARCHAR(30),
+	[calKey] VARCHAR(40)); 
+
+	INSERT INTO '' + @tmpTableName + ''(phoneNumber, calKey) values(@telephone,@calKey );
+	'';
+	EXEC (@dropTmpPhone);	
+	EXEC sp_executesql @sqlcmd, N''@telephone varchar(40), @calKey VARCHAR(40)'', @telephone,@calKey;
+END
+
+
+select @pais = valor from ccSettings with(nolock) where setting_id = 104
+select @ld = valor from ccSettings with(nolock) where setting_id = 17
+
+SET @sqlcmd =  ''
+UPDATE '' + @tmpTableName + '' SET phoneNumber = dbo.completa(phoneNumber, @pais, @ld);
+DELETE '' + @tmpTableName + '' WHERE phoneNumber like ''''%E%'''';
+
+INSERT INTO cclistanegra(telefono,idtipolista,HashKey, calKey)
+SELECT phoneNumber, @ln_id as idtipolista, dbo.hashList(calKey) as HashKey, calkey 
+FROM '' + @tmpTableName + '';
+
+INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+SELECT phoneNumber as telefono, 7 as idtipomov, @ln_id as idtipolista 
+FROM '' + @tmpTableName + '';''
+
+EXEC sp_executesql @sqlcmd, N''@pais varchar(2), @ld VARCHAR(5),@ln_id int'', @pais, @ld,@ln_id;
+
+IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+IF OBJECT_ID(N''tempdb..#myprincipaltempCall'') IS NOT NULL drop table #myprincipaltempCall
+IF OBJECT_ID(N''tempdb..#mytempCall'') IS NOT NULL drop table #mytempCall
+IF OBJECT_ID(N''tempdb..#helpTempCall]'') IS NOT NULL drop table #helpTempCall
+
+
+CREATE TABLE [dbo].[#mycamps] (	[campsid] [int] NULL)
+
+CREATE CLUSTERED INDEX [IX_mycamps] ON [dbo].[#mycamps]([campsid]) 
+
+insert #mycamps
+select A.cam_id from Camplistanegra A
+Inner join ccCamps B on A.cam_id=B.cam_id
+where A.idtipolista = @ln_id and B.CampType not in(7,5)
+
+
+CREATE TABLE [dbo].[#myprincipaltempCall](
+	[callout_id] [int] NULL, 
+	[cam_id] [smallint] NULL ,
+	[tipomov] [int] NULL,
+	[idtipolista] [int] NULL,
+	[cal_telefono] [varchar] (15) NULL ,
+	[cal_telefono2] [varchar] (15) NULL ,
+	[cal_telefono3] [varchar] (15) NULL ,
+	[cal_telefono4] [varchar] (15) NULL ,
+	[cal_telefono5] [varchar] (15) NULL
+	)
+
+CREATE CLUSTERED INDEX [IX_myprincipaltemp] ON [dbo].[#myprincipaltempCall]([callout_id]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp2] ON [dbo].[#myprincipaltempCall]([cal_telefono]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp3] ON [dbo].[#myprincipaltempCall]([cal_telefono2]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp4] ON [dbo].[#myprincipaltempCall]([cal_telefono3]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp5] ON [dbo].[#myprincipaltempCall]([cal_telefono4]) 
+CREATE NONCLUSTERED INDEX [IX_myprincipaltemp6] ON [dbo].[#myprincipaltempCall]([cal_telefono5]) 
+
+CREATE TABLE [dbo].[#helpTempCall](
+	[callout_id] [int] NULL, 
+	[cam_id] [smallint] NULL ,
+	[tipomov] [int] NULL,
+	[idtipolista] [int] NULL,
+	[cal_telefono] [varchar] (15) NULL ,
+	[cal_telefono2] [varchar] (15) NULL ,
+	[cal_telefono3] [varchar] (15) NULL ,
+	[cal_telefono4] [varchar] (15) NULL ,
+	[cal_telefono5] [varchar] (15) NULL
+	)
+
+CREATE TABLE [dbo].[#mytempCall](
+	[callout_id] [int] NULL, 
+	[telefono] [varchar] (15) NULL ,
+	[cam_id] [smallint] NULL ,
+	[tipomov] [int] NULL,
+	[idtipolista] [int] NULL
+)
+
+CREATE CLUSTERED INDEX [IX_mytemp] ON [dbo].[#mytempCall]([callout_id]) 
+
+declare @fech datetime = getdate()-30
+	SET @sqlcmd = ''
+	insert into [#helpTempCall]
+	SELECT a.callout_id as callout_id, a.cam_id,3, @ln_id as idtipolista, a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+	FROM [ccoCallsOutSource] as a with(nolock)
+	inner join #mycamps as b  on a.cam_id = b.campsid
+	inner join '' + @tmpTableName +'' t on 
+	t.phoneNumber IN ([SPACE_TEL]) 	AND t.calKey IS NULL
+	where  cal_fechadial > getdate()-30
+	''
+	
+	SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''cal_telefono'')	
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+	
+	SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''cal_telefono2'')	
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+
+	SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''cal_telefono3'')	
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+
+	SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''cal_telefono4'')	
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+
+	SET @sqlcmd_replace = REPLACE(@sqlcmd,''SPACE_TEL'',''cal_telefono5'')
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+
+	
+
+	SET @sqlcmd = ''insert into [#helpTempCall]
+	SELECT a.callout_id as callout_id, a.cam_id,3, @ln_id as idtipolista, a.[cal_telefono] , a.[cal_telefono2], a.[cal_telefono3], a.[cal_telefono4], a.[cal_telefono5] 
+	FROM [ccoCallsOutSource] as a with(nolock)
+	inner join #mycamps as b  on a.cam_id = b.campsid
+	inner join '' + @tmpTableName +'' t on a.cal_Key=t.calKey
+	where cal_fechadial > getdate()-30;
+	'';
+	
+	EXEC sp_executesql @sqlcmd_replace, N''@ln_id int'', @ln_id;
+
+	INSERT INTO #myprincipaltempCall
+	SELECT * FROM #helpTempCall
+	GROUP BY callout_id, cam_id, tipomov, idtipolista, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5
+
+if EXISTS (select * from #myprincipaltempCall)
+begin
+	declare @column nvarchar(max), @sql nvarchar(max)
+	,@sqlDeleteWorking nvarchar(max)
+	,@sqlUpdateWorking nvarchar(max)
+	,@sqlCaseWorking nvarchar(max)
+	,@params nvarchar(max)
+	,@phoneEmpty varchar(1)
+	,@sqlWithReplace nvarchar(max)
+
+	set @phoneEmpty=''''
+	set @column=''cal_telefono''
+	set @params=''@phoneEmpty varchar(1),@fech datetime''
+	set @sqlDeleteWorking=''and cs.cal_telefono2=@phoneEmpty
+	and cs.cal_telefono3=@phoneEmpty
+	and cs.cal_telefono4=@phoneEmpty
+	and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono2<>@phoneEmpty then cs.cal_telefono2 
+	when cs.cal_telefono3<>@phoneEmpty then cs.cal_telefono3 
+	when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+	when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+	else @phoneEmpty end ''
+
+	set @sqlUpdateWorking=''-- Actualizamos WT al siguiente telefono disponbile (cuando no es el unico telefono)
+	update wt 
+	set cal_telefono = CASE_UPDATE_WT
+	from ccoCallsOutSource cs 
+	inner join ccoWOrkingTable wt on cs.callout_id = wt.callout_id
+	inner join #mytempCall t on cs.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech and cs.COLUMN_CHECK= wt.cal_telefono''
+
+	set @sql=''
+insert #mytempCall
+select callout_id,COLUMN_CHECK,cam_id,tipomov,idtipolista
+from [#myprincipaltempCall] as a with(nolock)
+inner join '' + @tmpTableName + '' t on
+t.phoneNumber = COLUMN_CHECK
+where COLUMN_CHECK<>@phoneEmpty
+
+
+if EXISTS (select * from #mytempCall)
+begin		
+	-- Borramos de WT todos los registros en los que el telefono1 sea el unico telefono y este en la lista negra
+	delete wt with(rowlock)
+	from ccoWOrkingTable wt 
+	inner join ccoCallsOutSource cs on wt.callout_id = cs.callout_id
+	inner join #mytempCall t on wt.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech and
+	cs.COLUMN_CHECK = wt.cal_telefono
+	AND_DELETE_WT
+
+	UPDATE_SMS_WT_QUERY
+
+	--insertar el historial
+	insert cchistoriallistanegra (callout_id,telefono,cam_id,idtipomov,idtipolista)
+	select * from #mytempCall where [telefono]<>@phoneEmpty
+
+	-- Eliminamos el telefono1 de CS
+	update ccoCallsOutSource 
+	set COLUMN_CHECK = @phoneEmpty
+	from ccoCallsOutSource cs 
+	inner join #mytempCall t on cs.callout_id = t.callout_id
+	where cs.cal_fechadial > @fech		
+
+	truncate table #mytempCall
+end''
+
+	
+	/******************/
+	/*** Telefono 1 ***/
+	/******************/
+	
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	print(@sqlWithReplace)	
+	exec sp_executesql @sqlWithReplace, @params, @phoneEmpty,@fech	
+
+	/******************/
+	/*** Telefono 2 ***/
+	/******************/
+	set @column=''cal_telefono2''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono3=@phoneEmpty
+		and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono3<>@phoneEmpty then cs.cal_telefono3 
+		when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @phoneEmpty,@fech	
+
+	/******************/
+	/*** Telefono 3 ***/
+	/******************/
+	set @column=''cal_telefono3''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @phoneEmpty,@fech	
+	
+	/******************/
+	/*** Telefono 4 ***/
+	/******************/	
+	
+	set @column=''cal_telefono4''
+	
+	set @sqlDeleteWorking='' and cs.cal_telefono4=@phoneEmpty
+		and cs.cal_telefono5=@phoneEmpty''
+	
+	set @sqlCaseWorking='' case when cs.cal_telefono4<>@phoneEmpty then cs.cal_telefono4 
+		when cs.cal_telefono5<>@phoneEmpty then cs.cal_telefono5 
+		else @phoneEmpty end ''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',@sqlUpdateWorking),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @phoneEmpty,@fech	
+	
+	/******************/
+	/*** Telefono 5 ***/
+	/******************/
+
+	set @column=''cal_telefono5''	
+	set @sqlDeleteWorking='' and cs.cal_telefono5=@phoneEmpty''	
+	set @sqlCaseWorking=''''
+
+	set @sqlWithReplace=	
+	Replace(		
+	REPLACE(
+	REPLACE(
+		REPLACE(@sql,''UPDATE_SMS_WT_QUERY'',''''),
+		''COLUMN_CHECK'',@column)
+		,''AND_DELETE_WT'',@sqlDeleteWorking)
+		,''CASE_UPDATE_WT'',@sqlCaseWorking
+		)
+	--print(@sqlWithReplace)
+	exec sp_executesql @sqlWithReplace, @params, @phoneEmpty,@fech	
+
+end
+
+IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps
+IF OBJECT_ID(N''tempdb..#myprincipaltempCall'') IS NOT NULL drop table #myprincipaltempCall
+IF OBJECT_ID(N''tempdb..#mytempCall'') IS NOT NULL drop table #mytempCall
+IF OBJECT_ID(N''tempdb..#helpTempCall]'') IS NOT NULL drop table #helpTempCall
+IF @dropTmpPhone IS NOT NULL EXEC (@dropTmpPhone);'
+		EXEC(@sql)
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras eliminar sp ccsp_GalateaAdminUploadBLst si existe'
+		SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaAdminUploadBLst'')
+			BEGIN
+				DROP PROCEDURE ccsp_GalateaAdminUploadBLst
+			END'
+		EXEC(@sql)
+
+SET @process = 'TT9016-AdminKolob-Eroor en listas negras crear sp ccsp_GalateaAdminUploadBLst,  se modifico para el proceso de eliminar telefono indivual'
+		SET @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_GalateaAdminUploadBLst]  @command TINYINT, @telephone VARCHAR(20) = 0, @idtipolista INT, @calKey AS VARCHAR(40) = NULL, @isKolob bit=0
+		AS
+		DECLARE @hashCalKey BIGINT, @hashPhone BIGINT
+
+		SELECT @hashPhone = dbo.hashPhone(@telephone)
+
+		IF @calKey IS NOT NULL
+		BEGIN
+		  SELECT @hashCalKey = dbo.hashList(@calKey)
+		END
+		
+		IF @hashCalKey IS NULL
+		BEGIN
+		  IF @command IN (1, 4) --LookForNumber 
+			AND EXISTS (
+			  SELECT idtipolista
+			  FROM cclistanegra
+			  WHERE Hashtel = @hashPhone AND (HashKey IS NULL OR HashKey = 0) AND idtipolista = @idtipolista
+			  )
+		  BEGIN
+			SELECT 1
+
+			RETURN (0)
+		  END
+		END
+		ELSE
+		
+		BEGIN
+		  IF @command IN (1, 4) --LookForNumber 
+			AND EXISTS (
+			  SELECT idtipolista
+			  FROM cclistanegra
+			  WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+			  )
+		  BEGIN
+			SELECT 1
+
+			RETURN (0)
+		  END
+		END
+		
+		IF @command = 1 --Insert Number
+		BEGIN
+		  EXEC ccsp_InsertDNCList @telephone, @idtipolista, @hashCalKey, @calKey
+		  --print  @telephone
+		  INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+		  VALUES (@telephone, 1, @idtipolista)
+
+		  SELECT 200
+		END
+
+		IF @command = 2 --Delete Number
+		BEGIN
+		  --Check if phone number exists
+					IF EXISTS(SELECT cln.Hashtel FROM dbo.ccListaNegra AS cln WHERE cln.Hashtel = @hashPhone AND cln.idtipolista = @idtipolista)
+					BEGIN
+						  IF @hashCalKey IS NULL OR @hashCalKey = 0
+						  BEGIN
+							--Check if request is from kolob or xion
+							IF(@isKolob = 1)
+							BEGIN
+								--Check if phone number has calKey assigned
+								SELECT @hashCalKey = cln.HashKey FROM dbo.ccListaNegra AS cln WHERE cln.Hashtel = @hashPhone AND cln.idtipolista = @idtipolista
+								IF (@hashCalKey > 0)
+								BEGIN
+									SELECT CAST(-1 AS INT) --Phone number need a calkey to delete it
+								END
+								ELSE
+								BEGIN
+									INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+									VALUES (@telephone, 5, @idtipolista)
+
+									DELETE
+									FROM cclistanegra
+									WHERE Hashtel = @hashPhone AND (HashKey IS NULL OR HashKey = 0) AND idtipolista = @idtipolista;
+									SELECT CAST(1 AS INT)
+								END
+							END
+							ELSE
+							BEGIN
+								INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+								VALUES (@telephone, 5, @idtipolista)
+
+								DELETE
+								FROM cclistanegra
+								WHERE Hashtel = @hashPhone AND (HashKey IS NULL OR HashKey = 0) AND idtipolista = @idtipolista
+							END
+						  END
+						  ELSE
+						  BEGIN
+							--Check if phone with calKey exist
+							IF NOT EXISTS (SELECT cln.HashKey FROM dbo.ccListaNegra AS cln WHERE cln.HashKey = @hashCalKey AND cln.idtipolista = @idtipolista)
+							BEGIN
+								SELECT CAST(-4 AS INT) --Phone Number with calKey not exist
+							END
+							ELSE
+							BEGIN
+								INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+								VALUES (@telephone, 5, @idtipolista)
+
+								DELETE
+								FROM cclistanegra
+								WHERE Hashtel = @hashPhone AND HashKey = @hashCalKey AND idtipolista = @idtipolista
+								IF(@isKolob = 1)
+								BEGIN
+									SELECT CAST(1 AS INT)
+								END
+							END
+						  END
+					END
+					ELSE
+					BEGIN
+						SELECT CAST(-3 AS INT) --Phone Number not exist
+					END
+				  RETURN (0)
+		END
+
+		IF @command = 3 --Reemplaza
+		BEGIN
+		  INSERT cchistoriallistanegra (telefono, idtipomov, idtipolista)
+		  SELECT telefono, 4, @idtipolista
+		  FROM cclistanegra
+		  WHERE idtipolista = @idtipolista
+
+		  DELETE
+		  FROM cclistanegra
+		  WHERE idtipolista = @idtipolista
+
+		  RETURN (0)
+		END
+
+		IF @command = 5 --Delete by idtipolista
+		BEGIN
+		  UPDATE ccTiposListaNegra
+		  SET STATUS = 0
+		  WHERE idtipolista = @idtipolista
+
+		  DELETE ccAgendaListaNegra
+		  WHERE idagenda IN (
+			  SELECT idagenda
+			  FROM ccAgenda_TipolistaNegra
+			  WHERE idtipolista = @idtipolista
+			  )
+
+		  DELETE ccAgenda_TipolistaNegra
+		  WHERE idtipolista = @idtipolista
+
+		  DELETE cccalifblacklist
+		  WHERE idtipolista = @idtipolista
+
+		  DELETE Camplistanegra
+		  WHERE idtipolista = @idtipolista
+
+		  DECLARE @telefono VARCHAR(10)
+
+		  WHILE EXISTS (
+			  SELECT telefono
+			  FROM ccListaNegra
+			  WHERE idtipolista = @idtipolista
+			  )
+		  BEGIN
+			SELECT TOP 1 @hashPhone = Hashtel, @telefono = telefono
+			FROM ccListaNegra
+			WHERE idtipolista = @idtipolista
+
+			INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
+			VALUES (@telefono, 5, @idtipolista)
+
+			DELETE
+			FROM cclistanegra
+			WHERE Hashtel = @hashPhone AND idtipolista = @idtipolista
+		  END
+
+		  RETURN (0)
+		END
+
+		SET NOCOUNT OFF'
+		EXEC(@sql)
+------------------------------------ TT9016-AdminKolob-Eroor en listas negras ----------------------------
+
+
+------------------------------------ CW-8394 Permiso para hacer llamadas Manual en el agente ----------------------------
+
+SET @process = 'CW-8394 Permiso para hacer llamadas Manual en el agente, se elimina el sp ccsp_RIAAgentGetDialMask, si existe '
+		SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_RIAAgentGetDialMask'')
+			BEGIN
+				DROP PROCEDURE ccsp_RIAAgentGetDialMask
+			END'
+		EXEC(@sql)
+
+SET @process = 'CW-8394 Permiso para hacer llamadas Manual en el agente, se modifico para que tome el plan 2, donde los números son de 10 digitos para México'
+		SET @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_RIAAgentGetDialMask]
+@user_id integer,
+@tel varchar(15)
+AS
+declare @mask integer, @idioma integer, @value integer, @lada integer
+declare @country as tinyint
+
+set @value = 0
+select @mask = isnull(dialmask,7) from ccusers where user_id=@user_id
+select @country = valor from ccsettings where setting_id = 104
+
+if @mask=0 begin
+    select @value Response
+    return
+end
+
+-- Restricciones por pais 1:Mexico 2:Argentina 3:Colombia 4:USA 5:Chile 6:Venezuela 7:uk 8:Arabia Saudita, 9: Australia, 10:Brasil, 11:Guatemala, 12:Costa Rica, 13:Salvador
+if @country = 1
+    begin
+
+    DECLARE @specialDialPlan TINYINT, @phoneType TINYINT
+    SELECT @specialDialPlan = valor, @phoneType = 0
+    FROM ccsettings WITH (NOLOCK)
+    WHERE setting_id = 195
+
+    if @specialDialPlan = 2 select @phoneType=dbo.fnGetTipoLlamada(@tel)
+
+    --Restringe celulares
+    if (@mask & 1)>0
+        begin
+        if ((left(ltrim(rtrim(@tel)),3) = ''044'' Or left(ltrim(rtrim(@tel)),3) = ''045'') and len(ltrim(rtrim(@tel))) = 13) or (@specialDialPlan = 2 and (@phoneType=3 or @phoneType=4))
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if ((left(ltrim(rtrim(@tel)),2) = ''01'') and len(ltrim(rtrim(@tel))) = 12) or (@specialDialPlan = 2 and @phoneType=2)
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if (Len(@lada) + Len(ltrim(rtrim(@tel))) = 10 and @specialDialPlan = 0) or (@specialDialPlan = 2 and @phoneType=1)
+                begin
+                set @value = 6
+                end
+            end
+        end
+    end
+
+-- Argentina
+if @country = 2
+    begin
+    --Restringe celulares
+    if ((@mask & 1) > 0)
+        begin
+        if (left(@tel,2)=''15'') or (len(@tel)>=13 and substring(@tel,1,1)=''0'' and
+            (substring(@tel,4,2)=''15'' or substring(@tel,5,2)=''15'' or substring(@tel,3,2)=''15''))
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if ((left(ltrim(rtrim(@tel)),2) =''0'') and len(ltrim(rtrim(@tel))) = 11)
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask&4)>0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+                begin
+                set @value=6
+                end
+            end
+        end
+    end
+
+if @country = 3 --Colombia
+    begin
+    --Restringe Celulares
+    if ((@mask & 1) > 0)
+        begin
+        if len(@tel) > 8
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if len(@tel) = 8 or left(@tel,1) = ''0''
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+                begin
+                set @value = 6
+                end
+            end
+        end
+    end
+
+if @country = 4 --USA
+    begin
+    --Restringe larga distancia usa
+    if ((@mask & 2) > 0)
+        begin
+        if len(ltrim(rtrim(@tel))) >= 11  and (left(ltrim(rtrim(@tel)),1) = ''1'')
+            begin
+            set @value = 5
+            end
+        end
+
+    --Restringe locales usa
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            --if Len(ltrim(rtrim(@tel))) = 7
+            if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+                begin
+                set @value = 6
+            end
+            end
+        end
+    end
+
+--Chile
+if @country = 5
+    begin
+
+        --Restringe Celulares
+    if ((@mask & 1) > 0)
+        begin
+        if len(@tel) >= 10 and left(@tel,2) = ''09''
+            begin
+            set @value = 4
+            end
+        end
+
+        --Restringe Locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            if Len(@tel) in (6,7)
+                begin
+                set @value = 6
+                end
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if len(@tel) >= 8 and len(@tel) < 10
+                begin
+                set @value = 5
+                end
+            end
+        end
+    end
+
+--Venezuela
+if @country = 6
+begin
+        --Restringe Celulares
+    if ((@mask & 1) > 0)
+        begin
+        if len(@tel) >= 10 and left(@tel,2) = ''04''
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if len(@tel) >= 10 and left(@tel,1) = ''0''
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if Len(@lada) + Len(ltrim(rtrim(@tel))) = 10
+                begin
+                set @value = 6
+                end
+            end
+        end
+
+end
+
+--United Kingdom
+if @country = 7
+begin
+        --Restringe Celulares
+    if ((@mask & 1) > 0)
+        begin
+        if (len(@tel) >= 9) and left(@tel,2) = ''07''
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if len(@tel) >= 9 and left(@tel,1) = ''0''
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            if len(@tel) >= 9 and left(@tel,1) <> ''0''
+                begin
+                set @value = 6
+                end
+            end
+        end
+
+end
+
+--arabia saudita
+if @country = 8
+begin
+
+    --Restringe celulares
+    if (@mask & 1)>0
+        begin
+        if (left(ltrim(rtrim(@tel)),2) = ''05'' and len(ltrim(rtrim(@tel))) = 10 )
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if ( left(ltrim(rtrim(@tel)),2) <> ''05'' and len(ltrim(rtrim(@tel))) in (11, 9))
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if Len(@lada) + Len(ltrim(rtrim(@tel))) = 8
+                begin
+                set @value = 6
+                end
+            end
+        end
+end
+
+--Australia
+if @country = 9
+begin
+
+    --Restringe celulares
+    if (@mask & 1)>0
+        begin
+        if (left(ltrim(rtrim(@tel)),2) = ''04'' and len(ltrim(rtrim(@tel))) = 10)
+            begin
+            set @value = 4
+            end
+        end
+
+    --Restringe larga distancia
+    if(@value=0)
+        begin
+        if ((@mask & 2) > 0)
+            begin
+            if ( left(ltrim(rtrim(@tel)),2) <> ''04'' and len(ltrim(rtrim(@tel))) = 10)
+                begin
+                set @value = 5
+                end
+            end
+        end
+
+    --Restringe locales
+    if(@value=0)
+        begin
+        if ((@mask & 4) > 0)
+            begin
+            select @lada=valor from ccSettings WHERE setting_id=17
+            if ((Len(ltrim(rtrim(@tel))) = 8) or
+                (''0'' + left(ltrim(rtrim(@tel)),1) = @lada and Len(ltrim(rtrim(@tel))) = 9) or
+                (left(ltrim(rtrim(@tel)),2) = @lada and Len(ltrim(rtrim(@tel))) = 10))
+                begin
+                set @value = 6
+                end
+            end
+        end
+end
+
+--Brasil
+if @country = 10
+    begin
+        declare @lon int
+        --Restringe celulares
+        if (@mask & 1)>0
+        begin
+            set @tel=ltrim(rtrim(@tel))
+            set @lon=len(@tel)
+            if
+                (@lon in(7,8) and left(@tel,1) in (''6'',''7'',''8'',''9'') )
+                or (@lon=9 and left(@tel,1) = ''9'' )
+                or (@lon=10 and substring(@tel,3,1) in (''6'',''7'',''8'',''9'') )
+                or (@lon=11 and substring(@tel,3,1) = ''9'')
+                --or (@lon=12 and substring(@tel,5,1) in (''6'',''7'',''8'',''9'') )
+                --or (@lon=13 and substring(@tel,5,1) = ''9'' )
+                --or (@lon=13 and substring(@tel,5,1) = ''9'' )
+                begin
+                    set @value = 4
+                end
+        end
+
+        --Restringe larga distancia
+        if(@value=0)
+        begin
+            if ((@mask & 2) > 0)
+            begin
+                select @lada=valor from ccSettings WHERE setting_id=17
+                set @tel=ltrim(rtrim(@tel))
+                set @lon=len(@tel)
+                if  @lon>=10 and left(@tel,2) <> @lada
+                begin
+                    set @value = 5
+                end
+            end
+        end
+        --Restringe locales
+        if(@value=0)
+        begin
+            if ((@mask & 4) > 0)
+            begin
+                select @lada=valor from ccSettings WHERE setting_id=17
+                set @tel=ltrim(rtrim(@tel))
+                set @lon=len(@tel)
+                if @lon in (7,8,9) or (@lon in (10,11) and left(@tel,2)= @lada)
+                begin
+                    set @value = 6
+                end
+            end
+        end
+
+        --Restringe por cobrar
+        if(@value=0)
+        begin
+            declare @llamadasPorCobrar varchar(4);
+            select @llamadasPorCobrar= valor from ccSettings where setting_id=126
+            set @tel=ltrim(rtrim(@tel))
+            set @lon=len(@tel)
+            if @lon >= 12 and  left(@tel,2) = ''90'' and @llamadasPorCobrar=''0''
+            begin
+                set @value = 10 -- pone para llamadas por cobrar
+            end
+        end
+
+    end -- Termina Brasil
+
+
+--Guatemala
+if @country = 11
+    begin
+        --Restringe celulares
+        if (@mask & 1)>0
+        begin
+            set @tel=ltrim(rtrim(@tel))
+            if charindex(substring(@tel,1,1),''3,4,5'') > 0
+                set @value = 4
+        end
+
+        --Restringe locales
+        if(@value=0)
+        begin
+            if ((@mask & 4) > 0)
+            begin
+                set @tel=ltrim(rtrim(@tel))
+                if charindex(substring(@tel,1,1),''2,6,7'') > 0
+                    set @value = 6
+            end
+        end
+
+    end -- Termina Guatemala
+
+--Costa Rica
+if @country = 12
+    begin
+        --Restringe celulares
+        if (@mask & 1)>0
+        begin
+            set @tel=ltrim(rtrim(@tel))
+            if charindex(substring(@tel,1,1),''5,6,7,8'') > 0
+                set @value = 4
+        end
+
+        --Restringe locales
+        if(@value=0)
+        begin
+            if ((@mask & 4) > 0)
+            begin
+                set @tel=ltrim(rtrim(@tel))
+                if charindex(substring(@tel,1,1),''2,3,4'') > 0
+                    set @value = 6
+            end
+        end
+
+    end -- Termina Costa Rica
+
+--Salvador
+if @country = 13
+    begin
+        --Restringe celulares
+        if (@mask & 1)>0
+        begin
+            set @tel=ltrim(rtrim(@tel))
+            if charindex(substring(@tel,1,1),''6,7'') > 0
+                set @value = 4
+        end
+
+        --Restringe locales
+        if(@value=0)
+        begin
+            if ((@mask & 4) > 0)
+            begin
+                set @tel=ltrim(rtrim(@tel))
+                if charindex(substring(@tel,1,1),''2'') > 0
+                    set @value = 6
+            end
+        end
+
+    end -- Termina Salvador
+
+--Spain
+if @country = 14
+    begin
+        --Restringe celulares
+        if (@mask & 1)>0
+        begin
+            set @tel=ltrim(rtrim(@tel))
+            if charindex(substring(@tel,1,1),''6,7'') > 0
+                set @value = 4
+        end
+
+        --Restringe locales
+        if(@value=0)
+        begin
+            if ((@mask & 4) > 0)
+            begin
+                set @tel=ltrim(rtrim(@tel))
+                if charindex(substring(@tel,1,1),''8,9'') > 0
+                    set @value = 6
+            end
+        end
+
+    end -- Termina Spain
+
+select @value Response'
+		EXEC(@sql)
+------------------------------------ CW-8394 Permiso para hacer llamadas Manual en el agente ----------------------------
+
+
+
+
+
+	 ----------------------------------------------------------------------------------- END Marco García--------------------------------------------------------------------------
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

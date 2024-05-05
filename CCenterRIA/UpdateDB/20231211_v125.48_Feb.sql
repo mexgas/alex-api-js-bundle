@@ -5165,6 +5165,241 @@ SET NOCOUNT OFF
 END'
     EXEC(@sql);
 
+    SET @process = 'Alter SP ccspAgent_GetLastCalls Correcion para no tomar el tiempo Hold'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccspAgent_GetLastCalls] @user_id INT
+AS
+SET NOCOUNT ON;
+DECLARE @lastCallAgt TABLE(id           INT NOT NULL
+                        , tipo         VARCHAR(10) NOT NULL
+                        , Hora         DATETIME NOT NULL --VARCHAR(19) NOT NULL, 
+                        , Telefono     VARCHAR(55) NOT NULL
+                        , EspCamp      VARCHAR(55) NOT NULL
+                        , Calificacion VARCHAR(150)
+                        , Duracion     VARCHAR(10) NOT NULL
+                        , CallBack     DATETIME
+                        , cal_key      VARCHAR(40)
+                        , IDCampEsp    SMALLINT NOT NULL
+                        , prefijo      VARCHAR(255) NULL
+                        , GraphicID    INT
+                        , CamManualMode INT
+                        , SelectRotativeANI INT
+                        , PRIMARY KEY(id,tipo)
+);
+
+DECLARE @pais TINYINT;
+DECLARE @maxHours SMALLINT;
+DECLARE @topRows INT;
+DECLARE @setting VARCHAR(6);
+DECLARE @hidePhone BIT;
+DECLARE @dateStart DATETIME;
+
+SET @hidePhone = 1;
+
+SELECT @setting = valor FROM ccSettings WHERE setting_id = 255;
+
+SET @maxHours = CAST(SUBSTRING(@setting, 1, (SELECT PATINDEX(''%|%'', @setting)) - 1) AS SMALLINT);
+SET @topRows = CAST(SUBSTRING(@setting, (SELECT PATINDEX(''%|%'', @setting)) + 1, LEN(@setting)) AS INT);
+
+IF @maxHours = 0
+BEGIN
+    SELECT Id
+        , tipo
+        , (CONVERT(VARCHAR(10), Hora, 101) + '' '' + CONVERT(VARCHAR(8), Hora, 108)) AS Hora
+        , Telefono
+        , EspCamp
+        , Calificacion
+        , CallBack
+        , Duracion
+        , '''' AS CallBack
+        , cal_key
+        , IDCampEsp
+        , prefijo
+        , GraphicID
+        , SelectRotativeANI
+        , @hidePhone AS HidePhone FROM @lastCallAgt;
+
+    RETURN 0;
+END;
+
+SELECT @pais = valor FROM ccSettings WHERE setting_id = 104;
+
+SELECT @hidePhone = CASE WHEN valor = ''0''
+                    THEN 0 ELSE 1
+                    END FROM ccSettings WHERE setting_id = 223;
+
+IF @topRows = 0
+BEGIN
+    SET @topRows = 10000;
+END;
+
+SET @dateStart = DATEADD(hh, -@maxHours, GETDATE());
+
+WITH timeTransfer
+    AS (SELECT cal_id
+            , tipo
+            , SUM(tAntesXfer) AS tAntesXfer
+            , SUM(tDespuesXfer) AS tDespuesXfer FROM ccLogTransfers
+        WHERE fechaFin > @dateStart
+        GROUP BY cal_id
+                , tipo)
+
+    INSERT INTO @lastCallAgt
+            ---Insert OUT
+            SELECT TOP (@topRows) c.cal_id AS id
+                                , ''OUT'' AS Tipo
+                                , cal_inicio
+                                , cal_telefono AS Telefono
+                                , cam_descripcion AS EspCamp
+                                , ISNULL(cal.Description, '''') AS Calificacion
+                                , CONVERT(VARCHAR(8), DATEADD(ss, cal_tDialog - case when ccCamps.recordHold=1 then 0 else cal_tMoh end 
+                                + CASE WHEN stopRecording = 0
+                                                                                        THEN ISNULL(t.tDespuesXfer, 0) ELSE 0
+                                                                                        END, 0), 114) AS Duracion
+                                , cal_fcallback AS CallBack
+                                , cal_key
+                                , c.cam_id AS IDCampEsp
+                                , ISNULL(ccCamps.prefijo, '''') Prefijo
+                                , graph.graphic_id GraphicID
+                                , cam_ModoManual as CamManualMode 
+                                , ISNULL(selectRotativeANI, 0) as SelectRotativeANI FROM ccoCallsOut c
+                                                                INNER JOIN ccCamps ON ccCamps.cam_id = c.cam_id
+                                                                LEFT JOIN ccRIACampsGraph graph ON graph.cam_id = c.cam_id
+                                                                LEFT JOIN ccTipoCalifOut cal ON c.calif_id = cal.calif_id
+                                                                LEFT JOIN timeTransfer t ON c.cal_id = t.cal_id
+                                                                                            AND t.tipo = 2
+            WHERE user_id = @user_id
+                AND cal_inicio > @dateStart
+            UNION
+            --- IN
+            SELECT TOP (@topRows) c.cal_id AS id
+                                , ''IN'' AS Tipo
+                                , cal_inicio
+                                , cal_ani AS Telefono
+                                , descripcion AS EspCamp
+                                , ISNULL(cal.Description, '''') AS Calificacion
+                                , CONVERT(VARCHAR(14), DATEADD(second, cal_tDialog - case when ccInbound.recordHold=1 then 0 else cal_tMoh end  
+                                + CASE WHEN stopRecording = 0
+                                                                                                THEN ISNULL(t.tDespuesXfer, 0) ELSE 0
+                                                                                                END, 0), 108) Duracion
+                                , NULL AS CallBack
+                                , cal_key
+                                , c.inbound_id AS IDCampEsp
+                                , ISNULL(ccInbound.prefijo, '''') Prefijo
+                                , graph.graphic_id GraphicID
+                                , '''' as CamManualMode 
+                                , 0 as SelectRotativeANI FROM ccCallsIn c WITH (NOLOCK INDEX(IX_ccCallsIn_4))
+                                                              inner JOIN ccRIAInboundGraph graph ON graph.Inbound_id = c.Inbound_id
+                                                                INNER JOIN ccInbound ON ccInbound.Inbound_id = c.Inbound_id
+                                                                LEFT JOIN ccTipoCalif cal ON c.calif_id = cal.calif_id
+                                                                LEFT JOIN timeTransfer t ON c.cal_id = t.cal_id
+                                                                                            AND t.tipo = 1
+            WHERE user_id = @user_id
+                AND cal_inicio > @dateStart;
+
+SELECT Id
+    , tipo
+    , CASE WHEN @pais = 4
+    THEN(CONVERT(VARCHAR(10), Hora, 101) + '' '' + CONVERT(VARCHAR(8), Hora, 108)) ELSE(CONVERT(VARCHAR(10), Hora, 103) + '' '' + CONVERT(VARCHAR(8), Hora, 14))
+    END AS Hora
+    , Telefono
+    , EspCamp
+    , Calificacion
+    , ISNULL(CONVERT(VARCHAR(16), CallBack, 121), '''') AS CallBack
+    , Duracion
+    , CallBack
+    , cal_key
+    , IDCampEsp
+    , prefijo
+    , GraphicID
+    , @hidePhone AS HidePhone 
+    , CamManualMode 
+    , SelectRotativeANI FROM @lastCallAgt
+ORDER BY hora DESC;
+SET NOCOUNT OFF;'
+    EXEC(@sql);
+
+    SET @process = 'Alter ccsp_AvrsSyncronization para cambiar la duration cuando se graba el hold'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization] @action SMALLINT, @maxRecordsToTransfer INT = 10, @id INT = 0
+AS
+SET NOCOUNT ON
+
+IF @action = 1
+BEGIN
+    DECLARE @countrId INT
+
+    SET @countrId = 1
+
+    SELECT @countrId = valor
+    FROM ccSettings
+    WHERE setting_id = 104;
+
+    WITH callsIn
+    AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+        calls.cal_id, user_id, calls.Inbound_id, calls.calif_id 
+        , cast(cal_extension AS INT) AS cal_extension, cal_inicio, cal_ANI AS phone
+        , isnull(cal_tDialog - case when ccInbound.recordHold=1 then 0 else cal_tMoh end , 0) 
+        + CASE WHEN stopRecording = 0 THEN isnull(trans.tDespuesXfer, 0) ELSE 0 END AS duration
+        , cal_key, 0 AS cal_manual, cal_puerto
+        , calls.dni_id, fvalida, cal_whohung
+        , isnull(cast(califSub_id AS SMALLINT), 0) AS califSub_id
+        , CASE WHEN trans.tAntesXfer IS NULL THEN cal_tMoh WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 ELSE cal_tMoh - trans.tAntesXfer END AS cal_tMoh
+        , dateadd(ss, isnull(cal_tDialog, 0), cal_inicio) dateEnd, avrs.tipo + 1 AS callType, avrs.id AS avrsId, ccInbound.prefijo
+        
+        , convert(bit, case when isnull(calls.file_moved,1)=2 then 0 else 1 end)  AS isCallRecord
+        , isnull(dni.dni_numero, '''') AS DNIS, dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG
+        
+        FROM ccCallsIn  AS  calls   with(nolock)
+        INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id    AND avrs.tipo = 0
+        LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
+        left join ccInboundExtend inbExt on inbExt.Inbound_id=calls.Inbound_id
+        LEFT JOIN (
+            SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers
+            WHERE tipo = 1
+            GROUP BY cal_id, tipo
+            ) trans ON calls.cal_id = trans.cal_id
+        WHERE calls.User_id > 0
+        ), callsOut
+    AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+        calls.cal_id AS CallId, user_id AS UserId, calls.cam_id AS camAcdId
+        , cast(calls.calif_id AS SMALLINT) AS califId, cast(cal_extension AS INT) AS extension, cal_inicio, cal_telefono
+        , isnull(cal_tDialog - case when camps.recordHold=1 then 0 else cal_tMoh end , 0) + CASE WHEN stopRecording = 0 THEN isnull(trans.tDespuesXfer, 0) ELSE 0 END AS duration
+        , cal_key, cal_manual, cal_puerto, 0 AS dni_id, fvalida, cal_whohung
+        , isnull(cast(califSub_id AS SMALLINT), 0) AS califSub_id
+        , CASE WHEN trans.tAntesXfer IS NULL THEN cal_tMoh WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 ELSE cal_tMoh - trans.tAntesXfer END AS cal_tMoh
+        , dateadd(ss, isnull(cal_tDialog, 0), cal_inicio) dateEnd, avrs.tipo + 1 AS callType, avrs.id AS avrsId, camps.prefijo
+        
+        , convert(bit, case when isnull(calls.file_moved,1)=2 then 0 else 1 end)  AS isCallRecord
+        , '''' AS DNIS, dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG
+        FROM ccoCallsOut AS calls with(nolock)
+        INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
+        LEFT JOIN (
+            SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers
+            WHERE tipo = 2
+            GROUP BY cal_id, tipo
+            ) trans ON calls.cal_id = trans.cal_id
+        WHERE calls.User_id > 0
+        )
+
+        select * from callsIn
+        union 
+        select * from callsOut
+        
+END
+ELSE IF @action = 2
+BEGIN
+    DELETE
+    FROM ccAVRSTransfer
+    WHERE id = @id
+END
+'
+    EXEC(@sql);
+
     SET @process = ''
     SET @sql = ''
     EXEC(@sql);

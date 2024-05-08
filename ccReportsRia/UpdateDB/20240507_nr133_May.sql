@@ -37,40 +37,116 @@ BEGIN
 	BEGIN TRAN
 
 	BEGIN TRY
+	-------------------------------------------------- Frida Orta Begin -----------------------------------------------------------------------------------
+	set @process = 'DROP VIEW RepViewOutCallsDetail'
+	set @sql = '
+	if exists (select * FROM sys.views where name = N''RepViewOutCallsDetail'')
+    begin
+       DROP VIEW RepViewOutCallsDetail
+    end'
+	EXEC(@sql)
+
+	set @process = 'CREATE VIEW RepViewOutCallsDetail se quita columna campaignId'
+	set @sql = '
+	CREATE VIEW [dbo].[RepViewOutCallsDetail] AS 
+	SELECT
+	date,
+	callKey,
+	telephone,
+	transfer,
+	dialog,
+	nque,
+	wrapup,
+	CallDisposition,
+	subDisposition,
+	extension,
+	userId,
+	[login] [userName],
+	username [login],
+	campaign,
+	duration,
+	ncost,
+	iva,
+	total as totalRow,
+	ByCarrier,
+	Calltypes,
+	dialType,
+	whoHangUp,
+	dialResult as callStatus,
+	calId,
+	year,
+	month,
+	day,
+	hour,
+	minutes,
+	trunk,
+	data1 [Dato1],
+	data2 [Dato2],
+	data3 [Dato3],
+	data4 [Dato4],
+	data5 [Dato5],
+	MessageTime,
+	grabId  
+	FROM RepOutCallsDetail nolock'
+	EXEC(@sql)
+
+	set @process = 'DROP VIEW RepViewSpecialAbndCamp'
+	set @sql = '
+	if exists (select * FROM sys.views where name = N''RepViewSpecialAbndCamp'')
+    begin
+       DROP VIEW RepViewSpecialAbndCamp
+    end'
+	EXEC(@sql)
+
+	set @process = 'CREATE VIEW RepViewSpecialAbndCamp se quita columna campaignId'
+	set @sql = '
+	CREATE VIEW RepViewSpecialAbndCamp AS SELECT
+	date,
+	campaign,
+	dialedCalls,
+	abandonedCalls,
+	abandonedCallsPctg,
+	year,
+	month,
+	day,
+	hour,
+	minutes
+	FROM RepSpecialAbndCamp nolock'
+	EXEC(@sql)
+	-------------------------------------------------- Frida Orta End -----------------------------------------------------------------------------------
 	----------------------------------------------- Gaby Begin ----------------------------------------------------------------------------------
-	SET @process = 'DROP VIEW RepViewOutAnswAndXferCalls'
-SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''RepViewOutAnswAndXferCalls'') AND type = ''V'')
-    BEGIN
-        DROP VIEW RepViewOutAnswAndXferCalls
-    END'
-EXEC(@sql)
+		SET @process = 'DROP VIEW RepViewOutAnswAndXferCalls'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''RepViewOutAnswAndXferCalls'') AND type = ''V'')
+	    BEGIN
+	        DROP VIEW RepViewOutAnswAndXferCalls
+	    END'
+	EXEC(@sql)
 
 
-SET @process = 'CREATE VIEW RepViewOutAnswAndXferCalls'
-SET @sql = '
-CREATE VIEW RepViewOutAnswAndXferCalls
-as
-select
-	[date],
-	[callid],
-	[campaign],
-	[userId],
-	[Agent],
-	[dialog],
-	[telephone],
-	[dialId],
-	[dialType],
-	[CallTypes],
-	[ncost],
-	[iva],
-	[total],
-	[trunk],
-	[ANI] ,
-	[dialTimeSec]
-from RepOutAnswAndXferCalls NOLOCK'
-EXEC(@sql)
+	SET @process = 'CREATE VIEW RepViewOutAnswAndXferCalls'
+	SET @sql = '
+	CREATE VIEW RepViewOutAnswAndXferCalls
+	as
+	select
+		[date],
+		[callid],
+		[campaign],
+		[userId],
+		[Agent],
+		[dialog],
+		[telephone],
+		[dialId],
+		[dialType],
+		[CallTypes],
+		[ncost],
+		[iva],
+		[total],
+		[trunk],
+		[ANI] ,
+		[dialTimeSec]
+	from RepOutAnswAndXferCalls NOLOCK'
+	EXEC(@sql)
 	-------------------------------------------------- Gaby End -----------------------------------------------------------------------------------
-
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN

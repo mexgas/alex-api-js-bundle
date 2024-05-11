@@ -62,20 +62,7 @@ BEGIN
         EXEC(@sql);
 
         -----------------------------------------------------BEGIN TT8053 Enrique Ruiz ----------------------------------------------------------------
-
-         SET @process = 'TT8053 DROP VIEW ccLogAgentesDiaViewLast'
-        SET @sql = 'IF EXISTS(SELECT * FROM sys.views WHERE name=''ccLogAgentesDiaViewLast'')
-                    BEGIN
-                    DROP VIEW ccLogAgentesDiaViewLast;
-                    END;'
-        EXEC(@sql);
-
-        SET @process = 'TT8053 Create ccLogAgentesDiaViewLast for better access to last status by agent'
-        SET @sql = 'CREATE VIEW ccLogAgentesDiaViewLast AS
-SELECT User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus, callId
-FROM ccLogAgentesDiaLast with(nolock)      ;
-                    '
-        EXEC(@sql);
+        
         
         SET @process = 'TT8053 Modify consult of last agent state and add a condition for dialog column'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] 
@@ -6312,6 +6299,20 @@ SET NOCOUNT OFF
 ALTER TABLE [dbo].[ccLogAgentesDiaLast] WITH CHECK ADD CONSTRAINT [FK_ccLogAgentesDiaLast_ccTipoStatusAgente] FOREIGN KEY([TipoStatusAge_id]) REFERENCES [dbo].[ccTipoStatusAgente] ([TipoStatusAge_id])
 ALTER TABLE [dbo].[ccLogAgentesDiaLast] CHECK CONSTRAINT [FK_ccLogAgentesDiaLast_ccTipoStatusAgente]
     end'
+        EXEC(@sql);
+
+		SET @process = 'TT8053 DROP VIEW ccLogAgentesDiaViewLast'
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.views WHERE name=''ccLogAgentesDiaViewLast'')
+                    BEGIN
+                    DROP VIEW ccLogAgentesDiaViewLast;
+                    END;'
+        EXEC(@sql);
+
+        SET @process = 'TT8053 Create ccLogAgentesDiaViewLast for better access to last status by agent'
+        SET @sql = 'CREATE VIEW ccLogAgentesDiaViewLast AS
+SELECT User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo, currentStatus, callId
+FROM ccLogAgentesDiaLast with(nolock)      ;
+                    '
         EXEC(@sql);
 
         SET @process = 'Alter ccsp_SaveStatusAgent se agrega ccLogAgentesDiaLast'

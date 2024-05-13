@@ -105,7 +105,7 @@ if @Version_Actual >= @Version
 		@conflict_logging = N'both', 
 		@automatic_reinitialization_policy = 0,
 		@generation_leveling_threshold=0
-		select 'sp_addmergepublication'
+		
 
 		exec sp_addpublication_snapshot @publication =@publicationName, 
 		@frequency_type = 1, 

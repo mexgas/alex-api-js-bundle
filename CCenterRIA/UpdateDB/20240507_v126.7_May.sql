@@ -468,7 +468,8 @@ FROM ccLogAgentesDiaLast with(nolock)      ;
 @currentStatus int =-2,--NUEVO PARAMETRO PARA LA NUEVA COLUMNA
 @Fecha4 datetime=null,
 @tMusicHold int =0,
-@isTransferEngine bit = 0
+@isTransferEngine bit = 0,
+@TypeAuxiliar int = 0
 AS
 
 if @Fecha4 is null set @Fecha4 = getdate()

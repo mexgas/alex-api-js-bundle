@@ -79,15 +79,15 @@ BEGIN
 	'
 	EXEC(@sql)
 
-    SET @process = 'DROP SP Limpia2'
+    SET @process = 'DROP fn Limpia2'
     SET @sql = '
-	if exists (select * from sys.procedures where name = N''Limpia2'')
+	if exists (select * from sys.objects where object_id = OBJECT_ID(N''Limpia2'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
 	begin
-		DROP PROCEDURE Limpia2;
+		DROP FUNCTION Limpia2;
 	end'
     EXEC(@sql);
 
-	set @process = 'Create sp Limpia2'
+	set @process = 'Create fn Limpia2'
 	set @sql = 'CREATE FUNCTION [dbo].[Limpia2](@Phone varchar(32))
 RETURNS varchar(32) AS  
 BEGIN

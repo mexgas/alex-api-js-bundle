@@ -50,6 +50,15 @@ BEGIN
 
 
 	-----------------------------------------------Frida Orta Begin ----------------------------------------------------------------------------------
+	set @process = 'DEV2-476 K020029 Setting 272 '
+	set @sql = '
+	if not exists(select setting_id from ccSettings2 where setting_id = 272)
+	begin
+		insert into ccSettings2 (setting_id,valor,status,descripcion,Tipo,detalle,description) values (272,''3|90'',1, ''Reintentos para envío de mensajes de WhatsApp |Intervalo de reintentos'',''GRL'',''Reintentos para envío de mensajes WhatsApp (default: 3, max: 10) | Intervalo de reintentos para envío de plantillas WhatsApp (default: 90 s, min: 1 s)'',''Retries for WhatsApp outgoing messages (default: 3, max: 10) | Retry interval for WhatsApp templates (default: 90 s, min: 1 s)'')
+	end
+	'
+	EXEC(@sql)
+
 	set @process = 'Drop SP ccsp_GalateaDeleteCampaignAndACD '
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteCampaignAndACD'')

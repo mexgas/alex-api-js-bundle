@@ -114,7 +114,39 @@ BEGIN
 	FROM RepSpecialAbndCamp nolock'
 	EXEC(@sql)
 	-------------------------------------------------- Frida Orta End -----------------------------------------------------------------------------------
+	----------------------------------------------- Gaby Begin ----------------------------------------------------------------------------------
+		SET @process = 'DROP VIEW RepViewOutAnswAndXferCalls'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(''RepViewOutAnswAndXferCalls'') AND type = ''V'')
+	    BEGIN
+	        DROP VIEW RepViewOutAnswAndXferCalls
+	    END'
+	EXEC(@sql)
 
+
+	SET @process = 'CREATE VIEW RepViewOutAnswAndXferCalls'
+	SET @sql = '
+	CREATE VIEW RepViewOutAnswAndXferCalls
+	as
+	select
+		[date],
+		[callid],
+		[campaign],
+		[userId],
+		[Agent],
+		[dialog],
+		[telephone],
+		[dialId],
+		[dialType],
+		[CallTypes],
+		[ncost],
+		[iva],
+		[total],
+		[trunk],
+		[ANI] ,
+		[dialTimeSec]
+	from RepOutAnswAndXferCalls NOLOCK'
+	EXEC(@sql)
+	-------------------------------------------------- Gaby End -----------------------------------------------------------------------------------
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 
 		COMMIT TRAN

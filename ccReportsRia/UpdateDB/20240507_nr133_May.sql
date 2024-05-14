@@ -63,6 +63,7 @@ BEGIN
 	userId,
 	[login] [userName],
 	username [login],
+	campaignId,
 	campaign,
 	duration,
 	ncost,
@@ -102,6 +103,7 @@ BEGIN
 	set @sql = '
 	CREATE VIEW RepViewSpecialAbndCamp AS SELECT
 	date,
+	campaignId,
 	campaign,
 	dialedCalls,
 	abandonedCalls,
@@ -130,6 +132,7 @@ BEGIN
 	select
 		[date],
 		[callid],
+		[campaignId],
 		[campaign],
 		[userId],
 		[Agent],
@@ -139,7 +142,7 @@ BEGIN
 		[dialType],
 		[CallTypes],
 		[ncost],
-		[iva],
+		cast([iva] as varchar(3))+''%'' as [iva],
 		[total],
 		[trunk],
 		[ANI] ,

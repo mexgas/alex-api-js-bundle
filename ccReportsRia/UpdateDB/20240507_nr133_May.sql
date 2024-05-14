@@ -142,7 +142,7 @@ BEGIN
 		[dialType],
 		[CallTypes],
 		[ncost],
-		cast([iva] as varchar(3))+''%'' as [iva],
+		case when CHARINDEX(''%'',cast([iva] as varchar(3))) > 0 THEN [iva] else cast([iva] as varchar(3))+''%'' end [iva],
 		[total],
 		[trunk],
 		[ANI] ,

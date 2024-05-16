@@ -184,10 +184,28 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'contactMeanIn',@idInt,0)	
 
 set @idInt=@idInt+1
+insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)	
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversationsOut',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWAMessagesConversationsOut',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversationsRelationshipOut',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'contactMeanOut',@idInt,0)	
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppGlobalIds',@idInt,0)	
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppGlobalIdsRelationship',@idInt,0)	
+
+
+set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'SMS',0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsccoLogDial',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsOutSource',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'smsoutSourceMessage',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'SmsRemesasMuñozDay',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccSmsSegments',@idInt,0)
+
+set @idInt=@idInt+1
+insert into publicationTableCCenterRIA(publicationName,status) values(N'AuxiliarReady',0)	
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'TipoReadyAuxiliar',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogAgentesAuxiliarReady',@idInt,0)
+
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'Chatbot',0)
@@ -196,6 +214,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'Ch
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotConversationEndStatus',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatBotWhatsAppConversation',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ChatbotCalloutRelation',@idInt,0)
+
 
 
 
@@ -226,7 +245,10 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conver
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conversationtweet',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsApp',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
+insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AuxiliarReady',0)
+
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chatbot',0)
 
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')

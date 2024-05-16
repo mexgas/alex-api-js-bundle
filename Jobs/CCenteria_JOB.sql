@@ -5,11 +5,11 @@
 Author:
 
 
-Date: 2021/07/01
+Date: 2023/12/13
 Description:
 
 Database: CCenterRia
-Required version: 123.14
+Required version: 125.17
 
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
@@ -134,7 +134,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''CleanNod
         @active_start_date=20180911, 
         @active_end_date=99991231, 
         @active_start_time=0, 
-        @active_end_time=235959
+        @active_end_time=55959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -146,14 +146,16 @@ EndSave:
 '
     EXEC(@sql)
 
-    set @process = 'CREATE JOB CW (AutoStart),(Callback/abandoned update),(Campaign summary)'
+    set @process = 'CREATE JOB CW (Callback/abandoned update),(Campaign summary)'
     set @sql = 'USE [msdb]
-
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'') begin
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
 end
 
-/****** Object:  Job [CW (AutoStart),(Callback/abandoned update),(Campaign summary)]    Script Date: 11/10/2021 11:02:12 a. m. ******/
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (Callback/abandoned update),(Campaign summary)'') begin
+	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
+end
+
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
@@ -166,7 +168,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (Callback/abandoned update),(Campaign summary)'', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
@@ -269,7 +271,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (AutoStart)'', 
-		@enabled=0, 
+		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
@@ -338,39 +340,43 @@ END
 
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW Delete old records'', 
-        @enabled=1, 
-        @notify_level_eventlog=2, 
-        @notify_level_email=0, 
-        @notify_level_netsend=0, 
-        @notify_level_page=0, 
-        @delete_level=0, 
-        @description=N''No description available.'', 
-        @category_name=N''Nuxiba'', 
+		@enabled=1, 
+		@notify_level_eventlog=2, 
+		@notify_level_email=0, 
+		@notify_level_netsend=0, 
+		@notify_level_page=0, 
+		@delete_level=0, 
+		@description=N''No description available.'', 
+		@category_name=N''Nuxiba'', 
         @owner_login_name=N''replication'', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
-/****** Object:  Step [Run sp]    Script Date: 03/09/2021 07:46:53 p. m. ******/
+/****** Object:  Step [Run sp]    Script Date: 27/11/2023 04:10:50 p. m. ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''Run sp'', 
-        @step_id=1, 
-        @cmdexec_success_code=0, 
-        @on_success_action=1, 
-        @on_success_step_id=0, 
-        @on_fail_action=2, 
-        @on_fail_step_id=0, 
-        @retry_attempts=0, 
-        @retry_interval=1, 
-        @os_run_priority=0, @subsystem=N''TSQL'', 
-        @command=N''/***********************************************/
--- Delete Old Records New Version Febrero 2016 --
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_success_step_id=0, 
+		@on_fail_action=2, 
+		@on_fail_step_id=0, 
+		@retry_attempts=0, 
+		@retry_interval=1, 
+		@os_run_priority=0, @subsystem=N''TSQL'', 
+		@command=N''/***********************************************/
+-- Delete Old Records New Version Febrero 2024 --
 /***********************************************/
 set nocount on
 
 declare @idSqlCmd int
 declare @sqlCmd nvarchar(max)
 declare @days int
+declare @date datetime
 
 set @idSqlCmd = 0
 set @sqlCmd  =''''''''
 set @days = 30
+
+set @date =dateadd(dd, -@days, getdate())
+
 
 create table #sqlCmdDeleteOldRecords(
 idSqlCmd int identity primary key,
@@ -402,96 +408,118 @@ insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''truncate table ccUploadTemporal'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogReciclaje where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccLogReciclaje where fecha < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccPosicionCamps where Fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccPosicionCamps where Fecha < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccPosicionEspecialidad where Fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccPosicionEspecialidad where Fecha < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccRIAlog where operationDate < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccRIAlog where operationDate < @date'''', 0, 0)
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete from B from ccRIAChat_Log A inner join ccChatLog_AreaWg B on A.ChatID=B.ChatID  where A.fecha_chat < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccRiaChat_log where fecha_chat < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccRiaChat_log where fecha_chat < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccRIALogAgentesNotReady where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccRIALogAgentesNotReady where fecha < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccRIAWorkGroup_logDial_id where timestamp < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete ccRIAWorkGroup_logDial_id where timestamp < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete xxclientehistorial where fechaAct < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
+values (''''delete xxclientehistorial where fechaAct < @date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccCallsIn where cal_Inicio < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccCallsIn where cal_Inicio < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete cccallsreject where cal_inicio < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete cccallsreject where cal_inicio < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogAgentesDia where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccLogAgentesDia where fecha < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogAgentesDia_Dialog where fecha_Dialog < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccLogAgentesDia_Dialog where fecha_Dialog < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogAgentesNotReady where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccLogAgentesNotReady where fecha < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogLogin where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccLogLogin where fecha < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccLogtransfers where fechaFin < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccLogtransfers where fechaFin < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccriachats where chatDate < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccriachats where chatDate < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccRIAWorkGroup_Calid where timestamp < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccRIAWorkGroup_Calid where timestamp < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ivrcallsin where date < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ivrcallsin where date < @date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ivroptions where date < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ivroptions where date < @date'''', 0, 1)
 
 /******************************************************************/
 /* Delete by date because rows in ccoLogDials > ccoCallsOutSource */
 /******************************************************************/
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoLogDials where fecha < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+values (''''delete ccoLogDials where fecha < @date'''', 0, 1)
 
 /******************************************************************/
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete cchistoriallistanegra from cchistoriallistanegra as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 0)
+values (''''delete a from cchistoriallistanegra as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and A.fecha<@date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoWorkingTable from ccoWorkingTable as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 0)
+values (''''delete a from ccoWorkingTable as a inner join #ccoCallsOutSourceIds as b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 0)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccocallbacks from ccocallbacks as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 1)
+values (''''delete a from ccocallbacks as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id and cal_fecha<@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoCallsOut from ccoCallsOut as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 1)
+values (''''delete a from ccoCallsOut as a  inner join #ccoCallsOutSourceIds b on  a.callout_id = b.callout_id where a.cal_Inicio<@date'''', 0, 1)
+
+--quita los calloutId que existen registros recientes
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values ('''';with logDialsMax as(
+select b.callout_id,MAX(b.fecha) fecha from #ccoCallsOutSourceIds A
+inner join ccoLogDials b on A.callout_id = b.callout_id
+group by b.callout_id
+)
+delete B from logDialsMax A
+inner join #ccoCallsOutSourceIds B on A.callout_id=B.callout_id
+where @date>A.fecha'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoLogDials from ccoLogDials as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 1)
+values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
-values (''''delete ccoCallsOutSource from ccoCallsOutSource as a, #ccoCallsOutSourceIds as b where a.callout_id = b.callout_id'''', 0, 1)
+values (''''delete a from ccoCallPriorityOrder a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id where a.callout_id = b.callout_id'''', 0, 1)
+
 
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
     begin
         set rowcount 1
             select @idSqlCmd = idSqlCmd, @sqlCmd = SqlCmd from #sqlCmdDeleteOldRecords where [status] = 0 order by idSqlCmd
         set rowcount 0
+        
+		--print (@sqlCmd)
+		BEGIN TRY  
+    		exec sp_executesql @sqlCmd, N''''@date datetime'''', @date
+		END TRY  
+		BEGIN CATCH  
+		    SELECT ERROR_NUMBER() AS ErrorNumber  ,ERROR_MESSAGE() AS ErrorMessage;  
+		END CATCH;   
 
-        exec(@sqlCmd)
+		
 
         WAITFOR DELAY ''''00:00:01''''
 
@@ -516,22 +544,22 @@ while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
 
 drop table #sqlCmdDeleteOldRecords
 drop table #ccoCallsOutSourceIds'', 
-        @database_name=N''CCenterRIA'', 
-        @flags=0
+		@database_name=N''CCenterRIA'', 
+		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''Tuesday, Thursday and Saturday at 3:00 am'', 
-        @enabled=1, 
-        @freq_type=8, 
-        @freq_interval=84, 
-        @freq_subday_type=1, 
-        @freq_subday_interval=0, 
-        @freq_relative_interval=0, 
-        @freq_recurrence_factor=1, 
-        @active_start_date=20041022, 
-        @active_end_date=99991231, 
-        @active_start_time=10000, 
+		@enabled=1, 
+		@freq_type=8, 
+		@freq_interval=92, 
+		@freq_subday_type=1, 
+		@freq_subday_interval=0, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=1, 
+		@active_start_date=20041022, 
+		@active_end_date=99991231, 
+		@active_start_time=10000, 
         @active_end_time=235959
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
@@ -881,6 +909,74 @@ QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 EndSave:
 	'
+    EXEC(@sql)
+
+     set @process = 'DEV1-409 Create Job TruncateccDispositionDashboardResult'
+    set @sql = 'USE [msdb]
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''TruncateccDispositionDashboardResult'') begin
+    EXEC msdb.dbo.sp_delete_job @job_name=N''TruncateccDispositionDashboardResult'', @delete_unused_schedule=1
+end
+BEGIN TRANSACTION
+DECLARE @ReturnCode INT
+SELECT @ReturnCode = 0
+/****** Object:  JobCategory [Nuxiba]    Script Date: 20/09/2023 10:42:30 a. m. ******/
+IF NOT EXISTS (SELECT name FROM msdb.dbo.syscategories WHERE name=N''Nuxiba'' AND category_class=1)
+BEGIN
+EXEC @ReturnCode = msdb.dbo.sp_add_category @class=N''JOB'', @type=N''LOCAL'', @name=N''Nuxiba''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+
+END
+
+DECLARE @jobId BINARY(16)
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''TruncateccDispositionDashboardResult'', 
+        @enabled=1, 
+        @notify_level_eventlog=0, 
+        @notify_level_email=0, 
+        @notify_level_netsend=0, 
+        @notify_level_page=0, 
+        @delete_level=0, 
+        @description=N''No description available.'', 
+        @category_name=N''Nuxiba'', 
+        @owner_login_name=N''sa'', @job_id = @jobId OUTPUT
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+/****** Object:  Step [TruncateSaveDispositionResult]    Script Date: 20/09/2023 10:42:30 a. m. ******/
+EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''TruncateSaveDispositionResult'', 
+        @step_id=1, 
+        @cmdexec_success_code=0, 
+        @on_success_action=1, 
+        @on_success_step_id=0, 
+        @on_fail_action=2, 
+        @on_fail_step_id=0, 
+        @retry_attempts=0, 
+        @retry_interval=0, 
+        @os_run_priority=0, @subsystem=N''TSQL'', 
+        @command=N''exec ccspSaveDispositionResult @action=0'', 
+        @database_name=N''CCenterRIA'', 
+        @flags=0
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobschedule @job_id=@jobId, @name=N''SchTruncateSaveDispositionResult'', 
+        @enabled=1, 
+        @freq_type=4, 
+        @freq_interval=1, 
+        @freq_subday_type=1, 
+        @freq_subday_interval=0, 
+        @freq_relative_interval=0, 
+        @freq_recurrence_factor=0, 
+        @active_start_date=20230920, 
+        @active_end_date=99991231, 
+        @active_start_time=1000, 
+        @active_end_time=235959     
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+EXEC @ReturnCode = msdb.dbo.sp_add_jobserver @job_id = @jobId, @server_name = N''(local)''
+IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
+COMMIT TRANSACTION
+GOTO EndSave
+QuitWithRollback:
+    IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
+EndSave:
+'
     EXEC(@sql)
 
     set @process = 'CREATE JOB '

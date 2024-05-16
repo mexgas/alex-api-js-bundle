@@ -16,7 +16,7 @@ begin
 
        ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
 
-    SET @process = 'KR091000 Alter SP trsp_InsertRecNode Add @C29-----> LLamada Grabada --@extraInfo 1 Record, 0 Dont Record'
+    SET @process = 'KR091000,DEV1-435 Alter SP trsp_InsertRecNode Add @C29-----> LLamada Grabada --@extraInfo 1 Record, 0 Dont Record'
 	SET @sql = 'ALTER PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0, @rateEvaluationFormatKolob BIT = 0 
 AS
 BEGIN
@@ -238,35 +238,51 @@ SET @xml = (
 			FOR XML path(''R02'')
 			)
 
-IF EXISTS (
-		SELECT *
-		FROM RIA_RecNodeHistory
-		WHERE grab_id = @grabId
-		)
-BEGIN
+
+declare @isHistoryNode bit
+
+if @xml IS NULL begin
+	select @xml=node,@isHistoryNode=1 from RIA_RecNodeHistory with(nolock) where grab_id=@grabId
+	if @isHistoryNode is null begin
+		select @xml=node,@isHistoryNode=0 from ria_RecNode with(nolock) where grab_id=@grabId
+	end
+	
+	if @xml is not null	begin
+		if @rating is not null begin
+			SET @xml.modify(''replace value of (/R02/@C18)[1] with sql:variable("@rating")'')
+		end
+		if @supervisor is not null begin
+			SET @xml.modify(''replace value of (/R02/@C24)[1] with sql:variable("@supervisor")'')						
+		end
+	end		
+end
+else begin
+	select @isHistoryNode=1 from RIA_RecNodeHistory with(nolock) where grab_id=@grabId
+	if @isHistoryNode is null begin
+		select @isHistoryNode=0 from ria_RecNode with(nolock) where grab_id=@grabId
+	end	
+end
+
+
+if @isHistoryNode=1 and @xml is not null begin
 	UPDATE RIA_RecNodeHistory
 	SET node = @xml, [status] = 2
 	WHERE grab_id = @grabId
-END
-ELSE IF NOT EXISTS (
-		SELECT *
-		FROM ria_RecNode
-		WHERE grab_id = @grabId
-		)
-BEGIN
-	IF @xml IS NOT NULL
-		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status])
-		VALUES (@grabId, @xml, @CDATE, 0)
-	ELSE
-		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status])
-		VALUES (@grabId, @xml, @CDATE, - 1)
-END
-ELSE IF @xml IS NOT NULL
-BEGIN
+	return(0)
+end
+if @isHistoryNode is null  begin
+	if @xml is null begin
+		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) VALUES (@grabId, @xml, @CDATE, - 1)
+	end
+	else begin
+		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) VALUES (@grabId, @xml, @CDATE, 0)
+	end
+end
+else if @xml is not null begin
 	UPDATE ria_RecNode
 	SET node = @xml, [status] = 2
 	WHERE grab_id = @grabId
-END
+end
 	
 END'
 	EXEC(@sql)
@@ -275,6 +291,332 @@ END'
 
 
 ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
+ -------------------------------------------- Begin Jesus Gallardo hotfix/125.20230719.0.7 -------------------------------------------------------------------------------
+	
+	set @process = 'DEV1-435 Alter SP trsp_muevegrabaciones se modifica left join RIA_GRABACIONCONSULTA B on A.grab_id=B.grab_id where B.grab_id is null para que revise si los registros ya se ingresaron'
+	set @sql = 'ALTER PROCEDURE [dbo].[trsp_muevegrabaciones]
+AS
+BEGIN
+Set NOCOUNT ON
+
+declare @fecha datetime
+declare @Integrado as int
+
+select @integrado = par_valor from trec_parametros where par_id = 29
+set @fecha = CAST(CONVERT(VARCHAR(8), DATEADD(DD,-30,GETDATE()), 1) AS DATETIME)
+declare @top int
+set @top=3000
+
+declare @sql nvarchar(max) 
+set @sql=''declare @RIA_GRABACION table(	
+[grab_id] [bigint] NOT NULL,
+[cli_id] [int] NULL,
+[age_id] [int] NULL,
+[puerto_id] [int] NULL,
+[tipo_grab_id] [tinyint] NULL,
+[age_id_rec] [int] NULL,
+[ffin] [datetime] NOT NULL,
+[finicio] [datetime] NOT NULL,
+[ani] [varchar](30) NOT NULL,
+[dni] [varchar](15) NULL,
+[tamano] [int] NULL,
+[duracion] [int] NULL,
+[pos_pc] [varchar](25) NULL,
+[extension] [varchar](25) NULL,
+[razon_id] [tinyint] NULL,
+[nombre_archivo] [varchar](20) NULL,
+[info1] [varchar](50) NULL,
+[info2] [varchar](50) NULL,
+[info3] [varchar](50) NULL,
+[info4] [varchar](50) NULL,
+[info5] [varchar](50) NULL,
+[id_repositorio] [tinyint] NULL,
+[id_nivel_grito] [int] NULL,
+[tipo_llamada] [smallint] NULL,
+[cam_id] [smallint] NULL,
+[calif_id] [smallint] NULL,
+[cal_id] [int] NULL,
+[cal_key] [varchar](40) NOT NULL,
+[cal_manual] [tinyint] NULL,
+[cal_extension] [int] NULL,
+[cal_whoHung] [smallint] NULL,
+[cal_whoRec] [int] NULL,
+[id_plantilla] [smallint] NULL,
+[fvalida] [datetime] NULL,
+[fvalida2] [datetime] NULL,
+[borra_id] [bit] NULL,
+[cal_fcallback] [smalldatetime] NULL,
+[dni_id] [smallint] NULL,
+[extra_info] [varchar](50) NULL,
+[extra_info2] [varchar](50) NULL,
+[id_rep_video] [tinyint] NULL,
+[video] [int] NOT NULL,
+[IDWG] [varchar](800) NULL,
+[califSub_id] [smallint] NOT NULL,
+[cal_tMoh] [smallint] NOT NULL,
+[Prefijo] [varchar](max) NULL,
+primary key (grab_id)
+)
+''
+
+--AVRS XION
+if (@integrado = 2) BEGIN
+		set @sql=@sql+''  
+insert into @RIA_GRABACION
+(grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)
+SELECT top(@top) grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+	info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+	cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo
+FROM [RIA_GRABACION] with(nolock, index(IX_RIA_GRABACION_3)) WHERE [finicio] < @fecha;
+
+INSERT INTO [RIA_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)
+
+select A.grab_id,A.cli_id,A.age_id,A.puerto_id,A.tipo_grab_id,A.age_id_rec,A.ffin,A.finicio,A.ani,A.dni,A.tamano,A.duracion,A.pos_pc,A.extension,A.razon_id,A.nombre_archivo,A.info1,A.info2,A.info3,A.info4,A.
+info5,A.id_repositorio,A.id_nivel_grito,A.tipo_Llamada,A.cam_id,A.calif_id,A.cal_id,A.cal_key,A.cal_manual,A.cal_extension,A.cal_whoHung,A.cal_whoRec,A.id_plantilla,A.fvalida,A.fvalida2,A.borra_id,A.
+cal_fcallback,A.dni_id,A.extra_info,A.extra_info2,A.id_rep_video,A.video,A.IDWG,A.califSub_id,A.cal_tMoh,A.Prefijo
+from @RIA_GRABACION A
+left join RIA_GRABACIONCONSULTA B on A.grab_id=B.grab_id
+where B.grab_id is null
+
+delete A from RIA_GRABACION A 
+inner join @RIA_GRABACION B on A.grab_id=B.grab_id
+		''
+END
+else BEGIN  --AVRS Integrada ó AVRS Stand Alone
+	
+	set @sql=@sql+''
+SET IDENTITY_INSERT TREC_GRABACIONCONSULTA ON
+
+insert into @RIA_GRABACION
+(grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG,califSub_id,cal_tMoh,Prefijo)		  
+SELECT grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+	info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+	cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG
+FROM [TREC_GRABACION] with(nolock, index(IX_TREC_GRABACION_3)) WHERE [finicio] < @fecha;
+
+INSERT INTO [TREC_GRABACIONCONSULTA] (grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG)
+select grab_id,cli_id,age_id,puerto_id,tipo_grab_id,age_id_rec,ffin,finicio,ani,dni,tamano,duracion,pos_pc,extension,razon_id,nombre_archivo,info1,info2,info3,info4,
+info5,id_repositorio,id_nivel_grito,tipo_Llamada,cam_id,calif_id,cal_id,cal_key,cal_manual,cal_extension,cal_whoHung,cal_whoRec,id_plantilla,fvalida,fvalida2,borra_id,
+cal_fcallback,dni_id,extra_info,extra_info2,id_rep_video,video,IDWG
+from @RIA_GRABACION
+
+SET IDENTITY_INSERT TREC_GRABACIONCONSULTA OFF
+
+delete A from TREC_GRABACION A 
+inner join @RIA_GRABACION B on A.grab_id=B.grab_id''
+	
+END
+
+exec sp_executesql @sql, N''@top int, @fecha datetime'', @top,@fecha
+
+END'
+	EXEC(@sql)
+    -------------------------------------------- END Jesus Gallardo hotfix/25.20230719.0.7 -------------------------------------------------------------------------------
+	-------------------------------------------- Begin Jesus Gallardo hotfix/25.20230719.0.9 -------------------------------------------------------------------------------
+      SET @process = 'DEV1-440 alter SP ccspGalatea_Finder hotfix/25.20230719.0.9'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccspGalatea_Finder] 
+@action int,
+@grabIds varchar(max)=null,
+@grabId int =null,
+@userId int =0, 
+@markTime int=null,
+@markId int=null,
+@isSuperUser bit=0,
+@dateStart datetime=null,
+@dateEnd datetime=null,
+@idRepository int = 0
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    declare @sql varchar(max)
+    declare @camType table(Id int,camType tinyint)
+
+if @action=0 begin
+    if @isSuperUser =0 begin            
+                SELECT WGCam.IdCampEsp AS [Id], 2 callType
+                FROM ccRIAWorkGroupUsers Wguser
+                    INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                    INNER JOIN ccCamps c ON WGCam.IdCampEsp = c.cam_id
+                                            AND WGCam.Tipo = 1
+                WHERE Wguser.User_id = @userId
+                UNION
+                SELECT WGCam.IdCampEsp AS [Id], 1 AS callType
+                FROM ccRIAWorkGroupUsers Wguser
+                    INNER JOIN ccRIACampEspWG WGCam ON WGCam.IDWG = Wguser.IDWG
+                    INNER JOIN ccInbound inb ON WGCam.IdCampEsp = inb.Inbound_id
+                                                AND WGCam.Tipo = 0
+                WHERE Wguser.User_id = @userId;
+            end
+    else begin           
+        SELECT c.cam_id as [Id], 2 AS callType FROM ccCamps c
+        UNION
+        SELECT inb.Inbound_id AS [Id], 1 AS callType FROM ccInbound inb;
+    end
+        
+end
+
+    else if @action=1 begin
+        select id_repositorio as repositoryId,dirvirtual_audio as pathAudio,dirvirtual_video as pathVideo,ruta_repositorio as pathRepositoryAudio, 
+            ruta_repositorio_secundario as PathRepositoryAudioSecundario, dirvirtual_audio_secundario as PathAudioSecundario
+        from TREC_REPOSITORIOS
+    end
+else if @action=2 begin
+
+    ;with grab as (
+    select grab_id,cal_id,tipo_llamada,age_id as userId from RIA_GRABACION A with(nolock) 
+    where A.grab_id=@grabId
+    union
+    select grab_id,cal_id,tipo_llamada,age_id as userId from RIA_GRABACIONCONSULTA C with(nolock) 
+    where C.grab_id=@grabId
+    )
+
+    select isnull(mark.id_marca,0) as markId, grab.grab_id as grabId
+    ,isnull(b.login,'''') as userName, isnull(mark.user_id,0) as [userId],isnull(mark.marca,'''') as mark
+    ,convert(bit,case when b.TipoUser_id =1 then 0 else 1 end ) as IsAdmin
+    from grab 
+    left join RIA_MARCAS mark  on grab.cal_id=mark.call_id and grab.tipo_llamada=mark.tipo_llamada
+    left join ccUsers b on b.user_id = mark.user_id
+    order by grab.grab_id,mark.tipo_marca 
+
+
+end
+else if @action =3 begin
+    select cast(case when par_valor =''1'' then 1 else 0 end as bit) as isEncrypt from TREC_PARAMETROS where par_id=15
+end
+else if @action =4 begin
+    set @sql=''declare @nameFolder table (callType int,nameFolder varchar(100),prefijo varchar(2))
+insert into @nameFolder values(1,''''INBOUND'''',''''I_'''')
+insert into @nameFolder values(2,''''OUTBOUND'''',''''O_'''')
+declare @ext varchar(30)
+
+select @ext = case when par_valor=''''1'''' then ''''.wav.enc'''' else ''''.wav'''' end from TREC_PARAMETROS where par_id=15
+    ;
+    with grab as (
+    select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACION with(nolock) where grab_id in(''+@grabIds+'')
+    union
+    select grab_id,cal_id,tipo_llamada,id_repositorio,Prefijo as subFijo from RIA_GRABACIONCONSULTA with(nolock) where grab_id in(''+@grabIds+'')
+    )
+    
+    select grab.grab_id as grabId,grab.id_repositorio as repositoryId,rep.dirvirtual_audio as virtualAudio
+    ,rep.ruta_repositorio+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as pathRep,
+    rep.dirvirtual_audio_secundario as VirtualAudioSecundario, 
+    rep.ruta_repositorio_secundario+''''\''''+f.nameFolder+''''\''''+ cast(cal_id/10000 as varchar(100))+''''\'''' as PathRepSecundario,
+    f.prefijo+cast(cal_id as varchar(100))  + case when subFijo<>'''''''' then ''''_''''+subFijo else '''''''' end + @ext as [fileAudio]
+    from grab 
+    inner join TREC_REPOSITORIOS rep on grab.id_repositorio=rep.id_repositorio
+    inner join @nameFolder f on f.callType=grab.tipo_llamada  
+    order by repositoryId
+    ''
+    --print @sql
+    exec (@sql)
+end
+else if @action =5 begin
+    select top 1 id_repositorio as repositoryId,rep.ruta_repositorio as pathRep, Cred.domain, Cred.[user], Cred.[password],Rep.dirvirtual_audio as virtualAudio
+    from TREC_REPOSITORIOS Rep
+    inner join TREC_REPO_NWCREDENTIALS  RepCred on Rep.id_repositorio =repCred.id_repository
+    inner join RIA_NETWORKCREDENTIALS  Cred on RepCred.id_nwCredential=Cred.id
+    where Cred.type = 1 and status=1
+end
+else if @action=6 begin
+    declare @cal_id int,@tipo_llamada int
+
+    select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACION with(nolock) where grab_id=@grabId
+
+    if @cal_id is null and @tipo_llamada is null begin
+        select @cal_id= cal_id,@tipo_llamada=tipo_llamada from RIA_GRABACIONCONSULTA with(nolock) where grab_id=@grabId
+    end            
+    insert RIA_MARCAS (grab_id,user_id,marca,tipo_marca,tipo_llamada,call_id) values (@grabId,@userId,CONVERT(varchar, DATEADD(ss, @markTime , 0), 8),2,@tipo_llamada,@cal_id )
+    select cast( @@IDENTITY  as int) as markId
+end
+else if @action=7 begin
+    delete from RIA_MARCAS  where id_marca=@markId
+end
+else if @action=8 begin 
+    select par_valor as hexKey from TREC_PARAMETROS where par_id=75
+end
+
+else if @action=12 begin    
+          
+    insert into @camType
+    exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+
+    select distinct A.dni from RIA_GRABACION A with(nolock)
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+    union
+    select distinct A.dni from RIA_GRABACIONCONSULTA A with(nolock) 
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+end
+else if @action=13 begin                    
+    insert into @camType
+    exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+        
+    select distinct convert(varchar(100), A.cal_extension) as cal_extension from RIA_GRABACION A with(nolock)
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+    union
+    select distinct convert(varchar(100), A.cal_extension) from RIA_GRABACIONCONSULTA A with(nolock)
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+end
+
+else if @action=14 begin                    
+    insert into @camType
+    exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+
+    
+    select isnull(min(minDuration),0) as MinDuration, isnull(max(maxDuration),600) as MaxDuration from (
+        select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACION A with(nolock) 
+        inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+        where A.finicio between @dateStart and @dateEnd
+        union
+        select max(duracion) as maxDuration,min(duracion) as minDuration from RIA_GRABACIONCONSULTA A with(nolock)
+        inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+        where A.finicio between @dateStart and @dateEnd
+    )X
+end
+
+else if @action = 15 begin
+    select cast(id_repositorio as int) as idRepository from RIA_GRABACION where grab_id = @grabId
+end
+
+else if @action = 16 begin
+    select id_repositorio as repositoryId,rep.ruta_repositorio as pathRep, Cred.domain, Cred.[user], Cred.[password],Rep.dirvirtual_audio as virtualAudio
+    from TREC_REPOSITORIOS Rep
+    inner join TREC_REPO_NWCREDENTIALS  RepCred on Rep.id_repositorio =repCred.id_repository
+    inner join RIA_NETWORKCREDENTIALS  Cred on RepCred.id_nwCredential=Cred.id
+    where Cred.type = 1 and status=1 and Rep.id_repositorio = @idRepository
+end
+
+else if @action = 17 begin  -- Get Inbound and Outbound cal_ids 
+    insert into @camType
+    exec ccspGalatea_Finder @action=0,@userId=@userId,@isSuperUser=@isSuperUser
+        
+    select A.cal_id from RIA_GRABACION A with(nolock) 
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+    union
+    select A.cal_id from RIA_GRABACIONCONSULTA A with(nolock) 
+    inner join @camType B on A.cam_id=B.Id and A.tipo_llamada=B.camType
+    where A.finicio between @dateStart and @dateEnd
+end
+
+END'
+  	EXEC(@sql) 
+
+	
+
+      -------------------------------------------- Begin Jesus Gallardo hotfix/25.20230719.0.9 -------------------------------------------------------------------------------
 
 
     update trec_parametros set par_valor = @Version where par_id = 30

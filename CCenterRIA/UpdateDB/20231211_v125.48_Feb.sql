@@ -7182,7 +7182,35 @@ SET NOCOUNT ON;
 SET NOCOUNT ON;'
         EXEC(@sql);
 
-        ---------------------------------------- END fix/125.20231211.012 -------------------------------------------------
+        ---------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------
+
+---------------------------------------- BEGIN fix/125.20231211.0.13 -------------------------------------------------
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+    SET @process = ''
+    SET @sql = ''
+    EXEC(@sql);
+
+
+---------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------        
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

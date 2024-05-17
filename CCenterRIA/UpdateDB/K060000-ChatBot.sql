@@ -27,8 +27,8 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 125 --**********actualizar a 124 sin fix
-SET @versionfix = 35
+SET @version = 126 --**********actualizar a 124 sin fix
+SET @versionfix = 6
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 
@@ -202,14 +202,6 @@ end'
 	end'
 	EXEC(@sql)
 
-	SET @process = 'K060000-Se crea vista de los settings'
-	SET @sql = '
-	CREATE OR ALTER VIEW [dbo].[VIEW_SETTINGS]
-	AS
-	select setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate from ccSettings 
-	union
-	select setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate from ccSettings2'
-	EXEC(@sql)
 
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
 	SET @sql = 'if not exists(select * from sys.tables where name=''PinnedChatBots'') begin
@@ -287,11 +279,11 @@ end'
 begin
 	insert into ccGalateaModules values(9,''Asociación de chatbot'',''Chatbot association'',''Associação de chatbot'')
 end
-if not exists(select * from ccGalateaOperations where OperationId=78)
+if not exists(select * from ccGalateaOperations where OperationId=78)---Revisar por que existe crear uno nuevo
 begin
 	insert into ccGalateaOperations values(78,''Asociar chatbot'',''Associate chatbot'',''Associar chatbot'')
 end
-if not exists(select * from ccGalateaOperations where OperationId=79)
+if not exists(select * from ccGalateaOperations where OperationId=79)---Revisar por que existe crear uno nuevo
 begin
 	insert into ccGalateaOperations values(79,''Desasociar chatbot'',''Disassociate chatbot'',''Desassociar chatbot'')
 end'
@@ -482,10 +474,10 @@ set nocount off'
 	'
 	EXEC(@sql)
 
-
+	---Todo es necesario eliminar antes de crear ccsp_GalateaChatBotConversationsResult
 
 	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_GalateaChatBotConversationsResult]
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChatBotConversationsResult]
 				@action int,@chatBotId int,@status int=0,
 				@conversationId bigint=0,@campaignId int=0,
 				@activeConversations int = 0
@@ -560,8 +552,10 @@ set nocount off'
 
 				set nocount off'
 	EXEC(@sql)
+
+	---Todo es necesario eliminar antes de crear ccsp_Get_ChatBot_Relations
 	SET @process = 'K060026 Create or Alter procedure ccsp_Get_ChatBot_Relations to return related inbound campaigns'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_Get_ChatBot_Relations]
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_Get_ChatBot_Relations]
 				@option int, @chatbotId int = null
 				as set nocount on
 
@@ -628,8 +622,10 @@ set nocount off'
 				set nocount off'
 	EXEC(@sql)
 
+
+	--Es necesario realizar un merge a mano con el ultimo SP 
 	SET @process = 'K060005 Alter procedure ccsp_ConversationWASave to register the chatbotId and WhatsAppConversationId when creating a new WhatsApp conversation'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
                                         , @conversationId     INT         = 0
                                         , @inboundId          SMALLINT    = NULL
                                         , @phoneACD           VARCHAR(50) = NULL
@@ -671,7 +667,7 @@ set nocount off'
 					    IF @action = 1
 					    BEGIN --new Conversation
 					        IF NOT EXISTS
-					                        (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A
+            (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A with(nolock)
 					                        WHERE A.conversationId = @conversationId
 					                        )
 					        BEGIN
@@ -728,6 +724,9 @@ set nocount off'
 					            IF @conversationStatus in(17,18) BEGIN
 					                SET @conversationStatusTemp = 1
 					            END
+            DECLARE @RequestDate DATETIME = NULL;
+            SELECT @RequestDate = [requestDate] FROM ccWhatsAppConversations WITH(NOLOCK) WHERE conversationId = @conversationId;
+
 					                INSERT INTO [ccWhatsAppConversations]
 					            (inboundId
 					            , phoneACD
@@ -742,8 +741,9 @@ set nocount off'
 					            , disposition
 					            , subDisposition
 					            , agentId
+            , requestDate
 					            )
-					            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId, @RequestDate);
 					            SELECT @conversationIdNew = SCOPE_IDENTITY();
 
 					            INSERT INTO ccWhatsAppConversationsRelationship (conversationIdBefore
@@ -757,16 +757,17 @@ set nocount off'
 								END;
 					      
 								--Save new request by reassign
-					            UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+            UPDATE ccWAOperatingSummary SET Request = (Request + 1)
+            WHERE InboundId = @inboundId
 
-					        EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus;
+        EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
 
-					        SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship where conversationIdBefore = @conversationId;
+        SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship with(nolock) where conversationIdBefore = @conversationId;
 					        RETURN(0);
 					    END;
 					END;
 
-					IF @action = 2
+ELSE IF @action = 2
 					BEGIN --save conversation Times
 					    DECLARE @conversationIdTemp INT;
 					    DECLARE @TablaTemp TABLE (conversationId INT, status bit);
@@ -784,10 +785,9 @@ set nocount off'
 					    UPDATE ccWhatsAppConversations
 					    SET
 					    conversationStatus = @conversationStatus
-					    , finishedBy = case when @conversationStatus = 10 then 2
-					        when @conversationStatus = 17 then 2
-					        when @conversationStatus = 18 then 2
-					        else 1 end
+    , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
+    when @conversationStatus in(11) then 1
+    else 0 end
 					    , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
 					    ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
 					    ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
@@ -798,16 +798,17 @@ set nocount off'
 					        select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
 					        exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
 
-					        IF @conversationStatus in(13,10,17,18,11) BEGIN
+        IF @conversationStatus in(4,10,11,13,17,18) BEGIN
 					            DECLARE @conversationDateTemp INT;
-					            select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end from ccWhatsAppConversations where conversationId = @conversationId;
+            select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end 
+            from ccWhatsAppConversations with(nolock) where conversationId = @conversationId;
 
 					            IF @conversationStatus = 13 BEGIN
 					                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
 					                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationId, @clientId);
 					                END
 					            END
-					            ELSE IF @conversationStatus in(10,17,18) BEGIN --Save conversation Ended by system
+            ELSE IF @conversationStatus in(4,10,17,18) BEGIN --Save conversation Ended by system
 					                IF @conversationDateTemp > 0 BEGIN
 					                    UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
 					                END
@@ -824,17 +825,16 @@ set nocount off'
 
 					END;
 
-					IF @action = 3
+ELSE IF @action = 3
 					BEGIN --save conversation Status
-					    UPDATE ccWhatsAppConversations
 					            SET
 					                --conversationDate = GETDATE(),
 					                conversationStatus = @conversationStatus
 					    WHERE conversationId = @conversationId;
 					END;
 
-					IF @action = 4 BEGIN --save messages from conversation
-					    IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A WHERE A.conversationId=@conversationId)
+ELSE IF @action = 4 BEGIN --save messages from conversation
+    IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A with(nolock) WHERE A.conversationId=@conversationId)
 					        AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
 					    BEGIN
 					        IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
@@ -867,14 +867,14 @@ set nocount off'
 					                SET onQueue = 1,
 					                conversationStatus = @conversationStatus
 					        WHERE conversationId = @conversationId;
-					        SELECT @inboundId = inboundId FROM ccWhatsAppConversations where conversationId=@conversationId;
+        SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
 					        UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue + 1) WHERE InboundId = @inboundId
 					    END;
 
-					IF @action = 6
+ELSE IF @action = 6
 					BEGIN --save agent, assigdate and tqueue
 					    declare @agentIdTmp int
-					    SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A where A.conversationId = @conversationId
+    SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A with(nolock) where A.conversationId = @conversationId
 
 					    IF (@agentIdTmp is null or @agentIdTmp=0)
 					    BEGIN
@@ -886,15 +886,28 @@ set nocount off'
 					        WHERE conversationId = @conversationId;
 
 					        SELECT @conversationId as conversationId
-					    SELECT @inboundId = inboundId,  @onQueue = onQueue FROM ccWhatsAppConversations where conversationId=@conversationId;
+    SELECT @inboundId = inboundId,  @onQueue = onQueue FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+    declare @onQueueInt int
 
 					    IF @onQueue = 1 BEGIN
-					    UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue - 1) WHERE InboundId = @inboundId
+        UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue - 1),@onQueueInt =OnQueue WHERE InboundId = @inboundId
+        if @onQueueInt<=0 or exists(select * from ccWAOperatingSummary WHERE InboundId = @inboundId and OnQueue<0)begin
+
+            select          
+            @onQueueInt=count(case when onQueue =1 then 1 end)
+            from ccWhatsAppConversations with(nolock)
+            where inboundId= @inboundId
+            and requestDate>=convert(date,getdate(),121)
+
+            UPDATE ccWAOperatingSummary SET OnQueue = @onQueueInt WHERE InboundId = @inboundId
+
+        end
+
 					    END
 					    END
 					END;
 
-					    IF @action = 7
+ELSE IF @action = 7
 					    BEGIN --update price message
 					        UPDATE ccWAMessagesConversations
 					                SET price = @price,
@@ -902,7 +915,7 @@ set nocount off'
 					        WHERE messageId = @messageId;
 					    END;
 
-					    IF @action = 8
+ELSE IF @action = 8
 					    BEGIN --update status message
 					        IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
 					            UPDATE ccWAMessagesConversations
@@ -911,7 +924,7 @@ set nocount off'
 					        END;
 					    END;
 
-					    IF @action = 9
+ELSE IF @action = 9
 					    BEGIN --Save last message time by conversationID
 					        IF not exists(SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversation A WHERE A.conversationId=@conversationId) BEGIN
 					            INSERT INTO ccLastMessageAgentByConversation (conversationId,timeStampLastMessageAgent) VALUES (@conversationId,getDate())
@@ -924,17 +937,17 @@ set nocount off'
 					            END;
 					    END;
 
-					    IF @action = 10
+ELSE IF @action = 10
 					    BEGIN --drop and insert register by conversationID
 					        DELETE FROM ccLastMessageAgentByConversation WHERE conversationId = @conversationId;
 					    END;
 
-					    IF @action = 11
+ELSE IF @action = 11
 					    BEGIN --register desconnection agent by conversationID
 					        UPDATE ccLastMessageAgentByConversation SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
 					    END;
 
-					    IF @action = 12
+ELSE IF @action = 12
 					    BEGIN --Obtain conversationsWA post MCS reset
 
 					        declare @disconnectionIdTemp int = (select top 1 disconnectionId from ccDisconnectionMCS where timeStampConnection is null order by timeStampDisconnection desc);
@@ -945,15 +958,14 @@ set nocount off'
 					        set @from=DATEADD(dd,-1,@from);
 					            select A.conversationId, A.inboundId, A.phoneACD, A.clientId, A.conversationStatus, A.requestDate, isnull(A.conversationDate,'''') conversationDate, A.onQueue, A.agentId, isnull(B.timeStampMessage,'''') timeStampMessage, isnull(B.originType,'''') originType, isnull(B.price,'''') price, isnull(B.messageIdUi,'''') messageIdUi, isnull(B.messageId,'''') messageId, isnull(B.typeMessage,'''') typeMessage, isnull(B.content,'''') content, isnull(B.messageStatus,'''') messageStatus
 					            ,isnull(C.timeStampDisconnection,'''') timeStampDisconnection, isnull(C.timeStampConnection,'''') timeStampConnection
-					            from ccWhatsAppConversations A
+        from ccWhatsAppConversations A with(nolock)
 					            left join ccWAMessagesConversations B on A.conversationId = B.conversationId
 					            left join ccDisconnectionMCS C on C.disconnectionId = @disconnectionIdTemp
-					            --where B.conversationId is null
 					            where A.requestDate >= @from 
 					                and A.conversationStatus not in (4, 10, 11, 13, 17, 18)
 					            order by agentId desc, requestDate,timeStampMessage, inboundId, clientId 
 					    END;
-					    IF @action = 13
+ELSE IF @action = 13
 					    BEGIN ---Obtain agents ON STATUS READY
 					        WITH agents
 					        AS(
@@ -962,7 +974,8 @@ set nocount off'
 					            INNER JOIN 
 					            (
 					                SELECT User_id, MAX(fecha) max_time
-					                FROM ccLogAgentesDia
+            FROM ccLogAgentesDia with(nolock)
+            where fecha>=CONVERT(date,getdate(),121)
 					                GROUP BY User_id
 					            ) AS t
 					            ON c.fecha = t.max_time
@@ -982,12 +995,12 @@ set nocount off'
 					        left join usersByCampigns B on A.User_Id = B.User_Id
 					    END;
 
-					    IF @action = 14
+ELSE IF @action = 14
 					    BEGIN --register desconnection MCS
 					        INSERT INTO ccDisconnectionMCS (timeStampDisconnection) VALUES(GETDATE());
 					    END;
 
-						IF @action = 15
+ELSE IF @action = 15
 					    BEGIN --update content message
 					        IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
 					            UPDATE ccWAMessagesConversations
@@ -996,20 +1009,28 @@ set nocount off'
 					        END;
 					    END;
 
-						IF @action = 16
+ELSE IF @action = 16
 					    BEGIN --update agent status for reassigning error message
-					        IF EXISTS(SELECT 0 FROM ccWhatsAppConversations WHERE conversationId = @conversationId)
-							BEGIN
 					            UPDATE ccWhatsAppConversations
 					            SET IsAgentLoggingOut = @IsAgentLoggingOut
 					            WHERE conversationId = @conversationId;
 					        END;
+
+ELSE IF @action = 18 BEGIN
+    DECLARE @dateNow DATETIME;
+    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+    UPDATE ccWhatsAppConversations
+    SET finishedBy = 2, conversationStatus=17
+    WHERE finishedBy = 0 AND requestDate <= @dateNow    
 					    END;
 					END;'
 	EXEC(@sql)
 
+
+	---Todo Falta realizar merge
 	SET @process = 'K060005 Alter procedure ccsp_MultimediaCommon to add chatBotConversationId when retrieving data from a WhatsAppIn conversation'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
 				    @Option AS SMALLINT,
 				    @inboundId AS SMALLINT = 0,
 				    @conversationId AS INT = 0,
@@ -1313,8 +1334,10 @@ set nocount off'
 				    END'
 	EXEC(@sql)
 
-		SET @process = 'K0026 Add A SELECT for default Messages'
-	SET @sql = 'CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Get_Azure_Knowledge]
+
+	--Todo Falta eliminar antes de crear
+	SET @process = 'K0026 Add A SELECT for default Messages'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_Get_Azure_Knowledge]
 				@option int
 				as set nocount on
 
@@ -1406,9 +1429,10 @@ set nocount off'
 	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
 
 	---------------------------------------- BEGIN MARCO GARCIA ------------------------------------
+	---Falta realizar merge
 	SET @process = 'K060011-WhatsApp entrada->Histórico al asignar conversación de ChatBot a número de WhatsApp entrada, se agrega la consulta
 	para obtener las conversaciones del chatbot'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat] 
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat] 
 					@option SMALLINT, 
 					@clientNum VARCHAR(15) = '''', 
 					@conversationId AS INT = 0, 
@@ -1914,6 +1938,8 @@ set nocount off'
 	--------------------------------------------- END MARCO GARCIA ----------------------------------------------
 
 	-----------------------------------------------BEGIN MARCO CHAGOLLA-------------------------------------------
+
+	--Alter Falta Realizar merge
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agreca type 7 para guardar los nodos del chatbot'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_CreateNodeMultimedia] @conversationId BIGINT
 							, @supervisor     VARCHAR(255) = ''''

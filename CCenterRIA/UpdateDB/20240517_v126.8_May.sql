@@ -43,7 +43,56 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
- 
+		----------------------------------------------------- BEGIN Ulises KR134024 KR134025 KR134026 KR134027  ----------------------------------------------------------------
+		SET @process = 'KR134024 KR134025 KR134026 KR134027 Modulo';
+    	SET @sql = 'if not exists ( select 1 from ccGalateaModules where ModuleId = 22)
+		begin
+			INSERT INTO ccGalateaModules(ModuleId, MTagEs, MTagEn, MTagPt) 
+				values(22,''Roles de usuario'', ''User roles'', ''Funções de usuário'')
+		end';
+	   EXEC (@sql);
+
+	   SET @process = 'KR134024 KR134025 KR134026 KR134027 operation 114';
+	   SET @sql = 'if not exists ( select 1 from ccGalateaOperations where OperationId = 114)
+		begin
+			INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
+				VALUES (114, ''Crear rol de usuario'', ''Create user role'', ''Criar função de usuário'')
+		end';
+	   EXEC (@sql);
+
+	   SET @process = 'KR134024 KR134025 KR134026 KR134027 operation 115';
+	   SET @sql = 'if not exists ( select 1 from ccGalateaOperations where OperationId = 115)
+		begin
+			INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
+				VALUES (115, ''Editar rol de usuario'', ''Edit user role'', ''Editar função de usuário'')
+		end';
+	   EXEC (@sql);
+
+	   SET @process = 'KR134024 KR134025 KR134026 KR134027 operation 116';
+	   SET @sql = 'if not exists ( select 1 from ccGalateaOperations where OperationId = 116)
+		begin
+			INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
+				VALUES (116, ''Eliminar rol de usuario'', ''Delete user role'', ''Excluir função de usuário'')
+		end';
+	   EXEC (@sql);
+
+	   SET @process = 'KR134024 KR134025 KR134026 KR134027 operation 117';
+	   SET @sql = 'if not exists ( select 1 from ccGalateaOperations where OperationId = 117)
+		begin
+			INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
+				VALUES (117, ''Asignar rol de usuario'', ''Assign user role'', ''Atribuir função de usuário'')
+		end';
+	   EXEC (@sql);
+
+	   SET @process = 'KR134024 KR134025 KR134026 KR134027 operation 118';
+	   SET @sql = 'if not exists ( select 1 from ccGalateaOperations where OperationId = 118)
+		begin
+			INSERT INTO ccGalateaOperations(OperationId, OpTagEs, OpTagEn, OpTagPt)
+				VALUES (118, ''Desasignar rol de usuario'', ''Unassign user role'', ''Cancelar atribuição de função de usuário'')
+		end';
+	   EXEC (@sql);
+
+		----------------------------------------------------- END Ulises KR134024 KR134025 KR134026 KR134027  ----------------------------------------------------------------
         ----------------------------------------------------- BEGIN KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
     	SET @process = 'KR134000 Creación de tabla de status de referencia para email de mensajes sms. ';
     	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ccSmsEmailResultStatus'')

@@ -236,8 +236,15 @@ BEGIN
         ----------------------------------------------------- END KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
 		
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
+		SET @process = 'KR134013 - se elimina la funcion .';
+        SET @sql = 'if object_id(''VerifySmsMCA'') is not NULL
+BEGIN
+	DROP FUNCTION VerifySmsMCA
+END'
+		EXEC @sql;
+
 		SET @process = 'KR134013 - se crea la funcion VerifySmsMCA paraverificar los numero moviles.';
-        SET @sql = 'CREATE OR ALTER FUNCTION [dbo].[VerifySmsMCA] (@tel VARCHAR(32))
+        SET @sql = 'CREATE FUNCTION [dbo].[VerifySmsMCA] (@tel VARCHAR(32))
 RETURNS INT
 AS
 BEGIN
@@ -1193,10 +1200,10 @@ else if @action in(12,13) begin --Validar Carga
 	--Actualizamos resultado para Telefono fijo y telefono no existe
 	UPDATE rmd SET 
 	rmd.RESULTADO = CASE 
-		WHEN dbo.VerificaSmsMCA(rmd.TELEFONOS1) = 3 THEN ''NO ES POSIBLE ENVIO, CELUAR NO SE ENCUENTRA EN IFT''
-		WHEN dbo.VerificaSmsMCA(rmd.TELEFONOS1) = 5 THEN ''TELEFONO FIJO''
+		WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 3 THEN ''NO ES POSIBLE ENVIO, CELUAR NO SE ENCUENTRA EN IFT''
+		WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 5 THEN ''TELEFONO FIJO''
 		ELSE '''' END,
-	rmd.RESULTADO_ID = dbo.VerificaSmsMCA(rmd.TELEFONOS1)
+	rmd.RESULTADO_ID = dbo.VerifySmsMCA(rmd.TELEFONOS1)
 	FROM SmsRemesasMuñozDay rmd
 	inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
 	WHERE rmd.RESULTADO_ID = 0

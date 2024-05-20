@@ -193,7 +193,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''CW Call
 		@command=N''declare @callout_id_array varchar(max), @SQL varchar(max)
 set @callout_id_array=''''|''''
 
-select @callout_id_array=@callout_id_array+coalesce('''',''''+cast(callout_id as varchar(10)), @callout_id_array, '''''''')
+select @callout_id_array=@callout_id_array + case when callout_id is null then '''''''' else coalesce('''',''''+cast(callout_id as varchar(10)), @callout_id_array, '''''''') end
 from ccRIAUpdateCallBack_Abandon where minCallBackAbandonXpire < getdate()
 
 if len(@callout_id_array)>1
@@ -249,8 +249,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:
-'
+EndSave:'
 EXEC(@sql)
 
     set @process = 'CREATE JOB CW (AutoStart)'

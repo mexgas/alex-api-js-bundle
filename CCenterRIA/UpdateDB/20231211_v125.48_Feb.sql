@@ -6446,8 +6446,8 @@ else IF @permissionName = ''AllowPlayRecordsOnCallHistory''
     END
 else begin
     set @permissionValue= CASE
-        WHEN @permissionName in( ''AllowCellPhoneCalls'',''AllowLongDistanceCalls'',''AllowLocalCalls'')
-        THEN  case when @permissionName=1 then 0 else 1 end
+        WHEN @permissionName in(''AllowCellPhoneCalls'',''AllowLongDistanceCalls'',''AllowLocalCalls'')
+        THEN  case when @permissionValue=1 then 0 else 1 end
         else @permissionValue end   
     
     UPDATE

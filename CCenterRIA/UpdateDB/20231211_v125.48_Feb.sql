@@ -6654,7 +6654,7 @@ SET NOCOUNT OFF
     '
     EXEC(@sql);
 
-     SET @process = 'Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp se quita with index para mejorar el procesamiento tome el plan de ejecuccion se modifica para poder realizar la carga'
+     SET @process = 'Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp se quita with index para mejorar el procesamiento tome el plan de ejecuccion se modifica para poder realizar la carga, se crean tabalas temporales insercion de carga'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
 AS
 SET NOCOUNT ON
@@ -6778,15 +6778,14 @@ BEGIN
         DROP TABLE #tempsmsOutSource
 END
 ELSE
-BEGIN        
-        declare @tempCallsOutSource table
-        (callout_id INT PRIMARY KEY , cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT
-        , cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT
-        , iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT)
-        
-        declare @calloutIdSource table(callout_id INT NOT NULL PRIMARY KEY)               
+BEGIN
+        CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT)
+            
+        CREATE TABLE #calloutIdSource (callout_id INT NOT NULL PRIMARY KEY)
 
-        INSERT INTO @calloutIdSource
+        CREATE TABLE #calloutIdSource2 (callout_id INT NOT NULL PRIMARY KEY)
+
+        INSERT INTO #calloutIdSource
         SELECT top(@top) cs.callout_id
         FROM ccoCallsOutSource cs WITH ( NOLOCK)
         inner join ccoWorkingTable wt WITH ( NOLOCK) 
@@ -6799,9 +6798,31 @@ BEGIN
         FROM ccoCallsOutSource Cout WITH ( NOLOCK)
         inner join ccoworkingtable Wtab(NOLOCK)on Cout.callout_id = Wtab.callout_id 
         WHERE Cout.cam_id = @camp_id AND (COUT.cal_status < 2 OR COUT.cal_status = 7)
-            
-       
-        INSERT @tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
+    
+
+        INSERT INTO #calloutIdSource2
+        SELECT top(@top) callout_id
+        FROM ccoCallsOutSource WITH (NOLOCK)
+        WHERE cal_status IN (0, 1, 7) AND cam_id = @camp_id
+
+        IF exists(SELECT * FROM #calloutIdSource) 
+        BEGIN
+            UPDATE ccoCallBacks
+            SET [status] = 6, schedulerStatus = 1
+            WHERE callout_id IN (
+                    SELECT callout_id
+                    FROM #calloutIdSource cis
+                    )
+
+            UPDATE ccoCallsOutSource
+            SET cal_Status = 4
+            WHERE callout_id IN (
+                    SELECT callout_id
+                    FROM #calloutIdSource cis
+                    )
+        END
+
+        INSERT #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
         iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4,
             iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
         SELECT TOP(@top) callout_id, cam_id, CASE WHEN ISNULL(recycleType, 1) = 0 THEN 
@@ -6830,32 +6851,44 @@ BEGIN
         FROM ccoCallsOutSource WITH (NOLOCK)
         WHERE cam_id = @camp_id AND (cal_status < 2 OR cal_status = 7)
 
+        SELECT @rowstoInsert = COUNT(*) FROM #tempCallsOutSource
 
-        IF exists(SELECT * FROM @calloutIdSource) 
+        IF EXISTS(SELECT * FROM #tempCallsOutSource)
         BEGIN
-            UPDATE ccoCallBacks
-            SET [status] = 6, schedulerStatus = 1
-            WHERE callout_id IN (
-                    SELECT callout_id
-                    FROM @calloutIdSource  cis
-                    )            
-        END        
+            SELECT @rango = ISNULL(CEILING(CAST((MAX(Id) * 1.00) / 3 AS DECIMAL(10, 2))), 0.00)
+            FROM #tempCallsOutSource WITH (NOLOCK)
 
-        IF EXISTS(SELECT * FROM @tempCallsOutSource)
-        BEGIN            
-            INSERT INTO ccoWorkingTable --WITH (TABLOCKX) 
-            (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
-            SELECT A.callout_id, A.cam_id, A.cal_telefono, A.cal_status, A.cal_fechaDial, A.cal_keyw, A.iZonaHoraria, A.iZonaHoraria_verano, A.iZonaHoraria2, A.iZonaHoraria_verano2, A.iZonaHoraria3, A.iZonaHoraria_verano3, A.iZonaHoraria4, A.iZonaHoraria_verano4, A.iZonaHoraria5, A.iZonaHoraria_verano5, A.list_id
-            FROM @tempCallsOutSource A
-            left join ccoworkingtable B WITH(NOLOCK) on A.callout_id=B.callout_id
-            WHERE B.callout_id is null          
+            SET @batchsizeFin = @batchsizeFin + @rango
+
+            WHILE 1 = 1
+            BEGIN
+                -- Nuevos Jobs
+                INSERT INTO ccoWorkingTable
+                WITH (TABLOCKX) (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
+                SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id
+                FROM #tempCallsOutSource
+                WHERE id > @batchsizeIni AND id <= @batchsizeFin
+
+                IF @batchsizeFin > @rowstoInsert
+                    BREAK
+                ELSE
+                BEGIN
+                    SET @batchsizeIni = @batchsizeIni + @rango
+                    SET @batchsizeFin = @batchsizeFin + @rango
+                END
+            END
 
             UPDATE ccoCallsOutSource
             SET cal_status = 2, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
-            FROM ccoCallsOutSource co --WITH (NOLOCK)
-            inner join @tempCallsOutSource B on co.callout_id=B.callout_id
-            
-        END      
+            FROM ccoCallsOutSource co WITH (NOLOCK), #calloutIdSource2 cis3 WITH (NOLOCK)
+            WHERE co.callout_id = cis3.callout_id
+        END
+
+        DROP TABLE #calloutIdSource
+
+        DROP TABLE #calloutIdSource2
+
+        DROP TABLE #tempCallsOutSource
 END
 
 UPDATE ccCampsNvosCB

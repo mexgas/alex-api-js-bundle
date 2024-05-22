@@ -1601,6 +1601,39 @@ EndSave:';
         EXEC (@sql);
 
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
+
+
+		------------------------------------------------------BEGIN HEL---------------------------------------------------------------------
+
+		SET @process = 'SPEC-99 setting para nueva telefonia'
+		SET @sql= 'IF NOT EXISTS (select * from ccSettings where setting_id = 252)
+		BEGIN
+			insert ccsettings (setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate) values
+			(252,''1|1-50|https://switch.nuxiba.com|engine||3|0|Freeswitch'',''Balancer Configuration'',1,''GRL'',''Balancer Configuration'',''Balancer Configuration'',0,''.*'')
+		END'
+		EXEC(@sql);
+
+		SET @process = 'SPEC-99 tabla sip headers engine, antes en ini'
+		SET @sql= 'IF NOT EXISTS (SELECT * 
+						 FROM INFORMATION_SCHEMA.TABLES 
+						 WHERE TABLE_SCHEMA = ''dbo'' 
+						 AND  TABLE_NAME = ''ccSIPCustomHeaders'')
+		BEGIN
+			create table ccSIPCustomHeaders (header varchar(254) not null, value varchar(254) not null)
+		END'
+		EXEC(@sql);
+
+		SET @process = 'SPEC-99 tabla ivr dnis, antes en xml ivr'
+		SET @sql= 'IF NOT EXISTS (SELECT * 
+						 FROM INFORMATION_SCHEMA.TABLES 
+						 WHERE TABLE_SCHEMA = ''dbo'' 
+						 AND  TABLE_NAME = ''ccIVRDnis'')
+		BEGIN
+			create table ccIVRDnis (ivr_id varchar(50) not null, ivr_name varchar(50), dni_number varchar(50) not null)
+		END'
+		EXEC(@sql);
+
+		------------------------------------------------------BEGIN HEL---------------------------------------------------------------------
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

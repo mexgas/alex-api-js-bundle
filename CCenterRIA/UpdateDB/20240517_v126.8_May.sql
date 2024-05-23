@@ -165,72 +165,95 @@ BEGIN
 
         SET @process = 'KR134000 Se crea procedimiento almacenado ccspSmsClientsResponse';
         SET @sql = 'CREATE PROCEDURE [dbo].[ccspSmsClientsResponse] 
-                    @Action SMALLINT, 
-                    @Destination VARCHAR(32) = NULL, 
-                    @Source VARCHAR(32) = NULL,
-                    @Text VARCHAR(MAX) = NULL,
-                    @Date DATETIME = NULL,
-                    @SystemApiId VARCHAR(100) = NULL
-                    AS
+					@Action SMALLINT, 
+					@Destination VARCHAR(32) = NULL, 
+					@Source VARCHAR(32) = NULL,
+					@Text VARCHAR(MAX) = NULL,
+					@Date DATETIME = NULL,
+					@SystemApiId VARCHAR(100) = NULL
+					AS
 
-                    IF @Action IS NOT NULL BEGIN
-                        IF @Action = 0 BEGIN        -- Insert new client message
-                            INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId)
-                        END
+					IF @Action IS NOT NULL BEGIN
+					    IF @Action = 0 BEGIN        -- Insert new client message
+					        INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId)
+					    END
 
-                        IF @Action = 1 BEGIN        -- Get sender email information
-                            SELECT valor FROM ccSettings WHERE setting_id = 98
-                        END
+					    IF @Action = 1 BEGIN        -- Get sender email information
+					        SELECT valor FROM ccSettings WHERE setting_id = 98
+					    END
 
-                        IF @Action = 2 BEGIN        -- Get admin email information
-                            SELECT LD.cam_id AS CampaignId, 
-                                   U.notificationEmail AS AdminEmails
-                            FROM ccSmsResponseMessages RM
-                            INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
-                            INNER JOIN ccSupervisorCam SC ON SC.cam_id = LD.cam_id 
-                            INNER JOIN ccUsers U ON U.User_id = SC.user_id
-                            WHERE RM.EmailResultStatus <> 1     -- Get all non successful email messages
-                            GROUP BY LD.cam_id, U.notificationEmail;
-                        END
+					    IF @Action = 2 BEGIN        -- Get admin email information
+					        SELECT LD.cam_id AS CampaignId, 
+								   U.Login AS AdminName,
+					               U.notificationEmail AS AdminEmail
+					        FROM ccSmsResponseMessages RM
+					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
+					        INNER JOIN ccSupervisorCam SC ON SC.cam_id = LD.cam_id 
+					        INNER JOIN ccUsers U ON U.User_id = SC.user_id
+					        WHERE RM.EmailResultStatus <> 1     -- Get all non successful email messages
+							AND U.notificationEmail IS NOT NULL AND U.notificationEmail <> ''''
+					        GROUP BY LD.cam_id, U.Login, U.notificationEmail;
+					    END
 
-                        IF @Action = 3 BEGIN        -- Get messages to send an email
-                            SELECT  RM.Destination, 
-                                    RM.Source, 
-                                    RM.Text, 
-                                    RM.Date, 
-                                    RM.SystemApiId, 
-                                    LD.cam_id AS CampaignId,
-                                    RM.EmailResultStatus,
-                                    RM.EmailAttempts
-                            FROM ccSmsResponseMessages RM
-                            INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
-                            WHERE  RM.EmailResultStatus <> 1 
-                        END
+					    IF @Action = 3 BEGIN        -- Get messages to send an email
+					        SELECT  RM.Destination, 
+					                RM.Source, 
+					                RM.Text, 
+					                RM.Date, 
+					                RM.SystemApiId, 
+					                LD.cam_id AS CampaignId,
+					                RM.EmailResultStatus,
+					                RM.EmailAttempts
+					        FROM ccSmsResponseMessages RM
+					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
+					        WHERE  RM.EmailResultStatus <> 1 
+					    END
 
-                        IF @Action = 4 BEGIN        -- Update email attempts and status BEGIN TRY
-                            BEGIN TRY
-                            BEGIN TRANSACTION;
-                                UPDATE ccSmsResponseMessages
-                                SET EmailAttempts = PM.EmailAttempts,
-                                    EmailResultStatus = PM.EmailResultStatus
-                                FROM ccSmsResponseMessages RM
-                                INNER JOIN ProcessingSmsClientMessagesEmails PM ON RM.SystemApiId = PM.SystemApiId
+					    IF @Action = 4 BEGIN        -- Update email attempts and status 
+					        BEGIN TRY
+					        BEGIN TRANSACTION;
+								CREATE TABLE #TemporalProcessingSmsClientMessagesEmails
+								(
+									Destination VARCHAR(32) NOT NULL,
+									Source VARCHAR(32) NOT NULL,
+									Text NVARCHAR(MAX) NOT NULL,
+									Date DATETIME NOT NULL,
+									SystemApiId VARCHAR(100) NOT NULL,
+									UserEmail NVARCHAR(255),
+									CampaignId INT DEFAULT 0,
+									EmailAttempts INT NOT NULL DEFAULT 0,
+									EmailResultStatus SMALLINT NOT NULL DEFAULT 0
+								);
 
-                                COMMIT TRANSACTION;
-                                RETURN @@ROWCOUNT;
-                            END TRY
-                            BEGIN CATCH
-                                IF @@TRANCOUNT > 0
-                                    ROLLBACK TRANSACTION;
+								INSERT INTO #TemporalProcessingSmsClientMessagesEmails
+								SELECT * FROM ProcessingSmsClientMessagesEmails;
 
-                                RETURN -1;
-                            END CATCH
-                        END
-                    END
-                    ELSE BEGIN
-                        RAISERROR(''Invalid action specified.'', 16, 1);
-                        RETURN -1;
-                    END';
+					            UPDATE ccSmsResponseMessages
+					            SET EmailAttempts = PM.EmailAttempts,
+					                EmailResultStatus = PM.EmailResultStatus
+					            FROM ccSmsResponseMessages RM
+					            INNER JOIN #TemporalProcessingSmsClientMessagesEmails PM ON RM.SystemApiId = PM.SystemApiId
+								
+								DELETE FROM ProcessingSmsClientMessagesEmails
+								WHERE SystemApiId IN (SELECT SystemApiId FROM #TemporalProcessingSmsClientMessagesEmails);
+					            SELECT @@ROWCOUNT;
+								DROP TABLE #TemporalProcessingSmsClientMessagesEmails;
+
+								COMMIT TRANSACTION;
+					            
+					        END TRY
+					        BEGIN CATCH
+					            IF @@TRANCOUNT > 0
+					                ROLLBACK TRANSACTION;
+
+					            RETURN -1;
+					        END CATCH
+					    END
+					END
+					ELSE BEGIN
+					    RAISERROR(''Invalid action specified.'', 16, 1);
+					    RETURN -1;
+					END';
         EXEC (@sql);
         
         ----------------------------------------------------- END KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
@@ -238,10 +261,10 @@ BEGIN
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 		SET @process = 'KR134013 - se elimina la funcion .';
         SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VerifySmsMCA]'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-BEGIN
-	DROP FUNCTION dbo.VerifySmsMCA
-END'
-		EXEC @sql;
+ BEGIN 
+	DROP FUNCTION dbo.VerifySmsMCA 
+ END '
+		EXEC (@sql);
 
 		SET @process = 'KR134013 - se crea la funcion VerifySmsMCA paraverificar los numero moviles.';
         SET @sql = 'CREATE FUNCTION [dbo].[VerifySmsMCA] (@tel VARCHAR(32))

@@ -6779,84 +6779,61 @@ BEGIN
 END
 ELSE
 BEGIN
-        CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT)
-            
-        CREATE TABLE #calloutIdSource (callout_id INT NOT NULL PRIMARY KEY)
+        CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT, new_status int)
 
-        CREATE TABLE #calloutIdSource2 (callout_id INT NOT NULL PRIMARY KEY)
-
-        INSERT INTO #calloutIdSource
-        SELECT top(@top) cs.callout_id
-        FROM ccoCallsOutSource cs WITH ( NOLOCK)
-        inner join ccoWorkingTable wt WITH ( NOLOCK) 
-        on cs.callout_id = wt.callout_id AND cs.cam_id = wt.cam_id 
-        WHERE cs.cam_id = @camp_id and cs.cal_status IN (0, 7) AND wt.cal_status <= 2
-
-        UNION
-
-        SELECT top(@top) Cout.callout_id
-        FROM ccoCallsOutSource Cout WITH ( NOLOCK)
-        inner join ccoworkingtable Wtab(NOLOCK)on Cout.callout_id = Wtab.callout_id 
-        WHERE Cout.cam_id = @camp_id AND (COUT.cal_status < 2 OR COUT.cal_status = 7)
-    
-
-        INSERT INTO #calloutIdSource2
-        SELECT top(@top) callout_id
-        FROM ccoCallsOutSource WITH (NOLOCK)
-        WHERE cal_status IN (0, 1, 7) AND cam_id = @camp_id
-
-        IF exists(SELECT * FROM #calloutIdSource) 
-        BEGIN
-            UPDATE ccoCallBacks
-            SET [status] = 6, schedulerStatus = 1
-            WHERE callout_id IN (
-                    SELECT callout_id
-                    FROM #calloutIdSource cis
-                    )
-
-            UPDATE ccoCallsOutSource
-            SET cal_Status = 4
-            WHERE callout_id IN (
-                    SELECT callout_id
-                    FROM #calloutIdSource cis
-                    )
-        END
-
-        INSERT #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
+        INSERT INTO #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
         iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4,
-            iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
-        SELECT TOP(@top) callout_id, cam_id, CASE WHEN ISNULL(recycleType, 1) = 0 THEN 
+            iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id, new_status)
+        SELECT TOP(@top) cs.callout_id, cs.cam_id, CASE WHEN ISNULL(recycleType, 1) = 0 THEN 
         CASE 
-            WHEN recyclePhone = 1 THEN cal_telefono
+            WHEN recyclePhone = 1 THEN cs.cal_telefono
             WHEN recyclePhone = 2 THEN cal_telefono2
             WHEN recyclePhone = 3 THEN cal_telefono3
             WHEN recyclePhone = 4 THEN cal_telefono4
             else cal_telefono5
         END
-        ELSE rtrim(left(ltrim(cal_telefono + ''        '' + cal_telefono2 + ''         '' 
+        ELSE rtrim(left(ltrim(cs.cal_telefono + ''        '' + cal_telefono2 + ''         '' 
             + cal_telefono3 + ''         '' + cal_telefono4 + ''         '' + cal_telefono5 + ''         ''), 13)) 
         END AS cal_telefono,
-            CASE cal_status WHEN 7 THEN 1 ELSE cal_status END cal_status, cal_fechaDial, cal_key, 
-            CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria ELSE NULL END iZonaHoraria,
-            CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano, 
-            CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria2 ELSE NULL END iZonaHoraria2,
-            CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria_verano2 ELSE NULL END iZonaHoraria_verano2, 
-            CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria3 ELSE NULL END iZonaHoraria3, 
-            CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria_verano3 ELSE NULL END iZonaHoraria_verano3,
-            CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria4 ELSE NULL END iZonaHoraria4, 
-            CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria_verano4 ELSE NULL END iZonaHoraria_verano4, 
-            CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria5 ELSE NULL END iZonaHoraria5, 
-            CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria_verano5 ELSE 
-                    NULL END iZonaHoraria_verano5, list_id
-        FROM ccoCallsOutSource WITH (NOLOCK)
-        WHERE cam_id = @camp_id AND (cal_status < 2 OR cal_status = 7)
+            CASE cs.cal_status WHEN 7 THEN 1 ELSE cs.cal_status END cal_status, cs.cal_fechaDial, cal_key, 
+            CASE WHEN LEN(cs.cal_telefono) > 0 THEN cs.iZonaHoraria ELSE NULL END iZonaHoraria,
+            CASE WHEN LEN(cs.cal_telefono) > 0 THEN cs.iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano, 
+            CASE WHEN LEN(cal_telefono2) > 0 THEN cs.iZonaHoraria2 ELSE NULL END iZonaHoraria2,
+            CASE WHEN LEN(cal_telefono2) > 0 THEN cs.iZonaHoraria_verano2 ELSE NULL END iZonaHoraria_verano2, 
+            CASE WHEN LEN(cal_telefono3) > 0 THEN cs.iZonaHoraria3 ELSE NULL END iZonaHoraria3, 
+            CASE WHEN LEN(cal_telefono3) > 0 THEN cs.iZonaHoraria_verano3 ELSE NULL END iZonaHoraria_verano3,
+            CASE WHEN LEN(cal_telefono4) > 0 THEN cs.iZonaHoraria4 ELSE NULL END iZonaHoraria4, 
+            CASE WHEN LEN(cal_telefono4) > 0 THEN cs.iZonaHoraria_verano4 ELSE NULL END iZonaHoraria_verano4, 
+            CASE WHEN LEN(cal_telefono5) > 0 THEN cs.iZonaHoraria5 ELSE NULL END iZonaHoraria5, 
+            CASE WHEN LEN(cal_telefono5) > 0 THEN cs.iZonaHoraria_verano5 ELSE 
+                    NULL END iZonaHoraria_verano5, cs.list_id,
+        case when wt.callout_id is not null then 4 else cs.cal_status end new_status
+        FROM ccoCallsOutSource cs WITH ( NOLOCK)
+        LEFT JOIN ccoWorkingTable wt WITH ( NOLOCK) 
+        on cs.callout_id = wt.callout_id
+        WHERE cs.cam_id = @camp_id and cs.cal_status IN (0,1,7)
 
-        SELECT @rowstoInsert = COUNT(*) FROM #tempCallsOutSource
+        IF exists(SELECT * FROM #tempCallsOutSource where new_status=4) 
+        BEGIN
+            UPDATE ccoCallBacks
+            SET [status] = 6, schedulerStatus = 1
+            WHERE callout_id IN (
+                    SELECT callout_id
+                    FROM #tempCallsOutSource where new_status=4)
 
-        IF EXISTS(SELECT * FROM #tempCallsOutSource)
+            UPDATE ccoCallsOutSource
+            SET cal_Status = 4
+            WHERE callout_id IN (
+                    SELECT callout_id
+                    FROM #tempCallsOutSource where new_status=4)
+        END
+
+        SELECT @rowstoInsert = COUNT(*) FROM #tempCallsOutSource where new_status != 4
+
+        IF EXISTS(SELECT * FROM #tempCallsOutSource where new_status != 4)
         BEGIN
             SELECT @rango = ISNULL(CEILING(CAST((MAX(Id) * 1.00) / 3 AS DECIMAL(10, 2))), 0.00)
-            FROM #tempCallsOutSource WITH (NOLOCK)
+            FROM #tempCallsOutSource WITH (NOLOCK) where new_status != 4
 
             SET @batchsizeFin = @batchsizeFin + @rango
 
@@ -6866,8 +6843,8 @@ BEGIN
                 INSERT INTO ccoWorkingTable
                 WITH (TABLOCKX) (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
                 SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id
-                FROM #tempCallsOutSource
-                WHERE id > @batchsizeIni AND id <= @batchsizeFin
+                FROM #tempCallsOutSource 
+                WHERE new_status != 4 AND id > @batchsizeIni AND id <= @batchsizeFin
 
                 IF @batchsizeFin > @rowstoInsert
                     BREAK
@@ -6880,13 +6857,10 @@ BEGIN
 
             UPDATE ccoCallsOutSource
             SET cal_status = 2, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
-            FROM ccoCallsOutSource co WITH (NOLOCK), #calloutIdSource2 cis3 WITH (NOLOCK)
-            WHERE co.callout_id = cis3.callout_id
+            WHERE callout_id in (
+                    SELECT callout_id
+                    FROM #tempCallsOutSource)
         END
-
-        DROP TABLE #calloutIdSource
-
-        DROP TABLE #calloutIdSource2
 
         DROP TABLE #tempCallsOutSource
 END

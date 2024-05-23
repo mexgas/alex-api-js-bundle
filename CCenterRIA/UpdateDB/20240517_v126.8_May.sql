@@ -238,10 +238,10 @@ BEGIN
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 		SET @process = 'KR134013 - se elimina la funcion .';
         SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VerifySmsMCA]'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
-BEGIN
-	DROP FUNCTION dbo.VerifySmsMCA
-END'
-		EXEC @sql;
+ BEGIN 
+	DROP FUNCTION dbo.VerifySmsMCA 
+ END '
+		EXEC (@sql);
 
 		SET @process = 'KR134013 - se crea la funcion VerifySmsMCA paraverificar los numero moviles.';
         SET @sql = 'CREATE FUNCTION [dbo].[VerifySmsMCA] (@tel VARCHAR(32))

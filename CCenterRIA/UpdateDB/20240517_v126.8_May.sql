@@ -237,9 +237,9 @@ BEGIN
 		
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 		SET @process = 'KR134013 - se elimina la funcion .';
-        SET @sql = 'if object_id(''VerifySmsMCA'') is not NULL
+        SET @sql = 'IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''[dbo].[VerifySmsMCA]'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
 BEGIN
-	DROP FUNCTION VerifySmsMCA
+	DROP FUNCTION dbo.VerifySmsMCA
 END'
 		EXEC @sql;
 

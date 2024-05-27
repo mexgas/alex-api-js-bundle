@@ -851,7 +851,7 @@ return(0)';
             inner join dbo.smsWorkingTable AS swt WITH (INDEX (IX_smsWorkingTable_2), NOLOCK) 
             on sos.callkey = swt.cal_keyw AND sos.cam_id = swt.cam_id 
             WHERE sos.cam_id = @camp_id and sos.sms_status IN (0, 7) AND swt.sms_status <= 2
-			and ((@date >= sos.sms_dateDial AND sos.isSegmentLoad = 1) OR sos.isSegmentLoad = 0) 
+			and ((@date >= sos.sms_dateDial AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             UNION
 
@@ -859,13 +859,13 @@ return(0)';
             FROM dbo.smsOutSource AS sos2 WITH (INDEX (IX_smsOutSource_2), NOLOCK)
             inner join dbo.smsWorkingTable AS swt2 (NOLOCK)on sos2.smsout_id = swt2.smsout_id 
             WHERE sos2.cam_id = @camp_id AND (sos2.sms_status < 2 OR sos2.sms_status = 7)
-			and ((@date >= sos2.sms_dateDial AND sos2.isSegmentLoad = 1) OR sos2.isSegmentLoad = 0) 
+			and ((@date >= sos2.sms_dateDial AND ISNULL(sos2.isSegmentLoad, 0) = 1) OR ISNULL(sos2.isSegmentLoad, 0) = 0)
 
             INSERT INTO #smsoutIdSource2
             SELECT top(@top) sos.smsout_id
             FROM dbo.smsOutSource AS sos WITH (INDEX (IX_smsOutSource_1), NOLOCK)
             WHERE sos.sms_status IN (0, 1, 7) AND cam_id = @camp_id
-			and ((@date >= sos.sms_dateDial  AND sos.isSegmentLoad = 1) OR sos.isSegmentLoad = 0) 
+			and ((@date >= sos.sms_dateDial  AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             INSERT #tempsmsOutSource(smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, cal_keyw, iTimeZone, 
             iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4,
@@ -1166,10 +1166,9 @@ else if @action=11 begin --Carga los registros cargados
 end
 else if @action in(12,13) begin --Validar Carga
 
-	
 	declare @segmentTable table(id int, status bit, segmentName VARCHAR(10))
 	declare @segmentNames varchar(max)
-	declare @conditionTable table(conditionId int,smsCondition varchar(max),DailyLimit int,WeeklyLimit int,status bit)
+	declare @conditionTable table(conditionId int,smsCondition varchar(max),DailyLimit int,WeeklyLimit int,status bit, SegmentName varchar(255))
 	--declare @SmsRemesasId table (credictId int)
 	create table #SmsRemesasId(creditId nvarchar(40), TDCT VARCHAR(max))
 	create table #SmsRemesasIdTemp(creditId nvarchar(40), TDCT VARCHAR(max))
@@ -1213,6 +1212,7 @@ else if @action in(12,13) begin --Validar Carga
 	UPDATE rmd SET rmd.RESULTADO = '''', rmd.RESULTADO_ID = 0
 	FROM SmsRemesasMuñozDay rmd 
 	INNER JOIN #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
+
 	--Actualizamos resultado para FLAG B
 	UPDATE rmd SET rmd.RESULTADO = ''FLAG B'', rmd.RESULTADO_ID = 1
 	FROM SmsRemesasMuñozDay rmd
@@ -1265,6 +1265,7 @@ else if @action in(12,13) begin --Validar Carga
 	declare @conditionWhere varchar(max)
 	declare @SubConditionWhere varchar(max),@LogicConector varchar(20)
 	declare @DailyLimit int,@WeeklyLimit int
+	declare @SegmentName varchar(255)
 
 	DECLARE @Params NVARCHAR(MAX)
 	SET @Params = N''@WeeklyLimit int,@DailyLimit int'';
@@ -1276,6 +1277,8 @@ while exists(select * from @segmentTable where status=0) begin
 	-------------------------------- Revisa las condiciones por segmentId --------------------------------
 	while exists(select * from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId) begin
 		
+		SELECT @SegmentName = [Name] from ccSmsSegments where SegmentId = @segmentId
+
 		select top 1
 		@DailyLimit=DailyLimit,	@WeeklyLimit=WeeklyLimit,@conditionId=ConditionId,
 		@conditionWhere= PrimaryField+LogicOperator
@@ -1303,20 +1306,21 @@ while exists(select * from @segmentTable where status=0) begin
 			
 		end
 			
-		insert into @conditionTable values(@conditionId,@conditionWhere,@DailyLimit,@WeeklyLimit,0)		
+		insert into @conditionTable values(@conditionId,@conditionWhere,@DailyLimit,@WeeklyLimit,0, @SegmentName)	
 	end 
 	-------------------------------- Termina las condiciones por segmentId --------------------------------
 	update @segmentTable set status=1 where id=@segmentId
 end
 while exists(select * from @conditionTable where status=0) begin		
 	select top 1 
-	@conditionId=conditionId, @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit,	@conditionWhere=smsCondition
+	@conditionId=conditionId, @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit,	@conditionWhere=smsCondition,
+	@SegmentName = SegmentName
 	from @conditionTable 
 	where status=0
 	
 	set @subQuery= ''select A.id_credito, A.TDCT from SmsRemesasMuñozDay A with(nolock)
 	left join ccSmsValidateRegistryWeek B on A.credito=B.registryClient and B.total<@WeeklyLimit and B.totaltoDay<@DailyLimit
-	where  SegmentoMC in ('' + @segmentNames + '') AND RESULTADO_ID = 0 AND '' + @conditionWhere	
+	where  SegmentoMC in ('''''' + @SegmentName + '''''') AND RESULTADO_ID = 0 AND '' + @conditionWhere	
 	print(@subQuery)
 	insert into #SmsRemesasId
 	EXEC sp_executesql @subQuery,@Params,@WeeklyLimit,@DailyLimit;
@@ -1351,9 +1355,9 @@ if @action=12 begin
 end
 else begin
 	
-	set @sql=''select ''+@columns+'',0 PhoneStatus,0 callout_id,credito as Record_id,convert(varchar(100),'''''''') as DataPhone, TDCT as call_Key1
+	set @sql=''select A.''+@columns+'',0 PhoneStatus,0 callout_id,credito as Record_id,convert(varchar(100),'''''''') as DataPhone, a.TDCT as call_Key1
 	into TEMPO_''+convert(varchar(10),@camId)+''
-	from SmsRemesasMuñozDay A with(nolock) where A.TDCT in(select TDCT from #SmsRemesasId)''
+	from SmsRemesasMuñozDay A with(nolock) inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6''
 	print(@sql)
 	exec(@sql)
 end

@@ -1760,7 +1760,6 @@ EndSave:';
 		END
 		ELSE IF @Action = 4 BEGIN     -- Create or Edit Segment
 	    BEGIN TRY
-	        BEGIN TRANSACTION;
 				-- Check if segment name already exists
 				IF (
 						((@SegmentId IS NULL OR @SegmentId = 0) AND EXISTS (SELECT 1 FROM ccSmsSegments WHERE Name = @SegmentName))
@@ -1792,25 +1791,18 @@ EndSave:';
 					ELSE
 					BEGIN
 						RAISERROR(''Failed to insert or update segment.'', 16, 1);
-						ROLLBACK TRANSACTION;
 						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 					END
 				END
-				COMMIT TRANSACTION;
 			END TRY
 			BEGIN CATCH
 				PRINT ''Error Message: '' + ERROR_MESSAGE();
-				IF @@TRANCOUNT > 0 
-					ROLLBACK TRANSACTION;
-	        
 				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 			END CATCH;
 		END
 
 		ELSE IF @Action = 5 BEGIN   -- Create or Edit Condition
 	    BEGIN TRY
-	        BEGIN TRANSACTION;
-
 				MERGE INTO ccSmsConditions AS Target
 				USING (VALUES (@ConditionId, @SegmentId, @PrimaryField, @LogicOperator, 
 							   CASE WHEN @ComparisonValue = '''' THEN NULL ELSE @ComparisonValue END, 
@@ -1834,25 +1826,17 @@ EndSave:';
 				ELSE
 				BEGIN
 					RAISERROR(''Failed to insert or update condition.'', 16, 1);
-					ROLLBACK TRANSACTION;
 					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 				END
-
-				COMMIT TRANSACTION;
 			END TRY
 			BEGIN CATCH
 				PRINT ''Error Message: '' + ERROR_MESSAGE();
-				IF @@TRANCOUNT > 0 
-					ROLLBACK TRANSACTION;
-	        
 				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 			END CATCH;
 		END
 
 		ELSE IF @Action = 6 BEGIN  -- Create or Edit Subcondition
 	    BEGIN TRY
-	        BEGIN TRANSACTION;
-
 				MERGE INTO ccSmsSubconditions AS Target
 				USING (VALUES (@SubconditionId, @ConditionId, @PrimaryField, @LogicOperator,
 							   CASE WHEN @ComparisonValue = '''' THEN NULL ELSE @ComparisonValue END, 
@@ -1876,17 +1860,11 @@ EndSave:';
 				ELSE
 				BEGIN
 					RAISERROR(''Failed to insert or update subcondition.'', 16, 1);
-					ROLLBACK TRANSACTION;
 					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 				END
-
-				COMMIT TRANSACTION;
 			END TRY
 			BEGIN CATCH
-				PRINT ''Error Message: '' + ERROR_MESSAGE();
-				IF @@TRANCOUNT > 0 
-					ROLLBACK TRANSACTION;
-	        
+				PRINT ''Error Message: '' + ERROR_MESSAGE();	        
 				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 			END CATCH;
 		END
@@ -1923,36 +1901,28 @@ EndSave:';
 		END
 		ELSE IF @Action = 8 BEGIN  -- Delete Subconditions
 	    BEGIN TRY
-	        BEGIN TRANSACTION;
-
 				-- Delete Subconditions
 				DELETE FROM ccSmsSubconditions
 				WHERE SubconditionId IN (SELECT Id FROM @IdsTemp);
 
 				IF @@ROWCOUNT > 0
 				BEGIN
-					COMMIT TRANSACTION;
 					INSERT INTO @Result VALUES (1); -- Return 1 if successful
 				END
 				ELSE
 				BEGIN
 					RAISERROR(''No rows were affected.'', 16, 1);
-					ROLLBACK TRANSACTION;
 					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 				END
 			END TRY
 			BEGIN CATCH
 				PRINT ''Error Message: '' + ERROR_MESSAGE();
-				IF @@TRANCOUNT > 0 
-					ROLLBACK TRANSACTION;
-	        
 				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 			END CATCH;
 		END
 
 		ELSE IF @Action = 9 BEGIN  -- Create or Edit Validation
 	    BEGIN TRY
-	        BEGIN TRANSACTION;
 
 				IF @IsDelete = 1 BEGIN
 					DELETE FROM ccSmsSegmentFlagB WHERE Id = @Id;
@@ -1964,7 +1934,6 @@ EndSave:';
 					ELSE
 					BEGIN
 						RAISERROR(''Failed to delete validation.'', 16, 1);
-						ROLLBACK TRANSACTION;
 						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 					END
 				END
@@ -1986,19 +1955,13 @@ EndSave:';
 					ELSE
 					BEGIN
 						RAISERROR(''Failed to insert or update validation.'', 16, 1);
-						ROLLBACK TRANSACTION;
 						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 					END
 
 				END
-
-				COMMIT TRANSACTION;
 			END TRY
 			BEGIN CATCH
-				PRINT ''Error Message: '' + ERROR_MESSAGE();
-				IF @@TRANCOUNT > 0 
-					ROLLBACK TRANSACTION;
-	        
+				PRINT ''Error Message: '' + ERROR_MESSAGE();	        
 				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
 			END CATCH;
 		END

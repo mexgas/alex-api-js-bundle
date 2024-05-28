@@ -1627,6 +1627,464 @@ QuitWithRollback:
 EndSave:';
         EXEC (@sql);
 
+		SET @process = 'KR134000 - Se actualiza Action 10 del sp para copiar la información de la tabla smsremesamuñoz a smsremesamuñozday';
+        SET @sql = '
+	ALTER PROCEDURE [dbo].[ccspSmsSegments] 
+	@Action SMALLINT = NULL, 
+	@TableName VARCHAR(100) = NULL, 
+	@IsDelete BIT = NULL,
+	@CampaignId INT = NULL,
+	@Ids VARCHAR(MAX) = NULL,
+	@SegmentId INT = NULL,
+	@SegmentName VARCHAR(255) = NULL,
+	@SegmentIsGlobal BIT = NULL,
+	@ConditionId INT = NULL,
+	@SubconditionId INT = NULL, 
+	@PrimaryField VARCHAR(255) = NULL,
+	@LogicOperator VARCHAR(2) = NULL,
+	@ComparisonValue VARCHAR(150) = NULL, 
+	@ComparisonField  VARCHAR(150) = NULL,
+	@ArithmeticOperator VARCHAR(2) = NULL,
+	@Value VARCHAR(255) = NULL,
+	@LogicConector VARCHAR(3) = NULL,
+	@DailyLimit INT = NULL, 
+	@WeeklyLimit INT = NULL,
+	@Id SMALLINT = NULL,
+	@Validation VARCHAR(40) = NULL,
+	@IsActive BIT = NULL
+	AS
+
+	DECLARE @IdsTemp TABLE (Id INT);
+	DECLARE @Result TABLE (Names VARCHAR(MAX));
+	INSERT INTO @IdsTemp SELECT VALUE FROM dbo.fn_RIASplitDelimited(@Ids,'','')
+
+	IF @Action IS NOT NULL BEGIN
+		IF @Action = 0 BEGIN		-- Get column names
+			SELECT c.name AS ColumnName,
+				   t.name AS ColumnType,
+				   LEN(CONVERT(NVARCHAR(MAX), c.name)) AS ColumnLength
+			FROM sys.columns c
+			JOIN sys.types t ON c.system_type_id = t.system_type_id
+			WHERE c.object_id = OBJECT_ID(@TableName) AND t.name <> ''sysname'';
+
+		END
+		IF @Action = 1 BEGIN		-- Get all segments, conditions, and rules
+			SELECT  ISNULL(s.SegmentId, 0) AS SegmentId, 
+					ISNULL(s.Name, '''') AS SegmentName, 
+					ISNULL(s.IsGlobal, 0) AS SegmentIsGlobal,
+					ISNULL(s.CampaignId, 0) AS CampaignId,
+					ISNULL(c.ConditionId, 0) AS ConditionId, 
+					ISNULL(c.PrimaryField, '''') AS ConditionPrimaryField,
+					ISNULL(c.LogicOperator, '''') AS ConditionLogicOperator,
+					ISNULL(c.ComparisonValue, 0) AS ConditionComparisonValue,
+					ISNULL(c.ComparisonField, '''') AS ConditionComparisonField,
+					ISNULL(c.ArithmeticOperator, '''') AS ConditionArithmeticOperator,
+					ISNULL(c.Value, '''') AS ConditionValue, 
+					ISNULL(c.DailyLimit, 0) AS ConditionDailyLimit,
+					ISNULL(c.WeeklyLimit, 0) AS ConditionWeeklyLimit,
+					ISNULL(sc.SubconditionId, 0) AS SubconditionId,
+					ISNULL(sc.PrimaryField, '''') AS SubconditionPrimaryField,
+					ISNULL(sc.LogicOperator, '''') AS SubconditionLogicOperator,
+					ISNULL(sc.ComparisonValue, 0) AS SubconditionComparisonValue,
+					ISNULL(sc.ComparisonField, '''') AS SubconditionComparisonField,
+					ISNULL(sc.ArithmeticOperator, '''') AS SubconditionArithmeticOperator,
+					ISNULL(sc.Value, '''') AS SubconditionValue,
+					ISNULL(sc.LogicConector, '''') AS SubconditionLogicConector
+			FROM ccSmsSegments s
+			LEFT JOIN ccSmsConditions c ON s.SegmentId = c.SegmentId
+			LEFT JOIN ccSmsSubconditions sc ON sc.ConditionId = c.ConditionId
+			ORDER BY s.SegmentId, c.ConditionId, sc.SubconditionId;
+			RETURN 0
+		END
+		ELSE IF @Action = 2 BEGIN		-- Assign/unassign segments to/from campaign 
+			UPDATE ccSmsSegments
+			SET CampaignId = CASE WHEN @CampaignId != 0 THEN @CampaignId ELSE 0 END
+			FROM @IdsTemp ids
+			WHERE ccSmsSegments.SegmentId = ids.Id
+
+			INSERT INTO @Result
+			SELECT ISNULL(segments.Name,'''')
+	        FROM @IdsTemp ids
+	        INNER JOIN ccSmsSegments segments ON segments.SegmentId = ids.Id
+		END
+		ELSE IF @Action = 3 BEGIN
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+				-- Insert segment names into @Result before deletion
+				INSERT INTO @Result
+				SELECT ISNULL(segments.Name,'''')
+				FROM @IdsTemp ids
+				INNER JOIN ccSmsSegments segments ON segments.SegmentId = ids.Id
+				WHERE segments.CampaignId = 0;
+
+				DECLARE @ConditionIdsToDelete TABLE (ConditionId INT);
+				DECLARE @SubconditionIdsToDelete TABLE (SubconditionId INT);
+
+				INSERT INTO @ConditionIdsToDelete (ConditionId)
+				SELECT c.ConditionId
+				FROM ccSmsSegments s
+				INNER JOIN ccSmsConditions c ON s.SegmentId = c.SegmentId
+				INNER JOIN @IdsTemp ids ON s.SegmentId = ids.Id
+				WHERE s.CampaignId = 0;
+
+				INSERT INTO @SubconditionIdsToDelete (SubconditionId)
+				SELECT sc.SubconditionId
+				FROM ccSmsConditions c
+				INNER JOIN ccSmsSubconditions sc ON c.ConditionId = sc.ConditionId
+				WHERE c.ConditionId IN (SELECT ConditionId FROM @ConditionIdsToDelete)
+
+
+				-- Delete from ccSmsSubconditions
+				DELETE FROM ccSmsSubconditions
+				WHERE SubconditionId IN (SELECT SubconditionId FROM @SubconditionIdsToDelete);
+
+				-- Delete from ccSmsConditions
+				DELETE FROM ccSmsConditions
+				WHERE ConditionId IN (SELECT ConditionId FROM @ConditionIdsToDelete);
+
+				-- Delete from ccSmsSegments
+				DELETE FROM ccSmsSegments
+				WHERE SegmentId IN (SELECT Id FROM @IdsTemp) 
+				AND CampaignId = 0;
+
+
+				COMMIT TRANSACTION;
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+				
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+		ELSE IF @Action = 4 BEGIN     -- Create or Edit Segment
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+				-- Check if segment name already exists
+				IF (
+						((@SegmentId IS NULL OR @SegmentId = 0) AND EXISTS (SELECT 1 FROM ccSmsSegments WHERE Name = @SegmentName))
+					OR
+						(@SegmentId IS NOT NULL AND @SegmentId > 0 AND EXISTS (SELECT 1 FROM ccSmsSegments WHERE Name = @SegmentName AND SegmentId <> @SegmentId))
+					)
+				BEGIN
+					INSERT INTO @Result VALUES (-2);
+				END
+				ELSE
+				BEGIN
+					-- Segment name does not exist, proceed with insert/update
+					MERGE INTO ccSmsSegments AS Target
+					USING (VALUES (@SegmentId, @SegmentName, @SegmentIsGlobal)) AS Source (SegmentId, SegmentName, SegmentIsGlobal)
+					ON Target.SegmentId = Source.SegmentId
+					WHEN MATCHED THEN
+						UPDATE SET Name = Source.SegmentName, IsGlobal = Source.SegmentIsGlobal
+					WHEN NOT MATCHED BY TARGET THEN
+						INSERT (Name, IsGlobal, CampaignId)
+						VALUES (Source.SegmentName, Source.SegmentIsGlobal, 0);
+
+					IF @@ROWCOUNT > 0
+					BEGIN
+						INSERT INTO @Result 
+						SELECT (ISNULL(Name,'''') + ''>'' + CAST(SegmentId AS VARCHAR(MAX))) 
+						FROM ccSmsSegments 
+						WHERE SegmentId = @SegmentId OR SegmentId = SCOPE_IDENTITY();
+					END
+					ELSE
+					BEGIN
+						RAISERROR(''Failed to insert or update segment.'', 16, 1);
+						ROLLBACK TRANSACTION;
+						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+					END
+				END
+				COMMIT TRANSACTION;
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+
+		ELSE IF @Action = 5 BEGIN   -- Create or Edit Condition
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+
+				MERGE INTO ccSmsConditions AS Target
+				USING (VALUES (@ConditionId, @SegmentId, @PrimaryField, @LogicOperator, 
+							   CASE WHEN @ComparisonValue = '''' THEN NULL ELSE @ComparisonValue END, 
+							   CASE WHEN @ComparisonField = '''' THEN NULL ELSE @ComparisonField END, 
+							   @ArithmeticOperator, @Value, @DailyLimit, @WeeklyLimit)) 
+					AS Source (ConditionId, SegmentId, PrimaryField, LogicOperator, ComparisonValue, ComparisonField, ArithmeticOperator, Value, DailyLimit, WeeklyLimit)
+				ON Target.ConditionId = Source.ConditionId
+				WHEN MATCHED THEN
+					UPDATE SET PrimaryField = Source.PrimaryField, LogicOperator = Source.LogicOperator, ComparisonValue = Source.ComparisonValue,
+							   ComparisonField = Source.ComparisonField, ArithmeticOperator = Source.ArithmeticOperator, Value = Source.Value,
+							   DailyLimit = Source.DailyLimit, WeeklyLimit = Source.WeeklyLimit
+				WHEN NOT MATCHED BY TARGET THEN
+					INSERT (SegmentId, PrimaryField, LogicOperator, ComparisonValue, ComparisonField, ArithmeticOperator, Value, DailyLimit, WeeklyLimit)
+					VALUES (Source.SegmentId, Source.PrimaryField, Source.LogicOperator, Source.ComparisonValue, Source.ComparisonField,
+							Source.ArithmeticOperator, Source.Value, Source.DailyLimit, Source.WeeklyLimit);
+
+				IF @@ROWCOUNT > 0
+				BEGIN
+					INSERT INTO @Result SELECT CAST(ConditionId AS VARCHAR(MAX)) FROM ccSmsConditions WHERE ConditionId = @ConditionId OR ConditionId = SCOPE_IDENTITY();
+				END
+				ELSE
+				BEGIN
+					RAISERROR(''Failed to insert or update condition.'', 16, 1);
+					ROLLBACK TRANSACTION;
+					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+				END
+
+				COMMIT TRANSACTION;
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+
+		ELSE IF @Action = 6 BEGIN  -- Create or Edit Subcondition
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+
+				MERGE INTO ccSmsSubconditions AS Target
+				USING (VALUES (@SubconditionId, @ConditionId, @PrimaryField, @LogicOperator,
+							   CASE WHEN @ComparisonValue = '''' THEN NULL ELSE @ComparisonValue END, 
+							   CASE WHEN @ComparisonField = '''' THEN NULL ELSE @ComparisonField END,
+							   @ArithmeticOperator, @Value, @LogicConector)) 
+					AS Source (SubconditionId, ConditionId, PrimaryField, LogicOperator, ComparisonValue, ComparisonField, ArithmeticOperator, Value, LogicConector)
+				ON Target.SubconditionId = Source.SubconditionId
+				WHEN MATCHED THEN
+					UPDATE SET PrimaryField = Source.PrimaryField, LogicOperator = Source.LogicOperator, ComparisonValue = Source.ComparisonValue,
+							   ComparisonField = Source.ComparisonField, ArithmeticOperator = Source.ArithmeticOperator, Value = Source.Value,
+							   LogicConector = Source.LogicConector
+				WHEN NOT MATCHED BY TARGET THEN
+					INSERT (ConditionId, PrimaryField, LogicOperator, ComparisonValue, ComparisonField, ArithmeticOperator, Value, LogicConector)
+					VALUES (Source.ConditionId, Source.PrimaryField, Source.LogicOperator, Source.ComparisonValue, Source.ComparisonField,
+							Source.ArithmeticOperator, Source.Value, Source.LogicConector);
+
+				IF @@ROWCOUNT > 0
+				BEGIN
+					INSERT INTO @Result VALUES (1); -- Return 1 if successful
+				END
+				ELSE
+				BEGIN
+					RAISERROR(''Failed to insert or update subcondition.'', 16, 1);
+					ROLLBACK TRANSACTION;
+					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+				END
+
+				COMMIT TRANSACTION;
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+		ELSE IF @Action = 7 BEGIN  -- Delete Conditions
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+
+				-- Delete Subconditions
+				DELETE FROM ccSmsSubconditions
+				WHERE ConditionId IN (SELECT Id FROM @IdsTemp);
+
+				DELETE FROM ccSmsConditions
+				WHERE ConditionId IN (SELECT Id FROM @IdsTemp);
+
+				IF @@ROWCOUNT > 0
+				BEGIN
+					COMMIT TRANSACTION;
+					INSERT INTO @Result VALUES (1); -- Return 1 if successful
+				END
+				ELSE
+				BEGIN
+					RAISERROR(''No rows were affected.'', 16, 1);
+					ROLLBACK TRANSACTION;
+					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+				END
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+		ELSE IF @Action = 8 BEGIN  -- Delete Subconditions
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+
+				-- Delete Subconditions
+				DELETE FROM ccSmsSubconditions
+				WHERE SubconditionId IN (SELECT Id FROM @IdsTemp);
+
+				IF @@ROWCOUNT > 0
+				BEGIN
+					COMMIT TRANSACTION;
+					INSERT INTO @Result VALUES (1); -- Return 1 if successful
+				END
+				ELSE
+				BEGIN
+					RAISERROR(''No rows were affected.'', 16, 1);
+					ROLLBACK TRANSACTION;
+					INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+				END
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+
+		ELSE IF @Action = 9 BEGIN  -- Create or Edit Validation
+	    BEGIN TRY
+	        BEGIN TRANSACTION;
+
+				IF @IsDelete = 1 BEGIN
+					DELETE FROM ccSmsSegmentFlagB WHERE Id = @Id;
+
+					IF @@ROWCOUNT > 0
+					BEGIN
+						INSERT INTO @Result SELECT @Validation;
+					END
+					ELSE
+					BEGIN
+						RAISERROR(''Failed to delete validation.'', 16, 1);
+						ROLLBACK TRANSACTION;
+						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+					END
+				END
+				ELSE BEGIN
+					MERGE INTO ccSmsSegmentFlagB AS Target
+					USING (VALUES (@Id, @Validation, @IsActive)) 
+					AS Source (Id, Validation, IsActive)
+					ON Target.Id = Source.Id
+					WHEN MATCHED THEN
+						UPDATE SET IsActive = Source.IsActive
+					WHEN NOT MATCHED BY TARGET THEN
+						INSERT (Validation, IsActive)
+						VALUES (Source.Validation, Source.IsActive);
+
+					IF @@ROWCOUNT > 0
+					BEGIN
+						INSERT INTO @Result SELECT Validation FROM ccSmsSegmentFlagB WHERE Id = @Id OR Id = SCOPE_IDENTITY();
+					END
+					ELSE
+					BEGIN
+						RAISERROR(''Failed to insert or update validation.'', 16, 1);
+						ROLLBACK TRANSACTION;
+						INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+					END
+
+				END
+
+				COMMIT TRANSACTION;
+			END TRY
+			BEGIN CATCH
+				PRINT ''Error Message: '' + ERROR_MESSAGE();
+				IF @@TRANCOUNT > 0 
+					ROLLBACK TRANSACTION;
+	        
+				INSERT INTO @Result VALUES (-1); -- Return -1 in case of error
+			END CATCH;
+		END
+
+		ELSE IF @Action = 10 BEGIN  -- Bulkcopy SmsRemesasMuñozDay to SmsRemesasMuñozDayBefore
+		BEGIN TRY
+			BEGIN TRANSACTION;
+
+				DELETE SmsRemesasMuñozDayBefore
+				INSERT INTO SmsRemesasMuñozDayBefore
+				([id_credito],[fecha_actualizacion],[id_Cartera],[credito],[COMPRAS_DISPMONEDA]
+				,[DIA_CORTE],[DIA_CORTE_NUM],[DIAACTUAL],[DIAMASCINCO],[DIAMASCUATRO]
+				,[DIAMASDOS],[DIAMASTRES],[DIAMASUNO],[ETIQUETA_BASE_RECOM],[FECHACORTE]
+				,[IMPORTE_1ERPAGO_MULTIPAYMENT],[IMPORTE_2DOPAGO_MULTIPAYMENT],[IMPORTE_3ERPAGO_MULTIPAYMENT]
+				,[IMPORTE_ENDOSPAGOS],[IMPORTE_PAGO_ONESHOT],[IMPORTE_PAGO_ONESHOT_2],[IMPORTE_PAGOBON_ONESHOT]
+				,[INTERES_IVA_COMISION],[MESES_VENCIDOS],[MINIMOPAGARPESOS],[NoSMS],[PQC_MULTIPAYMENT_SIMULACION]
+				,[PQC_ONESHOT_SIMULACION],[PRODUCTO_GENERAL],[Quita_capital_3Pagos],[Quita_capital_ONESHOT]
+				,[RCV7DESCPRODUCTO],[RCV7MV0_MONEDA],[RCV7MV1_FILTRO],[RCV7MV1_MONEDA],[RCV7MV2_FILTRO]
+				,[RCV7MV2_MONEDA],[RCV7MV3_MONEDA],[SALDO_ACTUALMONEDA],[SALDO_CAPITAL],[SALDO_DEUDOR]
+				,[SALDO_VENCIDOMONEDA],[SEG_CUENTA],[SegmentoMC],[SumaMultiPayment],[TDCT],[TELEFONOS1]
+				,[TERMINACION],[CAMPAÑABENJAMIN],[TIPO_TELEFONO],[N_EMAIL],[TEL_POSICION],[SALDO_DEUDOR_FILTRO]
+				,[NUM_CUENTA],[INTERES_IVA_COMISION_FILTRO],[STATUS],[PROMESA],[FILA],[LOCACION],[ESTADO_FUNCIONAL]
+				,[CORTE_REAL],[CORTE],[RESULTADO],[RESULTADO_ID],[RESULTADO_ENVIO])
+				SELECT [id_credito],[fecha_actualizacion],[id_Cartera],[credito],[COMPRAS_DISPMONEDA]
+				,[DIA_CORTE],[DIA_CORTE_NUM],[DIAACTUAL],[DIAMASCINCO],[DIAMASCUATRO]
+				,[DIAMASDOS],[DIAMASTRES],[DIAMASUNO],[ETIQUETA_BASE_RECOM],[FECHACORTE]
+				,[IMPORTE_1ERPAGO_MULTIPAYMENT],[IMPORTE_2DOPAGO_MULTIPAYMENT],[IMPORTE_3ERPAGO_MULTIPAYMENT]
+				,[IMPORTE_ENDOSPAGOS],[IMPORTE_PAGO_ONESHOT],[IMPORTE_PAGO_ONESHOT_2],[IMPORTE_PAGOBON_ONESHOT]
+				,[INTERES_IVA_COMISION],[MESES_VENCIDOS],[MINIMOPAGARPESOS],[NoSMS],[PQC_MULTIPAYMENT_SIMULACION]
+				,[PQC_ONESHOT_SIMULACION],[PRODUCTO_GENERAL],[Quita_capital_3Pagos],[Quita_capital_ONESHOT]
+				,[RCV7DESCPRODUCTO],[RCV7MV0_MONEDA],[RCV7MV1_FILTRO],[RCV7MV1_MONEDA],[RCV7MV2_FILTRO]
+				,[RCV7MV2_MONEDA],[RCV7MV3_MONEDA],[SALDO_ACTUALMONEDA],[SALDO_CAPITAL],[SALDO_DEUDOR]
+				,[SALDO_VENCIDOMONEDA],[SEG_CUENTA],[SegmentoMC],[SumaMultiPayment],[TDCT],[TELEFONOS1]
+				,[TERMINACION],[CAMPAÑABENJAMIN],[TIPO_TELEFONO],[N_EMAIL],[TEL_POSICION],[SALDO_DEUDOR_FILTRO]
+				,[NUM_CUENTA],[INTERES_IVA_COMISION_FILTRO],[STATUS],[PROMESA],[FILA],[LOCACION],[ESTADO_FUNCIONAL]
+				,[CORTE_REAL],[CORTE],[RESULTADO],[RESULTADO_ID],[RESULTADO_ENVIO]
+				FROM SmsRemesasMuñozDay
+
+				DELETE SmsRemesasMuñozDay
+				INSERT INTO SmsRemesasMuñozDay
+				([id_credito],[fecha_actualizacion],[id_Cartera],[credito],[COMPRAS_DISPMONEDA]
+				,[DIA_CORTE],[DIA_CORTE_NUM],[DIAACTUAL],[DIAMASCINCO],[DIAMASCUATRO]
+				,[DIAMASDOS],[DIAMASTRES],[DIAMASUNO],[ETIQUETA_BASE_RECOM],[FECHACORTE]
+				,[IMPORTE_1ERPAGO_MULTIPAYMENT],[IMPORTE_2DOPAGO_MULTIPAYMENT],[IMPORTE_3ERPAGO_MULTIPAYMENT]
+				,[IMPORTE_ENDOSPAGOS],[IMPORTE_PAGO_ONESHOT],[IMPORTE_PAGO_ONESHOT_2],[IMPORTE_PAGOBON_ONESHOT]
+				,[INTERES_IVA_COMISION],[MESES_VENCIDOS],[MINIMOPAGARPESOS],[NoSMS],[PQC_MULTIPAYMENT_SIMULACION]
+				,[PQC_ONESHOT_SIMULACION],[PRODUCTO_GENERAL],[Quita_capital_3Pagos],[Quita_capital_ONESHOT]
+				,[RCV7DESCPRODUCTO],[RCV7MV0_MONEDA],[RCV7MV1_FILTRO],[RCV7MV1_MONEDA],[RCV7MV2_FILTRO]
+				,[RCV7MV2_MONEDA],[RCV7MV3_MONEDA],[SALDO_ACTUALMONEDA],[SALDO_CAPITAL],[SALDO_DEUDOR]
+				,[SALDO_VENCIDOMONEDA],[SEG_CUENTA],[SegmentoMC],[SumaMultiPayment],[TDCT],[TELEFONOS1]
+				,[TERMINACION],[CAMPAÑABENJAMIN],[TIPO_TELEFONO],[N_EMAIL],[TEL_POSICION],[SALDO_DEUDOR_FILTRO]
+				,[NUM_CUENTA],[INTERES_IVA_COMISION_FILTRO],[STATUS],[PROMESA],[FILA],[LOCACION],[ESTADO_FUNCIONAL]
+				,[CORTE_REAL],[CORTE])
+				SELECT [id_credito],[fecha_actualizacion],[id_Cartera],[credito],[COMPRAS_DISPMONEDA]
+				,[DIA_CORTE],[DIA_CORTE_NUM],[DIAACTUAL],[DIAMASCINCO],[DIAMASCUATRO]
+				,[DIAMASDOS],[DIAMASTRES],[DIAMASUNO],[ETIQUETA_BASE_RECOM],[FECHACORTE]
+				,[IMPORTE_1ERPAGO_MULTIPAYMENT],[IMPORTE_2DOPAGO_MULTIPAYMENT],[IMPORTE_3ERPAGO_MULTIPAYMENT]
+				,[IMPORTE_ENDOSPAGOS],[IMPORTE_PAGO_ONESHOT],[IMPORTE_PAGO_ONESHOT_2],[IMPORTE_PAGOBON_ONESHOT]
+				,[INTERES_IVA_COMISION],[MESES_VENCIDOS],[MINIMOPAGARPESOS],[NoSMS],[PQC_MULTIPAYMENT_SIMULACION]
+				,[PQC_ONESHOT_SIMULACION],[PRODUCTO_GENERAL],[Quita_capital_3Pagos],[Quita_capital_ONESHOT]
+				,[RCV7DESCPRODUCTO],[RCV7MV0_MONEDA],[RCV7MV1_FILTRO],[RCV7MV1_MONEDA],[RCV7MV2_FILTRO]
+				,[RCV7MV2_MONEDA],[RCV7MV3_MONEDA],[SALDO_ACTUALMONEDA],[SALDO_CAPITAL],[SALDO_DEUDOR]
+				,[SALDO_VENCIDOMONEDA],[SEG_CUENTA],[SegmentoMC],[SumaMultiPayment],[TDCT],[TELEFONOS1]
+				,[TERMINACION],[CAMPAÑABENJAMIN],[TIPO_TELEFONO],[N_EMAIL],[TEL_POSICION],[SALDO_DEUDOR_FILTRO]
+				,[NUM_CUENTA],[INTERES_IVA_COMISION_FILTRO],[STATUS],[PROMESA],[FILA],[LOCACION],[ESTADO_FUNCIONAL]
+				,[CORTE_REAL],[CORTE]
+				FROM SmsRemesasMuñoz
+
+
+
+				COMMIT TRANSACTION;
+				INSERT INTO @Result VALUES (1);
+			END TRY
+			BEGIN CATCH
+				IF @@TRANCOUNT > 0
+					ROLLBACK TRANSACTION;
+				INSERT INTO @Result VALUES (-1);
+			END CATCH
+		END
+		IF @Action <> 0 BEGIN SELECT * FROM @Result END
+	END
+	ELSE BEGIN
+		RAISERROR(''Invalid action specified.'', 16, 1);
+		RETURN -1;
+	END'
+		EXEC (@sql);
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 
 

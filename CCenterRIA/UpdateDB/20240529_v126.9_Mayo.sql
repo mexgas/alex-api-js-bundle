@@ -22,7 +22,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 126 --**********actualizar a 124 sin fix
-SET @versionfix = 7
+SET @versionfix = 9
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
@@ -84,12 +84,20 @@ BEGIN
 	CREATE INDEX IX_ccoCallsOutData_cal_id ON ccoCallsOutData (cal_id)
 	CREATE INDEX IX_ccoCallsOutData_callout_id ON ccoCallsOutData (callout_id)
 	CREATE INDEX IX_ccoCallsOutData_callDate ON ccoCallsOutData (callDate)
-END'
+END '
+	EXEC(@sql)
+
+	SET @process = 'KR140000 - Se crea SP ccsp_UpdateDataCall para actualizar datos de la llamada en ccoCallsOutSource, ccoCallsOutData y ccoLogDialsData'
+	SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_UpdateDataCall'') 
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_UpdateDataCall
+	END
+	'
 	EXEC(@sql)
 
 	SET @process = 'KR140000 - Se crea SP ccsp_UpdateDataCall para actualizar datos de la llamada en ccoCallsOutSource, ccoCallsOutData y ccoLogDialsData'
 	SET @sql = '
-CREATE OR ALTER PROCEDURE [dbo].[ccsp_UpdateDataCall]
+CREATE PROCEDURE [dbo].[ccsp_UpdateDataCall]
 @option int,
 @data1 varchar(255) = '''',
 @data2 varchar(255) = '''',
@@ -143,12 +151,13 @@ BEGIN
 		END
 		
 	END
-END'
+END
+'
 	EXEC(@sql)
 
 	SET @process = 'KR140002 - se actualiza sp ccsp_DLRInsertCall para insertar datos a la tabla ccoCallsOutData cuando el sistema hace una llamada'
 	SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
+	ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
 @callout_id int,
 @cam_id smallint,
 @cal_Key varchar(20),
@@ -523,6 +532,9 @@ values (''''delete ivrcallsin where date < dateadd(dd, -'''' + cast(@days as nva
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ivroptions where date < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete SmsSegmentsValidationResult where validation_date < dateadd(dd, -'''' + cast(@days as nvarchar(max)) + '''', getdate())'''', 0, 0)
 
 /******************************************************************/
 /* Delete by date because rows in ccoLogDials > ccoCallsOutSource */

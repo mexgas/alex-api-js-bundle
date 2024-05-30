@@ -20,9 +20,9 @@ DECLARE @versionALL VARCHAR(max);
 /*******************************************************************************************************
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
-sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
---SET @version = 126 --**********actualizar a 124 sin fix
-SET @versionfix = 6
+sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */--
+SET @version = 127 --**********actualizar a 124 sin fix
+SET @versionfix = 1
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
@@ -33,22 +33,16 @@ SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 5;
 --- Validacion para cuando pasamos a una nueva version LTS
-declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
-IF @version > @actualVersion 
-BEGIN 
-    SET @actualVersionFix = 0
-    select @version,@actualVersion,@versioMajer
-END
+--declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
+--IF @version > @actualVersion 
+--BEGIN 
+--    SET @actualVersionFix = 0
+--    select @version,@actualVersion,@versioMajer
+--END
 IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
 BEGIN
     BEGIN TRAN
     BEGIN TRY
-    	
-
-	
-
-
-
 	-----------------------------------------------Inicio Crear tablas ----------------------------------------------------------------------------------
 	set @process = 'Create table ccMetaWAOutboundTemplates '
 	set @sql = '
@@ -132,7 +126,7 @@ BEGIN
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccsp_GalateaDeleteCampaignAndACD'')
     begin
-        DROP PROCEDURE ccsp_AgentDataACD;
+        DROP PROCEDURE ccsp_GalateaDeleteCampaignAndACD;
     end'
 	EXEC(@sql)
 
@@ -456,7 +450,6 @@ BEGIN
 
 	set @process = 'DEV2-406 K020138 create sp ccsp_RIAConfCamp se agrega assignConversationSameAgent'
 	set @sql = '
-	
 		CREATE PROCEDURE ccsp_RIAConfCamp @User_id SMALLINT, @campID INT = NULL
 		AS
 		SET NOCOUNT ON
@@ -464,17 +457,17 @@ BEGIN
 		DECLARE @tableExistsRec TABLE (
 			camId INT PRIMARY KEY
 			,existRec BIT
-			''
+			)
 		DECLARE @camByUser TABLE (
 			camId INT PRIMARY KEY
 			,isCheck BIT
-			''
+			)
 		DECLARE @camId INT
 			,@id INT;
 		DEClARE @intenationalDialingPorts bit;
 		declare @tempInternationalCode int
  
-		if((select COUNT(*'' from ( select  top 1 IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=0  '' result '' > 0''
+		if((select COUNT(*) from ( select  top 1 IdCode from ccoDialers ccoDial inner join ccoDialerCamp ccoDialCamp on ccoDialCamp.dialer_id = ccoDial.dialer_id where ccoDialCamp.cam_id = @campID and ccoDial.DialingType=0  ) result ) > 0)
 		BEGIN
 			set @intenationalDialingPorts = 1
 		END
@@ -488,12 +481,12 @@ BEGIN
 				FROM ccUsers_Roles
 				WHERE User_id = @User_id
 					AND Rol_id = 7
-				''
+				)
 		BEGIN
 			INSERT INTO @camByUser
 			SELECT *
 				,0
-			FROM dbo.fGet_CampAcd_Area(@User_id, 1'' B
+			FROM dbo.fGet_CampAcd_Area(@User_id, 1) B
 			WHERE @campID IS NULL
 				OR cam_id = @campID
 		END
@@ -506,18 +499,18 @@ BEGIN
 			WHERE (
 					IDArea > 0
 					OR IDArea IS NULL
-					''
+					)
 				AND (
 					@campID IS NULL
 					OR cam_id = @campID
-					''
+					)
 		END
 
 		WHILE EXISTS (
 				SELECT *
 				FROM @camByUser
 				WHERE isCheck = 0
-				''
+				)
 		BEGIN
 			SELECT TOP 1 @camId = camId
 			FROM @camByUser
@@ -527,13 +520,13 @@ BEGIN
 					SELECT cam_id
 					FROM ccoCallsOut
 					WHERE cam_id = @camId
-					''
+					)
 			BEGIN
 				INSERT INTO @tableExistsRec
 				VALUES (
 					@camId
 					,1
-					''
+					)
 			END
 			ELSE
 			BEGIN
@@ -541,7 +534,7 @@ BEGIN
 				VALUES (
 					@camId
 					,0
-					''
+					)
 			END
 
 			UPDATE @camByUser
@@ -552,16 +545,16 @@ BEGIN
 		SELECT a1.cam_id
 			,cam_Descripcion
 			,cam_tNotas
-			,cast(cam_ocupado AS INT'' AS cam_ocupado
+			,cast(cam_ocupado AS INT) AS cam_ocupado
 			,cam_noInt_ocupado
 			,cam_inter_ocupado
-			,cast(cam_nocontesto AS INT'' AS cam_nocontesto
+			,cast(cam_nocontesto AS INT) AS cam_nocontesto
 			,cam_noInt_nocontesto
 			,cam_inter_nocontesto
-			,cast(cam_fax AS INT'' AS cam_fax
+			,cast(cam_fax AS INT) AS cam_fax
 			,cam_noInt_fax
 			,cam_inter_fax
-			,cast(cam_modomanual AS INT'' AS cam_modomanual
+			,cast(cam_modomanual AS INT) AS cam_modomanual
 			,ANI
 			,cam_ShowCalifWnd
 			,cam_StartTimerOnHangUp
@@ -573,20 +566,20 @@ BEGIN
 			,compliance
 			,cam_inter_graba
 			,cam_noint_graba
-			,cast(progDial AS TINYINT'' progDial
-			,cast(excCallBack AS TINYINT'' excCallBack
+			,cast(progDial AS TINYINT) progDial
+			,cast(excCallBack AS TINYINT) excCallBack
 			,dialOrder
 			,dialPrefix
 			,dialPrefixMan
 			,dialPrefixXfe
 			,listenManualCall
 			,stopRecording
-			,cast(abandonCallback AS TINYINT'' abandonCallback
+			,cast(abandonCallback AS TINYINT) abandonCallback
 			,a3.frame
 			,a1.t_autoCB
 			,a1.id_anilist
 			,a1.tDialonWrapUp
-			,dbo.fn_viewMode(@User_id, 10'' viewMode
+			,dbo.fn_viewMode(@User_id, 10) viewMode
 			,cam_maxqueue AS queSize
 			,DNCScrub
 			,callerIdDesc
@@ -594,8 +587,8 @@ BEGIN
 			,callsBySurvey
 			,ivrScript
 			,surveyPctg
-			,isnull(a1.call_record, 1'' AS call_record
-			,cast(startStopRecording AS TINYINT'' startStopRecording
+			,isnull(a1.call_record, 1) AS call_record
+			,cast(startStopRecording AS TINYINT) startStopRecording
 			,leaveRecMessage
 			,manualCallOnChat
 			,callBackSurveyAgent
@@ -606,8 +599,8 @@ BEGIN
 					THEN 0
 				ELSE 1
 				END isRelationSurvey
-			,isnull(a1.funcEspDtmf, 0''
-			,isnull(sipHdrFormat, '''' sipHdrFormat
+			,isnull(a1.funcEspDtmf, 0)
+			,isnull(sipHdrFormat,'''' ) sipHdrFormat
 			,cam_inter_cancelled
 			,prefijo
 			,enbleprefix = CASE 
@@ -615,37 +608,37 @@ BEGIN
 					THEN 1
 				ELSE 0
 				END
-			,isnull(exitAssisted, 0'' exitAssisted
-			,isnull(previewDiscard, 0'' PreviewDiscard	
-			,isnull(CampType, 0'' CampType
-			,isnull(contact.conexionInfo, '''' conexionInfo
-			,isnull(contact.connUser, '''' connUser
-			,isnull(contact.closeConversationTime, 0'' closeConversationTime
-			,isnull(contact.answerTimeoutClient, 0'' answerTimeoutClient
-			,isnull(contact.allowFileAttachments, 0'' allowFileAttachments
-			,isnull(selectRotativeANI, 0'' selectRotativeANI
-			,ISNULL(rotativeAlgo, 0'' rotativeAlgo
-			,isnull(autoStart, 0'' autoStart
-			,isnull(messagingOrder, 0'' messagingOrder
-			,ISNULL(cam_tPreview, 0'' AS CamTPreview
-			,ISNULL(timesPreview, 0'' AS TimesPreview
-			,isnull(timesDiscard, 0'' TimesDiscard
-			,ISNULL(recordHold, 0'' recordHold
-			,isnull(campsExtention.zipCodeSchedule, 0'' ZipCodeSchedule
-			,isnull(campsExtention.RecordCalls, 1'' RecordCalls
-			,isnull(campsExtention.simultaneousRecs, 1'' simultaneousRecs
-			,isnull(campsExtention.EditableContactData, 0'' EditableContactData
+			,isnull(exitAssisted, 0) exitAssisted
+			,isnull(previewDiscard, 0) PreviewDiscard	
+			,isnull(CampType, 0) CampType
+			,isnull(contact.conexionInfo, '''') conexionInfo
+			,isnull(contact.connUser,'''' ) connUser
+			,isnull(contact.closeConversationTime, 0) closeConversationTime
+			,isnull(contact.answerTimeoutClient, 0) answerTimeoutClient
+			,isnull(contact.allowFileAttachments, 0) allowFileAttachments
+			,isnull(selectRotativeANI, 0) selectRotativeANI
+			,ISNULL(rotativeAlgo, 0) rotativeAlgo
+			,isnull(autoStart, 0) autoStart
+			,isnull(messagingOrder, 0) messagingOrder
+			,ISNULL(cam_tPreview, 0) AS CamTPreview
+			,ISNULL(timesPreview, 0) AS TimesPreview
+			,isnull(timesDiscard, 0) TimesDiscard
+			,ISNULL(recordHold, 0) recordHold
+			,isnull(campsExtention.zipCodeSchedule, 0) ZipCodeSchedule
+			,isnull(campsExtention.RecordCalls, 1) RecordCalls
+			,isnull(campsExtention.simultaneousRecs, 1) simultaneousRecs
+			,isnull(campsExtention.EditableContactData, 0) EditableContactData
 			,@intenationalDialingPorts intenationalDialingPorts 
-			,isnull(campsExtention.AssignConversationSameAgent, 0'' AssignConversationSameAgent
+			,isnull(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent
 		FROM ccCamps a1
-		INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id''
-		INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id''
+		INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
+		INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
 		INNER JOIN @tableExistsRec a4 ON a1.cam_id = a4.camId
 		LEFT JOIN contactMeanOut contact ON a1.cam_id = contact.camp_id
 		LEFT JOIN ccCampsExtend campsExtention ON a1.cam_id = campsExtention.cam_id
 		ORDER BY cam_descripcion
 
-		RETURN (0''
+		RETURN (0)
 
 		SET NOCOUNT OFF
 		'
@@ -840,14 +833,16 @@ BEGIN
 			'
 	EXEC(@sql)
 
+	set @process = 'DEV2-406 K020138 drop sp ccsp_MetaWAOutboundTemplates'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MetaWAOutboundTemplates'')
+    begin
+        DROP PROCEDURE ccsp_MetaWAOutboundTemplates
+    end'
+	EXEC(@sql)
+
 	set @process = 'DEV2-406 K020138 create sp ccsp_MetaWAOutboundTemplates'
 	set @sql = '
-	if not exists (select * from sys.procedures where name = N''ccsp_MetaWAOutboundTemplates'')
-		begin
-		   CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
-		-- Add the parameters for the stored procedure here
-		@action TINYINT = NULL,
-		@whatsAppTemplateID INT = 0,
+		CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]		@action TINYINT = NULL,		@whatsAppTemplateID INT = 0,
 		@id varchar(200) = NULL,
 		@Category varchar(50) = NULL,
 		@TemplateName varchar(200) = NULL,
@@ -857,65 +852,54 @@ BEGIN
 		@header nvarchar(max)= null,
 		@body nvarchar(max) = null,
 		@footer nvarchar(max) = null,
-		@buttons nvarchar(max) = null
-	AS
-	BEGIN
-		-- SET NOCOUNT ON added to prevent extra result sets from
-		-- interfering with SELECT statements.
-		SET NOCOUNT ON;
-
-		IF(@action = 1)
-		BEGIN
-		print 1
-		END
-		ELSE IF(@action = 2)
-		BEGIN
-		print 1
-		END
-		ELSE IF(@action = 4) --create
-		BEGIN
-			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons)
-								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons)
-		END
-	END
+		@buttons nvarchar(max) = null	AS	BEGIN		IF(@action = 1)		BEGIN		print 1		END		ELSE IF(@action = 2)		BEGIN		print 2		END		ELSE IF(@action = 4) --create		BEGIN			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons)
+								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons)		END	END
+   '
+	EXEC(@sql);
+	
+	set @process = 'DEV2-406 K020138 drop sp ccsp_WhatsAppValidationAndConfig'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_WhatsAppValidationAndConfig'')
+    begin
+        DROP PROCEDURE ccsp_WhatsAppValidationAndConfig
     end'
 	EXEC(@sql)
 
-	------------------------------------------------Fin Modificar sp-----------------------------------------------------
-	------------------------------------------------Inicio Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
-	set @process = 'Se crea sp ccsp_WhatsappTemplatesStatus para actualizar el estado de las plantillas y la calidad mediante los cambios que llegan al webhook'
-	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsappTemplatesStatus]
-				@action as smallint,
-				@messageId as bigint = 0,
-				@status as varchar(30) = '''',
-				@notes as varchar(500) = '''',
-				@quality as int = 0
+	set @process = 'DEV2-406 K020138 create sp ccsp_WhatsAppValidationAndConfig'
+	set @sql = '
+	create procedure ccsp_WhatsAppValidationAndConfig
+	@action int,
+	@camId int=0,
+	@phoneNumber varchar(20)='''',
+	@TemplateName varchar(512)='''',
+	@RemovalDate datetime = getDate
+	as
+	begin
+		if (@action = 1)
+		begin
+		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers where Cam_Id=@camId and Number=@phoneNumber
+		end
+		if(@action = 2)
+		begin
+		 select top (1) Id from ccMetaWAOutboundTemplates where TemplateName=@TemplateName or ( TemplateName=@TemplateName and RemovalDate >= @RemovalDate)
+		end
+	end
+	'
+	EXEC(@sql)
+	
+	
 
-				AS
-				IF(@action = 0) begin
-					update ccMetaWAOutboundTemplates set Status = @status, notes = @notes where Id = @messageId
-				end
-				IF(@action = 1) begin
-					declare @isPendingQuality bit; 
-					select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
-					if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
-					else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
-				end'
-	EXEC(@sql)
-	------------------------------------------------Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
-	set @process = ' '
-	set @sql = ''
-	EXEC(@sql)
+
+	------------------------------------------------Fin Modificar sp-----------------------------------------------------
 
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
-        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+        --EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        --EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
         COMMIT TRAN
     END TRY
     BEGIN CATCH
-        /* Error generated based on sintax */
-        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR) + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
+        /* Error generated based on sintax */ 
+        SELECT @errorGenerated = 'DB script version: ' + cast(@version AS NVARCHAR)  + '''.''' + cast(@versionfix AS NVARCHAR) + ''' Error process: ''' + @process + ''' Line: ''' + cast(error_line() AS NVARCHAR) + ''' Number: ''' + cast(@@error AS NVARCHAR) + ''' Message: ''' + error_message()
         RAISERROR (@errorGenerated, 11, 1)
         ROLLBACK TRAN
     END CATCH

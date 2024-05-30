@@ -146,14 +146,16 @@ EndSave:
 '
     EXEC(@sql)
 
-    set @process = 'CREATE JOB CW (AutoStart),(Callback/abandoned update),(Campaign summary)'
+    set @process = 'CREATE JOB CW (Callback/abandoned update),(Campaign summary)'
     set @sql = 'USE [msdb]
-
 if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'') begin
 	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
 end
 
-/****** Object:  Job [CW (AutoStart),(Callback/abandoned update),(Campaign summary)]    Script Date: 11/10/2021 11:02:12 a. m. ******/
+if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CW (Callback/abandoned update),(Campaign summary)'') begin
+	EXEC msdb.dbo.sp_delete_job @job_name=N''CW (Callback/abandoned update),(Campaign summary)'', @delete_unused_schedule=1
+end
+
 BEGIN TRANSACTION
 DECLARE @ReturnCode INT
 SELECT @ReturnCode = 0
@@ -166,7 +168,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (AutoStart),(Callback/abandoned update),(Campaign summary)'', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (Callback/abandoned update),(Campaign summary)'', 
 		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
@@ -191,7 +193,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N''CW Call
 		@command=N''declare @callout_id_array varchar(max), @SQL varchar(max)
 set @callout_id_array=''''|''''
 
-select @callout_id_array=@callout_id_array+coalesce('''',''''+cast(callout_id as varchar(10)), @callout_id_array, '''''''')
+select @callout_id_array=@callout_id_array + case when callout_id is null then '''''''' else coalesce('''',''''+cast(callout_id as varchar(10)), @callout_id_array, '''''''') end
 from ccRIAUpdateCallBack_Abandon where minCallBackAbandonXpire < getdate()
 
 if len(@callout_id_array)>1
@@ -247,8 +249,7 @@ COMMIT TRANSACTION
 GOTO EndSave
 QuitWithRollback:
     IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
-EndSave:
-'
+EndSave:'
 EXEC(@sql)
 
     set @process = 'CREATE JOB CW (AutoStart)'
@@ -269,7 +270,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 DECLARE @jobId BINARY(16)
 EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N''CW (AutoStart)'', 
-		@enabled=0, 
+		@enabled=1, 
 		@notify_level_eventlog=0, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 

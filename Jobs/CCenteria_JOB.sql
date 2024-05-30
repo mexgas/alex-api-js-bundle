@@ -465,12 +465,20 @@ values (''''delete ivrcallsin where date < @date'''', 0, 1)
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ivroptions where date < @date'''', 0, 1)
 
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete SmsSegmentsValidationResult where validation_date < @date'''', 0, 0)
 /******************************************************************/
 /* Delete by date because rows in ccoLogDials > ccoCallsOutSource */
 /******************************************************************/
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete ccoLogDials where fecha < @date'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete ccoLogDialsData where callDate < @date'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete ccoCallsOutData where callDate < @date'''', 0, 1)
 
 /******************************************************************/
 

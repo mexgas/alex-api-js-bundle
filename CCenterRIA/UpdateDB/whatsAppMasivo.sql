@@ -842,7 +842,9 @@ BEGIN
 
 	set @process = 'DEV2-406 K020138 create sp ccsp_MetaWAOutboundTemplates'
 	set @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]		@action TINYINT = NULL,		@whatsAppTemplateID INT = 0,
+		CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
+		@action TINYINT = NULL,
+		@whatsAppTemplateID INT = 0,
 		@id varchar(200) = NULL,
 		@Category varchar(50) = NULL,
 		@TemplateName varchar(200) = NULL,
@@ -852,8 +854,23 @@ BEGIN
 		@header nvarchar(max)= null,
 		@body nvarchar(max) = null,
 		@footer nvarchar(max) = null,
-		@buttons nvarchar(max) = null	AS	BEGIN		IF(@action = 1)		BEGIN		print 1		END		ELSE IF(@action = 2)		BEGIN		print 2		END		ELSE IF(@action = 4) --create		BEGIN			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons)
-								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons)		END	END
+		@buttons nvarchar(max) = null
+	AS
+	BEGIN
+		IF(@action = 1)
+		BEGIN
+		print 1
+		END
+		ELSE IF(@action = 2)
+		BEGIN
+		print 2
+		END
+		ELSE IF(@action = 4) --create
+		BEGIN
+			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons)
+								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons)
+		END
+	END
    '
 	EXEC(@sql);
 	
@@ -890,6 +907,30 @@ BEGIN
 
 
 	------------------------------------------------Fin Modificar sp-----------------------------------------------------
+	------------------------------------------------Inicio Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
+	set @process = 'Se crea sp ccsp_WhatsappTemplatesStatus para actualizar el estado de las plantillas y la calidad mediante los cambios que llegan al webhook'
+	set @sql = 'IF NOT EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')begin
+					CREATE PROCEDURE [dbo].[ccsp_WhatsappTemplatesStatus]
+						@action as smallint,
+						@messageId as bigint = 0,
+						@status as varchar(30) = '''',
+						@notes as varchar(500) = '''',
+						@quality as int = 0
+
+						AS
+						IF(@action = 0) begin
+							update ccMetaWAOutboundTemplates set Status = @status, notes = @notes where Id = @messageId
+						end
+						IF(@action = 1) begin
+							declare @isPendingQuality bit; 
+							select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
+							if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
+							else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
+						end
+				end
+	'
+	EXEC(@sql)
+	------------------------------------------------Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
 
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

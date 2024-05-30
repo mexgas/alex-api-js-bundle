@@ -932,7 +932,7 @@ BEGIN
 	EXEC(@sql)
 	------------------------------------------------Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
 	------------------------------------------------Inicio Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
-	set @process = 'Se crea sp ccsp_WhatsappTemplatesStatus para actualizar el estado de las plantillas y la calidad mediante los cambios que llegan al webhook'
+	set @process = 'Se crea ccMetaWebhooksConfigurations para guardar los token necesarios'
 	set @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = N''ccMetaWebhooksConfigurations'') begin
 					CREATE TABLE ccMetaWebhooksConfigurations (
 						Id int NOT NULL,

@@ -1234,7 +1234,49 @@ return(0)
         
 
 --------------------------------------------------------------------- END Gaby --------------------------------------------------------------------------
+	------------------------------------------------Inicio Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
+	set @process = 'Se elimina ccsp_WhatsappTemplatesStatus si existe'
+	set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')begin
+					DROP PROCEDURE ccsp_WhatsappTemplatesStatus
+				end
+	'
+	EXEC(@sql)
+	
+	set @process = 'Se crea sp ccsp_WhatsappTemplatesStatus para actualizar el estado de las plantillas y la calidad mediante los cambios que llegan al webhook'
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsappTemplatesStatus]
+						@action as smallint,
+						@messageId as bigint = 0,
+						@status as varchar(30) = '''',
+						@notes as varchar(500) = '''',
+						@quality as int = 0
 
+						AS
+						IF(@action = 0) begin
+							update ccMetaWAOutboundTemplates set Status = @status, notes = @notes where Id = @messageId
+						end
+						IF(@action = 1) begin
+							declare @isPendingQuality bit; 
+							select @isPendingQuality=IsPendingQuality from  ccMetaWAOutboundTemplates where Id = @messageId;
+							if(@isPendingQuality = 1) update ccMetaWAOutboundTemplates set quality = @quality, IsPendingQuality = 0 where Id = @messageId 
+							else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
+						end'
+	EXEC(@sql)
+	------------------------------------------------Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
+	------------------------------------------------Inicio Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
+	set @process = 'Se elimina ccMetaWebhooksConfigurations si existe'
+	set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccMetaWebhooksConfigurations'') begin
+					DROP TABLE ccMetaWebhooksConfigurations
+				end
+	'
+	EXEC(@sql)
+	set @process = 'Se crea ccMetaWebhooksConfigurations para guardar los token necesarios'
+	set @sql = 'CREATE TABLE ccMetaWebhooksConfigurations (
+						Id int NOT NULL,
+						Controller varchar(150) NOT NULL,
+						Token varchar(max)
+					);'
+	EXEC(@sql)
+	------------------------------------------------Fin Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
 
 
  	

@@ -893,7 +893,7 @@ BEGIN
 	begin
 		if (@action = 1)
 		begin
-		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers where Cam_Id=@camId and Number=@phoneNumber
+		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers where Number=@phoneNumber
 		end
 		if(@action = 2)
 		begin

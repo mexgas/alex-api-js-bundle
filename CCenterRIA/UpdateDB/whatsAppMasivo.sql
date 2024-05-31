@@ -893,11 +893,11 @@ BEGIN
 	begin
 		if (@action = 1)
 		begin
-		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers where Cam_Id=@camId and Number=@phoneNumber
+		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers with (nolock) where Number=@phoneNumber
 		end
 		if(@action = 2)
 		begin
-		 select top (1) Id from ccMetaWAOutboundTemplates where TemplateName=@TemplateName or ( TemplateName=@TemplateName and RemovalDate >= @RemovalDate)
+		 select top (1) Id from ccMetaWAOutboundTemplates with (nolock) where TemplateName=@TemplateName or ( TemplateName=@TemplateName and RemovalDate >= @RemovalDate)
 		end
 	end
 	'

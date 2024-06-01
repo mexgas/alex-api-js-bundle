@@ -1859,10 +1859,14 @@ SET @sql = '
 
 						WHEN CCCT.identifierInfo = ''OUT_CONDUCT_SURVEY'' THEN
 							CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_CALLBACK'' ELSE ''COMMON_IMMEDIATE'' END
+						
 						WHEN CCCT.identifierInfo IN (''OUT_MANUAL_DIALING_ON_CHAT'', ''OUT_TIME_ZONE_VALIDATION_MANUAL'', ''OUT_INTENSIVE_DIALING'', ''OUT_CALLBACK_EXCLUSIVE_AGENT'', ''OUT_VOIEMAIL_DETECTION'',
 													''OUT_CALLBACK_FAILED'', ''OUT_EXIT_ASSISTED'', ''OUT_SHOW_DISPOSITIONS'', ''OUT_EDIT_CALL_KEY'', ''OUT_STOP_RECORDING'', ''OUT_LEAVE_PRERECORDED'',
 													''OUT_CONDUCT_CALLBACK_SURVEY'', ''OUT_RECEIVE_DTMF'', ''OUT_SELECT_ANI_ON_DIALING'', ''OUT_SMS_START_CAMP_AUTO'', ''OUT_RECORD_ON_HOLD'', ''OUT_LISTEN_TONE'', ''OUT_UNASSIGN_RECORDS'') THEN
 							CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+						
+						WHEN CCCT.identifierInfo = ''STOP_RECORDING_IVR_TRANSFER'' THEN
+							CASE WHEN CCCT.dataInfo = 0 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 								
 						ELSE CCCT.dataInfo END
 				ELSE '''' END, 
@@ -2444,6 +2448,32 @@ SET @sql = '
 	select @prefix as sDialPrefix, @tNoContesta as tNoContesta,@ani as ani, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail,
 	@call_record as call_record, isnull(@MsgFiles,'''') as messageFiles, isnull(@MohFiles,'''') as mohFiles, @ivr_script ivrScript, @sipheader data
 	,@PrefixRec PrefijoRec, @carrier Carrier, @recordHold recordHold, @recordIvr recordIvr'
+
+EXEC(@sql)
+
+SET @process = 'KR106 se borra sp ccsp_OUT_JobsActions'
+SET @sql = '
+	IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_OUT_JobsActions'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_OUT_JobsActions
+	END'
+
+EXEC(@sql)
+
+SET @process = 'KR106 se crea sp ccsp_OUT_JobsActions'
+SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_OUT_JobsActions]
+	@Type SMALLINT,
+	@callout_id INT = 0,
+	@cam_id int = 0
+	
+	AS
+			
+	IF (@type = 1) 
+	BEGIN
+		update ccoWorkingTable set CancelAttempts = case when CancelAttempts is null then 1 else CancelAttempts + 1 end where callout_id = @callout_id and cam_id = @cam_id		
+	END;
+'
 
 EXEC(@sql)
 

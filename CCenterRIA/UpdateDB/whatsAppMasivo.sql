@@ -888,7 +888,7 @@ BEGIN
 	@camId int=0,
 	@phoneNumber varchar(20)='''',
 	@TemplateName varchar(512)='''',
-	@RemovalDate datetime = getDate
+	@RemovalDate datetime = null
 	as
 	begin
 		if (@action = 1)

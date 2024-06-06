@@ -107,6 +107,19 @@ BEGIN
 		END'
 		EXEC(@sql)
 
+		set @process = 'update reportes 2120, 2130'
+		set @sql = '
+		update ccmenus set 
+		release=''fffe3e1af96616008d0b5b3f644e16cf792d8be7cfe33d4b93a43208ee10d77da093aaa985dcf1d0fe1952499fc34801be116ff32af2f5336b1563861cb91646'' 
+		where type=3 and menu_id=2120
+
+
+		update ccmenus set 
+		release=''d0df11930b9ac68aa5866c2760e456b7b5a686b8d838d01ab8ae7f4db57a2ff1418b4220a5daa1e20c6857d053450c444c77e33264bc19586d1c950b29c2fcb4'' 
+		where type=3 and menu_id=2130'
+		EXEC(@sql)
+
+
 		set @process = 'Inserts into ccGalateaIdentifiers'
 		set @sql = 'IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''CREATE_ROLE_USERS'')
 BEGIN

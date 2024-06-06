@@ -91,8 +91,8 @@ BEGIN
 			''systemTranslated_Resultado_ID_'' + cast(srm.RESULTADO_ID as varchar)  resultado,
 			''systemTranslated_Resultado_Envio_'' + cast(a.statusSystemsId as varchar)  resultado_de_envio		
 	from smsccoLogDial a
-	--inner join SmsRemesasMuñozDay srm on srm.TDCT = a.callkey
-	inner join SmsRemesasMuñozDay srm on srm.TDCT = a.registryClient
+	--inner join SmsRemesasMuÃ±ozDay srm on srm.TDCT = a.callkey
+	inner join SmsRemesasMuÃ±ozDay srm on srm.TDCT = a.registryClient
 	inner join ccSmsSegments ss on ss.name = srm.SegmentoMC
 	where a.smsDate between @from and @to
 	)

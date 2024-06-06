@@ -96,7 +96,7 @@ BEGIN
 		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 13030)
 		begin
 		INSERT INTO ccMenus (menu_id, menu_descrip, parent, nivel, ordengral, [type], HelpSWF, release)
-		VALUES(13030, ''Detalle de segmentos'',13000, ''B'', 12, 3, '''', '''' )
+		VALUES(13030, ''Detalle de segmentos|Segments Detail'',13000, ''B'', 12, 3, '''', ''fee5fe879970dad2b6f13aa6ef504e25910de557e916feed5fa87425cd9c1446e86bcbcd45690b7776892c78d673a271'' )
 		end'
 		EXEC(@sql)
 

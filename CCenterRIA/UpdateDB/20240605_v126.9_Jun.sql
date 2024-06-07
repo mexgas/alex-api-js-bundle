@@ -172,7 +172,7 @@ select @cal_id = scope_identity()
 
 INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 SELECT @cal_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @fecha
-FROM ccoCallsOutSource where callout_id = @callout_id
+FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
 
 insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
 select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
@@ -212,7 +212,7 @@ ALTER PROCEDURE [dbo].[ccsp_AGENTInsertCallOut]
 
 		INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 		SELECT @cal_id, @existCallOut, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @fecha
-		FROM ccoCallsOutSource where callout_id = @existCallOut
+		FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @existCallOut
 
 exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=11
 
@@ -261,7 +261,7 @@ exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callTy
 
 		INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 		SELECT @cal_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @fecha
-		FROM ccoCallsOutSource where callout_id = @callout_id
+		FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
 
     exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=11
      end
@@ -281,7 +281,7 @@ exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callTy
 
 			INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 			SELECT @cal_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @fecha
-			FROM ccoCallsOutSource where callout_id = @callout_id
+			FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
 
         exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=11
         end
@@ -358,7 +358,7 @@ BEGIN
 	BEGIN
 		INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
 		SELECT @logDial_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @tNow
-		FROM ccoCallsOutSource where callout_id = @callout_id
+		FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
 	END
 
     IF @RecicleSIC = 1

@@ -1700,7 +1700,7 @@ else if @action in(12,13) begin --Validar Carga
 
 	INSERT INTO #functionalState
 	select rid.creditId, count(rid.creditId) from smsccoLogDial ld
-	inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.callkey
+	inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.registryClient
 	where ld.smsDate >= @WeekStart
 	GROUP BY rid.creditId
 

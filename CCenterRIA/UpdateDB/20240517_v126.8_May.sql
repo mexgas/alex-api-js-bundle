@@ -2508,6 +2508,13 @@ EndSave:';
 		RETURN -1;
 	END'
 		EXEC (@sql);
+
+		SET @process = 'Se elimina columa callKey de la tabla smsccoLogDial'
+		SET @sql= 'if exists (select * from sys.columns where name = N''callkey'' and Object_ID = Object_ID(N''smsccoLogDial''))
+	begin
+		ALTER TABLE smsccoLogDial DROP COLUMN callkey
+	end'
+		EXEC(@sql);
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 
 

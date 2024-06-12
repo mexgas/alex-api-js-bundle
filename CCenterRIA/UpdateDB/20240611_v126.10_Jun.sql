@@ -103,7 +103,7 @@ EXEC(@sql)
 
 --------------------------------------- Functions ------------------------------------------
 
-SET @process = 'KR141000 Se borra función fnGetStopRecordingValue'
+SET @process = 'KR141000 Se borra funciÃ³n fnGetStopRecordingValue'
 SET @sql = '
 	if exists (select * from sys.objects where object_id = OBJECT_ID(N''fnGetStopRecordingValue'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
 	begin
@@ -112,7 +112,7 @@ SET @sql = '
 
 EXEC(@sql)
 
-SET @process = 'KR141000 Se crea función fnGetStopRecordingValue'
+SET @process = 'KR141000 Se crea funciÃ³n fnGetStopRecordingValue'
 SET @sql = '
 	CREATE function [dbo].[fnGetStopRecordingValue](@cal_id int, @cam_id int)
 	RETURNS int
@@ -151,7 +151,7 @@ SET @sql = '
 
 EXEC(@sql)
 
-SET @process = 'KR106000 Se agrega relación de identificador OUT_CANCELED'
+SET @process = 'KR106000 Se agrega relaciÃ³n de identificador OUT_CANCELED'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE Identifiers = ''OUT_CANCELED'')
 	BEGIN
@@ -164,7 +164,7 @@ SET @process = 'KR141000 Se agrega modulo 21'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaModules WHERE moduleId = 21)
 	BEGIN
-		insert into ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) values (21, ''Directorio de transferencia'', ''Transfer list'', ''Catálogo de transferência'')
+		insert into ccGalateaModules (ModuleId, MTagEs, MTagEn, MTagPt) values (21, ''Directorio de transferencia'', ''Transfer list'', ''CatÃ¡logo de transferÃªncia'')
 	END'
 
 EXEC(@sql)
@@ -173,7 +173,7 @@ SET @process = 'KR141000 se agrega operacion 121'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 121)
 	BEGIN
-		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (121, ''Configurar número de transferencia'', ''Configure transfer number'', ''Configurar número de transferência'')
+		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (121, ''Configurar nÃºmero de transferencia'', ''Configure transfer number'', ''Configurar nÃºmero de transferÃªncia'')
 	END'
 
 EXEC(@sql)
@@ -182,7 +182,7 @@ SET @process = 'KR141000 se agrega operacion 119'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 119)
 	BEGIN
-		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (119, ''Editar número de transferencia'', ''Edit transfer number'', ''Editar número de transferência'')
+		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (119, ''Editar nÃºmero de transferencia'', ''Edit transfer number'', ''Editar nÃºmero de transferÃªncia'')
 	END'
 
 EXEC(@sql)
@@ -191,7 +191,7 @@ SET @process = 'KR141000 se agrega operacion 120'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 120)
 	BEGIN
-		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (120, ''Eliminar número de transferencia'', ''Delete transfer number'', ''Excluir número de transferência'')
+		insert into ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPt) values (120, ''Eliminar nÃºmero de transferencia'', ''Delete transfer number'', ''Excluir nÃºmero de transferÃªncia'')
 	END'
 
 EXEC(@sql)
@@ -220,7 +220,7 @@ SET @process = 'KR141000 se agrega identificador TRANSFER_LIST_NUMBER'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''TRANSFER_LIST_NUMBER'')
 	BEGIN
-		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_NUMBER'', ''Número'', ''Number'', ''Número'')
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_NUMBER'', ''NÃºmero'', ''Number'', ''NÃºmero'')
 	END'
 
 EXEC(@sql)
@@ -229,7 +229,7 @@ SET @process = 'KR141000 se agrega identificador TRANSFER_LIST_CONFERENCE'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''TRANSFER_LIST_CONFERENCE'')
 	BEGIN
-		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_CONFERENCE'', ''Conferencia'', ''Conference'', ''Conferência'')
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_CONFERENCE'', ''Conferencia'', ''Conference'', ''ConferÃªncia'')
 	END'
 
 EXEC(@sql)
@@ -238,7 +238,7 @@ SET @process = 'KR141000 se agrega identificador TRANSFER_LIST_BLIND'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''TRANSFER_LIST_BLIND'')
 	BEGIN
-		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_BLIND'', ''Grabación en transferencia ciega'', ''Blind transfer recording'', ''Gravação em transferência cega'')
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_BLIND'', ''GrabaciÃ³n en transferencia ciega'', ''Blind transfer recording'', ''GravaÃ§Ã£o em transferÃªncia cega'')
 	END'
 
 EXEC(@sql)
@@ -247,7 +247,7 @@ SET @process = 'KR141000 se agrega identificador TRANSFER_LIST_ASSISTED'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''TRANSFER_LIST_ASSISTED'')
 	BEGIN
-		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_ASSISTED'', ''Grabación en transferencia asistida'', ''Assisted transfer recording'', ''Gravação em transferência assistida'')
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''TRANSFER_LIST_ASSISTED'', ''GrabaciÃ³n en transferencia asistida'', ''Assisted transfer recording'', ''GravaÃ§Ã£o em transferÃªncia assistida'')
 	END'
 
 EXEC(@sql)
@@ -256,12 +256,12 @@ SET @process = 'KR141000 se agrega identificador STOP_RECORDING_IVR_TRANSFER'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''STOP_RECORDING_IVR_TRANSFER'')
 	BEGIN
-		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''STOP_RECORDING_IVR_TRANSFER'', ''Detener grabación después de transferir a flujo de IVR'', ''Stop recording on transfers to IVR flows'', ''Parar de gravar ao transferir para sistemas IVR'')
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''STOP_RECORDING_IVR_TRANSFER'', ''Detener grabaciÃ³n despuÃ©s de transferir a flujo de IVR'', ''Stop recording on transfers to IVR flows'', ''Parar de gravar ao transferir para sistemas IVR'')
 	END'
 
 EXEC(@sql)
 
-SET @process = 'KR141000 Se agrega relación de identificador STOP_RECORDING_IVR_TRANSFER'
+SET @process = 'KR141000 Se agrega relaciÃ³n de identificador STOP_RECORDING_IVR_TRANSFER'
 SET @sql = '
 	IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE Identifiers = ''STOP_RECORDING_IVR_TRANSFER'')
 	BEGIN
@@ -393,7 +393,7 @@ SET @sql = '
 	select @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
 	if @iZonas is null begin
 	exec @iZonas=ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0              
-	--Checamos si la campaña tiene horarios configurados
+	--Checamos si la campaÃ±a tiene horarios configurados
 		if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
 		begin
 					if @iZonas = 0 begin
@@ -1010,7 +1010,7 @@ SET @sql = '
 
 	-- Prefijo por puerto
 	select @prefix = prefix from cstoProvedor where provedor_id = (select provedor_id from ccodialers where puerto = @iPortNumber )
-	-- Prefijo por campaña o especialidad
+	-- Prefijo por campaÃ±a o especialidad
 	if @prefix =''''
 		if @type = 2
 			select @prefix = dialPrefixXfe from ccCamps where cam_id = @camEspecId

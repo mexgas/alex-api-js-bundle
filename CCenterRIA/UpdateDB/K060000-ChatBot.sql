@@ -57,572 +57,6 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
-	SET @process = 'K060000-Se crea Tabla ChatBotConversation'
-	SET @sql = 'if not exists(SELECT * FROM ccSettings WHERE setting_id = 252) begin
-
-INSERT INTO ccSettings (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
-VALUES (252, ''127.0.0.1'', ''Ubicacicion del Chatbot'', 1, ''GRL'', ''IP del servidor donde se encuentra el chatbot'', ''Chatbot Service location'', 1, ''^(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}(25[0-5]|[01]?\d\d?|2[0-4]\d)$'')
-
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060000-Se crea Tabla ChatBotConversation'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversation'') begin
-	CREATE TABLE ChatBotConversation (
-	ChatBotConversationId BIGINT IDENTITY(1,1) PRIMARY KEY, 
-    ClientNumber VARCHAR(15),
-    ClientName VARCHAR(50),
-    ChatBotId INT,
-    ChatBotName VARCHAR(255),
-    ChatBotNumber VARCHAR(30),
-    ChatBotDomain VARCHAR(50),
-    CampIdTransfered INT,
-    ConversationStatus VARCHAR(30),
-    ConversationTime INT,
-    EndStatus INT,
-    QueueTime INT,
-    FirstMessageTime DATETIME
-	);
-	end'
-	EXEC(@sql)
-
-		SET @process = 'K060000-Se crea Tabla ChatBotConversationMessage'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversationMessage'') begin
-	CREATE TABLE ChatBotConversationMessage (
-	MessageId UNIQUEIDENTIFIER PRIMARY KEY default NEWID(),
-    ConversationChatBotId BIGINT NOT NULL,
-    OriginType VARCHAR(50),
-    MessageStatus VARCHAR(50),
-	Date DATETIME,
-    TypeMessage VARCHAR(50),
-    Message VARCHAR(255)
-	);
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060033 - Se agregan campos para validad si ya fueron procesados los mensajes en azure'
-	SET @sql = '
-	IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
-		WHERE  TABLE_NAME = ''ChatBotConversationMessage''
-		AND COLUMN_NAME = ''PendingToAzure'')
-	BEGIN
-		ALTER TABLE ChatBotConversationMessage ADD PendingToAzure smallint
-	END
-
-	IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
-		WHERE  TABLE_NAME = ''ChatBotConversationMessage''
-		AND COLUMN_NAME = ''message_uuid'')
-	BEGIN
-		ALTER TABLE ChatBotConversationMessage ADD message_uuid varchar(50)
-	END'
-	EXEC(@sql)
-
-	SET @process = 'K060000-Se crea SP ccsp_Save_ChatBot_Conversation_Message'
-	SET @sql = '
-	CREATE OR ALTER PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation_Message]
-	@option int,
-	@conversationChatBotId BIGINT = null,
-	@originType VARCHAR(50) = null,
-	@messageStatus VARCHAR(50) = null,
-	@date DateTime = null,
-	@typeMessage VARCHAR(50) = null,
-	@message VARCHAR(255) = null,
-	@message_uuid varchar(50) = null
-
-	as set nocount on
-
-	IF(@option = 1) BEGIN
-
-		INSERT INTO ChatBotConversationMessage(
-		message_uuid,
-		ConversationChatBotId,
-		OriginType,
-		MessageStatus,
-		Date,
-		TypeMessage,
-		Message
-		) 
-		VALUES (
-		@message_uuid,
-		@conversationChatBotId,
-		@originType,
-		@messageStatus,
-		@date,
-		@typeMessage,
-		@message
-		);
-
-		SELECT SCOPE_IDENTITY()
-	END 
-	IF(@option = 2)
-	BEGIN
-		UPDATE ChatBotConversationMessage SET message_uuid = @message_uuid
-		WHERE ConversationChatBotId = @conversationChatBotId and ISNULL(message_uuid, '''') = ''''
-		AND OriginType = @originType
-	END
-	IF(@option = 3)
-	BEGIN
-		UPDATE ChatBotConversationMessage SET MessageStatus = @messageStatus
-		WHERE ConversationChatBotId = @conversationChatBotId AND message_uuid = @message_uuid
-		AND OriginType = @originType
-	END
-
-	set nocount off'
-	EXEC(@sql)
-
-	SET @process = 'K060000-Se crea Tabla ccssetings 2'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccSettings2'') begin
-	CREATE TABLE ccSettings2(
-	setting_id smallint NOT NULL,
-	valor varchar(300),
-	descripcion varchar(150) NOT NULL,
-	Status tinyint,
-	Tipo varchar(3),
-	detalle varchar(600),
-	description varchar(600),
-	bLoadSettings bit,
-	validate varchar(255)
-	);
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060000-Se crea Tabla ChatBotRelation'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotRelation'') begin
-	CREATE TABLE ChatBotRelation (
-	AzureKnowledgeId int,
-	ContactName varchar(255)
-	);
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060000-Se inserta setting 256 Ruta para guardar conversaciones de chatbot'
-	SET @sql = 'if not exists(select * from ccSettings2 where setting_id=256) begin
-	INSERT INTO ccSettings2 (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
-	VALUES (256, ''C:\Multimedia\Conversations\Chatbot'', ''Ruta donde se guardarán las conversaciones de Chatbot'', 1, ''GRL'', ''Se guardan los archivos .json separados por carpetas'', ''Path for saving Chatbot conversations'', 1, ''.{0,99}'');
-	end'
-	EXEC(@sql)
-
-
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
-	SET @sql = 'if not exists(select * from sys.tables where name=''PinnedChatBots'') begin
-	CREATE TABLE [dbo].[PinnedChatBots](
-	[chatBotId] int not null,
-	[AdminId] int not null
-	)
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNode'') begin
-	CREATE TABLE [dbo].[ccChatBotNode](
-		[conversationId] [int] NOT NULL primary key,
-		[node] [xml] NULL,
-		[dateIn] [datetime] NULL,
-		[dateOut] [datetime] NULL,
-		[status] [smallint] NULL
-	)
-
-	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT (NULL) FOR [dateOut]
-	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT ((0)) FOR [status]
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNodeHistory'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNodeHistory'') begin
-	CREATE TABLE [dbo].[ccChatBotNodeHistory](
-		[conversationId] [int] NOT NULL,
-		[node] [xml] NULL,
-		[dateIn] [datetime] NULL,
-		[dateOut] [datetime] NULL,
-		[status] [smallint] NULL
-	)
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot Insert Finder ChatBot'
-	SET @sql = 'SET IDENTITY_INSERT ccFinderServices ON
-	if not exists(select * from ccFinderServices where name=''ChatBot'') begin
-		insert into ccFinderServices (id,[name],ref,tableName,tableNameHistory,columnId,isActive)
-		values(7,''ChatBot'',''R07'',''ccChatBotNode'',''ccChatBotNodeHistory'',''conversationId'',1)
-	end
-
-	SET IDENTITY_INSERT ccFinderServices OFF'
-	EXEC(@sql)
-
-
-	SET @process = 'K060008- Create Table ccChatBotConversationsResult'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotConversationsResult'') begin
-CREATE TABLE [dbo].[ccChatBotConversationsResult](
-	[chatBotId] [int] NOT NULL,
-	[FinishedByClient] [int] NOT NULL,
-	[FinishedBySystemFail] [int] NOT NULL,
-	[TransferWhatsAppCampaign] [int] NOT NULL,
-	[TransferCallBack] [int] NOT NULL,
-	[ActiveConversations] [int] NOT NULL
-) 
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060008- Create Table ccChatBotConversationsAbandoned'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotConversationsAbandoned'') begin
-CREATE TABLE [dbo].[ccChatBotConversationsAbandoned](
-	[chatBotId] [int] NOT NULL ,
-	[ConversationId] [int] NOT NULL,
-	[Date] [datetime] NOT NULL,	
-	primary key ([chatBotId],[ConversationId])
-) 
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060003 insert ccGalateaModules ModuleId=9 and ccGalateaOperations 78 and 79'
-	SET @sql = 'if not exists(select * from ccGalateaModules where ModuleId=9)
-begin
-	insert into ccGalateaModules values(9,''Asociación de chatbot'',''Chatbot association'',''Associação de chatbot'')
-end
-if not exists(select * from ccGalateaOperations where OperationId=78)---Revisar por que existe crear uno nuevo
-begin
-	insert into ccGalateaOperations values(78,''Asociar chatbot'',''Associate chatbot'',''Associar chatbot'')
-end
-if not exists(select * from ccGalateaOperations where OperationId=79)---Revisar por que existe crear uno nuevo
-begin
-	insert into ccGalateaOperations values(79,''Desasociar chatbot'',''Disassociate chatbot'',''Desassociar chatbot'')
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060003 DROP PROCEDURE ccsp_GalateaChatBotConversationsResult'
-	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaChatBotConversationsResult'')
-begin
-    DROP PROCEDURE ccsp_GalateaChatBotConversationsResult;
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060003 DROP PROCEDURE ccsp_GalateaChatBotAdmin'
-	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaChatBotAdmin'')
-begin
-    DROP PROCEDURE ccsp_GalateaChatBotAdmin;
-end'
-	EXEC(@sql)
-
-	SET @process = 'K060003-Create SP ccsp_GalateaChatBotAdmin'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChatBotAdmin]
-@action int,@userId int=0,@chatBotId int=0,@camId int=0,@camType int=0,
-@chatBotConversationId bigint=0, @WAConversationId int=0,
-@IsPinned bit = 0, @AdminId int = 0
-AS
-set nocount on
-
-declare @camDescription varchar(255),@chatBotName varchar(255)
-if @action in(4,5) begin
-	select @chatBotName=ProjectName from AzureKnowledge where Id=@chatBotId
-	if @camType=0 begin
-		select @camDescription=descripcion from ccInbound where Inbound_id=@camId
-	end
-	else begin
-		select @camDescription=cam_descripcion from ccCamps where cam_id=@camId
-	end
-end
-
-
-if @action=1 begin --Relation los que estan dados de alto con algun numero 
-	select A.id,A.ProjectName,B.ContactName from AzureKnowledge A 
-	inner join ChatBotRelation B on A.id=B.AzureKnowledgeId
-end
-else if @action=2 begin --Lista de campañas de entrada whats y Campaña de voz Normal
-	;with WgRelationUser as(
-	select Wgu.IDWG,WgC.IdCampEsp,WgC.Tipo from ccRIAWorkGroupUsers Wgu
-	inner join ccRIACampEspWG WgC on WgC.IDWG =Wgu.IDWG
-	where User_id=@userId
-	)
-	select CAST( A.IdCampEsp as int) as CamId,descripcion as [Description],CAST( A.Tipo as int) as CampTypeInOut 
-	from WgRelationUser A 
-	inner join ccInbound B on A.IdCampEsp=B.Inbound_id and A.Tipo=0 and B.chat=5
-	union
-	select CAST(A.IdCampEsp as int) as CamId,cam_descripcion as [Description],CAST( A.Tipo as int) as CampTypeInOut
-	from WgRelationUser A 
-	inner join ccCamps B on A.IdCampEsp=B.cam_id and A.Tipo=1 and B.CampType=0
-end
-else if @action=3 begin --Relacion de Chatbot con alguna campaña entrada/salida
-	;with WgRelationUser as(
-	select Wgu.IDWG,WgC.IdCampEsp,WgC.Tipo from ccRIAWorkGroupUsers Wgu
-	inner join ccRIACampEspWG WgC on WgC.IDWG =Wgu.IDWG
-	where User_id=@userId
-	)
-	select cast(A.chatBotId as int) as chatBotId,cast(A.campId as int) as CamId,CAST(A.campType as int) as CampTypeInOut 
-	from ChatBotCampaign A
-	inner join WgRelationUser B on A.campId=B.IdCampEsp and A.campType=B.Tipo
-	where (@chatBotId=0 or chatBotId=@chatBotId)
-end
-else if @action=4 begin --Add Campaing
-	if not exists(select * from ChatBotCampaign where chatBotId=@chatBotId and campId=@camId and campType=@camType) begin
-		insert into ChatBotCampaign values(@chatBotId,@camId,@camType)
-		
-		exec ccsp_GalateaActivityLog @UserId=34,@Operations=78,@Identifiers='''',@Values=@chatBotName,@Module=9,
-		@Target=@camDescription
-	end
-end
-else if @action=5 begin --delete Campaing
-	delete from ChatBotCampaign where chatBotId=@chatBotId and campId=@camId and campType=@camType
-	exec ccsp_GalateaActivityLog @UserId=34,@Operations=79,@Identifiers='''',@Values=@chatBotName,@Module=9,
-	@Target=@camDescription
-end
-ELSE IF @action = 6 BEGIN --Add relation of Chatbot-WA conversations
-	IF NOT EXISTS(SELECT * FROM ChatBotWhatsAppConversation WHERE ChatBotConversationId = @chatBotConversationId
-	AND WhatsAppConversationId = @WAConversationId AND CampType = @camType) BEGIN
-		INSERT INTO ChatBotWhatsAppConversation (ChatBotConversationId, WhatsAppConversationId, CampType) VALUES (@chatBotConversationId, @WAConversationId, @camType)
-	END
-END
-ELSE IF @action = 7 BEGIN --Get chatbotConversationId value if it exists
-	SELECT B.ChatBotConversationId, A.phoneACD AS ContactName, A.clientID AS ClientNumber, cbc.ChatBotName FROM ccWhatsAppConversations A
-	JOIN ChatBotWhatsAppConversation B ON B.WhatsAppConversationId = A.conversationId
-	JOIN dbo.ChatBotConversation AS cbc ON b.ChatBotConversationId = cbc.ChatBotConversationId
-	WHERE B.WhatsAppConversationId = @WAConversationId AND CampType = @camType;
-END
-ELSE IF @action = 8 BEGIN --GET AzureKnoledge bots
-	select A.id as ChatBotId, A.ProjectName, CASE WHEN ISNULL(P.chatBotId, 0) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END as IsPinned 
-	from AzureKnowledge A
-	left join PinnedChatBots P on A.id = P.chatBotId and  P.AdminId = @AdminId
-END
-ELSE IF @action = 9 BEGIN
-	IF(@IsPinned = 0)
-	BEGIN
-		DELETE FROM PinnedChatBots where chatBotId = @chatBotId and AdminId = @AdminId
-	END
-	ELSE
-	BEGIN
-		IF NOT EXISTS (select * from PinnedChatBots where chatBotId = @chatBotId and AdminId = @AdminId)
-		BEGIN
-			INSERT INTO PinnedChatBots values(@chatBotId, @AdminId)
-		END
-	END
-
-	select A.id as ChatBotId, A.ProjectName, CASE WHEN ISNULL(P.chatBotId, 0) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END as IsPinned 
-	from AzureKnowledge A
-	left join PinnedChatBots P on A.id = P.chatBotId and P.AdminId = @AdminId
-	WHERE a.id = @chatBotId
-END
-set nocount off'
-	EXEC(@sql)
-
-	-------------------------------------------- BEGIN Enrique Ruiz ---------------------------------------------------------------------------------
-	SET @process = 'K060005 Create table ChatBotWhatsAppConversation which contains the relation of ids from ChatBot and WhatsApp conversations'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotWhatsAppConversation'') begin
-	CREATE TABLE [dbo].ChatBotWhatsAppConversation(
-					ChatBotConversationId [bigint] NULL,
-					WhatsAppConversationId [int] NULL,
-					CampType [tinyint] NULL
-				) ON [PRIMARY]
-	END'
-	EXEC(@sql)
-
-	SET @process = 'Create table AzureKnowledge adding Language data'
-	SET @sql = 'if not exists(select * from sys.tables where name=''AzureKnowledge'') begin
-	CREATE TABLE AzureKnowledge (
-					id int NOT NULL IDENTITY(1,1) PRIMARY KEY,
-					ProjectName varchar(255) NOT NULL,
-					EndPoint varchar(255) NOT NULL,
-					SubscriptionKey varchar(255) NOT NULL,
-					DeploymentName varchar(255) NOT NULL,
-					Language varchar(50) NOT NULL
-				)
-				END'
-	EXEC(@sql)
-
-	SET @process = 'K060006 Create table ChatBotConversationEndStatus which contains the different manners a conversation can end'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotConversationEndStatus'') begin
-	CREATE TABLE [dbo].[ChatBotConversationEndStatus](
-					[id] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-					[name] [varchar](30) NOT NULL,
-					[description] [varchar](100) NOT NULL
-				PRIMARY KEY CLUSTERED 
-				(
-					[id] ASC
-				)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-				) ON [PRIMARY]
-				END'
-	EXEC(@sql)
-
-	SET @process = 'K060006 Insert the EndStatus in the table'
-	SET @sql = 'TRUNCATE TABLE ChatBotConversationEndStatus;
-				INSERT INTO ChatBotConversationEndStatus ([name],[description])
-				VALUES 
-				(''Finish'',''Finished by contact''), 
-				(''Fail'',''Finished on failure''), 
-				(''Transfer'',''Transferred to WhatsApp''),
-				(''Callback'',''Transferred to call''), 
-				(''Abandon'',''Abandoned'');'
-	EXEC(@sql)
-
-	SET @process = 'K060014 se agregan etiquetas correspindientes para los estatus'
-	SET @sql = 'IF NOT EXISTS (SELECT * FROM   INFORMATION_SCHEMA.COLUMNS 
-	WHERE  TABLE_NAME = ''ChatBotConversationEndStatus''
-	AND COLUMN_NAME = ''tag'')
-	BEGIN
-		alter table ChatBotConversationEndStatus 
-		add [tag] [varchar](50),
-			[es] [varchar](100),
-			[en] [varchar](100),
-			[pt] [varchar](100)
-	END
-
-
-
-	UPDATE ChatBotConversationEndStatus SET [tag] = ''finished-by-contact'', es =''Finalizada por contacto'', en = ''Finished by contact'',pt =''Encerrada pelo contato'' where id = 1
-	UPDATE ChatBotConversationEndStatus SET [tag] = ''finished-on-failure'', es = ''Finalizada por falla'', en = ''Finished on failure'', pt = ''Encerrada após falha'' where id = 2
-	UPDATE ChatBotConversationEndStatus SET [tag] = ''transferred-to-whatsapp'', es = ''Transferida a WhatsApp'', en = ''Transferred to WhatsApp'', pt = ''Transferida para WhatsApp'' where id = 3
-	UPDATE ChatBotConversationEndStatus SET [tag] = ''transferred-to-call'', es = ''Transferida a llamada'', en = ''Transferred to call'', pt = ''Transferida para chamada'' where id = 4
-	UPDATE ChatBotConversationEndStatus SET [tag] = ''abandoned'', es = ''Abandonada'', en = ''Abandoned'', pt = ''Abandonada'' where id = 5
-	'
-	EXEC(@sql)
-
-	---Todo es necesario eliminar antes de crear ccsp_GalateaChatBotConversationsResult
-
-	SET @process = 'K060008 -Create or Alter SP ccsp_GalateaChatBotConversationsResult to insert abandoned conversations correctly'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChatBotConversationsResult]
-				@action int,@chatBotId int,@status int=0,
-				@conversationId bigint=0,@campaignId int=0,
-				@activeConversations int = 0
-				AS
-				set nocount on
-
-				IF @action=0 BEGIN --Insertar estado de finalización en Tabla de Conversaciones
-					UPDATE ChatBotConversation SET EndStatus=@status, CampIdTransfered=@campaignId, ConversationTime =  DATEDIFF(ss, ISNULL(FirstMessageTime, GETDATE()), GETDATE()) WHERE ChatBotConversationId = @conversationId;
-
-					IF @status = 5
-					BEGIN
-						SET @action = 2
-					END
-					ELSE BEGIN
-						SET @action = 1
-					END;
-
-					EXEC ccsp_GalateaChatBotConversationsResult @action=@action, @chatBotId=@chatBotId,
-							@status=@status, @conversationId=@conversationId, @campaignId=@campaignId
-					END
-					--To do: Añadir consulta para finder
-				if @action=1 begin --Actualizar el status
-					declare @FinishedByClient int,@FinishedBySystemFail int,@TransferWhatsAppCampaign int,@TransferCallBack int
-					select @FinishedByClient= case when @status=1 then 1 else 0 end
-					,@FinishedBySystemFail= case when @status=2 then 1 else 0 end
-					,@TransferWhatsAppCampaign= case when @status=3 then 1 else 0 end
-					,@TransferCallBack= case when @status=4 then 1 else 0 end
-
-					if not exists(select  * from ccChatBotConversationsResult where chatBotId=@chatBotId) begin
-						insert into ccChatBotConversationsResult values(@chatBotId,@FinishedByClient,@FinishedBySystemFail,@TransferWhatsAppCampaign,@TransferCallBack, 1)
-					end
-					else begin
-						update ccChatBotConversationsResult set [FinishedByClient]=[FinishedByClient]+@FinishedByClient
-						,[FinishedBySystemFail]=[FinishedBySystemFail]+@FinishedBySystemFail
-						,[TransferWhatsAppCampaign]=[TransferWhatsAppCampaign]+@TransferWhatsAppCampaign
-						,[TransferCallBack]=[TransferCallBack]+@TransferCallBack
-						where chatBotId=@chatBotId
-					end
-				end
-				else if @action=2 begin	---Insert Conversation Abandoned
-					insert into ccChatBotConversationsAbandoned values(@chatBotId,@conversationId,GETDATE())
-				end
-				else if @action=3 begin --Truncate Table 
-					truncate table ccChatBotConversationsResult 
-					truncate table ccChatBotConversationsAbandoned
-				end
-				else if @action=4 begin --GetChatBotConversationsResult
-					DECLARE @AverageTime varchar(8)
-					DECLARE @timeInSeconds int
-
-					select  @timeInSeconds = SUM(ConversationTime)/COUNT(ConversationTime) from ChatBotConversation
-					WHERE EndStatus > 0 and FirstMessageTime >= CAST(CAST(GETDATE() AS date) AS datetime)
-					AND ConversationTime > 0 and ChatBotId = @ChatBotId
-
-					SELECT @AverageTime =
-						RIGHT(''00''+CONVERT(VARCHAR(10),@timeInSeconds/3600),2)  
-						+'':'' 
-						+ RIGHT(''00''+CONVERT(VARCHAR(2),(@timeInSeconds%3600)/60),2) 
-						+'':'' 
-						+ RIGHT(''00''+CONVERT(VARCHAR(2),@timeInSeconds%60),2) 
-					select  *, @AverageTime AS AverageTime from ccChatBotConversationsResult where chatBotId=@chatBotId
-				end
-				else if @action=5 begin --GetChartAbandoned
-					select CONVERT(varchar(5),dateadd(mi,-(DATEPART(MINUTE,Date) % 10),Date),108) [Hour]
-					,COUNT(*) Amount
-					from ccChatBotConversationsAbandoned where chatBotId=@chatBotId
-					group by CONVERT(varchar(5),dateadd(mi,-(DATEPART(MINUTE,Date) % 10),Date),108)
-				end
-				else if @action=6 begin --Update Active Conversations
-					UPDATE ccChatBotConversationsResult set activeConversations = @activeConversations where ChatBotId = @chatBotId 
-				end
-
-				set nocount off'
-	EXEC(@sql)
-
-	---Todo es necesario eliminar antes de crear ccsp_Get_ChatBot_Relations
-	SET @process = 'K060026 Create or Alter procedure ccsp_Get_ChatBot_Relations to return related inbound campaigns'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_Get_ChatBot_Relations]
-				@option int, @chatbotId int = null
-				as set nocount on
-
-				IF(@option = 1) BEGIN --All relations of Azure Knowledge and Phone Number
-					SELECT b.AzureKnowledgeId,A.ProjectName,B.ContactName FROM AzureKnowledge A 
-					INNER JOIN ChatBotRelation B ON A.id = B.AzureKnowledgeId
-				END
-
-				ELSE IF(@option = 2) BEGIN  --Inbound Campaigns that have a ChatBot associated
-					SELECT  CAST(ROW_NUMBER() OVER(ORDER BY A.inboundId ASC) AS INT) AS rowId, 
-					A.inboundId AS campId, A.name AS campName, A.connUser AS campNumber,
-					CAST(B.campType AS tinyint) AS campType, B.chatBotId, CAST(0 AS SMALLINT) AS validSchedule
-					from contactMeanIn A
-					JOIN ChatBotCampaign B ON A.inboundId = B.campId
-					WHERE B.chatBotId = @chatbotId AND B.campType = 0;
-				END 
-				ELSE IF(@option = 3) BEGIN 
-					--To do: Retornar lista de Campañas de Voz de Salida Habilitadas y en Horario, en este momento retorna lo mismo que opcion 2
-
-					CREATE TABLE #ActiveCampaigns (
-						rowId INT,
-						campId INT,
-						campName VARCHAR(30),
-						campNumber VARCHAR(60),
-						campType TINYINT,
-						chatBotId INT,
-						validSchedule SMALLINT);
-
-					INSERT INTO #ActiveCampaigns
-						SELECT  CAST(ROW_NUMBER() OVER(ORDER BY A.inboundId ASC) AS INT) AS rowId, 
-						A.inboundId AS campId, A.name AS campName, A.connUser AS campNumber,
-						CAST(0 AS tinyint) AS campType, B.chatBotId, CAST(0 AS SMALLINT) AS validSchedule
-						from contactMeanIn A
-						JOIN ChatBotCampaign B ON A.inboundId = B.campId
-						JOIN ccInbound C ON A.inboundId = C.Inbound_id
-						WHERE B.chatBotId = @chatbotId AND B.campType = 0 AND C.Status = 1;
-
-					CREATE TABLE #ActiveSchedule (active INT);
-					DECLARE @validSchedule INT;
-					DECLARE @campId INT;
-					DECLARE @totalRows INT;
-					DECLARE @row INT;
-					SET @totalRows = ISNULL((SELECT COUNT (*) FROM #ActiveCampaigns), 0);
-					SET @row = 1;
-
-					WHILE @row <= @totalRows
-					BEGIN
-						SET @campId = ISNULL((SELECT campId FROM #ActiveCampaigns WHERE rowId = @row), 0);
-						INSERT INTO #ActiveSchedule EXEC ccsp_RIAChatACDSchedule @Option=1,@Inbound_Id=@campId
-						SELECT @validSchedule = active FROM #ActiveSchedule;
-						IF @validSchedule = 1
-						BEGIN
-							UPDATE #ActiveCampaigns SET validSchedule = @validSchedule WHERE campId = @campId;
-						END;
-						SET @row = @row + 1;
-					END;
-
-					SELECT CAST(ROW_NUMBER() OVER(ORDER BY campId ASC) AS INT) AS rowId,
-					campId, campName, campNumber, campType, chatBotId FROM #ActiveCampaigns WHERE validSchedule = 1;
-
-					DROP TABLE #ActiveSchedule;
-					DROP TABLE #ActiveCampaigns;
-				END 
-				set nocount off'
-	EXEC(@sql)
-
-
 	--Es necesario realizar un merge a mano con el ultimo SP 
 	SET @process = 'K060005 Alter procedure ccsp_ConversationWASave to register the chatbotId and WhatsAppConversationId when creating a new WhatsApp conversation'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
@@ -1028,408 +462,6 @@ ELSE IF @action = 18 BEGIN
 	EXEC(@sql)
 
 
-	---Todo Falta realizar merge
-	SET @process = 'K060005 Alter procedure ccsp_MultimediaCommon to add chatBotConversationId when retrieving data from a WhatsAppIn conversation'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
-				    @Option AS SMALLINT,
-				    @inboundId AS SMALLINT = 0,
-				    @conversationId AS INT = 0,
-				    @ServiceType AS SMALLINT = 0,
-				    @status as SMALLINT =0,
-				    @messagesList as varchar(max) = '''',
-				    @agentId AS SMALLINT = 0,
-				    @CampType bit =0
-				    AS
-				    BEGIN
-				        SET NOCOUNT ON;
-
-				    IF @Option = 0 --  Get Campaigns Configuration List
-				    BEGIN
-				            SELECT CAST(campaign.cam_id AS INT) AS Id,
-				                    campaign.cam_descripcion AS [Name],
-				                    ISNULL(configuration.number, '''') AS Phone,
-				                    CAST(graphics.graphic_id AS INT) AS GraphicId
-				            FROM  ccCamps campaign 
-				            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-				            INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
-				                            
-				    END
-
-				    ELSE IF @Option = 1 --  Get Acds Configuration List
-				    BEGIN
-				                            
-				        SELECT --inbound.chat AS ServiceType,
-				        CAST(inbound.Inbound_id AS INT) AS Id,
-				        inbound.descripcion AS [Name],
-				        ISNULL(configuration.conexionInfo, '''') AS Phone,
-				        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-				        inbound.tNotas AS WrapUpTime,
-				        CAST(graphics.graphic_id AS INT) AS GraphicId
-				        FROM  ccInbound inbound
-				        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-				        INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
-				                            
-				    END
-
-				    ELSE IF(@Option = 2)
-					BEGIN
-
-				        DECLARE @OldAgentId INT = 0
-				        DECLARE @OldConversationId INT = 0
-				        if @campType = 0 --ACD
-						BEGIN
-				            SELECT  @OldAgentId = conv.agentId,
-				                    @OldConversationId = rel.conversationIdBefore
-				            FROM ccWhatsAppConversationsRelationship rel 
-				            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
-				            WHERE rel.conversationIdAfter = @conversationId
-
-							CREATE TABLE #ChatBotRelation (ChatBotConversationId INT, ContactName VARCHAR(50), ClientNumber VARCHAR(25), ChatBotName VARCHAR(255));
-							INSERT INTO #ChatBotRelation EXEC ccsp_GalateaChatBotAdmin @action = 7,
-							@WAConversationId = @conversationId, @camType = @CampType;
-
-							SELECT
-							cast(i.chat as int) AS ServiceType,
-							cast(c.conversationId as int) as ConversationID,
-							CAST(ISNULL(cb.ChatBotConversationId, 0)  AS INT) AS ChatBotConversationID,
-							c.clientId as ClientId,
-							cm.conexionInfo as [To],
-							cast(i.Inbound_id as int) as ACDId,
-							i.descripcion as ACDName,
-							cast(g.graphic_id as int) as ACDGraphicId,
-							cast(cm.closeConversationTime as int) as [TimeOut],
-							cast(cm.answerTimeOut as int) as [TimeOutWarning],
-							i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-							i.tNotas as [WrapUpTime],
-							i.ShowCalifWnd,
-							cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-							ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-							isnull(permission.AllowUnassign,0) as AllowUnassign,
-							isnull(permission.AllowSpam,0) as AllowSpam,
-							ISNULL(@OldAgentId, 0) AS OldAgentId,
-							ISNULL(@OldConversationId, 0) AS OldConversationId,
-							c.agentId AS AgentId,
-							ISNULL(c.IsAgentLoggingOut,0) AS IsAgentLoggingOut
-							from ccWhatsAppConversations c
-							left join ccInbound i on c.inboundId = i.Inbound_id 
-							left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
-							LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-							LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-							LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
-							LEFT JOIN #ChatBotRelation cb ON cb.ClientNumber = c.clientId
-
-							WHERE c.conversationId = @conversationId;
-							DROP TABLE #ChatBotRelation;
-	
-				        END
-				        ELSE BEGIN --Camp
-				            SELECT  @OldAgentId = conv.agentId,
-				                    @OldConversationId = rel.conversationIdBefore
-				            FROM ccWhatsAppConversationsRelationshipOut rel 
-				            RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
-				            WHERE rel.conversationIdAfter = @conversationId
-
-				            SELECT
-				            cast(i.CampType as int) AS ServiceType,
-				            cast(c.conversationId as int) as ConversationID,
-				            c.clientId as ClientId,
-				            c.phoneCamp as [To],
-				            cast(i.cam_id as int) as ACDId,
-				            i.cam_descripcion as ACDName,
-				            cast(g.graphic_id as int) as ACDGraphicId,
-				            cast(cm.closeConversationTime as int) as [TimeOut],
-				            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-				            i.exitAssisted as [ExitWrapUpDisposition],              
-				            cast(i.cam_tnotas as int) [WrapUpTime],
-				            i.cam_ShowCalifWnd as ShowCalifWnd, 
-				            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-				            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-				            isnull(permission.AllowUnassign,0) as AllowUnassign,
-				            isnull(permission.AllowSpam,0) as AllowSpam,
-				            ISNULL(@OldAgentId, 0) AS OldAgentId,
-				            ISNULL(@OldConversationId, 0) AS OldConversationId,
-				            c.agentId AS AgentId
-				            FROM  ccWhatsAppConversationsOut c
-				            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
-				            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
-				            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
-				            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
-				            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
-
-				            where c.conversationId = @conversationId
-				        END
-				    END
-				    ELSE IF(@Option = 3)
-				    BEGIN
-				        if @campType =0 begin --ACD
-				            SELECT
-				            CAST(inbound.Inbound_id AS INT) AS Id,
-				            inbound.descripcion AS Name,
-				            ISNULL(configuration.conexionInfo, '''') AS Phone,
-				            CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-				            inbound.tNotas AS WrapUpTime,
-				                CAST(graphics.graphic_id AS INT) AS GraphicId
-				            FROM  ccInbound inbound
-				            INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-				            INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-				        end
-				        else begin
-				        SELECT
-				            CAST(campaign.cam_id AS INT) AS Id,
-				            campaign.cam_descripcion AS Name,
-				            ISNULL(configuration.conexionInfo, '''') AS Phone,
-				            CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
-				            cast(campaign.cam_tnotas as int) AS WrapUpTime,
-				            CAST(graphics.graphic_id AS INT) AS GraphicId
-				            FROM  ccCamps campaign
-				            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-				            INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
-				        end
-				    END
-				    ELSE IF(@Option = 4)
-				    Begin
-				            declare @pathFile as varchar(max)
-				            declare @filetype as varchar(5)
-				            DECLARE @mensajes TABLE(idMessage VARCHAR(100));
-				            DECLARE @tmpMessageConversations TABLE(
-				                    [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-				                ,[conversationId] INT NOT NULL
-				                ,[timeStampMessage] DATETIME NOT NULL
-				                ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-				                ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-				                ,[messageIdUi] INT NULL
-				                ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				                ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				                ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				                ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				                ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				                ,[timeStampMessageUTC] DATETIME NULL
-				                ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-				            );
-
-				        insert into @mensajes
-				        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
-				                        
-				            if(@CampType = 0)
-				            BEGIN
-				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-				                messageStatus) 
-				                select messageId, conversationId, timeStampMessageUTC, originType
-				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-				                messageStatus
-				                FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
-				            END
-				            if(@CampType = 1)
-				            BEGIN
-				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-				                messageStatus) 
-				                select messageId, conversationId, timeStampMessageUTC, originType
-				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-				                messageStatus
-				                FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
-				            END
-				            select @pathFile = valor from ccSettings where setting_id=230
-				        select
-				            messageId as MessageId,
-				            messageStatus as Status,
-				            originType as Origin,
-				            case when originType =''Client'' then 3
-				                    when originType =''Agent'' then 2
-				                    when originType =''Admin'' then 1
-				            else 0 end as OriginType,
-				            timeStampMessage as [Timestamp],
-				            case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
-				            typeMessage as Type,
-				            case 
-				                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
-				                    else
-				                        case
-				                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
-				                                    else '''' end
-				                    end as Caption,
-				            case 
-				                    when originType = ''Client''
-				                    then
-				                        case
-				                                when typeMessage = ''text'' or typeMessage = ''location''
-				                                or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
-				                            then ''''
-				                                else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
-				                                case
-				                                        when typeMessage = ''video'' then ''.mp4''
-				                                        when typeMessage = ''image'' then ''.jpg''
-				                                        when typeMessage = ''audio'' then ''.mp3''
-				                                        when typeMessage = ''file''
-				                                        then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
-				                                    else '''' end
-				                        end
-				                    else
-				                        case
-				                            when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
-				                            then ''''
-				                            else content
-				                    end
-				                end as [Url],
-				                case when typeMessage = ''file'' 
-				                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
-				                else '''' end as [FileSize],
-				                case when typeMessage = ''file'' 
-				                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
-				                else '''' end as [FileName],
-				            case when typeMessage = ''location''
-				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-				            case when typeMessage = ''location''
-				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-				            case when typeMessage = ''location''
-				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-				            case when typeMessage = ''location''
-				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-				            case when typeMessage = ''location''
-				            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
-				                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
-				                from @tmpMessageConversations
-				            order by Timestamp asc
-
-				    End
-				                                            
-				    ELSE IF(@Option = 5)
-				    BEGIN
-				        if @CampType =0 begin
-				            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-				                FROM contactMeanIn
-				            WHERE inboundId = @inboundId
-				        end 
-				        else begin
-				            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-				                FROM contactMeanOut
-				            WHERE camp_id = @inboundId
-				        end 
-				    END
-				    ELSE IF(@Option = 6)
-				    BEGIN
-				        SELECT [Login] AS ''OriginName''
-				            FROM [CCenterRIA].[dbo].[ccUsers]
-				        WHERE [User_id] = @agentId
-				    END
-					ELSE IF(@Option = 7)--  Get ChatBotCampaigns Configuration List
-				    BEGIN    
-				        SELECT --inbound.chat AS ServiceType,
-				        CAST(inbound.Inbound_id AS INT) AS Id,
-				        inbound.descripcion AS [Name],
-				        cbr.ContactName AS Phone,
-				        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-				        inbound.tNotas AS WrapUpTime,
-				        CAST(graphics.graphic_id AS INT) AS GraphicId
-						--,cbr.ContactName AS ChatBotNumber
-				        FROM  ccInbound inbound
-				        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-				        INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
-						INNER JOIN ChatBotCampaign cbc ON inbound.Inbound_id = cbc.campId
-						INNER JOIN ChatBotRelation cbr ON cbc.chatBotId = cbr.AzureKnowledgeId
-						WHERE cbc.campType = 0 AND inbound.Status != 0
-						ORDER BY Id ASC
-				    END
-				    END'
-	EXEC(@sql)
-
-
-	--Todo Falta eliminar antes de crear
-	SET @process = 'K0026 Add A SELECT for default Messages'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_Get_Azure_Knowledge]
-				@option int
-				as set nocount on
-
-				IF(@option = 1) BEGIN 
-					SELECT * FROM AzureKnowledge;
-				END
-				ELSE IF(@option = 2) BEGIN 
-					SELECT * FROM ChatBotDefaultMessages;
-				END 
-
-				set nocount off'
-	EXEC(@sql)
-
-	SET @process = 'K060026 Create Table for default Chatbot messages'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotDefaultMessages'') begin
-	CREATE TABLE ChatBotDefaultMessages(
-		[MessageTagName] [varchar](50) PRIMARY KEY NOT NULL,
-		[MeTagES] [varchar](250) NOT NULL,
-		[MeTagEN] [varchar](250) NOT NULL,
-		[MeTagPT] [varchar](250) NOT NULL,
-	)
-	end'
-	EXEC(@sql)
-
-	SET @process = 'K060026 Insert Default Messages into Chatbot Table'
-	SET @sql = 'TRUNCATE TABLE ChatBotDefaultMessages;
-				INSERT INTO ChatBotDefaultMessages (MessageTagName, MeTagES, MeTagEN, MeTagPT)
-				VALUES
-					(''no-answer-found'', ''Lo siento, no entendí la respuesta.'', ''Sorry, I didn’t get that.'', ''Desculpe, não entendi.''),
-					(''continue-prompt'', ''¿Intentamos otra vez?'', ''Do you want to continue?'', ''Tentar de novo?''),
-					(''option-continue'', ''Intentar'', ''Continue'', ''Tentar''),
-					(''option-main-menu'', ''Volver a menú principal'', ''Return to main menu'', ''Retornar ao menu principal''),
-
-					(''option-transfer-to-agent'', ''Transferir a un agente en WhatsApp'', ''Chat with an agent on WhatsApp'', ''Transferir para um agente no WhatsApp''),
-					(''mssg-campaign-out-of-schedule'', ''Error al transferir. La campaña de WhatsApp {0} está fuera de horario.'',
-						''Unable to connect. The WhatsApp campaign {0} is out of schedule.'', ''Erro ao transferir. A campanha de WhatsApp {0} está fora de horário.''),
-					(''mssg-campaign-out-of-service'', ''Error al transferir. La campaña de WhatsApp {0} está fuera de servicio.'',
-						''Unable to connect. The WhatsApp campaign {0} is out of service.'', ''Erro ao transferir. A campanha de WhatsApp {0} está fora de serviço.''),
-					(''mssg-no-ready-agents-found'', ''Error al transferir. No hay agentes disponibles en este momento.'',
-						''Unable to connect. There are no ready agents at this time.'', ''Erro ao transferir. Não há agentes disponíveis neste momento.''),
-					(''mssg-unexpected-error'', ''Ocurrió un error inesperado.'', ''An unexpected error occurred.'', ''Ocorreu um erro inesperado.''),
-
-					(''option-speak-with-agent'', ''Hablar con un agente por teléfono'', ''Speak with an agent over the phone'', ''Falar com um agente pelo telefone''),
-					(''prompt-phone-number'', ''Proporcionar número telefónico'', ''Type your phone number'', ''Digitar o número de telefone''),
-					(''prompt-validation'', ''¿El número {0} es correcto?'', ''Is the number {0} correct?'', ''O número {0} está correto?''),
-					(''option-correct'', ''Sí'', ''Yes'', ''Sim''),
-					(''option-not-correct'', ''No'', ''No'', ''Não''),
-					(''mssg-success'', ''La llamada fue programada correctamente. Un agente se pondrá en contacto en breve.'',
-						''Call programmed successfully. An agent will contact you shortly.'', ''A chamada foi programada com êxito. Um agente entrará em contato em breve.''),
-					(''mssg-error-out-of-schedule'', ''Error al programar llamada. La campaña de marcación está fuera de horario.'',
-						''Unable to program call. The dialing campaign is out of schedule.'', ''Erro ao programar a chamada. A campanha de discagem está fora de horário.''),
-					(''mssg-error-out-of-service'', ''Error al programar llamada. La campaña de marcación está fuera de servicio.'',
-						''Unable to program call. The dialing campaign is out of service.'', ''Erro ao programar a chamada. A campanha de discagem está fora de serviço.''),
-					(''mssg-error-no-agents-found'', ''Error al programar llamada. No hay agentes disponibles en este momento.'',
-						''Unable to program call. There are no ready agents at this time.'', ''Erro ao programar a chamada. Não há agentes disponíveis neste momento.''),
-					(''mssg-error-generic'', ''Ocurrió un error inesperado.'', ''An unexpected error occurred.'', ''Ocorreu um erro inesperado.'')
-				;'
-	EXEC(@sql)
-	
-	SET @process = 'K060026 Create table for the relation of campaigns with the registered chatbots'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ChatBotCampaign'') begin
-	CREATE TABLE ChatBotCampaign (
-				chatBotId int NOT NULL,
-				campId int NOT NULL,
-				campType tinyint NOT NULL,
-			);
-	END'
-	EXEC(@sql)
-
-	SET @process = 'K060017 Add the menus of new reports and report menu'
-	SET @sql = 'IF NOT EXISTS(SELECT * FROM ccMenus WHERE menu_id = 15000 OR menu_id = 15010 OR menu_id = 15020 OR menu_id = 15030) BEGIN
-					INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF) VALUES
-					(15000, ''Chatbot|Chatbot'', 15000, ''A'', 12, 3, ''''),
-					(15010, ''Detalle de conversaciones|Conversations Detail'', 15000, ''B'', 12, 3, ''''),
-					(15020, ''Conversaciones por chatbot|Conversations by Chatbot'', 15000, ''B'', 12, 3, ''''),
-					(15030, ''Conversaciones transferidas a WhatsApp|Transferred Conversations to WhatsApp'', 15000, ''B'', 12, 3, '''');
-				END'
-	EXEC(@sql)
-	
-	SET @process = 'K060017 Add the release encrypted value to the menus'
-	SET @sql = 'IF EXISTS(SELECT * FROM ccMenus WHERE menu_id = 15000 OR menu_id = 15010 OR menu_id = 15020 OR menu_id = 15030) BEGIN
-					UPDATE ccMenus SET release = ''33b95227bffa5d65c9153de6446d153bd6852b9bf809975e12d665594f21f41b'' WHERE ccMenus.menu_id = 15000
-					UPDATE ccMenus SET release = ''accb20a46285ea9856ace61e5e3ffd452de1f55f20c7a005ce8e05a503060fb18beee994719b6abd36ad36efaffd0370'' WHERE ccMenus.menu_id = 15010
-					UPDATE ccMenus SET release = ''2605c8244920fb599fb936a4bf94521abfec097ca281c5864874691fe77a9dcb497d9428f876069fee726e663efa2ea23fd5c333b0be8fbc714d53e1fcb087c8'' WHERE ccMenus.menu_id = 15020
-					UPDATE ccMenus SET release = ''2605c8244920fb599fb936a4bf94521ac1d8958f95ce9d3d1dcfbee594bd612c14c53787eec7f5671ec8aeeced55be43d4aafdd18714a1f51cd96626558813a4e4e0613c02e23f40e9f6b8341c44cf20'' WHERE ccMenus.menu_id = 15030
-				END'
-	EXEC(@sql)
-
-	---------------------------------------- END Enrique Ruiz ---------------------------------------------------------------------------------
-
-	---------------------------------------- BEGIN MARCO GARCIA ------------------------------------
-	---Falta realizar merge
 	SET @process = 'K060011-WhatsApp entrada->Histórico al asignar conversación de ChatBot a número de WhatsApp entrada, se agrega la consulta
 	para obtener las conversaciones del chatbot'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AgentHistoricalChat] 
@@ -1935,9 +967,6 @@ ELSE IF @action = 18 BEGIN
 		                END
 		            END'
 	EXEC(@sql)
-	--------------------------------------------- END MARCO GARCIA ----------------------------------------------
-
-	-----------------------------------------------BEGIN MARCO CHAGOLLA-------------------------------------------
 
 	--Alter Falta Realizar merge
 	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agreca type 7 para guardar los nodos del chatbot'
@@ -2205,75 +1234,8 @@ ELSE IF @action = 18 BEGIN
 	END;'
 	EXEC(@sql)
 
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot, se agrega condicion para crear nodo multimedia'
-	SET @sql = 'CREATE OR ALTER   PROCEDURE [dbo].[ccsp_Save_ChatBot_Conversation]
-	@option int,
-	@clientNumber VARCHAR(15),
-	@clientName VARCHAR(50),
-	@chatBotId INT,
-	@chatBotName VARCHAR(255),
-	@chatBotNumber VARCHAR(30),
-	@chatBotDomain VARCHAR(50),
-	@campIdTransfered INT,
-	@conversationStatus VARCHAR(30),
-	@conversationTime INT,
-	@endStatus VARCHAR(50),
-	@queueTime INT,
-	@firstMessageTime DATETIME,
-	@ChatBotConversationId numeric(18,0) = 0
-
-	as set nocount on
-
-	IF(@option = 1) BEGIN
-
-		INSERT INTO ChatBotConversation(
-		ClientNumber,
-		ClientName,
-		ChatBotId,
-		ChatBotName,
-		ChatBotNumber,
-		ChatBotDomain,
-		CampIdTransfered,
-		ConversationStatus,
-		ConversationTime,
-		EndStatus,
-		QueueTime,
-		FirstMessageTime
-		) 
-		VALUES (
-		@clientNumber,
-		@clientName,
-		@chatBotId,
-		@chatBotName,
-		@chatBotNumber,
-		@chatBotDomain,
-		@campIdTransfered,
-		@conversationStatus,
-		@conversationTime,
-		@endStatus,
-		@queueTime,
-		@firstMessageTime
-		);
-
-		SELECT @ChatBotConversationId = SCOPE_IDENTITY();
-		IF @ChatBotConversationId > 0
-		BEGIN
-			EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
-		END
-		SELECT @ChatBotConversationId
-
-	END
-	IF @option = 2
-	BEGIN
-		EXEC ccsp_CreateNodeMultimedia @conversationId = @ChatBotConversationId, @type = 7
-		SELECT @ChatBotConversationId
-	END
-
-	set nocount off'
-	EXEC(@sql)
-
-		SET @process = 'K060015-Buscador Conversaciones ChatBot transferidas a campaña WhatsApp de entrada, se agrega action 6 y 7 '
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspGalatea_Finder] 
+	SET @process = 'K060015-Buscador Conversaciones ChatBot transferidas a campaña WhatsApp de entrada, se agrega action 6 y 7 '
+	SET @sql = 'CREATE ROCEDURE [dbo].[ccspGalatea_Finder] 
 				@action INT, 
 				@userId INT = 0, 
 				@conversationId BIGINT = 0,
@@ -2397,57 +1359,9 @@ ELSE IF @action = 18 BEGIN
 				END;'
 	EXEC(@sql)
 
-	SET @process = 'K060033- Se crea tabla ccUnsentWAMessagesToAzureKnowledge para guardar mensajes pendientes para envíar a azure knowledge'
-	SET @sql = 'if not exists(select * from sys.tables where name=''ccUnsentWAMessagesToAzureKnowledge'') begin
-		CREATE TABLE ccUnsentWAMessagesToAzureKnowledge(
-			message_uuid VARCHAR(50) PRIMARY KEY,
-			MessageJson VARCHAR(MAX) NOT NULL,
-			[timestamp] datetime NOT NULL
-		)
-	END'
-	EXEC(@sql)
-
-	SET @process = 'K060033- Se crea SP ccsp_UnsentMessagesToAzureKnowledge para gestionar mensajes pendientes para envíar a azure knowledge'
-	SET @sql = 'CREATE OR ALTER PROCEDURE ccsp_UnsentMessagesToAzureKnowledge
-	@action INT, 
-	@MessageJson VARCHAR(max) = NULL, 
-	@timestamp datetime = NULL,
-	@message_uuid varchar(50) = null
-	AS
-	BEGIN
-		IF @action = 1
-		BEGIN
-			DECLARE @ConversationId bigint = 0;
-			IF EXISTS (SELECT ConversationChatBotId FROM ChatBotConversationMessage  where ISNULL(PendingToAzure, 0) = 0 and message_uuid = @message_uuid)
-			BEGIN
-				UPDATE ChatBotConversationMessage SET PendingToAzure = 1 WHERE message_uuid = @message_uuid;
-				INSERT INTO ccUnsentWAMessagesToAzureKnowledge(message_uuid, MessageJson, [timestamp]) values(@message_uuid, @MessageJson, @timestamp)
-				SELECT @ConversationId = ConversationChatBotId FROM ChatBotConversationMessage  where PendingToAzure = 1 and message_uuid = @message_uuid;
-			END
-			Select @ConversationId as ConversationId
-			RETURN 0;
-		END
-		IF @action = 2
-		BEGIN
-			--SELECT MessageId, MessageJson from ccUnsentWAMessagesToAzureKnowledge ORDER BY [timestamp] asc
-			SELECT a.Message_uuid, a.ConversationChatBotId as ConversationId, b.MessageJson from 
-			ChatBotConversationMessage a
-			INNER JOIN ccUnsentWAMessagesToAzureKnowledge b on a.message_uuid = b.message_uuid
-			WHERE PendingToAzure = 1
-			ORDER BY [timestamp] asc
-			RETURN 0;
-		END
-		IF @action = 3
-		BEGIN
-			DELETE  FROM ccUnsentWAMessagesToAzureKnowledge WHERE message_uuid = @message_uuid
-			UPDATE ChatBotConversationMessage set PendingToAzure = 2 WHERE PendingToAzure = 1 and  message_uuid = @message_uuid
-			RETURN 0;
-		END
-	END'
-	EXEC(@sql)
 
 	SET @process = 'K060024-Id global Chatbot-WhatsApp se actualiza SP para crear y actualizar los IDs globales del chatbot'
-	SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccsp_WhatsAppGlobalIds]  
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsAppGlobalIds]  
 					 @ConversationType TINYINT = -1,
 					 @ConversationId INT = 0,
 					 @MessageId VARCHAR(MAX) = '''',
@@ -2560,8 +1474,312 @@ ELSE IF @action = 18 BEGIN
 				SET NOCOUNT OFF'
 	EXEC(@sql)
 
+	---Todo Falta realizar merge
+	SET @process = 'K060005 Alter procedure ccsp_MultimediaCommon to add chatBotConversationId when retrieving data from a WhatsAppIn conversation'
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaCommon]
+				    @Option AS SMALLINT,
+				    @inboundId AS SMALLINT = 0,
+				    @conversationId AS INT = 0,
+				    @ServiceType AS SMALLINT = 0,
+				    @status as SMALLINT =0,
+				    @messagesList as varchar(max) = '''',
+				    @agentId AS SMALLINT = 0,
+				    @CampType bit =0
+				    AS
+				    BEGIN
+				        SET NOCOUNT ON;
 
-	------------------------------------------------END MARCO CHAGOLLA--------------------------------------------
+				    IF @Option = 0 --  Get Campaigns Configuration List
+				    BEGIN
+				            SELECT CAST(campaign.cam_id AS INT) AS Id,
+				                    campaign.cam_descripcion AS [Name],
+				                    ISNULL(configuration.number, '''') AS Phone,
+				                    CAST(graphics.graphic_id AS INT) AS GraphicId
+				            FROM  ccCamps campaign 
+				            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+				            INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
+				                            
+				    END
+
+				    ELSE IF @Option = 1 --  Get Acds Configuration List
+				    BEGIN
+				                            
+				        SELECT --inbound.chat AS ServiceType,
+				        CAST(inbound.Inbound_id AS INT) AS Id,
+				        inbound.descripcion AS [Name],
+				        ISNULL(configuration.conexionInfo, '''') AS Phone,
+				        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+				        inbound.tNotas AS WrapUpTime,
+				        CAST(graphics.graphic_id AS INT) AS GraphicId
+				        FROM  ccInbound inbound
+				        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+				        INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId where inbound.Status != 0 
+				                            
+				    END
+
+				    ELSE IF(@Option = 2)
+					BEGIN
+
+				        DECLARE @OldAgentId INT = 0
+				        DECLARE @OldConversationId INT = 0
+				        if @campType = 0 --ACD
+						BEGIN
+				            SELECT  @OldAgentId = conv.agentId,
+				                    @OldConversationId = rel.conversationIdBefore
+				            FROM ccWhatsAppConversationsRelationship rel 
+				            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+				            WHERE rel.conversationIdAfter = @conversationId
+
+							CREATE TABLE #ChatBotRelation (ChatBotConversationId INT, ContactName VARCHAR(50), ClientNumber VARCHAR(25), ChatBotName VARCHAR(255));
+							INSERT INTO #ChatBotRelation EXEC ccsp_GalateaChatBotAdmin @action = 7,
+							@WAConversationId = @conversationId, @camType = @CampType;
+
+							SELECT
+							cast(i.chat as int) AS ServiceType,
+							cast(c.conversationId as int) as ConversationID,
+							CAST(ISNULL(cb.ChatBotConversationId, 0)  AS INT) AS ChatBotConversationID,
+							c.clientId as ClientId,
+							cm.conexionInfo as [To],
+							cast(i.Inbound_id as int) as ACDId,
+							i.descripcion as ACDName,
+							cast(g.graphic_id as int) as ACDGraphicId,
+							cast(cm.closeConversationTime as int) as [TimeOut],
+							cast(cm.answerTimeOut as int) as [TimeOutWarning],
+							i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+							i.tNotas as [WrapUpTime],
+							i.ShowCalifWnd,
+							cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+							ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+							isnull(permission.AllowUnassign,0) as AllowUnassign,
+							isnull(permission.AllowSpam,0) as AllowSpam,
+							ISNULL(@OldAgentId, 0) AS OldAgentId,
+							ISNULL(@OldConversationId, 0) AS OldConversationId,
+							c.agentId AS AgentId,
+							ISNULL(c.IsAgentLoggingOut,0) AS IsAgentLoggingOut
+							from ccWhatsAppConversations c
+							left join ccInbound i on c.inboundId = i.Inbound_id 
+							left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
+							LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+							LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+							LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+							LEFT JOIN #ChatBotRelation cb ON cb.ClientNumber = c.clientId
+
+							WHERE c.conversationId = @conversationId;
+							DROP TABLE #ChatBotRelation;
+	
+				        END
+				        ELSE BEGIN --Camp
+				            SELECT  @OldAgentId = conv.agentId,
+				                    @OldConversationId = rel.conversationIdBefore
+				            FROM ccWhatsAppConversationsRelationshipOut rel 
+				            RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
+				            WHERE rel.conversationIdAfter = @conversationId
+
+				            SELECT
+				            cast(i.CampType as int) AS ServiceType,
+				            cast(c.conversationId as int) as ConversationID,
+				            c.clientId as ClientId,
+				            c.phoneCamp as [To],
+				            cast(i.cam_id as int) as ACDId,
+				            i.cam_descripcion as ACDName,
+				            cast(g.graphic_id as int) as ACDGraphicId,
+				            cast(cm.closeConversationTime as int) as [TimeOut],
+				            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
+				            i.exitAssisted as [ExitWrapUpDisposition],              
+				            cast(i.cam_tnotas as int) [WrapUpTime],
+				            i.cam_ShowCalifWnd as ShowCalifWnd, 
+				            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+				            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+				            isnull(permission.AllowUnassign,0) as AllowUnassign,
+				            isnull(permission.AllowSpam,0) as AllowSpam,
+				            ISNULL(@OldAgentId, 0) AS OldAgentId,
+				            ISNULL(@OldConversationId, 0) AS OldConversationId,
+				            c.agentId AS AgentId
+				            FROM  ccWhatsAppConversationsOut c
+				            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
+				            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
+				            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
+				            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
+				            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+
+				            where c.conversationId = @conversationId
+				        END
+				    END
+				    ELSE IF(@Option = 3)
+				    BEGIN
+				        if @campType =0 begin --ACD
+				            SELECT
+				            CAST(inbound.Inbound_id AS INT) AS Id,
+				            inbound.descripcion AS Name,
+				            ISNULL(configuration.conexionInfo, '''') AS Phone,
+				            CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+				            inbound.tNotas AS WrapUpTime,
+				                CAST(graphics.graphic_id AS INT) AS GraphicId
+				            FROM  ccInbound inbound
+				            INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+				            INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+				        end
+				        else begin
+				        SELECT
+				            CAST(campaign.cam_id AS INT) AS Id,
+				            campaign.cam_descripcion AS Name,
+				            ISNULL(configuration.conexionInfo, '''') AS Phone,
+				            CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
+				            cast(campaign.cam_tnotas as int) AS WrapUpTime,
+				            CAST(graphics.graphic_id AS INT) AS GraphicId
+				            FROM  ccCamps campaign
+				            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+				            INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
+				        end
+				    END
+				    ELSE IF(@Option = 4)
+				    Begin
+				            declare @pathFile as varchar(max)
+				            declare @filetype as varchar(5)
+				            DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+				            DECLARE @tmpMessageConversations TABLE(
+				                    [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+				                ,[conversationId] INT NOT NULL
+				                ,[timeStampMessage] DATETIME NOT NULL
+				                ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+				                ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+				                ,[messageIdUi] INT NULL
+				                ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				                ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				                ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				                ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				                ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				                ,[timeStampMessageUTC] DATETIME NULL
+				                ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+				            );
+
+				        insert into @mensajes
+				        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+				                        
+				            if(@CampType = 0)
+				            BEGIN
+				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+				                messageStatus) 
+				                select messageId, conversationId, timeStampMessageUTC, originType
+				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+				                messageStatus
+				                FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
+				            END
+				            if(@CampType = 1)
+				            BEGIN
+				                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+				                messageStatus) 
+				                select messageId, conversationId, timeStampMessageUTC, originType
+				                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+				                messageStatus
+				                FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
+				            END
+				            select @pathFile = valor from ccSettings where setting_id=230
+				        select
+				            messageId as MessageId,
+				            messageStatus as Status,
+				            originType as Origin,
+				            case when originType =''Client'' then 3
+				                    when originType =''Agent'' then 2
+				                    when originType =''Admin'' then 1
+				            else 0 end as OriginType,
+				            timeStampMessage as [Timestamp],
+				            case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
+				            typeMessage as Type,
+				            case 
+				                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
+				                    else
+				                        case
+				                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
+				                                    else '''' end
+				                    end as Caption,
+				            case 
+				                    when originType = ''Client''
+				                    then
+				                        case
+				                                when typeMessage = ''text'' or typeMessage = ''location''
+				                                or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
+				                            then ''''
+				                                else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
+				                                case
+				                                        when typeMessage = ''video'' then ''.mp4''
+				                                        when typeMessage = ''image'' then ''.jpg''
+				                                        when typeMessage = ''audio'' then ''.mp3''
+				                                        when typeMessage = ''file''
+				                                        then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
+				                                    else '''' end
+				                        end
+				                    else
+				                        case
+				                            when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
+				                            then ''''
+				                            else content
+				                    end
+				                end as [Url],
+				                case when typeMessage = ''file'' 
+				                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
+				                else '''' end as [FileSize],
+				                case when typeMessage = ''file'' 
+				                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
+				                else '''' end as [FileName],
+				            case when typeMessage = ''location''
+				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+				            case when typeMessage = ''location''
+				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+				            case when typeMessage = ''location''
+				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+				            case when typeMessage = ''location''
+				            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+				            case when typeMessage = ''location''
+				            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+				                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+				                from @tmpMessageConversations
+				            order by Timestamp asc
+
+				    End
+				                                            
+				    ELSE IF(@Option = 5)
+				    BEGIN
+				        if @CampType =0 begin
+				            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+				                FROM contactMeanIn
+				            WHERE inboundId = @inboundId
+				        end 
+				        else begin
+				            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+				                FROM contactMeanOut
+				            WHERE camp_id = @inboundId
+				        end 
+				    END
+				    ELSE IF(@Option = 6)
+				    BEGIN
+				        SELECT [Login] AS ''OriginName''
+				            FROM [CCenterRIA].[dbo].[ccUsers]
+				        WHERE [User_id] = @agentId
+				    END
+					ELSE IF(@Option = 7)--  Get ChatBotCampaigns Configuration List
+				    BEGIN    
+				        SELECT --inbound.chat AS ServiceType,
+				        CAST(inbound.Inbound_id AS INT) AS Id,
+				        inbound.descripcion AS [Name],
+				        cbr.ContactName AS Phone,
+				        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+				        inbound.tNotas AS WrapUpTime,
+				        CAST(graphics.graphic_id AS INT) AS GraphicId
+						--,cbr.ContactName AS ChatBotNumber
+				        FROM  ccInbound inbound
+				        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+				        INNER JOIN  contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId
+						INNER JOIN ChatBotCampaign cbc ON inbound.Inbound_id = cbc.campId
+						INNER JOIN ChatBotRelation cbr ON cbc.chatBotId = cbr.AzureKnowledgeId
+						WHERE cbc.campType = 0 AND inbound.Status != 0
+						ORDER BY Id ASC
+				    END
+				    END'
+	EXEC(@sql)
+
 
 		
 		/* End script release */		/* Upgrade database version (first and the last number of setting 77) */

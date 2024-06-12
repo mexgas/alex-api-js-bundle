@@ -2033,7 +2033,6 @@ SET @sql = '
 	as
 	declare @prefix as varchar(15), @sipheader varchar(500)
 	declare @ani as varchar(32)
-	declare @call_record_cam as tinyint
 	declare @pais as tinyint 
 	declare @aniglobal varchar(32), @sipHdrFormat varchar(255)
 	declare @ivr_script smallint, @surveycamid int
@@ -2043,7 +2042,6 @@ SET @sql = '
 	declare @recordHold bit, @recordIvr bit
 
 	select @pais = valor from ccsettings with(nolock) where setting_id = 104
-	select @call_record_cam = call_record,  @PrefixRec=ISNULL(prefijo,'''') from ccCamps where cam_id = @cam_id
 	select @aniglobal = valor from ccsettings with(nolock) where setting_id = 177
 
 	set @prefix =''''
@@ -2075,8 +2073,8 @@ SET @sql = '
 
 	select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta = cam_tNoContesta, @ani = case when @ani = '''' then ani else @ani end
 	,@detectAnswerMachine = detectAnswerMachine, @detectVoiceMail = detectVoiceMail
-	,@call_record = dbo.EnableCallRecord(@call_record_cam,@pais,@phone), @surveycamid = isnull(surveycamid,0), @recordHold=ISNULL(recordHold,0)
-	,@recordIvr=ISNULL(recordIvr,0)
+	,@call_record = dbo.EnableCallRecord(call_record, @pais, @phone), @surveycamid = isnull(surveycamid,0), @recordHold=ISNULL(recordHold,0)
+	,@recordIvr=ISNULL(recordIvr,0), @PrefixRec = ISNULL(prefijo,'''')
 	from ccCamps NOLOCK where cam_id = @cam_id
 
 	SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)

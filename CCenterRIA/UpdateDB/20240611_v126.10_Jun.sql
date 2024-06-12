@@ -2043,7 +2043,7 @@ SET @sql = '
 	declare @recordHold bit, @recordIvr bit
 
 	select @pais = valor from ccsettings with(nolock) where setting_id = 104
-	select @call_record_cam = call_record from ccCamps where cam_id = @cam_id
+	select @call_record_cam = call_record,  @PrefixRec=ISNULL(prefijo,'''') from ccCamps where cam_id = @cam_id
 	select @aniglobal = valor from ccsettings with(nolock) where setting_id = 177
 
 	set @prefix =''''
@@ -2088,8 +2088,6 @@ SET @sql = '
 	if @ani = '''' begin 
 	set @ani = @aniglobal 
 	end 
-
-	 select @PrefixRec=ISNULL(prefijo,'''') from ccCamps where cam_id = @cam_id
 
 	 set @carrier = ''''
 	 select @carrier = dbo.GetCarrierByTel(@phone)

@@ -1832,7 +1832,10 @@ else begin
 	FROM INFORMATION_SCHEMA.COLUMNS
 	WHERE TABLE_NAME = ''SmsRemesasMuñozDay'' AND COLUMN_NAME in (select value from dbo.fn_RIASplitDelimited(@columns,'',''))
 
-	SET @createTable = ''
+	SET @createTable = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +'''''')
+	BEGIN
+		DROP TABLE '' + @tableName + ''
+	END
 		CREATE TABLE '' + @tableName + '' (
 			Record_id INT IDENTITY(1,1) PRIMARY KEY, ActiveRecord BIT DEFAULT(0),PhoneStatus int, callout_id int, DataPhone varchar(100), cal_Key varchar(40), cal_telephone varchar(40) default(''''''''), 
 			'' + @columnsWithTypes + '');''
@@ -1844,7 +1847,11 @@ else begin
 	from SmsRemesasMuñozDay A with(nolock) inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6''
 	print(@sql)
 	exec(@sql)
-	set @sql = ''Create table '' + @tableName + ''_ids (Record_id int)'';
+	set @sql = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +''_ids'''')
+	BEGIN
+		DROP TABLE '' + @tableName + ''_ids
+	END
+	Create table '' + @tableName + ''_ids (Record_id int)'';
 	exec(@sql)
 end
 drop table #SmsRemesasId

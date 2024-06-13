@@ -134,7 +134,7 @@ BEGIN
         EXEC (@sql);
 
         SET @process = 'KR134000 Se crea índice para SystemApiId';
-        SET @sql = 'IF OBJECT_ID(N''IX_ccSmsResponseMessages_SystemApiId'', N''INDEX'') IS NULL
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N''IX_ccSmsResponseMessages_SystemApiId'' AND object_id = OBJECT_ID(N''ccSmsResponseMessages''))
                     BEGIN
                         CREATE INDEX IX_ccSmsResponseMessages_SystemApiId ON ccSmsResponseMessages (SystemApiId);
                     END';

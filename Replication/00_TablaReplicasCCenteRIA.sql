@@ -25,6 +25,7 @@ declare @idInt int=1
 
 insert into publicationTableCCenterRIA(publicationName,status) values(N'LogDials',0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoLogDials',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoLogDialsData',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'LogAgentesDia',0)	
@@ -49,6 +50,7 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'Re
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'CallsOut',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallsOut',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccoCallsOutData',@idInt,0)
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'CallsIn',0)	

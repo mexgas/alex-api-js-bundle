@@ -938,6 +938,7 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 		,simultaneousRecs SimultaneousRecs
 		,EditableContactData EditableContactData
 		,internationalDialingPortsAssigned internationalDialingPortsAssigned
+		,AssignConversationSameAgent AssignConversationSameAgent
 		,maxLimitQueueConversations MaxLimitQueueConversations
 		FROM @AllCampaigns
 		WHERE cam_id = @campID

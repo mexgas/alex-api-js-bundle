@@ -1311,7 +1311,6 @@ return(0)';
             inner join dbo.smsWorkingTable AS swt WITH (INDEX (IX_smsWorkingTable_2), NOLOCK) 
             on sos.callkey = swt.cal_keyw AND sos.cam_id = swt.cam_id 
             WHERE sos.cam_id = @camp_id and sos.sms_status IN (0, 7) AND swt.sms_status <= 2
-			and ((@date >= sos.sms_dateDial AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             UNION
 
@@ -1319,13 +1318,11 @@ return(0)';
             FROM dbo.smsOutSource AS sos2 WITH (INDEX (IX_smsOutSource_2), NOLOCK)
             inner join dbo.smsWorkingTable AS swt2 (NOLOCK)on sos2.smsout_id = swt2.smsout_id 
             WHERE sos2.cam_id = @camp_id AND (sos2.sms_status < 2 OR sos2.sms_status = 7)
-			and ((@date >= sos2.sms_dateDial AND ISNULL(sos2.isSegmentLoad, 0) = 1) OR ISNULL(sos2.isSegmentLoad, 0) = 0)
 
             INSERT INTO #smsoutIdSource2
             SELECT top(@top) sos.smsout_id
             FROM dbo.smsOutSource AS sos WITH (INDEX (IX_smsOutSource_1), NOLOCK)
             WHERE sos.sms_status IN (0, 1, 7) AND cam_id = @camp_id
-			and ((@date >= sos.sms_dateDial  AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             INSERT #tempsmsOutSource(smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, cal_keyw, iTimeZone, 
             iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4,
@@ -1700,7 +1697,7 @@ else if @action in(12,13) begin --Validar Carga
 
 	INSERT INTO #functionalState
 	select rid.creditId, count(rid.creditId) from smsccoLogDial ld
-	inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.callkey
+	inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.registryClient
 	where ld.smsDate >= @WeekStart
 	GROUP BY rid.creditId
 
@@ -1814,11 +1811,47 @@ if @action=12 begin
 	select @countValidate as ValidRecords,@nonValid as InvalidRecords
 end
 else begin
+	DECLARE @tableName VARCHAR(20) = ''TEMPO_''+convert(varchar(10),@camId)
+	DECLARE @columnsWithTypes VARCHAR(MAX)
+	DECLARE @newColumns VARCHAR(MAX)
+	DECLARE @createTable VARCHAR(MAX)
+	DECLARE @insertInto VARCHAR(MAX)
+
+	SELECT 
+		@columnsWithTypes = STRING_AGG(QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
+			CASE 
+				WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
+					CASE 
+						WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
+						ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
+					END + '')''
+				WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
+				ELSE ''''
+			END, '', ''),
+    @newColumns = STRING_AGG(QUOTENAME(COLUMN_NAME), '', '')
+	FROM INFORMATION_SCHEMA.COLUMNS
+	WHERE TABLE_NAME = ''SmsRemesasMuñozDay'' AND COLUMN_NAME in (select value from dbo.fn_RIASplitDelimited(@columns,'',''))
+
+	SET @createTable = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +'''''')
+	BEGIN
+		DROP TABLE '' + @tableName + ''
+	END
+		CREATE TABLE '' + @tableName + '' (
+			Record_id INT IDENTITY(1,1) PRIMARY KEY, ActiveRecord BIT DEFAULT(0),PhoneStatus int, callout_id int, DataPhone varchar(100), cal_Key varchar(40), cal_telephone varchar(40) default(''''''''), 
+			'' + @columnsWithTypes + '');''
+	print(@createTable)
+	EXEC (@createTable)
 	
-	set @sql=''select A.''+@columns+'',0 PhoneStatus,0 callout_id,credito as Record_id,convert(varchar(100),'''''''') as DataPhone, a.TDCT as call_Key1
-	into TEMPO_''+convert(varchar(10),@camId)+''
+	set @sql=''INSERT INTO '' + @tableName + '' (PhoneStatus, callout_id, DataPhone, cal_Key, cal_telephone,'' + @newColumns + '')
+	select 0 PhoneStatus,0 callout_id,convert(varchar(100),'''''''') as DataPhone, A.TDCT, TELEFONOS1, ''+@newColumns+''
 	from SmsRemesasMuñozDay A with(nolock) inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6''
 	print(@sql)
+	exec(@sql)
+	set @sql = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +''_ids'''')
+	BEGIN
+		DROP TABLE '' + @tableName + ''_ids
+	END
+	Create table '' + @tableName + ''_ids (Record_id int)'';
 	exec(@sql)
 end
 drop table #SmsRemesasId

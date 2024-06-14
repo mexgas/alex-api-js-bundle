@@ -552,6 +552,30 @@ SET @sql = '
 	END'
 EXEC(@sql)
 ------------------------------------------------------ End David Medina ---------------------------------------------------------------------------------
+
+-------------------------------------------------------BEGIN MACL---------------------------------------------------
+SET @process = 'K064010 - Se elimina sp ccsp_ValidateWrapUp en caso de existir'
+SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_ValidateWrapUp'') 
+BEGIN
+	DROP PROCEDURE dbo.ccsp_ValidateWrapUp
+END'
+EXEC(@sql)
+
+SET @process = 'K064010 - Se crea sp ccsp_ValidateWrapUp para validar el setting 99'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_ValidateWrapUp] @callId INT AS
+BEGIN
+	DECLARE @cam_id int;
+	DECLARE @valor VARCHAR(max)
+	select @valor = valor from ccSettings where setting_id = 99
+
+	if @valor = 1
+	BEGIN
+		select @cam_id = cam_id from ccoCallsOut where cal_manual = 1 and cal_id = @callId
+		SELECT cam_ShowCalifWnd as showWrapUp, cam_tnotas as wrapUpTime, cam_id from ccCamps where @cam_id = cam_id;
+	END
+END'
+EXEC(@sql)
+--------------------------------------------------------END MACL----------------------------------------------------
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

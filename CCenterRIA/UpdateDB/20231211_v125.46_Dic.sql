@@ -5017,7 +5017,7 @@ set nocount off'
     EXEC(@sql)
 
    
-     set @process = 'Alter Sp ccsp_RIA_ABCACDGroups if @option = 1 y 5 -- select acd para que se pueda asignar desde RIA campañas encuesta'
+    set @process = 'Alter Sp ccsp_RIA_ABCACDGroups if @option = 1 y 5 -- select acd para que se pueda asignar desde RIA campañas encuesta'
     set @sql='ALTER PROCEDURE [dbo].[ccsp_RIA_ABCACDGroups]
 @option smallint,
 @userid int,
@@ -5241,7 +5241,7 @@ set nocount off'
     EXEC(@sql)
 
 
-     set @process = 'Alter Sp ccsp_RIAUpdateCamConfig cambios se agrega para validar si @callsBySurvey y @ivrScript para poner de tipo encuesta'
+    set @process = 'Alter Sp ccsp_RIAUpdateCamConfig cambios se agrega para validar si @callsBySurvey y @ivrScript para poner de tipo encuesta'
     set @sql='ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
 @cam_id smallint,
 @cam_descripcion varchar(40) = null,
@@ -5645,10 +5645,7 @@ RETURN(0)
 
 set nocount off'
     EXEC(@sql)
-
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
+   
     ---------------------------------------END Jesus Gallardo hotfix/125.20231211.0.9---------------------------------------------------------
 
     ---------------------------------------BEGIN Ivan Martin hotfix/125.20231211.0.9---------------------------------------------------------

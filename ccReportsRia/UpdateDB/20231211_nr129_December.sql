@@ -1019,6 +1019,13 @@ end
 
 
     
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
 if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_10'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
 begin
 CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_10
@@ -4048,218 +4055,7 @@ end
     EXEC(@sql)
 
 
-    set @process = 'DEV1-459 Alter SP ccspRepOutDialDetail se quita with index'
-    set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail] 
-
-@action AS TINYINT, 
-@from AS   DATETIME = NULL, 
-@to AS     DATETIME = NULL
-AS
-SET NOCOUNT ON
-
-IF @from IS NULL
-    SELECT @from =CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE())) - 15
-if @to is null
-    SELECT @to = GETDATE()
-
-IF @action = 1
-BEGIN  
-
-DECLARE @country SMALLINT
-SELECT @country = valor
-FROM ccSettings
-WHERE setting_id = 104
-
---Borrar lo que esta para no repetir          
-DELETE FROM RepOutDialDetail WHERE date >= @from AND date < @to
-        
-    IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
-    IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
-    IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
-
-    create table #dials (
-    logDial_id  int not null,
-    callout_id  int not null,
-    cam_id  smallint not null,
-    tipoResDial_id  int not null,
-    resultDialDesc  varchar(60) not null,
-    Telefono    varchar(32) not null,
-    Puerto  smallint not null,
-    fecha   datetime not null,
-    tDialing    smallint not null,
-    dialType    varchar(50) not null,
-    tBusy   smallint  not null,
-    answerbit   bit not null,
-    canceledNoAgents    bit not null,
-    cal_id  int not null,
-    disconnectCause varchar(250) not null,
-    cal_key varchar(40) not null,
-    file_moved  varchar(100)  null,
-    tipoLlamada_id  smallint null,
-    CallDisposition varchar(150) null,
-    califSubDesc    varchar(150) null,
-    codeSip varchar(10) not null,
-    TipoTel varchar(30)  not null,
-    tpreview    smallint not null,
-    UserID  smallint null,
-    )
-
-    if exists(select *  from DC_Extra) begin
-    CREATE NONCLUSTERED INDEX IX_dials_Tmp1 ON #dials ([codeSip])INCLUDE ([disconnectCause])
-    end
     
-    create table #relationCodeSip(
-    codeSip int not null,
-    disconnectCause varchar(250),
-    description varchar(250)
-    )
-
-    insert into #dials
-    SELECT  dial.logDial_id
-        ,dial.callout_id
-        ,dial.cam_id
-        ,CASE WHEN dial.canceledNoAgents = 1 THEN 14 ELSE dial.tipoResDial_id END AS tipoResDial_id
-        ,ISNULL(tr.descripcion ,'''') as resultDialDesc
-        ,dial.Telefono
-        ,dial.Puerto
-        ,dial.fecha
-        ,dial.tDialing
-        ,CASE WHEN dial.TipoDialingMode = ''100000000'' THEN ''systemTranslated_Preview'' 
-              WHEN LEFT(dial.TipoDialingMode, 1) = ''1'' THEN ''systemTranslated_Assisted'' 
-              WHEN RIGHT(dial.TipoDialingMode, 2) = ''00'' THEN ''systemTranslated_Auto'' 
-              WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' END AS dialType            
-        ,dial.tBusy
-        ,dial.answerbit
-        ,dial.canceledNoAgents
-        ,dial.cal_id
-        ,dial.disconnectCause
-        ,isnull(co.cal_key,dial.cal_key) cal_key 
-        ,case when co.file_moved=2 then ''systemTranslated_Remoto'' else ''Local'' end file_moved-- isnull(co.file_moved,0) as file_moved
-        ,dial.tipoLlamada_id
-        ,tco.[Description] AS CallDisposition
-        ,tsco.califSubDesc
-        ,CASE WHEN dial.disconnectCause <> '''' THEN SUBSTRING(dial.disconnectCause, 21, 3) ELSE '''' END codeSip
-        ,case when @country<>1 then '''' WHEN dial.tipoLlamada_id IN (1, 2, 5) THEN ''systemTranslated_fijo'' 
-            WHEN dial.tipoLlamada_id IN (3, 4) THEN ''systemTranslated_cellPhone'' ELSE ''systemTranslated_Indefinite'' END TipoTel
-        ,ISNULL(regp.tPreview,'''') as tpreview
-        ,co.User_id as UserID   
-    FROM ccoLogDials dial(NOLOCK)
-    LEFT JOIN ccocallsout co(NOLOCK) ON dial.cal_id = co.cal_id
-    LEFT JOIN cctipocalifout tco WITH (NOLOCK) ON tco.calif_id = co.calif_id
-    LEFT JOIN cctipocalifsubout tsco WITH (NOLOCK) ON tsco.califSub_id = co.califSub_id
-    LEFT JOIN RegProcessPreviewRecord regp WITH (NOLOCK) ON regp.callout_id = co.callout_id and regp.callId = co.cal_id
-    LEFT JOIN cctipoResultadoDial tr(NOLOCK) ON dial.tipoResDial_id = tr.tiporesdial_id
-    WHERE fecha >= @from AND fecha < @to
-
-    if exists(select * from RegProcessPreviewRecord) begin
-
-    insert into #dials
-    select 
-            0 as logDial_id 
-            ,reg.callout_id
-            ,ccoa.cam_id
-            ,reg.process
-            ,ISNULL(cctyp.translatedDesc,'''')
-            ,ccoa.cal_telefono
-            ,0 as Puerto
-            ,reg.reg_date
-            ,0 as tDialing
-            ,''systemTranslated_Preview'' as dialType     
-            ,0 as tBusy
-            ,0 as answerbit
-            ,0 as canceledNoAgents
-            ,0 as cal_id
-            ,'''' as disconnectCause
-            ,ccoa.cal_Key
-            ,''Local'' as file_moved 
-            ,0 as tipoLlamada_id
-            ,'''' as CallDisposition
-            ,'''' as califSubDesc
-            ,'''' as codeSip
-            ,''systemTranslated_Indefinite'' as TipoTel
-            ,reg.tPreview
-            ,reg.userId 
-    FROM RegProcessPreviewRecord reg(NOLOCK)
-    left join ccoCallsOutSource ccoa (NOLOCK) ON reg.callout_id = ccoa.callout_id
-    left join ccTypeProcessPreview cctyp (NOLOCK) ON  cctyp.typeProcess_id = reg.process
-    WHERE reg.reg_date >= @from AND reg.reg_date < @to AND reg.process !=7
-    
-    end
-    
-    if exists(select *  from DC_Extra) begin
-        ;with codeSips as (
-            select distinct codeSip as codeSip,disconnectCause          
-            from #dials where codeSip<>''''
-        )   
-
-        select cast(codeSip as int) as codeSip,disconnectCause 
-        into #codeSip 
-        from codeSips where IsNumeric(codeSip)=1
-    
-        insert into #relationCodeSip
-        select A.codeSip,A.disconnectCause,B.description        
-        from #codeSip A
-        inner join DC_Extra B on A.codeSip=B.id
-
-    end
-
---Inserta informacon de reporte  
-    INSERT INTO RepOutDialDetail
-        SELECT fecha as [date]
-        ,case when dials.cal_key is null or  cs.cal_key is null then '''' when dials.cal_key is not null then dials.cal_key else cs.cal_key end cal_key
-        ,telefono telephone
-        ,dials.tiporesdial_id as tiporesdialId
-        ,CASE WHEN dials.tipoResDial_id = 14 THEN ''systemTranslated_CancelledBySystem'' ELSE ISNULL(dials.resultDialDesc, '''') END AS dialResult
-        ,dials.[cam_id] campaignId
-        ,ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') AS campaign
-        ,dials.tbusy AS timeMessage
-        ,DATEPART(yyyy, fecha) year 
-        ,DATEPART(mm, fecha) month  
-        ,DATEPART(dd, fecha) day    
-        ,DATEPART(hh, fecha) hour   
-        ,DATEPART(mi, fecha) minutes
-        ,ISNULL(rl.name, '''') listName
-        ,CASE WHEN answerbit = 1 THEN ''systemTranslated_Charged'' ELSE ''systemTranslated_NotCharged'' END AS billed
-        ,ISNULL(cs.Dato1, '''') AS data1
-        ,ISNULL(cs.Dato2, '''') AS data2
-        ,ISNULL(cs.Dato3, '''') AS data3
-        ,ISNULL(cs.Dato4, '''') AS data4
-        ,ISNULL(cs.Dato5, '''') AS data5
-        --,CASE WHEN dials.[file_moved] = 1 THEN ''systemTranslated_Remoto'' ELSE ''Local'' END AS fileMoved
-        ,dials.[file_moved] AS fileMoved
-        ,dials.disconnectCause
-        ,COALESCE(dat.description, descripcion, ''N/A'') DCCustomer
-        ,dials.dialType
-        ,TipoTel
-        ,ISNULL(CallDisposition, ''N/A'') AS CallDisposition
-        ,ISNULL(califSubDesc, ''N/A'') AS CallSubDisposition
-        ,ISNULL(csP.Dato6, '''') AS data6
-        ,ISNULL(csP.Dato7, '''') AS data7
-        ,ISNULL(csP.Dato8, '''') AS data8
-        ,ISNULL(csP.Dato9, '''') AS data9
-        ,ISNULL(csP.Dato10, '''') AS data10
-        ,ISNULL(csP.Dato11, '''') AS data11
-        ,ISNULL(csP.Dato12, '''') AS data12
-        ,ISNULL(csP.Dato13, '''') AS data13
-        ,ISNULL(csP.Dato14, '''') AS data14
-        ,ISNULL(csP.Dato15, '''') AS data15
-        ,dials.tpreview AS preview_Time
-        ,ISNULL(us.Login,'''') as [login]
-    FROM #dials as dials
-    LEFT JOIN ccoCallsOutSource cs(NOLOCK) ON dials.callout_id = cs.callout_id
-    LEFT JOIN cctipoResultadoDial tr(NOLOCK) ON dials.tiporesdial_id = tr.tiporesdial_id
-    LEFT JOIN ccCamps camps(NOLOCK) ON camps.[cam_id] = dials.[cam_id]
-    LEFT JOIN ccRIARegistryLists rl(NOLOCK) ON cs.list_id = rl.list_id
-    LEFT JOIN #relationCodeSip dat ON dat.disconnectCause = dials.disconnectCause
-    LEFT JOIN ccoCallsPreviewData csP ON (dials.cal_Key = csP.cal_Key AND dials.cam_id = csP.cam_id)
-    LEFT JOIN ccUsers us (NOLOCK) ON  us.User_id = dials.UserID
-
-    IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
-    IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
-    IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
-END'
-    EXEC(@sql)
-
     set @process = 'DEV1-459 Alter SP ccspRepSpecialTimes se quita with index'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepSpecialTimes] @action AS TINYINT
     ,@from AS DATETIME = NULL
@@ -5247,6 +5043,24 @@ set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altert
     DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
     end'
 EXEC(@sql)
+
+    set @process = 'alter Table smsccoLogDial add Message'
+    set @sql='if not exists(select * from sys.tables where name = N''smsccoLogDial'') begin
+    CREATE TABLE [dbo].[smsccoLogDial](
+    [logId] [bigint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+    [smsout_id] [int] NOT NULL,
+    [cam_id] [int] NOT NULL,
+    [phone] [varchar](32) NOT NULL,
+    [smsDate] [datetime] NOT NULL,
+    [registryClient] [varchar](60) NOT NULL,
+    [SystemApiId] [varchar](100) NOT NULL,
+    [statusSystemsId] [int] NOT NULL,
+    [Bill] [float] NOT NULL,
+    [ProviderId] [int] NOT NULL,
+    [Message] [varchar](200) NULL
+) 
+end'
+    EXEC(@sql)
  
     set @process = 'alter Table smsccoLogDial add Message'
     set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))
@@ -5394,32 +5208,417 @@ begin
 end'
     EXEC(@sql)
 
-    set @process = ''
+  
+    ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.11---------------------------------------------------------
+
+    
+  set @process = 'DEV1-459 Alter SP ccspRepOutDialDetail se quita with index'
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepOutDialDetail] 
+
+@action AS TINYINT, 
+@from AS   DATETIME = NULL, 
+@to AS     DATETIME = NULL
+AS
+SET NOCOUNT ON
+
+IF @from IS NULL
+    SELECT @from =CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE())) - 15
+if @to is null
+    SELECT @to = GETDATE()
+
+IF @action = 1
+BEGIN  
+
+DECLARE @country SMALLINT
+SELECT @country = valor
+FROM ccSettings
+WHERE setting_id = 104
+
+--Borrar lo que esta para no repetir          
+DELETE FROM RepOutDialDetail WHERE date >= @from AND date < @to
+        
+    IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
+    IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
+    IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
+
+    create table #dials (
+    logDial_id  int not null,
+    callout_id  int not null,
+    cam_id  smallint not null,
+    tipoResDial_id  int not null,
+    resultDialDesc  varchar(60) not null,
+    Telefono    varchar(32) not null,
+    Puerto  smallint not null,
+    fecha   datetime not null,
+    tDialing    smallint not null,
+    dialType    varchar(50) not null,
+    tBusy   smallint  not null,
+    answerbit   bit not null,
+    canceledNoAgents    bit not null,
+    cal_id  int null,
+    disconnectCause varchar(250) not null,
+    cal_key varchar(40) not null,
+    file_moved  varchar(100)  null,
+    tipoLlamada_id  smallint null,
+    CallDisposition varchar(150) null,
+    califSubDesc    varchar(150) null,
+    codeSip varchar(10) not null,
+    TipoTel varchar(30)  not null,
+    tpreview    smallint not null,
+    UserID  smallint null,
+    )
+
+    if exists(select *  from DC_Extra) begin
+    CREATE NONCLUSTERED INDEX IX_dials_Tmp1 ON #dials ([codeSip])INCLUDE ([disconnectCause])
+    end
+    
+    create table #relationCodeSip(
+    codeSip int not null,
+    disconnectCause varchar(250),
+    description varchar(250)
+    )
+
+    insert into #dials
+    SELECT  dial.logDial_id
+        ,dial.callout_id
+        ,dial.cam_id
+        ,CASE WHEN dial.canceledNoAgents = 1 THEN 14 ELSE dial.tipoResDial_id END AS tipoResDial_id
+        ,ISNULL(tr.descripcion ,'''') as resultDialDesc
+        ,dial.Telefono
+        ,dial.Puerto
+        ,dial.fecha
+        ,dial.tDialing
+        ,CASE WHEN dial.TipoDialingMode = ''100000000'' THEN ''systemTranslated_Preview'' 
+              WHEN LEFT(dial.TipoDialingMode, 1) = ''1'' THEN ''systemTranslated_Assisted'' 
+              WHEN RIGHT(dial.TipoDialingMode, 2) = ''00'' THEN ''systemTranslated_Auto'' 
+              WHEN RIGHT(dial.TipoDialingMode, 2) IN (''10'', ''01'') THEN ''systemTranslated_Manual'' END AS dialType            
+        ,dial.tBusy
+        ,dial.answerbit
+        ,dial.canceledNoAgents
+        ,dial.cal_id
+        ,dial.disconnectCause
+        ,isnull(co.cal_key,dial.cal_key) cal_key 
+        ,case when co.file_moved=2 then ''systemTranslated_Remoto'' else ''Local'' end file_moved-- isnull(co.file_moved,0) as file_moved
+        ,dial.tipoLlamada_id
+        ,tco.[Description] AS CallDisposition
+        ,tsco.califSubDesc
+        ,CASE WHEN dial.disconnectCause <> '''' THEN SUBSTRING(dial.disconnectCause, 21, 3) ELSE '''' END codeSip
+        ,case when @country<>1 then '''' WHEN dial.tipoLlamada_id IN (1, 2, 5) THEN ''systemTranslated_fijo'' 
+            WHEN dial.tipoLlamada_id IN (3, 4) THEN ''systemTranslated_cellPhone'' ELSE ''systemTranslated_Indefinite'' END TipoTel
+        ,ISNULL(regp.tPreview,'''') as tpreview
+        ,co.User_id as UserID   
+    FROM ccoLogDials dial(NOLOCK)
+    LEFT JOIN ccocallsout co(NOLOCK) ON dial.cal_id = co.cal_id
+    LEFT JOIN cctipocalifout tco WITH (NOLOCK) ON tco.calif_id = co.calif_id
+    LEFT JOIN cctipocalifsubout tsco WITH (NOLOCK) ON tsco.califSub_id = co.califSub_id
+    LEFT JOIN RegProcessPreviewRecord regp WITH (NOLOCK) ON regp.callout_id = co.callout_id and regp.callId = co.cal_id
+    LEFT JOIN cctipoResultadoDial tr(NOLOCK) ON dial.tipoResDial_id = tr.tiporesdial_id
+    WHERE fecha >= @from AND fecha < @to
+
+    if exists(select * from RegProcessPreviewRecord) begin
+
+    insert into #dials
+    select 
+            0 as logDial_id 
+            ,reg.callout_id
+            ,ccoa.cam_id
+            ,reg.process
+            ,ISNULL(cctyp.translatedDesc,'''')
+            ,ccoa.cal_telefono
+            ,0 as Puerto
+            ,reg.reg_date
+            ,0 as tDialing
+            ,''systemTranslated_Preview'' as dialType     
+            ,0 as tBusy
+            ,0 as answerbit
+            ,0 as canceledNoAgents
+            ,0 as cal_id
+            ,'''' as disconnectCause
+            ,ccoa.cal_Key
+            ,''Local'' as file_moved 
+            ,0 as tipoLlamada_id
+            ,'''' as CallDisposition
+            ,'''' as califSubDesc
+            ,'''' as codeSip
+            ,''systemTranslated_Indefinite'' as TipoTel
+            ,reg.tPreview
+            ,reg.userId 
+    FROM RegProcessPreviewRecord reg(NOLOCK)
+    left join ccoCallsOutSource ccoa (NOLOCK) ON reg.callout_id = ccoa.callout_id
+    left join ccTypeProcessPreview cctyp (NOLOCK) ON  cctyp.typeProcess_id = reg.process
+    WHERE reg.reg_date >= @from AND reg.reg_date < @to AND reg.process !=7
+    
+    end
+    
+    if exists(select *  from DC_Extra) begin
+        ;with codeSips as (
+            select distinct codeSip as codeSip,disconnectCause          
+            from #dials where codeSip<>''''
+        )   
+
+        select cast(codeSip as int) as codeSip,disconnectCause 
+        into #codeSip 
+        from codeSips where IsNumeric(codeSip)=1
+    
+        insert into #relationCodeSip
+        select A.codeSip,A.disconnectCause,B.description        
+        from #codeSip A
+        inner join DC_Extra B on A.codeSip=B.id
+
+    end
+
+--Inserta informacon de reporte  
+    INSERT INTO RepOutDialDetail
+        SELECT fecha as [date]
+        ,case when dials.cal_key is null or  cs.cal_key is null then '''' when dials.cal_key is not null then dials.cal_key else cs.cal_key end cal_key
+        ,telefono telephone
+        ,dials.tiporesdial_id as tiporesdialId
+        ,CASE WHEN dials.tipoResDial_id = 14 THEN ''systemTranslated_CancelledBySystem'' ELSE ISNULL(dials.resultDialDesc, '''') END AS dialResult
+        ,dials.[cam_id] campaignId
+        ,ISNULL(RTRIM(LTRIM(camps.cam_descripcion)), ''systemTranslated_NoCampaign'') AS campaign
+        ,dials.tbusy AS timeMessage
+        ,DATEPART(yyyy, fecha) year 
+        ,DATEPART(mm, fecha) month  
+        ,DATEPART(dd, fecha) day    
+        ,DATEPART(hh, fecha) hour   
+        ,DATEPART(mi, fecha) minutes
+        ,ISNULL(rl.name, '''') listName
+        ,CASE WHEN answerbit = 1 THEN ''systemTranslated_Charged'' ELSE ''systemTranslated_NotCharged'' END AS billed
+        ,ISNULL(cs.Dato1, '''') AS data1
+        ,ISNULL(cs.Dato2, '''') AS data2
+        ,ISNULL(cs.Dato3, '''') AS data3
+        ,ISNULL(cs.Dato4, '''') AS data4
+        ,ISNULL(cs.Dato5, '''') AS data5
+        --,CASE WHEN dials.[file_moved] = 1 THEN ''systemTranslated_Remoto'' ELSE ''Local'' END AS fileMoved
+        ,dials.[file_moved] AS fileMoved
+        ,dials.disconnectCause
+        ,COALESCE(dat.description, descripcion, ''N/A'') DCCustomer
+        ,dials.dialType
+        ,TipoTel
+        ,ISNULL(CallDisposition, ''N/A'') AS CallDisposition
+        ,ISNULL(califSubDesc, ''N/A'') AS CallSubDisposition
+        ,ISNULL(csP.Dato6, '''') AS data6
+        ,ISNULL(csP.Dato7, '''') AS data7
+        ,ISNULL(csP.Dato8, '''') AS data8
+        ,ISNULL(csP.Dato9, '''') AS data9
+        ,ISNULL(csP.Dato10, '''') AS data10
+        ,ISNULL(csP.Dato11, '''') AS data11
+        ,ISNULL(csP.Dato12, '''') AS data12
+        ,ISNULL(csP.Dato13, '''') AS data13
+        ,ISNULL(csP.Dato14, '''') AS data14
+        ,ISNULL(csP.Dato15, '''') AS data15
+        ,dials.tpreview AS preview_Time
+        ,ISNULL(us.Login,'''') as [login]
+    FROM #dials as dials
+    LEFT JOIN ccoCallsOutSource cs(NOLOCK) ON dials.callout_id = cs.callout_id
+    LEFT JOIN cctipoResultadoDial tr(NOLOCK) ON dials.tiporesdial_id = tr.tiporesdial_id
+    LEFT JOIN ccCamps camps(NOLOCK) ON camps.[cam_id] = dials.[cam_id]
+    LEFT JOIN ccRIARegistryLists rl(NOLOCK) ON cs.list_id = rl.list_id
+    LEFT JOIN #relationCodeSip dat ON dat.disconnectCause = dials.disconnectCause
+    LEFT JOIN ccoCallsPreviewData csP ON (dials.cal_Key = csP.cal_Key AND dials.cam_id = csP.cam_id)
+    LEFT JOIN ccUsers us (NOLOCK) ON  us.User_id = dials.UserID
+
+    IF OBJECT_ID(''tempdb..#dials'') IS NOT NULL drop table #dials
+    IF OBJECT_ID(''tempdb..#codeSip'') IS NOT NULL drop table #codeSip;
+    IF OBJECT_ID(''tempdb..#relationCodeSip'') IS NOT NULL drop table #relationCodeSip;
+END'
+    EXEC(@sql)
+
+
+	set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='if exists (select * FROM sys.views where name = N''RepViewAgentGIUnion'')
+    begin
+	DROP VIEW [RepViewAgentGIUnion];
+	end'
+	EXEC(@sql)
+
+	set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='if exists (select * FROM sys.views where name = N''RepViewSummary'')
+    begin
+	DROP VIEW [RepViewSummary];
+	end'
+	EXEC(@sql)
+
+
+    set @process = 'Create View RepViewAgentGIUnion'
+    set @sql='CREATE VIEW [dbo].[RepViewAgentGIUnion] AS
+select [date],userId,[user],[login]
+,sum(tlog) tlog
+,sum(tunknown) tunknown
+,sum(tav) tav
+,sum(tnotav) tnotav
+,sum(tother) tother
+,sum(tprob) tprob
+,sum(tChatting) tChatting
+,sum(tundefined) tundefined
+,sum(nxferin) nxferin
+,sum(nanswerin) nanswerin
+,sum(nabndxferin) nabndxferin
+,sum(nabndringin) nabndringin
+,sum(nabnddlgin) nabnddlgin
+,sum(abndaxferin) abndaxferin
+,sum(nnoanswerin) nnoanswerin
+,sum(nlostin) nlostin
+,sum(tdialogin) tdialogin
+,sum(tnotesin) tnotesin
+,sum(tringin) tringin
+,sum(txferin) txferin
+,sum(nxferout) nxferout
+,sum(nanswerout) nanswerout
+,sum(nabndxferout) nabndxferout
+,sum(nabndringout) nabndringout
+,sum(nabnddlgout) nabnddlgout
+,sum(abndaxferout) abndaxferout
+,sum(nnoanswerout) nnoanswerout
+,sum(nlostout) nlostout
+,sum(tdialogout) tdialogout
+,sum(tnotesout) tnotesout
+,sum(tringout) tringout
+,sum(txferout) txferout
+,sum(nother) nother
+,sum(nmohin) nmohin
+,sum(nmohout) nmohout
+,sum(nwhagin) nwhagin
+,sum(nwhagout) nwhagout
+,sum(nwhcliin) nwhcliin
+,sum(nwhcliout) nwhcliout
+,[year],[month],[day],[hour],[minutes]
+,0 tManual,0 tauxiliarready
+from RepAgentGI_VersionOld
+group by [date],userId,[user],[login],[year],[month],[day],[hour],[minutes]
+union
+select [date],userId,[user],[login]
+,tlog
+,tunknown
+,tav
+,tnotav
+,tother
+,tprob
+,tChatting
+,tundefined
+,nxferin
+,nanswerin
+,nabndxferin
+,nabndringin
+,nabnddlgin
+,abndaxferin
+,nnoanswerin
+,nlostin
+,tdialogin
+,tnotesin
+,tringin
+,txferin
+,nxferout
+,nanswerout
+,nabndxferout
+,nabndringout
+,nabnddlgout
+,abndaxferout
+,nnoanswerout
+,nlostout
+,tdialogout
+,tnotesout
+,tringout
+,txferout
+,nother
+,nmohin
+,nmohout
+,nwhagin
+,nwhagout
+,nwhcliin
+,nwhcliout
+,[year],[month],[day],[hour],[minutes]
+,tManual
+,0 tauxiliarready
+from RepAgentGI
+'
+    EXEC(@sql)
+
+
+    set @process = 'Create View RepViewSummary'
+    set @sql='CREATE VIEW [dbo].[RepViewSummary] AS
+select 
+[date]
+,[login]
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,0 callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,0 avgCallTengaged
+,twrapup
+,userId
+,0 TypeNotReady
+,'''' descripcion
+,''_Time'' descripcion_time
+,0 [time]
+,0 transferStatus
+,0 ringingTime
+,0 unknownStatus
+,0 otherStatus
+,0 failureStatus
+,0 chatTengaged
+,0 undefinedTime
+,0 dialingStatus
+--,null TipoReadyAuxiliarId
+--,'' auxiliarRedy_descripcion
+--,'' descripcion_auxiliarRedyTime_time
+--,0 auxiliarRedyTime
+from RepAgentSummary_VersionAmatech
+union
+select date
+,login
+,user
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,avgCallTengaged
+,twrapup
+,userId
+,TypeNotReady
+,descripcion
+,descripcion_time
+,time
+,transferStatus
+,ringingTime
+,unknownStatus
+,otherStatus
+,failureStatus
+,chatTengaged
+,undefinedTime
+,dialingStatus
+--,TipoReadyAuxiliarId
+--,auxiliarRedy_descripcion
+--,descripcion_auxiliarRedyTime_time
+--,auxiliarRedyTime
+from RepAgentSummary'
+    EXEC(@sql)
+    
+	set @process = ''
     set @sql=''
     EXEC(@sql)
 
+    
      set @process = ''
     set @sql=''
     EXEC(@sql)
 
-
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-    ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.9---------------------------------------------------------
+    ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.11---------------------------------------------------------
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

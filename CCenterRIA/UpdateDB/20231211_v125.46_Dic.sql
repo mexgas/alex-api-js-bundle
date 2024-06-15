@@ -5866,7 +5866,8 @@ set nocount off'
 		end
 		else if @action=5 begin
 			if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
-				insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
+				insert into ccSmsConversationsResult(camId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected,InsufficientBalance,Exception)
+				values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
 			end
 			else begin
 				update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 

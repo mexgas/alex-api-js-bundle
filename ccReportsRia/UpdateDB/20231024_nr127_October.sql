@@ -26,18 +26,7 @@ BEGIN
 	begin
 		alter table RepOutManagementBase add campaignId int null
 	end'
-	EXEC(@sql)
-
-	set @process = 'CW-8143 Actualizar valor de columna campaignId en tabla RepOutManagementBase'
-	set @sql='
-	if exists (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''RepOutManagementBase'' AND COLUMN_NAME = ''campaignId'')
-	begin
-		update RepOutManagementBase 
-		set campaignId = ISNULL(c.cam_id, 0)
-		from RepOutManagementBase rep
-		left join cccamps c on rep.Campaigns = c.cam_descripcion
-	end'
-	EXEC(@sql)
+	EXEC(@sql)	
 
 	set @process = 'CW-8143 Borrar sp ccspRepOutManagementBase'
 	set @sql='

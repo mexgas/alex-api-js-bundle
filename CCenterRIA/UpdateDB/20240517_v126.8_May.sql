@@ -1820,17 +1820,18 @@ else begin
 	DECLARE @insertInto VARCHAR(MAX)
 
 	SELECT 
-		@columnsWithTypes = STRING_AGG(QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
-			CASE 
-				WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
-					CASE 
-						WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
-						ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
-					END + '')''
-				WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
-				ELSE ''''
-			END, '', ''),
-    @newColumns = STRING_AGG(QUOTENAME(COLUMN_NAME), '', '')
+		@columnsWithTypes = COALESCE(@columnsWithTypes + '', '', '''') + 
+		QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
+		CASE 
+			WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
+				CASE 
+					WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
+					ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
+				END + '')''
+			WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
+			ELSE ''''
+		END,
+		@newColumns = COALESCE(@newColumns + '', '', '''') + QUOTENAME(COLUMN_NAME)
 	FROM INFORMATION_SCHEMA.COLUMNS
 	WHERE TABLE_NAME = ''SmsRemesasMuñozDay'' AND COLUMN_NAME in (select value from dbo.fn_RIASplitDelimited(@columns,'',''))
 

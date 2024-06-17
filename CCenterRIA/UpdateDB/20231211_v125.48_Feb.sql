@@ -10574,8 +10574,108 @@ SET NOCOUNT OFF;'
 	EXEC(@sql);
 
 		----------------------------------------------------- END Carlos Chavez  ----------------------------------------------------------------
+        ----------------------------------------------------- BEGIN Uriel Cabrera  ----------------------------------------------------------------
+    SET @process = 'CREATE setting 261 - Admin Machine Location'
+	SET @sql = 'IF NOT EXISTS (Select * from ccSettings2 where setting_id = 261) begin
+                    INSERT INTO ccSettings2 VALUES (261, '''', ''Ubicación del AdminMachine'',
+                        1, ''GRL'', ''IP o Hostname del servidor donde se encuentra el AdminMachine'',
+                        ''AdminMachine location'',0,
+                        ''^(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}(25[0-5]|[01]?\d\d?|2[0-4]\d)$'')
+                end'
+	EXEC(@sql);
 
+    SET @process = 'DROP PROCEDURE ccsp_GalateaSettingsExtend'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaSettingsExtend'')
+                begin
+                    DROP PROCEDURE ccsp_GalateaSettingsExtend;
+                end'
+	EXEC(@sql);
 
+    SET @process = 'CREATE PROCEDURE ccsp_GalateaSettingsExtend'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaSettingsExtend]
+                    @Ids VARCHAR(1000) = NULL
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+
+                    DECLARE @IdList TABLE (Id SMALLINT);
+                    DECLARE @Delimiter CHAR(1) = '','';
+                    DECLARE @Pos INT;
+                    DECLARE @NextPos INT;
+                    DECLARE @Id VARCHAR(255);
+
+                    SET @Ids = LTRIM(RTRIM(@Ids))+ '','';
+                    SET @Pos = CHARINDEX(@Delimiter, @Ids, 1);
+
+                    WHILE (@Pos > 0)
+                    BEGIN
+                        SET @Id = LTRIM(RTRIM(LEFT(@Ids, @Pos - 1)));
+                        IF (@Id != '''')
+                        BEGIN
+                            INSERT INTO @IdList (Id) VALUES (@Id);
+                        END
+                        SET @Ids = RIGHT(@Ids, LEN(@Ids) - @Pos);
+                        SET @Pos = CHARINDEX(@Delimiter, @Ids, 1);
+                    END;
+
+                    SELECT [setting_id], [valor]
+                    FROM
+                    (
+                        SELECT [setting_id], [valor], 1 AS [Tabla]
+                        FROM [dbo].[ccSettings] WITH(NOLOCK)
+                        WHERE ([setting_id] IN (SELECT Id FROM @IdList WHERE Id <= 255) and Status = 1 ) or Tipo = ''AGT''
+                        UNION ALL
+                        SELECT [setting_id], [valor], 2 AS [Tabla]
+                        FROM [dbo].[ccSettings2] WITH(NOLOCK)
+                        WHERE [setting_id] IN (SELECT Id FROM @IdList WHERE Id > 255) and Status = 1
+                    ) AS AllSettings
+                    ORDER BY [setting_id], [Tabla];
+
+                END'
+	EXEC(@sql);
+
+    SET @process = 'DROP PROCEDURE ccsp_GalateaSetSocketConfiguration'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaSetSocketConfiguration'')
+                begin
+                    DROP PROCEDURE ccsp_GalateaSetSocketConfiguration;
+                end'
+	EXEC(@sql);
+
+    SET @process = 'CREATE PROCEDURE ccsp_GalateaSetSocketConfiguration'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaSetSocketConfiguration]
+                @ip varchar(300)
+                    AS
+                set nocount on
+                    update ccSettings2 set valor= @ip where setting_id = 261'
+	EXEC(@sql);
+
+    SET @process = 'DROP PROCEDURE ccsp_GalateaSettingsExtendById'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaSettingsExtendById'')
+                begin
+                    DROP PROCEDURE ccsp_GalateaSettingsExtendById;
+                end'
+	EXEC(@sql);
+
+    SET @process = 'CREATE PROCEDURE ccsp_GalateaSettingsExtendById'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaSettingsExtendById]
+						@Id smallint = NULL
+					AS
+					BEGIN
+
+						SET NOCOUNT ON;
+
+						SELECT [setting_id]
+								,[valor]
+								,[Status]
+								,[Tipo]
+								,[bLoadSettings]
+							FROM [dbo].[ccSettings2] WITH(NOLOCK)
+							WHERE (@Id IS NULL OR [setting_id]=@Id)
+
+					END'
+	EXEC(@sql);
+
+        ----------------------------------------------------- END Uriel Cabrera  ----------------------------------------------------------------
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

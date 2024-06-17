@@ -518,6 +518,50 @@ BEGIN
 END'
 		EXEC(@sql)
 
+		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
+        SET @sql = 'IF OBJECT_ID(''dbo.fnGetTraducedIdentifiers'', ''IF'') IS NOT NULL
+		BEGIN
+			DROP FUNCTION dbo.fnGetTraducedIdentifiers;
+		END';
+        EXEC (@sql);
+
+		SET @process = 'Create function [fnGetTraducedIdentifiers]';
+        SET @sql = 'CREATE function [dbo].[fnGetTraducedIdentifiers](@identifiers varchar(max), @lang int)
+        RETURNS varchar(max)
+        AS
+        BEGIN
+
+        DECLARE @result VARCHAR(MAX);
+
+        ;WITH temp AS (
+            SELECT value AS identifier
+            FROM dbo.fn_RIASplitDelimited(@identifiers, '','')
+        ),
+        tradIdentifiers AS (
+            SELECT 
+                CASE 
+                    WHEN i.Description IS NOT NULL THEN
+                        CASE 
+                            WHEN @lang = 0 THEN i.TagEs 
+                            WHEN @lang = 1 THEN i.TagEn 
+                            ELSE i.TagPt
+                        END
+                    ELSE a.identifier 
+                END AS identifier
+            FROM temp a
+            LEFT JOIN ccGalateaIdentifiers i ON a.identifier = i.Description
+        )
+
+        SELECT @result = STUFF((
+            SELECT '','' + identifier
+            FROM tradIdentifiers
+            FOR XML PATH(''''), TYPE).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
+
+        RETURN @result;
+
+        END';
+        EXEC (@sql);
+
 
 		SET @process = 'Drop [ccsp_GalateaChangeHistory]';
         SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaChangeHistory'')
@@ -672,50 +716,6 @@ END'
 
 
     SET NOCOUNT OFF';
-        EXEC (@sql);
-
-		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
-        SET @sql = 'IF OBJECT_ID(''dbo.fnGetTraducedIdentifiers'', ''IF'') IS NOT NULL
-		BEGIN
-			DROP FUNCTION dbo.fnGetTraducedIdentifiers;
-		END';
-        EXEC (@sql);
-
-		SET @process = 'Create function [fnGetTraducedIdentifiers]';
-        SET @sql = 'CREATE function [dbo].[fnGetTraducedIdentifiers](@identifiers varchar(max), @lang int)
-        RETURNS varchar(max)
-        AS
-        BEGIN
-
-        DECLARE @result VARCHAR(MAX);
-
-        ;WITH temp AS (
-            SELECT value AS identifier
-            FROM dbo.fn_RIASplitDelimited(@identifiers, '','')
-        ),
-        tradIdentifiers AS (
-            SELECT 
-                CASE 
-                    WHEN i.Description IS NOT NULL THEN
-                        CASE 
-                            WHEN @lang = 0 THEN i.TagEs 
-                            WHEN @lang = 1 THEN i.TagEn 
-                            ELSE i.TagPt
-                        END
-                    ELSE a.identifier 
-                END AS identifier
-            FROM temp a
-            LEFT JOIN ccGalateaIdentifiers i ON a.identifier = i.Description
-        )
-
-        SELECT @result = STUFF((
-            SELECT '','' + identifier
-            FROM tradIdentifiers
-            FOR XML PATH(''''), TYPE).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
-
-        RETURN @result;
-
-        END';
         EXEC (@sql);
 
 		----------------------------------------------------- END Ulises SP's ----------------------------------------------------------------

@@ -3942,7 +3942,7 @@ BEGIN
         INSERT INTO ccCampsExtend(cam_id,zipCodeSchedule,SimultaneousRecs, RecordCalls, EditableContactData) values (@cam_id,@zipCodeSchedule,@simultaneousRecs, @recordCalls, @editableContactData)
     end
 
-    update ccCamps set call_record = @recordCalls where cam_id = @cam_id
+    update ccCamps set call_record = ISNULL(@recordCalls, call_record) where cam_id = @cam_id
 
     set nocount off
 END'

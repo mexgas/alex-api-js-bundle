@@ -518,9 +518,53 @@ BEGIN
 END'
 		EXEC(@sql)
 
+		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
+        SET @sql = 'IF OBJECT_ID(''dbo.fnGetTraducedIdentifiers'', ''IF'') IS NOT NULL
+		BEGIN
+			DROP FUNCTION dbo.fnGetTraducedIdentifiers;
+		END';
+        EXEC (@sql);
+
+		SET @process = 'Create function [fnGetTraducedIdentifiers]';
+        SET @sql = 'CREATE function [dbo].[fnGetTraducedIdentifiers](@identifiers varchar(max), @lang int)
+        RETURNS varchar(max)
+        AS
+        BEGIN
+
+        DECLARE @result VARCHAR(MAX);
+
+        ;WITH temp AS (
+            SELECT value AS identifier
+            FROM dbo.fn_RIASplitDelimited(@identifiers, '','')
+        ),
+        tradIdentifiers AS (
+            SELECT 
+                CASE 
+                    WHEN i.Description IS NOT NULL THEN
+                        CASE 
+                            WHEN @lang = 0 THEN i.TagEs 
+                            WHEN @lang = 1 THEN i.TagEn 
+                            ELSE i.TagPt
+                        END
+                    ELSE a.identifier 
+                END AS identifier
+            FROM temp a
+            LEFT JOIN ccGalateaIdentifiers i ON a.identifier = i.Description
+        )
+
+        SELECT @result = STUFF((
+            SELECT '','' + identifier
+            FROM tradIdentifiers
+            FOR XML PATH(''''), TYPE).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
+
+        RETURN @result;
+
+        END';
+        EXEC (@sql);
+
 
 		SET @process = 'Drop [ccsp_GalateaChangeHistory]';
-        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''[ccsp_GalateaChangeHistory]'')
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaChangeHistory'')
                     BEGIN
                       DROP PROCEDURE [ccsp_GalateaChangeHistory]
                     END';
@@ -672,48 +716,6 @@ END'
 
 
     SET NOCOUNT OFF';
-        EXEC (@sql);
-
-		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
-        SET @sql = 'IF OBJECT_ID(''dbo.fnGetTraducedIdentifiers'', ''IF'') IS NOT NULL
-		BEGIN
-			DROP FUNCTION dbo.fnGetTraducedIdentifiers;
-		END';
-        EXEC (@sql);
-
-		SET @process = 'Create function [fnGetTraducedIdentifiers]';
-        SET @sql = 'CREATE function [dbo].[fnGetTraducedIdentifiers](@identifiers varchar(max), @lang int)
-RETURNS varchar(max)
-AS
-BEGIN
-
-DECLARE @result VARCHAR(MAX)
-
-;WITH temp AS (
-    SELECT value AS identifier
-    FROM dbo.fn_RIASplitDelimited(@identifiers, '','')
-),
-tradIdentifiers AS (
-    SELECT 
-        CASE 
-            WHEN i.Description IS NOT NULL THEN
-                CASE 
-                    WHEN @lang = 0 THEN i.TagEs 
-                    WHEN @lang = 1 THEN i.TagEn 
-                    ELSE i.TagPt
-                END
-            ELSE a.identifier 
-        END AS identifier
-    FROM temp a
-    LEFT JOIN ccGalateaIdentifiers i ON a.identifier = i.Description
-)
-
-SELECT @result = STRING_AGG(identifier, '', '')
-FROM tradIdentifiers;
-
-return @result
-				
-END';
         EXEC (@sql);
 
 		----------------------------------------------------- END Ulises SP's ----------------------------------------------------------------
@@ -1818,17 +1820,18 @@ else begin
 	DECLARE @insertInto VARCHAR(MAX)
 
 	SELECT 
-		@columnsWithTypes = STRING_AGG(QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
-			CASE 
-				WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
-					CASE 
-						WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
-						ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
-					END + '')''
-				WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
-				ELSE ''''
-			END, '', ''),
-    @newColumns = STRING_AGG(QUOTENAME(COLUMN_NAME), '', '')
+		@columnsWithTypes = COALESCE(@columnsWithTypes + '', '', '''') + 
+		QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
+		CASE 
+			WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
+				CASE 
+					WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
+					ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
+				END + '')''
+			WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
+			ELSE ''''
+		END,
+		@newColumns = COALESCE(@newColumns + '', '', '''') + QUOTENAME(COLUMN_NAME)
 	FROM INFORMATION_SCHEMA.COLUMNS
 	WHERE TABLE_NAME = ''SmsRemesasMuñozDay'' AND COLUMN_NAME in (select value from dbo.fn_RIASplitDelimited(@columns,'',''))
 

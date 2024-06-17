@@ -47,7 +47,7 @@ BEGIN
         EXEC (@sql);
 
 		SET @process = 'CREATE SP  ccspRepSMSDayReportBySegments';
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepSMSDayReportBySegments] 
+        SET @sql = 'CREATE PROCEDURE ccspRepSMSDayReportBySegments
 	@action AS TINYINT = 1, 
 	@from AS DATETIME = null,  
 	@to AS DATETIME = null

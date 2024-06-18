@@ -1187,12 +1187,12 @@ return(0)';
 							crlp.cal_key, 
 							crlp.telefono AS phone,
 							CASE
-								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked  
 								WHEN crlp.tipoMov = 2 THEN @typeUpdatedRecords	
 								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @typeIncorrectRecords
 								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @typeBlockedRecords
 								WHEN crlp.tipoMov in(-1,0) THEN @typeDescriptionPhoneNotLoaded
 								WHEN crlp.tipoMov in(8) THEN @descriptionInternationalPortNotFound
+								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked
 								WHEN crlp.keyTranslate is not null THEN isnull(tlan.translate,crlp2.descTipoMov)
 							ELSE 
 								crlp2.descTipoMov  
@@ -1202,10 +1202,10 @@ return(0)';
 							end
 							 AS ColumnFile, 
 							CASE  WHEN crlp.tipoMov = 2 THEN ''''N/A'''' 
-									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList							  
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @descriptionIncorrectRecords
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @descriptionBlockedRecords
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-camp-no-international-port'''') THEN  @descriptionInternationalPortNotFound
+									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList
 									WHEN crlp.keyTranslate is not null THEN tlan.translate 
 							ELSE crlp.motivo END AS motivo,
 							CAST('' + @LoadBySegment + '' as BIT) AS LoadBySegment

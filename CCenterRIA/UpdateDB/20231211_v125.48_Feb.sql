@@ -10892,7 +10892,8 @@ set nocount off';
 	set @process = 'CW-8569 Create sp ccsp_GalateaManageWG se modifica condición option= 3 se cambia < por <= '
     set @sql='
 	
-CREATE PROCedure [dbo].[ccsp_GalateaManageWG]
+	
+alter PROCedure [dbo].[ccsp_GalateaManageWG]
 @option smallint,
 @IDWG smallint,
 @Type smallint = 0,
@@ -10911,6 +10912,11 @@ declare @IDCampEsp varchar(max)
 declare @Assigned  varchar(max)
 declare @AssignedCampsIn  varchar(max)
 declare @AssignedCampsOut  varchar(max)
+declare @settings table (
+setting_id tinyint,
+valor varchar(300)
+)
+insert into @settings (setting_id, valor) select setting_id,valor from ccSettings where setting_id in (63,64,180)
 
 set @id = 1
 set @Assigned = ''''
@@ -10967,7 +10973,7 @@ if @option = 1 -- Insert Agente-Supervisor in WorkGroup
                 If @Type = 1
                  begin
 
-                        If (select count(User_id) from ccRIAWorkGroupUsers where User_id = @user) < (select valor from ccSettings where setting_id = 63)
+                        If (select count(User_id) from ccRIAWorkGroupUsers where User_id = @user) < (select valor from @settings where setting_id=63)
                          begin
                             insert into ccRIAWorkGroupUsers(IDWG, User_id) values(@IDWG,@user)
 
@@ -11143,10 +11149,10 @@ if @option = 3 -- Insert WorkGroup in Camp or ACDGroup
          select @IDCampEsp = CampEsp, @Type = Type from #CampsInOutList where Row= @id
          
 
-         if (select count(IdCampEsp) from ccRIACampEspWG where IdCampEsp=@IDCampEsp and Tipo=@Type) <= (select valor from ccSettings where setting_id=180) -- limit
+         if (select count(IdCampEsp) from ccRIACampEspWG where IdCampEsp=@IDCampEsp and Tipo=@Type) <= (select valor from @settings where setting_id=180) -- limit
              begin
 
-                if (select count(IDWG) from ccRIACampEspWG where IDWG=@IDWG) <= (select valor from ccSettings where setting_id=64) -- limit
+                if (select count(IDWG) from ccRIACampEspWG where IDWG=@IDWG) <= (select valor from @settings where setting_id=64) -- limit
                     begin
 
                         if not exists (select IDWG from ccRIACampEspWG where IDWG=@IDWG and Tipo=@Type and IdCampEsp=@IDCampEsp) -- No existe el grupo en el ACD o Especialidad

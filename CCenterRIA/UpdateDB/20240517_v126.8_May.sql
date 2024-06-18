@@ -1118,7 +1118,7 @@ return(0)';
 			''
 
 		if @nType like ''%__1__%''
-			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1,0) 
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1) 
 			''
 
 		if @nType like ''%_1___%''

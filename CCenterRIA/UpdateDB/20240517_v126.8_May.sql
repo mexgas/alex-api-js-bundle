@@ -358,15 +358,17 @@ END
         SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ccSmsResponseMessages'')
                     BEGIN
                         CREATE TABLE ccSmsResponseMessages (
-                            Id INT PRIMARY KEY IDENTITY(1,1),
-                            Destination VARCHAR(32) NOT NULL,
-                            Source VARCHAR(32) NOT NULL,
-                            Text NVARCHAR(MAX) NOT NULL,
-                            Date DATETIME NOT NULL,
-                            SystemApiId VARCHAR(100) NOT NULL, 
-                            EmailAttempts INT NOT NULL DEFAULT 0,
-                            EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
-                        );
+					        Id INT PRIMARY KEY IDENTITY(1,1),
+					        Destination VARCHAR(32) NOT NULL,
+					        Source VARCHAR(32) NOT NULL,
+					        Text NVARCHAR(MAX) NOT NULL,
+					        Date DATETIME NOT NULL,
+							SystemApiId VARCHAR(100) NOT NULL, 
+							EmailAttempts INT NOT NULL DEFAULT 0,
+							EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
+							CampaignId INT NOT NULL DEFAULT 0,
+							SmsOutId INT NOT NULL DEFAULT 0
+					    );
                     END';
         EXEC (@sql);
 
@@ -381,15 +383,16 @@ END
         SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ProcessingSmsClientMessagesEmails'')
                     BEGIN
                         CREATE TABLE ProcessingSmsClientMessagesEmails (
-                            Destination VARCHAR(32) NOT NULL,
-                            Source VARCHAR(32) NOT NULL,
-                            Text NVARCHAR(MAX) NOT NULL,
-                            Date DATETIME NOT NULL,
-                            SystemApiId VARCHAR(100) NOT NULL, 
-                            UserEmail NVARCHAR(255), 
-                            EmailAttempts INT NOT NULL DEFAULT 0,
-                            EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
-                        );
+							Destination VARCHAR(32) NOT NULL,
+							Source VARCHAR(32) NOT NULL,
+							Text NVARCHAR(MAX) NOT NULL,
+							Date DATETIME NOT NULL,
+							SystemApiId VARCHAR(100) NOT NULL, 
+							UserEmail NVARCHAR(255), 
+							CampaignId INT DEFAULT 0, 
+							EmailAttempts INT NOT NULL DEFAULT 0,
+							EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
+						);
                     END';
         EXEC (@sql);
 
@@ -407,12 +410,14 @@ END
 					@Source VARCHAR(32) = NULL,
 					@Text VARCHAR(MAX) = NULL,
 					@Date DATETIME = NULL,
-					@SystemApiId VARCHAR(100) = NULL
+					@SystemApiId VARCHAR(100) = NULL,
+					@CampaignId INT = 0,
+					@SmsOutId INT = 0
 					AS
 
 					IF @Action IS NOT NULL BEGIN
 					    IF @Action = 0 BEGIN        -- Insert new client message
-					        INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId)
+					        INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId, CampaignId, SmsOutId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId, @CampaignId, @SmsOutId)
 					    END
 
 					    IF @Action = 1 BEGIN        -- Get sender email information
@@ -424,7 +429,7 @@ END
 								   U.Login AS AdminName,
 					               U.notificationEmail AS AdminEmail
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
 					        INNER JOIN ccSupervisorCam SC ON SC.cam_id = LD.cam_id 
 					        INNER JOIN ccUsers U ON U.User_id = SC.user_id
 					        WHERE RM.EmailResultStatus <> 1     -- Get all non successful email messages
@@ -433,7 +438,8 @@ END
 					    END
 
 					    IF @Action = 3 BEGIN        -- Get messages to send an email
-					        SELECT  RM.Destination, 
+					        SELECT  DISTINCT 
+									RM.Destination, 
 					                RM.Source, 
 					                RM.Text, 
 					                RM.Date, 
@@ -442,8 +448,8 @@ END
 					                RM.EmailResultStatus,
 					                RM.EmailAttempts
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
-					        WHERE  RM.EmailResultStatus <> 1 
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
+					        WHERE  RM.EmailResultStatus <> 1 AND RM.CampaignId = LD.cam_id AND RM.SmsOutId = LD.smsout_id
 					    END
 
 					    IF @Action = 4 BEGIN        -- Update email attempts and status 

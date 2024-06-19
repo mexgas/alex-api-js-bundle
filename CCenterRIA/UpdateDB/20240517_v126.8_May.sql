@@ -411,8 +411,8 @@ END
 					@Text VARCHAR(MAX) = NULL,
 					@Date DATETIME = NULL,
 					@SystemApiId VARCHAR(100) = NULL,
-					@CampaignId INT = NULL,
-					@SmsOutId INT = NULL
+					@CampaignId INT = 0,
+					@SmsOutId INT = 0
 					AS
 
 					IF @Action IS NOT NULL BEGIN

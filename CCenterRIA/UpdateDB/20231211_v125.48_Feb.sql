@@ -566,6 +566,855 @@ SET NOCOUNT OFF'
 END '
         EXEC(@sql);
 
+        SET @process = 'ALTER SP ccsp_ConversationOutWASave @action = 1 Se revisa si el debe cerrar las conversaciones que fueron mayores a 23 horas'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
+@action             INT
+, @conversationId     INT         = 0
+, @campId             INT         = NULL        
+, @phoneCamp          VARCHAR(50) = NULL
+, @clientId           VARCHAR(25) = NULL
+, @conversationStatus SMALLINT    = 0
+, @tChatting          FLOAT       = 0
+, @tWrapUp            SMALLINT    = 0
+, @finishedBy         TINYINT     = 0
+, @onQueue            BIT         = NULL
+, @tQueue             SMALLINT    = 0
+, @tTimeout           INT         = 0
+, @disposition        SMALLINT    = 0
+, @subDisposition     SMALLINT    = 0
+, @agentId            INT         = 0
+
+AS
+BEGIN
+    SET NOCOUNT ON;
+                        
+    declare @conversationIdTemporal     INT;
+
+IF @action = 1 BEGIN --new Conversation
+    select @phoneCamp= number from ccWhatsAppNumbers where camp_id= @campId
+                            
+    if @phoneCamp is null or @phoneCamp='''' begin
+        select 0 as [ConversationId],0 as [MessageId]
+        return(0)
+    end
+    DECLARE @dateNow DATETIME;
+    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+
+    declare @existsConversationOut bit
+    set @existsConversationOut =0
+    
+    
+    if not exists (select * from ccWhatsAppConversationsOut with(nolock) where
+    phoneCamp = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate <= @dateNow) 
+    begin       
+        set @existsConversationOut=0
+    end 
+    else begin
+        set @existsConversationOut=1
+        UPDATE ccWhatsAppConversationsOut
+        SET finishedBy = 2 ,conversationStatus=17
+        WHERE finishedBy = 0  AND requestDate <= @dateNow
+        and phoneCamp = @phoneCamp and clientId = @clientId
+    end
+    
+    if not exists (select 1 from ccWhatsAppConversationsOut with(nolock) 
+        where phoneCamp = @phoneCamp and clientId = @clientId 
+        and finishedBy = 0 and requestDate > @dateNow) 
+    begin
+        set @existsConversationOut=0
+    end
+    else begin
+        set @existsConversationOut=1
+    end
+    
+    if @existsConversationOut=0
+    begin
+        if not exists (select * from ccWhatsAppConversations with(nolock) where phoneACD = @phoneCamp and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) 
+        begin
+            INSERT INTO [ccWhatsAppConversationsOut]
+            ([camId] , [phoneCamp], clientId, conversationStatus, tChatting
+            , tWrapUp, finishedBy, onQueue, tQueue, requestDate
+            , tTimeout, disposition, subDisposition, agentId)
+            VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
+            @onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
+                        
+            SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
+            SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
+        end
+        else begin
+            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+            ,B.conversationId as conversationIdExists
+            FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
+            ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
+            INNER JOIN ccUsers C ON B.agentId = C.User_id;
+        end  
+    end
+    else begin
+        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+        ,B.conversationId as conversationIdExists
+        FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
+        ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
+        INNER JOIN ccUsers C ON B.agentId = C.User_id;
+    end  
+END 
+ELSE IF @action = 2 -- Get Outbound Templates
+BEGIN
+    IF @campId IS NOT NULL
+    BEGIN
+        DECLARE @AsociatedNumber VARCHAR(30) = (SELECT number from ccWhatsAppNumbers WHERE @campId = camp_id);
+        SELECT * FROM ccWhatsAppOutboundTemplates WHERE AsociatedNumber = @AsociatedNumber AND Status = 1;
+    END
+END
+END'
+        EXEC(@sql);
+
+    set @process = 'Alter Sp ccsp_ConversationWASave IF @action = 6 Se modifica para agregar with(nolock) y action=18'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
+, @conversationId     INT         = 0
+, @inboundId          SMALLINT    = NULL
+, @phoneACD           VARCHAR(50) = NULL
+, @clientId           VARCHAR(25) = NULL
+, @conversationStatus SMALLINT    = 0
+, @tChatting          FLOAT    = 0
+, @tWrapUp            SMALLINT    = 0
+, @finishedBy         TINYINT     = 0
+, @onQueue            BIT         = NULL
+, @tQueue             SMALLINT    = 0
+, @tTimeout           INT         = 0
+, @disposition        SMALLINT    = 0
+, @subDisposition     SMALLINT    = 0
+, @agentId            INT         = 0
+--VAR MESSAGES
+, @messageId          VARCHAR(50) = NULL
+, @messageIdUi        INT         = NULL
+, @clientNum          VARCHAR(15) = NULL
+, @vonageNum          VARCHAR(15) = NULL
+, @typeMessage        VARCHAR(25) = ''''
+, @content            NVARCHAR(MAX)= NULL
+, @timeStampMessage   DATETIME    = NULL
+, @timeStampMessageUTC DATETIME   = NULL
+, @originType         VARCHAR(15) = NULL
+, @currency           VARCHAR(10) = ''-''
+, @price              VARCHAR(10) = ''0.00''
+, @messageStatus      VARCHAR(15) = ''N/A''
+, @listConversationsIds   VARCHAR(MAX) = NULL
+, @IsAgentLoggingOut  BIT = 0
+AS
+BEGIN
+    DECLARE @isEndConversation BIT;
+    DECLARE @meanContactTypeId SMALLINT;
+    DECLARE @conversationIdNew INT;
+    SET @meanContactTypeId = 1;
+    SET NOCOUNT ON;
+
+IF @action = 1
+    BEGIN --new Conversation
+        IF NOT EXISTS
+            (SELECT A.conversationId conversationId FROM ccWhatsAppConversations A with(nolock)
+            WHERE A.conversationId = @conversationId
+            )
+        BEGIN
+            INSERT INTO [ccWhatsAppConversations]
+            (inboundId
+            , phoneACD
+            , clientId
+            , conversationStatus
+            , tChatting
+            , tWrapUp
+            , finishedBy
+            , onQueue
+            , tQueue
+            , tTimeout
+            , disposition
+            , subDisposition
+            , agentId
+            )
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+
+            IF NOT EXISTS (SELECT WhatsAppSpamId FROM ccWhatsAppSpam WHERE NumberClient = @clientId and InboundId = @inboundId) BEGIN
+                SELECT @conversationId = SCOPE_IDENTITY();
+                SELECT @conversationId AS ConversationId;
+            END
+            ELSE BEGIN
+
+                declare @conversationIdTemporal     INT;
+                SELECT @conversationIdTemporal = SCOPE_IDENTITY();
+                EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationIdTemporal, @conversationStatus = 13
+                SELECT 0 AS ConversationId;
+            END;
+
+            --Save new request
+            IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @inboundId)
+                BEGIN
+                    INSERT INTO ccWAOperatingSummary (InboundId, Request) VALUES (@inboundId, 1);
+                END
+            ELSE
+                BEGIN
+                    UPDATE ccWAOperatingSummary SET Request = (Request + 1) WHERE InboundId = @inboundId
+                END
+            RETURN(0);
+        END
+        ELSE
+        BEGIN
+            DECLARE @conversationStatusTemp INT = @conversationStatus;
+            IF @conversationStatus in(17,18) BEGIN
+                SET @conversationStatusTemp = 1
+            END
+            DECLARE @RequestDate DATETIME = NULL;
+            SELECT @RequestDate = [requestDate] FROM ccWhatsAppConversations WITH(NOLOCK) WHERE conversationId = @conversationId;
+
+            INSERT INTO [ccWhatsAppConversations]
+            (inboundId
+            , phoneACD
+            , clientId
+            , conversationStatus
+            , tChatting
+            , tWrapUp
+            , finishedBy
+            , onQueue
+            , tQueue
+            , tTimeout
+            , disposition
+            , subDisposition
+            , agentId
+            , requestDate
+            )
+            VALUES(@inboundId, @phoneACD, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId, @RequestDate);
+            SELECT @conversationIdNew = SCOPE_IDENTITY();
+
+            INSERT INTO ccWhatsAppConversationsRelationship (conversationIdBefore
+                                                                , conversationIdAfter)
+                VALUES (@conversationId, @conversationIdNew);
+            --Save new request by reassign
+            UPDATE ccWAOperatingSummary SET Request = (Request + 1)
+            WHERE InboundId = @inboundId
+
+        EXEC ccsp_ConversationWASave @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
+
+        SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationship with(nolock) where conversationIdBefore = @conversationId;
+        RETURN(0);
+    END;
+END;
+
+ELSE IF @action = 2
+BEGIN --save conversation Times
+    DECLARE @conversationIdTemp INT;
+    DECLARE @TablaTemp TABLE (conversationId INT, status bit);
+
+    IF @listConversationsIds IS NOT NULL begin
+        INSERT INTO @TablaTemp
+        SELECT value,0
+        FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+        where value is not null and value<>''''
+    end
+    else begin
+        INSERT INTO @TablaTemp values(@conversationId,0)
+    end
+
+    UPDATE ccWhatsAppConversations
+    SET
+    conversationStatus = @conversationStatus
+    , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
+    when @conversationStatus in(11) then 1
+    else 0 end
+    , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
+    ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
+    ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+    WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
+
+        WHILE exists(SELECT conversationId FROM @TablaTemp where status=0)
+    BEGIN
+        select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
+        exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=5
+
+        IF @conversationStatus in(4,10,11,13,17,18) BEGIN
+            DECLARE @conversationDateTemp INT;
+            select @inboundId = inboundId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end 
+            from ccWhatsAppConversations with(nolock) where conversationId = @conversationId;
+
+            IF @conversationStatus = 13 BEGIN
+                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationId, @clientId);
+                END
+            END
+            ELSE IF @conversationStatus in(4,10,17,18) BEGIN --Save conversation Ended by system
+                IF @conversationDateTemp > 0 BEGIN
+                    UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+                END
+                ELSE BEGIN
+                        UPDATE ccWAOperatingSummary SET EndedBySystem = (EndedBySystem + 1) WHERE InboundId = @inboundId
+                END
+            END
+            ELSE IF @conversationStatus = 11 BEGIN --Save conversation Ended by AGENT
+                UPDATE ccWAOperatingSummary SET Attended = (Attended + 1), Assigned = (Assigned - 1) WHERE InboundId = @inboundId
+            END
+        END
+        update @TablaTemp set status=1 where conversationId=@conversationIdTemp
+    END
+
+END;
+
+ELSE IF @action = 3
+BEGIN --save conversation Status
+    UPDATE ccWhatsAppConversations SET conversationStatus = @conversationStatus
+    WHERE conversationId = @conversationId;
+END;
+
+ELSE IF @action = 4 BEGIN --save messages from conversation
+    IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A with(nolock) WHERE A.conversationId=@conversationId)
+        AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversations A WHERE A.messageId=@messageId)
+    BEGIN
+        IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
+            (SELECT messageIdUi
+                FROM ccWAMessagesConversations
+                WHERE originType IN (''Agent'', ''Admin'')
+                AND conversationId = @conversationId)
+            BEGIN
+                UPDATE ccWhatsAppConversations
+                    SET FirstMessageAgent = @timeStampMessage
+                    WHERE conversationId = @conversationId;
+            END
+
+        INSERT INTO [ccWAMessagesConversations](
+                                            messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
+                                            (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+        SELECT @messageId=SCOPE_IDENTITY()
+        SELECT @messageId as MessageId
+        RETURN (0)
+    END
+    ELSE BEGIN
+        SELECT 0 AS MessageId
+        RETURN (0)
+    END
+END;
+
+    IF @action = 5
+    BEGIN --save onQueue
+        UPDATE ccWhatsAppConversations
+                SET onQueue = 1,
+                conversationStatus = @conversationStatus
+        WHERE conversationId = @conversationId;
+        SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+        UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue + 1) WHERE InboundId = @inboundId
+    END;
+
+ELSE IF @action = 6
+BEGIN --save agent, assigdate and tqueue
+    declare @agentIdTmp int
+    SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversations A with(nolock) where A.conversationId = @conversationId
+
+    IF (@agentIdTmp is null or @agentIdTmp=0)
+    BEGIN
+        UPDATE ccWhatsAppConversations
+                SET agentId = @agentId,
+                assignDate = getdate(),
+                conversationStatus = @conversationStatus
+                ,tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+        WHERE conversationId = @conversationId;
+
+        SELECT @conversationId as conversationId
+    SELECT @inboundId = inboundId,  @onQueue = onQueue FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+    declare @onQueueInt int
+
+    IF @onQueue = 1 BEGIN
+        UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue - 1),@onQueueInt =OnQueue WHERE InboundId = @inboundId
+        if @onQueueInt<=0 or exists(select * from ccWAOperatingSummary WHERE InboundId = @inboundId and OnQueue<0)begin
+
+            select          
+            @onQueueInt=count(case when onQueue =1 then 1 end)
+            from ccWhatsAppConversations with(nolock)
+            where inboundId= @inboundId
+            and requestDate>=convert(date,getdate(),121)
+
+            UPDATE ccWAOperatingSummary SET OnQueue = @onQueueInt WHERE InboundId = @inboundId
+
+        end
+
+    END
+    END
+END;
+
+ELSE IF @action = 7
+BEGIN --update price message
+    UPDATE ccWAMessagesConversations
+            SET price = @price,
+                currency = @currency
+    WHERE messageId = @messageId;
+END;
+
+ELSE IF @action = 8
+BEGIN --update status message
+    IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+        UPDATE ccWAMessagesConversations
+                SET messageStatus = @messageStatus
+        WHERE messageId = @messageId;
+    END;
+END;
+
+ELSE IF @action = 9
+BEGIN --Save last message time by conversationID
+    IF not exists(SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversation A WHERE A.conversationId=@conversationId) BEGIN
+        INSERT INTO ccLastMessageAgentByConversation (conversationId,timeStampLastMessageAgent) VALUES (@conversationId,getDate())
+    END;
+    ELSE
+        BEGIN
+            UPDATE ccLastMessageAgentByConversation
+                SET timeStampLastMessageAgent = getDate()
+            WHERE conversationId = @conversationId;
+        END;
+END;
+
+ELSE IF @action = 10
+BEGIN --drop and insert register by conversationID
+    DELETE FROM ccLastMessageAgentByConversation WHERE conversationId = @conversationId;
+END;
+
+ELSE IF @action = 11
+BEGIN --register desconnection agent by conversationID
+    UPDATE ccLastMessageAgentByConversation SET desconnectionAgent = getDate() WHERE conversationId = @conversationId;
+END;
+
+ELSE IF @action = 12
+BEGIN --Obtain conversationsWA post MCS reset
+
+    declare @disconnectionIdTemp int = (select top 1 disconnectionId from ccDisconnectionMCS where timeStampConnection is null order by timeStampDisconnection desc);
+    UPDATE ccDisconnectionMCS SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
+
+    declare @from as datetime;-- = ''01-07-2022'';
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+    set @from=DATEADD(dd,-1,@from);
+        select A.conversationId, A.inboundId, A.phoneACD, A.clientId, A.conversationStatus, A.requestDate, isnull(A.conversationDate,'''') conversationDate, A.onQueue, A.agentId, isnull(B.timeStampMessage,'''') timeStampMessage, isnull(B.originType,'''') originType, isnull(B.price,'''') price, isnull(B.messageIdUi,'''') messageIdUi, isnull(B.messageId,'''') messageId, isnull(B.typeMessage,'''') typeMessage, isnull(B.content,'''') content, isnull(B.messageStatus,'''') messageStatus
+        ,isnull(C.timeStampDisconnection,'''') timeStampDisconnection, isnull(C.timeStampConnection,'''') timeStampConnection
+        from ccWhatsAppConversations A with(nolock)
+        left join ccWAMessagesConversations B on A.conversationId = B.conversationId
+        left join ccDisconnectionMCS C on C.disconnectionId = @disconnectionIdTemp          
+        where A.requestDate >= @from 
+            and A.conversationStatus not in (4, 10, 11, 13, 17, 18)
+        order by agentId desc, requestDate,timeStampMessage, inboundId, clientId 
+END;
+ELSE IF @action = 13
+BEGIN ---Obtain agents ON STATUS READY
+    WITH agents
+    AS(
+        SELECT c.User_id, c.fecha, c.currentStatus
+        FROM ccLogAgentesDia c
+        INNER JOIN 
+        (
+            SELECT User_id, MAX(fecha) max_time
+            FROM ccLogAgentesDia with(nolock)
+            where fecha>=CONVERT(date,getdate(),121)
+            GROUP BY User_id
+        ) AS t
+        ON c.fecha = t.max_time
+        AND c.User_id=t.User_id AND currentStatus in (3,34)
+    ), usersByCampigns
+    AS (
+        select IdCampEsp, User_id from ccRIACampEspWG A
+        Inner join ccRIAWorkGroupUsers B
+        on A.IDWG = B.IDWG
+        Inner join contactMeanIn C
+        ON A.idCampEsp = C.inboundId
+        where A.IDWG = 1 and A.Tipo = 0
+        AND C.meanContactTypeId = 5
+    )
+
+    select DISTINCT A.User_Id from agents A
+    left join usersByCampigns B on A.User_Id = B.User_Id
+END;
+
+ELSE IF @action = 14
+BEGIN --register desconnection MCS
+    INSERT INTO ccDisconnectionMCS (timeStampDisconnection) VALUES(GETDATE());
+END;
+
+ELSE IF @action = 15
+BEGIN --update content message
+    IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversations A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+        UPDATE ccWAMessagesConversations
+                SET content = @content
+        WHERE messageId = @messageId;
+    END;
+END;
+
+ELSE IF @action = 16
+BEGIN --update agent status for reassigning error message
+    UPDATE ccWhatsAppConversations
+    SET IsAgentLoggingOut = @IsAgentLoggingOut
+    WHERE conversationId = @conversationId;
+END;
+
+ELSE IF @action = 18 BEGIN
+    DECLARE @dateNow DATETIME;
+    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+    UPDATE ccWhatsAppConversations
+    SET finishedBy = 2, conversationStatus=17
+    WHERE finishedBy = 0 AND requestDate <= @dateNow    
+END;
+END;'
+    EXEC(@sql)
+
+
+        SET @process = 'ALTER SP ccsp_ConversationWASaveOut se agrega with(nolock), se valida para el modo finalizar las conversaciones'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASaveOut] @action             INT
+, @conversationId     INT         = 0
+, @camId          SMALLINT    = NULL
+, @phoneCam           VARCHAR(50) = NULL
+, @clientId           VARCHAR(25) = NULL
+, @conversationStatus SMALLINT    = 0
+, @tChatting          FLOAT    = 0
+, @tWrapUp            SMALLINT    = 0
+, @finishedBy         TINYINT     = 0
+, @onQueue            BIT         = NULL
+, @tQueue             SMALLINT    = 0
+, @tTimeout           INT         = 0
+, @disposition        SMALLINT    = 0
+, @subDisposition     SMALLINT    = 0
+, @agentId            INT         = 0
+--VAR MESSAGES
+, @messageId          VARCHAR(50) = NULL
+, @messageIdUi        INT         = NULL
+, @clientNum          VARCHAR(15) = NULL
+, @vonageNum          VARCHAR(15) = NULL
+, @typeMessage        VARCHAR(25) = ''''
+, @content            NVARCHAR(MAX)= NULL
+, @timeStampMessage   DATETIME    = NULL
+, @timeStampMessageUTC DATETIME   = NULL
+, @originType         VARCHAR(15) = NULL
+, @currency           VARCHAR(10) = ''-''
+, @price              VARCHAR(10) = ''0.00''
+, @messageStatus      VARCHAR(15) = ''N/A''
+, @listConversationsIds   VARCHAR(MAX) = NULL
+, @IsAgentLoggingOut  BIT = 0
+AS
+BEGIN
+    DECLARE @isEndConversation BIT;
+    DECLARE @meanContactTypeId SMALLINT;
+    DECLARE @conversationIdNew INT;
+    SET @meanContactTypeId = 1;
+    SET NOCOUNT ON;
+
+IF @action = 1
+BEGIN --new Conversation
+    IF NOT EXISTS (SELECT A.conversationId conversationId FROM ccWhatsAppConversationsOut A with(nolock)
+    WHERE A.conversationId = @conversationId)
+    BEGIN
+        INSERT INTO [ccWhatsAppConversationsOut]
+        (camId, phoneCamp , clientId, conversationStatus, tChatting , tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition, agentId)
+        VALUES(@camId, @phoneCam, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, @onQueue, @tQueue, @tTimeout, @disposition, @subDisposition, @agentId);
+
+        
+        SELECT @conversationId = SCOPE_IDENTITY();
+        SELECT @conversationId AS ConversationId;
+        
+--        Save new request
+        IF NOT EXISTS (SELECT camId FROM ccWAOperatingSummaryOut WHERE camId = @camId) BEGIN
+           INSERT INTO ccWAOperatingSummaryOut (camId, Request) VALUES (@camId, 1);
+        END
+        ELSE BEGIN
+            UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1) WHERE camId = @camId
+        END
+        RETURN(0);
+    END
+    ELSE BEGIN
+        DECLARE @conversationStatusTemp INT = @conversationStatus;
+        IF @conversationStatus in(17,18) BEGIN
+            SET @conversationStatusTemp = 1
+        END
+
+        DECLARE @RequestDate DATETIME = NULL;
+        SELECT @RequestDate = [requestDate] FROM ccWhatsAppConversationsOut WITH(NOLOCK) WHERE conversationId = @conversationId;
+
+        INSERT INTO [ccWhatsAppConversationsOut]
+            (camId, phoneCamp, clientId, conversationStatus, tChatting, tWrapUp, finishedBy, onQueue, tQueue, tTimeout, disposition, subDisposition, agentId, requestDate)
+        VALUES(@camId, @phoneCam, @clientId, @conversationStatusTemp, @tChatting, @tWrapUp, @finishedBy, @onQueue, 
+            @tQueue, @tTimeout, @disposition, @subDisposition, @agentId, @RequestDate);
+        SELECT @conversationIdNew = SCOPE_IDENTITY();
+
+        INSERT INTO ccWhatsAppConversationsRelationshipOut (conversationIdBefore, conversationIdAfter)
+        VALUES (@conversationId, @conversationIdNew);
+        --Save new request by reassign
+        UPDATE ccWAOperatingSummaryOut SET Request = (Request + 1)
+        WHERE camId = @camId
+
+    EXEC ccsp_ConversationWASaveOut @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
+
+    SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationshipOut where conversationIdBefore = @conversationId;
+    RETURN(0);
+END;
+END;
+
+else IF @action = 2
+BEGIN --save conversation Times
+    DECLARE @conversationIdTemp INT;
+    DECLARE @TablaTemp TABLE (conversationId INT, status bit);
+
+    IF @listConversationsIds IS NOT NULL begin
+        INSERT INTO @TablaTemp
+        SELECT value,0
+        FROM fn_RIASplitDelimited(@listConversationsIds, '','')
+        where value is not null and value<>''''
+    end
+    else begin
+        INSERT INTO @TablaTemp values(@conversationId,0)
+    end
+    
+    UPDATE ccWhatsAppConversationsOut
+    SET
+    conversationStatus = @conversationStatus
+    , finishedBy = case when @conversationStatus in(4,10,17,18) then 2
+    when @conversationStatus in(11) then 1
+        else 0 end
+    , tConversation =  case when @conversationStatus = 10 OR conversationDate is null then 0 else DATEDIFF(ss, conversationDate, GETDATE()) end
+    ,tQueue = case when @conversationStatus = 10 then DATEDIFF(ss,requestDate,getdate()) else tQueue end
+    ,onQueue = case when @conversationStatus = 10 then 1 else onQueue end
+    WHERE conversationId IN (SELECT conversationId FROM @TablaTemp);
+
+    WHILE exists(SELECT conversationId FROM @TablaTemp where status=0)
+    BEGIN
+        select top 1 @conversationIdTemp=conversationId FROM @TablaTemp where status=0
+        exec ccsp_CreateNodeMultimedia @conversationId=@conversationIdTemp, @type=6
+
+        IF @conversationStatus in(4,10,11,13,17,18) BEGIN
+            DECLARE @conversationDateTemp INT;
+            select @camId = CamId, @agentId = agentId, @clientId = clientId, @conversationDateTemp = case when conversationDate is not null then 1 else 0 end 
+            from ccWhatsAppConversationsOut where conversationId = @conversationId;
+
+            IF @conversationStatus = 13 BEGIN
+                IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam with(nolock) where NumberClient = @clientId) BEGIN
+                    INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@camId, @agentId, @conversationId, @clientId);
+                END
+            END
+            ELSE IF @conversationStatus in(4,10,17,18) BEGIN --Save conversation Ended by system
+                IF @conversationDateTemp > 0 BEGIN
+                    UPDATE ccWAOperatingSummaryOut SET EndedBySystem = (EndedBySystem + 1), Assigned = (Assigned - 1) WHERE CamId = @camId
+                END
+                ELSE BEGIN
+                        UPDATE ccWAOperatingSummaryOut SET EndedBySystem = (EndedBySystem + 1) WHERE CamId = @camId
+                END
+            END
+            ELSE IF @conversationStatus = 11 BEGIN --Save conversation Ended by AGENT
+                UPDATE ccWAOperatingSummaryOut SET Attended = (Attended + 1), Assigned = (Assigned - 1) WHERE CamId = @camId
+            END
+        END
+        update @TablaTemp set status=1 where conversationId=@conversationIdTemp
+    END
+
+END;
+
+else IF @action = 3
+BEGIN --save conversation Status
+    UPDATE ccWhatsAppConversationsOut SET conversationStatus = @conversationStatus WHERE conversationId = @conversationId;
+END;
+
+else IF @action = 4 BEGIN --save messages from conversation
+    IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId)
+        AND NOT EXISTS(SELECT A.messageId messageId FROM ccWAMessagesConversationsOut A with(nolock) WHERE A.messageId=@messageId)
+    BEGIN
+        IF (@originType = ''Agent'' OR @originType = ''Admin'') AND NOT EXISTS
+            (SELECT messageIdUi
+                FROM ccWAMessagesConversationsOut
+                WHERE originType IN (''Agent'', ''Admin'')
+                AND conversationId = @conversationId)
+            BEGIN
+                UPDATE ccWhatsAppConversationsOut
+                    SET FirstMessageAgent = @timeStampMessage
+                    WHERE conversationId = @conversationId;
+            END
+
+        INSERT INTO [ccWAMessagesConversationsOut](
+        messageId, messageIdUi, clientNum, vonageNum, typeMessage, content, conversationId, timeStampMessage, timeStampMessageUTC, originType, currency, price, messageStatus) values
+        (@messageId, @messageIdUi, @clientNum, @vonageNum, @typeMessage, @content, @conversationId, @timeStampMessage, @timeStampMessageUTC, @originType, @currency, @price, @messageStatus)
+        SELECT @messageId=SCOPE_IDENTITY()
+       
+       SELECT @camId=camId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId
+        if not exists(select * from ccWAConversationsResult where camId=@camId)begin
+            insert into ccWAConversationsResult values(@camId,0,0,0,0,0)
+        end
+        exec ccsp_ConversationWASaveOut @action=16,@messageStatus=@messageStatus,@conversationId=@conversationId
+        
+         SELECT @messageId as MessageId
+        
+        RETURN (0)
+    END
+    ELSE BEGIN
+        SELECT 0 AS MessageId
+        RETURN (0)
+    END
+END;
+
+else IF @action = 5
+BEGIN --save onQueue
+    UPDATE ccWhatsAppConversationsOut
+            SET onQueue = 1,
+            conversationStatus = @conversationStatus
+    WHERE conversationId = @conversationId;
+    SELECT @camId = camId FROM ccWhatsAppConversationsOut where conversationId=@conversationId;
+    UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue + 1) WHERE camId = @camId
+END;
+
+else IF @action = 6
+BEGIN --save agent, assigdate and tqueue
+    declare @agentIdTmp int
+    SELECT @agentIdTmp = A.agentId FROM ccWhatsAppConversationsOut A with(nolock) where A.conversationId = @conversationId
+       
+        UPDATE ccWhatsAppConversationsOut
+                SET agentId = @agentId,
+                assignDate = getdate(),
+                conversationStatus = @conversationStatus
+                ,tQueue = case when onQueue = 1 then DATEDIFF(ss,requestDate,isnull(assignDate,getdate())) else 0 end
+        WHERE conversationId = @conversationId;
+
+    SELECT @conversationId as conversationId
+    SELECT @camId = camId,  @onQueue = onQueue FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+
+    IF @onQueue = 1 BEGIN
+     UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue - 1) WHERE camId = @camId   
+    END
+END;
+
+ Else IF @action = 7
+BEGIN --update price message
+    UPDATE ccWAMessagesConversationsOut SET price = @price, currency = @currency WHERE messageId = @messageId;
+END;
+else IF @action = 8
+BEGIN --update status message
+    IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversationsOut A with(nolock) 
+        WHERE A.messageId=@messageId) <> ''read'' 
+    BEGIN
+        UPDATE ccWAMessagesConversationsOut
+        SET messageStatus = @messageStatus
+        WHERE messageId = @messageId;
+        exec ccsp_ConversationWASaveOut @action=16,@messageStatus=@messageStatus,@conversationId=@conversationId
+        
+    END;
+END;
+
+else IF @action = 9
+BEGIN --Save last message time by conversationID
+    IF (SELECT A.conversationId conversationID FROM ccLastMessageAgentByConversationOut A with(nolock) 
+        WHERE A.conversationId=@conversationId) IS NULL BEGIN
+        INSERT INTO ccLastMessageAgentByConversationOut (conversationId) VALUES (@conversationId)
+    END;
+    ELSE
+        BEGIN
+            UPDATE ccLastMessageAgentByConversationOut
+                SET timeStampLastMessageAgent = getDate()
+            WHERE conversationId = @conversationId;
+        END;
+END;
+
+else IF @action = 10
+BEGIN --drop and insert register by conversationID
+    DELETE FROM ccLastMessageAgentByConversationOut WHERE conversationId = @conversationId;
+END;
+
+Else IF @action = 11
+BEGIN --register desconnection agent by conversationID
+    exec ccsp_ConversationWASaveOut @action = 9, @conversationId=@conversationId
+END;
+
+else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
+    declare @disconnectionIdTemp int = (select top 1 disconnectionId from [ccDisconnectionMCSOut] with(nolock) 
+    where timeStampConnection is null order by timeStampDisconnection desc);
+    UPDATE ccDisconnectionMCSOut SET timeStampConnection = GETDATE() WHERE disconnectionId = @disconnectionIdTemp;
+
+    declare @from as datetime;
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+    set @from=DATEADD(dd,-1,@from);
+        select A.conversationId, A.camId as inboundId, A.phoneCamp as phoneACD
+        , A.clientId, A.conversationStatus, A.requestDate, isnull(A.conversationDate,'''') conversationDate, isnull(A.onQueue,0) onQueue, A.agentId, 
+        isnull(B.timeStampMessage,'''') timeStampMessage, isnull(B.originType,'''') originType, isnull(B.price,'''') price, isnull(B.messageIdUi,'''') messageIdUi, 
+        isnull(B.messageId,'''') messageId, isnull(B.typeMessage,'''') typeMessage, isnull(B.content,'''') content, isnull(B.messageStatus,'''') messageStatus
+        ,isnull(C.timeStampDisconnection,'''') timeStampDisconnection, isnull(C.timeStampConnection,'''') timeStampConnection
+        from ccWhatsAppConversationsOut A with(nolock) 
+        left join ccWAMessagesConversationsOut B with(nolock) on A.conversationId = B.conversationId
+        left join [ccDisconnectionMCSOut] C with(nolock) on C.disconnectionId = @disconnectionIdTemp        
+        where A.requestDate >= @from 
+            and A.conversationStatus not in (4, 10, 11, 13, 17, 18)
+        order by agentId desc, requestDate,timeStampMessage, camId, clientId 
+END;
+else IF @action = 13
+BEGIN ---Obtain agents ON STATUS READY
+    WITH agents
+    AS(
+        SELECT c.User_id, c.fecha, c.currentStatus
+        FROM ccLogAgentesDia c
+        INNER JOIN 
+        (
+            SELECT User_id, MAX(fecha) max_time
+            FROM ccLogAgentesDia with(nolock)
+            where fecha>=CONVERT(date,getdate(),121)
+            GROUP BY User_id
+        ) AS t
+        ON c.fecha = t.max_time
+        AND c.User_id=t.User_id AND currentStatus in (3,34)
+    ), usersByCampigns
+    AS (
+        select IdCampEsp, User_id from ccRIACampEspWG A
+        Inner join ccRIAWorkGroupUsers B
+        on A.IDWG = B.IDWG
+        Inner join contactMeanOut C
+        ON A.idCampEsp = C.camp_id
+        where A.IDWG = 1 and A.Tipo = 1
+        AND C.meanContactTypeId = 5
+    )
+
+    select DISTINCT A.User_Id from agents A
+    left join usersByCampigns B on A.User_Id = B.User_Id
+END;
+
+else IF @action = 14
+BEGIN --register desconnection MCS
+    INSERT INTO ccDisconnectionMCS (timeStampDisconnection) VALUES(GETDATE());
+END;
+ELSE IF @action = 15
+    BEGIN --update content message
+        IF (SELECT A.messageStatus messageStatus FROM ccWAMessagesConversationsOut A WHERE A.messageId=@messageId) <> ''read'' BEGIN
+            UPDATE ccWAMessagesConversationsOut
+                    SET content = @content
+            WHERE messageId = @messageId;
+        END;
+    END;
+ELSE IF @action = 16 BEGIN --update content message
+    if @camId is null or @camId=0 begin 
+        SELECT @camId=camId FROM ccWhatsAppConversationsOut A with(nolock) WHERE A.conversationId=@conversationId
+    end
+                
+    if @messageStatus=''submitted'' begin
+        update ccWAConversationsResult set SentMsg= SentMsg+1
+    end
+    else if @messageStatus=''delivered'' begin
+        update ccWAConversationsResult set SentMsg= SentMsg-1,Delivered=Delivered+1
+    end
+    else if @messageStatus=''read'' begin
+        update ccWAConversationsResult set Delivered=Delivered-1,ReadMsg=ReadMsg+1
+    end
+    else if @messageStatus=''rejected'' begin
+        update ccWAConversationsResult set SentMsg= SentMsg-1,NotDelivered=NotDelivered+1
+    end
+
+    SELECT @messageId as MessageId
+END;
+ELSE IF @action = 17 BEGIN --update agent status for reassigning error message
+    print(''Falata agregar columna'')
+    UPDATE ccWhatsAppConversationsOut
+    SET IsAgentLoggingOut = @IsAgentLoggingOut
+    WHERE conversationId = @conversationId;
+END;
+ELSE IF @action = 18 BEGIN
+    DECLARE @dateNow DATETIME;
+    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+    UPDATE ccWhatsAppConversationsOut 
+    SET finishedBy = 2, conversationStatus=17
+    WHERE finishedBy = 0  AND requestDate <= @dateNow   
+END;
+END;'
+        EXEC(@sql);
+
+
         SET @process = 'ALTER SP ccsp_WhatsAppInformation @Option=1 se modifica para poder validar que este no regrese valores negativos'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
 @Option SMALLINT,
@@ -10750,6 +11599,506 @@ select L.cam_id, L.Campana,
                 group by cam_id) callsOut on L.cam_id = callsOut.cam_id'
         EXEC(@sql);
         ----------------------------------------------------- END Jonathan Ramirez  ----------------------------------------------------------------
+
+	-----------------------Begin Frida Orta---------------------------------------------------------------------------------
+	set @process = 'Delete ccsp_GalateaManageWG'
+    set @sql='
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaManageWG'')
+    begin
+        DROP PROCEDURE ccsp_GalateaManageWG;
+    end'
+    EXEC(@sql)
+
+	set @process = 'CW-8569 Create sp ccsp_GalateaManageWG se modifica condición option= 3 se cambia < por <= '
+    set @sql='
+	
+	
+alter PROCedure [dbo].[ccsp_GalateaManageWG]
+@option smallint,
+@IDWG smallint,
+@Type smallint = 0,
+@usersList varchar(max) ='''',
+@ListCampsIn varchar(max) = '''',
+@ListCampsOut varchar(max) ='''',
+@idNewArea int = 0,
+@LoginId int = 0,
+@AreaId int = 0
+as
+set nocount on
+declare @count int
+declare @id int
+declare @user int
+declare @IDCampEsp varchar(max)
+declare @Assigned  varchar(max)
+declare @AssignedCampsIn  varchar(max)
+declare @AssignedCampsOut  varchar(max)
+declare @settings table (
+setting_id tinyint,
+valor varchar(300)
+)
+insert into @settings (setting_id, valor) select setting_id,valor from ccSettings where setting_id in (63,64,180)
+
+set @id = 1
+set @Assigned = ''''
+set @AssignedCampsIn = ''''
+set @AssignedCampsOut = ''''
+
+
+IF OBJECT_ID(''tempdb..#UsersList'') IS NOT NULL DROP TABLE #UsersList;
+IF OBJECT_ID(''tempdb..#CampsInOutList'') IS NOT NULL DROP TABLE #CampsInOutList;
+
+select *  into #CampsInOutList from (
+select ROW_NUMBER() OVER(ORDER BY [CampEsp] ASC) AS Row, [CampEsp], [Type] from (
+    select 0 as [Type],
+    [value] As [CampEsp]
+    FROM fn_RIASplitDelimited(@ListCampsIn, '','') where [value] > 0
+    union
+    select 1 as [Type],
+    [value] As [CampEsp]
+    FROM fn_RIASplitDelimited(@ListCampsOut, '','') where [value] > 0
+    ) as Camps ) as CampsInOut
+
+select ROW_NUMBER() OVER(ORDER BY value ASC) AS Row,
+    value As user_id
+    into #UsersList
+    FROM fn_RIASplitDelimited(@usersList, '','')
+
+select @count = count(user_id) from #UsersList
+
+IF(@option = 1 OR @option = 2) BEGIN
+
+    DECLARE @areaName VARCHAr(50);
+    DECLARE @userLogin VARCHAR(40);
+    DECLARE @workGroupName VARCHAR(40);
+    DECLARE @userToAffect VARCHAR(40);
+    DECLARE @campName VARCHAR(40);
+
+END
+
+if @option = 1 -- Insert Agente-Supervisor in WorkGroup
+ begin
+
+    while @id<=@count
+    begin
+        select @user = user_id from #UsersList where Row= @id
+        select @Type = tipoUser_id from ccUsers where user_id = @user
+
+        if @Type in(1, 2, 6)
+        begin
+
+            if not exists(select IDWG from ccRIAWorkGroupUsers where IDWG = @IDWG AND User_id = @user)
+            begin
+            
+
+                If @Type = 1
+                 begin
+
+                        If (select count(User_id) from ccRIAWorkGroupUsers where User_id = @user) < (select valor from @settings where setting_id=63)
+                         begin
+                            insert into ccRIAWorkGroupUsers(IDWG, User_id) values(@IDWG,@user)
+
+                            --INSERT LOG RECORD (ASSIGN AGENT)
+                            SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 23, 3, '''', @userToAffect, @workGroupName);
+
+                            select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+                            --insert skill media
+                            exec ccsp_Skills @action= 5,@userId=@user
+
+                            --select * from cccampsAgente where user_id=@user and 
+
+                            insert into cccampsAgente (user_id, cam_id, prioridad, skill, IDWG)
+                            select @user [User_id], A.idCampEsp [cam_id], dbo.fn_Calcula_UsrPriority(@user,0) [prioridad], 1 [skill], @IDWG IDWG
+                            
+                            from ccRIACampEspWG A
+                            inner join ccCamps C on A.Tipo=1 and A.idCampEsp=C.cam_id                           
+                            where A.tipo = 1 and A.IDWG = @IDWG and
+                             idCampEsp not in (select cam_id from cccampsAgente where user_id=@user and IDWG=@IDWG)
+                             
+
+
+                           insert into ccInboundAgentes(User_id, Inbound_id, cli_id, prioridad, skill, IDWG)
+                            select @user, A.idCampEsp, 0, dbo.fn_Calcula_UsrPriority(@user,0), 1, @IDWG
+                            from ccRIACampEspWG A
+                            inner join ccInbound C on A.Tipo=0 and A.idCampEsp=C.Inbound_id
+                            where A.tipo = 0 and IDWG = @IDWG and
+
+                            idCampEsp not in (select inbound_id from ccInboundAgentes where user_id=@user and IDWG=@IDWG)
+
+                            if not exists(select * from ccRIAWorkGroupUsersConsulta where IDWG=@IDWG and User_id=@user) begin
+                                insert into ccRIAWorkGroupUsersConsulta(IDWG, User_id) values(@IDWG,@user)
+                            end
+                        end
+                 end
+                 else if @Type in(2, 6)
+                 begin
+                    -- -Supervisor  @Type in (2,6)
+                    insert into ccRIAWorkGroupUsers(IDWG, User_id) values (@IDWG, @user)
+
+                    --INSERT LOG RECORD (ASSIGN ADMIN)
+                    SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                    SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+
+                    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 30, 3, '''', @userToAffect, @workGroupName);
+
+                    select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+                    if not exists(select * from ccRIAWorkGroupUsersConsulta where IDWG=@IDWG and User_id=@user) begin
+                        insert into ccRIAWorkGroupUsersConsulta(IDWG, User_id) values(@IDWG,@user)
+                    end
+
+                    insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+                    select @user, idCampEsp, 0, @IDWG
+                    from ccRIACampEspWG where tipo=0 and IDWG=@IDWG
+                     and idCampEsp not in (select cam_id from ccSupervisorCam where user_id=@user and tipo=0 and IDWG=@IDWG)
+
+                    update ccSupervisorCam
+                    set monitored = 1
+                    where user_id = @user
+                    and cam_id in (select cam_id from ccSupervisorCam where user_id=@user and tipo=0 and IDWG=@IDWG)
+                    and tipo = 0
+                    and IDWG <> @IDWG
+                    and monitored = 0
+
+                    insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+                    select @user, idCampEsp, 1, @IDWG
+                    from ccRIACampEspWG where tipo=1 and IDWG=@IDWG
+                     and idCampEsp not in (select cam_id from ccSupervisorCam where user_id=@user and tipo=1 and IDWG=@IDWG)
+
+                    update ccSupervisorCam
+                    set monitored = 1
+                    where user_id = @user
+                    and cam_id in (select cam_id from ccSupervisorCam where user_id=@user and tipo=1 and IDWG=@IDWG)
+                    and tipo = 1
+                    and IDWG <> @IDWG
+                    and monitored = 0
+                end
+                
+            end
+        end
+        set @id = @id+1
+    end
+end
+
+
+
+
+if @option = 2 -- Delete Agent-Supervisor from WorkGroup
+ begin
+
+    while @id<=@count
+    begin
+        select @user = user_id from #UsersList where Row= @id
+        select @Type = tipoUser_id from ccUsers where user_id = @user
+        
+        if @Type = 1 --delete skill media
+        exec ccsp_Skills @action= 4,@userId=@user,@idwg=@IDWG
+        
+        if exists(select IDWG from ccRIAWorkGroupUsers where IDWG = @IDWG AND User_id = @user)
+        begin
+        
+            Delete ccRIAWorkGroupUsers where IDWG = @IDWG and User_id = @user
+        
+
+            if @Type = 1 -- Agente
+             begin
+
+                --INSERT LOG RECORD (UNASSIGN AGENT)
+
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 24, 3, '''', @userToAffect, @workGroupName);
+
+                select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+                insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.cam_id,A.prioridad,A.skill,A.rel_id,A.IDWG   from ccCampsAgente A left join ccCampsAgenteBackUp B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+                insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG) select A.user_id,A.Inbound_id,A.cli_id,A.prioridad,A.skill,A.rel_id,A.IDWG from ccInboundAgentes A left join ccInboundAgentesBackup B on A.user_Id=B.user_id and A.Inbound_id=B.Inbound_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+
+                delete from cccampsagente where user_id=@user and IDWG=@IDWG
+                delete from ccInboundagentes where user_id=@user and IDWG=@IDWG
+
+                --update preview permission
+                update ccusers set 
+                AllowChangeDialingMode=(case when assigned is null then 0 else 1 end),
+                DialingMode=(case when assigned is null then 0 else 1 end) from ccusers us (nolock) left join (
+                select count(1) assigned,user_id from ccCampsAgente ca (nolock) join ccCamps cc (nolock) on cc.cam_id=ca.cam_id
+                where progDial=3 and user_id = @user group by user_id)c on us.User_id=c.user_id
+                where us.user_id = @user
+                --select @Type
+             end
+             else if @Type in(2, 6) -- Supervisor
+             begin
+
+                --INSERT LOG RECORD (UNASSIGN ADMIN)
+
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                SET @workGroupName = (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG);
+
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@areaName, getDate(), @userLogin, 31, 3, '''', @userToAffect, @workGroupName);
+
+                select @Assigned = @Assigned+ cast(@user as varchar(5))+'',''
+                insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored) select A.user_id,A.cam_id,A.tipo,A.IDWG,A.monitored from ccSupervisorCam A left join ccSupervisorCam B on A.user_Id=B.user_id and A.cam_id=B.cam_id where B.User_id is null and A.user_id=@user and A.IDWG=@IDWG
+                delete ccSupervisorCam where user_id=@user and IDWG=@IDWG
+                --select @Type
+            end
+        end
+        set @id = @id+1
+    end
+end
+if @option in (1,2)
+begin
+    if LEN(@Assigned) > 0
+        select SUBSTRING(@Assigned,0,Len(@Assigned))
+    else
+        select @Assigned
+
+    return(0)
+end
+
+if @option = 3 -- Insert WorkGroup in Camp or ACDGroup  
+  begin
+    select @count = count(CampEsp) from #CampsInOutList
+
+    while @id<=@count
+    begin
+         select @IDCampEsp = CampEsp, @Type = Type from #CampsInOutList where Row= @id
+         
+
+         if (select count(IdCampEsp) from ccRIACampEspWG where IdCampEsp=@IDCampEsp and Tipo=@Type) <= (select valor from @settings where setting_id=180) -- limit
+             begin
+
+                if (select count(IDWG) from ccRIACampEspWG where IDWG=@IDWG) <= (select valor from @settings where setting_id=64) -- limit
+                    begin
+
+                        if not exists (select IDWG from ccRIACampEspWG where IDWG=@IDWG and Tipo=@Type and IdCampEsp=@IDCampEsp) -- No existe el grupo en el ACD o Especialidad
+                        begin
+
+                            insert into ccRIACampEspWG (IDWG, Tipo, IdCampEsp, priority) values (@IDWG, @Type, @IDCampEsp, 1)
+                            if not exists(select * from ccRIACampEspWGConsulta where IDWG=@IDWG and Tipo=@Type and IdCampEsp=@IDCampEsp) begin
+                                insert into ccRIACampEspWGConsulta (IDWG, Tipo, IdCampEsp) values (@IDWG, @Type, @IDCampEsp)
+                            end   
+
+                            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            
+                            IF(@Type = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
+                            ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
+                             
+                            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                            VALUES (
+                                (SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
+                                getDate(), 
+                                @userLogin, 
+                                36, 
+                                3, 
+                                '''', 
+                                @campName,
+                                (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
+                            );
+
+                            exec ccsp_RIACalcula_WGPriority @IDWG, @IDCampEsp, @Type
+                            if @Type in (0, 1) -- ACDGroup
+                            begin
+
+                                if @IDWG is not null or @IDWG = 0
+                                begin
+                                    if @Type=0 --ACDGroup
+                                    begin
+                                        select @AssignedCampsIn = @AssignedCampsIn+ cast(@IDCampEsp as varchar(5))+'',''
+                                        insert into ccInboundAgentes(User_id, Inbound_id, cli_id, prioridad, skill, idwg)
+                                        SELECT distinct u.user_id, @IDCampEsp, 0 cli_id, dbo.fn_Calcula_UsrPriority(u.User_id,0), 1 skill, @IDWG 
+                                        FROM ccRIAWorkGroupUsers u join ccRIACampEspWG c on u.IDWG = c.IDWG
+                                            join ccusers s on u.user_id = s.user_id
+                                        WHERE c.tipo=0 and s.tipouser_id=1 and c.idCampEsp=@IDCampEsp and c.IDWG=@IDWG 
+                                        and u.User_id not in (select User_id from ccInboundAgentes where Inbound_id=@IDCampEsp and IDWG=@IDWG)
+
+                                        insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+                                        select b.user_id, @IDCampEsp, 0, @IDWG
+                                        from ccRIACampEspWG a join ccRIAWorkGroupUsers b on a.idwg = b.idwg
+                                            join ccusers s on b.user_id = s.user_id
+                                        where s.tipouser_id <> 1 and a.idcampesp=@IDCampEsp and b.idwg=@IDWG and a.tipo=0
+                                            and b.User_id not in (select User_id from ccSupervisorCam where cam_id=@IDCampEsp and tipo=0 and IDWG=@IDWG)
+             
+                                        --return(0)
+                                    end
+
+                                    else if @Type = 1 -- Camp
+                                    begin
+                                        select @AssignedCampsOut = @AssignedCampsOut+ cast(@IDCampEsp as varchar(5))+'',''
+                                        insert into CCCAMPSAGENTE (user_id, cam_id, prioridad, skill, IDWG)
+                                        SELECT distinct u.user_id, @IDCampEsp, dbo.fn_Calcula_UsrPriority(u.User_id,0), 1 skill, @IDWG
+                                        FROM ccRIAWorkGroupUsers u join ccRIACampEspWG c on u.IDWG = c.IDWG
+                                        join ccusers s on u.user_id = s.user_id
+                                        WHERE c.tipo=1 and s.tipouser_id=1 and c.idCampEsp=@IDCampEsp and u.IDWG=@IDWG 
+                                            and u.User_id not in (select User_id from ccCampsAgente where cam_id=@IDCampEsp and IDWG=@IDWG)
+            
+                                        insert into ccSupervisorCam (user_id, cam_id, tipo, IDWG)
+                                        select b.user_id, @IDCampEsp, 1, @IDWG
+                                        from ccRIACampEspWG a join ccRIAWorkGroupUsers b on a.idwg = b.idwg
+                                            join ccusers s on b.user_id = s.user_id
+                                        where s.tipouser_id <> 1 and a.idcampesp=@IDCampEsp and b.idwg=@IDWG and a.tipo=1
+                                            and b.User_id not in (select User_id from ccSupervisorCam where cam_id=@IDCampEsp and tipo=1 and IDWG=@IDWG)
+                                    end
+                            end
+                        end
+                    end
+                end
+            end
+        set @id = @id + 1
+   end
+end
+
+if @option = 3
+begin
+    
+if LEN(@AssignedCampsIn) > 0 or LEN(@AssignedCampsOut) > 0
+        select SUBSTRING(@AssignedCampsIn,0,Len(@AssignedCampsIn)) as CampsInAssigned, SUBSTRING(@AssignedCampsOut,0,Len(@AssignedCampsOut)) as CampsOutAssigned 
+    else
+        select @AssignedCampsIn as CampsInAssigned, @AssignedCampsOut as CampsOutAssigned
+
+    return(0)
+end
+
+if @option = 4  --Delete relatoion Camp with WG
+begin
+declare @multipleAgents varchar(1000)
+declare @multipleAdmins varchar(2000)
+declare @sql varchar(max)
+
+select @count = count(CampEsp) from #CampsInOutList
+ while @id<=@count
+  begin
+
+        select @IDCampEsp = CampEsp, @Type = Type from #CampsInOutList where Row= @id
+
+        SELECT @multipleAgents = coalesce(@multipleAgents + '','', '''') + CAST(A.user_id AS VARCHAR(40))
+        FROM ccRIAWorkGroupUsers A
+        JOIN ccUsers B ON A.user_id = B.user_id
+        WHERE IDWG = @IDWG AND TipoUser_id = 1
+
+        SELECT @multipleAdmins = coalesce(@multipleAdmins + '','', '''') + CAST(A.user_id AS VARCHAR(40))
+        FROM ccRIAWorkGroupUsers A
+        JOIN ccUsers B ON A.user_id = B.user_id
+        WHERE IDWG = @IDWG AND TipoUser_id = 2
+
+
+        if right( @multipleAgents,1)='','' begin
+            set @multipleAgents=SUBSTRING(@multipleAgents,0,len(@multipleAgents)-1)
+        end
+        if right( @multipleAdmins,1)='','' begin
+            set @multipleAdmins=SUBSTRING(@multipleAdmins,0,len(@multipleAdmins)-1)
+        end
+
+
+        --Delete Agent from WorkGroup
+           set @sql = ''ccsp_RIA_ABCAgents @option=7,@UserId=''''0'''',@Login='''''''',@Nombres='''''''',@ApellidoPaterno='''''''',@ApellidoMaterno='''''''',@Password='''''''',@Sexo=0,@canChangeStatus=0,
+                    @AreaId=0,@UserType=0,@IDWG=''+cast(@IDWG as varchar(4))+'',@DeleteUsers=0,@InOut=''+cast(@Type as varchar(4))+'',@IDCampEsp=''+cast(@IDCampEsp as varchar(4))+'',@multipleUsers=''''''+@multipleAgents+''''''''
+           
+           exec(@sql)
+
+         --Delete Supervisor from WorkGroup
+
+         set @sql = ''ccsp_RIA_ABCAgents @option=8,@UserId=''''0'''',@Login='''''''',@Nombres='''''''',@ApellidoPaterno='''''''',@ApellidoMaterno='''''''',@Password='''''''',@Sexo=0,@canChangeStatus=0,
+                    @AreaId=0,@UserType=0,@IDWG=''+cast(@IDWG as varchar(4))+'',@DeleteUsers=0,@InOut=''+cast(@Type as varchar(4))+'',@IDCampEsp=''+cast(@IDCampEsp as varchar(4))+'',@multipleUsers=''''''+@multipleAdmins+''''''''
+           
+           exec(@sql)
+
+        --Delete WokGroup from ACD or Camp 
+
+        SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+                            
+        IF(@Type = 1) SET @campName = (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @IDCampEsp)
+        ELSE SET @campName = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @IDCampEsp)
+                             
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+        VALUES (
+            (SELECT [AreaName] FROM ccRIACat_Areas AS CRA, ccRIAAreaWorkGroup AS CRAW WHERE CRAW.IDWG = @IDWG AND CRA.IDArea = CRAW.IDArea), 
+            getDate(), 
+            @userLogin, 
+            59, 
+            3, 
+            '''', 
+            @campName,
+            (SELECT [WGName] FROM ccRIACat_WorkGroup WHERE IDWG = @IDWG)
+        );
+
+
+         set @sql = ''exec ccsp_RIA_ABCWorkGroups @option=7,@IDWG=''+cast(@IDWG as varchar(4))+'',@IDCampEsp=''''''+cast(@IDCampEsp as varchar(4))+'''''',@Type=''+cast(@Type as varchar(4))+''''
+         exec(@sql)
+         
+        set @id = @id + 1
+    
+    end
+
+    select 1
+    return 0
+end
+
+if @option = 5  --Change Admin Administrator.
+begin
+declare @user_id int
+select @user_id = value FROM fn_RIASplitDelimited(@usersList, '','')
+select @Type = TipoUser_id from ccUsers where User_id = @user_id
+
+        if @Type = 1 -- Agente
+        begin
+
+            if(select count(user_id) from ccCampsAgente where user_id = @user_id) >0 or 
+            (select count(user_id) from ccInboundAgentes where user_id = @user_id) >0 or
+            (select count(user_id) from ccRIAWorkGroupUsers where user_id = @user_id) > 0
+            begin
+                select -1
+                return 0
+            end
+            else
+
+                SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
+                SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+
+                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+                VALUES (@areaName, getDate(), @userLogin, 27, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
+
+                update ccUsers set IDArea = @idNewArea where user_id = @user_id
+        end
+
+        
+    if @Type in (2, 6) -- Supervisor
+    begin
+
+        if(select count(user_id) from ccSupervisorCam where user_id = @user_id) > 0 or
+        (select count(user_id) from ccRIAWorkGroupUsers where user_id = @user_id) > 0
+        begin
+            select -1
+            return 0
+        end
+        else
+
+            SELECT @userToAffect = CCU.Login, @areaName = CCRA.AreaName FROM ccUsers AS CCU, ccRIACat_Areas AS CCRA WHERE CCU.user_id = @user_id AND CCRA.IDArea = CCU.IDArea;
+            SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @LoginId);
+
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+            VALUES (@areaName, getDate(), @userLogin, 34, 3, ''T&CHANGE_USER_AREA'', (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idNewArea), @userToAffect);
+
+            update ccUsers set IDArea = @idNewArea where user_id = @user_id
+    end
+
+    update ccPosicion set user_id = 0 where user_id = @user_id
+
+    select 1
+
+end
+
+set nocount off
+	'
+    EXEC(@sql)
+	-----------------------End Frida Orta---------------------------------------------------------------------------------
+
+
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

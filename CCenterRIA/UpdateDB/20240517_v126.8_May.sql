@@ -429,7 +429,7 @@ END
 								   U.Login AS AdminName,
 					               U.notificationEmail AS AdminEmail
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.registryClient = RM.SystemApiId
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
 					        INNER JOIN ccSupervisorCam SC ON SC.cam_id = LD.cam_id 
 					        INNER JOIN ccUsers U ON U.User_id = SC.user_id
 					        WHERE RM.EmailResultStatus <> 1     -- Get all non successful email messages
@@ -448,7 +448,7 @@ END
 					                RM.EmailResultStatus,
 					                RM.EmailAttempts
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.registryClient = RM.SystemApiId
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
 					        WHERE  RM.EmailResultStatus <> 1 AND RM.CampaignId = LD.cam_id AND RM.SmsOutId = LD.smsout_id
 					    END
 

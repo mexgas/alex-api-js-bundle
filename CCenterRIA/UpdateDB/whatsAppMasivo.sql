@@ -66,10 +66,29 @@ BEGIN
 		StatusCW BIT NULL,
 		quality INT NULL,
 		notes VARCHAR(500) NULL,
+		FilePath varchar(1024) NULL,
 		IsPendingQuality bit NOT NULL DEFAULT 1
 	) 
     end'
 	EXEC(@sql)
+	
+    SET @process = 'Whatsapp Masivo - Create new table for WhatsApp numbers'
+    SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccMetaWhatsAppNumbers'')
+                BEGIN
+                    CREATE TABLE ccMetaWhatsAppNumbers
+					(
+						MetaId int identity(1,1),
+						Number varchar(30) PRIMARY KEY not null,
+						Status int,
+						Inbound_Id smallint FOREIGN KEY(Inbound_id) REFERENCES ccInbound(Inbound_id) null,
+						Cam_Id smallint FOREIGN KEY(cam_id) REFERENCES ccCamps(cam_id) null,
+						PhoneNumberId varchar(100),
+						Token varchar(max),
+						WAAccountId varchar(30) null,
+                        IdApp varchar(30) null,
+					)
+                END;'
+    EXEC(@sql);
 	-----------------------------------------------Fin Crear tablas ----------------------------------------------------------------------------------
 	------------------------------------------------Inicio Agregar columnas---------------------------------------------------------------------------
 	set @process = 'DEV2-476 K020029 Setting 272 '
@@ -969,7 +988,8 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 		@body nvarchar(max) = null,
 		@footer nvarchar(max) = null,
 		@buttons nvarchar(max) = null,
-		@metaStatus varchar(30) = null
+		@metaStatus varchar(30) = null,
+		@FilePath varchar(1024) = null
 	AS
 	BEGIN
 		IF(@action = 1)
@@ -1006,8 +1026,8 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 		END
 		ELSE IF(@action = 4) --create
 		BEGIN
-			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons)
-								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons)
+			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath)
+								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath)
 		END
 		ELSE IF(@action = 5) -- Get Template Config By Id
 		BEGIN
@@ -1064,7 +1084,7 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 	begin
 		if (@action = 1)
 		begin
-		 select WAAccountId, Token,PhoneNumberId from ccMetaWhatsAppNumbers with (nolock) where Number=@phoneNumber
+		select WAAccountId, Token,PhoneNumberId,IdApp from ccMetaWhatsAppNumbers with (nolock) where Number=@phoneNumber
 		end
 		if(@action = 2)
 		begin
@@ -1919,21 +1939,6 @@ set nocount off'
                 END;'
     EXEC(@sql);
 
-    SET @process = 'Whatsapp Masivo - Create new table for WhatsApp numbers'
-    SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccMetaWhatsAppNumbers'')
-                BEGIN
-                    CREATE TABLE ccMetaWhatsAppNumbers
-					(
-						MetaId int identity(1,1),
-						Number varchar(30) PRIMARY KEY not null,
-						Status int,
-						Inbound_Id smallint FOREIGN KEY(Inbound_id) REFERENCES ccInbound(Inbound_id) null,
-						Cam_Id smallint FOREIGN KEY(cam_id) REFERENCES ccCamps(cam_id) null,
-						PhoneNumberId varchar(100),
-						Token varchar(max)
-					)
-                END;'
-    EXEC(@sql);
 
 
     SET @process = 'Whatsapp Masivo - Create new table for Whatsapp messages'

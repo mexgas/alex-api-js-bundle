@@ -85,7 +85,7 @@ BEGIN
 						PhoneNumberId varchar(100),
 						Token varchar(max),
 						WAAccountId varchar(30) null,
-                        IdApp varchar(30) null,
+                        IdApp varchar(30) null
 					)
                 END;'
     EXEC(@sql);

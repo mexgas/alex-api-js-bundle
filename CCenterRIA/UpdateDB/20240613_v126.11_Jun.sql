@@ -84,7 +84,7 @@ EXEC(@sql)
 SET @process = 'K064001|K064003 se modifica SP ccsp_GalateaAreas añadiendo variables @maxWhats @callWhileChat @callWhileEmail @callWhileTwitter @callWhileWhats 
 		y modificando flujos en lectura, escritura y actualización de datos añadiendo esas variables'
 SET @sql = '
-		ALTER procedure [dbo].[ccsp_GalateaAreas] 
+				ALTER procedure [dbo].[ccsp_GalateaAreas] 
 		@option int = 2,
 		@IDArea smallint = 0,
 		@Descripcion varchar(40) = NULL,
@@ -342,6 +342,22 @@ SET @sql = '
 									CASE
 										WHEN @toolsTransfer = 1 THEN ''COMMON_ENABLED''
 										ELSE ''COMMON_DISABLED'' END
+								when at.identifierInfo = ''T&SET_CALL_WHILE_CHAT'' then 
+									case 
+										when @callWhileChat = 1 then ''COMMON_ENABLED''
+										else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_EMAIL'' then 
+									case 
+										when @callWhileEmail = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_TWITTER'' then 
+									case 
+										when @callWhileTwitter = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_WHATS'' then 
+									case 
+										when @callWhileWhats = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
 								ELSE AT.dataInfo END
 						ELSE '''' END, 
 						CASE WHEN AT.identifierInfo IS NOT NULL THEN
@@ -505,7 +521,7 @@ SET @sql = '
 			(setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
 			VALUES (260, ''1'', ''Permite realizar marcación manual estando en diálogo o programar la llamada para que sea realizada cuando el agente pase a estado disponible'', 1, ''AGT'', ''0 Desactivado|1 Habilitado'', ''Allows manual dialing while in dialogue with some unified media or scheduling the call to be made when the agent becomes available'', 1, ''^[0-1]$'');
 	END'
-
+EXEC(@sql)
 ---------------------------------------------------- k064001|k064003 -------------------------------------------------------------------------------------
 SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
 SET @sql = '
@@ -549,6 +565,42 @@ SET @sql = '
 	BEGIN
 		INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
 		VALUES (''T&SET_CALL_WHILE_WHATS'', ''ccRIACat_Areas'', ''callWhileWhats'');
+	END'
+EXEC(@sql)
+
+SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+SET @sql = '	
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_CHAT'')
+	BEGIN
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+		values (''T&SET_CALL_WHILE_CHAT'', ''Aceptar llamadas en estado de diálogo de chat'', ''Accept calls on engaged status (chat)'', ''Aceitar chamadas no status de diálogo de chat'')
+	END'
+EXEC(@sql)
+
+SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+SET @sql = '	
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_EMAIL'')
+	BEGIN
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+		values (''T&SET_CALL_WHILE_EMAIL'', ''Aceptar llamadas en estado de diálogo de correo'', ''Accept calls on engaged status (email)'', ''Aceitar chamadas no status de diálogo de e-mail'')
+	END'
+EXEC(@sql)
+
+SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+SET @sql = '	
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_TWITTER'')
+	BEGIN
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+		values (''T&SET_CALL_WHILE_TWITTER'', ''Aceptar llamadas en estado de diálogo de Twitter'', ''Accept calls on engaged status (Twitter)'', ''Aceitar chamadas no status de diálogo de Twitter'')
+	END'
+EXEC(@sql)
+
+SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+SET @sql = '	
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_WHATS'')
+	BEGIN
+		insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+		values (''T&SET_CALL_WHILE_WHATS'', ''Aceptar llamadas en estado de diálogo de WhatsApp'', ''Accept calls on engaged status (WhatsApp)'', ''Aceitar chamadas no status de diálogo de WhatsApp'')
 	END'
 EXEC(@sql)
 ------------------------------------------------------ End David Medina ---------------------------------------------------------------------------------

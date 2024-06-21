@@ -89,6 +89,18 @@ BEGIN
 					)
                 END;'
     EXEC(@sql);
+	
+    SET @process = 'Whatsapp Masivo - Create new table for Url Meta'
+    SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccMetaWhatsAppConfigurations'')
+                BEGIN
+                    CREATE TABLE ccMetaWhatsAppConfigurations(
+						Id int PRIMARY KEY not null,
+						Url varchar(150) not null,
+						Description varchar(200)
+					)
+                END;'
+    EXEC(@sql);
+
 	-----------------------------------------------Fin Crear tablas ----------------------------------------------------------------------------------
 	------------------------------------------------Inicio Agregar columnas---------------------------------------------------------------------------
 	set @process = 'DEV2-476 K020029 Setting 272 '
@@ -247,6 +259,26 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 			insert into tableLangueDbLoader (languageId,tag, translate) values (2,''description-invalid'',''Telefone inválido'')
 		end'
         EXEC(@sql);
+
+SET @process = 'Insert Url para subir archivos'    
+    SET @sql='
+        IF NOT EXISTS(SELECT 1 FROM ccMetaWhatsAppConfigurations WHERE Id = 2)
+        BEGIN
+            insert into ccMetaWhatsAppConfigurations (Id,Url,Description)
+            values (2,''https://graph.facebook.com/v19.0/WAAcountId/message_templates'',''Url dar de alta plantillas de whatsAppMeta, WAAcountId hace referencia al id de la cuenta'')
+        END
+    '
+    EXEC(@sql)
+
+SET @process = 'Insert Url para dar de alta plantillas'    
+    SET @sql='
+        IF NOT EXISTS(SELECT 1 FROM ccMetaWhatsAppConfigurations WHERE Id = 3)
+        BEGIN
+            insert into ccMetaWhatsAppConfigurations (Id,Url,Description)
+            values (3,''https://graph.facebook.com/v20.0/'',''Url para envío solicitud de Id de sesión para subir archivos a la API de whatsAppMeta'')
+        END
+    '
+    EXEC(@sql)
 
 	------------------------------------------------Fin Insertar valores en tablas----------------------------------------------------------------
 	------------------------------------------------Modificar sp-----------------------------------------------------
@@ -1090,6 +1122,10 @@ SET @process = 'K020148-Carga BD WhatsApp salida-Detalle INSERT INTO tableLangue
 		begin
 		 select top (1) Id from ccMetaWAOutboundTemplates with (nolock) where TemplateName=@TemplateName or ( TemplateName=@TemplateName and RemovalDate >= @RemovalDate)
 		end
+		if(@action = 3)
+		begin 
+			select Id,Url from ccMetaWhatsAppConfigurations
+		end
 	end
 	'
 	EXEC(@sql)
@@ -1927,17 +1963,6 @@ set nocount off'
 
 	        ----------------------------------------------------- BEGIN Gaby ---------------------------------------------------------------
 
-
-    SET @process = 'Whatsapp Masivo - Create new table for Url Meta'
-    SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''ccMetaWhatsAppConfigurations'')
-                BEGIN
-                    CREATE TABLE ccMetaWhatsAppConfigurations(
-						Id int PRIMARY KEY not null,
-						Url varchar(150) not null,
-						Description varchar(200)
-					)
-                END;'
-    EXEC(@sql);
 
 
 

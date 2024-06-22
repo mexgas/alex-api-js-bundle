@@ -32,7 +32,6 @@ insert into publicationTableCCenterRIA(publicationName,status) values(N'ccRIAWor
 insert into publicationTableCCenterRIA(publicationName,status) values(N'MenuReportsRia',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationMail',0)
-insert into publicationTableCCenterRIA(publicationName,status) values(N'Conversationtweet',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsApp',0)
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)

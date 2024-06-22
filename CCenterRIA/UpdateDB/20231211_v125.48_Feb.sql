@@ -135,17 +135,17 @@ if @iZonas is null begin
 --Checamos si la campaña tiene horarios configurados
         if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
         begin
-                    if @iZonas = 0 begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-                        return
-                    end
+            if @iZonas = 0 begin
+                SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                return
+            end
         end
         else begin
             if @camSurvey > 0
-                    begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-                        return
-                    end
+            begin
+                SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                return
+            end
         end
 end
 
@@ -205,79 +205,79 @@ begin
 
             IF(@campType = 7)
             BEGIN
-                select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
-                +@isVerano+'',''
-                +@isVerano+''2,''
-                +@isVerano+''3,''
-                +@isVerano+''4,''
-                +@isVerano+''5,
-                W.list_id, isNull(R.sequence,0) as sequence,
-                sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
-                isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
-                FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-                left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
-                left join ccUsers us (nolock) on us.User_id=w.user_id
-                WHERE W.sms_status=1 -- CallBacks
-                and W.sms_dateDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-                and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-                and (
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
-                        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
-                        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
-                        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
-                        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
-                )
-                and isnull(R.status,2) = 2
-                order by priority_cb desc, W.sms_dateDial ''  + @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
-            END
-            ELSE
-            BEGIN
-                select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
-                +@isVerano+'',''
-                +@isVerano+''2,''
-                +@isVerano+''3,''
-                +@isVerano+''4,''
-                +@isVerano+''5,
-                W.list_id, isNull(R.sequence,0) as sequence,
-                cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-                isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
-                FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-                left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
-                left join ccUsers us (nolock) on us.User_id=w.user_id
-                left join ccCampsExtend ce on ce.cam_id=W.cam_id
-                WHERE W.cal_status=1 -- CallBacks
-                and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-                and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-                and (
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
-                        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
-                        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
-                        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
-                        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
-                )
-                and isnull(R.status,2) = 2
-                order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
-            END
+select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
++@isVerano+'',''
++@isVerano+''2,''
++@isVerano+''3,''
++@isVerano+''4,''
++@isVerano+''5,
+W.list_id, isNull(R.sequence,0) as sequence,
+sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
+isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
+sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
+FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
+left join ccUsers us (nolock) on us.User_id=w.user_id
+WHERE W.sms_status=1 -- CallBacks
+and W.sms_dateDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+and (
+        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
+        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
+        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
+        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
+        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
+)
+and isnull(R.status,2) = 2
+order by priority_cb desc, W.sms_dateDial ''  + @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+END
+ELSE
+BEGIN
+    select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
+    +@isVerano+'',''
+    +@isVerano+''2,''
+    +@isVerano+''3,''
+    +@isVerano+''4,''
+    +@isVerano+''5,
+    W.list_id, isNull(R.sequence,0) as sequence,
+    cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
+    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
+    FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+    left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+    left join ccUsers us (nolock) on us.User_id=w.user_id
+    left join ccCampsExtend ce on ce.cam_id=W.cam_id
+    WHERE W.cal_status=1 -- CallBacks
+    and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+    and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+    and (
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+    )
+    and isnull(R.status,2) = 2
+    order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+END
                     
 end -- TOMA EN CUENTA LOS CALLBACKS
 
@@ -289,160 +289,160 @@ begin
 
             IF(@campType = 7)
             BEGIN
-                select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
-                +@isVerano+'',''
-                +@isVerano+''2,''
-                +@isVerano+''3,''
-                +@isVerano+''4,''
-                +@isVerano+''5,
-                W.list_id, isNull(R.sequence,0) as sequence,
-                sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
-                isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
-                sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
-                FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-                left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
-                left join ccUsers us (nolock) on us.User_id=w.user_id
-                WHERE W.sms_status=0 -- Nuevas
-                and W.sms_dateDial < dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-                and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-                and (
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
-                        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
-                )
-                and isnull(R.status,2) = 2
-                order by R.sequence, W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
-            END
-            ELSE
-            BEGIN
-                select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
-                +@isVerano+'',''
-                +@isVerano+''2,''
-                +@isVerano+''3,''
-                +@isVerano+''4,''
-                +@isVerano+''5,
-                W.list_id, isNull(R.sequence,0) as sequence,
-                cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-                isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
-                cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
-                FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-                left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
-                left join ccUsers us (nolock) on us.User_id=w.user_id
-                left join ccCampsExtend ce on ce.cam_id=W.cam_id
-                WHERE W.cal_status=0 -- Nuevas
-                and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-                and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-                and (
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
-                        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-                or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
-                )
-                and isnull(R.status,2) = 2
-                order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
-            END
+    select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
+    +@isVerano+'',''
+    +@isVerano+''2,''
+    +@isVerano+''3,''
+    +@isVerano+''4,''
+    +@isVerano+''5,
+    W.list_id, isNull(R.sequence,0) as sequence,
+    sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
+    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
+    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
+    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
+    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
+    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
+    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
+    FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+    left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
+    left join ccUsers us (nolock) on us.User_id=w.user_id
+    WHERE W.sms_status=0 -- Nuevas
+    and W.sms_dateDial < dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+    and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+    and (
+            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
+            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
+            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
+            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
+            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
+    )
+    and isnull(R.status,2) = 2
+    order by R.sequence, W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
+END
+ELSE
+BEGIN
+    select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
+    +@isVerano+'',''
+    +@isVerano+''2,''
+    +@isVerano+''3,''
+    +@isVerano+''4,''
+    +@isVerano+''5,
+    W.list_id, isNull(R.sequence,0) as sequence,
+    cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
+    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
+    FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+    left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+    left join ccUsers us (nolock) on us.User_id=w.user_id
+    left join ccCampsExtend ce on ce.cam_id=W.cam_id
+    WHERE W.cal_status=0 -- Nuevas
+    and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+    and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+    and (
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+    )
+    and isnull(R.status,2) = 2
+    order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
+END
 
 end -- TOMA EN CUENTA LAS NUEVAS
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
 select @sql=@sql+nchar(13)+ ''SET rowcount 0''
 if @Test=0
-        begin
-            select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
-            WHERE callout_id in(select callout_id from #NEW_JOBS)''
+begin
+    select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
+    WHERE callout_id in(select callout_id from #NEW_JOBS)''
 end
 
 if @Test = 2
 begin
-        select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
-        declare @nSQL nvarchar(4000)
-        set @nSQL=cast(@sql as nvarchar(4000))
-        exec sp_executesql @nSQL, N''@outA int OUTPUT'',@outA=@total OUTPUT
-        return(@total)
+    select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
+    declare @nSQL nvarchar(4000)
+    set @nSQL=cast(@sql as nvarchar(4000))
+    exec sp_executesql @nSQL, N''@outA int OUTPUT'',@outA=@total OUTPUT
+    return(@total)
 end
 else
 BEGIN
     IF(@isDashboardApi = 1)
     BEGIN
-            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
+select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
 
-            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
-            SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
-            +@isVerano+'',''
-            +@isVerano+''2,''
-            +@isVerano+''3,''
-            +@isVerano+''4,''
-            +@isVerano+''5,
-            W.list_id, isNull(R.sequence,0) as sequence,
-            cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-            isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
-            cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
-            cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
-            cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
-            cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
-            cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
-            FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-            left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
-            left join ccUsers us (nolock) on us.User_id=w.user_id
-            left join ccCampsExtend ce on ce.cam_id=W.cam_id
-            WHERE W.cal_status= 2 -- Procesando
-            and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-            and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-            and (
-                    ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-            or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
-                    ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-            or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
-                    ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-            or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
-                    ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-            or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
-                    ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-            or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
-            )
-            and isnull(R.status,2) = 2
-            order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
-                -- TOMA EN CUENTA LOS REGISTROS PROCESANDOSE
+select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS
+SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
++@isVerano+'',''
++@isVerano+''2,''
++@isVerano+''3,''
++@isVerano+''4,''
++@isVerano+''5,
+W.list_id, isNull(R.sequence,0) as sequence,
+cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
+isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
+FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+left join ccUsers us (nolock) on us.User_id=w.user_id
+left join ccCampsExtend ce on ce.cam_id=W.cam_id
+WHERE W.cal_status= 2 -- Procesando
+and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+and (
+        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+)
+and isnull(R.status,2) = 2
+order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
+    -- TOMA EN CUENTA LOS REGISTROS PROCESANDOSE
     END
 
     select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, user_id,
-    case when tz>0  then tz  else tz_tmp end as tz,
-    case when tz2>0 then tz2 else tz2_tmp end as tz2,
-    case when tz3>0 then tz3 else tz3_tmp end as tz3,
-    case when tz4>0 then tz4 else tz4_tmp end as tz4,
-    case when tz5>0 then tz5 else tz5_tmp end as tz5,
-    case when tz is null then '''''''' else cal_telefono end as tel,
-    case when tz2 is null then '''''''' else cal_telefono end as tel2,
-    case when tz3 is null then '''''''' else cal_telefono end as tel3,
-    case when tz4 is null then '''''''' else cal_telefono end as tel4,
-    case when tz5 is null then '''''''' else cal_telefono end as tel5,
-    NULL as dialOrder, list_id, sequence, calkey,
-    0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type, nDescartes, name_agent, SimultaneousRecs,'' + @maxRecs + '' maxRecs
-    FROM #NEW_JOBS where len(cal_telefono)>0
+case when tz>0  then tz  else tz_tmp end as tz,
+case when tz2>0 then tz2 else tz2_tmp end as tz2,
+case when tz3>0 then tz3 else tz3_tmp end as tz3,
+case when tz4>0 then tz4 else tz4_tmp end as tz4,
+case when tz5>0 then tz5 else tz5_tmp end as tz5,
+case when tz is null then '''''''' else cal_telefono end as tel,
+case when tz2 is null then '''''''' else cal_telefono end as tel2,
+case when tz3 is null then '''''''' else cal_telefono end as tel3,
+case when tz4 is null then '''''''' else cal_telefono end as tel4,
+case when tz5 is null then '''''''' else cal_telefono end as tel5,
+NULL as dialOrder, list_id, sequence, calkey,
+0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type, nDescartes, name_agent, SimultaneousRecs,'' + @maxRecs + '' maxRecs
+FROM #NEW_JOBS where len(cal_telefono)>0
 
     ---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
-    declare @regval int
-    SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0    
+declare @regval int
+SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0    
     ''
 end
 
@@ -1852,291 +1852,6 @@ end'
      EXEC(@sql);
     
 ---------------------------------- Begin fix/125.20231211.0.10 ----------------------------------
------------------------- BEGIN  CW-8389 Error al consultar el finder por día y rango de fechas no se muestra información Marco Garcia -----------------------------
-set @process = 'CW-8389 Error al consultar el finder por día y rango de fechas no se muestra información delete sp ccsp_BaseXmngr'
-set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_BaseXmngr'')
-        BEGIN
-            DROP PROCEDURE [dbo].[ccsp_BaseXmngr]
-        END'
-EXEC(@sql)
-
-SET @process = 'CW-8389 Error al consultar el finder por día y rango de fechas no se muestra información, se modifica el @action'
-SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_BaseXmngr]
-@action int,
-@option tinyint = 0,
-@ids varchar(max)=null,
-@name varchar(25) = NULL,
-@top int = 0,
-@dateIni datetime =null,
-@dateEnd datetime =null,
-@dateStart dateTime= null,
-@userId int = 0,
-@node varchar(10) = null,
-@grabIds varchar(4000) = null
-AS
-
-declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max),@tableNameHistory nvarchar(max)
-declare @parameterDefinition nvarchar(max)
-declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
-declare @status tinyint
-declare @filterWg varchar(max)
-declare @len int
-declare @tipo int
-declare @serviceId varchar(10)
-
-set @sql = ''''
-
-select @tableName=tableName,@tableNameHistory=tableNameHistory,@columnId=columnId from ccFinderServices where id=@option 
-
-if @action in (1,6) begin --obtiene los nodos a insertar en BX
-    if @action = 1 set @status =0
-    else if @action = 6 set @status = 2
-
-    if @option <>2 begin
-
-    declare @auxTag nvarchar(10)
-                            
-    select @auxTag =case when @option = 1 then ''@C09'' when @option in (3,4) then ''@C02''
-    else ''@CDATE''   end
-    set @parameterDefinition =N''@status int, @top int,@option int''
-    set @sql=''declare @basexName varchar(max)
-select @basexName=Xname from ccBaseXDB where serviceId=@option and isFull=0;
-    with node ( ''+@columnId+ '',xmlString,dateNode)
-    AS(
-        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
-        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
-        from ''+ @tableName + '' A with(rowlock)
-        where A.status =@status
-        union
-        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
-        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
-        from ''+ @tableNameHistory + '' A with(rowlock)
-        where A.status =@status  
-    )
-
-    select node.''+@columnId+ '',node.xmlString,isnull(baseX.Xname,@basexName) Xname from node
-    left join ccBaseXDB baseX on baseX.serviceId= @option and node.dateNode between baseX.dateStart and isnull(baseX.dateEnd,getdate())
-    order by Xname''
-    --print(@sql)
-    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status,@top=@top,@option=@option
-    end
-end
-else if @action in (2,7) begin--actualiza los nodos insertados en BX
-    if @action = 2 set @status =0
-    else if @action = 7 set @status = 2
-
-    set @parameterDefinition =N''@status int''
-
-    set @sql = ''update ''+@tableName+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
-    select @tableName,@columnId,@ids,@sql
-    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
-    set @sql = ''update ''+@tableNameHistory+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
-    --print(@sql)
-    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
-
-end
-else if @action = 3 --trae el nombre de la base de datos en BX
-begin
-    select Xname from ccBaseXDB where serviceId = @option and isFull=0
-end
-else if @action = 4 --inserta el nombre del xml en BX
-begin
-    insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option,@dateStart, @name,0)
-end
-else if @action = 5 begin --obtener servicios disponibles    
-    select id, ref  from ccFinderServices where isActive=1
-end
-else if @action = 8 begin--trae la lista de las bases para la busqueda
-    select Xname from ccBaseXDB where serviceId = @option
-    and (
-
-    @dateIni between dateStart and dateEnd
-    or @dateEnd between dateStart and dateEnd
-    or dateStart between @dateIni and @dateEnd
-    )
-    union
-    select Xname from ccBaseXDB where serviceId = @option and isFull=0
-    and (
-        dateStart between @dateIni and @dateEnd
-        or @dateIni>=dateStart
-
-    )
-end
-else if @action = 9 begin--Cierra la base datos
-    update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()), dateStart=isnull(@dateStart,dateStart) where serviceId= @option and  isfull = 0 and dateEnd is null
-    and Xname=@name
-end
-
-else if @action = 10 begin
-    
-    set @tipo = CASE WHEN @node = ''R06'' THEN 1 ELSE 0 END
-    set @filterWg=''''
-    if @node is null or @node = ''R02''
-    begin
-        select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+convert(varchar(max), WGCam.Tipo+1)+'') or '' from ccRIAWorkGroupUsers Wguser
-        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-        where Wguser.User_id=@userId
-                        
-    end
-    else
-    begin
-    
-    set @serviceId = (select convert(varchar(10), id) from ccFinderServices where ref = @node)
-    select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+@serviceId+'') or '' from ccRIAWorkGroupUsers Wguser
-        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-        where Wguser.User_id=@userId and WGCam.Tipo=@tipo
-    end
-
-
-    set @len=len(@filterWg)- CHARINDEX(''ro )'', REVERSE(@filterWg))
-    select SUBSTRING(@filterWg,0, @len)
-    end
-
-
-else if @action = 11 begin--trae el nombre de la base de datos en BX
-
-    set @sql=''
-    declare @dateStart datetime
-    set @dateStart= convert(datetime,convert(varchar(10),getdate(),121))
-    SELECT isnull(min(dateIn),@dateStart) as node FROM ''+@tableName+'' where status = 0  ''
-    EXECUTE sp_executesql  @sql
-
-end
-
-else if @action = 13 begin
-    set @sql = ''''
-    select @tableName=tableName,@tableNameHistory=tableNameHistory,@columnId=columnId from ccFinderServices where id=5 
-    select @tableName,@tableNameHistory,@columnId
-    set @sql=''
-    ;
-    with duplicateIds as(
-    select ''+@columnId+'',dateIn from ''+@tableName+'' where ''+@columnId+'' in(''+@grabIds+'')
-    union
-    select ''+@columnId+'',dateIn from ''+@tableNameHistory+'' where ''+@columnId+'' in(''+@grabIds+'')
-    )
-
-    select A.''+@columnId+'' as Id,min(B.Xname) Xname from duplicateIds A
-    inner join ccbasexDB B on B.serviceId=2 and( A.dateIn between B.dateStart and B.dateEnd or A.dateIn>= B.dateStart)
-    group by A.''+@columnId+'',A.dateIn
-    Having count(*)>1
-    order by Xname
-    ''
-    exec (@sql)
-
-end
-
-else if @action = 14 begin
-    declare @CidNameOut varchar(100),@CidNameIn varchar(100)
-    declare @filterCamId varchar(max), @filterInboundId varchar(max);
-    declare @campType int
-    declare @cidOut varchar(max)=''''
-    declare @cidin varchar(max)=''''
-
-    set @filterWg=''''
-    if @node is null begin
-        set @node=''R02''
-    end
-
-    set @CidNameOut=''$CID_OUT_''+@node
-    set @CidNameIn=''$CID_In_''+@node
-
-    set @filterCamId=''''
-    
-
-    if @node = ''R02''
-    begin
-        select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
-        from ccRIAWorkGroupUsers Wguser
-        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-        inner join ccCamps c on c.cam_id=WGCam.IdCampEsp and c.CampType not in(5,7)
-        where Wguser.User_id=@userId and WGCam.Tipo=1                               
-    end
-    else if @node = ''R05''
-    begin       
-        select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
-        from ccRIAWorkGroupUsers Wguser
-        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-        inner join ccCamps c on c.cam_id=WGCam.IdCampEsp and c.CampType =5
-        where Wguser.User_id=@userId and WGCam.Tipo=1                       
-    end
-
-    if @filterCamId<>'''' begin
-        if @node in( ''R02'',''R05'') begin
-            set @filterWg=''let ''+@CidNameOut+'':=(''
-        end
-
-        set @filterCamId=SUBSTRING(@filterCamId,0,len(@filterCamId))
-        set @filterCamId=@filterCamId+'')''+char(10)    
-
-        set @filterWg=@filterWg+@filterCamId
-    end 
-        
-    set @tipo = case when @node in(''R01'',''R02'',''R03'',''R04'') then 1  
-        when @node =''R05'' then 5 
-        when @node =''R06'' then 6 
-        else 0 end -- revisar ccsp_CreateNodeMultimedia CTYPE
-
-    set @campType = case when @node =''R01'' then 1 
-        when @node =''R02'' then 0
-        when @node =''R03'' then 3
-        when @node =''R04'' then 4
-        when @node =''R05'' then 5
-        when @node =''R06'' then 6 else 0 end
-
-    SET @filterInboundId= ''''
-            
-    select @filterInboundId=@filterInboundId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
-    from ccRIAWorkGroupUsers Wguser
-        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
-        inner join ccInbound c on c.Inbound_id=WGCam.IdCampEsp and c.chat =@campType
-        where Wguser.User_id=@userId and WGCam.Tipo=0
-    
-    if @filterInboundId<>'''' begin
-        set @filterInboundId=SUBSTRING(@filterInboundId,0,len(@filterInboundId))
-        set @filterInboundId=@filterInboundId+'')''+char(10)    
-
-        set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(''+@filterInboundId
-    end
-    
-    if @node = ''R02'' BEGIN
-        IF(@filterCamId <> '''')
-        BEGIN
-            SET @cidOut=''(exists(index-of(''+@CidNameOut+'',@CID)) and @CType=2)''
-        END
-    end
-    else if @node = ''R06'' begin
-        set @cidOut=''(exists(index-of(''+@CidNameOut+'',@CID)) and @CType=6)''
-    end
-    if @node not in(''R05'') BEGIN
-        IF(@filterInboundId <> '''')
-        BEGIN
-            set @cidin=''(exists(index-of(''+@CidNameIn+'',@CID)) and @CType=''+ convert(varchar(max), @tipo)+'')''
-        END
-    end
-    
-    select @filterWg as VarCamInOut,@cidOut as CidOut,@cidin as CidIn
-end
-else if @action = 15 begin --Saber si hacer busqueda en basex
-  select @tableName=tableName,@tableNameHistory=tableNameHistory from ccFinderServices where ref=@node
-  if @node=''R02'' begin
-    select 1
-    return(0)
-  end
-
-  set @sql=''if exists(select * from ''+@tableName+'') begin
-        select 1
-    end
-    else if exists(select * from ''+@tableNameHistory+'') begin
-        select 1
-    end
-    select 0''
-    exec (@sql)
-    
-end'
-
-EXEC(@sql)
-
------------------------- END  CW-8389 Error al consultar el finder por día y rango de fechas no se muestra información Marco Garcia -----------------------------
                
 ----------------------------------------------------------------------------------- BEGIN Ivan Martin Fix Numeros Duplicados WhatsApp --------------------------------------------------------------------------
 
@@ -5218,187 +4933,7 @@ end
 set nocount off'
     EXEC(@sql);
 
-    SET @process = 'Alter SP ccsp_GalateaAdminLogin Se pone area default si el admin no esta asignado en una campaña'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
-                                               @Password    VARCHAR(40) = '''', 
-                                               @PasswordLwC VARCHAR(40) = NULL, 
-                                               @IPAddress   VARCHAR(20) = '''', 
-                                               @adminId     INT         = 0
-AS
-    BEGIN
-        SET NOCOUNT ON;
-        DECLARE @LoginOK BIT= 0, @PswdOK BIT= 0, @User_id SMALLINT, @Nombre VARCHAR(100), @ADMServer VARCHAR(300), @AreaId SMALLINT, @ViewAvrs INT, @changeRecDisposition INT, @PasswordExpired INT= 0, @UsernameMatch BIT= 1, @UserBlocked BIT= 0, @LastPasswordChange DATETIME, @Ext VARCHAR(80), @ViewAgents BIT= 0, @Theme SMALLINT= 0, @UserBlockedByMaxAttempts BIT = 0;
-        CREATE TABLE #temp
-        (LoginOK              INT, 
-         PswdOK               INT, 
-         User_id              SMALLINT, 
-         Nombre               VARCHAR(100), 
-         ADMServer            VARCHAR(300), 
-         AreaId               SMALLINT, 
-         ViewAvrs             INT, 
-         changeRecDisposition INT, 
-         LastPasswordchange   INT
-        );
-        
-        INSERT INTO #temp
-        EXEC ccsp_RIAADMChecaLogin 
-             @Login, 
-             @Password, 
-             @PasswordLwC, 
-             @adminId,
-             1;
-        SELECT @LoginOK = LoginOK, @PswdOK = PswdOK, @Nombre = Nombre, @ADMServer = ADMServer, @AreaId = AreaId, @ViewAvrs = ViewAvrs, @changeRecDisposition = changeRecDisposition, @PasswordExpired = LastPasswordchange
-        FROM #temp;
-
-        if @AreaId is null or @AreaId=0
-        select top 1 @AreaId= IDArea from ccRIACat_Areas where StatusArea=1
-
-
-        IF @LoginOK = 1
-            BEGIN
-            IF (SELECT isBlocked
-            FROM ccUsers
-            WHERE User_id = @User_id) = 1
-            BEGIN
-            SET @UserBlockedByMaxAttempts = 1;
-            END
-            ELSE
-            BEGIN
-            
-                IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-                WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-                BEGIN
-                SET @PasswordExpired = 1;
-                END
-                SELECT @User_id = User_id, @ViewAgents = viewAgents, @Theme = theme
-                FROM ccUsers
-                WHERE Login = @Login;
-                DECLARE @LastLoginAttempt DATETIME, @LoginAttempts INT, @MaxAttemptsAllow INT, @TimeBloqued INT, @TimeFromLastAttempt INT;
-                SELECT @LastLoginAttempt = LastLoginAttempt, @LoginAttempts = LoginAttempts, @LastPasswordChange = LastPasswordChange
-                FROM ccUsers
-                WHERE User_id = @User_id;
-                
-                IF (SELECT valor
-                FROM ccSettings
-                WHERE setting_id = 207) = 1
-                BEGIN
-                    IF (SELECT LoginAttempts
-                    FROM ccUsers
-                    WHERE User_id = @User_id) > 3
-                    BEGIN
-                        SET @UserBlockedByMaxAttempts = 1;
-                        UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-                    END
-                END
-                ELSE
-                BEGIN
-                
-                SELECT @MaxAttemptsAllow = valor
-                FROM ccSettings
-                WHERE setting_id = 198;
-                SELECT @TimeBloqued = valor
-                FROM ccSettings
-                WHERE setting_id = 197;
-                SELECT @TimeFromLastAttempt = DATEDIFF(MINUTE, @LastLoginAttempt, GETDATE());
-                IF @LoginAttempts > @MaxAttemptsAllow
-                    BEGIN
-                        SET @LoginAttempts = 0;
-                        UPDATE ccUsers
-                          SET 
-                              LoginAttempts = 0, 
-                              LastLoginAttempt = GETDATE()
-                        WHERE User_id = @User_id;
-                END;
-                IF(@LoginAttempts >= @MaxAttemptsAllow
-                   AND @TimeFromLastAttempt < @TimeBloqued)
-                    BEGIN
-                        SET @UserBlocked = 1;
-                END;
-
-                END
-                --Checks Username match case sensitive    
-                IF CAST(@Login AS VARBINARY(200)) <>
-                (
-                    SELECT CAST(LOGIN AS VARBINARY(200))
-                    FROM ccUsers
-                    WHERE User_id = @User_id
-                )
-                    BEGIN
-                        SET @UsernameMatch = 0;
-                END;
-
-                --Increments attemps if error
-                IF (@UserBlocked = 0
-                   AND (@UsernameMatch = 0
-                        OR @PswdOK = 0)) AND @UserBlockedByMaxAttempts = 0
-                    BEGIN
-                        UPDATE ccUsers
-                          SET 
-                              LoginAttempts = @LoginAttempts + 1, 
-                              LastLoginAttempt = GETDATE(), 
-                              onLine = 0
-                        WHERE User_id = @User_id;
-                END;
-
-                --Sets to default to try another attempt
-                DECLARE @ExpirationTime INT;
-                SELECT @ExpirationTime = valor
-                FROM ccSettings
-                WHERE setting_id = 29;
-                SELECT @PasswordExpired = (CASE
-                                               WHEN DATEDIFF(DAY, LastPasswordChange, GETDATE()) > @ExpirationTime
-                                                    AND @ExpirationTime > 0 THEN 1 ELSE 0
-                                           END)
-                FROM ccUsers
-                WHERE User_id = @User_id;
-                IF @UserBlocked = 0
-                   AND @UsernameMatch = 1
-                   AND @PswdOK = 1
-                   AND @PasswordExpired = 0
-                    BEGIN
-                        UPDATE ccUsers
-                          SET 
-                              LoginAttempts = 0, 
-                              LastLoginAttempt = GETDATE(), 
-                              onLine = 1
-                        WHERE User_id = @User_id;
-                END;
-                SELECT @Ext = dbo.fn_Ext_X_ip(@IPAddress);
-                DECLARE @WorkGroup VARCHAR(MAX);
-                SELECT @WorkGroup = COALESCE(@WorkGroup + ''|'' + CAST(IDWG AS VARCHAR(MAX)), CAST(IDWG AS VARCHAR(MAX)))
-                FROM ccRIAWorkGroupUsers
-                WHERE User_id = @User_id;
-                DECLARE @Roles VARCHAR(MAX);
-                SELECT @Roles = STUFF(
-                (
-                    SELECT '', '' + CAST(ur.Rol_id AS VARCHAR)
-                    FROM ccUsers_Roles ur
-                    WHERE User_id = @User_id FOR XML PATH('''')
-                ), 1, 2, '''');
-        END;
-        END;
-        
-        IF (SELECT valor
-        FROM ccSettings
-        WHERE setting_id = 207) = 1
-        BEGIN
-            IF (SELECT LoginAttempts
-            FROM ccUsers
-            WHERE User_id = @User_id) > 3
-            BEGIN
-                SET @UserBlockedByMaxAttempts = 1;
-                UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-            END
-            IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-            WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-            BEGIN
-            SET @PasswordExpired = 1;
-            END
-        END
-        SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles, @UserBlockedByMaxAttempts UserBlockedByMaxAttempts;
-    END;'
-    EXEC(@sql);
-
+    
 ---------------------------------------- BEGIN fix/125.20231211.012 -------------------------------------------------
    
 
@@ -7521,8 +7056,8 @@ END;'
 
         ----------------------------------------------------- END TT8053 Enrique Ruiz  ----------------------------------------------------------------
         ----------------------------------------------------- START TT9314 Uriel Cabrera  ----------------------------------------------------------------
-    SET @process = 'TT9314 Se modifica el procedimiento ccsp_GalateaAdminLogin para prevenir el areaId del administrador con valor 0, tomando ahora la primera área activa'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
+    SET @process = 'TT9314  Alter SP ccsp_GalateaAdminLogin Se pone area default si el admin no esta asignado en una campaña,areaId del administrador con valor 0, tomando ahora la primera área activa'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
                                                @Password    VARCHAR(40) = '''', 
                                                @PasswordLwC VARCHAR(40) = NULL, 
                                                @IPAddress   VARCHAR(20) = '''', 
@@ -7542,36 +7077,37 @@ AS
          changeRecDisposition INT, 
          LastPasswordchange   INT
         );
-		
+        
         INSERT INTO #temp
         EXEC ccsp_RIAADMChecaLogin 
              @Login, 
              @Password, 
              @PasswordLwC, 
              @adminId,
-			 1;
+             1;
         SELECT @LoginOK = LoginOK, @PswdOK = PswdOK, @Nombre = Nombre, @ADMServer = ADMServer, @AreaId = AreaId, @ViewAvrs = ViewAvrs, @changeRecDisposition = changeRecDisposition, @PasswordExpired = LastPasswordchange
         FROM #temp;
 
-		if @AreaId is null or @AreaId=0
-		select top 1 @AreaId= IDArea from ccRIACat_Areas where StatusArea=1
+        if @AreaId is null or @AreaId=0
+        select top 1 @AreaId= IDArea from ccRIACat_Areas where StatusArea=1
+
 
         IF @LoginOK = 1
             BEGIN
-			IF (SELECT isBlocked
-			FROM ccUsers
-			WHERE User_id = @User_id) = 1
-			BEGIN
-			SET @UserBlockedByMaxAttempts = 1;
-			END
-			ELSE
-			BEGIN
-			
-				IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-				WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-				BEGIN
-				SET @PasswordExpired = 1;
-				END
+            IF (SELECT isBlocked
+            FROM ccUsers
+            WHERE User_id = @User_id) = 1
+            BEGIN
+            SET @UserBlockedByMaxAttempts = 1;
+            END
+            ELSE
+            BEGIN
+            
+                IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
+                WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
+                BEGIN
+                SET @PasswordExpired = 1;
+                END
                 SELECT @User_id = User_id, @ViewAgents = viewAgents, @Theme = theme
                 FROM ccUsers
                 WHERE Login = @Login;
@@ -7579,22 +7115,22 @@ AS
                 SELECT @LastLoginAttempt = LastLoginAttempt, @LoginAttempts = LoginAttempts, @LastPasswordChange = LastPasswordChange
                 FROM ccUsers
                 WHERE User_id = @User_id;
-				
-				IF (SELECT valor
-				FROM ccSettings
-				WHERE setting_id = 207) = 1
-				BEGIN
-					IF (SELECT LoginAttempts
-					FROM ccUsers
-					WHERE User_id = @User_id) > 3
-					BEGIN
-						SET @UserBlockedByMaxAttempts = 1;
-						UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-					END
-				END
-				ELSE
-				BEGIN
-				
+                
+                IF (SELECT valor
+                FROM ccSettings
+                WHERE setting_id = 207) = 1
+                BEGIN
+                    IF (SELECT LoginAttempts
+                    FROM ccUsers
+                    WHERE User_id = @User_id) > 3
+                    BEGIN
+                        SET @UserBlockedByMaxAttempts = 1;
+                        UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+                    END
+                END
+                ELSE
+                BEGIN
+                
                 SELECT @MaxAttemptsAllow = valor
                 FROM ccSettings
                 WHERE setting_id = 198;
@@ -7617,7 +7153,7 @@ AS
                         SET @UserBlocked = 1;
                 END;
 
-				END
+                END
                 --Checks Username match case sensitive    
                 IF CAST(@Login AS VARBINARY(200)) <>
                 (
@@ -7652,7 +7188,7 @@ AS
                                                     AND @ExpirationTime > 0 THEN 1 ELSE 0
                                            END)
                 FROM ccUsers
-				WHERE User_id = @User_id;
+                WHERE User_id = @User_id;
                 IF @UserBlocked = 0
                    AND @UsernameMatch = 1
                    AND @PswdOK = 1
@@ -7678,46 +7214,33 @@ AS
                     WHERE User_id = @User_id FOR XML PATH('''')
                 ), 1, 2, '''');
         END;
-		END;
-		
-		IF (SELECT valor
-		FROM ccSettings
-		WHERE setting_id = 207) = 1
-		BEGIN
-			IF (SELECT LoginAttempts
-			FROM ccUsers
-			WHERE User_id = @User_id) > 3
-			BEGIN
-				SET @UserBlockedByMaxAttempts = 1;
-				UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-			END
-			IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-			WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-			BEGIN
-			SET @PasswordExpired = 1;
-			END
-		END
+        END;
+        
+        IF (SELECT valor
+        FROM ccSettings
+        WHERE setting_id = 207) = 1
+        BEGIN
+            IF (SELECT LoginAttempts
+            FROM ccUsers
+            WHERE User_id = @User_id) > 3
+            BEGIN
+                SET @UserBlockedByMaxAttempts = 1;
+                UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+            END
+            IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
+            WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
+            BEGIN
+            SET @PasswordExpired = 1;
+            END
+        END
         SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles, @UserBlockedByMaxAttempts UserBlockedByMaxAttempts;
     END;'
     EXEC(@sql);
 
-        ----------------------------------------------------- START TT9314 Uriel Cabrera  ----------------------------------------------------------------
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql);
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql);
-
-    SET @process = ''
-    SET @sql = ''
-    EXEC(@sql);
 
     ----------------------------------------------------- START TT9258 Leonardo Ramírez Landa  ----------------------------------------------------------------
 
-    SET @process = 'TT9258 Añter procedure ccsp_BaseXmngr para que ordene a Xname'
+    SET @process = 'CW-8389,TT9258 Error al consultar el finder por día y rango de fechas no se muestra información, se modifica el @action'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
 @action int,
 @option tinyint = 0,

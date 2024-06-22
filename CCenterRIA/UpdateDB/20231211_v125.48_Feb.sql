@@ -1,4 +1,3 @@
---v14
 /*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
@@ -60,9 +59,7 @@ BEGIN
 
         SET @process = 'update ccCamps set CampType =0 where CampType is null'
         SET @sql = 'update ccCamps set CampType =0 where CampType is null'
-        EXEC(@sql);
-
-       
+        EXEC(@sql);   
 
         --------------------------------------------------- START DEV2-380 Hugo Longoria -------------------------------------------------------------
 
@@ -79,19 +76,19 @@ BEGIN
         set @sql = 'CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
             returns varchar(500)
             as
-            begin
-                declare @result varchar(500)
-                DECLARE @col varchar(MAX);
-                SELECT @col = coalesce(@col,'''')+case when charindex(value,@format)>0 then value else '''' end
-                FROM dbo.fn_RIASplitDelimited(''_CAMID_|_KEY_|_D1_|_D2_|_D3_|_D4_|_D5_|_CALLOUT_'',''|'')
-                if len(isnull(@col,'''')) = 0 return isnull(@format,'''')
+begin
+    declare @result varchar(500)
+    DECLARE @col varchar(MAX);
+    SELECT @col = coalesce(@col,'''')+case when charindex(value,@format)>0 then value else '''' end
+    FROM dbo.fn_RIASplitDelimited(''_CAMID_|_KEY_|_D1_|_D2_|_D3_|_D4_|_D5_|_CALLOUT_'',''|'')
+    if len(isnull(@col,'''')) = 0 return isnull(@format,'''')
 
-                SELECT 
-                    @result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
-                FROM ccocallsoutsource nolock where callout_id=@callout_id
+    SELECT 
+        @result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
+    FROM ccocallsoutsource nolock where callout_id=@callout_id
 
-                return isnull(@result,'''')
-            end'
+    return isnull(@result,'''')
+end'
         EXEC(@sql)
 
         ---------------------------------------------------- END DEV2-380 Hugo Longoria --------------------------------------------------------------
@@ -136,28 +133,28 @@ if @iZonas is null begin
 --Checamos si la campaña tiene horarios configurados
         if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
         begin
-                    if @iZonas = 0 begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-                        return
-                    end
+            if @iZonas = 0 begin
+                SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                return
+            end
         end
         else begin
             if @camSurvey > 0
-                    begin
-                        SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
-                        return
-                    end
+            begin
+                SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+                return
+            end
         end
 end
 
 set @sql=''CREATE TABLE #NEW_JOBS
 (callout_id int,
-        cam_id int,
-        cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-        cal_status tinyint,
-        cal_fechaDial datetime,
-        user_id int,
-        tz int,
+cam_id int,
+cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+cal_status tinyint,
+cal_fechaDial datetime,
+user_id int,
+tz int,
 tz2 int,
 tz3 int,
 tz4 int,
@@ -195,107 +192,107 @@ set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' e
 if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
 begin
 
-            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
+    select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
 
-            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
-
-select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
-+@isVerano+'',''
-+@isVerano+''2,''
-+@isVerano+''3,''
-+@isVerano+''4,''
-+@isVerano+''5,
-W.list_id, isNull(R.sequence,0) as sequence,
-cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
-FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
-left join ccUsers us (nolock) on us.User_id=w.user_id
-left join ccCampsExtend ce on ce.cam_id=W.cam_id
-WHERE W.cal_status=1 -- CallBacks
-and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-and (
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
-        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
-        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
-        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
-        ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
-)
-and isnull(R.status,2) = 2
-order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
+    select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
+            
+    select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
+    +@isVerano+'',''
+    +@isVerano+''2,''
+    +@isVerano+''3,''
+    +@isVerano+''4,''
+    +@isVerano+''5,
+    W.list_id, isNull(R.sequence,0) as sequence,
+    cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
+    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
+    FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+    left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+    left join ccUsers us (nolock) on us.User_id=w.user_id
+    left join ccCampsExtend ce on ce.cam_id=W.cam_id
+    WHERE W.cal_status=1 -- CallBacks
+    and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+    and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+    and (
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+            ((W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+    )
+    and isnull(R.status,2) = 2
+    order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
                     
 end -- TOMA EN CUENTA LOS CALLBACKS
 
 if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
 begin
-            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
+    select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
 
-            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
+    select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
 
     
-select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
-+@isVerano+'',''
-+@isVerano+''2,''
-+@isVerano+''3,''
-+@isVerano+''4,''
-+@isVerano+''5,
-W.list_id, isNull(R.sequence,0) as sequence,
-cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
-isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
-cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
-FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
-left join ccUsers us (nolock) on us.User_id=w.user_id
-left join ccCampsExtend ce on ce.cam_id=W.cam_id
-WHERE W.cal_status=0 -- Nuevas
-and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-and (
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
-        ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
-)
-and isnull(R.status,2) = 2
-order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
+    select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
+    +@isVerano+'',''
+    +@isVerano+''2,''
+    +@isVerano+''3,''
+    +@isVerano+''4,''
+    +@isVerano+''5,
+    W.list_id, isNull(R.sequence,0) as sequence,
+    cs.cal_key+''''~''''+rtrim(dato1)+''''~''''+rtrim(dato2)+''''~''''+rtrim(dato3)+''''~''''+rtrim(dato4)+''''~''''+rtrim(dato5) calkey, W.nDescartes,
+    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, SimultaneousRecs,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'',
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 ,
+    cs.iZonaHoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5
+    FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
+    left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
+    left join ccUsers us (nolock) on us.User_id=w.user_id
+    left join ccCampsExtend ce on ce.cam_id=W.cam_id
+    WHERE W.cal_status=0 -- Nuevas
+    and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+    and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
+    and (
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''2=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''3=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''4=0) or
+            ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
+    or W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+''5=0)
+    )
+    and isnull(R.status,2) = 2
+    order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
 
 end -- TOMA EN CUENTA LAS NUEVAS
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
 select @sql=@sql+nchar(13)+ ''SET rowcount 0''
 if @Test=0
-        begin
-            select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
-            WHERE callout_id in(select callout_id from #NEW_JOBS)''
+begin
+    select @sql=@sql+nchar(13)+ ''UPDATE ccoWorkingTable with (rowlock) SET cal_status=2 --CALLBACK IN PROGRESS
+    WHERE callout_id in(select callout_id from #NEW_JOBS)''
 end
 
 if @Test = 2
 begin
-        select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
-        declare @nSQL nvarchar(4000)
-        set @nSQL=cast(@sql as nvarchar(4000))
-        exec sp_executesql @nSQL, N''@outA int OUTPUT'',@outA=@total OUTPUT
-        return(@total)
+    select @sql=@sql+nchar(13)+ '' SELECT @outA=count(*) FROM #NEW_JOBS where len(cal_telefono)>0''
+    declare @nSQL nvarchar(4000)
+    set @nSQL=cast(@sql as nvarchar(4000))
+    exec sp_executesql @nSQL, N''@outA int OUTPUT'',@outA=@total OUTPUT
+    return(@total)
 end
 else
 BEGIN
@@ -343,23 +340,23 @@ order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Or
     END
 
     select @sql=@sql+nchar(13)+ ''SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, user_id,
-    case when tz>0  then tz  else tz_tmp end as tz,
-    case when tz2>0 then tz2 else tz2_tmp end as tz2,
-    case when tz3>0 then tz3 else tz3_tmp end as tz3,
-    case when tz4>0 then tz4 else tz4_tmp end as tz4,
-    case when tz5>0 then tz5 else tz5_tmp end as tz5,
-    case when tz is null then '''''''' else cal_telefono end as tel,
-    case when tz2 is null then '''''''' else cal_telefono end as tel2,
-    case when tz3 is null then '''''''' else cal_telefono end as tel3,
-    case when tz4 is null then '''''''' else cal_telefono end as tel4,
-    case when tz5 is null then '''''''' else cal_telefono end as tel5,
-    NULL as dialOrder, list_id, sequence, calkey,
-    0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type, nDescartes, name_agent, SimultaneousRecs,'' + @maxRecs + '' maxRecs
-    FROM #NEW_JOBS where len(cal_telefono)>0
+case when tz>0  then tz  else tz_tmp end as tz,
+case when tz2>0 then tz2 else tz2_tmp end as tz2,
+case when tz3>0 then tz3 else tz3_tmp end as tz3,
+case when tz4>0 then tz4 else tz4_tmp end as tz4,
+case when tz5>0 then tz5 else tz5_tmp end as tz5,
+case when tz is null then '''''''' else cal_telefono end as tel,
+case when tz2 is null then '''''''' else cal_telefono end as tel2,
+case when tz3 is null then '''''''' else cal_telefono end as tel3,
+case when tz4 is null then '''''''' else cal_telefono end as tel4,
+case when tz5 is null then '''''''' else cal_telefono end as tel5,
+NULL as dialOrder, list_id, sequence, calkey,
+0 tel_type, 0 tel2_type, 0 tel3_type, 0 tel4_type, 0 tel5_type, nDescartes, name_agent, SimultaneousRecs,'' + @maxRecs + '' maxRecs
+FROM #NEW_JOBS where len(cal_telefono)>0
 
     ---Recarga info de las cubetas de usuario en la tabla ccCampsNvosCB
-    declare @regval int
-    SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0    
+declare @regval int
+SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0    
     ''
 end
 
@@ -1769,7 +1766,7 @@ end'
      EXEC(@sql);
     
 ---------------------------------- Begin fix/125.20231211.0.10 ----------------------------------
-
+               
 ----------------------------------------------------------------------------------- BEGIN Ivan Martin Fix Numeros Duplicados WhatsApp --------------------------------------------------------------------------
 
      SET @process = 'Drop procedure ccsp_MultimediaCommon'
@@ -1782,286 +1779,286 @@ end'
 
      SET @process = 'Se modifica action 1 para que tome el campo de Phone de ccWhatsAppNumbers en lugar de contactMeanIn, homologando esto con el accion 0'
      SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
-                    @Option AS SMALLINT,
-                    @inboundId AS SMALLINT = 0,
-                    @conversationId AS INT = 0,
-                    @ServiceType AS SMALLINT = 0,
-                    @status as SMALLINT =0,
-                    @messagesList as varchar(max) = '''',
-                    @agentId AS SMALLINT = 0,
-                    @CampType bit =0
-                    AS
-                    BEGIN
-                        SET NOCOUNT ON;
+@Option AS SMALLINT,
+@inboundId AS SMALLINT = 0,
+@conversationId AS INT = 0,
+@ServiceType AS SMALLINT = 0,
+@status as SMALLINT =0,
+@messagesList as varchar(max) = '''',
+@agentId AS SMALLINT = 0,
+@CampType bit =0
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-                    IF @Option = 0 --  Get Campaigns Configuration List
-                    BEGIN
-                            SELECT CAST(campaign.cam_id AS INT) AS Id,
-                                    campaign.cam_descripcion AS [Name],
-                                    ISNULL(configuration.number, '''') AS Phone,
-                                    CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccCamps campaign 
-                            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-                            INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
-                                                                
-                    END
+IF @Option = 0 --  Get Campaigns Configuration List
+BEGIN
+        SELECT CAST(campaign.cam_id AS INT) AS Id,
+                campaign.cam_descripcion AS [Name],
+                ISNULL(configuration.number, '''') AS Phone,
+                CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccCamps campaign 
+        INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+        INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
+                                            
+END
 
-                    ELSE IF @Option = 1 --  Get Acds Configuration List
-                    BEGIN
-                                                                
-                        SELECT --inbound.chat AS ServiceType,
-                        CAST(inbound.Inbound_id AS INT) AS Id,
-                        inbound.descripcion AS [Name],
-                        ISNULL(numbers.number, '''') AS Phone,
-                        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                        inbound.tNotas AS WrapUpTime,
-                        CAST(graphics.graphic_id AS INT) AS GraphicId
-                        FROM  ccInbound inbound
-                        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-                        INNER JOIN contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId 
-                        INNER JOIN ccWhatsAppNumbers numbers ON inbound.Inbound_id = numbers.inboundId
-                        where inbound.Status != 0 AND configuration.meanContactTypeId = 5 and numbers.status != 0 
-                                                                
-                    END
+ELSE IF @Option = 1 --  Get Acds Configuration List
+BEGIN
+                                            
+    SELECT --inbound.chat AS ServiceType,
+    CAST(inbound.Inbound_id AS INT) AS Id,
+    inbound.descripcion AS [Name],
+    ISNULL(numbers.number, '''') AS Phone,
+    CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+    inbound.tNotas AS WrapUpTime,
+    CAST(graphics.graphic_id AS INT) AS GraphicId
+    FROM  ccInbound inbound
+    INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+    INNER JOIN contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId 
+    INNER JOIN ccWhatsAppNumbers numbers ON inbound.Inbound_id = numbers.inboundId
+    where inbound.Status != 0 AND configuration.meanContactTypeId = 5 and numbers.status != 0 
+                                            
+END
 
-                    ELSE IF(@Option = 2)
-                    BEGIN
+ELSE IF(@Option = 2)
+BEGIN
 
 
-                        DECLARE @OldAgentId INT = 0
-                        DECLARE @OldConversationId INT = 0
-                        if @campType =0 begin --ACD
-                            SELECT  @OldAgentId = conv.agentId,
-                                    @OldConversationId = rel.conversationIdBefore
-                            FROM ccWhatsAppConversationsRelationship rel 
-                            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
-                            WHERE rel.conversationIdAfter = @conversationId
+    DECLARE @OldAgentId INT = 0
+    DECLARE @OldConversationId INT = 0
+    if @campType =0 begin --ACD
+        SELECT  @OldAgentId = conv.agentId,
+                @OldConversationId = rel.conversationIdBefore
+        FROM ccWhatsAppConversationsRelationship rel 
+        RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+        WHERE rel.conversationIdAfter = @conversationId
 
-                        SELECT
-                        cast(i.chat as int) AS ServiceType,
-                        cast(c.conversationId as int) as ConversationID,
-                        c.clientId as ClientId,
-                        cm.conexionInfo as [To],
-                        cast(i.Inbound_id as int) as ACDId,
-                        i.descripcion as ACDName,
-                        cast(g.graphic_id as int) as ACDGraphicId,
-                        cast(cm.closeConversationTime as int) as [TimeOut],
-                        cast(cm.answerTimeOut as int) as [TimeOutWarning],
-                        i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-                        i.tNotas as [WrapUpTime],
-                        i.ShowCalifWnd,
-                        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                        isnull(permission.AllowUnassign,0) as AllowUnassign,
-                        isnull(permission.AllowSpam,0) as AllowSpam,
-                        ISNULL(@OldAgentId, 0) AS OldAgentId,
-                        ISNULL(@OldConversationId, 0) AS OldConversationId,
-                        c.agentId AS AgentId,
-                        c.IsAgentLoggingOut AS IsAgentLoggingOut
-                        from ccWhatsAppConversations c
-                        left join ccInbound i on c.inboundId = i.Inbound_id 
-                        left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
-                        LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-                        LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-                        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+    SELECT
+    cast(i.chat as int) AS ServiceType,
+    cast(c.conversationId as int) as ConversationID,
+    c.clientId as ClientId,
+    cm.conexionInfo as [To],
+    cast(i.Inbound_id as int) as ACDId,
+    i.descripcion as ACDName,
+    cast(g.graphic_id as int) as ACDGraphicId,
+    cast(cm.closeConversationTime as int) as [TimeOut],
+    cast(cm.answerTimeOut as int) as [TimeOutWarning],
+    i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+    i.tNotas as [WrapUpTime],
+    i.ShowCalifWnd,
+    cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+    ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+    isnull(permission.AllowUnassign,0) as AllowUnassign,
+    isnull(permission.AllowSpam,0) as AllowSpam,
+    ISNULL(@OldAgentId, 0) AS OldAgentId,
+    ISNULL(@OldConversationId, 0) AS OldConversationId,
+    c.agentId AS AgentId,
+    c.IsAgentLoggingOut AS IsAgentLoggingOut
+    from ccWhatsAppConversations c
+    left join ccInbound i on c.inboundId = i.Inbound_id 
+    left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
+    LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-                        where c.conversationId = @conversationId
+    where c.conversationId = @conversationId
 
-                                                
-                        End
-                        ELSE BEGIN --Camp
-                            SELECT  @OldAgentId = conv.agentId,
-                                    @OldConversationId = rel.conversationIdBefore
-                            FROM ccWhatsAppConversationsRelationshipOut rel 
-                            RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
-                            WHERE rel.conversationIdAfter = @conversationId
-
-                            SELECT
-                            cast(i.CampType as int) AS ServiceType,
-                            cast(c.conversationId as int) as ConversationID,
-                            c.clientId as ClientId,
-                            c.phoneCamp as [To],
-                            cast(i.cam_id as int) as ACDId,
-                            i.cam_descripcion as ACDName,
-                            cast(g.graphic_id as int) as ACDGraphicId,
-                            cast(cm.closeConversationTime as int) as [TimeOut],
-                            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-                            i.exitAssisted as [ExitWrapUpDisposition],              
-                            cast(i.cam_tnotas as int) [WrapUpTime],
-                            i.cam_ShowCalifWnd as ShowCalifWnd, 
-                            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                            isnull(permission.AllowUnassign,0) as AllowUnassign,
-                            isnull(permission.AllowSpam,0) as AllowSpam,
-                            ISNULL(@OldAgentId, 0) AS OldAgentId,
-                            ISNULL(@OldConversationId, 0) AS OldConversationId,
-                            c.agentId AS AgentId
-                            FROM  ccWhatsAppConversationsOut c
-                            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
-                            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
-                            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
-                            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
-                            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
-
-                            where c.conversationId = @conversationId
-                        END
-                    END
-                    ELSE IF(@Option = 3)
-                    BEGIN
-                        if @campType =0 begin --ACD
-                            SELECT
-                            CAST(inbound.Inbound_id AS INT) AS Id,
-                            inbound.descripcion AS Name,
-                            ISNULL(configuration.conexionInfo, '''') AS Phone,
-                            CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                            inbound.tNotas AS WrapUpTime,
-                                CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccInbound inbound
-                            INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-                            INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-                        end
-                        else begin
-                        SELECT
-                            CAST(campaign.cam_id AS INT) AS Id,
-                            campaign.cam_descripcion AS Name,
-                            ISNULL(configuration.conexionInfo, '''') AS Phone,
-                            CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
-                            cast(campaign.cam_tnotas as int) AS WrapUpTime,
-                            CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccCamps campaign
-                            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-                            INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
-                        end
-                    END
-                    ELSE IF(@Option = 4)
-                    Begin
-                            declare @pathFile as varchar(max)
-                            declare @filetype as varchar(5)
-                            DECLARE @mensajes TABLE(idMessage VARCHAR(100));
-                            DECLARE @tmpMessageConversations TABLE(
-                                    [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[conversationId] INT NOT NULL
-                                ,[timeStampMessage] DATETIME NOT NULL
-                                ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[messageIdUi] INT NULL
-                                ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[timeStampMessageUTC] DATETIME NULL
-                                ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                            );
-
-                        insert into @mensajes
-                        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
-                                                            
-                            if(@CampType = 0)
-                            BEGIN
-                                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus) 
-                                select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus
                             
-                                FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
-                            END
-                            if(@CampType = 1)
-                            BEGIN
-                                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus) 
-                                select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus
-                                FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
-                            END
-                            select @pathFile = valor from ccSettings where setting_id=230
-                        select
-                            messageId as MessageId,
-                            messageStatus as Status,
-                            originType as Origin,
-                            case when originType =''Client'' then 3
-                                    when originType =''Agent'' then 2
-                                    when originType =''Admin'' then 1
-                            else 0 end as OriginType,
-                            timeStampMessage as [Timestamp],
-                            case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
-                            typeMessage as Type,
-                            case 
-                                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
-                                    else
-                                        case
-                                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
-                                                    else '''' end
-                                    end as Caption,
-                            case 
-                                    when originType = ''Client''
-                                    then
-                                        case
-                                                when typeMessage = ''text'' or typeMessage = ''location''
-                                                or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
-                                            then ''''
-                                                else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
-                                                case
-                                                        when typeMessage = ''video'' then ''.mp4''
-                                                        when typeMessage = ''image'' then ''.jpg''
-                                                        when typeMessage = ''audio'' then ''.mp3''
-                                                        when typeMessage = ''file''
-                                                        then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
-                                                    else '''' end
-                                        end
-                                    else
-                                        case
-                                            when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
-                                            then ''''
-                                            else content
-                                    end
-                                end as [Url],
-                                case when typeMessage = ''file'' 
-                                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
-                                else '''' end as [FileSize],
-                                case when typeMessage = ''file'' 
-                                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
-                                else '''' end as [FileName],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-                            case when typeMessage = ''location''
-                            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
-                                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
-                                from @tmpMessageConversations
-                            order by Timestamp asc
+    End
+    ELSE BEGIN --Camp
+        SELECT  @OldAgentId = conv.agentId,
+                @OldConversationId = rel.conversationIdBefore
+        FROM ccWhatsAppConversationsRelationshipOut rel 
+        RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
+        WHERE rel.conversationIdAfter = @conversationId
 
-                    End
-                                                                                
-                    ELSE IF(@Option = 5)
-                    BEGIN
-                        if @CampType =0 begin
-                            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-                                FROM contactMeanIn
-                            WHERE inboundId = @inboundId
-                        end 
-                        else begin
-                            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-                                FROM contactMeanOut
-                            WHERE camp_id = @inboundId
-                        end 
-                    END
-                    ELSE IF(@Option = 6)
-                    BEGIN
-                        SELECT [Login] AS ''OriginName''
-                            FROM [CCenterRIA].[dbo].[ccUsers]
-                        WHERE [User_id] = @agentId
-                    END
-                    END'
+        SELECT
+        cast(i.CampType as int) AS ServiceType,
+        cast(c.conversationId as int) as ConversationID,
+        c.clientId as ClientId,
+        c.phoneCamp as [To],
+        cast(i.cam_id as int) as ACDId,
+        i.cam_descripcion as ACDName,
+        cast(g.graphic_id as int) as ACDGraphicId,
+        cast(cm.closeConversationTime as int) as [TimeOut],
+        cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
+        i.exitAssisted as [ExitWrapUpDisposition],              
+        cast(i.cam_tnotas as int) [WrapUpTime],
+        i.cam_ShowCalifWnd as ShowCalifWnd, 
+        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+        isnull(permission.AllowUnassign,0) as AllowUnassign,
+        isnull(permission.AllowSpam,0) as AllowSpam,
+        ISNULL(@OldAgentId, 0) AS OldAgentId,
+        ISNULL(@OldConversationId, 0) AS OldConversationId,
+        c.agentId AS AgentId
+        FROM  ccWhatsAppConversationsOut c
+        LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
+        LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
+        LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
+        LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
+        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+
+        where c.conversationId = @conversationId
+    END
+END
+ELSE IF(@Option = 3)
+BEGIN
+    if @campType =0 begin --ACD
+        SELECT
+        CAST(inbound.Inbound_id AS INT) AS Id,
+        inbound.descripcion AS Name,
+        ISNULL(configuration.conexionInfo, '''') AS Phone,
+        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+        inbound.tNotas AS WrapUpTime,
+            CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccInbound inbound
+        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+        INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+    end
+    else begin
+    SELECT
+        CAST(campaign.cam_id AS INT) AS Id,
+        campaign.cam_descripcion AS Name,
+        ISNULL(configuration.conexionInfo, '''') AS Phone,
+        CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
+        cast(campaign.cam_tnotas as int) AS WrapUpTime,
+        CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccCamps campaign
+        INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+        INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
+    end
+END
+ELSE IF(@Option = 4)
+Begin
+        declare @pathFile as varchar(max)
+        declare @filetype as varchar(5)
+        DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+        DECLARE @tmpMessageConversations TABLE(
+                [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[conversationId] INT NOT NULL
+            ,[timeStampMessage] DATETIME NOT NULL
+            ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[messageIdUi] INT NULL
+            ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[timeStampMessageUTC] DATETIME NULL
+            ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+        );
+
+    insert into @mensajes
+    select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+                                        
+        if(@CampType = 0)
+        BEGIN
+            INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus) 
+            select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus
+        
+            FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
+        END
+        if(@CampType = 1)
+        BEGIN
+            INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus) 
+            select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus
+            FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
+        END
+        select @pathFile = valor from ccSettings where setting_id=230
+    select
+        messageId as MessageId,
+        messageStatus as Status,
+        originType as Origin,
+        case when originType =''Client'' then 3
+                when originType =''Agent'' then 2
+                when originType =''Admin'' then 1
+        else 0 end as OriginType,
+        timeStampMessage as [Timestamp],
+        case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
+        typeMessage as Type,
+        case 
+                when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
+                else
+                    case
+                        when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
+                                else '''' end
+                end as Caption,
+        case 
+                when originType = ''Client''
+                then
+                    case
+                            when typeMessage = ''text'' or typeMessage = ''location''
+                            or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
+                        then ''''
+                            else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
+                            case
+                                    when typeMessage = ''video'' then ''.mp4''
+                                    when typeMessage = ''image'' then ''.jpg''
+                                    when typeMessage = ''audio'' then ''.mp3''
+                                    when typeMessage = ''file''
+                                    then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
+                                else '''' end
+                    end
+                else
+                    case
+                        when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
+                        then ''''
+                        else content
+                end
+            end as [Url],
+            case when typeMessage = ''file'' 
+            then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
+            else '''' end as [FileSize],
+            case when typeMessage = ''file'' 
+            then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
+            else '''' end as [FileName],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+        case when typeMessage = ''location''
+        then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+            (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+            from @tmpMessageConversations
+        order by Timestamp asc
+
+End
+                                                            
+ELSE IF(@Option = 5)
+BEGIN
+    if @CampType =0 begin
+        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+            FROM contactMeanIn
+        WHERE inboundId = @inboundId
+    end 
+    else begin
+        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+            FROM contactMeanOut
+        WHERE camp_id = @inboundId
+    end 
+END
+ELSE IF(@Option = 6)
+BEGIN
+    SELECT [Login] AS ''OriginName''
+        FROM [CCenterRIA].[dbo].[ccUsers]
+    WHERE [User_id] = @agentId
+END
+END'
      EXEC(@sql);
 
      ----------------------------------------------------------------------------------- END Ivan Martin Fix Numeros Duplicados WhatsApp --------------------------------------------------------------------------
@@ -3462,13 +3459,13 @@ if (datediff(ss, @upd_date, getdate()) > 300) begin
         
                 if @vop2 is null 
             set @vop2=0
-                
+
         if @vop3 is null 
             set @vop3=0
                         
-                if @vop4 is null 
-            set @vop4=0
-    
+        if @vop4 is null 
+            set @vop4=0     
+        
         update ccCampsInfo set
              contact_reg=isnull( case when @vop2=0 then 0 else (@vop1/@vop2)*100 end,0)
             , dial_retries=isnull(case when @vop4=0 then 0 else(@vop3/@vop4)*100 end,0)
@@ -4861,6 +4858,7 @@ end
 set nocount off'
     EXEC(@sql);
 
+    
 ---------------------------------------- BEGIN fix/125.20231211.012 -------------------------------------------------
    
 
@@ -6985,7 +6983,7 @@ END;'
         ----------------------------------------------------- START TT9314 Uriel Cabrera  ----------------------------------------------------------------
     --SET @process = 'Alter SP ccsp_GalateaAdminLogin Se pone area default si el admin no esta asignado en una campaña'
         SET @process = 'TT9314 Se modifica el procedimiento ccsp_GalateaAdminLogin para prevenir el areaId del administrador con valor 0, tomando ahora la primera área activa'
-    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminLogin] @Login       VARCHAR(40) = '''', 
                                                @Password    VARCHAR(40) = '''', 
                                                @PasswordLwC VARCHAR(40) = NULL, 
                                                @IPAddress   VARCHAR(20) = '''', 
@@ -7005,36 +7003,37 @@ AS
          changeRecDisposition INT, 
          LastPasswordchange   INT
         );
-                
+        
         INSERT INTO #temp
         EXEC ccsp_RIAADMChecaLogin 
              @Login, 
              @Password, 
              @PasswordLwC, 
              @adminId,
-                         1;
+             1;
         SELECT @LoginOK = LoginOK, @PswdOK = PswdOK, @Nombre = Nombre, @ADMServer = ADMServer, @AreaId = AreaId, @ViewAvrs = ViewAvrs, @changeRecDisposition = changeRecDisposition, @PasswordExpired = LastPasswordchange
         FROM #temp;
 
-                if @AreaId is null or @AreaId=0
-                select top 1 @AreaId= IDArea from ccRIACat_Areas where StatusArea=1
+        if @AreaId is null or @AreaId=0
+        select top 1 @AreaId= IDArea from ccRIACat_Areas where StatusArea=1
+
 
         IF @LoginOK = 1
             BEGIN
-                        IF (SELECT isBlocked
-                        FROM ccUsers
-                        WHERE User_id = @User_id) = 1
-                        BEGIN
-                        SET @UserBlockedByMaxAttempts = 1;
-                        END
-                        ELSE
-                        BEGIN
-                        
-                                IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-                                WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-                                BEGIN
-                                SET @PasswordExpired = 1;
-                                END
+            IF (SELECT isBlocked
+            FROM ccUsers
+            WHERE User_id = @User_id) = 1
+            BEGIN
+            SET @UserBlockedByMaxAttempts = 1;
+            END
+            ELSE
+            BEGIN
+            
+                IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
+                WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
+                BEGIN
+                SET @PasswordExpired = 1;
+                END
                 SELECT @User_id = User_id, @ViewAgents = viewAgents, @Theme = theme
                 FROM ccUsers
                 WHERE Login = @Login;
@@ -7042,22 +7041,22 @@ AS
                 SELECT @LastLoginAttempt = LastLoginAttempt, @LoginAttempts = LoginAttempts, @LastPasswordChange = LastPasswordChange
                 FROM ccUsers
                 WHERE User_id = @User_id;
-                                
-                                IF (SELECT valor
-                                FROM ccSettings
-                                WHERE setting_id = 207) = 1
-                                BEGIN
-                                        IF (SELECT LoginAttempts
-                                        FROM ccUsers
-                                        WHERE User_id = @User_id) > 3
-                                        BEGIN
-                                                SET @UserBlockedByMaxAttempts = 1;
-                                                UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-                                        END
-                                END
-                                ELSE
-                                BEGIN
-                                
+                
+                IF (SELECT valor
+                FROM ccSettings
+                WHERE setting_id = 207) = 1
+                BEGIN
+                    IF (SELECT LoginAttempts
+                    FROM ccUsers
+                    WHERE User_id = @User_id) > 3
+                    BEGIN
+                        SET @UserBlockedByMaxAttempts = 1;
+                        UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+                    END
+                END
+                ELSE
+                BEGIN
+                
                 SELECT @MaxAttemptsAllow = valor
                 FROM ccSettings
                 WHERE setting_id = 198;
@@ -7080,7 +7079,7 @@ AS
                         SET @UserBlocked = 1;
                 END;
 
-                                END
+                END
                 --Checks Username match case sensitive    
                 IF CAST(@Login AS VARBINARY(200)) <>
                 (
@@ -7115,7 +7114,7 @@ AS
                                                     AND @ExpirationTime > 0 THEN 1 ELSE 0
                                            END)
                 FROM ccUsers
-                                WHERE User_id = @User_id;
+                WHERE User_id = @User_id;
                 IF @UserBlocked = 0
                    AND @UsernameMatch = 1
                    AND @PswdOK = 1
@@ -7141,25 +7140,25 @@ AS
                     WHERE User_id = @User_id FOR XML PATH('''')
                 ), 1, 2, '''');
         END;
-                END;
-                
-                IF (SELECT valor
-                FROM ccSettings
-                WHERE setting_id = 207) = 1
-                BEGIN
-                        IF (SELECT LoginAttempts
-                        FROM ccUsers
-                        WHERE User_id = @User_id) > 3
-                        BEGIN
-                                SET @UserBlockedByMaxAttempts = 1;
-                                UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
-                        END
-                        IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
-                        WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
-                        BEGIN
-                        SET @PasswordExpired = 1;
-                        END
-                END
+        END;
+        
+        IF (SELECT valor
+        FROM ccSettings
+        WHERE setting_id = 207) = 1
+        BEGIN
+            IF (SELECT LoginAttempts
+            FROM ccUsers
+            WHERE User_id = @User_id) > 3
+            BEGIN
+                SET @UserBlockedByMaxAttempts = 1;
+                UPDATE ccUsers SET isBlocked = 1 WHERE User_id = @User_id;
+            END
+            IF ((SELECT DATEDIFF(DAY, LastPasswordChange, GETDATE()) FROM ccUsers
+            WHERE User_id = @User_id) > 30 AND @PswdOK = 1)
+            BEGIN
+            SET @PasswordExpired = 1;
+            END
+        END
         SELECT @LoginOK UserExists, @UserBlocked UserBlocked, @UsernameMatch UsernameMatch, @PswdOK PasswordMatch, CAST(@PasswordExpired AS BIT) PasswordExpired, @User_id UserID, @Nombre Name, @ADMServer ADMServer, @AreaId AreaId, @ViewAvrs ViewAvrs, @changeRecDisposition ChangeRecDisposition, @Ext Ext, ISNULL(@ViewAgents, 0) ViewAgents, ISNULL(@WorkGroup, 0) WorkGroup, ISNULL(@Theme, 0) Theme, ISNULL(@Roles, 0) Roles, @UserBlockedByMaxAttempts UserBlockedByMaxAttempts;
     END;'
     EXEC(@sql);
@@ -11522,10 +11521,7 @@ select L.cam_id, L.Campana,
     EXEC(@sql)
 
         set @process = 'CW-8569 Create sp ccsp_GalateaManageWG se modifica condición option= 3 se cambia < por <= '
-    set @sql='
-        
-        
-alter PROCedure [dbo].[ccsp_GalateaManageWG]
+    set @sql='CREATE PROCedure [dbo].[ccsp_GalateaManageWG]
 @option smallint,
 @IDWG smallint,
 @Type smallint = 0,

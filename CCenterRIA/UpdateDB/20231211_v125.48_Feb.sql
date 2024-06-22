@@ -59,9 +59,7 @@ BEGIN
 
         SET @process = 'update ccCamps set CampType =0 where CampType is null'
         SET @sql = 'update ccCamps set CampType =0 where CampType is null'
-        EXEC(@sql);
-
-       
+        EXEC(@sql);   
 
         --------------------------------------------------- START DEV2-380 Hugo Longoria -------------------------------------------------------------
 
@@ -78,19 +76,19 @@ BEGIN
         set @sql = 'CREATE function [dbo].[fn_getSIPHeaderCfg](@callout_id int, @format varchar(500))
             returns varchar(500)
             as
-            begin
-                declare @result varchar(500)
-                DECLARE @col varchar(MAX);
-                SELECT @col = coalesce(@col,'''')+case when charindex(value,@format)>0 then value else '''' end
-                FROM dbo.fn_RIASplitDelimited(''_CAMID_|_KEY_|_D1_|_D2_|_D3_|_D4_|_D5_|_CALLOUT_'',''|'')
-                if len(isnull(@col,'''')) = 0 return isnull(@format,'''')
+begin
+    declare @result varchar(500)
+    DECLARE @col varchar(MAX);
+    SELECT @col = coalesce(@col,'''')+case when charindex(value,@format)>0 then value else '''' end
+    FROM dbo.fn_RIASplitDelimited(''_CAMID_|_KEY_|_D1_|_D2_|_D3_|_D4_|_D5_|_CALLOUT_'',''|'')
+    if len(isnull(@col,'''')) = 0 return isnull(@format,'''')
 
-                SELECT 
-                    @result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
-                FROM ccocallsoutsource nolock where callout_id=@callout_id
+    SELECT 
+        @result = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@format,''_CAMID_'',cast(cam_id as varchar(5))),''_KEY_'',cal_Key),''_D1_'',Dato1),''_D2_'',Dato2),''_D3_'',Dato3),''_D4_'',Dato4),''_D5_'',Dato5),''_CALLOUT_'',cast(@callout_id as varchar(10)))
+    FROM ccocallsoutsource nolock where callout_id=@callout_id
 
-                return isnull(@result,'''')
-            end'
+    return isnull(@result,'''')
+end'
         EXEC(@sql)
 
         ---------------------------------------------------- END DEV2-380 Hugo Longoria --------------------------------------------------------------
@@ -1864,288 +1862,287 @@ end'
 
 
      SET @process = 'Se modifica action 1 para que tome el campo de Phone de ccWhatsAppNumbers en lugar de contactMeanIn, homologando esto con el accion 0'
-     SET @sql = '
-                    CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
-                    @Option AS SMALLINT,
-                    @inboundId AS SMALLINT = 0,
-                    @conversationId AS INT = 0,
-                    @ServiceType AS SMALLINT = 0,
-                    @status as SMALLINT =0,
-                    @messagesList as varchar(max) = '''',
-                    @agentId AS SMALLINT = 0,
-                    @CampType bit =0
-                    AS
-                    BEGIN
-                        SET NOCOUNT ON;
+     SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+@Option AS SMALLINT,
+@inboundId AS SMALLINT = 0,
+@conversationId AS INT = 0,
+@ServiceType AS SMALLINT = 0,
+@status as SMALLINT =0,
+@messagesList as varchar(max) = '''',
+@agentId AS SMALLINT = 0,
+@CampType bit =0
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-                    IF @Option = 0 --  Get Campaigns Configuration List
-                    BEGIN
-                            SELECT CAST(campaign.cam_id AS INT) AS Id,
-                                    campaign.cam_descripcion AS [Name],
-                                    ISNULL(configuration.number, '''') AS Phone,
-                                    CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccCamps campaign 
-                            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-                            INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
-                                                                
-                    END
+IF @Option = 0 --  Get Campaigns Configuration List
+BEGIN
+        SELECT CAST(campaign.cam_id AS INT) AS Id,
+                campaign.cam_descripcion AS [Name],
+                ISNULL(configuration.number, '''') AS Phone,
+                CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccCamps campaign 
+        INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+        INNER JOIN  ccWhatsAppNumbers configuration ON campaign.cam_id = configuration.camp_id where configuration.status != 0 AND campaign.CampType = 5
+                                            
+END
 
-                    ELSE IF @Option = 1 --  Get Acds Configuration List
-                    BEGIN
-                                                                
-                        SELECT --inbound.chat AS ServiceType,
-                        CAST(inbound.Inbound_id AS INT) AS Id,
-                        inbound.descripcion AS [Name],
-                        ISNULL(numbers.number, '''') AS Phone,
-                        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                        inbound.tNotas AS WrapUpTime,
-                        CAST(graphics.graphic_id AS INT) AS GraphicId
-                        FROM  ccInbound inbound
-                        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-                        INNER JOIN contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId 
-                        INNER JOIN ccWhatsAppNumbers numbers ON inbound.Inbound_id = numbers.inboundId
-                        where inbound.Status != 0 AND configuration.meanContactTypeId = 5 and numbers.status != 0 
-                                                                
-                    END
+ELSE IF @Option = 1 --  Get Acds Configuration List
+BEGIN
+                                            
+    SELECT --inbound.chat AS ServiceType,
+    CAST(inbound.Inbound_id AS INT) AS Id,
+    inbound.descripcion AS [Name],
+    ISNULL(numbers.number, '''') AS Phone,
+    CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+    inbound.tNotas AS WrapUpTime,
+    CAST(graphics.graphic_id AS INT) AS GraphicId
+    FROM  ccInbound inbound
+    INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+    INNER JOIN contactMeanIn configuration ON inbound.Inbound_id = configuration.inboundId 
+    INNER JOIN ccWhatsAppNumbers numbers ON inbound.Inbound_id = numbers.inboundId
+    where inbound.Status != 0 AND configuration.meanContactTypeId = 5 and numbers.status != 0 
+                                            
+END
 
-                    ELSE IF(@Option = 2)
-                    BEGIN
+ELSE IF(@Option = 2)
+BEGIN
 
 
-                        DECLARE @OldAgentId INT = 0
-                        DECLARE @OldConversationId INT = 0
-                        if @campType =0 begin --ACD
-                            SELECT  @OldAgentId = conv.agentId,
-                                    @OldConversationId = rel.conversationIdBefore
-                            FROM ccWhatsAppConversationsRelationship rel 
-                            RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
-                            WHERE rel.conversationIdAfter = @conversationId
+    DECLARE @OldAgentId INT = 0
+    DECLARE @OldConversationId INT = 0
+    if @campType =0 begin --ACD
+        SELECT  @OldAgentId = conv.agentId,
+                @OldConversationId = rel.conversationIdBefore
+        FROM ccWhatsAppConversationsRelationship rel 
+        RIGHT JOIN ccWhatsAppConversations conv ON conv.conversationId = rel.conversationIdBefore
+        WHERE rel.conversationIdAfter = @conversationId
 
-                        SELECT
-                        cast(i.chat as int) AS ServiceType,
-                        cast(c.conversationId as int) as ConversationID,
-                        c.clientId as ClientId,
-                        cm.conexionInfo as [To],
-                        cast(i.Inbound_id as int) as ACDId,
-                        i.descripcion as ACDName,
-                        cast(g.graphic_id as int) as ACDGraphicId,
-                        cast(cm.closeConversationTime as int) as [TimeOut],
-                        cast(cm.answerTimeOut as int) as [TimeOutWarning],
-                        i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
-                        i.tNotas as [WrapUpTime],
-                        i.ShowCalifWnd,
-                        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                        isnull(permission.AllowUnassign,0) as AllowUnassign,
-                        isnull(permission.AllowSpam,0) as AllowSpam,
-                        ISNULL(@OldAgentId, 0) AS OldAgentId,
-                        ISNULL(@OldConversationId, 0) AS OldConversationId,
-                        c.agentId AS AgentId,
-                        c.IsAgentLoggingOut AS IsAgentLoggingOut
-                        from ccWhatsAppConversations c
-                        left join ccInbound i on c.inboundId = i.Inbound_id 
-                        left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
-                        LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
-                        LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
-                        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+    SELECT
+    cast(i.chat as int) AS ServiceType,
+    cast(c.conversationId as int) as ConversationID,
+    c.clientId as ClientId,
+    cm.conexionInfo as [To],
+    cast(i.Inbound_id as int) as ACDId,
+    i.descripcion as ACDName,
+    cast(g.graphic_id as int) as ACDGraphicId,
+    cast(cm.closeConversationTime as int) as [TimeOut],
+    cast(cm.answerTimeOut as int) as [TimeOutWarning],
+    i.ExitWrapUpDisposition as [ExitWrapUpDisposition],
+    i.tNotas as [WrapUpTime],
+    i.ShowCalifWnd,
+    cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+    ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+    isnull(permission.AllowUnassign,0) as AllowUnassign,
+    isnull(permission.AllowSpam,0) as AllowSpam,
+    ISNULL(@OldAgentId, 0) AS OldAgentId,
+    ISNULL(@OldConversationId, 0) AS OldConversationId,
+    c.agentId AS AgentId,
+    c.IsAgentLoggingOut AS IsAgentLoggingOut
+    from ccWhatsAppConversations c
+    left join ccInbound i on c.inboundId = i.Inbound_id 
+    left JOIN  contactMeanIn cm  ON i.Inbound_id = cm.inboundId    
+    LEFT JOIN ccRIAInboundGraph g on g.Inbound_id = i.Inbound_id
+    LEFT JOIN ccLastMessageAgentByConversation lm ON lm.conversationId = c.conversationId
+    LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
 
-                        where c.conversationId = @conversationId
+    where c.conversationId = @conversationId
 
-                                                
-                        End
-                        ELSE BEGIN --Camp
-                            SELECT  @OldAgentId = conv.agentId,
-                                    @OldConversationId = rel.conversationIdBefore
-                            FROM ccWhatsAppConversationsRelationshipOut rel 
-                            RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
-                            WHERE rel.conversationIdAfter = @conversationId
-
-                            SELECT
-                            cast(i.CampType as int) AS ServiceType,
-                            cast(c.conversationId as int) as ConversationID,
-                            c.clientId as ClientId,
-                            c.phoneCamp as [To],
-                            cast(i.cam_id as int) as ACDId,
-                            i.cam_descripcion as ACDName,
-                            cast(g.graphic_id as int) as ACDGraphicId,
-                            cast(cm.closeConversationTime as int) as [TimeOut],
-                            cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
-                            i.exitAssisted as [ExitWrapUpDisposition],              
-                            cast(i.cam_tnotas as int) [WrapUpTime],
-                            i.cam_ShowCalifWnd as ShowCalifWnd, 
-                            cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
-                            ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
-                            isnull(permission.AllowUnassign,0) as AllowUnassign,
-                            isnull(permission.AllowSpam,0) as AllowSpam,
-                            ISNULL(@OldAgentId, 0) AS OldAgentId,
-                            ISNULL(@OldConversationId, 0) AS OldConversationId,
-                            c.agentId AS AgentId
-                            FROM  ccWhatsAppConversationsOut c
-                            LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
-                            LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
-                            LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
-                            LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
-                            LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
-
-                            where c.conversationId = @conversationId
-                        END
-                    END
-                    ELSE IF(@Option = 3)
-                    BEGIN
-                        if @campType =0 begin --ACD
-                            SELECT
-                            CAST(inbound.Inbound_id AS INT) AS Id,
-                            inbound.descripcion AS Name,
-                            ISNULL(configuration.conexionInfo, '''') AS Phone,
-                            CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
-                            inbound.tNotas AS WrapUpTime,
-                                CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccInbound inbound
-                            INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
-                            INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
-                        end
-                        else begin
-                        SELECT
-                            CAST(campaign.cam_id AS INT) AS Id,
-                            campaign.cam_descripcion AS Name,
-                            ISNULL(configuration.conexionInfo, '''') AS Phone,
-                            CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
-                            cast(campaign.cam_tnotas as int) AS WrapUpTime,
-                            CAST(graphics.graphic_id AS INT) AS GraphicId
-                            FROM  ccCamps campaign
-                            INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
-                            INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
-                        end
-                    END
-                    ELSE IF(@Option = 4)
-                    Begin
-                            declare @pathFile as varchar(max)
-                            declare @filetype as varchar(5)
-                            DECLARE @mensajes TABLE(idMessage VARCHAR(100));
-                            DECLARE @tmpMessageConversations TABLE(
-                                    [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[conversationId] INT NOT NULL
-                                ,[timeStampMessage] DATETIME NOT NULL
-                                ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
-                                ,[messageIdUi] INT NULL
-                                ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                                ,[timeStampMessageUTC] DATETIME NULL
-                                ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
-                            );
-
-                        insert into @mensajes
-                        select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
-                                                            
-                            if(@CampType = 0)
-                            BEGIN
-                                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus) 
-                                select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus
                             
-                                FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
-                            END
-                            if(@CampType = 1)
-                            BEGIN
-                                INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus) 
-                                select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
-                                ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
-                                messageStatus
-                                FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
-                            END
-                            select @pathFile = valor from ccSettings where setting_id=230
-                        select
-                            messageId as MessageId,
-                            messageStatus as Status,
-                            originType as Origin,
-                            case when originType =''Client'' then 3
-                                    when originType =''Agent'' then 2
-                                    when originType =''Admin'' then 1
-                            else 0 end as OriginType,
-                            timeStampMessage as [Timestamp],
-                            case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
-                            typeMessage as Type,
-                            case 
-                                    when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
-                                    else
-                                        case
-                                            when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
-                                                    else '''' end
-                                    end as Caption,
-                            case 
-                                    when originType = ''Client''
-                                    then
-                                        case
-                                                when typeMessage = ''text'' or typeMessage = ''location''
-                                                or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
-                                            then ''''
-                                                else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
-                                                case
-                                                        when typeMessage = ''video'' then ''.mp4''
-                                                        when typeMessage = ''image'' then ''.jpg''
-                                                        when typeMessage = ''audio'' then ''.mp3''
-                                                        when typeMessage = ''file''
-                                                        then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
-                                                    else '''' end
-                                        end
-                                    else
-                                        case
-                                            when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
-                                            then ''''
-                                            else content
-                                    end
-                                end as [Url],
-                                case when typeMessage = ''file'' 
-                                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
-                                else '''' end as [FileSize],
-                                case when typeMessage = ''file'' 
-                                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
-                                else '''' end as [FileName],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-                            case when typeMessage = ''location''
-                            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-                            case when typeMessage = ''location''
-                            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
-                                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
-                                from @tmpMessageConversations
-                            order by Timestamp asc
+    End
+    ELSE BEGIN --Camp
+        SELECT  @OldAgentId = conv.agentId,
+                @OldConversationId = rel.conversationIdBefore
+        FROM ccWhatsAppConversationsRelationshipOut rel 
+        RIGHT JOIN ccWhatsAppConversationsOut conv ON conv.conversationId = rel.conversationIdBefore
+        WHERE rel.conversationIdAfter = @conversationId
 
-                    End
-                                                                                
-                    ELSE IF(@Option = 5)
-                    BEGIN
-                        if @CampType =0 begin
-                            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-                                FROM contactMeanIn
-                            WHERE inboundId = @inboundId
-                        end 
-                        else begin
-                            SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
-                                FROM contactMeanOut
-                            WHERE camp_id = @inboundId
-                        end 
-                    END
-                    ELSE IF(@Option = 6)
-                    BEGIN
-                        SELECT [Login] AS ''OriginName''
-                            FROM [CCenterRIA].[dbo].[ccUsers]
-                        WHERE [User_id] = @agentId
-                    END
-                    END'
+        SELECT
+        cast(i.CampType as int) AS ServiceType,
+        cast(c.conversationId as int) as ConversationID,
+        c.clientId as ClientId,
+        c.phoneCamp as [To],
+        cast(i.cam_id as int) as ACDId,
+        i.cam_descripcion as ACDName,
+        cast(g.graphic_id as int) as ACDGraphicId,
+        cast(cm.closeConversationTime as int) as [TimeOut],
+        cast(cm.answerTimeoutClient as int) as [TimeOutWarning],
+        i.exitAssisted as [ExitWrapUpDisposition],              
+        cast(i.cam_tnotas as int) [WrapUpTime],
+        i.cam_ShowCalifWnd as ShowCalifWnd, 
+        cast(ISNULL(answerTimeoutClient, 30) AS int) as [AnswerTimeoutClient],
+        ISNULL(DATEDIFF(ss, lm.timeStampLastMessageAgent, lm.desconnectionAgent),0) as [SecTimeOutLastMessageAgent],
+        isnull(permission.AllowUnassign,0) as AllowUnassign,
+        isnull(permission.AllowSpam,0) as AllowSpam,
+        ISNULL(@OldAgentId, 0) AS OldAgentId,
+        ISNULL(@OldConversationId, 0) AS OldConversationId,
+        c.agentId AS AgentId
+        FROM  ccWhatsAppConversationsOut c
+        LEFT JOIN  ccCamps i ON c.camId = i.cam_id 
+        LEFT JOIN  contactMeanOut cm  ON c.camId = cm.camp_id
+        LEFT JOIN ccRIACampsGraph g on g.cam_id = c.camId
+        LEFT JOIN ccLastMessageAgentByConversationOut lm ON lm.conversationId = c.conversationId
+        LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
+
+        where c.conversationId = @conversationId
+    END
+END
+ELSE IF(@Option = 3)
+BEGIN
+    if @campType =0 begin --ACD
+        SELECT
+        CAST(inbound.Inbound_id AS INT) AS Id,
+        inbound.descripcion AS Name,
+        ISNULL(configuration.conexionInfo, '''') AS Phone,
+        CAST(ISNULL(configuration.answerTimeOut, 0) AS int) AS TimeOut,
+        inbound.tNotas AS WrapUpTime,
+            CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccInbound inbound
+        INNER JOIN ccRIAInboundGraph graphics ON inbound.Inbound_id = graphics.Inbound_id
+        INNER JOIN  contactMeanIn configuration ON (inbound.Inbound_id = configuration.inboundId and inbound.Inbound_id = @inboundId)
+    end
+    else begin
+    SELECT
+        CAST(campaign.cam_id AS INT) AS Id,
+        campaign.cam_descripcion AS Name,
+        ISNULL(configuration.conexionInfo, '''') AS Phone,
+        CAST(ISNULL(configuration.answerTimeoutClient, 0) AS int) AS TimeOut,
+        cast(campaign.cam_tnotas as int) AS WrapUpTime,
+        CAST(graphics.graphic_id AS INT) AS GraphicId
+        FROM  ccCamps campaign
+        INNER JOIN ccRIACampsGraph graphics ON campaign.cam_id = graphics.cam_id
+        INNER JOIN  contactMeanOut configuration ON (campaign.cam_id = configuration.camp_id and campaign.cam_id = @inboundId)
+    end
+END
+ELSE IF(@Option = 4)
+Begin
+        declare @pathFile as varchar(max)
+        declare @filetype as varchar(5)
+        DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+        DECLARE @tmpMessageConversations TABLE(
+                [messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[conversationId] INT NOT NULL
+            ,[timeStampMessage] DATETIME NOT NULL
+            ,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            ,[messageIdUi] INT NULL
+            ,[currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+            ,[timeStampMessageUTC] DATETIME NULL
+            ,[messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+        );
+
+    insert into @mensajes
+    select value from dbo.fn_RIASplitDelimited(@messagesList,'','')
+                                        
+        if(@CampType = 0)
+        BEGIN
+            INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus) 
+            select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus
+        
+            FROM ccWAMessagesConversations  where messageId in (select idMessage from @mensajes)
+        END
+        if(@CampType = 1)
+        BEGIN
+            INSERT INTO @tmpMessageConversations(messageId, conversationId, timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus) 
+            select messageId, conversationId,timeStampMessageUTC timeStampMessage, originType
+            ,price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC,
+            messageStatus
+            FROM ccWAMessagesConversationsOut  where messageId in (select idMessage from @mensajes)
+        END
+        select @pathFile = valor from ccSettings where setting_id=230
+    select
+        messageId as MessageId,
+        messageStatus as Status,
+        originType as Origin,
+        case when originType =''Client'' then 3
+                when originType =''Agent'' then 2
+                when originType =''Admin'' then 1
+        else 0 end as OriginType,
+        timeStampMessage as [Timestamp],
+        case when typeMessage IN (''text'', ''template'')  then content else '''' end as Content,
+        typeMessage as Type,
+        case 
+                when typeMessage not in( ''text'' ,''location'', ''file'', ''template'') then content
+                else
+                    case
+                        when typeMessage = ''file'' then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
+                                else '''' end
+                end as Caption,
+        case 
+                when originType = ''Client''
+                then
+                    case
+                            when typeMessage = ''text'' or typeMessage = ''location''
+                            or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
+                        then ''''
+                            else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
+                            case
+                                    when typeMessage = ''video'' then ''.mp4''
+                                    when typeMessage = ''image'' then ''.jpg''
+                                    when typeMessage = ''audio'' then ''.mp3''
+                                    when typeMessage = ''file''
+                                    then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
+                                else '''' end
+                    end
+                else
+                    case
+                        when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
+                        then ''''
+                        else content
+                end
+            end as [Url],
+            case when typeMessage = ''file'' 
+            then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
+            else '''' end as [FileSize],
+            case when typeMessage = ''file'' 
+            then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
+            else '''' end as [FileName],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
+        case when typeMessage = ''location''
+        then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
+        case when typeMessage = ''location''
+        then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
+            (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
+            from @tmpMessageConversations
+        order by Timestamp asc
+
+End
+                                                            
+ELSE IF(@Option = 5)
+BEGIN
+    if @CampType =0 begin
+        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+            FROM contactMeanIn
+        WHERE inboundId = @inboundId
+    end 
+    else begin
+        SELECT CAST(ISNULL(answerTimeoutClient, 30) AS int) AS AnswerTimeoutClient 
+            FROM contactMeanOut
+        WHERE camp_id = @inboundId
+    end 
+END
+ELSE IF(@Option = 6)
+BEGIN
+    SELECT [Login] AS ''OriginName''
+        FROM [CCenterRIA].[dbo].[ccUsers]
+    WHERE [User_id] = @agentId
+END
+END'
      EXEC(@sql);
 
      ----------------------------------------------------------------------------------- END Ivan Martin Fix Numeros Duplicados WhatsApp --------------------------------------------------------------------------
@@ -4076,6 +4073,15 @@ BEGIN
     end
 
     SELECT @Result
+END'
+    EXEC(@sql);
+
+    SET @process = 'Se crea setting 274 version de liberacion del instalador'
+    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 274)
+BEGIN
+    INSERT INTO ccSettings2(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+    VALUES(274, ''125.20231211.0.14'', ''Version del instalador'', 1, ''XXX'', ''Version del instalador '',
+                     ''Installer version'',0,''.*'') 
 END'
     EXEC(@sql);
 

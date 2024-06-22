@@ -149,12 +149,12 @@ end
 
 set @sql=''CREATE TABLE #NEW_JOBS
 (callout_id int,
-        cam_id int,
-        cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
-        cal_status tinyint,
-        cal_fechaDial datetime,
-        user_id int,
-        tz int,
+cam_id int,
+cal_telefono varchar(15)collate SQL_Latin1_General_CP1_CI_AS,
+cal_status tinyint,
+cal_fechaDial datetime,
+user_id int,
+tz int,
 tz2 int,
 tz3 int,
 tz4 int,
@@ -188,58 +188,14 @@ select @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
 declare @isVerano varchar(max)
 set @isVerano = ''W.izonahoraria'' + case @bIsDaylight when 1 then ''_verano'' else '''' END
         
-IF(@campType = 7)
-BEGIN
-    set @isVerano = ''W.iTimeZone'' + case @bIsDaylight when 1 then ''_summer'' else '''' END
-END
-
 
 if @TipoJobs in(0,1)--** INCLUIR LOS CALLBACKS
 begin
 
-            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
+    select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar )
 
-            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
-
-            IF(@campType = 7)
-            BEGIN
-select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
-+@isVerano+'',''
-+@isVerano+''2,''
-+@isVerano+''3,''
-+@isVerano+''4,''
-+@isVerano+''5,
-W.list_id, isNull(R.sequence,0) as sequence,
-sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
-isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
-sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
-sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
-sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
-sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
-sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
-FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
-left join ccUsers us (nolock) on us.User_id=w.user_id
-WHERE W.sms_status=1 -- CallBacks
-and W.sms_dateDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-and (
-        ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
-        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
-        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
-        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
-        ((W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
-)
-and isnull(R.status,2) = 2
-order by priority_cb desc, W.sms_dateDial ''  + @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
-END
-ELSE
-BEGIN
+    select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
+            
     select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
     +@isVerano+'',''
     +@isVerano+''2,''
@@ -275,55 +231,16 @@ BEGIN
     )
     and isnull(R.status,2) = 2
     order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc-- Solo se aplica el order en registros Nuevos (cal_status=0)
-END
                     
 end -- TOMA EN CUENTA LOS CALLBACKS
 
 if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
 begin
-            select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
+    select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
 
-            select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
+    select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
 
-            IF(@campType = 7)
-            BEGIN
-    select @sql=@sql+nchar(13)+ ''SELECT W.smsout_id, W.cam_id, W.sms_phoneNumber, W.sms_status, W.sms_dateDial, W.user_id,''
-    +@isVerano+'',''
-    +@isVerano+''2,''
-    +@isVerano+''3,''
-    +@isVerano+''4,''
-    +@isVerano+''5,
-    W.list_id, isNull(R.sequence,0) as sequence,
-    sos.callkey+''''~''''+rtrim(data1)+''''~''''+rtrim(data2)+''''~''''+rtrim(data3)+''''~''''+rtrim(data4)+''''~''''+rtrim(data5) calkey, 0 AS nDescartes,
-    isnull(us.nombres, '''''''') + '''' '''' + isnull(us.ApellidoPaterno, '''''''') + '''' '''' + isnull(us.ApellidoMaterno, '''''''') Name_agent, 0 SimultaneousRecs,
-    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'',
-    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 ,
-    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 ,
-    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 ,
-    sos.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5
-    FROM smsWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegistryLists)) on W.list_id = R.list_id
-    left join smsOutSource sos (nolock) on sos.smsout_id=W.smsout_id
-    left join ccUsers us (nolock) on us.User_id=w.user_id
-    WHERE W.sms_status=0 -- Nuevas
-    and W.sms_dateDial < dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
-    and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
-    and (
-            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''=0) or
-            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''2=0) or
-            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''3=0) or
-            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''4=0) or
-            ( (W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5 & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
-    or W.iTimeZone''+case @bIsDaylight when 1 then ''_summer'' else '''' end+''5=0)
-    )
-    and isnull(R.status,2) = 2
-    order by R.sequence, W.sms_dateDial ''+ @Order_Asc_Desc +'', smsout_id ''+ @Order_Asc_Desc
-END
-ELSE
-BEGIN
+    
     select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
     +@isVerano+'',''
     +@isVerano+''2,''
@@ -359,7 +276,6 @@ BEGIN
     )
     and isnull(R.status,2) = 2
     order by R.sequence, W.cal_fechaDial ''+ @Order_Asc_Desc +'', callout_id ''+ @Order_Asc_Desc
-END
 
 end -- TOMA EN CUENTA LAS NUEVAS
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------

@@ -372,6 +372,32 @@ END
                     END';
         EXEC (@sql);
 
+		SET @process = 'KR134000 Creacion de las columnas para la tabla ccSmsResponseMessages';
+        SET @sql = 'IF NOT EXISTS (
+					SELECT 1
+					FROM INFORMATION_SCHEMA.COLUMNS
+					WHERE TABLE_NAME = ''ccSmsResponseMessages''
+						AND COLUMN_NAME = ''CampaignId''
+					)
+						BEGIN
+						ALTER TABLE ccSmsResponseMessages
+						ADD CampaignId INT NOT NULL DEFAULT 0;
+						END';
+        EXEC (@sql);
+
+		SET @process = 'KR134000 Creacion de las columnas para la tabla ccSmsResponseMessages';
+        SET @sql = 'IF NOT EXISTS (
+					SELECT 1
+					FROM INFORMATION_SCHEMA.COLUMNS
+					WHERE TABLE_NAME = ''ccSmsResponseMessages''
+						AND COLUMN_NAME = ''SmsOutId''
+					)
+						BEGIN
+						ALTER TABLE ccSmsResponseMessages
+						ADD SmsOutId INT NOT NULL DEFAULT 0;
+						END';
+        EXEC (@sql);
+
         SET @process = 'KR134000 Se crea índice para SystemApiId';
         SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N''IX_ccSmsResponseMessages_SystemApiId'' AND object_id = OBJECT_ID(N''ccSmsResponseMessages''))
                     BEGIN

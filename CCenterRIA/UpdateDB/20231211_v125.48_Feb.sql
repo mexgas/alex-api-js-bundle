@@ -11521,7 +11521,7 @@ select L.cam_id, L.Campana,
     EXEC(@sql)
 
         set @process = 'CW-8569 Create sp ccsp_GalateaManageWG se modifica condición option= 3 se cambia < por <= '
-    set @sql='CREATE PROCedure [dbo].[ccsp_GalateaManageWG]
+    set @sql='CREATE PROCEDURE ccsp_GalateaManageWG
 @option smallint,
 @IDWG smallint,
 @Type smallint = 0,

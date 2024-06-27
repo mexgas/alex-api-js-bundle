@@ -87,7 +87,7 @@ SET @sql = 'if not exists (select * from sys.tables where name = N''Chatbot'')
 EXEC(@sql)
 
 --------------------------------------------------------- SPs ------------------------------------------------------------------------------------------
-set @process = 'delete de ccsp_AuxiliarReadyManagement por si ya existe'
+set @process = 'delete de ccsp_ChatbotManagement por si ya existe'
 set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_ChatbotManagement'')
         BEGIN
             DROP PROCEDURE [dbo].[ccsp_ChatbotManagement]

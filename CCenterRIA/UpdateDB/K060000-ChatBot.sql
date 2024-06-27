@@ -57,6 +57,79 @@ BEGIN
 	BEGIN TRAN
 	BEGIN TRY
 
+-------------------------------------------------- Begin David Medina -----------------------------------------------------------------------------------
+--------------------------------------------------------- DDL -------------------------------------------------------------------------------------------
+---------------------------------------------------- k060036|k060037 ------------------------------------------------------------------------------------
+-------------------------------------------------------- Tablas -----------------------------------------------------------------------------------------
+SET @process = 'Creación de nueva tabla IVR para separar el IVR de la tabla chatbot'
+SET @sql = 'if not exists (select * from sys.tables where name = N''IVR'')
+			begin
+				create table IVR(
+				IVRID smallint IDENTITY(1,1) PRIMARY KEY,
+				IVRName varchar(40),
+				IVR varchar(max));
+			end'
+EXEC(@sql)
+
+SET @process = 'Creación de tabla nueva de chatbot y relación de tabla chatbot a IVR'
+SET @sql = 'if not exists (select * from sys.tables where name = N''Chatbot'')
+			 begin
+				create table Chatbot (
+				ID int IDENTITY(1,1) PRIMARY KEY,
+				ChatBotName	varchar(40),
+				IVRID smallint,
+				AssociatedPhone	varchar(20),
+				CreationDate	date,
+				LastModificationDate	date,
+				Status	bit,
+				CONSTRAINT FK_Chatbot_IVR FOREIGN KEY (IVRID) REFERENCES IVR(IVRID))
+			end'
+EXEC(@sql)
+
+--------------------------------------------------------- SPs ------------------------------------------------------------------------------------------
+
+set @process = 'Creación de SP para gestión de chatbots'
+set @sql = 'Create proc [dbo].[ccsp_ChatbotManagement]	
+@type int,
+@ChatbotName varchar(40) = null,
+@TemplateId smallint = null,
+@AssociatedNumber varchar(20) = null
+
+as
+set nocount on
+
+if @type=1
+begin 
+	select id as ChatbotId, ChatBotName as ChatbotName, AssociatedPhone as AssociatedNumber,  FORMAT(CreationDate, ''dd/MM/yyyy'') as CreationDate, 
+	FORMAT(LastModificationDate, ''dd/MM/yyyy'') as LastModificationDate, status as ChatbotStatus from Chatbot 
+	return(0) 
+end 
+
+if @type=2
+begin
+	select id as ChatbotId , AssociatedPhone  as AssociatedNumber from Chatbot 
+	return(0) 
+end
+
+if @type=3 
+begin
+	select IVRID as IVRID , IVRName as IVRTemplate from IVR 
+	return(0) 
+end
+
+if @type=4
+begin
+	if exists(select LTRIM(RTRIM(ChatBotName)) from Chatbot where Status=1 and ChatBotName=LTRIM(RTRIM(@ChatBotName))) begin
+		select -1 as result
+		return(0)
+	end
+	insert into ChatBot(ChatBotName, IVRID, AssociatedPhone, CreationDate, LastModificationDate, Status) values (@ChatbotName, @TemplateId, @AssociatedNumber, getdate(), getdate(), 1)
+	select top 1 ID as result from chatbot order by ID desc
+	return(0)
+end'
+EXEC(@sql)
+------------------------------------------------------ End David Medina ---------------------------------------------------------------------------------
+
 	--Es necesario realizar un merge a mano con el ultimo SP 
 	SET @process = 'K060005 Alter procedure ccsp_ConversationWASave to register the chatbotId and WhatsAppConversationId when creating a new WhatsApp conversation'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT

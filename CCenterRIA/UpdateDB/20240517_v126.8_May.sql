@@ -2658,7 +2658,7 @@ EndSave:';
 					    end
 					end
 					else if @action=6 begin 
-					    set @sql='delete from smsWorkingTable where smsout_id in('+@smsoutIds+')'
+					    set @sql=''delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')''
 					    exec (@sql)
 					end
 					else if @action=7 begin
@@ -2768,13 +2768,23 @@ EndSave:';
 					    END
 					end
 					else if @action=13 begin
-						UPDATE MCA
-						SET RESULTADO_ENVIO = LD.statusSystemsId
-						FROM SmsRemesasMuñozDay MCA
-						INNER JOIN smsccoLogDial LD ON LD.registryClient = MCA.TDCT
-						WHERE MCA.TDCT IN (SELECT value FROM dbo.fn_RIASplitDelimited (@smsoutIds, ','))
-					end
-					';
+						BEGIN TRANSACTION;
+
+						BEGIN TRY
+						    UPDATE MCA
+						    SET RESULTADO_ENVIO = LD.statusSystemsId
+						    FROM SmsRemesasMuñozDay MCA
+						    INNER JOIN smsccoLogDial LD ON LD.registryClient = MCA.TDCT
+						    WHERE MCA.TDCT IN (SELECT value FROM dbo.fn_RIASplitDelimited (@smsoutIds, '',''));
+
+						    COMMIT TRANSACTION;
+						    SELECT ''1'' AS Result;
+						END TRY
+						BEGIN CATCH
+						    ROLLBACK TRANSACTION;
+						    SELECT ''-1'' AS Result;
+						END CATCH;
+					end';
         EXEC (@sql);
 
 

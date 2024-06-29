@@ -4004,6 +4004,15 @@ BEGIN
 END'
     EXEC(@sql);
 
+     SET @process = 'Se crea setting 275 ubicacion de lectura de archivos de excel en el adminMachine'
+    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM ccSettings2 WHERE setting_id = 275)
+BEGIN
+    INSERT INTO ccSettings2(setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate)
+    VALUES(275, ''..\..\Sites\Galatea\GalateaAdminWS\ExcelFiles'', ''Ruta donde esta gurdado los archivos de excel'', 1, ''XXX'', ''Path where the excel files are saved'',
+                     ''Ruta donde esta gurdado los archivos de excel'',0,''.*'') 
+END'
+    EXEC(@sql);
+
     SET @process = 'Alter Sp ccsp_GalateaAdminRotativeANI se agrega cast smallint id_RAniList'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminRotativeANI]
     @type SMALLINT,

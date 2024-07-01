@@ -2768,8 +2768,6 @@ EndSave:';
 					    END
 					end
 					else if @action=13 begin
-						BEGIN TRANSACTION;
-
 						BEGIN TRY
 						    UPDATE MCA
 						    SET RESULTADO_ENVIO = LD.statusSystemsId
@@ -2777,11 +2775,9 @@ EndSave:';
 						    INNER JOIN smsccoLogDial LD ON LD.registryClient = MCA.TDCT
 						    WHERE MCA.TDCT IN (SELECT value FROM dbo.fn_RIASplitDelimited (@smsoutIds, '',''));
 
-						    COMMIT TRANSACTION;
 						    SELECT ''1'' AS Result;
 						END TRY
 						BEGIN CATCH
-						    ROLLBACK TRANSACTION;
 						    SELECT ''-1'' AS Result;
 						END CATCH;
 					end';

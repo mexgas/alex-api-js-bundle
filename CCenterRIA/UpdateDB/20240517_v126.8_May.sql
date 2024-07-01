@@ -1799,7 +1799,7 @@ INNER JOIN #SmsRemesasId rid on rid.TDCT = rmd.TDCT
 WHERE RESULTADO_ID = 0;
 
 --Actualizamos todo lo que no cumple
-UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2
+UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2, rmd.RESULTADO_ENVIO = 0
 FROM SmsRemesasMuñozDay rmd
 INNER JOIN #SmsRemesasIdTemp rid on rid.TDCT = rmd.TDCT
 WHERE RESULTADO_ID = 0;

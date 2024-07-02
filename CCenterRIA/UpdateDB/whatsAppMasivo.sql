@@ -2611,7 +2611,7 @@ return(0)
 	ALTER PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
 				@Option AS SMALLINT,
 				@ServiceType AS SMALLINT = 0,
-				@Number AS VARCHAR(25) = '',
+				@Number AS VARCHAR(25) = '''',
 				@Id AS INT = 0,
 				@CamType AS SMALLINT = 0
 				AS
@@ -2660,7 +2660,7 @@ return(0)
 							ELSE BEGIN
 								SELECT @Number = number from ccWhatsAppNumbers WHERE camp_id = @Id
 							END
-							SELECT ISNULL(@Number, '') as number
+							SELECT ISNULL(@Number, '''') as number
 						END
 					END
 				END
@@ -2726,12 +2726,12 @@ return(0)
 		            ELSE
 		                CCIT.identifierInfo
 		            END,
-		            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '' THEN
+		            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
 		                CASE 
 		                    WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
 		                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 		                    ELSE CCIT.dataInfo END
-		            ELSE '' END, 
+		            ELSE '''' END, 
 		            CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
 		        FROM #ccInboundTable AS CCIT;
 
@@ -2753,7 +2753,7 @@ return(0)
 		          BEGIN
 		          DECLARE @PrevConexion VARCHAR(MAX) = (SELECT [conexionInfo] FROM contactMeanIn WHERE inboundId = @inboundId);
 		          
-				  set @number = case when  @number is null or @number in('',''0'', ''Ninguno'') then ''Ninguno'' else @number end
+				  set @number = case when  @number is null or @number in('''',''0'', ''Ninguno'') then ''Ninguno'' else @number end
 
 		          EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inboundId, @userId= @userId
 
@@ -2779,7 +2779,7 @@ return(0)
 		        EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#contactMeanInTable'';  
 				END
 
-		        IF(@number=''Ninguno'' AND @PrevConexion='')UPDATE contactMeanIn SET conexionInfo = '' WHERE inboundId = @inboundId;
+		        IF(@number=''Ninguno'' AND @PrevConexion='''')UPDATE contactMeanIn SET conexionInfo = '''' WHERE inboundId = @inboundId;
 		        DELETE FROM #contactMeanInTable WHERE columnInfo IN (''name'',''connUser'',''ConnPass'');
 
 		            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
@@ -2790,14 +2790,14 @@ return(0)
 		                53, 
 						@module, 
 		                CMIT.identifierInfo,
-		                CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '' THEN
+		                CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
 		                    CASE
 		                        WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
 		                            CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 		                        WHEN CMIT.identifierInfo IN (''IN_ASSOCIATED_PHONE_WHATS'') THEN
 		                            CASE WHEN CMIT.dataInfo = ''Ninguno'' THEN ''COMMON_NONE_O'' ELSE CMIT.dataInfo END
 		                        ELSE CMIT.dataInfo END
-		                ELSE '' END, 
+		                ELSE '''' END, 
 		                (SELECT [name] FROM contactMeanIn WHERE inboundId = @inboundId)
 		            FROM #contactMeanInTable AS CMIT;
 
@@ -2808,7 +2808,7 @@ return(0)
 		          update ccWhatsAppNumbers set inboundId=0 where inboundId=@inboundId
 				  update ccMetaWhatsAppNumbers set Inbound_Id=0 where Inbound_Id=@inboundId
 
-		          if @number <> '' begin
+		          if @number <> '''' begin
 					if EXISTS (SELECT number FROM ccWhatsAppNumbers WHERE number = @number)
 						update ccWhatsAppNumbers set inboundId=@inboundId where inboundId=0 and number=@number
 					if EXISTS (SELECT number FROM ccMetaWhatsAppNumbers WHERE number = @number)
@@ -2829,7 +2829,7 @@ return(0)
 		                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
 		                53, 
 		                3,
-		                '',
+		                '''',
 		                ''IN_CALL_EDIT_ICON'', 
 		                (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
 		        END
@@ -2973,79 +2973,79 @@ return(0)
 		EXEC InsertLogAdminGalatea @action=1, @tableName=''ccCamps'', @columnNameId=''cam_id'', @valueId= @cam_id, @userId= @userid
 
 	UPDATE ccCamps SET
-	cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
-	cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
-	cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
-	cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
-	cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
-	cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
-	cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
-	cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
-	cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
-	cam_fax = isnull(@cam_fax,cam_fax),
-	cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
-	cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
-	cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
-	ANI = isnull(@ANI,ANI),
-	cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
-	editableCallKey = isnull(@editableCallKey, editableCallKey),
-	cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
-	iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
-	detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
-	detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
-	compliance = isnull(@compliance, compliance),
-	cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
-	cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
-	cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
-	progDial = isnull(@progDial, progDial),
-	excCallBack = isnull(@excCallBack,excCallBack),
-	dialOrder = isnull(@dialOrder, dialOrder),
-	dialPrefix = isnull(@dialPrefix, dialPrefix),
-	dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
-	dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
-	listenManualCall = isnull(@listenManualCall, listenManualCall),
-	stopRecording = isnull(@stopRecording, stopRecording),
-	abandonCallback = isnull(@abandonCallback, abandonCallback),
-	t_autoCB = isnull(@autoCB,t_autoCB),
-	id_anilist = isnull(@id_listAni,id_anilist),
-	tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
-	cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
-	cam_maxqueue = isnull(@quesize,cam_maxqueue),
-	DNCScrub = isnull(@DNCScrub,DNCScrub),
-	callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
-	timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
-	callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
-	ivrScript = isnull(@ivrScript,ivrScript),
-	surveyPctg = isnull(@surveyPctg,surveyPctg),
-	call_record = isnull(@call_record,call_record),
-	startStopRecording = isnull(@dRestrictPlay, startStopRecording),
-	leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
-	manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
-	callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
-	callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
-	funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
-	sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
-	prefijo = isnull(@prefijo, prefijo),
-	exitAssisted = isnull(@exitAssisted, exitAssisted),
-	previewDiscard = isnull(@previewDiscard, previewDiscard),
-	rotativeAlgo = isnull(@rotativeAlgo, rotativeAlgo),
-	timesPreview = isnull(@timesPreview, timesPreview),
-	cam_tPreview = isnull(@cam_tPreview,cam_tPreview),
-	timesDiscard = isnull(@timesDiscard, timesDiscard),
-	CampType = (CASE  WHEN @CampType is not null THEN @CampType WHEN @progDial = 2 THEN 6 WHEN @progDial IS NOT NULL AND @progDial <> 2 THEN 0 WHEN CampType is not null THEN CampType ELSE 0 END),
-	selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI),
-	messagingOrder = isnull(@messagingorder, messagingOrder),
-	autoStart = isnull(@autoStart,autoStart),
-	recordHold = isnull(@recordHold, recordHold)
+		cam_descripcion = isnull(@cam_descripcion,cam_descripcion),
+		cam_tnotas = isnull(@cam_tnotas,cam_tnotas),
+		cam_ocupado = isnull(@cam_ocupado,cam_ocupado),
+		cam_NoInt_ocupado = isnull(@cam_NoInt_ocupado,cam_NoInt_ocupado),
+		cam_inter_ocupado = isnull(@cam_inter_ocupado,cam_inter_ocupado),
+		cam_nocontesto = isnull(@cam_nocontesto,cam_nocontesto),
+		cam_NoInt_nocontesto = isnull(@cam_NoInt_nocontesto,cam_NoInt_nocontesto),
+		cam_inter_nocontesto = isnull(@cam_inter_nocontesto,cam_inter_nocontesto),
+		cam_inter_cancelled = isnull(@cam_inter_cancelled,cam_inter_cancelled),
+		cam_fax = isnull(@cam_fax,cam_fax),
+		cam_NoInt_fax = isnull(@cam_NoInt_fax,cam_NoInt_fax),
+		cam_inter_fax = isnull(@cam_inter_fax, cam_inter_fax),
+		cam_ModoManual = isnull(@cam_ModoManual, cam_ModoManual),
+		ANI = isnull(@ANI,ANI),
+		cam_StartTimerOnHangUp = isnull(@cam_StartTimerOnHangUp,cam_StartTimerOnHangUp),
+		editableCallKey = isnull(@editableCallKey, editableCallKey),
+		cam_tNoContesta = isnull(@cam_tNoContesta, cam_tNoContesta),
+		iTipoDial = isnull(@cam_intensive_dialing, iTipoDial),
+		detectAnswerMachine = isnull(@detectAnswerMachine, detectAnswerMachine),
+		detectVoiceMail = isnull(@detectVoiceMail, detectVoiceMail),
+		compliance = isnull(@compliance, compliance),
+		cam_inter_graba = isnull(@cam_inter_graba, cam_inter_graba),
+		cam_NoInt_graba = isnull(@cam_NoInt_graba, cam_NoInt_graba),
+		cam_graba = isnull(convert(bit, @cam_NoInt_graba), cam_graba),
+		progDial = isnull(@progDial, progDial),
+		excCallBack = isnull(@excCallBack,excCallBack),
+		dialOrder = isnull(@dialOrder, dialOrder),
+		dialPrefix = isnull(@dialPrefix, dialPrefix),
+		dialPrefixMan = isnull(@dialPrefixMan, dialPrefixMan),
+		dialPrefixXfe = isnull(@dialPrefixXfe, dialPrefixXfe),
+		listenManualCall = isnull(@listenManualCall, listenManualCall),
+		stopRecording = isnull(@stopRecording, stopRecording),
+		abandonCallback = isnull(@abandonCallback, abandonCallback),
+		t_autoCB = isnull(@autoCB,t_autoCB),
+		id_anilist = isnull(@id_listAni,id_anilist),
+		tDialonWrapUp = case when @cam_tnotas<@tDialonWrapUp and @cam_tnotas<>-1 then @cam_tnotas else isnull(@tDialonWrapUp,tDialonWrapUp) end,
+		cam_fDialOnWU = case @tDialonWrapUp when 0 then 0 else 2 end,
+		cam_maxqueue = isnull(@quesize,cam_maxqueue),
+		DNCScrub = isnull(@DNCScrub,DNCScrub),
+		callerIdDesc = isnull(@callerIdDesc,callerIdDesc),
+		timeZoneRule = isnull(@timeZoneRule,timeZoneRule),
+		callsBySurvey = isnull(@callsBySurvey,callsBySurvey),
+		ivrScript = isnull(@ivrScript,ivrScript),
+		surveyPctg = isnull(@surveyPctg,surveyPctg),
+		call_record = isnull(@call_record,call_record),
+		startStopRecording = isnull(@dRestrictPlay, startStopRecording),
+		leaveRecMessage = isnull(@leaveRecMessage, leaveRecMessage),
+		manualCallOnChat = isnull(@manualCallOnChat, manualCallOnChat),
+		callBackSurveyClient = isnull(@callBackSurveyClient, callBackSurveyClient),
+		callBackSurveyAgent = isnull(@callBackSurveyAgent , callBackSurveyAgent ),
+		funcEspDtmf =  isnull(@funcEspDtmf , funcEspDtmf ),
+		sipHdrFormat = isnull(@sipHdrsCfg, sipHdrFormat),
+		prefijo = isnull(@prefijo, prefijo),
+		exitAssisted = isnull(@exitAssisted, exitAssisted),
+		previewDiscard = isnull(@previewDiscard, previewDiscard),
+		rotativeAlgo = isnull(@rotativeAlgo, rotativeAlgo),
+		timesPreview = isnull(@timesPreview, timesPreview),
+		cam_tPreview = isnull(@cam_tPreview,cam_tPreview),
+		timesDiscard = isnull(@timesDiscard, timesDiscard),
+		CampType = (CASE WHEN @callsBySurvey is not null AND @ivrScript is not null THEN
+						CASE WHEN @callsBySurvey=0 and @ivrScript=0 THEN 0 
+							ELSE 8 
+						END
+					WHEN @CampType is not null THEN @CampType 
+					WHEN @progDial = 2 THEN 6 
+					WHEN @progDial IS NOT NULL AND @progDial <> 2 THEN 0 
+					WHEN CampType is not null THEN CampType ELSE 0 END),
+		selectRotativeANI = isnull(@selectRotativeANI, selectRotativeANI),
+		messagingOrder = isnull(@messagingorder, messagingOrder),
+		autoStart = isnull(@autoStart,autoStart),
+		recordHold = isnull(@recordHold, recordHold)
 
-	Where cam_id = @cam_id
-
-	if @callsBySurvey is not null and @ivrScript is not null begin
-			
-		UPDATE ccCamps SET CampType=case when @callsBySurvey=0 and @ivrScript=0 then 0 else 8 end 
 		Where cam_id = @cam_id
-	end
-		
 
 			IF OBJECT_ID(N''tempdb..#ccCampsTable'') IS NOT NULL DROP TABLE #ccCampsTable
 
@@ -3077,7 +3077,7 @@ return(0)
 			IF(@isCreating = 1) DELETE FROM #ccCampsTable WHERE columnInfo IN (''cam_descripcion'');
 				
 			DELETE FROM #ccCampsTable WHERE columnInfo IN (''startStopRecording'');
-			DELETE FROM #ccCampsTable WHERE dataInfo = '';
+			DELETE FROM #ccCampsTable WHERE dataInfo = '''';
 				
 			IF(@CampType = 6) DELETE FROM #ccCampsTable WHERE columnInfo IN (''CampType'', ''cam_fDialOnWU'', ''ProgDial'');
 			ELSE IF(@CampType = 5 AND @isCreating = 2) DELETE FROM #ccCampsTable WHERE columnInfo NOT IN (''cam_ModoManual'', ''cam_descripcion'', ''exitAssisted'');
@@ -3094,11 +3094,11 @@ return(0)
 				(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
 				@operation, 
 				@module,
-				CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> ''
+				CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> ''''
 					THEN
 						CASE
 							WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN
-								CASE WHEN @isCreating = 1 THEN '' ELSE CCCT.identifierInfo END
+								CASE WHEN @isCreating = 1 THEN '''' ELSE CCCT.identifierInfo END
 							WHEN CCCT.identifierInfo = ''OUT_EXIT_ASSISTED'' THEN 
 								CASE WHEN @CampType = 5 THEN ''OUT_WHATS_EXIT_ASSISTED'' ELSE CCCT.identifierInfo END
 							WHEN CCCT.identifierInfo = ''OUT_MANUAL_DIALING'' THEN
@@ -3107,9 +3107,9 @@ return(0)
 								CCCT.identifierInfo
 							END
 					ELSE
-					''
+					''''
 					END,
-				CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '' THEN
+				CASE WHEN CCCT.identifierInfo IS NOT NULL AND CCCT.identifierInfo <> '''' THEN
 					CASE 
 						WHEN CCCT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_DESTINATION_QUEUE_TIME'', ''IN_DESTINATION_OUT_SERVIVE'', ''IN_DESTINATION_OUT_SCHEDULE'') THEN
 							CASE WHEN CCCT.dataInfo = ''VOICEMAIL'' 
@@ -3163,7 +3163,7 @@ return(0)
 							CASE WHEN CCCT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 							
 						ELSE CCCT.dataInfo END
-				ELSE '' END, 
+				ELSE '''' END, 
 				CASE WHEN CCCT.identifierInfo = ''OUT_CALL_EDIT_NAME'' THEN @PrevName ELSE (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id) END
 			FROM #ccCampsTable AS CCCT;
 
@@ -3196,7 +3196,7 @@ return(0)
 
 		DECLARE @PrevConexionInfo VARCHAR(MAX) = (SELECT [conexionInfo] FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id);
 
-		set @ConexionInfo = case when  @ConexionInfo is null or @ConexionInfo in('',''0'',''None'',''Ninguno'') then CASE WHEN @isCreating > 0 AND @PrevConexionInfo <> '' THEN ''Ninguno'' ELSE '' END else @ConexionInfo end
+		set @ConexionInfo = case when  @ConexionInfo is null or @ConexionInfo in('''',''0'',''None'',''Ninguno'') then CASE WHEN @isCreating > 0 AND @PrevConexionInfo <> '''' THEN ''Ninguno'' ELSE '''' END else @ConexionInfo end
 		UPDATE contactMeanOut SET conexionInfo = @ConexionInfo, ConnPass = @ConexionInfo, connUser = @ConexionInfo,
 												closeConversationTime = CAST(@agentCloseConversationTime AS INT), answerTimeoutClient = @adminCloseConversationTime,
 								allowFileAttachments = @allowFileAttachments,
@@ -3206,10 +3206,10 @@ return(0)
 			
 		IF(@isCreating > 0 AND @module > -1) BEGIN 
 			EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanOut'', @columnNameId = ''camp_id'', @valueId = @cam_id, @userId = @userid, @tableTemp=''#contactMeanOutTable'';
-			IF(@ConexionInfo IS NULL OR @ConexionInfo IN ('',''0'',''None'',''Ninguno'') AND @PrevConexionInfo <> @ConexionInfo) UPDATE contactMeanOut SET conexionInfo = '' WHERE @CampType = meanContactTypeId AND camp_id = @cam_id
+			IF(@ConexionInfo IS NULL OR @ConexionInfo IN ('''',''0'',''None'',''Ninguno'') AND @PrevConexionInfo <> @ConexionInfo) UPDATE contactMeanOut SET conexionInfo = '''' WHERE @CampType = meanContactTypeId AND camp_id = @cam_id
 		END
 
-		DELETE FROM #contactMeanOutTable WHERE columnInfo IN (''conexionInfo'') AND  dataInfo = '';
+		DELETE FROM #contactMeanOutTable WHERE columnInfo IN (''conexionInfo'') AND  dataInfo = '''';
 		DELETE FROM #contactMeanOutTable WHERE columnInfo IN (''ConnPass'', ''connUser'') ;
 
 		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
@@ -3220,14 +3220,14 @@ return(0)
 			@operation, 
 			@module, 
 			CMOT.identifierInfo,
-			CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '' THEN
+			CASE WHEN CMOT.identifierInfo IS NOT NULL AND CMOT.identifierInfo <> '''' THEN
 				CASE
 					WHEN CMOT.identifierInfo = ''OUT_WHATS_ATTACH_FILES'' THEN
 						CASE WHEN CMOT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 					WHEN CMOT.identifierInfo = ''OUT_WHATS_ASSOCIATED_PHONE'' THEN
 						CASE WHEN CMOT.dataInfo = ''Ninguno'' THEN ''COMMON_NONE_O'' ELSE CMOT.dataInfo END
 					ELSE CMOT.dataInfo END
-			ELSE '' END, 
+			ELSE '''' END, 
 			(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @cam_id)
 		FROM #contactMeanOutTable AS CMOT;
 
@@ -3238,7 +3238,7 @@ return(0)
 			update ccWhatsAppNumbers set camp_id=0 where camp_id=@cam_id
 			update ccMetaWhatsAppNumbers set Cam_Id=0 where Cam_Id=@cam_id
 
-			IF(@ConexionInfo <> '')
+			IF(@ConexionInfo <> '''')
 			BEGIN
 				IF EXISTS (SELECT number FROM ccWhatsAppNumbers WHERE number = @ConexionInfo)
 					UPDATE ccWhatsAppNumbers SET camp_id = @cam_id WHERE number = @ConexionInfo
@@ -3338,7 +3338,7 @@ return(0)
 						A.stopRecording [StopRecording],
 						A.dialPrefixOverflow [DialPrefixOverflow],
 						AE.SurveyCamId [SurveyCamId],
-						isnull(A.callerIdDesc, '') [CallerIdDesc],
+						isnull(A.callerIdDesc, '''') [CallerIdDesc],
 						isnull(A.startStopRecording,0) [StartStopRecording],
 						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
 						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
@@ -3357,12 +3357,12 @@ return(0)
 					if @command=2 -- WhatsApp campaign
 					begin
 						declare @numbers varchar(max)
-						select @numbers=COALESCE(@numbers + '','', '') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
-						select @numbers=COALESCE(@numbers + '','', '') + number from ccMetaWhatsAppNumbers where Inbound_Id = 0 and status = 1
+						select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
+						select @numbers=COALESCE(@numbers + '','', '''') + number from ccMetaWhatsAppNumbers where Inbound_Id = 0 and status = 1
 
 						select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
-						ISNULL(c.conexionInfo,'') [Number],
-						ISNULL(@numbers,'') [FreeNumbersStr],
+						ISNULL(c.conexionInfo,'''') [Number],
+						ISNULL(@numbers,'''') [FreeNumbersStr],
 						CAST(ISNULL(c.closeConversationTime, 0) AS INT) [MaxAnswerTime],
 						ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
 						ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],

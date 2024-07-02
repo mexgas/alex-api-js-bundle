@@ -1799,7 +1799,7 @@ INNER JOIN #SmsRemesasId rid on rid.TDCT = rmd.TDCT
 WHERE RESULTADO_ID = 0;
 
 --Actualizamos todo lo que no cumple
-UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2
+UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2, rmd.RESULTADO_ENVIO = 0
 FROM SmsRemesasMuñozDay rmd
 INNER JOIN #SmsRemesasIdTemp rid on rid.TDCT = rmd.TDCT
 WHERE RESULTADO_ID = 0;
@@ -2591,6 +2591,200 @@ EndSave:';
 		EXEC(@sql);
 
 		------------------------------------------------------BEGIN HEL---------------------------------------------------------------------
+
+		------------------------------------------------------BEGIN Ivan Martin Fix CW-8576 ---------------------------------------------------------------------
+		SET @process = 'KR134000 Drop procedure ccspOutboundSmsMessage';
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccspOutboundSmsMessage'')
+                    BEGIN
+                      DROP PROCEDURE ccspOutboundSmsMessage
+                    END';
+        EXEC (@sql);
+
+        SET @process = 'KR134000 Added acion 13';
+        SET @sql = 'CREATE procedure [dbo].[ccspOutboundSmsMessage] 
+					@action int,
+					@camId int = null,
+					@SentMsg int=null,
+					@smsoutIds varchar(max)=null,
+					@SystemApiId varchar(100)=null,
+					@statusSystemsId int =null,
+					@InsufficientBalance int=null,
+					@date datetime =null,
+					@addingCampaign bit = null,
+					@statusIds varchar(max)=null
+					as
+					declare @sql varchar(max)
+					if @action=1 begin
+					    set @date=getdate()
+
+					    if @addingCampaign = 1 begin
+					        select distinct cast(c. cam_id as int) as CamId,
+					                        cam_descripcion as [Name],
+					                        cam_procesando as [Start],
+					                        0 AS MessageQuantity
+					        from ccCamps c
+					        where CampType=7 and c.IDArea is not null and c.cam_id=@camId
+					    end
+					    else begin
+					        SELECT DISTINCT CAST(c. cam_id AS INT) AS CamId,
+					                        cam_descripcion AS Name,
+					                        cam_procesando AS Start,
+					                        ISNULL((w.new + w.pro),0) AS MessageQuantity
+					        FROM ccCamps c
+					        LEFT JOIN ccSmsSchedules s ON s.cam_id = c.cam_id
+					        LEFT JOIN ccCampsNvosCB  w ON c.cam_id = w.id
+					        WHERE CampType=7 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+					        AND @date BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+					    end
+					end
+					else if @action=2 begin
+					    select tz_offset from ccTimeZones ORDER BY tz_id
+					end
+					else if @action=3 begin
+					    select cast(camId as int) CamId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected 
+					    from ccSmsConversationsResult where ( @camId is null or camId=@camId)
+					end
+					else if @action=4 begin
+					    truncate table ccSmsConversationsResult
+					end
+					else if @action=5 begin
+					    if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+					        insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
+					    end
+					    else begin
+					        update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
+					        ,InsufficientBalance=InsufficientBalance+@InsufficientBalance
+					        where camId=@camId
+					    end
+					end
+					else if @action=6 begin 
+					    set @sql=''delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')''
+					    exec (@sql)
+					end
+					else if @action=7 begin
+					    DECLARE @TemporalProcessingSmsStatusUpdates TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, StatusSystemsId INT, IsCharged BIT)
+					    INSERT INTO @TemporalProcessingSmsStatusUpdates
+					    SELECT SystemApiId, StatusSystemsId, IsCharged FROM ProcessingSmsStatusUpdates
+
+					    DECLARE @ChargedMessages INT = (SELECT SUM(CASE WHEN IsCharged = 1 THEN 1 ELSE 0 END) FROM @TemporalProcessingSmsStatusUpdates)
+					    IF @ChargedMessages <> 0
+					    BEGIN
+					        UPDATE ccSettings2 WITH(TABLOCK) SET valor = valor - @ChargedMessages WHERE setting_id = 258 AND valor > 0;
+					    END
+
+					    DECLARE @UpdatingSmsWorkingTable TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, OldStatusSystemsId INT, NewStatusSystemsId INT, CampaignId INT)
+					    INSERT INTO @UpdatingSmsWorkingTable
+					    SELECT S.SystemApiId, S.StatusSystemsId, T.StatusSystemsId, S.cam_id FROM smsccoLogDial S WITH(NOLOCK)
+					    INNER JOIN @TemporalProcessingSmsStatusUpdates T ON S.SystemApiId = T.SystemApiId
+					            
+					    ;WITH CTE AS (
+					    SELECT
+					        CampaignId,
+					        COUNT(CASE WHEN NewStatusSystemsId = 0 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 0 THEN 1 END) AS SentMsg,
+					        COUNT(CASE WHEN NewStatusSystemsId = 1 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 1 THEN 1 END) AS Delivered,
+					        COUNT(CASE WHEN NewStatusSystemsId = 2 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 2 THEN 1 END) AS NotDelivered,
+					        COUNT(CASE WHEN NewStatusSystemsId = 3 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 3 THEN 1 END) AS RecipientRejected,
+					        COUNT(CASE WHEN NewStatusSystemsId = 4 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 4 THEN 1 END) AS CarrierRejected,
+					        COUNT(CASE WHEN NewStatusSystemsId = 5 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 5 THEN 1 END) AS Exception,
+					        COUNT(CASE WHEN NewStatusSystemsId = 6 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 6 THEN 1 END) AS InsufficientBalance
+
+					    FROM @UpdatingSmsWorkingTable
+					    GROUP BY CampaignId
+					    )
+
+					    MERGE INTO ccSmsConversationsResult AS Target
+					    USING CTE AS Source ON Target.camId = Source.CampaignId
+					    WHEN MATCHED THEN
+					        UPDATE SET
+					            Target.SentMsg = CASE WHEN (Target.SentMsg + Source.SentMsg) < 0 THEN 0 ELSE (Target.SentMsg + Source.SentMsg) END,
+					            Target.Delivered = CASE WHEN (Target.Delivered + Source.Delivered) < 0 THEN 0 ELSE (Target.Delivered + Source.Delivered) END,
+					            Target.NotDelivered = CASE WHEN (Target.NotDelivered + Source.NotDelivered) < 0 THEN 0 ELSE (Target.NotDelivered + Source.NotDelivered) END,
+					            Target.RecipientRejected = CASE WHEN (Target.RecipientRejected + Source.RecipientRejected) < 0 THEN 0 ELSE (Target.RecipientRejected + Source.RecipientRejected) END,
+					            Target.CarrierRejected = CASE WHEN (Target.CarrierRejected + Source.CarrierRejected) < 0 THEN 0 ELSE (Target.CarrierRejected + Source.CarrierRejected) END,
+					            Target.Exception = CASE WHEN (Target.Exception + Source.Exception) < 0 THEN 0 ELSE (Target.Exception + Source.Exception) END,
+					            Target.InsufficientBalance = CASE WHEN (Target.InsufficientBalance + Source.InsufficientBalance) < 0 THEN 0 ELSE (Target.InsufficientBalance + Source.InsufficientBalance) END
+
+					    WHEN NOT MATCHED BY TARGET THEN
+					    INSERT (camId, SentMsg, Delivered, NotDelivered, RecipientRejected, CarrierRejected, Exception, InsufficientBalance)
+					    VALUES (Source.CampaignId, Source.SentMsg, Source.Delivered, Source.NotDelivered, Source.RecipientRejected, Source.CarrierRejected, Source.Exception, Source.InsufficientBalance);
+
+					    UPDATE smsccoLogDial SET Bill = (CASE WHEN T.StatusSystemsId IN (0, 1, 2) THEN 0.7 ELSE 0 END),
+					                                statusSystemsId = T.StatusSystemsId
+					    FROM smsccoLogDial S WITH(NOLOCK)
+					    INNER JOIN @TemporalProcessingSmsStatusUpdates T ON T.SystemApiId = S.SystemApiId
+
+					    DELETE FROM ProcessingSmsStatusUpdates 
+					    WHERE SystemApiId IN (SELECT SystemApiId FROM @TemporalProcessingSmsStatusUpdates);
+
+						DECLARE @Result INT = @@ROWCOUNT;
+
+						IF (SELECT valor FROM ccSettings2 WHERE setting_id = 268) = 1 BEGIN
+							UPDATE SmsRemesasMuñozDay SET RESULTADO_ENVIO = T.StatusSystemsId
+							FROM smsccoLogDial S WITH(NOLOCK)
+							INNER JOIN @TemporalProcessingSmsStatusUpdates T ON T.SystemApiId = S.SystemApiId
+						END
+					    SELECT @Result;
+					end
+					else if @action=8 begin
+					    update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(3,4,5,6)
+					end
+					else if @action=9 begin
+					    CREATE TABLE #TempSmsOutIds (
+					    smsout_id INT
+					    );
+
+					    INSERT INTO #TempSmsOutIds (smsout_id)
+					    SELECT DISTINCT wt.smsout_id
+					    FROM smsWorkingTable wt
+					    JOIN smsOutSource os WITH(NOLOCK) ON wt.smsout_id = os.smsout_id
+					    LEFT JOIN smsccoLogDial cco WITH(NOLOCK) ON wt.smsout_id = cco.smsout_id
+					    WHERE wt.cam_id=@camId and wt.sms_status IN(1,2) 
+					    AND cco.smsout_id IS NULL;
+					            
+
+					    UPDATE wt
+					    SET wt.sms_status = 0
+					    FROM smsWorkingTable wt WITH(NOLOCK)
+					    JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
+
+					    DROP TABLE #TempSmsOutIds;
+					end
+					else if @action=10 begin
+					    SELECT COUNT(*) FROM smsWorkingTable with (NOLOCK) WHERE cam_id = @camId
+					end
+					else if @action=12 begin
+					    IF EXISTS (SELECT 1 FROM ccSmsSchedules WITH (NOLOCK) WHERE cam_id = @camId 
+					    AND GETDATE() BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+					    )
+					    AND EXISTS (SELECT 1 FROM smsWorkingTable WITH (NOLOCK) WHERE cam_id = @camId)
+					    BEGIN
+					        SELECT CAST(0 AS BIT);
+					        RETURN;
+					    END
+					    ELSE BEGIN
+					        UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
+					        SELECT CAST(1 AS BIT);
+					        RETURN;
+					    END
+					end
+					else if @action=13 begin
+						BEGIN TRY
+						    UPDATE MCA
+						    SET RESULTADO_ENVIO = LD.statusSystemsId
+						    FROM SmsRemesasMuñozDay MCA
+						    INNER JOIN smsccoLogDial LD ON LD.registryClient = MCA.TDCT
+						    WHERE MCA.TDCT IN (SELECT value FROM dbo.fn_RIASplitDelimited (@smsoutIds, '',''));
+
+						    SELECT ''1'' AS Result;
+						END TRY
+						BEGIN CATCH
+						    SELECT ''-1'' AS Result;
+						END CATCH;
+					end';
+        EXEC (@sql);
+
+
+		------------------------------------------------------END Ivan Martin Fix CW-8576---------------------------------------------------------------------
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

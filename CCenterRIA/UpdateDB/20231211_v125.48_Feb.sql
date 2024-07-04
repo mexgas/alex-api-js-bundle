@@ -6123,7 +6123,8 @@ SET NOCOUNT OFF
     '
     EXEC(@sql);
 
-     SET @process = 'Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp se quita with index para mejorar el procesamiento tome el plan de ejecuccion se modifica para poder realizar la carga, se crean tabalas temporales insercion de carga'
+---------------------------------------- BEGIN fix/125.20231211.0.12 -------------------------------------------------
+    SET @process = 'Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp se quita with index para mejorar el procesamiento tome el plan de ejecuccion'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
 AS
 SET NOCOUNT ON

@@ -1448,13 +1448,15 @@ return(0)
 
 		ELSE IF @Option = 8 -- whats outbound conversations
 		BEGIN
+			DECLARE @ActualDay DATE = GETDATE()
+
 			SELECT -- active
 				COUNT(cco.camId) AS Active,
 				0 AS Queued,
 				0 AS FinishedAgent,
 				0 AS FinishedSystem
 			FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
-			WHERE cco.conversationStatus NOT IN (10, 11, 17, 18) AND cco.camId = @camId
+			WHERE cco.conversationStatus NOT IN (10, 11, 17, 18) AND cco.camId = @camId AND CAST(cco.conversationDate AS DATE) = @ActualDay
 			GROUP BY cco.camId
 			UNION 
 			SELECT -- queued
@@ -1463,7 +1465,7 @@ return(0)
 				0 AS FinishedAgent,
 				0 AS FinishedSystem
 			FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
-			WHERE cco.conversationStatus = 1 AND cco.camId = @camId
+			WHERE cco.conversationStatus = 1 AND cco.camId = @camId AND CAST(cco.conversationDate AS DATE) = @ActualDay
 			GROUP BY cco.camId
 			UNION
 			SELECT -- finished by agent
@@ -1472,7 +1474,7 @@ return(0)
 				COUNT(cco.camId) AS FinishedAgent,
 				0 AS FinishedSystem
 			FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
-			WHERE cco.conversationStatus = 11 AND cco.camId = @camId
+			WHERE cco.conversationStatus = 11 AND cco.camId = @camId AND CAST(cco.conversationDate AS DATE) = @ActualDay
 			GROUP BY cco.camId
 			UNION
 			SELECT -- finished by system
@@ -1481,7 +1483,7 @@ return(0)
 				0 AS FinishedAgent,
 				COUNT(cco.camId) AS FinishedSystem 
 			FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
-			WHERE cco.conversationStatus = 10 AND cco.camId = @camId
+			WHERE cco.conversationStatus = 10 AND cco.camId = @camId AND CAST(cco.conversationDate AS DATE) = @ActualDay
 			GROUP BY cco.camId
 		END
 	'

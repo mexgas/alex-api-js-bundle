@@ -1576,25 +1576,27 @@ return(0)';
 					EXEC (@sql)
 
 				end
-				else if @action=7 begin
-				    declare @valueInt int, @value varchar(100)
-					select @valueInt=valor from ccSettings where setting_id=104
-					select @value=valor from ccSettings where setting_id=17		
+				else if @action = 7 begin
+				    declare @valueInt104 int, @value17 varchar(100), @value247 varchar(100), @valueInt258 int
+				    select 
+				        @valueInt104 = case when setting_id = 104 then valor else @valueInt104 end,
+				        @value17 = case when setting_id = 17 then valor else @value17 end,
+				        @value247 = case when setting_id = 247 then valor else @value247 end,
+				        @valueInt258 = case when setting_id = 258 then valor else @valueInt258 end
+				    from VIEW_SETTINGS 
+				    where setting_id in (104, 17, 247, 258)
 
-					select @phone= dbo.Verifica2(@phone,@valueInt,@value,1)
-					if LEFT(@phone, 1)=''E'' begin
-						select -1 as Result,''is not cellPhone''
-						return -1;
-					end
-					select @valueInt=valor from ccSettings2 where setting_id=258
-					if @valueInt<=0 begin
-						select -2 as Result,''Credit Sms Zero''
-					end
-					select @value=valor from ccSettings where setting_id=247
-
-					select 1 as Result,@value as ApiBackBone
-					,MessageTemplate
-					from ccSmsTemplate where TemplateId=@templateId
+				    select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1)
+				    if LEFT(@phone, 1) = ''E'' begin
+				        select -1 as Result, ''is not cellPhone''
+				        return -1;
+				    end
+				    if @valueInt258 <= 0 begin
+				        select -2 as Result, ''Credit Sms Zero''
+				    end
+				    select 1 as Result, @value247 as ApiBackBone, MessageTemplate
+				    from ccSmsTemplate 
+				    where TemplateId = @templateId
 				end
 				else if @action=8 begin --smsOutSource
 				    insert into smsOutSource (callkey,cam_id,sms_phoneNumber,sms_status,sms_attemps,user_id,sms_dateDial,dial_tels)

@@ -169,15 +169,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'me
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageUnAssigned',@idInt,0)
 
 set @idInt=@idInt+1
-insert into publicationTableCCenterRIA(publicationName,status) values(N'Conversationtweet',0)	
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'relationMessageDispositionTwit',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageUnAssingedTwit',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageOutTwitter',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'conversationTwitter',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'searchConversationTwitter',@idInt,0)
-insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'messageInTwitter',@idInt,0)
-
-set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'ConversationWhatsApp',0)	
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppConversations',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccWhatsAppSpam',@idInt,0)
@@ -209,7 +200,6 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'Ti
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccLogAgentesAuxiliarReady',@idInt,0)
 
 
-
 print('----------------------------- subcripcionTableCCReportsRIA --------------')
 
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'LogDials',0)
@@ -233,12 +223,14 @@ insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'MenuRe
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSCampEsp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Chats',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationMail',0)
-insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conversationtweet',0)
+
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AVRSGraphs',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsApp',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'ConversationWhatsAppOut',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'SMS',0)
 insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'AuxiliarReady',0)
+
+	-- insert into subcripcionTableCCReportsRIA(publicationName,status) values(N'Conversationtweet',0)
 
 
 print('----------------------------- subcripcionTableCCRecorderRIA --------------')
@@ -251,4 +243,3 @@ insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'AVR
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'OutIn',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'Chats',0)
 insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'ConversationMail',0)
-insert into  subcripcionTableCCRecorderRIA (publicationName,status) values(N'Conversationtweet',0)

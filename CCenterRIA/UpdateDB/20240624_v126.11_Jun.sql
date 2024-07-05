@@ -3602,7 +3602,434 @@ ON [dbo].[smsccoLogDial] ([SystemApiId])
 
 		------------------------------------------------------END Ivan Martin Fix CW-8576---------------------------------------------------------------------
 
+		------------------------------------------------------BEGIN MACL Fix carga segmentos-----------------------------------------------
 
+SET @process = 'KR134015 - Se agrega cambio para obtener si es carga por segmento';
+        SET @sql = 'ALTER procedure [dbo].[ccsp_RIALogPhones]
+		@load_id int,
+		@Type smallint,
+		@GenCSV bit = 1, -- 0:100 / 1:todos
+		@isKolob bit = 0,
+		@PageIndex      INT = 0,
+		@PageSize       INT = 0,
+		@option SMALLINT = NULL
+		as
+		set nocount ON
+
+		declare @CaseType varchar(2000), @sql nvarchar(MAX), @nType char(5), @MovType SMALLINT, @language int, @LoadBySegment varchar(1)
+		SELECT @language = cs.valor FROM dbo.ccSettings AS cs WHERE cs.setting_id = 27;
+		declare @PageStart int,@PageEnd int
+
+		SELECT @LoadBySegment = CAST(ISNULL(LoadBySegment,''0'') as varchar) from ccRIALoading where load_id = @load_id
+		IF(@option = 0)
+		BEGIN
+			select CAST(@LoadBySegment as bit) as LoadBySegment
+			return 0;
+		END
+
+		select @CaseType = '''', @nType = right(''0000''+cast(@Type as varchar(5)), 5)
+
+		if @nType like ''%____1%''
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov in (0,8)
+			''
+
+		if @nType like ''%___1_%''
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')<>'''''''' and crlp.tipoMov in(-1,0,8) 
+			''
+
+		if @nType like ''%__1__%''
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1) 
+			''
+
+		if @nType like ''%_1___%''
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')<>'''''''' and crlp.tipoMov IN (1,4) 
+			''
+
+		if @nType like ''%1____%''
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov = 2 ''
+
+		if @CaseType = '''' and @nType <> 0
+			return(0)
+
+		if @nType like ''%____1%''
+			select @CaseType = @CaseType + ''  or telefono<>'''''''' and crlp.tipoMov = 0''
+
+		select @PageStart=@PageSize*(@PageIndex-1),@PageEnd=@PageSize*@PageIndex
+
+		IF(@option = 1)
+		BEGIN	
+			SET @sql = ''SELECT count(*) AS listSize FROM (
+		select crlp.load_id
+		from ccRIALogPhones AS crlp 
+		where crlp.load_id = @load_id'' 
+		+ @CaseType +'') tmp '' +
+		case @GenCSV when 0 then ''WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd'' else '''' end
+					--EXEC(@sql);
+			
+				Exec sp_executesql @sql
+						 , N''@PageStart int,@PageEnd int,@language int,@load_id int''
+						 , @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id
+					RETURN (0);
+				END
+				ELSE 
+				BEGIN
+						IF(@isKolob = 1)
+						BEGIN
+
+						declare @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200), @typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+						@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @typeUpdatedRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200), @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max);
+
+
+						select @typeDescriptionPhoneBlocked=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-num''
+						select @typeDescriptionPhoneUpdated=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-num''
+						select @typeIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-incorrect-records''
+						select @typeBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-records''
+						select @typeDescriptionPhoneNotLoaded=translate from tableLangueDbLoader where languageId=@language and tag=''type-not-loaded-num''
+
+						select @typeDescriptionPhoneBlackList=translate from tableLangueDbLoader where languageId=@language and tag=''description-dnc-list''
+						select @descriptionIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-incorrect-records''
+						select @descriptionBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-blocked-records''
+						select @typeUpdatedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-records''
+						select @descriptionInternationalPortNotFound=TRANSLATE from tableLangueDbLoader where languageId=@language and tag=''type-camp-no-international-port''
+
+
+						select @column=translate from tableLangueDbLoader where languageId=@language and tag=''column-file-field''
+
+						select @headerPhone=header_phone,@headerPhone2=header_phone2,@headerPhone3=header_phone3,@headerPhone4=header_phone4 
+						,@headerPhone5=header_phone5
+						from fileHeadersPhoneLoad where load_id=@load_id
+			
+							set @CaseType=case when @CaseType <> '''' then '' and ('' + substring(@CaseType, 5, len(@CaseType)) + '')'' else '''' END
+							SET @sql = '';with result as(
+							SELECT * FROM (select  
+							ROW_NUMBER() OVER(ORDER BY crlp.cal_key ASC) AS RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							crlp.telefono AS phone,
+							CASE
+								WHEN crlp.tipoMov = 2 THEN @typeUpdatedRecords	
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @typeIncorrectRecords
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @typeBlockedRecords
+								WHEN crlp.tipoMov in(-1,0) THEN @typeDescriptionPhoneNotLoaded
+								WHEN crlp.tipoMov in(8) THEN @descriptionInternationalPortNotFound
+								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked
+								WHEN crlp.keyTranslate is not null THEN isnull(tlan.translate,crlp2.descTipoMov)
+							ELSE 
+								crlp2.descTipoMov  
+							END AS Tipo,
+							case when CHARINDEX('''':'''',crlp.motivo)=0 then 0 else
+								convert(int,substring(crlp.motivo ,CHARINDEX('''':'''',crlp.motivo)-1 ,1))
+							end
+							 AS ColumnFile, 
+							CASE  WHEN crlp.tipoMov = 2 THEN ''''N/A'''' 
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @descriptionIncorrectRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @descriptionBlockedRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-camp-no-international-port'''') THEN  @descriptionInternationalPortNotFound
+									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList
+									WHEN crlp.keyTranslate is not null THEN tlan.translate 
+							ELSE crlp.motivo END AS motivo,
+							CAST('' + @LoadBySegment + '' as BIT) AS LoadBySegment
+							from ccRIALogPhones AS crlp 
+							INNER JOIN dbo.ccRIACATLogPhones AS  crlp2 ON crlp.tipoMov = crlp2.tipoMov
+							left join tableLangueDbLoader tlan on tlan.tag=crlp.keyTranslate and tlan.languageId=@language
+							where crlp.load_id = @load_id '' 				
+							+ @CaseType +'') tmp '' +
+							case @GenCSV when 0 then '' WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd '' else '''' end +'' 
+							) 
+							select  crlp.RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							crlp.phone,
+							crlp.Tipo,
+							case when crlp.ColumnFile=1 then @headerPhone
+							when crlp.ColumnFile=2 then @headerPhone2
+							when crlp.ColumnFile=3 then @headerPhone3
+							when crlp.ColumnFile=4 then @headerPhone4
+							when crlp.ColumnFile=5 then @headerPhone5
+							else '''''''' end ColumnFile,
+							crlp.motivo
+							from result crlp ''
+			END
+			ELSE
+			BEGIN
+				set @sql = ''select '' + case @GenCSV when 0 then ''top 100 '' else '''' end 
+				+ ''load_id, cal_key, telefono, tipoMov, motivo from ccRIALogPhones AS crlp where load_id = @load_id '' 
+				+ @CaseType
+			END  
+			--PRINT(@sql);
+
+
+
+			Exec sp_executesql @sql, N''@PageStart int,@PageEnd int,@language int,@load_id int, @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200),
+			@typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+			@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200)
+			, @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max), @typeUpdatedRecords varchar(200)''
+			, @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id,@column=@column,@typeDescriptionPhoneNotLoaded=@typeDescriptionPhoneNotLoaded
+			,@typeDescriptionPhoneBlocked=@typeDescriptionPhoneBlocked,@typeDescriptionPhoneUpdated=@typeDescriptionPhoneUpdated,@typeDescriptionPhoneBlackList=@typeDescriptionPhoneBlackList
+			,@typeBlockedRecords=@typeBlockedRecords,@typeIncorrectRecords=@typeIncorrectRecords,@descriptionBlockedRecords=@descriptionBlockedRecords,@descriptionIncorrectRecords=@descriptionIncorrectRecords,
+			 @descriptionInternationalPortNotFound= @descriptionInternationalPortNotFound 
+			,@headerPhone=@headerPhone,@headerPhone2=@headerPhone2,@headerPhone3=@headerPhone3,@headerPhone4=@headerPhone4,@headerPhone5=@headerPhone5,@typeUpdatedRecords=@typeUpdatedRecords
+	
+		return(0)
+		END
+		set nocount OFF';
+        EXEC (@sql);
+
+		SET @process = 'KR134013 - cambios para obtener solo registros dentro de horario cuando fue carga por segmento';
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
+    AS
+    SET NOCOUNT ON
+
+    DECLARE @prioridad VARCHAR(8)
+    DECLARE @batchsizeIni AS INT
+    DECLARE @batchsizeFin AS INT
+    DECLARE @rango AS DECIMAL
+    DECLARE @rowstoInsert AS INT
+    DECLARE @campType AS INT
+    DECLARE @recordsQuantitySetting VARCHAR(8)
+    DECLARE @settingValueP1 VARCHAR(25)
+
+    SET @rowstoInsert = 0
+    SET @batchsizeIni = 0
+    SET @batchsizeFin = 0
+    SET @rango = 0.00
+
+    IF EXISTS(SELECT * FROM sys.views WHERE NAME = ''VIEW_SETTINGS'') BEGIN
+        SELECT @recordsQuantitySetting = [valor] FROM VIEW_SETTINGS WHERE setting_id = 257;
+        IF(@recordsQuantitySetting IS NOT NULL AND @recordsQuantitySetting <> '''') BEGIN
+            SELECT @settingValueP1 = SUBSTRING(@recordsQuantitySetting, CHARINDEX(''|'', @recordsQuantitySetting)+1, LEN(@recordsQuantitySetting)),
+                   @top = (SUBSTRING(@settingValueP1, 1, CHARINDEX(''|'', @settingValueP1)-1));
+        END ELSE SET @top = 3000
+    END ELSE SET @top = 3000
+
+    SELECT @prioridad = isnull(Prioridad, ''12345NNN'')
+    FROM ccCampsPrioridadTel WITH (NOLOCK)
+    WHERE cam_id = @camp_id
+
+    SELECT @campType = cc.CampType FROM dbo.ccCamps AS cc WHERE cc.cam_id = @camp_id;
+
+    DELETE ccUploadTemporal
+    WHERE cam_id = @camp_id
+
+    IF(@campType = 7)
+    BEGIN
+            CREATE TABLE #tempsmsOutSource (Id INT PRIMARY KEY identity, smsout_id INT, cam_id INT, sms_phoneNumber VARCHAR(19), sms_status TINYINT, sms_dateDial DATETIME, cal_keyw VARCHAR(40), iTimeZone INT, iTimeZone_summer INT, iTimeZone2 INT, iTimeZone_summer2 INT, iTimeZone3 INT, iTimeZone_summer3 INT, iTimeZone4 INT, iTimeZone_summer4 INT, iTimeZone5 INT, iTimeZone_summer5 INT, list_id INT, sms_dateDialEnd datetime, isSegmentLoad bit)
+
+            CREATE NONCLUSTERED INDEX [IX_TempSMSO] ON [dbo].[#tempsmsOutSource] ([Id] ASC)
+                WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+            CREATE TABLE #smsoutIdSource (smsout_id INT NOT NULL PRIMARY KEY)
+
+            CREATE TABLE #smsoutIdSource2 (smsout_id INT NOT NULL PRIMARY KEY)
+
+			--UPDATING TABLES BEFORE LOADING
+			DECLARE @date datetime = GETDATE()
+			UPDATE smsOutSource SET sms_status = 2 where sms_dateDialEnd < @date and isSegmentLoad = 1
+			UPDATE smsWorkingTable SET sms_status = 2 where sms_dateDialEnd < @date and isSegmentLoad = 1
+
+            INSERT INTO #smsoutIdSource
+            SELECT top(@top) sos.smsout_id
+            FROM dbo.smsOutSource AS sos  WITH (INDEX (IX_smsOutSource_2), NOLOCK)
+            inner join dbo.smsWorkingTable AS swt WITH (INDEX (IX_smsWorkingTable_2), NOLOCK) 
+            on sos.callkey = swt.cal_keyw AND sos.cam_id = swt.cam_id 
+            WHERE sos.cam_id = @camp_id and sos.sms_status IN (0, 7) AND swt.sms_status <= 2
+
+            UNION
+
+            SELECT top(@top) swt2.smsout_id
+            FROM dbo.smsOutSource AS sos2 WITH (INDEX (IX_smsOutSource_2), NOLOCK)
+            inner join dbo.smsWorkingTable AS swt2 (NOLOCK)on sos2.smsout_id = swt2.smsout_id 
+            WHERE sos2.cam_id = @camp_id AND (sos2.sms_status < 2 OR sos2.sms_status = 7)
+
+            INSERT INTO #smsoutIdSource2
+            SELECT top(@top) sos.smsout_id
+            FROM dbo.smsOutSource AS sos WITH (INDEX (IX_smsOutSource_1), NOLOCK)
+            WHERE sos.sms_status IN (0, 1, 7) AND cam_id = @camp_id
+
+            INSERT #tempsmsOutSource(smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, cal_keyw, iTimeZone, 
+            iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4,
+             iTimeZone_summer4, iTimeZone5, iTimeZone_summer5, list_id, sms_dateDialEnd, isSegmentLoad)
+            SELECT TOP(@top) smsout_id, cam_id, RTRIM(LEFT(LTRIM(sms_phoneNumber + ''        '' + sms_phoneNumber2 + ''         '' 
+            + sms_phoneNumber3 + ''         '' + sms_phoneNumber4 + ''         '' + sms_phoneNumber5 + ''         ''), 13)) AS sms_phoneNumber,
+             CASE sms_status WHEN 7 THEN 1 ELSE sms_status END sms_status, sms_dateDial, callkey, 
+             CASE WHEN LEN(sms_phoneNumber) > 0 THEN iTimeZone ELSE NULL END iTimeZone,
+              CASE WHEN LEN(sms_phoneNumber) > 0 THEN iTimeZone_summer ELSE NULL END iTimeZone_summer, 
+              CASE WHEN LEN(sms_phoneNumber2) > 0 THEN iTimeZone2 ELSE NULL END iTimeZone2,
+               CASE WHEN LEN(sms_phoneNumber2) > 0 THEN iTimeZone_summer2 ELSE NULL END iTimeZone_summer2, 
+               CASE WHEN LEN(sms_phoneNumber3) > 0 THEN iTimeZone3 ELSE NULL END iTimeZone3, 
+               CASE WHEN LEN(sms_phoneNumber3) > 0 THEN iTimeZone_summer3 ELSE NULL END iTimeZone_summer3,
+                CASE WHEN LEN(sms_phoneNumber4) > 0 THEN iTimeZone4 ELSE NULL END iTimeZone4, 
+                CASE WHEN LEN(sms_phoneNumber4) > 0 THEN iTimeZone_summer4 ELSE NULL END iTimeZone_summer4, 
+                CASE WHEN LEN(sms_phoneNumber5) > 0 THEN iTimeZone5 ELSE NULL END iTimeZone5, 
+                CASE WHEN LEN(sms_phoneNumber5) > 0 THEN iTimeZone_summer5 ELSE 
+                        NULL END iTimeZone_summer5, list_id, sms_dateDialEnd, ISNULL(isSegmentLoad, 0)
+            FROM dbo.smsOutSource  WITH (INDEX (IX_smsOutSource_1), NOLOCK)
+            WHERE cam_id = @camp_id AND (sms_status < 2 OR sms_status = 7) 
+
+            SELECT @rowstoInsert = COUNT(*) FROM #tempsmsOutSource AS tos;
+
+            
+            IF EXISTS(SELECT * FROM #tempsmsOutSource)
+            BEGIN
+                SELECT @rango = ISNULL(CEILING(CAST((MAX(Id) * 1.00) / 3 AS DECIMAL(10, 2))), 0.00)
+                FROM #tempsmsOutSource  WITH (NOLOCK)
+
+                SET @batchsizeFin = @batchsizeFin + @rango
+
+                WHILE 1 = 1
+                BEGIN
+                    -- Nuevos Jobs
+                    INSERT INTO dbo.smsWorkingTable
+                    WITH (TABLOCKX) (smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, attemps, user_id,cal_keyw, iTimeZone, iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4, iTimeZone_summer4, iTimeZone5, iTimeZone_summer5, list_id, sms_dateDialEnd, isSegmentLoad)
+                    SELECT smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, 0, 0 ,cal_keyw, iTimeZone, iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4, iTimeZone_summer4, iTimeZone5, iTimeZone_summer5, list_id, sms_dateDialEnd, isSegmentLoad
+                    FROM #tempsmsOutSource 
+                    WHERE id > @batchsizeIni AND id <= @batchsizeFin
+                    IF @batchsizeFin > @rowstoInsert
+                        BREAK
+                    ELSE
+                    BEGIN
+                        SET @batchsizeIni = @batchsizeIni + @rango
+                        SET @batchsizeFin = @batchsizeFin + @rango
+                    END
+                END
+
+                UPDATE dbo.smsOutSource
+                SET sms_status = 2
+                FROM dbo.smsOutSource AS sos WITH (NOLOCK), #smsoutIdSource2  cis3 WITH (NOLOCK)
+                WHERE sos.smsout_id = cis3.smsout_id
+            END
+
+            DROP TABLE #smsoutIdSource
+
+            DROP TABLE #smsoutIdSource2
+
+            DROP TABLE #tempsmsOutSource
+    END
+    ELSE
+    BEGIN
+            CREATE TABLE #tempCallsOutSource (Id INT PRIMARY KEY identity, callout_id INT, cam_id INT, cal_telefono VARCHAR(19), cal_status TINYINT, cal_fechaDial DATETIME, cal_keyw VARCHAR(40), iZonaHoraria INT, iZonaHoraria_verano INT, iZonaHoraria2 INT, iZonaHoraria_verano2 INT, iZonaHoraria3 INT, iZonaHoraria_verano3 INT, iZonaHoraria4 INT, iZonaHoraria_verano4 INT, iZonaHoraria5 INT, iZonaHoraria_verano5 INT, list_id INT)
+
+            CREATE NONCLUSTERED INDEX [IX_TempCOS] ON [dbo].[#tempCallsOutSource] ([Id] ASC)
+                WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+            CREATE TABLE #calloutIdSource (callout_id INT NOT NULL PRIMARY KEY)
+
+            CREATE TABLE #calloutIdSource2 (callout_id INT NOT NULL PRIMARY KEY)
+
+            INSERT INTO #calloutIdSource
+            SELECT top(@top) cs.callout_id
+            FROM ccoCallsOutSource cs WITH (INDEX (IX_ccoCallsOutSource_15), NOLOCK)
+            inner join ccoWorkingTable wt WITH (INDEX (IX_ccoWorkingTable_15), NOLOCK) 
+            on cs.callout_id = wt.callout_id AND cs.cam_id = wt.cam_id 
+            WHERE cs.cam_id = @camp_id and cs.cal_status IN (0, 7) AND wt.cal_status <= 2
+
+            UNION
+
+            SELECT top(@top) Cout.callout_id
+            FROM ccoCallsOutSource Cout WITH (INDEX (IX_ccoCallsOutSource_16), NOLOCK)
+            inner join ccoworkingtable Wtab(NOLOCK)on Cout.callout_id = Wtab.callout_id 
+            WHERE Cout.cam_id = @camp_id AND (COUT.cal_status < 2 OR COUT.cal_status = 7)
+    
+
+            INSERT INTO #calloutIdSource2
+            SELECT top(@top) callout_id
+            FROM ccoCallsOutSource WITH (INDEX (IX_ccoCallsOutSource_11), NOLOCK)
+            WHERE cal_status IN (0, 1, 7) AND cam_id = @camp_id
+
+            IF exists(SELECT * FROM #calloutIdSource) 
+            BEGIN
+                UPDATE ccoCallBacks
+                SET [status] = 6, schedulerStatus = 1
+                WHERE callout_id IN (
+                        SELECT callout_id
+                        FROM #calloutIdSource cis
+                        )
+
+                UPDATE ccoCallsOutSource
+                SET cal_Status = 4
+                WHERE callout_id IN (
+                        SELECT callout_id
+                        FROM #calloutIdSource cis
+                        )
+            END
+
+            INSERT #tempCallsOutSource (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, 
+            iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4,
+             iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
+            SELECT TOP(@top) callout_id, cam_id, CASE WHEN ISNULL(recycleType, 1) = 0 THEN 
+            CASE 
+                WHEN recyclePhone = 1 THEN cal_telefono
+                WHEN recyclePhone = 2 THEN cal_telefono2
+                WHEN recyclePhone = 3 THEN cal_telefono3
+                WHEN recyclePhone = 4 THEN cal_telefono4
+                else cal_telefono5
+            END
+            ELSE rtrim(left(ltrim(cal_telefono + ''        '' + cal_telefono2 + ''         '' 
+                + cal_telefono3 + ''         '' + cal_telefono4 + ''         '' + cal_telefono5 + ''         ''), 13)) 
+            END AS cal_telefono,
+             CASE cal_status WHEN 7 THEN 1 ELSE cal_status END cal_status, cal_fechaDial, cal_key, 
+             CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria ELSE NULL END iZonaHoraria,
+              CASE WHEN LEN(cal_telefono) > 0 THEN iZonaHoraria_verano ELSE NULL END iZonaHoraria_verano, 
+              CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria2 ELSE NULL END iZonaHoraria2,
+               CASE WHEN LEN(cal_telefono2) > 0 THEN iZonaHoraria_verano2 ELSE NULL END iZonaHoraria_verano2, 
+               CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria3 ELSE NULL END iZonaHoraria3, 
+               CASE WHEN LEN(cal_telefono3) > 0 THEN iZonaHoraria_verano3 ELSE NULL END iZonaHoraria_verano3,
+                CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria4 ELSE NULL END iZonaHoraria4, 
+                CASE WHEN LEN(cal_telefono4) > 0 THEN iZonaHoraria_verano4 ELSE NULL END iZonaHoraria_verano4, 
+                CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria5 ELSE NULL END iZonaHoraria5, 
+                CASE WHEN LEN(cal_telefono5) > 0 THEN iZonaHoraria_verano5 ELSE 
+                        NULL END iZonaHoraria_verano5, list_id
+            FROM ccoCallsOutSource WITH (INDEX (IX_ccoCallsOutSource_17), NOLOCK)
+            WHERE cam_id = @camp_id AND (cal_status < 2 OR cal_status = 7) /*AND CONVERT(VARCHAR(10),cal_fechaDial, 103) >= CONVERT(VARCHAR(10), GETDATE(), 103)*/
+
+            SELECT @rowstoInsert = COUNT(*) FROM #tempCallsOutSource
+
+            IF EXISTS(SELECT * FROM #tempCallsOutSource)
+            BEGIN
+                SELECT @rango = ISNULL(CEILING(CAST((MAX(Id) * 1.00) / 3 AS DECIMAL(10, 2))), 0.00)
+                FROM #tempCallsOutSource WITH (NOLOCK)
+
+                SET @batchsizeFin = @batchsizeFin + @rango
+
+                WHILE 1 = 1
+                BEGIN
+                    -- Nuevos Jobs
+                    INSERT INTO ccoWorkingTable
+                    WITH (TABLOCKX) (callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id)
+                    SELECT callout_id, cam_id, cal_telefono, cal_status, cal_fechaDial, cal_keyw, iZonaHoraria, iZonaHoraria_verano, iZonaHoraria2, iZonaHoraria_verano2, iZonaHoraria3, iZonaHoraria_verano3, iZonaHoraria4, iZonaHoraria_verano4, iZonaHoraria5, iZonaHoraria_verano5, list_id
+                    FROM #tempCallsOutSource
+                    WHERE id > @batchsizeIni AND id <= @batchsizeFin
+
+                    IF @batchsizeFin > @rowstoInsert
+                        BREAK
+                    ELSE
+                    BEGIN
+                        SET @batchsizeIni = @batchsizeIni + @rango
+                        SET @batchsizeFin = @batchsizeFin + @rango
+                    END
+                END
+
+                UPDATE ccoCallsOutSource
+                SET cal_status = 2, nOcupado = 0, nNoContesta = 0, nFax = 0, nContestadora = 0, nShortCall = 0, nOtro = 0
+                FROM ccoCallsOutSource co WITH (NOLOCK), #calloutIdSource2 cis3 WITH (NOLOCK)
+                WHERE co.callout_id = cis3.callout_id
+            END
+
+            DROP TABLE #calloutIdSource
+
+            DROP TABLE #calloutIdSource2
+
+            DROP TABLE #tempCallsOutSource
+    END
+
+    UPDATE ccCampsNvosCB
+    SET dateUpdate = NULL
+    WHERE id = @camp_id
+
+    SET NOCOUNT OFF
+    ';
+        EXEC (@sql);
+		---------------------------------------------------------END MACL-------------------------------------------------------
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

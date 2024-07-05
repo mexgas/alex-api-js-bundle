@@ -44,6 +44,8 @@ BEGIN
     BEGIN TRAN
     BEGIN TRY
 	
+---------------------------------------- Begin fix/125.20231211.0.9 fix/125.20231211.0.14 - -------------------------------------------------        
+
 	SET @process = 'Alter SP ccsp_OUTGetNewJobs Merge 125.20241211.0.14 -KR106000 se crea sp ccsp_OUTGetNewJobs'
 	SET @sql = 'Alter procedure [dbo].[ccsp_OUTGetNewJobs]
 @CAMPID int,
@@ -176,8 +178,8 @@ order by prioridad_cb desc, W.cal_fechaDial ''  + @Order_Asc_Desc +'', callout_i
 end -- TOMA EN CUENTA LOS CALLBACKS
 if @TipoJobs in(0,2)--** INCLUIR LAS NUEVAS
 begin
-			select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
-			select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
+	select @sql=@sql+nchar(13)+ ''SET ROWCOUNT '' + cast( @topCount/2 as varchar );
+	select @sql=@sql+nchar(13)+ ''INSERT #NEW_JOBS'';
 
 
 select @sql=@sql+nchar(13)+ ''SELECT W.callout_id, W.cam_id, W.cal_telefono, W.cal_status, W.cal_fechaDial, W.user_id,''
@@ -1486,7 +1488,7 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
 end'
     EXEC(@sql);
 
-     set @process = 'Dineria -- alter Table smsccoLogDial add Message'
+    set @process = 'Dineria -- alter Table smsccoLogDial add Message'
     set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))
 begin
     alter Table smsccoLogDial add Message varchar(200) null
@@ -2783,8 +2785,65 @@ ELSE IF @action = 18 BEGIN
     END;
 END;'
         EXEC(@sql);
+
+
+        set @process = 'Dineria -- alter Table smsccoLogDial add Message'
+    set @sql='if not exists (select * from sys.columns where name = N''Message'' and Object_ID = Object_ID(N''smsccoLogDial''))
+begin
+    alter Table smsccoLogDial add Message varchar(200) null
+end
+'
+    EXEC(@sql)
+
+    set @process = 'Dineria --  Add Column smsccoLogDial.Bill decimal'
+    set @sql='if not exists (select * from sys.columns c 
+inner join sys.types t on c.system_type_id=t.system_type_id
+where c.name = N''Bill'' and c.Object_ID = Object_ID(N''smsccoLogDial'')
+and t.name=''float''
+)
+begin
+   alter Table smsccoLogDial alter Column Bill decimal(10,2) not null
+end'
+    EXEC(@sql)
+
+    SET @process = 'Hotfix SMS - Adding indexes'
+        SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+                    begin
+                            
+                    end'
+        EXEC(@sql);
+
+SET @process = 'Hotfix SMS - Adding indexes'
+SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+begin
+    CREATE INDEX IX_smsccoLogDial_2 ON smsccoLogDial(smsDate,statusSystemsId);
+end'
+   EXEC(@sql);
+
+SET @process = 'Hotfix SMS - Create new table for messages without a status update'
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = ''UnchangedStatusSmsMessages'')
+BEGIN
+    CREATE TABLE UnchangedStatusSmsMessages (
+        SystemApiId VARCHAR(100) NOT NULL,
+        StatusSystemsId INT NOT NULL
+    );
+END;'
+        EXEC(@sql);
+
+set @process = 'Dineria -- CREATE IX_smsccoLogDial_3 '
+    set @sql='if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_3'' and object_id = OBJECT_ID(N''smsccoLogDial''))
+    begin
+        CREATE NONCLUSTERED INDEX IX_smsccoLogDial_3
+ON [dbo].[smsccoLogDial] ([SystemApiId])
+    end
+'
+    EXEC(@sql)
+
    	
-        ----------------------------------------------------- BEGIN KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
+---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.14 - -------------------------------------------------        
+
+
+----------------------------------------------------- BEGIN KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
     	SET @process = 'KR134000 Creación de tabla de status de referencia para email de mensajes sms. ';
     	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ccSmsEmailResultStatus'')
                     BEGIN
@@ -3542,6 +3601,9 @@ END;'
 
 
 		------------------------------------------------------END Ivan Martin Fix CW-8576---------------------------------------------------------------------
+
+
+
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -7762,9 +7762,9 @@ select @Telefono1 Phone1,@Telefono2 Phone2,@Telefono3 Phone3,@Telefono4 Phone4,@
     set @sql='ALTER PROCEDURE [dbo].[ccsp_Callbacks]
 @cam_id as int
 AS
-select aÃ±o,mes,dia,hora, callbacks from ccRIACallbacks with(nolock)
+select año,mes,dia,hora, callbacks from ccRIACallbacks with(nolock)
 
-where cam_id=@cam_id order by aÃ±o,mes,dia,hora'
+where cam_id=@cam_id order by año,mes,dia,hora'
     EXEC(@sql)
 
     set @process = 'Sorteos -- ALTER SP  ccsp_DLRGetRotativeANI se valida @aniList es cero o menor'
@@ -9219,7 +9219,7 @@ set @process = 'Dineria Hotfix se agrega sigo de igual para que tome tambien las
             SET @horaUniversal = getutcdate()
             SET @dateNow = getdate()
             declare @iZonas int
-            -- Si la campaÃ±a no tiene horarios asignados, marcar todas las zonas
+            -- Si la campaña no tiene horarios asignados, marcar todas las zonas
             IF @revHorario = 0
             BEGIN
                 IF NOT EXISTS (
@@ -10400,7 +10400,7 @@ if @Tipo in (1,2) begin
 
         if @Tipo = 2 begin
                 -- devuelve resultado de la taba, solo las camps del usuario
-                SELECT res.id, res.campaÃ±a, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
+                SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
                 isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor, OverallTotalNew
                 FROM #Tcamps tcam
                 left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
@@ -10408,7 +10408,7 @@ if @Tipo in (1,2) begin
                 inner join cccamps cc (nolock) on res.id=cc.cam_id
         end
         else 
-                SELECT id, campaÃ±a, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,
+                SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,
                 cc.aggressionFactor, OverallTotalNew
                 FROM ccCampsNvosCB res (nolock)
                 LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id

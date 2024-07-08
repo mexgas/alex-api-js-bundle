@@ -989,7 +989,6 @@ EndSave:
 	set @process = 'Create Job to clean reconnectMsg column in ccUsers'
 	set @sql = '
 		USE [msdb]
-			GO
 
 			BEGIN TRANSACTION
 			DECLARE @ReturnCode INT
@@ -1052,7 +1051,6 @@ EndSave:
 			QuitWithRollback:
 				IF (@@TRANCOUNT > 0) ROLLBACK TRANSACTION
 			EndSave:
-			GO
 			'
 	EXEC(@sql)
 	----------------------------------------------------------- Uriel Cabrera  Fin Job de limpieza para la columna reconnectMsg en caso de que el usuario ya no se conecte en el dia -------------------------------------------------------------------------------

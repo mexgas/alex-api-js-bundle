@@ -911,7 +911,7 @@ set nocount off'
     EXEC(@sql);
 
     SET @process = 'KR123022 - Habilitar y deshabilitar uso de auxiliares al agente action 10 added to update AuxiliaryRestricted column'
-SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIA_ABCAgents]
     @option smallint,
     @UserId int,
     @Login varchar(40)='''',
@@ -2805,13 +2805,6 @@ begin
    alter Table smsccoLogDial alter Column Bill decimal(10,2) not null
 end'
     EXEC(@sql)
-
-    SET @process = 'Hotfix SMS - Adding indexes'
-        SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))
-                    begin
-                            
-                    end'
-        EXEC(@sql);
 
 SET @process = 'Hotfix SMS - Adding indexes'
 SET @sql = 'if not exists (select * from sys.indexes where name = N''IX_smsccoLogDial_2'' and object_id = OBJECT_ID(N''smsccoLogDial''))

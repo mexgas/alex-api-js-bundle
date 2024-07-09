@@ -55,7 +55,7 @@ END
 IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
 BEGIN
     BEGIN TRAN
-    BEGIN TRY    
+    BEGIN TRY		
 
         SET @process = 'update ccCamps set CampType =0 where CampType is null'
         SET @sql = 'update ccCamps set CampType =0 where CampType is null'
@@ -11673,7 +11673,7 @@ select L.cam_id, L.Campana,
         ----------------------------------------------------- END Jonathan Ramirez  ----------------------------------------------------------------
 
         -----------------------Begin Frida Orta---------------------------------------------------------------------------------
-        set @process = 'Delete ccsp_GalateaManageWG'
+    set @process = 'Delete ccsp_GalateaManageWG'
     set @sql='
         if exists (select * from sys.procedures where name = N''ccsp_GalateaManageWG'')
     begin
@@ -12166,7 +12166,142 @@ set nocount off
     EXEC(@sql)
         -----------------------End Frida Orta---------------------------------------------------------------------------------
 
+set @process = 'Alter SP ccsp_getVersion --fix Version '
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_getVersion]
+    @Module VARCHAR(3) = NULL,
+    @Version INT = 0 OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @Idioma BIT;
+    SELECT @Idioma = CAST(valor AS BIT) FROM ccSettings WHERE setting_id = 27;
 
+    set @Module=UPPER(@Module)
+
+    IF ISNULL(@Module, '''') NOT IN (''BD'', ''ADM'', ''AGT'', ''ALL'', ''BDF'')
+    BEGIN
+        SELECT ''-2'' AS ID, 
+               CASE @Idioma WHEN 0 THEN ''ERROR. Modulo no valido'' ELSE ''ERROR. Invalid Module'' END AS [Description];
+        RETURN 0;
+    END
+
+    DECLARE @nVersion VARCHAR(30);
+    SELECT @nVersion = CAST(valor AS VARCHAR(15)) FROM ccSettings WHERE setting_id = 77;
+
+    BEGIN TRY
+        DECLARE @version_1 VARCHAR(15), @version_2 VARCHAR(9), @version_3 VARCHAR(6), @version_4 VARCHAR(6);
+        DECLARE @Prueba TABLE (id INT, value NVARCHAR(100));
+
+        INSERT INTO @Prueba SELECT * FROM fn_RIASplitDelimited(@nVersion, ''.'');
+
+        IF NOT EXISTS (SELECT value FROM @Prueba WHERE id = 4)
+        BEGIN
+            UPDATE ccSettings SET valor = valor + ''.00'' WHERE setting_Id = 77;
+            INSERT INTO @Prueba (value) VALUES (''00'');
+        END
+    END TRY
+    BEGIN CATCH
+        SELECT ''-1'' AS ID, ERROR_MESSAGE() AS [Description];
+        RETURN 0;
+    END CATCH
+
+    
+    IF ISNULL(@Version, 0) = 0 --Saber la version
+    BEGIN
+        SELECT @version_1 = value FROM @Prueba WHERE id = 1;
+        SELECT @version_2 = value FROM @Prueba WHERE id = 2;
+        SELECT @version_3 = value FROM @Prueba WHERE id = 3;
+        SELECT @version_4 = value FROM @Prueba WHERE id = 4;
+
+        IF @Module in(''ALL'',''BDF'')
+        BEGIN
+            IF @Module = ''ALL''
+                SELECT @version_1 + ''.'' + @version_2 + ''.'' + @version_3 + ''.'' + @version_4;
+            ELSE IF @Module = ''BDF''
+                SELECT @version_1 + ''.'' + @version_4;
+
+            RETURN 0;
+        END
+        ELSE
+        BEGIN
+            SELECT @Version = CAST(CASE @Module
+                                   WHEN ''BD'' THEN @version_1
+                                   WHEN ''ADM'' THEN @version_2
+                                   WHEN ''AGT'' THEN @version_3
+                                   END AS INT);
+            SELECT @Version AS Version;
+            RETURN @Version;
+        END
+    END
+
+    IF @Module = ''BD'' AND (@Version <= CAST(@version_1 AS INT) OR (@Version - CAST(@version_1 AS INT)) > 1)
+    BEGIN
+        SELECT ''-3'' AS ID, 
+               CASE @Idioma 
+                    WHEN 0 THEN ''ERROR. Version no Valida para BD. Version Actual: '' + @version_1
+                    ELSE ''ERROR. Invalid Version for BD. Current Version: '' + @version_1
+               END AS [Description];
+        RETURN 0;
+    END
+
+
+    IF @Version <= CAST(CASE @Module
+                        WHEN ''BD'' THEN @version_1
+                        WHEN ''ADM'' THEN @version_2
+                        ELSE @version_3
+                        END AS INT)
+    BEGIN
+        SELECT ''-3'' AS ID, 
+               CASE @Idioma 
+                    WHEN 0 THEN ''ERROR. Version no Valida para '' + @Module + ''. Version Actual: '' +
+                                CASE UPPER(@Module)
+                                     WHEN ''BD'' THEN @version_1
+                                     WHEN ''ADM'' THEN @version_2
+                                     ELSE @version_3
+                                END
+                    ELSE ''ERROR. Invalid Version for '' + @Module + ''. Current Version: '' +
+                                CASE UPPER(@Module)
+                                     WHEN ''BD'' THEN @version_1
+                                     WHEN ''ADM'' THEN @version_2
+                                     ELSE @version_3
+                                END
+               END AS [Description];
+        RETURN 0;
+    END
+
+    SELECT @version_1 = value FROM @Prueba WHERE id = 1;
+    SELECT @version_2 = value FROM @Prueba WHERE id = 2;
+    SELECT @version_3 = value FROM @Prueba WHERE id = 3;
+    SELECT @version_4 = ISNULL(MAX(value), ''00'') FROM @Prueba WHERE id = 4;
+
+    IF UPPER(@Module) = ''BD'' begin
+        if cast(@version_1 as int) in (@Version-1) begin            
+            set  @version_4 = ''00''
+        end
+        SET @version_1 = @Version;
+    end
+    ELSE IF UPPER(@Module) = ''ADM'' SET @version_2 = @Version;
+    ELSE IF UPPER(@Module) = ''AGT'' SET @version_3 = @Version;
+    ELSE SET @version_4 = @Version;
+
+    SET @nVersion = @version_1 + ''.'' + @version_2 + ''.'' + @version_3 + ''.'' + @version_4;
+    UPDATE ccSettings SET valor = @nVersion WHERE setting_id = 77;
+
+    IF @@ROWCOUNT = 1
+        SELECT ''0'' AS ID, ''Actualizado a version: '' + @nVersion AS [Description];
+    ELSE
+        SELECT ''-4'' AS ID, 
+               CASE @Idioma 
+                    WHEN 0 THEN ''ERROR generado al actualizar a version '' + @nVersion
+                    ELSE ''ERROR introduced when upgrading to version '' + @nVersion
+               END AS [Description];
+
+    RETURN 0;
+    SET NOCOUNT OFF;
+END
+'
+    EXEC(@sql)
 
 
 ---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.14 - -------------------------------------------------        

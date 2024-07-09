@@ -10056,9 +10056,8 @@ ALTER PROCEDURE [dbo].[ccsp_RIALoadCamps] @option SMALLINT, @AreaId SMALLINT = N
         EXEC(@sql);
 
 
-set @process = 'Create sp ccsp_RIAUpdateEspecConfig TT7668 -AgenteKolob - Configuración en el tiempo de notas'
-SET @sql = '
-    CREATE PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] 
+set @process = 'ALTER sp ccsp_RIAUpdateEspecConfig TT7668 -AgenteKolob - Configuración en el tiempo de notas'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateEspecConfig] 
     @inbound_id              SMALLINT, 
     @descripcion             VARCHAR(50)  = NULL, 
     @Status                  TINYINT      = NULL, 

@@ -1093,6 +1093,142 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			WHERE t.Id = @whatsAppTemplateID
 			RETURN 0;
 		END
+		ELSE IF (@action = 8) -- update template
+		BEGIN
+			-- insert into activity log table and update template data
+			IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '' and before update header contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
+			END
+			IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '' and before update footer contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
+			END
+			IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '' and before update buttons contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
+			END
+			
+			EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
+			Create table #ccMetaWAOutboundTemplates 
+			(
+				columnInfo VARCHAR(255),
+				dataInfo VARCHAR(255),
+				identifierInfo VARCHAR(255)
+			)
+
+			UPDATE ccMetaWAOutboundTemplates
+			SET Category = @Category,
+				header = @header,
+				body = @body,
+				footer = @footer,
+				buttons = @buttons
+			WHERE Id = @Id
+
+			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates''
+
+			DECLARE @posicionInicialPalabra INT,
+					@posicionFinalPalabra INT,
+					@stringaux VARCHAR(MAX),
+					@value VARCHAR(MAX)
+
+			DECLARE @column VARCHAR(50),
+					@data VARCHAR(MAX),
+					@identifier VARCHAR(50)
+
+			DECLARE cursorTemplates CURSOR FOR
+					SELECT columnInfo, dataInfo, identifierInfo
+					FROM #ccMetaWAOutboundTemplates
+
+			OPEN cursorTemplates
+
+			FETCH NEXT FROM cursorTemplates INTO @column, @data, @identifier
+
+			WHILE @@FETCH_STATUS = 0
+			BEGIN
+				SET @value = ''''
+				IF @column = ''Category''
+				BEGIN
+					SELECT @value = cgi.Description FROM ccGalateaIdentifiers cgi WHERE cgi.TagEn = @data
+				END
+				ELSE IF @column = ''header''
+				BEGIN
+					DECLARE @letraSiguiente VARCHAR(1)
+
+					SET @posicionInicialPalabra = CHARINDEX(''"format":"'', @data)
+					SET @posicionInicialPalabra = @posicionInicialPalabra + LEN(''"format":"'')
+					SET @letraSiguiente = SUBSTRING(@data, @posicionInicialPalabra, 1)
+
+					SET @value = CASE 
+									WHEN @letraSiguiente = ''T'' THEN ''T&META_HEADER_TEXT''
+									WHEN @letraSiguiente = ''L'' THEN ''T&META_HEADER_LOCATION''
+									WHEN @letraSiguiente IN (''I'',''V'',''D'') THEN ''T&META_HEADER_MEDIA''
+									ELSE ''COMMON_NONE_O''
+								END
+				END
+				ELSE IF @column = ''body'' OR @column = ''footer''
+				BEGIN
+					SET @posicionInicialPalabra = CHARINDEX(''"text":"'', @data)
+					SET @posicionInicialPalabra = @posicionInicialPalabra + LEN(''"text":"'')
+					SET @posicionFinalPalabra = CHARINDEX(''"'',@data,@posicionInicialPalabra) - @posicionInicialPalabra
+
+					SET @value = SUBSTRING(@data,@posicionInicialPalabra,@posicionFinalPalabra)
+				END
+				ELSE IF @column = ''buttons''
+				BEGIN
+					DECLARE @tableButtons TABLE (TYPE VARCHAR(25))
+					SET @posicionInicialPalabra = CHARINDEX(''['',@data)
+
+					SET @stringaux = SUBSTRING(@data,@posicionInicialPalabra, LEN(@data))
+
+					WHILE CHARINDEX(''"type":"'',@stringaux) > 0
+					BEGIN
+						SET @posicionInicialPalabra = CHARINDEX(''"type":"'',@stringaux) + LEN(''"type":"'')
+						IF @posicionInicialPalabra > 0
+						BEGIN
+							SET @posicionFinalPalabra = CHARINDEX(''"'',@stringaux,@posicionInicialPalabra)
+							INSERT INTO @tableButtons (TYPE) VALUES (SUBSTRING(@stringaux,@posicionInicialPalabra, @posicionFinalPalabra - @posicionInicialPalabra))
+
+							SET @stringaux = SUBSTRING(@stringaux,@posicionFinalPalabra,LEN(@stringaux) - @posicionFinalPalabra) -- actualizar cadena
+						END
+					END
+
+					IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''PHONE_NUMBER'')
+						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''PHONE_NUMBER'')) + ''-T&META_BUTTON_PHONENUMBER,''
+					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''URL'')
+						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''URL'')) + ''-T&META_BUTTON_URL,''
+					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''QUICK_REPLY'')
+						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''QUICK_REPLY'')) + ''-T&META_BUTTON_QUICKREPLY,''
+					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''COPY_CODE'')
+						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''COPY_CODE'')) + ''-T&META_BUTTON_COPYCODE,''
+
+					SET @value = LEFT(@value, LEN(@value) - 1)
+				END
+
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				SELECT
+					ca.AreaName,
+					GETDATE(),
+					cu.Login,
+					122,
+					20,
+					@identifier,
+					@value,
+					@TemplateName
+				FROM ccUsers cu
+				INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+				WHERE cu.User_id = @UserId
+
+				FETCH NEXT FROM cursorTemplates INTO @column, @data, @identifier
+			END
+
+			CLOSE cursorTemplates
+			DEALLOCATE cursorTemplates
+		END
+
 	END
    '
 	EXEC(@sql);
@@ -2612,7 +2748,161 @@ return(0)
 		END'
 	EXEC(@sql)
 	----------------------------------------------------------- Uriel Cabrera  Fin se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
-        /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
+    
+	----------------------------------------------------------- Start Isaac Cortes -------------------------------------------------------------------------------
+	set @process = 'DEV2-577 K02118 Operation 122'
+	set @sql = '
+		IF NOT EXISTS (SELECT OperationId FROM ccGalateaOperations WHERE OperationId = 122)
+		BEGIN
+			INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPT) VALUES (122, ''Editar plantilla'', ''Edit template'', ''Editar modelo'')
+		END
+	'
+	EXEC(@sql)
+	set @process = 'DEV2-577 K02118 Identifiers'
+	set @sql = '
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_CATEGORY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_CATEGORY'',''Categoría'',''Category'',''Categoria'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_HEADER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_HEADER'',''Encabezado'',''Header'',''Cabeçalho'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_BODY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_BODY'',''Cuerpo'',''Body'',''Corpo'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_FOOTER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_FOOTER'',''Pie de página'',''Footer'',''Rodapé'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_BUTTONS'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_BUTTONS'',''Botones'',''Buttons'',''Botões'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_CATEGORY_MARKETING'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_CATEGORY_MARKETING'',''Marketing'',''Marketing'',''Marketing'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_CATEGORY_UTILITY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_CATEGORY_UTILITY'',''Utilidad'',''Utility'',''Utilidade'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_TEXT'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_TEXT'',''Texto'',''Text'',''Texto'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_MEDIA'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_MEDIA'',''Contenido multimedia'',''Media'',''Mídia'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_LOCATION'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_LOCATION'',''Ubicación'',''Location'',''Localização'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_PHONENUMBER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_PHONENUMBER'',''de teléfono'',''phone number button'',''de telefone'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_URL'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_URL'',''de URL'',''URL button(s)'',''de URL'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_QUICKREPLY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_QUICKREPLY'',''de respuesta rápida'',''quick reply button(s)'',''de resposta rápida'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_COPYCODE'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_COPYCODE'',''de copiar código'',''copy code button'',''de copiar código'')
+		END
+
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_CATEGORY'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_CATEGORY'',''ccMetaWAOutboundTemplates'',''Category'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_HEADER'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_HEADER'',''ccMetaWAOutboundTemplates'',''header'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_BODY'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_BODY'',''ccMetaWAOutboundTemplates'',''body'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_FOOTER'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_FOOTER'',''ccMetaWAOutboundTemplates'',''footer'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_BUTTONS'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_BUTTONS'',''ccMetaWAOutboundTemplates'',''buttons'')
+		END
+	'
+	EXEC(@sql)
+	set @process = 'DEV2-576 K02118 Create scalar fuction GetMetaButtonTemplateHistory'
+	set @sql = '
+		IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type = N''FN'')
+		BEGIN
+			CREATE FUNCTION [dbo].[GetMetaButtonTemplateHistory] (@buttons VARCHAR(MAX), @lang INT)
+			RETURNS VARCHAR (MAX)
+			AS
+			BEGIN
+
+				DECLARE @value varchar(400),
+						@stringFormated VARCHAR(MAX) = '',
+						@flag BIT = 0
+
+				DECLARE cursorAddText CURSOR FOR
+						SELECT 
+							(CASE 
+								WHEN cgi.Description IS NULL THEN tb3.Value 
+								ELSE (CASE 
+										WHEN @lang = 0 THEN cgi.TagEs 
+										WHEN @lang = 2 THEN cgi.TagPt 
+										ELSE cgi.TagEn 
+										END) 
+								END) as Value
+						FROM (
+							SELECT tb1.Id, tb1.Value
+							FROM dbo.fn_RIASplitDelimited(@buttons, ',') as tb1
+						) AS tb2
+						CROSS APPLY dbo.fn_RIASplitDelimited(tb2.Value,'-') AS tb3
+						LEFT JOIN ccGalateaIdentifiers cgi ON cgi.Description = tb3.Value
+
+				OPEN cursorAddText
+
+				FETCH NEXT FROM cursorAddText INTO @value
+
+				WHILE @@FETCH_STATUS = 0
+				BEGIN
+					IF @flag = 0
+					BEGIN
+						SET @stringFormated = @stringFormated + @value
+						SET @flag = 1
+					END
+					ELSE
+					BEGIN
+						SET @stringFormated = @stringFormated + ' ' + @value + ', '
+						SET @flag = 0
+					END
+
+					FETCH NEXT FROM cursorAddText INTO @value
+				END
+				CLOSE cursorAddText
+				DEALLOCATE cursorAddText
+
+				SET @stringFormated = LEFT(@stringFormated, LEN(@stringFormated) - 1)
+				--PRINT @stringRes
+				RETURN @stringFormated
+			END
+		END
+	'
+
+	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
+	
+	
+	
+	    /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         --EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         --EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
         COMMIT TRAN

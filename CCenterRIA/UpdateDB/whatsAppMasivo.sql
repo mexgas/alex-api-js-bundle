@@ -2750,16 +2750,16 @@ return(0)
 	----------------------------------------------------------- Uriel Cabrera  Fin se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
     
 	----------------------------------------------------------- Start Isaac Cortes -------------------------------------------------------------------------------
-	set @process = 'DEV2-577 K02118 Operation 122'
-	set @sql = '
+	SET @process = 'DEV2-577 K02118 Operation 122'
+	SET @sql = '
 		IF NOT EXISTS (SELECT OperationId FROM ccGalateaOperations WHERE OperationId = 122)
 		BEGIN
 			INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPT) VALUES (122, ''Editar plantilla'', ''Edit template'', ''Editar modelo'')
 		END
 	'
 	EXEC(@sql)
-	set @process = 'DEV2-577 K02118 Identifiers'
-	set @sql = '
+	SET @process = 'DEV2-577 K02118 Identifiers'
+	SET @sql = '
 		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_CATEGORY'')
 		BEGIN
 			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_CATEGORY'',''Categoría'',''Category'',''Categoria'')
@@ -2839,9 +2839,9 @@ return(0)
 		END
 	'
 	EXEC(@sql)
-	set @process = 'DEV2-576 K02118 Create scalar fuction GetMetaButtonTemplateHistory'
-	set @sql = '
-		IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type = N''FN'')
+	SET @process = 'DEV2-576 K02118 Create scalar fuction GetMetaButtonTemplateHistory'
+	SET @sql = '
+		IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
 		BEGIN
 			CREATE FUNCTION [dbo].[GetMetaButtonTemplateHistory] (@buttons VARCHAR(MAX), @lang INT)
 			RETURNS VARCHAR (MAX)
@@ -2897,6 +2897,162 @@ return(0)
 			END
 		END
 	'
+	SET @process = 'K02118 delete sp ccsp_GalateaChangeHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_GalateaChangeHistory'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_GalateaChangeHistory
+	END'
+	EXEC(@sql)
+
+	set @process = 'K020113 se crea sp ccsp_RIAAdmDelRegs'
+	set @sql = '
+	ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+    @option TINYINT,
+    @loginLst VARCHAR(max) = NULL,
+    @moduleWithOperation varchar(max) = NULL,
+    @operationDateIni SMALLDATETIME = NULL,
+    @operationDateFin SMALLDATETIME = NULL,
+    @top INT = 0
+    AS
+    SET NOCOUNT ON
+
+    DECLARE @lang TINYINT
+
+    SELECT @lang = valor
+    FROM ccsettings
+    WHERE setting_id = 27
+
+    IF @option = 1 -- Catalogo de modulos
+    BEGIN
+        WITH Catalog AS(
+        SELECT m.ModuleId as module_id, o.OperationId as operationType, 
+        CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS mDescripcion, 
+        CASE @lang WHEN 0 THEN OpTagEs WHEN 2 THEN OpTagPt ELSE OpTagEn END AS oDescripcion
+        FROM ccGalateaOperations o WITH (INDEX (IX_ccGalateaOperations_Op))
+        JOIN ccGalateaModOpRelation r ON o.OperationId = r.OperationId
+        JOIN ccGalateaModules m WITH (INDEX (IX_ccGalateaModules_Mod)) ON r.ModuleId = m.ModuleId --WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
+		
+        UNION
+
+        SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+
+        UNION
+
+        SELECT ModuleId as module_id, 0, CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, 
+        CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT ModuleId as module_id, - 1 , CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, '' - ''
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod)))
+
+        SELECT module_id,operationType,mDescripcion,oDescripcion 
+        FROM Catalog
+        ORDER BY mDescripcion, oDescripcion
+
+        RETURN (0)
+    END
+
+    IF @option = 2 -- Muestra informacion por filtros
+    BEGIN
+
+        declare @sql as nvarchar(max)
+        DECLARE @table TABLE(id int,value varchar(max))
+        declare @id int
+        declare @moduleId varchar(max)
+        declare @operationLst varchar(max)
+        declare @query varchar(max) = '' and (''
+        declare @value varchar(max)
+        declare @first int = 1
+        declare @pos int
+
+        insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
+        while exists(select * from @table)
+        begin
+            select top 1 @id = id, @value = value from @table
+            set @pos = charindex('':'', @value)
+            if(@pos <> 0)
+            begin
+                set @moduleId = substring(@value, 1, @pos-1)
+                set @operationLst = replace(substring(@value, @pos+1, len(@value)), ''-'', '','')
+                if(@first = 1)
+                begin
+                    set @query = @query + ''l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                    set @first = 0
+                end
+                else
+                begin
+                    set @query = @query + '' or l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                end
+            end
+
+            delete @table where id = @id
+        end
+        set @query = @query + '')''
+
+
+        SET ROWCOUNT @top
+
+        set @sql =
+        ''DECLARE @tableLogin TABLE(id int,value varchar(255))
+        insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
+
+        SELECT L.LogId as log_id, L.Area as areaName, L.ActivityDate as operationDate,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN O.OpTagEs WHEN 2 THEN O.OpTagPt ELSE O.OpTagEn END operationType,
+        L.LOGIN,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN M.MTagEs WHEN 2 THEN M.MTagPt ELSE M.MTagEn END module_id,
+        CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
+        CASE WHEN i.description IS NULL THEN L.Identifier ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN i.TagEs WHEN 2 THEN i.TagPt ELSE i.TagEn END END +
+        CASE WHEN L.Identifier<>'''''''' AND L.Value<>'''''''' THEN '''': '''' ELSE '''''''' END +
+
+        CASE WHEN V.description IS NULL 
+            THEN 
+                CASE 
+                    WHEN L.Identifier<>'''''''' AND (L.Identifier LIKE ''''COMMON_DELETE_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_ADD_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_DATE%'''')
+                        THEN dbo.GetDateByLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+                    ''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''OUT_SIP_IDENTIFIER'''' THEN dbo.GetSipLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+					''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''T&EDIT_TEMPLATE_BUTTONS'''' THEN dbo.GetMetaButtonTemplateHistory(L.value,''+CAST(@lang AS VARCHAR(5))+'')''+
+            ''ELSE L.value END
+            ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.TagEs WHEN 2 THEN v.TagPt ELSE v.TagEn END END AS value
+
+        FROM ccGalateaActivityLog L
+        JOIN ccGalateaModules M WITH (INDEX (IX_ccGalateaModules_Mod)) ON L.ModuleId = M.ModuleId
+        JOIN ccGalateaOperations O WITH (INDEX (IX_ccGalateaOperations_Op)) ON L.OperationId = O.OperationId
+        LEFT JOIN targetRecord t ON t.targetT = L.target
+        LEFT JOIN ccGalateaIdentifiers i ON i.Description = L.Identifier
+        LEFT JOIN ccGalateaIdentifiers v ON v.Description = L.Value
+        LEFT JOIN ccUsers CU ON CU.Login = L.login
+        WHERE 1=1 
+        AND
+        CU.TipoUser_id = 2''
+        +
+        case isnull(@loginLst, '''') when '''' then '''' else
+        '' AND L.LOGIN in (select value from @tableLogin) ''
+        END
+        +
+        case isnull(@moduleWithOperation, '''') when '''' then '''' else
+        @query
+        end
+        + case ISNULL(@operationDateIni, '''') when '''' then '''' else
+        ''AND L.ActivityDate >= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull('''''' + convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, -1, '''''' + convert(varchar(19), @operationDateIni, 121) + '''''') ELSE L.ActivityDate END ''
+        + '' AND L.ActivityDate <= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull(''''''+ convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, 1, '''''' + convert(varchar(19), @operationDateFin, 121) + '''''') ELSE L.ActivityDate END''
+        end
+        +
+        '' ORDER BY L.ActivityDate DESC''
+        execute sp_executesql @sql
+        --print @sql
+    END
+
+
+    SET NOCOUNT OFF'
+	EXEC(@sql)
+
 
 	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
 	

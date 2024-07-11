@@ -2905,9 +2905,9 @@ return(0)
 	END'
 	EXEC(@sql)
 
-	set @process = 'K020113 se crea sp ccsp_RIAAdmDelRegs'
+	set @process = 'K02118 create sp ccsp_GalateaChangeHistory'
 	set @sql = '
-	ALTER PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+	CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
     @option TINYINT,
     @loginLst VARCHAR(max) = NULL,
     @moduleWithOperation varchar(max) = NULL,

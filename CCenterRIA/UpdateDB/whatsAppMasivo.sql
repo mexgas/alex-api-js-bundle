@@ -1027,8 +1027,28 @@ SET @process = 'Insert Url para dar de alta plantillas'
 	BEGIN
 		IF(@action = 1)
 		BEGIN
+			;WITH TemplateIsEditable AS (
+				SELECT
+					tb1.Id,
+					CASE 
+						WHEN COUNT(*) >= 10 THEN 2
+						WHEN MAX(tb1.Date) >= CAST(GETDATE() AS DATE) THEN 1
+						ELSE 0
+					END AS IsEditable
+				FROM (
+					SELECT
+						gal.Target AS Id,
+						CAST(gal.ActivityDate AS DATE) AS Date
+					FROM ccGalateaActivityLog gal 
+					WHERE gal.OperationId = 122 
+					AND gal.ModuleId = 20 
+					AND gal.Target = ISNULL(CAST(@whatsAppTemplateID AS VARCHAR(MAX)), gal.target)
+					AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
+				) AS tb1
+				GROUP BY tb1.Id
+			)
 			SELECT 
-			 cmwot.Id 
+			cmwot.Id 
 			,cmwot.TemplateName AS Name
 			,cmwot.Status AS Status
 			,Category AS Category
@@ -1040,7 +1060,9 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			,cmwot.LanguageCode
 			,cmwot.quality AS Quality
 			,cmwot.IsPendingQuality
-			FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+			,ISNULL(tie.IsEditable, 0) AS IsEditable
+			FROM  dbo.ccMetaWAOutboundTemplates cmwot
+			LEFT JOIN TemplateIsEditable tie ON tie.Id = CAST(cmwot.Id AS VARCHAR(MAX))
 			WHERE cmwot.Id = ISNULL(@whatsAppTemplateID, cmwot.Id)
 			AND cmwot.StatusCW = 1
 		END

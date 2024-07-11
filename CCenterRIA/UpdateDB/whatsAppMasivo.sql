@@ -1021,7 +1021,8 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		@footer nvarchar(max) = null,
 		@buttons nvarchar(max) = null,
 		@metaStatus varchar(30) = null,
-		@FilePath varchar(1024) = null
+		@FilePath varchar(1024) = null,
+		@UserId SMALLINT = 0
 	AS
 	BEGIN
 		IF(@action = 1)

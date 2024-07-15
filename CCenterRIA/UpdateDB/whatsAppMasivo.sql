@@ -1118,21 +1118,37 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		END
 		ELSE IF (@action = 8) -- update template
 		BEGIN
+			DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
+			DECLARE @areaName VARCHAR(50),
+					@login VARCHAR(50)
+
+			SELECT
+				@areaName = ca.AreaName,
+				@login = cu.Login
+			FROM ccUsers cu
+			INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+			WHERE cu.User_id = @UserId
+
+			INSERT INTO @tableHistoryLog 
+			SELECT tb.Id, tb.Value
+			FROM dbo.fn_RIASplitDelimited(@HistoryLog, '',,'') tb
+
+
 			-- insert into activity log table and update template data
-			IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '' and before update header contains data
+			IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
 			BEGIN
 				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
 			END
-			IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '' and before update footer contains data
+			IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
 			BEGIN
 				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
 			END
-			IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '' and before update buttons contains data
+			IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
 			BEGIN
 				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (''Default'', GETDATE(), ''root'', 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
 			END
 			
 			EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
@@ -1151,105 +1167,26 @@ SET @process = 'Insert Url para dar de alta plantillas'
 				buttons = @buttons
 			WHERE Id = @Id
 
-			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates''
+			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
 
-			DECLARE @posicionInicialPalabra INT,
-					@posicionFinalPalabra INT,
-					@stringaux VARCHAR(MAX),
-					@value VARCHAR(MAX)
-
-			DECLARE @column VARCHAR(50),
-					@data VARCHAR(MAX),
-					@identifier VARCHAR(50)
-
-			DECLARE cursorTemplates CURSOR FOR
-					SELECT columnInfo, dataInfo, identifierInfo
-					FROM #ccMetaWAOutboundTemplates
-
-			OPEN cursorTemplates
-
-			FETCH NEXT FROM cursorTemplates INTO @column, @data, @identifier
-
-			WHILE @@FETCH_STATUS = 0
-			BEGIN
-				SET @value = ''''
-				IF @column = ''Category''
-				BEGIN
-					SELECT @value = cgi.Description FROM ccGalateaIdentifiers cgi WHERE cgi.TagEn = @data
-				END
-				ELSE IF @column = ''header''
-				BEGIN
-					DECLARE @letraSiguiente VARCHAR(1)
-
-					SET @posicionInicialPalabra = CHARINDEX(''"format":"'', @data)
-					SET @posicionInicialPalabra = @posicionInicialPalabra + LEN(''"format":"'')
-					SET @letraSiguiente = SUBSTRING(@data, @posicionInicialPalabra, 1)
-
-					SET @value = CASE 
-									WHEN @letraSiguiente = ''T'' THEN ''T&META_HEADER_TEXT''
-									WHEN @letraSiguiente = ''L'' THEN ''T&META_HEADER_LOCATION''
-									WHEN @letraSiguiente IN (''I'',''V'',''D'') THEN ''T&META_HEADER_MEDIA''
-									ELSE ''COMMON_NONE_O''
-								END
-				END
-				ELSE IF @column = ''body'' OR @column = ''footer''
-				BEGIN
-					SET @posicionInicialPalabra = CHARINDEX(''"text":"'', @data)
-					SET @posicionInicialPalabra = @posicionInicialPalabra + LEN(''"text":"'')
-					SET @posicionFinalPalabra = CHARINDEX(''"'',@data,@posicionInicialPalabra) - @posicionInicialPalabra
-
-					SET @value = SUBSTRING(@data,@posicionInicialPalabra,@posicionFinalPalabra)
-				END
-				ELSE IF @column = ''buttons''
-				BEGIN
-					DECLARE @tableButtons TABLE (TYPE VARCHAR(25))
-					SET @posicionInicialPalabra = CHARINDEX(''['',@data)
-
-					SET @stringaux = SUBSTRING(@data,@posicionInicialPalabra, LEN(@data))
-
-					WHILE CHARINDEX(''"type":"'',@stringaux) > 0
-					BEGIN
-						SET @posicionInicialPalabra = CHARINDEX(''"type":"'',@stringaux) + LEN(''"type":"'')
-						IF @posicionInicialPalabra > 0
-						BEGIN
-							SET @posicionFinalPalabra = CHARINDEX(''"'',@stringaux,@posicionInicialPalabra)
-							INSERT INTO @tableButtons (TYPE) VALUES (SUBSTRING(@stringaux,@posicionInicialPalabra, @posicionFinalPalabra - @posicionInicialPalabra))
-
-							SET @stringaux = SUBSTRING(@stringaux,@posicionFinalPalabra,LEN(@stringaux) - @posicionFinalPalabra) -- actualizar cadena
-						END
-					END
-
-					IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''PHONE_NUMBER'')
-						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''PHONE_NUMBER'')) + ''-T&META_BUTTON_PHONENUMBER,''
-					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''URL'')
-						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''URL'')) + ''-T&META_BUTTON_URL,''
-					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''QUICK_REPLY'')
-						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''QUICK_REPLY'')) + ''-T&META_BUTTON_QUICKREPLY,''
-					ELSE IF EXISTS(SELECT * FROM @tableButtons WHERE TYPE = ''COPY_CODE'')
-						SET @value = @value + CONVERT(VARCHAR(10),(SELECT COUNT(TYPE) FROM @tableButtons WHERE TYPE = ''COPY_CODE'')) + ''-T&META_BUTTON_COPYCODE,''
-
-					SET @value = LEFT(@value, LEN(@value) - 1)
-				END
-
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				SELECT
-					ca.AreaName,
-					GETDATE(),
-					cu.Login,
-					122,
-					20,
-					@identifier,
-					@value,
-					@TemplateName
-				FROM ccUsers cu
-				INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
-				WHERE cu.User_id = @UserId
-
-				FETCH NEXT FROM cursorTemplates INTO @column, @data, @identifier
-			END
-
-			CLOSE cursorTemplates
-			DEALLOCATE cursorTemplates
+			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+			SELECT
+				@areaName,
+				GETDATE(),
+				@login,
+				122,
+				20,
+				cc.identifierInfo,
+				tb1.Value,
+				@id
+			FROM #ccMetaWAOutboundTemplates cc
+			INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
+																	WHEN tb1.Id = 1 THEN ''Category''
+																	WHEN tb1.Id = 2 THEN ''header'' 
+																	WHEN tb1.Id = 3 THEN ''body'' 
+																	WHEN tb1.Id = 4 THEN ''footer''
+																	WHEN tb1.Id > 4 THEN ''buttons''
+																	END)
 		END
 
 	END

@@ -2261,7 +2261,7 @@ return(0)
         
 
 --------------------------------------------------------------------- END Gaby --------------------------------------------------------------------------
-	------------------------------------------------Inicio Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
+	------------------------------------------------Uriel Cabrera Inicio Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
 	set @process = 'Se elimina ccsp_WhatsappTemplatesStatus si existe'
 	set @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WhatsappTemplatesStatus'')begin
 					DROP PROCEDURE ccsp_WhatsappTemplatesStatus
@@ -2288,8 +2288,8 @@ return(0)
 							else update ccMetaWAOutboundTemplates set quality = @quality where Id = @messageId
 						end'
 	EXEC(@sql)
-	------------------------------------------------Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
-	------------------------------------------------Inicio Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
+	------------------------------------------------Uriel Cabrera Fin Crear Sp de actualizacion de plantillas por webhook-----------------------------------------------------
+	------------------------------------------------Uriel Cabrera Inicio Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
 	set @process = 'Se elimina ccMetaWebhooksConfigurations si existe'
 	set @sql = 'IF EXISTS (SELECT * FROM sys.tables WHERE name = N''ccMetaWebhooksConfigurations'') begin
 					DROP TABLE ccMetaWebhooksConfigurations
@@ -2303,7 +2303,7 @@ return(0)
 						Token varchar(max)
 					);'
 	EXEC(@sql)
-	------------------------------------------------Fin Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
+	------------------------------------------------Uriel Cabrera Fin Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
 	----------------------------------------------------------Begin David------------------------------------------------------------------------------------
 	set @process = 'Se actualiza SP para que se tome infromación de tablas ccWhatsAppOutSource y ccoWAWorkingTable'
 	set @sql = '
@@ -2603,6 +2603,15 @@ return(0)
 	end'
 	EXEC(@sql)
 	----------------------------------------------------------- End Rod Salazar -------------------------------------------------------------------------------
+	----------------------------------------------------------- Uriel Cabrera  Inicio se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
+	set @process = 'Add reconnectMsg column to ccUsers'
+	set @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''reconnectMsg'' AND Object_ID = Object_ID(N''dbo.ccUsers''))
+		BEGIN
+			ALTER TABLE ccUsers ADD reconnectMsg int default 0
+		END'
+	EXEC(@sql)
+	----------------------------------------------------------- Uriel Cabrera  Fin se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
 
 	----------------------------------------------------------- Start Carlos Eduardo Muñoz -------------------------------------------------------------------------------
 	set @process = 'DEV1-600 Se actualizan procedimientos para el despliegue de números meta en campañas de entrada y salida, así como el enlace de números al guardar ajustes.'

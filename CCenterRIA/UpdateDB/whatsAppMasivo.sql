@@ -1063,9 +1063,10 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		END
 		ELSE IF(@action = 5) -- Get Template Config By Id
 		BEGIN
-			SELECT n.WAAccountId, n.Token, ''https://graph.facebook.com/v19.0/WAAccountId/message_templates'' as [Url], t.TemplateName FROM ccMetaWAOutboundTemplates t
+			SELECT n.WAAccountId, n.Token, c.Url as [Url], t.TemplateName 
+			FROM ccMetaWAOutboundTemplates t
 			INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
-			left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
+			left JOIN ccMetaWhatsAppConfigurations c on c.Id = 2
 			WHERE t.Id = @whatsAppTemplateID
 			RETURN 0;
 		END
@@ -2612,6 +2613,26 @@ return(0)
 		END'
 	EXEC(@sql)
 	----------------------------------------------------------- Uriel Cabrera  Fin se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
+	-----------------------------------------------------------BEGIN MACL-----------------------------------------------------
+	set @process = 'Insert Create template in ccGalateaOperations'
+	set @sql = '
+	if not exists(select OperationId from ccGalateaOperations where OperationId=123)
+	begin
+		insert into ccGalateaOperations (OperationId,OpTagEs,OpTagEn,OpTagPt) values (123,''Eliminar plantilla'',''Delete template'',''Excluir modelo'')
+	end'
+	EXEC(@sql)
+
+	set @process = 'Insert Create template in ccGalateaOperations'
+	set @sql = '
+	if not exists(select * from ccGalateaModOpRelation where OperationId=123)
+	begin
+		insert into ccGalateaModOpRelation (ModuleId, OperationId) values (20,123)
+	end'
+	EXEC(@sql)
+
+
+	-----------------------------------------------------------END MACL-------------------------------------------------------
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         --EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         --EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

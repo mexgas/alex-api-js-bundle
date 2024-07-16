@@ -525,10 +525,15 @@ END'
 		EXEC(@sql)
 
 		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
-        SET @sql = 'IF OBJECT_ID(''dbo.fnGetTraducedIdentifiers'', ''IF'') IS NOT NULL
-		BEGIN
-			DROP FUNCTION dbo.fnGetTraducedIdentifiers;
-		END';
+        SET @sql = 'IF EXISTS (
+    SELECT * 
+    FROM sys.objects 
+    WHERE object_id = OBJECT_ID(N''dbo.fnGetTraducedIdentifiers'') 
+    AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT'')
+)
+BEGIN
+    DROP FUNCTION dbo.fnGetTraducedIdentifiers;
+END';
         EXEC (@sql);
 
 		SET @process = 'Create function [fnGetTraducedIdentifiers]';

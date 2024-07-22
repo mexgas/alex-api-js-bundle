@@ -3272,6 +3272,605 @@ return(0)
 		select @@rowcount
 	end'
 	EXEC(@sql)
+
+	set @process = 'CW-8638 se borra sp ccsp_SaveStatusAgent'
+	set @sql = '
+	IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_SaveStatusAgent'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_SaveStatusAgent
+	END'
+	EXEC(@sql)
+
+	set @process = 'CW-8638 se borra sp ccsp_RIAAdmDelRegs'
+	set @sql = '	
+	CREATE PROCEDURE [dbo].[ccsp_SaveStatusAgent]
+		@User_id smallint,
+		@TipoStatusAge_id tinyint,
+		@TipoNotReady smallint,
+		@tStatus float,
+		@TipoCall  tinyint,
+		@Camp smallint,
+		@callout_id int=0,
+		@call_id int=0,
+		@isLogout smallint=0, --Agrega el tiempo cuando esta dialogo y se desloguea
+		@tDialog float =0 ,
+		@currentStatus int =-2,--NUEVO PARAMETRO PARA LA NUEVA COLUMNA
+		@Fecha4 datetime=null,
+		@tMusicHold int =0,
+		@isTransferEngine bit = 0
+		AS
+
+		if @Fecha4 is null set @Fecha4 = getdate()
+
+		if @TipoCall > 0 set @TipoCall = @TipoCall - 1
+
+		 IF @User_id <= 0 OR (@tStatus = 0 AND @TipoStatusAge_id = 30)
+				RETURN 0;
+
+		declare @cam_id int,@surveycamId int
+		declare @cal_telefono varchar(30)
+		declare @cal_key varchar(40)
+		declare @inbound_id int
+		declare @callBackSurveyClients bit
+		declare @cal_whoHung tinyint
+		DECLARE @cal_tXfer float,   @cal_tRing float
+		declare @cal_tDialog int
+		declare @cal_tNotas float
+		declare @cal_tNotaOri int
+		declare @tMinAVRS smallint
+		declare @calInicio datetime
+		declare @sumCall float
+		declare @cal_manual int 
+
+		set @cal_tNotas =0
+		set @cal_tNotaOri=0
+
+		if @TipoStatusAge_id=32 set @tStatus=CONVERT(DECIMAL(10,2), ROUND(@tStatus, 0, 1))
+
+		set @cal_manual =0
+		--4 Dialog,6 Notas, 27 Notas Fallida
+
+		 IF @TipoStatusAge_id IN (4, 6, 27) AND @call_id > 0 and @isLogout=1
+		BEGIN
+		   if @TipoStatusAge_id=4  set @tDialog=@tStatus --Dialogo
+		   if @TipoStatusAge_id=6  set @cal_tNotas=@tStatus --Notas
+
+   
+			 if @TipoCall = 0 
+			 begin -- BEING IN @TipoCall = 0  ---
+				SELECT @calInicio = cal_Xfer,
+				@sumCall = cal_tXfer + cal_tRing + cal_tDialog + cal_tNotas,
+				@Camp = Inbound_id,
+				@cal_tDialog = cal_tDialog,
+				@cal_tNotaOri = cal_tNotas,
+				@cal_key = cal_Key,
+				@inbound_id = inbound_id,
+				@cal_telefono = cal_ani,
+				@cal_whoHung = cal_whoHung,
+				@cal_tXfer = cal_tXfer,
+				@cal_tRing = cal_tRing
+				FROM ccCallsIN WITH (NOLOCK)
+				WHERE cal_id = @call_id
+				AND statusCall_id = 13
+
+				IF @cal_tXfer = 0 AND @cal_tRing = 0
+				BEGIN
+					SELECT @cal_tXfer = CASE WHEN TipoStatusAge_id = 5 THEN tStatus ELSE @cal_tXfer END,
+						@cal_tRing = CASE WHEN TipoStatusAge_id = 9 THEN tStatus ELSE @cal_tRing END
+					FROM ccLogAgentesDia WITH (NOLOCK)
+					WHERE User_id = @User_id
+						AND callID = @call_id
+						AND Tipo = @TipoCall
+						AND TipoStatusAge_id IN (5, 9)
+				END
+				IF @cal_tDialog = 0 AND @tDialog > 0            
+				BEGIN
+					IF @Fecha4 < DATEADD(ms, (@sumCall + @tDialog + @cal_tNotas) * 1000, @calInicio)
+					BEGIN
+						SET @tStatus = CASE WHEN @tStatus > 0 THEN @tStatus - 1 ELSE @tStatus END
+
+						IF @TipoStatusAge_id = 4
+							SET @tDialog = @tDialog - 1
+
+						IF @TipoStatusAge_id = 6
+						BEGIN
+							IF @cal_tNotas > 0
+								SET @cal_tNotas = @cal_tNotas - 1
+							ELSE
+								SET @tDialog = @tDialog - 1
+						END
+					END
+
+					UPDATE ccCallsIN
+					WITH (ROWLOCK)
+
+					SET cal_tDialog = @tDialog,
+						cal_tNotas = @cal_tNotas,
+						cal_tMoh = @tMusicHold,
+						cal_tXfer=@cal_tXfer,
+						cal_tRing=@cal_tRing
+					WHERE cal_id = @call_id
+						AND statusCall_id = 13
+				END
+				----------------------------
+				IF @isTransferEngine = 1
+				BEGIN 
+					DECLARE @minimoDialogo TINYINT
+
+					SELECT @minimoDialogo = valor
+					FROM ccSettings
+					WHERE setting_id = 13
+
+					IF @cal_tDialog < @minimoDialogo
+					BEGIN
+						--el status 18 es para llamada cortada con transferencia en Reminder
+						EXEC ccsp_RIAUpdateCallBack_Abandon @cal_id = @call_id, @nStatus = 18
+					END
+				END
+				-----------------------------
+			 END -- END IN @TipoCall = 0  ---
+			 Else 
+			 begin -- BEING IN @TipoCall = 1  ---
+				SELECT @calInicio = cal_inicio,
+				@sumCall = cal_tXfer + cal_tRing + cal_tDialog + cal_tNotas,
+				@cam_id = cam_id,
+				@cal_tDialog = cal_tDialog,
+				@cal_tNotaOri = cal_tNotas,
+				@cal_tXfer = cal_tXfer,
+				@cal_tRing = cal_tRing
+				FROM ccoCallsOut WITH (NOLOCK)
+				WHERE cal_id = @call_id
+
+				SET @Camp = @cam_id
+
+				if @cal_tXfer=0 and @cal_tRing=0 begin
+					SELECT @cal_tXfer = CASE WHEN TipoStatusAge_id = 5 THEN tStatus ELSE @cal_tXfer END,
+					@cal_tRing = CASE WHEN TipoStatusAge_id = 9 THEN tStatus ELSE @cal_tRing END
+					FROM ccLogAgentesDia WITH (NOLOCK)
+					WHERE User_id = @User_id
+					AND callID = @call_id
+					AND Tipo = @TipoCall
+					AND TipoStatusAge_id IN (5, 9)
+
+				end
+
+				if @cal_tDialog = 0 and @tDialog>0 begin
+					IF @Fecha4 < DATEADD(ss, @sumCall + @tDialog + @cal_tNotas, @calInicio)
+						BEGIN
+							SET @tStatus = CASE WHEN @tStatus > 0 THEN @tStatus - 1 ELSE @tStatus END
+
+							IF @TipoStatusAge_id = 4
+								SET @tDialog = @tDialog - 1
+							IF @TipoStatusAge_id = 6
+							BEGIN
+								IF @cal_tNotas > 0
+									SET @cal_tNotas = @cal_tNotas - 1
+								ELSE
+									SET @tDialog = @tDialog - 1
+							END
+						END
+
+						UPDATE ccoCallsOut
+						WITH (ROWLOCK)
+						SET cal_tDialog = @tDialog,
+							totalCall_Time = @tDialog,
+							cal_tNotas = @cal_tNotas,
+							cal_tMoh = @tMusicHold,
+							cal_tXfer = @cal_tXfer,
+							cal_tRing = @cal_tRing
+						WHERE cal_id = @call_id
+							AND statusCall_id = 13
+
+				end
+				else if @TipoStatusAge_id=4 and @cal_tDialog = 0 and @tDialog>0
+					update ccoCallsOut with(rowlock) set cal_tDialog=@tDialog, totalCall_Time=@tDialog  
+					,cal_tXfer=@cal_tXfer,cal_tRing=@cal_tRing
+					where cal_id = @call_id
+				else if @TipoStatusAge_id=6 and @cal_tNotaOri = 0 and @cal_tNotas>0
+					update ccoCallsOut with(rowlock) set cal_tNotas=@cal_tNotas 
+					,cal_tXfer=@cal_tXfer,cal_tRing=@cal_tRing
+					where cal_id = @call_id 
+			 END -- END OUT @TipoCall = 1  ---
+    
+			select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+			if (@cal_tDialog>=@tMinAVRS or @tDialog>=@tMinAVRS) and @isLogout=1 and @cal_manual<>1 begin
+				insert ccAVRSTransfer (cal_id, tipo) values (@call_id, @TipoCall)
+			end
+
+			if @TipoStatusAge_id in(6,27) begin
+			--Valida que el agente no pudo guardar el status antes de desloguear
+			if not exists(select  * from ccLogAgentesDia with(nolock) where User_id=@User_id and TipoStatusAge_id=4 and fecha between dateadd(ss,-@tDialog-@tStatus-@cal_tNotaOri-2,@Fecha4) and @Fecha4 )
+				INSERT ccLogAgentesDia ( User_id, TipoStatusAge_id, tStatus, fecha, IdCampEsp, Tipo,currentStatus,callID ) VALUES( @User_id, 4, @tDialog, DATEADD(ss,-@tStatus, @Fecha4), @Camp, @TipoCall,@TipoStatusAge_id,@call_id )
+			end
+		end --@TipoStatusAge_id IN (4, 6, 27) AND @call_id > 0 and @isLogout=1 --
+
+
+		IF (@TipoStatusAge_id = 4)
+		BEGIN -- 4 = Dialogo
+			DECLARE @tStatus3 FLOAT, @Fecha3 DATETIME
+
+			SELECT TOP 1 @tStatus3 = tstatus, @Fecha3 = fecha
+			FROM ccLogAgentesDia WITH (NOLOCK)
+			WHERE TipoStatusAge_id = 3 AND user_id = @User_id
+			ORDER BY fecha DESC
+
+			INSERT INTO ccLogAgentesDia_Dialog (
+				User_id,
+				Cam_id,
+				fecha_Calc_ms,
+				tStatus_Dispo,
+				fecha_Dispo,
+				tStatus_Dialog,
+				fecha_Dialog
+				)
+			SELECT @User_id, cam_id,
+				datediff(ms, dateadd(ms, - (@tStatus3 * 1000), @Fecha3), dateadd(ms, - (@tStatus3 * 1000
+							), @Fecha4)),
+				@tStatus3,
+				@Fecha3,
+				@tStatus,
+				@Fecha4
+			FROM cccampsagente
+			WHERE user_id = @User_id
+
+			---Agregar callback en caso de este activo setting en campañas o acd y tenga relacion de campaña de encuesta
+			IF @call_id > 0
+			BEGIN
+				IF @TipoCall = 0
+				BEGIN --IN
+					SELECT @surveycamid = isnull(extend.SurveyCamId, 0),
+						@callBackSurveyClients = i.callBackSurveyClient
+					FROM ccinbound i
+					LEFT JOIN ccInboundExtend extend
+						ON i.inbound_id = extend.inbound_id
+					WHERE i.inbound_id = @inbound_id
+
+					IF @surveycamId > 0
+						AND (
+							@callBackSurveyClients = 1
+							OR @cal_whoHung = 1
+							)
+					BEGIN
+						IF EXISTS (
+								SELECT cam_id
+								FROM cccamps
+								WHERE cam_id = @surveycamid
+									AND isnull(callsBySurvey, 0) > 0
+									AND isnull(ivrScript, 0) > 0
+								)
+						BEGIN
+							IF (
+									SELECT surveyPctg
+									FROM ccCamps
+									WHERE cam_id = @surveycamid
+									) >= rand() * 100
+							BEGIN
+								INSERT INTO ccoCallsOUTSource (
+									cal_Key,
+									cam_id,
+									cal_telefono,
+									cal_status,
+									cal_fechaDial
+									)
+								VALUES (
+									right((cast(@call_id AS VARCHAR) + '''' + @cal_Key), 40),
+									@surveycamid,
+									@cal_telefono,
+									0,
+									dateadd(mi, 6, getdate())
+									)
+							END
+						END
+					END
+				END --@TipoCall = 0
+				ELSE
+				BEGIN --OUT
+					SELECT @surveycamId = isnull(surveycamid, 0),
+						@callBackSurveyClients = callBackSurveyClient
+					FROM cccamps
+					WHERE cam_id = @cam_id
+
+					SELECT @cal_key = cal_Key,
+						@cam_id = cam_id,
+						@cal_telefono = cal_telefono,
+						@cal_whoHung = cal_whoHung
+					FROM ccoCallsOUT WITH (
+							INDEX (IX_ccoCallsOut_11),
+							NOLOCK
+							)
+					WHERE callout_id = @callout_id
+						AND statusCall_id = 13
+						AND cal_id = @call_id
+
+					IF @surveycamId > 0
+						AND (
+							@callBackSurveyClients = 1
+							OR @cal_whoHung = 1
+							)
+					BEGIN
+						IF (
+								SELECT surveyPctg
+								FROM ccCamps
+								WHERE cam_id = @surveycamId
+								) >= rand() * 100
+						BEGIN
+							INSERT INTO ccoCallsOUTSource (
+								cal_Key,
+								cam_id,
+								cal_telefono,
+								cal_status,
+								cal_fechaDial
+								)
+							VALUES (
+								right((cast(@call_id AS VARCHAR) + '''' + @cal_Key), 40),
+								@surveycamid,
+								@cal_telefono,
+								0,
+								dateadd(mi, 6, getdate())
+								)
+						END
+					END
+				END
+			END --@callout_id>0
+		END --End -- 4 = Dialogo
+
+
+		IF @isLogout = 0 AND @TipoStatusAge_id = 6
+		BEGIN --- BEGIN Insert ccLogAgentesDia @isLogout = 0 AND @TipoStatusAge_id = 6 -----
+			--Valida que el ccserver no haya guardado antes el status antes al desloguear
+			IF NOT EXISTS (
+					SELECT *
+					FROM ccLogAgentesDia WITH (NOLOCK)
+					WHERE User_id = @User_id
+						AND TipoStatusAge_id = 4
+						AND fecha BETWEEN dateadd(ss, - 10, @Fecha4) AND @Fecha4
+						AND tStatus = @tStatus + 1
+					)
+			BEGIN
+				INSERT ccLogAgentesDia (
+					User_id,
+					TipoStatusAge_id,
+					tStatus,
+					fecha,
+					IdCampEsp,
+					Tipo,
+					currentStatus,
+					callID
+					)
+				VALUES (
+					@User_id,
+					@TipoStatusAge_id,
+					@tStatus,
+					@Fecha4,
+					@Camp,
+					@TipoCall,
+					@currentStatus,
+					@call_id
+					)
+
+				IF NOT EXISTS (
+						SELECT *
+						FROM [ccLogAgentesDiaLast]
+						WHERE User_id = @User_id
+						)
+				BEGIN
+					INSERT [ccLogAgentesDiaLast] (
+						User_id,
+						TipoStatusAge_id,
+						tStatus,
+						fecha,
+						IdCampEsp,
+						Tipo,
+						currentStatus,
+						callID
+						)
+					VALUES (
+						@User_id,
+						@TipoStatusAge_id,
+						@tStatus,
+						@Fecha4,
+						@Camp,
+						@TipoCall,
+						@currentStatus,
+						@call_id
+						)
+				END
+				ELSE
+				BEGIN
+					UPDATE [ccLogAgentesDiaLast]
+					SET TipoStatusAge_id = @TipoStatusAge_id,
+						tStatus = @tStatus,
+						fecha = @Fecha4,
+						IdCampEsp = @Camp,
+						Tipo = @TipoCall,
+						currentStatus = @currentStatus,
+						callID = @call_id
+					WHERE USER_ID = @User_id
+				END
+			END
+		END --- END Insert ccLogAgentesDia @isLogout = 0 AND @TipoStatusAge_id = 6 -----
+		ELSE 
+		BEGIN --- BEGIN ELSE DIFF -----
+			INSERT ccLogAgentesDia (
+				User_id,
+				TipoStatusAge_id,
+				tStatus,
+				fecha,
+				IdCampEsp,
+				Tipo,
+				currentStatus,
+				callID
+				)
+			VALUES (
+				@User_id,
+				@TipoStatusAge_id,
+				@tStatus,
+				@Fecha4,
+				@Camp,
+				@TipoCall,
+				@currentStatus,
+				@call_id
+				)
+
+			IF NOT EXISTS (
+					SELECT *
+					FROM [ccLogAgentesDiaLast]
+					WHERE User_id = @User_id
+					)
+			BEGIN
+				INSERT [ccLogAgentesDiaLast] (
+					User_id,
+					TipoStatusAge_id,
+					tStatus,
+					fecha,
+					IdCampEsp,
+					Tipo,
+					currentStatus,
+					callID
+					)
+				VALUES (
+					@User_id,
+					@TipoStatusAge_id,
+					@tStatus,
+					@Fecha4,
+					@Camp,
+					@TipoCall,
+					@currentStatus,
+					@call_id
+					)
+			END
+			ELSE
+			BEGIN
+				UPDATE [ccLogAgentesDiaLast]
+				SET TipoStatusAge_id = @TipoStatusAge_id,
+					tStatus = @tStatus,
+					fecha = @Fecha4,
+					IdCampEsp = @Camp,
+					Tipo = @TipoCall,
+					currentStatus = @currentStatus,
+					callID = @call_id
+				WHERE USER_ID = @User_id
+			END
+		END --- END ELSE DIFF -----
+
+
+		IF (@TipoStatusAge_id = 2)
+		BEGIN  -- 2 = No Disponible
+			INSERT ccLogAgentesNotReady (
+				User_id,
+				TipoNotReady_id,
+				tStatus,
+				fecha,
+				IdCampEsp,
+				Tipo
+				)
+			VALUES (
+				@User_id,
+				@TipoNotReady,
+				@tStatus,
+				@Fecha4,
+				@Camp,
+				@TipoCall
+				)
+
+			---Para Agente RIA: OAYC
+			INSERT ccRIALogAgentesNotReady (
+				User_id,
+				TipoNotReady_id,
+				tStatus,
+				fecha
+				)
+			VALUES (
+				@User_id,
+				@TipoNotReady,
+				@tStatus,
+				@Fecha4
+				)
+		END
+
+
+		-- Actualiza para reporte de tiempos especiales (Boan)
+		IF @Camp > 0
+		BEGIN
+			IF EXISTS (
+					SELECT *
+					FROM ccLogAgentesDia WITH (
+							INDEX (IX_ccLogAgentesDia_5),
+							NOLOCK
+							)
+					WHERE IdCampEsp = 0
+						AND user_id = @User_id
+					)
+			BEGIN
+				UPDATE ccLogAgentesDia
+				WITH (ROWLOCK)
+
+				SET IdCampEsp = @Camp,
+					Tipo = @TipoCall
+				WHERE IdCampEsp = 0
+					AND user_id = @User_id
+			END
+
+			IF EXISTS (
+					SELECT *
+					FROM ccLogAgentesNotReady WITH (
+							INDEX (IX_ccLogAgentesNotReady_4),
+							NOLOCK
+							)
+					WHERE IdCampEsp = 0
+						AND user_id = @User_id
+					)
+			BEGIN
+				UPDATE ccLogAgentesNotReady
+				WITH (ROWLOCK)
+
+				SET IdCampEsp = @Camp,
+					Tipo = @TipoCall
+				WHERE IdCampEsp = 0
+					AND user_id = @User_id
+			END
+		END
+
+
+		IF (
+				@TipoStatusAge_id = 34
+				AND @call_id > 0
+				) -- Dialogo WhatsApp
+		BEGIN
+			IF @TipoCall = 0
+			BEGIN
+				UPDATE ccWhatsAppConversations
+				SET tChatting = (tChatting + @tStatus)
+				WHERE conversationId = @call_id;
+
+				SET @Camp = (
+						SELECT inboundId
+						FROM ccWhatsAppConversations
+						WHERE conversationId = @call_id
+						);
+
+				EXEC ccsp_WhatsAppInformation @Option = 2,
+					@InboundId = @Camp
+			END
+			ELSE
+			BEGIN
+				UPDATE ccWhatsAppConversationsOut
+				SET tChatting = (tChatting + @tStatus)
+				WHERE conversationId = @call_id;
+
+				SET @Camp = (
+						SELECT camId
+						FROM ccWhatsAppConversationsOut
+						WHERE conversationId = @call_id
+						);
+
+				EXEC ccsp_WhatsAppInformationOut @Option = 2,
+					@camId = @Camp
+			END
+		END
+'
+	EXEC(@sql)
 	----------------------------------------------------------- End Rod Salazar -------------------------------------------------------------------------------
 	----------------------------------------------------------- Uriel Cabrera  Inicio se agrega la columna reconnect Msg para mensajes despues de desconexion -------------------------------------------------------------------------------
 	set @process = 'Add reconnectMsg column to ccUsers'

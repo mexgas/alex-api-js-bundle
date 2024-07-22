@@ -3499,51 +3499,47 @@ return(0)
 			AS
 			BEGIN
 
-				DECLARE @value varchar(400),
-						@stringFormated VARCHAR(MAX) = '',
-						@flag BIT = 0
+				DECLARE @stringFormated VARCHAR(MAX) = '''';
 
-				DECLARE cursorAddText CURSOR FOR
-						SELECT 
-							(CASE 
-								WHEN cgi.Description IS NULL THEN tb3.Value 
-								ELSE (CASE 
-										WHEN @lang = 0 THEN cgi.TagEs 
-										WHEN @lang = 2 THEN cgi.TagPt 
-										ELSE cgi.TagEn 
-										END) 
-								END) as Value
-						FROM (
-							SELECT tb1.Id, tb1.Value
-							FROM dbo.fn_RIASplitDelimited(@buttons, ',') as tb1
-						) AS tb2
-						CROSS APPLY dbo.fn_RIASplitDelimited(tb2.Value,'-') AS tb3
-						LEFT JOIN ccGalateaIdentifiers cgi ON cgi.Description = tb3.Value
+				WITH ButtonParts AS (
+					SELECT 
+						tb1.Id, 
+						tb3.Value
+					FROM dbo.fn_RIASplitDelimited(@buttons, '','') AS tb1
+					CROSS APPLY dbo.fn_RIASplitDelimited(tb1.Value, ''-'') AS tb3
+				),
+				TranslatedButtons AS (
+					SELECT 
+						CASE 
+							WHEN cgi.Description IS NULL THEN bp.Value 
+							ELSE 
+								CASE 
+									WHEN @lang = 0 THEN cgi.TagEs 
+									WHEN @lang = 2 THEN cgi.TagPt 
+									ELSE cgi.TagEn 
+								END 
+						END AS Value,
+						ROW_NUMBER() OVER (ORDER BY bp.Id) AS rn
+					FROM ButtonParts bp
+					LEFT JOIN ccGalateaIdentifiers cgi ON cgi.Description = bp.Value
+				)
+				SELECT 
+				@stringFormated = STUFF(
+					(SELECT 
+						CASE 
+							WHEN rn % 2 = 1 THEN Value 
+							ELSE '' '' + Value + '', '' 
+						END
+					FROM TranslatedButtons
+					FOR XML PATH(''''), TYPE
+					).value(''.'', ''VARCHAR(MAX)'')
+				, 1, 0, '''');
 
-				OPEN cursorAddText
-
-				FETCH NEXT FROM cursorAddText INTO @value
-
-				WHILE @@FETCH_STATUS = 0
+				IF RIGHT(@stringFormated, 2) = '', ''
 				BEGIN
-					IF @flag = 0
-					BEGIN
-						SET @stringFormated = @stringFormated + @value
-						SET @flag = 1
-					END
-					ELSE
-					BEGIN
-						SET @stringFormated = @stringFormated + ' ' + @value + ', '
-						SET @flag = 0
-					END
-
-					FETCH NEXT FROM cursorAddText INTO @value
+					SET @stringFormated = LEFT(@stringFormated, LEN(@stringFormated) - 1);
 				END
-				CLOSE cursorAddText
-				DEALLOCATE cursorAddText
 
-				SET @stringFormated = LEFT(@stringFormated, LEN(@stringFormated) - 1)
-				--PRINT @stringRes
 				RETURN @stringFormated
 			END
 		END

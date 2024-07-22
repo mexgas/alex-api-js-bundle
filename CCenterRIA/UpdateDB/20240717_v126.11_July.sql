@@ -3490,6 +3490,13 @@ return(0)
 		END
 	'
 	EXEC(@sql)
+	SET @process = 'DEV2-576 K02118 Delete scalar fuction GetMetaButtonTemplateHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+	BEGIN
+		DROP FUNCTION dbo.GetMetaButtonTemplateHistory
+	END'
+	EXEC(@sql)
 	SET @process = 'DEV2-576 K02118 Create scalar fuction GetMetaButtonTemplateHistory'
 	SET @sql = '
 		IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))

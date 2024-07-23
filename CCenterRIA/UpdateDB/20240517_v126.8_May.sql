@@ -92,7 +92,244 @@ BEGIN
 		end';
 	   EXEC (@sql);
 
+	   set @process = 'insertar ccMenus'
+		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 13030)
+		begin
+		INSERT INTO ccMenus (menu_id, menu_descrip, parent, nivel, ordengral, [type], HelpSWF, release)
+		VALUES(13030, ''Detalle de segmentos|Segments Detail'',13000, ''B'', 12, 3, '''', ''fee5fe879970dad2b6f13aa6ef504e25910de557e916feed5fa87425cd9c1446e86bcbcd45690b7776892c78d673a271'' )
+		end'
+		EXEC(@sql)
+
+		set @process = 'Insert relation user-menu'
+		set @sql = 'IF not exists (select 1 from ccMenuUser where id_User = 1 and id_Menu = 13030)
+		BEGIN
+		INSERT INTO ccMenuUser(id_User, id_Menu, type) VALUES (1, 13030,3)
+		END'
+		EXEC(@sql)
+
+		set @process = 'update reportes 2120, 2130'
+		set @sql = '
+		update ccmenus set 
+		release=''fffe3e1af96616008d0b5b3f644e16cf792d8be7cfe33d4b93a43208ee10d77da093aaa985dcf1d0fe1952499fc34801be116ff32af2f5336b1563861cb91646'' 
+		where type=3 and menu_id=2120
+
+
+		update ccmenus set 
+		release=''d0df11930b9ac68aa5866c2760e456b7b5a686b8d838d01ab8ae7f4db57a2ff1418b4220a5daa1e20c6857d053450c444c77e33264bc19586d1c950b29c2fcb4'' 
+		where type=3 and menu_id=2130'
+		EXEC(@sql)
+
+
+		set @process = 'Inserts into ccGalateaIdentifiers'
+		set @sql = 'IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''CREATE_ROLE_USERS'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''CREATE_ROLE_USERS'',''Usuarios'', ''Users'', ''Usuários'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''CREATE_ROLE_PERMISSIONS'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''CREATE_ROLE_PERMISSIONS'',''Permisos'', ''Permissions'', ''Permissões'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''EDIT_ROLE_NAME'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''EDIT_ROLE_NAME'','' Nombre'', ''Name'', ''Nome'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10014'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10014'',''Gestionar horarios'',''Manage schedules'',''Gerenciar horários'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10005'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10005'',''Eliminar registros ‘nuevos’'',''Delete ‘new’ records'',''Excluir registros ‘novos’'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10002'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10002'',''Cargar registros'',''Load records'',''Carregar registros'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10006'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10006'',''Eliminar registros ‘devolver llamada’'',''Delete ‘callback’ records'',''Excluir registros ‘retornar chamada’'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10001'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10001'',''Iniciar/detener campañas'',''Start/stop campaigns'',''Iniciar/parar campanhas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10003'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10003'',''Acceder a CenterScript'',''Access CenterScript'',''Acessar o CenterScript'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10004'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10004'',''Gestionar roles de usuario'',''Manage user roles'',''Gerenciar funções de usuário'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10007'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10007'',''Monitorear áreas'',''Monitor areas'',''Monitorar áreas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10008'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10008'',''Gestionar áreas'',''Manage areas'',''Gerenciar áreas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10011'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10011'',''Gestionar ajustes de campaña'',''Manage campaign settings'',''Gerenciar ajustes de campanha'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10012'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10012'',''Gestionar puertos'',''Manage ports'',''Gerenciar portas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10010'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10010'',''Gestionar permisos de agente'',''Manage agent permissions'',''Gerenciar permissões de agente'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10009'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10009'',''Gestionar estados de No Disponible'',''Manage unavailable options'',''Gerenciar tipos de não disponível'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10015'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10015'',''Gestionar chat con agentes'',''Manage agent chat'',''Gerenciar chat com agentes'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10016'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10016'',''Supervisar llamadas (todas las opciones)'',''Supervise calls (all features)'',''Supervisionar chamadas (todas as opções)'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10017'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10017'',''Supervisar llamadas (solo monitoreo)'',''Supervise calls (monitoring only)'',''Supervisionar chamadas (somente monitoramento)'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10018'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10018'',''Gestionar formatos de evaluación'',''Manage scoring templates'',''Gerenciar modelos de avaliação'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10019'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10019'',''Acceder a historial de actividad'',''Access activity log'',''Acessar o histórico de atividade'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10020'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10020'',''Gestionar inicio automático'',''Manage automatic start'',''Gerenciar início automático'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10021'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10021'',''Gestionar calificaciones'',''Manage dispositions'',''Gerenciar classificações'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10022'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10022'',''Gestionar factor de marcación fijo'',''Manage fixed dialing rate'',''Gerenciar fator de discagem fixo'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10023'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10023'',''Gestionar listas de ANI local'',''Manage local ANI lists'',''Gerenciar listas de ANI local'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10024'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10024'',''Gestionar números DNIS'',''Manage DNIS numbers'',''Gerenciar números DNIS'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10025'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10025'',''Gestionar listas negras'',''Manage DNC lists'',''Gerenciar listas negras'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10026'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10026'',''Acceder a reportes'',''Access reports'',''Acessar os relatórios'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10027'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10027'',''Acceder a buscador'',''Access finder'',''Acessar o localizador'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10028'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10028'',''Asociar campañas'',''Associate campaigns'',''Associar campanhas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10029'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10029'',''Gestionar mensajes automáticos'',''Manage automatic messages'',''Gerenciar mensagens automáticas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10031'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10031'',''Gestionar directorio de transferencia'',''Manage transfer list'',''Gerenciar catálogo de transferência'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10030'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10030'',''Gestionar administradores conectados'',''Manage online administrators'',''Gerenciar administradores conectados'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10032'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10032'',''Gestionar devolución de llamadas'',''Manage callback configuration'',''Gerenciar retorno de chamadas'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10033'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10033'',''Reciclar registros'',''Recycle records'',''Reciclar registros'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10036'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10036'',''Gestionar segmentos'',''Manage segments'',''Gerenciar segmentos'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10037'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10037'',''Cargar registros por segmento'',''Load records by segment'',''Carregar registros por segmento'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10038'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10038'',''Gestionar validaciones'',''Manage verifications'',''Gerenciar verificações'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10039'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10039'',''Gestionar plantillas de SMS'',''Manage SMS templates'',''Gerenciar modelos de SMS'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10034'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10034'',''Monitorear áreas y asignar/desasignar usuarios'',''Monitor areas and assign/unassign users'',''Monitorar áreas e atribuir/não atribuir usuários'')
+END
+
+IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''10035'')
+BEGIN
+    INSERT INTO ccGalateaIdentifiers VALUES (''10035'',''Acceder a buscador (sin descarga de archivos)'',''Access finder (except file downloads)'',''Acessar o localizador (sem baixar arquivos)'')
+END
+'
+		EXEC(@sql)
+
 		----------------------------------------------------- END Ulises KR134024 KR134025 KR134026 KR134027  ----------------------------------------------------------------
+		
         ----------------------------------------------------- BEGIN KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
     	SET @process = 'KR134000 Creación de tabla de status de referencia para email de mensajes sms. ';
     	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ccSmsEmailResultStatus'')
@@ -121,20 +358,22 @@ BEGIN
         SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ccSmsResponseMessages'')
                     BEGIN
                         CREATE TABLE ccSmsResponseMessages (
-                            Id INT PRIMARY KEY IDENTITY(1,1),
-                            Destination VARCHAR(32) NOT NULL,
-                            Source VARCHAR(32) NOT NULL,
-                            Text NVARCHAR(MAX) NOT NULL,
-                            Date DATETIME NOT NULL,
-                            SystemApiId VARCHAR(100) NOT NULL, 
-                            EmailAttempts INT NOT NULL DEFAULT 0,
-                            EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
-                        );
+					        Id INT PRIMARY KEY IDENTITY(1,1),
+					        Destination VARCHAR(32) NOT NULL,
+					        Source VARCHAR(32) NOT NULL,
+					        Text NVARCHAR(MAX) NOT NULL,
+					        Date DATETIME NOT NULL,
+							SystemApiId VARCHAR(100) NOT NULL, 
+							EmailAttempts INT NOT NULL DEFAULT 0,
+							EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
+							CampaignId INT NOT NULL DEFAULT 0,
+							SmsOutId INT NOT NULL DEFAULT 0
+					    );
                     END';
         EXEC (@sql);
 
         SET @process = 'KR134000 Se crea índice para SystemApiId';
-        SET @sql = 'IF OBJECT_ID(N''IX_ccSmsResponseMessages_SystemApiId'', N''INDEX'') IS NULL
+        SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N''IX_ccSmsResponseMessages_SystemApiId'' AND object_id = OBJECT_ID(N''ccSmsResponseMessages''))
                     BEGIN
                         CREATE INDEX IX_ccSmsResponseMessages_SystemApiId ON ccSmsResponseMessages (SystemApiId);
                     END';
@@ -144,15 +383,16 @@ BEGIN
         SET @sql = 'IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = N''ProcessingSmsClientMessagesEmails'')
                     BEGIN
                         CREATE TABLE ProcessingSmsClientMessagesEmails (
-                            Destination VARCHAR(32) NOT NULL,
-                            Source VARCHAR(32) NOT NULL,
-                            Text NVARCHAR(MAX) NOT NULL,
-                            Date DATETIME NOT NULL,
-                            SystemApiId VARCHAR(100) NOT NULL, 
-                            UserEmail NVARCHAR(255), 
-                            EmailAttempts INT NOT NULL DEFAULT 0,
-                            EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
-                        );
+							Destination VARCHAR(32) NOT NULL,
+							Source VARCHAR(32) NOT NULL,
+							Text NVARCHAR(MAX) NOT NULL,
+							Date DATETIME NOT NULL,
+							SystemApiId VARCHAR(100) NOT NULL, 
+							UserEmail NVARCHAR(255), 
+							CampaignId INT DEFAULT 0, 
+							EmailAttempts INT NOT NULL DEFAULT 0,
+							EmailResultStatus SMALLINT NOT NULL DEFAULT 0,
+						);
                     END';
         EXEC (@sql);
 
@@ -170,12 +410,14 @@ BEGIN
 					@Source VARCHAR(32) = NULL,
 					@Text VARCHAR(MAX) = NULL,
 					@Date DATETIME = NULL,
-					@SystemApiId VARCHAR(100) = NULL
+					@SystemApiId VARCHAR(100) = NULL,
+					@CampaignId INT = 0,
+					@SmsOutId INT = 0
 					AS
 
 					IF @Action IS NOT NULL BEGIN
 					    IF @Action = 0 BEGIN        -- Insert new client message
-					        INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId)
+					        INSERT INTO ccSmsResponseMessages (Destination, Source, Text, Date, SystemApiId, CampaignId, SmsOutId) VALUES (@Destination, @Source, @Text, @Date, @SystemApiId, @CampaignId, @SmsOutId)
 					    END
 
 					    IF @Action = 1 BEGIN        -- Get sender email information
@@ -187,7 +429,7 @@ BEGIN
 								   U.Login AS AdminName,
 					               U.notificationEmail AS AdminEmail
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
 					        INNER JOIN ccSupervisorCam SC ON SC.cam_id = LD.cam_id 
 					        INNER JOIN ccUsers U ON U.User_id = SC.user_id
 					        WHERE RM.EmailResultStatus <> 1     -- Get all non successful email messages
@@ -196,7 +438,8 @@ BEGIN
 					    END
 
 					    IF @Action = 3 BEGIN        -- Get messages to send an email
-					        SELECT  RM.Destination, 
+					        SELECT  DISTINCT 
+									RM.Destination, 
 					                RM.Source, 
 					                RM.Text, 
 					                RM.Date, 
@@ -205,8 +448,8 @@ BEGIN
 					                RM.EmailResultStatus,
 					                RM.EmailAttempts
 					        FROM ccSmsResponseMessages RM
-					        INNER JOIN smsccoLogDial LD ON LD.SystemApiId = RM.SystemApiId
-					        WHERE  RM.EmailResultStatus <> 1 
+					        INNER JOIN smsccoLogDial LD WITH(NOLOCK) ON LD.registryClient = RM.SystemApiId
+					        WHERE  RM.EmailResultStatus <> 1 AND RM.CampaignId = LD.cam_id AND RM.SmsOutId = LD.smsout_id
 					    END
 
 					    IF @Action = 4 BEGIN        -- Update email attempts and status 
@@ -257,6 +500,236 @@ BEGIN
         EXEC (@sql);
         
         ----------------------------------------------------- END KR134000-SMS Masivo Muñoz, Ivan Martin  ----------------------------------------------------------------
+
+		----------------------------------------------------- BEGIN Ulises SP's ----------------------------------------------------------------
+		SET @process = 'Drop ccsp_GalateaGetUsersAddedToRol';
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaGetUsersAddedToRol'')
+                    BEGIN
+                      DROP PROCEDURE ccsp_GalateaGetUsersAddedToRol
+                    END';
+        EXEC (@sql);
+
+		set @process = 'CREATE PROCEDURE ccsp_GalateaGetUsersAddedToRol'
+		set @sql = 'CREATE PROCEDURE ccsp_GalateaGetUsersAddedToRol
+    @UserIds NVARCHAR(MAX)
+AS
+BEGIN
+    SELECT 
+        STUFF(
+            (SELECT '','' + login 
+             FROM ccUsers 
+             WHERE User_id IN (SELECT value As [User_id] FROM fn_RIASplitDelimited(@UserIds, '',''))
+             FOR XML PATH(''''), TYPE
+            ).value(''.'', ''NVARCHAR(MAX)''), 1, 1, '''') AS Logins
+END'
+		EXEC(@sql)
+
+		SET @process = 'Drop function [fnGetTraducedIdentifiers]';
+        SET @sql = 'IF EXISTS (
+    SELECT * 
+    FROM sys.objects 
+    WHERE object_id = OBJECT_ID(N''dbo.fnGetTraducedIdentifiers'') 
+    AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT'')
+)
+BEGIN
+    DROP FUNCTION dbo.fnGetTraducedIdentifiers;
+END';
+        EXEC (@sql);
+
+		SET @process = 'Create function [fnGetTraducedIdentifiers]';
+        SET @sql = 'CREATE function [dbo].[fnGetTraducedIdentifiers](@identifiers varchar(max), @lang int)
+        RETURNS varchar(max)
+        AS
+        BEGIN
+
+        DECLARE @result VARCHAR(MAX);
+
+        ;WITH temp AS (
+            SELECT value AS identifier
+            FROM dbo.fn_RIASplitDelimited(@identifiers, '','')
+        ),
+        tradIdentifiers AS (
+            SELECT 
+                CASE 
+                    WHEN i.Description IS NOT NULL THEN
+                        CASE 
+                            WHEN @lang = 0 THEN i.TagEs 
+                            WHEN @lang = 1 THEN i.TagEn 
+                            ELSE i.TagPt
+                        END
+                    ELSE a.identifier 
+                END AS identifier
+            FROM temp a
+            LEFT JOIN ccGalateaIdentifiers i ON a.identifier = i.Description
+        )
+
+        SELECT @result = STUFF((
+            SELECT '','' + identifier
+            FROM tradIdentifiers
+            FOR XML PATH(''''), TYPE).value(''.'', ''VARCHAR(MAX)''), 1, 1, '''');
+
+        RETURN @result;
+
+        END';
+        EXEC (@sql);
+
+
+		SET @process = 'Drop [ccsp_GalateaChangeHistory]';
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccsp_GalateaChangeHistory'')
+                    BEGIN
+                      DROP PROCEDURE [ccsp_GalateaChangeHistory]
+                    END';
+        EXEC (@sql);
+
+		SET @process = 'CREATE SP [ccsp_GalateaChangeHistory]';
+        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+    @option TINYINT,
+    @loginLst VARCHAR(max) = NULL,
+    @moduleWithOperation varchar(max) = NULL,
+    @operationDateIni SMALLDATETIME = NULL,
+    @operationDateFin SMALLDATETIME = NULL,
+    @top INT = 0
+    AS
+    SET NOCOUNT ON
+
+    DECLARE @lang TINYINT
+
+    SELECT @lang = valor
+    FROM ccsettings
+    WHERE setting_id = 27
+
+    IF @option = 1 -- Catalogo de modulos
+    BEGIN
+        WITH Catalog AS(
+        SELECT m.ModuleId as module_id, o.OperationId as operationType, 
+        CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS mDescripcion, 
+        CASE @lang WHEN 0 THEN OpTagEs WHEN 2 THEN OpTagPt ELSE OpTagEn END AS oDescripcion
+        FROM ccGalateaOperations o WITH (INDEX (IX_ccGalateaOperations_Op))
+        JOIN ccGalateaModOpRelation r ON o.OperationId = r.OperationId
+        JOIN ccGalateaModules m WITH (INDEX (IX_ccGalateaModules_Mod)) ON r.ModuleId = m.ModuleId --WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
+		
+        UNION
+
+        SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+
+        UNION
+
+        SELECT ModuleId as module_id, 0, CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, 
+        CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT ModuleId as module_id, - 1 , CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, '' - ''
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod)))
+
+        SELECT module_id,operationType,mDescripcion,oDescripcion 
+        FROM Catalog
+        ORDER BY mDescripcion, oDescripcion
+
+        RETURN (0)
+    END
+
+    IF @option = 2 -- Muestra informacion por filtros
+    BEGIN
+
+        declare @sql as nvarchar(max)
+        DECLARE @table TABLE(id int,value varchar(max))
+        declare @id int
+        declare @moduleId varchar(max)
+        declare @operationLst varchar(max)
+        declare @query varchar(max) = '' and (''
+        declare @value varchar(max)
+        declare @first int = 1
+        declare @pos int
+
+        insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
+        while exists(select * from @table)
+        begin
+            select top 1 @id = id, @value = value from @table
+            set @pos = charindex('':'', @value)
+            if(@pos <> 0)
+            begin
+                set @moduleId = substring(@value, 1, @pos-1)
+                set @operationLst = replace(substring(@value, @pos+1, len(@value)), ''-'', '','')
+                if(@first = 1)
+                begin
+                    set @query = @query + ''l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                    set @first = 0
+                end
+                else
+                begin
+                    set @query = @query + '' or l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                end
+            end
+
+            delete @table where id = @id
+        end
+        set @query = @query + '')''
+
+
+        SET ROWCOUNT @top
+
+        set @sql =
+        ''DECLARE @tableLogin TABLE(id int,value varchar(255))
+        insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
+
+        SELECT L.LogId as log_id, L.Area as areaName, L.ActivityDate as operationDate,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN O.OpTagEs WHEN 2 THEN O.OpTagPt ELSE O.OpTagEn END operationType,
+        L.LOGIN,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN M.MTagEs WHEN 2 THEN M.MTagPt ELSE M.MTagEn END module_id,
+        CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
+        CASE WHEN i.description IS NULL THEN L.Identifier ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN i.TagEs WHEN 2 THEN i.TagPt ELSE i.TagEn END END +
+        CASE WHEN L.Identifier<>'''''''' AND L.Value<>'''''''' THEN '''': '''' ELSE '''''''' END +
+
+
+        CASE WHEN V.description IS NULL 
+            THEN 
+                CASE 
+                    WHEN L.Identifier<>'''''''' AND (L.Identifier LIKE ''''COMMON_DELETE_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_ADD_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_DATE%'''')
+                        THEN dbo.GetDateByLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+                    ''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''OUT_SIP_IDENTIFIER'''' THEN dbo.GetSipLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+				''WHEN CHARINDEX('''','''', L.value) > 0 THEN dbo.fnGetTraducedIdentifiers(L.value, '' + cast(@lang as varchar(5)) + '')
+				ELSE L.value END
+            ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.TagEs WHEN 2 THEN v.TagPt ELSE v.TagEn END END AS value
+
+        FROM ccGalateaActivityLog L
+        JOIN ccGalateaModules M WITH (INDEX (IX_ccGalateaModules_Mod)) ON L.ModuleId = M.ModuleId
+        JOIN ccGalateaOperations O WITH (INDEX (IX_ccGalateaOperations_Op)) ON L.OperationId = O.OperationId
+        LEFT JOIN targetRecord t ON t.targetT = L.target
+        LEFT JOIN ccGalateaIdentifiers i ON i.Description = L.Identifier
+        LEFT JOIN ccGalateaIdentifiers v ON v.Description = L.Value
+        LEFT JOIN ccUsers CU ON CU.Login = L.login
+        WHERE 1=1 
+        AND
+        CU.TipoUser_id = 2''
+        +
+        case isnull(@loginLst, '''') when '''' then '''' else
+        '' AND L.LOGIN in (select value from @tableLogin) ''
+        END
+        +
+        case isnull(@moduleWithOperation, '''') when '''' then '''' else
+        @query
+        end
+        + case ISNULL(@operationDateIni, '''') when '''' then '''' else
+        ''AND L.ActivityDate >= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull('''''' + convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, -1, '''''' + convert(varchar(19), @operationDateIni, 121) + '''''') ELSE L.ActivityDate END ''
+        + '' AND L.ActivityDate <= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull(''''''+ convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, 1, '''''' + convert(varchar(19), @operationDateFin, 121) + '''''') ELSE L.ActivityDate END''
+        end
+        +
+        '' ORDER BY L.ActivityDate DESC''
+        execute sp_executesql @sql
+        --print @sql
+    END
+
+
+    SET NOCOUNT OFF';
+        EXEC (@sql);
+
+		----------------------------------------------------- END Ulises SP's ----------------------------------------------------------------
 		
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 		SET @process = 'KR134013 - se elimina la funcion .';
@@ -656,7 +1129,7 @@ return(0)';
 			''
 
 		if @nType like ''%__1__%''
-			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1,0) 
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1) 
 			''
 
 		if @nType like ''%_1___%''
@@ -725,12 +1198,12 @@ return(0)';
 							crlp.cal_key, 
 							crlp.telefono AS phone,
 							CASE
-								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked  
 								WHEN crlp.tipoMov = 2 THEN @typeUpdatedRecords	
 								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @typeIncorrectRecords
 								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @typeBlockedRecords
 								WHEN crlp.tipoMov in(-1,0) THEN @typeDescriptionPhoneNotLoaded
 								WHEN crlp.tipoMov in(8) THEN @descriptionInternationalPortNotFound
+								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked
 								WHEN crlp.keyTranslate is not null THEN isnull(tlan.translate,crlp2.descTipoMov)
 							ELSE 
 								crlp2.descTipoMov  
@@ -740,10 +1213,10 @@ return(0)';
 							end
 							 AS ColumnFile, 
 							CASE  WHEN crlp.tipoMov = 2 THEN ''''N/A'''' 
-									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList							  
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @descriptionIncorrectRecords
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @descriptionBlockedRecords
 									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-camp-no-international-port'''') THEN  @descriptionInternationalPortNotFound
+									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList
 									WHEN crlp.keyTranslate is not null THEN tlan.translate 
 							ELSE crlp.motivo END AS motivo,
 							CAST('' + @LoadBySegment + '' as BIT) AS LoadBySegment
@@ -851,7 +1324,6 @@ return(0)';
             inner join dbo.smsWorkingTable AS swt WITH (INDEX (IX_smsWorkingTable_2), NOLOCK) 
             on sos.callkey = swt.cal_keyw AND sos.cam_id = swt.cam_id 
             WHERE sos.cam_id = @camp_id and sos.sms_status IN (0, 7) AND swt.sms_status <= 2
-			and ((@date >= sos.sms_dateDial AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             UNION
 
@@ -859,13 +1331,11 @@ return(0)';
             FROM dbo.smsOutSource AS sos2 WITH (INDEX (IX_smsOutSource_2), NOLOCK)
             inner join dbo.smsWorkingTable AS swt2 (NOLOCK)on sos2.smsout_id = swt2.smsout_id 
             WHERE sos2.cam_id = @camp_id AND (sos2.sms_status < 2 OR sos2.sms_status = 7)
-			and ((@date >= sos2.sms_dateDial AND ISNULL(sos2.isSegmentLoad, 0) = 1) OR ISNULL(sos2.isSegmentLoad, 0) = 0)
 
             INSERT INTO #smsoutIdSource2
             SELECT top(@top) sos.smsout_id
             FROM dbo.smsOutSource AS sos WITH (INDEX (IX_smsOutSource_1), NOLOCK)
             WHERE sos.sms_status IN (0, 1, 7) AND cam_id = @camp_id
-			and ((@date >= sos.sms_dateDial  AND ISNULL(sos.isSegmentLoad, 0) = 1) OR ISNULL(sos.isSegmentLoad, 0) = 0) 
 
             INSERT #tempsmsOutSource(smsout_id, cam_id, sms_phoneNumber, sms_status, sms_dateDial, cal_keyw, iTimeZone, 
             iTimeZone_summer, iTimeZone2, iTimeZone_summer2, iTimeZone3, iTimeZone_summer3, iTimeZone4,
@@ -1052,357 +1522,397 @@ return(0)';
         EXEC (@sql);
 
 		SET @process = 'KR134014 - Se agrega opcion 15 para obtener los resultados de la validacion por segmentos, 
-		KR134018 - se guarda el resultado de la validación la tabla SmsSegmentsValidationResult';
+		KR134018 - se guarda el resultado de la validación la tabla SmsSegmentsValidationResult y se agrega poner el resultado de envio en 0 en la misma tabla rmd.RESULTADO_ENVIO = 0';
         SET @sql = 'ALTER procedure [dbo].[ccspLoadRegistrySegments] 
-@action int,
-@camId int = null,
-@typeTemplate int=2, --1 Segmentos, 2 Plantillas Archivos
-@phone varchar(32)=null,
-@templateId int=null,
-@callKey varchar(60)=null,
-@userId int=0,
-@msg varchar(160)=null,
-@smsout_id int=null,
-@SystemApiId varchar(100)=null,
-@statusSystemsId int=null,
-@dateStart datetime=null,
-@dateEnd datetime=null,
-@segmentIds varchar(max)='''',
-@columns varchar(max)=''*''
-as
+				@action int,
+				@camId int = null,
+				@typeTemplate int=2, --1 Segmentos, 2 Plantillas Archivos
+				@phone varchar(32)=null,
+				@templateId int=null,
+				@callKey varchar(60)=null,
+				@userId int=0,
+				@msg varchar(160)=null,
+				@smsout_id int=null,
+				@SystemApiId varchar(100)=null,
+				@statusSystemsId int=null,
+				@dateStart datetime=null,
+				@dateEnd datetime=null,
+				@segmentIds varchar(max)='''',
+				@columns varchar(max)=''*''
+				as
 
-SET NOCOUNT ON;
-SET ANSI_WARNINGS OFF;
+				SET NOCOUNT ON;
+				SET ANSI_WARNINGS OFF;
 
-DECLARE @sql VARCHAR(max)
-declare @today date=convert(date,getdate(),121)
-declare @monday datetime
-
-
-if @action=1 begin --List Segments
-	select SegmentId,Name from ccSmsSegments where IsGlobal=1 or CampaignId=@camId
-end
-else if @action=2 begin  --ListColumnsTable
-    SELECT name
-	FROM sys.columns
-	WHERE object_id = OBJECT_ID(''SmsRemesasMuñoz'')
-	and name like ''TELEFONOS[0-9]%''
-end
-else if @action=3 begin --List Plantillas
-    select TemplateId,Description as Name,MessageTemplate from ccSmsTemplate where Type=@typeTemplate
-end
-else if @action=4 begin
-    Select iDate DateStart,fDate DateEnd from ccSmsSchedules where cam_id=@camId
-end
-else if @action=5 begin
-    select top 1 * from SmsRemesasMuñoz
-end
-else if @action=6 begin
-    SET @columns = ''''
-	SELECT @columns = @columns + ''isnull(max(len('' + COLUMN_NAME + '')),0)as '' + COLUMN_NAME + '',''
-	FROM INFORMATION_SCHEMA.COLUMNS
-	WHERE TABLE_NAME = ''SmsRemesasMuñoz''
-	AND DATA_TYPE IN (''varchar'', ''nvarchar'', ''char'', ''nchar'');
-
-	SET @columns = SUBSTRING(@columns, 0, len(@columns))
-	SET @sql = ''select '' + @columns + '' from SmsRemesasMuñoz''
-
-	--PRINT (@sql)
-	EXEC (@sql)
-
-end
-else if @action=7 begin
-    declare @valueInt int, @value varchar(100)
-	select @valueInt=valor from ccSettings where setting_id=104
-	select @value=valor from ccSettings where setting_id=17		
-
-	select @phone= dbo.Verifica2(@phone,@valueInt,@value,1)
-	if LEFT(@phone, 1)=''E'' begin
-		select -1 as Result,''is not cellPhone''
-		return -1;
-	end
-	select @valueInt=valor from ccSettings2 where setting_id=258
-	if @valueInt<=0 begin
-		select -2 as Result,''Credit Sms Zero''
-	end
-	select @value=valor from ccSettings where setting_id=247
-
-	select 1 as Result,@value as ApiBackBone
-	,MessageTemplate
-	from ccSmsTemplate where TemplateId=@templateId
-end
-else if @action=8 begin --smsOutSource
-    insert into smsOutSource (callkey,cam_id,sms_phoneNumber,sms_status,sms_attemps,user_id,sms_dateDial,dial_tels)
-	values (@callKey,@camId,@phone,0,0,@userId,getdate(),''12345NNN'')
-	select @smsout_id=SCOPE_IDENTITY()
-
-	insert into smsoutSourceMessage(smsout_id,message)
-	values(@smsout_id,@msg)
-
-	select @smsout_id as smsoutId
-end
-else if @action=9 begin --smsccoLogDial
-	insert into smsccoLogDial (smsout_id,cam_id,phone,smsDate,registryClient,SystemApiId,statusSystemsId,Bill,ProviderId)
-	values (@smsout_id,@camId,@phone,getdate(),@callKey,@SystemApiId,@statusSystemsId,
-	case when @statusSystemsId=0 then 0.7 else 0 end,0
-	)	
-end
-else if @action=10 begin --ChangeSchedule
-	delete from ccSmsSchedules where cam_id=@camId
-	insert into ccSmsSchedules(cam_id,iDate,fDate) values(@camId,@dateStart,@dateEnd)
-end
-else if @action=11 begin --Carga los registros cargados
-	truncate table ccSmsValidateRegistryWeek;
-	SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
-	---------------Revisa la lista de registros es necesario moverlo a otro proceso para que lo tenga en la carga---------------------
-	insert into ccSmsValidateRegistryWeek(registryClient,total,totaltoDay,loadRegistry)
-	select registryClient,count(*) total,
-	count(case when smsDate>=@today  then 1 end) totaltoday,
-	0 loadRegistry
-	from smsccoLogDial with(nolock)
-	where smsDate>=@monday
-	group by registryClient
-
-end
-else if @action in(12,13) begin --Validar Carga
-
-	declare @segmentTable table(id int, status bit, segmentName VARCHAR(10))
-	declare @segmentNames varchar(max)
-	declare @conditionTable table(conditionId int,smsCondition varchar(max),DailyLimit int,WeeklyLimit int,status bit, SegmentName varchar(255))
-	--declare @SmsRemesasId table (credictId int)
-	create table #SmsRemesasId(creditId nvarchar(40), TDCT VARCHAR(max))
-	create table #SmsRemesasIdTemp(creditId nvarchar(40), TDCT VARCHAR(max))
-	create table #functionalState(creditId nvarchar(40), smsSent int)
-	declare @FlagB table(credictId int, TDCT VARCHAR(max))
-	------------Se obtiene los dias de la semana que han pasado
-	DECLARE @lastMonday datetime, @WeekStart datetime;
-	DECLARE @DaysFromWeek int, @LastMondaymonth int, @ActualMonth int
-	DECLARE @actualDate datetime = getdate()
-	SET @lastMonday = DATEADD(DAY, -(DATEPART(WEEKDAY, @actualDate) + 5) % 7, @actualDate);
-	--select @lastMonday lastMonday, @actualDate actualDate
-
-	SET @LastMondaymonth = DATEPART(MONTH, @lastMonday);
-	SET @ActualMonth = DATEPART(MONTH, @actualDate);
-
-	IF(@ActualMonth = @LastMondaymonth)
-	BEGIN
-		SELECT @DaysFromWeek = DATEDIFF(DAY, @lastMonday, @actualDate);
-	END
-	ELSE BEGIN
-		SELECT @DaysFromWeek = DATEDIFF(DAY, DATEADD(DAY, 1 - DATEPART(DAY, @actualDate), @actualDate), @actualDate);
-	END
-	SET @WeekStart = CONVERT(datetime, CONVERT(date, @actualDate-@DaysFromWeek));
-	
-
-	--------------------------Comienza validacion--------------
-
-	insert into @segmentTable
-	select a.value,0 status, s.Name from dbo.fn_RIASplitDelimited(@segmentIds,'','') a
-	inner join ccSmsSegments s on s.segmentId = a.value
-
-	--Condicion para obtener solo los que coincidan con SegmentoMC
-	SELECT @segmentNames = COALESCE(@segmentNames + '', '', '''') + QUOTENAME(a.segmentName, '''''''')
-	FROM @segmentTable a
-
-	--Tabla con todos los id de la tabla remesa que hacen match con los segmentos
-	INSERT INTO #SmsRemesasIdTemp
-	SELECT a.credito, a.TDCT from SmsRemesasMuñozDay a 
-	INNER JOIN @segmentTable b on a.SegmentoMC = b.segmentName
-	--Reseteamos todos los resultados para los segmentos
-	UPDATE rmd SET rmd.RESULTADO = '''', rmd.RESULTADO_ID = 0
-	FROM SmsRemesasMuñozDay rmd 
-	INNER JOIN #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
-
-	--Actualizamos resultado para FLAG B
-	UPDATE rmd SET rmd.RESULTADO = ''FLAG B'', rmd.RESULTADO_ID = 1
-	FROM SmsRemesasMuñozDay rmd
-	inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
-	inner join ccSmsSegmentFlagB sfb on rmd.Fila = sfb.Validation
-	WHERE rmd.RESULTADO_ID = 0 AND sfb.IsActive = 1
-
-	--Actualizamos resultado para Telefono fijo y telefono no existe
-	UPDATE rmd SET 
-	rmd.RESULTADO = CASE 
-		WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 3 THEN ''NO ES POSIBLE ENVIO, CELUAR NO SE ENCUENTRA EN IFT''
-		WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 5 THEN ''TELEFONO FIJO''
-		ELSE '''' END,
-	rmd.RESULTADO_ID = dbo.VerifySmsMCA(rmd.TELEFONOS1)
-	FROM SmsRemesasMuñozDay rmd
-	inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
-	WHERE rmd.RESULTADO_ID = 0
-
-	--Regla de Estado Funcional para segmento BMX_122
-	UPDATE rmd SET rmd.RESULTADO = ''NO SE ENVIA POR REGLA DE ESTADO FUNCIONAL'', rmd.RESULTADO_ID = 4
-	FROM SmsRemesasMuñozDay rmd
-	inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
-	WHERE rmd.RESULTADO_ID = 0 AND rmd.SegmentoMC = ''BMX_122''
-	AND ESTADO_FUNCIONAL <> ''F''
-
-	INSERT INTO #functionalState
-	select rid.creditId, count(rid.creditId) from smsccoLogDial ld
-	inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.callkey
-	where ld.smsDate >= @WeekStart
-	GROUP BY rid.creditId
-
-	UPDATE rmd SET rmd.RESULTADO = ''NO SE ENVIA POR REGLA DE ESTADO FUNCIONAL'', rmd.RESULTADO_ID = 4
-	FROM SmsRemesasMuñozDay rmd
-	inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
-	inner join #functionalState fs on rmd.id_credito = fs.creditId
-	WHERE rmd.RESULTADO_ID = 0 AND rmd.SegmentoMC = ''BMX_122''
-	AND fs.smsSent >= 3;
+				DECLARE @sql VARCHAR(max)
+				declare @today date=convert(date,getdate(),121)
+				declare @monday datetime
 
 
-	declare @subQuery nvarchar(max)
-	
-	SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
-	
-	if not exists(select * from ccSmsValidateRegistryWeek)begin
-		exec ccspLoadRegistrySegments @action=11
-	end
-	
+				if @action=1 begin --List Segments
+					select SegmentId,Name from ccSmsSegments where IsGlobal=1 or CampaignId=@camId
+				end
+				else if @action=2 begin  --ListColumnsTable
+				    SELECT name
+					FROM sys.columns
+					WHERE object_id = OBJECT_ID(''SmsRemesasMuñoz'')
+					and name like ''TELEFONOS[0-9]%''
+				end
+				else if @action=3 begin --List Plantillas
+				    select TemplateId,Description as Name,MessageTemplate from ccSmsTemplate where Type=@typeTemplate
+				end
+				else if @action=4 begin
+				    Select iDate DateStart,fDate DateEnd from ccSmsSchedules where cam_id=@camId
+				end
+				else if @action=5 begin
+				    select top 1 * from SmsRemesasMuñoz
+				end
+				else if @action=6 begin
+				    SET @columns = ''''
+					SELECT @columns = @columns + ''isnull(max(len('' + COLUMN_NAME + '')),0)as '' + COLUMN_NAME + '',''
+					FROM INFORMATION_SCHEMA.COLUMNS
+					WHERE TABLE_NAME = ''SmsRemesasMuñoz''
+					AND DATA_TYPE IN (''varchar'', ''nvarchar'', ''char'', ''nchar'');
 
-	declare @conditionId int,@segmentId int,@SubConditionId int
-	declare @conditionWhere varchar(max)
-	declare @SubConditionWhere varchar(max),@LogicConector varchar(20)
-	declare @DailyLimit int,@WeeklyLimit int
-	declare @SegmentName varchar(255)
+					SET @columns = SUBSTRING(@columns, 0, len(@columns))
+					SET @sql = ''select '' + @columns + '' from SmsRemesasMuñoz''
 
-	DECLARE @Params NVARCHAR(MAX)
-	SET @Params = N''@WeeklyLimit int,@DailyLimit int'';
-	
----Lista de @segmentIds
-while exists(select * from @segmentTable where status=0) begin
-	select top 1 @segmentId=id from @segmentTable where status=0		
-	set @conditionId=0
-	-------------------------------- Revisa las condiciones por segmentId --------------------------------
-	while exists(select * from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId) begin
-		
-		SELECT @SegmentName = [Name] from ccSmsSegments where SegmentId = @segmentId
+					--PRINT (@sql)
+					EXEC (@sql)
 
-		select top 1
-		@DailyLimit=DailyLimit,	@WeeklyLimit=WeeklyLimit,@conditionId=ConditionId,
-		@conditionWhere= PrimaryField+LogicOperator
-		+case when isnull(ComparisonValue,'''') <>'''' then ComparisonValue else''(''+ ComparisonField end 					
-		+case when isnull(ComparisonValue,'''') <>'''' or  isnull(ArithmeticOperator,'''')='''' or isnull(Value,'''')=''''then '''' else isnull(ArithmeticOperator,'''')+isnull(Value,'''') end 
-		+case when isnull(ComparisonValue,'''') <>'''' then '''' else'')'' end 
-		from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId
-		
-		set @SubConditionId=0
-		while exists(select * from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId) 
-		begin
-		
-			select top 1
-			@LogicConector=LogicConector,
-			@SubConditionId=SubconditionId,
-			@SubConditionWhere=
-			PrimaryField+LogicOperator
-			+case when isnull(ComparisonValue,'''') <>'''' then ComparisonValue else''(''+ ComparisonField end 					
-			+case when isnull(ComparisonValue,'''') <>'''' or  isnull(ArithmeticOperator,'''')='''' or isnull(Value,'''')='''' then '''' else isnull(ArithmeticOperator,'''')+isnull(Value,'''') end
-			+case when isnull(ComparisonValue,'''') <>'''' then '''' else'')'' end 
-			from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId
+				end
+				else if @action = 7 begin
+				    declare @valueInt104 int, @value17 varchar(100), @value247 varchar(100), @valueInt258 int
+				    select 
+				        @valueInt104 = case when setting_id = 104 then valor else @valueInt104 end,
+				        @value17 = case when setting_id = 17 then valor else @value17 end,
+				        @value247 = case when setting_id = 247 then valor else @value247 end,
+				        @valueInt258 = case when setting_id = 258 then valor else @valueInt258 end
+				    from VIEW_SETTINGS 
+				    where setting_id in (104, 17, 247, 258)
 
-			set @conditionWhere=@conditionWhere+'' ''+ @LogicConector+'' '' +@SubConditionWhere
+				    select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1)
+				    if LEFT(@phone, 1) = ''E'' begin
+				        select -1 as Result, ''is not cellPhone''
+				        return -1;
+				    end
+				    if @valueInt258 <= 0 begin
+				        select -2 as Result, ''Credit Sms Zero''
+				    end
+				    select 1 as Result, @value247 as ApiBackBone, MessageTemplate
+				    from ccSmsTemplate 
+				    where TemplateId = @templateId
+				end
+				else if @action=8 begin --smsOutSource
+				    insert into smsOutSource (callkey,cam_id,sms_phoneNumber,sms_status,sms_attemps,user_id,sms_dateDial,dial_tels)
+					values (@callKey,@camId,@phone,0,0,@userId,getdate(),''12345NNN'')
+					select @smsout_id=SCOPE_IDENTITY()
 
-			
-		end
-			
-		insert into @conditionTable values(@conditionId,@conditionWhere,@DailyLimit,@WeeklyLimit,0, @SegmentName)	
-	end 
-	-------------------------------- Termina las condiciones por segmentId --------------------------------
-	update @segmentTable set status=1 where id=@segmentId
-end
-while exists(select * from @conditionTable where status=0) begin		
-	select top 1 
-	@conditionId=conditionId, @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit,	@conditionWhere=smsCondition,
-	@SegmentName = SegmentName
-	from @conditionTable 
-	where status=0
-	
-	set @subQuery= ''select A.id_credito, A.TDCT from SmsRemesasMuñozDay A with(nolock)
-	left join ccSmsValidateRegistryWeek B on A.credito=B.registryClient and B.total<@WeeklyLimit and B.totaltoDay<@DailyLimit
-	where  SegmentoMC in ('''''' + @SegmentName + '''''') AND RESULTADO_ID = 0 AND '' + @conditionWhere	
-	print(@subQuery)
-	insert into #SmsRemesasId
-	EXEC sp_executesql @subQuery,@Params,@WeeklyLimit,@DailyLimit;
-	update @conditionTable set status=1 where @conditionId=conditionId
-end
+					insert into smsoutSourceMessage(smsout_id,message)
+					values(@smsout_id,@msg)
 
---Actualizamos los ids que no coindiden
-UPDATE rmd SET rmd.RESULTADO = ''CUENTA CON T. Celular para envio de sms'' , rmd.RESULTADO_ID = 6
-FROM SmsRemesasMuñozDay rmd
-INNER JOIN #SmsRemesasId rid on rid.TDCT = rmd.TDCT
-WHERE RESULTADO_ID = 0;
+					select @smsout_id as smsoutId
+				end
+				else if @action=9 begin --smsccoLogDial
+					insert into smsccoLogDial (smsout_id,cam_id,phone,smsDate,registryClient,SystemApiId,statusSystemsId,Bill,ProviderId)
+					values (@smsout_id,@camId,@phone,getdate(),@callKey,@SystemApiId,@statusSystemsId,
+					case when @statusSystemsId=0 then 0.7 else 0 end,0
+					)	
+				end
+				else if @action=10 begin --ChangeSchedule
+					delete from ccSmsSchedules where cam_id=@camId
+					insert into ccSmsSchedules(cam_id,iDate,fDate) values(@camId,@dateStart,@dateEnd)
+				end
+				else if @action=11 begin --Carga los registros cargados
+					truncate table ccSmsValidateRegistryWeek;
+					SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
+					---------------Revisa la lista de registros es necesario moverlo a otro proceso para que lo tenga en la carga---------------------
+					insert into ccSmsValidateRegistryWeek(registryClient,total,totaltoDay,loadRegistry)
+					select registryClient,count(*) total,
+					count(case when smsDate>=@today  then 1 end) totaltoday,
+					0 loadRegistry
+					from smsccoLogDial with(nolock)
+					where smsDate>=@monday
+					group by registryClient
 
---Actualizamos todo lo que no cumple
-UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2
-FROM SmsRemesasMuñozDay rmd
-INNER JOIN #SmsRemesasIdTemp rid on rid.TDCT = rmd.TDCT
-WHERE RESULTADO_ID = 0;
-	
-if @action=12 begin
-	declare @countValidate int,@nonValid int
-	select @countValidate=count(1) from SmsRemesasMuñozDay A with(nolock)
-	inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6
+				end
+				else if @action in(12,13) begin --Validar Carga
 
-	select @nonValid=count(1) from SmsRemesasMuñozDay A with(nolock)
-	inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID <> 6
+					declare @segmentTable table(id int, status bit, segmentName VARCHAR(10))
+					declare @segmentNames varchar(max)
+					declare @conditionTable table(conditionId int,smsCondition varchar(max),DailyLimit int,WeeklyLimit int,status bit, SegmentName varchar(255))
+					--declare @SmsRemesasId table (credictId int)
+					create table #SmsRemesasId(creditId nvarchar(40), TDCT VARCHAR(max))
+					create table #SmsRemesasIdTemp(creditId nvarchar(40), TDCT VARCHAR(max))
+					create table #functionalState(creditId nvarchar(40), smsSent int)
+					declare @FlagB table(credictId int, TDCT VARCHAR(max))
+					------------Se obtiene los dias de la semana que han pasado
+					DECLARE @lastMonday datetime, @WeekStart datetime;
+					DECLARE @DaysFromWeek int, @LastMondaymonth int, @ActualMonth int
+					DECLARE @actualDate datetime = getdate()
+					SET @lastMonday = DATEADD(DAY, -(DATEPART(WEEKDAY, @actualDate) + 5) % 7, @actualDate);
+					--select @lastMonday lastMonday, @actualDate actualDate
 
-	INSERT INTO SmsSegmentsValidationResult(id_credito, credito, TELEFONOS1, TDCT, RESULTADO, RESULTADO_ID, validation_date)
-	SELECT A.id_credito, A.credito, TELEFONOS1, A.TDCT, A.RESULTADO, A.RESULTADO_ID, GETDATE() FROM SmsRemesasMuñozDay A
-	inner join #SmsRemesasIdTemp b on A.TDCT = b.TDCT
+					SET @LastMondaymonth = DATEPART(MONTH, @lastMonday);
+					SET @ActualMonth = DATEPART(MONTH, @actualDate);
 
-	select @countValidate as ValidRecords,@nonValid as InvalidRecords
-end
-else begin
-	
-	set @sql=''select A.''+@columns+'',0 PhoneStatus,0 callout_id,credito as Record_id,convert(varchar(100),'''''''') as DataPhone, a.TDCT as call_Key1
-	into TEMPO_''+convert(varchar(10),@camId)+''
-	from SmsRemesasMuñozDay A with(nolock) inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6''
-	print(@sql)
-	exec(@sql)
-end
-drop table #SmsRemesasId
-drop table #SmsRemesasIdTemp
-drop table #functionalState
-end
-else if @action =14 begin 
-	select MessageTemplate from ccSmsTemplate where TemplateId=@templateId
-end
+					IF(@ActualMonth = @LastMondaymonth)
+					BEGIN
+						SELECT @DaysFromWeek = DATEDIFF(DAY, @lastMonday, @actualDate);
+					END
+					ELSE BEGIN
+						SELECT @DaysFromWeek = DATEDIFF(DAY, DATEADD(DAY, 1 - DATEPART(DAY, @actualDate), @actualDate), @actualDate);
+					END
+					SET @WeekStart = CONVERT(datetime, CONVERT(date, @actualDate-@DaysFromWeek));
+					
 
-else if @action =15 begin --Obtener resultados de validación por segmentos
+					--------------------------Comienza validacion--------------
 
-	DECLARE @counter int = 0
-	DECLARE @ActualDay DATETIME = GETDATE();
-	DECLARE @FirstDayMonth DATETIME = DATEADD(MONTH, DATEDIFF(MONTH, 0, @ActualDay),0)
-	DECLARE @DayCounter DATETIME;
-	DECLARE @WeekCount int = 0;
+					insert into @segmentTable
+					select a.value,0 status, s.Name from dbo.fn_RIASplitDelimited(@segmentIds,'','') a
+					inner join ccSmsSegments s on s.segmentId = a.value
 
-	WHILE @counter < DAY(@ActualDay)
-	BEGIN
-		SET @DayCounter =  DATEADD(DAY, @counter, @FirstDayMonth)
-		IF DATEPART(WEEKDAY,@DayCounter) = 2
-			SET @WeekCount = @WeekCount + 1
-		print @DayCounter
-		set @counter = @counter + 1
-	END
+					--Condicion para obtener solo los que coincidan con SegmentoMC
+					SELECT @segmentNames = COALESCE(@segmentNames + '', '', '''') + QUOTENAME(a.segmentName, '''''''')
+					FROM @segmentTable a
 
-	IF DATEPART(WEEKDAY, @FirstDayMonth) <> 2 BEGIN
-		SET @WeekCount = @WeekCount + 1
-	END
+					--Tabla con todos los id de la tabla remesa que hacen match con los segmentos
+					INSERT INTO #SmsRemesasIdTemp
+					SELECT a.credito, a.TDCT from SmsRemesasMuñozDay a 
+					INNER JOIN @segmentTable b on a.SegmentoMC = b.segmentName
+					--Reseteamos todos los resultados para los segmentos
+					UPDATE rmd SET rmd.RESULTADO = '''', rmd.RESULTADO_ID = 0
+					FROM SmsRemesasMuñozDay rmd 
+					INNER JOIN #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
 
-	declare @segments table(segmentName VARCHAR(10))
+					--Actualizamos resultado para FLAG B
+					UPDATE rmd SET rmd.RESULTADO = ''FLAG B'', rmd.RESULTADO_ID = 1, rmd.RESULTADO_ENVIO = 0
+					FROM SmsRemesasMuñozDay rmd
+					inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
+					inner join ccSmsSegmentFlagB sfb on rmd.Fila = sfb.Validation
+					WHERE rmd.RESULTADO_ID = 0 AND sfb.IsActive = 1
 
-	insert into @segments
-	select s.Name from dbo.fn_RIASplitDelimited(@segmentIds,'','') a
-	inner join ccSmsSegments s on s.segmentId = a.value
+					--Actualizamos resultado para Telefono fijo y telefono no existe
+					UPDATE rmd SET 
+					rmd.RESULTADO = CASE 
+						WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 3 THEN ''NO ES POSIBLE ENVIO, CELUAR NO SE ENCUENTRA EN IFT''
+						WHEN dbo.VerifySmsMCA(rmd.TELEFONOS1) = 5 THEN ''TELEFONO FIJO''
+						ELSE '''' END,
+					rmd.RESULTADO_ID = dbo.VerifySmsMCA(rmd.TELEFONOS1),
+					rmd.RESULTADO_ENVIO = 0
+					FROM SmsRemesasMuñozDay rmd
+					inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
+					WHERE rmd.RESULTADO_ID = 0
 
-	select	id_credito AS id_credit, credito AS credit, GETDATE() as snapshot_date, MESES_VENCIDOS as expired_month, SEG_CUENTA as seg_account,
-			FILA as seg_row, LOCACION as [location], DIA_CORTE as cut_day, SegmentoMC as segment_mc, @WeekCount as [week], DATEPART(WEEKDAY, @ActualDay) week_day,
-			TELEFONOS1 as phones1, RESULTADO as result, ISNULL(ESTADO_FUNCIONAL, '''') as functional_state, ISNULL(CORTE_REAL, '''')  as real_cut
-	from SmsRemesasMuñozDay rmd
-	inner join @segments s on rmd.SegmentoMC = s.segmentName;
-	
-end';
+					--Regla de Estado Funcional para segmento BMX_122
+					UPDATE rmd SET rmd.RESULTADO = ''NO SE ENVIA POR REGLA DE ESTADO FUNCIONAL'', rmd.RESULTADO_ID = 4, rmd.RESULTADO_ENVIO = 0
+					FROM SmsRemesasMuñozDay rmd
+					inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
+					WHERE rmd.RESULTADO_ID = 0 AND rmd.SegmentoMC = ''BMX_122''
+					AND ESTADO_FUNCIONAL <> ''F''
+
+					INSERT INTO #functionalState
+					select rid.creditId, count(rid.creditId) from smsccoLogDial ld
+					inner join #SmsRemesasIdTemp rid on rid.TDCT = ld.registryClient
+					where ld.smsDate >= @WeekStart
+					GROUP BY rid.creditId
+
+					UPDATE rmd SET rmd.RESULTADO = ''NO SE ENVIA POR REGLA DE ESTADO FUNCIONAL'', rmd.RESULTADO_ID = 4, rmd.RESULTADO_ENVIO = 0
+					FROM SmsRemesasMuñozDay rmd
+					inner join #SmsRemesasIdTemp rid on rmd.TDCT = rid.TDCT
+					inner join #functionalState fs on rmd.id_credito = fs.creditId
+					WHERE rmd.RESULTADO_ID = 0 AND rmd.SegmentoMC = ''BMX_122''
+					AND fs.smsSent >= 3;
+
+
+					declare @subQuery nvarchar(max)
+					
+					SELECT @monday= DATEADD(DAY, -(DATEPART(WEEKDAY, @today) + @@DATEFIRST - 2) % 7, CAST(@today AS DATE))
+					
+					if not exists(select * from ccSmsValidateRegistryWeek)begin
+						exec ccspLoadRegistrySegments @action=11
+					end
+					
+
+					declare @conditionId int,@segmentId int,@SubConditionId int
+					declare @conditionWhere varchar(max)
+					declare @SubConditionWhere varchar(max),@LogicConector varchar(20)
+					declare @DailyLimit int,@WeeklyLimit int
+					declare @SegmentName varchar(255)
+
+					DECLARE @Params NVARCHAR(MAX)
+					SET @Params = N''@WeeklyLimit int,@DailyLimit int'';
+					
+				---Lista de @segmentIds
+				while exists(select * from @segmentTable where status=0) begin
+					select top 1 @segmentId=id from @segmentTable where status=0		
+					set @conditionId=0
+					-------------------------------- Revisa las condiciones por segmentId --------------------------------
+					while exists(select * from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId) begin
+						
+						SELECT @SegmentName = [Name] from ccSmsSegments where SegmentId = @segmentId
+
+						select top 1
+						@DailyLimit=DailyLimit,	@WeeklyLimit=WeeklyLimit,@conditionId=ConditionId,
+						@conditionWhere= PrimaryField+LogicOperator
+						+case when isnull(ComparisonValue,'''') <>'''' then ComparisonValue else''(''+ ComparisonField end 					
+						+case when isnull(ComparisonValue,'''') <>'''' or  isnull(ArithmeticOperator,'''')='''' or isnull(Value,'''')=''''then '''' else isnull(ArithmeticOperator,'''')+isnull(Value,'''') end 
+						+case when isnull(ComparisonValue,'''') <>'''' then '''' else'')'' end 
+						from ccSmsConditions where SegmentId=@segmentId and ConditionId>@conditionId
+						
+						set @SubConditionId=0
+						while exists(select * from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId) 
+						begin
+						
+							select top 1
+							@LogicConector=LogicConector,
+							@SubConditionId=SubconditionId,
+							@SubConditionWhere=
+							PrimaryField+LogicOperator
+							+case when isnull(ComparisonValue,'''') <>'''' then ComparisonValue else''(''+ ComparisonField end 					
+							+case when isnull(ComparisonValue,'''') <>'''' or  isnull(ArithmeticOperator,'''')='''' or isnull(Value,'''')='''' then '''' else isnull(ArithmeticOperator,'''')+isnull(Value,'''') end
+							+case when isnull(ComparisonValue,'''') <>'''' then '''' else'')'' end 
+							from ccSmsSubconditions where ConditionId=@conditionId and SubconditionId>@SubConditionId
+
+							set @conditionWhere=@conditionWhere+'' ''+ @LogicConector+'' '' +@SubConditionWhere
+
+							
+						end
+							
+						insert into @conditionTable values(@conditionId,@conditionWhere,@DailyLimit,@WeeklyLimit,0, @SegmentName)	
+					end 
+					-------------------------------- Termina las condiciones por segmentId --------------------------------
+					update @segmentTable set status=1 where id=@segmentId
+				end
+				while exists(select * from @conditionTable where status=0) begin		
+					select top 1 
+					@conditionId=conditionId, @DailyLimit=DailyLimit, @WeeklyLimit=WeeklyLimit,	@conditionWhere=smsCondition,
+					@SegmentName = SegmentName
+					from @conditionTable 
+					where status=0
+					
+					set @subQuery= ''select A.id_credito, A.TDCT from SmsRemesasMuñozDay A with(nolock)
+					left join ccSmsValidateRegistryWeek B on A.credito=B.registryClient and B.total<@WeeklyLimit and B.totaltoDay<@DailyLimit
+					where  SegmentoMC in ('''''' + @SegmentName + '''''') AND RESULTADO_ID = 0 AND '' + @conditionWhere	
+					print(@subQuery)
+					insert into #SmsRemesasId
+					EXEC sp_executesql @subQuery,@Params,@WeeklyLimit,@DailyLimit;
+					update @conditionTable set status=1 where @conditionId=conditionId
+				end
+
+				--Actualizamos los ids que no coindiden
+				UPDATE rmd SET rmd.RESULTADO = ''CUENTA CON T. Celular para envio de sms'' , rmd.RESULTADO_ID = 6
+				FROM SmsRemesasMuñozDay rmd
+				INNER JOIN #SmsRemesasId rid on rid.TDCT = rmd.TDCT
+				WHERE RESULTADO_ID = 0;
+
+				--Actualizamos todo lo que no cumple
+				UPDATE rmd SET rmd.RESULTADO = ''NO CUMPLE CON REGLA DE CORTE'' , rmd.RESULTADO_ID = 2, rmd.RESULTADO_ENVIO = 0
+				FROM SmsRemesasMuñozDay rmd
+				INNER JOIN #SmsRemesasIdTemp rid on rid.TDCT = rmd.TDCT
+				WHERE RESULTADO_ID = 0;
+					
+				if @action=12 begin
+					declare @countValidate int,@nonValid int
+					select @countValidate=count(1) from SmsRemesasMuñozDay A with(nolock)
+					inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6
+
+					select @nonValid=count(1) from SmsRemesasMuñozDay A with(nolock)
+					inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID <> 6
+
+					INSERT INTO SmsSegmentsValidationResult(id_credito, credito, TELEFONOS1, TDCT, RESULTADO, RESULTADO_ID, validation_date)
+					SELECT A.id_credito, A.credito, TELEFONOS1, A.TDCT, A.RESULTADO, A.RESULTADO_ID, GETDATE() FROM SmsRemesasMuñozDay A
+					inner join #SmsRemesasIdTemp b on A.TDCT = b.TDCT
+
+					select @countValidate as ValidRecords,@nonValid as InvalidRecords
+				end
+				else begin
+					DECLARE @tableName VARCHAR(20) = ''TEMPO_''+convert(varchar(10),@camId)
+					DECLARE @columnsWithTypes VARCHAR(MAX)
+					DECLARE @newColumns VARCHAR(MAX)
+					DECLARE @createTable VARCHAR(MAX)
+					DECLARE @insertInto VARCHAR(MAX)
+
+					SELECT 
+						@columnsWithTypes = COALESCE(@columnsWithTypes + '', '', '''') + 
+						QUOTENAME(COLUMN_NAME) + '' '' + DATA_TYPE + 
+						CASE 
+							WHEN DATA_TYPE IN (''char'', ''varchar'', ''nchar'', ''nvarchar'', ''binary'', ''varbinary'') THEN ''('' + 
+								CASE 
+									WHEN CHARACTER_MAXIMUM_LENGTH = -1 THEN ''MAX'' 
+									ELSE CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR)
+								END + '')''
+							WHEN DATA_TYPE IN (''decimal'', ''numeric'') THEN ''('' + CAST(NUMERIC_PRECISION AS VARCHAR) + '','' + CAST(NUMERIC_SCALE AS VARCHAR) + '')''
+							ELSE ''''
+						END,
+						@newColumns = COALESCE(@newColumns + '', '', '''') + QUOTENAME(COLUMN_NAME)
+					FROM INFORMATION_SCHEMA.COLUMNS
+					WHERE TABLE_NAME = ''SmsRemesasMuñozDay'' AND COLUMN_NAME in (select value from dbo.fn_RIASplitDelimited(@columns,'',''))
+
+					SET @createTable = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +'''''')
+					BEGIN
+						DROP TABLE '' + @tableName + ''
+					END
+						CREATE TABLE '' + @tableName + '' (
+							Record_id INT IDENTITY(1,1) PRIMARY KEY, ActiveRecord BIT DEFAULT(0),PhoneStatus int, callout_id int, DataPhone varchar(100), cal_Key varchar(40), cal_telephone varchar(40) default(''''''''), 
+							'' + @columnsWithTypes + '');''
+					print(@createTable)
+					EXEC (@createTable)
+					
+					set @sql=''INSERT INTO '' + @tableName + '' (PhoneStatus, callout_id, DataPhone, cal_Key, cal_telephone,'' + @newColumns + '')
+					select 0 PhoneStatus,0 callout_id,convert(varchar(100),'''''''') as DataPhone, A.TDCT, TELEFONOS1, ''+@newColumns+''
+					from SmsRemesasMuñozDay A with(nolock) inner join #SmsRemesasIdTemp b on a.TDCT = b.TDCT where a.RESULTADO_ID = 6''
+					print(@sql)
+					exec(@sql)
+					set @sql = ''IF EXISTS (SELECT * FROM sys.tables WHERE name = N'''''' + @tableName +''_ids'''')
+					BEGIN
+						DROP TABLE '' + @tableName + ''_ids
+					END
+					Create table '' + @tableName + ''_ids (Record_id int)'';
+					exec(@sql)
+				end
+				drop table #SmsRemesasId
+				drop table #SmsRemesasIdTemp
+				drop table #functionalState
+				end
+				else if @action =14 begin 
+					select MessageTemplate from ccSmsTemplate where TemplateId=@templateId
+				end
+
+				else if @action =15 begin --Obtener resultados de validación por segmentos
+
+					DECLARE @counter int = 0
+					DECLARE @ActualDay DATETIME = GETDATE();
+					DECLARE @FirstDayMonth DATETIME = DATEADD(MONTH, DATEDIFF(MONTH, 0, @ActualDay),0)
+					DECLARE @DayCounter DATETIME;
+					DECLARE @WeekCount int = 0;
+
+					WHILE @counter < DAY(@ActualDay)
+					BEGIN
+						SET @DayCounter =  DATEADD(DAY, @counter, @FirstDayMonth)
+						IF DATEPART(WEEKDAY,@DayCounter) = 2
+							SET @WeekCount = @WeekCount + 1
+						print @DayCounter
+						set @counter = @counter + 1
+					END
+
+					IF DATEPART(WEEKDAY, @FirstDayMonth) <> 2 BEGIN
+						SET @WeekCount = @WeekCount + 1
+					END
+
+					declare @segments table(segmentName VARCHAR(10))
+
+					insert into @segments
+					select s.Name from dbo.fn_RIASplitDelimited(@segmentIds,'','') a
+					inner join ccSmsSegments s on s.segmentId = a.value
+
+					select	id_credito AS id_credit, credito AS credit, GETDATE() as snapshot_date, MESES_VENCIDOS as expired_month, SEG_CUENTA as seg_account,
+							FILA as seg_row, LOCACION as [location], DIA_CORTE as cut_day, SegmentoMC as segment_mc, @WeekCount as [week], DATEPART(WEEKDAY, @ActualDay) week_day,
+							TELEFONOS1 as phones1, RESULTADO as result, ISNULL(ESTADO_FUNCIONAL, '''') as functional_state, ISNULL(CORTE_REAL, '''')  as real_cut
+					from SmsRemesasMuñozDay rmd
+					inner join @segments s on rmd.SegmentoMC = s.segmentName;
+					
+				end';
         EXEC (@sql);
 
 		SET @process = 'KR134018 - Se actualiza job para eliminar los registros de más de 30 días de la tabla SmsSegmentsValidationResult';
@@ -2048,6 +2558,13 @@ EndSave:';
 		RETURN -1;
 	END'
 		EXEC (@sql);
+
+		SET @process = 'Se elimina columa callKey de la tabla smsccoLogDial'
+		SET @sql= 'if exists (select * from sys.columns where name = N''callkey'' and Object_ID = Object_ID(N''smsccoLogDial''))
+	begin
+		ALTER TABLE smsccoLogDial DROP COLUMN callkey
+	end'
+		EXEC(@sql);
 		------------------------------------------------------BEGIN MACL---------------------------------------------------------------------
 
 
@@ -2082,6 +2599,200 @@ EndSave:';
 		EXEC(@sql);
 
 		------------------------------------------------------BEGIN HEL---------------------------------------------------------------------
+
+		------------------------------------------------------BEGIN Ivan Martin Fix CW-8576 ---------------------------------------------------------------------
+		SET @process = 'KR134000 Drop procedure ccspOutboundSmsMessage';
+        SET @sql = 'IF EXISTS(SELECT * FROM sys.procedures WHERE name = N''ccspOutboundSmsMessage'')
+                    BEGIN
+                      DROP PROCEDURE ccspOutboundSmsMessage
+                    END';
+        EXEC (@sql);
+
+        SET @process = 'KR134000 Added acion 13';
+        SET @sql = 'CREATE procedure [dbo].[ccspOutboundSmsMessage] 
+					@action int,
+					@camId int = null,
+					@SentMsg int=null,
+					@smsoutIds varchar(max)=null,
+					@SystemApiId varchar(100)=null,
+					@statusSystemsId int =null,
+					@InsufficientBalance int=null,
+					@date datetime =null,
+					@addingCampaign bit = null,
+					@statusIds varchar(max)=null
+					as
+					declare @sql varchar(max)
+					if @action=1 begin
+					    set @date=getdate()
+
+					    if @addingCampaign = 1 begin
+					        select distinct cast(c. cam_id as int) as CamId,
+					                        cam_descripcion as [Name],
+					                        cam_procesando as [Start],
+					                        0 AS MessageQuantity
+					        from ccCamps c
+					        where CampType=7 and c.IDArea is not null and c.cam_id=@camId
+					    end
+					    else begin
+					        SELECT DISTINCT CAST(c. cam_id AS INT) AS CamId,
+					                        cam_descripcion AS Name,
+					                        cam_procesando AS Start,
+					                        ISNULL((w.new + w.pro),0) AS MessageQuantity
+					        FROM ccCamps c
+					        LEFT JOIN ccSmsSchedules s ON s.cam_id = c.cam_id
+					        LEFT JOIN ccCampsNvosCB  w ON c.cam_id = w.id
+					        WHERE CampType=7 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+					        AND @date BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+					    end
+					end
+					else if @action=2 begin
+					    select tz_offset from ccTimeZones ORDER BY tz_id
+					end
+					else if @action=3 begin
+					    select cast(camId as int) CamId,SentMsg,Delivered,NotDelivered,RecipientRejected,CarrierRejected 
+					    from ccSmsConversationsResult where ( @camId is null or camId=@camId)
+					end
+					else if @action=4 begin
+					    truncate table ccSmsConversationsResult
+					end
+					else if @action=5 begin
+					    if not exists(select * from ccSmsConversationsResult where camId=@camId) begin
+					        insert into ccSmsConversationsResult values(@camId,@SentMsg,0,0,0,0,@InsufficientBalance,0)
+					    end
+					    else begin
+					        update ccSmsConversationsResult set SentMsg=SentMsg+@SentMsg 
+					        ,InsufficientBalance=InsufficientBalance+@InsufficientBalance
+					        where camId=@camId
+					    end
+					end
+					else if @action=6 begin 
+					    set @sql=''delete from smsWorkingTable where smsout_id in(''+@smsoutIds+'')''
+					    exec (@sql)
+					end
+					else if @action=7 begin
+					    DECLARE @TemporalProcessingSmsStatusUpdates TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, StatusSystemsId INT, IsCharged BIT)
+					    INSERT INTO @TemporalProcessingSmsStatusUpdates
+					    SELECT SystemApiId, StatusSystemsId, IsCharged FROM ProcessingSmsStatusUpdates
+
+					    DECLARE @ChargedMessages INT = (SELECT SUM(CASE WHEN IsCharged = 1 THEN 1 ELSE 0 END) FROM @TemporalProcessingSmsStatusUpdates)
+					    IF @ChargedMessages <> 0
+					    BEGIN
+					        UPDATE ccSettings2 WITH(TABLOCK) SET valor = valor - @ChargedMessages WHERE setting_id = 258 AND valor > 0;
+					    END
+
+					    DECLARE @UpdatingSmsWorkingTable TABLE(SystemApiId VARCHAR(100) PRIMARY KEY, OldStatusSystemsId INT, NewStatusSystemsId INT, CampaignId INT)
+					    INSERT INTO @UpdatingSmsWorkingTable
+					    SELECT S.SystemApiId, S.StatusSystemsId, T.StatusSystemsId, S.cam_id FROM smsccoLogDial S WITH(NOLOCK)
+					    INNER JOIN @TemporalProcessingSmsStatusUpdates T ON S.SystemApiId = T.SystemApiId
+					            
+					    ;WITH CTE AS (
+					    SELECT
+					        CampaignId,
+					        COUNT(CASE WHEN NewStatusSystemsId = 0 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 0 THEN 1 END) AS SentMsg,
+					        COUNT(CASE WHEN NewStatusSystemsId = 1 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 1 THEN 1 END) AS Delivered,
+					        COUNT(CASE WHEN NewStatusSystemsId = 2 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 2 THEN 1 END) AS NotDelivered,
+					        COUNT(CASE WHEN NewStatusSystemsId = 3 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 3 THEN 1 END) AS RecipientRejected,
+					        COUNT(CASE WHEN NewStatusSystemsId = 4 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 4 THEN 1 END) AS CarrierRejected,
+					        COUNT(CASE WHEN NewStatusSystemsId = 5 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 5 THEN 1 END) AS Exception,
+					        COUNT(CASE WHEN NewStatusSystemsId = 6 THEN 1 END) - COUNT(CASE WHEN OldStatusSystemsId = 6 THEN 1 END) AS InsufficientBalance
+
+					    FROM @UpdatingSmsWorkingTable
+					    GROUP BY CampaignId
+					    )
+
+					    MERGE INTO ccSmsConversationsResult AS Target
+					    USING CTE AS Source ON Target.camId = Source.CampaignId
+					    WHEN MATCHED THEN
+					        UPDATE SET
+					            Target.SentMsg = CASE WHEN (Target.SentMsg + Source.SentMsg) < 0 THEN 0 ELSE (Target.SentMsg + Source.SentMsg) END,
+					            Target.Delivered = CASE WHEN (Target.Delivered + Source.Delivered) < 0 THEN 0 ELSE (Target.Delivered + Source.Delivered) END,
+					            Target.NotDelivered = CASE WHEN (Target.NotDelivered + Source.NotDelivered) < 0 THEN 0 ELSE (Target.NotDelivered + Source.NotDelivered) END,
+					            Target.RecipientRejected = CASE WHEN (Target.RecipientRejected + Source.RecipientRejected) < 0 THEN 0 ELSE (Target.RecipientRejected + Source.RecipientRejected) END,
+					            Target.CarrierRejected = CASE WHEN (Target.CarrierRejected + Source.CarrierRejected) < 0 THEN 0 ELSE (Target.CarrierRejected + Source.CarrierRejected) END,
+					            Target.Exception = CASE WHEN (Target.Exception + Source.Exception) < 0 THEN 0 ELSE (Target.Exception + Source.Exception) END,
+					            Target.InsufficientBalance = CASE WHEN (Target.InsufficientBalance + Source.InsufficientBalance) < 0 THEN 0 ELSE (Target.InsufficientBalance + Source.InsufficientBalance) END
+
+					    WHEN NOT MATCHED BY TARGET THEN
+					    INSERT (camId, SentMsg, Delivered, NotDelivered, RecipientRejected, CarrierRejected, Exception, InsufficientBalance)
+					    VALUES (Source.CampaignId, Source.SentMsg, Source.Delivered, Source.NotDelivered, Source.RecipientRejected, Source.CarrierRejected, Source.Exception, Source.InsufficientBalance);
+
+					    UPDATE smsccoLogDial SET Bill = (CASE WHEN T.StatusSystemsId IN (0, 1, 2) THEN 0.7 ELSE 0 END),
+					                                statusSystemsId = T.StatusSystemsId
+					    FROM smsccoLogDial S WITH(NOLOCK)
+					    INNER JOIN @TemporalProcessingSmsStatusUpdates T ON T.SystemApiId = S.SystemApiId
+
+					    DELETE FROM ProcessingSmsStatusUpdates 
+					    WHERE SystemApiId IN (SELECT SystemApiId FROM @TemporalProcessingSmsStatusUpdates);
+
+						DECLARE @Result INT = @@ROWCOUNT;
+
+						IF (SELECT valor FROM ccSettings2 WHERE setting_id = 268) = 1 BEGIN
+							UPDATE MCA SET RESULTADO_ENVIO = S.StatusSystemsId
+							FROM SmsRemesasMuñozDay MCA
+							INNER JOIN smsccoLogDial S WITH(NOLOCK) ON S.registryClient = MCA.TDCT
+						END
+					    SELECT @Result;
+					end
+					else if @action=8 begin
+					    update smsccoLogDial set Bill=0.70 where smsDate>=@date and statusSystemsId not in(3,4,5,6)
+					end
+					else if @action=9 begin
+					    CREATE TABLE #TempSmsOutIds (
+					    smsout_id INT
+					    );
+
+					    INSERT INTO #TempSmsOutIds (smsout_id)
+					    SELECT DISTINCT wt.smsout_id
+					    FROM smsWorkingTable wt
+					    JOIN smsOutSource os WITH(NOLOCK) ON wt.smsout_id = os.smsout_id
+					    LEFT JOIN smsccoLogDial cco WITH(NOLOCK) ON wt.smsout_id = cco.smsout_id
+					    WHERE wt.cam_id=@camId and wt.sms_status IN(1,2) 
+					    AND cco.smsout_id IS NULL;
+					            
+
+					    UPDATE wt
+					    SET wt.sms_status = 0
+					    FROM smsWorkingTable wt WITH(NOLOCK)
+					    JOIN #TempSmsOutIds temp ON wt.smsout_id = temp.smsout_id;
+
+					    DROP TABLE #TempSmsOutIds;
+					end
+					else if @action=10 begin
+					    SELECT COUNT(*) FROM smsWorkingTable with (NOLOCK) WHERE cam_id = @camId
+					end
+					else if @action=12 begin
+					    IF EXISTS (SELECT 1 FROM ccSmsSchedules WITH (NOLOCK) WHERE cam_id = @camId 
+					    AND GETDATE() BETWEEN dateadd(hh,-12,iDate) AND dateadd(hh,12,fDate)
+					    )
+					    AND EXISTS (SELECT 1 FROM smsWorkingTable WITH (NOLOCK) WHERE cam_id = @camId)
+					    BEGIN
+					        SELECT CAST(0 AS BIT);
+					        RETURN;
+					    END
+					    ELSE BEGIN
+					        UPDATE ccCamps SET cam_procesando = 0 WHERE cam_id = @camId
+					        SELECT CAST(1 AS BIT);
+					        RETURN;
+					    END
+					end
+					else if @action=13 begin
+						BEGIN TRY
+						    UPDATE MCA
+						    SET RESULTADO_ENVIO = LD.statusSystemsId
+						    FROM SmsRemesasMuñozDay MCA
+						    INNER JOIN smsccoLogDial LD ON LD.registryClient = MCA.TDCT
+						    WHERE MCA.TDCT IN (SELECT value FROM dbo.fn_RIASplitDelimited (@smsoutIds, '',''));
+
+						    SELECT ''1'' AS Result;
+						END TRY
+						BEGIN CATCH
+						    SELECT ''-1'' AS Result;
+						END CATCH;
+					end';
+        EXEC (@sql);
+
+
+		------------------------------------------------------END Ivan Martin Fix CW-8576---------------------------------------------------------------------
  	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

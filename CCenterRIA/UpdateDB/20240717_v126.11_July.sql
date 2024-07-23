@@ -3302,6 +3302,47 @@ return(0)
 
 	-----------------------------------------------------------END MACL-------------------------------------------------------
 
+	----------------------------------------------------------- Start Isaac Cortes -------------------------------------------------------------------------------
+	set @process = 'K020020 Delete sp [ccsp_WAOUTGetLogDials]'
+	set @sql = '
+		IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WAOUTGetLogDials'')
+		BEGIN
+			DROP PROCEDURE dbo.ccsp_WAOUTGetLogDials
+		END
+	'
+	EXEC(@sql)
+
+	set @process = 'K020020 Create sp ccsp_WAOUTGetLogDials'
+	set @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_WAOUTGetLogDials]
+		@Action				INT,
+		@CamId				INT,
+		@ClientId			VARCHAR(50),
+		@ConversationId		INT = NULL,
+		@MetaId				VARCHAR(1000) = NULL
+		AS
+		BEGIN
+
+			IF @Action = 1 -- get conversation in log dials
+			BEGIN
+				DECLARE @InitialTime DATETIME
+				SET @InitialTime = DATEADD(HH, -23, GETDATE())
+				SELECT TOP(1)
+					cwld.MetaId AS MetaID
+				FROM ccoWhatsLogDials cwld WITH(NOLOCK)
+				WHERE cwld.CamId = @CamID 
+				AND cwld.PhoneClient = @ClientId
+				AND cwld.TimeSpam >= @InitialTime
+			END
+			ELSE IF @Action = 2
+			BEGIN
+				UPDATE ccoWhatsLogDials SET ConversationId = @ConversationId WHERE MetaId = @MetaId
+			END
+		END
+	'
+	EXEC(@sql)
+	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
+
 	----------------------------------------------------------- Start Carlos Eduardo Muñoz -------------------------------------------------------------------------------
 	set @process = 'DEV1-600 Se actualizan procedimientos para el despliegue de números meta en campañas de entrada y salida, así como el enlace de números al guardar ajustes.'
 

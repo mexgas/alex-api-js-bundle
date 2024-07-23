@@ -3303,7 +3303,43 @@ return(0)
 	-----------------------------------------------------------END MACL-------------------------------------------------------
 
 	----------------------------------------------------------- Start Isaac Cortes -------------------------------------------------------------------------------
+	SET @process = 'K020020 Delete sp [ccsp_WAOUTGetLogDials]'
+	SET @sql = '
+		IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_WAOUTGetLogDials'')
+		BEGIN
+			DROP PROCEDURE dbo.ccsp_WAOUTGetLogDials
+		END
+	'
+	EXEC(@sql)
+	SET @process = 'K020020 Create sp ccsp_WAOUTGetLogDials'
+	SET @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_WAOUTGetLogDials]
+		@Action				INT,
+		@CamId				INT,
+		@ClientId			VARCHAR(50),
+		@ConversationId		INT = NULL,
+		@MetaId				VARCHAR(1000) = NULL
+		AS
+		BEGIN
 
+			IF @Action = 1 -- get conversation in log dials
+			BEGIN
+				DECLARE @InitialTime DATETIME
+				SET @InitialTime = DATEADD(HH, -23, GETDATE())
+				SELECT TOP(1)
+					cwld.MetaId AS MetaID
+				FROM ccoWhatsLogDials cwld WITH(NOLOCK)
+				WHERE cwld.CamId = @CamID 
+				AND cwld.PhoneClient = @ClientId
+				AND cwld.TimeSpam >= @InitialTime
+			END
+			ELSE IF @Action = 2
+			BEGIN
+				UPDATE ccoWhatsLogDials SET ConversationId = @ConversationId WHERE MetaId = @MetaId
+			END
+		END
+	'
+	EXEC(@sql)
 	SET @process = 'WhatsApp Masivo - Drop SP ccsp_WhatsAppInformationOut'
 	SET @sql = '
 	    if exists (select * from sys.procedures where name = N''ccsp_WhatsAppInformationOut'')

@@ -5507,6 +5507,14 @@ END
 	end'
 	EXEC(@sql)
 
+------------------------------------------------------------ Ivan Martin CW-8618 --------------------------------------------------------------------------------
+	set @process = 'CW-8618 Se agrega un el siguiente índice a la tabla smsoutSourceMessage para mejorar el rendimiento del SP ccsp_OUTGetNewJobsSMS'
+	set @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N''IX_smsoutSourceMessage_smsout_id'' AND object_id = OBJECT_ID(N''smsoutSourceMessage''))
+				BEGIN
+					CREATE NONCLUSTERED INDEX IX_smsoutSourceMessage_smsout_id ON smsoutSourceMessage (smsout_id);
+				END'
+	EXEC(@sql)
+------------------------------------------------------------ End Ivan Martin CW-8618 --------------------------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         --EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

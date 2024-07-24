@@ -170,18 +170,26 @@ end'
 	end'
 	EXEC(@sql)
 
-	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode'
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode (si no existe la tabla )'
 	SET @sql = 'if not exists(select * from sys.tables where name=''ccChatBotNode'') begin
 	CREATE TABLE [dbo].[ccChatBotNode](
 		[conversationId] [int] NOT NULL primary key,
 		[node] [xml] NULL,
 		[dateIn] [datetime] NULL,
 		[dateOut] [datetime] NULL,
-		[status] [smallint] NULL
+		[status] [smallint] NOT NULL DEFAULT ((0))
 	)
+	end'
+	EXEC(@sql)
 
-	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT (NULL) FOR [dateOut]
-	ALTER TABLE [dbo].[ccChatBotNode] ADD  DEFAULT ((0)) FOR [status]
+	SET @process = 'K060013-Buscador-Conversaciones ChatBot Create Table ccChatBotNode (si ya existe la tabla)'
+	SET @sql = 'if exists(select * from sys.tables where name=''ccChatBotNode'') begin
+	UPDATE [dbo].[ccChatBotNode] SET [status] = 0 WHERE [status] IS NULL;
+
+	ALTER TABLE [dbo].[ccChatBotNode]
+	ALTER COLUMN [status] smallint NOT NULL;
+
+	ALTER TABLE [dbo].[ccChatBotNode] ADD DEFAULT ((0)) FOR [status];
 	end'
 	EXEC(@sql)
 

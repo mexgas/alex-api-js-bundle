@@ -1021,13 +1021,35 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		@footer nvarchar(max) = null,
 		@buttons nvarchar(max) = null,
 		@metaStatus varchar(30) = null,
-		@FilePath varchar(1024) = null
+		@FilePath varchar(1024) = null,
+		@HistoryLog varchar(max) = null,
+		@UserId SMALLINT = 0
 	AS
 	BEGIN
 		IF(@action = 1)
 		BEGIN
+			;WITH TemplateIsEditable AS (
+				SELECT
+					tb1.Id,
+					CASE 
+						WHEN COUNT(*) >= 10 THEN 2
+						WHEN MAX(tb1.Date) >= CAST(GETDATE() AS DATE) THEN 1
+						ELSE 0
+					END AS IsEditable
+				FROM (
+					SELECT
+						gal.Target AS Id,
+						CAST(gal.ActivityDate AS DATE) AS Date
+					FROM ccGalateaActivityLog gal 
+					WHERE gal.OperationId = 122 
+					AND gal.ModuleId = 20 
+					AND gal.Target = ISNULL(CAST(@whatsAppTemplateID AS VARCHAR(MAX)), gal.target)
+					AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
+				) AS tb1
+				GROUP BY tb1.Id
+			)
 			SELECT 
-			 cmwot.Id 
+			cmwot.Id 
 			,cmwot.TemplateName AS Name
 			,cmwot.Status AS Status
 			,Category AS Category
@@ -1039,7 +1061,9 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			,cmwot.LanguageCode
 			,cmwot.quality AS Quality
 			,cmwot.IsPendingQuality
-			FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+			,ISNULL(tie.IsEditable, 0) AS IsEditable
+			FROM  dbo.ccMetaWAOutboundTemplates cmwot
+			LEFT JOIN TemplateIsEditable tie ON tie.Id = CAST(cmwot.Id AS VARCHAR(MAX))
 			WHERE cmwot.Id = ISNULL(@whatsAppTemplateID, cmwot.Id)
 			AND cmwot.StatusCW = 1
 		END
@@ -1094,6 +1118,79 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			WHERE t.Id = @whatsAppTemplateID
 			RETURN 0;
 		END
+		ELSE IF (@action = 8) -- update template
+		BEGIN
+			DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
+			DECLARE @areaName VARCHAR(50),
+					@login VARCHAR(50)
+
+			SELECT
+				@areaName = ca.AreaName,
+				@login = cu.Login
+			FROM ccUsers cu
+			INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+			WHERE cu.User_id = @UserId
+
+			INSERT INTO @tableHistoryLog 
+			SELECT tb.Id, tb.Value
+			FROM dbo.fn_RIASplitDelimited(@HistoryLog, '',,'') tb
+
+
+			-- insert into activity log table and update template data
+			IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
+			END
+			IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
+			END
+			IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
+			BEGIN
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
+			END
+			
+			EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
+			Create table #ccMetaWAOutboundTemplates 
+			(
+				columnInfo VARCHAR(255),
+				dataInfo VARCHAR(255),
+				identifierInfo VARCHAR(255)
+			)
+
+			UPDATE ccMetaWAOutboundTemplates
+			SET Category = @Category,
+				header = @header,
+				body = @body,
+				footer = @footer,
+				buttons = @buttons
+			WHERE Id = @Id
+
+			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
+
+			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+			SELECT
+				@areaName,
+				GETDATE(),
+				@login,
+				122,
+				20,
+				cc.identifierInfo,
+				tb1.Value,
+				@id
+			FROM #ccMetaWAOutboundTemplates cc
+			INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
+																	WHEN tb1.Id = 1 THEN ''Category''
+																	WHEN tb1.Id = 2 THEN ''header'' 
+																	WHEN tb1.Id = 3 THEN ''body'' 
+																	WHEN tb1.Id = 4 THEN ''footer''
+																	WHEN tb1.Id > 4 THEN ''buttons''
+																	END)
+		END
+
 	END
    '
 	EXEC(@sql);
@@ -3910,6 +4007,7 @@ return(0)
 		END
 	'
 	EXEC(@sql)
+
 	SET @process = 'K020020 Create sp ccsp_WAOUTGetLogDials'
 	SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_WAOUTGetLogDials]
@@ -4193,8 +4291,315 @@ return(0)
 	'
 	EXEC(@sql)
 
-	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
+	SET @process = 'DEV2-577 K02118 Operation 122'
+	SET @sql = '
+		IF NOT EXISTS (SELECT OperationId FROM ccGalateaOperations WHERE OperationId = 122)
+		BEGIN
+			INSERT INTO ccGalateaOperations (OperationId, OpTagEs, OpTagEn, OpTagPT) VALUES (122, ''Editar plantilla'', ''Edit template'', ''Editar modelo'')
+		END
+	'
+	EXEC(@sql)
+	SET @process = 'DEV2-577 K02118 Identifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_CATEGORY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_CATEGORY'',''Categoría'',''Category'',''Categoria'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_HEADER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_HEADER'',''Encabezado'',''Header'',''Cabeçalho'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_BODY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_BODY'',''Cuerpo'',''Body'',''Corpo'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_FOOTER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_FOOTER'',''Pie de página'',''Footer'',''Rodapé'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&EDIT_TEMPLATE_BUTTONS'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&EDIT_TEMPLATE_BUTTONS'',''Botones'',''Buttons'',''Botões'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_CATEGORY_MARKETING'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_CATEGORY_MARKETING'',''Marketing'',''Marketing'',''Marketing'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_CATEGORY_UTILITY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_CATEGORY_UTILITY'',''Utilidad'',''Utility'',''Utilidade'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_TEXT'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_TEXT'',''Texto'',''Text'',''Texto'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_MEDIA'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_MEDIA'',''Contenido multimedia'',''Media'',''Mídia'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_HEADER_LOCATION'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_HEADER_LOCATION'',''Ubicación'',''Location'',''Localização'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_PHONENUMBER'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_PHONENUMBER'',''de teléfono'',''phone number button'',''de telefone'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_URL'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_URL'',''de URL'',''URL button(s)'',''de URL'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_QUICKREPLY'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_QUICKREPLY'',''de respuesta rápida'',''quick reply button(s)'',''de resposta rápida'')
+		END
+		IF NOT EXISTS (SELECT Description FROM ccGalateaIdentifiers WHERE Description = ''T&META_BUTTON_COPYCODE'')
+		BEGIN
+			INSERT INTO ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) VALUES (''T&META_BUTTON_COPYCODE'',''de copiar código'',''copy code button'',''de copiar código'')
+		END
 
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_CATEGORY'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_CATEGORY'',''ccMetaWAOutboundTemplates'',''Category'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_HEADER'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_HEADER'',''ccMetaWAOutboundTemplates'',''header'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_BODY'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_BODY'',''ccMetaWAOutboundTemplates'',''body'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_FOOTER'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_FOOTER'',''ccMetaWAOutboundTemplates'',''footer'')
+		END
+		IF NOT EXISTS (SELECT Identifiers FROM relationTableColumnIdentifiers WHERE Identifiers = ''T&EDIT_TEMPLATE_BUTTONS'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers (Identifiers, tableName, colunName) VALUES (''T&EDIT_TEMPLATE_BUTTONS'',''ccMetaWAOutboundTemplates'',''buttons'')
+		END
+	'
+	EXEC(@sql)
+	SET @process = 'DEV2-576 K02118 Delete scalar fuction GetMetaButtonTemplateHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+	BEGIN
+		DROP FUNCTION dbo.GetMetaButtonTemplateHistory
+	END'
+	EXEC(@sql)
+	SET @process = 'DEV2-576 K02118 Create scalar fuction GetMetaButtonTemplateHistory'
+	SET @sql = '
+		IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''dbo.GetMetaButtonTemplateHistory'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		BEGIN
+			CREATE FUNCTION [dbo].[GetMetaButtonTemplateHistory] (@buttons VARCHAR(MAX), @lang INT)
+			RETURNS VARCHAR (MAX)
+			AS
+			BEGIN
+
+				DECLARE @stringFormated VARCHAR(MAX) = '''';
+
+				WITH ButtonParts AS (
+					SELECT 
+						tb1.Id, 
+						tb3.Value
+					FROM dbo.fn_RIASplitDelimited(@buttons, '','') AS tb1
+					CROSS APPLY dbo.fn_RIASplitDelimited(tb1.Value, ''-'') AS tb3
+				),
+				TranslatedButtons AS (
+					SELECT 
+						CASE 
+							WHEN cgi.Description IS NULL THEN bp.Value 
+							ELSE 
+								CASE 
+									WHEN @lang = 0 THEN cgi.TagEs 
+									WHEN @lang = 2 THEN cgi.TagPt 
+									ELSE cgi.TagEn 
+								END 
+						END AS Value,
+						ROW_NUMBER() OVER (ORDER BY bp.Id) AS rn
+					FROM ButtonParts bp
+					LEFT JOIN ccGalateaIdentifiers cgi ON cgi.Description = bp.Value
+				)
+				SELECT 
+				@stringFormated = STUFF(
+					(SELECT 
+						CASE 
+							WHEN rn % 2 = 1 THEN Value 
+							ELSE '' '' + Value + '', '' 
+						END
+					FROM TranslatedButtons
+					FOR XML PATH(''''), TYPE
+					).value(''.'', ''VARCHAR(MAX)'')
+				, 1, 0, '''');
+
+				IF RIGHT(@stringFormated, 2) = '', ''
+				BEGIN
+					SET @stringFormated = LEFT(@stringFormated, LEN(@stringFormated) - 1);
+				END
+
+				RETURN @stringFormated
+			END
+		END
+	'
+	SET @process = 'K02118 delete sp ccsp_GalateaChangeHistory'
+	SET @sql = '
+	IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccsp_GalateaChangeHistory'')
+	BEGIN
+		DROP PROCEDURE dbo.ccsp_GalateaChangeHistory
+	END'
+	EXEC(@sql)
+
+	set @process = 'K02118 create sp ccsp_GalateaChangeHistory'
+	set @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_GalateaChangeHistory]
+    @option TINYINT,
+    @loginLst VARCHAR(max) = NULL,
+    @moduleWithOperation varchar(max) = NULL,
+    @operationDateIni SMALLDATETIME = NULL,
+    @operationDateFin SMALLDATETIME = NULL,
+    @top INT = 0
+    AS
+    SET NOCOUNT ON
+
+    DECLARE @lang TINYINT
+
+    SELECT @lang = valor
+    FROM ccsettings
+    WHERE setting_id = 27
+
+    IF @option = 1 -- Catalogo de modulos
+    BEGIN
+        WITH Catalog AS(
+        SELECT m.ModuleId as module_id, o.OperationId as operationType, 
+        CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS mDescripcion, 
+        CASE @lang WHEN 0 THEN OpTagEs WHEN 2 THEN OpTagPt ELSE OpTagEn END AS oDescripcion
+        FROM ccGalateaOperations o WITH (INDEX (IX_ccGalateaOperations_Op))
+        JOIN ccGalateaModOpRelation r ON o.OperationId = r.OperationId
+        JOIN ccGalateaModules m WITH (INDEX (IX_ccGalateaModules_Mod)) ON r.ModuleId = m.ModuleId --WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT 0, - 1, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, '' - ''
+		
+        UNION
+
+        SELECT 0, 0, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END, CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+
+        UNION
+
+        SELECT ModuleId as module_id, 0, CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, 
+        CASE @lang WHEN 0 THEN '' - TODAS - '' ELSE '' - ALL - '' END
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod))
+
+        UNION
+
+        SELECT ModuleId as module_id, - 1 , CASE @lang WHEN 0 THEN MTagEs WHEN 2 THEN MTagPt ELSE MTagEn END AS descripcion, '' - ''
+        FROM ccGalateaModules WITH (INDEX (IX_ccGalateaModules_Mod)))
+
+        SELECT module_id,operationType,mDescripcion,oDescripcion 
+        FROM Catalog
+        ORDER BY mDescripcion, oDescripcion
+
+        RETURN (0)
+    END
+
+    IF @option = 2 -- Muestra informacion por filtros
+    BEGIN
+
+        declare @sql as nvarchar(max)
+        DECLARE @table TABLE(id int,value varchar(max))
+        declare @id int
+        declare @moduleId varchar(max)
+        declare @operationLst varchar(max)
+        declare @query varchar(max) = '' and (''
+        declare @value varchar(max)
+        declare @first int = 1
+        declare @pos int
+
+        insert into @table select * from dbo.fn_RIASplitDelimited(cast(isnull(@moduleWithOperation,'''') as varchar(max)), '','')
+        while exists(select * from @table)
+        begin
+            select top 1 @id = id, @value = value from @table
+            set @pos = charindex('':'', @value)
+            if(@pos <> 0)
+            begin
+                set @moduleId = substring(@value, 1, @pos-1)
+                set @operationLst = replace(substring(@value, @pos+1, len(@value)), ''-'', '','')
+                if(@first = 1)
+                begin
+                    set @query = @query + ''l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                    set @first = 0
+                end
+                else
+                begin
+                    set @query = @query + '' or l.moduleId='' + @moduleId + '' and l.operationId in ('' + @operationLst + '')''
+                end
+            end
+
+            delete @table where id = @id
+        end
+        set @query = @query + '')''
+
+
+        SET ROWCOUNT @top
+
+        set @sql =
+        ''DECLARE @tableLogin TABLE(id int,value varchar(255))
+        insert into @tableLogin  select * from dbo.fn_RIASplitDelimited('''''' + cast(isnull(@loginLst,'''') as varchar(max)) + '''''','''','''')
+
+        SELECT L.LogId as log_id, L.Area as areaName, L.ActivityDate as operationDate,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN O.OpTagEs WHEN 2 THEN O.OpTagPt ELSE O.OpTagEn END operationType,
+        L.LOGIN,
+        CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN M.MTagEs WHEN 2 THEN M.MTagPt ELSE M.MTagEn END module_id,
+        CASE WHEN t.targetT IS NULL THEN L.target ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN t.es WHEN 2 THEN t.pt ELSE t.en END END AS target,
+        CASE WHEN i.description IS NULL THEN L.Identifier ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN i.TagEs WHEN 2 THEN i.TagPt ELSE i.TagEn END END +
+        CASE WHEN L.Identifier<>'''''''' AND L.Value<>'''''''' THEN '''': '''' ELSE '''''''' END +
+
+        CASE WHEN V.description IS NULL 
+            THEN 
+                CASE 
+                    WHEN L.Identifier<>'''''''' AND (L.Identifier LIKE ''''COMMON_DELETE_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_ADD_SCHEDULE%'''' OR L.Identifier LIKE ''''COMMON_DATE%'''')
+                        THEN dbo.GetDateByLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+                    ''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''OUT_SIP_IDENTIFIER'''' THEN dbo.GetSipLangHistory(L.value,''+cast(@lang as varchar(5)) +'')''+
+					''WHEN L.Identifier<>'''''''' AND L.Identifier = ''''T&EDIT_TEMPLATE_BUTTONS'''' THEN dbo.GetMetaButtonTemplateHistory(L.value,''+CAST(@lang AS VARCHAR(5))+'')''+
+            ''ELSE L.value END
+            ELSE CASE '' + cast(@lang as varchar(5)) + '' WHEN 0 THEN v.TagEs WHEN 2 THEN v.TagPt ELSE v.TagEn END END AS value
+
+        FROM ccGalateaActivityLog L
+        JOIN ccGalateaModules M WITH (INDEX (IX_ccGalateaModules_Mod)) ON L.ModuleId = M.ModuleId
+        JOIN ccGalateaOperations O WITH (INDEX (IX_ccGalateaOperations_Op)) ON L.OperationId = O.OperationId
+        LEFT JOIN targetRecord t ON t.targetT = L.target
+        LEFT JOIN ccGalateaIdentifiers i ON i.Description = L.Identifier
+        LEFT JOIN ccGalateaIdentifiers v ON v.Description = L.Value
+        LEFT JOIN ccUsers CU ON CU.Login = L.login
+        WHERE 1=1 
+        AND
+        CU.TipoUser_id = 2''
+        +
+        case isnull(@loginLst, '''') when '''' then '''' else
+        '' AND L.LOGIN in (select value from @tableLogin) ''
+        END
+        +
+        case isnull(@moduleWithOperation, '''') when '''' then '''' else
+        @query
+        end
+        + case ISNULL(@operationDateIni, '''') when '''' then '''' else
+        ''AND L.ActivityDate >= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull('''''' + convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, -1, '''''' + convert(varchar(19), @operationDateIni, 121) + '''''') ELSE L.ActivityDate END ''
+        + '' AND L.ActivityDate <= CASE WHEN isnull(''''''+ convert(varchar(19), @operationDateIni, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' AND isnull(''''''+ convert(varchar(19), @operationDateFin, 121) + '''''', '''' 19000101 '''') <> '''' 19000101 '''' THEN dateadd(minute, 1, '''''' + convert(varchar(19), @operationDateFin, 121) + '''''') ELSE L.ActivityDate END''
+        end
+        +
+        '' ORDER BY L.ActivityDate DESC''
+        execute sp_executesql @sql
+        --print @sql
+    END
+
+
+    SET NOCOUNT OFF'
+	EXEC(@sql)
+
+
+	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
+	
 	----------------------------------------------------------- Start Carlos Eduardo Muñoz -------------------------------------------------------------------------------
 	set @process = 'DEV1-600 Se actualizan procedimientos para el despliegue de números meta en campañas de entrada y salida, así como el enlace de números al guardar ajustes.'
 

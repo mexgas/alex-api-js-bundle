@@ -77,12 +77,12 @@ SET @sql = 'if not exists (select * from sys.tables where name = N''Chatbot'')
 				create table Chatbot (
 				ID int IDENTITY(1,1) PRIMARY KEY,
 				ChatBotName	varchar(40),
-				IVRID smallint,
-				AssociatedPhone	varchar(20),
+				IVRID smallint NULL,
+				AssociatedPhone	varchar(20) NULL,
 				CreationDate	date,
 				LastModificationDate	date,
 				Status	bit,
-				CONSTRAINT FK_Chatbot_IVR FOREIGN KEY (IVRID) REFERENCES IVR(IVRID))
+				CONSTRAINT FK_Chatbot_IVR FOREIGN KEY (IVRID) REFERENCES IVR(IVRID) ON DELETE SET NULL)
 			end'
 EXEC(@sql)
 
@@ -95,7 +95,7 @@ set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_ChatbotMa
 EXEC(@sql)
 
 set @process = 'Creación de SP para gestión de chatbots'
-set @sql = 'Create proc [dbo].[ccsp_ChatbotManagement]	
+set @sql = 'CREATE proc [dbo].[ccsp_ChatbotManagement]	 
 @type int,
 @ChatbotName varchar(40) = null,
 @TemplateId smallint = null,
@@ -104,7 +104,7 @@ set @sql = 'Create proc [dbo].[ccsp_ChatbotManagement]
 as
 set nocount on
 
-if @type=1
+if @type=1 
 begin 
 	select id as ChatbotId, ChatBotName as ChatbotName, AssociatedPhone as AssociatedNumber,  FORMAT(CreationDate, ''dd/MM/yyyy'') as CreationDate, 
 	FORMAT(LastModificationDate, ''dd/MM/yyyy'') as LastModificationDate, status as ChatbotStatus from Chatbot 
@@ -113,13 +113,15 @@ end
 
 if @type=2
 begin
-	select id as ChatbotId , AssociatedPhone  as AssociatedNumber from Chatbot 
-	return(0) 
+	WITH DistinctAssociatedPhone AS (
+    SELECT id AS ChatbotId, AssociatedPhone AS AssociatedNumber, ROW_NUMBER() OVER (PARTITION BY AssociatedPhone ORDER BY id) AS rn FROM Chatbot WHERE AssociatedPhone IS NOT NULL
+	)
+	SELECT ChatbotId, AssociatedNumber FROM DistinctAssociatedPhone WHERE rn = 1; 
 end
 
 if @type=3 
 begin
-	select IVRID as IVRID , IVRName as IVRTemplate from IVR 
+	select distinct IVRID as IVRID , IVRName as IVRTemplate from IVR  
 	return(0) 
 end
 
@@ -132,7 +134,7 @@ begin
 	insert into ChatBot(ChatBotName, IVRID, AssociatedPhone, CreationDate, LastModificationDate, Status) values (@ChatbotName, @TemplateId, @AssociatedNumber, getdate(), getdate(), 1)
 	select top 1 ID as result from chatbot order by ID desc
 	return(0)
-end'
+end '
 EXEC(@sql)
 ------------------------------------------------------ End David Medina ---------------------------------------------------------------------------------
 

@@ -4204,7 +4204,7 @@ return(0)
 		SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
 				ISNULL(disposition.calif_id, 0) AS DispositionId,
 				COUNT(whatsConv.disposition) AS Total,
-				ISNULL(disposition.GraphColor, \'1DB4E2\') AS GraphColor,
+				ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
 				COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
 		FROM ccWhatsAppConversationsOut whatsConv with(nolock)
 		LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition

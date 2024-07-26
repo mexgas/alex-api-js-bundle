@@ -22,7 +22,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */--
 SET @version = 126 --**********actualizar a 124 sin fix
-SET @versionfix = 11
+SET @versionfix = 13
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
@@ -4204,7 +4204,7 @@ return(0)
 		SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
 				ISNULL(disposition.calif_id, 0) AS DispositionId,
 				COUNT(whatsConv.disposition) AS Total,
-				ISNULL(disposition.GraphColor, \'1DB4E2\') AS GraphColor,
+				ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
 				COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
 		FROM ccWhatsAppConversationsOut whatsConv with(nolock)
 		LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition

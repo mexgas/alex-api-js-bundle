@@ -6907,31 +6907,7 @@ return(0)
 				Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
 			End
 			select 1 as result
-		END
-        IF @option = 6 -- get configAreaMultimedia by userId
-		BEGIN
-			SELECT 
-			crca.callWhileChat
-			, crca.callWhileEmail
-			, crca.CallWhileWhatsAppIn
-			, crca.CallWhileWhatsAppOut
-			FROM  
-			dbo.ccRIAWorkGroupUsers AS crwgu INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg 
-			ON crawg.IDWG = crwgu.IDWG INNER JOIN dbo.ccRIACat_Areas AS crca 
-			ON crca.IDArea = crawg.IDArea WHERE crwgu.User_id = @userId 
-			GROUP BY crca.IDArea, crca.callWhileChat, crca.callWhileEmail, crca.CallWhileWhatsAppIn, crca.CallWhileWhatsAppOut
-
-			RETURN (0)
-		END
-		IF(@option = 7) -- get area cmapign relation by areaId
-		BEGIN
-			SELECT crcew.IdCampEsp, crawg.IDArea FROM dbo.ccRIACampEspWG AS crcew 
-									INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg
-									ON crawg.IDWG = crcew.IDWG
-									WHERE crcew.Tipo = 1 AND crawg.IDArea = @idArea
-			RETURN (0)
-		END
-        
+		END       
 	SET NOCOUNT ON;
 	'
 	EXEC(@sql)

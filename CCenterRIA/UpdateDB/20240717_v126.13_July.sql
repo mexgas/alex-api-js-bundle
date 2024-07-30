@@ -979,7 +979,7 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		,CAST(TimesPreview AS SMALLINT) TimesPreview
 		,@numbers AS FreeNumbers
 		,selectRotativeANI SelectRotativeANIManualCall
-		,CAST(rotativeAlgo AS VARCHAR(20)) RotativeAlgo
+		,RotativeAlgo
 		,autoStart AutoStart
 		,messagingOrder MessagingOrder
 		,timesDiscard TimesDiscard

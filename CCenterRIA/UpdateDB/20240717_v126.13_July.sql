@@ -5130,9 +5130,9 @@ return(0)
 			Begin
 					declare @pathFile as varchar(max)
 					declare @filetype as varchar(5)
-					DECLARE @mensajes TABLE(idMessage VARCHAR(100));
+					DECLARE @mensajes TABLE(idMessage VARCHAR(150));
 					DECLARE @tmpMessageConversations TABLE(
-							[messageId] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+							[messageId] VARCHAR(150) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
 						,[conversationId] INT NOT NULL
 						,[timeStampMessage] DATETIME NOT NULL
 						,[originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL

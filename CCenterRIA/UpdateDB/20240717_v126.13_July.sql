@@ -6464,125 +6464,128 @@ return(0)
 
 	SET @process = 'WhatsApp Masivo - Create SP ccsp_RIA_ABCAreas'	
 	SET @sql='
-	CREATE PROCEDURE ccsp_RIA_ABCAreas
-@option smallint,
-@IDArea smallint,
-@Descripcion varchar(40),
-@maxMails smallint = 3, 
-@maxChats smallint = 3,
-@maxTweets smallint = 3,
-@maxWhats smallint = 3,
-@maxWhatsOut smallint = 3,
-@defCampaing smallint = NULL, 
-@isKolob bit = 0,
-@toolsTransfer bit = 0
-AS
+	CREATE PROCEDURE [dbo].[ccsp_RIA_ABCAreas]
+	@option smallint,
+	@IDArea smallint,
+	@Descripcion varchar(40),
+	@maxMails smallint = 3, 
+	@maxChats smallint = 3,
+	@maxTweets smallint = 3,
+	@maxWhats smallint = 3,
+	@maxWhatsOut smallint = 3,
+	@callWhileChat bit = 0,
+	@callWhileEmail bit = 0,
+	@callWhileTwitter bit = 0,
+	@callWhileWhatsAppIn bit = 0,
+	@callWhileWhatsAppOut bit = 0,
+	@defCampaing smallint = NULL, 
+	@isKolob bit = 0,
+	@toolsTransfer bit = 0
+	AS
 
-set nocount on
+	set nocount on
 
+	if @option = 1 begin --Selected Area
+	 Select a.IDArea, AreaName, isnull(a.maxChats,0) as maxChats, isnull(maxMails,3) maxMails,
+	 isnull(a.maxWhats,3) as maxWhats, isnull(a.maxWhatsOut,3) as maxWhatsOut,a.callWhileChat, 
+	 a.callWhileEmail, a.callWhileTwitter, a.callWhileWhatsAppIn, a.callWhileWhatsAppOut,
+	 isnull(users,0) users, isnull(admins,0) admins, 
+	 isnull(camps,0) camps, isnull(acds,0) acds  ,isnull(a.maxTweets,3) as maxTweets , ToolsTransfer
+	 from ccRIACat_Areas a (nolock)
+	 left join (select IDArea , MAX(isnull(maxChats,0)) as maxChats from ccInbound GROUP BY IDArea) b on a.IDArea = b.IDArea
+	 left join (select IDArea,count(case when TipoUser_id = 1 AND (@isKolob = 0 OR DATEDIFF(dd, LastLoginAttempt, getdate()) <= 60)  then 1 else null end) users, count(case when TipoUser_id > 1 AND (@isKolob = 0 OR DATEDIFF(dd, LastLoginAttempt, getdate()) <= 60) then 1 else null end) admins from ccusers (nolock) where isnull(IDArea,0)=case isnull(0,0) when 0 then isnull(IDArea,0) else 0 end group by IDArea) userswg on userswg.IDArea=a.IDArea
+	 left join (select IDArea,count(*) acds from ccinbound (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) acdswg on acdswg.IDArea=a.IDArea
+	 left join (select IDArea,count(*) camps from cccamps (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) campswg on campswg.IDArea=a.IDArea
+	 where StatusArea=1 and isnull(a.IDArea,0)=case isnull(@IDArea,0)
+	 when 0 then isnull(a.IDArea,0) else @IDArea end
+	 order by AreaName
+	 return(0)
+	end
+	else if @option=2 begin --Insert Area
+		 if exists(select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion) begin
+		  select -1 as result,-1 as idAreas--, Nombre en Uso
+		  return(0)
+		 end
+		Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,maxWhats,maxWhatsOut,callWhileChat,callWhileEmail,callWhileTwitter,callWhileWhatsAppIn,callWhileWhatsAppOut,defCampaing,CreateDate,ToolsTransfer) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@maxWhats,@maxWhatsOut,@callWhileChat,@callWhileEmail,@callWhileTwitter,@callWhileWhatsAppIn,@callWhileWhatsAppOut,@defCampaing,Getdate(),@toolsTransfer)
+		select 1 as result, scope_identity() as idAreas--, Area Insertada
+		return(0)
+	end
+	else if @option=3 begin--Update Area
+		if not exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
+			Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileTwitter=@callWhileTwitter,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
+		else
+			Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileTwitter=@callWhileTwitter,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
 
+		if (select max(maxChats) as maxChats from ccinbound where IDArea=@IDArea) <> @maxChats
+			Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
+	 return(0)
+	end
 
-if @option = 1 begin --Selected Area
- Select a.IDArea, AreaName, isnull(a.maxChats,0) as maxChats, isnull(maxMails,3) maxMails,
- isnull(users,0) users, isnull(admins,0) admins,
- isnull(camps,0) camps, isnull(acds,0) acds  ,isnull(a.maxTweets,3) as maxTweets,isnull(a.maxWhats,3) as maxWhats,
- isnull(a.maxWhatsOut,3) as maxWhatsOut, ToolsTransfer
- from ccRIACat_Areas a (nolock)
- left join (select IDArea , MAX(isnull(maxChats,0)) as maxChats from ccInbound GROUP BY IDArea) b on a.IDArea = b.IDArea
- left join (select IDArea,count(case when TipoUser_id = 1 AND (@isKolob = 0 OR DATEDIFF(dd, LastLoginAttempt, getdate()) <= 60)  then 1 else null end) users, count(case when TipoUser_id > 1 AND (@isKolob = 0 OR DATEDIFF(dd, LastLoginAttempt, getdate()) <= 60) then 1 else null end) admins from ccusers (nolock) where isnull(IDArea,0)=case isnull(0,0) when 0 then isnull(IDArea,0) else 0 end group by IDArea) userswg on userswg.IDArea=a.IDArea
- left join (select IDArea,count(*) acds from ccinbound (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) acdswg on acdswg.IDArea=a.IDArea
- left join (select IDArea,count(*) camps from cccamps (nolock) where isnull(IDArea,0)=case isnull(@IDArea,0) when 0 then isnull(IDArea,0) else @IDArea end group by IDArea) campswg on campswg.IDArea=a.IDArea
- where StatusArea=1 and isnull(a.IDArea,0)=case isnull(@IDArea,0)
- when 0 then isnull(a.IDArea,0) else @IDArea end
- order by AreaName
- return(0)
-end
-else if @option=2 begin --Insert Area
-	 if exists(select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion) begin
-	  select -1 as result,-1 as idAreas--, Nombre en Uso
+	else if @option=4 begin --Delete Area
+	 if (exists(select IDArea from ccUsers where IDArea=@IDArea) or exists(select IDArea from ccCamps where IDArea = @IDArea)
+	  or exists(select IDArea from ccInbound where IDArea=@IDArea)) and (select valor from ccSettings where setting_id=95)<>1
+	 begin
+	  select -1
 	  return(0)
 	 end
-	Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,maxWhats,maxWhatsOut,defCampaing,CreateDate,ToolsTransfer) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@maxWhats,@maxWhatsOut,@defCampaing,Getdate(),@toolsTransfer)
-	select 1 as result, scope_identity() as idAreas--, Area Insertada
-	return(0)
-end
-else if @option=3 begin--Update Area
-	if not exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
-		Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,defCampaing=@defCampaing where IDArea=@IDArea
-	else
-		Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,defCampaing=@defCampaing where IDArea=@IDArea
 
-	if (select max(maxChats) as maxChats from ccinbound where IDArea=@IDArea) <> @maxChats
-		Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
- return(0)
-end
+		declare @DWorkGroups as varchar(500)
 
-else if @option=4 begin --Delete Area
- if (exists(select IDArea from ccUsers where IDArea=@IDArea) or exists(select IDArea from ccCamps where IDArea = @IDArea)
-  or exists(select IDArea from ccInbound where IDArea=@IDArea)) and (select valor from ccSettings where setting_id=95)<>1
- begin
-  select -1
-  return(0)
- end
+		 insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+		 select user_id,cam_id,prioridad,skill,rel_id,IDWG
+		 from ccCampsAgente
+		 where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
 
-	declare @DWorkGroups as varchar(500)
+		 insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+		 select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
+		 from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
 
-	 insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-	 select user_id,cam_id,prioridad,skill,rel_id,IDWG
-	 from ccCampsAgente
-	 where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
 
-	 insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
-	 select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
-	 from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+		 select user_id,cam_id,tipo,IDWG,monitored
+		 from ccSupervisorCam
+		 where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
 
-	 Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
-	 Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
 
-	 insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
-	 select user_id,cam_id,tipo,IDWG,monitored
-	 from ccSupervisorCam
-	 where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
+		 delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
+		 delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
+		 where cam_id in (select cam_id from ccCamps where IDArea=@IDArea))
 
-	 Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea=@IDArea)
+		 Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
+		 Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
 
-	 delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
-	 delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea=@IDArea)
-	 delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
-	 where cam_id in (select cam_id from ccCamps where IDArea=@IDArea))
+		 Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+		 Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+		 Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
 
-	 Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
-	 Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea=@IDArea)
+		 select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
+		 Delete from ccRIAAreaWorkGroup where IDArea=@IDArea
 
-	 Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
-	 Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
-	 Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea = @IDArea)
+		 if (select valor from ccSettings where setting_id=95)=1
+		 begin
+		  Update ccInbound set IDArea=NULL, status=0 where IDArea=@IDArea
+		  Update ccCamps set IDArea=NULL where IDArea=@IDArea
+		  Update ccUsers set IDArea=NULL where IDArea=@IDArea
+		 end
 
-	 select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea=@IDArea
-	 Delete from ccRIAAreaWorkGroup where IDArea=@IDArea
+		 Update ccRIACat_Areas set StatusArea=0 where IDArea=@IDArea
 
-	 if (select valor from ccSettings where setting_id=95)=1
-	 begin
-	  Update ccInbound set IDArea=NULL, status=0 where IDArea=@IDArea
-	  Update ccCamps set IDArea=NULL where IDArea=@IDArea
-	  Update ccUsers set IDArea=NULL where IDArea=@IDArea
-	 end
+		 select @DWorkGroups
 
-	 Update ccRIACat_Areas set StatusArea=0 where IDArea=@IDArea
-
-	 select @DWorkGroups
-
- return(0)
-end
-else if @option=5 begin -- Select Areas Campaings and show its default Campaing 
-	select A.IDArea as IDArea, C.cam_id as campID, C.cam_descripcion as campName,
-	case when A.defCampaing=C.cam_id then 1 else 0 end as isDefault
-	from ccRIACat_Areas A (nolock)
-	inner join ccCamps C on A.IDArea=C.IDArea
-	order by IDArea asc, isDefault desc, campName
-	return(0)
- end    
-	'
+	 return(0)
+	end
+	else if @option=5 begin -- Select Areas Campaings and show its default Campaing 
+		select A.IDArea as IDArea, C.cam_id as campID, C.cam_descripcion as campName,
+		case when A.defCampaing=C.cam_id then 1 else 0 end as isDefault
+		from ccRIACat_Areas A (nolock)
+		inner join ccCamps C on A.IDArea=C.IDArea
+		order by IDArea asc, isDefault desc, campName
+		return(0)
+	 end'
 	EXEC(@sql)
 
 	SET @process = 'WhatsApp Masivo - Delete SP ccsp_GalateaAreas'	
@@ -6596,276 +6599,340 @@ else if @option=5 begin -- Select Areas Campaings and show its default Campaing
 
 	SET @process = 'WhatsApp Masivo - Create SP ccsp_GalateaAreas'	
 	SET @sql='
-		create procedure ccsp_GalateaAreas 
-    @option int = 2,
-    @IDArea smallint = 0,
-    @Descripcion varchar(40) = NULL,
-    @maxMails smallint = 3,
-    @maxChats smallint = 3,
-    @maxTweets smallint = 3,
-    @defCampaing smallint = 0,
-    @movesfromArea bit = 0,
-    @userId int = NULL,
-    @groupAreas varchar (MAX) = NULL,
-    @toolsTransfer tinyint = NULL,
-	@maxWhats smallint = 3,
-	@maxWhatsOut smallint = 3
-AS
+	Create procedure [dbo].[ccsp_GalateaAreas] 
+		@option int = 2,
+		@IDArea smallint = 0,
+		@Descripcion varchar(40) = NULL,
+		@maxMails smallint = 3,
+		@maxChats smallint = 3,
+		@maxTweets smallint = 3,
+		@maxWhats smallint = 3,
+		@maxWhatsOut smallint = 3,
+		@callWhileChat bit = 0,
+		@callWhileEmail bit = 0,
+		@callWhileTwitter bit = 0,
+		@CallWhileWhatsAppIn bit = 0,
+		@CallWhileWhatsAppOut bit = 0,
+		@defCampaing smallint = 0,
+		@movesfromArea bit = 0,
+		@userId int = NULL,
+		@groupAreas varchar (MAX) = NULL,
+		@toolsTransfer tinyint = NULL 
+	AS
 
-SET NOCOUNT ON;
+	SET NOCOUNT ON;
     
-    declare @opt int = @option -1
+		declare @opt int = @option -1
     
-    DECLARE @userLogin as varchar(40);
-    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @userId);
+		DECLARE @userLogin as varchar(40);
+		SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @userId);
 
-    if @option = 1 --Superuser info
-    begin
-        create table #campsIds(
-            id int,
-            cadena varchar(max)
-        )
+		if @option = 1 --Superuser info
+		begin
+			create table #campsIds(
+				id int,
+				cadena varchar(max)
+			)
             
-        declare @sql varchar(max),@idPivots varchar(max),@idConcat varchar(max)
+			declare @sql varchar(max),@idPivots varchar(max),@idConcat varchar(max)
             
-        set @idPivots =''''
-        set @idConcat=''''
+			set @idPivots =''''
+			set @idConcat=''''
             
-        select @idPivots=@idPivots+Id+'','',
-            @idConcat=@idConcat+''case when ''+id+'' is not null then convert(varchar(max),''+ id+'') + '''','''' else '''''''' end + 
-            ''
-            from (
-            select distinct ''[''+convert(varchar(max),cam_id)+'']'' as Id from ccCamps   
-            )x
+			select @idPivots=@idPivots+Id+'','',
+				@idConcat=@idConcat+''case when ''+id+'' is not null then convert(varchar(max),''+ id+'') + '''','''' else '''''''' end + 
+				''
+				from (
+				select distinct ''[''+convert(varchar(max),cam_id)+'']'' as Id from ccCamps   
+				)x
             
-        set @idPivots =SUBSTRING(@idPivots,0,len(@idPivots))
-        set @idConcat =SUBSTRING(@idConcat,0,len(@idConcat)-7)
+			set @idPivots =SUBSTRING(@idPivots,0,len(@idPivots))
+			set @idConcat =SUBSTRING(@idConcat,0,len(@idConcat)-7)
             
-        set @sql=''
-            select IDArea,''+@idConcat+'' from 
-            (   select IDArea, cam_id from ccCamps) as T
-            PIVOT (
-            max(cam_id) for cam_id in (''+@idPivots+'') ) as P''
+			set @sql=''
+				select IDArea,''+@idConcat+'' from 
+				(   select IDArea, cam_id from ccCamps) as T
+				PIVOT (
+				max(cam_id) for cam_id in (''+@idPivots+'') ) as P''
 
-        insert into #campsIds
-        exec(@sql)
+			insert into #campsIds
+			exec(@sql)
             
-        select a.IDArea Id, 
-            a.AreaName Name, 
-            a.StatusArea Status, 
-            a.maxMails Mails, 
-            a.maxChats Chats, 
-            a.maxTweets Tweets, 
-			a.maxWhats Whats,
-			a.maxWhatsOut WhatsOut,
-            a.CreateDate as CreateDate,         
-            ISNULL(b.cadena, 0) as CampaignIds  
-        from ccRIACat_Areas a --Falta el datetime 
-        left join #campsIds b on a.IDArea = b.id
+			select a.IDArea Id, 
+				a.AreaName Name, 
+				a.StatusArea Status, 
+				a.maxMails Mails, 
+				a.maxChats Chats, 
+				a.maxTweets Tweets, 
+				a.maxWhats Whats,
+				a.maxWhatsOut WhatsOut,
+				a.callWhileChat callChat,
+				a.callWhileEmail callEmail,
+				a.callWhileTwitter callTwitter,
+				a.CallWhileWhatsAppIn callWhatsIn,
+				a.CallWhileWhatsAppOut callWhatsOut,
+				a.CreateDate as CreateDate,         
+				ISNULL(b.cadena, 0) as CampaignIds  
+			from ccRIACat_Areas a --Falta el datetime 
+			left join #campsIds b on a.IDArea = b.id
 
-        drop table #campsIds
-    end
-    if @option = 2 -- Select de las areas
-    begin
-        IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
-        Create table #Areas(
-            IDArea smallint,
-            AreaName varchar(MAX),
-            maxChats tinyint ,
-            maxMails tinyint ,
-            users int,
-            admins int,
-            camps int,
-            acds int,
-            maxTweets tinyint,
-			maxWhats tinyint,
-			maxWhatsOut tinyint,
-            toolsTransfer tinyint
-        )
-        insert into #Areas
-        EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@defCampaing=@defCampaing, @isKolob=1,@maxWhats=@maxWhats, @maxWhatsOut=@maxWhatsOut
-        select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
-        from #Areas a
-        inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
+			drop table #campsIds
+		end
+		if @option = 2 -- Select de las areas
+		begin
+			IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
+			Create table #Areas(
+				IDArea smallint,
+				AreaName varchar(MAX),
+				maxChats tinyint ,
+				maxMails tinyint ,
+				maxWhats tinyint ,
+				maxWhatsOut tinyint ,
+				callWhileChat bit, 
+				callWhileEmail bit,
+				callWhileTwitter bit,
+				CallWhileWhatsAppIn bit,
+				CallWhileWhatsAppOut bit,
+				users int,
+				admins int,
+				camps int,
+				acds int,
+				maxTweets tinyint,
+				toolsTransfer tinyint
+			)
+			insert into #Areas
+			EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@maxWhats=@maxWhats,@maxWhatsOut=@maxWhatsOut,@callWhileChat=@callWhileChat,@callWhileEmail=@callWhileEmail,@callWhileTwitter=@callWhileTwitter,@callWhileWhatsAppIn=@callWhileWhatsAppIn,@callWhileWhatsAppOut=@callWhileWhatsAppOut,@defCampaing=@defCampaing, @isKolob=1
+			select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
+			from #Areas a
+			inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
 
-        IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
-    end
-    if @option = 3 -- Insert new area
-    begin
-    IF OBJECT_ID(''tempdb..#InsertAreas'') IS NOT NULL DROP TABLE #InsertAreas;
-        Create table #InsertAreas(
-            result int,
-            idAreas decimal
-        )
-        insert into #InsertAreas
-        EXEC ccsp_RIA_ABCAreas 
-            @option = @opt,
-            @IDArea=@IDArea,
-            @Descripcion=@Descripcion,
-            @maxMails=@maxMails,
-            @maxChats=@maxChats,
-            @maxTweets=@maxTweets,
-            @defCampaing=@defCampaing,
-            @toolsTransfer=@toolsTransfer,
-			@maxWhats=@maxWhats,
-			@maxWhatsOut=@maxWhatsOut
-        if (select result from #InsertAreas) = 1
-            begin
+			IF OBJECT_ID(''tempdb..#Areas'') IS NOT NULL DROP TABLE #Areas;
+		end
+		if @option = 3 -- Insert new area
+		begin
+		IF OBJECT_ID(''tempdb..#InsertAreas'') IS NOT NULL DROP TABLE #InsertAreas;
+			Create table #InsertAreas(
+				result int,
+				idAreas decimal
+			)
+			insert into #InsertAreas
+			EXEC ccsp_RIA_ABCAreas 
+				@option = @opt,
+				@IDArea=@IDArea,
+				@Descripcion=@Descripcion,
+				@maxMails=@maxMails,
+				@maxChats=@maxChats,
+				@maxTweets=@maxTweets,
+				@maxWhats=@maxWhats,
+				@maxWhatsOut=@maxWhatsOut,
+				@callWhileChat=@callWhileChat,
+				@callWhileEmail=@callWhileEmail,
+				@callWhileTwitter=@callWhileTwitter,
+				@callWhileWhatsAppIn=@callWhileWhatsAppIn,
+				@callWhileWhatsAppOut=@callWhileWhatsAppOut,
+				@defCampaing=@defCampaing,
+				@toolsTransfer=@toolsTransfer
+			if (select result from #InsertAreas) = 1
+				begin
 
-                --INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD AL CREAR UN AREA
-                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@Descripcion, getDate(), @userLogin, 17, 3, '''', '''', @Descripcion);
+					--INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD AL CREAR UN AREA
+					INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) VALUES (@Descripcion, getDate(), @userLogin, 17, 3, '''', '''', @Descripcion);
 
-                if(@movesfromArea = 1) begin
-                    Update ccUsers set IDArea = (select idAreas from #InsertAreas), status = 1 where User_id = @userId
-                end
-            end
-        Select * from #InsertAreas
-    end
-    if @option = 4 -- Delete Areas
-    begin
-        IF OBJECT_ID(''tempdb..#AreasDelete'') IS NOT NULL DROP TABLE #AreasDelete;
-        SELECT value As IDArea into #AreasDelete FROM fn_RIASplitDelimited(@groupAreas, '','')
+					if(@movesfromArea = 1) begin
+						Update ccUsers set IDArea = (select idAreas from #InsertAreas), status = 1 where User_id = @userId
+					end
+				end
+			Select * from #InsertAreas
+		end
+		if @option = 4 -- Delete Areas
+		begin
+			IF OBJECT_ID(''tempdb..#AreasDelete'') IS NOT NULL DROP TABLE #AreasDelete;
+			SELECT value As IDArea into #AreasDelete FROM fn_RIASplitDelimited(@groupAreas, '','')
         
         
-        if (exists(select IDArea from ccUsers where IDArea=(Select top 1 IDArea from #AreasDelete)) or exists(select IDArea from ccCamps where IDArea = (Select top 1 IDArea from #AreasDelete))
-          or exists(select IDArea from ccInbound where IDArea=(Select top 1 IDArea from #AreasDelete))) and (select valor from ccSettings where setting_id=95)<>1
-        BEGIN
-            Select -1 as result
-        END
-        ELSE
-        BEGIN
-            declare @DWorkGroups as varchar(500)
-            insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
-            select user_id,cam_id,prioridad,skill,rel_id,IDWG
-            from ccCampsAgente
-            where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+			if (exists(select IDArea from ccUsers where IDArea=(Select top 1 IDArea from #AreasDelete)) or exists(select IDArea from ccCamps where IDArea = (Select top 1 IDArea from #AreasDelete))
+			  or exists(select IDArea from ccInbound where IDArea=(Select top 1 IDArea from #AreasDelete))) and (select valor from ccSettings where setting_id=95)<>1
+			BEGIN
+				Select -1 as result
+			END
+			ELSE
+			BEGIN
+				declare @DWorkGroups as varchar(500)
+				insert into ccCampsAgenteBackUp(user_id,cam_id,prioridad,skill,rel_id,IDWG)
+				select user_id,cam_id,prioridad,skill,rel_id,IDWG
+				from ccCampsAgente
+				where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-            insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
-            select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
-            from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+				insert into ccInboundAgentesBackup(user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG)
+				select user_id,Inbound_id,cli_id,prioridad,skill,rel_id,IDWG
+				from ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-            Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
-            Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+				Delete ccCampsAgente where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+				Delete ccInboundAgentes where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-            insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
-            select user_id,cam_id,tipo,IDWG,monitored
-            from ccSupervisorCam
-            where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+				insert into ccSupervisorCamBackup(user_id,cam_id,tipo,IDWG,monitored)
+				select user_id,cam_id,tipo,IDWG,monitored
+				from ccSupervisorCam
+				where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-            Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
+				Delete ccSupervisorCam where user_id in (select user_id from ccusers with(index(PK_ccUsers)) where IDArea in (Select IDArea from #AreasDelete))
 
-            delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
-            delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
-            delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
-            where cam_id in (select cam_id from ccCamps where IDArea in (Select IDArea from #AreasDelete)))
+				delete ccoDialerCamp where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+				delete ccoWorkingTable where cam_id in (select cam_id from ccCamps with(index(PK_ccCamps)) where IDArea in (Select IDArea from #AreasDelete))
+				delete ccoWorkingTable where callout_id in (select callout_id from ccoCallsOutSource with(index(IX_ccoCallsOutSource_1))
+				where cam_id in (select cam_id from ccCamps where IDArea in (Select IDArea from #AreasDelete)))
 
-            Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
-            Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+				Delete ccInboundHorarios Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
+				Delete ccInboundMsgs Where Inbound_id in (select Inbound_id from ccInbound with(index(PK_ccInbound)) where IDArea in (Select IDArea from #AreasDelete))
 
-            Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
-            Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
-            Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+				Delete from ccRIAWorkGroupUsers where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+				Delete from ccRIACat_WorkGroup where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
+				Delete from ccRIACampEspWG where IDWG in (select IDWG from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete))
 
-            select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
-            Delete from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+				select @DWorkGroups = coalesce(@DWorkGroups + '''','''', '''') + CAST(IDWG as varchar(40)) FROM ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
+				Delete from ccRIAAreaWorkGroup where IDArea in (Select IDArea from #AreasDelete)
 
-            if (select valor from ccSettings where setting_id=95)=1
-            begin
-            Update ccInbound set IDArea=NULL, status=0 where IDArea in (Select IDArea from #AreasDelete)
-            Update ccCamps set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
-            Update ccUsers set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
-            end
+				if (select valor from ccSettings where setting_id=95)=1
+				begin
+				Update ccInbound set IDArea=NULL, status=0 where IDArea in (Select IDArea from #AreasDelete)
+				Update ccCamps set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+				Update ccUsers set IDArea=NULL where IDArea in (Select IDArea from #AreasDelete)
+				end
 
-            Update ccRIACat_Areas set StatusArea=0 where IDArea in (Select IDArea from #AreasDelete)
+				Update ccRIACat_Areas set StatusArea=0 where IDArea in (Select IDArea from #AreasDelete)
 
-            --INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA AREA ELIMINADA
-            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-            SELECT AreaName, getDate(), @userLogin, 19, 3, '''', '''', AreaName
-            FROM ccRIACat_Areas 
-            WHERE IDArea in (Select IDArea from #AreasDelete);
+				--INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA AREA ELIMINADA
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+				SELECT AreaName, getDate(), @userLogin, 19, 3, '''', '''', AreaName
+				FROM ccRIACat_Areas 
+				WHERE IDArea in (Select IDArea from #AreasDelete);
 
-            select 1 as result
-        END
-    end
-    if @option = 5 -- update Areas
-    begin
-        if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion and IDArea <> @IDArea)
-            begin
-                select -1 as result
-                return
-            end
-        else
-            begin
+				select 1 as result
+			END
+		end
+		if @option = 5 -- update Areas
+		begin
+			if exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion and IDArea <> @IDArea)
+				begin
+					select -1 as result
+					return
+				end
+			else
+				begin
 
-                --INICIO - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
+					--INICIO - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
 
-                DECLARE @PrevDescription AS VARCHAR(50);
-                DECLARE @SelectedArea AS VARCHAR(10) = CAST(@IDArea AS varchar(10));
+					DECLARE @PrevDescription AS VARCHAR(50);
+					DECLARE @SelectedArea AS VARCHAR(10) = CAST(@IDArea AS varchar(10));
 
-                SELECT @PrevDescription = AreaName
-                FROM ccRIACat_Areas 
-                WHERE IDArea = @IDArea;
+					SELECT @PrevDescription = AreaName
+					FROM ccRIACat_Areas 
+					WHERE IDArea = @IDArea;
 
-                EXEC InsertLogAdminGalatea @action=1, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
+					EXEC InsertLogAdminGalatea @action=1, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
 
-                DECLARE @AreasTable TABLE 
-                (
-                    columnInfo VARCHAR(255),
-                    dataInfo VARCHAR(255),
-                    identifierInfo VARCHAR(255)
-                )
+					DECLARE @AreasTable TABLE 
+					(
+						columnInfo VARCHAR(255),
+						dataInfo VARCHAR(255),
+						identifierInfo VARCHAR(255)
+					)
 
-                update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),maxWhats=isnull(@maxWhats,maxWhats),maxWhatsOut=isnull(@maxWhatsOut,maxWhatsOut),defCampaing=isnull(@defCampaing, 0), ToolsTransfer=case when @toolsTransfer = 3 then ToolsTransfer else @toolsTransfer end where IDArea=@IDArea
+					update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),maxWhats=isnull(@maxWhats,maxWhats),maxWhatsOut=isnull(@maxWhatsOut,maxWhatsOut),callWhileChat=isnull(@callWhileChat,callWhileChat),callWhileEmail=isnull(@callWhileEmail,callWhileEmail),callWhileTwitter=isnull(@callWhileTwitter,callWhileTwitter),callWhileWhatsAppIn=isnull(@callWhileWhatsAppIn,callWhileWhatsAppIn),callWhileWhatsAppOut=isnull(@callWhileWhatsAppOut,callWhileWhatsAppOut),defCampaing=isnull(@defCampaing, 0), ToolsTransfer=case when @toolsTransfer = 3 then ToolsTransfer else @toolsTransfer end where IDArea=@IDArea
 
-                INSERT INTO @AreasTable EXEC InsertLogAdminGalatea @action=2, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId;
+				   INSERT INTO @AreasTable EXEC InsertLogAdminGalatea @action=2, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId;
 
-                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-                SELECT 
-                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
-                        CASE 
-                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
-                    ELSE '''' END,
-                    getDate(), 
-                    @userLogin, 
-                    18, 
-                    3, 
-                    AT.identifierInfo,
-                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
-                        CASE 
-                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @Descripcion
-                            WHEN AT.identifierInfo = ''T&SET_CAMPAIGN'' THEN 
-                                CASE 
-                                    WHEN @defCampaing IS NOT NULL AND @defCampaing <> 0 THEN
-                                        (SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @defCampaing)
-                                    ELSE ''T&COMMON_NONE'' END
-                            WHEN AT.identifierInfo = ''T&SET_TOOLSTRANSFER'' THEN
-                                CASE
-                                    WHEN @toolsTransfer = 1 THEN ''COMMON_ENABLED''
-                                    ELSE ''COMMON_DISABLED'' END
-                            ELSE AT.dataInfo END
-                    ELSE '''' END, 
-                    CASE WHEN AT.identifierInfo IS NOT NULL THEN
-                        CASE 
-                            WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
-                    ELSE '''' END
-                FROM @AreasTable AS AT;
+					INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+					SELECT 
+						CASE WHEN AT.identifierInfo IS NOT NULL THEN
+							CASE 
+								WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
+						ELSE '''' END,
+						getDate(), 
+						@userLogin, 
+						18, 
+						3, 
+						AT.identifierInfo,
+						CASE WHEN AT.identifierInfo IS NOT NULL THEN
+							CASE 
+								WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @Descripcion
+								WHEN AT.identifierInfo = ''T&SET_CAMPAIGN'' THEN 
+									CASE 
+										WHEN @defCampaing IS NOT NULL AND @defCampaing <> 0 THEN
+											(SELECT [cam_descripcion] FROM ccCamps WHERE cam_id = @defCampaing)
+										ELSE ''T&COMMON_NONE'' END
+								WHEN AT.identifierInfo = ''T&SET_TOOLSTRANSFER'' THEN
+									CASE
+										WHEN @toolsTransfer = 1 THEN ''COMMON_ENABLED''
+										ELSE ''COMMON_DISABLED'' END
+								when at.identifierInfo = ''T&SET_CALL_WHILE_CHAT'' then 
+									case 
+										when @callWhileChat = 1 then ''COMMON_ENABLED''
+										else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_EMAIL'' then 
+									case 
+										when @callWhileEmail = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_TWITTER'' then 
+									case 
+										when @callWhileTwitter = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_WHATSAPP_IN'' then 
+									case 
+										when @CallWhileWhatsAppIn = 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								when at.identifierInfo = ''T&SET_CALL_WHILE_WHATSAPP_OUT'' then 
+									case 
+										when @CallWhileWhatsAppOut= 1 then ''COMMON_ENABLED''
+											else ''COMMON_DISABLED'' end
+								ELSE AT.dataInfo END
+						ELSE '''' END, 
+						CASE WHEN AT.identifierInfo IS NOT NULL THEN
+							CASE 
+								WHEN AT.identifierInfo = ''T&EDIT_NAME'' THEN @PrevDescription ELSE isNull(@Descripcion, @PrevDescription) END
+						ELSE '''' END
+					FROM @AreasTable AS AT;
 
-                EXEC InsertLogAdminGalatea @action=3, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
+					EXEC InsertLogAdminGalatea @action=3, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId
 
-                --FIN - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
+					--FIN - INSERTA UN REGISTRO EN EL HISTORIAL DE ACTIVIDAD POR CADA PROPIEDAD EDITADA*******
 
-            end
-        if @maxChats is not null
-            begin
-                Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
-            end
-        if @movesfromArea = 1
-        Begin
-            Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
-        End
-        select 1 as result
-    end
-SET NOCOUNT ON;
+				end
+			if @maxChats is not null
+				begin
+					Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
+				end
+			if @movesfromArea = 1
+			Begin
+				Update ccUsers set IDArea = @IDArea, status = 1 where User_id = @userId
+			End
+			select 1 as result
+		END
+        IF @option = 6 -- get configAreaMultimedia by userId
+		BEGIN
+			SELECT 
+			crca.callWhileChat
+			, crca.callWhileEmail
+			, crca.CallWhileWhatsAppIn
+			, crca.CallWhileWhatsAppOut
+			FROM  
+			dbo.ccRIAWorkGroupUsers AS crwgu INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg 
+			ON crawg.IDWG = crwgu.IDWG INNER JOIN dbo.ccRIACat_Areas AS crca 
+			ON crca.IDArea = crawg.IDArea WHERE crwgu.User_id = @userId 
+			GROUP BY crca.IDArea, crca.callWhileChat, crca.callWhileEmail, crca.CallWhileWhatsAppIn, crca.CallWhileWhatsAppOut
+
+			RETURN (0)
+		END
+		IF(@option = 7) -- get area cmapign relation by areaId
+		BEGIN
+			SELECT crcew.IdCampEsp, crawg.IDArea FROM dbo.ccRIACampEspWG AS crcew 
+									INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg
+									ON crawg.IDWG = crcew.IDWG
+									WHERE crcew.Tipo = 1 AND crawg.IDArea = @idArea
+			RETURN (0)
+		END
+        
+	SET NOCOUNT ON;
 	'
 	EXEC(@sql)
 

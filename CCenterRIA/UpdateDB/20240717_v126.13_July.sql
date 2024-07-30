@@ -1009,7 +1009,7 @@ SET @process = 'Insert Url para dar de alta plantillas'
 	set @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
 		@action TINYINT = NULL,
-		@whatsAppTemplateID INT = 0,
+		@whatsAppTemplateID BIGINT = 0,
 		@id varchar(200) = NULL,
 		@Category varchar(50) = NULL,
 		@TemplateName varchar(200) = NULL,
@@ -1059,7 +1059,7 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			,cmwot.footer AS Footer
 			,cmwot.buttons AS Buttons
 			,cmwot.LanguageCode
-			,cmwot.quality AS Quality
+			,ISNULL(cmwot.quality,0) AS Quality
 			,cmwot.IsPendingQuality
 			,ISNULL(tie.IsEditable, 0) AS IsEditable
 			FROM  dbo.ccMetaWAOutboundTemplates cmwot

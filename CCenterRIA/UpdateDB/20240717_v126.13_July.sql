@@ -5293,6 +5293,10 @@ return(0)
 							AND Numbers.inboundId = 0 
 							AND Numbers.status = 1 
 							AND Configurations.serviceType = 5
+							UNION
+							SELECT number FROM ccMetaWhatsAppNumbers
+							WHERE Inbound_Id = 0
+							AND STATUS = 1
 						END 
 					IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
 						BEGIN
@@ -6096,6 +6100,119 @@ return(0)
 					END
 	'
 	EXEC (@sql)
+
+	set @sql = '
+	ALTER PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
+			    @ConexionInfo varchar(400),
+			    @inbound_id int,
+			    @ConnUser varchar(60),
+			    @tNotas int,
+			    @closeConversationTime tinyint,
+			    @ShowCalifWnd bit,
+			    @ExitWrapUpDisposition bit,
+			    @MUTimeOutClient int,
+			    @allowFileAttachments bit,
+			    @userId SMALLINT, 
+			    @idArea SMALLINT, 
+			    @isCreating BIT
+
+			    AS
+			    set nocount on
+			    IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inbound_id) 
+			    BEGIN
+
+			        UPDATE contactMeanIn SET ConnPass = ''N/A'', numMessages = 3, timeAlertMessage = 5, answerTimeOut = 10 where inboundId = @inbound_id;
+
+			        EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inbound_id, @userId= @userid
+
+			        IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+
+			        Create table #contactMeanInTable 
+			        (
+			            columnInfo VARCHAR(255),
+			            dataInfo VARCHAR(255),
+			            identifierInfo VARCHAR(255)
+			        )
+
+			        UPDATE contactMeanIn SET conexionInfo = @conexionInfo, connUser = @connUser, closeConversationTime = CAST(@closeConversationTime AS INT), answerTimeoutClient = @MUTimeOutClient, allowFileAttachments = @allowFileAttachments        
+			        where inboundId = @inbound_id;
+
+			        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#contactMeanInTable'';
+
+			        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+			        SELECT 
+			            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+			            getDate(), 
+			            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+			            CASE WHEN @isCreating = 1 THEN 40 ELSE 53 END, 
+			            3, 
+			            CMIT.identifierInfo,
+			            CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
+			                CASE
+			                    WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
+			                        CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+			                    ELSE CMIT.dataInfo END
+			            ELSE '''' END, 
+			            (SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
+			        FROM #contactMeanInTable AS CMIT;
+
+			        EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inbound_id, @userId = @userid;
+
+			        IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+
+			        UPDATE ccWhatsAppNumbers SET inboundId = @inbound_id WHERE number = @conexionInfo
+					UPDATE ccMetaWhatsAppNumbers SET Inbound_Id = @inbound_id WHERE number = @conexionInfo
+
+
+			    END;
+
+			    IF EXISTS (SELECT Inbound_id FROM ccInbound WHERE Inbound_id = @inbound_id) 
+			    BEGIN
+			    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inbound_id, @userId= @userid
+
+			        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+
+			        Create table #ccInboundTable 
+			        (
+			            columnInfo VARCHAR(255),
+			            dataInfo VARCHAR(255),
+			            identifierInfo VARCHAR(255)
+			        )
+
+			        UPDATE ccInbound SET tNotas = @tNotas, ShowCalifWnd = @ShowCalifWnd, ExitWrapUpDisposition = @ExitWrapUpDisposition where Inbound_id = @inbound_id;
+
+			        IF(@isCreating > 0) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid, @tableTemp=''#ccInboundTable'';
+
+			        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+			        SELECT 
+			            (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
+			            getDate(), 
+			            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+			            40, 
+			            3, 
+			            CASE 
+			                WHEN CCIT.identifierInfo = ''IN_WRAP_UP_TIME'' THEN ''IN_WRAP_UP_TIME_WHATS''
+			                WHEN CCIT.identifierInfo = ''IN_SHOW_DISPOSITIONS'' THEN ''IN_SHOW_DISPOSITIONS_WHATS'' 
+			                ELSE  CCIT.identifierInfo 
+			            END,
+			            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+			                CASE
+			                    WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_UP_TIME'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
+			                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+			                    ELSE CCIT.dataInfo END
+			            ELSE '''' END, 
+			            (SELECT [name] FROM contactMeanIn WHERE inboundId = @inbound_id)
+			        FROM #ccInboundTable AS CCIT;
+
+			        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inbound_id, @userId = @userid;
+
+			        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+			    END;
+			    SELECT @inbound_id;
+			    return(@inbound_id)
+
+			    set nocount off'
+	EXEC(@sql)
 	----------------------------------------------------------- End Carlos Muñoz -------------------------------------------------------------------------------
 	----------------------------------------------------------- Start Jonathan Ramírez -------------------------------------------------------------------------
 	set @process = 'Modify SP ccsp_WhatsAppInformationOut, se modifica valor de retorno Sin calificación'

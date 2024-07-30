@@ -5258,6 +5258,27 @@ return(0)
 	'
 	EXEC(@sql)
 
+	set @process = 'Update length in messageId - ccWAMessagesConversations'
+	set @sql = '
+		IF (SELECT max_length FROM sys.columns WHERE name = N''messageId'' AND Object_ID = Object_ID(N''ccWAMessagesConversations'')) < 150
+		BEGIN
+			ALTER TABLE [dbo].[ccWAMessagesConversations]
+			ALTER COLUMN [messageId] VARCHAR(150) NOT NULL;
+		END
+	'
+	EXEC(@sql)
+	
+	set @process = 'Update length in messageId - ccWAMessagesConversationsOut'
+	set @sql = '
+		IF (SELECT max_length FROM sys.columns WHERE name = N''messageId'' AND Object_ID = Object_ID(N''ccWAMessagesConversationsOut'')) < 150
+		BEGIN
+			ALTER TABLE [dbo].[ccWAMessagesConversationsOut]
+			ALTER COLUMN [messageId] VARCHAR(150) NOT NULL;
+		END
+	'
+	EXEC(@sql)
+
+
 	-----------------------------------------------------------  End Isaac Cortes  -------------------------------------------------------------------------------
 	
 	----------------------------------------------------------- Start Carlos Eduardo Muñoz -------------------------------------------------------------------------------

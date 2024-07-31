@@ -94,7 +94,7 @@ BEGIN
 		BEGIN
 			INSERT INTO ccSettings2 
 				(setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
-				VALUES (260, ''1'', ''Permite realizar marcación manual estando en diálogo o programar la llamada para que sea realizada cuando el agente pase a estado disponible'', 1, ''AGT'', ''0 Desactivado|1 Habilitado'', ''Allows manual dialing while in dialogue with some unified media or scheduling the call to be made when the agent becomes available'', 1, ''^[0-1]$'');
+				VALUES (260, ''0'', ''Permite realizar marcación manual estando en diálogo o programar la llamada para que sea realizada cuando el agente pase a estado disponible'', 1, ''AGT'', ''0 Desactivado|1 Habilitado'', ''Allows manual dialing while in dialogue with some unified media or scheduling the call to be made when the agent becomes available'', 1, ''^[0-1]$'');
 		END'
 	EXEC(@sql)
 	---------------------------------------------------- k064001|k064003 -------------------------------------------------------------------------------------

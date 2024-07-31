@@ -80,8 +80,8 @@ BEGIN
 						MetaId int identity(1,1),
 						Number varchar(30) PRIMARY KEY not null,
 						Status int,
-						Inbound_Id smallint FOREIGN KEY(Inbound_id) REFERENCES ccInbound(Inbound_id) null,
-						Cam_Id smallint FOREIGN KEY(cam_id) REFERENCES ccCamps(cam_id) null,
+						Inbound_Id smallint,
+						Cam_Id smallint,
 						PhoneNumberId varchar(100),
 						Token varchar(max),
 						WAAccountId varchar(30) null,
@@ -1823,6 +1823,16 @@ and (
    ( (''+@isVerano+''  & @iZonas)>0 or ''+@isVerano+''=0) 
 )
 order by W.dateDial ''+ @Order_Asc_Desc +'', waout_id ''+ @Order_Asc_Desc
+
+if @TipoJobs in(0,2)--** INCLUIR LOS NUEVAS
+begin				
+	select @sql=@sql+nchar(13)+''--INCLUIR LAS NUEVAS--''
+	select @sql=@sql+REPLACE(
+	REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.dateDial < dateadd(mi, 5, getdate())'')--Todo cambiar
+		,''STATUS_REPLACE_QUERY'',''W.WaStatus=0'')
+	
+	--print(@sql)
+end -- TOMA EN CUENTA LAS NUEVAS
 
 ----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
 set @parameters=''@CAMPID int,@topCount int,@iZonas int''		

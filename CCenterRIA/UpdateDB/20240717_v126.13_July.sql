@@ -1748,7 +1748,7 @@ SET @process = 'Insert Url para dar de alta plantillas'
 
 	SET @process = 'WhatsApp Masivo - Create SP ccsp_WAOUTGetNewJobs'	
 	SET @sql='
-		CREATE PROCEDURE [dbo].[ccsp_WAOUTGetNewJobs]
+		CREATE PROCEDURE ccsp_WAOUTGetNewJobs
 @campId INT,
 @action INT=0, --0 select and update, 1 select registry
 @topCount INT=80

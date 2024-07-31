@@ -6047,7 +6047,7 @@ return(0)
 		EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
 	end
 
-	IF (@CampType IS NOT NULL AND @CampType IN (3, 5))
+	IF (@CampType IS NOT NULL AND @CampType IN (3, 5, 0))
 	BEGIN
 		IF NOT EXISTS(SELECT camp_id FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id)
 		BEGIN

@@ -43,6 +43,169 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
+	-------------------------------------------------- Begin David Medina -----------------------------------------------------------------------------------
+	--------------------------------------------------------- DDL -------------------------------------------------------------------------------------------
+	---------------------------------------------------- k064001|k064003 ------------------------------------------------------------------------------------
+	-------------------------------------------------------- Tablas -----------------------------------------------------------------------------------------
+	SET @process = 'k064001|k064003 se añade columna callWhileChat a tabla ccRIACat_Areas'
+	SET @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''callWhileChat'' AND Object_ID = Object_ID(N''dbo.ccRIACat_Areas''))
+		BEGIN
+			ALTER TABLE ccRIACat_Areas ADD callWhileChat BIT NOT NULL DEFAULT 0;
+		END'
+	EXEC(@sql)
+
+	SET @process = 'k064001|k064003 se añade columna callWhileEmail a tabla ccRIACat_Areas'
+	SET @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''callWhileEmail'' AND Object_ID = Object_ID(N''dbo.ccRIACat_Areas''))
+		BEGIN
+			ALTER TABLE ccRIACat_Areas ADD callWhileEmail BIT NOT NULL DEFAULT 0;
+		END'
+	EXEC(@sql)
+
+	SET @process = 'k064001|k064003 se añade columna callWhileWhatsAppIn a tabla ccRIACat_Areas'
+	SET @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''callWhileWhatsAppIn'' AND Object_ID = Object_ID(N''dbo.ccRIACat_Areas''))
+		BEGIN
+			ALTER TABLE ccRIACat_Areas ADD callWhileWhatsAppIn BIT NOT NULL DEFAULT 0;
+		END'
+	EXEC(@sql)
+
+	SET @process = 'k064001|k064003 se añade columna callWhileWhatsAppOut a tabla ccRIACat_Areas'
+	SET @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''callWhileWhatsAppOut'' AND Object_ID = Object_ID(N''dbo.ccRIACat_Areas''))
+		BEGIN
+			ALTER TABLE ccRIACat_Areas ADD callWhileWhatsAppOut BIT NOT NULL DEFAULT 0;
+		END'
+	EXEC(@sql)
+
+	SET @process = 'k064001|k064003 se añade columna maxWhatsOut a tabla ccRIACat_Areas'
+	SET @sql = '
+		IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''maxWhatsOut'' AND Object_ID = Object_ID(N''dbo.ccRIACat_Areas''))
+		BEGIN
+			ALTER TABLE ccRIACat_Areas ADD maxWhatsOut smallint default 3;
+		END'
+	EXEC(@sql)
+	--------------------------------------------------------- DML -------------------------------------------------------------------------------------------
+	------------------------------------------------------- k064033 -----------------------------------------------------------------------------------------
+	SET @process = 'K064033-Setting realizar marcación manual teniendo conversación en diálogo'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM ccSettings2 WHERE setting_id = 260)
+		BEGIN
+			INSERT INTO ccSettings2 
+				(setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate) 
+				VALUES (260, ''0'', ''Permite realizar marcación manual estando en diálogo o programar la llamada para que sea realizada cuando el agente pase a estado disponible'', 1, ''AGT'', ''0 Desactivado|1 Habilitado'', ''Allows manual dialing while in dialogue with some unified media or scheduling the call to be made when the agent becomes available'', 1, ''^[0-1]$'');
+		END'
+	EXEC(@sql)
+	---------------------------------------------------- k064001|k064003 -------------------------------------------------------------------------------------
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''maxWhats'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_MAX_WHATS'', ''ccRIACat_Areas'', ''maxWhats'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''maxWhatsOut'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_MAX_WHATS_OUT'', ''ccRIACat_Areas'', ''maxWhatsOut'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''callWhileChat'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_CALL_WHILE_CHAT'', ''ccRIACat_Areas'', ''callWhileChat'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''callWhileEmail'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_CALL_WHILE_EMAIL'', ''ccRIACat_Areas'', ''callWhileEmail'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''callWhileWhatsAppIn'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_CALL_WHILE_WHATSAPP_IN'', ''ccRIACat_Areas'', ''callWhileWhatsAppIn'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores de relación en tabla relationTableColumnIdentifiers'
+	SET @sql = '
+		IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''callWhileWhatsAppOut'')
+		BEGIN
+			INSERT INTO relationTableColumnIdentifiers(identifiers, tableName, colunName)
+			VALUES (''T&SET_CALL_WHILE_WHATSAPP_OUT'', ''ccRIACat_Areas'', ''callWhileWhatsAppOut'');
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_CHAT'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_CALL_WHILE_CHAT'', ''Aceptar llamadas en estado de diálogo de chat'', ''Accept calls on engaged status (chat)'', ''Aceitar chamadas no status de diálogo de chat'')
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_EMAIL'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_CALL_WHILE_EMAIL'', ''Aceptar llamadas en estado de diálogo de correo'', ''Accept calls on engaged status (email)'', ''Aceitar chamadas no status de diálogo de e-mail'')
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_WHATSAPP_OUT'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_CALL_WHILE_WHATSAPP_OUT'', ''Aceptar llamadas en estado de diálogo de WhatsApp de salida'', ''Accept calls on engaged status (Outbound WhatsApp)'', ''Aceitar chamadas no status de diálogo de saída do WhatsApp'')
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_CALL_WHILE_WHATSAPP_IN'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_CALL_WHILE_WHATSAPP_IN'', ''Aceptar llamadas en estado de diálogo de WhatsApp de entrada'', ''Accept calls on engaged status (Inbound WhatsApp)'', ''Aceitar chamadas no status de diálogo de entrada do WhatsApp'')
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_WHATS_OUT'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_MAX_WHATS_OUT'', ''Conversaciones de WhatsApp de salida por agente'', ''Outbound WhatsApp conversations per agent'', ''Conversas de WhatsApp de saída por agente'')
+		END'
+	EXEC(@sql)
+
+	SET @process = 'Se insertan identificadores para mostrar etiquetas en historial de actividad al editar areas'
+	SET @sql = '	
+		IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''T&SET_MAX_WHATS_IN'')
+		BEGIN
+			insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) 
+			values (''T&SET_MAX_WHATS_IN'', ''Conversaciones de WhatsApp de entrada por agente'', ''Inbound WhatsApp conversations per agent'', ''Conversas de WhatsApp de entrada por agente'')
+		END'
+	EXEC(@sql)
+------------------------------------------------------ End David Medina ---------------------------------------------------------------------------------
 	-----------------------------------------------Inicio Crear tablas ----------------------------------------------------------------------------------
 	set @process = 'Create table ccMetaWAOutboundTemplates '
 	set @sql = '
@@ -6454,15 +6617,6 @@ return(0)
 
 	----------------------------------------------------------- End Jonathan Ramírez ---------------------------------------------------------------------------
 ------------------------------------------------------------ Gaby K064034 --------------------------------------------------------------------------------
-	SET @process = 'WhatsApp Masivo - New column Max Whats Out'	
-	SET @sql='
-	if not exists (select * from sys.columns where name = N''maxWhatsOut'' and Object_ID = Object_ID(N''ccRIACat_Areas''))
-    begin
-        alter table ccRIACat_Areas add maxWhatsOut tinyint default(3)
-    end
-	'
-	EXEC(@sql)
-
 	SET @process = 'WhatsApp Masivo - Delete SP ccsp_RIA_ABCAreas'	
 	SET @sql='
 	if exists (select * from sys.procedures where name = N''ccsp_RIA_ABCAreas'')
@@ -6485,7 +6639,6 @@ return(0)
 	@maxWhatsOut smallint = 3,
 	@callWhileChat bit = 0,
 	@callWhileEmail bit = 0,
-	@callWhileTwitter bit = 0,
 	@callWhileWhatsAppIn bit = 0,
 	@callWhileWhatsAppOut bit = 0,
 	@defCampaing smallint = NULL, 
@@ -6498,7 +6651,7 @@ return(0)
 	if @option = 1 begin --Selected Area
 	 Select a.IDArea, AreaName, isnull(a.maxChats,0) as maxChats, isnull(maxMails,3) maxMails,
 	 isnull(a.maxWhats,3) as maxWhats, isnull(a.maxWhatsOut,3) as maxWhatsOut,a.callWhileChat, 
-	 a.callWhileEmail, a.callWhileTwitter, a.callWhileWhatsAppIn, a.callWhileWhatsAppOut,
+	 a.callWhileEmail, a.callWhileWhatsAppIn, a.callWhileWhatsAppOut,
 	 isnull(users,0) users, isnull(admins,0) admins, 
 	 isnull(camps,0) camps, isnull(acds,0) acds  ,isnull(a.maxTweets,3) as maxTweets , ToolsTransfer
 	 from ccRIACat_Areas a (nolock)
@@ -6516,15 +6669,15 @@ return(0)
 		  select -1 as result,-1 as idAreas--, Nombre en Uso
 		  return(0)
 		 end
-		Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,maxWhats,maxWhatsOut,callWhileChat,callWhileEmail,callWhileTwitter,callWhileWhatsAppIn,callWhileWhatsAppOut,defCampaing,CreateDate,ToolsTransfer) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@maxWhats,@maxWhatsOut,@callWhileChat,@callWhileEmail,@callWhileTwitter,@callWhileWhatsAppIn,@callWhileWhatsAppOut,@defCampaing,Getdate(),@toolsTransfer)
+		Insert into ccRIACat_Areas (AreaName,maxMails,maxChats,maxTweets,maxWhats,maxWhatsOut,callWhileChat,callWhileEmail,callWhileWhatsAppIn,callWhileWhatsAppOut,defCampaing,CreateDate,ToolsTransfer) values (@Descripcion,@maxMails,@maxChats,@maxTweets,@maxWhats,@maxWhatsOut,@callWhileChat,@callWhileEmail,@callWhileWhatsAppIn,@callWhileWhatsAppOut,@defCampaing,Getdate(),@toolsTransfer)
 		select 1 as result, scope_identity() as idAreas--, Area Insertada
 		return(0)
 	end
 	else if @option=3 begin--Update Area
 		if not exists(Select AreaName from ccRIACat_Areas where StatusArea=1 and AreaName=@Descripcion)
-			Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileTwitter=@callWhileTwitter,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
+			Update ccRIACat_Areas set AreaName=@Descripcion,maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
 		else
-			Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileTwitter=@callWhileTwitter,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
+			Update ccRIACat_Areas set maxMails=@maxMails,maxChats=@maxChats,maxTweets=@maxTweets,maxWhats=@maxWhats,maxWhatsOut=@maxWhatsOut,callWhileChat=@callWhileChat,callWhileEmail=@callWhileEmail,callWhileWhatsAppIn=@callWhileWhatsAppIn,callWhileWhatsAppOut=@callWhileWhatsAppOut,defCampaing=@defCampaing where IDArea=@IDArea
 
 		if (select max(maxChats) as maxChats from ccinbound where IDArea=@IDArea) <> @maxChats
 			Update ccinbound set maxChats=@maxChats where IDArea=@IDArea
@@ -6620,7 +6773,6 @@ return(0)
 		@maxWhatsOut smallint = 3,
 		@callWhileChat bit = 0,
 		@callWhileEmail bit = 0,
-		@callWhileTwitter bit = 0,
 		@CallWhileWhatsAppIn bit = 0,
 		@CallWhileWhatsAppOut bit = 0,
 		@defCampaing smallint = 0,
@@ -6678,7 +6830,6 @@ return(0)
 				a.maxWhatsOut WhatsOut,
 				a.callWhileChat callChat,
 				a.callWhileEmail callEmail,
-				a.callWhileTwitter callTwitter,
 				a.CallWhileWhatsAppIn callWhatsIn,
 				a.CallWhileWhatsAppOut callWhatsOut,
 				a.CreateDate as CreateDate,         
@@ -6700,7 +6851,6 @@ return(0)
 				maxWhatsOut tinyint ,
 				callWhileChat bit, 
 				callWhileEmail bit,
-				callWhileTwitter bit,
 				CallWhileWhatsAppIn bit,
 				CallWhileWhatsAppOut bit,
 				users int,
@@ -6711,7 +6861,7 @@ return(0)
 				toolsTransfer tinyint
 			)
 			insert into #Areas
-			EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@maxWhats=@maxWhats,@maxWhatsOut=@maxWhatsOut,@callWhileChat=@callWhileChat,@callWhileEmail=@callWhileEmail,@callWhileTwitter=@callWhileTwitter,@callWhileWhatsAppIn=@callWhileWhatsAppIn,@callWhileWhatsAppOut=@callWhileWhatsAppOut,@defCampaing=@defCampaing, @isKolob=1
+			EXECUTE ccsp_RIA_ABCAreas @option = @opt, @IDArea=@IDArea,@Descripcion=@Descripcion,@maxMails=@maxMails,@maxChats=@maxChats,@maxTweets=@maxTweets,@maxWhats=@maxWhats,@maxWhatsOut=@maxWhatsOut,@callWhileChat=@callWhileChat,@callWhileEmail=@callWhileEmail,@callWhileWhatsAppIn=@callWhileWhatsAppIn,@callWhileWhatsAppOut=@callWhileWhatsAppOut,@defCampaing=@defCampaing, @isKolob=1
 			select a.*,rca.CreateDate,Isnull(rca.defCampaing,0) as defCampaing
 			from #Areas a
 			inner join ccRIACat_Areas rca with(nolock) on a.IDArea = rca.IDArea
@@ -6737,7 +6887,6 @@ return(0)
 				@maxWhatsOut=@maxWhatsOut,
 				@callWhileChat=@callWhileChat,
 				@callWhileEmail=@callWhileEmail,
-				@callWhileTwitter=@callWhileTwitter,
 				@callWhileWhatsAppIn=@callWhileWhatsAppIn,
 				@callWhileWhatsAppOut=@callWhileWhatsAppOut,
 				@defCampaing=@defCampaing,
@@ -6848,7 +6997,7 @@ return(0)
 						identifierInfo VARCHAR(255)
 					)
 
-					update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),maxWhats=isnull(@maxWhats,maxWhats),maxWhatsOut=isnull(@maxWhatsOut,maxWhatsOut),callWhileChat=isnull(@callWhileChat,callWhileChat),callWhileEmail=isnull(@callWhileEmail,callWhileEmail),callWhileTwitter=isnull(@callWhileTwitter,callWhileTwitter),callWhileWhatsAppIn=isnull(@callWhileWhatsAppIn,callWhileWhatsAppIn),callWhileWhatsAppOut=isnull(@callWhileWhatsAppOut,callWhileWhatsAppOut),defCampaing=isnull(@defCampaing, 0), ToolsTransfer=case when @toolsTransfer = 3 then ToolsTransfer else @toolsTransfer end where IDArea=@IDArea
+					update ccRIACat_Areas set AreaName= isnull(@Descripcion,AreaName),maxMails=isnull(@maxMails,maxMails),maxChats=isnull(@maxChats,maxChats),maxTweets=isnull(@maxTweets,maxTweets),maxWhats=isnull(@maxWhats,maxWhats),maxWhatsOut=isnull(@maxWhatsOut,maxWhatsOut),callWhileChat=isnull(@callWhileChat,callWhileChat),callWhileEmail=isnull(@callWhileEmail,callWhileEmail),callWhileWhatsAppIn=isnull(@callWhileWhatsAppIn,callWhileWhatsAppIn),callWhileWhatsAppOut=isnull(@callWhileWhatsAppOut,callWhileWhatsAppOut),defCampaing=isnull(@defCampaing, 0), ToolsTransfer=case when @toolsTransfer = 3 then ToolsTransfer else @toolsTransfer end where IDArea=@IDArea
 
 				   INSERT INTO @AreasTable EXEC InsertLogAdminGalatea @action=2, @tableName=''ccRIACat_Areas'', @columnNameId=''IDArea'', @valueId=@SelectedArea, @userId= @userId;
 
@@ -6882,10 +7031,6 @@ return(0)
 								when at.identifierInfo = ''T&SET_CALL_WHILE_EMAIL'' then 
 									case 
 										when @callWhileEmail = 1 then ''COMMON_ENABLED''
-											else ''COMMON_DISABLED'' end
-								when at.identifierInfo = ''T&SET_CALL_WHILE_TWITTER'' then 
-									case 
-										when @callWhileTwitter = 1 then ''COMMON_ENABLED''
 											else ''COMMON_DISABLED'' end
 								when at.identifierInfo = ''T&SET_CALL_WHILE_WHATSAPP_IN'' then 
 									case 

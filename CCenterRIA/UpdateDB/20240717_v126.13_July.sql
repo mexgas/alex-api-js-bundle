@@ -1884,7 +1884,8 @@ SET @process = 'Insert Url para dar de alta plantillas'
 	SET @sql='
 		create procedure ccspOutboundWhatsApp
 		@action int,
-		@camId int = null
+		@camId int = null,
+		@campType int = null
 		as
 		if @action=1 begin
 			declare @Url as varchar(50)

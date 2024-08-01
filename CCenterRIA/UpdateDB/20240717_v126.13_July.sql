@@ -1890,34 +1890,73 @@ SET @process = 'Insert Url para dar de alta plantillas'
 			declare @Url as varchar(50)
 			set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
 
-			select 
-				distinct 
-				cast(c. cam_id as int) as CamId,
-				cam_descripcion as [Name],
-				1 AS CampType,
-				cam_procesando as [Start],
-				Number as PhoneNumber, 
-				case cam_procesando when 0 then '''' else REPLACE(@Url, ''phoneId'', PhoneNumberId) end as Url, 
-				Token
-			from ccCamps c with(nolock)
-			left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
-			left join  ccCampsHorarios s ON s.cam_id = c.cam_id
-			left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
-			WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
-			UNION
-			SELECT -- load acd
-				DISTINCT 
-				CAST(ci.Inbound_id AS INT) AS CamId,
-				ci.descripcion AS [Name],
-				0 AS CampType,
-				CAST(ci.Status AS BIT) AS [Start],
-				cmw.Number AS PhoneNumber,
-				(CASE ci.Status WHEN 0 THEN '''' ELSE REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) END) AS Url,
-				cmw.Token AS Token
-			FROM ccInbound ci WITH(NOLOCK)
-			LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
-			LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
-			WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+			IF @camId IS NULL AND @campType IS NULL
+			BEGIN
+				select 
+					distinct 
+					cast(c. cam_id as int) as CamId,
+					cam_descripcion as [Name],
+					1 AS CampType,
+					cam_procesando as [Start],
+					Number as PhoneNumber, 
+					case cam_procesando when 0 then '''' else REPLACE(@Url, ''phoneId'', PhoneNumberId) end as Url, 
+					Token
+				from ccCamps c with(nolock)
+				left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+				left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+				left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+				WHERE CampType=5 AND c.IDArea IS NOT NULL
+				UNION
+				SELECT -- load acd
+					DISTINCT 
+					CAST(ci.Inbound_id AS INT) AS CamId,
+					ci.descripcion AS [Name],
+					0 AS CampType,
+					CAST(ci.Status AS BIT) AS [Start],
+					cmw.Number AS PhoneNumber,
+					(CASE ci.Status WHEN 0 THEN '''' ELSE REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) END) AS Url,
+					cmw.Token AS Token
+				FROM ccInbound ci WITH(NOLOCK)
+				LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+				LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+				WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+			END
+			ELSE IF @campType IS NOT NULL
+			BEGIN
+				IF @campType = 0
+				BEGIN
+					SELECT -- load acd
+						DISTINCT 
+						CAST(ci.Inbound_id AS INT) AS CamId,
+						ci.descripcion AS [Name],
+						0 AS CampType,
+						CAST(ci.Status AS BIT) AS [Start],
+						cmw.Number AS PhoneNumber,
+						(CASE ci.Status WHEN 0 THEN '''' ELSE REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) END) AS Url,
+						cmw.Token AS Token
+					FROM ccInbound ci WITH(NOLOCK)
+					LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+					LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+					WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+				END
+				ELSE
+				BEGIN
+					select 
+						distinct 
+						cast(c. cam_id as int) as CamId,
+						cam_descripcion as [Name],
+						1 AS CampType,
+						cam_procesando as [Start],
+						Number as PhoneNumber, 
+						case cam_procesando when 0 then '''' else REPLACE(@Url, ''phoneId'', PhoneNumberId) end as Url, 
+						Token
+					from ccCamps c with(nolock)
+					left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+					left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+					left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+					WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+				END
+			END
 	    end
 	'
 	EXEC(@sql)

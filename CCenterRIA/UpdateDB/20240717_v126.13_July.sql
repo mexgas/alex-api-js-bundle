@@ -2362,7 +2362,7 @@ return(0)
 	EXEC(@sql)
 
 	SET @process = 'K020147 - Campañas Whatsapp de Salida en totales - Agentes Se modifica SP para traer los datos solamente de las campañas de whatsApp'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns] --exec ccsp_GalateaAdminCampaigns @Option=10, @AdminId=1, @CampType=1, @IsCampaignWhatsApp=1
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminCampaigns]
 				@Option AS      SMALLINT, 
 				@CampType AS    SMALLINT = 0, 
 				@WorkgroupId AS INT      = 0, 
@@ -2831,9 +2831,26 @@ return(0)
 							WHERE user_id = @AdminId
 							)
 						SELECT DISTINCT CAST(IdCampEsp AS INT) AS Id
+						INTO #tempIds
 						FROM ccRIACampEspWG A WITH (NOLOCK)
 						INNER JOIN wgId ON wgId.IDWG = A.IDWG
 							AND A.Tipo = @CampType;
+	
+						IF(@CampType = 1)
+						BEGIN
+							SELECT Id FROM #tempIds ids
+							INNER JOIN ccCamps c on c.cam_id = ids.Id
+							WHERE (c.CampType = 5 AND @IsWhatsAppCampaign = 1) 
+							OR (c.CampType <> 5 AND @IsWhatsAppCampaign = 0)
+						END
+						ELSE
+						BEGIN
+							SELECT Id FROM #tempIds ids
+							INNER JOIN ccInbound c on c.Inbound_id = ids.Id
+							WHERE (c.chat = 5 AND @IsWhatsAppCampaign = 1) 
+							OR (c.chat <> 5 AND @IsWhatsAppCampaign = 0)
+						END
+						DROP TABLE #tempIds
 					END;
 					ELSE
 					BEGIN
@@ -2843,12 +2860,16 @@ return(0)
 							SELECT DISTINCT CAST(cam_id AS INT) AS Id
 							FROM ccCamps WITH (NOLOCK)
 							WHERE IDArea IS NOT NULL
+							AND(CampType = 5 AND @IsWhatsAppCampaign = 1) 
+							OR (CampType <> 5 AND @IsWhatsAppCampaign = 0)
 						END
 						ELSE
 						BEGIN
 							SELECT DISTINCT CAST(Inbound_id AS INT) AS Id
 							FROM ccInbound WITH (NOLOCK)
 							WHERE IDArea IS NOT NULL
+							AND (chat = 5 AND @IsWhatsAppCampaign = 1) 
+							OR (chat <> 5 AND @IsWhatsAppCampaign = 0)
 						END
 					END;
 

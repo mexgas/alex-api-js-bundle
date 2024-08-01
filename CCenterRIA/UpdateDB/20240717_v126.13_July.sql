@@ -3137,7 +3137,7 @@ return(0)
 	END'
 	EXEC(@sql)
 
-	set @process = 'CW-8638 se borra sp ccsp_RIAAdmDelRegs'
+	set @process = 'CW-8638 se crea sp ccsp_SaveStatusAgent'
 	set @sql = '	
 	
 		CREATE PROCEDURE [dbo].[ccsp_SaveStatusAgent]

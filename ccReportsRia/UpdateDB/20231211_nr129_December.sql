@@ -5608,6 +5608,20 @@ select date
 --,auxiliarRedyTime
 from RepAgentSummary'
     EXEC(@sql)
+
+    set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+    begin
+    DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+    end'
+EXEC(@sql)
+
+    set @process = 'add ani to ccologdials'
+    set @sql = 'IF COL_LENGTH(''dbo.ccologdials'', ''ani'') IS NULL
+    BEGIN
+        alter table ccologdials add ani varchar(32) null
+    END'
+    EXEC(@sql)
     
 	set @process = 'alter SP ccspRepOutAnswAndXferCalls se corrige para que tome el ani de ccoLogDials'
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswAndXferCalls]
@@ -5747,9 +5761,12 @@ end'
     EXEC(@sql)
 
     
-     set @process = ''
-    set @sql=''
-    EXEC(@sql)
+    set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+    set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+        begin
+        ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+        end'
+EXEC(@sql)
 
     ---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.11---------------------------------------------------------
 

@@ -6496,12 +6496,28 @@ return(0)
 			    set nocount off'
 	EXEC(@sql)
 
+	set @process = 'View and store procedure to validate meta numbers'
 	set @sql = '
+		IF OBJECT_ID(''dbo.ccAllWhatsAppNumbers'', ''V'') IS NOT NULL 
+			DROP view dbo.ccAllWhatsAppNumbers;
+	'
+	EXEC(@sql)
+
+	set @sql = 
+	'
 		CREATE VIEW dbo.ccAllWhatsAppNumbers
 	AS
 		SELECT number AS Number, 0 AS IsMeta FROM dbo.ccWhatsAppNumbers -- Vonage 0
 		UNION
 		SELECT number AS Number, 1 AS IsMeta FROM dbo.ccMetaWhatsAppNumbers -- Meta 1'
+	EXEC(@sql)
+
+	set @sql = '
+	if exists (select * from sys.procedures where name = N''ccsp_GetWhatsAppNumbers'')
+    begin
+        DROP PROCEDURE ccsp_GetWhatsAppNumbers;
+    end
+	'
 	EXEC(@sql)
 
 	set @sql = '

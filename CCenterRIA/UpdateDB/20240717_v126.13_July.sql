@@ -6278,9 +6278,17 @@ return(0)
 	EXEC(@sql)
 	----------------------------------------------------------- End Carlos Muñoz -------------------------------------------------------------------------------
 	----------------------------------------------------------- Start Jonathan Ramírez -------------------------------------------------------------------------
+	SET @process = 'Delete SP ccsp_WhatsAppInformationOut'	
+	SET @sql='
+	if exists (select * from sys.procedures where name = N''ccsp_WhatsAppInformationOut'')
+    begin
+        DROP PROCEDURE ccsp_WhatsAppInformationOut;
+    end
+	'
+	EXEC(@sql)
 	set @process = 'Modify SP ccsp_WhatsAppInformationOut, se modifica valor de retorno Sin calificación'
 	set @sql = '
-	ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformationOut]
+	CREATE PROCEDURE [dbo].[ccsp_WhatsAppInformationOut]
 	@Option SMALLINT,
 	@camId SMALLINT = 0,
 	@ConversationId INT = 0,

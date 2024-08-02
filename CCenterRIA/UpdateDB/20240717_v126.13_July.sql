@@ -6135,7 +6135,7 @@ return(0)
 		EXECUTE ccsp_CheckTimesDiscard @action=0,@camId = @cam_id
 	end
 
-	IF (@CampType IS NOT NULL AND @CampType IN (3, 5, 0))
+	IF (@CampType IS NOT NULL AND @CampType IN (3, 5))
 	BEGIN
 		IF NOT EXISTS(SELECT camp_id FROM contactMeanOut WHERE @CampType = meanContactTypeId AND camp_id = @cam_id)
 		BEGIN
@@ -6222,7 +6222,7 @@ return(0)
 		WHERE cam_id = @cam_id
 
 
-		IF(@prevCalif <> @cam_ShowCalifWnd) BEGIN
+		IF(@prevCalif <> @cam_ShowCalifWnd AND @isCreating > 0) BEGIN
 			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
 			SELECT 
 				(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),
@@ -6243,7 +6243,7 @@ return(0)
 	cam_ShowCalifWnd = isnull(@cam_ShowCalifWnd,cam_ShowCalifWnd)
 	where cam_id = @cam_id
 
-	IF(@prevCalif <> @cam_ShowCalifWnd) BEGIN
+	IF(@prevCalif <> @cam_ShowCalifWnd AND @isCreating > 0) BEGIN
 		INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
 		SELECT 
 			(SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @idarea),

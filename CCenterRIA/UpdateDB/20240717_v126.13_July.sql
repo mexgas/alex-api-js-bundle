@@ -6495,6 +6495,24 @@ return(0)
 
 			    set nocount off'
 	EXEC(@sql)
+
+	set @sql = '
+		CREATE VIEW dbo.ccAllWhatsAppNumbers
+	AS
+		SELECT number AS Number, 0 AS IsMeta FROM dbo.ccWhatsAppNumbers -- Vonage 0
+		UNION
+		SELECT number AS Number, 1 AS IsMeta FROM dbo.ccMetaWhatsAppNumbers -- Meta 1'
+	EXEC(@sql)
+
+	set @sql = '
+	CREATE PROC ccsp_GetWhatsAppNumbers AS
+	BEGIN
+
+	SELECT Number, CAST(IsMeta AS BIT) IsMeta FROM dbo.ccAllWhatsAppNumbers;
+
+	END
+	'
+	EXEC(@sql)
 	----------------------------------------------------------- End Carlos Muñoz -------------------------------------------------------------------------------
 	----------------------------------------------------------- Start Jonathan Ramírez -------------------------------------------------------------------------
 	set @process = 'Modify SP ccsp_WhatsAppInformationOut, se modifica valor de retorno Sin calificación'

@@ -1186,7 +1186,8 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		@metaStatus varchar(30) = null,
 		@FilePath varchar(1024) = null,
 		@HistoryLog varchar(max) = null,
-		@UserId SMALLINT = 0
+		@UserId SMALLINT = 0,
+		@MetaId INT = 0
 	AS
 	BEGIN
 		IF(@action = 1)
@@ -1245,8 +1246,8 @@ SET @process = 'Insert Url para dar de alta plantillas'
 		END
 		ELSE IF(@action = 4) --create
 		BEGIN
-			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath)
-								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath)
+			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW)
+								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1)
 		END
 		ELSE IF(@action = 5) -- Get Template Config By Id
 		BEGIN

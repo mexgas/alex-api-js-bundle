@@ -4349,7 +4349,7 @@ BEGIN
         LEFT JOIN (
             SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
             FROM ccLogTransfers
-            WHERE tipo = 1
+            WHERE tipo = 1  and modo != 7
             GROUP BY cal_id, tipo
             ) trans ON calls.cal_id = trans.cal_id
         WHERE calls.User_id > 0

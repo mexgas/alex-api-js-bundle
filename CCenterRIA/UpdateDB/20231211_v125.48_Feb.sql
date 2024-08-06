@@ -479,109 +479,6 @@ SET NOCOUNT OFF'
 END '
         EXEC(@sql);
 
-        SET @process = 'ALTER SP ccsp_ConversationOutWASave @action = 1 Se revisa si el debe cerrar las conversaciones que fueron mayores a 23 horas'
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
-@action             INT
-, @conversationId     INT         = 0
-, @campId             INT         = NULL        
-, @phoneCamp          VARCHAR(50) = NULL
-, @clientId           VARCHAR(25) = NULL
-, @conversationStatus SMALLINT    = 0
-, @tChatting          FLOAT       = 0
-, @tWrapUp            SMALLINT    = 0
-, @finishedBy         TINYINT     = 0
-, @onQueue            BIT         = NULL
-, @tQueue             SMALLINT    = 0
-, @tTimeout           INT         = 0
-, @disposition        SMALLINT    = 0
-, @subDisposition     SMALLINT    = 0
-, @agentId            INT         = 0
-
-AS
-BEGIN
-    SET NOCOUNT ON;
-                        
-    declare @conversationIdTemporal     INT;
-
-IF @action = 1 BEGIN --new Conversation
-    select @phoneCamp= number from ccWhatsAppNumbers where camp_id= @campId
-                            
-    if @phoneCamp is null or @phoneCamp='''' begin
-        select 0 as [ConversationId],0 as [MessageId]
-        return(0)
-    end
-    DECLARE @dateNow DATETIME;
-    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
-
-
-    declare @existsConversationOut bit
-    set @existsConversationOut =0
-    
-    
-    if not exists (select * from ccWhatsAppConversationsOut with(nolock) where
-    phoneCamp = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate <= @dateNow) 
-    begin       
-        set @existsConversationOut=0
-    end 
-    else begin
-        set @existsConversationOut=1
-        UPDATE ccWhatsAppConversationsOut
-        SET finishedBy = 2 ,conversationStatus=17
-        WHERE finishedBy = 0  AND requestDate <= @dateNow
-        and phoneCamp = @phoneCamp and clientId = @clientId
-    end
-    
-    if not exists (select 1 from ccWhatsAppConversationsOut with(nolock) 
-        where phoneCamp = @phoneCamp and clientId = @clientId 
-        and finishedBy = 0 and requestDate > @dateNow) 
-    begin
-        set @existsConversationOut=0
-    end
-    else begin
-        set @existsConversationOut=1
-    end
-    
-    if @existsConversationOut=0
-    begin
-        if not exists (select * from ccWhatsAppConversations with(nolock) where phoneACD = @phoneCamp and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) 
-        begin
-            INSERT INTO [ccWhatsAppConversationsOut]
-            ([camId] , [phoneCamp], clientId, conversationStatus, tChatting
-            , tWrapUp, finishedBy, onQueue, tQueue, requestDate
-            , tTimeout, disposition, subDisposition, agentId)
-            VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
-            @onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
-                        
-            SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
-            SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
-        end
-        else begin
-            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
-            ,B.conversationId as conversationIdExists
-            FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
-            ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
-            INNER JOIN ccUsers C ON B.agentId = C.User_id;
-        end  
-    end
-    else begin
-        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
-        ,B.conversationId as conversationIdExists
-        FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
-        ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
-        INNER JOIN ccUsers C ON B.agentId = C.User_id;
-    end  
-END 
-ELSE IF @action = 2 -- Get Outbound Templates
-BEGIN
-    IF @campId IS NOT NULL
-    BEGIN
-        DECLARE @AsociatedNumber VARCHAR(30) = (SELECT number from ccWhatsAppNumbers WHERE @campId = camp_id);
-        SELECT * FROM ccWhatsAppOutboundTemplates WHERE AsociatedNumber = @AsociatedNumber AND Status = 1;
-    END
-END
-END'
-        EXEC(@sql);
-
     set @process = 'Alter Sp ccsp_ConversationWASave IF @action = 6 Se modifica para agregar with(nolock) y action=18'
     set @sql='ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 , @conversationId     INT         = 0
@@ -10749,7 +10646,7 @@ SET NOCOUNT OFF;'
 
         ----------------------------------------------------- END Uriel Cabrera  ----------------------------------------------------------------
         ----------------------------------------------------- START Jonathan Ramirez  ----------------------------------------------------------------
-        SET @process = '1 - JR 1211.0.14 -> SP ccsp_ConversationOutWASave, Valida si la conversaciÃ³n de entrada existe'
+        SET @process = '1 - JR 1211.0.14, 15 -> SP ccsp_ConversationOutWASave, Valida si la conversaciÃ³n de entrada existe. Se valida que el usuario exista si no mandar pendiente por asignar'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
 @action             INT
 , @conversationId     INT         = 0
@@ -10852,19 +10749,21 @@ IF @action = 1 BEGIN --new Conversation
             SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
         end
         else begin
-            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId
             ,B.conversationId as conversationIdExists
+            ,case when C.Login  is null then ''Pendiente por asignar'' else C.Login end Username
             FROM ccInbound A INNER JOIN ccWhatsAppConversations B WITH(NOLOCK)
             ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
-            INNER JOIN ccUsers C ON B.agentId = C.User_id;
+            left JOIN ccUsers C ON B.agentId = C.User_id;
         end  
     end
     else begin
-        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId
         ,B.conversationId as conversationIdExists
+        ,case when C.Login  is null then ''Pendiente por asignar'' else C.Login end Username
         FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B WITH(NOLOCK)
         ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
-        INNER JOIN ccUsers C ON B.agentId = C.User_id;
+        left JOIN ccUsers C ON B.agentId = C.User_id;
     end  
 END 
 ELSE IF @action = 2 -- Get Outbound Templates
@@ -12544,6 +12443,43 @@ END
 	EXEC(@sql)
 
 --------------------------- END Roberto Nava TT7953 ----------------------------------------------------------------------------------
+--------------------------- START Jonathan Ramirez 125.20231211.0.15-----------------------------------------------------------------------------------
+SET @process = '0.15 - 1 - Se modifica SP ccsp_OutboundMultimediaCommon, Se cambia InitialDate, por InitialTime'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_OutboundMultimediaCommon] 
+                    @Action INT,
+                    @ConversationId INT = NULL
+                    AS
+                    BEGIN
+                    SET NOCOUNT ON;
+
+                        IF @Action = 0 -- Get WhatsApp Campaigns List
+                        BEGIN 
+                            SELECT CAST(campaigns.cam_id AS INT) AS Id,
+                                   campaigns.cam_descripcion AS Name,
+                                   waNumbers.number AS Phone,
+                                   5 as [Type]
+                            FROM ccCamps campaigns
+                            INNER JOIN ccWhatsAppNumbers waNumbers
+                            ON campaigns.cam_id = waNumbers.camp_id
+                            WHERE campaigns.CampType = 5 AND waNumbers.status = 1
+                            ORDER BY campaigns.cam_id 
+                        END
+
+                        ELSE IF @Action = 1 -- Get Outbound WhatsApp conversation by conversation id
+                        BEGIN 
+                            DECLARE @ServiceType VARCHAR(20) = ''whatsapp''
+                            SELECT conversationId AS ConversationID,
+                                   clientId AS ClientId,
+                                   phoneCamp AS CampaignPhone,
+                                   agentId AS AgentId,
+                                   @ServiceType AS ServiceType,
+                                   requestDate AS InitialTime
+                            FROM ccWhatsAppConversationsOut
+                            WHERE conversationId = @ConversationId
+                        END
+                    END';
+        EXEC(@sql);
+--------------------------- START Jonathan Ramirez 125.20231211.0.15-----------------------------------------------------------------------------------
 ----------------------------------------------------------- Begin David Medina -----------------------------------------------------------------------
 SET @process = 'Ticket TT10862-AdminKolob-No guardan cambios en ND'
 SET @sql = '

@@ -225,7 +225,6 @@ BEGIN
 		buttons nvarchar(max) NULL,
 		MetaId INT NULL,
 		RemovalDate datetime NULL,
-		IdFile varchar(200),
 		StatusCW BIT NULL,
 		quality INT NULL,
 		notes VARCHAR(500) NULL,

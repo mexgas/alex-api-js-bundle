@@ -4910,11 +4910,11 @@ FROM ccLogAgentesDiaLast with(nolock)      ;
                     '
         EXEC(@sql);
 
-        SET @process = 'Alter ccsp_SaveStatusAgent se agrega ccLogAgentesDiaLast'
+        SET @process = 'CW-8638 Alter ccsp_SaveStatusAgent se agrega ccLogAgentesDiaLast'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,
-@TipoNotReady tinyint,
+@TipoNotReady smallint,
 @tStatus float,
 @TipoCall  tinyint,
 @Camp smallint,

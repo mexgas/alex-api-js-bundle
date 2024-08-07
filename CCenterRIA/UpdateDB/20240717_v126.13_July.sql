@@ -5324,68 +5324,66 @@ return(0)
 	----------------------------------------------------------- Start Carlos Eduardo Muñoz -------------------------------------------------------------------------------
 	set @process = 'DEV1-600 Se actualizan procedimientos para el despliegue de números meta en campañas de entrada y salida, así como el enlace de números al guardar ajustes.'
 
-	set @sql = '
-	ALTER PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
-				@Option AS SMALLINT,
-				@ServiceType AS SMALLINT = 0,
-				@Number AS VARCHAR(25) = '''',
-				@Id AS INT = 0,
-				@CamType AS SMALLINT = 0
-				AS
-				BEGIN
-				    SET NOCOUNT ON;
-					BEGIN
-				    IF(@Option = 1) -- Get Vonage Configurations depending the Service Type and number 
-						BEGIN
-							SELECT config.applicationId AS ApplicationId,
-								   config.secretKey AS SecretKey,
-								   config.messagesUrl AS MessagesUrl
-							FROM ccVonageConfigurations config
-							INNER JOIN ccWhatsAppNumbers numbers ON config.vonageId = numbers.vonageId 
-							AND numbers.number = @Number 
-							AND config.serviceType = @ServiceType   -- 5 = WhatsApp
-						END 
+	set @sql = 'ALTER PROCEDURE [dbo].[ccsp_MultimediaConfigurations] 
+@Option AS SMALLINT,
+@ServiceType AS SMALLINT = 0,
+@Number AS VARCHAR(25) = '''',
+@Id AS INT = 0,
+@CamType AS SMALLINT = 0
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN
+	IF(@Option = 1) -- Get Vonage Configurations depending the Service Type and number 
+		BEGIN
+			SELECT config.applicationId AS ApplicationId,
+					config.secretKey AS SecretKey,
+					config.messagesUrl AS MessagesUrl
+			FROM ccVonageConfigurations config
+			INNER JOIN ccWhatsAppNumbers numbers ON config.vonageId = numbers.vonageId 
+			AND numbers.number = @Number 
+			AND config.serviceType = @ServiceType   -- 5 = WhatsApp
+		END 
 
-					IF(@Option = 2) -- Get WhatsApp registered numbers 
-						BEGIN
-							SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
-							INNER JOIN ccVonageConfigurations Configurations 
-							ON Numbers.vonageId = Configurations.vonageId 
-							AND Numbers.inboundId = 0 
-							AND Numbers.status = 1 
-							AND Configurations.serviceType = 5
-							UNION
-							SELECT number FROM ccMetaWhatsAppNumbers
-							WHERE Inbound_Id = 0
-							AND STATUS = 1
-						END 
-					IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
-						BEGIN
-							SELECT number AvailableNumbers
-							FROM ccWhatsAppNumbers Numbers 
-							INNER JOIN ccVonageConfigurations Configurations 
-							ON Numbers.vonageId = Configurations.vonageId 
-							AND Numbers.camp_id = 0 
-							AND Numbers.status = 1 
-							AND Configurations.serviceType = 5
-							UNION
-							SELECT number FROM ccMetaWhatsAppNumbers
-							WHERE Cam_Id = 0
-							AND STATUS = 1
-						END
-					IF(@Option = 4) -- Get associated whatsapp number
-						BEGIN
-							IF (@CamType = 0) BEGIN
-								SELECT @Number = number from ccWhatsAppNumbers WHERE inboundId = @Id
-							END
-							ELSE BEGIN
-								SELECT @Number = number from ccWhatsAppNumbers WHERE camp_id = @Id
-							END
-							SELECT ISNULL(@Number, '''') as number
-						END
-					END
-				END
-	'
+	IF(@Option = 2) -- Get WhatsApp registered numbers 
+		BEGIN
+			SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+			INNER JOIN ccVonageConfigurations Configurations 
+			ON Numbers.vonageId = Configurations.vonageId 
+			AND Numbers.inboundId = 0 
+			AND Numbers.status = 1 
+			AND Configurations.serviceType = 5
+			UNION
+			SELECT number FROM ccMetaWhatsAppNumbers
+			WHERE Inbound_Id is null or Inbound_Id = 0 
+			AND STATUS = 1
+		END 
+	IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
+		BEGIN
+			SELECT number AvailableNumbers
+			FROM ccWhatsAppNumbers Numbers 
+			INNER JOIN ccVonageConfigurations Configurations 
+			ON Numbers.vonageId = Configurations.vonageId 
+			AND Numbers.camp_id = 0 
+			AND Numbers.status = 1 
+			AND Configurations.serviceType = 5
+			UNION
+			SELECT number FROM ccMetaWhatsAppNumbers
+			WHERE Cam_Id is null or Cam_Id = 0
+			AND STATUS = 1
+		END
+	IF(@Option = 4) -- Get associated whatsapp number
+		BEGIN
+			IF (@CamType = 0) BEGIN
+				SELECT @Number = number from ccWhatsAppNumbers WHERE inboundId = @Id
+			END
+			ELSE BEGIN
+				SELECT @Number = number from ccWhatsAppNumbers WHERE camp_id = @Id
+			END
+			SELECT ISNULL(@Number, '''') as number
+		END
+	END
+END'
 	EXEC (@sql)
 
 	set @sql = '
@@ -6043,123 +6041,121 @@ return(0)
 	'
 	EXEC (@sql)
 
-	SET @sql = '
-	ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
-					@command int,
-					@inboundId int
-					AS
-					BEGIN
+	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
+@command int,
+@inboundId int
+AS
+BEGIN
 
-					SET NOCOUNT ON;
+SET NOCOUNT ON;
 
-					if @command=0
-					begin
-					select descripcion from ccInbound where Inbound_id = @inboundId
-					end
-					if @command=1 -- Voice campaign
-					begin
-						select 
-						A.Inbound_id [InboundId],
-						A.descripcion [Description],
-						A.chat [MediaType],
-						A.Status,
-						isnull(gra.graphic_id,1) [Frame],
-						A.tNotas,
-						A.tMaxWaitCall,
-						A.nMaxQue,
-						A.tel_maxwait,
-						A.tel_maxqueue,
-						A.tel_outservice,
-						A.tel_noct,
-						A.ShowCalifWnd,
-						A.editableCallKey [EditableCallKey],
-						A.queuePosition [QueuePosition],
-						A.tMaxQueueCallBack,
-						A.stopRecording [StopRecording],
-						A.dialPrefixOverflow [DialPrefixOverflow],
-						AE.SurveyCamId [SurveyCamId],
-						isnull(A.callerIdDesc, '''') [CallerIdDesc],
-						isnull(A.startStopRecording,0) [StartStopRecording],
-						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
-						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
-						case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then cast(1 as bit) else cast(0 as bit) end [IsRelationSurvey],
-						isnull(A.editableDtmf,0) [EditableDtmf],
-						isnull(A.addDataCallBackReminder,0) [AddDataCallBackReminder],
-						isnull(A.recordHold, 0) [RecordHold],
-						isnull(AE.RecordCalls, 1) [RecordCalls],
-						isnull(A.EditableContactData, 0) [EditableContactData]
-						from ccInbound A
-						left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
-						left join ccInboundExtend AE on AE.Inbound_id = @inboundId
-						left join ccCamps C on C.cam_id=A.cam_id
-						where A.Inbound_id=@inboundId
-					end
-					if @command=2 -- WhatsApp campaign
-					begin
-						declare @numbers varchar(max)
-						select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId = 0 and status = 1
-						select @numbers=COALESCE(@numbers + '','', '''') + number from ccMetaWhatsAppNumbers where Inbound_Id = 0 and status = 1
+if @command=0
+begin
+select descripcion from ccInbound where Inbound_id = @inboundId
+end
+if @command=1 -- Voice campaign
+begin
+	select 
+	A.Inbound_id [InboundId],
+	A.descripcion [Description],
+	A.chat [MediaType],
+	A.Status,
+	isnull(gra.graphic_id,1) [Frame],
+	A.tNotas,
+	A.tMaxWaitCall,
+	A.nMaxQue,
+	A.tel_maxwait,
+	A.tel_maxqueue,
+	A.tel_outservice,
+	A.tel_noct,
+	A.ShowCalifWnd,
+	A.editableCallKey [EditableCallKey],
+	A.queuePosition [QueuePosition],
+	A.tMaxQueueCallBack,
+	A.stopRecording [StopRecording],
+	A.dialPrefixOverflow [DialPrefixOverflow],
+	AE.SurveyCamId [SurveyCamId],
+	isnull(A.callerIdDesc, '''') [CallerIdDesc],
+	isnull(A.startStopRecording,0) [StartStopRecording],
+	case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyAgent  else cast(0 as bit) end [CallBackSurveyAgent],
+	case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then A.callBackSurveyClient else cast(0 as bit) end [CallBackSurveyClient],
+	case when (A.cam_id > 0 and C.callsBySurvey>0) or AE.SurveyCamId>0 then cast(1 as bit) else cast(0 as bit) end [IsRelationSurvey],
+	isnull(A.editableDtmf,0) [EditableDtmf],
+	isnull(A.addDataCallBackReminder,0) [AddDataCallBackReminder],
+	isnull(A.recordHold, 0) [RecordHold],
+	isnull(AE.RecordCalls, 1) [RecordCalls],
+	isnull(A.EditableContactData, 0) [EditableContactData]
+	from ccInbound A
+	left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+	left join ccInboundExtend AE on AE.Inbound_id = @inboundId
+	left join ccCamps C on C.cam_id=A.cam_id
+	where A.Inbound_id=@inboundId
+end
+if @command=2 -- WhatsApp campaign
+begin
+	declare @numbers varchar(max)
+	select @numbers=COALESCE(@numbers + '','', '''') + number from ccWhatsAppNumbers where inboundId is null or inboundId = 0 and status = 1
+	select @numbers=COALESCE(@numbers + '','', '''') + number from ccMetaWhatsAppNumbers where Inbound_Id is null or Inbound_Id = 0 and status = 1
 
-						select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
-						ISNULL(c.conexionInfo,'''') [Number],
-						ISNULL(@numbers,'''') [FreeNumbersStr],
-						CAST(ISNULL(c.closeConversationTime, 0) AS INT) [MaxAnswerTime],
-						ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
-						ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],
-						i.tNotas [tNotas],
-						i.ExitWrapUpDisposition,
-						i.ShowCalifWnd
-						from ccInbound i left join ccRIAInboundGraph g on i.Inbound_id = g.Inbound_id
-						left join contactMeanIn c on i.Inbound_id = c.inboundId and i.chat = 5 and c.meanContactTypeId = 5
-						where i.Inbound_id=@inboundId
-					end
-					if @command=3 -- Email campaign
-					begin
-						select 
-						A.Inbound_id [InboundId],
-						A.descripcion [Description],
-						A.chat [MediaType],
-						A.Status,
-						isnull(gra.graphic_id,1) [Frame],
-						A.tNotas,
-						A.ShowCalifWnd,
-						C.conexionInfo [ConnInfo],
-						C.connUser  [ConnUserName],
-						C.ConnPass [ConnPwd],
-						C.isActive [IsActive],
-						C.timeAlertMessage,
-						C.closeConversationTime [CloseConversationTime],
-						C.answerTimeOut [AnswerTimeOut],
-						C.name [SenderName]
-						from ccInbound A
-						left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
-						left join contactMeanIn C on A.Inbound_id = C.inboundId and C.meanContactTypeId=1
-						where A.Inbound_id=@inboundId
-					end
-					if @command=4 -- Chat campaign
-					begin
-						select 
-						i.Inbound_id [InboundId],
-						i.descripcion [Description],
-						i.chat [MediaType],
-						i.Status,
-						isnull(ig.graphic_id,1) [Frame],
-						i.tNotas,
-						i.ShowCalifWnd,
-						i.inactiveChatTime [InactiveChatTime],
-						i.chatDomain [ChatDomain],
-						i.chatTimeOverflow [ChatTimeOverflow],
-						i.chatQueueOverflow [ChatQueueOverflow]
-						from ccInbound i
-						left join ccRIAInboundGraph ig on ig.Inbound_id=i.Inbound_id
-						where i.Inbound_id =@inboundId
-					end
+	select i.Inbound_id [InboundId], i.descripcion [Description], i.chat [MediaType], i.Status, isnull(g.graphic_id,1) [Frame],
+	ISNULL(c.conexionInfo,'''') [Number],
+	ISNULL(@numbers,'''') [FreeNumbersStr],
+	CAST(ISNULL(c.closeConversationTime, 0) AS INT) [MaxAnswerTime],
+	ISNULL(c.answerTimeoutClient, 30) [MUTimeOutClient],
+	ISNULL(c.allowFileAttachments, 0) [AllowFileAttachments],
+	i.tNotas [tNotas],
+	i.ExitWrapUpDisposition,
+	i.ShowCalifWnd
+	from ccInbound i left join ccRIAInboundGraph g on i.Inbound_id = g.Inbound_id
+	left join contactMeanIn c on i.Inbound_id = c.inboundId and i.chat = 5 and c.meanContactTypeId = 5
+	where i.Inbound_id=@inboundId
+end
+if @command=3 -- Email campaign
+begin
+	select 
+	A.Inbound_id [InboundId],
+	A.descripcion [Description],
+	A.chat [MediaType],
+	A.Status,
+	isnull(gra.graphic_id,1) [Frame],
+	A.tNotas,
+	A.ShowCalifWnd,
+	C.conexionInfo [ConnInfo],
+	C.connUser  [ConnUserName],
+	C.ConnPass [ConnPwd],
+	C.isActive [IsActive],
+	C.timeAlertMessage,
+	C.closeConversationTime [CloseConversationTime],
+	C.answerTimeOut [AnswerTimeOut],
+	C.name [SenderName]
+	from ccInbound A
+	left join ccRIAInboundGraph gra on gra.Inbound_id=A.Inbound_id
+	left join contactMeanIn C on A.Inbound_id = C.inboundId and C.meanContactTypeId=1
+	where A.Inbound_id=@inboundId
+end
+if @command=4 -- Chat campaign
+begin
+	select 
+	i.Inbound_id [InboundId],
+	i.descripcion [Description],
+	i.chat [MediaType],
+	i.Status,
+	isnull(ig.graphic_id,1) [Frame],
+	i.tNotas,
+	i.ShowCalifWnd,
+	i.inactiveChatTime [InactiveChatTime],
+	i.chatDomain [ChatDomain],
+	i.chatTimeOverflow [ChatTimeOverflow],
+	i.chatQueueOverflow [ChatQueueOverflow]
+	from ccInbound i
+	left join ccRIAInboundGraph ig on ig.Inbound_id=i.Inbound_id
+	where i.Inbound_id =@inboundId
+end
 
-					RETURN(0)
+RETURN(0)
 
-					SET NOCOUNT OFF;    
-					END
-	'
+SET NOCOUNT OFF;    
+END'
 	EXEC (@sql)
 
 	set @sql = '

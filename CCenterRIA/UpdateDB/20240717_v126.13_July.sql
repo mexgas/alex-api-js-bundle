@@ -1168,194 +1168,226 @@ SET @process = 'Insert Url para dar de alta plantillas'
 	EXEC(@sql)
 
 	set @process = 'DEV2-406 K020138 create sp ccsp_MetaWAOutboundTemplates'
-	set @sql = '
-		CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
-		@action TINYINT = NULL,
-		@whatsAppTemplateID BIGINT = 0,
-		@id varchar(200) = NULL,
-		@Category varchar(50) = NULL,
-		@TemplateName varchar(200) = NULL,
-		@AllowCategoryChange tinyint = NULL,
-		@LanguageCode varchar(10)= NULL,
-		@Status varchar(200)= NULL, 
-		@header nvarchar(max)= null,
-		@body nvarchar(max) = null,
-		@footer nvarchar(max) = null,
-		@buttons nvarchar(max) = null,
-		@metaStatus varchar(30) = null,
-		@FilePath varchar(1024) = null,
-		@HistoryLog varchar(max) = null,
-		@UserId SMALLINT = 0,
-		@MetaId INT = 0
-	AS
-	BEGIN
-		IF(@action = 1)
-		BEGIN
-			;WITH TemplateIsEditable AS (
-				SELECT
-					tb1.Id,
-					CASE 
-						WHEN COUNT(*) >= 10 THEN 2
-						WHEN MAX(tb1.Date) >= CAST(GETDATE() AS DATE) THEN 1
-						ELSE 0
-					END AS IsEditable
-				FROM (
-					SELECT
-						gal.Target AS Id,
-						CAST(gal.ActivityDate AS DATE) AS Date
-					FROM ccGalateaActivityLog gal 
-					WHERE gal.OperationId = 122 
-					AND gal.ModuleId = 20 
-					AND gal.Target = ISNULL(CAST(@whatsAppTemplateID AS VARCHAR(MAX)), gal.target)
-					AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
-				) AS tb1
-				GROUP BY tb1.Id
-			)
-			SELECT 
-			cmwot.Id 
-			,cmwot.TemplateName AS Name
-			,cmwot.Status AS Status
-			,Category AS Category
-			,ISNULL(cmwot.notes, '''' ) AS Notes
-			,cmwot.header AS Header
-			,Body
-			,cmwot.footer AS Footer
-			,cmwot.buttons AS Buttons
-			,cmwot.LanguageCode
-			,ISNULL(cmwot.quality,0) AS Quality
-			,cmwot.IsPendingQuality
-			,ISNULL(tie.IsEditable, 0) AS IsEditable
-			FROM  dbo.ccMetaWAOutboundTemplates cmwot
-			LEFT JOIN TemplateIsEditable tie ON tie.Id = CAST(cmwot.Id AS VARCHAR(MAX))
-			WHERE cmwot.Id = ISNULL(@whatsAppTemplateID, cmwot.Id)
-			AND cmwot.StatusCW = 1
-		END
-		ELSE IF(@action = 2)
-		BEGIN
-			SELECT cmwan.MetaId AS Id, cmwan.Number FROM dbo.ccMetaWhatsAppNumbers AS cmwan
-			Left JOIN dbo.ccMetaWhatsAppConfigurations AS cmwac
-			ON cmwan.MetaId = cmwac.Id
-			WHERE cmwan.Status = 1
-		END
-		ELSE IF(@action = 3)
-		BEGIN
-			UPDATE ccMetaWAOutboundTemplates SET StatusCW = 0 WHERE Id = @whatsAppTemplateID
-			SELECT @@ROWCOUNT;
-			RETURN 0;
-		END
-		ELSE IF(@action = 4) --create
-		BEGIN
-			insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW)
-								values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1)
-		END
-		ELSE IF(@action = 5) -- Get Template Config By Id
-		BEGIN
-			SELECT n.WAAccountId, n.Token, c.Url as [Url], t.TemplateName 
-			FROM ccMetaWAOutboundTemplates t
-			INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
-			left JOIN ccMetaWhatsAppConfigurations c on c.Id = 2
-			WHERE t.Id = @whatsAppTemplateID
-			RETURN 0;
-		END
-		ELSE IF(@action = 6) -- update status to delete
-		BEGIN
-			DECLARE @newStatus bit = 1;
-			IF(@metaStatus = ''DELETED'')
-			BEGIN
-				SET @newStatus = 0
-			END
-			UPDATE ccMetaWAOutboundTemplates SET 
-			[Status] = @metaStatus, 
-			StatusCW = @newStatus,
-			RemovalDate = ISNULL(RemovalDate, GETDATE())
-			WHERE Id = @whatsAppTemplateID
-			AND [StatusCW] = 1;
-			SELECT @@ROWCOUNT;
-			RETURN 0;
-		END
-		ELSE IF(@action = 7) -- Get template campaigns associsted
-		BEGIN
-			SELECT ISNULL(n.Cam_Id,0) as Cam_Id, ISNULL(n.Inbound_Id,0) AS Inbound_Id FROM ccMetaWAOutboundTemplates t
-			INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
-			left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
-			WHERE t.Id = @whatsAppTemplateID
-			RETURN 0;
-		END
-		ELSE IF (@action = 8) -- update template
-		BEGIN
-			DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
-			DECLARE @areaName VARCHAR(50),
-					@login VARCHAR(50)
+	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
+    @action TINYINT = NULL,
+    @whatsAppTemplateID BIGINT = 0,
+    @id varchar(200) = NULL,
+    @Category varchar(50) = NULL,
+    @TemplateName varchar(200) = NULL,
+    @AllowCategoryChange tinyint = NULL,
+    @LanguageCode varchar(10) = NULL,
+    @Status varchar(200) = NULL, 
+    @header nvarchar(max) = null,
+    @body nvarchar(max) = null,
+    @footer nvarchar(max) = null,
+    @buttons nvarchar(max) = null,
+    @metaStatus varchar(30) = null,
+    @FilePath varchar(1024) = null,
+    @HistoryLog varchar(max) = null,
+    @UserId SMALLINT = 0,
+    @MetaId INT = 0
+AS
+BEGIN
 
-			SELECT
-				@areaName = ca.AreaName,
-				@login = cu.Login
-			FROM ccUsers cu
-			INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
-			WHERE cu.User_id = @UserId
+	declare @target varchar(250)
+	declare @tbl table (
+		id varchar(250) not null,
+		IsEditable int not null
+	)
+	
+	 IF @action in( 1,9) begin
+		set @target=CAST(@whatsAppTemplateID AS VARCHAR(250))
 
-			INSERT INTO @tableHistoryLog 
-			SELECT tb.Id, tb.Value
-			FROM dbo.fn_RIASplitDelimited(@HistoryLog, '',,'') tb
+        ;WITH tb1 as(
+		
+		SELECT
+			gal.Target AS Id,
+			CAST(gal.ActivityDate AS DATE) AS Date
+            FROM ccGalateaActivityLog gal 
+            WHERE gal.OperationId = 122 
+            AND gal.ModuleId = 20 
+            AND gal.Target = ISNULL(@target, gal.target)
+            AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
+		)
+		, TemplateIsEditable AS (
+            SELECT
+            tb1.Id,
+            CASE WHEN COUNT(*) >= 10 THEN 2 WHEN MAX(tb1.Date) >= CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END AS IsEditable
+            FROM tb1
+            GROUP BY tb1.Id
+        )
+
+		insert into @tbl
+		select * from TemplateIsEditable
+	end
+
+    IF(@action = 1)
+    BEGIN
+		SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,ISNULL(tie.IsEditable, 0) AS IsEditable
+        FROM  dbo.ccMetaWAOutboundTemplates cmwot
+        LEFT JOIN @tbl tie ON tie.Id = CAST(cmwot.Id AS VARCHAR(MAX))
+        WHERE cmwot.Id = ISNULL(@whatsAppTemplateID, cmwot.Id)
+        AND cmwot.StatusCW = 1				
+    END
+    ELSE IF(@action = 2)
+    BEGIN
+        SELECT cmwan.MetaId AS Id, cmwan.Number FROM dbo.ccMetaWhatsAppNumbers AS cmwan
+        Left JOIN dbo.ccMetaWhatsAppConfigurations AS cmwac
+        ON cmwan.MetaId = cmwac.Id
+        WHERE cmwan.Status = 1
+    END
+    ELSE IF(@action = 3)
+    BEGIN
+        UPDATE ccMetaWAOutboundTemplates SET StatusCW = 0 WHERE Id = @whatsAppTemplateID
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 4) --create
+    BEGIN
+        insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW)
+                            values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1)
+    END
+    ELSE IF(@action = 5) -- Get Template Config By Id
+    BEGIN
+        SELECT n.WAAccountId, n.Token, c.Url as [Url], t.TemplateName 
+        FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on c.Id = 2
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF(@action = 6) -- update status to delete
+    BEGIN
+        DECLARE @newStatus bit = 1;
+        IF(@metaStatus = ''DELETED'')
+        BEGIN
+            SET @newStatus = 0
+        END
+        UPDATE ccMetaWAOutboundTemplates SET 
+        [Status] = @metaStatus, 
+        StatusCW = @newStatus,
+        RemovalDate = ISNULL(RemovalDate, GETDATE())
+        WHERE Id = @whatsAppTemplateID
+        AND [StatusCW] = 1;
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 7) -- Get template campaigns associated
+    BEGIN
+        SELECT ISNULL(n.Cam_Id,0) as Cam_Id, ISNULL(n.Inbound_Id,0) AS Inbound_Id FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF (@action = 8) -- update template
+    BEGIN
+        DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
+        DECLARE @areaName VARCHAR(50),
+                @login VARCHAR(50)
+
+        SELECT
+            @areaName = ca.AreaName,
+            @login = cu.Login
+        FROM ccUsers cu
+        INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+        WHERE cu.User_id = @UserId
+
+        INSERT INTO @tableHistoryLog 
+        SELECT tb.Id, tb.Value
+        FROM dbo.fn_RIASplitDelimited(@HistoryLog, '',,'') tb
 
 
-			-- insert into activity log table and update template data
-			IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
-			BEGIN
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
-			END
-			IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
-			BEGIN
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
-			END
-			IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
-			BEGIN
-				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-				VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
-			END
-			
-			EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
-			Create table #ccMetaWAOutboundTemplates 
-			(
-				columnInfo VARCHAR(255),
-				dataInfo VARCHAR(255),
-				identifierInfo VARCHAR(255)
-			)
+        -- insert into activity log table and update template data
+        IF @header IS NULL OR LEN(@header) = 0 AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',''root'')
+        END
+        IF @footer IS NULL OR LEN(@footer) = 0 AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',''root'')
+        END
+        IF @buttons IS NULL OR LEN(@buttons) = 0 AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',''root'')
+        END
+        
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
+        Create table #ccMetaWAOutboundTemplates 
+        (
+            columnInfo VARCHAR(255),
+            dataInfo VARCHAR(255),
+            identifierInfo VARCHAR(255)
+        )
 
-			UPDATE ccMetaWAOutboundTemplates
-			SET Category = @Category,
-				header = @header,
-				body = @body,
-				footer = @footer,
-				buttons = @buttons
-			WHERE Id = @Id
+        UPDATE ccMetaWAOutboundTemplates
+        SET Category = @Category,
+            header = @header,
+            body = @body,
+            footer = @footer,
+            buttons = @buttons
+        WHERE Id = @Id
 
-			EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
+        EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
 
-			INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-			SELECT
-				@areaName,
-				GETDATE(),
-				@login,
-				122,
-				20,
-				cc.identifierInfo,
-				tb1.Value,
-				@id
-			FROM #ccMetaWAOutboundTemplates cc
-			INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
-																	WHEN tb1.Id = 1 THEN ''Category''
-																	WHEN tb1.Id = 2 THEN ''header'' 
-																	WHEN tb1.Id = 3 THEN ''body'' 
-																	WHEN tb1.Id = 4 THEN ''footer''
-																	WHEN tb1.Id > 4 THEN ''buttons''
-																	END)
-		END
-
-	END
-   '
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+        SELECT
+            @areaName,
+            GETDATE(),
+            @login,
+            122,
+            20,
+            cc.identifierInfo,
+            tb1.Value,
+            @id
+        FROM #ccMetaWAOutboundTemplates cc
+        INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
+                                                                WHEN tb1.Id = 1 THEN ''Category''
+                                                                WHEN tb1.Id = 2 THEN ''header'' 
+                                                                WHEN tb1.Id = 3 THEN ''body'' 
+                                                                WHEN tb1.Id = 4 THEN ''footer''
+                                                                WHEN tb1.Id > 4 THEN ''buttons''
+                                                                END)
+    END
+	else IF(@action = 9) --Selecion de plantillas por telefono
+    BEGIN
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,ISNULL(tie.IsEditable, 0) AS IsEditable
+        FROM  dbo.ccMetaWAOutboundTemplates cmwot
+        LEFT JOIN @tbl tie ON tie.Id = CAST(cmwot.Id AS VARCHAR(MAX))
+        WHERE cmwot.MetaId = @whatsAppTemplateID
+        AND cmwot.StatusCW = 1
+    END
+END
+'
 	EXEC(@sql);
 	
 	set @process = 'DEV2-406 K020138 drop sp ccsp_WhatsAppValidationAndConfig'

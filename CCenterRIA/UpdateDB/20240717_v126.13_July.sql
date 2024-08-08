@@ -2246,12 +2246,20 @@ return(0)
 				end
 	'
 	EXEC(@sql)
+	
 	set @process = 'Se crea ccMetaWebhooksConfigurations para guardar los token necesarios'
 	set @sql = 'CREATE TABLE ccMetaWebhooksConfigurations (
 						Id int NOT NULL,
 						Controller varchar(150) NOT NULL,
 						Token varchar(max)
 					);'
+	EXEC(@sql)
+
+	set @process = 'Inserta token default'
+	set @sql = 'if not exists(select * from ccMetaWebhooksConfigurations) begin
+insert into ccMetaWebhooksConfigurations
+values(1,''webhooks/MetaWebhooksRouter'',''ABC1234'')
+end'
 	EXEC(@sql)
 	------------------------------------------------Uriel Cabrera Fin Crear Tabla para configuraciones de los webhooks-----------------------------------------------------
 	----------------------------------------------------------Begin David------------------------------------------------------------------------------------
@@ -7108,8 +7116,8 @@ END
 ------------------------------------------------------------ End Ivan Martin CW-8618 --------------------------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
-        --EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-        --EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+        EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
+        EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
         COMMIT TRAN
     END TRY
     BEGIN CATCH

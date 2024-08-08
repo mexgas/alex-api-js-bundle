@@ -5350,7 +5350,7 @@ BEGIN
 			SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
 			INNER JOIN ccVonageConfigurations Configurations 
 			ON Numbers.vonageId = Configurations.vonageId 
-			AND Numbers.inboundId = 0 
+			AND Numbers.inboundId = 0 or Numbers.inboundId IS NULL
 			AND Numbers.status = 1 
 			AND Configurations.serviceType = 5
 			UNION
@@ -5364,7 +5364,7 @@ BEGIN
 			FROM ccWhatsAppNumbers Numbers 
 			INNER JOIN ccVonageConfigurations Configurations 
 			ON Numbers.vonageId = Configurations.vonageId 
-			AND Numbers.camp_id = 0 
+			AND Numbers.camp_id = 0 OR Numbers.camp_id IS NULL
 			AND Numbers.status = 1 
 			AND Configurations.serviceType = 5
 			UNION

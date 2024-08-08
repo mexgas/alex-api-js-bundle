@@ -12397,7 +12397,7 @@ END
 
 
 	set @process = 'TT7953-Engine-En agentKolob tipifica mal el colgado en llamadas de entrada - ALTER SP'
-    set @sql = 'ALTER procedure [dbo].[ccsp_IVRInCalls]
+    set @sql = 'CREATE procedure [dbo].[ccsp_IVRInCalls]
 		@action tinyint = 0 ,
 		@ani varchar(30) = null ,
 		@idIvr int = 0 ,

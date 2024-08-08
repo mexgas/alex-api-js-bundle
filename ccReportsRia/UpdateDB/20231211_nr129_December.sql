@@ -6145,6 +6145,180 @@ EXEC(@sql)
 		END'
     EXEC(@sql)
 	-------------------------- ------------ END Marco García hotfix/125.20231211.0.15
+	-------------------------- ------------ BEGIN Frida García hotfix/125.20231211.0.15
+	    set @process = 'CW-8604 Drop sp ccspRepAVRSQuestion'
+		set @sql='
+		if exists (select * from sys.procedures where name = N''ccspRepAVRSQuestion'')
+		begin
+			DROP PROCEDURE ccspRepAVRSQuestion;
+		end'
+		EXEC(@sql)
+
+		set @process = 'CW-8604 create procedure ccspRepAVRSQuestion refactorización '
+		set @sql='
+		CREATE PROCEDURE  ccspRepAVRSQuestion
+		@action as tinyint,
+		@from as datetime = null,
+		@to as datetime = null
+		AS
+		if @from is null
+		  select @from = convert(datetime,convert(varchar(11),getdate()))
+		if @to is null
+		  select @to = getdate()
+
+		if(DATEPART(hour, @from) = 3 and DATEPART(minute, @from) = 0)
+		  SELECT @from = convert(DATETIME, convert(VARCHAR(11), @from))
+
+		if @action = 1 BEGIN
+
+
+		DELETE FROM dbo.RepAVRSQuestion with(rowlock)
+		where date >= @from AND date < @to
+
+		;with template as (
+		select 
+		rfc.nameFormatConcept
+		,rcq.idQuestion
+		,rcq.idConcept
+		,rcq.idFormat
+		,rcq.title
+		,ref.nameFormat
+
+		from  RECORDERRIA_CONCEPTQUESTIONS rcq
+		right join RECORDERRIA_FORMATCONCEPTS rfc on rfc.idConcept = rcq.idConcept
+		right join RECORDERRIA_EVALUATIONFORMATS ref on ref.idFormat = rcq.idFormat
+		),
+		riagrab as(
+			select r.grab_id, age_id, tipo_grab_id, cam_id, tipo_llamada 
+			from RIA_GRABACION r 
+			union
+			select rgc.grab_id, age_id, tipo_grab_id, cam_id, tipo_llamada from ria_grabacionconsulta rgc 
+		),
+		answer as (
+			select 
+			 rre.nameAdmin--
+			,convert(date, rre.createAt) as [date]
+			,raq.idRecordingEvaluation
+			,raq.IdQuestion
+			,raq.points
+			,rre.grab_id
+			,rre.userAdmin
+			,rre.createAt
+			,rre.idFormat
+			from  RECORDERRIA_ANSWERSOFQUESTIONSEVALUATION raq
+			right join  RECORDERRIA_RECORDINGEVALUATION rre on rre.idRecordingEvaluation = raq.idRecordingEvaluation
+		),
+		total as(
+		select 
+		an.date as [date]
+		,ra.age_id  as UserId
+		,cu.Login AS [user]
+		,(cu.apellidopaterno+'' ''+cu.apellidomaterno+'' ''+cu.nombres)  AS agentName
+		,ccu.User_id as supervisorId
+		,an.userAdmin as supervisorUser
+		,an.nameAdmin as Supervisor
+		,t.idFormat  AS templateId
+		,t.nameFormat AS Template
+		,t.idConcept as sectionId
+		,t.nameFormatConcept as Section
+		,t.idQuestion as questionId
+		,t.title as question
+		,an.points as score
+		,an.grab_id as mediaId
+		,case ra.tipo_grab_id
+			  when 1 then case ra.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end    
+			  when 2 then ''systemTranslated_Chat''
+			  when 3 then ''systemTranslated_Email''
+			  when 3 then ''systemTranslated_Twitter''
+			end as media
+		,ra.cam_id AS cam_id
+		,(CASE WHEN ra.tipo_llamada = 2 THEN cc.cam_descripcion ELSE ci.descripcion END) AS campaignAcd
+		from answer an
+		left join template t on t.idFormat = an.idFormat
+		inner join riagrab ra on ra.grab_id = an.grab_id
+		inner join ccUsers cu ON cu.User_id = ra.age_id
+		inner join ccUsers ccu on ccu.Login = an.userAdmin
+		left join cccamps cc ON ra.cam_id = cc.cam_id
+		left join ccinbound ci ON ra.cam_id = ci.Inbound_id
+		WHERE an.createAt >= @from AND an.createAt <= @to
+		),
+		dataResume as(
+		(select
+		convert(date, f.fecha_calif) as [date]
+			,f.age_id as userId
+			,a.Login as [user]
+			,(a.apellidopaterno+'' ''+a.apellidomaterno+'' ''+a.nombres) AS agentName
+			,f.id_calificador as supervisorId
+			,s.Login as supervisorUser
+			,(s.apellidopaterno+'' ''+s.apellidomaterno+'' ''+s.nombres) AS Supervisor
+			,f.id_formato as templateId
+			,q.nombre as Template
+			,c.id_concepto as sectionId
+			,c.con_descripcion as Section
+			,p.id_pregunta AS questionId
+			,p.enunciado_pregunta AS Question
+			,r.peso AS score
+			,f.id_grabacion as mediaId
+			,case f.tipo
+				when 1 then case f.tipo_llamada when 1 then ''systemTranslated_in_single'' else ''systemTranslated_out_single'' end
+				when 2 then ''systemTranslated_Chat''
+				when 3 then ''systemTranslated_Email''
+				when 3 then ''systemTranslated_Twitter''
+			end as media
+			,f.cam_id as cam_id
+			,(CASE WHEN f.tipo_llamada = 2 THEN e.cam_descripcion ELSE u.descripcion END) AS campaignAcd
+
+		from RIA_RESULTADOSFORMA r
+		  INNER JOIN dbo.RIA_FORMACALIF f ON f.id_forma = r.id_forma
+		  INNER JOIN RIA_FORMATOS q ON q.id_formato = f.id_formato
+		  INNER JOIN RIA_PREGUNTAS p ON r.id_pregunta = p.id_pregunta
+		  INNER JOIN RIA_CONCEPTOS c ON p.id_concepto = c.id_concepto
+		  INNER JOIN dbo.ccUserView a ON f.age_id = a.User_id
+		  INNER JOIN dbo.ccUserView s ON f.id_calificador = s.User_id
+		  left JOIN cccamps AS e ON f.cam_id = e.cam_id and  f.tipo_llamada=2
+		  left JOIN ccinbound AS u ON f.cam_id = u.Inbound_id and  f.tipo_llamada=1
+		  WHERE f.fecha_calif >= @from AND f.fecha_calif <= @to
+		  )
+		  UNION
+		  (
+			 select 
+				date
+				,UserId
+				,user
+				,agentName AS agentName
+				,supervisorId
+				,supervisorUser
+				,Supervisor
+				,templateId
+				,Template
+				,sectionId
+				,Section
+				,questionId
+				,question
+				,score
+				,mediaId
+				,media
+				,cam_id
+				,campaignAcd
+			 from total 
+		  )
+		)
+		  INSERT INTO dbo.RepAVRSQuestion ([date],userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question, avgDisposition,mediaId,media,cam_id,campaignAcd,Dispositions)
+		  select [date],userId, [user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question, avg(score) score, mediaId, media,cam_id,campaignAcd, avg(score) score
+		  from dataResume
+		  group by  [date], userId,[user],agentName,supervisorId,supervisorUser,Supervisor,templateId,Template,sectionId,Section, questionId, Question,
+		  mediaId,media,cam_id,campaignAcd
+ 
+		END'
+			EXEC(@sql)
+
+		set @process = 'CW-8604 se agrega agrupación por mediaId, sectionId,questionId'
+		set @sql='
+		update GroupByReports set columns=''Template|mediaId|sectionId|questionId|Section|question|count(avgDisposition):Dispositions|avg(avgDisposition):avgDisposition''
+		,groupByColumns=''Template|mediaId|sectionId|questionId|Section|question''
+		where id=8064'
+		EXEC(@sql)
+	-------------------------- ------------ END Frida García hotfix/125.20231211.0.15
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

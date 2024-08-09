@@ -250,6 +250,13 @@ SET @sql = 'CREATE PROCEDURE [dbo].[SupportReportCallInIVR] @action AS TINYINT, 
 	END'
 EXEC(@sql)
 
+set @process = 'TT10897 Se añade un Setting'
+set @sql = 'if not exists(select * from ccsettings where setting_id=46) begin
+		insert into ccsettings values(46,''0'',''Incluye los registros de las llamadas de entrada IVR al reporte RepInCallsDetail si el valor es 1 '',1,''X'')
+	end'
+
+EXEC(@sql)
+
 
 SET @process = 'K061001 Drop sp ccspRepInCallsDetail'
 SET @sql = '
@@ -276,7 +283,7 @@ IF @action = 1
 BEGIN
 
 	DECLARE @tab TABLE (callId INT PRIMARY KEY, [Dato1] VARCHAR(255), [Dato2] VARCHAR(255), [Dato3] VARCHAR(255), [Dato4] VARCHAR(255), [Dato5] VARCHAR(255))
-	DECLARE @fechaSUM DATETIME
+	DECLARE @showIVRCallsinSetting  TINYINT;
 	INSERT INTO @tab
 	SELECT callId, [Dato 1], [Dato 2], [Dato 3], [Dato 4], [Dato 5]
 	FROM (
@@ -292,166 +299,331 @@ BEGIN
 	FROM RepInCallsDetail
 	WHERE [date] >= @from AND [date] < @to
 
-			
-	INSERT INTO RepInCallsDetail (DATE, 
-callid, 
-inboundId, 
-ACDGroup, 
-callStatusId, 
-callStatus, 
-dispositionId, 
-disposition, 
-subDispositionId, 
-subDisposition, 
-dnisId, 
-dnis, 
-userId, 
-[user], 
-callKey, 
-ANI, 
-queueTime, 
-xferTime, 
-ringingTime, 
-dialogTime, 
-extension, 
-agentName, 
-whoHangUp, 
-mohTime, 
-year, 
-month, 
-day, 
-hour, 
-minutes, 
-provedorId, 
-provider, 
-trunk, 
-fileMoved, 
-twrapup, 
-AverageHandleTime, 
-Dato1, 
-Dato2, 
-Dato3, 
-Dato4, 
-Dato5, 
-grabId, 
-nameDNI, 
-numDNI, 
-collectCall, 
-timeTotalInCallSec, 
-timeTotalInCallMin, 
-statusCallByIVR, 
-IVR_ID, 
-callHung, 
-recibeCallBy, 
-cal_final)
-	SELECT 
-		a.cal_inicio AS cal_ini, 
-		a.cal_id,
-		a.Inbound_id,
-		ISNULL(ccIn.descripcion, '''') AS Inbound, 
-		a.statusCall_id, 
-		ISNULL(statusLlamada.descripcion, '''') AS statusCall, 
-		a.calif_id, 
-		ISNULL(disposition.description, '''') AS calif, 
-		ISNULL(a.califSub_id, 0), 
-		ISNULL(subDisposition.califSubDesc, '''') AS califSub, 
-		a.dni_id, 
-		ISNULL(dnis.dni_numero, '''') AS dni, 
-		a.user_id, 
-		ISNULL(LOGIN, '''') AS [user], 
-		ISNULL(a.cal_key, '''') as cal_key, 
-		a.cal_ANI, 
-		cal_tWait, 
-		cal_tXfer, 
-		cal_tRing, 
-		cal_tDialog, 
-		a.cal_extension, 
-		ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno, '''') AS agentName,
-		CASE
-			WHEN a.cal_whoHung = 0
-			THEN ''systemTranslated_Contact''
-			WHEN a.cal_whoHung = 1
-			THEN ''systemTranslated_Agent''
-			ELSE ''systemTranslated_AgentSurvey''
-		END [whoHangUp], 
-		a.cal_tMoh, 
-		DATEPART(yyyy, cal_inicio) [year], 
-		DATEPART(mm, cal_inicio) [month], 
-		DATEPART(dd, cal_inicio) [day], 
-		DATEPART(hh, cal_inicio) [hour], 
-		DATEPART(mi, cal_inicio) [minute], 
-		di.provedor_id, 
-		prov.descrip [Proveedor], 
-		a.cal_puerto,
-		CASE
-			WHEN a.file_moved = 1 THEN ''systemTranslated_Remoto''
-			WHEN a.file_moved = 2 THEN ''systemTranslated_noRecordingCamp''
-			ELSE ''Local''
-		END AS file_Moved, 
-		cal_tNotas, 
-		AverageHandleTime = cal_tNotas + cal_tDialog, 
-		ISNULL(tab.Dato1, '''') AS Dato1, 
-		ISNULL(tab.Dato2, '''') AS Dato2, 
-		ISNULL(tab.Dato3, '''') AS Dato3, 
-		ISNULL(tab.Dato4, '''') AS Dato4, 
-		ISNULL(tab.Dato5, '''') AS Dato5, 
-		ISNULL(rc.grab_id, 0) AS grabId,
-		ISNULL(dni_Descripcion, '''') AS nameDNI,
-		ISNULL(dnis.dni_numero, '''') AS dni,
-		CASE
-				WHEN statusLlamada.descripcion IS NOT NULL THEN ''systemTranslated_collectCallYes''
-				ELSE ''systemTranslated_collectCallNo''
-		END AS collectCall,
-		CASE
-			WHEN A.cal_final IS NULL THEN 0
-			ELSE CAST( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) AS INT)
-		END AS timeTotalInCallSec,
-		CASE
-			WHEN A.cal_final IS NULL THEN 0
-			ELSE CAST( FLOOR( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) / 60 ) AS INT) 
-		END + 
-		CASE
-			WHEN A.cal_final IS NULL THEN 0
-			ELSE
-				CASE
-					WHEN CAST(CEILING( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) ) AS INT) % 60 != 0 THEN 1
-					ELSE 0
-				END
-		END AS timeTotalInCallMin,
-		CASE 
-			WHEN a.IVR_id != 0 and ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_AbandonedInIVR''
-			WHEN a.statusCall_id = 13 THEN ''systemTranslated_Answered''
-			WHEN a.statusCall_id != 13 THEN ''''
-			ELSE ''''
-		END AS statusCallByIVR,
-		ISNULL(ivrCIN.IVR_ID, 0) AS IVR_ID,
-		CASE
-			WHEN ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_ClientSystem''
-			ELSE ''''
-		END AS callHung,
-		CASE
-			WHEN ivrCIN.callid = a.cal_id THEN ''systemTranslated_SystemIVR''
-			WHEN a.IVR_id = 0 THEN ''systemTranslated_CallInbound'' 
-			ELSE ''''
-		END AS [recibeCallBy], 
-		ISNULL(a.cal_final, NULL) AS cal_final
-FROM cccallsin A   
-		LEFT JOIN ccoDialers di ON di.dialer_id = a.cal_puerto
-		LEFT JOIN cstoProvedor prov ON di.provedor_id = prov.provedor_id
-		LEFT JOIN @tab tab ON tab.callId = a.cal_id
-		LEFT JOIN Ria_grabacion rc ON rc.cal_id = a.cal_id and rc.tipo_llamada=1
-		LEFT JOIN ccInbound ccIn ON a.Inbound_id = ccIn.Inbound_id
-		LEFT JOIN ccstatusllamada statusLlamada ON a.statusCall_id = statusLlamada.statusCall_id
-		LEFT JOIN cctipocalif disposition ON a.calif_id = disposition.calif_id
-		LEFT JOIN cctipocalifsub subDisposition ON a.califSub_id = subDisposition.califSub_id
-		LEFT JOIN ccdnis dnis ON a.dni_id = dnis.dni_id
-		LEFT JOIN ccUserView ccuser ON a.User_id = ccuser.user_id
-		LEFT JOIN repIVRDetail ivrCIN ON a.IVR_id = ivrCIN.IVR_ID 
-WHERE a.cal_inicio >= @from
-		AND a.cal_inicio < @to
+	SELECT @showIVRCallsinSetting = cs.valor FROM dbo.ccSettings AS cs WHERE cs.setting_id = 46
 
+	IF(@showIVRCallsinSetting > 0)
+	BEGIN		
+		INSERT INTO RepInCallsDetail (DATE, 
+	callid, 
+	inboundId, 
+	ACDGroup, 
+	callStatusId, 
+	callStatus, 
+	dispositionId, 
+	disposition, 
+	subDispositionId, 
+	subDisposition, 
+	dnisId, 
+	dnis, 
+	userId, 
+	[user], 
+	callKey, 
+	ANI, 
+	queueTime, 
+	xferTime, 
+	ringingTime, 
+	dialogTime, 
+	extension, 
+	agentName, 
+	whoHangUp, 
+	mohTime, 
+	year, 
+	month, 
+	day, 
+	hour, 
+	minutes, 
+	provedorId, 
+	provider, 
+	trunk, 
+	fileMoved, 
+	twrapup, 
+	AverageHandleTime, 
+	Dato1, 
+	Dato2, 
+	Dato3, 
+	Dato4, 
+	Dato5, 
+	grabId, 
+	nameDNI, 
+	numDNI, 
+	collectCall, 
+	timeTotalInCallSec, 
+	timeTotalInCallMin, 
+	statusCallByIVR, 
+	IVR_ID, 
+	callHung, 
+	recibeCallBy, 
+	cal_final)
+		SELECT 
+			a.cal_inicio AS cal_ini, 
+			a.cal_id,
+			a.Inbound_id,
+			ISNULL(ccIn.descripcion, '''') AS Inbound, 
+			a.statusCall_id, 
+			ISNULL(statusLlamada.descripcion, '''') AS statusCall, 
+			a.calif_id, 
+			ISNULL(disposition.description, '''') AS calif, 
+			ISNULL(a.califSub_id, 0), 
+			ISNULL(subDisposition.califSubDesc, '''') AS califSub, 
+			a.dni_id, 
+			ISNULL(dnis.dni_numero, '''') AS dni, 
+			a.user_id, 
+			ISNULL(LOGIN, '''') AS [user], 
+			ISNULL(a.cal_key, '''') as cal_key, 
+			a.cal_ANI, 
+			cal_tWait, 
+			cal_tXfer, 
+			cal_tRing, 
+			cal_tDialog, 
+			a.cal_extension, 
+			ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno, '''') AS agentName,
+			CASE
+				WHEN a.cal_whoHung = 0
+				THEN ''systemTranslated_Contact''
+				WHEN a.cal_whoHung = 1
+				THEN ''systemTranslated_Agent''
+				ELSE ''systemTranslated_AgentSurvey''
+			END [whoHangUp], 
+			a.cal_tMoh, 
+			DATEPART(yyyy, cal_inicio) [year], 
+			DATEPART(mm, cal_inicio) [month], 
+			DATEPART(dd, cal_inicio) [day], 
+			DATEPART(hh, cal_inicio) [hour], 
+			DATEPART(mi, cal_inicio) [minute], 
+			di.provedor_id, 
+			prov.descrip [Proveedor], 
+			a.cal_puerto,
+			CASE
+				WHEN a.file_moved = 1 THEN ''systemTranslated_Remoto''
+				WHEN a.file_moved = 2 THEN ''systemTranslated_noRecordingCamp''
+				ELSE ''Local''
+			END AS file_Moved, 
+			cal_tNotas, 
+			AverageHandleTime = cal_tNotas + cal_tDialog, 
+			ISNULL(tab.Dato1, '''') AS Dato1, 
+			ISNULL(tab.Dato2, '''') AS Dato2, 
+			ISNULL(tab.Dato3, '''') AS Dato3, 
+			ISNULL(tab.Dato4, '''') AS Dato4, 
+			ISNULL(tab.Dato5, '''') AS Dato5, 
+			ISNULL(rc.grab_id, 0) AS grabId,
+			ISNULL(dni_Descripcion, '''') AS nameDNI,
+			ISNULL(dnis.dni_numero, '''') AS dni,
+			CASE
+					WHEN statusLlamada.descripcion IS NOT NULL THEN ''systemTranslated_collectCallYes''
+					ELSE ''systemTranslated_collectCallNo''
+			END AS collectCall,
+			CASE
+				WHEN A.cal_final IS NULL THEN CAST( (cal_tDialog + cal_tXfer + cal_tWait + cal_tRing) AS INT)
+				ELSE CAST( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) AS INT)
+			END AS timeTotalInCallSec,
+			CASE
+				WHEN A.cal_final IS NULL THEN CAST(FLOOR( ( cal_tDialog + cal_tXfer + cal_tWait  + cal_tRing  ) / 60) AS INT)
+				ELSE CAST( FLOOR( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) / 60 ) AS INT) 
+			END + 
+			CASE
+				WHEN A.cal_final IS NULL THEN 
+					CASE 
+						WHEN CEILING(CAST( (cal_tDialog + cal_tXfer  + cal_tWait  + cal_tRing) AS INT  ) % 60) != 0 THEN 1 
+						ELSE 0
+					END
+				ELSE
+					CASE
+						WHEN CAST(CEILING( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) ) AS INT) % 60 != 0 THEN 1
+						ELSE 0
+					END
+			END AS timeTotalInCallMin,
+			CASE 
+				WHEN a.IVR_id != 0 and ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_AbandonedInIVR''
+				WHEN a.statusCall_id = 13 THEN ''systemTranslated_Answered''
+				WHEN a.statusCall_id != 13 THEN ''''
+				ELSE ''''
+			END AS statusCallByIVR,
+			ISNULL(ivrCIN.IVR_ID, 0) AS IVR_ID,
+			CASE
+				WHEN ivrCIN.callStatus = ''systemTranslated_AbandonedInIVR'' THEN ''systemTranslated_ClientSystem''
+				ELSE ''''
+			END AS callHung,
+			CASE
+				WHEN ivrCIN.callid = a.cal_id THEN ''systemTranslated_SystemIVR''
+				WHEN a.IVR_id = 0 THEN ''systemTranslated_CallInbound'' 
+				ELSE ''''
+			END AS [recibeCallBy], 
+			ISNULL(a.cal_final, NULL) AS cal_final
+	FROM cccallsin A   
+			LEFT JOIN ccoDialers di ON di.dialer_id = a.cal_puerto
+			LEFT JOIN cstoProvedor prov ON di.provedor_id = prov.provedor_id
+			LEFT JOIN @tab tab ON tab.callId = a.cal_id
+			LEFT JOIN Ria_grabacion rc ON rc.cal_id = a.cal_id and rc.tipo_llamada=1
+			LEFT JOIN ccInbound ccIn ON a.Inbound_id = ccIn.Inbound_id
+			LEFT JOIN ccstatusllamada statusLlamada ON a.statusCall_id = statusLlamada.statusCall_id
+			LEFT JOIN cctipocalif disposition ON a.calif_id = disposition.calif_id
+			LEFT JOIN cctipocalifsub subDisposition ON a.califSub_id = subDisposition.califSub_id
+			LEFT JOIN ccdnis dnis ON a.dni_id = dnis.dni_id
+			LEFT JOIN ccUserView ccuser ON a.User_id = ccuser.user_id
+			LEFT JOIN repIVRDetail ivrCIN ON a.IVR_id = ivrCIN.IVR_ID 
+	WHERE a.cal_inicio >= @from
+			AND a.cal_inicio < @to
 
-EXEC SupportReportCallInIVR 1, @from, @to
+		EXEC SupportReportCallInIVR 1, @from, @to
+	END
+	ELSE
+	BEGIN
+		INSERT INTO RepInCallsDetail (DATE, 
+	callid, 
+	inboundId, 
+	ACDGroup, 
+	callStatusId, 
+	callStatus, 
+	dispositionId, 
+	disposition, 
+	subDispositionId, 
+	subDisposition, 
+	dnisId, 
+	dnis, 
+	userId, 
+	[user], 
+	callKey, 
+	ANI, 
+	queueTime, 
+	xferTime, 
+	ringingTime, 
+	dialogTime, 
+	extension, 
+	agentName, 
+	whoHangUp, 
+	mohTime, 
+	year, 
+	month, 
+	day, 
+	hour, 
+	minutes, 
+	provedorId, 
+	provider, 
+	trunk, 
+	fileMoved, 
+	twrapup, 
+	AverageHandleTime, 
+	Dato1, 
+	Dato2, 
+	Dato3, 
+	Dato4, 
+	Dato5, 
+	grabId, 
+	nameDNI, 
+	numDNI, 
+	collectCall, 
+	timeTotalInCallSec, 
+	timeTotalInCallMin, 
+	statusCallByIVR, 
+	IVR_ID, 
+	callHung, 
+	recibeCallBy, 
+	cal_final)
+		SELECT 
+			a.cal_inicio AS cal_ini, 
+			a.cal_id,
+			a.Inbound_id,
+			ISNULL(ccIn.descripcion, '''') AS Inbound, 
+			a.statusCall_id, 
+			ISNULL(statusLlamada.descripcion, '''') AS statusCall, 
+			a.calif_id, 
+			ISNULL(disposition.description, '''') AS calif, 
+			ISNULL(a.califSub_id, 0), 
+			ISNULL(subDisposition.califSubDesc, '''') AS califSub, 
+			a.dni_id, 
+			ISNULL(dnis.dni_numero, '''') AS dni, 
+			a.user_id, 
+			ISNULL(LOGIN, '''') AS [user], 
+			ISNULL(a.cal_key, '''') as cal_key, 
+			a.cal_ANI, 
+			cal_tWait, 
+			cal_tXfer, 
+			cal_tRing, 
+			cal_tDialog, 
+			a.cal_extension, 
+			ISNULL(Nombres + '' '' + ApellidoPaterno + '' '' + ApellidoMaterno, '''') AS agentName,
+			CASE
+				WHEN a.cal_whoHung = 0
+				THEN ''systemTranslated_Contact''
+				WHEN a.cal_whoHung = 1
+				THEN ''systemTranslated_Agent''
+				ELSE ''systemTranslated_AgentSurvey''
+			END [whoHangUp], 
+			a.cal_tMoh, 
+			DATEPART(yyyy, cal_inicio) [year], 
+			DATEPART(mm, cal_inicio) [month], 
+			DATEPART(dd, cal_inicio) [day], 
+			DATEPART(hh, cal_inicio) [hour], 
+			DATEPART(mi, cal_inicio) [minute], 
+			di.provedor_id, 
+			prov.descrip [Proveedor], 
+			a.cal_puerto,
+			CASE
+				WHEN a.file_moved = 1 THEN ''systemTranslated_Remoto''
+				WHEN a.file_moved = 2 THEN ''systemTranslated_noRecordingCamp''
+				ELSE ''Local''
+			END AS file_Moved, 
+			cal_tNotas, 
+			AverageHandleTime = cal_tNotas + cal_tDialog, 
+			ISNULL(tab.Dato1, '''') AS Dato1, 
+			ISNULL(tab.Dato2, '''') AS Dato2, 
+			ISNULL(tab.Dato3, '''') AS Dato3, 
+			ISNULL(tab.Dato4, '''') AS Dato4, 
+			ISNULL(tab.Dato5, '''') AS Dato5, 
+			ISNULL(rc.grab_id, 0) AS grabId,
+			ISNULL(dni_Descripcion, '''') AS nameDNI,
+			ISNULL(dnis.dni_numero, '''') AS dni,
+			CASE
+					WHEN statusLlamada.descripcion IS NOT NULL THEN ''systemTranslated_collectCallYes''
+					ELSE ''systemTranslated_collectCallNo''
+			END AS collectCall,
+			CASE
+				WHEN A.cal_final IS NULL THEN CAST( (cal_tDialog + cal_tXfer + cal_tWait + cal_tRing) AS INT)
+				ELSE CAST( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) AS INT)
+			END AS timeTotalInCallSec,
+			CASE
+				WHEN A.cal_final IS NULL THEN CAST(FLOOR( ( cal_tDialog + cal_tXfer + cal_tWait  + cal_tRing  ) / 60) AS INT)
+				ELSE CAST( FLOOR( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) / 60 ) AS INT) 
+			END + 
+			CASE
+				WHEN A.cal_final IS NULL THEN 
+					CASE 
+						WHEN CEILING(CAST( (cal_tDialog + cal_tXfer  + cal_tWait  + cal_tRing) AS INT  ) % 60) != 0 THEN 1 
+						ELSE 0
+					END
+				ELSE
+					CASE
+						WHEN CAST(CEILING( DATEDIFF(SECOND, A.cal_Inicio, A.cal_final) ) AS INT) % 60 != 0 THEN 1
+						ELSE 0
+					END
+			END AS timeTotalInCallMin,
+			CASE 
+				WHEN a.IVR_id != 0 THEN ''systemTranslated_AbandonedInIVR''
+				WHEN a.statusCall_id = 13 THEN ''systemTranslated_Answered''
+				WHEN a.statusCall_id != 13 THEN ''''
+				ELSE ''''
+			END AS statusCallByIVR,
+			0 AS IVR_ID,
+			'''' AS callHung,
+			CASE
+				WHEN a.IVR_id = 0 THEN ''systemTranslated_CallInbound'' 
+				ELSE ''''
+			END AS [recibeCallBy], 
+			ISNULL(a.cal_final, NULL) AS cal_final
+	FROM cccallsin A   
+			LEFT JOIN ccoDialers di ON di.dialer_id = a.cal_puerto
+			LEFT JOIN cstoProvedor prov ON di.provedor_id = prov.provedor_id
+			LEFT JOIN @tab tab ON tab.callId = a.cal_id
+			LEFT JOIN Ria_grabacion rc ON rc.cal_id = a.cal_id and rc.tipo_llamada=1
+			LEFT JOIN ccInbound ccIn ON a.Inbound_id = ccIn.Inbound_id
+			LEFT JOIN ccstatusllamada statusLlamada ON a.statusCall_id = statusLlamada.statusCall_id
+			LEFT JOIN cctipocalif disposition ON a.calif_id = disposition.calif_id
+			LEFT JOIN cctipocalifsub subDisposition ON a.califSub_id = subDisposition.califSub_id
+			LEFT JOIN ccdnis dnis ON a.dni_id = dnis.dni_id
+			LEFT JOIN ccUserView ccuser ON a.User_id = ccuser.user_id
+	WHERE a.cal_inicio >= @from
+			AND a.cal_inicio < @to
+	END
 
 END'
 EXEC(@sql)

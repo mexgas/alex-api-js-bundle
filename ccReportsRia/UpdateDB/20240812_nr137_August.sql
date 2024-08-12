@@ -85,9 +85,9 @@ BEGIN
 
 	set @process = 'insert into Filters Filters adminIds'
 	set @sql = '
-	if not exists(select id from Filters where id = 15 and type = 33)
+	if not exists(select id from Filters where id = 15 and type = 36)
 	begin
-		insert into Filters (id,name,type,xmlParentNode,xmlChildNode) values (15,''adminIds'',33,''AdminIds'',''AdminId'')
+		insert into Filters (id,name,type,xmlParentNode,xmlChildNode) values (15,''adminIds'',36,''AdminIds'',''AdminId'')
 	end
 	'
 	EXEC(@sql)

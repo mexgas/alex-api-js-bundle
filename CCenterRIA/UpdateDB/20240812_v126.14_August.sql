@@ -3737,7 +3737,7 @@ CREATE PROCEDURE ccsp_GalateaAdminCampaigns
 							c.cam_id as cam_id
 							,cam_descripcion as cam_desc
 							,area.AreaName
-							from ccCamps c
+							from ccCamps c with (nolock)
 							inner join @camps id on c.cam_id = id.cam_id
 							inner join ccRIACat_Areas area on area.IDArea = c.IDArea
 							group by area.AreaName, c.cam_id, c.cam_descripcion
@@ -3746,7 +3746,7 @@ CREATE PROCEDURE ccsp_GalateaAdminCampaigns
 							currentConversationWa as (
 							select conversationId, camId, assignDate, onQueue,finishedBy
 							,case when conversationStatus = 2 then 1 else 0 end as assigned
-							from ccWhatsAppConversationsOut
+							from ccWhatsAppConversationsOut with (nolock)
 							where assignDate >= @from and assignDate <= @to
 							)
 							select 

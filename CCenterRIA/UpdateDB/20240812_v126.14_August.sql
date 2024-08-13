@@ -6,7 +6,7 @@ Author:
 Date: 2023/07/04
 Description: K089000
 Database: CCenterRia
-Required version: 125.37
+Required version: 126
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
 SET NOCOUNT ON
@@ -3714,8 +3714,8 @@ CREATE PROCEDURE ccsp_GalateaAdminCampaigns
 				END
 				ELSE IF  @Option=16
 				begin
-					declare @from datetime = DATEADD(day, DATEDIFF(day, 0, GETDATE()), 0);
-					declare @to datetime = DATEADD(second, -1, DATEADD(day, DATEDIFF(day, 0, GETDATE()) + 1, 0));
+					DECLARE @from DATETIME = CAST(GETDATE() AS DATE);
+					DECLARE @to DATETIME = DATEADD(MILLISECOND, -3, DATEADD(DAY, 1, @from));
 					select @AreaId = IDArea from ccUsers where User_id = @Id
 					declare @camps table (cam_id int)
 					insert @camps	select cam_id  FROM  dbo.fGet_CampAcd_Area(@Id,5) group by cam_id

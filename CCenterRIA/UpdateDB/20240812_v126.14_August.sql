@@ -68,7 +68,7 @@ BEGIN
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccsp_MetaWAOutboundTemplates'
+	set @process = 'K020109 create sp ccsp_MetaWAOutboundTemplates se agregaron los actions 10,11,12 y 13'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
 	@action TINYINT = NULL,
 	@whatsAppTemplateID BIGINT = 0,
@@ -382,7 +382,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccsp_RIAOUTInsertNewJOBS_WT_Camp'
+	set @process = 'K020109 create sp ccsp_RIAOUTInsertNewJOBS_WT_Camp se agregó el código de ELSE IF(@campType = 5) línea 515 a la 587'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
     AS
     SET NOCOUNT ON
@@ -718,7 +718,7 @@ END'
 		END';
 	EXEC(@sql);
 
-	set @process = 'K020109 create function Verifica2'
+	set @process = 'K020109 create function Verifica2 en la línea 789 de agregó la validación @isForWhatsapp = 1, para tambien validar si es móvil para whatsapp '
 	set @sql = 'CREATE FUNCTION [dbo].[Verifica2] (@tel VARCHAR(32), @pais TINYINT = 0, @cldLocal VARCHAR(7) = '''', @isForSMS bit = 0, @isForWhatsapp BIT = 0)
 		RETURNS VARCHAR(32)
 		AS
@@ -1682,7 +1682,7 @@ END'
 		END';
 	EXEC(@sql);
 
-	set @process = 'K020109 create function Verifica'
+	set @process = 'K020109 create function Verifica en la función dbo.verifica2 se le agregó el parametro DEFAULT'
 	set @sql = 'CREATE FUNCTION [dbo].[Verifica](@tel varchar(32))
 		RETURNS varchar(32) AS
 		BEGIN
@@ -1705,7 +1705,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccspLoadRegistrySegments'
+	set @process = 'K020109 create sp ccspLoadRegistrySegments en donde se ocupa dbo.verifica2 se le agregó un parametro default'
 	set @sql = 'CREATE procedure [dbo].[ccspLoadRegistrySegments] 
 				@action int,
 				@camId int = null,
@@ -2105,7 +2105,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccsp_Limpia'
+	set @process = 'K020109 create sp ccsp_Limpia en donde se ocupa la función dbo.verifica2 se le agregó un parametro DEFAULT'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_Limpia] @tel VARCHAR(50), @Camp INT = 0, @calKey VARCHAR(20) = ''''
 AS
 SET NOCOUNT ON
@@ -2511,7 +2511,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccsp_WhatsAppLoader'
+	set @process = 'K020109 create sp ccsp_WhatsAppLoader es es un sp nuevo'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsAppLoader]
 	-- Add the parameters for the stored procedure here
 	@action TINYINT =NULL,
@@ -2558,7 +2558,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020109 create sp ccsp_GalateaAdminRotativeANI'
+	set @process = 'K020109 create sp ccsp_GalateaAdminRotativeANI se añadio el @loadTYpe y se modfico el @type = 10, para que filtre por el @loadType en la línea 2683 y 2685'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAdminRotativeANI]
 			@type SMALLINT,
 			@idArea SMALLINT = NULL,
@@ -2708,7 +2708,7 @@ END'
     end'
 	EXEC(@sql)
 
-	set @process = 'K020134, K002089 create sp ccsp_MultimediaCommon'
+	set @process = 'K020134, K002089 create sp ccsp_MultimediaCommon se modificó el @Option 2, en la línea 2808 y 2847'
 	set @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
                     @Option AS SMALLINT,
                     @inboundId AS SMALLINT = 0,

@@ -3022,26 +3022,42 @@ END'
 	@AgentId INT
 	AS
 	BEGIN
-		SELECT COUNT(*) AS InboundWhatsAppConversations
-		FROM ccWhatsAppConversations
-		WHERE agentId = @AgentId
-		and assignDate IS NOT NULL 
-		and assignDate >= CAST(GETDATE() AS DATE) 
-		and assignDate < DATEADD(day, 1, CAST(GETDATE() AS DATE));
-	end'
+		BEGIN TRY
+			DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+			SELECT COUNT (*) AS InboundWhatsAppConversations
+			FROM ccWhatsAppConversations WITH (NOLOCK)
+			WHERE agentId = @AgentId
+			AND assignDate > @Today
+			AND assignDate < DATEADD(day, 1, @Today);
+		END TRY
+		BEGIN CATCH
+			-- Manejo de errores
+			DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+			RAISERROR(@ErrorMessage, 16, 1);
+		END CATCH
+	END;'
     EXEC(@sql);
 
 	SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationOutByAgentID para que se obtenga el total de conversaciones de salida de whatsapp de hoy por ID de agente'
     SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationOutByAgentID]
-    @AgentId INT
+	@AgentId INT
 	AS
 	BEGIN
-		SELECT COUNT(*) AS InboundWhatsAppConversations
-		FROM ccWhatsAppConversationsOut
-		WHERE agentId = @AgentId
-		and assignDate IS NOT NULL 
-		and assignDate >= CAST(GETDATE() AS DATE) 
-		and assignDate < DATEADD(day, 1, CAST(GETDATE() AS DATE));
+		BEGIN TRY
+			DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+			SELECT COUNT (*) AS OutboundWhatsAppConversations
+			FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+			WHERE agentId = @AgentId
+			AND assignDate > @Today
+			AND assignDate < DATEADD(day, 1, @Today);
+		END TRY
+		BEGIN CATCH
+			-- Manejo de errores
+			DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+			RAISERROR(@ErrorMessage, 16, 1);
+		END CATCH
 	END;'
     EXEC(@sql);
 

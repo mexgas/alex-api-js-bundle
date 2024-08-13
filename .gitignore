@@ -1,4 +1,4 @@
 *.bak
 *.orig
 .scannerwork/
-.vs/
+/.vs/

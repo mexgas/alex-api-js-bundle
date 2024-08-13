@@ -3016,10 +3016,7 @@ END'
 		-------------------------- END Marco García -------------------------------------------------------------------
 		---------------------------------------------- GABY ------------------------------------------------------------
 		SET @process = 'K020023 Update setting 270'
-	SET @sql = ' IF EXISTS (SELECT * FROM ccSettings2 WHERE setting_id=270)
-		BEGIN
-			update ccsettings2 set description=''WhatsApp messages by second (default: 80, max: 1000, min: 1)'' where setting_id=270
-		END';
+	SET @sql = ' update ccsettings2 set description=''WhatsApp messages by second (default: 80, max: 1000, min: 1)'' where setting_id=270';
 	EXEC(@sql);
 	-------------------------------------------------- END GABY --------------------------------------------------------------------
 

@@ -27,7 +27,7 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 137 --**********actualizar a 124 sin fix
+SET @version = 126 --**********actualizar a 124 sin fix
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -38,7 +38,36 @@ BEGIN
 
 	BEGIN TRY
 	------------------------------Begin Frida
-	set @process = 'create table RepSpecialRecordingsDownload'
+	set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+		begin
+		DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+		end'
+	EXEC(@sql)
+
+	set @process = 'DEV2-620 CREATE TABLE ccRecordingsDownload  '
+	set @sql = '
+	if not exists (select * from sys.tables where name = N'ccRecordingsDownload')
+    begin
+        CREATE TABLE ccRecordingsDownload (
+		date DATETIME NOT NULL,
+		adminId int,
+		grab_Id BIGINT,
+		cam_id int,
+		CampType smallint
+		)
+    end
+	'
+	EXEC(@sql)
+
+	set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
+	set @process = 'DEV2-620 create table RepSpecialRecordingsDownload'
 	set @sql = '
 	if not exists (select * from sys.tables where name = N''RepSpecialRecordingsDownload'')
     begin
@@ -59,22 +88,9 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = ' CREATE TABLE ccRecordingsDownload  '
-	set @sql = '
-	if not exists (select * from sys.tables where name = N'ccRecordingsDownload')
-    begin
-        CREATE TABLE ccRecordingsDownload (
-		date DATETIME NOT NULL,
-		adminId int,
-		grab_Id BIGINT,
-		cam_id int,
-		CampType smallint
-		)
-    end
-	'
-	EXEC(@sql)
+	
 
-	set @process = ' insert into ReportHighUse ccspRepSpecialRecordingsDownload '
+	set @process = 'DEV2-620 insert into ReportHighUse ccspRepSpecialRecordingsDownload '
 	set @sql = '
 	if not exists(select * from ReportHighUse where nameSp=''ccspRepSpecialRecordingsDownload'')
 	begin 
@@ -83,7 +99,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into Filters Filters adminIds'
+	set @process = 'DEV2-620 insert into Filters Filters adminIds'
 	set @sql = '
 	if not exists(select id from Filters where id = 15 and type = 36)
 	begin
@@ -92,7 +108,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into FiltersMenus adminids'
+	set @process = 'DEV2-620 insert into FiltersMenus adminids'
 	set @sql = '
 	if not exists (select * from FiltersMenus where name=''adminids'' )
 	begin
@@ -101,7 +117,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into FiltersMenus campaigns'
+	set @process = 'DEV2-620 insert into FiltersMenus campaigns'
 	set @sql = '
 	if not exists (select * from FiltersMenus where name=''campaigns'' )
 	begin
@@ -110,7 +126,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into FiltersMenus acds'
+	set @process = 'DEV2-620 insert into FiltersMenus acds'
 	set @sql = '
 	if not exists (select * from FiltersMenus where name=''acds'' )
 	begin
@@ -119,7 +135,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into FiltersMenus groupby'
+	set @process = 'DEV2-620 insert into FiltersMenus groupby'
 	set @sql = '
 	if not exists (select * from FiltersMenus where name=''groupby'' )
 	begin
@@ -128,7 +144,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into FiltersMenus text'
+	set @process = 'DEV2-620 insert into FiltersMenus text'
 	set @sql = '
 	if not exists (select * from FiltersMenus where name=''text'' )
 	begin
@@ -137,7 +153,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'INSERT INTO ReportsFiltersMenus date '
+	set @process = 'DEV2-620 INSERT INTO ReportsFiltersMenus date '
 	set @sql = '
 	if not exists (select * from ReportsFiltersMenus where idReport=7230 and filterMenuName=''date'')
 	begin
@@ -146,7 +162,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'INSERT INTO ReportsFilters campaigns'
+	set @process = 'DEV2-620 INSERT INTO ReportsFilters campaigns'
 	set @sql = '
 	if not exists (select * from ReportsFilters where id=7230 and filterName=''campaigns'')
 	begin
@@ -155,7 +171,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'INSERT INTO ReportsFilters acds'
+	set @process = 'DEV2-620 INSERT INTO ReportsFilters acds'
 	set @sql = '
 	if not exists (select * from ReportsFilters where id=7230 and filterName=''acds'')
 	begin
@@ -164,7 +180,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'INSERT INTO ReportsFilters adminids'
+	set @process = 'DEV2-620 INSERT INTO ReportsFilters adminids'
 	set @sql = '
 	if not exists (select * from ReportsFilters where id=7230 and filterName=''adminids'')
 	begin
@@ -173,7 +189,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = ' insert into ReportsFiltersMenus adminids'
+	set @process = 'DEV2-620  insert into ReportsFiltersMenus adminids'
 	set @sql = '
 	if not exists (select * from ReportsFiltersMenus where idReport=7230 and filterMenuName=''adminids'')
 	begin
@@ -182,7 +198,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'insert into ReportsFiltersMenus campaigns '
+	set @process = 'DEV2-620 DEV2-620 insert into ReportsFiltersMenus campaigns '
 	set @sql = '
 	if not exists (select * from ReportsFiltersMenus where idReport=7230 and filterMenuName=''campaigns'')
 	begin
@@ -192,7 +208,7 @@ BEGIN
 	EXEC(@sql)
 
 
-	set @process = 'insert into ReportsFiltersMenus acds'
+	set @process = 'DEV2-620 insert into ReportsFiltersMenus acds'
 	set @sql = '
 	if not exists (select * from ReportsFiltersMenus where idReport=7230 and filterMenuName=''acds'')
 	begin
@@ -201,7 +217,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'create table orColumnsByReport '
+	set @process = 'DEV2-620 create table orColumnsByReport '
 	set @sql = '
 	if not exists (select * from sys.tables where name = N''orColumnsByReport'')
     begin
@@ -210,7 +226,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = ' insert into orColumnsByReport report 7230'
+	set @process = 'DEV2-620  insert into orColumnsByReport report 7230'
 	set @sql = '
 	if not exists (select * from orColumnsByReport where idReport=7230 and columns=''campaignId|inboundId'')
 	begin
@@ -219,7 +235,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = ' DROP PROCEDURE ccspRepSpecialRecordingsDownload '
+	set @process = 'DEV2-620  DROP PROCEDURE ccspRepSpecialRecordingsDownload '
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccspRepSpecialRecordingsDownload'')
     begin
@@ -228,7 +244,7 @@ BEGIN
 	'
 	EXEC(@sql)
 
-	set @process = 'CREATE PROC ccspRepSpecialRecordingsDownload '
+	set @process = 'DEV2-620 CREATE PROC ccspRepSpecialRecordingsDownload '
 	set @sql = '
 	
 CREATE PROC ccspRepSpecialRecordingsDownload
@@ -320,7 +336,7 @@ END
 	'
 	EXEC(@sql)
 
-	set @process = 'DROP PROCEDURE ccspRepCatalogos '
+	set @process = 'DEV2-620 DROP PROCEDURE ccspRepCatalogos '
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccspRepCatalogos'')
     begin
@@ -329,7 +345,7 @@ END
 	'
 	EXEC(@sql)
 
-	set @process = 'CREATE PROCEDURE  ccspRepCatalogos'
+	set @process = 'DEV2-620 CREATE PROCEDURE  ccspRepCatalogos'
 	set @sql = 'CREATE  PROCEDURE ccspRepCatalogos
 	@type as tinyint,
 	@action tinyint = 0 -- 0 Filter select; 1 Filters Range

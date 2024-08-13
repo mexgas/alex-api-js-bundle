@@ -15,7 +15,7 @@ begin
     begin try
 
 	------------------------------Begin Frida
-	set @process = 'DROP PROCEDURE ccspGalatea_Finder'
+	set @process = 'DEV2-620 DROP PROCEDURE ccspGalatea_Finder'
 	set @sql = '
 	if exists (select * from sys.procedures where name = N''ccspGalatea_Finder'')
     begin
@@ -24,7 +24,7 @@ begin
 	'
 	EXEC(@sql)
 
-	set @process = 'CREATE PROCEDURE ccspGalatea_Finder'
+	set @process = 'DEV2-620 CREATE PROCEDURE ccspGalatea_Finder'
 	set @sql = 'CREATE PROCEDURE ccspGalatea_Finder
 @action int,
 @grabIds varchar(max)=null,

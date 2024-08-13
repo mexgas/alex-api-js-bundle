@@ -3015,6 +3015,40 @@ END'
 		------ K020134, K002089 ---------------
 		-------------------------- END Marco García -------------------------------------------------------------------
 
+		----------------------------------------------------- START K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
+
+    SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationInByAgentID para que se obtenga el total de conversaciones de entrada de whatsapp de hoy por ID de agente'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationInByAgentID]
+	@AgentId INT
+	AS
+	BEGIN
+		SELECT COUNT(*) AS InboundWhatsAppConversations
+		FROM ccWhatsAppConversations
+		WHERE agentId = @AgentId
+		and assignDate IS NOT NULL 
+		and assignDate >= CAST(GETDATE() AS DATE) 
+		and assignDate < DATEADD(day, 1, CAST(GETDATE() AS DATE));
+	end'
+    EXEC(@sql);
+
+	SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationOutByAgentID para que se obtenga el total de conversaciones de salida de whatsapp de hoy por ID de agente'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationOutByAgentID]
+    @AgentId INT
+	AS
+	BEGIN
+		SELECT COUNT(*) AS InboundWhatsAppConversations
+		FROM ccWhatsAppConversationsOut
+		WHERE agentId = @AgentId
+		and assignDate IS NOT NULL 
+		and assignDate >= CAST(GETDATE() AS DATE) 
+		and assignDate < DATEADD(day, 1, CAST(GETDATE() AS DATE));
+	END;'
+    EXEC(@sql);
+
+
+
+    ----------------------------------------------------- END K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

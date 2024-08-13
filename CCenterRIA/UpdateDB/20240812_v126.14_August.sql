@@ -3014,6 +3014,14 @@ END'
 	EXEC(@sql);
 		------ K020134, K002089 ---------------
 		-------------------------- END Marco García -------------------------------------------------------------------
+		---------------------------------------------- GABY ------------------------------------------------------------
+		SET @process = 'K020023 Update setting 270'
+	SET @sql = ' IF EXISTS (SELECT * FROM ccSettings2 WHERE setting_id=270)
+		BEGIN
+			update ccsettings2 set description=''WhatsApp messages by second (default: 80, max: 1000, min: 1)'' where setting_id=270
+		END';
+	EXEC(@sql);
+	-------------------------------------------------- END GABY --------------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

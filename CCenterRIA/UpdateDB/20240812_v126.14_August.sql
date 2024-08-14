@@ -3865,6 +3865,56 @@ end
 	EXEC(@sql);
 	-------------------------------------------------- END GABY --------------------------------------------------------------------
 
+		----------------------------------------------------- START K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
+
+    SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationInByAgentID para que se obtenga el total de conversaciones de entrada de whatsapp de hoy por ID de agente'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationInByAgentID]
+	@AgentId INT
+	AS
+	BEGIN
+		BEGIN TRY
+			DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+			SELECT COUNT (*) AS InboundWhatsAppConversations
+			FROM ccWhatsAppConversations WITH (NOLOCK)
+			WHERE agentId = @AgentId
+			AND assignDate > @Today
+			AND assignDate < DATEADD(day, 1, @Today);
+		END TRY
+		BEGIN CATCH
+			-- Manejo de errores
+			DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+			RAISERROR(@ErrorMessage, 16, 1);
+		END CATCH
+	END;'
+    EXEC(@sql);
+
+	SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationOutByAgentID para que se obtenga el total de conversaciones de salida de whatsapp de hoy por ID de agente'
+    SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationOutByAgentID]
+	@AgentId INT
+	AS
+	BEGIN
+		BEGIN TRY
+			DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+			SELECT COUNT (*) AS OutboundWhatsAppConversations
+			FROM ccWhatsAppConversationsOut WITH (NOLOCK)
+			WHERE agentId = @AgentId
+			AND assignDate > @Today
+			AND assignDate < DATEADD(day, 1, @Today);
+		END TRY
+		BEGIN CATCH
+			-- Manejo de errores
+			DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+			RAISERROR(@ErrorMessage, 16, 1);
+		END CATCH
+	END;'
+    EXEC(@sql);
+
+
+
+    ----------------------------------------------------- END K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

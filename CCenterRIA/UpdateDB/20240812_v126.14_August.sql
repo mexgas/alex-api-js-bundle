@@ -3867,6 +3867,13 @@ end
 
 		----------------------------------------------------- START K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
 
+	set @process = 'K020117 drop sp ccTodayTotalWhatsappConversationInByAgentID'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccTodayTotalWhatsappConversationInByAgentID'')
+    begin
+        DROP PROCEDURE ccTodayTotalWhatsappConversationInByAgentID
+    end'
+	EXEC(@sql)
+
     SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationInByAgentID para que se obtenga el total de conversaciones de entrada de whatsapp de hoy por ID de agente'
     SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationInByAgentID]
 	@AgentId INT
@@ -3888,6 +3895,13 @@ end
 		END CATCH
 	END;'
     EXEC(@sql);
+
+	set @process = 'K020117 drop sp ccTodayTotalWhatsappConversationOutByAgentID'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccTodayTotalWhatsappConversationOutByAgentID'')
+    begin
+        DROP PROCEDURE ccTodayTotalWhatsappConversationOutByAgentID
+    end'
+	EXEC(@sql)
 
 	SET @process = 'K020117 Create procedure ccTodayTotalWhatsappConversationOutByAgentID para que se obtenga el total de conversaciones de salida de whatsapp de hoy por ID de agente'
     SET @sql = 'CREATE PROCEDURE [dbo].[ccTodayTotalWhatsappConversationOutByAgentID]

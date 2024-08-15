@@ -27,7 +27,7 @@ DECLARE @versionALL VARCHAR(max);
 Importante:la variable @version puede tener 2 valores dependiendo la necesidad que se tenga el primer ejemplo
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
-SET @version = 126 --**********actualizar a 124 sin fix
+SET @version = 137 --**********actualizar a 124 sin fix
 
 /* Actual version (use your own script to do it) */
 EXEC @actualVersion = ccsp_getVersion 'BD'
@@ -47,7 +47,7 @@ BEGIN
 
 	set @process = 'DEV2-620 CREATE TABLE ccRecordingsDownload  '
 	set @sql = '
-	if not exists (select * from sys.tables where name = N'ccRecordingsDownload')
+	if not exists (select * from sys.tables where name = N''ccRecordingsDownload'')
     begin
         CREATE TABLE ccRecordingsDownload (
 		date DATETIME NOT NULL,

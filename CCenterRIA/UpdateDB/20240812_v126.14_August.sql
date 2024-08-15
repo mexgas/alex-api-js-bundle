@@ -2528,10 +2528,10 @@ BEGIN
 		DECLARE @sql NVARCHAR(MAX);
 
 		-- Obtener la lista de columnas excluyendo ''column1''
-		SELECT @columnList = STRING_AGG(name, '', '') 
-		FROM sys.columns 
-		WHERE object_id = OBJECT_ID(@tableTemp) 
-		AND name <> ''phoneType'';
+		SET @columnList = (SELECT STUFF((SELECT '','' +name 
+				FROM sys.columns 
+				WHERE object_id = OBJECT_ID(@tableTemp) 
+				AND name <> ''phoneType'' FOR XML PATH('''')), 1, 1, ''''))
 
 		-- Construir la consulta SQL dinámica
 		SET @sql = ''

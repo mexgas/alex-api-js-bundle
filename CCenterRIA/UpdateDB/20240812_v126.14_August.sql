@@ -3928,6 +3928,59 @@ end
 
 
     ----------------------------------------------------- END K020117 Leonardo Ramírez Landa  ----------------------------------------------------------------
+	----------------------------------------------------- BEGIN Roberto Nava Cambio por tema de tipificacion -------------------------------------------------
+
+	SET @process = 'Alter SP ccsp_IVRInCalls Se agregan actualizaciones para poder colgar por encuesta o sistema'
+	SET @sql = 'ALTER procedure [dbo].[ccsp_IVRInCalls]
+@action tinyint = 0 ,
+@ani varchar(30) = null ,
+@idIvr int = 0 ,
+@option varchar(5)= null ,
+@saveType tinyInt = null,
+@dnis varchar(50) = null,
+@name varchar(50) = null,
+@questionId int = 0,
+@surveyId int = 0,
+@calId int = 0,
+@callout_id int = 0,
+@ttotalIVR int = 0,
+@callType tinyint = null,
+@callbackCamId int =0
+-- saveType 1 es menu 2 es dato
+-- accion 1 siempre @ani  -> @idIvr
+-- accion 2 siempre @idIvr @opcionDigitada -> nada
+AS
+IF @action = 1
+BEGIN
+	IF @ani IS NOT NULL
+	BEGIN
+		INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
+		UPDATE ccCallsIn SET cal_whoHung = 2 WHERE cal_id = @callout_id
+		Select ''ID''=scope_identity()
+	END
+END
+ELSE IF @action = 2
+BEGIN
+	IF @option IS NOT NULL AND @idIvr IS NOT NULL
+	BEGIN
+		INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id, callType) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0),isnull(@callType,0))
+		select 0
+	END
+	ELSE select -1
+END
+ELSE IF @action = 3
+BEGIN
+	UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
+	if @callout_id > 0 begin
+		exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
+		UPDATE ccoCallsOut set cal_whoHung = 2 where cal_id = @callout_id
+	end
+	if @callbackCamId >0  begin
+		EXEC [ccsp_KolobUpdateCallback_AbandonIVR] @idIvr, @callbackCamId
+	end
+END'
+	exec(@sql)
+
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

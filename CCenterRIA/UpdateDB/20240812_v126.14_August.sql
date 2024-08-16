@@ -4538,22 +4538,8 @@ end
 	'
 	EXEC(@sql)
 
-	SET @process = 'Envio Plantillas Manuales'
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'Envio Plantillas Manuales'
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'Envio Plantillas Manuales'
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'Envio Plantillas Manuales'
-	SET @sql = ''
-	EXEC(@sql)
-
+	
+	------------------------------------------------------END JEsus Gallardo ---------------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

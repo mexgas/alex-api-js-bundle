@@ -372,6 +372,10 @@ END'
 	IF NOT EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccWhatsAppOutSource'' and COLUMN_NAME = ''dateDial'')
 	BEGIN
 		ALTER TABLE dbo.ccWhatsAppOutSource ADD dateDial DATETIME NOT NULL DEFAULT GETDATE()
+	END
+	IF EXISTS(SELECT * FROM sys.columns WHERE name = N''TemplateId'' AND Object_ID = Object_ID(N''ccWhatsAppOutSource''))
+	BEGIN
+		ALTER TABLE dbo.ccWhatsAppOutSource ALTER COLUMN TemplateId BIGINT
 	END'
 	EXEC(@sql)
 

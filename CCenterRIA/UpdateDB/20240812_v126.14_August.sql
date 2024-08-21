@@ -4300,6 +4300,130 @@ END
 	
 	------------------------------------------------------END JEsus Gallardo ---------------------------------------------------------------------
 
+	------------------------------------------------- Gaby WA Envío -------------------------------------------------------------------
+	set @process = 'WA Envío Masivo - Drop procedure'
+	set @sql = 'if exists (select * from sys.procedures where name = N''ccsp_WAOUTGetNewJobs'')
+    begin
+        DROP PROCEDURE ccsp_WAOUTGetNewJobs
+    end'
+	EXEC(@sql)
+
+
+	set @process = 'WA Envío Masivo - Create procedure'
+	set @sql = '
+CREATE PROCEDURE ccsp_WAOUTGetNewJobs
+@campId INT,
+@action INT=0, --0 select and update, 1 select registry
+@topCount INT=80
+
+as
+set nocount on
+DECLARE @iZonas INT = NULL
+DECLARE @bIsDaylight bit, @revHorario bit
+DECLARE @country_id INT, @TipoJobs INT
+
+DECLARE @sql nvarchar(MAX), @Order_Asc_Desc char(4)
+declare @sqlInsertGeneric nvarchar(MAX)
+declare @parameters nvarchar(MAX)
+		
+-- VALIDAMOS EL IDIOMA Y LADA CONFIGURADA --
+SELECT @country_id=valor FROM ccSettings WHERE setting_id=104
+SELECT @revHorario=valor from ccsettings where setting_id = 112
+-- VALIDAMOS EL ORDER EN COMO SE VAN A MOSTRAR LOS REGISTROS --
+SELECT @Order_Asc_Desc=case dialOrder when 1 then ''desc'' else ''asc'' end FROM ccCamps WHERE cam_id=@campId
+SELECT @Order_Asc_Desc=isnull(@Order_Asc_Desc,''asc'')
+
+SET DATEFIRST 1
+--Checamos si es horario de verano
+SELECT @bIsDaylight = dbo.fnIsDayLight (@country_id, getdate())
+
+exec @iZonas= ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0
+
+if exists(select cam_id from ccCampsHorarios with(index(IX_ccCampsHorarios)) where cam_id=@campid)
+begin
+	if @iZonas = 0 begin
+		SELECT 0 as callout_id, 0 as cam_id, '''' as cal_telefono, 0 as cal_status, '''' as cal_fechaDial, 0 as user_id, 0 as tz where 1=0
+		return
+	end
+end
+
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+
+CREATE TABLE #NEW_JOBS (
+	WAOutId INT
+	,CamId INT
+	,Phone VARCHAR(30) collate SQL_Latin1_General_CP1_CI_AS
+	,Status TINYINT
+	,DateDial DATETIME	
+	,Tz1 INT
+	,CallKey VARCHAR(40)	
+	,Components NVARCHAR(4000)
+	)
+set @sql=''''
+
+DECLARE @new_calls_date VARCHAR(max) = '''';
+		
+
+SELECT @TipoJobs=cam_TipoJobs from ccCamps where cam_id=@CAMPID
+
+DECLARE @isVerano varchar(max)
+
+	set @isVerano = ''W.TimeZone'' + case @bIsDaylight when 1 then ''_summer'' else '''' END
+
+	
+
+	select @sqlInsertGeneric=nchar(13)+ ''INSERT #NEW_JOBS
+SELECT top(@topCount) W.waout_id, W.CamId, W.phoneNumber, W.WaStatus,W.dateDial,''
++@isVerano+'',
+w.callkey,
+wos.componentJson
+FROM ccoWAWorkingTable W 
+inner join ccWhatsAppOutSource wos (nolock) on wos.waout_id=W.waout_id
+WHERE WaStatus in (0)
+and W.CamId=@campId
+and (
+   ( (''+@isVerano+''  & @iZonas)>0 or ''+@isVerano+''=0) 
+)
+order by W.dateDial ''+ @Order_Asc_Desc +'', waout_id ''+ @Order_Asc_Desc
+
+if @TipoJobs in(0,2)--** INCLUIR LOS NUEVAS
+begin				
+	select @sql=@sql+nchar(13)+''--INCLUIR LAS NUEVAS--''
+	select @sql=@sql+REPLACE(
+	REPLACE(@sqlInsertGeneric,''DATE_REPLACE_QUERY'',''W.dateDial < dateadd(mi, 5, getdate())'')--Todo cambiar
+		,''STATUS_REPLACE_QUERY'',''W.WaStatus=0'')
+	
+	--print(@sql)
+end -- TOMA EN CUENTA LAS NUEVAS
+
+----------------------- RETORNA LOS RESULTADOS OBTENIDOS -------------------------------
+set @parameters=''@CAMPID int,@topCount int,@iZonas int''		
+
+	
+SELECT @sql=@sql+nchar(13)+ ''update ccoWAWorkingTable with (rowlock) SET WaStatus=2 where WAOut_id in(select WaOutId from #NEW_JOBS)''	
+
+
+		
+select @sql=@sql+nchar(13)+ ''SELECT WaOutId, CamId, Phone, Status, DateDial,
+Tz1,CallKey as RegistryClient,Components as MessageJson
+FROM #NEW_JOBS where len(Phone)>0
+''
+
+print (@sql)
+
+exec sp_executesql  @sql,@parameters,
+@CAMPID=@CAMPID
+,@topCount=@topCount
+,@iZonas=@iZonas
+
+IF OBJECT_ID(N''tempdb..#NEW_JOBS'') IS NOT NULL  DROP TABLE #NEW_JOBS
+
+return(0)'
+	EXEC(@sql)
+	----------------------------------------------------- END GABY -------------------------------------------------------------
+
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

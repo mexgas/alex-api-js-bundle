@@ -344,13 +344,6 @@ BEGIN
 		cmwot.MetaId = cmwan.MetaId
 		WHERE cmwot.StatusCW = 1 AND cmwan.Cam_Id = @campId AND cmwot.Status = ''APPROVED''
 	END
-	ELSE IF (@action = 14) -- check if campaing exists
-	BEGIN
-		IF EXISTS(SELECT 1 FROM dbo.ccMetaWAOutboundTemplates cmwot WHERE cmwot.Id = @whatsAppTemplateID)
-			SELECT 1
-		ELSE
-			SELECT 0
-	END
 END'
 	EXEC(@sql);
 

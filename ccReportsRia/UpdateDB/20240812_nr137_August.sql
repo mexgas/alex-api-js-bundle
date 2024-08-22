@@ -90,7 +90,7 @@ BEGIN
 
 	set @process = 'DEV2-620 create index on RepSpecialRecordingsDownload'
 	set @sql = '
-	if not exists (select * from sys.indexes where name = N''IX_RepSpecialRecordingsDownload'' and object_id = OBJECT_ID(N''yourTableName''))
+	if not exists (select * from sys.indexes where name = N''IX_RepSpecialRecordingsDownload'' and object_id = OBJECT_ID(N''RepSpecialRecordingsDownload''))
     begin
 		CREATE CLUSTERED INDEX IX_RepSpecialRecordingsDownload
 		ON RepSpecialRecordingsDownload (date, adminId,inboundId,campaignId);

@@ -32,13 +32,7 @@ WHERE setting_id = 77;
 SELECT @actualVersionFix = cast(isnull(max(value), '0') AS INT)
 FROM dbo.fn_RIASplitDelimited(@versionALL, '.')
 WHERE id = 5;
---- Validacion para cuando pasamos a una nueva version LTS
---declare @versioMajer int= case when @version > @actualVersion then 1 else 0 end
---IF @version > @actualVersion 
---BEGIN 
---    SET @actualVersionFix = 0
---    select @version,@actualVersion,@versioMajer
---END
+
 IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
 BEGIN
     BEGIN TRAN

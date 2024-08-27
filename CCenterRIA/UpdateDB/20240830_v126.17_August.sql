@@ -201,7 +201,8 @@ SET @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEspañol] AS
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (34, convert(text, N''Dialogo de Whatsapp'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Inactivo'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (36, convert(text, N''En diálogo Correo'' collate SQL_Latin1_General_CP1_CI_AS))
-            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Transferencia Agent'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Disponible auxiliar'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (38, convert(text, ''Transferencia Agent'' collate SQL_Latin1_General_CP1_CI_AS))
 
             Print ''Estableciendo los tipos de usuario''
             Delete [dbo].[ccTipoUsers]
@@ -516,7 +517,8 @@ SET @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosEnglish]
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (34, convert(text, N''Whatsapp Dialog'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Idle'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (36, convert(text, N''Engaged Email'' collate SQL_Latin1_General_CP1_CI_AS))
-            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Transfer Agent'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Auxiliary available'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (38, convert(text, ''Transfer Agent'' collate SQL_Latin1_General_CP1_CI_AS))
 
             Print ''Estableciendo los tipos de usuario''
             Delete [ccTipoUsers]
@@ -826,7 +828,9 @@ SET @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosPortugues]
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (34, convert(text, N''Em diálogo Whatsapp'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (35, convert(text, N''Idle'' collate SQL_Latin1_General_CP1_CI_AS))
             INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (36, convert(text, N''Em diálogo E-mail'' collate SQL_Latin1_General_CP1_CI_AS))
-            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Agente de transferência'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, convert(text, ''Auxiliar disponível'' collate SQL_Latin1_General_CP1_CI_AS))
+            INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (38, convert(text, ''Agente de transferência'' collate SQL_Latin1_General_CP1_CI_AS))
+
 
             Print ''Estableciendo los tipos de usuario''
             Delete [dbo].[ccTipoUsers]
@@ -980,23 +984,35 @@ SET @sql = 'ALTER PROCEDURE [dbo].[configuraIdiomaCatalogosPortugues]
 
 SET @process = 'K064009 - Add Transfer Agent to ccTipoStatusAgente table'
 SET @sql = '
+	declare  @language int
     select @language = valor from ccSettings where setting_id = 27; 
-    declare @descrip varchar(200)
+    declare @descripTransfer varchar(200), @descripNotReadyAux varchar(200)
     if @language = 2 begin
-        set @descrip=''Agente de transferência''
+        set @descripTransfer=''Agente de transferência''
+        set @descripNotReadyAux=''Auxiliar disponível''
     end
     else if @language = 0 begin
-        set @descrip=''Transferencia Agent''
+        set @descripTransfer=''Transferencia Agent''
+        set @descripNotReadyAux=''Disponible auxiliar''
     end
     else begin
-        set @descrip=''Transfer Agent''
+        set @descripTransfer=''Transfer Agent''
+        set @descripNotReadyAux=''Auxiliary available''
     end 
 
-	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id = 37) begin
-        INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (37, @descrip)
+    if not exists (select 1 from ccTipoStatusAgente where TipoStatusAge_id = 37)
+    begin
+        insert into ccTipoStatusAgente values (37, @descripNotReadyAux)
     end
     else begin
-        cTipoStatusAgente set [descripcion]=@descrip  where TipoStatusAge_id = 37 
+      update  ccTipoStatusAgente set [descripcion]=@descripNotReadyAux  where TipoStatusAge_id = 37
+    end
+
+	if not exists(select * from ccTipoStatusAgente where TipoStatusAge_id = 38) begin
+        INSERT [ccTipoStatusAgente] ([TipoStatusAge_id], [descripcion]) VALUES (38, @descripTransfer)
+    end
+    else begin
+      update  ccTipoStatusAgente set [descripcion]=@descripTransfer  where TipoStatusAge_id = 38
     end
 '
 

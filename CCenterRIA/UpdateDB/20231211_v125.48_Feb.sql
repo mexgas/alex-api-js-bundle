@@ -479,109 +479,6 @@ SET NOCOUNT OFF'
 END '
         EXEC(@sql);
 
-        SET @process = 'ALTER SP ccsp_ConversationOutWASave @action = 1 Se revisa si el debe cerrar las conversaciones que fueron mayores a 23 horas'
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
-@action             INT
-, @conversationId     INT         = 0
-, @campId             INT         = NULL        
-, @phoneCamp          VARCHAR(50) = NULL
-, @clientId           VARCHAR(25) = NULL
-, @conversationStatus SMALLINT    = 0
-, @tChatting          FLOAT       = 0
-, @tWrapUp            SMALLINT    = 0
-, @finishedBy         TINYINT     = 0
-, @onQueue            BIT         = NULL
-, @tQueue             SMALLINT    = 0
-, @tTimeout           INT         = 0
-, @disposition        SMALLINT    = 0
-, @subDisposition     SMALLINT    = 0
-, @agentId            INT         = 0
-
-AS
-BEGIN
-    SET NOCOUNT ON;
-                        
-    declare @conversationIdTemporal     INT;
-
-IF @action = 1 BEGIN --new Conversation
-    select @phoneCamp= number from ccWhatsAppNumbers where camp_id= @campId
-                            
-    if @phoneCamp is null or @phoneCamp='''' begin
-        select 0 as [ConversationId],0 as [MessageId]
-        return(0)
-    end
-    DECLARE @dateNow DATETIME;
-    SET @dateNow = DATEADD(HOUR, -23, GETDATE());
-
-
-    declare @existsConversationOut bit
-    set @existsConversationOut =0
-    
-    
-    if not exists (select * from ccWhatsAppConversationsOut with(nolock) where
-    phoneCamp = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate <= @dateNow) 
-    begin       
-        set @existsConversationOut=0
-    end 
-    else begin
-        set @existsConversationOut=1
-        UPDATE ccWhatsAppConversationsOut
-        SET finishedBy = 2 ,conversationStatus=17
-        WHERE finishedBy = 0  AND requestDate <= @dateNow
-        and phoneCamp = @phoneCamp and clientId = @clientId
-    end
-    
-    if not exists (select 1 from ccWhatsAppConversationsOut with(nolock) 
-        where phoneCamp = @phoneCamp and clientId = @clientId 
-        and finishedBy = 0 and requestDate > @dateNow) 
-    begin
-        set @existsConversationOut=0
-    end
-    else begin
-        set @existsConversationOut=1
-    end
-    
-    if @existsConversationOut=0
-    begin
-        if not exists (select * from ccWhatsAppConversations with(nolock) where phoneACD = @phoneCamp and clientId = @clientId and DATEDIFF(hh,requestDate,getdate()) <= 23 and finishedBy = 0) 
-        begin
-            INSERT INTO [ccWhatsAppConversationsOut]
-            ([camId] , [phoneCamp], clientId, conversationStatus, tChatting
-            , tWrapUp, finishedBy, onQueue, tQueue, requestDate
-            , tTimeout, disposition, subDisposition, agentId)
-            VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
-            @onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
-                        
-            SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
-            SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
-        end
-        else begin
-            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
-            ,B.conversationId as conversationIdExists
-            FROM ccInbound A INNER JOIN ccWhatsAppConversations B 
-            ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
-            INNER JOIN ccUsers C ON B.agentId = C.User_id;
-        end  
-    end
-    else begin
-        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
-        ,B.conversationId as conversationIdExists
-        FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B 
-        ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
-        INNER JOIN ccUsers C ON B.agentId = C.User_id;
-    end  
-END 
-ELSE IF @action = 2 -- Get Outbound Templates
-BEGIN
-    IF @campId IS NOT NULL
-    BEGIN
-        DECLARE @AsociatedNumber VARCHAR(30) = (SELECT number from ccWhatsAppNumbers WHERE @campId = camp_id);
-        SELECT * FROM ccWhatsAppOutboundTemplates WHERE AsociatedNumber = @AsociatedNumber AND Status = 1;
-    END
-END
-END'
-        EXEC(@sql);
-
     set @process = 'Alter Sp ccsp_ConversationWASave IF @action = 6 Se modifica para agregar with(nolock) y action=18'
     set @sql='ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 , @conversationId     INT         = 0
@@ -4349,7 +4246,7 @@ BEGIN
         LEFT JOIN (
             SELECT cal_id, tipo, sum(tAntesXfer) AS tAntesXfer, sum(tDespuesXfer) AS tDespuesXfer
             FROM ccLogTransfers
-            WHERE tipo = 1
+            WHERE tipo = 1  and modo != 7
             GROUP BY cal_id, tipo
             ) trans ON calls.cal_id = trans.cal_id
         WHERE calls.User_id > 0
@@ -4910,11 +4807,11 @@ FROM ccLogAgentesDiaLast with(nolock)      ;
                     '
         EXEC(@sql);
 
-        SET @process = 'Alter ccsp_SaveStatusAgent se agrega ccLogAgentesDiaLast'
+        SET @process = 'CW-8638 Alter ccsp_SaveStatusAgent se agrega ccLogAgentesDiaLast'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_SaveStatusAgent]
 @User_id smallint,
 @TipoStatusAge_id tinyint,
-@TipoNotReady tinyint,
+@TipoNotReady smallint,
 @tStatus float,
 @TipoCall  tinyint,
 @Camp smallint,
@@ -10749,7 +10646,7 @@ SET NOCOUNT OFF;'
 
         ----------------------------------------------------- END Uriel Cabrera  ----------------------------------------------------------------
         ----------------------------------------------------- START Jonathan Ramirez  ----------------------------------------------------------------
-        SET @process = '1 - JR 1211.0.14 -> SP ccsp_ConversationOutWASave, Valida si la conversaciÃ³n de entrada existe'
+        SET @process = '1 - JR 1211.0.14, 15 -> SP ccsp_ConversationOutWASave, Valida si la conversaciÃ³n de entrada existe. Se valida que el usuario exista si no mandar pendiente por asignar'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
 @action             INT
 , @conversationId     INT         = 0
@@ -10852,19 +10749,21 @@ IF @action = 1 BEGIN --new Conversation
             SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
         end
         else begin
-            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+            select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId
             ,B.conversationId as conversationIdExists
+            ,case when C.Login  is null then ''Pendiente por asignar'' else C.Login end Username
             FROM ccInbound A INNER JOIN ccWhatsAppConversations B WITH(NOLOCK)
             ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
-            INNER JOIN ccUsers C ON B.agentId = C.User_id;
+            left JOIN ccUsers C ON B.agentId = C.User_id;
         end  
     end
     else begin
-        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+        select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId
         ,B.conversationId as conversationIdExists
+        ,case when C.Login  is null then ''Pendiente por asignar'' else C.Login end Username
         FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B WITH(NOLOCK)
         ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
-        INNER JOIN ccUsers C ON B.agentId = C.User_id;
+        left JOIN ccUsers C ON B.agentId = C.User_id;
     end  
 END 
 ELSE IF @action = 2 -- Get Outbound Templates
@@ -12304,7 +12203,413 @@ END
     EXEC(@sql)
 
 
----------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.14 - -------------------------------------------------        
+	---------------------------- BEGIN Marco García TT10870 ------------------------------------------------------------------------------
+
+	SET @process = 'TT10870-Engine-Error mensajes automáticos delete procedure ccsp_GalateaAgentAutomaticMessages'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaAgentAutomaticMessages'')
+		BEGIN
+			DROP PROCEDURE ccsp_GalateaAgentAutomaticMessages;
+		END';
+	EXEC(@sql);
+
+
+	SET @process = 'TT10870-Engine-Error mensajes automáticos create procedure ccsp_GalateaAgentAutomaticMessages'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaAgentAutomaticMessages] 
+	@action as tinyint,
+	@msgName as varchar(40) = '''',
+	@msgFile as varchar(100) = null,
+	@Description as varchar(40) = '''',
+	@duration as int = -1,
+	@CampType tinyint = 0,
+	@msgIdLst varchar(8000) = null,
+	@camId int =null,
+	@MsgId int = null,
+	@userId smallint = NULL,
+	@idArea smallint = NULL,
+	@messageType tinyint = NULL
+	AS
+	BEGIN
+	SET NOCOUNT ON
+	declare @tableMsgId table(MsgId int not null)
+	declare @campName varchar(70)
+		declare @idCampUnassign int
+		DECLARE @operation INT
+
+		if @action in (3,7) begin --Assin/Unassign
+			if @CampType=0
+					select @campName =descripcion from ccInbound where Inbound_id=@camId
+			else
+					select @campName =cam_descripcion from ccCamps where cam_id=@camId
+	end
+
+	if @action = 1  -- GET_AUDIO_CATALOG
+	begin
+			select ISNULL(msgName, msgFile) [MsgName], [Description] [MsgDescription], [MsgFile] [MsgFile], [MsgId] [MsgId], [idArea][IdArea], [messageType][MessageType] from ccAgentMsgFiles where idArea in (-1, @idArea)        
+			return (0)
+	end
+	else if @action = 2 --CREATE_NEW_MSG
+	begin
+			if EXISTS(select msgName from ccAgentMsgFiles where msgName=@msgName)
+					begin
+							select -1 as result
+					end
+			else
+					begin
+							insert into ccAgentMsgFiles (msgFile, [Description], Duration, msgName, idArea, messageType) 
+							values (@msgFile, @Description, @duration, @msgName, @idArea, @messageType)
+							select cast(@@identity as int) result              
+			end 
+
+	end 
+	else IF @action = 3 -- Assing
+	begin   
+			if not exists(select MsgId from ccAgentMsgFiles where MsgId=@MsgId)
+			begin
+					select ''0'' as result
+					return(0)
+			end
+
+			if exists(select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType and MsgType = @messageType)
+			begin
+					select ''-1'' as result
+					return(0)
+			end
+
+			insert into ccAgentMsgRelationFiles (MsgId, CamId, CamType, MsgType) values(@MsgId,@camId,@CampType,@messageType)
+
+			select @campName
+
+	end
+
+	else IF @action = 4 -- GET_CAMP_MESSAGES_RELATION
+	begin   
+			select MsgId from [ccAgentMsgRelationFiles] where CamId=@camId and CamType=@CampType and MsgType = @messageType          
+	end
+	else IF @action = 5 -- DELETE_AUDIO_MSG
+	begin
+
+			insert into @tableMsgId
+			select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+
+			if exists(select A.MsgId from [ccAgentMsgRelationFiles] A 
+							  inner join @tableMsgId B on A.MsgId=B.MsgId
+			)
+			begin
+					select 0 as result
+					return(0)
+			end
+
+			 delete A from ccAgentMsgFiles A 
+			 inner join @tableMsgId B on A.MsgId=B.MsgId
+         
+			 select 1 as result  
+			 return(0)
+	end
+        
+	else if @action = 6 --EDIT_AUDIO_MSG
+	BEGIN    
+			update ccAgentMsgFiles set [Description] = isnull(@Description,[Description]), MsgName = isnull(@msgName,MsgName),
+			MsgFile = isnull(@msgFile,MsgFile), Duration=case when @duration is null or @duration<=0 then Duration else @duration end,
+				idArea = isnull(@idArea, idArea)
+			where MsgId = @MsgId    
+	END
+	else IF @action = 7 -- UnAssing
+	begin           
+			if not exists(select MsgId from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType and MsgType = @messageType)
+			begin
+					select ''-1'' as result
+					return(0)
+			end
+				else begin
+					select @idCampUnassign =CamId from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType and MsgType = @messageType
+				end
+
+			delete from [ccAgentMsgRelationFiles] where MsgId=@MsgId and CamId=@camId and CamType=@CampType and MsgType = @messageType
+			select @campName
+	end
+
+	else IF @action = 8 -- list fileName
+	begin                           
+			insert into @tableMsgId
+			select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+        
+			select A.MsgFile from ccAgentMsgFiles A 
+							  inner join @tableMsgId B on A.MsgId=B.MsgId
+	end
+	else IF @action = 9 -- Relation CampIn and MsgFile
+	begin                           
+			select A.CamId,B.MsgFile,B.Duration from [ccAgentMsgRelationFiles] A
+			inner join ccAgentMsgFiles B on A.MsgId=B.MsgId
+			where CamType=@CampType AND B.messageType = ISNULL(@messageType, B.messageType )
+
+	end
+	else IF @action = 10 -- Relation CampIn and MsgFile
+	begin
+			select MsgId,MsgFile ,Duration from ccAgentMsgFiles where MsgId=@MsgId
+
+	END
+	ELSE IF @action = 11 -- Relation Campaign and Audio Msg
+		BEGIN
+				(select CC.cam_id as Camp_Id, Camp_Type = 1,ISNULL(cam_descripcion,'''''''') as [Name], Graphics.frame as Frame, Type = ISNULL(IM.MsgType ,17), ISNULL(CC.IDArea,0) as IdArea, ISNULL(AREas.AreaName,'''') as AreaName
+				from ccCamps as CC with(nolock) 
+				left join ccRIACat_Areas as AREas with(nolock) on CC.IDArea = AREas.IDArea
+				inner join ccRIACampsGraph as CampsGraph on CC.cam_id = CampsGraph.cam_id
+				inner join ccRIAGraphics as Graphics on Graphics.graphic_id = CampsGraph.graphic_id
+				inner join ccAgentMsgRelationFiles IM on IM.CamId = CC.cam_id
+				Where IM.MsgId = @MsgId and IM.CamType = 1) 
+					UNION
+				(select IC.Inbound_id as Camp_Id, Camp_Type = 0,ISNULL(descripcion,'''''''') as [Name], Graphics.frame as Frame, Type = ISNULL(IM.MsgType ,16), ISNULL(IC.IDArea,0) as IdArea, ISNULL(AREas.AreaName,'''') as AreaName
+				from ccInbound as IC with(nolock) 
+				left join ccRIACat_Areas as AREas with(nolock) on IC.IDArea = AREas.IDArea
+				inner join ccRIAInboundGraph as CampsGraph on IC.Inbound_id = CampsGraph.Inbound_id
+				inner join ccRIAGraphics as Graphics on Graphics.graphic_id = CampsGraph.graphic_id
+				inner join ccAgentMsgRelationFiles IM on IM.CamId = IC.Inbound_id
+				Where IM.MsgId = @MsgId and IM.CamType = 0)
+		END
+		else IF @action = 12 -- list MsgName
+	begin                           
+			insert into @tableMsgId
+			select value from dbo.fn_RIASplitDelimited(@msgIdLst, '','')
+        
+			select A.MsgName from ccAgentMsgFiles A 
+							  inner join @tableMsgId B on A.MsgId=B.MsgId
+	end
+		else IF @action = 13 -- getAudioInformation
+	begin                           
+			select [MsgName] [MsgName], [Description] [MsgDescription], [MsgFile] [MsgFile], [idArea][IdArea] from ccAgentMsgFiles where MsgId = @MsgId
+	end
+	
+	END'
+
+	EXEC(@sql);
+
+
+
+	--------------------------- END Marco Garcia TT10870 ----------------------------------------------------------------------------------
+---------------------------- BEGIN Roberto Nava TT7953 ------------------------------------------------------------------------------
+
+	SET @process = 'TT7953-Engine-En agentKolob tipifica mal el colgado en llamadas de entrada - Drop SP'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_IVRInCalls'')
+		BEGIN
+			DROP PROCEDURE ccsp_IVRInCalls;
+		END';
+	EXEC(@sql);
+
+
+	set @process = 'TT7953-Engine-En agentKolob tipifica mal el colgado en llamadas de entrada - ALTER SP'
+    set @sql = 'CREATE procedure [dbo].[ccsp_IVRInCalls]
+		@action tinyint = 0 ,
+		@ani varchar(30) = null ,
+		@idIvr int = 0 ,
+		@option varchar(5)= null ,
+		@saveType tinyInt = null,
+		@dnis varchar(50) = null,
+		@name varchar(50) = null,
+		@questionId int = 0,
+		@surveyId int = 0,
+		@calId int = 0,
+		@callout_id int = 0,
+		@ttotalIVR int = 0,
+		@callType tinyint = null
+		-- saveType 1 es menu 2 es dato
+		-- accion 1 siempre @ani  -> @idIvr
+		-- accion 2 siempre @idIvr @opcionDigitada -> nada
+		AS
+		IF @action = 1
+		BEGIN
+			IF @ani IS NOT NULL
+			BEGIN
+				INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
+				UPDATE ccCallsIn SET cal_whoHung = 2 WHERE cal_id = @callout_id
+                Select ''ID''=scope_identity()
+			END
+		END
+		ELSE IF @action = 2
+		BEGIN
+			IF @option IS NOT NULL AND @idIvr IS NOT NULL
+			BEGIN
+				INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id, callType) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0),isnull(@callType,0))
+				select 0
+			END
+			ELSE select -1
+		END
+		ELSE IF @action = 3
+		BEGIN
+			UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
+			if @callout_id > 0
+				exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
+                UPDATE ccoCallsOut set cal_whoHung = 2 where cal_id = @callout_id
+		END'
+	EXEC(@sql)
+
+--------------------------- END Roberto Nava TT7953 ----------------------------------------------------------------------------------
+--------------------------- START Jonathan Ramirez 125.20231211.0.15-----------------------------------------------------------------------------------
+SET @process = '0.15 - 1 - Se modifica SP ccsp_OutboundMultimediaCommon, Se cambia InitialDate, por InitialTime'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_OutboundMultimediaCommon] 
+                    @Action INT,
+                    @ConversationId INT = NULL
+                    AS
+                    BEGIN
+                    SET NOCOUNT ON;
+
+                        IF @Action = 0 -- Get WhatsApp Campaigns List
+                        BEGIN 
+                            SELECT CAST(campaigns.cam_id AS INT) AS Id,
+                                   campaigns.cam_descripcion AS Name,
+                                   waNumbers.number AS Phone,
+                                   5 as [Type]
+                            FROM ccCamps campaigns
+                            INNER JOIN ccWhatsAppNumbers waNumbers
+                            ON campaigns.cam_id = waNumbers.camp_id
+                            WHERE campaigns.CampType = 5 AND waNumbers.status = 1
+                            ORDER BY campaigns.cam_id 
+                        END
+
+                        ELSE IF @Action = 1 -- Get Outbound WhatsApp conversation by conversation id
+                        BEGIN 
+                            DECLARE @ServiceType VARCHAR(20) = ''whatsapp''
+                            SELECT conversationId AS ConversationID,
+                                   clientId AS ClientId,
+                                   phoneCamp AS CampaignPhone,
+                                   agentId AS AgentId,
+                                   @ServiceType AS ServiceType,
+                                   requestDate AS InitialTime
+                            FROM ccWhatsAppConversationsOut
+                            WHERE conversationId = @ConversationId
+                        END
+                    END';
+        EXEC(@sql);
+--------------------------- START Jonathan Ramirez 125.20231211.0.15-----------------------------------------------------------------------------------
+----------------------------------------------------------- Begin David Medina -----------------------------------------------------------------------
+SET @process = 'Ticket TT10862-AdminKolob-No guardan cambios en ND'
+SET @sql = '
+	IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_GalateaUnavailableStates'')
+	BEGIN
+		DROP PROCEDURE ccsp_GalateaUnavailableStates
+	END
+'
+EXEC(@sql)
+
+SET @process = 'TT10862 Se quita casteo a tinyint a variable TipoNotReady_id cuando se realiza un update'
+SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_GalateaUnavailableStates]
+	@NotReady_id smallint = null,
+	@Description varchar(30)='''',
+	@Acc_Time int = null,
+	@Intervals int = null,
+	@Pass_Supv tinyint = null,
+	@NextStatus int = null,
+	@Frame smallint = null,
+	@Type varchar(1)='''',
+	@IsSupv int = null,
+	@NotReady_ids varchar(max)=''''
+	AS
+	set nocount on
+	DECLARE @sql nvarchar(4000), @graph nvarchar(1000), @id smallint, @newGraph smallint
+	if @Type = 1 -- LOAD
+		begin
+			SELECT distinct a1.TipoNotReady_id as NotReady_Id, a1.Descripcion as Description, a1.Time_Acum as Acc_Time, a1.Time_xEv as Intervals, 
+			cast(a1.Pas_Sup as bit) Pass_Supv, a1.NextStatus, frame as Frame, cast(a1.IsSup as bit) IsSupv
+			FROM ccTipoNotReady a1 
+			inner join ccRIAnotreadyGraph a2 on (a1.tiponotready_id=a2.tiponotready_id)
+			inner join ccRIAGraphics a3 on (a2.graphic_id=a3.graphic_id)
+			where a1.StatusTipoNotReady=1
+			order by 2
+		end
+	If @Type=2 -- INSERT
+		begin
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=1 and Descripcion=@Description)
+			begin		
+			select -1
+			return(0)
+			end
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=0 and Descripcion=@Description)
+			begin		
+				select @id=TipoNotReady_id from ccTipoNotReady where Descripcion=@Description
+				update ccTipoNotReady set 
+				Time_acum=@Acc_Time,
+				Time_xEv=@Intervals,
+				Pas_Sup=@Pass_Supv,
+				NextStatus=@NextStatus,
+				IsSup=@IsSupv,
+				StatusTipoNotReady=1
+				where Descripcion=@Description
+				If not exists(select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+					Begin
+						insert into ccRIAGraphics (frame, type_id) select @Frame,4
+					End
+				insert into ccRIANotReadyGraph select @id, graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+				select cast(@id as int)
+				return(0)		
+			end
+		If not exists(select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+			Begin
+			insert into ccRIAGraphics (frame, type_id) select @Frame,4
+			End
+		insert ccTipoNotReady (Descripcion, Time_Acum, Time_xEv, Pas_Sup, NextStatus, IsSup, StatusTipoNotReady) 
+		select @Description, @Acc_Time, @Intervals, @Pass_Supv, @NextStatus, @IsSupv,1
+		select @id=SCOPE_IDENTITY()
+		insert into ccRIANotReadyGraph select @id, graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+		select cast(@id as int)
+		end
+	If @Type=3 -- DELETE
+		begin
+			declare @NDs_Ids table (id int primary key not null)
+		if @NotReady_id is null
+			begin
+			insert into @NDs_Ids
+			select value from dbo.fn_RIASplitDelimited (@NotReady_ids, '','')
+			end
+		else
+			begin
+			insert into @NDs_Ids
+			select @NotReady_id
+			end
+		exec ccsp_AdminNotready 3,0,@NotReady_id,0, @NotReady_ids
+		delete ccRIANotReadyGraph where tipoNotReady_id in (select id from @NDs_Ids)
+		delete from ccUnavailableRelation where idUnavailable in (select id from @NDs_Ids)
+		update ccTipoNotReady set StatusTipoNotReady=0 where tipoNotReady_id in (select id from @NDs_Ids)
+		update ccTipoNotReady set NextStatus=-1 where NextStatus in (select id from @NDs_Ids)
+		select cast(id as smallint) NotReady_Id, 0 as Related from @NDs_Ids
+		end
+	if(@Type=4) --UPDATE
+		begin
+		if exists(select Descripcion from ccTipoNotReady where StatusTipoNotReady=1 and Descripcion=@Description and TipoNotReady_id not in (@NotReady_id))
+			begin		
+			select -1
+			return(0)
+			end
+		update ccTipoNotReady set 
+			Descripcion=case @Description when '''' then Descripcion else @Description end,
+			Time_Acum=ISNULL(@Acc_Time,Time_Acum),
+			Time_xEv=ISNULL(@Intervals,Time_xEv),
+			Pas_Sup=ISNULL(@Pass_Supv,Pas_Sup), 
+			NextStatus=ISNULL(@NextStatus,NextStatus), 
+			IsSup=ISNULL(@IsSupv,IsSup)
+		where TipoNotReady_id=@NotReady_id
+		IF ISNULL(@Frame,'''') not in('''')
+			BEGIN
+			If not exists (select frame from ccRIAGraphics where frame = @Frame and type_id = 4)
+				begin
+				insert into ccRIAGraphics (frame, type_id) select @Frame,4
+				end
+			select @graph = graphic_id from ccRIAGraphics where frame = @Frame and type_id = 4
+			update ccRIANotReadyGraph set graphic_id=@graph where TipoNotReady_id=@NotReady_id
+			END
+			select 1
+		end
+	if @Type = 5
+		begin
+		select cast(NextStatus as smallint) NotReady_Id, cast(TipoNotReady_id as int) Related
+		from ccTipoNotReady 
+		where StatusTipoNotReady=1 and NextStatus in (select value from dbo.fn_RIASplitDelimited (@NotReady_ids, '',''))
+		end
+	set nocount off
+'
+EXEC(@sql)
+----------------------------------------------------------- END David Medina -------------------------------------------------------------------------
+
+---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.15 - -------------------------------------------------        
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

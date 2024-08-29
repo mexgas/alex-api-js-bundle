@@ -2209,7 +2209,7 @@ timestamp   smalldatetime
 )
 
 set @interval=10
-set @to = convert(datetime, convert(varchar(16), getdate(), 121)+''0:00'',121)
+set @to = convert(datetime, convert(varchar(15), getdate(), 121)+''0:00'',121)
 
 set @to = dateadd(mi,10,@to)
 set @from = dateadd( mi, -@interval*30, @to)

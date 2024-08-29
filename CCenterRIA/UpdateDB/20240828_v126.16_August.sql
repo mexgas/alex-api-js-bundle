@@ -1496,136 +1496,76 @@ BEGIN
         SELECT @pathFile = valor FROM ccSettings WHERE setting_id = 230;
 
         SELECT
-    messageId AS MessageId,
-    messageStatus AS Status,
-    originType AS Origin,
-    CASE 
-        WHEN originType = ''Client'' THEN 3
-        WHEN originType = ''Agent'' THEN 2
-        WHEN originType = ''Admin'' THEN 1
-        ELSE 0 
-    END AS OriginType,
-    timeStampMessage AS [Timestamp],
-    CASE 
-        WHEN typeMessage IN (''text'', ''template'', ''image'', ''video'') THEN content 
-        ELSE '''' 
-    END AS Content,
-    typeMessage AS Type,
-    CASE 
-        WHEN typeMessage IN (''file'', ''image'', ''video'') THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 1), '':'') WHERE id = 2)
-        WHEN typeMessage NOT IN (''text'', ''location'', ''file'', ''template'', ''image'', ''video'') THEN content
-        ELSE '''' 
-    END AS Caption,
-    CASE 
-        WHEN originType = ''Client'' THEN 
-            CASE
-                WHEN typeMessage = ''text'' OR typeMessage = ''location'' OR (typeMessage = ''file'' AND (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2) = '''') THEN ''''
-                ELSE @pathFile + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + char(92) + CAST(conversationId / 1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + char(92) + typeMessage + char(92) + messageId + 
+            messageId AS MessageId,
+            messageStatus AS Status,
+            originType AS Origin,
+            CASE 
+                WHEN originType = ''Client'' THEN 3
+                WHEN originType = ''Agent'' THEN 2
+                WHEN originType = ''Admin'' THEN 1
+                ELSE 0 
+            END AS OriginType,
+            timeStampMessage AS [Timestamp],
+            CASE 
+                WHEN typeMessage IN (''text'', ''template'', ''image'', ''video'') THEN content 
+                ELSE '''' 
+            END AS Content,
+            typeMessage AS Type,
+            CASE 
+                WHEN typeMessage IN (''file'', ''image'', ''video'') THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 1), '':'') WHERE id = 2)
+                WHEN typeMessage NOT IN (''text'', ''location'', ''file'', ''template'', ''image'', ''video'') THEN content
+                ELSE '''' 
+            END AS Caption,
+            CASE 
+                WHEN originType = ''Client'' THEN 
                     CASE
-                        WHEN typeMessage = ''video'' THEN ''.mp4''
-                        WHEN typeMessage = ''image'' THEN ''.jpg''
-                        WHEN typeMessage = ''audio'' THEN ''.mp3''
-                        WHEN typeMessage = ''file'' THEN (SELECT SUBSTRING(content, LEN(content) - CHARINDEX(''.'', REVERSE(content)) + 1, LEN(content)))
-                        ELSE '''' 
+                        WHEN typeMessage = ''text'' OR typeMessage = ''location'' OR (typeMessage = ''file'' AND (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2) = '''') THEN ''''
+                        ELSE @pathFile + char(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + char(92) + CAST(conversationId / 1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + char(92) + typeMessage + char(92) + messageId + 
+                            CASE
+                                WHEN typeMessage = ''video'' THEN ''.mp4''
+                                WHEN typeMessage = ''image'' THEN ''.jpg''
+                                WHEN typeMessage = ''audio'' THEN ''.mp3''
+                                WHEN typeMessage = ''file'' THEN (SELECT SUBSTRING(content, LEN(content) - CHARINDEX(''.'', REVERSE(content)) + 1, LEN(content)))
+                                ELSE '''' 
+                            END
                     END
-            END
-        ELSE 
-            CASE
-                WHEN typeMessage = ''text'' OR typeMessage = ''location'' OR typeMessage = ''template'' THEN ''''
-                ELSE content
-            END
-    END AS [Url],
-    CASE 
-        WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [FileSize],
-    CASE 
-        WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 4), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [FileName],
-    CASE 
-        WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 1), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [Address],
-    CASE 
-        WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [Lat],
-    CASE 
-        WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [Long],
-    CASE 
-        WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 4), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [Name],
-    CASE 
-        WHEN typeMessage = ''location'' THEN ''https://www.google.com/maps/search/'' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2) + '','' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
-        ELSE '''' 
-    END AS [LocationURL]
-FROM @tmpMessageConversations
-ORDER BY Timestamp ASC;
-
-
-        select
-            messageId as MessageId,
-            messageStatus as Status,
-            originType as Origin,
-            case when originType =''Client'' then 3
-                    when originType =''Agent'' then 2
-                    when originType =''Admin'' then 1
-            else 0 end as OriginType,
-            timeStampMessage as [Timestamp],
-            case when typeMessage IN (''text'', ''template'', ''image'', ''video'')  then content else '''' end as Content,
-            typeMessage as Type,
-            case 
-                when typeMessage in (''file'', ''image'', ''video'') then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) 
-                when typeMessage not in( ''text'' ,''location'', ''file'', ''template'', ''image'', ''video'') then content
-                else '''' end as Caption,
-            case 
-                    when originType = ''Client''
-                    then
-                        case
-                                when typeMessage = ''text'' or typeMessage = ''location''
-                                or (typeMessage = ''file'' and (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) = '''' )
-                            then ''''
-                                else char(92)+char(92)+''WhatsApp''+char(92)+char(92)+ CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END +char(92)+char(92)+cast(conversationId/1000 as varchar(30))+char(92)+char(92)+cast(conversationId as varchar(20))+char(92)+char(92)+ typeMessage + char(92)+char(92)+ messageId +
-                                case
-                                        when typeMessage = ''video'' then ''.mp4''
-                                        when typeMessage = ''image'' then ''.jpg''
-                                        when typeMessage = ''audio'' then ''.mp3''
-                                        when typeMessage = ''file''
-                                        then (select substring(content, LEN(content) - CHARINDEX(''.'',REVERSE(content))+1, len(content)))
-                                    else '''' end
-                        end
-                    else
-                        case
-                            when typeMessage = ''text'' or typeMessage = ''location'' OR typeMessage = ''template''
-                            then ''''
-                            else content
-                    end
-                end as [Url],
-                case when typeMessage = ''file'' 
-                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2)
-                else '''' end as [FileSize],
-                case when typeMessage = ''file'' 
-                then (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2)
-                else '''' end as [FileName],
-            case when typeMessage = ''location''
-            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 1),'':'') where id=2) else '''' end as [Address],
-            case when typeMessage = ''location''
-            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) else '''' end as [Lat],
-            case when typeMessage = ''location''
-            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [Long],
-            case when typeMessage = ''location''
-            then  (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 4),'':'') where id=2) else '''' end as [Name],
-            case when typeMessage = ''location''
-            then ''https://www.google.com/maps/search/'' + (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 2),'':'') where id=2) + '','' +
-                (select value from dbo.fn_RIASplitDelimited((select value from dbo.fn_RIASplitDelimited(content,''|'') where id = 3),'':'') where id=2) else '''' end as [LocationURL]
-                from @tmpMessageConversations
-            order by Timestamp asc
-
-    End
+                ELSE 
+                    CASE
+                        WHEN typeMessage = ''text'' OR typeMessage = ''location'' OR typeMessage = ''template'' THEN ''''
+                        ELSE content
+                    END
+            END AS [Url],
+            CASE 
+                WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [FileSize],
+            CASE 
+                WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 4), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [FileName],
+            CASE 
+                WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 1), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [Address],
+            CASE 
+                WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [Lat],
+            CASE 
+                WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [Long],
+            CASE 
+                WHEN typeMessage = ''location'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 4), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [Name],
+            CASE 
+                WHEN typeMessage = ''location'' THEN ''https://www.google.com/maps/search/'' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 2), '':'') WHERE id = 2) + '','' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content, ''|'') WHERE id = 3), '':'') WHERE id = 2)
+                ELSE '''' 
+            END AS [LocationURL]
+        FROM @tmpMessageConversations
+        ORDER BY Timestamp ASC;
+    END
                                                                             
     ELSE IF(@Option = 5)
     BEGIN

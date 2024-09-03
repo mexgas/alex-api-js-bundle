@@ -45,6 +45,178 @@ BEGIN
     BEGIN TRY
         
 	
+	SET @process = 'DEV2-639 Drop Trigger tg_ccRIALoading_IA'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''tg_ccRIALoading_IA'')
+BEGIN
+    DROP TRIGGER [dbo].[tg_ccRIALoading_IA];
+END'
+    EXEC(@sql)
+    
+	SET @process = 'DEV2-639 Create Trigger tg_ccRIALoading_IA'
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccRIALoading_IA]
+ON [dbo].[ccRIALoading]    
+AFTER INSERT, UPDATE
+AS 
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM INSERTED A INNER JOIN ccCamps c ON c.cam_id = A.cam_id WHERE c.CampType = 4)
+    BEGIN
+        DECLARE @datenow DATETIME = GETDATE();
+
+        UPDATE B 
+        SET B.dateUpdate = @datenow 
+        FROM INSERTED A
+        INNER JOIN ccRIALoadingTmpIA B ON A.[load_id] = B.[load_id]
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4;
+
+        INSERT INTO ccRIALoadingTmpIA (load_id, dateUpdate)
+        SELECT A.[load_id], @datenow 
+        FROM INSERTED A
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4
+        LEFT JOIN ccRIALoadingTmpIA B ON A.[load_id] = B.[load_id]
+        WHERE B.dateUpdate IS NULL;
+    END
+END;'
+    EXEC(@sql)
+
+	SET @process = 'DEV2-639 Drop Trigger tg_ccCamps_IA'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''tg_ccCamps_IA'')
+BEGIN
+    DROP TRIGGER [dbo].[tg_ccCamps_IA];
+END'
+    EXEC(@sql)
+
+	SET @process = 'DEV2-639 Create Trigger tg_ccCamps_IA'
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccCamps_IA]
+ON [dbo].[ccCamps]
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM INSERTED WHERE CampType = 4)
+    BEGIN
+        DECLARE @datenow DATETIME = GETDATE();
+
+        UPDATE B 
+        SET B.dateUpdate = @datenow 
+        FROM INSERTED A
+        INNER JOIN ccCampsTmpIA B ON A.cam_id = B.cam_id AND A.CampType = 4;
+
+        INSERT INTO ccCampsTmpIA (cam_id, dateUpdate)
+        SELECT A.cam_id, @datenow 
+        FROM INSERTED A
+        LEFT JOIN ccCampsTmpIA B ON A.cam_id = B.cam_id  
+        WHERE B.cam_id IS NULL AND A.CampType = 4;
+    END
+END;'
+    EXEC(@sql)
+
+	SET @process = 'DEV2-639 Drop Trigger tg_ccoCallsOutSource_IA'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''tg_ccoCallsOutSource_IA'')
+BEGIN
+    DROP TRIGGER [dbo].[tg_ccoCallsOutSource_IA];
+END'
+    EXEC(@sql)
+	
+	SET @process = 'DEV2-639 Create Trigger tg_ccoCallsOutSource_IA'
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccoCallsOutSource_IA]
+ON [dbo].[ccoCallsOutSource]
+AFTER INSERT, UPDATE
+AS 
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM INSERTED A INNER JOIN ccCamps c ON c.cam_id = A.cam_id WHERE c.CampType = 4)
+    BEGIN
+        DECLARE @datenow DATETIME = GETDATE();
+
+        UPDATE B 
+        SET B.dateUpdate = @datenow 
+        FROM INSERTED A
+        INNER JOIN ccoCallsOutSourceTmpIA B ON A.callout_id = B.callout_id
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4;
+
+        INSERT INTO ccoCallsOutSourceTmpIA (callout_id, dateUpdate)
+        SELECT A.callout_id, @datenow 
+        FROM INSERTED A
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4
+        LEFT JOIN ccoCallsOutSourceTmpIA B ON A.callout_id = B.callout_id
+        WHERE B.dateUpdate IS NULL;
+    END
+END;'
+    EXEC(@sql)
+	
+	SET @process = 'DEV2-639 Drop Trigger tg_ccoCallsOut_IA'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''tg_ccoCallsOut_IA'')
+BEGIN
+    DROP TRIGGER [dbo].[tg_ccoCallsOut_IA];
+END'
+    EXEC(@sql)
+	
+	SET @process = 'DEV2-639 Create Trigger tg_ccoCallsOut_IA'
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccoCallsOut_IA]
+ON [dbo].[ccoCallsOut]
+AFTER INSERT, UPDATE
+AS 
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM INSERTED A INNER JOIN ccCamps c ON c.cam_id = A.cam_id WHERE c.CampType = 4)
+    BEGIN
+        DECLARE @datenow DATETIME = GETDATE();
+
+        UPDATE B 
+        SET B.dateUpdate = @datenow 
+        FROM INSERTED A
+        INNER JOIN ccoCallsOutTmpIA B ON A.cal_id = B.cal_id
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4;
+
+        INSERT INTO ccoCallsOutTmpIA (cal_id, dateUpdate)
+        SELECT A.cal_id, @datenow 
+        FROM INSERTED A
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4
+        LEFT JOIN ccoCallsOutTmpIA B ON A.cal_id = B.cal_id
+        WHERE B.dateUpdate IS NULL;
+    END
+END;'
+    EXEC(@sql)
+	
+	SET @process = 'DEV2-639 Drop Trigger tg_ccoLogDials_IA'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.triggers WHERE name = ''tg_ccoLogDials_IA'')
+BEGIN
+    DROP TRIGGER [dbo].[tg_ccoLogDials_IA];
+END'
+    EXEC(@sql)
+	
+	SET @process = 'DEV2-639 Create Trigger tg_ccoLogDials_IA'
+	SET @sql = 'CREATE TRIGGER [dbo].[tg_ccoLogDials_IA]
+ON [dbo].[ccoLogDials]
+AFTER INSERT, UPDATE
+AS 
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM INSERTED A INNER JOIN ccCamps c ON c.cam_id = A.cam_id WHERE c.CampType = 4)
+    BEGIN
+        DECLARE @datenow DATETIME = GETDATE();
+
+        UPDATE B 
+        SET B.dateUpdate = @datenow 
+        FROM INSERTED A
+        INNER JOIN ccoLogDialsTmpIA B ON A.logDial_id = B.logDial_id
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4;
+
+        INSERT INTO ccoLogDialsTmpIA (logDial_id, dateUpdate)
+        SELECT A.logDial_id, @datenow 
+        FROM INSERTED A
+        INNER JOIN ccCamps c ON c.cam_id = A.cam_id AND c.CampType = 4
+        LEFT JOIN ccoLogDialsTmpIA B ON A.logDial_id = B.logDial_id
+        WHERE B.logDial_id IS NULL;
+    END
+END;'
+    EXEC(@sql)
 	
 	SET @process = 'TT11673 TT11674 Alter sp ccsp_RIAUpdateCamConfig - se agrega validacion para nombre duplicado'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAUpdateCamConfig]
@@ -460,7 +632,47 @@ RETURN(0)
 set nocount off'
     EXEC(@sql);
 	
+	SET @process = 'DEV2-386 Add column dialPrefix to xxClienteCarga'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''dialPrefix'' and Object_ID = Object_ID(N''xxClienteCarga''))
+begin
+	alter table xxClienteCarga add dialPrefix varchar(30) null default ''''
+end'
+	EXEC(@sql)
+	
+	SET @process = 'DEV2-386 Drop sp xx_Inserta'
+	SET @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''xx_Inserta'')
+    BEGIN
+        DROP PROCEDURE [dbo].[xx_Inserta]
+    END'
+	EXEC(@sql)
 
+	SET @process = 'DEV2-386 Create sp xx_Inserta'
+	SET @sql = 'CREATE PROCEDURE [dbo].[xx_Inserta] 
+	@cal_key varchar(20),
+	@cal_telefono varchar(19),
+	@cal_telefono2 varchar(19),
+	@cal_telefono3 varchar(19),
+	@cal_telefono4 varchar(19),
+	@cal_telefono5 varchar(19),
+	@dato1 varchar(255),
+	@dato2 varchar(255),
+	@dato3 varchar(255),
+	@dato4 varchar(255),
+	@dato5 varchar(255),
+	@cam_id integer,
+	@FCallBack smalldatetime = '''',
+	@cal_status tinyint=0,
+	@User_id integer=0,
+	@dialPrefix varchar(30) = ''''
+	as
+	declare @calloutid int
+	if (@cal_status=0) set @FCallBack=getdate()
+	Insert into ccoCallsOutSource ( cal_key, cal_telefono, cal_telefono2, cal_telefono3, cal_telefono4, cal_telefono5, dato1, dato2, dato3, dato4, dato5, cam_id, cal_fechaDial, cal_status, user_id, dialPrefix)
+	values ( @cal_key, @cal_telefono, @cal_telefono2, @cal_telefono3, @cal_telefono4, @cal_telefono5, @dato1, @dato2, @dato3, @dato4, @dato5, @cam_id, @FCallBack, @cal_status, @User_id, @dialPrefix)
+	select @calloutid=scope_identity()
+	--Insert into xxClienteHistorial ( callout_id , fechaAct ) values ( @calloutid, getdate() )
+	select @calloutid'
+	EXEC(@sql)
 	
 
 

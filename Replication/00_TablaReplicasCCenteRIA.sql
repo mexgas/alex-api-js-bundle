@@ -108,6 +108,10 @@ insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'cc
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccCallCost_RIA',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccEstadosAni',@idInt,0)
 insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccTypeProcessPreview',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccHorarios',@idInt,0)
+insert into articleTableCCenterRIA(articleName,publicationId,status) values(N'ccInboundHorarios',@idInt,0)
+
+
 
 set @idInt=@idInt+1
 insert into publicationTableCCenterRIA(publicationName,status) values(N'LogAgentesDia_Dialog',0)	

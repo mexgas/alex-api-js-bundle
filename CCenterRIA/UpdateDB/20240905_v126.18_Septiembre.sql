@@ -75,6 +75,7 @@ SET @process = ' K064019-Estados canal WhatsApp salida
 			   - Se inserta registro en tabla messageStatus para estado cuando se termina la conversación exceder tiemp de respuesta por parte del agente '
 SET @sql = '
 	IF NOT EXISTS(select 1 from messageStatus where name = ''Unassigned due to agent timeout'')
+	BEGIN
 		INSERT INTO dbo.messageStatus (name, description, isFinished) VALUES (''Unassigned due to agent timeout'',  ''unassigned for exceeding the maximum response time'', 0) 
 	END'
 EXEC(@sql)
@@ -82,6 +83,7 @@ EXEC(@sql)
 SET @process = 'K020116 Se inserta registro en tabla messageStatus para estado nuevo cuando se envian templates de manera masiva'
 SET @sql = '
 	IF NOT EXISTS(select 1 from messageStatus where name = ''Sent in bulk'')
+	BEGIN
 		INSERT INTO dbo.messageStatus (name, description, isFinished) VALUES (''Sent in bulk'',  ''Message sent in bulk, not replied'', 1) 
 	END'
 EXEC(@sql)

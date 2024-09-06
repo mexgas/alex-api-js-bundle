@@ -47,7 +47,7 @@ BEGIN
 ------------------------------------------------- Empieza David Medina ----------------------------------------------------------------------------------
 ---------------------------------------- K020116 | K020052 | K020053 | K020054 --------------------------------------------------------------------------
 -------------------------------------------------------- Tablas -----------------------------------------------------------------------------------------
-SET @process = 'K020052 Se añade columna answered para saber si ese template de envío masivo ya ha sido contestado'
+SET @process = 'K020052 Se aÃ±ade columna answered para saber si ese template de envio masivo ya ha sido contestado'
 SET @sql = '
 	IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''answered'' AND Object_ID = Object_ID(N''dbo.ccoWhatsLogDials''))
 	BEGIN
@@ -55,7 +55,7 @@ SET @sql = '
 	END'
 EXEC(@sql)
 
-SET @process = 'K020116 Se añade columna Category para saber la categoría del template enviado'
+SET @process = 'K020116 Se aÃ±ade columna Category para saber la categoria del template enviado'
 SET @sql = '
 	IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''Category'' AND Object_ID = Object_ID(N''dbo.ccWhatsAppGlobalIds''))
 	BEGIN
@@ -72,7 +72,7 @@ SET @sql = '
 EXEC(@sql)
 
 SET @process = ' K064019-Estados canal WhatsApp salida 
-			   - Se inserta registro en tabla messageStatus para estado cuando se termina la conversación exceder tiemp de respuesta por parte del agente '
+			   - Se inserta registro en tabla messageStatus para estado cuando se termina la conversaciÃ³n exceder tiemp de respuesta por parte del agente '
 SET @sql = '
 	IF NOT EXISTS(select 1 from messageStatus where name = ''Unassigned due to agent timeout'')
 		INSERT INTO dbo.messageStatus (name, description, isFinished) VALUES (''Unassigned due to agent timeout'',  ''unassigned for exceeding the maximum response time'', 0) 
@@ -95,8 +95,8 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Convers
 EXEC(@sql)
 
 SET @process = ' K020116 | K020052 | K020053 | K020054 David Medina 
-			   - Se modifica SP ccsp_ConversationWASaveOut añadiendo variable , @ConvId = NULL OUTPUT s
-			   - Se modifica action 1 para añadirle el valor de la conversación creada a @ConvId
+			   - Se modifica SP ccsp_ConversationWASaveOut aÃ±adiendo variable , @ConvId = NULL OUTPUT s
+			   - Se modifica action 1 para aÃ±adirle el valor de la conversaciÃ³n creada a @ConvId
 			   - Se modifica Action 12 para que no cargue conversasiones con status 20 al iniciar Multimedia que son conversaciones con estatus de envio masivo'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_ConversationWASaveOut] 
@@ -464,7 +464,7 @@ EXEC(@sql)
 
 SET @process = ' K020116 David Medina 
 			   - Se crea SP ccsp_createMessageAndGlobalId para que al momento que el outbound de WhatsApp haga el envio masivo se cree una nueva 
-				 conversación, se guarde el mensaje y se cree su Id global'
+				 conversaciÃ³n, se guarde el mensaje y se cree su Id global'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_createMessageAndGlobalId] 
 	@Type INT,
@@ -557,9 +557,9 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_WAOUTGe
 EXEC(@sql)
 
 SET @process = ' K020052 | K020053 | K020054 David Medina 
-			   - Se modifica SP ccsp_WAOUTGetLogDials añadiendo variables @CamNumber, @ConversationId, @MetaId
-			   - Se modifica action 1 para que tome también en cuanta el número de whatsApp de la campaña, que solamente verifique el último registro en donde
-			     coincidan el numerp de la campaña y del cliente y que verifique si esta ya ha sido respondido
+			   - Se modifica SP ccsp_WAOUTGetLogDials aÃ±adiendo variables @CamNumber, @ConversationId, @MetaId
+			   - Se modifica action 1 para que tome tambiÃ©n en cuanta el nÃºmero de whatsApp de la campaÃ±a, que solamente verifique el Ãºltimo registro en donde
+			     coincidan el numerp de la campaÃ±a y del cliente y que verifique si esta ya ha sido respondido
 			   - Se crea Action 2 para obtrener el texto de las plantilla buscando en tabla de registrsos ccoWhatsLogDials'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_WAOUTGetLogDials]
@@ -575,7 +575,7 @@ SET @sql = '
 		DECLARE @LastMetaId VARCHAR(1000);
 		DECLARE @Answered BIT;
 
-		IF @Action = 1 -- Verifica para el último registro guardado en ccowhatslogdials si han pasado menos de 24 horas desde su envio 
+		IF @Action = 1 -- Verifica para el Ãºltimo registro guardado en ccowhatslogdials si han pasado menos de 24 horas desde su envio 
 		BEGIN
 			DECLARE @InitialTime DATETIME;       
 			DECLARE @LastConversationId BIGINT; 
@@ -625,7 +625,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAChat
 EXEC(@sql)
 
 SET @process = ' K020052 | K020053  David Medina 
-			   - Se modifica SP ccsp_RIAChatACDSchedule agregando @Option = 2 para que verifique si la campaña de salida esta dentro de horario para poder enviar respuesta de cliente a Agente'
+			   - Se modifica SP ccsp_RIAChatACDSchedule agregando @Option = 2 para que verifique si la campaÃ±a de salida esta dentro de horario para poder enviar respuesta de cliente a Agente'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_RIAChatACDSchedule]
 	@Option     AS SMALLINT,
@@ -842,12 +842,12 @@ SET @sql = '
 
 			IF @ConversationType = 0 AND NOT EXISTS(SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
 			BEGIN
-				RAISERROR(''ERROR. No existe una conversación de entrada con el id especificado'', 18, 1);
+				RAISERROR(''ERROR. No existe una conversaciÃ³n de entrada con el id especificado'', 18, 1);
 				RETURN(0);
 			END;
 			ELSE IF @ConversationType = 1 AND NOT EXISTS(SELECT * FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
 			BEGIN
-				RAISERROR(''ERROR. No existe una conversación de salida con el id especificado'', 18, 1);
+				RAISERROR(''ERROR. No existe una conversaciÃ³n de salida con el id especificado'', 18, 1);
 				RETURN(0);
 			END;
 			ELSE
@@ -952,7 +952,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_WhatsAp
 EXEC(@sql)
 
 SET @process = ' K020116 David Medina 
-			   - Se modifica SP ccsp_WhatsAppOutboundTemplates añadiendo @Action = 2 para obtener la categoría de template'
+			   - Se modifica SP ccsp_WhatsAppOutboundTemplates aÃ±adiendo @Action = 2 para obtener la categorÃ­a de template'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
 						@Action SMALLINT, 
@@ -986,7 +986,7 @@ SET @sql = '
 						SET NOCOUNT OFF '
 EXEC(@sql)
 -------------------------------------------------- Termina David Medina ----------------------------------------------------------------------------------
--------------------------------------------------- BEGIN Marco García  ----------------------------------------------------------------------------------------
+-------------------------------------------------- BEGIN Marco GarcÃ­a  ----------------------------------------------------------------------------------------
 -------------------------------------------------- | K064016-Estados canal Chat | 
 
 SET @process = 'K064016-Estados canal Chat CREATE TABLE ccChatCauseFinished '
@@ -1053,7 +1053,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multime
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se modifica el @option = 2, el el c.conversationDate AS ConversationDate, línea 1167 y 1203'
+SET @process = 'K064019-Estados canal WhatsApp salida se modifica el @option = 2, el el c.conversationDate AS ConversationDate, lÃ­nea 1167 y 1203'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 @Option AS SMALLINT,
 @inboundId AS SMALLINT = 0,
@@ -1067,7 +1067,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF @Option = 0 --  Obtener lista de configuraciones de campañas
+    IF @Option = 0 --  Obtener lista de configuraciones de campaÃ±as
     BEGIN
         SELECT CAST(campaign.cam_id AS INT) AS Id,
                campaign.cam_descripcion AS [Name],
@@ -1167,7 +1167,7 @@ BEGIN
             LEFT JOIN ccRIAAgentsPermissions permission ON permission.AgentId = c.agentId
             WHERE c.conversationId = @conversationId
 
-        END ELSE BEGIN -- Campaña
+        END ELSE BEGIN -- CampaÃ±a
             SELECT @OldAgentId = conv.agentId,
                    @OldConversationId = rel.conversationIdBefore
             FROM ccWhatsAppConversationsRelationshipOut rel 
@@ -1410,7 +1410,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAInse
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se modifica  agrega el @action 8 y 9 línea 1491 - 1500'
+SET @process = 'K064019-Estados canal WhatsApp salida se modifica  agrega el @action 8 y 9 lÃ­nea 1491 - 1500'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @action int,
 @inboundId smallint = 0,
@@ -1475,18 +1475,18 @@ else if @action in (5,6) begin -- Save Chatting Time /*comentario: la insercion 
        exec ccsp_CreateNodeMultimedia @conversationId=@chatId, @type=1,@supervisor=@supervisor,@template =@template,@ScoreTemplate=@ScoreTemplate
       
 end
-else if(@action = 7) -- Se añadio al cambio
+else if(@action = 7) -- Se aÃ±adio al cambio
 begin 
     if @chatId > 0
     begin
         UPDATE dbo.ccRIAChats SET chatDate = GETDATE() WHERE chatId = @chatId
     end
 END
-ELSE if(@action = 8) -- Se añadio al cambio
+ELSE if(@action = 8) -- Se aÃ±adio al cambio
 BEGIN 
     UPDATE dbo.ccRIAChats SET causeFinishedId = @causeFinishedId  WHERE chatId = @chatId
 END
-ELSE IF(@action = 9) -- Se realiza para consultar la configuración de areas
+ELSE IF(@action = 9) -- Se realiza para consultar la configuracÃ³n de areas
 BEGIN
     SELECT crca.callWhileChat, crca.callWhileEmail, crca.CallWhileWhatsAppIn, crca.CallWhileWhatsAppOut FROM dbo.ccRIACampEspWG AS crcew INNER JOIN dbo.ccRIAAreaWorkGroup AS crawg 
     ON crawg.IDWG = crcew.IDWG INNER JOIN dbo.ccRIACat_Areas AS crca ON crca.IDArea = crawg.IDArea
@@ -1502,7 +1502,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Galatea
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se agrega el @option 6 y 7 línea 1815 - 1837'
+SET @process = 'K064019-Estados canal WhatsApp salida se agrega el @option 6 y 7 lÃ­nea 1815 - 1837'
 SET @sql = 'CREATE procedure [dbo].[ccsp_GalateaAreas] 
         @option int = 2,
         @IDArea smallint = 0,
@@ -2227,7 +2227,7 @@ SET @sql = 'CREATE procedure [dbo].[ccsp_GalateaAreas]
             END;
         END;'
         EXEC(@sql)
-------------------------------------------------- END Marco García ------------------------------------------------------------------------------------------------
+------------------------------------------------- END Marco GarcÃ­a ------------------------------------------------------------------------------------------------
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

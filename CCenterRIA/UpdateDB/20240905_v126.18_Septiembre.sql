@@ -97,7 +97,7 @@ EXEC(@sql)
 SET @process = ' K020116 | K020052 | K020053 | K020054 David Medina 
 			   - Se modifica SP ccsp_ConversationWASaveOut añadiendo variable , @ConvId = NULL OUTPUT s
 			   - Se modifica action 1 para añadirle el valor de la conversación creada a @ConvId
-			   - Se modifica Action 12 para que no cargue conversasiones con status 20 al iniciar Multimedia que son conversaciones con estatus de envio masivo'
+			   - Se modifica Action 12 para que no cargue conversasiones con status 19 y 20 al iniciar Multimedia que son conversaciones con estatus de envio masivo'
 SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_ConversationWASaveOut] 
 	  @action             INT
@@ -989,7 +989,7 @@ EXEC(@sql)
 -------------------------------------------------- BEGIN Marco García  ----------------------------------------------------------------------------------------
 -------------------------------------------------- | K064016-Estados canal Chat | 
 
-SET @process = 'K064016-Estados canal Chat CREATE TABLE ccChatCauseFinished '
+SET @process = 'K064016-Estados canal Chat se crea la tabla ccChatCauseFinished'
 SET @sql = 'IF NOT EXISTS (SELECT *
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = ''dbo'' AND TABLE_NAME = ''ccChatCauseFinished'')
@@ -1003,7 +1003,7 @@ BEGIN
 END'
 EXEC(@sql)
 
-SET @process = 'K064016-Estados canal Chat ALTER TABLE ccRIAChats ADD COLUMN causeFinishedId'
+SET @process = 'K064016-Estados canal Chat se agrega la columna causeFinishedId a la tabla ccRIAChats '
 SET @sql = 'IF NOT EXISTS(SELECT *
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE COLUMN_NAME = ''causeFinishedId'' AND TABLE_NAME = ''ccRIAChats'')
@@ -1013,7 +1013,7 @@ END'
 EXEC(@sql)
 
 
-SET @process = 'K064016-Estados canal Chat insert status in ccRIAChatStatus table '
+SET @process = 'K064016-Estados canal Chat se inserta un registro a la tabla ccRIAChatStatus '
 SET @sql = 'IF NOT EXISTS( SELECT * FROM ccRIAChatStatus WHERE Description = ''UnassignedDueToFailure'')
 BEGIN
     INSERT INTO dbo.ccRIAChatStatus
@@ -1027,7 +1027,7 @@ END'
 
 EXEC(@sql)
 
-SET @process = 'K064016-Estados canal Chat insert row in ccChatCauseFinished table'
+SET @process = 'K064016-Estados canal Chat se agrega un registro a la tabla ccChatCauseFinished'
 SET @sql = 'IF NOT EXISTS(SELECT * FROM dbo.ccChatCauseFinished AS cccf WHERE cccf.CauseFinishedId = 1)  
 BEGIN
     INSERT INTO dbo.ccChatCauseFinished
@@ -1053,7 +1053,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Multime
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se modifica el @option = 2, el el c.conversationDate AS ConversationDate, línea 1167 y 1203'
+SET @process = 'K064019-Estados canal WhatsApp salida se modifica el @option = 2, el c.conversationDate AS ConversationDate, línea 1161 y 1197'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 @Option AS SMALLINT,
 @inboundId AS SMALLINT = 0,
@@ -1410,7 +1410,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_RIAInse
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se modifica  agrega el @action 8 y 9 línea 1491 - 1500'
+SET @process = 'K064019-Estados canal WhatsApp salida se modifica  agrega el @action 8 y 9 línea 1485 - 1494'
 SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_RIAInsertChat]
 @action int,
 @inboundId smallint = 0,
@@ -1502,7 +1502,7 @@ SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_Galatea
 			end'
 EXEC(@sql)
 
-SET @process = 'K064019-Estados canal WhatsApp salida se agrega el @option 6 y 7 línea 1815 - 1837'
+SET @process = 'K064019-Estados canal WhatsApp salida se agrega el @option 6 y 7 línea 1809 - 1831'
 SET @sql = 'CREATE procedure [dbo].[ccsp_GalateaAreas] 
         @option int = 2,
         @IDArea smallint = 0,
@@ -1841,7 +1841,7 @@ SET @sql = 'CREATE procedure [dbo].[ccsp_GalateaAreas]
 				end'
 	EXEC(@sql)
 
-	SET @process = 'K064019-Estados canal WhatsApp salida se'
+	SET @process = 'K064019-Estados canal WhatsApp salida se modifica el @action = 12 se agrega el conversationStatus 19 en el not in, en la línea 2166 '
 	SET @sql = ' CREATE PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
         , @conversationId     INT         = 0
         , @inboundId          SMALLINT    = NULL

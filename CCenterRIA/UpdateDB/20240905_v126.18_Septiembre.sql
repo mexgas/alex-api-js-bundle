@@ -585,7 +585,7 @@ SET @sql = '
         
 			SET @InitialTime = DATEADD(HH, -24, GETDATE());
 
-			SELECT TOP(1) @LastMetaId = cwld.MetaId, @LastConversationId = cwld.ConversationId,@Answered = cwld.answered2, @ConvId = cwld.conversationId
+			SELECT TOP(1) @LastMetaId = cwld.MetaId, @LastConversationId = cwld.ConversationId,@Answered = cwld.answered, @ConvId = cwld.conversationId
 			FROM ccoWhatsLogDials cwld WITH(NOLOCK)
 			WHERE cwld.CamId = @CamID 
 			AND cwld.PhoneWa = @CamNumber
@@ -596,7 +596,7 @@ SET @sql = '
 			IF @Answered = 0 
 			BEGIN
 
-				update ccowhatslogdials set answered2 = 1 where metaid = @LastMetaId
+				update ccowhatslogdials set answered = 1 where metaid = @LastMetaId
 				update ccWhatsAppConversationsOut set conversationStatus = 1 where conversationId = @ConvId
 
 				SELECT @LastMetaId AS MetaId, 

@@ -990,6 +990,10 @@ EndSave:
 	set @sql = '
 		USE [msdb]
 
+            if exists(select * from  [msdb].[dbo].[sysjobs] AS [sJOB] where [name]=N''CleanReconnectMsgForAgent'') begin
+                EXEC msdb.dbo.sp_delete_job @job_name=N''CleanReconnectMsgForAgent'', @delete_unused_schedule=1
+            end
+
 			BEGIN TRANSACTION
 			DECLARE @ReturnCode INT
 			SELECT @ReturnCode = 0

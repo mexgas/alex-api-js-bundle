@@ -6292,7 +6292,7 @@ SET NOCOUNT ON;
 SET NOCOUNT ON;'
         EXEC(@sql);
 
-        ---------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------
+
 
 ---------------------------------------- BEGIN fix/125.20231211.0.13 -------------------------------------------------
     SET @process = 'Alter SP ccsp_GalateaAdminGetPermissions los permisos AllowCellPhoneCalls,AllowLongDistanceCalls AllowLocalCalls se invierte el bit'
@@ -6654,6 +6654,8 @@ SET NOCOUNT OFF
     '
     EXEC(@sql);
 
+---------------------------------------- BEGIN fix/125.20231211.0.12 -------------------------------------------------
+
      SET @process = 'Alter SP ccsp_RIAOUTInsertNewJOBS_WT_Camp se quita with index para mejorar el procesamiento tome el plan de ejecuccion se modifica para poder realizar la carga, se crean tabalas temporales insercion de carga'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAOUTInsertNewJOBS_WT_Camp] @camp_id AS INT, @reciclar AS INT = 1, @top AS INT = 3000
 AS
@@ -6871,6 +6873,10 @@ WHERE id = @camp_id
 
 SET NOCOUNT OFF'
     EXEC(@sql);
+
+
+---------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------
+
 
      -----------------------------------------------------BEGIN TT8053 Enrique Ruiz ----------------------------------------------------------------
         
@@ -7995,9 +8001,7 @@ end'
 
 
     ----------------------------------------------------- END TT9258 Leonardo Ramírez Landa  ----------------------------------------------------------------
-
-
----------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------        
+      
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

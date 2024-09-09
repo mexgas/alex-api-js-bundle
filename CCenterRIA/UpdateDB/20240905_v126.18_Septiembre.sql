@@ -464,6 +464,13 @@ SET @sql = '
 	END;'
 EXEC(@sql)
 
+SET @process = 'Se elimina SP ccsp_createMessageAndGlobalId'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_createMessageAndGlobalId'')
+			begin
+				DROP PROCEDURE ccsp_createMessageAndGlobalId;
+			end'
+EXEC(@sql)
+
 SET @process = ' K020116 David Medina 
 			   - Se crea SP ccsp_createMessageAndGlobalId para que al momento que el outbound de WhatsApp haga el envio masivo se cree una nueva 
 				 conversación, se guarde el mensaje y se cree su Id global'
@@ -524,6 +531,13 @@ SET @sql = '
 			END  
 		END
 	END'
+EXEC(@sql)
+
+SET @process = 'Se elimina SP ccsp_OutboundConversationResponseExceeded'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_OutboundConversationResponseExceeded'')
+			begin
+				DROP PROCEDURE ccsp_OutboundConversationResponseExceeded;
+			end'
 EXEC(@sql)
 
 SET @process = ' K020052 | K020053 | K020054 David Medina 
@@ -986,6 +1000,96 @@ SET @sql = '
 						END
 
 						SET NOCOUNT OFF '
+EXEC(@sql)
+
+SET @process = 'Se elimina SP ccsp_MultimediaConfigurations'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_MultimediaConfigurations'')
+			begin
+				DROP PROCEDURE ccsp_MultimediaConfigurations;
+			end'
+EXEC(@sql)
+
+
+SET @process = ' K064019 David Medina 
+			   - Se modifica SP ccsp_MultimediaConfigurations paraq ue la consulta del option=4 igual muestre los números de meta'
+SET @sql = '
+	CREATE PROCEDURE [dbo].[ccsp_MultimediaConfigurations] --  exec ccsp_MultimediaConfigurations @Option = 4, @Id=2, @CamType=1
+		@Option AS SMALLINT,
+		@ServiceType AS SMALLINT = 0,
+		@Number AS VARCHAR(25) = '''',
+		@Id AS INT = 0,
+		@CamType AS SMALLINT = 0
+		AS
+		BEGIN
+			SET NOCOUNT ON;
+			BEGIN
+			IF(@Option = 1) -- Get Vonage Configurations depending the Service Type and number 
+				BEGIN
+					SELECT config.applicationId AS ApplicationId,
+							config.secretKey AS SecretKey,
+							config.messagesUrl AS MessagesUrl
+					FROM ccVonageConfigurations config
+					INNER JOIN ccWhatsAppNumbers numbers ON config.vonageId = numbers.vonageId 
+					AND numbers.number = @Number 
+					AND config.serviceType = @ServiceType   -- 5 = WhatsApp
+				END 
+
+			IF(@Option = 2) -- Get WhatsApp registered numbers 
+				BEGIN
+					SELECT number AS AvailableNumbers FROM ccWhatsAppNumbers Numbers 
+					INNER JOIN ccVonageConfigurations Configurations 
+					ON Numbers.vonageId = Configurations.vonageId 
+					AND Numbers.inboundId = 0 or Numbers.inboundId IS NULL
+					AND Numbers.status = 1 
+					AND Configurations.serviceType = 5
+					UNION
+					SELECT number FROM ccMetaWhatsAppNumbers
+					WHERE Inbound_Id is null or Inbound_Id = 0 
+					AND STATUS = 1
+				END 
+			IF(@Option = 3) -- Get WhatsApp registered numbers Outbound
+				BEGIN
+					SELECT number AvailableNumbers
+					FROM ccWhatsAppNumbers Numbers 
+					INNER JOIN ccVonageConfigurations Configurations 
+					ON Numbers.vonageId = Configurations.vonageId 
+					AND Numbers.camp_id = 0 OR Numbers.camp_id IS NULL
+					AND Numbers.status = 1 
+					AND Configurations.serviceType = 5
+					UNION
+					SELECT number FROM ccMetaWhatsAppNumbers
+					WHERE Cam_Id is null or Cam_Id = 0
+					AND STATUS = 1
+				END
+			IF(@Option = 4) -- Get associated WhatsApp number
+			BEGIN
+				DECLARE @TempTable TABLE (number VARCHAR(50)); 
+
+				IF (@CamType = 0) 
+				BEGIN
+					INSERT INTO @TempTable (number)
+					SELECT number FROM ccWhatsAppNumbers WHERE inboundId = @Id
+
+					UNION
+
+					SELECT number FROM ccMetaWhatsAppNumbers WHERE inbound_Id = @Id;
+				END
+				ELSE 
+				BEGIN
+					INSERT INTO @TempTable (number)
+					SELECT number FROM ccWhatsAppNumbers WHERE camp_id = @Id 
+
+					UNION
+
+					SELECT number FROM ccMetaWhatsAppNumbers WHERE cam_id = @Id;
+				END
+
+				SELECT TOP 1 @Number = number FROM @TempTable;
+
+				SELECT ISNULL(@Number, '''') as number;
+				END
+			END 
+		END'
 EXEC(@sql)
 -------------------------------------------------- Termina David Medina ----------------------------------------------------------------------------------
 -------------------------------------------------- BEGIN Marco García  ----------------------------------------------------------------------------------------

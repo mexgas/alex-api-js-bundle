@@ -56,17 +56,7 @@ end
 	EXEC(@sql)
 
 	SET @process = 'Create procedure ccspRepInEffectiveness '
-	SET @sql = 'USE [CCReportsRIA]
-GO
-
-/****** Object:  StoredProcedure [dbo].[ccspRepInEffectiveness]    Script Date: 06/09/2024 12:33:44 p. m. ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-ALTER PROCEDURE [dbo].[ccspRepInEffectiveness] 
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccspRepInEffectiveness] 
     @action TINYINT, 
     @from DATETIME = NULL, 
     @to DATETIME = NULL
@@ -521,11 +511,6 @@ BEGIN
 END;
 '
 	EXEC(@sql)
-
-	set @process = ''
-	set @sql = ''
-	EXEC(@sql)
-
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

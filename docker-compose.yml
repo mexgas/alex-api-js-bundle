@@ -1,0 +1,17 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    container_name: sqlserver2017
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Nuxiba2024_"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./CCenterRIA:/var/opt/mssql/data
+    networks:
+      - sql_network
+
+networks:
+  sql_network:
+    driver: bridge

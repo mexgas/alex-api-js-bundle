@@ -2,3 +2,6 @@
 *.orig
 .scannerwork/
 /.vs/
+DatabaseUpdateValidator/.vs/
+DatabaseUpdateValidator/DatabaseUpdateValidator/bin/
+DatabaseUpdateValidator/DatabaseUpdateValidator/obj/

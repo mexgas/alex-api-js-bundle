@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    environment {
+        PROJECT_ENVIRONMENT = 'DEVELOP'
+        SONAR_NAME = 'CW_Data_Base_DEV'
+    }
+    stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    print "--------------- ENVIRONMENT VARIABLES ---------------"
+                    print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
+                    print "SONAR_NAME = ${env.SONAR_NAME}"
+                    print "RELEASE_VERSION = ${env.RELEASE_VERSION}"
+                    print "IS_PUBLISH_FTP = ${env.IS_PUBLISH_FTP}"
+                    print "-----------------------------------------------------"
+                }
+            }
+        }
+        stage('slack notification') {            
+            steps {
+                wrap([$class: 'BuildUser']) {
+                    notifyBuild('STARTED')
+                }
+            }
+        }
+
+        stage('Copy Bat') {
+            steps {
+                
+            }
+        }
+        
+    }
+    post {
+        always {
+            wrap([$class: 'BuildUser']) {
+                notifyBuild("${currentBuild.currentResult}")
+                cleanWs()
+            }
+        }
+    }
+}

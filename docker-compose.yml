@@ -8,7 +8,7 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - ./CCenterRIA:/var/opt/mssql/data
+      - ./DatabaseUpdateValidator/Data:/var/opt/mssql/data
     networks:
       - sql_network
 

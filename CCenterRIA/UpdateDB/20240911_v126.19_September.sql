@@ -448,6 +448,35 @@ BEGIN
 
 		------------------------------------------------- Termina Ivan Martin ----------------------------------------------------------------------------------
 
+        ------------------------------------------------- Empieza Leonardo Ramírez ----------------------------------------------------------------------------------
+---------------------------------------------------------------- K020135  -------------------------------------------------------------------------------------------
+    set @process = 'K020135 - Setting para habilitar la encripción de conversaciones y adjuntos de whatsapp'
+
+    set @sql = '
+        IF NOT EXISTS (
+        SELECT 1 FROM ccSettings2 WHERE setting_id = 269
+        )
+            BEGIN
+                INSERT INTO ccSettings2 (
+                    setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate
+                ) VALUES (
+                    269,
+                    ''0'',
+                    ''Encriptar conversaciones y adjuntos de WhatsApp'',
+                    1,
+                    ''GRL'',
+                    ''Habilita la encripción para conversaciones y adjuntos de WhatsApp'',
+                    ''Encrypt WhatsApp conversations and attachments'',
+                    0,
+                    ''^[0-1]$''
+                );
+        END;
+    '
+
+    EXEC(@sql)
+
+------------------------------------------------- Termina Leonardo Ramírez ----------------------------------------------------------------------------------
+
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

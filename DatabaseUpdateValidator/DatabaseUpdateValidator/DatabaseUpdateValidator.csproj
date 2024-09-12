@@ -35,4 +35,10 @@
     <Folder Include="Nuxiba\Resources\Query\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Sql\AttachDatabase.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

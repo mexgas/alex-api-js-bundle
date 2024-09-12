@@ -13,6 +13,11 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             _sqlExecutor = sqlExecutor;
         }
 
+        public void ExecuteScript(string sqlScript, string connectionString, string createDatabase)
+        {
+            _sqlExecutor.ExecuteSqlScript(connectionString, sqlScript, createDatabase);
+        }
+
         // Método para leer y ejecutar los archivos SQL
         public void ExecuteFiles(SortedList<double, string> filePaths, string connectionString)
         {

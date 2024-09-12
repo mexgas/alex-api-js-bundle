@@ -38,7 +38,14 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 sqlConnectionStringBuilder.Password = databaseDto.Password;
                 sqlConnectionStringBuilder.Encrypt = false;
 
+                sqlConnectionStringBuilder.InitialCatalog = "master";
+                sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+
+                sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
                 sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString());
+
+                sqlConnectionStringBuilder.InitialCatalog = "master";
+                sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
             }
         }
 

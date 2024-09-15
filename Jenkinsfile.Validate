@@ -1,8 +1,13 @@
+@Library('SlackSend') _
+
 pipeline {
     agent any
     environment {
         PROJECT_ENVIRONMENT = 'DEVELOP'
-        SONAR_NAME = 'CW_Data_Base_DEV'
+        PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
+        SONAR_NAME = 'CW_Data_Base_DEV'         
+        scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
+        msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
     }
     stages {
         stage('Setup Environment') {
@@ -24,10 +29,28 @@ pipeline {
                 }
             }
         }
+        stage('Docker Compose Up') {
+            steps {
+                script {                    
+                    bat 'docker-compose up -d'
+                }
+            }
+        }
 
         stage('Copy Bat') {
             steps {
-                
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
+                  bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
+                  bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
+                  bat "DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0 ${env.WORKSPACE}"
+            }
+        }
+
+        stage('Docker Compose Down') {
+            steps {
+                script {                    
+                    bat 'docker-compose down'
+                }
             }
         }
         
@@ -35,9 +58,10 @@ pipeline {
     post {
         always {
             wrap([$class: 'BuildUser']) {
-                notifyBuild("${currentBuild.currentResult}")
+                NotifyBuild("${currentBuild.currentResult}")
+                 echo "Cleaning up workspace directory: ${env.WORKSPACE}"
                 cleanWs()
             }
         }
-    }
+    }    
 }

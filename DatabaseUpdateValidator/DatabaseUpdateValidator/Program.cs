@@ -23,7 +23,6 @@ namespace Main
                 return;
             }
 
-            // Crear una instancia de NuxibaWorkerService y llamar al método OnStart con la ruta proporcionada
             var workerServices = new NuxibaWorkerService();
             workerServices.OnStart(path);
         }

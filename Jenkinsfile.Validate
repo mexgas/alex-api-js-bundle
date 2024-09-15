@@ -29,6 +29,7 @@ pipeline {
                 }
             }
         }
+
         stage('Docker Compose Up') {
             steps {
                 script {                    
@@ -39,10 +40,16 @@ pipeline {
 
         stage('Copy Bat') {
             steps {
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'                  
+            }
+        }
+
+        stage('Build and execute') {
+            steps {
                   bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
                   bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
                   bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-                  bat "DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0 ${env.WORKSPACE}"
+                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\""
             }
         }
 
@@ -60,7 +67,7 @@ pipeline {
             wrap([$class: 'BuildUser']) {
                 NotifyBuild("${currentBuild.currentResult}")
                  echo "Cleaning up workspace directory: ${env.WORKSPACE}"
-                cleanWs()
+                // cleanWs()
             }
         }
     }

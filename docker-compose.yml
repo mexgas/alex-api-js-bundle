@@ -6,7 +6,7 @@ services:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "Nuxiba2024_"
     ports:
-      - "1433:1434"
+      - "1436:1433"
     volumes:
       - ./Data:/var/opt/mssql/data
     networks:

@@ -1,4 +1,5 @@
 @Library('SlackSend') _
+
 pipeline {
     agent any
     environment {
@@ -21,10 +22,10 @@ pipeline {
                 }
             }
         }
-        stage('slack notification') {            
+         stage('slack notification') {            
             steps {
                 wrap([$class: 'BuildUser']) {
-                    notifyBuild('STARTED')
+                    NotifyBuild('STARTED')
                 }
             }
         }
@@ -62,5 +63,5 @@ pipeline {
                 cleanWs()
             }
         }
-    }    
+    }
 }

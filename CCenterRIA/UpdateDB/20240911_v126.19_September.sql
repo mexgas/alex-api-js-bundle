@@ -48,7 +48,7 @@ BEGIN
 		------------------------------------------------------- CW-8657  --------------------------------------------------------------------------
 		-------------------------------------------------------- Tablas -----------------------------------------------------------------------------------------
 		SET @process = ' Fix CW-8657: Del action 7 se quita la validacion del telefono y de creditos ya se crea un accion 16 con dichas validaciones. Esto para regresar el status de error en los tres flujos.'
-		SET @sql = 'ALTER procedure [dbo].[ccspLoadRegistrySegments] 
+		SET @sql = 'ALTER procedure [dbo].[ccspLoadRegistrySegment s] 
                     @action int,
                     @camId int = null,
                     @typeTemplate int=2, --1 Segmentos, 2 Plantillas Archivos

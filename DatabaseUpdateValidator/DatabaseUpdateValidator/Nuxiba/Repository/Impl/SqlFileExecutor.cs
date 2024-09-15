@@ -1,13 +1,18 @@
 ﻿using DatabaseUpdateValidator.Nuxiba.Base.Exceptions;
 using Nuxiba.NuxibaAppBase.Base.Repository;
+using NLog;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
 {
     public class SqlFileExecutor : BaseRepository, ISqlFileExecutor
     {
         private readonly ISqlExecutor _sqlExecutor;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        // Constructor inyecta las dependencias
+        // Constructor to inject dependencies
         public SqlFileExecutor(ISqlExecutor sqlExecutor)
         {
             _sqlExecutor = sqlExecutor;
@@ -18,7 +23,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
             _sqlExecutor.ExecuteSqlScript(connectionString, sqlScript, createDatabase);
         }
 
-        // Método para leer y ejecutar los archivos SQL
+        // Method to read and execute the SQL files
         public void ExecuteFiles(SortedList<double, string> filePaths, string connectionString)
         {
             foreach (var filePath in filePaths)
@@ -27,25 +32,25 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                 {
                     try
                     {
-                        // Leer el contenido del archivo SQL
+                        // Read the content of the SQL file
                         string sqlScript = File.ReadAllText(filePath.Value);
 
-                        // Ejecutar el script en la base de datos
+                        // Execute the script in the database
                         _sqlExecutor.ExecuteSqlScript(connectionString, sqlScript, filePath.Value);
 
-                        // Loggear éxito
-                        Logger.Info($"Archivo ejecutado correctamente: {filePath.Value} version:{filePath.Key}");
+                        // Log success
+                        Logger.Info($"File executed successfully: {filePath.Value} version: {filePath.Key}");
                     }
                     catch (Exception ex)
                     {
-                        // Loggear errores
-                        Logger.Warn($"Error al ejecutar el archivo: {filePath}, Error: {ex.Message}");
+                        // Log errors
+                        Logger.Warn($"Error while executing the file: {filePath.Value}, Error: {ex.Message}");
                         throw;
                     }
                 }
                 else
                 {
-                    throw new DatabaseUpdateValidatorException($"El archivo no existe: {filePath}");
+                    throw new DatabaseUpdateValidatorException($"File does not exist: {filePath.Value}");
                 }
             }
         }

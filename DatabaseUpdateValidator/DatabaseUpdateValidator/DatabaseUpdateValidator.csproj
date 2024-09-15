@@ -36,6 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="nlog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Sql\AttachDatabase.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

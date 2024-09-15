@@ -4,6 +4,7 @@ using Nuxiba.NuxibaAppBase.Common.Wrapper.Impl;
 using Nuxiba.NuxibaAppBase.Common.Wrapper;
 using DatabaseUpdateValidator.Nuxiba.Base.Infrastructure.Containers.Scanners;
 using DatabaseUpdateValidator.Nuxiba.Model;
+using DatabaseUpdateValidator.Nuxiba.Base.Infrastructure.Constants;
 
 namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
 {
@@ -28,9 +29,9 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
             Logger.Info("**************************** START APPLICATION *****************************************");
 
             DatabaseDto databaseDto = new DatabaseDto();
-            string username = "sa";
-            string password = "Nuxiba2024_";
-            string server = "127.0.0.1,1436";
+            string username = DatabaseUpdateValidatorConstants.SQL_SERVER_USER;
+            string password = DatabaseUpdateValidatorConstants.SQL_SERVER_PASSWORD;
+            string server = DatabaseUpdateValidatorConstants.SQL_SERVER_SERVER;
 
             DatabaseDto CCenterRIA = new DatabaseDto
             {

@@ -1,5 +1,4 @@
-@Library('SlackSend') _
-
+@Library('SlackSend') 
 pipeline {
     agent any
     environment {
@@ -29,30 +28,30 @@ pipeline {
                 }
             }
         }
-        stage('Docker Compose Up') {
-            steps {
-                script {                    
-                    bat 'docker-compose up -d'
-                }
-            }
-        }
+        // stage('Docker Compose Up') {
+        //     steps {
+        //         script {                    
+        //             bat 'docker-compose up -d'
+        //         }
+        //     }
+        // }
 
         stage('Copy Bat') {
             steps {
                   bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
                   bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
                   bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-                  bat "DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0 ${env.WORKSPACE}"
+                //   bat "DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0 ${env.WORKSPACE}"
             }
         }
 
-        stage('Docker Compose Down') {
-            steps {
-                script {                    
-                    bat 'docker-compose down'
-                }
-            }
-        }
+        // stage('Docker Compose Down') {
+        //     steps {
+        //         script {                    
+        //             bat 'docker-compose down'
+        //         }
+        //     }
+        // }
         
     }
     post {

@@ -45,7 +45,10 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                     sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
 
                     sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
-                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString());
+
+                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto);
+
+                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto); //se ejecuta una segunda vez para validar que no falle en una segunda actualizacion
                     if (DatabaseUpdateValidatorConstants.IS_DETACH)
                     {
                         sqlConnectionStringBuilder.InitialCatalog = "master";
@@ -54,13 +57,13 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn(ex);
+                    Logger.Fatal(ex);
                     isFail = true;
                 }
             }
             if (isFail)
             {
-                new Exception("Fail Script Database");
+                throw new Exception("Fail Script Database");
             }
         }
 

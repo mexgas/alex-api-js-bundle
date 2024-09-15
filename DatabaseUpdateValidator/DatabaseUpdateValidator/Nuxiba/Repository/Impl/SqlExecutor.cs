@@ -14,5 +14,15 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                 command.ExecuteNonQuery();
             }
         }
+
+        public object ExecuteScalar(string connectionString, string script)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand command = new SqlCommand(script, connection);
+                connection.Open();
+                return command.ExecuteScalar();
+            }
+        }
     }
 }

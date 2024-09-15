@@ -13,5 +13,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Model
         public string Pattern { get; set; }
         public string QueryAttaach { get; set; }
         public string DetachDB { get; set; }
+        public string VersionQuery { get; set; }
+        public string VersionQueryFix { get; set; }
     }
 }

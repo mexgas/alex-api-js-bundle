@@ -41,6 +41,10 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./CCenterRIA/UpdateDB/"),
                 Pattern = @".+_v(?<version>\d+)(\.(?<versionFix>\d+))?_.+\.sql",
+                VersionQuery = @"ccsp_getVersion 'BD'",
+                VersionQueryFix = @"declare @version varchar(max);
+                    select @version =valor from ccsettings where setting_id=77;
+                    select cast(isnull(max(value),'0') as int) from dbo.fn_RIASplitDelimited(@version,'.') where id=4;",
                 QueryAttaach = @"
 if not exists(select * from sys.databases where name='CCenterRIA') begin
     CREATE DATABASE CCenterRIA
@@ -60,6 +64,7 @@ EXEC sp_detach_db 'CCenterRIA';"
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./RecorderRIA/UpdateDB/"),
                 Pattern = @"^.+_v(?<version>\d+)_.+\.sql",
+                VersionQuery = "select cast(substring(valor, 1, charindex('.', valor)-1) as int) from ccSettings where setting_id = 24",
                 QueryAttaach = @"
 if not exists(select * from sys.databases where name='CCRecorderRIA') begin
     CREATE DATABASE CCRecorderRIA
@@ -78,6 +83,7 @@ EXEC sp_detach_db 'CCRecorderRIA';"
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./ccReportsRia/UpdateDB/"),
                 Pattern = @"^.+_nr(?<version>\d+)_.+\.sql",
+                VersionQuery = "select cast(par_valor as int) from trec_parametros where par_id = 30",
                 QueryAttaach = @"
 if not exists(select * from sys.databases where name='CCReportsRIA') begin
     CREATE DATABASE CCReportsRIA

@@ -4,6 +4,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using DatabaseUpdateValidator.Nuxiba.Model;
 
 namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
 {
@@ -24,9 +25,19 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
         }
 
         // Method to read and execute the SQL files
-        public void ExecuteFiles(SortedList<double, string> filePaths, string connectionString)
+        public void ExecuteFiles(SortedList<double, string> filePaths, string connectionString, DatabaseDto databaseDto)
         {
-            foreach (var filePath in filePaths)
+            int currentVersion = (int)_sqlExecutor.ExecuteScalar(connectionString, databaseDto.VersionQuery);
+            int versionFix = 0;
+            if (!string.IsNullOrEmpty(databaseDto.VersionQueryFix))
+            {
+                versionFix = (int)_sqlExecutor.ExecuteScalar(connectionString, databaseDto.VersionQueryFix);
+            }
+
+            int currentVersioFinal = (currentVersion * 1000) + versionFix;
+            var sortFile = filePaths.Where(f => f.Key >= currentVersioFinal).OrderBy(o => o.Key).ToList();
+
+            foreach (var filePath in sortFile)
             {
                 if (File.Exists(filePath.Value))
                 {

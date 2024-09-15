@@ -41,10 +41,13 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./CCenterRIA/UpdateDB/"),
                 Pattern = @".+_v(?<version>\d+)(\.(?<versionFix>\d+))?_.+\.sql",
-                QueryAttaach = @"CREATE DATABASE CCenterRIA
-ON (FILENAME = '/var/opt/mssql/data/CCenterRIA.mdf'),
-(FILENAME = '/var/opt/mssql/data/CCenterRIA_log.ldf')
-FOR ATTACH;"
+                QueryAttaach = @"
+if not exists(select * from sys.databases where name='CCenterRIA') begin
+    CREATE DATABASE CCenterRIA
+    ON (FILENAME = '/var/opt/mssql/data/CCenterRIA.mdf'),
+    (FILENAME = '/var/opt/mssql/data/CCenterRIA_log.ldf')
+    FOR ATTACH;
+end"
 ,
                 DetachDB = @"ALTER DATABASE CCenterRIA SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 EXEC sp_detach_db 'CCenterRIA';"
@@ -57,10 +60,13 @@ EXEC sp_detach_db 'CCenterRIA';"
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./RecorderRIA/UpdateDB/"),
                 Pattern = @"^.+_v(?<version>\d+)_.+\.sql",
-                QueryAttaach = @"CREATE DATABASE CCRecorderRIA
-ON (FILENAME = '/var/opt/mssql/data/CCRecorderRIA.mdf'),
-(FILENAME = '/var/opt/mssql/data/CCRecorderRIA_log.ldf')
-FOR ATTACH;",
+                QueryAttaach = @"
+if not exists(select * from sys.databases where name='CCRecorderRIA') begin
+    CREATE DATABASE CCRecorderRIA
+    ON (FILENAME = '/var/opt/mssql/data/CCRecorderRIA.mdf'),
+    (FILENAME = '/var/opt/mssql/data/CCRecorderRIA_log.ldf')
+    FOR ATTACH;
+end",
                 DetachDB = @"ALTER DATABASE CCRecorderRIA SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 EXEC sp_detach_db 'CCRecorderRIA';"
             };
@@ -72,10 +78,13 @@ EXEC sp_detach_db 'CCRecorderRIA';"
                 Server = server,
                 DirectoryPath = Path.Combine(path, "./ccReportsRia/UpdateDB/"),
                 Pattern = @"^.+_nr(?<version>\d+)_.+\.sql",
-                QueryAttaach = @"CREATE DATABASE CCReportsRIA
-ON (FILENAME = '/var/opt/mssql/data/ccReportsRia.mdf'),
-(FILENAME = '/var/opt/mssql/data/ccReportsRia_1.ldf')
-FOR ATTACH;"
+                QueryAttaach = @"
+if not exists(select * from sys.databases where name='CCReportsRIA') begin
+    CREATE DATABASE CCReportsRIA
+    ON (FILENAME = '/var/opt/mssql/data/ccReportsRia.mdf'),
+    (FILENAME = '/var/opt/mssql/data/ccReportsRia_1.ldf')
+    FOR ATTACH;
+end"
 ,
                 DetachDB = @"ALTER DATABASE CCReportsRIA SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
 EXEC sp_detach_db 'CCReportsRIA';"

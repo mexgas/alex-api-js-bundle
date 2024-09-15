@@ -25,6 +25,7 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
 
         public void Start(List<DatabaseDto> databaseDtos)
         {
+            bool isFail = false;
             Logger.Info("*********************** Start *********************************************************************************");
             foreach (DatabaseDto databaseDto in databaseDtos)
             {
@@ -38,16 +39,28 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 sqlConnectionStringBuilder.Password = databaseDto.Password;
                 sqlConnectionStringBuilder.Encrypt = false;
 
-                sqlConnectionStringBuilder.InitialCatalog = "master";
-                sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
-
-                sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
-                sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString());
-                if (DatabaseUpdateValidatorConstants.IS_DETACH)
+                try
                 {
                     sqlConnectionStringBuilder.InitialCatalog = "master";
-                    sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+                    sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+
+                    sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
+                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString());
+                    if (DatabaseUpdateValidatorConstants.IS_DETACH)
+                    {
+                        sqlConnectionStringBuilder.InitialCatalog = "master";
+                        sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex);
+                    isFail = true;
+                }
+            }
+            if (isFail)
+            {
+                new Exception("Fail Script Database");
             }
         }
 

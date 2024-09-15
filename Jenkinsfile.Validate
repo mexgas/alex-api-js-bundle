@@ -9,11 +9,33 @@ pipeline {
         SQL_SERVER_SERVER = '127.0.0.1,1436'
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
+        REPO_SLUG = 'cw-database'
         scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
         msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
 
     }
     stages {
+        stage('Setup parameters') {
+            steps {
+                script {
+                    properties([
+                        parameters([
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: 'master',
+                                trim: true
+                            ),
+                            string(
+                                name: 'BITBUCKET_PR_ID',
+                            ),
+                            string(
+                                name: 'BITBUCKET_PROJECT',
+                            )
+                        ])
+                    ])
+                }
+            }
+        }
         stage('Setup Environment') {
             steps {
                 script {
@@ -29,6 +51,14 @@ pipeline {
                 wrap([$class: 'BuildUser']) {
                     NotifyBuild('STARTED')
                 }
+            }
+        }
+        stage('Checkout') {
+            steps {
+                deleteDir()
+                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
+                userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                url: 'git@bitbucket.org:nuxibatechnologies/{env.REPO_SLUG}.git']]])
             }
         }
 
@@ -62,14 +92,42 @@ pipeline {
                 }
             }
         }
-        
     }
     post {
         always {
             wrap([$class: 'BuildUser']) {
                 NotifyBuild("${currentBuild.currentResult}")
-                 echo "Cleaning up workspace directory: ${env.WORKSPACE}"
-                // cleanWs()
+            }
+
+            // Agregar callback HTTP al final del build
+            script {
+                def sonarProjectKey = "${SONAR_NAME}"
+                def buildResult = currentBuild.currentResult ?: 'SUCCESS'
+                def buildNumber = env.BUILD_NUMBER
+                def buildId = env.BUILD_ID
+                def branchName = params.BRANCH
+                def prId = params.BITBUCKET_PR_ID
+
+                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+
+                // Enviar datos a una aplicaciÃ³n externa con HttpRequest 2
+                def response = httpRequest(
+                    url: "${env.CALLBACK_URL_PR}",  // Usar la variable de entorno global del sistema
+                    httpMode: 'POST',
+                    contentType: 'APPLICATION_JSON',
+                    requestBody: """
+                    {
+                        "projectKey": "${sonarProjectKey}",
+                        "buildNumber": "${buildNumber}",
+                        "status": "${buildResult}",
+                        "branch": "${branchName}",
+                        "prId": "${prId}",
+                        "buildId": "${buildId}",
+                        "RepoSlug: "${env.REPO_SLUG}"
+                    }
+                    """
+                )
+                echo "Callback Response: ${response.content}"
             }
         }
     }

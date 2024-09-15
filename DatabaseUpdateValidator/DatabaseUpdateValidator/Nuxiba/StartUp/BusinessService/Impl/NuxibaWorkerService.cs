@@ -29,8 +29,8 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
 
             DatabaseDto databaseDto = new DatabaseDto();
             string username = "sa";
-            string password = "nuxiba";
-            string server = "127.0.0.1,1434";
+            string password = "Nuxiba2024_";
+            string server = "127.0.0.1,1436";
 
             DatabaseDto CCenterRIA = new DatabaseDto
             {

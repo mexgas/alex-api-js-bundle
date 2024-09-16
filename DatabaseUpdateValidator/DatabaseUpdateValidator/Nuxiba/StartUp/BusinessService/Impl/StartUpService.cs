@@ -49,21 +49,36 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                     sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto);
 
                     sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto); //se ejecuta una segunda vez para validar que no falle en una segunda actualizacion
-                    if (DatabaseUpdateValidatorConstants.IS_DETACH)
-                    {
-                        sqlConnectionStringBuilder.InitialCatalog = "master";
-                        sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
-                    }
                 }
                 catch (Exception ex)
                 {
                     Logger.Fatal(ex);
                     isFail = true;
                 }
+                finally
+                {
+                    Detach(databaseDto, sqlConnectionStringBuilder);
+                }
             }
             if (isFail)
             {
                 throw new Exception("Fail Script Database");
+            }
+        }
+
+        private void Detach(DatabaseDto databaseDto, SqlConnectionStringBuilder sqlConnectionStringBuilder)
+        {
+            try
+            {
+                if (DatabaseUpdateValidatorConstants.IS_DETACH)
+                {
+                    sqlConnectionStringBuilder.InitialCatalog = "master";
+                    sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Fatal(ex);
             }
         }
 

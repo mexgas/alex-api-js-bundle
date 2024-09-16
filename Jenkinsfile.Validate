@@ -87,13 +87,13 @@ pipeline {
             }
         }
 
-        stage('Docker Compose Down') {
-            steps {
-                script {                    
-                    bat 'docker-compose down'
-                }
-            }
-        }
+        // stage('Docker Compose Down') {
+        //     steps {
+        //         script {                    
+        //             bat 'docker-compose down'
+        //         }
+        //     }
+        // }
     }
     post {
         always {
@@ -103,6 +103,8 @@ pipeline {
 
              // Agregar callback HTTP al final del build
             script {
+                bat 'docker-compose up -d'
+
                 def sonarProjectKey = "${SONAR_NAME}"
                 def buildResult = currentBuild.currentResult ?: 'SUCCESS'
                 def buildNumber = env.BUILD_NUMBER

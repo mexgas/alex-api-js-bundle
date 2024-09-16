@@ -108,26 +108,31 @@ pipeline {
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
 
-                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"                
+                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-                // Enviar datos a una aplicación externa con HttpRequest 2
+                // Crear el cuerpo del requestBody
+                def requestBody = """
+                {
+                    "projectKey": "${sonarProjectKey}",
+                    "buildNumber": "${buildNumber}",
+                    "status": "${buildResult}",
+                    "branch": "${branchName}",
+                    "prId": "${prId}",
+                    "buildId": "${buildId}",
+                    "RepoSlug": "${env.REPO_SLUG}",
+                    "BuildUrl": "${buildUrl}",
+                    "JobName": "${jobName}"
+                }
+                """
+                // Imprimir el requestBody
+                echo "Request Body: ${requestBody}"
+
+                // Enviar datos a una aplicación externa con HttpRequest
                 def response = httpRequest(
-                    url: "${env.CALLBACK_URL_PR}",  // Usar la variable de entorno global del sistema
+                    url: "${env.CALLBACK_URL_PR}",
                     httpMode: 'POST',
                     contentType: 'APPLICATION_JSON',
-                    requestBody: """
-                    {
-                        "projectKey": "${sonarProjectKey}",
-                        "buildNumber": "${buildNumber}",
-                        "status": "${buildResult}",
-                        "branch": "${branchName}",
-                        "prId": "${prId}",
-                        "buildId": "${buildId}",
-                        "RepoSlug": "${env.REPO_SLUG}",
-                        "BuildUrl": "${buildUrl}",
-                        "JobName": "${jobName}" // Incluir el nombre del proyecto
-                    }
-                    """
+                    requestBody: requestBody
                 )
                 echo "Callback Response: ${response.content}"
             }

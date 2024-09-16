@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "DatabaseUpdateValidator": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\SourceTree\\cw-database\\"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

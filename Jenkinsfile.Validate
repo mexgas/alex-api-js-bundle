@@ -57,8 +57,7 @@ pipeline {
             }
         }
         stage('Checkout') {
-            steps {
-                deleteDir()
+            steps {                
                  checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
                 userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                 url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
@@ -111,7 +110,7 @@ pipeline {
                 def branchName = params.BRANCH
                 def prId = params.BITBUCKET_PR_ID
 
-                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"                
 
                 // Enviar datos a una aplicación externa con HttpRequest 2
                 def response = httpRequest(

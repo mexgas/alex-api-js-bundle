@@ -2,7 +2,7 @@
   "profiles": {
     "DatabaseUpdateValidator": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\SourceTree\\cw-database\\"
+      "commandLineArgs": "C:\\SourceTree\\cw-database\\ 192.168.1.59,1436"
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"

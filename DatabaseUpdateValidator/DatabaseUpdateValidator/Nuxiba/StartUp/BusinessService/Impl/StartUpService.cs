@@ -1,4 +1,4 @@
-﻿using DatabaseUpdateValidator.Nuxiba.Base.Infrastructure.Constants;
+using DatabaseUpdateValidator.Nuxiba.Base.Infrastructure.Constants;
 using DatabaseUpdateValidator.Nuxiba.Helper;
 using DatabaseUpdateValidator.Nuxiba.Model;
 using DatabaseUpdateValidator.Nuxiba.Repository;
@@ -6,6 +6,7 @@ using DatabaseUpdateValidator.Nuxiba.Repository.Impl;
 using Microsoft.Data.SqlClient;
 using Nuxiba.NuxibaAppBase.Base.BusinessService;
 using Nuxiba.NuxibaAppBase.Base.Infrastructure.Components;
+using System.Text;
 
 namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
 {
@@ -27,6 +28,9 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
         {
             bool isFail = false;
             Logger.Info("*********************** Start *********************************************************************************");
+
+            StringBuilder stringBuilder = new StringBuilder();
+
             foreach (DatabaseDto databaseDto in databaseDtos)
             {
                 var listFile = sqlFileProcessor.GetOrderedSqlFiles(databaseDto.DirectoryPath, databaseDto.Pattern);
@@ -49,21 +53,37 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                     sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto);
 
                     sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto); //se ejecuta una segunda vez para validar que no falle en una segunda actualizacion
-                    if (DatabaseUpdateValidatorConstants.IS_DETACH)
-                    {
-                        sqlConnectionStringBuilder.InitialCatalog = "master";
-                        sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
-                    }
                 }
                 catch (Exception ex)
                 {
+                    stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
                     Logger.Fatal(ex);
                     isFail = true;
+                }
+                finally
+                {
+                    Detach(databaseDto, sqlConnectionStringBuilder);
                 }
             }
             if (isFail)
             {
                 throw new Exception("Fail Script Database");
+            }
+        }
+
+        private void Detach(DatabaseDto databaseDto, SqlConnectionStringBuilder sqlConnectionStringBuilder)
+        {
+            try
+            {
+                if (DatabaseUpdateValidatorConstants.IS_DETACH)
+                {
+                    sqlConnectionStringBuilder.InitialCatalog = "master";
+                    sqlFileExecutor.ExecuteScript(databaseDto.DetachDB, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Fatal(ex);
             }
         }
 

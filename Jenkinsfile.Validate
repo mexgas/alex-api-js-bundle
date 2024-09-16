@@ -40,7 +40,11 @@ pipeline {
                 script {
                     print "--------------- ENVIRONMENT VARIABLES ---------------"
                     print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
-                    print "SONAR_NAME = ${env.SONAR_NAME}"                    
+                    print "SONAR_NAME = ${env.SONAR_NAME}"
+                    print "WORKSPACE = ${env.WORKSPACE}"
+                    print "SQL_SERVER_SERVER = ${env.SQL_SERVER_SERVER}"
+                    print "SQL_SERVER_USER = ${env.SQL_SERVER_USER}"
+                    print "SQL_SERVER_PASSWORD = ${env.SQL_SERVER_PASSWORD}"
                     print "-----------------------------------------------------"
                 }
             }

@@ -69,7 +69,7 @@ pipeline {
             steps {
                 script {                    
                     bat 'docker-compose up -d'
-                    sleep(time: 20, unit: 'SECONDS') 
+                    sleep(time: 15, unit: 'SECONDS') 
 
                 }
             }
@@ -88,14 +88,6 @@ pipeline {
                   bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
             }
         }
-
-        // stage('Docker Compose Down') {
-        //     steps {
-        //         script {                    
-        //             bat 'docker-compose down'
-        //         }
-        //     }
-        // }
     }
     post {
         always {
@@ -113,25 +105,34 @@ pipeline {
                 def buildId = env.BUILD_ID
                 def branchName = params.BRANCH
                 def prId = params.BITBUCKET_PR_ID
+                def buildUrl = env.BUILD_URL
+                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
 
-                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"                
+                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-                // Enviar datos a una aplicación externa con HttpRequest 2
+                // Crear el cuerpo del requestBody
+                def requestBody = """
+                {
+                    "projectKey": "${sonarProjectKey}",
+                    "buildNumber": "${buildNumber}",
+                    "status": "${buildResult}",
+                    "branch": "${branchName}",
+                    "prId": "${prId}",
+                    "buildId": "${buildId}",
+                    "RepoSlug": "${env.REPO_SLUG}",
+                    "BuildUrl": "${buildUrl}",
+                    "JobName": "${jobName}"
+                }
+                """
+                // Imprimir el requestBody
+                echo "Request Body: ${requestBody}"
+
+                // Enviar datos a una aplicación externa con HttpRequest
                 def response = httpRequest(
-                    url: "${env.CALLBACK_URL_PR}",  // Usar la variable de entorno global del sistema
+                    url: "${env.CALLBACK_URL_PR}",
                     httpMode: 'POST',
                     contentType: 'APPLICATION_JSON',
-                    requestBody: """
-                    {
-                        "projectKey": "${sonarProjectKey}",
-                        "buildNumber": "${buildNumber}",
-                        "status": "${buildResult}",
-                        "branch": "${branchName}",
-                        "prId": "${prId}",
-                        "buildId": "${buildId}",
-                        "RepoSlug": "${env.REPO_SLUG}"
-                    }
-                    """
+                    requestBody: requestBody
                 )
                 echo "Callback Response: ${response.content}"
             }

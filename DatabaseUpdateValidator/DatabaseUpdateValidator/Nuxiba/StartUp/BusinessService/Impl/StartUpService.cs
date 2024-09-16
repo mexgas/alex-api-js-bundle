@@ -6,6 +6,7 @@ using DatabaseUpdateValidator.Nuxiba.Repository.Impl;
 using Microsoft.Data.SqlClient;
 using Nuxiba.NuxibaAppBase.Base.BusinessService;
 using Nuxiba.NuxibaAppBase.Base.Infrastructure.Components;
+using System.Text;
 
 namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
 {
@@ -27,6 +28,9 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
         {
             bool isFail = false;
             Logger.Info("*********************** Start *********************************************************************************");
+
+            StringBuilder stringBuilder = new StringBuilder();
+
             foreach (DatabaseDto databaseDto in databaseDtos)
             {
                 var listFile = sqlFileProcessor.GetOrderedSqlFiles(databaseDto.DirectoryPath, databaseDto.Pattern);
@@ -52,6 +56,7 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 }
                 catch (Exception ex)
                 {
+                    stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
                     Logger.Fatal(ex);
                     isFail = true;
                 }

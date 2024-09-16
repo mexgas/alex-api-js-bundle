@@ -49,9 +49,10 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                     }
                     catch (Exception ex)
                     {
+                        string msg = $"Error while executing the file: {filePath.Value}, Error: {ex.Message}";
                         // Log errors
-                        Logger.Warn($"Error while executing the file: {filePath.Value}, Error: {ex.Message}");
-                        throw;
+                        Logger.Warn(msg);
+                        throw new Exception(msg, ex);
                     }
                 }
                 else

@@ -2305,6 +2305,59 @@ SET @sql = '
 EXEC(@sql)
 ----------------------------------------------------------- Brian Omar Mejia Magos -------------------------------------------------------------------------
 
+----------------------------------------------------------- Start Hugo Longoria -------------------------------------------------------------------------
+
+    set @process = 'Alter SP ccsp_DLRInsertCall'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
+	@callout_id int,
+	@cam_id smallint,
+	@cal_Key varchar(20),
+	@cal_Telefono varchar(14),
+	@Puerto smallint,
+	@logDial_id int=0
+	AS
+
+	INSERT ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id ) --Status 6=Pide Agente
+	  VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto, getdate(), 6 )
+
+	select scope_identity() as cal_id
+	'
+    EXEC(@sql)
+
+	SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
+    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
+                begin
+                    DROP PROCEDURE ccsp_DLRAfterInsertCall;
+                end'
+    EXEC(@sql);
+
+	set @process = 'Create SP ccsp_DLRAfterInsertCall'
+    set @sql='CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
+	@cam_id smallint,
+	@cal_id BIGINT=0
+	AS
+	set nocount on
+
+	DECLARE @callout_id int, @date datetime
+
+	SELECT @callout_id=callout_id, @date=cal_Inicio from ccoCallsout nolock WHERE cal_id=@cal_id
+
+	INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
+	SELECT @cal_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @date
+	FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
+
+	insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+	select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
+	where wg.Tipo=1 and wg.idcampesp=@cam_id
+
+	exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=6
+  
+	set nocount off
+	'
+    EXEC(@sql)
+
+----------------------------------------------------------- End Hugo Longoria -------------------------------------------------------------------------
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

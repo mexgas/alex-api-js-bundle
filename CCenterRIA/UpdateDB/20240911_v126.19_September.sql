@@ -433,7 +433,7 @@ BEGIN
                     end
 
                     else if @action =16 begin --Validate phone and credits for sms test message
-                        select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1)
+                        select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1, DEFAULT)
                         if LEFT(@phone, 1) = ''E'' begin
                             select -3 -- Not a Cellphone
                             return -1;

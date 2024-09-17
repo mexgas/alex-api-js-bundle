@@ -433,7 +433,7 @@ BEGIN
                     end
 
                     else if @action =16 begin --Validate phone and credits for sms test message
-                        select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1)
+                        select @phone = dbo.Verifica2(@phone, @valueInt104, @value17, 1, DEFAULT)
                         if LEFT(@phone, 1) = ''E'' begin
                             select -3 -- Not a Cellphone
                             return -1;
@@ -477,14 +477,22 @@ BEGIN
 
 ------------------------------------------------- Termina Leonardo Ramírez ----------------------------------------------------------------------------------
 
-        ------------------------------------------------- Empieza Carlos Muñoz ----------------------------------------------------------------------------------
+------------------------------------------------- Empieza Carlos Muñoz ----------------------------------------------------------------------------------
         SET @process = 'Nuevo procedimiento almacenado para el reinicio diario de la tabla de conteo de conversaciones del día'
         SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InitConversationCount'')
 			begin
 				DROP PROCEDURE ccsp_InitConversationCount;
 			end'
-        
+
         EXEC(@sql)
+
+		SET @sql = '
+		if not exists (select * from sys.columns where name = N''MarkedAsSpam'' and Object_ID = Object_ID(N''ccWAOperatingSummary''))
+			begin
+				ALTER TABLE ccWAOperatingSummary ADD MarkedAsSpam INT 
+			end'
+		EXEC(@sql)
+
         SET @sql = '
             CREATE PROC ccsp_InitConversationCount
                 AS

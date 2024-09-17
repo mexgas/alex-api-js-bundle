@@ -1,0 +1,141 @@
+@Library('SlackSend') _
+
+pipeline {
+    agent any
+    environment {
+        PROJECT_ENVIRONMENT = 'DEVELOP'
+        PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
+        SONAR_NAME = 'CW_Data_Base_DEV'
+        SQL_SERVER_SERVER = '127.0.0.1,1436'
+        SQL_SERVER_USER = 'sa'
+        SQL_SERVER_PASSWORD = 'Nuxiba2024_'
+        REPO_SLUG = 'cw-database'
+        scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
+        msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
+    }
+    stages {
+        stage('Setup parameters') {
+            steps {
+                script {
+                    properties([
+                        parameters([
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: 'master',
+                                trim: true
+                            ),
+                            string(
+                                name: 'BITBUCKET_PR_ID',
+                            ),
+                            string(
+                                name: 'BITBUCKET_PROJECT',
+                            )
+                        ])
+                    ])
+                }
+            }
+        }
+        stage('Setup Environment') {
+            steps {
+                script {
+                    print "--------------- ENVIRONMENT VARIABLES ---------------"
+                    print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
+                    print "SONAR_NAME = ${env.SONAR_NAME}"
+                    print "WORKSPACE = ${env.WORKSPACE}"
+                    print "SQL_SERVER_SERVER = ${env.SQL_SERVER_SERVER}"
+                    print "SQL_SERVER_USER = ${env.SQL_SERVER_USER}"
+                    print "SQL_SERVER_PASSWORD = ${env.SQL_SERVER_PASSWORD}"
+                    print "-----------------------------------------------------"
+                }
+            }
+        }
+         stage('slack notification') {            
+            steps {
+                wrap([$class: 'BuildUser']) {
+                    NotifyBuild('STARTED')
+                }
+            }
+        }
+        stage('Checkout') {
+            steps {                
+                deleteDir()
+                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
+                userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
+            }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                script {                    
+                    bat 'docker-compose up -d'
+                    sleep(time: 15, unit: 'SECONDS') 
+
+                }
+            }
+        }
+
+        stage('Copy Bat') {
+            steps {
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'                  
+            }
+        }
+
+        stage('Build and execute') {
+            steps {                  
+                  bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
+                  bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
+                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+            }
+        }
+    }
+    post {
+        always {
+            wrap([$class: 'BuildUser']) {
+                NotifyBuild("${currentBuild.currentResult}")
+            }
+
+             // Agregar callback HTTP al final del build
+            script {
+                bat 'docker-compose down'
+
+                def sonarProjectKey = "${SONAR_NAME}"
+                def buildResult = currentBuild.currentResult ?: 'SUCCESS'
+                def buildNumber = env.BUILD_NUMBER
+                def buildId = env.BUILD_ID
+                def branchName = params.BRANCH
+                def prId = params.BITBUCKET_PR_ID
+                def buildUrl = env.BUILD_URL
+                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+
+                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+
+                // Crear el cuerpo del requestBody
+                def requestBody = """
+                {
+                    "projectKey": "${sonarProjectKey}",
+                    "buildNumber": "${buildNumber}",
+                    "status": "${buildResult}",
+                    "branch": "${branchName}",
+                    "prId": "${prId}",
+                    "buildId": "${buildId}",
+                    "RepoSlug": "${env.REPO_SLUG}",
+                    "BuildUrl": "${buildUrl}",
+                    "JobName": "${jobName}"
+                }
+                """
+                // Imprimir el requestBody
+                echo "Request Body: ${requestBody}"
+
+                // Enviar datos a una aplicación externa con HttpRequest
+                def response = httpRequest(
+                    url: "${env.CALLBACK_URL_PR}",
+                    httpMode: 'POST',
+                    contentType: 'APPLICATION_JSON',
+                    requestBody: requestBody
+                )
+                echo "Callback Response: ${response.content}"
+            }
+        }
+    }
+}

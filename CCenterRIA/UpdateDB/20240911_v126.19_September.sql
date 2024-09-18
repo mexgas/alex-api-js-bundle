@@ -672,7 +672,7 @@ BEGIN
 					--Save new request
 					IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @inboundId)
 						BEGIN
-							INSERT INTO ccWAOperatingSummary (InboundId, Request) VALUES (@inboundId, 1);
+							INSERT INTO ccWAOperatingSummary (InboundId, Request, MarkedAsSpam) VALUES (@inboundId, 1, 0);
 						END
 					ELSE
 						BEGIN
@@ -763,6 +763,7 @@ BEGIN
 					IF @conversationStatus = 13 BEGIN
 						UPDATE ccWAOperatingSummary SET MarkedAsSpam = (MarkedAsSpam + 1) where Inboundid = @inboundId
 						IF NOT EXISTS (SELECT NumberClient from ccWhatsAppSpam where NumberClient = @clientId) BEGIN
+							UPDATE ccWAOperatingSummary SET Assigned = (Assigned - 1) where Inboundid = @inboundId;
 							INSERT INTO ccWhatsAppSpam (InboundId, AgentId, ConversationId, NumberClient) VALUES (@inboundId, @agentId, @conversationId, @clientId);
 						END
 					END

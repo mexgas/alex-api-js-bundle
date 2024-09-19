@@ -46,7 +46,7 @@ BEGIN
     	
 		------------------------------------------------- Empeiza David Medina ----------------------------------------------------------------------------------
 		------------------------------------------------------- Tablas ------------------------------------------------------------------------------------------
-		SET @process = 'k002092 Se añade columna AssignConversationSameAgent para saber si la conversación se reasignará al mismo agente'
+		SET @process = 'k002092 | k002093 Se añade columna AssignConversationSameAgent para saber si la conversación se reasignará al mismo agente'
 		SET @sql = '
 			IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''AssignConversationSameAgent'' AND Object_ID = Object_ID(N''dbo.ccinbound''))
 			BEGIN
@@ -70,7 +70,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'k002092 Se insertan identificadores de relación en tabla relationTableColumnIdentifiers para AssignConversationSameAgent'
+		SET @process = 'k002092 | k002093 Se insertan identificadores de relación en tabla relationTableColumnIdentifiers para AssignConversationSameAgent'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''AssignConversationSameAgent'' AND tableName = ''ccInbound'')
 			BEGIN
@@ -97,7 +97,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'k002092 Se insertan identificadores de relación en tabla ccGalateaIdentifiers para AssignConversationSameAgent'
+		SET @process = 'k002092 | k002093 Se insertan identificadores de relación en tabla ccGalateaIdentifiers para AssignConversationSameAgent'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''IN_WHATS_ASSIGN_SAME_AGENT'')
 			BEGIN
@@ -131,7 +131,9 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_GalateaGetInboundConfiguration en el @command=2 para que el AdminWS muestre a la UI AssignConversationSameAgent, ConversationHistoryTime y MaxLimitQueueConversations'
+		SET @process = ' HUs -> k002090 | K002092 | K020001 | K020004 | K020005 
+					     Se modifica SP ccsp_GalateaGetInboundConfiguration en el @command=2 para que el AdminWS muestre a
+						 la UI AssignConversationSameAgent, ConversationHistoryTime y MaxLimitQueueConversations'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
 			@command int,
@@ -260,8 +262,9 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_GalateaUpdateWhatsAppConfiguration agregandole @ConversationHistoryTime, @MaximumLimitConversationsInQueue y @assignConversationSameAgent, para agregar 
-						valores y actualizarlos en tabla ccinbound y log de actividad para IN_WHATS_ASSIGN_SAME_AGENT'
+		SET @process = ' HUs -> k002090 | K002092 | K020001 | K020004 | K020005 
+						 Se modifica SP ccsp_GalateaUpdateWhatsAppConfiguration agregandole @ConversationHistoryTime, @MaximumLimitConversationsInQueue y @assignConversationSameAgent,
+						 para agrega valores y actualizarlos en tabla ccinbound y log de actividad para IN_WHATS_ASSIGN_SAME_AGENT'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
 		        @inboundId        smallint,
@@ -500,8 +503,9 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_Multimedia2 en el @action = 1 para que guarde AssignSameAgent ene l diccionario del distributor para saber si se debe o no
-						asignar conversación de entrada a último agente que atendió esa conversación'
+		SET @process = ' HU -> k002093 
+						 Se modifica SP ccsp_Multimedia2 en el @action = 1 para que guarde AssignSameAgent ene l diccionario del distributor para saber si se debe o no
+						 asignar conversación de entrada a último agente que atendió esa conversación'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL
 			, @senderId INT = NULL,@camType bit=0
@@ -585,8 +589,9 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_UpdateACDWhatsappConfig agregandole @ConversationHistoryTime, @MaximumLimitConversationsInQueue y @assignConversationSameAgent, para agregar 
-						valores y actualizarlos en tabla ccinbound y log de actividad para IN_WHATS_ASSIGN_SAME_AGENT'
+		SET @process = ' HUs -> k002090 | K002092 | K020001 | K020004 | K020005
+						 Se modifica SP ccsp_UpdateACDWhatsappConfig agregandole @ConversationHistoryTime, @MaximumLimitConversationsInQueue y @assignConversationSameAgent,  
+						 para agregar valores y actualizarlos en tabla ccinbound y log de actividad para IN_WHATS_ASSIGN_SAME_AGENT'
 		SET @sql = '
 		CREATE PROCEDURE  [dbo].[ccsp_UpdateACDWhatsappConfig]
 			    @ConexionInfo varchar(400),
@@ -713,8 +718,9 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_WAGetPreviousAgentToReassign para conseguir último agente al que se le asignó conversación con el mismo num de cliente en camapaña
-						de entrada'
+		SET @process = 'HUs -> k002093
+						Se modifica SP ccsp_WAGetPreviousAgentToReassign para conseguir último agente al que se le asignó conversación 
+						con el mismo num de cliente en camapaña de entrada'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_WAGetPreviousAgentToReassign]  
 			 @Action int, @CamId int, @ClientId VARCHAR(20) 

@@ -1,4 +1,4 @@
-/*******************************/
+ï»¿/*******************************/
 /***** NUXIBA TECHNOLOGIES *****/
 /*******************************/
 /*
@@ -46,7 +46,7 @@ BEGIN
     	
 		------------------------------------------------- Empeiza David Medina ----------------------------------------------------------------------------------
 		------------------------------------------------------- Tablas ------------------------------------------------------------------------------------------
-		SET @process = 'k002092 Se añade columna AssignConversationSameAgent para saber si la conversación se reasignará al mismo agente'
+		SET @process = 'k002092 Se aÃ±ade columna AssignConversationSameAgent para saber si la conversaciÃ³n se reasignarÃ¡ al mismo agente'
 		SET @sql = '
 			IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''AssignConversationSameAgent'' AND Object_ID = Object_ID(N''dbo.ccinbound''))
 			BEGIN
@@ -54,7 +54,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K002090 Se añade columna ConversationHistoryTime para saber cantidad de días máximos a buscar por conversaciones de WA en histórico '
+		SET @process = 'K002090 Se aÃ±ade columna ConversationHistoryTime para saber cantidad de dÃ­as mÃ¡ximos a buscar por conversaciones de WA en histÃ³rico '
 		SET @sql = '
 			IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''ConversationHistoryTime'' AND Object_ID = Object_ID(N''dbo.ccinbound''))
 			BEGIN
@@ -62,7 +62,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K020001 Se añade columna MaximumLimitConversationsInQueue para máximo de conversaciones en cola'
+		SET @process = 'K020001 Se aÃ±ade columna MaximumLimitConversationsInQueue para mÃ¡ximo de conversaciones en cola'
 		SET @sql = '
 			IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''MaximumLimitConversationsInQueue'' AND Object_ID = Object_ID(N''dbo.ccinbound''))
 			BEGIN
@@ -70,7 +70,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'k002092 Se insertan identificadores de relación en tabla relationTableColumnIdentifiers para AssignConversationSameAgent'
+		SET @process = 'k002092 Se insertan identificadores de relaciÃ³n en tabla relationTableColumnIdentifiers para AssignConversationSameAgent'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''AssignConversationSameAgent'' AND tableName = ''ccInbound'')
 			BEGIN
@@ -79,7 +79,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K002090 Se insertan identificadores de relación en tabla relationTableColumnIdentifiers para ConversationHistoryTime'
+		SET @process = 'K002090 Se insertan identificadores de relaciÃ³n en tabla relationTableColumnIdentifiers para ConversationHistoryTime'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''ConversationHistoryTime'' AND tableName = ''ccInbound'')
 			BEGIN
@@ -88,7 +88,7 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K020001 Se insertan identificadores de relación en tabla relationTableColumnIdentifiers para MaximumLimitConversationsInQueue'
+		SET @process = 'K020001 Se insertan identificadores de relaciÃ³n en tabla relationTableColumnIdentifiers para MaximumLimitConversationsInQueue'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM relationTableColumnIdentifiers WHERE colunName = ''MaximumLimitConversationsInQueue'' AND tableName = ''ccInbound'')
 			BEGIN
@@ -97,30 +97,30 @@ BEGIN
 			END'
 		EXEC(@sql)
 
-		SET @process = 'k002092 Se insertan identificadores de relación en tabla ccGalateaIdentifiers para AssignConversationSameAgent'
+		SET @process = 'k002092 Se insertan identificadores de relaciÃ³n en tabla ccGalateaIdentifiers para AssignConversationSameAgent'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''IN_WHATS_ASSIGN_SAME_AGENT'')
 			BEGIN
-				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''IN_WHATS_ASSIGN_SAME_AGENT'', ''Asignar contacto al último agente que le atendió'', 
-				''Assign contact to the last agent who assisted them'', ''Atribuir contato ao último agente que o atendeu'') 
+				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''IN_WHATS_ASSIGN_SAME_AGENT'', ''Asignar contacto al Ãºltimo agente que le atendiÃ³'', 
+				''Assign contact to the last agent who assisted them'', ''Atribuir contato ao Ãºltimo agente que o atendeu'') 
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K002090 Se insertan identificadores de relación en tabla ccGalateaIdentifiers para ConversationHistoryTime'
+		SET @process = 'K002090 Se insertan identificadores de relaciÃ³n en tabla ccGalateaIdentifiers para ConversationHistoryTime'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''IN_CONVERSATION_HISTORY_TIME'')
 			BEGIN
-				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''IN_CONVERSATION_HISTORY_TIME'', ''Tiempo de historial de conversaciones (días)'', 
-				''Conversations log period (days)'', ''Tempo de histórico de conversas (dias)'') 
+				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''IN_CONVERSATION_HISTORY_TIME'', ''Tiempo de historial de conversaciones (dÃ­as)'', 
+				''Conversations log period (days)'', ''Tempo de histÃ³rico de conversas (dias)'') 
 			END'
 		EXEC(@sql)
 
-		SET @process = 'K020001 Se insertan identificadores de relación en tabla ccGalateaIdentifiers para MaximumLimitConversationsInQueue'
+		SET @process = 'K020001 Se insertan identificadores de relaciÃ³n en tabla ccGalateaIdentifiers para MaximumLimitConversationsInQueue'
 		SET @sql = '
 			IF NOT EXISTS (SELECT 1 FROM ccGalateaIdentifiers WHERE Description = ''MAXIMUM_LIMIT_CONVERSATIONS_IN_QUEUE'')
 			BEGIN
-				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''MAXIMUM_LIMIT_CONVERSATIONS_IN_QUEUE'', ''Número máximo en espera'', 
-				''Maximum conversations in queue'', ''Número máximo na fila'') 
+				insert into ccGalateaIdentifiers (Description, TagEs, TagEn, TagPt) values (''MAXIMUM_LIMIT_CONVERSATIONS_IN_QUEUE'', ''NÃºmero mÃ¡ximo en espera'', 
+				''Maximum conversations in queue'', ''NÃºmero mÃ¡ximo na fila'') 
 			END'
 		EXEC(@sql)
 		--------------------------------------------------------- SPs -------------------------------------------------------------------------------------------
@@ -501,7 +501,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'Se modifica SP ccsp_Multimedia2 en el @action = 1 para que guarde AssignSameAgent ene l diccionario del distributor para saber si se debe o no
-						asignar conversación de entrada a último agente que atendió esa conversación'
+						asignar conversaciÃ³n de entrada a Ãºltimo agente que atendiÃ³ esa conversaciÃ³n'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_Multimedia2] @action INT, @inboundId INT = NULL, @userId INT = NULL
 			, @senderId INT = NULL,@camType bit=0
@@ -713,7 +713,7 @@ BEGIN
 					end'
 		EXEC(@sql)
 
-		SET @process = 'Se modifica SP ccsp_WAGetPreviousAgentToReassign para conseguir último agente al que se le asignó conversación con el mismo num de cliente en camapaña
+		SET @process = 'Se modifica SP ccsp_WAGetPreviousAgentToReassign para conseguir Ãºltimo agente al que se le asignÃ³ conversaciÃ³n con el mismo num de cliente en camapaÃ±a
 						de entrada'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_WAGetPreviousAgentToReassign]  

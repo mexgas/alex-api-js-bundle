@@ -267,18 +267,18 @@ BEGIN
 						 para agrega valores y actualizarlos en tabla ccinbound y log de actividad para IN_WHATS_ASSIGN_SAME_AGENT'
 		SET @sql = '
 		CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateWhatsAppConfiguration]
-		        @inboundId        smallint,
-		        @frame          smallint  = null,
-		        @description      varchar(50) = null,
-		        @mediaType        tinyint   = null,
-		        @status         smallint  = null,
-		        @number         varchar(400)= null,
-		        @maxAnswerTime      int   = null,
-		        @muTimeOutClient    int     = null,
-		        @tNotas         int     = null,
-		        @exitWrapUpDisposition  bit     = null,
-		        @showCalifWnd     bit     = null,
-		        @allowFileAttachments bit    = null,
+				@inboundId        smallint,
+				@frame          smallint  = null,
+				@description      varchar(50) = null,
+				@mediaType        tinyint   = null,
+				@status         smallint  = null,
+				@number         varchar(400)= null,
+				@maxAnswerTime      int   = null,
+				@muTimeOutClient    int     = null,
+				@tNotas         int     = null,
+				@exitWrapUpDisposition  bit     = null,
+				@showCalifWnd     bit     = null,
+				@allowFileAttachments bit    = null,
 				@userId 				smallint	= null,
 				@module			int = -1,
 				@ConversationHistoryTime SMALLINT = null,
@@ -286,214 +286,214 @@ BEGIN
 				@assignConversationSameAgent bit = null
 
 
-		      AS
-		      BEGIN
-		        SET NOCOUNT ON;
-		        DECLARE @graph_id smallint
+				AS
+				BEGIN
+				SET NOCOUNT ON;
+				DECLARE @graph_id smallint
 
-		        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
+				EXEC InsertLogAdminGalatea @action=1, @tableName=''ccInbound'', @columnNameId=''Inbound_id'', @valueId= @inboundId, @userId= @userId
 
-		        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+				IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-		        Create table #ccInboundTable 
-		        (
-		            columnInfo VARCHAR(255),
-		            dataInfo VARCHAR(255),
-		            identifierInfo VARCHAR(255)
-		        )
+				Create table #ccInboundTable 
+				(
+					columnInfo VARCHAR(255),
+					dataInfo VARCHAR(255),
+					identifierInfo VARCHAR(255)
+				)
 		    
-		        DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
+				DECLARE @PrevDesc VARCHAR(MAX) = (SELECT [descripcion] FROM ccInbound WHERE Inbound_id = @inboundId);
 
-		        UPDATE ccInbound SET
-		          descripcion = ISNULL(@description, descripcion),
-		          chat = ISNULL(@mediaType, chat),
-		          Status = ISNULL(@status, Status),
-		          tNotas = ISNULL(@tNotas, tNotas),
-		          ExitWrapUpDisposition = ISNULL(@exitWrapUpDisposition, ExitWrapUpDisposition),
-				  AssignConversationSameAgent = ISNULL(@assignConversationSameAgent, AssignConversationSameAgent),
-				  ConversationHistoryTime = ISNULL(@ConversationHistoryTime, ConversationHistoryTime),
-				  MaximumLimitConversationsInQueue = ISNULL(@MaximumLimitConversationsInQueue, MaximumLimitConversationsInQueue)
-		        WHERE Inbound_id = @inboundId
+				UPDATE ccInbound SET
+					descripcion = ISNULL(@description, descripcion),
+					chat = ISNULL(@mediaType, chat),
+					Status = ISNULL(@status, Status),
+					tNotas = ISNULL(@tNotas, tNotas),
+					ExitWrapUpDisposition = ISNULL(@exitWrapUpDisposition, ExitWrapUpDisposition),
+					AssignConversationSameAgent = ISNULL(@assignConversationSameAgent, AssignConversationSameAgent),
+					ConversationHistoryTime = ISNULL(@ConversationHistoryTime, ConversationHistoryTime),
+					MaximumLimitConversationsInQueue = ISNULL(@MaximumLimitConversationsInQueue, MaximumLimitConversationsInQueue)
+				WHERE Inbound_id = @inboundId
 
 				IF(@module > -1) EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#ccInboundTable'';	
 
-		        DELETE FROM #ccInboundTable WHERE columnInfo IN (''tel_maxwait'', ''tel_maxqueue'', ''tel_outservice'', ''tel_noct'');
+				DELETE FROM #ccInboundTable WHERE columnInfo IN (''tel_maxwait'', ''tel_maxqueue'', ''tel_outservice'', ''tel_noct'');
 
-		        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		        SELECT 
-		            (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		            getDate(), 
-		            (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		            53, 
+				INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+				SELECT 
+					(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+					getDate(), 
+					(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+					53, 
 					@module,
-		            CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
-		                CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
-		            ELSE
-		                CCIT.identifierInfo
-		            END,
-		            CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
-		                CASE 
-		                    WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
-		                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+					CASE WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'') THEN
+						CASE WHEN @mediaType = 5 THEN ''IN_SHOW_DISPOSITIONS_WHATS'' ELSE  CCIT.identifierInfo END
+					ELSE
+						CCIT.identifierInfo
+					END,
+					CASE WHEN CCIT.identifierInfo IS NOT NULL AND CCIT.identifierInfo <> '''' THEN
+						CASE 
+							WHEN CCIT.identifierInfo IN (''IN_SHOW_DISPOSITIONS'', ''IN_WRAP_ON_DIPOSITION_WHATS'') THEN
+								CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
 							WHEN CCIT.identifierInfo = ''IN_WHATS_ASSIGN_SAME_AGENT'' THEN
-			                        CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-		                    ELSE CCIT.dataInfo END
-		            ELSE '''' END, 
-		            CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
-		        FROM #ccInboundTable AS CCIT;
+									CASE WHEN CCIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+							ELSE CCIT.dataInfo END
+					ELSE '''' END, 
+					CASE WHEN CCIT.identifierInfo = ''IN_CALL_EDIT_NAME'' THEN @PrevDesc ELSE (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId) END
+				FROM #ccInboundTable AS CCIT;
 
-		        EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
+				EXEC InsertLogAdminGalatea @action=3, @tableName = ''ccInbound'', @columnNameId = ''Inbound_id'', @valueId = @inboundId, @userId = @userId;
 
-		        IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
+				IF OBJECT_ID(N''tempdb..#ccInboundTable'') IS NOT NULL DROP TABLE #ccInboundTable
 
-		        DECLARE @descUpdate varchar(50)
-		        DECLARE @statusCCInbound smallint
-		        select @descUpdate = ISNULL(@description, descripcion), @statusCCInbound = status from ccInbound where Inbound_id =@inboundId
+				DECLARE @descUpdate varchar(50)
+				DECLARE @statusCCInbound smallint
+				select @descUpdate = ISNULL(@description, descripcion), @statusCCInbound = status from ccInbound where Inbound_id =@inboundId
 
-		        IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId=@inboundId) 
-		          BEGIN
-		              INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) 
-		          values (5, @descUpdate, @inboundId, @statusCCInbound);
-		          END
+				IF NOT EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId=@inboundId) 
+					BEGIN
+						INSERT INTO contactMeanIn (meanContactTypeId, name, inboundId, isActive) 
+					values (5, @descUpdate, @inboundId, @statusCCInbound);
+					END
 
-		        IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inboundId) 
-		          BEGIN
-		          DECLARE @PrevConexion VARCHAR(MAX) = (SELECT [conexionInfo] FROM contactMeanIn WHERE inboundId = @inboundId);
+				IF EXISTS (SELECT inboundId FROM contactMeanIn WHERE inboundId = @inboundId) 
+					BEGIN
+					DECLARE @PrevConexion VARCHAR(MAX) = (SELECT [conexionInfo] FROM contactMeanIn WHERE inboundId = @inboundId);
 		          
-				  set @number = case when  @number is null or @number in('''',''0'', ''Ninguno'') then ''Ninguno'' else @number end
+					set @number = case when  @number is null or @number in(''0'', ''Ninguno'') then ''Ninguno'' else @number end
 
-		          EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inboundId, @userId= @userId
+					EXEC InsertLogAdminGalatea @action=1, @tableName=''contactMeanIn'', @columnNameId=''inboundId'', @valueId= @inboundId, @userId= @userId
 
-		            IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+					IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
-		            Create table #contactMeanInTable 
-		            (
-		                columnInfo VARCHAR(255),
-		                dataInfo VARCHAR(255),
-		                identifierInfo VARCHAR(255)
-		            )
+					Create table #contactMeanInTable 
+					(
+						columnInfo VARCHAR(255),
+						dataInfo VARCHAR(255),
+						identifierInfo VARCHAR(255)
+					)
 
 
-		          UPDATE contactMeanIn set name=@descUpdate, conexionInfo=ISNULL(@number, conexionInfo)
-		          ,connUser=ISNULL(@number, connUser)
-		          ,ConnPass=ISNULL(@number, ConnPass) 
-		          ,closeConversationTime = ISNULL(@maxAnswerTime, closeConversationTime),
-		          answerTimeoutClient = ISNULL(@muTimeOutClient, answerTimeoutClient),
-		          allowFileAttachments = ISNULL(@allowFileAttachments, allowFileAttachments)
-		          where inboundId = @inboundId;
+					UPDATE contactMeanIn set name=@descUpdate, conexionInfo=ISNULL(@number, conexionInfo)
+					,connUser=ISNULL(@number, connUser)
+					,ConnPass=ISNULL(@number, ConnPass) 
+					,closeConversationTime = ISNULL(@maxAnswerTime, closeConversationTime),
+					answerTimeoutClient = ISNULL(@muTimeOutClient, answerTimeoutClient),
+					allowFileAttachments = ISNULL(@allowFileAttachments, allowFileAttachments)
+					where inboundId = @inboundId;
 
 				IF(@module > -1) BEGIN
-		        EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#contactMeanInTable'';  
+				EXEC InsertLogAdminGalatea @action=2, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId, @tableTemp=''#contactMeanInTable'';  
 				END
 
-		        IF(@number=''Ninguno'' AND @PrevConexion='''')UPDATE contactMeanIn SET conexionInfo = '''' WHERE inboundId = @inboundId;
-		        DELETE FROM #contactMeanInTable WHERE columnInfo IN (''name'',''connUser'',''ConnPass'');
+				IF(@number=''Ninguno'' AND @PrevConexion='''')UPDATE contactMeanIn SET conexionInfo = '''' WHERE inboundId = @inboundId;
+				DELETE FROM #contactMeanInTable WHERE columnInfo IN (''name'',''connUser'',''ConnPass'');
 
-		            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		            SELECT 
-		                (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		                getDate(), 
-		                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		                53, 
+					INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+					SELECT 
+						(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+						getDate(), 
+						(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+						53, 
 						@module, 
-		                CMIT.identifierInfo,
-		                CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
-		                    CASE
-		                        WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
-		                            CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
-		                        WHEN CMIT.identifierInfo IN (''IN_ASSOCIATED_PHONE_WHATS'') THEN
-		                            CASE WHEN CMIT.dataInfo = ''Ninguno'' THEN ''COMMON_NONE_O'' ELSE CMIT.dataInfo END
-		                        ELSE CMIT.dataInfo END
-		                ELSE '''' END, 
-		                (SELECT [name] FROM contactMeanIn WHERE inboundId = @inboundId)
-		            FROM #contactMeanInTable AS CMIT;
+						CMIT.identifierInfo,
+						CASE WHEN CMIT.identifierInfo IS NOT NULL AND CMIT.identifierInfo <> '''' THEN
+							CASE
+								WHEN CMIT.identifierInfo IN (''IN_ATTACH_FILES_WHATS'') THEN
+									CASE WHEN CMIT.dataInfo = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END
+								WHEN CMIT.identifierInfo IN (''IN_ASSOCIATED_PHONE_WHATS'') THEN
+									CASE WHEN CMIT.dataInfo = ''Ninguno'' THEN ''COMMON_NONE_O'' ELSE CMIT.dataInfo END
+								ELSE CMIT.dataInfo END
+						ELSE '''' END, 
+						(SELECT [name] FROM contactMeanIn WHERE inboundId = @inboundId)
+					FROM #contactMeanInTable AS CMIT;
 
-		            EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId;
+					EXEC InsertLogAdminGalatea @action=3, @tableName = ''contactMeanIn'', @columnNameId = ''inboundId'', @valueId = @inboundId, @userId = @userId;
 
-		            IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
+					IF OBJECT_ID(N''tempdb..#contactMeanInTable'') IS NOT NULL DROP TABLE #contactMeanInTable
 
-		          update ccWhatsAppNumbers set inboundId=0 where inboundId=@inboundId
-				  update ccMetaWhatsAppNumbers set Inbound_Id=0 where Inbound_Id=@inboundId
+					update ccWhatsAppNumbers set inboundId=0 where inboundId=@inboundId
+					update ccMetaWhatsAppNumbers set Inbound_Id=0 where Inbound_Id=@inboundId
 
-		          if @number <> '''' begin
+					if @number <> '''' begin
 					if EXISTS (SELECT number FROM ccWhatsAppNumbers WHERE number = @number)
 						update ccWhatsAppNumbers set inboundId=@inboundId where inboundId=0 and number=@number
 					if EXISTS (SELECT number FROM ccMetaWhatsAppNumbers WHERE number = @number)
 						UPDATE ccMetaWhatsAppNumbers SET Inbound_Id = @inboundId WHERE Inbound_Id = 0 and number = @number
-		          end
+					end
 
-		          END
+					END
 
-		        IF @frame IS NOT NULL
-		        BEGIN
-		          SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
-		          UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
+				IF @frame IS NOT NULL
+				BEGIN
+					SELECT @graph_id = graphic_id from ccRIAGraphics where frame = @frame and [type_id] = 1
+					UPDATE ccRIAInboundGraph set graphic_id = ISNULL(@graph_id, graphic_id) where inbound_id = @inboundId
 
-		          INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		          SELECT 
-		                (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		                getDate(), 
-		                (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		                53, 
-		                3,
-		                '''',
-		                ''IN_CALL_EDIT_ICON'', 
-		                (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
-		        END
+					INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+					SELECT 
+						(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+						getDate(), 
+						(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+						53, 
+						3,
+						'''',
+						''IN_CALL_EDIT_ICON'', 
+						(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+				END
 
-		        DECLARE @prevCalif BIT = (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId);
+				DECLARE @prevCalif BIT = (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId);
 
-		        IF @showCalifWnd = 1
-		          BEGIN
-		          IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
-		              BEGIN
+				IF @showCalifWnd = 1
+					BEGIN
+					IF EXISTS(SELECT cam_id FROM ccCalifCamp WHERE cam_id = @inboundId AND tipo = 0)
+						BEGIN
 
-		            UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
-		                  WHERE inbound_id = @inboundId
+					UPDATE ccInbound SET ShowCalifWnd = ISNULL(@showCalifWnd, ShowCalifWnd)
+							WHERE inbound_id = @inboundId
 
-		            IF(@prevCalif <> @showCalifWnd) BEGIN
-		                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		                SELECT 
-		                    (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		                    getDate(), 
-		                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		                    53, 
-		                    3,
-		                    ''IN_SHOW_DISPOSITIONS'',
-		                    CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
-		                    (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
-		            END
+					IF(@prevCalif <> @showCalifWnd) BEGIN
+						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+						SELECT 
+							(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+							getDate(), 
+							(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+							53, 
+							3,
+							''IN_SHOW_DISPOSITIONS'',
+							CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
+							(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+					END
 
-		            SELECT 1 [Result]
-		            RETURN(0)
-		              END
+					SELECT 1 [Result]
+					RETURN(0)
+						END
 
-		              SELECT -1 [Result]
-		              RETURN(0)
-		           END
-		           ELSE
-		         BEGIN
-		          UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
+						SELECT -1 [Result]
+						RETURN(0)
+					END
+					ELSE
+					BEGIN
+					UPDATE ccInbound SET ShowCalifWnd = ISNULL(@ShowCalifWnd, ShowCalifWnd) WHERE inbound_id = @inboundId;
 
-		          IF(@prevCalif <> @showCalifWnd) BEGIN
-		                INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-		                SELECT 
-		                    (SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
-		                    getDate(), 
-		                    (SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
-		                    53, 
-		                    3,
-		                    ''IN_SHOW_DISPOSITIONS'',
-		                    CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
-		                    (SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
-		            END
-		         END
+					IF(@prevCalif <> @showCalifWnd) BEGIN
+						INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+						SELECT 
+							(SELECT CCRCA.[AreaName] FROM ccRIACat_Areas AS CCRCA, ccInbound AS CCI WHERE CCRCA.IDArea = CCI.IDArea AND CCI.Inbound_id = @inboundId),
+							getDate(), 
+							(SELECT [Login] FROM ccUsers WHERE User_id = @userid), 
+							53, 
+							3,
+							''IN_SHOW_DISPOSITIONS'',
+							CASE WHEN (SELECT [ShowCalifWnd] FROM ccInbound WHERE inbound_id = @inboundId) = 1 THEN ''COMMON_ENABLED'' ELSE ''COMMON_DISABLED'' END,
+							(SELECT [descripcion] FROM ccInbound WHERE inbound_id = @inboundId)
+					END
+					END
 
-		         SELECT 1 [Result]
-		         RETURN(0)
+					SELECT 1 [Result]
+					RETURN(0)
 
-		        SET NOCOUNT OFF;
-		      END'
+				SET NOCOUNT OFF;
+				END'
 		EXEC (@sql)
 
 		SET @process = 'Se elimina SP ccsp_Multimedia2'

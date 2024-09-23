@@ -157,15 +157,25 @@ pipeline {
 
                 echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-                // Crear el cuerpo del requestBody
-                // Guardar el cuerpo JSON en una variable escapando las comillas dobles
-                def requestBody = """{\"ProjectKey\":\"${sonarProjectKey}\",\"BuildNumber\":\"${buildNumber}\",\"Status\":\"${buildResult}\",\"Branch\":\"${branchName}\",\"PrId\":\"${prId}\",\"BuildId\":\"${buildId}\",\"RepoSlug\":\"${env.REPO_SLUG}\",\"BuildUrl\":\"${buildUrl}\",\"JobName\":\"${jobName}\"}"""
+                // Crear el cuerpo del requestBody utilizando concatenación de strings
+                def requestBody = "{"
+                requestBody += "\"ProjectKey\":\"${sonarProjectKey}\","
+                requestBody += "\"BuildNumber\":\"${buildNumber}\","
+                requestBody += "\"Status\":\"${buildResult}\","
+                requestBody += "\"Branch\":\"${branchName}\","
+                requestBody += "\"PrId\":\"${prId}\","
+                requestBody += "\"BuildId\":\"${buildId}\","
+                requestBody += "\"RepoSlug\":\"${env.REPO_SLUG}\","
+                requestBody += "\"BuildUrl\":\"${buildUrl}\","
+                requestBody += "\"JobName\":\"${jobName}\""
+                requestBody += "}"
 
                 // Usar curl para enviar el archivo junto con los datos JSON
                 bat """
                     curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
                 """
             }
+
         }
     }
 }

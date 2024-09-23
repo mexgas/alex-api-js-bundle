@@ -1286,7 +1286,6 @@ end'
 
 	set @process = 'Insertar o actualizar relación usuario-menú'
 	set @sql = '
-	EXEC(@sql)
 	update ccMenus
 		set release=''2090e8fccd25cea4ecc5dca31a027f6eb558e6fe9e23d58d7b02544ab0bfbdbf9c255f81245206f27b7210a5bd04d823''
 		,menu_descrip=''1|Descarga de grabaciones|Recordings Download'' 

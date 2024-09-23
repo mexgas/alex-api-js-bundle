@@ -6,7 +6,8 @@ pipeline {
         PROJECT_ENVIRONMENT = 'DEVELOP'
         PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
         SONAR_NAME = 'CW_Data_Base_DEV'
-        SQL_SERVER_SERVER = '127.0.0.1,1436'
+        SQL_SERVER_SERVER_PR = '127.0.0.1,1436'
+        SQL_SERVER_SERVER_MAIN = '127.0.0.1,1437'
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
         REPO_SLUG = 'cw-database'
@@ -20,8 +21,13 @@ pipeline {
                     properties([
                         parameters([
                             string(
-                                name: 'BRANCH',
+                                name: 'MAIN_BRANCH',
                                 defaultValue: 'master',
+                                trim: true
+                            ),
+                            string(
+                                name: 'BRANCH',
+                                defaultValue: '',
                                 trim: true
                             ),
                             string(
@@ -42,6 +48,8 @@ pipeline {
                     print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
                     print "SONAR_NAME = ${env.SONAR_NAME}"
                     print "WORKSPACE = ${env.WORKSPACE}"
+                    print "MAIN_BRANCH = ${env.MAIN_BRANCH}"
+                    print "PR_BRANCH = ${env.BRANCH}"
                     print "SQL_SERVER_SERVER = ${env.SQL_SERVER_SERVER}"
                     print "SQL_SERVER_USER = ${env.SQL_SERVER_USER}"
                     print "SQL_SERVER_PASSWORD = ${env.SQL_SERVER_PASSWORD}"
@@ -56,7 +64,8 @@ pipeline {
                 }
             }
         }
-        stage('Checkout') {
+
+        stage('Checkout PR Branch') {
             steps {                
                 deleteDir()
                  checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
@@ -65,11 +74,21 @@ pipeline {
             }
         }
 
+        stage('Checkout Base Branch') {
+            steps {                
+                dir('main') {
+                     checkout([$class: 'GitSCM', branches: [[name: "${params.MAIN_BRANCH}"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                    url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
+                }
+            }
+        }
+        
         stage('Docker Compose Up') {
             steps {
                 script {                    
                     bat 'docker-compose up -d'
-                    sleep(time: 15, unit: 'SECONDS') 
+                    sleep(time: 10, unit: 'SECONDS') 
 
                 }
             }

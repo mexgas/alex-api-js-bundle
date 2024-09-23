@@ -110,6 +110,7 @@ pipeline {
                   bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER_PR} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
                   echo 'Check Main'
                   bat "./DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE/main}\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+                  echo 'Termina'
             }
         }
         

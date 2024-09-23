@@ -69,8 +69,7 @@ pipeline {
         }
 
         stage('Checkout PR Branch') {
-            steps {                
-                deleteDir()
+            steps {                                
                  checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
                 userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                 url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])

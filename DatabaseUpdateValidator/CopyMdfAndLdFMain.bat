@@ -21,7 +21,7 @@ for %%f in ("%source%\*.mdf" "%source%\*.ldf") do (
 )
 
 set source=.\ccReportsRia\
-set destination=.\Data
+set destination=.\DataMain
 
 rem Crear el destino si no existe
 if not exist %destination% (
@@ -39,7 +39,7 @@ for %%f in ("%source%\*.mdf" "%source%\*.ldf") do (
 )
 
 set source=.\RecorderRIA\Database
-set destination=.\Data
+set destination=.\DataMain
 
 rem Crear el destino si no existe
 if not exist %destination% (

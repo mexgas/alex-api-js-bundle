@@ -1256,13 +1256,50 @@ else if @action=2 begin
 end'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+-------------------------------------------- Begin Ulises --------------------------------------------	
+
+	-- Para insertar o actualizar en ccMenus
+	set @process = 'insertar o actualizar ccMenus'
+	set @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 13030)
+	BEGIN
+		-- Si no existe, realiza el INSERT
+		INSERT INTO ccMenus (menu_id, menu_descrip, parent, nivel, ordengral, [type], HelpSWF, release)
+		VALUES(13030, ''Detalle de segmentos'',13000, ''B'', 12, 3, '''', '''' )
+	END
+	ELSE
+	BEGIN
+		-- Si ya existe, realiza el UPDATE
+		UPDATE ccMenus
+		SET menu_descrip = ''Detalle de segmentos'',
+			parent = 13000,
+			nivel = ''B'',
+			ordengral = 12,
+			[type] = 3,
+			HelpSWF = '''',
+			release = ''''
+		WHERE menu_id = 13030
+	END'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	-- Para insertar o actualizar en ccMenuUser
+	set @process = 'Insertar o actualizar relación usuario-menú'
+	set @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccMenuUser WHERE id_User = 1 AND id_Menu = 13030)
+	BEGIN
+		-- Si no existe, realiza el INSERT
+		INSERT INTO ccMenuUser(id_User, id_Menu, [type]) 
+		VALUES (1, 13030, 3)
+	END
+	ELSE
+	BEGIN
+		-- Si ya existe, realiza el UPDATE
+		UPDATE ccMenuUser
+		SET [type] = 3
+		WHERE id_User = 1 AND id_Menu = 13030
+	END'
 	EXEC(@sql)
+------------------------------------------- end Ulises ----------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

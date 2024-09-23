@@ -85,23 +85,25 @@ pipeline {
                 }
             }
         }
+
         
-        stage('Docker Compose Up') {
-            steps {
-                script {                    
-                    bat 'docker-compose up -d'
-                    sleep(time: 15, unit: 'SECONDS') 
-
-                }
-            }
-        }
-
         stage('Copy Bat') {
             steps {
                   bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
                   bat './main/DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
             }
         }
+        
+        stage('Docker Compose Up') {
+            steps {
+                script {                    
+                    bat 'docker-compose up -d'
+                    sleep(time: 60, unit: 'SECONDS') 
+
+                }
+            }
+        }
+
 
         stage('Build and execute PR') {
             steps {                  
@@ -112,24 +114,23 @@ pipeline {
         }
 
         stage('Build and execute MAIN') {
-            steps {                  
-                  bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
-                  bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE/main}\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+            steps {                                    
+                  echo 'Check Main'
+                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}/main\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"                  
             }
         }
 
-         stage('Comparar Esquemas con Liquibase') {
+        stage('Compare Squema') {
             steps {
-                script {
-                    // Ejecutar el comando docker exec en Windows usando bat
-                    bat '''
-                    docker exec liquibase liquibase diff ^
-                      --referenceUrl=jdbc:sqlserver://sqlserver_main:1433;databaseName=CCenterRIA ^
-                      --url=jdbc:sqlserver://sqlserver_pr:1433;databaseName=CCenterRIA ^
-                      --changeLogFile=/liquibase/changelogs/db_diff_CCenterRIA.xml
-                    '''
-                }
+                  bat './CompareDatabse.bat CCenterRIA CCenterRIA'
+                  bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
+                  bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+            }
+        }
+
+          stage('Zip ZipDacpc') {
+            steps {
+                  bat './ZipDacpc.bat'                  
             }
         }
 
@@ -152,34 +153,30 @@ pipeline {
                 def prId = params.BITBUCKET_PR_ID
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+                def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
 
                 echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-                // Crear el cuerpo del requestBody
-                def requestBody = """
-                {
-                    "projectKey": "${sonarProjectKey}",
-                    "buildNumber": "${buildNumber}",
-                    "status": "${buildResult}",
-                    "branch": "${branchName}",
-                    "prId": "${prId}",
-                    "buildId": "${buildId}",
-                    "RepoSlug": "${env.REPO_SLUG}",
-                    "BuildUrl": "${buildUrl}",
-                    "JobName": "${jobName}"
-                }
-                """
-                // Imprimir el requestBody
-                echo "Request Body: ${requestBody}"
+              // Crear un mapa para el JSON
+                    def requestBodyMap = [
+                        ProjectKey : sonarProjectKey,
+                        BuildNumber: buildNumber,
+                        Status     : buildResult,
+                        Branch     : branchName,
+                        PrId       : prId,
+                        BuildId    : buildId,
+                        RepoSlug   : env.REPO_SLUG,
+                        BuildUrl   : buildUrl,
+                        JobName    : jobName
+                    ]
+                    // Convertir el mapa a una cadena JSON
+                    def requestBody = groovy.json.JsonOutput.toJson(requestBodyMap)
+                    echo "Generated JSON: ${requestBody}"
 
-                // Enviar datos a una aplicación externa con HttpRequest
-                def response = httpRequest(
-                    url: "${env.CALLBACK_URL_PR}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: requestBody
-                )
-                echo "Callback Response: ${response.content}"
+                // Usar curl para enviar el archivo junto con los datos JSON                
+                bat """
+                    curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
+                """
             }
         }
     }

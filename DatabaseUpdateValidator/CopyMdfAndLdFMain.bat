@@ -5,6 +5,15 @@ rem Definir las rutas relativas de origen y destino
 set source=.\CCenterRIA\
 set destination=.\DataMain
 
+:: Verifica si la carpeta existe
+if exist %destination% (
+    :: Elimina la carpeta y su contenido
+    rmdir /S /Q %destination%
+    echo Carpeta eliminada: %destination%
+) else (
+    echo La carpeta no existe: %destination%
+)
+
 rem Crear el destino si no existe
 if not exist %destination% (
     mkdir %destination%

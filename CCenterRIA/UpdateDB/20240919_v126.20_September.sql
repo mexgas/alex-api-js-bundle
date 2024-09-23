@@ -1163,7 +1163,6 @@ ELSE IF @action = 18 BEGIN
 						UPDATE ccWhatsAppConversationsOut SET assignDate = FirstMessageAgent where conversationId = @conversationId;
 					END
 					END;
-                    END;
         '
 
         EXEC(@sql)

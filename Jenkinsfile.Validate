@@ -133,8 +133,7 @@ pipeline {
                   bat './ZipDacpc.bat'                  
             }
         }
-        
-        
+
     }
     post {
         always {
@@ -153,7 +152,7 @@ pipeline {
                 def branchName = params.BRANCH
                 def prId = params.BITBUCKET_PR_ID
                 def buildUrl = env.BUILD_URL
-                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+                def jobName = env.JOB_NAME // Obtener el nombre del proyecto                 
 
                 echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
@@ -174,14 +173,13 @@ pipeline {
                 // Imprimir el requestBody
                 echo "Request Body: ${requestBody}"
 
-                // Enviar datos a una aplicación externa con HttpRequest
-                def response = httpRequest(
-                    url: "${env.CALLBACK_URL_PR}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: requestBody
-                )
-                echo "Callback Response: ${response.content}"
+                 // Usar curl para enviar el archivo junto con el request body
+                def fileToSend = "${env.WORKSPACE}/path/to/your/file.zip" // Ruta del archivo
+                def callbackUrl = "${env.CALLBACK_URL_PR}"
+
+                bat """
+                    curl -X POST -F 'data=${requestBody}' -F 'file=@${fileToSend}' ${callbackUrl}
+                """
             }
         }
     }

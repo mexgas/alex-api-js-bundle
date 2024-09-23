@@ -1075,6 +1075,7 @@ else IF @action = 12  BEGIN --Obtain conversationsWA post MCS reset
                             left join [ccDisconnectionMCSOut] C with(nolock) on C.disconnectionId = @disconnectionIdTemp        
                             where A.requestDate >= @from 
                                 and A.conversationStatus not in (4, 10, 11, 13, 17, 18, 19, 20)
+								and A.finishedBy=0
                             order by agentId desc, requestDate,timeStampMessage, camId, clientId 
                     END;
                     else IF @action = 13

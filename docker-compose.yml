@@ -26,19 +26,6 @@ services:
       - ./Data:/var/opt/mssql/data
     networks:
       - sql_network
-  
-  liquibase:
-    image: liquibase/liquibase
-    container_name: liquibase
-    environment:
-      LIQUIBASE_DB_USERNAME: sa
-      LIQUIBASE_DB_PASSWORD: "Nuxiba2024_"
-    volumes:
-      - ./changelogs:/liquibase/changelogs
-    entrypoint: ["/bin/sh", "-c"]
-    command: tail -f /dev/null
-    networks:
-      - sql_network
 
 networks:
   sql_network:

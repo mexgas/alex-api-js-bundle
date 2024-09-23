@@ -159,7 +159,7 @@ pipeline {
 
                 // Crear el cuerpo del requestBody
                 // Guardar el cuerpo JSON en una variable escapando las comillas dobles
-                def requestBody = """{\"projectKey\":\"${sonarProjectKey}\",\"buildNumber\":\"${buildNumber}\",\"status\":\"${buildResult}\",\"branch\":\"${branchName}\",\"prId\":\"${prId}\",\"buildId\":\"${buildId}\",\"RepoSlug\":\"${env.REPO_SLUG}\",\"BuildUrl\":\"${buildUrl}\",\"JobName\":\"${jobName}\"}"""
+                def requestBody = """{\"ProjectKey\":\"${sonarProjectKey}\",\"BuildNumber\":\"${buildNumber}\",\"Status\":\"${buildResult}\",\"Branch\":\"${branchName}\",\"PrId\":\"${prId}\",\"BuildId\":\"${buildId}\",\"RepoSlug\":\"${env.REPO_SLUG}\",\"BuildUrl\":\"${buildUrl}\",\"JobName\":\"${jobName}\"}"""
 
                 // Usar curl para enviar el archivo junto con los datos JSON
                 bat """

@@ -3,7 +3,7 @@ rem Copiar archivos .mdf y .ldf de una ruta relativa a otra
 
 rem Definir las rutas relativas de origen y destino
 set source=.\CCenterRIA\
-set destination=..\DataMain
+set destination=.\DataMain
 
 rem Crear el destino si no existe
 if not exist %destination% (

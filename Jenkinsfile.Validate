@@ -90,7 +90,7 @@ pipeline {
             steps {
                 script {                    
                     bat 'docker-compose up -d'
-                    sleep(time: 10, unit: 'SECONDS') 
+                    sleep(time: 15, unit: 'SECONDS') 
 
                 }
             }

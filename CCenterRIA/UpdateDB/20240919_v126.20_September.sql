@@ -1256,13 +1256,59 @@ else if @action=2 begin
 end'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+-------------------------------------------- Begin Ulises --------------------------------------------	
+
+	-- Para insertar o actualizar en ccMenus
+	set @process = 'insertar o actualizar ccMenus'
+	set @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccMenus WHERE menu_id = 13030)
+	BEGIN
+		-- Si no existe, realiza el INSERT
+		INSERT INTO ccMenus (menu_id, menu_descrip, parent, nivel, ordengral, [type], HelpSWF, release)
+		VALUES(13030, ''Detalle de segmentos|Segment detail'',13000, ''B'', 12, 3, '''', ''c3c93fb90d8ed55d317dbbe258f51b6bd5372b73071d1f818f087b264ca99a80a6890def7dd644070e45e7c3e5ce8575'' )
+	END
+	ELSE
+	BEGIN
+		-- Si ya existe, realiza el UPDATE
+		UPDATE ccMenus
+		SET menu_descrip = ''Detalle de segmentos|Segment detail'',
+			parent = 13000,
+			nivel = ''B'',
+			ordengral = 12,
+			[type] = 3,
+			HelpSWF = '''',
+			release = ''c3c93fb90d8ed55d317dbbe258f51b6bd5372b73071d1f818f087b264ca99a80a6890def7dd644070e45e7c3e5ce8575''
+		WHERE menu_id = 13030
+	END'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	set @process = 'Insertar o actualizar relación usuario-menú'
+	set @sql = '
 	EXEC(@sql)
+	update ccMenus
+		set release=''2090e8fccd25cea4ecc5dca31a027f6eb558e6fe9e23d58d7b02544ab0bfbdbf9c255f81245206f27b7210a5bd04d823''
+		,menu_descrip=''1|Descarga de grabaciones|Recordings Download'' 
+	where menu_id = 7230 '
+	EXEC(@sql)
+
+	-- Para insertar o actualizar en ccMenuUser
+	set @process = 'Insertar o actualizar relación usuario-menú'
+	set @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccMenuUser WHERE id_User = 1 AND id_Menu = 13030)
+	BEGIN
+		-- Si no existe, realiza el INSERT
+		INSERT INTO ccMenuUser(id_User, id_Menu, [type]) 
+		VALUES (1, 13030, 3)
+	END
+	ELSE
+	BEGIN
+		-- Si ya existe, realiza el UPDATE
+		UPDATE ccMenuUser
+		SET [type] = 3
+		WHERE id_User = 1 AND id_Menu = 13030
+	END'
+	EXEC(@sql)
+------------------------------------------- end Ulises ----------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

@@ -152,33 +152,18 @@ pipeline {
                 def branchName = params.BRANCH
                 def prId = params.BITBUCKET_PR_ID
                 def buildUrl = env.BUILD_URL
-                def jobName = env.JOB_NAME // Obtener el nombre del proyecto                 
+                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+                def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
 
                 echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
                 // Crear el cuerpo del requestBody
-                def requestBody = """
-                {
-                    "projectKey": "${sonarProjectKey}",
-                    "buildNumber": "${buildNumber}",
-                    "status": "${buildResult}",
-                    "branch": "${branchName}",
-                    "prId": "${prId}",
-                    "buildId": "${buildId}",
-                    "RepoSlug": "${env.REPO_SLUG}",
-                    "BuildUrl": "${buildUrl}",
-                    "JobName": "${jobName}"
-                }
-                """
-                // Imprimir el requestBody
-                echo "Request Body: ${requestBody}"
+                // Guardar el cuerpo JSON en una variable escapando las comillas dobles
+                def requestBody = """{\"projectKey\":\"${sonarProjectKey}\",\"buildNumber\":\"${buildNumber}\",\"status\":\"${buildResult}\",\"branch\":\"${branchName}\",\"prId\":\"${prId}\",\"buildId\":\"${buildId}\",\"RepoSlug\":\"${env.REPO_SLUG}\",\"BuildUrl\":\"${buildUrl}\",\"JobName\":\"${jobName}\"}"""
 
-                 // Usar curl para enviar el archivo junto con el request body
-                def fileToSend = "${env.WORKSPACE}/path/to/your/file.zip" // Ruta del archivo
-                def callbackUrl = "${env.CALLBACK_URL_PR}"
-
+                // Usar curl para enviar el archivo junto con los datos JSON
                 bat """
-                    curl -X POST -F 'data=${requestBody}' -F 'file=@${fileToSend}' ${callbackUrl}
+                    curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
                 """
             }
         }

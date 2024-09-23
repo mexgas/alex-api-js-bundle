@@ -812,7 +812,7 @@ BEGIN
                     , @subDisposition     SMALLINT    = 0
                     , @agentId            INT         = 0
                     --VAR MESSAGES
-                    , @messageId          VARCHAR(50) = NULL
+                    , @messageId          VARCHAR(150) = NULL
                     , @messageIdUi        INT         = NULL
                     , @clientNum          VARCHAR(15) = NULL
                     , @vonageNum          VARCHAR(15) = NULL
@@ -826,6 +826,7 @@ BEGIN
                     , @messageStatus      VARCHAR(15) = ''N/A''
                     , @listConversationsIds   VARCHAR(MAX) = NULL
                     , @IsAgentLoggingOut  BIT = 0
+					, @ConvId             INT = NULL OUTPUT
                     AS
                     BEGIN
                         DECLARE @isEndConversation BIT;
@@ -845,6 +846,7 @@ BEGIN
                             
                             
                             SELECT @conversationId = SCOPE_IDENTITY();
+							SELECT @ConvId = @conversationId;
                             SELECT @conversationId AS ConversationId;
 
                     --        Save new request
@@ -880,6 +882,7 @@ BEGIN
                         EXEC ccsp_ConversationWASaveOut @action = 2, @conversationId = @conversationId, @conversationStatus = @conversationStatus
 
                         SELECT conversationIdAfter as ConversationId FROM ccWhatsAppConversationsRelationshipOut where conversationIdBefore = @conversationId;
+						SELECT @ConvId = conversationIdAfter FROM ccWhatsAppConversationsRelationshipOut WHERE conversationIdBefore = @conversationId;
                         RETURN(0);
                     END;
                     END;
@@ -1071,7 +1074,7 @@ BEGIN
                             left join ccWAMessagesConversationsOut B with(nolock) on A.conversationId = B.conversationId
                             left join [ccDisconnectionMCSOut] C with(nolock) on C.disconnectionId = @disconnectionIdTemp        
                             where A.requestDate >= @from 
-                                and A.conversationStatus not in (4, 10, 11, 13, 17, 18)
+                                and A.conversationStatus not in (4, 10, 11, 13, 17, 18, 19, 20)
                             order by agentId desc, requestDate,timeStampMessage, camId, clientId 
                     END;
                     else IF @action = 13
@@ -1154,6 +1157,11 @@ BEGIN
                         SET finishedBy = 2, conversationStatus=17
                             WHERE finishedBy = 0  AND requestDate <= @dateNow   
                         END;
+					ELSE IF @action = 19 select * from ccWhatsAppConversationsOut
+					BEGIN 
+						UPDATE ccWhatsAppConversationsOut SET assignDate = FirstMessageAgent where conversationId = @conversationId;
+					END
+					END;
                     END;
         '
 

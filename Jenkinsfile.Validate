@@ -85,6 +85,14 @@ pipeline {
                 }
             }
         }
+
+        
+        stage('Copy Bat') {
+            steps {
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
+                  bat './main/DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
+            }
+        }
         
         stage('Docker Compose Up') {
             steps {
@@ -96,12 +104,6 @@ pipeline {
             }
         }
 
-        stage('Copy Bat') {
-            steps {
-                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
-                  bat './main/DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
-            }
-        }
 
         stage('Build and execute PR') {
             steps {                  

@@ -157,25 +157,20 @@ pipeline {
 
                 echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-              // Crear un mapa para el JSON
-                    def requestBodyMap = [
-                        ProjectKey : sonarProjectKey,
-                        BuildNumber: buildNumber,
-                        Status     : buildResult,
-                        Branch     : branchName,
-                        PrId       : prId,
-                        BuildId    : buildId,
-                        RepoSlug   : env.REPO_SLUG,
-                        BuildUrl   : buildUrl,
-                        JobName    : jobName
-                    ]
-                    // Convertir el mapa a una cadena JSON
-                    def requestBody = groovy.json.JsonOutput.toJson(requestBodyMap)
-                    echo "Generated JSON: ${requestBody}"
-
-                // Usar curl para enviar el archivo junto con los datos JSON                
+                // Usar curl para enviar cada parámetro por separado
                 bat """
-                    curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
+                    curl -X POST \
+                    -F "ProjectKey=${sonarProjectKey}" \
+                    -F "BuildNumber=${buildNumber}" \
+                    -F "Status=${buildResult}" \
+                    -F "Branch=${branchName}" \
+                    -F "PrId=${prId}" \
+                    -F "BuildId=${buildId}" \
+                    -F "RepoSlug=${env.REPO_SLUG}" \
+                    -F "BuildUrl=${buildUrl}" \
+                    -F "JobName=${jobName}" \
+                    -F "file=@${fileToSend}" \
+                    ${env.CALLBACK_URL_PR}
                 """
             }
         }

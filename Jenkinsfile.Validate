@@ -32,9 +32,11 @@ pipeline {
                             ),
                             string(
                                 name: 'BITBUCKET_PR_ID',
+                                defaultValue: '603'
                             ),
                             string(
                                 name: 'BITBUCKET_PROJECT',
+                                defaultValue: 'CW Database'
                             )
                         ])
                     ])

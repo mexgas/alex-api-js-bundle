@@ -1,6 +1,6 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2017-latest
+     image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: sqlserver2017
     environment:
       ACCEPT_EULA: "Y"
@@ -9,6 +9,18 @@ services:
       - "1436:1433"
     volumes:
       - ./Data:/var/opt/mssql/data
+  
+  liquibase:
+    image: liquibase/liquibase
+    container_name: liquibase
+    environment:
+      - LIQUIBASE_DB_URL=jdbc:sqlserver://host.docker.internal:1433;databaseName=mydb
+      - LIQUIBASE_DB_USERNAME=sa
+      - LIQUIBASE_DB_PASSWORD=Nuxiba2024_
+    volumes:
+      - ./changelogs:/liquibase/changelogs
+    entrypoint: ["liquibase", "--logLevel=info", "diff", "--referenceUrl=jdbc:sqlserver://host.docker.internal:1433;databaseName=db_base", "--url=jdbc:sqlserver://host.docker.internal:1433;databaseName=db_pr", "--changeLogFile=/liquibase/changelogs/db_diff.xml"]
+
     networks:
       - sql_network
 

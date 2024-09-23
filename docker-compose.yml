@@ -23,7 +23,7 @@ services:
     ports:
       - "1437:1433"
     volumes:
-      - ./DataPR:/var/opt/mssql/data
+      - ./Data:/var/opt/mssql/data
     networks:
       - sql_network
   

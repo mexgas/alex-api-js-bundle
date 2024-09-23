@@ -178,7 +178,6 @@ pipeline {
                     curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
                 """
             }
-
         }
     }
 }

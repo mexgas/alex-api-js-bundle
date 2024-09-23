@@ -119,20 +119,7 @@ pipeline {
             }
         }
 
-         stage('Comparar Esquemas con Liquibase') {
-            steps {
-                script {
-                    // Ejecutar el comando docker exec en Windows usando bat
-                    bat '''
-                    docker exec liquibase liquibase diff ^
-                      --referenceUrl=jdbc:sqlserver://sqlserver_main:1433;databaseName=CCenterRIA ^
-                      --url=jdbc:sqlserver://sqlserver_pr:1433;databaseName=CCenterRIA ^
-                      --changeLogFile=/liquibase/changelogs/db_diff_CCenterRIA.xml
-                    '''
-                }
-            }
-        }
-
+        
     }
     post {
         always {

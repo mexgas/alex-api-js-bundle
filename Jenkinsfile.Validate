@@ -32,7 +32,7 @@ pipeline {
                             ),
                             string(
                                 name: 'BITBUCKET_PR_ID',
-                                defaultValue: '603'
+                                defaultValue: ''
                             ),
                             string(
                                 name: 'BITBUCKET_PROJECT',
@@ -150,33 +150,41 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def buildId = env.BUILD_ID
                 def branchName = params.BRANCH
-                def prId = params.BITBUCKET_PR_ID
+                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco        
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
                 def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
+                
+                
+                if (buildResult == 'SUCCESS') {
+                    echo "El build fue exitoso. Limpiando el repositorio..."
 
-                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+                    // Limpiar el directorio de trabajo                    
 
-              // Crear un mapa para el JSON
-                    def requestBodyMap = [
-                        ProjectKey : sonarProjectKey,
-                        BuildNumber: buildNumber,
-                        Status     : buildResult,
-                        Branch     : branchName,
-                        PrId       : prId,
-                        BuildId    : buildId,
-                        RepoSlug   : env.REPO_SLUG,
-                        BuildUrl   : buildUrl,
-                        JobName    : jobName
-                    ]
-                    // Convertir el mapa a una cadena JSON
-                    def requestBody = groovy.json.JsonOutput.toJson(requestBodyMap)
-                    echo "Generated JSON: ${requestBody}"
+                    if (prId) {
+                        echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
 
-                // Usar curl para enviar el archivo junto con los datos JSON                
-                bat """
-                    curl -X POST -F "data=${requestBody}" -F "file=@${fileToSend}" ${env.CALLBACK_URL_PR}
-                """
+                        // Usar curl para enviar cada parámetro por separado
+                        bat """
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
+                            -F "file=@${fileToSend}" \
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    } else {
+                        echo "prId está vacío, no se enviará la solicitud curl."
+                    }
+
+                    deleteDir()
+                }
             }
         }
     }

@@ -90,7 +90,7 @@ pipeline {
         stage('Copy Bat') {
             steps {
                   bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
-                  bat './main/DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
             }
         }
         

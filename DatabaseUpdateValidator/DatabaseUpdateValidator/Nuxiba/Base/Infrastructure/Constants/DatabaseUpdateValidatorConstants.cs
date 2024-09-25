@@ -10,6 +10,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Base.Infrastructure.Constants
         public static string SQL_SERVER_SERVER { get; set; } = "127.0.0.1,1436";
         public static string SQL_SERVER_USER { get; set; } = "sa";
         public static string SQL_SERVER_PASSWORD { get; set; } = "Nuxiba2024_";
+        public static string SQL_SERVER_SUBFIX { get; set; } = "";
         public static bool IS_DETACH { get; set; } = true;
     }
 }

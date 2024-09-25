@@ -3,7 +3,7 @@ rem Copiar archivos .mdf y .ldf de una ruta relativa a otra
 
 rem Definir las rutas relativas de origen y destino
 set source=.\CCenterRIA\
-set destination=.\Data
+set destination=.\DataMain
 
 :: Verifica si la carpeta existe
 if exist %destination% (
@@ -13,7 +13,6 @@ if exist %destination% (
 ) else (
     echo La carpeta no existe: %destination%
 )
-
 
 rem Crear el destino si no existe
 if not exist %destination% (
@@ -31,7 +30,7 @@ for %%f in ("%source%\*.mdf" "%source%\*.ldf") do (
 )
 
 set source=.\ccReportsRia\
-set destination=.\Data
+set destination=.\DataMain
 
 rem Crear el destino si no existe
 if not exist %destination% (
@@ -49,7 +48,7 @@ for %%f in ("%source%\*.mdf" "%source%\*.ldf") do (
 )
 
 set source=.\RecorderRIA\Database
-set destination=.\Data
+set destination=.\DataMain
 
 rem Crear el destino si no existe
 if not exist %destination% (

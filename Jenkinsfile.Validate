@@ -6,7 +6,8 @@ pipeline {
         PROJECT_ENVIRONMENT = 'DEVELOP'
         PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
         SONAR_NAME = 'CW_Data_Base_DEV'
-        SQL_SERVER_SERVER = '127.0.0.1,1436'
+        SQL_SERVER_SERVER_MAIN = '127.0.0.1,1436'
+        SQL_SERVER_SERVER_PR = '127.0.0.1,1437'        
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
         REPO_SLUG = 'cw-database'
@@ -20,15 +21,22 @@ pipeline {
                     properties([
                         parameters([
                             string(
-                                name: 'BRANCH',
+                                name: 'MAIN_BRANCH',
                                 defaultValue: 'master',
                                 trim: true
                             ),
                             string(
+                                name: 'BRANCH',
+                                defaultValue: '',
+                                trim: true
+                            ),
+                            string(
                                 name: 'BITBUCKET_PR_ID',
+                                defaultValue: ''
                             ),
                             string(
                                 name: 'BITBUCKET_PROJECT',
+                                defaultValue: 'CW Database'
                             )
                         ])
                     ])
@@ -42,7 +50,10 @@ pipeline {
                     print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
                     print "SONAR_NAME = ${env.SONAR_NAME}"
                     print "WORKSPACE = ${env.WORKSPACE}"
-                    print "SQL_SERVER_SERVER = ${env.SQL_SERVER_SERVER}"
+                    print "MAIN_BRANCH = ${env.MAIN_BRANCH}"
+                    print "PR_BRANCH = ${env.BRANCH}"
+                    print "SQL_SERVER_SERVER_PR = ${env.SQL_SERVER_SERVER_PR}"
+                    print "SQL_SERVER_SERVER_MAIN = ${env.SQL_SERVER_SERVER_MAIN}"
                     print "SQL_SERVER_USER = ${env.SQL_SERVER_USER}"
                     print "SQL_SERVER_PASSWORD = ${env.SQL_SERVER_PASSWORD}"
                     print "-----------------------------------------------------"
@@ -56,38 +67,73 @@ pipeline {
                 }
             }
         }
-        stage('Checkout') {
-            steps {                
-                deleteDir()
+
+        stage('Checkout PR Branch') {
+            steps {                                
                  checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
                 userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                 url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
             }
         }
 
+        stage('Checkout Base Branch') {
+            steps {                
+                dir('main') {
+                     checkout([$class: 'GitSCM', branches: [[name: "${params.MAIN_BRANCH}"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                    url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
+                }
+            }
+        }
+
+        
+        stage('Copy Bat') {
+            steps {
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
+                  bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
+            }
+        }
+        
         stage('Docker Compose Up') {
             steps {
                 script {                    
                     bat 'docker-compose up -d'
-                    sleep(time: 15, unit: 'SECONDS') 
+                    sleep(time: 60, unit: 'SECONDS') 
 
                 }
             }
         }
 
-        stage('Copy Bat') {
-            steps {
-                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'                  
-            }
-        }
 
-        stage('Build and execute') {
+        stage('Build and execute PR') {
             steps {                  
                   bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
                   bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER_PR} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
             }
         }
+
+        stage('Build and execute MAIN') {
+            steps {                                    
+                  echo 'Check Main'
+                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}/main\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"                  
+            }
+        }
+
+        stage('Compare Squema') {
+            steps {
+                  bat './CompareDatabse.bat CCenterRIA CCenterRIA'
+                  bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
+                  bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+            }
+        }
+
+          stage('Zip ZipDacpc') {
+            steps {
+                  bat './ZipDacpc.bat'                  
+            }
+        }
+
     }
     post {
         always {
@@ -104,37 +150,41 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def buildId = env.BUILD_ID
                 def branchName = params.BRANCH
-                def prId = params.BITBUCKET_PR_ID
+                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco        
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+                def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
+                
+                
+                if (buildResult == 'SUCCESS') {
+                    echo "El build fue exitoso. Limpiando el repositorio..."
 
-                echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+                    // Limpiar el directorio de trabajo                    
 
-                // Crear el cuerpo del requestBody
-                def requestBody = """
-                {
-                    "projectKey": "${sonarProjectKey}",
-                    "buildNumber": "${buildNumber}",
-                    "status": "${buildResult}",
-                    "branch": "${branchName}",
-                    "prId": "${prId}",
-                    "buildId": "${buildId}",
-                    "RepoSlug": "${env.REPO_SLUG}",
-                    "BuildUrl": "${buildUrl}",
-                    "JobName": "${jobName}"
+                    if (prId) {
+                        echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+
+                        // Usar curl para enviar cada parámetro por separado
+                        bat """
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
+                            -F "file=@${fileToSend}" \
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    } else {
+                        echo "prId está vacío, no se enviará la solicitud curl."
+                    }
+
+                    deleteDir()
                 }
-                """
-                // Imprimir el requestBody
-                echo "Request Body: ${requestBody}"
-
-                // Enviar datos a una aplicación externa con HttpRequest
-                def response = httpRequest(
-                    url: "${env.CALLBACK_URL_PR}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: requestBody
-                )
-                echo "Callback Response: ${response.content}"
             }
         }
     }

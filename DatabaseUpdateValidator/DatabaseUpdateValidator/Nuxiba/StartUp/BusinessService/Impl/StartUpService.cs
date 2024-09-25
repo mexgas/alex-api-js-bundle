@@ -60,10 +60,10 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                     Logger.Fatal(ex);
                     isFail = true;
                 }
-                finally
-                {
-                    Detach(databaseDto, sqlConnectionStringBuilder);
-                }
+                //finally
+                //{
+                //    Detach(databaseDto, sqlConnectionStringBuilder);
+                //}
             }
             if (isFail)
             {

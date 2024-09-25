@@ -1222,7 +1222,7 @@ BEGIN
 			0 AS CampType,
 			CAST(ci.Status AS BIT) AS [Start],
 			cmw.Number AS PhoneNumber,
-			(CASE ci.Status WHEN 0 THEN '''' ELSE REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) END) AS Url,
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
 			cmw.Token AS Token
 		FROM ccInbound ci WITH(NOLOCK)
 		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
@@ -1238,7 +1238,7 @@ BEGIN
 			1 AS CampType,
 			cam_procesando as [Start],
 			Number as PhoneNumber, 
-			case cam_procesando when 0 then '''' else REPLACE(@Url, ''phoneId'', PhoneNumberId) end as Url, 
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
 			Token
 		from ccCamps c with(nolock)
 		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id

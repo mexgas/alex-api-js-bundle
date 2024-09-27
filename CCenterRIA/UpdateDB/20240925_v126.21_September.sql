@@ -618,7 +618,7 @@ END'
 
 		SET @process = 'K020140 Se crea Sp con modificaciones para actualizar obtener y actualizar cambios en creación de campaña'
 		SET @sql = '
-	CEATE PROCEDURE ccsp_RIAUpdateCamConfig
+	CREATE PROCEDURE ccsp_RIAUpdateCamConfig
 	@cam_id smallint,
 	@cam_descripcion varchar(40) = null,
 	@cam_tnotas smallint = null,

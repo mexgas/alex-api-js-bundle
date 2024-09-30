@@ -36,7 +36,7 @@ pipeline {
                             ),
                             string(
                                 name: 'BITBUCKET_PROJECT',
-                                defaultValue: 'CW Database'
+                                defaultValue: 'cw-database'
                             )
                         ])
                     ])
@@ -154,35 +154,31 @@ pipeline {
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
                 def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
-                
-                
+
+                // Limpiar el directorio de trabajo                    
+
+                if (prId) {
+                    echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+
+                    // Usar curl para enviar cada parámetro por separado
+                    bat """
+                        curl -X POST \
+                        -F "ProjectKey=${sonarProjectKey}" \
+                        -F "BuildNumber=${buildNumber}" \
+                        -F "Status=${buildResult}" \
+                        -F "Branch=${branchName}" \
+                        -F "PrId=${prId}" \
+                        -F "BuildId=${buildId}" \
+                        -F "RepoSlug=${env.REPO_SLUG}" \
+                        -F "BuildUrl=${buildUrl}" \
+                        -F "JobName=${jobName}" \
+                        -F "file=@${fileToSend}" \
+                        ${env.CALLBACK_URL_PR}
+                    """
+                } else {
+                    echo "prId está vacío, no se enviará la solicitud curl."
+                }
                 if (buildResult == 'SUCCESS') {
-                    echo "El build fue exitoso. Limpiando el repositorio..."
-
-                    // Limpiar el directorio de trabajo                    
-
-                    if (prId) {
-                        echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
-
-                        // Usar curl para enviar cada parámetro por separado
-                        bat """
-                            curl -X POST \
-                            -F "ProjectKey=${sonarProjectKey}" \
-                            -F "BuildNumber=${buildNumber}" \
-                            -F "Status=${buildResult}" \
-                            -F "Branch=${branchName}" \
-                            -F "PrId=${prId}" \
-                            -F "BuildId=${buildId}" \
-                            -F "RepoSlug=${env.REPO_SLUG}" \
-                            -F "BuildUrl=${buildUrl}" \
-                            -F "JobName=${jobName}" \
-                            -F "file=@${fileToSend}" \
-                            ${env.CALLBACK_URL_PR}
-                        """
-                    } else {
-                        echo "prId está vacío, no se enviará la solicitud curl."
-                    }
-
                     deleteDir()
                 }
             }

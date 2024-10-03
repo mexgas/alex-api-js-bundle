@@ -29,7 +29,7 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
             bool isFail = false;
             Logger.Info("*********************** Start *********************************************************************************");
 
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder stringBuilder = new StringBuilder("Fail Script Database");
 
             foreach (DatabaseDto databaseDto in databaseDtos)
             {
@@ -57,17 +57,14 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 catch (Exception ex)
                 {
                     stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
+                    stringBuilder.AppendLine($"InnerException error:{ex.InnerException}");
                     Logger.Fatal(ex);
                     isFail = true;
                 }
-                //finally
-                //{
-                //    Detach(databaseDto, sqlConnectionStringBuilder);
-                //}
             }
             if (isFail)
             {
-                throw new Exception("Fail Script Database");
+                throw new Exception(stringBuilder.ToString());
             }
         }
 

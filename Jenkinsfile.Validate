@@ -120,14 +120,23 @@ pipeline {
             }
         }
 
-        stage('Compare Squema') {
+      stage('Compare Schema') {
             steps {
-                  bat './CompareDatabse.bat CCenterRIA CCenterRIA'
-                  bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
-                  bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+                script {
+                    parallel(
+                        "Compare CCenterRIA": {
+                            bat './CompareDatabse.bat CCenterRIA CCenterRIA'
+                        },
+                        "Compare CCRecorderRIA": {
+                            bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
+                        },
+                        "Compare CCReportsRIA": {
+                            bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+                        }
+                    )
+                }
             }
         }
-
           stage('Zip ZipDacpc') {
             steps {
                   bat './ZipDacpc.bat'                  
@@ -164,32 +173,32 @@ pipeline {
                     if (fileExists(fileToSend)) {
                         // Enviar con el archivo adjunto
                         bat """
-                            curl -X POST \\
-                            -F "ProjectKey=${sonarProjectKey}" \\
-                            -F "BuildNumber=${buildNumber}" \\
-                            -F "Status=${buildResult}" \\
-                            -F "Branch=${branchName}" \\
-                            -F "PrId=${prId}" \\
-                            -F "BuildId=${buildId}" \\
-                            -F "RepoSlug=${env.REPO_SLUG}" \\
-                            -F "BuildUrl=${buildUrl}" \\
-                            -F "JobName=${jobName}" \\
-                            -F "file=@${fileToSend}" \\
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
+                            -F "file=@${fileToSend}" \
                             ${env.CALLBACK_URL_PR}
                         """
                     } else {
                         // Enviar sin el archivo adjunto
                         bat """
-                            curl -X POST \\
-                            -F "ProjectKey=${sonarProjectKey}" \\
-                            -F "BuildNumber=${buildNumber}" \\
-                            -F "Status=${buildResult}" \\
-                            -F "Branch=${branchName}" \\
-                            -F "PrId=${prId}" \\
-                            -F "BuildId=${buildId}" \\
-                            -F "RepoSlug=${env.REPO_SLUG}" \\
-                            -F "BuildUrl=${buildUrl}" \\
-                            -F "JobName=${jobName}" \\
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
                             ${env.CALLBACK_URL_PR}
                         """
                     }

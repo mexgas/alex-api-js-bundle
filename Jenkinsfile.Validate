@@ -153,28 +153,47 @@ pipeline {
                 def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco        
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
-                def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
+                
 
                 // Limpiar el directorio de trabajo                    
 
                 if (prId) {
                     echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+                    def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
 
-                    // Usar curl para enviar cada parámetro por separado
-                    bat """
-                        curl -X POST \
-                        -F "ProjectKey=${sonarProjectKey}" \
-                        -F "BuildNumber=${buildNumber}" \
-                        -F "Status=${buildResult}" \
-                        -F "Branch=${branchName}" \
-                        -F "PrId=${prId}" \
-                        -F "BuildId=${buildId}" \
-                        -F "RepoSlug=${env.REPO_SLUG}" \
-                        -F "BuildUrl=${buildUrl}" \
-                        -F "JobName=${jobName}" \
-                        -F "file=@${fileToSend}" \
-                        ${env.CALLBACK_URL_PR}
-                    """
+                    if (fileExists(fileToSend)) {
+                        // Enviar con el archivo adjunto
+                        bat """
+                            curl -X POST \\
+                            -F "ProjectKey=${sonarProjectKey}" \\
+                            -F "BuildNumber=${buildNumber}" \\
+                            -F "Status=${buildResult}" \\
+                            -F "Branch=${branchName}" \\
+                            -F "PrId=${prId}" \\
+                            -F "BuildId=${buildId}" \\
+                            -F "RepoSlug=${env.REPO_SLUG}" \\
+                            -F "BuildUrl=${buildUrl}" \\
+                            -F "JobName=${jobName}" \\
+                            -F "file=@${fileToSend}" \\
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    } else {
+                        // Enviar sin el archivo adjunto
+                        bat """
+                            curl -X POST \\
+                            -F "ProjectKey=${sonarProjectKey}" \\
+                            -F "BuildNumber=${buildNumber}" \\
+                            -F "Status=${buildResult}" \\
+                            -F "Branch=${branchName}" \\
+                            -F "PrId=${prId}" \\
+                            -F "BuildId=${buildId}" \\
+                            -F "RepoSlug=${env.REPO_SLUG}" \\
+                            -F "BuildUrl=${buildUrl}" \\
+                            -F "JobName=${jobName}" \\
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    }
+
                 } else {
                     echo "prId está vacío, no se enviará la solicitud curl."
                 }

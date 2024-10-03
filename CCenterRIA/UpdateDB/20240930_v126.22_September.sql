@@ -1101,7 +1101,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_RIAADMCampMsgs'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_RIAADMCampMsgs'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_RIAADMCampMsgs''))              
 					BEGIN
 						DROP PROCEDURE ccsp_RIAADMCampMsgs;
 					END;'
@@ -1151,7 +1151,7 @@ BEGIN
 		EXEC(@sql)
 		
 		SET @process = 'KR146000 - se valida sp ccsp_DLRgetDialPrefix'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_DLRgetDialPrefix'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_DLRgetDialPrefix''))          
 					BEGIN
 						DROP PROCEDURE ccsp_DLRgetDialPrefix;
 					END;'
@@ -1234,7 +1234,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_AutomaticMessages'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_AutomaticMessages'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_AutomaticMessages''))          
 					BEGIN
 						DROP PROCEDURE ccsp_AutomaticMessages;
 					END;'
@@ -1382,7 +1382,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_GalateaAutomaticMessages'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_GalateaAutomaticMessages'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_GalateaAutomaticMessages''))         
 					BEGIN
 						DROP PROCEDURE ccsp_GalateaAutomaticMessages;
 					END;'

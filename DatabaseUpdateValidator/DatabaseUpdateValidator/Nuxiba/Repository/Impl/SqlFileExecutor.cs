@@ -8,7 +8,6 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
     {
         private readonly ISqlExecutor _sqlExecutor;
 
-        // Constructor to inject dependencies
         public SqlFileExecutor(ISqlExecutor sqlExecutor)
         {
             _sqlExecutor = sqlExecutor;
@@ -49,7 +48,7 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error while executing the file: {filePath.Value}, Error: {ex.Message}";
+                        string msg = $"Error while executing the file: {filePath.Value}";
                         // Log errors
                         Logger.Warn(msg);
                         throw new Exception(msg, ex);

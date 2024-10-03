@@ -57,13 +57,10 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                 catch (Exception ex)
                 {
                     stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
+                    stringBuilder.AppendLine($"InnerException error:{ex.InnerException}");
                     Logger.Fatal(ex);
                     isFail = true;
                 }
-                //finally
-                //{
-                //    Detach(databaseDto, sqlConnectionStringBuilder);
-                //}
             }
             if (isFail)
             {

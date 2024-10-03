@@ -646,21 +646,33 @@ BEGIN
 ------------------------------------------- Begin Rod Salazar ----------------------------------------------------------
 
 		SET @process = 'KR146000 - Se crea tabla ttsMessages'
-		SET @sql = 'create table ttsMessages(
-						messageId int not null identity(1,1) primary key,
-						name varchar(40) not null,
-						description varchar(40) null,
-						message varchar(3072) not null,
-						areaId int null
-					)
+		SET @sql = '
+					IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ttsMessages''))
+					BEGIN
+						create table ttsMessages(
+							messageId int not null identity(1,1) primary key,
+							name varchar(40) not null,
+							description varchar(40) null,
+							message varchar(3072) not null,
+							areaId int null
+						)
 
-					CREATE INDEX IDX_TTSMessage ON ttsMessages (messageId);'
+						CREATE INDEX IDX_TTSMessage ON ttsMessages (messageId);
+					END
+					'
+		EXEC(@sql)
+
+		set @process = 'KR146000 Validar vista ViewTTSMessagesData'
+		set @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ViewTTSMessagesData''))
+					BEGIN
+						DROP VIEW ViewTTSMessagesData;
+					END;'
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - Se crea vista para leer los datos'
 		SET @sql = 'CREATE VIEW ViewTTSMessagesData as 
 					--select * from DatosClienteTTS
-					select cam_id, cal_key, cal_telefono Dato1, Dato2, Dato3, Dato4, Dato5 from ccoCallsOutSource'
+					select cam_id, cal_key, cal_telefono, Dato1, Dato2, Dato3, Dato4, Dato5 from ccoCallsOutSource'
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - Se agrega tipoMsg_id = 20 e identificadores para historial de actividad'
@@ -781,85 +793,8 @@ BEGIN
 					END'
 		EXEC(@sql)
 
-		
-
-		SET @process = 'KR146000 - se valida sp ccsp_TTSMessages'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_TTSMessages'')              
-					BEGIN
-						DROP PROCEDURE ccsp_TTSMessages;
-					END;'
-		EXEC(@sql)
-
-		SET @process = 'KR146000 - se crea sp ccsp_TTSMessages'
-		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_TTSMessages]
-					@cam_id int,
-					@callout_id int
-				
-					AS
-				
-					declare @message varchar(3072) = ''''
-			
-					IF EXISTS (SELECT 1, * FROM ccCampsMsgs WHERe cam_id = @cam_id and Type = 20)
-					BEGIN
-	
-						exec ccsp_TTSMessageData @cam_id, @callout_id, @message = @message output
-
-						SELECT @message = REPLACE(REPLACE(@message, ''{{'', ''''), ''}}'', '''')
-
-						declare @temp table(part varchar(3072))
-
-						IF CHARINDEX(''<CurrencyText>'', @message) > 0
-						BEGIN
-							WHILE CHARINDEX(''<CurrencyText>'', @message) > 0
-							BEGIN
-								DECLARE @start INT, @end INT, @currencyValue NVARCHAR(3072)
-
-								SET	@start = CHARINDEX(''<CurrencyText>'', @message) + LEN(''<CurrencyText>'')
-								SET @end = CHARINDEX(''</CurrencyText>'', @message)
-     
-								SET @currencyValue = SUBSTRING(@message, @start, @end - @start)
-      
-								IF ISNUMERIC(@currencyValue) = 1
-								BEGIN	
-									SET @message = STUFF(@message, CHARINDEX(''<CurrencyText>'', @message), @end - CHARINDEX(''<CurrencyText>'', @message) + LEN(''</CurrencyText>''), @currencyValue + '' pesos'')
-								END
-								ELSE
-								BEGIN	
-									SET @message = STUFF(@message, CHARINDEX(''<CurrencyText>'', @message), @end - CHARINDEX(''<CurrencyText>'', @message) + LEN(''</CurrencyText>''), @currencyValue)
-								END
-							END	
-						END
-
-						IF CHARINDEX(''<SpellingText>'', @message) > 0
-						BEGIN
-
-							insert into @temp
-							select dbo.fnGetTTSTraduction(value, 1) from dbo.fn_RIASplitDelimited(@message, ''</SpellingText>'');
-		
-							set @message=''''
-							select @message = @message + part from  @temp
-
-							delete from @temp
-				
-						END
-
-						IF CHARINDEX(''<TelephoneText>'', @message) > 0
-						BEGIN
-								
-							insert into @temp
-							select dbo.fnGetTTSTraduction(value, 2) from dbo.fn_RIASplitDelimited(@message, ''</TelephoneText>'');				
-		
-							set @message=''''
-							select @message = @message + part from  @temp
-			
-						END
-					END
-
-					select @message'
-		EXEC(@sql)
-
 		SET @process = 'KR146000 - se valida sp ccsp_TTSMessageData'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_TTSMessageData'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_TTSMessageData''))              
 					BEGIN
 						DROP PROCEDURE ccsp_TTSMessageData;
 					END;'
@@ -944,14 +879,91 @@ BEGIN
 					END;'
 		EXEC(@sql)
 
-		SET @process = 'KR146000 - Se valida función fn_RIASplitDelimited1'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''fn_RIASplitDelimited1'') AND type IN (N''FN'', N''IF'', N''TF''))
+		SET @process = 'KR146000 - se valida sp ccsp_TTSMessages'
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_TTSMessages''))              
 					BEGIN
-						DROP FUNCTION fn_RIASplitDelimited1;
+						DROP PROCEDURE ccsp_TTSMessages;
 					END;'
 		EXEC(@sql)
 
-		SET @process = 'KR146000 - se modifica función fn_RIASplitDelimited1'
+		SET @process = 'KR146000 - se crea sp ccsp_TTSMessages'
+		SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_TTSMessages]
+					@cam_id int,
+					@callout_id int
+				
+					AS
+				
+					declare @message varchar(3072) = ''''
+			
+					IF EXISTS (SELECT 1, * FROM ccCampsMsgs WHERe cam_id = @cam_id and Type = 20)
+					BEGIN
+	
+						exec ccsp_TTSMessageData @cam_id, @callout_id, @message = @message output
+
+						SELECT @message = REPLACE(REPLACE(@message, ''{{'', ''''), ''}}'', '''')
+
+						declare @temp table(part varchar(3072))
+
+						IF CHARINDEX(''<CurrencyText>'', @message) > 0
+						BEGIN
+							WHILE CHARINDEX(''<CurrencyText>'', @message) > 0
+							BEGIN
+								DECLARE @start INT, @end INT, @currencyValue NVARCHAR(3072)
+
+								SET	@start = CHARINDEX(''<CurrencyText>'', @message) + LEN(''<CurrencyText>'')
+								SET @end = CHARINDEX(''</CurrencyText>'', @message)
+     
+								SET @currencyValue = SUBSTRING(@message, @start, @end - @start)
+      
+								IF ISNUMERIC(@currencyValue) = 1
+								BEGIN	
+									SET @message = STUFF(@message, CHARINDEX(''<CurrencyText>'', @message), @end - CHARINDEX(''<CurrencyText>'', @message) + LEN(''</CurrencyText>''), @currencyValue + '' pesos'')
+								END
+								ELSE
+								BEGIN	
+									SET @message = STUFF(@message, CHARINDEX(''<CurrencyText>'', @message), @end - CHARINDEX(''<CurrencyText>'', @message) + LEN(''</CurrencyText>''), @currencyValue)
+								END
+							END	
+						END
+
+						IF CHARINDEX(''<SpellingText>'', @message) > 0
+						BEGIN
+
+							insert into @temp
+							select dbo.fnGetTTSTraduction(value, 1) from dbo.fn_RIASplitDelimited(@message, ''</SpellingText>'');
+		
+							set @message=''''
+							select @message = @message + part from  @temp
+
+							delete from @temp
+				
+						END
+
+						IF CHARINDEX(''<TelephoneText>'', @message) > 0
+						BEGIN
+								
+							insert into @temp
+							select dbo.fnGetTTSTraduction(value, 2) from dbo.fn_RIASplitDelimited(@message, ''</TelephoneText>'');				
+		
+							set @message=''''
+							select @message = @message + part from  @temp
+			
+						END
+					END
+
+					select @message'
+		EXEC(@sql)
+
+		
+
+		SET @process = 'KR146000 - Se valida función fn_RIASplitDelimited'
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''fn_RIASplitDelimited'') AND type IN (N''FN'', N''IF'', N''TF''))
+					BEGIN
+						DROP FUNCTION fn_RIASplitDelimited;
+					END;'
+		EXEC(@sql)
+
+		SET @process = 'KR146000 - se modifica función fn_RIASplitDelimited'
 		SET @sql = 'CREATE FUNCTION [dbo].[fn_RIASplitDelimited]
 					( 
 					  @List nvarchar(MAX),
@@ -1020,7 +1032,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_LoadGraphics'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_LoadGraphics'')              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_LoadGraphics''))              
 					BEGIN
 						DROP PROCEDURE ccsp_LoadGraphics;
 					END;'

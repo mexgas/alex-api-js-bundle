@@ -5,17 +5,14 @@ pipeline {
     environment {
         PROJECT_ENVIRONMENT = 'DEVELOP'
         PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
+        PROJECT_NAME_BASE_SCH = 'SaveSchemaDb'
         SONAR_NAME = 'CW_Data_Base_DEV'
         SQL_SERVER_SERVER_MAIN = '127.0.0.1,1436'
         SQL_SERVER_SERVER_PR = '127.0.0.1,1437'
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
         REPO_SLUG = 'cw-database'
-        scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
         msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
-    }
-    tools {
-        sonarQube 'SonarQubeScanner' // Nombre del SonarQube Scanner configurado en Jenkins
     }
     stages {
         stage('Setup parameters') {
@@ -43,12 +40,6 @@ pipeline {
                             )
                         ])
                     ])
-                }
-            }
-        }
-        stage('Setup Environment') {
-            steps {
-                script {
                     print '--------------- ENVIRONMENT VARIABLES ---------------'
                     print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
                     print "SONAR_NAME = ${env.SONAR_NAME}"
@@ -62,7 +53,7 @@ pipeline {
                     print '-----------------------------------------------------'
                 }
             }
-        }
+        }        
         stage('slack notification') {
             steps {
                 wrap([$class: 'BuildUser']) {
@@ -89,31 +80,6 @@ pipeline {
             }
         }
 
-        stage('Verify SonarQube Scanner') {
-            steps {
-                script {
-                    // Usamos el nombre exacto de la instalación configurada: SonarQubeScanner4.7
-                    def scannerHome = tool name: 'SonarQubeScanner4.7', type: 'SonarQubeScannerInstallation'
-                    withSonarQubeEnv('SonarQube Server') { 
-                        bat "${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=mi-proyecto \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://192.168.1.56:9000 \
-                            -Dsonar.login=sqa_1b5abf04831dc87c820fa28eeefd25c3b6ad2e7b"
-                    }
-                }
-            }
-        }
-
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                     def scannerHome = tool 'SonarQubeScanner'
-                }
-            }
-        }
-
         stage('Copy Bat') {
             steps {
                 bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
@@ -132,7 +98,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat '\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln'
+                bat 'dotnet restore "./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"'
                 bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
             }
         }
@@ -148,6 +114,43 @@ pipeline {
                         bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}/main\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
                     }
                 )
+                }
+            }
+        }
+
+        stage('Checkout Schema') {
+            steps {
+                dir('save-schema-db') {
+                    checkout([$class: 'GitSCM', branches: [[name: "develop"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                    url: "git@bitbucket.org:nuxibatechnologies/save-schema-db.git"]]])
+
+                    script {
+                        bat '"%NUGET_PATH%" restore %PROJECT_NAME_BASE_SCH%.Solution.sln'
+                        bat "\"${msbuild}\\msbuild\" %PROJECT_NAME_BASE_SCH%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
+                        bat '"SaveSchemaDbServices/bin/Debug/NuxibaSaveSchemaDbServices.exe" "%SQL_SERVER_SERVER_PR%" "%SQL_SERVER_USER%" "%SQL_SERVER_PASSWORD%" CCenterRia CCRecorderRIA ccReportsRia'
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv('SonarLinux_1.56') {
+                        def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        echo "${scannerHome}"
+                        withSonarQubeEnv('SonarLinux_1.56') {
+                            bat """
+                                ${scannerHome}/bin/sonar-scanner.bat ^
+                                -Dsonar.projectKey=${env.SONAR_NAME} ^
+                                -Dsonar.projectName=${env.SONAR_NAME} ^
+                                -Dsonar.projectVersion=${env.BUILD_ID} ^
+                                -Dsonar.sources=save-schema-db/SaveSchemaDbServices/bin/Debug/SCHEMA_BD ^                                
+                                -Dsonar.language=tsql ^
+                            """
+                        }
+                    }
                 }
             }
         }
@@ -186,59 +189,59 @@ pipeline {
             script {
                 bat 'docker-compose down'
 
-                def sonarProjectKey = "${SONAR_NAME}"
-                def buildResult = currentBuild.currentResult ?: 'SUCCESS'
-                def buildNumber = env.BUILD_NUMBER
-                def buildId = env.BUILD_ID
-                def branchName = params.BRANCH
-                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco
-                def buildUrl = env.BUILD_URL
-                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+            //     def sonarProjectKey = "${SONAR_NAME}"
+            //     def buildResult = currentBuild.currentResult ?: 'SUCCESS'
+            //     def buildNumber = env.BUILD_NUMBER
+            //     def buildId = env.BUILD_ID
+            //     def branchName = params.BRANCH
+            //     def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco
+            //     def buildUrl = env.BUILD_URL
+            //     def jobName = env.JOB_NAME // Obtener el nombre del proyecto
 
-                // Limpiar el directorio de trabajo
+            //     // Limpiar el directorio de trabajo
 
-                if (prId) {
-                    echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
-                    def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
+            //     if (prId) {
+            //         echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+            //         def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
 
-                    if (fileExists(fileToSend)) {
-                        // Enviar con el archivo adjunto
-                        bat """
-                            curl -X POST \
-                            -F "ProjectKey=${sonarProjectKey}" \
-                            -F "BuildNumber=${buildNumber}" \
-                            -F "Status=${buildResult}" \
-                            -F "Branch=${branchName}" \
-                            -F "PrId=${prId}" \
-                            -F "BuildId=${buildId}" \
-                            -F "RepoSlug=${env.REPO_SLUG}" \
-                            -F "BuildUrl=${buildUrl}" \
-                            -F "JobName=${jobName}" \
-                            -F "file=@${fileToSend}" \
-                            ${env.CALLBACK_URL_PR}
-                        """
-                    } else {
-                        // Enviar sin el archivo adjunto
-                        bat """
-                            curl -X POST \
-                            -F "ProjectKey=${sonarProjectKey}" \
-                            -F "BuildNumber=${buildNumber}" \
-                            -F "Status=${buildResult}" \
-                            -F "Branch=${branchName}" \
-                            -F "PrId=${prId}" \
-                            -F "BuildId=${buildId}" \
-                            -F "RepoSlug=${env.REPO_SLUG}" \
-                            -F "BuildUrl=${buildUrl}" \
-                            -F "JobName=${jobName}" \
-                            ${env.CALLBACK_URL_PR}
-                        """
-                    }
-                } else {
-                    echo "prId está vacío, no se enviará la solicitud curl."
-                }
-                if (buildResult == 'SUCCESS') {
-                    deleteDir()
-                }
+            //         if (fileExists(fileToSend)) {
+            //             // Enviar con el archivo adjunto
+            //             bat """
+            //                 curl -X POST \
+            //                 -F "ProjectKey=${sonarProjectKey}" \
+            //                 -F "BuildNumber=${buildNumber}" \
+            //                 -F "Status=${buildResult}" \
+            //                 -F "Branch=${branchName}" \
+            //                 -F "PrId=${prId}" \
+            //                 -F "BuildId=${buildId}" \
+            //                 -F "RepoSlug=${env.REPO_SLUG}" \
+            //                 -F "BuildUrl=${buildUrl}" \
+            //                 -F "JobName=${jobName}" \
+            //                 -F "file=@${fileToSend}" \
+            //                 ${env.CALLBACK_URL_PR}
+            //             """
+            //         } else {
+            //             // Enviar sin el archivo adjunto
+            //             bat """
+            //                 curl -X POST \
+            //                 -F "ProjectKey=${sonarProjectKey}" \
+            //                 -F "BuildNumber=${buildNumber}" \
+            //                 -F "Status=${buildResult}" \
+            //                 -F "Branch=${branchName}" \
+            //                 -F "PrId=${prId}" \
+            //                 -F "BuildId=${buildId}" \
+            //                 -F "RepoSlug=${env.REPO_SLUG}" \
+            //                 -F "BuildUrl=${buildUrl}" \
+            //                 -F "JobName=${jobName}" \
+            //                 ${env.CALLBACK_URL_PR}
+            //             """
+            //         }
+            //     } else {
+            //         echo "prId está vacío, no se enviará la solicitud curl."
+            //     }
+            //     // if (buildResult == 'SUCCESS') {
+            //     //     deleteDir()
+            //     // }
             }
         }
     }

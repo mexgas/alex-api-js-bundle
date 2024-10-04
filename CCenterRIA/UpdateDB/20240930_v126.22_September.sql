@@ -1101,7 +1101,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_RIAADMCampMsgs'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_RIAADMCampMsgs''))              
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_RIAADMCampMsgs'')              
 					BEGIN
 						DROP PROCEDURE ccsp_RIAADMCampMsgs;
 					END;'
@@ -1151,7 +1151,7 @@ BEGIN
 		EXEC(@sql)
 		
 		SET @process = 'KR146000 - se valida sp ccsp_DLRgetDialPrefix'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_DLRgetDialPrefix''))          
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_DLRgetDialPrefix'')              
 					BEGIN
 						DROP PROCEDURE ccsp_DLRgetDialPrefix;
 					END;'
@@ -1234,7 +1234,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_AutomaticMessages'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_AutomaticMessages''))          
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_AutomaticMessages'')              
 					BEGIN
 						DROP PROCEDURE ccsp_AutomaticMessages;
 					END;'
@@ -1382,7 +1382,7 @@ BEGIN
 		EXEC(@sql)
 
 		SET @process = 'KR146000 - se valida sp ccsp_GalateaAutomaticMessages'
-		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_GalateaAutomaticMessages''))         
+		SET @sql = 'IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N''ccsp_GalateaAutomaticMessages'')              
 					BEGIN
 						DROP PROCEDURE ccsp_GalateaAutomaticMessages;
 					END;'
@@ -1835,7 +1835,155 @@ BEGIN
 
 		------------------------------------------- Begin Rod Salazar ----------------------------------------------------------
 
-		
+    SET @process = 'ALter funcion fnGetTipoLlamada'
+    SET @sql = 'Alter FUNCTION [dbo].[fnGetTipoLlamada](@tel VARCHAR(32))
+RETURNS TINYINT
+AS
+BEGIN
+    DECLARE @ladatemp varchar(5), @ldlocal VARCHAR(10), @serie varchar(10), @numeracion SMALLINT, @lenght TINYINT
+    DECLARE @mod VARCHAR(10), @country TINYINT,@s@lenght varchar(10)
+
+    -- Retrieve country and local area code from settings
+    SELECT @country = valor 
+    FROM ccsettings WITH (NOLOCK) 
+    WHERE setting_id = 104
+
+    SELECT @lenght = LEN(@tel),
+           @ldlocal = valor 
+    FROM ccSettings WITH (NOLOCK) 
+    WHERE setting_id = 17
+
+    -- Temporary tables for prefijo and tipoLlamada data
+    DECLARE @table TABLE (
+        id INT NOT NULL,
+        prefijo NVARCHAR(100) NOT NULL
+    )
+
+    DECLARE @t_tipos TABLE (
+        tipollamada_id INT NOT NULL,
+        prefijo NVARCHAR(100) NOT NULL,
+        rowid INT NOT NULL
+    )
+
+    DECLARE @tipoLlamada_id SMALLINT, @prefijo VARCHAR(15), @tipo TINYINT, @cantidadLL TINYINT
+    SET @tipoLlamada_id = 0
+
+    set @s@lenght=CONVERT(varchar(10),@lenght)
+
+    if @country= 1 begin
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = 1 AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)
+        and longitud like ''%''+@s@lenght+''%''
+    end
+    else begin
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = @country
+        and longitud like ''%''+@s@lenght+''%''
+    end
+        
+
+    -- Count the number of matching records
+    SELECT @cantidadLL = COUNT(*) 
+    FROM @t_tipos
+
+    -- If there are matching options, evaluate them
+    IF @cantidadLL <> 0
+    BEGIN
+        SELECT TOP 1 @tipo = tipollamada_id
+        FROM @t_tipos t
+        CROSS APPLY dbo.fn_RIASplitDelimited(t.prefijo, ''|'') AS splitPrefijo
+        WHERE @tel LIKE splitPrefijo.value + ''%''
+        ORDER BY LEN(splitPrefijo.value) DESC;
+    END
+    ELSE
+    BEGIN
+        
+        SELECT TOP 1 @tipoLlamada_id = tipoLlamada_id, @prefijo = prefijo
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        CROSS APPLY dbo.fn_RIASplitDelimited(cstoTipoLlamada.prefijo, ''|'') AS split
+        WHERE country_id = @country
+          AND longitud = ''0''
+          AND @tel LIKE split.value + ''%''
+          AND (country_id <> 1 OR (country_id = 1 AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)))
+        ORDER BY LEN(split.value) DESC;     
+
+        -- If a match was found, assign it to @tipo
+        IF @tipoLlamada_id <> 0
+        BEGIN
+            SET @tipo = @tipoLlamada_id
+        END
+        ELSE
+        BEGIN
+            if @country!=1 begin
+                 RETURN @tipo
+            end
+            -- Additional series checks for certain phone lengths
+            IF @lenght = 10 - LEN(@ldlocal)
+            BEGIN
+                SELECT @tel = CONVERT(VARCHAR(3), @ldlocal) + @tel
+            END
+
+            SELECT @tel = RIGHT(@tel, 10)
+            SELECT @ladatemp = LEFT(@tel, 2)
+
+            -- Check for two-digit area codes
+            IF @ladatemp IN (''55'', ''56'', ''33'', ''81'')
+            BEGIN
+                SELECT @serie = SUBSTRING(@tel, 3, 4), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+            ELSE
+            BEGIN
+                -- Check for three-digit area codes                
+                SELECT @ladatemp = LEFT(@tel, 3), 
+                       @serie = SUBSTRING(@tel, 4, 3), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+
+            -- Fetch modalidad based on series and numeracion
+            SELECT top 1 @mod = MODALIDAD 
+            FROM Series WITH (NOLOCK) 
+            WHERE CLD = @ladatemp 
+            AND SERIE = @serie 
+            AND @numeracion BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+            -- Check if the number is local
+            DECLARE @isLocal BIT = 0
+
+           IF EXISTS (SELECT 1 FROM ccRiaArecode WITH (NOLOCK) WHERE area = @ladatemp)
+           OR @ldlocal = @ladatemp
+            BEGIN
+                SET @isLocal = 1;
+            END
+
+            -- Determinar el tipo de llamada según la modalidad y si es local
+            IF @mod IN (''FIJO'', ''MPP'')
+            BEGIN
+                -- Llamada fija o móvil postpago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 1  -- Llamada local
+                            ELSE 2                     -- Llamada de larga distancia
+                        END;
+            END
+            ELSE IF @mod = ''CPP''
+            BEGIN
+                -- Llamada celular prepago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 3  -- Llamada celular local
+                            ELSE 4                    -- Llamada celular de larga distancia
+                        END;
+            END
+        END
+    END
+
+    RETURN @tipo
+END
+'
+    EXEC(@sql)		
 		
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

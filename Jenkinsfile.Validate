@@ -146,6 +146,16 @@ pipeline {
                 bat './ZipDacpc.bat'
             }
         }
+        stage('Sonar') {
+            steps {
+                script {
+                    withSonarQubeEnv('SonarLinux_1.56') {
+                        def scannerHome = tool 'SonarQubeScanner'
+                        bat "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=cw-database -Dsonar.sources=./CCenterRIA/UpdateDB,./ccReportsRia/UpdateDB,./RecorderRIA/UpdateDB -Dsonar.language=tsql -Dsonar.sourceEncoding=UTF-8"
+                    }
+                }
+            }
+        }
     }
     post {
         always {

@@ -86,6 +86,16 @@ pipeline {
             }
         }
 
+        stage('Verify SonarQube Scanner') {
+    steps {
+        script {
+            def scannerHome = tool 'SonarQubeScanner'
+            bat "${scannerHome}/bin/sonar-scanner.bat --version"
+        }
+    }
+}
+
+
         stage('SonarQube Analysis') {
             steps {
                 script {

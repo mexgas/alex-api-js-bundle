@@ -14,6 +14,9 @@ pipeline {
         scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
         msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
     }
+    tools {
+        sonarQube 'SonarQubeScanner' // Nombre del SonarQube Scanner configurado en Jenkins
+    }
     stages {
         stage('Setup parameters') {
             steps {
@@ -91,7 +94,13 @@ pipeline {
                 script {
                     // Usamos el nombre exacto de la instalación configurada: SonarQubeScanner4.7
                     def scannerHome = tool name: 'SonarQubeScanner4.7', type: 'SonarQubeScannerInstallation'
-                    bat "${scannerHome}/bin/sonar-scanner.bat --version"
+                    withSonarQubeEnv('SonarQube Server') { 
+                        bat "${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=mi-proyecto \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://192.168.1.56:9000 \
+                            -Dsonar.login=sqa_1b5abf04831dc87c820fa28eeefd25c3b6ad2e7b"
+                    }
                 }
             }
         }
@@ -100,18 +109,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    withSonarQubeEnv('SonarLinux_1.56') {
-                        def scannerHome = tool name: 'SonarQubeScanner4.7', type: 'SonarQubeScannerInstallation'
-                        echo "${scannerHome}"
-                        bat """
-                            ${scannerHome}/bin/sonar-scanner.bat ^
-                            -Dsonar.projectKey=${env.SONAR_NAME} ^
-                            -Dsonar.projectName=${env.SONAR_NAME} ^
-                            -Dsonar.projectVersion=${env.BUILD_ID} ^
-                            -Dsonar.sources=./CCenterRIA/UpdateDB,./ccReportsRia/UpdateDB,./RecorderRIA/UpdateDB ^
-                            -Dsonar.language=tsql ^
-                        """
-                    }
+                     def scannerHome = tool 'SonarQubeScanner'
                 }
             }
         }

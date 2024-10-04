@@ -91,6 +91,7 @@ pipeline {
                 script {
                     withSonarQubeEnv('SonarLinux_1.56') {
                         def scannerHome = tool 'SonarQubeScanner'
+                        echo "${scannerHome}"
                         bat """
                             ${scannerHome}/bin/sonar-scanner.bat ^
                             -Dsonar.projectKey=${env.SONAR_NAME} ^
@@ -119,7 +120,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build') {
             steps {
                 bat '\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln'

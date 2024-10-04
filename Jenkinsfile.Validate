@@ -86,22 +86,6 @@ pipeline {
             }
         }
 
-        stage('Copy Bat') {
-            steps {
-                bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
-                bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
-            }
-        }
-
-        stage('Docker Compose Up') {
-            steps {
-                script {
-                    bat 'docker-compose up -d'
-                    sleep(time: 60, unit: 'SECONDS')
-                }
-            }
-        }
-        
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -120,6 +104,22 @@ pipeline {
             }
         }
 
+        stage('Copy Bat') {
+            steps {
+                bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
+                bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
+            }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                script {
+                    bat 'docker-compose up -d'
+                    sleep(time: 60, unit: 'SECONDS')
+                }
+            }
+        }
+        
         stage('Build') {
             steps {
                 bat '\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln'

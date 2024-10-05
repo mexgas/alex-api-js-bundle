@@ -2,7 +2,7 @@
 schemaspy.t=mssql08
 schemaspy.dp=./mssql/mssql-jdbc-9.2.1.jre11.jar
 schemaspy.db=CCRecorderRIA
-schemaspy.host=192.168.1.58
+schemaspy.host=127.0.0.1
 schemaspy.port=1436
 schemaspy.u=sa
 schemaspy.p=Nuxiba2024_

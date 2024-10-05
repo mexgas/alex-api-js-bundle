@@ -1,5 +1,5 @@
 cls
-set pathReport=D:/schemaspy
+set pathReport=C:/schemaspy
 java -jar schemaspy-6.1.0.jar -configFile ./CCenterRia.config.file -norows -o "%pathReport%/CCenterRia"
 
 rem start "" "%pathReport%/CCenterRia/index.html"

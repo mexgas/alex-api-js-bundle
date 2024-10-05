@@ -62,16 +62,11 @@ pipeline {
             }
         }
 
-        stage('Checkout PR Branch') {
+        stage('Checkout PR And Base Branch') {
             steps {
                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
                 userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                 url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
-            }
-        }
-
-        stage('Checkout Base Branch') {
-            steps {
                 dir('main') {
                     checkout([$class: 'GitSCM', branches: [[name: "${params.MAIN_BRANCH}"]], extensions: [],
                     userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',

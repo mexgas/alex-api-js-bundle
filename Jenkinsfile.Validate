@@ -166,7 +166,7 @@ pipeline {
                             bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
                         },
                         'schemaspy': {
-                            bat '"./schemaspy/ReportGenerate.bat"'
+                            bat 'cd schemaspy && "./ReportGenerate.bat"'
                         }
                     )
                 }

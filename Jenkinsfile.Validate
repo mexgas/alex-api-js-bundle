@@ -132,7 +132,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {      
-                    bat '"copyschemabd.bat.bat"'
+                    bat '"copyschemabd.bat"'
                     def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                     echo "${scannerHome}"
                     withSonarQubeEnv('SonarLinux_1.56') {

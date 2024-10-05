@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[componentsRelation](	  [Template_id] INT NOT NULL	, [Component_id] INT NOT NULL	, [i] VARCHAR(50) COLLATE Modern_Spanish_CI_AS NOT NULL	, [x] INT NOT NULL	, [y] INT NOT NULL	, [h] INT NOT NULL	, [w] INT NOT NULL	, [Name] VARCHAR(50) COLLATE Modern_Spanish_CI_AS NULL)

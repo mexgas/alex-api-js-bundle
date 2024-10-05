@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_MODELOS_PBX](	  [modelo_grabacion_id] TINYINT NOT NULL IDENTITY(1,1)	, [modelo_grabacion_comando] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [pbx_id] TINYINT NOT NULL	, CONSTRAINT [PK_TREC_MODELOS_PBX] PRIMARY KEY ([modelo_grabacion_id] ASC, [pbx_id] ASC))

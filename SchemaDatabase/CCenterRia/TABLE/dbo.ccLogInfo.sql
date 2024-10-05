@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccLogInfo](	  [timekey] DATETIME NOT NULL	, [sLogInfo] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [iParentInfo] INT NULL	, CONSTRAINT [PK__ccLogInfo__03F0984C] PRIMARY KEY ([timekey] ASC, [sLogInfo] ASC))

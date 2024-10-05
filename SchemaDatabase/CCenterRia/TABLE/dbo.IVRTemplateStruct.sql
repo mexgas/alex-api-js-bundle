@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[IVRTemplateStruct](	  [IdScript] SMALLINT NULL	, [IdBlock] SMALLINT NULL	, [TypeBlock] TINYINT NULL	, [LabelBlock] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [VariablesBlock] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [RetCodeBlock] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

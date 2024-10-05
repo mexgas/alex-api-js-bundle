@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[tmpSessionGeneral](	  [user_id] SMALLINT NOT NULL	, [login] DATETIME NOT NULL	, [logout] DATETIME NULL	, [extension] VARCHAR(7) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [timeGroup] DATETIME NOT NULL	, [timeGroupNext] DATETIME NULL	, [tlog] INT NULL)

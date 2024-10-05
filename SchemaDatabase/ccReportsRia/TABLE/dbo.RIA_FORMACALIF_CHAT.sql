@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_FORMACALIF_CHAT](	  [id_forma] INT NOT NULL IDENTITY(1,1)	, [fecha_calif] SMALLDATETIME NOT NULL	, [id_formato] INT NOT NULL	, [age_id] INT NOT NULL	, [version] INT NOT NULL	, [id_chat] INT NULL	, [total_forma] INT NULL)

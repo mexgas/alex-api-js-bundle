@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Charts](	  [id] INT NOT NULL	, [name] NVARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [type] NVARCHAR(1) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_Charts] PRIMARY KEY ([name] ASC))

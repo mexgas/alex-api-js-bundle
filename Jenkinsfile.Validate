@@ -5,13 +5,13 @@ pipeline {
     environment {
         PROJECT_ENVIRONMENT = 'DEVELOP'
         PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
+        PROJECT_NAME_BASE_SCH = 'SaveSchemaDb'
         SONAR_NAME = 'CW_Data_Base_DEV'
         SQL_SERVER_SERVER_MAIN = '127.0.0.1,1436'
-        SQL_SERVER_SERVER_PR = '127.0.0.1,1437'        
+        SQL_SERVER_SERVER_PR = '127.0.0.1,1437'
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
         REPO_SLUG = 'cw-database'
-        scannerHome = tool 'SonarQubeScannerForMSBuild_OLD'
         msbuild = tool name: 'MSBuild2022', type: 'hudson.plugins.msbuild.MsBuildInstallation'
     }
     stages {
@@ -40,13 +40,7 @@ pipeline {
                             )
                         ])
                     ])
-                }
-            }
-        }
-        stage('Setup Environment') {
-            steps {
-                script {
-                    print "--------------- ENVIRONMENT VARIABLES ---------------"
+                    print '--------------- ENVIRONMENT VARIABLES ---------------'
                     print "PROJECT_ENVIRONMENT = ${env.PROJECT_ENVIRONMENT}"
                     print "SONAR_NAME = ${env.SONAR_NAME}"
                     print "WORKSPACE = ${env.WORKSPACE}"
@@ -56,11 +50,11 @@ pipeline {
                     print "SQL_SERVER_SERVER_MAIN = ${env.SQL_SERVER_SERVER_MAIN}"
                     print "SQL_SERVER_USER = ${env.SQL_SERVER_USER}"
                     print "SQL_SERVER_PASSWORD = ${env.SQL_SERVER_PASSWORD}"
-                    print "-----------------------------------------------------"
+                    print '-----------------------------------------------------'
                 }
             }
-        }
-         stage('slack notification') {            
+        }        
+        stage('slack notification') {
             steps {
                 wrap([$class: 'BuildUser']) {
                     NotifyBuild('STARTED')
@@ -68,81 +62,115 @@ pipeline {
             }
         }
 
-        stage('Checkout PR Branch') {
-            steps {                                
-                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
+        stage('Checkout PR And Base Branch') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
                 userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                 url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
-            }
-        }
-
-        stage('Checkout Base Branch') {
-            steps {                
                 dir('main') {
-                     checkout([$class: 'GitSCM', branches: [[name: "${params.MAIN_BRANCH}"]], extensions: [],
+                    checkout([$class: 'GitSCM', branches: [[name: "${params.MAIN_BRANCH}"]], extensions: [],
                     userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
                     url: "git@bitbucket.org:nuxibatechnologies/${env.REPO_SLUG}.git"]]])
                 }
             }
         }
 
-        
         stage('Copy Bat') {
             steps {
-                  bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
-                  bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
+                bat './DatabaseUpdateValidator/CopyMdfAndLdF.bat'
+                bat './DatabaseUpdateValidator/CopyMdfAndLdFMain.bat'
             }
         }
-        
+
         stage('Docker Compose Up') {
             steps {
-                script {                    
+                script {
                     bat 'docker-compose up -d'
-                    sleep(time: 60, unit: 'SECONDS') 
-
+                    sleep(time: 20, unit: 'SECONDS')
                 }
             }
         }
 
-
-        stage('Build and execute PR') {
-            steps {                  
-                  bat "\"%NUGET_PATH%\" restore ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"
-                  bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
-                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER_PR} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+        stage('Build') {
+            steps {
+                bat 'dotnet restore "./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln"'
+                bat "\"${msbuild}\\msbuild\" ./DatabaseUpdateValidator/%PROJECT_NAME_BASE%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
             }
         }
 
-        stage('Build and execute MAIN') {
-            steps {                                    
-                  echo 'Check Main'
-                  bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}/main\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"                  
-            }
-        }
-
-      stage('Compare Schema') {
+        stage('PR  and execute MAIN') {
             steps {
                 script {
                     parallel(
-                        "Compare CCenterRIA": {
+                    'Branch PR': {
+                        bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}\" ${env.SQL_SERVER_SERVER_PR} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+                    },
+                    'Branch Main': {
+                        bat "\"DatabaseUpdateValidator/DatabaseUpdateValidator/bin/Debug/net8.0/DatabaseUpdateValidator.exe\" \"${env.WORKSPACE}/main\" ${env.SQL_SERVER_SERVER_MAIN} ${env.SQL_SERVER_USER} ${env.SQL_SERVER_PASSWORD}"
+                    }
+                )
+                }
+            }
+        }
+
+        stage('Checkout Schema') {
+            steps {
+                dir('save-schema-db') {
+                    checkout([$class: 'GitSCM', branches: [[name: "develop"]], extensions: [],
+                    userRemoteConfigs: [[credentialsId: '57291e5b-bac5-434d-92ce-c2faff96584e',
+                    url: "git@bitbucket.org:nuxibatechnologies/save-schema-db.git"]]])
+
+                    script {
+                        bat '"%NUGET_PATH%" restore %PROJECT_NAME_BASE_SCH%.Solution.sln'
+                        bat "\"${msbuild}\\msbuild\" %PROJECT_NAME_BASE_SCH%.Solution.sln /p:Configuration=Debug /t:clean;rebuild"
+                        bat '"SaveSchemaDbServices/bin/Debug/NuxibaSaveSchemaDbServices.exe" "%SQL_SERVER_SERVER_PR%" "%SQL_SERVER_USER%" "%SQL_SERVER_PASSWORD%" CCenterRia CCRecorderRIA ccReportsRia'
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {      
+                    bat '"copyschemabd.bat.bat"'
+                    def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    echo "${scannerHome}"
+                    withSonarQubeEnv('SonarLinux_1.56') {
+                        bat """
+                            ${scannerHome}/bin/sonar-scanner.bat ^
+                            -Dsonar.projectKey=${env.SONAR_NAME} ^
+                            -Dsonar.projectName=${env.SONAR_NAME} ^
+                            -Dsonar.projectVersion=${env.BUILD_ID} ^
+                            -Dsonar.sources=./SCHEMA_BD ^
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Compare Schema') {
+            steps {
+                script {
+                    parallel(
+                        'Compare CCenterRIA': {
                             bat './CompareDatabse.bat CCenterRIA CCenterRIA'
                         },
-                        "Compare CCRecorderRIA": {
+                        'Compare CCRecorderRIA': {
                             bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
                         },
-                        "Compare CCReportsRIA": {
+                        'Compare CCReportsRIA': {
                             bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
                         }
                     )
                 }
             }
         }
-          stage('Zip ZipDacpc') {
+        stage('Zip ZipDacpc') {
             steps {
-                  bat './ZipDacpc.bat'                  
+                bat './ZipDacpc.bat'
             }
         }
-
+        
     }
     post {
         always {
@@ -150,7 +178,7 @@ pipeline {
                 NotifyBuild("${currentBuild.currentResult}")
             }
 
-             // Agregar callback HTTP al final del build
+            // Agregar callback HTTP al final del build
             script {
                 bat 'docker-compose down'
 
@@ -159,12 +187,11 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def buildId = env.BUILD_ID
                 def branchName = params.BRANCH
-                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco        
+                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco
                 def buildUrl = env.BUILD_URL
                 def jobName = env.JOB_NAME // Obtener el nombre del proyecto
-                
 
-                // Limpiar el directorio de trabajo                    
+                // Limpiar el directorio de trabajo
 
                 if (prId) {
                     echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
@@ -202,7 +229,6 @@ pipeline {
                             ${env.CALLBACK_URL_PR}
                         """
                     }
-
                 } else {
                     echo "prId está vacío, no se enviará la solicitud curl."
                 }

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRateByCarrier](	  [tipoLlamada_id] SMALLINT NOT NULL	, [estado] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [lada] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__ccRateByCarrier__0D10B989] PRIMARY KEY ([tipoLlamada_id] ASC, [estado] ASC, [lada] ASC))

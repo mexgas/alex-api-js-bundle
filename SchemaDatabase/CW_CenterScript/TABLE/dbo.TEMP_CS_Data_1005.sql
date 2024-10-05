@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TEMP_CS_Data_1005](	  [Record_id] INT NOT NULL IDENTITY(1,1)	, [Call_key] NVARCHAR(40) COLLATE Modern_Spanish_CI_AS NULL	, [Date] DATETIME NULL	, [Component1] VARCHAR(255) COLLATE Modern_Spanish_CI_AS NULL	, [Component2] VARCHAR(255) COLLATE Modern_Spanish_CI_AS NULL)

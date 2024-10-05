@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_ARCHIVO_GRABACION](	  [id] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [lado] CHAR(1) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [grab_id_max] BIGINT NOT NULL	, [hecho] BIT NOT NULL DEFAULT((0))	, [cli_id] INT NOT NULL DEFAULT((0))	, [grab_id_active] INT NULL	, CONSTRAINT [PK_TREC_ARCHIVO] PRIMARY KEY ([id] ASC, [lado] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[DataCallIn](	  [CallId] INT NOT NULL	, [Data] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Description] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__DataCallIn__35A8BAC8] PRIMARY KEY ([CallId] ASC, [Description] ASC))

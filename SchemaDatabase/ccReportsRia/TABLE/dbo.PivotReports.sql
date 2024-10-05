@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[PivotReports](	  [id] INT NOT NULL	, [columns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [complementColumns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [pivotFunction] VARCHAR(6) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [isGroupPivot] BIT NULL)

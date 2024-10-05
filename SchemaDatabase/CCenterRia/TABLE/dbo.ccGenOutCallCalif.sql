@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenOutCallCalif](	  [timegroup] SMALLDATETIME NOT NULL	, [cam_id] SMALLINT NOT NULL	, [user_id] SMALLINT NOT NULL	, [calif_id] SMALLINT NOT NULL	, [amount] SMALLINT NOT NULL	, CONSTRAINT [PK_ccGenOutCallCalif] PRIMARY KEY ([timegroup] ASC, [cam_id] ASC, [user_id] ASC, [calif_id] ASC))

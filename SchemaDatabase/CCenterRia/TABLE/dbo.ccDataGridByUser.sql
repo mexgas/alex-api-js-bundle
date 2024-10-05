@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccDataGridByUser](	  [user_id] INT NOT NULL	, [idGrid] INT NOT NULL	, [columnsOrder] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

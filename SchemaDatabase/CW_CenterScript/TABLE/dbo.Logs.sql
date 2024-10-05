@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Logs](	  [Action_id] INT NOT NULL IDENTITY(1,1)	, [Description] VARCHAR(255) COLLATE Modern_Spanish_CI_AS NULL	, CONSTRAINT [PK__Logs__A11C566A182C9B23] PRIMARY KEY ([Action_id] ASC))

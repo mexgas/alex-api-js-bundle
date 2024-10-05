@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccWhatsAppConversationsRelationship](	  [relationshipId] INT NOT NULL IDENTITY(1,1)	, [conversationIdBefore] INT NOT NULL	, [conversationIdAfter] INT NOT NULL	, CONSTRAINT [pk_ccWhatsAppConversationsRelationship_1] PRIMARY KEY ([relationshipId] ASC))

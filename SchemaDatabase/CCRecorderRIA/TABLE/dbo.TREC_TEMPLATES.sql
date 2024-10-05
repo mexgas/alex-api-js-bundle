@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_TEMPLATES](	  [tpl_id] INT NOT NULL IDENTITY(1,1)	, [esp_id] INT NOT NULL	, [tpl_nombre] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tpl_activo] SMALLINT NOT NULL DEFAULT((1))	, [tpl_descripcion] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_TREC_TEMPLATES] PRIMARY KEY ([tpl_id] ASC))

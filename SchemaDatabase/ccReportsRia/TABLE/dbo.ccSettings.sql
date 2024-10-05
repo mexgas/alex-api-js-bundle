@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccSettings](	  [setting_id] TINYINT NOT NULL	, [valor] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [descripcion] VARCHAR(200) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [Status] TINYINT NULL	, [Tipo] VARCHAR(3) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

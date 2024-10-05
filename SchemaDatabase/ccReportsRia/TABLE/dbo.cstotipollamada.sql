@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[cstotipollamada](	  [country_id] SMALLINT NOT NULL	, [tipoLlamada_id] SMALLINT NOT NULL	, [descrip] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [prefijo] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [longitud] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

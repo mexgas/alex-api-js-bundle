@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccinboundagentes](	  [User_id] SMALLINT NOT NULL	, [Inbound_id] SMALLINT NOT NULL	, [cli_id] INT NULL	, [prioridad] INT NOT NULL	, [skill] TINYINT NOT NULL	, [rel_id] INT NOT NULL IDENTITY(1,1)	, [IDWG] INT NOT NULL DEFAULT((0))	, CONSTRAINT [PK_ccInboundAgentes] PRIMARY KEY ([rel_id] ASC))

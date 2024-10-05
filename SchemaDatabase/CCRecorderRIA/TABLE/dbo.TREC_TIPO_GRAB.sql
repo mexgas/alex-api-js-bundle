@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_TIPO_GRAB](	  [tipo_grab_id] TINYINT NOT NULL IDENTITY(1,1)	, [tipo_grab_descripcion] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__TREC_TIPO_GRAB__619B8048] PRIMARY KEY ([tipo_grab_id] ASC))

@@ -131,20 +131,18 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    diir('save-schema-db/SaveSchemaDbServices/bin/Debug/'){
-                        def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                        echo "${scannerHome}"
-                        withSonarQubeEnv('SonarLinux_1.56') {
-                            bat """
-                                ${scannerHome}/bin/sonar-scanner.bat ^
-                                -Dsonar.projectKey=${env.SONAR_NAME} ^
-                                -Dsonar.projectName=${env.SONAR_NAME} ^
-                                -Dsonar.projectVersion=${env.BUILD_ID} ^
-                                -Dsonar.sources=save-schema-db/SaveSchemaDbServices/bin/Debug/SCHEMA_BD ^
-                                -Dsonar.language=tsql ^
-                            """
-                        }                        
+                script {                    
+                    def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    echo "${scannerHome}"
+                    withSonarQubeEnv('SonarLinux_1.56') {
+                        bat """
+                            ${scannerHome}/bin/sonar-scanner.bat ^
+                            -Dsonar.projectKey=${env.SONAR_NAME} ^
+                            -Dsonar.projectName=${env.SONAR_NAME} ^
+                            -Dsonar.projectVersion=${env.BUILD_ID} ^
+                            -Dsonar.sources=save-schema-db/SaveSchemaDbServices/bin/Debug/SCHEMA_BD ^
+                            -Dsonar.language=tsql ^
+                        """
                     }
                 }
             }

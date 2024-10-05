@@ -7,8 +7,8 @@ pipeline {
         PROJECT_NAME_BASE = 'DatabaseUpdateValidator'
         PROJECT_NAME_BASE_SCH = 'SaveSchemaDb'
         SONAR_NAME = 'CW_Data_Base_DEV'
-        SQL_SERVER_SERVER_MAIN = '127.0.0.1,1436'
-        SQL_SERVER_SERVER_PR = '127.0.0.1,1437'
+        SQL_SERVER_SERVER_MAIN = '192.168.1.48,1436'
+        SQL_SERVER_SERVER_PR = '192.168.1.48,1437'
         SQL_SERVER_USER = 'sa'
         SQL_SERVER_PASSWORD = 'Nuxiba2024_'
         REPO_SLUG = 'cw-database'
@@ -162,6 +162,9 @@ pipeline {
                         },
                         'Compare CCReportsRIA': {
                             bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+                        },
+                        'schemaspy': {
+                            bat '"./schemaspy/ReportGenerate.bat"'
                         }
                     )
                 }
@@ -184,59 +187,59 @@ pipeline {
             script {
                 bat 'docker-compose down'
 
-            //     def sonarProjectKey = "${SONAR_NAME}"
-            //     def buildResult = currentBuild.currentResult ?: 'SUCCESS'
-            //     def buildNumber = env.BUILD_NUMBER
-            //     def buildId = env.BUILD_ID
-            //     def branchName = params.BRANCH
-            //     def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco
-            //     def buildUrl = env.BUILD_URL
-            //     def jobName = env.JOB_NAME // Obtener el nombre del proyecto
+                def sonarProjectKey = "${SONAR_NAME}"
+                def buildResult = currentBuild.currentResult ?: 'SUCCESS'
+                def buildNumber = env.BUILD_NUMBER
+                def buildId = env.BUILD_ID
+                def branchName = params.BRANCH
+                def prId = params.BITBUCKET_PR_ID?.trim() // Asegúrate de que `prId` no contenga espacios en blanco
+                def buildUrl = env.BUILD_URL
+                def jobName = env.JOB_NAME // Obtener el nombre del proyecto
 
-            //     // Limpiar el directorio de trabajo
+                // Limpiar el directorio de trabajo
 
-            //     if (prId) {
-            //         echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
-            //         def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
+                if (prId) {
+                    echo "CALLBACK_URL:${env.CALLBACK_URL_PR}"
+                    def fileToSend = "${env.WORKSPACE}/DacpacFiles.zip" // Ruta del archivo
 
-            //         if (fileExists(fileToSend)) {
-            //             // Enviar con el archivo adjunto
-            //             bat """
-            //                 curl -X POST \
-            //                 -F "ProjectKey=${sonarProjectKey}" \
-            //                 -F "BuildNumber=${buildNumber}" \
-            //                 -F "Status=${buildResult}" \
-            //                 -F "Branch=${branchName}" \
-            //                 -F "PrId=${prId}" \
-            //                 -F "BuildId=${buildId}" \
-            //                 -F "RepoSlug=${env.REPO_SLUG}" \
-            //                 -F "BuildUrl=${buildUrl}" \
-            //                 -F "JobName=${jobName}" \
-            //                 -F "file=@${fileToSend}" \
-            //                 ${env.CALLBACK_URL_PR}
-            //             """
-            //         } else {
-            //             // Enviar sin el archivo adjunto
-            //             bat """
-            //                 curl -X POST \
-            //                 -F "ProjectKey=${sonarProjectKey}" \
-            //                 -F "BuildNumber=${buildNumber}" \
-            //                 -F "Status=${buildResult}" \
-            //                 -F "Branch=${branchName}" \
-            //                 -F "PrId=${prId}" \
-            //                 -F "BuildId=${buildId}" \
-            //                 -F "RepoSlug=${env.REPO_SLUG}" \
-            //                 -F "BuildUrl=${buildUrl}" \
-            //                 -F "JobName=${jobName}" \
-            //                 ${env.CALLBACK_URL_PR}
-            //             """
-            //         }
-            //     } else {
-            //         echo "prId está vacío, no se enviará la solicitud curl."
-            //     }
-            //     // if (buildResult == 'SUCCESS') {
-            //     //     deleteDir()
-            //     // }
+                    if (fileExists(fileToSend)) {
+                        // Enviar con el archivo adjunto
+                        bat """
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
+                            -F "file=@${fileToSend}" \
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    } else {
+                        // Enviar sin el archivo adjunto
+                        bat """
+                            curl -X POST \
+                            -F "ProjectKey=${sonarProjectKey}" \
+                            -F "BuildNumber=${buildNumber}" \
+                            -F "Status=${buildResult}" \
+                            -F "Branch=${branchName}" \
+                            -F "PrId=${prId}" \
+                            -F "BuildId=${buildId}" \
+                            -F "RepoSlug=${env.REPO_SLUG}" \
+                            -F "BuildUrl=${buildUrl}" \
+                            -F "JobName=${jobName}" \
+                            ${env.CALLBACK_URL_PR}
+                        """
+                    }
+                } else {
+                    echo "prId está vacío, no se enviará la solicitud curl."
+                }
+                if (buildResult == 'SUCCESS') {
+                    deleteDir()
+                }
             }
         }
     }

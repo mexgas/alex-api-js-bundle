@@ -1,12 +1,11 @@
 # type of database. Run with -dbhelp for details
 schemaspy.t=mssql08
 schemaspy.dp=./mssql/mssql-jdbc-9.2.1.jre11.jar
-schemaspy.host=192.168.1.58
-schemaspy.port=1433
 schemaspy.db=CCReportsRIA
+schemaspy.host=192.168.1.58
+schemaspy.port=1436
 schemaspy.u=sa
-schemaspy.p=nuxiba
-#schemaspy.o=D:/schemaspy/CCReportsRIA
+schemaspy.p=Nuxiba2024_
 schemaspy.I=^(MSmerge_|sysmerge).+$
 #schemaspy.i=^(Rep).+$
 

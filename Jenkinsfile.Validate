@@ -131,7 +131,8 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {                    
+                script {      
+                    bat 'SCHEMA_BD.bat'              
                     def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                     echo "${scannerHome}"
                     withSonarQubeEnv('SonarLinux_1.56') {
@@ -140,8 +141,7 @@ pipeline {
                             -Dsonar.projectKey=${env.SONAR_NAME} ^
                             -Dsonar.projectName=${env.SONAR_NAME} ^
                             -Dsonar.projectVersion=${env.BUILD_ID} ^
-                            -Dsonar.sources=save-schema-db/SaveSchemaDbServices/bin/Debug/SCHEMA_BD ^
-                            -Dsonar.language=tsql ^
+                            -Dsonar.sources=./SCHEMA_BD ^
                         """
                     }
                 }

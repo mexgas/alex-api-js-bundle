@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Filters](	  [id] INT NOT NULL	, [name] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [type] INT NOT NULL	, [xmlParentNode] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [xmlChildNode] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_Filters] PRIMARY KEY ([name] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RepIVRGeneral](	  [date] DATETIME NOT NULL	, [noTransferred] INT NOT NULL	, [transferred] INT NOT NULL	, [total] INT NOT NULL	, [year] INT NOT NULL	, [month] INT NOT NULL	, [day] INT NOT NULL	, [hour] INT NOT NULL	, [minutes] INT NOT NULL)CREATE NONCLUSTERED INDEX [IX_RepIVRGeneral] ON [dbo].[RepIVRGeneral] ([date] ASC)

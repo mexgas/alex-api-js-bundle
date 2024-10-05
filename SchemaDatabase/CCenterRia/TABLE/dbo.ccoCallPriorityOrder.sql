@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccoCallPriorityOrder](	  [callout_id] INT NOT NULL	, [priorityCall] CHAR(8) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_ccoCallPriorityOrder] PRIMARY KEY ([callout_id] ASC))

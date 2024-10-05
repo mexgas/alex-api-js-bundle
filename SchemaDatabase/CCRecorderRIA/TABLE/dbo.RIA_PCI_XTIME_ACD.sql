@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_PCI_XTIME_ACD](	  [Inbound_id] INT NOT NULL	, [Num_recordings] INT NOT NULL	, [Suma] INT NOT NULL	, CONSTRAINT [PK_RIA_PCI_ACD_XTIME] PRIMARY KEY ([Inbound_id] ASC))

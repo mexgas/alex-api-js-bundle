@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccXionElementsRelease](	  [menu_id] SMALLINT NULL	, [element] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

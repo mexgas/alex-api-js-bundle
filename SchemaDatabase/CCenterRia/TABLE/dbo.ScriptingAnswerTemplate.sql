@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ScriptingAnswerTemplate](	  [scriptingId] INT NOT NULL	, [answerId] INT NOT NULL	, [answerPlot] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [answerStatus] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [nextPlot] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

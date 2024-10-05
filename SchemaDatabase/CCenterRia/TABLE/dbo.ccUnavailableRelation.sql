@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccUnavailableRelation](	  [idUnavailable] INT NOT NULL	, [idCampACD] INT NOT NULL	, [type] BIT NOT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccstatusllamada](	  [statusCall_id] TINYINT NOT NULL	, [descripcion] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [inAbandonConfig] BIT NOT NULL DEFAULT((0))	, CONSTRAINT [PK_ccStatusLLamada] PRIMARY KEY ([statusCall_id] ASC))

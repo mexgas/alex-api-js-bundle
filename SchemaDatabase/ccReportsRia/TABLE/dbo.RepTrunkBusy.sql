@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RepTrunkBusy](	  [date] DATETIME NOT NULL	, [trunk] INT NOT NULL	, [tBusy] INT NOT NULL	, [Calls] INT NOT NULL	, [year] INT NOT NULL	, [month] INT NOT NULL	, [day] INT NOT NULL	, [hour] INT NOT NULL	, [minutes] INT NOT NULL)CREATE NONCLUSTERED INDEX [IX_RepTrunkBusy] ON [dbo].[RepTrunkBusy] ([date] ASC)

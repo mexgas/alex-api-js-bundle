@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenSessionAgent](	  [login] DATETIME NOT NULL	, [user_id] SMALLINT NOT NULL	, [tlog] INT NOT NULL	, [tnot_av] INT NOT NULL	, [tav] INT NOT NULL	, [tprob] INT NOT NULL	, [tunknown] INT NOT NULL	, [tother] INT NOT NULL	, [nother] SMALLINT NOT NULL	, CONSTRAINT [PK_ccGenSessionAgent] PRIMARY KEY ([login] ASC, [user_id] ASC))

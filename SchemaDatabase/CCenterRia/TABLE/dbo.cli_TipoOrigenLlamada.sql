@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[cli_TipoOrigenLlamada](	  [cal_origin_id] TINYINT NOT NULL	, [code] VARCHAR(3) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Name] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

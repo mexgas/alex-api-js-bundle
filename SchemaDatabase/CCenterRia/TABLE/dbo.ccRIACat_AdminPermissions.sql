@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACat_AdminPermissions](	  [per_id] TINYINT NOT NULL IDENTITY(1,1)	, [per_desc] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [bStatus] BIT NULL	, [release] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT(''))

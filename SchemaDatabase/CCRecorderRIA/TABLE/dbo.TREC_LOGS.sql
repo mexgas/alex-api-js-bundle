@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_LOGS](	  [log_id] INT NOT NULL IDENTITY(1,1)	, [age_id] INT NOT NULL	, [accion_id] INT NOT NULL	, [fecha] DATETIME NOT NULL DEFAULT(getdate())	, [info] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_TREC_LOGS] PRIMARY KEY ([log_id] ASC))

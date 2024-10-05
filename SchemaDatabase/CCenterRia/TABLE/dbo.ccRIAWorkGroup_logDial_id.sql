@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAWorkGroup_logDial_id](	  [IDWG] SMALLINT NOT NULL	, [logDial_id] INT NULL	, [cam_id] SMALLINT NOT NULL	, [timestamp] DATETIME NOT NULL)CREATE NONCLUSTERED INDEX [IX_WGlogDial_id] ON [dbo].[ccRIAWorkGroup_logDial_id] ([IDWG] ASC)

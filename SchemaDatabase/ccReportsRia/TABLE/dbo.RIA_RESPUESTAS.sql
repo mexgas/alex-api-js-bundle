@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_RESPUESTAS](	  [id_respuesta] INT NOT NULL IDENTITY(1,1)	, [id_pregunta] INT NOT NULL	, [etiqueta] VARCHAR(120) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [peso] INT NOT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAInboundGraph](	  [Inbound_id] SMALLINT NOT NULL	, [graphic_id] SMALLINT NOT NULL	, CONSTRAINT [PK_ccRIAInboundGraph] PRIMARY KEY ([Inbound_id] ASC, [graphic_id] ASC))

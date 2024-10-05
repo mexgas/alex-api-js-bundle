@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccEdoAniList](	  [id_AniList] SMALLINT NOT NULL IDENTITY(1,1)	, [description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT('')	, [idArea] SMALLINT NOT NULL DEFAULT((0))	, CONSTRAINT [PK_ccEdoAniList] PRIMARY KEY ([id_AniList] ASC))

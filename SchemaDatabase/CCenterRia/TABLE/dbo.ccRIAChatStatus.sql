@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAChatStatus](	  [id] INT NOT NULL IDENTITY(0,1)	, [description] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccRIAChatStatus] PRIMARY KEY ([id] ASC))

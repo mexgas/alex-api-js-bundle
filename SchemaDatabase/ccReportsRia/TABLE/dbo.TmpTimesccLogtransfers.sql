@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TmpTimesccLogtransfers](	  [dateIni] DATETIME NOT NULL	, [dateEnd] DATETIME NOT NULL	, [callId] INT NOT NULL	, [tipo] TINYINT NULL	, [modo] TINYINT NULL	, [destino] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tAntesXfer] INT NULL	, [tDespuesXfer] INT NULL	, [timegroup] DATETIME NOT NULL	, [timegroup_next] DATETIME NOT NULL)

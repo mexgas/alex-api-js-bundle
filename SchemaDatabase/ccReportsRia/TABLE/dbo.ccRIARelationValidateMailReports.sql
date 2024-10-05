@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIARelationValidateMailReports](	  [id] INT NOT NULL	, [tipo] TINYINT NOT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Survey](	  [surveyId] INT NOT NULL IDENTITY(1,1)	, [description] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [scriptId] INT NOT NULL DEFAULT((0))	, [active] INT NOT NULL DEFAULT((1))	, CONSTRAINT [PK__Survey__09CA388A] PRIMARY KEY ([surveyId] ASC))

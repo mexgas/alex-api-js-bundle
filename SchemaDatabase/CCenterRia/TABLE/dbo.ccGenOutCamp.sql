@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenOutCamp](	  [timegroup] SMALLDATETIME NOT NULL	, [cam_id] SMALLINT NOT NULL	, [pos_tot] SMALLINT NOT NULL	, [pos_time] INT NOT NULL	, [pos_efect] SMALLINT NOT NULL	, CONSTRAINT [PK_ccGenSpecOut] PRIMARY KEY ([timegroup] ASC, [cam_id] ASC))

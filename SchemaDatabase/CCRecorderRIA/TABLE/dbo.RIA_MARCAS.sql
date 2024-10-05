@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_MARCAS](	  [id_marca] INT NOT NULL IDENTITY(1,1)	, [grab_id] INT NULL	, [user_id] INT NOT NULL	, [marca] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tipo_marca] INT NOT NULL	, [tipo_llamada] INT NOT NULL	, [call_id] INT NULL	, CONSTRAINT [PK_TREC_MARCAS] PRIMARY KEY ([id_marca] ASC))

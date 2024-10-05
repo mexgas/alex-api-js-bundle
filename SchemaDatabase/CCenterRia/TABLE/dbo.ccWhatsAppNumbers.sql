@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccWhatsAppNumbers](	  [vonageId] INT NOT NULL	, [number] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [inboundId] INT NOT NULL DEFAULT((0))	, [status] BIT NOT NULL DEFAULT((0))	, CONSTRAINT [PK__ccWhatsA__FD291E4051ADBC30] PRIMARY KEY ([number] ASC))

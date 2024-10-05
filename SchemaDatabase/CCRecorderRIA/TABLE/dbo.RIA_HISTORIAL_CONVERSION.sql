@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_HISTORIAL_CONVERSION](	  [id] INT NOT NULL IDENTITY(1,1)	, [fecha_inicial] DATETIME NULL	, [fecha_final] DATETIME NULL	, [grabid_inicial] INT NULL	, [grabid_final] INT NULL	, CONSTRAINT [PK_RIA_HISTORIAL_CONVERSION] PRIMARY KEY ([id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIALog_Module](	  [module_id] TINYINT NOT NULL	, [descripcion] VARCHAR(150) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccRIALog_Module] ON [dbo].[ccRIALog_Module] ([module_id] ASC)

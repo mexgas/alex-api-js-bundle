@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccCRMNodes](	  [cal_id] INT NOT NULL	, [type] INT NOT NULL	, [grab_id] BIGINT NULL	, [node] XML NOT NULL)CREATE NONCLUSTERED INDEX [IX_grabId] ON [dbo].[ccCRMNodes] ([grab_id] DESC)

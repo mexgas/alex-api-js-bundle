@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[DC_Extra](	  [id] INT NOT NULL	, [description] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL DEFAULT('')	, CONSTRAINT [PK__DC_Extra__3213E83FA8F11DD9] PRIMARY KEY ([id] ASC))

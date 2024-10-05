@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[IVRStructure](	  [IdScript] TINYINT NOT NULL	, [Level] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Description] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

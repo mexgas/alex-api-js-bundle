@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_RESULTADOSFORMA_CHAT](	  [id_forma] INT NOT NULL	, [id_pregunta] INT NOT NULL	, [id_respuesta] INT NOT NULL	, [etiquetas] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [peso] INT NULL)

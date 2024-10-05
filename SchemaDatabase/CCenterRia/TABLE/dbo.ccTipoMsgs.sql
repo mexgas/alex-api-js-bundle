@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoMsgs](	  [tipomsg_id] TINYINT NOT NULL	, [msg_descripcion] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [msg_mostrar] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_ccTipoMsgs] PRIMARY KEY ([tipomsg_id] ASC))

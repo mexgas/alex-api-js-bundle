@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[telefonosTransferencia](	  [numtra_id] SMALLINT NOT NULL IDENTITY(1,1)	, [nombre] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [tel] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [IDArea] SMALLINT NULL	, [allowsConference] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_telefonosTransferencia] PRIMARY KEY ([numtra_id] ASC))

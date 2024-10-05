@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_MODELO_GRABACION](	  [modelo_grabacion_id] TINYINT NOT NULL IDENTITY(1,1)	, [modelo_grabacion_descripcion] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__TREC_MODELO_GRAB__286302EC] PRIMARY KEY ([modelo_grabacion_id] ASC))

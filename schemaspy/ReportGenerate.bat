@@ -1,5 +1,5 @@
 cls
-set pathReport=D:/schemaspy
+set pathReport=C:/schemaspy
 java -jar schemaspy-6.1.0.jar -configFile ./CCenterRia.config.file -norows -o "%pathReport%/CCenterRia"
 
 rem start "" "%pathReport%/CCenterRia/index.html"
@@ -12,6 +12,6 @@ java -jar schemaspy-6.1.0.jar -configFile ./CCRecorderRIA.config.file -norows -o
 
 rem start "" "%pathReport%/CCRecorderRIA/index.html"
 
-java -jar schemaspy-6.1.0.jar -configFile ./CW_CenterScript.config.file -norows -o "%pathReport%/CW_CenterScript"
+@REM java -jar schemaspy-6.1.0.jar -configFile ./CW_CenterScript.config.file -norows -o "%pathReport%/CW_CenterScript"
 
 rem start "" "/%pathReport%/CW_CenterScript/index.html"

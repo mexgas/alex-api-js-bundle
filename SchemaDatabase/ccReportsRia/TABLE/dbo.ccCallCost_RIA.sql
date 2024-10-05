@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccCallCost_RIA](	  [country_id] SMALLINT NOT NULL	, [tipoLlamada_id] SMALLINT NULL	, [cost_per_min] FLOAT NULL	, [additional_min] FLOAT NULL)CREATE UNIQUE NONCLUSTERED INDEX [PK_ccCallCost] ON [dbo].[ccCallCost_RIA] ([country_id] ASC, [tipoLlamada_id] ASC)

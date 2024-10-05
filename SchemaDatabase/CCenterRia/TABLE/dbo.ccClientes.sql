@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccClientes](	  [cli_id] INT NOT NULL IDENTITY(1,1)	, [cli_nombre] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccClientes] PRIMARY KEY ([cli_id] ASC))

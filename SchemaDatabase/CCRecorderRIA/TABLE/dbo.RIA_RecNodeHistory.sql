@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_RecNodeHistory](	  [grab_id] BIGINT NOT NULL	, [node] XML NULL	, [dateIn] DATETIME NULL	, [dateOut] DATETIME NULL	, [status] TINYINT NULL	, CONSTRAINT [PK_RIA_RecNodeHistory] PRIMARY KEY ([grab_id] ASC))CREATE NONCLUSTERED INDEX [IX_RIA_RecNodeHistory_I] ON [dbo].[RIA_RecNodeHistory] ([grab_id] ASC, [dateIn] ASC)

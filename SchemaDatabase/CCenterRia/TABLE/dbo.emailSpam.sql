@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[emailSpam](	  [correoSpamId] INT NOT NULL IDENTITY(1,1)	, [inboundId] INT NOT NULL	, [agentId] INT NULL	, [conversationId] INT NULL	, [fecha] DATETIME NULL	, [correo] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK__emailSpam__31D829E4] PRIMARY KEY ([correoSpamId] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenInSpec](	  [timegroup] SMALLDATETIME NOT NULL	, [inbound_id] SMALLINT NOT NULL	, [pos_tot] SMALLINT NOT NULL	, [pos_time] INT NOT NULL	, [pos_efect] SMALLINT NOT NULL	, CONSTRAINT [PK_ccGenSpec] PRIMARY KEY ([timegroup] ASC, [inbound_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[mcaProtocolos](	  [protocolo_id] SMALLINT NOT NULL IDENTITY(1,1)	, [descrip] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [nota] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, CONSTRAINT [PK_mcaProtocolos] PRIMARY KEY ([protocolo_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_GEN_HORA_PTO](	  [timegroup] SMALLDATETIME NOT NULL	, [puerto] INT NOT NULL	, [grabaciones] INT NOT NULL	, [shortcalls] INT NOT NULL	, [duracion] INT NOT NULL	, [promedio] FLOAT NOT NULL	, [tamano] BIGINT NOT NULL)

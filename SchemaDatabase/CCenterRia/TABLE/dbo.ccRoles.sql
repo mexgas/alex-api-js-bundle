@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRoles](	  [Rol_id] INT NOT NULL IDENTITY(1,1)	, [Description] VARCHAR(250) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [KeyJson] VARCHAR(250) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [CreateDate] DATETIME NULL	, [Active] BIT NULL	, [Level] SMALLINT NULL	, CONSTRAINT [PK_ccRoles] PRIMARY KEY ([Rol_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[tmpTimesHoldIn](	  [inbound_id] INT NOT NULL	, [userId] INT NOT NULL	, [tiempohold] INT NOT NULL	, [timegroup] DATETIME NULL	, [timegroup_next] DATETIME NULL)

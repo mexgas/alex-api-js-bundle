@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAGraphics](	  [graphic_id] SMALLINT NOT NULL IDENTITY(1,1)	, [frame] SMALLINT NOT NULL	, [type_id] SMALLINT NOT NULL	, CONSTRAINT [PK_ccRIAGraphics] PRIMARY KEY ([graphic_id] ASC))CREATE NONCLUSTERED INDEX [IX_ccRIAGraphics_I] ON [dbo].[ccRIAGraphics] ([frame] ASC, [type_id] ASC)

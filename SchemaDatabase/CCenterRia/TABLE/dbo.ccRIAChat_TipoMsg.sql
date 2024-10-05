@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAChat_TipoMsg](	  [TipoMsgChat] TINYINT NOT NULL IDENTITY(1,1)	, [MsgDescripcion] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [MsgDetalle] VARCHAR(1500) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [MsgStatus] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccRIAChat_TipoMsg] PRIMARY KEY ([TipoMsgChat] ASC))

@@ -142,8 +142,6 @@ pipeline {
                             -Dsonar.projectName=${env.SONAR_NAME} ^
                             -Dsonar.projectVersion=${env.BUILD_ID} ^
                             -Dsonar.sources=./SCHEMA_BD ^
-                            -Dsonar.issue.ignore.multicriteria=e1 ^                                                        
-                            -Dsonar.issue.ignore.multicriteria.e1.resourceKey=**/TABLE/**/*.sql
                         """
                     }
                 }

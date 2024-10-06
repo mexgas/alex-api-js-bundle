@@ -38,6 +38,9 @@ if %ERRORLEVEL% neq 0 (
 REM Extraer el esquema de la base de datos de destino a un archivo DACPAC
 echo Generando archivo DACPAC de la base de datos de destino: %TargetDatabaseName%...
 %SqlPackagePath% /Action:Extract /SourceConnectionString:%TargetConnectionString% /TargetFile:%TargetDacpac%
+%SqlPackagePath% /Action:Script /SourceServerName:"192.168.1.59,1436" /SourceDatabaseName:"%SourceDatabaseName%" /TargetServerName:"192.168.1.59,1437" /TargetDatabaseName:"%TargetDatabaseName%" /p:TargetUser="sa" /p:TargetPassword="Nuxiba2024_" /p:TrustServerCertificate=True /p:SourceUser="sa" /p:SourcePassword="Nuxiba2024_" /OutputPath:"%SourceDatabaseName%.sql"
+
+
 if %ERRORLEVEL% neq 0 (
     echo Error al extraer el esquema de la base de datos de destino.
     pause

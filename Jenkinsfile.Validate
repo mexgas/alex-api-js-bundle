@@ -129,29 +129,24 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {      
-                    bat '"copyschemabd.bat"'
-                    def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                    echo "${scannerHome}"
-                    withSonarQubeEnv('SonarLinux_1.56') {
-                        bat """
-                            ${scannerHome}/bin/sonar-scanner.bat ^
-                            -Dsonar.projectKey=${env.SONAR_NAME} ^
-                            -Dsonar.projectName=${env.SONAR_NAME} ^
-                            -Dsonar.projectVersion=${env.BUILD_ID} ^
-                            -Dsonar.sources=./SCHEMA_BD ^
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Compare Schema') {
+        stage('SonarQube Analysis And Compare Schema') {
             steps {
                 script {
                     parallel(
+                        'SonarQube Analysis': {
+                            bat '"copyschemabd.bat"'
+                            def scannerHome = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                            echo "${scannerHome}"
+                            withSonarQubeEnv('SonarLinux_1.56') {
+                                bat """
+                                    ${scannerHome}/bin/sonar-scanner.bat ^
+                                    -Dsonar.projectKey=${env.SONAR_NAME} ^
+                                    -Dsonar.projectName=${env.SONAR_NAME} ^
+                                    -Dsonar.projectVersion=${env.BUILD_ID} ^
+                                    -Dsonar.sources=./SCHEMA_BD ^
+                                """
+                            }
+                        },
                         'Compare CCenterRIA': {
                             bat './CompareDatabse.bat CCenterRIA CCenterRIA'
                         },

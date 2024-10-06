@@ -11,7 +11,7 @@ cd /d %DacpacPath%
 
 REM Comprimir todos los archivos .dacpac en un archivo ZIP
 echo Comprimiendo archivos DACPAC en %ZipFileName%...
-tar -cvf %ZipFileName% *.dacpac
+tar -cvf %ZipFileName% *.sql
 
 REM Verificar si el archivo ZIP se creó correctamente
 if exist %ZipFileName% (

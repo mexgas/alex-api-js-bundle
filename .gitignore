@@ -1,3 +1,6 @@
 *.bak
 *.orig
 .scannerwork/
+DatabaseUpdateValidator/.vs/
+DatabaseUpdateValidator/DatabaseUpdateValidator/bin/
+DatabaseUpdateValidator/DatabaseUpdateValidator/obj/

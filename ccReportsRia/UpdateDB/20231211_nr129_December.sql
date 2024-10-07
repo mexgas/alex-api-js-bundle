@@ -6458,8 +6458,10 @@ FROM clt
 end'
     EXEC(@sql)
 
-    set @process = ''
-    set @sql=''
+    set @process = 'Update datos por hoja'
+    set @sql='update ccSettings 
+set valor=''200000|200000|2500000|10000|250000|2500000|44''
+where setting_id=44'
     EXEC(@sql)
     -------------------------------------- End hotfix/125.20231211.0.17 --------------------------------------
 

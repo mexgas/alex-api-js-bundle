@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  sqlserver_main:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver_main
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Nuxiba2024_"
+    ports:
+      - "1436:1433"
+    volumes:
+      - ./DataMain:/var/opt/mssql/data
+    networks:
+      - sql_network
+
+  sqlserver_pr:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver_pr
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Nuxiba2024_"
+    ports:
+      - "1437:1433"
+    volumes:
+      - ./Data:/var/opt/mssql/data
+    networks:
+      - sql_network
+
+networks:
+  sql_network:
+    driver: bridge

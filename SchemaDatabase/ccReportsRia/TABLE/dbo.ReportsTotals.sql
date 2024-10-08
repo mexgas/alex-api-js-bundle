@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ReportsTotals](	  [id] INT NOT NULL	, [totalColumns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ReportsTotals] PRIMARY KEY ([id] ASC))

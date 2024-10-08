@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAMailReports](	  [id] INT NOT NULL IDENTITY(1,1)	, [mailbox] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)CREATE UNIQUE NONCLUSTERED INDEX [UQ__ccRIAMai__92BA7DA8DB86F364] ON [dbo].[ccRIAMailReports] ([mailbox] ASC)

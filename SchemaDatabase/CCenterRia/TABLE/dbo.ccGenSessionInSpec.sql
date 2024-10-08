@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenSessionInSpec](	  [login] DATETIME NOT NULL	, [user_id] SMALLINT NOT NULL	, [inbound_id] SMALLINT NOT NULL	, [pos_tot] TINYINT NOT NULL	, [pos_time] INT NOT NULL	, [pos_efect] TINYINT NOT NULL	, CONSTRAINT [PK_ccGenSessionInSpec] PRIMARY KEY ([login] ASC, [user_id] ASC, [inbound_id] ASC))

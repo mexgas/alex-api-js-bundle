@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_GRUPOS_EXTENSION](	  [Grupoext_id] INT NOT NULL	, [Grupoext_gpol_id] TINYINT NOT NULL	, [Grupoext_nombre] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Grupoext_descripcion] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Grupoext_tipo] TINYINT NOT NULL)

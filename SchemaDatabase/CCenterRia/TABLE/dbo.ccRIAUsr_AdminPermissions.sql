@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAUsr_AdminPermissions](	  [User_id] SMALLINT NULL	, [per_id] TINYINT NULL)

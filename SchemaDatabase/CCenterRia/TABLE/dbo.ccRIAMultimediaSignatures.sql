@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAMultimediaSignatures](	  [signature_id] SMALLINT NOT NULL	, [Description] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [htmlText] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Status] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccRIAMultimediaSignatures] PRIMARY KEY ([signature_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccHorarioVeranoCol](	  [inicio] DATETIME NULL	, [fin] DATETIME NULL)

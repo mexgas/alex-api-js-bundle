@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_PCI_XTIME_CAMP](	  [cam_id] INT NOT NULL	, [Num_recordings] INT NOT NULL	, [Suma] INT NOT NULL	, CONSTRAINT [PK_RIA_PCI_CAMP_XTIME] PRIMARY KEY ([cam_id] ASC))

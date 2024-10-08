@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACallBack_Queue](	  [Que_id] INT NOT NULL IDENTITY(1,1)	, [cal_id] INT NULL	, [CAL_ANI] VARCHAR(13) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [callout_id] INT NULL	, [inbound_id] INT NULL	, [status_queue] SMALLINT NULL	, [datestamp] DATETIME NULL	, [retry] TINYINT NULL	, [xferDate] DATETIME NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIARoleMenu](	  [Role_id] SMALLINT NOT NULL	, [id_Menu] INT NOT NULL	, [type] TINYINT NOT NULL DEFAULT((1)))

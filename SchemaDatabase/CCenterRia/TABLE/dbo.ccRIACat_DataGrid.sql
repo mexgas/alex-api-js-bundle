@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIACat_DataGrid](	  [idGrid] INT NOT NULL	, [gridName] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [columns] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

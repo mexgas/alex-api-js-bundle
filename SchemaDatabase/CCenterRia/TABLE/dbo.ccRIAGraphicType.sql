@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAGraphicType](	  [type_id] SMALLINT NOT NULL IDENTITY(1,1)	, [descripcion] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccRIAGraphicType] PRIMARY KEY ([type_id] ASC))

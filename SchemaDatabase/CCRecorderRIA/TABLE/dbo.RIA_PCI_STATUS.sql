@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_PCI_STATUS](	  [grab_id] INT NOT NULL	, [pci_status] SMALLINT NULL	, [other_info] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

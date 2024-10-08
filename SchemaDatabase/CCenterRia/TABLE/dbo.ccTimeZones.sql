@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTimeZones](	  [tz_id] INT NOT NULL	, [tz_name] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tz_offset] FLOAT NOT NULL	, CONSTRAINT [PK_ccTimeZones] PRIMARY KEY ([tz_id] ASC))

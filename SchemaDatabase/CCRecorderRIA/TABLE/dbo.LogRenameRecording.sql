@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[LogRenameRecording](	  [id] INT NOT NULL IDENTITY(1,1)	, [userID] INT NULL	, [camId] INT NULL	, [OldNameRec] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [NewNameRec] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [DateRename] DATETIME NULL)

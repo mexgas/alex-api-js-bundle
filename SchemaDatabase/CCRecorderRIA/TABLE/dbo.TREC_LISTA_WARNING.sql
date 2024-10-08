@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_LISTA_WARNING](	  [id_warning] TINYINT NOT NULL	, [descripcion] NVARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [nivel] TINYINT NOT NULL	, [veces] TINYINT NULL	, [perioricidad] SMALLINT NULL	, CONSTRAINT [PK_TREC_LISTA_WARNING] PRIMARY KEY ([id_warning] ASC))

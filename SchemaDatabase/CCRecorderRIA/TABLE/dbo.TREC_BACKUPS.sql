@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_BACKUPS](	  [grab_id] INT NOT NULL	, [status_audio] SMALLINT NULL	, [status_video] SMALLINT NULL	, [id_ruta_backup] INT NULL	, CONSTRAINT [PK_TREC_BACKUPS] PRIMARY KEY ([grab_id] ASC))CREATE NONCLUSTERED INDEX [IX_TREC_BACKUPS_1] ON [dbo].[TREC_BACKUPS] ([status_audio] ASC)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIA_vmACDMailBoxes](	  [ACDvm_id] INT NOT NULL IDENTITY(1,1)	, [vmID] INT NOT NULL	, [inbound_id] SMALLINT NOT NULL)

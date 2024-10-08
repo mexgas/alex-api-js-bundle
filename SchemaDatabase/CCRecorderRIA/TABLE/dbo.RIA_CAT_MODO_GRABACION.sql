@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_CAT_MODO_GRABACION](	  [modo_graba_id] TINYINT NOT NULL IDENTITY(1,1)	, [modo_graba_descripcion] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__TREC_MODO_GRABAC__2A4B4B5E] PRIMARY KEY ([modo_graba_id] ASC))

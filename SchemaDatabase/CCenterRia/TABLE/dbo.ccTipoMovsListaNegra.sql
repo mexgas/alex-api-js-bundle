@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoMovsListaNegra](	  [idtipomov] INT NOT NULL IDENTITY(1,1)	, [movimiento] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccTipoMovsListaNegra] PRIMARY KEY ([idtipomov] ASC))

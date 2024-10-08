@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccUploadTemporal](	  [cal_key] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [cam_id] SMALLINT NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccUploadTemporal_1] ON [dbo].[ccUploadTemporal] ([cam_id] ASC)

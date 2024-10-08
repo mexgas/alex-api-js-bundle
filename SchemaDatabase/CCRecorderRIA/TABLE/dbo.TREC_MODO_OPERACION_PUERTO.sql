@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_MODO_OPERACION_PUERTO](	  [modo_operacion_puerto_id] TINYINT NOT NULL IDENTITY(1,1)	, [modo_operacion_puerto_descripcion] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__TREC_MODO_OPERAC__2C3393D0] PRIMARY KEY ([modo_operacion_puerto_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_ACCESSLIST](	  [keyAddress] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [wildCard] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [ruta_repositorio] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT(''))

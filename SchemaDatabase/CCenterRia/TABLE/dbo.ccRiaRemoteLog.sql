@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRiaRemoteLog](	  [id_remotelog] TINYINT NOT NULL IDENTITY(1,1)	, [ip] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccRiaRemoteLog] PRIMARY KEY ([ip] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[FavoriteTemplates](	  [id] INT NOT NULL	, [userId] INT NOT NULL	, [parameters] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [reportName] NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [date] DATETIME NOT NULL	, CONSTRAINT [PK_FavoriteTemplates] PRIMARY KEY ([userId] ASC, [reportName] ASC))

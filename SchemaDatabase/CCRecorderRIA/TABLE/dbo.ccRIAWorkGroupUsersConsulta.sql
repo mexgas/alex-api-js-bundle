@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAWorkGroupUsersConsulta](	  [IDWG] SMALLINT NOT NULL	, [User_id] SMALLINT NOT NULL)CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta] ON [dbo].[ccRIAWorkGroupUsersConsulta] ([IDWG] ASC)CREATE NONCLUSTERED INDEX [IX_ccRIAWorkGroupUsersConsulta2] ON [dbo].[ccRIAWorkGroupUsersConsulta] ([IDWG] ASC, [User_id] ASC)

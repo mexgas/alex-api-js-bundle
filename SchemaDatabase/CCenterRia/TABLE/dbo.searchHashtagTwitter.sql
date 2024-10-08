@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[searchHashtagTwitter](	  [searchTwitterId] INT NOT NULL IDENTITY(1,1)	, [hashtag] VARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__searchHashtagTwi__658CD814] PRIMARY KEY ([searchTwitterId] ASC))CREATE UNIQUE NONCLUSTERED INDEX [UQ__searchHashtagTwi__6680FC4D] ON [dbo].[searchHashtagTwitter] ([hashtag] ASC)

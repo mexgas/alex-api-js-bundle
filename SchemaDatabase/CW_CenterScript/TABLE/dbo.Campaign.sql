@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Campaign](	  [Cam_id] INT NOT NULL	, [Template_id] INT NOT NULL)

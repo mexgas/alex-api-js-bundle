@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_CONCEPTOS](	  [id_concepto] INT NOT NULL IDENTITY(1,1)	, [id_formato] INT NOT NULL	, [num_concepto] INT NOT NULL	, [con_descripcion] VARCHAR(80) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [version] INT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_RIA_CONCEPTOS] PRIMARY KEY ([id_concepto] ASC, [version] ASC))

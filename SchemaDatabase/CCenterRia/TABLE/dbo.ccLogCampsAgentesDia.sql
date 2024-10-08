@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccLogCampsAgentesDia](	  [User_id] SMALLINT NOT NULL	, [TipoStatusAge_id] TINYINT NOT NULL	, [TipoCall] TINYINT NOT NULL	, [Camp] SMALLINT NOT NULL	, [tStatus] SMALLINT NOT NULL	, [fecha] DATETIME NOT NULL DEFAULT(getdate()))

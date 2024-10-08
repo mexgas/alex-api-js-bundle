@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RiaMarkHold](	  [marca] INT NOT NULL	, [tipo_marca] INT NOT NULL	, [tipo_llamada] INT NOT NULL	, [call_id] INT NULL)CREATE NONCLUSTERED INDEX [IX_RiaMarkHold_1] ON [dbo].[RiaMarkHold] ([tipo_llamada] ASC, [call_id] ASC)

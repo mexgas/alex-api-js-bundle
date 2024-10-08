@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[cc_KillList](	  [id] INT NOT NULL IDENTITY(1,1)	, [hashTel] INT NOT NULL	, [hashkey] INT NULL	, [id_tipoLista] INT NOT NULL	, [date] DATETIME NOT NULL)

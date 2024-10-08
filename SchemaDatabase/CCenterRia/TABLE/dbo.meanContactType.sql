@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[meanContactType](	  [meanContactTypeId] SMALLINT NOT NULL IDENTITY(1,1)	, [name] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [isActive] BIT NOT NULL	, CONSTRAINT [PK__meanContactType__2D487EF1] PRIMARY KEY ([meanContactTypeId] ASC))CREATE UNIQUE NONCLUSTERED INDEX [UQ__meanContactType__147CD127] ON [dbo].[meanContactType] ([name] ASC)

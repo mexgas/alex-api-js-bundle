@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[IVRTemplateAudio](	  [ivrAudioId] INT NOT NULL IDENTITY(1,1)	, [audioFile] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

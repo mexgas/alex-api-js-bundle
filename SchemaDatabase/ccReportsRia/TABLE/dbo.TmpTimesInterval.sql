@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TmpTimesInterval](	  [ID] INT NOT NULL	, [Start] DATETIME NULL	, [Stop] DATETIME NULL	, CONSTRAINT [PK__TmpTimes__3214EC279342B7C5] PRIMARY KEY ([ID] ASC))CREATE NONCLUSTERED INDEX [ix_times] ON [dbo].[TmpTimesInterval] ([Start] DESC, [Stop] DESC)CREATE NONCLUSTERED INDEX [ix_times2] ON [dbo].[TmpTimesInterval] ([Start] DESC)

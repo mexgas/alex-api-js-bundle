@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[PinedCampaigns](	  [CampId] INT NOT NULL	, [AdminId] INT NULL	, [Type] SMALLINT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_MARCAS_VIDEO](	  [id_marca] INT NOT NULL IDENTITY(1,1)	, [marca] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tipo_marca] INT NOT NULL	, [tipo_llamada] INT NOT NULL	, [call_id] INT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[CsCenterwareWS_ApiKey](	  [Api_id] INT NOT NULL IDENTITY(1,1)	, [APIkey] VARCHAR(32) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Description] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

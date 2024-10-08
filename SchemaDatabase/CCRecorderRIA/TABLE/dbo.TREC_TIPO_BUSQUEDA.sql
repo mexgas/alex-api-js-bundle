@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_TIPO_BUSQUEDA](	  [tipo_busq_id] SMALLINT NOT NULL	, [Descripcion] VARCHAR(30) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [tipo] SMALLINT NOT NULL DEFAULT((1)))

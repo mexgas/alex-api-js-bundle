@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_PERFIL](	  [perfil_id] TINYINT NOT NULL	, [perfil_descripcion] VARCHAR(75) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__TREC_PERFIL__49C3F6B7] PRIMARY KEY ([perfil_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_TIPO_GRITOS](	  [id_nivel_grito] INT NOT NULL IDENTITY(*,1)	, [nombre_nivel] VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_RIA_TIPO_GRITOS] PRIMARY KEY ([id_nivel_grito] ASC))

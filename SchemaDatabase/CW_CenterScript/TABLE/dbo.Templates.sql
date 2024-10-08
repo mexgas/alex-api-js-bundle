@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Templates](	  [Template_id] INT NOT NULL IDENTITY(1,1)	, [Description] VARCHAR(125) COLLATE Modern_Spanish_CI_AS NULL	, [name] VARCHAR(125) COLLATE Modern_Spanish_CI_AS NULL	, [status] BIT NULL	, [actityAgent] BIT NULL	, [dateCreated] DATE NULL	, [EditStatus] BIT NULL	, CONSTRAINT [PK__Template__E7F893F91367E606] PRIMARY KEY ([Template_id] ASC))

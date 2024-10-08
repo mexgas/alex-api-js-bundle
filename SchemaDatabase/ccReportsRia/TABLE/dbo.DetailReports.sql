@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[DetailReports](	  [id] INT NOT NULL	, [dbColumnFilter] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [columns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [pivotColumns] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [showColumnsDetail] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_GEN_DURACION](	  [timegroup] SMALLDATETIME NOT NULL	, [age_id] INT NOT NULL	, [val] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [menor10] INT NOT NULL	, [menor20] INT NOT NULL	, [menor30] INT NOT NULL	, [menor40] INT NOT NULL	, [menor50] INT NOT NULL	, [menor60] INT NOT NULL)

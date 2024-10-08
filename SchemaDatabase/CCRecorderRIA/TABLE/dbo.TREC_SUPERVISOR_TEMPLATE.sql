@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[TREC_SUPERVISOR_TEMPLATE](	  [age_id] INT NOT NULL	, [tpl_id] INT NOT NULL)

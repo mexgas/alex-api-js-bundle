@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[CallDetail](	  [Calltype] VARCHAR(50) COLLATE Modern_Spanish_CI_AS NOT NULL	, [Cal_id] INT NOT NULL	, [Template_id] INT NOT NULL	, [Record_id] INT NOT NULL)

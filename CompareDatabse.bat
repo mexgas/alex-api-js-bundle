@@ -15,26 +15,27 @@ if "%2"=="" (
 )
 
 REM Define los nombres de las bases de datos pasados como parámetros
-set PrDatabaseName=%1
-set DestDatabaseName=%2
+set SourceDatabaseName=%1
+set PrDatabaseName=%2
 
 REM Define los detalles de conexión, con el parámetro TrustServerCertificate en la cadena de conexión
-set PrConnectionString="Data Source=192.168.1.59,1436;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
-set DestConnectionString="Data Source=192.168.1.59,1437;Initial Catalog=%DestDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set SourceConnectionString="Data Source=192.168.1.59,1436;Initial Catalog=%SourceDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set PrConnectionString="Data Source=192.168.1.59,1437;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
 
 REM Define los archivos DACPAC donde se guardarán los esquemas extraídos
-set SourceDacpac=%PrDatabaseName%_Pr.dacpac
-set TargetDacpac=%DestDatabaseName%_Dest.dacpac
+set SourceDacpac=%SourceDatabaseName%_Ori.dacpac
+set PrDacpac=%PrDatabaseName%_PR.dacpac
 
 REM Define los archivos de salida para el reporte XML y los scripts SQL
-set ReportFile=%PrDatabaseName%.xml
-set ScriptFileForward=%PrDatabaseName%_UpdateScript_Pr.sql
+set ScriptFileBackward=%SourceDatabaseName%_Ori.sql
 
-set ScriptFileBackward=%DestDatabaseName%_UpdateScript_Dest.sql
+set ReportFile=%PrDatabaseName%.xml
+set ScriptFileForward=%PrDatabaseName%_Pr.sql
+
 
 REM Extraer el esquema de la base de datos de origen a un archivo DACPAC
-echo Generando archivo DACPAC de la base de datos de Pr: %PrDatabaseName%...
-%SqlPackagePath% /Action:Extract /SourceConnectionString:%PrConnectionString% /TargetFile:%SourceDacpac%
+echo Generando archivo DACPAC de la base de datos de Pr: %SourceDatabaseName%...
+%SqlPackagePath% /Action:Extract /SourceConnectionString:%SourceConnectionString% /TargetFile:%SourceDacpac%
 if %ERRORLEVEL% neq 0 (
     echo Error al extraer el esquema de la base de datos de origen.
     pause
@@ -42,8 +43,8 @@ if %ERRORLEVEL% neq 0 (
 )
 
 REM Extraer el esquema de la base de datos de destino a un archivo DACPAC
-echo Generando archivo DACPAC de la base de datos de destino: %DestDatabaseName%...
-%SqlPackagePath% /Action:Extract /SourceConnectionString:%DestConnectionString% /TargetFile:%TargetDacpac%
+echo Generando archivo DACPAC de la base de datos de destino: %PrDatabaseName%...
+%SqlPackagePath% /Action:Extract /SourceConnectionString:%PrConnectionString% /TargetFile:%PrDacpac%
 if %ERRORLEVEL% neq 0 (
     echo Error al extraer el esquema de la base de datos de destino.
     pause
@@ -52,28 +53,12 @@ if %ERRORLEVEL% neq 0 (
 
 REM Comparar el archivo DACPAC de origen con la base de datos de destino (Forward) y generar un reporte XML y script SQL
 echo Comparando el archivo DACPAC de origen con la base de datos de destino y generando el reporte XML 
-%SqlPackagePath% /Action:DeployReport /SourceFile:%SourceDacpac% /TargetConnectionString:%DestConnectionString% /OutputPath:%ReportFileForward%
-rem if %ERRORLEVEL% neq 0 (
-rem     echo Error al generar el reporte de diferencias en XML (origen -> destino).
-rem     pause
-rem     exit /b
-rem )
-
+%SqlPackagePath% /Action:DeployReport /SourceFile:%SourceDacpac% /TargetConnectionString:%SourceConnectionString% /OutputPath:%ReportFile%
 
 echo Comparando el archivo DACPAC de origen con la base de datos de destino y generando el script SQL %ScriptFileForward%
-%SqlPackagePath% /Action:Script /SourceFile:%SourceDacpac% /TargetConnectionString:%DestConnectionString% /OutputPath:%ScriptFileForward%
-rem if %ERRORLEVEL% neq 0 (
-rem     echo Error al generar el script SQL (origen -> destino).
-rem     pause
-rem     exit /b
-rem )
+%SqlPackagePath% /Action:Script /SourceFile:%SourceDacpac% /TargetConnectionString:%SourceConnectionString% /OutputPath:%ScriptFileBackward%
 
-%SqlPackagePath% /Action:Script /SourceFile:%TargetDacpac% /TargetConnectionString:%PrConnectionString% /OutputPath:%ScriptFileBackward%
-rem if %ERRORLEVEL% neq 0 (
-rem     echo Error al generar el script SQL (destino -> origen).
-rem     pause
-rem     exit /b
-rem )
+%SqlPackagePath% /Action:Script /SourceFile:%PrDacpac% /TargetConnectionString:%PrConnectionString% /OutputPath:%ScriptFileForward%
 
 echo Archivos generados exitosamente:
 echo - Reporte XML: %ReportFile%

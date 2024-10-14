@@ -153,13 +153,13 @@ pipeline {
                 script {
                     parallel(                        
                         'Compare CCenterRIA': {
-                            bat './CompareDatabse.bat CCenterRIA CCenterRIA'
+                            bat '"./CompareDatabse.bat" CCenterRIA CCenterRIA'
                         },
                         'Compare CCRecorderRIA': {
-                            bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
+                            bat '"./CompareDatabse.bat" CCRecorderRIA CCRecorderRIA'
                         },
                         'Compare CCReportsRIA': {
-                            bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+                            bat '"./CompareDatabse.bat" CCReportsRIA CCReportsRIA'
                         }
                     )
                 }

@@ -232,9 +232,9 @@ pipeline {
                 } else {
                     echo "prId está vacío, no se enviará la solicitud curl."
                 }
-                if (buildResult == 'SUCCESS') {
-                    deleteDir()
-                }
+                // if (buildResult == 'SUCCESS') {
+                //     deleteDir()
+                // }
             }
         }
     }

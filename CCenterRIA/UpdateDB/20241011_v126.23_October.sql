@@ -57,7 +57,7 @@ BEGIN
 		SET @process = 'DEV2-631 - create sp ccsp_MultimediaCommon '
 		SET @sql = '
 		
-CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
+CREATE PROCEDURE ccsp_MultimediaCommon
 @Option AS SMALLINT,
 @inboundId AS SMALLINT = 0,
 @conversationId AS INT = 0,
@@ -66,7 +66,8 @@ CREATE PROCEDURE [dbo].[ccsp_MultimediaCommon]
 @messagesList as varchar(max) = '''',
 @agentId AS SMALLINT = 0,
 @CampType bit =0,
-@phoneNumber varchar(30)=''''
+@phoneNumber varchar(30)='''',
+@campaignNumber VARCHAR(MAX) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -299,8 +300,19 @@ BEGIN
             FROM [ccUsers]
         WHERE [User_id] = @agentId
     END
-END
-			'
+	ELSE IF(@Option = 7)
+    BEGIN
+		IF @CampType = 0 BEGIN
+        -- No se sabe si se va a implementar
+        SELECT -1
+        END 
+        ELSE BEGIN
+			SELECT CAST(ISNULL(maxLimitQueueConversations,99) AS INT) AS MaxLimitQueueConversations 
+            FROM contactMeanOut
+            WHERE conexionInfo = @campaignNumber
+        END 
+    END
+END'
 		EXEC(@sql)
 
 		SET @process = 'DEV2-631 - create setting 279 '

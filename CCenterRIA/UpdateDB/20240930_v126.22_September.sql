@@ -43,7 +43,7 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
-    	
+    	--
 		------------------------------------------------- BEGIN MARCO GARCÍA----------------------------------------------------------------------------------
 		------------------------------------------------------- Tablas ------------------------------------------------------------------------------------------
 		SET @process = 'K002091 - Descargar conversaciones entrada Whatsapp con adjuntos - Se crea la tabla ccFinderWhatsAppDownloadedMessage'

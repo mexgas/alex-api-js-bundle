@@ -290,10 +290,265 @@ FROM clt
 
 end'
     EXEC(@sql)
-
-   
+  
 -------------------------------------- End hotfix/125.20231211.0.17 --------------------------------------
 
+
+-------------------------------------- Begin Carlos Muñoz --------------------------------------
+set @process = 'K002151 Reporte historial de desasignaciones'
+	set @sql = 'if not exists (select * from sys.tables where name = N''RepWhatsConversationsUnassigned'')
+				BEGIN
+					CREATE TABLE [dbo].[RepWhatsConversationsUnassigned](
+                    [date] [datetime] NOT NULL,
+                    [conversationid] [int] NOT NULL,
+                    [globalid] [int] NULL,
+                    [inboundid] [int] NULL,
+                    [campaign] [varchar](50) NOT NULL,
+                    [associatedPhoneNumberWhatsApp] [varchar](40) NOT NULL,
+                    [contactPhoneNumberWhatsApp] [varchar](40) NULL,
+                    [unassignedBy] [varchar](40) NULL,
+                    [userId] [int] NOT NULL,
+                    [agentName] [varchar](50) NOT NULL,
+                    [year] [smallint] NOT NULL,
+                    [month] [smallint] NOT NULL,
+                    [day] [smallint] NOT NULL,
+                    [hour] [smallint] NOT NULL,
+                    [minutes] [smallint] NOT NULL
+                ) ON [PRIMARY]
+				END;'
+	EXEC(@sql)
+
+	set @process = 'DEV1-673 create index on RepWhatsConversationsUnassigned'
+	set @sql = '
+	if not exists (select * from sys.indexes where name = N''IX_RepWhatsConversationsUnassigned'' and object_id = OBJECT_ID(N''RepWhatsConversationsUnassigned''))
+    begin
+        CREATE INDEX IX_RepWhatsConversationsUnassigned ON RepWhatsConversationsUnassigned(date, inboundid, userId);
+    end
+	'
+    EXEC(@sql)
+
+    set @process = 'DEV1-673 Reportfilters, reportfiltersmenus and translation'
+	-- REPORTS FILTERS
+    set @sql = '
+	if not exists (select * from ReportsFilters where id=12015 and filterName=''acds'')
+	begin
+		INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Conversations unassigned'',''acds'',12015) 
+	end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+	if not exists (select * from ReportsFilters where id=12015 and filterName=''users'')
+	begin
+		INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Conversations unassigned'',''users'',12015) 
+	end
+	'
+	EXEC(@sql)
+
+    -- REPORTS FILTERS MENUS
+    set @sql = '
+	if not exists (select * from ReportsFiltersMenus where idReport=12015 and filterMenuName=''date'')
+	begin
+		INSERT INTO ReportsFiltersMenus VALUES(12015,N''date'',1,'''') 
+	end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+	if not exists (select * from ReportsFiltersMenus where idReport=12015 and filterMenuName=''filterby'')
+	begin
+		INSERT INTO ReportsFiltersMenus VALUES(12015,N''filterby'',1,'''') 
+	end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+	if not exists (select * from TranslatedReports where id=12015)
+	begin
+		INSERT INTO TranslatedReports VALUES (12015, ''unassignedBy'')
+	end
+	'
+	EXEC(@sql)
+
+    set @process = 'DEV1-673  DROP PROCEDURE ccspRepWhatsConversationsUnassigned '
+	set @sql = '
+	if exists (select * from sys.procedures where name = N''ccspRepWhatsConversationsUnassigned'')
+    begin
+        DROP PROCEDURE ccspRepWhatsConversationsUnassigned;
+    end
+	'
+	EXEC(@sql)
+
+        
+    set @sql = '
+        CREATE PROC ccspRepWhatsConversationsUnassigned
+        @action AS tinyint,
+        @from as datetime = null,
+        @to as datetime = null
+        AS
+            IF @from is null
+                SET @from = getdate()
+                SET @from = DATEADD(dd, -1, @from)
+            IF @to is null
+                SET @to = getdate()
+
+            IF @action = 1
+            BEGIN
+                DELETE FROM RepWhatsConversationsUnassigned WHERE date >= @from AND date < @to
+
+                INSERT INTO RepWhatsConversationsUnassigned
+                SELECT requestDate as date, 
+                    wac.conversationId as conversationid,
+                    ISNULL(globalRelation.GlobalId, 0) as globalid,
+                    i.Inbound_id as inboundid,
+                    i.descripcion as campaign, 
+                    phoneACD as associatedPhoneNumberWhatsApp, 
+                    clientId as contactPhoneNumberWhatsApp, 
+                    CASE wac.conversationStatus
+                            WHEN 4 THEN ''systemTranslated_Agent''
+                            WHEN 17 THEN ''systemTranslated_systemTimeout''
+                            WHEN 18 THEN ''systemTranslated_systemError''
+                            END as unassignedBy, 
+                    ISNULL(u.User_id, 0) as userId, 
+                    ISNULL(u.Nombres, '''') as agentName ,
+                    DATEPART(yyyy, wac.requestDate) [year],
+                    datepart(mm, wac.requestDate) [month],
+                    datepart(dd, wac.requestDate) [day],
+                    datepart(hh, wac.requestDate) [hour],
+                    datepart(mi, wac.requestDate) [minutes]
+                FROM ccWhatsAppConversations wac LEFT JOIN ccInbound i on wac.inboundId = i.Inbound_id 
+                LEFT JOIN ccUserView u ON u.User_id = wac.agentId
+                LEFT JOIN ccWhatsAppGlobalIdsRelationship globalRelation ON globalRelation.ConversationId = wac.conversationId AND globalRelation.ConversationType = 0
+                LEFT JOIN ccWhatsAppGlobalIds globalIds ON globalRelation.GlobalId = globalIds.GlobalId AND 
+                        globalIds.FirstMessageConversationIdFromAgent = wac.conversationId AND
+                        globalIds.FirstMessageConversationTypeFromAgent = 0
+                WHERE wac.conversationStatus IN (4,17,18) AND wac.requestDate BETWEEN @from AND @to
+        END
+    '
+    EXEC(@sql)
+
+    set @process = 'K002152 Reporte SPAM de conversaciones WhatsApp de entrada'
+	set @sql = 'if not exists (select * from sys.tables where name = N''RepWhatsConversationsMarkedAsSpam'')
+				BEGIN
+                    CREATE TABLE [dbo].[RepWhatsConversationsMarkedAsSpam](
+                        [date] [datetime] NOT NULL,
+                        [conversationid] [int] NOT NULL,
+                        [globalid] [int] NULL,
+                        [inboundid] [int] NULL,
+                        [campaign] [varchar](50) NOT NULL,
+                        [associatedPhoneNumberWhatsApp] [varchar](40) NOT NULL,
+                        [contactPhoneNumberWhatsApp] [varchar](40) NULL,
+                        [spamDate] [datetime] NOT NULL,
+                        [userId] [int] NOT NULL,
+                        [agentName] [varchar](50) NOT NULL,
+                        [year] [smallint] NOT NULL,
+                        [month] [smallint] NOT NULL,
+                        [day] [smallint] NOT NULL,
+                        [hour] [smallint] NOT NULL,
+                        [minutes] [smallint] NOT NULL
+                    ) ON [PRIMARY]
+				END;'
+	EXEC(@sql)
+
+    set @process = 'DEV2-685 create index on RepWhatsConversationsMarkedAsSpam'
+	set @sql = '
+	if not exists (select * from sys.indexes where name = N''IX_RepWhatsConversationsMarkedAsSpam'' and object_id = OBJECT_ID(N''RepWhatsConversationsMarkedAsSpam''))
+    begin
+        CREATE INDEX IX_RepWhatsConversationsMarkedAsSpam ON RepWhatsConversationsMarkedAsSpam(date, inboundid, userId);
+    end
+	'
+    EXEC(@sql)
+
+    set @process = 'DEV2-685 Reportfilters, reportfiltersmenus and translation'
+	-- REPORTS FILTERS
+    set @sql = '
+	if not exists (select * from ReportsFilters where id=12017 and filterName=''acds'')
+	begin
+		INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Conversations As Spam IN'',''acds'',12017) 
+	end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+	if not exists (select * from ReportsFilters where id=12017 and filterName=''users'')
+	begin
+		INSERT INTO ReportsFilters(reportName,filterName,id) VALUES(''Conversations As Spam IN'',''users'',12017) 
+	end
+	'
+	EXEC(@sql)
+
+    -- REPORTS FILTERS MENUS
+    set @sql = '
+	if not exists (select * from ReportsFiltersMenus where idReport=12017 and filterMenuName=''date'')
+	begin
+		INSERT INTO ReportsFiltersMenus VALUES(12017,N''date'',1,'''') 
+	end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+	if not exists (select * from ReportsFiltersMenus where idReport=12017 and filterMenuName=''filterby'')
+	begin
+		INSERT INTO ReportsFiltersMenus VALUES(12017,N''filterby'',1,'''') 
+	end
+	'
+	EXEC(@sql)
+
+    set @process = 'DEV2-685 DROP PROCEDURE ccspRepWhatsConversationsMarkedAsSpam '
+	set @sql = '
+	if exists (select * from sys.procedures where name = N''ccspRepWhatsConversationsMarkedAsSpam'')
+    begin
+        DROP PROCEDURE ccspRepWhatsConversationsMarkedAsSpam;
+    end
+	'
+	EXEC(@sql)
+
+    set @sql = '
+    CREATE PROC ccspRepWhatsConversationsMarkedAsSpam
+        @action AS tinyint,
+        @from as datetime = null,
+        @to as datetime = null
+    AS
+        IF @from is null
+            SET @from = getdate()
+            SET @from = DATEADD(dd, -1, @from)
+        IF @to is null
+            SET @to = getdate()
+
+        IF @action = 1
+        BEGIN
+            DELETE FROM RepWhatsConversationsMarkedAsSpam  WHERE date >= @from AND date < @to
+
+            INSERT INTO RepWhatsConversationsMarkedAsSpam
+            SELECT wac.requestDate as date, 
+                was.conversationId as conversationid,
+                ISNULL(globalIds.GlobalId,0) as globalid,
+                was.InboundId as inboundid,
+                i.descripcion as campaign,
+                wac.phoneACD as associatedPhoneNumberWhatsApp,
+                wac.clientId as contactPhoneNumberWhatsApp,
+                was.Fecha as spamDate,
+                was.AgentId as userId,
+                u.Nombres as agentName,
+                DATEPART(yyyy, wac.requestDate) [year],
+                datepart(mm, wac.requestDate) [month],
+                datepart(dd, wac.requestDate) [day],
+                datepart(hh, wac.requestDate) [hour],
+                datepart(mi, wac.requestDate) [minutes]
+            FROM ccWhatsAppSpam was 
+                LEFT JOIN ccWhatsAppConversations wac ON was.ConversationId = wac.conversationId
+                LEFT JOIN ccInbound i on was.inboundId = i.Inbound_id 
+                LEFT JOIN ccUserView u ON u.User_id = was.agentId
+                LEFT JOIN ccWhatsAppGlobalIdsRelationship globalRelation ON globalRelation.ConversationId = was.conversationId AND globalRelation.ConversationType = 0
+                LEFT JOIN ccWhatsAppGlobalIds globalIds ON globalRelation.GlobalId = globalIds.GlobalId AND 
+                    globalIds.FirstMessageConversationIdFromAgent = was.conversationId AND
+                    globalIds.FirstMessageConversationTypeFromAgent = 0
+            WHERE wac.agentId <> 0 AND wac.requestDate BETWEEN @from AND @to
+        END
+    '
+    EXEC(@sql)
+
+-------------------------------------- End Carlos Muñoz --------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

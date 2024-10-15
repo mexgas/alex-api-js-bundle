@@ -28,27 +28,23 @@ set ScriptFileForward=%PrDatabaseName%_Pr.sql
 
 set ScriptFileBackward=%DestDatabaseName%_Ori.sql
 
+set folderPrDacpac=%PrDatabaseName%_Pr
+set folderOriDacpac=%DestDatabaseName%_Ori
+
+
 REM Extraer el esquema de la base de datos de destino a un archivo DACPAC
 echo Generando archivo DACPAC de la base de datos de destino: %OriDacpac%...
 %SqlPackagePath% /Action:Extract /SourceConnectionString:%OriConnectionString% /TargetFile:%OriDacpac%
-
 
 REM Extraer el esquema de la base de datos de origen a un archivo DACPAC
 echo Generando archivo DACPAC de la base de datos de Pr: %PrDacpac%...
 %SqlPackagePath% /Action:Extract /SourceConnectionString:%PrConnectionString% /TargetFile:%PrDacpac%
 
 
-REM Comparar el archivo DACPAC de origen con la base de datos de destino (Forward) y generar un reporte XML y script SQL
-echo Comparando el archivo DACPAC de origen con la base de datos de destino y generando el reporte XML 
-%SqlPackagePath% /Action:DeployReport /SourceFile:%PrDacpac% /TargetConnectionString:%OriConnectionString% /OutputPath:%ReportFile%
+unpackdacpac unpack %PrDacpac% %folderPrDacpac% --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
+unpackdacpac unpack %OriDacpac% %folderOriDacpac% --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
 
-echo Comparando el archivo DACPAC de origen con la base de datos de destino y generando el script SQL %ScriptFileForward%
-%SqlPackagePath% /Action:Script /SourceFile:%PrDacpac% /TargetConnectionString:%OriConnectionString% /OutputPath:%ScriptFileForward%
+:: Mover y renombrar el archivo
+move "%folderPrDacpac%\model.sql" "%ScriptFileForward%"    
+move "%folderOriDacpac%\model.sql" "%ScriptFileBackward%"    
 
-%SqlPackagePath% /Action:Script /SourceFile:%OriDacpac% /TargetConnectionString:%PrConnectionString% /OutputPath:%ScriptFileBackward%
-
-rem echo Archivos generados exitosamente:
-rem echo - Reporte XML: %ReportFile%
-rem echo - Origen -> Destino - Script SQL: %ScriptFileForward%
-rem echo - Destino -> Origen - Script SQL: %ScriptFileBackward%
-rem rem rem pause

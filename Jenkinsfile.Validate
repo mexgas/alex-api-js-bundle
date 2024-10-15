@@ -53,7 +53,7 @@ pipeline {
                     print '-----------------------------------------------------'
                 }
             }
-        }        
+        }
         stage('slack notification') {
             steps {
                 wrap([$class: 'BuildUser']) {
@@ -61,7 +61,6 @@ pipeline {
                 }
             }
         }
-
         stage('Checkout PR And Base Branch') {
             steps {
                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
@@ -86,7 +85,7 @@ pipeline {
             steps {
                 script {
                     bat 'docker-compose up -d'
-                    sleep(time: 20, unit: 'SECONDS')
+                    sleep(time: 30, unit: 'SECONDS')
                 }
             }
         }

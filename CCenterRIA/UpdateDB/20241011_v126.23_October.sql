@@ -786,13 +786,13 @@ BEGIN
                         )
                     THEN ''''
                     WHEN typeMessage = ''file''
-                    THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 2)
+                    THEN ''C:'' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 3)
                     WHEN typeMessage IN (''image'', ''video'')
                     THEN
                         CASE
                             WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 4), '':'') WHERE Id = 2) = 0 -- soporte con mensajes de vonage
                             THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + CASE WHEN typeMessage = ''video'' THEN ''.mp4'' WHEN typeMessage = ''image'' THEN ''.jpg'' END)
-                            ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 2)
+                            ELSE ''C:'' + (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 3)
                         END
                     WHEN typeMessage = ''audio''
                     THEN

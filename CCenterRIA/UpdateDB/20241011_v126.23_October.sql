@@ -1026,6 +1026,42 @@ END
         '
         EXEC(@sql)
 
+        SET @process = 'DEV2-676 - drop function fn_RIASplitDelimited'
+		SET @sql = '
+		if exists (select * from sys.objects where object_id = OBJECT_ID(N''fn_RIASplitDelimited'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		begin
+			DROP FUNCTION fn_RIASplitDelimited;
+		end'
+		EXEC(@sql)
+
+        SET @process = 'DEV2-676 - create function fn_RIASplitDelimited'
+		SET @sql = '
+CREATE FUNCTION fn_RIASplitDelimited
+( 
+	@List nvarchar(MAX),
+	@SplitOn varchar(20)
+)
+RETURNS @RtnValue table (
+	Id int identity(1,1),
+	Value nvarchar(MAX)
+)
+AS
+BEGIN
+	While (Charindex(@SplitOn,@List)>0)
+	Begin 
+		Insert Into @RtnValue (value)
+		Select 
+			Value = ltrim(rtrim(Substring(@List,1,Charindex(@SplitOn,@List)-1))) 
+		Set @List = Substring(@List,Charindex(@SplitOn,@List)+len(@SplitOn),len(@List))
+	End 
+  
+	Insert Into @RtnValue (Value)
+	Select Value = ltrim(rtrim(@List))
+
+	Return
+END'
+		EXEC(@sql)
+
         -------------------------------------------  END Isaac  ----------------------------------------------------------
     	
 		------------------------------------------------- BEGIN Frida----------------------------------------------------------------------------------

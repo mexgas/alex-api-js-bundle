@@ -1348,8 +1348,24 @@ END'
 
 		------------------------------------------- END Frida ----------------------------------------------------------
 
-		
-		
+        ------------------------------------------- BEGIN Carlos Muñoz ----------------------------------------------------------
+        set @process = 'K002151 insertar Menú desasignaciones'
+		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 12015)
+		begin
+            INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+            VALUES (12015, ''Detalle de desasignaciones|Deassignments details'', 12000, ''B'', 7, 3, '''', ''9a05140d99e34def9554e1bc34862113a197a3b3a6f96c5973200bde9d74c5d56671efd486ce9b4817c4b2bd3a2781ee4483f8fd82006fd0898f038e1f58f056'')
+		end'
+		EXEC(@sql)
+
+        set @process = 'K002152 insertar Menú SPAM'
+		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 12017)
+		begin
+            INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
+            VALUES (12017, ''Detalle de conversaciones enviadas a SPAM|Detail of conversations sent to SPAM'', 12000, ''B'', 7, 3, '''', ''4a80200b610ac847a8d8adb01a398ddd7beb4c96b0314a257dca209b43d0fbbb79cba6c047a2df9772cfd4dded5925d629b0be059c1a8306f9c97ab6712b73d433c513c5e787039a9a54df821e61cfe6'')
+		end'
+		EXEC(@sql)
+
+        ------------------------------------------- END Carlos Muñoz ----------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

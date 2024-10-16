@@ -53,7 +53,7 @@ pipeline {
                     print '-----------------------------------------------------'
                 }
             }
-        }        
+        }
         stage('slack notification') {
             steps {
                 wrap([$class: 'BuildUser']) {
@@ -61,7 +61,6 @@ pipeline {
                 }
             }
         }
-
         stage('Checkout PR And Base Branch') {
             steps {
                 checkout([$class: 'GitSCM', branches: [[name: "${params.BRANCH}"]], extensions: [],
@@ -86,7 +85,7 @@ pipeline {
             steps {
                 script {
                     bat 'docker-compose up -d'
-                    sleep(time: 20, unit: 'SECONDS')
+                    sleep(time: 15, unit: 'SECONDS')
                 }
             }
         }
@@ -153,13 +152,13 @@ pipeline {
                 script {
                     parallel(                        
                         'Compare CCenterRIA': {
-                            bat './CompareDatabse.bat CCenterRIA CCenterRIA'
+                            bat '"./CompareDatabse.bat" CCenterRIA CCenterRIA'
                         },
                         'Compare CCRecorderRIA': {
-                            bat './CompareDatabse.bat CCRecorderRIA CCRecorderRIA'
+                            bat '"./CompareDatabse.bat" CCRecorderRIA CCRecorderRIA'
                         },
                         'Compare CCReportsRIA': {
-                            bat './CompareDatabse.bat CCReportsRIA CCReportsRIA'
+                            bat '"./CompareDatabse.bat" CCReportsRIA CCReportsRIA'
                         }
                     )
                 }
@@ -232,9 +231,9 @@ pipeline {
                 } else {
                     echo "prId está vacío, no se enviará la solicitud curl."
                 }
-                // if (buildResult == 'SUCCESS') {
-                //     deleteDir()
-                // }
+                if (buildResult == 'SUCCESS') {
+                    deleteDir()
+                }
             }
         }
     }

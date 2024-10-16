@@ -7,6 +7,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "Nuxiba2024_"
+      MSSQL_AGENT_ENABLED: "true"  # Habilita SQL Server Agent
     ports:
       - "1436:1433"
     volumes:
@@ -20,6 +21,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "Nuxiba2024_"
+      MSSQL_AGENT_ENABLED: "true"  # Habilita SQL Server Agent
     ports:
       - "1437:1433"
     volumes:

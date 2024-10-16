@@ -786,13 +786,13 @@ BEGIN
                         )
                     THEN ''''
                     WHEN typeMessage = ''file''
-                    THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 2)
+                    THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), ''l:'') WHERE Id = 2)
                     WHEN typeMessage IN (''image'', ''video'')
                     THEN
                         CASE
                             WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 4), '':'') WHERE Id = 2) = 0 -- soporte con mensajes de vonage
                             THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + CASE WHEN typeMessage = ''video'' THEN ''.mp4'' WHEN typeMessage = ''image'' THEN ''.jpg'' END)
-                            ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), '':'') WHERE Id = 2)
+                            ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2), ''l:'') WHERE Id = 2)
                         END
                     WHEN typeMessage = ''audio''
                     THEN
@@ -1025,6 +1025,42 @@ BEGIN
 END
         '
         EXEC(@sql)
+
+        SET @process = 'DEV2-676 - drop function fn_RIASplitDelimited'
+		SET @sql = '
+		if exists (select * from sys.objects where object_id = OBJECT_ID(N''fn_RIASplitDelimited'') and type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+		begin
+			DROP FUNCTION fn_RIASplitDelimited;
+		end'
+		EXEC(@sql)
+
+        SET @process = 'DEV2-676 - create function fn_RIASplitDelimited'
+		SET @sql = '
+CREATE FUNCTION fn_RIASplitDelimited
+( 
+	@List nvarchar(MAX),
+	@SplitOn varchar(20)
+)
+RETURNS @RtnValue table (
+	Id int identity(1,1),
+	Value nvarchar(MAX)
+)
+AS
+BEGIN
+	While (Charindex(@SplitOn,@List)>0)
+	Begin 
+		Insert Into @RtnValue (value)
+		Select 
+			Value = ltrim(rtrim(Substring(@List,1,Charindex(@SplitOn,@List)-1))) 
+		Set @List = Substring(@List,Charindex(@SplitOn,@List)+len(@SplitOn),len(@List))
+	End 
+  
+	Insert Into @RtnValue (Value)
+	Select Value = ltrim(rtrim(@List))
+
+	Return
+END'
+		EXEC(@sql)
 
         -------------------------------------------  END Isaac  ----------------------------------------------------------
     	

@@ -1349,7 +1349,7 @@ END'
 		------------------------------------------- END Frida ----------------------------------------------------------
 
         ------------------------------------------- BEGIN Carlos Muñoz ----------------------------------------------------------
-        set @process = 'K002151 insertar Menú desasignaciones'
+        set @process = 'K002151 Insert menu for deassignment reports'
 		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 12015)
 		begin
             INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
@@ -1357,13 +1357,31 @@ END'
 		end'
 		EXEC(@sql)
 
-        set @process = 'K002152 insertar Menú SPAM'
+        set @process = 'K002151 Insert user-menu for deassignment reports'
+        set @sql = '
+        IF NOT EXISTS (SELECT 1 FROM ccMenuUser WHERE id_User = 1 AND id_Menu = 12015)
+        BEGIN
+            INSERT INTO ccMenuUser(id_User, id_Menu, type) 
+            VALUES (1, 12015, 3)
+        END'
+        EXEC(@sql)
+        
+        set @process = 'K002152 Insert menu for spam reports'
 		set @sql = 'if not exists (select 1 from ccMenus where menu_id = 12017)
 		begin
             INSERT INTO ccMenus (menu_id, menu_descrip, parent, Nivel, ordengral, type, HelpSWF, release)
             VALUES (12017, ''Detalle de conversaciones enviadas a SPAM|Detail of conversations sent to SPAM'', 12000, ''B'', 7, 3, '''', ''4a80200b610ac847a8d8adb01a398ddd7beb4c96b0314a257dca209b43d0fbbb79cba6c047a2df9772cfd4dded5925d629b0be059c1a8306f9c97ab6712b73d433c513c5e787039a9a54df821e61cfe6'')
 		end'
 		EXEC(@sql)
+
+        set @process = 'K002152 Insert user-menu for spam reports'
+        set @sql = '
+        IF NOT EXISTS (SELECT 1 FROM ccMenuUser WHERE id_User = 1 AND id_Menu = 12017)
+        BEGIN
+            INSERT INTO ccMenuUser(id_User, id_Menu, type) 
+            VALUES (1, 12017, 3)
+        END'
+        EXEC(@sql)
 
         ------------------------------------------- END Carlos Muñoz ----------------------------------------------------------
 

@@ -1370,7 +1370,7 @@ CREATE PROCEDURE ccsp_MultimediaCommon
 AS
 BEGIN
     SET NOCOUNT ON;
-
+	SET @phoneNumber = NULLIF(@phoneNumber, '''');
     IF @Option = 0 --  Obtener lista de configuraciones de campañas
     BEGIN
         SELECT CAST(campaign.cam_id AS INT) AS Id,
@@ -1431,6 +1431,7 @@ BEGIN
 
      ELSE IF(@Option = 2)
     BEGIN
+		SET @phoneNumber = NULLIF(@phoneNumber, '''');
         DECLARE @OldAgentId INT = 0
         DECLARE @OldConversationId INT = 0
 		DECLARE @isMeta BIT

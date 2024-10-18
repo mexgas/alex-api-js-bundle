@@ -46,6 +46,16 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
                     sqlConnectionStringBuilder.UserID = databaseDto.UserName;
                     sqlConnectionStringBuilder.Password = databaseDto.Password;
                     sqlConnectionStringBuilder.Encrypt = false;
+                    bool isConnected = false;
+                    do
+                    {
+                        sqlConnectionStringBuilder.InitialCatalog = "master";
+                        isConnected = sqlFileExecutor.IsDatabaseConnected(sqlConnectionStringBuilder.ToString());
+                        if (!isConnected)
+                        {
+                            Thread.Sleep(5000);
+                        }
+                    } while (!isConnected);
 
                     try
                     {

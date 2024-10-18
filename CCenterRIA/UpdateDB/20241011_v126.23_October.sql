@@ -668,7 +668,7 @@ RETURNS @Messages TABLE
     Origin VARCHAR(50),	
     OriginType INT,
     Timestamp DATETIME,
-    Content	VARCHAR(250),
+    Content	VARCHAR(MAX),
     Type VARCHAR(20),
     Caption	VARCHAR(MAX),
     Url	VARCHAR(MAX),

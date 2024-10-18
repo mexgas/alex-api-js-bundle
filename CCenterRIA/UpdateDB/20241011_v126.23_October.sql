@@ -1667,7 +1667,7 @@ END'
 
         ------------------------------------------- BEGIN Ivan Martin Fix ----------------------------------------------------------
         set @process = 'Fix para totales de mensajes en monitoreo de campañas de salida. Cambios en action 16 para validar numeros negativos y no tomar en cuenta los mensajes del cliente en la suma.'
-		set @sql = 'CREATE PROCEDURE [dbo].[ccsp_ConversationWASaveOut] @action             INT
+		set @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASaveOut] @action             INT
 				                    , @conversationId     INT         = 0
 				                    , @camId          SMALLINT    = NULL
 				                    , @phoneCam           VARCHAR(50) = NULL

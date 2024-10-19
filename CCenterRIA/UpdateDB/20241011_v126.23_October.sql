@@ -2052,7 +2052,7 @@ END'
 		------------------------------------------- END Ivan Martin ----------------------------------------------------------
 
 		SET @process = 'Alter SP ccsp_GalateaAreas se agrega if @option = 2 borrar la tabla #Areas'
-        SET @sql = 'AALTER procedure [dbo].[ccsp_GalateaAreas] 
+        SET @sql = 'ALTER procedure [dbo].[ccsp_GalateaAreas] 
         @option int = 2,
         @IDArea smallint = 0,
         @Descripcion varchar(40) = NULL,

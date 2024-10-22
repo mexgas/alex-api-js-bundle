@@ -12355,61 +12355,6 @@ END
 
 	--------------------------- END Marco Garcia TT10870 ----------------------------------------------------------------------------------
 ---------------------------- BEGIN Roberto Nava TT7953 ------------------------------------------------------------------------------
-
-	SET @process = 'TT7953-Engine-En agentKolob tipifica mal el colgado en llamadas de entrada - Drop SP'
-	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_IVRInCalls'')
-		BEGIN
-			DROP PROCEDURE ccsp_IVRInCalls;
-		END';
-	EXEC(@sql);
-
-
-	set @process = 'TT7953-Engine-En agentKolob tipifica mal el colgado en llamadas de entrada - ALTER SP'
-    set @sql = 'CREATE procedure [dbo].[ccsp_IVRInCalls]
-		@action tinyint = 0 ,
-		@ani varchar(30) = null ,
-		@idIvr int = 0 ,
-		@option varchar(5)= null ,
-		@saveType tinyInt = null,
-		@dnis varchar(50) = null,
-		@name varchar(50) = null,
-		@questionId int = 0,
-		@surveyId int = 0,
-		@calId int = 0,
-		@callout_id int = 0,
-		@ttotalIVR int = 0,
-		@callType tinyint = null
-		-- saveType 1 es menu 2 es dato
-		-- accion 1 siempre @ani  -> @idIvr
-		-- accion 2 siempre @idIvr @opcionDigitada -> nada
-		AS
-		IF @action = 1
-		BEGIN
-			IF @ani IS NOT NULL
-			BEGIN
-				INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
-				UPDATE ccCallsIn SET cal_whoHung = 2 WHERE cal_id = @callout_id
-                Select ''ID''=scope_identity()
-			END
-		END
-		ELSE IF @action = 2
-		BEGIN
-			IF @option IS NOT NULL AND @idIvr IS NOT NULL
-			BEGIN
-				INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id, callType) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0),isnull(@callType,0))
-				select 0
-			END
-			ELSE select -1
-		END
-		ELSE IF @action = 3
-		BEGIN
-			UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
-			if @callout_id > 0
-				exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
-                UPDATE ccoCallsOut set cal_whoHung = 2 where cal_id = @callout_id
-		END'
-	EXEC(@sql)
-
 --------------------------- END Roberto Nava TT7953 ----------------------------------------------------------------------------------
 --------------------------- START Jonathan Ramirez 125.20231211.0.15-----------------------------------------------------------------------------------
 SET @process = '0.15 - 1 - Se modifica SP ccsp_OutboundMultimediaCommon, Se cambia InitialDate, por InitialTime'
@@ -13158,7 +13103,142 @@ END
 
 ---------------------------------------- End jesus 125.20231211.0.17 ----------------------------------------
 
-     
+		---------------------------- Start Hugo 125.20231211.0.18 ------------------------------------------------------------------------------
+
+	SET @process = 'Drop SP ccsp_IVRInCalls'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_IVRInCalls'')
+		BEGIN
+			DROP PROCEDURE ccsp_IVRInCalls;
+		END';
+	EXEC(@sql);
+
+	set @process = 'fix type - CREATE SP ccsp_IVRInCalls'
+    set @sql = 'CREATE procedure [dbo].[ccsp_IVRInCalls]
+		@action tinyint = 0 ,
+		@ani varchar(30) = null ,
+		@idIvr int = 0 ,
+		@option varchar(5)= null ,
+		@saveType tinyInt = null,
+		@dnis varchar(50) = null,
+		@name varchar(50) = null,
+		@questionId int = 0,
+		@surveyId int = 0,
+		@calId int = 0,
+		@callout_id int = 0,
+		@ttotalIVR int = 0,
+		@callType tinyint = null
+		-- saveType 1 es menu 2 es dato
+		-- accion 1 siempre @ani  -> @idIvr
+		-- accion 2 siempre @idIvr @opcionDigitada -> nada
+		AS
+		IF @action = 1
+		BEGIN
+			IF @ani IS NOT NULL
+			BEGIN
+				INSERT INTO IVRCallsIn(cal_ani,date,dnis,callout_id) values(@ani,getDate(),isnull(@dnis,''''),@callout_id);
+				UPDATE ccCallsIn SET cal_whoHung = 2 WHERE cal_id = @callout_id
+                Select ''ID''=cast(scope_identity() as int)
+			END
+		END
+		ELSE IF @action = 2
+		BEGIN
+			IF @option IS NOT NULL AND @idIvr IS NOT NULL
+			BEGIN
+				INSERT INTO IVROptions(IVR_id,selectedOption,date,saveType,name, questionId, surveyId, cal_id, callType) values (@idIvr,@option,getDate(),@saveType,@name,isnull(@questionId,0),isnull(@surveyId,0),isnull(@calId,0),isnull(@callType,0))
+				select 0
+			END
+			ELSE select -1
+		END
+		ELSE IF @action = 3
+		BEGIN
+			UPDATE IVRCallsIn set tincall = @ttotalIVR where IVR_id = @idIvr and callout_id = @callout_id
+			if @callout_id > 0
+				exec ccsp_EngineLogTransfers 4, @callout_id, 0, 0, null
+                UPDATE ccoCallsOut set cal_whoHung = 2 where cal_id = @callout_id
+		END'
+	EXEC(@sql)
+
+
+	SET @process = 'Drop SP getPrefixByAcdId'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''getPrefixByAcdId'')
+		BEGIN
+			DROP PROCEDURE getPrefixByAcdId;
+		END';
+	EXEC(@sql);
+
+	set @process = 'fix type - CREATE SP getPrefixByAcdId'
+    set @sql = 'CREATE procedure [dbo].[getPrefixByAcdId] 
+		@inboundId int,@phone varchar(50) = ''''
+		as
+		declare @prefijo varchar(40),@recordHold bit,@call_record as tinyint
+		declare @countryId as tinyint 
+
+		select @countryId = valor from ccsettings with(nolock) where setting_id = 104
+
+		select @prefijo= isnull(prefijo,''''),@recordHold= ISNULL(recordHold,0)  ,@call_record=ISNULL(B.RecordCalls,1)
+		from ccInbound A
+		left join ccInboundExtend B on A.Inbound_id=B.Inbound_id
+		where A.Inbound_id = @inboundId
+
+		select @prefijo recordPrefix,@recordHold recordHold ,dbo.EnableCallRecord(@call_record,@countryId,@phone) callRecord'
+	EXEC(@sql);
+
+
+	SET @process = 'Drop SP spInsertCall'
+	SET @sql = ' IF EXISTS (SELECT * FROM sys.procedures where name= N''spInsertCall'')
+		BEGIN
+			DROP PROCEDURE spInsertCall;
+		END';
+	EXEC(@sql);
+
+	set @process = 'fix remove unnecessary columns - CREATE SP spInsertCall'
+    set @sql = 'CREATE PROCEDURE [dbo].[spInsertCall]
+		@Pto smallint,
+		@DNIS varchar(14),
+		@ANI as varchar(14),
+		@inbound_id smallint=0,
+		@IVR_id int = 0, --Id del IVR
+		@CALLDATA as varchar(1275) = ''''
+		AS
+		declare @dni_id as smallint
+		declare @cal_id as int
+		declare @datacall as varchar(100)
+
+		select @Ani = left(rtrim(ltrim(@ANI)), 13)
+		select @DNIS = rtrim(ltrim(@DNIS))
+
+		  --busca dni_id
+		  select @dni_id = isnull ( ( select dni_id From ccDNIS Where dni_numero =  @DNIS and dni_status = 1 ), 0)
+  
+		  --busca especialidad
+		  IF @inbound_id =0 and @dni_id >0
+			select @Inbound_id=ED.Inbound_id from ccInboundDnis ED where ED.dni_id = @dni_id
+  
+		  INSERT ccCallsIN ( cal_ANI, dni_id, cal_puerto, cal_Inicio, inbound_id, IVR_id )
+		  VALUES ( @ANI, @dni_id, @Pto, getdate(), @inbound_id, @IVR_id )
+
+		  select @cal_id = scope_identity()
+
+		  exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@inbound_id,@callType=0,@statusCallId=1
+
+		  IF @inbound_id > 0 
+		  BEGIN
+			insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+			select idwg, @cal_id, 0 as user_id, getdate() timestamp, 0 as tipo from ccRIACampEspWG wg   
+			where wg.tipo = 0 and wg.IdCampEsp = @Inbound_id
+
+		  END
+
+		  IF @CALLDATA <> ''''  BEGIN -- Transfer Reminder
+			set @CALLDATA=SUBSTRING(@CALLDATA,0,len(@CALLDATA)-2)
+			insert into DataCallIn (CallId, Data, Description) 
+			select @cal_id,value,''Dato ''+cast(id as varchar(max)) from dbo.[fn_RIASplitDelimited](@CALLDATA,''~'')
+		  END
+
+		  Select @cal_id as IDCall'
+	EXEC(@sql);
+
+--------------------------- End Hugo 125.20231211.0.18 ----------------------------------------------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

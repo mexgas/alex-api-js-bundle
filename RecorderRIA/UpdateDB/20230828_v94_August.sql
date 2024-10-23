@@ -13,283 +13,7 @@ if @Version_Actual in(@Version, @Version -1) -- Aqui poner numero de nueva versi
 begin
     begin tran
     begin try
-
-       ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
-
-    SET @process = 'KR091000,DEV1-435 Alter SP trsp_InsertRecNode Add @C29-----> LLamada Grabada --@extraInfo 1 Record, 0 Dont Record'
-	SET @sql = 'ALTER PROCEDURE [dbo].[trsp_InsertRecNode] @grabId INT, @type INT = 0, @rateEvaluationFormatKolob BIT = 0 
-AS
-BEGIN
-DECLARE @shoutLevel AS int
-DECLARE @language AS INT
-DECLARE @start AS INT
-DECLARE @callType INT
-DECLARE @xml AS XML
-DECLARE @crmNode AS XML
-DECLARE @manual AS NVARCHAR(10)
-DECLARE @rating AS NVARCHAR(20)
-DECLARE @sqlCRM NVARCHAR(max)
-DECLARE @supervisor AS NVARCHAR(50)
-DECLARE @template AS NVARCHAR(50)
-DECLARE @callID AS NVARCHAR(50)
-DECLARE @isHistory BIT
-DECLARE @Prefijo VARCHAR(50)
-DECLARE @CDATE DATETIME
-DECLARE @hasVideo tinyint
-DECLARE @hasRecordCall AS bit
-
-SET @Prefijo = ''''
-
-DECLARE @table AS NVARCHAR(20)
-
-SET @table = ''RIA''
-
-/*
-CDATE---> Date Generic
-C01-----> grab_id
-C02-----> Type of Recording (Inbound/Outbound)
-C03-----> Camp/ACD descripcion
-C04-----> ShoutLevel
-C05-----> Agent Login
-C06-----> Formated date
-C07-----> Position Computer
-C08-----> Duration
-C09-----> Ani
-C10-----> Dnis
-C11-----> Calkey
-C12-----> Manual
-C13-----> User ID
-C14-----> cal ID
-C15-----> Cam /ACD ID
-C16-----> Duration Reco@rding as 00:00:00
-C17-----> Position Extension
-C18-----> rating(Scoring Template)
-C19-----> Reposiory ID
-C20-----> Disposition
-C21-----> Disposition ID
-C22-----> Has Video
-C23-----> Agent Full Name
-C24-----> Supervisor Name
-C25-----> Score Template
-C26-----> graphic_id
-C27-----> Prefix recording
-C28-----> subDisposition
-CID-----> CamId
-CType---> Tipo de llamada
-C29-----> LLamada Grabada --@extraInfo 1 Record, 0 Dont Record
-*/
-SELECT @language = valor
-FROM ccSettings
-WHERE setting_id = 27
-
-IF EXISTS (
-		SELECT *
-		FROM ria_grabacion
-		WHERE grab_id = @grabId
-		)
-BEGIN
-
-IF (@rateEvaluationFormatKolob = 1)
-	BEGIN
-	SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN ''N/A'' ELSE ''Manual'' END,
-	@shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio, @hasVideo = rec.video
-	,@hasRecordCall=convert(bit, isnull(rec.extra_info,''1''))
-	FROM ria_grabacion rec
-	LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
-	LEFT JOIN (
-		SELECT AVG(totalPoints) AS total_forma, grab_id  
-		FROM RECORDERRIA_RECORDINGEVALUATION 
-		WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
-		) formCalif ON formCalif.grab_id = rec.grab_id
-	WHERE rec.grab_id = @grabId
-	END
-ElSE
-	BEGIN
-	SELECT @isHistory = 0, @callType = rec.tipo_llamada, @Prefijo = rec.Prefijo, @manual = CASE WHEN rec.cal_manual = 0 THEN ''N/A'' ELSE ''Manual'' END,
-	@shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio, @hasVideo = rec.video
-	,@hasRecordCall=convert(bit, isnull(rec.extra_info,''1''))
-	FROM ria_grabacion rec
-	LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
-	LEFT JOIN (
-		SELECT TOP 1 total_forma, id_grabacion
-		FROM ria_formacalif
-		WHERE id_grabacion = @grabId
-		ORDER BY fecha_calif DESC
-		) formCalif ON formCalif.id_grabacion = rec.grab_id
-	WHERE grab_id = @grabId
-END
-
-	
-
-	IF(@hasVideo = 0 AND EXISTS (SELECT * FROM RIA_AgentVideo where callId=@callID and calltype = @callType))
-	BEGIN 
-		UPDATE RIA_GRABACION SET video = 1 where cal_id = @callID
-		DELETE FROM RIA_AgentVideo WHERE callId = @callID and calltype = @callType
-	END
-END
-ELSE
-BEGIN
-	IF (@rateEvaluationFormatKolob = 1)
-		BEGIN
-			SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN ''N/A'' ELSE ''Manual'' END
-			, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
-			,@hasRecordCall=convert(bit, isnull(rec.extra_info,''1''))
-			FROM RIA_GRABACIONCONSULTA rec
-			LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
-			LEFT JOIN (
-				SELECT AVG(totalPoints) AS total_forma, grab_id  
-				FROM RECORDERRIA_RECORDINGEVALUATION 
-				WHERE deleted != 1 AND grab_id = @grabId GROUP BY grab_id
-				) formCalif ON formCalif.grab_id = rec.grab_id
-			WHERE rec.grab_id = @grabId
-		END
-	ElSE
-		BEGIN
-			SELECT @isHistory = 1, @callType = rec.tipo_llamada, @manual = CASE WHEN rec.cal_manual = 0 THEN ''N/A'' ELSE ''Manual'' END
-			, @shoutlevel = isnull(rec.id_nivel_grito,-1), @rating = isnull(total_forma, 0), @callID = cal_id, @CDATE = rec.finicio
-			,@hasRecordCall=convert(bit, isnull(rec.extra_info,''1''))
-			FROM RIA_GRABACIONCONSULTA rec
-			LEFT JOIN ria_tipo_gritos sho ON rec.id_nivel_grito = sho.id_nivel_grito
-			LEFT JOIN (
-				SELECT TOP 1 total_forma, id_grabacion
-				FROM ria_formacalif
-				WHERE id_grabacion = @grabId
-				ORDER BY fecha_calif DESC
-				) formCalif ON formCalif.id_grabacion = rec.grab_id
-			WHERE grab_id = @grabId
-		END
-END
-
-SELECT @Template = formatos.nombre, @supervisor = (supervisor.Nombres + '' '' + supervisor.ApellidoPaterno + '' '' + supervisor.ApellidoMaterno)
-FROM RIA_FORMATOS AS formatos
-INNER JOIN RIA_FORMACALIF formatosCalif ON formatosCalif.id_formato = formatos.id_formato
-INNER JOIN RIA_GRABACION grabacion ON grabacion.grab_id = formatosCalif.id_grabacion
-INNER JOIN ccUsers supervisor ON supervisor.User_id = formatosCalif.id_supervisor
-WHERE grabacion.grab_id = @grabId AND formatosCalif.tipo = 1
-
-
-declare @riaGrabacion table(
-	[grab_id] [bigint] primary key,
-	[finicio] [datetime] NOT NULL,
-	[duracion] [int] NULL,
-	[ani] [varchar](30) NOT NULL,
-	[dni] [varchar](15) NULL,
-	[tipo_llamada] [smallint] NULL,
-	[cam_id] [smallint] NULL,
-	[calif_id] [smallint] NULL,
-	[cal_id] [int] NULL,
-	[cal_key] [varchar](40) NOT NULL,
-	[id_repositorio] [tinyint] NULL,
-	[video] [int] NOT NULL,
-	[age_id] [int] NULL,
-	[cal_extension] [int] NULL,
-	[califSub_id] [smallint] NOT NULL
-)
-
-insert into @riaGrabacion
-
-select [grab_id],[finicio],[duracion],[ani],[dni],[tipo_llamada],[cam_id],[calif_id],[cal_id],[cal_key],
-[id_repositorio],[video],[age_id],[cal_extension],[califSub_id]
-FROM ria_grabacion rec
-WHERE grab_id = @grabId
-union
-select [grab_id],[finicio],[duracion],[ani],[dni],[tipo_llamada],[cam_id],[calif_id],[cal_id],[cal_key],
-[id_repositorio],[video],[age_id],[cal_extension],[califSub_id]
-FROM RIA_GRABACIONCONSULTA 
-WHERE grab_id = @grabId
-
-SET @xml = (
-			SELECT *
-			FROM (
-				SELECT convert(VARCHAR(23), rec.finicio, 126) AS ''@CDATE'', rec.grab_id AS ''@C01'', ''Inbound'' AS ''@C02'', inb.descripcion AS ''@C03'', isnull(@shoutLevel, -1) AS ''@C04''
-				, isnull(usr.LOGIN,''N/A'') AS ''@C05'', convert(VARCHAR(23), rec.finicio, 126) AS ''@C06'', pos.Computer AS ''@C07'', convert(NVARCHAR(10), rec.duracion) AS ''@C08'', rec.ani AS ''@C09'', rec.dni AS ''@C10''
-				, rec.cal_key AS ''@C11'', @manual AS ''@C12'', isnull(usr.[User_id],0) AS ''@C13'', rec.cal_id AS ''@C14'', rec.cam_id AS ''@C15'', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS ''@C16''
-				, isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS ''@C17'', isnull(@rating, 0) AS ''@C18'', rec.id_repositorio AS ''@C19'', isnull(e.description, ''N/A'') AS ''@C20'', rec.calif_id AS ''@C21''
-				, rec.video AS ''@C22'', isnull(usr.Nombres + '' '' + usr.ApellidoPaterno + '' '' + usr.ApellidoMaterno,''N/A'') AS ''@C23'', isnull(@supervisor, '''') AS ''@C24'', isnull(@Template, '''') AS ''@C25'', grap.graphic_id AS ''@C26''
-				, @Prefijo AS ''@C27'', rec.cam_id AS ''@CID'', rec.tipo_llamada AS ''@CType''
-				,isnull(subDisposition.califSubDesc,''N/A'') as ''@C28'', @hasRecordCall AS ''@C29''
-				FROM @riaGrabacion rec
-				INNER JOIN ccinbound inb ON rec.cam_id = inb.Inbound_id AND rec.tipo_llamada = 1
-				LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
-				LEFT JOIN ccPosicion pos ON pos.pos_id = rec.cal_extension * - 1
-				LEFT JOIN ccTipoCalif AS e ON rec.calif_id = e.calif_id
-					LEFT JOIN cctipocalifsub AS subDisposition ON rec.califSub_id = subDisposition.califSub_id
-				INNER JOIN ccRIAInboundGraph grap ON grap.Inbound_id = inb.Inbound_id
-				WHERE rec.grab_id = @grabId
-
-				UNION
-
-				SELECT convert(VARCHAR(23), rec.finicio, 126) AS ''@CDATE'', rec.grab_id AS ''@C01'', ''Outbound'' AS ''@C02'', inb.cam_descripcion AS ''@C03'', isnull(@shoutLevel, -1) AS ''@C04''
-				, isnull(usr.LOGIN,''N/A'') AS ''@C05'', convert(VARCHAR(23), rec.finicio, 126) AS ''@C06'', pos.Computer AS ''@C07'', convert(NVARCHAR(10), rec.duracion) AS ''@C08'', rec.ani AS ''@C09'', rec.dni AS ''@C10''
-				, rec.cal_key AS ''@C11'', @manual AS ''@C12'', isnull(usr.[User_id],0) AS ''@C13'', rec.cal_id AS ''@C14'', rec.cam_id AS ''@C15'', CONVERT(CHAR(8), DATEADD(second, rec.duracion, 0), 108) AS ''@C16''
-				, isnull(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, - 1) AS ''@C17'', isnull(@rating, 0) AS ''@C18'', rec.id_repositorio AS ''@C19'', isnull(e.Description, ''N/A'') AS ''@C20'', rec.calif_id AS ''@C21''
-				, rec.video AS ''@C22'', isnull(usr.Nombres + '' '' + usr.ApellidoPaterno + '' '' + usr.ApellidoMaterno,''N/A'') AS ''@C23'', isnull(@supervisor, '''') AS ''@C24'', isnull(@Template, '''') AS ''@C25'', grap.graphic_id AS ''@C26''
-				, @Prefijo AS ''@C27'', rec.cam_id AS ''@CID'', rec.tipo_llamada AS ''@CType''
-				,isnull(subDisposition.califSubDesc,''N/A'') as ''@C28'', @hasRecordCall AS ''@C29''
-				FROM @riaGrabacion rec
-				INNER JOIN cccamps inb ON rec.cam_id = inb.cam_id AND rec.tipo_llamada = 2
-				LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
-				LEFT JOIN ccPosicion pos ON pos.pos_id = rec.cal_extension * - 1
-				LEFT JOIN ccTipoCalifOUT AS e ON rec.calif_id = e.calif_id
-					LEFT JOIN cctipocalifsubout AS subDisposition ON rec.califSub_id = subDisposition.califSub_id
-				INNER JOIN ccRIACampsGraph grap ON grap.cam_id = inb.cam_id
-				WHERE rec.grab_id = @grabId
-				) x
-			FOR XML path(''R02'')
-			)
-
-
-declare @isHistoryNode bit
-
-if @xml IS NULL begin
-	select @xml=node,@isHistoryNode=1 from RIA_RecNodeHistory with(nolock) where grab_id=@grabId
-	if @isHistoryNode is null begin
-		select @xml=node,@isHistoryNode=0 from ria_RecNode with(nolock) where grab_id=@grabId
-	end
-	
-	if @xml is not null	begin
-		if @rating is not null begin
-			SET @xml.modify(''replace value of (/R02/@C18)[1] with sql:variable("@rating")'')
-		end
-		if @supervisor is not null begin
-			SET @xml.modify(''replace value of (/R02/@C24)[1] with sql:variable("@supervisor")'')						
-		end
-	end		
-end
-else begin
-	select @isHistoryNode=1 from RIA_RecNodeHistory with(nolock) where grab_id=@grabId
-	if @isHistoryNode is null begin
-		select @isHistoryNode=0 from ria_RecNode with(nolock) where grab_id=@grabId
-	end	
-end
-
-
-if @isHistoryNode=1 and @xml is not null begin
-	UPDATE RIA_RecNodeHistory
-	SET node = @xml, [status] = 2
-	WHERE grab_id = @grabId
-	return(0)
-end
-if @isHistoryNode is null  begin
-	if @xml is null begin
-		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) VALUES (@grabId, @xml, @CDATE, - 1)
-	end
-	else begin
-		INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) VALUES (@grabId, @xml, @CDATE, 0)
-	end
-end
-else if @xml is not null begin
-	UPDATE ria_RecNode
-	SET node = @xml, [status] = 2
-	WHERE grab_id = @grabId
-end
-	
-END'
-	EXEC(@sql)
-
-	
-
-
+   
 ---------------------------------------BEGIN KR091000 Setting grabar llamadas por campaña ---------------------------------------------------------
  -------------------------------------------- Begin Jesus Gallardo hotfix/125.20230719.0.7 -------------------------------------------------------------------------------
 	
@@ -2077,6 +1801,372 @@ IF OBJECT_ID(''tempdb..#tmpWGconcat'') IS NOT NULL
 
 
 	-------------------------------------------- End Jesus Gallardo hotfix/125.20231211.0.13 -------------------------------------------------------------------------------
+
+
+	-------------------------------------------- Begin Jesus Gallardo hotfix/125.20231211.0.18 -------------------------------------------------------------------------------
+
+	SET @process = 'feature/KR179003 CREATE TABLE [dbo].[RIA_GRABACION_TEMP]'
+	SET @sql = 'if not exists(select * from sys.tables where name=''RIA_GRABACION_TEMP'') begin
+	CREATE TABLE [dbo].[RIA_GRABACION_TEMP](
+	[AvrTransferId] int,
+	[tipo_llamada] [smallint] NULL,
+	[cal_id] [int] NULL,
+	[age_id] [int] NULL,
+	[cam_id] [smallint] NULL,
+	[calif_id] [smallint] NULL,
+	[cal_extension] [int] NULL,
+	[finicio] [datetime] NOT NULL,
+	[ffin] [datetime] NOT NULL,
+	[ani] [varchar](30) NOT NULL,
+	[duracion] [int] NULL,
+	[cal_key] [varchar](40) NOT NULL,
+	[puerto_id] [int] NULL,
+	[dni_id] [smallint] NULL,
+	[id_repositorio] [tinyint] NULL,
+	[razon_id] [tinyint] NULL,
+	[tipo_grab_id] [tinyint] NULL,
+	[fvalida] [datetime] NULL,
+	[cal_whoHung] [smallint] NULL,
+	[califSub_id] [smallint] NOT NULL,
+	[cal_tMoh] [smallint] NOT NULL,
+	[cal_manual] [tinyint] NULL,
+	[id_nivel_grito] [int] NULL,
+	[Prefijo] [varchar](512) NULL,
+	[dni] [varchar](15) NULL,
+	[IDWG] [varchar](800) NULL,
+	[extra_info] [varchar](50) NULL,
+	[extra_info2] [varchar](50) NULL	
+	)
+
+	
+end
+'
+	EXEC(@sql)
+
+	SET @process = 'feature/KR179003 CREATE INDEX IX_RIA_GRABACION_TEMP_I'
+	SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = ''IX_RIA_GRABACION_TEMP_I'')
+BEGIN
+    -- Crea el índice utilizando las columnas tipo_llamada y cal_id
+    CREATE INDEX IX_RIA_GRABACION_TEMP_I
+    ON [dbo].[RIA_GRABACION_TEMP] ([tipo_llamada], [cal_id]);
+END'
+	EXEC(@sql)
+
+
+  	SET @process = 'feature/KR179003 Alter SP '
+	SET @sql = ''
+	EXEC(@sql)
+
+
+	SET @process = 'feature/KR179003 Create SP ccsp_InsertOrUpdateRecordingRIA_Grabacion'
+	SET @sql = 'CREATE PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion
+AS
+BEGIN
+    -- Declaramos una tabla temporal para almacenar grab_id, cal_id, tipo_llamada y AvrTransferId de los registros procesados
+    DECLARE @ProcessedRecords TABLE (       
+        grab_id BIGINT,
+        cal_id INT,
+        tipo_llamada INT,
+		AvrTransferId int
+    );
+
+    -- Utilizamos MERGE para insertar o actualizar registros en la tabla ria_grabacion
+	
+    MERGE INTO ria_grabacion AS Target
+    USING RIA_GRABACION_TEMP AS Source
+    ON Target.cal_id = Source.cal_id AND Target.tipo_llamada = Source.tipo_llamada
+    WHEN MATCHED THEN 
+        UPDATE SET
+            Target.calif_id = Source.calif_id,
+            Target.califSub_id = Source.califSub_id,
+            Target.cal_tMoh = Source.cal_tMoh,
+            Target.duracion = Source.duracion,
+            Target.cal_extension = Source.cal_extension,
+            Target.IDWG = Source.IDWG,
+            Target.extra_info = Source.extra_info,
+            Target.extra_info2 = Source.extra_info2
+        --OUTPUT ''UPDATE'' AS ActionType, inserted.grab_id, inserted.cal_id, inserted.tipo_llamada INTO @ProcessedRecords
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (tipo_llamada, cal_id, age_id, cam_id, calif_id, cal_extension, finicio, ffin, ani, duracion, cal_key, puerto_id, dni_id, id_repositorio, razon_id, tipo_grab_id,
+                fvalida, cal_whohung, califSub_id, cal_tMoh, cal_manual, id_nivel_grito, prefijo, dni, IDWG, extra_info, extra_info2)
+        VALUES (Source.tipo_llamada, Source.cal_id, Source.age_id, Source.cam_id, Source.calif_id, Source.cal_extension, Source.finicio, Source.ffin, Source.ani, Source.duracion, 
+                Source.cal_key, Source.puerto_id, Source.dni_id, Source.id_repositorio, Source.razon_id, Source.tipo_grab_id, Source.fvalida, Source.cal_whohung, Source.califSub_id, 
+                Source.cal_tMoh, Source.cal_manual, Source.id_nivel_grito, Source.prefijo, Source.dni, Source.IDWG, Source.extra_info, Source.extra_info2)
+       
+	   OUTPUT inserted.grab_id, inserted.cal_id, inserted.tipo_llamada 
+	   INTO @ProcessedRecords(grab_id,cal_id,tipo_llamada)
+		;
+    -- Ahora añadimos el AvrTransferId a @ProcessedRecords uniendo con RIA_GRABACION_TEMP
+    UPDATE PR
+    SET PR.AvrTransferId = S.AvrTransferId
+    FROM @ProcessedRecords PR
+    INNER JOIN RIA_GRABACION_TEMP S ON PR.cal_id = S.cal_id AND PR.tipo_llamada = S.tipo_llamada;
+
+    -- Regresamos grab_id, cal_id, tipo_llamada y AvrTransferId para los registros insertados o actualizados
+    SELECT grab_id, cal_id, tipo_llamada, AvrTransferId FROM @ProcessedRecords;
+
+    -- Limpiar la tabla temporal
+    TRUNCATE TABLE RIA_GRABACION_TEMP;
+END;
+'
+	EXEC(@sql)
+
+	
+
+	SET @process = 'feature/KR179003 Alter SP trsp_InsertRecNode'
+	SET @sql = 'ALTER PROCEDURE [dbo].[trsp_InsertRecNode]
+    @grabId INT, 
+    @type INT = 0, 
+    @rateEvaluationFormatKolob BIT = 0
+AS
+BEGIN
+    -- Declaración de Variables
+DECLARE @shoutLevel AS INT,            
+@callType INT,
+@xml AS XML,
+@manual AS NVARCHAR(10),
+@rating AS NVARCHAR(20),
+@supervisor AS NVARCHAR(50),
+@template AS NVARCHAR(50),
+@callID AS NVARCHAR(50),
+@isHistory BIT,
+@Prefijo VARCHAR(50),
+@CDATE DATETIME,
+@hasVideo TINYINT,
+@hasRecordCall AS BIT,
+@isVoicemail AS BIT
+
+-- Inicialización
+SET @Prefijo = '''';
+
+/*
+CDATE---> Date Generic
+C01-----> grab_id
+C02-----> Type of Recording (Inbound/Outbound)
+C03-----> Camp/ACD descripcion
+C04-----> ShoutLevel
+C05-----> Agent Login
+C06-----> Formated date
+C07-----> Position Computer
+C08-----> Duration
+C09-----> Ani
+C10-----> Dnis
+C11-----> Calkey
+C12-----> Manual
+C13-----> User ID
+C14-----> cal ID
+C15-----> Cam /ACD ID
+C16-----> Duration Reco@rding as 00:00:00
+C17-----> Position Extension
+C18-----> rating(Scoring Template)
+C19-----> Reposiory ID
+C20-----> Disposition
+C21-----> Disposition ID
+C22-----> Has Video
+C23-----> Agent Full Name
+C24-----> Supervisor Name
+C25-----> Score Template
+C26-----> graphic_id
+C27-----> Prefix recording
+C28-----> subDisposition
+CID-----> CamId
+CType---> Tipo de llamada
+C29-----> LLamada Grabada --@extraInfo 1 Record, 0 Dont Record
+C30-----> LLamada VoiceMail
+*/
+
+-- Consulta dinámica entre ria_grabacion y RIA_GRABACIONCONSULTA
+WITH GrabacionSource AS (
+	SELECT rec.grab_id, rec.tipo_llamada, rec.Prefijo, rec.cal_manual, rec.id_nivel_grito, 
+			rec.cal_id, rec.finicio, rec.extra_info, rec.extra_info2, rec.video, 
+			CASE WHEN @rateEvaluationFormatKolob = 1 THEN
+				(SELECT AVG(totalPoints) FROM RECORDERRIA_RECORDINGEVALUATION 
+				WHERE deleted != 1 AND grab_id = @grabId)
+			ELSE
+				(SELECT TOP 1 total_forma FROM ria_formacalif 
+				WHERE id_grabacion = @grabId ORDER BY fecha_calif DESC)
+			END AS total_forma
+	FROM ria_grabacion rec
+	WHERE rec.grab_id = @grabId
+	UNION ALL
+	SELECT rec.grab_id, rec.tipo_llamada, '''' AS Prefijo, rec.cal_manual, rec.id_nivel_grito, 
+			rec.cal_id, rec.finicio, rec.extra_info, rec.extra_info2, NULL AS video,
+			CASE WHEN @rateEvaluationFormatKolob = 1 THEN
+				(SELECT AVG(totalPoints) FROM RECORDERRIA_RECORDINGEVALUATION 
+				WHERE deleted != 1 AND grab_id = @grabId)
+			ELSE
+				(SELECT TOP 1 total_forma FROM ria_formacalif 
+				WHERE id_grabacion = @grabId ORDER BY fecha_calif DESC)
+			END AS total_forma
+	FROM RIA_GRABACIONCONSULTA rec
+	WHERE rec.grab_id = @grabId
+)
+SELECT @isHistory = 1,
+		@callType = G.tipo_llamada,
+		@Prefijo = G.Prefijo,
+		@manual = CASE WHEN G.cal_manual = 0 THEN ''N/A'' ELSE ''Manual'' END,
+		@shoutLevel = ISNULL(G.id_nivel_grito, -1),
+		@rating = ISNULL(G.total_forma, 0),
+		@callID = G.cal_id,
+		@CDATE = G.finicio,
+		@hasVideo = G.video,
+		@hasRecordCall = CONVERT(BIT, ISNULL(G.extra_info, ''1'')),
+		@isVoicemail = CONVERT(BIT, ISNULL(G.extra_info2, ''0''))
+FROM GrabacionSource G;
+	    
+
+    -- Sección 4: Generación del XML con los detalles de la grabación
+   SET @xml = (
+    SELECT 
+        CONVERT(VARCHAR(23), rec.finicio, 126) AS ''@CDATE'',
+        rec.grab_id AS ''@C01'',
+        CASE WHEN rec.tipo_llamada = 1 THEN ''Inbound'' ELSE ''Outbound'' END AS ''@C02'',
+        CASE 
+            WHEN rec.tipo_llamada = 1 THEN inb.descripcion 
+            ELSE outb.cam_descripcion 
+        END AS ''@C03'',
+        ISNULL(@shoutLevel, -1) AS ''@C04'',
+        ISNULL(usr.LOGIN, ''N/A'') AS ''@C05'',
+        CONVERT(VARCHAR(23), rec.finicio, 126) AS ''@C06'',
+        pos.Computer AS ''@C07'',
+        CONVERT(NVARCHAR(10), rec.duracion) AS ''@C08'',
+        rec.ani AS ''@C09'',
+        rec.dni AS ''@C10'',
+        rec.cal_key AS ''@C11'',
+        @manual AS ''@C12'',
+        ISNULL(usr.[User_id], 0) AS ''@C13'',
+        rec.cal_id AS ''@C14'',
+        rec.cam_id AS ''@C15'',
+        CONVERT(CHAR(8), DATEADD(SECOND, rec.duracion, 0), 108) AS ''@C16'',
+        ISNULL(CASE WHEN pos.ext_id = 0 THEN pos.pos_id ELSE pos.ext_id END, -1) AS ''@C17'',
+        ISNULL(@rating, 0) AS ''@C18'',
+        rec.id_repositorio AS ''@C19'',
+        ISNULL(e.description, ''N/A'') AS ''@C20'',
+        rec.calif_id AS ''@C21'',
+        rec.video AS ''@C22'',
+        ISNULL(usr.Nombres + '' '' + usr.ApellidoPaterno + '' '' + usr.ApellidoMaterno, ''N/A'') AS ''@C23'',
+        ISNULL(@supervisor, '''') AS ''@C24'',
+        ISNULL(@template, '''') AS ''@C25'',
+        grap.graphic_id AS ''@C26'',
+        @Prefijo AS ''@C27'',
+        rec.cam_id AS ''@CID'',
+        rec.tipo_llamada AS ''@CType'',
+        ISNULL(subDisposition.califSubDesc, ''N/A'') AS ''@C28'',
+        @hasRecordCall AS ''@C29'',
+		@isVoicemail AS ''@C30''
+    FROM ria_grabacion rec
+    LEFT JOIN ccinbound inb ON rec.cam_id = inb.Inbound_id AND rec.tipo_llamada = 1
+    LEFT JOIN cccamps outb ON rec.cam_id = outb.cam_id AND rec.tipo_llamada = 2
+    LEFT JOIN ccUsers usr ON usr.User_id = rec.age_id
+    LEFT JOIN ccPosicion pos ON pos.pos_id = rec.cal_extension * -1
+    LEFT JOIN ccTipoCalif AS e ON rec.calif_id = e.calif_id
+    LEFT JOIN ccTipoCalifOUT AS eOut ON rec.calif_id = eOut.calif_id AND rec.tipo_llamada = 2
+    LEFT JOIN cctipocalifsub AS subDisposition ON rec.califSub_id = subDisposition.califSub_id
+    LEFT JOIN cctipocalifsubout AS subDispositionOut ON rec.califSub_id = subDispositionOut.califSub_id AND rec.tipo_llamada = 2
+    LEFT JOIN ccRIAInboundGraph grap ON grap.Inbound_id = inb.Inbound_id AND rec.tipo_llamada = 1
+    LEFT JOIN ccRIACampsGraph grapOut ON grapOut.cam_id = outb.cam_id AND rec.tipo_llamada = 2
+    WHERE rec.grab_id = @grabId
+    FOR XML PATH(''R02'')
+)
+
+
+-- Sección 5: Manejo de nodos históricos y actualización del XML
+DECLARE @isHistoryNode BIT
+
+IF @xml IS NULL 
+BEGIN
+		-- Intentar obtener el nodo desde el historial
+	SELECT @xml = node, @isHistoryNode = 1 
+	FROM RIA_RecNodeHistory with(nolock)
+	WHERE grab_id = @grabId;
+
+		-- Si no se encontró en el historial, buscar en la tabla principal
+	IF @xml IS NULL
+	BEGIN
+		SELECT @xml = node, @isHistoryNode = 0 
+		FROM ria_RecNode  with(nolock)
+		WHERE grab_id = @grabId;
+	END
+
+    IF @xml IS NOT NULL
+	BEGIN
+		IF @rating IS NOT NULL 
+		BEGIN
+			SET @xml.modify(''replace value of (/R02/@C18)[1] with sql:variable("@rating")'');
+		END
+		IF @supervisor IS NOT NULL 
+		BEGIN
+			SET @xml.modify(''replace value of (/R02/@C24)[1] with sql:variable("@supervisor")'');                        
+		END
+	END
+END
+ELSE
+BEGIN
+    -- Verificar si el nodo ya existe en el historial
+    SELECT @isHistoryNode = 1 
+    FROM RIA_RecNodeHistory 
+    WHERE grab_id = @grabId;
+
+    -- Si no está en el historial, revisar si está en la tabla principal
+    IF @isHistoryNode IS NULL
+    BEGIN
+        SELECT @isHistoryNode = 0 
+        FROM ria_RecNode 
+        WHERE grab_id = @grabId;
+    END    
+END
+
+-- Insertar o actualizar el nodo basado en el historial
+IF @isHistoryNode = 1 AND @xml IS NOT NULL
+BEGIN
+    -- Actualizar en el historial
+    UPDATE RIA_RecNodeHistory 
+    SET node = @xml, [status] = 2 
+    WHERE grab_id = @grabId;
+    RETURN(0);
+END
+ELSE IF @xml IS NULL
+BEGIN
+    -- Insertar un nuevo nodo con estado -1 si no hay XML
+    INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) 
+    VALUES (@grabId, @xml, @CDATE, -1);
+	RETURN(0);
+END
+
+    -- Si hay XML, insertar o actualizar en ria_RecNode
+IF @isHistoryNode IS NULL
+BEGIN
+    INSERT INTO ria_RecNode (grab_id, node, dateIn, [status]) 
+    VALUES (@grabId, @xml, @CDATE, 0);
+END
+ELSE
+BEGIN
+    UPDATE ria_RecNode 
+    SET node = @xml, [status] = 2 
+    WHERE grab_id = @grabId;
+END
+
+END'
+	EXEC(@sql)
+
+	SET @process = 'feature/KR179003 Alter SP '
+	SET @sql = ''
+	EXEC(@sql)
+
+
+	SET @process = 'feature/KR179003 Alter SP '
+	SET @sql = ''
+	EXEC(@sql)
+
+	SET @process = 'feature/KR179003 Alter SP '
+	SET @sql = ''
+	EXEC(@sql)
+
+	SET @process = 'feature/KR179003 Alter SP '
+	SET @sql = ''
+	EXEC(@sql)
+
+	-------------------------------------------- End Jesus Gallardo hotfix/125.20231211.0.18 -------------------------------------------------------------------------------
 
     update trec_parametros set par_valor = @Version where par_id = 30
     set @Version_Actual=@Version_Actual+1

@@ -1801,6 +1801,109 @@ IF OBJECT_ID(''tempdb..#tmpWGconcat'') IS NOT NULL
 
 
 	-------------------------------------------- End Jesus Gallardo hotfix/125.20231211.0.13 -------------------------------------------------------------------------------
+	SET @process = 'CREATE table RIA_GRABACION_TEMP'
+	SET @sql = 'if not exists(select * from sys.tables where name=''RIA_GRABACION_TEMP'') begin
+	CREATE TABLE [dbo].[RIA_GRABACION_TEMP](
+	[AvrTransferId] int,
+	[tipo_llamada] [smallint] NULL,
+	[cal_id] [int] NULL,
+	[age_id] [int] NULL,
+	[cam_id] [smallint] NULL,
+	[calif_id] [smallint] NULL,
+	[cal_extension] [int] NULL,
+	[finicio] [datetime] NOT NULL,
+	[ffin] [datetime] NOT NULL,
+	[ani] [varchar](30) NOT NULL,
+	[duracion] [int] NULL,
+	[cal_key] [varchar](40) NOT NULL,
+	[puerto_id] [int] NULL,
+	[dni_id] [smallint] NULL,
+	[id_repositorio] [tinyint] NULL,
+	[razon_id] [tinyint] NULL,
+	[tipo_grab_id] [tinyint] NULL,
+	[fvalida] [datetime] NULL,
+	[cal_whoHung] [smallint] NULL,
+	[califSub_id] [smallint] NOT NULL,
+	[cal_tMoh] [smallint] NOT NULL,
+	[cal_manual] [tinyint] NULL,
+	[id_nivel_grito] [int] NULL,
+	[Prefijo] [varchar](512) NULL,
+	[dni] [varchar](15) NULL,
+	[IDWG] [varchar](800) NULL,
+	[extra_info] [varchar](50) NULL,
+	[extra_info2] [varchar](50) NULL	
+	)	
+end'
+	EXEC(@sql)
+
+	SET @process = 'CREATE INDEX IX_RIA_GRABACION_TEMP_I'
+	SET @sql = 'IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = ''IX_RIA_GRABACION_TEMP_I'')
+BEGIN
+    -- Crea el índice utilizando las columnas tipo_llamada y cal_id
+    CREATE INDEX IX_RIA_GRABACION_TEMP_I
+    ON [dbo].[RIA_GRABACION_TEMP] ([tipo_llamada], [cal_id]);
+END'
+	EXEC(@sql)
+
+	set @process = 'Drop SP ccsp_InsertOrUpdateRecordingRIA_Grabacion'
+		set @sql = 'IF EXISTS(SELECT 1 FROM sys.procedures WHERE Name = ''ccsp_InsertOrUpdateRecordingRIA_Grabacion'')
+BEGIN
+	DROP PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion
+END'
+		EXEC(@sql)
+
+	SET @process = 'CREATE PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion'
+	SET @sql = 'CREATE PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion
+AS
+BEGIN
+    -- Declaramos una tabla temporal para almacenar grab_id, cal_id, tipo_llamada y AvrTransferId de los registros procesados
+    DECLARE @ProcessedRecords TABLE (       
+        grab_id BIGINT,
+        cal_id INT,
+        tipo_llamada INT,
+		AvrTransferId int
+    );
+
+    -- Utilizamos MERGE para insertar o actualizar registros en la tabla ria_grabacion
+	
+    MERGE INTO ria_grabacion AS Target
+    USING RIA_GRABACION_TEMP AS Source
+    ON Target.cal_id = Source.cal_id AND Target.tipo_llamada = Source.tipo_llamada
+    WHEN MATCHED THEN 
+        UPDATE SET
+            Target.calif_id = Source.calif_id,
+            Target.califSub_id = Source.califSub_id,
+            Target.cal_tMoh = Source.cal_tMoh,
+            Target.duracion = Source.duracion,
+            Target.cal_extension = Source.cal_extension,
+            Target.IDWG = Source.IDWG,
+            Target.extra_info = Source.extra_info,
+            Target.extra_info2 = Source.extra_info2
+        --OUTPUT ''UPDATE'' AS ActionType, inserted.grab_id, inserted.cal_id, inserted.tipo_llamada INTO @ProcessedRecords
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (tipo_llamada, cal_id, age_id, cam_id, calif_id, cal_extension, finicio, ffin, ani, duracion, cal_key, puerto_id, dni_id, id_repositorio, razon_id, tipo_grab_id,
+                fvalida, cal_whohung, califSub_id, cal_tMoh, cal_manual, id_nivel_grito, prefijo, dni, IDWG, extra_info, extra_info2)
+        VALUES (Source.tipo_llamada, Source.cal_id, Source.age_id, Source.cam_id, Source.calif_id, Source.cal_extension, Source.finicio, Source.ffin, Source.ani, Source.duracion, 
+                Source.cal_key, Source.puerto_id, Source.dni_id, Source.id_repositorio, Source.razon_id, Source.tipo_grab_id, Source.fvalida, Source.cal_whohung, Source.califSub_id, 
+                Source.cal_tMoh, Source.cal_manual, Source.id_nivel_grito, Source.prefijo, Source.dni, Source.IDWG, Source.extra_info, Source.extra_info2)
+       
+	   OUTPUT inserted.grab_id, inserted.cal_id, inserted.tipo_llamada 
+	   INTO @ProcessedRecords(grab_id,cal_id,tipo_llamada)
+		;
+    -- Ahora añadimos el AvrTransferId a @ProcessedRecords uniendo con RIA_GRABACION_TEMP
+    UPDATE PR
+    SET PR.AvrTransferId = S.AvrTransferId
+    FROM @ProcessedRecords PR
+    INNER JOIN RIA_GRABACION_TEMP S ON PR.cal_id = S.cal_id AND PR.tipo_llamada = S.tipo_llamada;
+
+    -- Regresamos grab_id, cal_id, tipo_llamada y AvrTransferId para los registros insertados o actualizados
+    SELECT grab_id, cal_id, tipo_llamada, AvrTransferId FROM @ProcessedRecords;
+
+    -- Limpiar la tabla temporal
+    TRUNCATE TABLE RIA_GRABACION_TEMP;
+END;
+'
+	EXEC(@sql)
 
 
 	-------------------------------------------- Begin Jesus Gallardo hotfix/125.20231211.0.18 -------------------------------------------------------------------------------
@@ -1853,9 +1956,13 @@ END'
 	EXEC(@sql)
 
 
-  	SET @process = 'feature/KR179003 Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
+  	
+    SET @process = 'feature/KR179003 Drop procedure ccsp_InsertOrUpdateRecordingRIA_Grabacion'
+    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_InsertOrUpdateRecordingRIA_Grabacion'')
+                begin
+                    DROP PROCEDURE ccsp_InsertOrUpdateRecordingRIA_Grabacion;
+                end'
+    EXEC(@sql);
 
 
 	SET @process = 'feature/KR179003 Create SP ccsp_InsertOrUpdateRecordingRIA_Grabacion'
@@ -2149,22 +2256,10 @@ END
 END'
 	EXEC(@sql)
 
-	SET @process = 'feature/KR179003 Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
+	-- SET @process = 'feature/KR179003 Alter SP '
+	-- SET @sql = ''
+	-- EXEC(@sql)
 
-
-	SET @process = 'feature/KR179003 Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'feature/KR179003 Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
-
-	SET @process = 'feature/KR179003 Alter SP '
-	SET @sql = ''
-	EXEC(@sql)
 
 	-------------------------------------------- End Jesus Gallardo hotfix/125.20231211.0.18 -------------------------------------------------------------------------------
 

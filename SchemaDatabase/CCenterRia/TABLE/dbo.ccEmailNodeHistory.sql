@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccEmailNodeHistory](	  [emailId] INT NOT NULL	, [node] XML NULL	, [dateIn] DATETIME NULL	, [dateOut] DATETIME NULL	, [status] INT NULL	, CONSTRAINT [PK_ccEmailNodeHistory] PRIMARY KEY ([emailId] ASC))

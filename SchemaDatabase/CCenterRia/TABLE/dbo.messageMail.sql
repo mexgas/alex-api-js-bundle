@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[messageMail](	  [messageId] INT NOT NULL	, [uid] VARCHAR(500) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__messageMail__34E9A0B9] PRIMARY KEY ([messageId] ASC, [uid] ASC))

@@ -29,45 +29,60 @@ namespace DatabaseUpdateValidator.Nuxiba.StartUp.BusinessService.Impl
             bool isFail = false;
             Logger.Info("*********************** Start *********************************************************************************");
 
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder stringBuilder = new StringBuilder("Fail Script Database");
+
+            List<Task> tasks = new List<Task>();
 
             foreach (DatabaseDto databaseDto in databaseDtos)
             {
-                var listFile = sqlFileProcessor.GetOrderedSqlFiles(databaseDto.DirectoryPath, databaseDto.Pattern);
-                var sort = sqlFileProcessor.MapVersionFile(listFile, databaseDto.Pattern, databaseDto.VersionDb);
-                SqlConnectionStringBuilder sqlConnectionStringBuilder = new SqlConnectionStringBuilder();
-                sqlConnectionStringBuilder.ApplicationName = DatabaseUpdateValidatorConstants.APPLICATION_NAME;
-                sqlConnectionStringBuilder.DataSource = databaseDto.Server;
-                sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
-                sqlConnectionStringBuilder.UserID = databaseDto.UserName;
-                sqlConnectionStringBuilder.Password = databaseDto.Password;
-                sqlConnectionStringBuilder.Encrypt = false;
-
-                try
+                Task t = Task.Run(() =>
                 {
-                    sqlConnectionStringBuilder.InitialCatalog = "master";
-                    sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
-
+                    var listFile = sqlFileProcessor.GetOrderedSqlFiles(databaseDto.DirectoryPath, databaseDto.Pattern);
+                    var sort = sqlFileProcessor.MapVersionFile(listFile, databaseDto.Pattern, databaseDto.VersionDb);
+                    SqlConnectionStringBuilder sqlConnectionStringBuilder = new SqlConnectionStringBuilder();
+                    sqlConnectionStringBuilder.ApplicationName = DatabaseUpdateValidatorConstants.APPLICATION_NAME;
+                    sqlConnectionStringBuilder.DataSource = databaseDto.Server;
                     sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
+                    sqlConnectionStringBuilder.UserID = databaseDto.UserName;
+                    sqlConnectionStringBuilder.Password = databaseDto.Password;
+                    sqlConnectionStringBuilder.Encrypt = false;
+                    bool isConnected = false;
+                    do
+                    {
+                        sqlConnectionStringBuilder.InitialCatalog = "master";
+                        isConnected = sqlFileExecutor.IsDatabaseConnected(sqlConnectionStringBuilder.ToString());
+                        if (!isConnected)
+                        {
+                            Thread.Sleep(5000);
+                        }
+                    } while (!isConnected);
 
-                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto);
+                    try
+                    {
+                        sqlConnectionStringBuilder.InitialCatalog = "master";
+                        sqlFileExecutor.ExecuteScript(databaseDto.QueryAttaach, sqlConnectionStringBuilder.ToString(), databaseDto.DatabaseName);
 
-                    sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto); //se ejecuta una segunda vez para validar que no falle en una segunda actualizacion
-                }
-                catch (Exception ex)
-                {
-                    stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
-                    Logger.Fatal(ex);
-                    isFail = true;
-                }
-                //finally
-                //{
-                //    Detach(databaseDto, sqlConnectionStringBuilder);
-                //}
+                        sqlConnectionStringBuilder.InitialCatalog = databaseDto.DatabaseName;
+
+                        sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto);
+
+                        sqlFileExecutor.ExecuteFiles(sort, sqlConnectionStringBuilder.ToString(), databaseDto); //se ejecuta una segunda vez para validar que no falle en una segunda actualizacion
+                    }
+                    catch (Exception ex)
+                    {
+                        stringBuilder.AppendLine($"{databaseDto.DatabaseName} error:{ex.Message}");
+                        stringBuilder.AppendLine($"InnerException error:{ex.InnerException}");
+                        Logger.Fatal(ex);
+                        isFail = true;
+                    }
+                });
+                tasks.Add(t);
             }
+
+            Task.WaitAll(tasks.ToArray());
             if (isFail)
             {
-                throw new Exception("Fail Script Database");
+                throw new Exception(stringBuilder.ToString());
             }
         }
 

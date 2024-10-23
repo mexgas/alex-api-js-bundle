@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[cctiposubcalifrel](	  [califRel_id] INT NOT NULL IDENTITY(1,1)	, [calif_id] SMALLINT NOT NULL	, [califSub_id] SMALLINT NOT NULL	, [tipoSubRel] TINYINT NOT NULL	, CONSTRAINT [PK_cctipoSubCalifRel] PRIMARY KEY ([califRel_id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_ExportProfilesRecordingsManager](	  [id] INT NOT NULL IDENTITY(1,1)	, [profile] NVARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [user_id] INT NOT NULL	, [struct] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [active] INT NOT NULL)

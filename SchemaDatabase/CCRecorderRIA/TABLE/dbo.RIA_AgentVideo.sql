@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_AgentVideo](	  [callId] INT NOT NULL	, [callType] TINYINT NULL	, CONSTRAINT [PK__RIA_Agen__180B0E340C2409BC] PRIMARY KEY ([callId] ASC))

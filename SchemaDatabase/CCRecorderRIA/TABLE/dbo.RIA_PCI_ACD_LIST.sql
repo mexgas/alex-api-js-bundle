@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RIA_PCI_ACD_LIST](	  [Inbound_id] INT NOT NULL	, [List_type] SMALLINT NOT NULL	, [Keyword] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL)

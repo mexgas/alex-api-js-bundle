@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccGenAgentNotReady](	  [timegroup] SMALLDATETIME NOT NULL	, [user_id] SMALLINT NOT NULL	, [tiponotready_id] SMALLINT NOT NULL	, [amount] SMALLINT NOT NULL	, [time] SMALLINT NOT NULL	, [amountReal] SMALLINT NULL	, CONSTRAINT [PK_ccGenAgentNotReady] PRIMARY KEY ([timegroup] ASC, [user_id] ASC, [tiponotready_id] ASC))

@@ -1,6 +1,7 @@
 using DatabaseUpdateValidator.Nuxiba.Base.Exceptions;
 using Nuxiba.NuxibaAppBase.Base.Repository;
 using DatabaseUpdateValidator.Nuxiba.Model;
+using Microsoft.Data.SqlClient;
 
 namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
 {
@@ -8,10 +9,31 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
     {
         private readonly ISqlExecutor _sqlExecutor;
 
-        // Constructor to inject dependencies
         public SqlFileExecutor(ISqlExecutor sqlExecutor)
         {
             _sqlExecutor = sqlExecutor;
+        }
+
+        public bool IsDatabaseConnected(string connectionString)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open(); // Intentar abrir la conexión
+                    if (connection.State == System.Data.ConnectionState.Open)
+                    {
+                        Logger.Debug("Conexión a la base de datos establecida correctamente.");
+                        return true;
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                Logger.Debug($"Error al conectar a la base de datos: {ex.Message}");
+            }
+
+            return false;
         }
 
         public void ExecuteScript(string sqlScript, string connectionString, string createDatabase)
@@ -49,9 +71,8 @@ namespace DatabaseUpdateValidator.Nuxiba.Repository.Impl
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error while executing the file: {filePath.Value}, Error: {ex.Message}";
-                        // Log errors
-                        Logger.Warn(msg);
+                        string msg = $"while executing the file: {filePath.Value}";
+                        Logger.Error(msg);
                         throw new Exception(msg, ex);
                     }
                 }

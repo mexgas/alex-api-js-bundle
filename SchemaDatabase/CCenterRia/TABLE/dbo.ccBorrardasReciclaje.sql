@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccBorrardasReciclaje](	  [callout_id] INT NULL	, [cal_key] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [cal_status] SMALLINT NULL	, [cam_id] SMALLINT NULL	, [fecha] SMALLDATETIME NULL DEFAULT(getdate()))

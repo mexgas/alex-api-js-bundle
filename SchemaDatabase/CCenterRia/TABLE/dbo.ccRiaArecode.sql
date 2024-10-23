@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRiaArecode](	  [area] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK__ccRiaAre__5DB33B7B3C3154D4] PRIMARY KEY ([area] ASC))

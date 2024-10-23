@@ -1,4 +1,4 @@
-@echo off
+rem @echo off
 
 REM Define la ruta a SqlPackage.exe
 set SqlPackagePath="C:\Devops\sqlpackage-win-x64-en-162.4.92.3\SqlPackage.exe"
@@ -9,41 +9,42 @@ if "%1"=="" (
     exit /b
 )
 
-if "%2"=="" (
-    echo Por favor proporciona el nombre de la base de datos de destino como segundo parámetro.
-    exit /b
-)
 
 REM Define los nombres de las bases de datos pasados como parámetros
-set SourceDatabaseName=%1
-set TargetDatabaseName=%2
+set PrDatabaseName=%1
+set DestDatabaseName=%1
 
 REM Define los detalles de conexión, con el parámetro TrustServerCertificate en la cadena de conexión
-set SourceConnectionString="Data Source=192.168.1.59,1436;Initial Catalog=%SourceDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
-set TargetConnectionString="Data Source=192.168.1.59,1437;Initial Catalog=%TargetDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set OriConnectionString="Data Source=192.168.1.59,1436;Initial Catalog=%DestDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
+set PrConnectionString="Data Source=192.168.1.59,1437;Initial Catalog=%PrDatabaseName%;User Id=sa;Password=Nuxiba2024_;Encrypt=False;TrustServerCertificate=True"
 
 REM Define los archivos DACPAC donde se guardarán los esquemas extraídos
-set SourceDacpac=%~dp0Source_%SourceDatabaseName%.dacpac
-set TargetDacpac=%~dp0Target_%TargetDatabaseName%.dacpac
+set PrDacpac=%PrDatabaseName%_Pr.dacpac
+set OriDacpac=%DestDatabaseName%_Ori.dacpac
 
-REM Extraer el esquema de la base de datos de origen a un archivo DACPAC
-echo Generando archivo DACPAC de la base de datos de origen: %SourceDatabaseName%...
-%SqlPackagePath% /Action:Extract /SourceConnectionString:%SourceConnectionString% /TargetFile:%SourceDacpac%
-if %ERRORLEVEL% neq 0 (
-    echo Error al extraer el esquema de la base de datos de origen.
-    pause
-    exit /b
-)
+REM Define los archivos de salida para el reporte XML y los scripts SQL
+set ReportFile=%PrDatabaseName%.xml
+set ScriptFileForward=%PrDatabaseName%_Pr.sql
+
+set ScriptFileBackward=%DestDatabaseName%_Ori.sql
+
+set folderPrDacpac=%PrDatabaseName%_Pr
+set folderOriDacpac=%DestDatabaseName%_Ori
+
 
 REM Extraer el esquema de la base de datos de destino a un archivo DACPAC
-echo Generando archivo DACPAC de la base de datos de destino: %TargetDatabaseName%...
-%SqlPackagePath% /Action:Extract /SourceConnectionString:%TargetConnectionString% /TargetFile:%TargetDacpac%
-if %ERRORLEVEL% neq 0 (
-    echo Error al extraer el esquema de la base de datos de destino.
-    pause
-    exit /b
-)
+echo Generando archivo DACPAC de la base de datos de destino: %OriDacpac%...
+%SqlPackagePath% /Action:Extract /SourceConnectionString:%OriConnectionString% /TargetFile:%OriDacpac%
 
-echo Archivos DACPAC generados exitosamente:
-echo - Origen: %SourceDacpac%
-echo - Destino: %TargetDacpac%
+REM Extraer el esquema de la base de datos de origen a un archivo DACPAC
+echo Generando archivo DACPAC de la base de datos de Pr: %PrDacpac%...
+%SqlPackagePath% /Action:Extract /SourceConnectionString:%PrConnectionString% /TargetFile:%PrDacpac%
+
+
+unpackdacpac unpack %PrDacpac% %folderPrDacpac% --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
+unpackdacpac unpack %OriDacpac% %folderOriDacpac% --deploy-script-exclude-object-type Users --deploy-script-exclude-object-type Logins --deploy-script-exclude-object-type RoleMembership
+
+:: Mover y renombrar el archivo
+move "%folderPrDacpac%\model.sql" "%ScriptFileForward%"    
+move "%folderOriDacpac%\model.sql" "%ScriptFileBackward%"    
+

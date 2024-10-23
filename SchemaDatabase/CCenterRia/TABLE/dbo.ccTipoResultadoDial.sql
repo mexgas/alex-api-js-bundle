@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTipoResultadoDial](	  [tipoResDial_id] TINYINT NOT NULL	, [descripcion] VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, CONSTRAINT [PK_ccTipoResultadoDial] PRIMARY KEY ([tipoResDial_id] ASC))

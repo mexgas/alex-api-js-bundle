@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTemplates](	  [id] INT NOT NULL	, [User_id] INT NOT NULL	, [parameters] VARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [reportName] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [date] DATETIME NOT NULL)

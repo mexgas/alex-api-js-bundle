@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccWAAverageConversations](	  [InboundId] SMALLINT NOT NULL	, [AverageConversationTime] INT NULL	, [AverageDialogTime] INT NULL	, [AverageWaitingTime] INT NULL	, [MaximumWaitingTime] INT NULL	, [ServiceLevel] SMALLINT NULL DEFAULT((0))	, [StatusUpdate] BIT NULL DEFAULT((0))	, [LastUpdate] DATETIME NULL)

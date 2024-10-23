@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[RegProcessPreviewRecord](	  [userId] SMALLINT NOT NULL	, [process] SMALLINT NOT NULL	, [callout_id] INT NOT NULL	, [camId] INT NOT NULL	, [reg_date] DATETIME2(7) NULL)

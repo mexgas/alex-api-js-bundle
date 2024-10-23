@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[migration](	  [id] INT NOT NULL	, [description] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [status] INT NULL	, [error] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [dateStart] DATETIME NOT NULL	, [dateEnd] DATETIME NOT NULL)

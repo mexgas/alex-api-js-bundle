@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccRIAMultimediaAddress](	  [address_id] SMALLINT NOT NULL	, [Description] VARCHAR(40) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [address] VARCHAR(254) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [Status] BIT NOT NULL DEFAULT((1))	, CONSTRAINT [PK_ccRIAMultimediaAddress] PRIMARY KEY ([address_id] ASC))

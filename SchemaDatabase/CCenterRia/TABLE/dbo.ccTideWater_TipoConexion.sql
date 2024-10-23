@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccTideWater_TipoConexion](	  [tipo_Con] TINYINT NOT NULL IDENTITY(1,1)	, [desc_Con] VARCHAR(35) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [status_Con] BIT NULL DEFAULT((1))	, CONSTRAINT [PK_ccTideWater_TipoConexion] PRIMARY KEY ([tipo_Con] ASC))

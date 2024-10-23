@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccWhatsAppNode](	  [conversationId] INT NOT NULL	, [node] XML NULL	, [dateIn] DATETIME NULL	, [dateOut] DATETIME NULL DEFAULT(NULL)	, [status] TINYINT NULL DEFAULT((0))	, CONSTRAINT [PK__ccWhatsA__2860E54E6D6B09E9] PRIMARY KEY ([conversationId] ASC))

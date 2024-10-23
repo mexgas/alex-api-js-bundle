@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccBaseXDB](	  [id] INT NOT NULL IDENTITY(1,1)	, [serviceId] INT NULL	, [dateStart] DATETIME NULL	, [dateEnd] DATETIME NULL DEFAULT(NULL)	, [Xname] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL	, [isFull] BIT NULL DEFAULT((0))	, CONSTRAINT [PK__ccBaseXDB__750425CE] PRIMARY KEY ([id] ASC))

@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[Logger](	  [Logger_id] INT NOT NULL IDENTITY(1,1)	, [Template_id] INT NOT NULL	, [User_id] INT NULL	, [Action_id] INT NULL	, [date] DATE NULL	, CONSTRAINT [PK__Logger__FF6B5D0D1BFD2C07] PRIMARY KEY ([Logger_id] ASC))

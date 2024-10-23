@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccMenuUser](	  [id_User] INT NOT NULL	, [id_Menu] INT NOT NULL	, [type] TINYINT NOT NULL DEFAULT((1)))

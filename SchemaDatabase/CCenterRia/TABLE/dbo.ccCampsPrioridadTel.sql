@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccCampsPrioridadTel](	  [cam_id] INT NOT NULL	, [Prioridad] CHAR(8) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL DEFAULT('12345NNN'))CREATE NONCLUSTERED INDEX [IX_ccCampsPrioridadTel] ON [dbo].[ccCampsPrioridadTel] ([cam_id] ASC)

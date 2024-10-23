@@ -1,1 +1,0 @@
-CREATE TABLE [dbo].[ccSIPCodeMap](	  [id] INT NOT NULL IDENTITY(1,1)	, [country] INT NOT NULL	, [carrier] VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL	, [resultCode] SMALLINT NOT NULL	, [mappedCode] SMALLINT NOT NULL	, [hash] VARCHAR(34) COLLATE SQL_Latin1_General_CP1_CI_AS NULL)

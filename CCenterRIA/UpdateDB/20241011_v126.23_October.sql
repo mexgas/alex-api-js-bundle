@@ -2470,6 +2470,548 @@ END'
         EXEC(@sql);
 		-------------------------------------------------------------------- Ulises End --------------------------------------------------------------------------
 
+		-------------------------------------------------------------------- BEGIN MACL --------------------------------------------------------------------------
+		SET @process = 'Alter SP ccspOutboundWhatsApp para obtener eñ AreaId'
+        SET @sql = 'ALTER procedure [dbo].[ccspOutboundWhatsApp]
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+	select 
+		distinct 
+		cast(c. cam_id as int) as CamId,
+		cam_descripcion as [Name],
+		1 AS CampType,
+		cam_procesando as [Start],
+		Number as PhoneNumber, 
+		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+		Token,
+		CAST(c.IDArea AS int) as AreaId
+	from ccCamps c with(nolock)
+	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+	WHERE CampType=5 AND c.IDArea IS NOT NULL
+	UNION
+	SELECT -- load acd
+		DISTINCT 
+		CAST(ci.Inbound_id AS INT) AS CamId,
+		ci.descripcion AS [Name],
+		0 AS CampType,
+		CAST(ci.Status AS BIT) AS [Start],
+		cmw.Number AS PhoneNumber,
+		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+		cmw.Token AS Token,
+		CAST(ci.IDArea AS int) as AreaId
+	FROM ccInbound ci WITH(NOLOCK)
+	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+END
+ELSE IF @campType IS NOT NULL
+BEGIN
+	IF @campType = 0
+	BEGIN
+		SELECT -- load acd
+			DISTINCT 
+			CAST(ci.Inbound_id AS INT) AS CamId,
+			ci.descripcion AS [Name],
+			0 AS CampType,
+			CAST(ci.Status AS BIT) AS [Start],
+			cmw.Number AS PhoneNumber,
+			(CASE ci.Status WHEN 0 THEN '''' ELSE REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) END) AS Url,
+			cmw.Token AS Token,
+			CAST(ci.IDArea AS int) as AreaId
+		FROM ccInbound ci WITH(NOLOCK)
+		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+	END
+	ELSE
+	BEGIN
+		select 
+			distinct 
+			cast(c. cam_id as int) as CamId,
+			cam_descripcion as [Name],
+			1 AS CampType,
+			cam_procesando as [Start],
+			Number as PhoneNumber, 
+			case cam_procesando when 0 then '''' else REPLACE(@Url, ''phoneId'', PhoneNumberId) end as Url, 
+			Token,
+			CAST(c.IDArea AS int) as AreaId
+		from ccCamps c with(nolock)
+		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+	END
+END
+
+end
+else if @action=2 begin
+	select top 1 A.id,A.LanguageCode,B.Number from ccMetaWAOutboundTemplates A
+	inner join ccMetawhatsAppNumbers B on B.MetaId=A.MetaId
+	where A.TemplateName=@templateName and B.Cam_Id=@camId
+
+end'
+        EXEC(@sql);
+		-------------------------------------------------------------------- BEGIN MACL --------------------------------------------------------------------------
+		
+		-------------------------------------------------------------------- BEGIN DMM  --------------------------------------------------------------------------
+		SET @process = 'Alter SP ccsp_GetAgentAndCampaignRelationship'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GetAgentAndCampaignRelationship]
+ @Option smallint = null,
+ @agentId smallint = null,
+ @From datetime = null,
+ @To datetime = null,
+ @InboundIdsLst varchar(max) = null,
+ @OutboundIdsLst varchar(max) = null,
+ @ClientNumbersLst varchar(max) = null,   
+ @MaxConversationHistory smallint = null,
+ @ConversationIndex smallint = null
+
+AS
+BEGIN
+IF @Option = 1
+BEGIN
+    DECLARE @campsIn VARCHAR(MAX) = ''''
+    DECLARE @InboundNames VARCHAR(MAX) = ''''
+    DECLARE @OutboundNames VARCHAR(MAX) = ''''
+    DECLARE @campsOut VARCHAR(MAX) = ''''
+    DECLARE @combinedCampsIn VARCHAR(MAX) = ''''
+    DECLARE @combinedCampsOut VARCHAR(MAX) = ''''
+    DECLARE @combinedInboundNames VARCHAR(MAX) = ''''
+    DECLARE @combinedOutboundNames VARCHAR(MAX) = ''''
+    DECLARE @ClientIds VARCHAR(MAX) = ''''
+    DECLARE @MaxConversationHistoryTime INT = NULL
+    DECLARE @MaxDaysPerWAConvo INT = NULL
+    DECLARE @FinalMaxValue INT = NULL
+    DECLARE @count INT
+    DECLARE @id INT
+    DECLARE @wg INT
+
+    IF OBJECT_ID(''tempdb..#AgentsRelations'') IS NOT NULL 
+        DROP TABLE #AgentsRelations;
+
+    -- Create and populate temporary table
+    SELECT ROW_NUMBER() OVER(ORDER BY idWG ASC) AS Row,
+           IDWG, @campsIn AS campsIn, @campsOut AS campsOut, 
+           @InboundNames AS InboundNames, @OutboundNames AS OutboundNames
+    INTO #AgentsRelations
+    FROM ccRIAAreaWorkGroup wg
+    WHERE EXISTS (
+        SELECT 1 
+        FROM ccRIAWorkGroupUsers wgu 
+        WHERE wgu.IDWG = wg.IDWG 
+            AND wgu.user_id = @agentId
+    );
+
+    SELECT @count = COUNT(idWG) FROM #AgentsRelations;
+    SET @id = 1;
+
+    -- Loop through each workgroup to fetch related campaigns
+    WHILE @id <= @count
+    BEGIN
+        SELECT @wg = idwg FROM #AgentsRelations WHERE Row = @id;
+
+        SET @campsIn = '''';
+        SET @campsOut = '''';
+        SET @InboundNames = '''';
+        SET @OutboundNames = '''';
+
+        -- Fetch Inbound Campaigns
+        SELECT @campsIn = ISNULL(@campsIn + CASE WHEN @campsIn = '''' THEN '''' ELSE '','' END + CONVERT(VARCHAR(12), inbound_id), @campsIn)
+        FROM ccInbound i 
+        INNER JOIN ccRIACampEspWG wg ON wg.IdCampEsp = i.Inbound_id
+        WHERE wg.IDWG = @wg AND wg.Tipo = 0 and i.chat = 5
+        ORDER BY inbound_id;
+
+        -- Fetch Outbound Campaigns
+        SELECT @campsOut = ISNULL(@campsOut + CASE WHEN @campsOut = '''' THEN '''' ELSE '','' END + CONVERT(VARCHAR(12), cam_id), @campsOut)
+        FROM ccCamps c 
+        INNER JOIN ccRIACampEspWG wg ON wg.IdCampEsp = c.cam_id
+        WHERE wg.IDWG = @wg AND wg.Tipo = 1 and c.CampType = 5
+        ORDER BY cam_id;
+
+        -- Fetch Inbound Names
+        SELECT @InboundNames = ISNULL(@InboundNames + CASE WHEN @InboundNames = '''' THEN '''' ELSE '','' END + i.descripcion, @InboundNames)
+        FROM ccInbound i
+        WHERE i.Inbound_id IN (
+            SELECT inbound_id FROM ccInbound 
+            INNER JOIN ccRIACampEspWG wg ON wg.IdCampEsp = i.Inbound_id
+            WHERE wg.IDWG = @wg AND wg.Tipo = 0 and i.chat = 5
+        )
+        ORDER BY i.Inbound_id;
+
+        -- Fetch Outbound Names
+        SELECT @OutboundNames = ISNULL(@OutboundNames + CASE WHEN @OutboundNames = '''' THEN '''' ELSE '','' END + c.cam_descripcion, @OutboundNames)
+        FROM ccCamps c
+        WHERE c.cam_id IN (
+            SELECT cam_id FROM ccCamps 
+            INNER JOIN ccRIACampEspWG wg ON wg.IdCampEsp = c.cam_id
+            WHERE wg.IDWG = @wg AND wg.Tipo = 1 and c.CampType = 5
+        )
+        ORDER BY c.cam_id;
+
+        -- Combine Inbound and Outbound campaigns and names
+        IF @campsIn IS NOT NULL AND @campsIn <> ''''
+            SET @combinedCampsIn = ISNULL(@combinedCampsIn + CASE WHEN @combinedCampsIn = '''' THEN '''' ELSE '','' END + @campsIn, @combinedCampsIn);
+
+        IF @campsOut IS NOT NULL AND @campsOut <> ''''
+            SET @combinedCampsOut = ISNULL(@combinedCampsOut + CASE WHEN @combinedCampsOut = '''' THEN '''' ELSE '','' END + @campsOut, @combinedCampsOut);
+
+        IF @InboundNames IS NOT NULL AND @InboundNames <> ''''
+            SET @combinedInboundNames = ISNULL(@combinedInboundNames + CASE WHEN @combinedInboundNames = '''' THEN '''' ELSE '','' END + @InboundNames, @combinedInboundNames);
+
+        IF @OutboundNames IS NOT NULL AND @OutboundNames <> ''''
+            SET @combinedOutboundNames = ISNULL(@combinedOutboundNames + CASE WHEN @combinedOutboundNames = '''' THEN '''' ELSE '','' END + @OutboundNames, @combinedOutboundNames);
+
+        SET @id = @id + 1;
+    END
+
+    -- Fetch max ConversationHistoryTime from ccInbound
+    IF @combinedCampsIn IS NOT NULL AND @combinedCampsIn <> ''''
+    BEGIN
+        IF OBJECT_ID(''tempdb..#TmpInboundIds'') IS NOT NULL DROP TABLE #TmpInboundIds;
+
+        CREATE TABLE #TmpInboundIds (Id INT);
+        INSERT INTO #TmpInboundIds (Id)
+        SELECT CAST(value AS INT) 
+        FROM fn_RIASplitDelimited(@combinedCampsIn, '','');
+
+        SELECT @MaxConversationHistoryTime = MAX(i.ConversationHistoryTime)
+        FROM ccInbound i
+        INNER JOIN #TmpInboundIds tmp ON tmp.Id = i.Inbound_id;
+
+        IF OBJECT_ID(''tempdb..#TmpInboundIds'') IS NOT NULL DROP TABLE #TmpInboundIds;
+    END
+
+    -- Fetch max MaxDaysPerWAConvo from contactMeanOut for Outbound campaigns
+    IF @combinedCampsOut IS NOT NULL AND @combinedCampsOut <> ''''
+    BEGIN
+        IF OBJECT_ID(''tempdb..#TmpOutboundIds'') IS NOT NULL DROP TABLE #TmpOutboundIds;
+
+        CREATE TABLE #TmpOutboundIds (Id INT);
+        INSERT INTO #TmpOutboundIds (Id)
+        SELECT CAST(value AS INT) 
+        FROM fn_RIASplitDelimited(@combinedCampsOut, '','');
+
+        SELECT @MaxDaysPerWAConvo = MAX(cmo.MaxDaysPerWAConvo)
+        FROM contactMeanOut cmo 
+        INNER JOIN #TmpOutboundIds tmp ON tmp.Id = cmo.camp_id;
+
+        IF OBJECT_ID(''tempdb..#TmpOutboundIds'') IS NOT NULL DROP TABLE #TmpOutboundIds;
+    END
+
+    -- Compare the maximum values using CASE statement instead of GREATEST
+    SET @FinalMaxValue = CASE 
+        WHEN @MaxConversationHistoryTime IS NULL THEN @MaxDaysPerWAConvo
+        WHEN @MaxDaysPerWAConvo IS NULL THEN @MaxConversationHistoryTime
+        ELSE CASE 
+            WHEN @MaxConversationHistoryTime > @MaxDaysPerWAConvo THEN @MaxConversationHistoryTime
+            ELSE @MaxDaysPerWAConvo
+        END
+    END;
+
+    -- Return the combined results
+    SELECT 
+        @combinedCampsIn AS InboundIdsLst, 
+        @combinedInboundNames AS InboundNamesLst, 
+        @combinedCampsOut AS OutboundIdsLst, 
+        @combinedOutboundNames AS OutboundNamesLst, 
+        CAST(@FinalMaxValue AS SMALLINT) AS MaxConversationHistory;
+
+    -- Drop #AgentsRelations table to clean up temp tables
+    IF OBJECT_ID(''tempdb..#AgentsRelations'') IS NOT NULL 
+        DROP TABLE #AgentsRelations;
+	END
+END
+
+--IF @Option = 3
+--BEGIN
+--    -- Table for Client Numbers
+--    DECLARE @ClientNumberTable TABLE (ClientNumber BIGINT);
+    
+--    -- Table for Inbound Campaign IDs
+--    DECLARE @InboundIdTable TABLE (InboundId INT);
+
+--    -- Table for Outbound Campaign IDs
+--    DECLARE @OutboundIdTable TABLE (OutboundId INT);
+    
+--    -- Insert Client Numbers
+--    IF @ClientNumbersLst IS NOT NULL AND @ClientNumbersLst <> ''''
+--    BEGIN
+--        INSERT INTO @ClientNumberTable (ClientNumber)
+--        SELECT CAST(value AS BIGINT)
+--        FROM fn_RIASplitDelimited(@ClientNumbersLst, '','');
+--    END
+
+--    -- Insert Inbound Campaign IDs
+--    IF @InboundIdsLst IS NOT NULL AND @InboundIdsLst <> ''''
+--    BEGIN
+--        INSERT INTO @InboundIdTable (InboundId)
+--        SELECT CAST(value AS INT)
+--        FROM fn_RIASplitDelimited(@InboundIdsLst, '','');
+--    END
+
+--    -- Insert Outbound Campaign IDs
+--    IF @OutboundIdsLst IS NOT NULL AND @OutboundIdsLst <> ''''
+--    BEGIN
+--        INSERT INTO @OutboundIdTable (OutboundId)
+--        SELECT CAST(value AS INT)
+--        FROM fn_RIASplitDelimited(@OutboundIdsLst, '','');
+--    END
+
+--    -- Get Latest Inbound Messages
+--    ;WITH LatestInboundMessages AS (
+--        SELECT 
+--            c.ConversationId,
+--            c.InboundId AS CampaignId,
+--            g.graphic_id AS GraphicId,
+--            c.clientId AS ClientNumber,
+--            m.content AS MessageContent,
+--            m.TimeStampMessage AS LastMessageTimestamp,
+--            ''Inbound'' AS CampType,
+--            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+--        FROM ccWhatsAppConversations c
+--        LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
+--        LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+--        WHERE c.AgentId = @agentId 
+--            AND c.requestDate BETWEEN @From AND @To
+--            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+--            AND (@InboundIdsLst IS NULL OR @InboundIdsLst = '''' OR c.InboundId IN (SELECT InboundId FROM @InboundIdTable))
+--    ),
+--    -- Get Latest Outbound Messages
+--    LatestOutboundMessages AS (
+--        SELECT 
+--            c.ConversationId,
+--            c.camId AS CampaignId,
+--            g.graphic_id AS GraphicId,
+--            c.clientId AS ClientNumber,
+--            m.content AS MessageContent,
+--            m.TimeStampMessage AS LastMessageTimestamp,
+--            ''Outbound'' AS CampType,
+--            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+--        FROM ccWhatsAppConversationsOut c
+--        LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
+--        LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+--        WHERE c.AgentId = @agentId 
+--            AND c.requestDate BETWEEN @From AND @To
+--            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+--            AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''' OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
+--    ),
+--    -- Combine Inbound and Outbound Messages
+--    CombinedMessages AS (
+--        SELECT 
+--            ConversationId,
+--            CampaignId,
+--            GraphicId,
+--            ClientNumber,
+--            MessageContent,
+--            LastMessageTimestamp,
+--            CampType
+--        FROM LatestInboundMessages
+--        WHERE rn = 1
+        
+--        UNION ALL
+        
+--        SELECT 
+--            ConversationId,
+--            CampaignId,
+--            GraphicId,
+--            ClientNumber,
+--            MessageContent,
+--            LastMessageTimestamp,
+--            CampType
+--        FROM LatestOutboundMessages
+--        WHERE rn = 1
+--    ),
+--    -- Count the Number of Conversations
+--    ConversationCount AS (
+--        SELECT 
+--            COUNT(DISTINCT ConversationId) AS NumberOfConversations
+--        FROM (
+--            SELECT ConversationId FROM ccWhatsAppConversations 
+--            WHERE AgentId = @agentId AND requestDate BETWEEN @From AND @To
+--            UNION ALL
+--            SELECT ConversationId FROM ccWhatsAppConversationsOut
+--            WHERE AgentId = @agentId AND requestDate BETWEEN @From AND @To
+--        ) AS AllConversations
+--    )
+    
+--    -- Final output: Select Top 10 Messages and Number of Conversations
+--    SELECT /*TOP 10*/ * ,
+--           (SELECT NumberOfConversations FROM ConversationCount) AS ConversationsCount
+--    FROM CombinedMessages
+--    ORDER BY LastMessageTimestamp DESC;
+--END;
+
+IF @Option = 2
+BEGIN
+    DECLARE @ClientNumberTable TABLE (ClientNumber BIGINT);
+    DECLARE @InboundIdTable TABLE (InboundId INT);
+    DECLARE @OutboundIdTable TABLE (OutboundId INT);
+    DECLARE @PageSize INT = 10; -- Number of conversations per page
+
+    -- Insert Client Numbers
+    IF @ClientNumbersLst IS NOT NULL AND @ClientNumbersLst <> ''''
+    BEGIN
+        INSERT INTO @ClientNumberTable (ClientNumber)
+        SELECT CAST(value AS BIGINT)
+        FROM fn_RIASplitDelimited(@ClientNumbersLst, '','');
+    END
+
+    -- Insert Inbound Campaign IDs
+    IF @InboundIdsLst IS NOT NULL AND @InboundIdsLst <> ''''
+    BEGIN
+        INSERT INTO @InboundIdTable (InboundId)
+        SELECT CAST(value AS INT)
+        FROM fn_RIASplitDelimited(@InboundIdsLst, '','');
+    END
+
+    -- Insert Outbound Campaign IDs
+    IF @OutboundIdsLst IS NOT NULL AND @OutboundIdsLst <> ''''
+    BEGIN
+        INSERT INTO @OutboundIdTable (OutboundId)
+        SELECT CAST(value AS INT)
+        FROM fn_RIASplitDelimited(@OutboundIdsLst, '','');
+    END
+
+    -- Get Total Conversation Count (used for determining the Last page)
+    DECLARE @TotalConversations INT;
+    SELECT 
+        @TotalConversations = COUNT(DISTINCT ConversationId)
+    FROM (
+        -- Inbound Conversations
+        SELECT ConversationId 
+        FROM ccWhatsAppConversations 
+        WHERE AgentId = @agentId 
+        AND requestDate BETWEEN @From AND @To
+        -- Apply ClientNumber filtering if provided
+        AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+        -- Apply InboundId filtering if provided
+        AND (@InboundIdsLst IS NULL OR @InboundIdsLst = '''' OR InboundId IN (SELECT InboundId FROM @InboundIdTable))
+
+        UNION ALL
+
+        -- Outbound Conversations
+        SELECT ConversationId 
+        FROM ccWhatsAppConversationsOut
+        WHERE AgentId = @agentId 
+        AND requestDate BETWEEN @From AND @To
+        -- Apply ClientNumber filtering if provided
+        AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+        -- Apply OutboundId filtering if provided
+        AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''' OR camId IN (SELECT OutboundId FROM @OutboundIdTable))
+    ) AS AllConversations;
+
+    -- Calculate the correct offset based on the @ConversationIndex
+    DECLARE @Offset INT;
+    SET @Offset = ISNULL(@ConversationIndex, 1) - 1; -- Index is 1-based, OFFSET is 0-based
+
+    -- Handle the Last Button Logic: If @ConversationIndex is too high, return the last page
+    IF @ConversationIndex >= @TotalConversations
+    BEGIN
+        SET @Offset = @TotalConversations - @PageSize; -- Get the offset for the last page
+        IF @Offset < 0 SET @Offset = 0; -- Ensure we don''t go negative
+    END
+
+    -- Get Latest Inbound Messages
+    ;WITH LatestInboundMessages AS (
+        SELECT 
+            c.ConversationId,
+            c.InboundId AS CampaignId,
+            g.graphic_id AS GraphicId,
+            c.clientId AS ClientNumber,
+            m.content AS MessageContent,
+            m.TimeStampMessage AS LastMessageTimestamp,
+            ''Inbound'' AS CampType,
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+        FROM ccWhatsAppConversations c
+        LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
+        LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+        WHERE c.AgentId = @agentId 
+            AND c.requestDate BETWEEN @From AND @To
+            -- Apply ClientNumber filtering if provided
+            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            -- Apply InboundId filtering if provided
+            AND (@InboundIdsLst IS NULL OR @InboundIdsLst = '''' OR c.InboundId IN (SELECT InboundId FROM @InboundIdTable))
+    ),
+    
+    -- Get Latest Outbound Messages
+    LatestOutboundMessages AS (
+        SELECT 
+            c.ConversationId,
+            c.camId AS CampaignId,
+            g.graphic_id AS GraphicId,
+            c.clientId AS ClientNumber,
+            m.content AS MessageContent,
+            m.TimeStampMessage AS LastMessageTimestamp,
+            ''Outbound'' AS CampType,
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+        FROM ccWhatsAppConversationsOut c
+        LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
+        LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+        WHERE c.AgentId = @agentId 
+            AND c.requestDate BETWEEN @From AND @To
+            -- Apply ClientNumber filtering if provided
+            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            -- Apply OutboundId filtering if provided
+            AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''' OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
+    ),
+
+    -- Combine Inbound and Outbound Messages
+    CombinedMessages AS (
+        SELECT 
+            ConversationId,
+            CampaignId,
+            GraphicId,
+            ClientNumber,
+            MessageContent,
+            LastMessageTimestamp,
+            CampType
+        FROM LatestInboundMessages
+        WHERE rn = 1
+        
+        UNION ALL
+        
+        SELECT 
+            ConversationId,
+            CampaignId,
+            GraphicId,
+            ClientNumber,
+            MessageContent,
+            LastMessageTimestamp,
+            CampType
+        FROM LatestOutboundMessages
+        WHERE rn = 1
+    )
+
+    -- Final output: Select messages with pagination
+    SELECT conversationId as ConversationId,
+           CampaignId as CamId,
+           CAST(GraphicId AS SMALLINT) AS Frame,
+           ClientNumber as ClientNumber,
+           MessageContent as MessageContent,
+           CampType AS CamType,
+           LastMessageTimestamp as LastMessageDateTime,
+           @TotalConversations AS ConversationsCount
+    FROM CombinedMessages
+    ORDER BY LastMessageTimestamp DESC
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; -- Pagination Logic
+END;'
+
+        EXEC(@sql);
+		-------------------------------------------------------------------- BEGIN DMM  --------------------------------------------------------------------------
+
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

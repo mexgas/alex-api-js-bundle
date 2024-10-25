@@ -12979,13 +12979,14 @@ end'
 AS
 set nocount on
 
-if @status = 0
-        set @status = 6 --Status 6=Pide Agente
-
-if @status=19
+if @status = 0 begin
+  set @status = 6 --Status 6=Pide Agente
+end
+else if @status=19
 begin
-        insert into ccAVRSTransfer(cal_id,tipo) values(@cal_id,1)
-        return
+    update ccoCallsOut set statusCall_id=@status where cal_id =@cal_id;
+    insert into ccAVRSTransfer(cal_id,tipo) values(@cal_id,1)
+    return
 end
 
 insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)

@@ -12964,8 +12964,15 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
 end'
         EXEC(@sql);
 
+		
+    SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
+    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
+begin
+    DROP PROCEDURE ccsp_DLRAfterInsertCall;
+end'
+
         SET @process = 'feature/KR179003 Alter SP ccsp_DLRAfterInsertCall'
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
+        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
 @cam_id smallint,
 @cal_id BIGINT=0,
 @status int=0

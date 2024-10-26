@@ -12924,7 +12924,7 @@ else if @action = 14 begin
         set @filterCamId=@filterCamId+'')''+char(10)    
 
         set @filterWg=@filterWg+@filterCamId
-                set @cidin=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+        set @cidOut=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
     end
 
     SET @filterInboundId= ''''
@@ -12940,7 +12940,7 @@ else if @action = 14 begin
         set @filterInboundId=@filterInboundId+'')''+char(10)    
 
         set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(''+@filterInboundId
-                set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+        set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
     end
     
     select @filterWg as VarCamInOut,@cidOut as CidOut,@cidin as CidIn

@@ -12962,7 +12962,7 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
     exec (@sql)
     
 end'
-        EXEC(@sql);
+    EXEC(@sql);
 
 		
     SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
@@ -12970,9 +12970,10 @@ end'
 begin
     DROP PROCEDURE ccsp_DLRAfterInsertCall;
 end'
+     EXEC(@sql);
 
-        SET @process = 'feature/KR179003 Alter SP ccsp_DLRAfterInsertCall'
-        SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
+     SET @process = 'feature/KR179003 Alter SP ccsp_DLRAfterInsertCall'
+     SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
 @cam_id smallint,
 @cal_id BIGINT=0,
 @status int=0
@@ -12996,48 +12997,15 @@ where wg.Tipo=1 and wg.idcampesp=@cam_id
 exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=@status
 
 set nocount off'
-        EXEC(@sql);
-
-    SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
-    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
-                begin
-                    DROP PROCEDURE ccsp_DLRAfterInsertCall;
-                end'
     EXEC(@sql);
-
-        set @process = 'Create SP ccsp_DLRAfterInsertCall'
-    set @sql='CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
-        @cam_id smallint,
-@cal_id BIGINT=0,
-@status int=0
-AS
-set nocount on
-
-if @status = 0
-        set @status = 6 --Status 6=Pide Agente
-
-if @status=19
-begin
-        insert into ccAVRSTransfer(cal_id,tipo) values(@cal_id,1)
-        return
-end
-
-insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
-select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
-where wg.Tipo=1 and wg.idcampesp=@cam_id
-
-exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=@status
-
-set nocount off
-        '
-    EXEC(@sql)
+       
 
         SET @process = 'feature/KR179003 Alter SP ccsp_DLRSaveDialResult'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
-                @callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
-                @tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
-                @canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
-                @ani varchar(32)=''''
+@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
+@ani varchar(32)=''''
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -13140,8 +13108,8 @@ where setting_id=236
 end'
         EXEC(@sql);
 
-                       SET @process = 'Alter Funcion fnGetTipoLlamada mejora en el manejo y se valida si no es mexico no compare la lada'
-                SET @Sql = 'ALTER FUNCTION [dbo].[fnGetTipoLlamada](@tel VARCHAR(32))
+        SET @process = 'Alter Funcion fnGetTipoLlamada mejora en el manejo y se valida si no es mexico no compare la lada'
+        SET @Sql = 'ALTER FUNCTION [dbo].[fnGetTipoLlamada](@tel VARCHAR(32))
 RETURNS TINYINT
 AS
 BEGIN

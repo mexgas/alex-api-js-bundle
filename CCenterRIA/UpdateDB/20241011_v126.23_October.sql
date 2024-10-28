@@ -2470,6 +2470,748 @@ END'
         EXEC(@sql);
 		-------------------------------------------------------------------- Ulises End --------------------------------------------------------------------------
 
+----------------------------------------------------------- Start Hugo Longoria -------------------------------------------------------------------------
+
+    set @process = 'Alter SP ccsp_DLRInsertCall'
+    set @sql='ALTER PROCEDURE [dbo].[ccsp_DLRInsertCall]
+	@callout_id int,
+	@cam_id smallint,
+	@cal_Key varchar(20),
+	@cal_Telefono varchar(14),
+	@Puerto smallint,
+	@logDial_id int=0
+	AS
+
+	INSERT ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id ) --Status 6=Pide Agente
+	  VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto, getdate(), 6 )
+
+	select scope_identity() as cal_id
+	'
+    EXEC(@sql)
+
+
+
+----------------------------------------------------------- End Hugo Longoria -------------------------------------------------------------------------
+
+---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.15 fix/125.20231211.0.16- -------------------------------------------------
+    SET @process = 'Alter ccsp_AvrsSyncronization para cambiar la duration cuando se graba el hold'
+    SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]
+    @action SMALLINT,
+    @maxRecordsToTransfer INT = 10,
+    @id INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @action = 1
+    BEGIN
+        DECLARE @countrId INT;
+        SET @countrId = 1;
+
+        SELECT @countrId = valor
+        FROM ccSettings
+        WHERE setting_id = 104;
+
+                 -- Declarar la variable tipo tabla
+         declare @tempCalls table(
+            cal_id INT,
+            user_id INT,
+            Inbound_id INT,
+            calif_id int,
+            cal_extension INT,
+            cal_inicio DATETIME,
+            phone VARCHAR(50),
+            duration INT,
+            cal_key VARCHAR(50),
+            cal_manual int,
+            cal_puerto INT,
+            dni_id INT,
+            fvalida datetime,
+            cal_whohung int,
+            califSub_id int,
+            cal_tMoh INT,
+            dateEnd DATETIME,
+            callType INT,
+            avrsId INT,
+            prefijo VARCHAR(20),
+            isCallRecord BIT,
+            DNIS VARCHAR(50),
+            IDWG INT,
+            IsVoicemail BIT
+        );
+
+
+        WITH callsIn AS (
+            SELECT TOP (@maxRecordsToTransfer) 
+                calls.cal_id as CallId,
+                user_id,
+                calls.Inbound_id,
+                calls.calif_id,
+                CAST(cal_extension AS INT) AS cal_extension,
+                cal_inicio,
+                cal_ANI AS phone,
+                ISNULL(cal_tDialog - CASE WHEN ccInbound.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+                + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+                cal_key,
+                0 AS cal_manual,
+                cal_puerto,
+                calls.dni_id,
+                fvalida,
+                cal_whohung,
+                ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+                CASE 
+                    WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                    WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                    ELSE cal_tMoh - trans.tAntesXfer 
+                END AS cal_tMoh,
+                DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+                avrs.tipo + 1 AS callType,
+                avrs.id AS avrsId,
+                ccInbound.prefijo,
+                CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+                ISNULL(dni.dni_numero, '''') AS DNIS,
+                dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+                0 AS IsVoicemail
+            FROM ccCallsIn AS calls WITH (NOLOCK)
+            INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
+            INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
+            LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
+            LEFT JOIN ccInboundExtend inbExt ON inbExt.Inbound_id = calls.Inbound_id
+            LEFT JOIN (
+                SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+                FROM ccLogTransfers  with(nolock)
+                WHERE tipo = 1 AND modo != 7
+                GROUP BY cal_id, tipo
+            ) trans ON calls.cal_id = trans.cal_id
+            WHERE calls.User_id > 0
+        ),
+        callsOut AS (
+            SELECT TOP (@maxRecordsToTransfer) 
+                calls.cal_id AS CallId,
+                user_id AS UserId,
+                calls.cam_id AS camAcdId,
+                CAST(calls.calif_id AS SMALLINT) AS califId,
+                CAST(cal_extension AS INT) AS extension,
+                cal_inicio,
+                cal_telefono,
+                ISNULL(cal_tDialog - CASE WHEN camps.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+                + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+                cal_key,
+                cal_manual,
+                cal_puerto,
+                0 AS dni_id,
+                fvalida,
+                cal_whohung,
+                ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+                CASE 
+                    WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                    WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                    ELSE cal_tMoh - trans.tAntesXfer 
+                END AS cal_tMoh,
+                DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+                avrs.tipo + 1 AS callType,
+                avrs.id AS avrsId,
+                camps.prefijo,
+                CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+                '''' AS DNIS,
+                dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+                CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail
+            FROM ccoCallsOut AS calls WITH (NOLOCK)
+            INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
+            INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
+            LEFT JOIN (
+                SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+                FROM ccLogTransfers with(nolock)
+                WHERE tipo = 2
+                GROUP BY cal_id, tipo
+            ) trans ON calls.cal_id = trans.cal_id
+            WHERE calls.User_id > 0 OR calls.statusCall_id = 19
+        )
+
+                INSERT INTO @tempCalls
+                
+        SELECT * FROM callsIn
+        UNION 
+        SELECT * FROM callsOut;
+
+
+                 -- Revisar si hay registros con IsVoicemail = 1
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
+        BEGIN
+            
+                        update A
+                        set A.duration=B.tDialing
+                        FROM @tempCalls A
+            Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
+            WHERE A.IsVoicemail = 1;
+        END
+        
+        -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
+        SELECT * FROM @tempCalls;
+        
+    END
+    ELSE IF @action = 2
+    BEGIN
+        DELETE FROM ccAVRSTransfer
+        WHERE id = @id;
+    END
+END;
+'
+        EXEC(@sql);
+
+
+
+        SET @process = 'feature/KR179003 Alter SP ccsp_BaseXmngr'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
+@action int,
+@option tinyint = 0,
+@ids varchar(max)=null,
+@name varchar(25) = NULL,
+@top int = 0,
+@dateIni datetime =null,
+@dateEnd datetime =null,
+@dateStart dateTime= null,
+@userId int = 0,
+@node varchar(10) = null,
+@grabIds varchar(4000) = null
+AS
+
+declare @sql nvarchar(max),@tableName nvarchar(max),@columnId nvarchar(max),@tableNameHistory nvarchar(max)
+declare @parameterDefinition nvarchar(max)
+declare @chat tinyint ,@rec tinyint,@email tinyint,@twitter tinyint
+declare @status tinyint
+declare @filterWg varchar(max)
+declare @len int
+declare @tipo int
+declare @serviceId varchar(10)
+
+set @sql = ''''
+
+select @tableName=tableName,@tableNameHistory=tableNameHistory,@columnId=columnId from ccFinderServices where id=@option 
+
+if @action in (1,6) begin --obtiene los nodos a insertar en BX
+    if @action = 1 set @status =0
+    else if @action = 6 set @status = 2
+
+    if @option <>2 begin
+
+    declare @auxTag nvarchar(10)
+                            
+    select @auxTag =case when @option = 1 then ''@C09'' when @option in (3,4) then ''@C02''
+    else ''@CDATE''   end
+    set @parameterDefinition =N''@status int, @top int,@option int''
+    set @sql=''declare @basexName varchar(max)
+select @basexName=Xname from ccBaseXDB where serviceId=@option and isFull=0;
+    with node ( ''+@columnId+ '',xmlString,dateNode)
+    AS(
+        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+        from ''+ @tableName + '' A with(rowlock)
+        where A.status =@status
+        union
+        select top(@top) ''+@columnId+ '', replace(replace(convert(nvarchar(max),node),''''{'''',''''&#123;''''),''''}'''',''''&#125;'''') xmlString
+        ,isNull(node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/@CDATE)[1]'''',''''datetime''''),node.value(''''(/R0'' + cast(@option as nvarchar(3)) + ''/''+@auxTag+'')[1]'''',''''datetime'''')) as dateNode
+        from ''+ @tableNameHistory + '' A with(rowlock)
+        where A.status =@status  
+    )
+
+    select node.''+@columnId+ '',node.xmlString,isnull(baseX.Xname,@basexName) Xname from node
+    left join ccBaseXDB baseX on baseX.serviceId= @option and node.dateNode between baseX.dateStart and isnull(baseX.dateEnd,getdate())
+    order by Xname''
+    --print(@sql)
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status,@top=@top,@option=@option
+    end
+end
+else if @action in (2,7) begin--actualiza los nodos insertados en BX
+    if @action = 2 set @status =0
+    else if @action = 7 set @status = 2
+
+    set @parameterDefinition =N''@status int''
+
+    set @sql = ''update ''+@tableName+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+    select @tableName,@columnId,@ids,@sql
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+    set @sql = ''update ''+@tableNameHistory+'' with(rowlock) set [status] = @status + 1 , dateOut = getDate() where ''+@columnId+'' in(''+@ids+'') and [status] = @status''
+    --print(@sql)
+    EXECUTE sp_executesql  @sql, @parameterDefinition, @status=@status
+
+end
+else if @action = 3 --trae el nombre de la base de datos en BX
+begin
+    select Xname from ccBaseXDB where serviceId = @option and isFull=0
+end
+else if @action = 4 --inserta el nombre del xml en BX
+begin
+    insert into ccBaseXDB (serviceId, dateStart, Xname,[isFull]) values (@option,@dateStart, @name,0)
+end
+else if @action = 5 begin --obtener servicios disponibles    
+    select id, ref  from ccFinderServices where isActive=1
+end
+else if @action = 8 begin--trae la lista de las bases para la busqueda
+    select Xname from ccBaseXDB where serviceId = @option
+    and (
+
+    @dateIni between dateStart and dateEnd
+    or @dateEnd between dateStart and dateEnd
+    or dateStart between @dateIni and @dateEnd
+    )
+    union
+    select Xname from ccBaseXDB where serviceId = @option and isFull=0
+    and (
+        dateStart between @dateIni and @dateEnd
+        or @dateIni>=dateStart
+
+    )
+end
+else if @action = 9 begin--Cierra la base datos
+    update ccBaseXDB set isfull = 1,dateEnd=isnull(@dateEnd,getdate()), dateStart=isnull(@dateStart,dateStart) where serviceId= @option and  isfull = 0 and dateEnd is null
+    and Xname=@name
+end
+
+else if @action = 10 begin
+    
+    set @tipo = CASE WHEN @node = ''R06'' THEN 1 ELSE 0 END
+    set @filterWg=''''
+    if @node is null or @node = ''R02''
+    begin
+        select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+convert(varchar(max), WGCam.Tipo+1)+'') or '' from ccRIAWorkGroupUsers Wguser
+        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+        where Wguser.User_id=@userId
+                        
+    end
+    else
+    begin
+    
+    set @serviceId = (select convert(varchar(10), id) from ccFinderServices where ref = @node)
+    select @filterWg=@filterWg+''(@CID='' +convert(varchar(max), WGCam.IdCampEsp)+ '' and @CType=''+@serviceId+'') or '' from ccRIAWorkGroupUsers Wguser
+        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+        where Wguser.User_id=@userId and WGCam.Tipo=@tipo
+    end
+
+
+    set @len=len(@filterWg)- CHARINDEX(''ro )'', REVERSE(@filterWg))
+    select SUBSTRING(@filterWg,0, @len)
+    end
+
+
+else if @action = 11 begin--trae el nombre de la base de datos en BX
+
+    set @sql=''
+    declare @dateStart datetime
+    set @dateStart= convert(datetime,convert(varchar(10),getdate(),121))
+    SELECT isnull(min(dateIn),@dateStart) as node FROM ''+@tableName+'' where status = 0  ''
+    EXECUTE sp_executesql  @sql
+
+end
+
+else if @action = 13 begin
+    set @sql = ''''
+    select @tableName=tableName,@tableNameHistory=tableNameHistory,@columnId=columnId from ccFinderServices where id=5 
+    select @tableName,@tableNameHistory,@columnId
+    set @sql=''
+    ;
+    with duplicateIds as(
+    select ''+@columnId+'',dateIn from ''+@tableName+'' where ''+@columnId+'' in(''+@grabIds+'')
+    union
+    select ''+@columnId+'',dateIn from ''+@tableNameHistory+'' where ''+@columnId+'' in(''+@grabIds+'')
+    )
+
+    select A.''+@columnId+'' as Id,min(B.Xname) Xname from duplicateIds A
+    inner join ccbasexDB B on B.serviceId=2 and( A.dateIn between B.dateStart and B.dateEnd or A.dateIn>= B.dateStart)
+    group by A.''+@columnId+'',A.dateIn
+    Having count(*)>1
+    order by Xname
+    ''
+    exec (@sql)
+
+end
+
+else if @action = 14 begin
+    declare @CidNameOut varchar(100),@CidNameIn varchar(100)
+    declare @filterCamId varchar(max), @filterInboundId varchar(max);
+    declare @campType int
+    declare @cidOut varchar(max)=''''
+    declare @cidin varchar(max)=''''
+
+    set @filterWg=''''
+    if @node is null begin
+        set @node=''R02''
+    end
+
+    set @CidNameOut=''$CID_OUT''
+    set @CidNameIn=''$CID_IN''
+
+    set @filterCamId=''''
+    
+    select @filterCamId=@filterCamId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
+    from ccRIAWorkGroupUsers Wguser
+    inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+    inner join ccCamps c on c.cam_id=WGCam.IdCampEsp --and c.CampType not in(5,7)
+    where Wguser.User_id=@userId and WGCam.Tipo=1                               
+    
+
+    if @filterCamId<>'''' begin
+        set @filterWg=''let ''+@CidNameOut+'':=(''
+
+        set @filterCamId=SUBSTRING(@filterCamId,0,len(@filterCamId))
+        set @filterCamId=@filterCamId+'')''+char(10)    
+
+        set @filterWg=@filterWg+@filterCamId
+        set @cidOut=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+    end
+
+    SET @filterInboundId= ''''
+            
+    select @filterInboundId=@filterInboundId+''"''+ convert(varchar(max), WGCam.IdCampEsp) +''",''
+    from ccRIAWorkGroupUsers Wguser
+        inner join ccRIACampEspWG WGCam on WGCam.IDWG=Wguser.IDWG
+        inner join ccInbound c on c.Inbound_id=WGCam.IdCampEsp
+        where Wguser.User_id=@userId and WGCam.Tipo=0
+    
+    if @filterInboundId<>'''' begin
+        set @filterInboundId=SUBSTRING(@filterInboundId,0,len(@filterInboundId))
+        set @filterInboundId=@filterInboundId+'')''+char(10)    
+
+        set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(''+@filterInboundId
+        set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+    end
+    
+    select @filterWg as VarCamInOut,@cidOut as CidOut,@cidin as CidIn
+end
+else if @action = 15 begin --Saber si hacer busqueda en basex
+  select @tableName=tableName,@tableNameHistory=tableNameHistory from ccFinderServices where ref=@node
+  if @node=''R02'' begin
+    select 1
+    return(0)
+  end
+
+  set @sql=''if exists(select * from ''+@tableName+'') begin
+        select 1
+    end
+    else if exists(select * from ''+@tableNameHistory+'') begin
+        select 1
+    end
+    select 0''
+    exec (@sql)
+    
+end'
+    EXEC(@sql);
+
+
+
+		
+    SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
+    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
+begin
+    DROP PROCEDURE ccsp_DLRAfterInsertCall;
+end'
+     EXEC(@sql);
+
+     SET @process = 'feature/KR179003 Alter SP ccsp_DLRAfterInsertCall'
+     SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
+@cam_id smallint,
+@cal_id BIGINT=0,
+@status int=0
+AS
+set nocount on
+
+if @status = 0 begin
+  set @status = 6 --Status 6=Pide Agente
+end
+else if @status=19
+begin
+    update ccoCallsOut set statusCall_id=@status where cal_id =@cal_id;
+    insert into ccAVRSTransfer(cal_id,tipo) values(@cal_id,1)
+    return
+end
+DECLARE @callout_id int, @date datetime
+
+SELECT @callout_id=callout_id, @date=cal_Inicio from ccoCallsout nolock WHERE cal_id=@cal_id
+
+INSERT INTO ccoCallsOutData(cal_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
+SELECT @cal_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @date
+FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
+
+
+insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
+where wg.Tipo=1 and wg.idcampesp=@cam_id
+
+exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=@status
+
+set nocount off'
+    EXEC(@sql);
+
+SET @process = 'feature/KR179003 Alter SP ccsp_DLRSaveDialResult'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
+@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
+@ani varchar(32)=''''
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+    DECLARE @logDial_id INT;
+    DECLARE @tAnswerBitFinal AS DATETIME;
+    DECLARE @MaxCal_id INT;
+    DECLARE @tTotal SMALLINT;
+
+    SELECT @RecicleSIC = ISNULL(valor, 0)
+    FROM ccSettings
+    WHERE setting_id = 60;
+
+    SELECT @tTotal = @tDialing + @tAnswerBit;
+
+    SELECT @tNow = GETDATE();
+
+    SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+
+-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+IF @call_id > 0 AND @tipoResDial_id = 1 and @cal_key = ''''
+    BEGIN
+    SELECT @cal_key = cal_key
+    FROM ccoCallsOutSource WITH(NOLOCK)
+    WHERE @callout_id = callout_id;         
+END;
+
+declare @TipoLlamada int
+select @TipoLlamada=dbo.fnGetTipoLlamada(@Telefono)
+
+IF @call_id > 0 AND @tipoResDial_id = 1
+BEGIN
+        INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
+               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, 
+               @TipoLlamada, @ani;
+    END;
+         ELSE
+    BEGIN
+        INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
+               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS,
+               @TipoLlamada, @ani;
+    END;
+
+    SELECT @logDial_id = SCOPE_IDENTITY();
+    IF NOT EXISTS(SELECT 1 FROM ccoLogDialsData where logDial_id = @logDial_id)
+    BEGIN
+        INSERT INTO ccoLogDialsData(logDial_id, callout_id, Data1, Data2, Data3, Data4, Data5, callDate)  
+        SELECT @logDial_id, @callout_id, ISNULL(Dato1, ''''), ISNULL(Dato2, ''''), ISNULL(Dato3, ''''), ISNULL(Dato4, ''''), ISNULL(Dato5, ''''), @tNow
+        FROM ccoCallsOutSource WITH (NOLOCK) where callout_id = @callout_id
+    END
+
+    IF @RecicleSIC = 1
+    BEGIN
+        UPDATE ccoWorkingTable WITH(ROWLOCK)
+          SET tipoResDial_id = @tipoResDial_id
+        WHERE callout_id = @callout_id;
+    END;
+
+    -- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+IF @call_id > 0 AND @tipoResDial_id = 1
+    BEGIN
+        UPDATE ccoCallsOut WITH(ROWLOCK)
+    SET cal_puerto = @Puerto, cal_manual = CASE WHEN cal_manual = 1 THEN 2 ELSE cal_manual END
+    WHERE cal_id = @call_id AND cal_puerto = 0;
+
+        EXEC ccsp_CstoCalculaCosto @call_id;
+    END;
+else IF @call_id > 0 AND @tipoResDial_id = 11
+BEGIN
+        UPDATE ccoCallsOut WITH(ROWLOCK)
+    SET cal_puerto = @Puerto
+    WHERE cal_id = @call_id AND cal_puerto = 0;
+
+end
+
+    -- inserta informacion para reportes de workgroup
+    INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )
+           SELECT IDWG, @logDial_id, IdCampEsp, GETDATE()
+           FROM ccRIACampEspWG
+WHERE tipo = 1 AND IdCampEsp = @cam_id;
+
+    -- Guarda configuracion de TipoDialingMode
+    UPDATE ccoLogDials WITH(ROWLOCK)
+      SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+    WHERE logDial_id = @logDial_id;
+    SET NOCOUNT OFF;
+END;
+
+    SELECT @logDial_id as LogDialId'
+        EXEC(@sql);
+
+
+        SET @process = 'feature/KR179003 update ccSettings setting_id=236'
+        SET @sql = 'update ccSettings 
+set detalle=''Habilita la grabacion de audio antes de que se conteste la llamada (Early Media). 0-Deshabilitado, 1-Habilitado,2- grabacion early media en buzon''
+,description=''Enable audio recording before the call is answered (Early Media). 0-Disabled, 1-Enabled, 2- recording early media en voicemail''
+where setting_id=236
+'
+        EXEC(@sql);
+
+        SET @process = 'feature/KR179003 Add ccStatusLLamada Buzon'
+        SET @sql = 'if not exists(select * from ccStatusLLamada where statusCall_id=19) begin
+        insert into ccStatusLLamada (statusCall_id,descripcion,inAbandonConfig)
+        values (19,''Buzon'',0)
+end'
+        EXEC(@sql);
+
+ SET @process = 'Alter Funcion fnGetTipoLlamada mejora en el manejo y se valida si no es mexico no compare la lada'
+        SET @Sql = 'ALTER FUNCTION [dbo].[fnGetTipoLlamada](@tel VARCHAR(32))
+RETURNS TINYINT
+AS
+BEGIN
+    DECLARE @ladatemp VARCHAR(5), @ldlocal VARCHAR(10), @serie VARCHAR(10), @numeracion SMALLINT, @length TINYINT
+    DECLARE @mod VARCHAR(10), @country TINYINT, @lengthStr VARCHAR(10)
+    DECLARE @tipoLlamada_id SMALLINT = 0, @tipo TINYINT = 0, @cantidadLL TINYINT
+
+    -- Recuperar cÃ³digo de paÃ­s y cÃ³digo de Ã¡rea local de las configuraciones
+    SELECT @country = valor FROM ccsettings WITH (NOLOCK) WHERE setting_id = 104
+    SELECT @ldlocal = valor FROM ccSettings WITH (NOLOCK) WHERE setting_id = 17
+
+        set @length = LEN(@tel)
+    SET @lengthStr = CONVERT(VARCHAR(10), @length)
+
+    -- Tabla para almacenar los tipos de llamadas
+    DECLARE @t_tipos TABLE (
+        tipollamada_id INT NOT NULL,
+        prefijo NVARCHAR(100) NOT NULL,
+        rowid INT NOT NULL
+    )
+
+    -- Si el paÃ­s es igual a 1
+    IF @country = 1
+    BEGIN
+        -- Insertar prefijos especÃ­ficos para el paÃ­s 1 (local)
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = 1
+        AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)  -- Excluir ciertos tipos de llamadas
+        AND CHARINDEX(@lengthStr, longitud) > 0  -- Usamos CHARINDEX para encontrar la longitud
+    END
+    ELSE
+    BEGIN
+        -- Insertar prefijos para paÃ­ses que no son el paÃ­s 1
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = @country
+        AND CHARINDEX(@lengthStr, longitud) > 0  -- Usamos CHARINDEX en lugar de LIKE
+    END
+
+    -- Verificar si existen registros coincidentes
+    SELECT @cantidadLL = COUNT(*) FROM @t_tipos
+
+    IF @cantidadLL > 0
+    BEGIN
+        -- Buscar la mejor coincidencia (para ambos casos de paÃ­s)
+        SELECT TOP 1 @tipo = tipollamada_id
+        FROM @t_tipos t
+        CROSS APPLY dbo.fn_RIASplitDelimited(t.prefijo, ''|'') AS splitPrefijo
+        WHERE @tel LIKE splitPrefijo.value + ''%''
+        ORDER BY LEN(splitPrefijo.value) DESC
+    END
+    ELSE
+    BEGIN
+        -- BÃºsqueda por defecto en cstoTipoLlamada si no hay coincidencias
+        SELECT TOP 1 @tipoLlamada_id = tipoLlamada_id
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        CROSS APPLY dbo.fn_RIASplitDelimited(cstoTipoLlamada.prefijo, ''|'') AS split
+        WHERE country_id = @country
+        AND longitud = ''0''
+        AND @tel LIKE split.value + ''%''
+        AND (country_id <> 1 OR (country_id = 1 AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)))
+        ORDER BY LEN(split.value) DESC
+
+        IF @tipoLlamada_id > 0
+        BEGIN
+            SET @tipo = @tipoLlamada_id
+        END
+        ELSE IF @country != 1
+        BEGIN
+            -- Si no es el paÃ­s 1 y no hay coincidencias, regresar @tipo
+            RETURN @tipo
+        END
+        ELSE
+        BEGIN
+            -- LÃ³gica adicional cuando es el paÃ­s 1
+            IF @length = 10 - LEN(@ldlocal)
+            BEGIN
+                -- Ajustar el nÃºmero de telÃ©fono segÃºn la longitud
+                SELECT @tel = CONVERT(VARCHAR(3), @ldlocal) + @tel
+            END
+
+            -- Reestructurar el nÃºmero para verificar prefijos
+            SELECT @tel = RIGHT(@tel, 10)
+            SELECT @ladatemp = LEFT(@tel, 2)
+
+            -- Verificar prefijos de dos dÃ­gitos
+            IF @ladatemp IN (''55'', ''56'', ''33'', ''81'')
+            BEGIN
+                SELECT @serie = SUBSTRING(@tel, 3, 4), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+            ELSE
+            BEGIN
+                -- Verificar prefijos de tres dÃ­gitos                
+                SELECT @ladatemp = LEFT(@tel, 3), 
+                                           @serie = SUBSTRING(@tel, 4, 3), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+
+            -- Buscar modalidad en la tabla `Series`
+            SELECT TOP 1 @mod = MODALIDAD 
+            FROM Series WITH (NOLOCK) 
+            WHERE CLD = @ladatemp 
+            AND SERIE = @serie 
+            AND @numeracion BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+            -- Verificar si el nÃºmero es local
+            DECLARE @isLocal BIT = 0
+
+            IF EXISTS (SELECT 1 FROM ccRiaArecode WITH (NOLOCK) WHERE area = @ladatemp)
+               OR @ldlocal = @ladatemp
+            BEGIN
+                SET @isLocal = 1;
+            END
+
+            -- Determinar el tipo de llamada segÃºn la modalidad y si es local
+            IF @mod IN (''FIJO'', ''MPP'')
+            BEGIN
+                -- Llamada fija o mÃ³vil postpago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 1  -- Llamada local
+                            ELSE 2                     -- Llamada de larga distancia
+                        END;
+            END
+            ELSE IF @mod = ''CPP''
+            BEGIN
+                -- Llamada celular prepago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 3  -- Llamada celular local
+                            ELSE 4                    -- Llamada celular de larga distancia
+                        END;
+            END
+        END
+    END
+
+    RETURN @tipo
+END
+'
+         EXEC (@Sql)
+
+        -- SET @process = 'feature/KR179003 Alter SP ccsp_AvrsSyncronization'
+        -- SET @sql = ''
+        -- EXEC(@sql);
+
+--------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------                        
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

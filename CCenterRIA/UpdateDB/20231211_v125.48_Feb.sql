@@ -13397,94 +13397,92 @@ SET @process = 'K069002, K069004 - ccsp_GalateaUpdateUser - SP Edited,
 Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
 SET @sql = '
 ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
-	@UserId int,
-	@Login varchar(40),
-	@Nombres varchar(45),
-	@LastName varchar(45),
-	@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
-	@Sexo bit,
-	@canChangeStatus bit,
-	@AdminId int,
-	@AreaId int,
-	@NotificationEmail varchar(255)
-	as
+@UserId int,
+@Login varchar(40),
+@Nombres varchar(45),
+@LastName varchar(45),
+@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+@Sexo bit,
+@canChangeStatus bit,
+@AdminId int,
+@AreaId int
+as
 
-	Declare @ApellidoMaterno varchar(45)
-	Declare @ApellidoPaterno varchar(45)
-	Declare @userIdOnDb int
-	Declare @LoginOnDb varchar(40)
-	--Obtiene el idioma de Centerware
-	Declare @lenguageXion varchar
-	select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+Declare @ApellidoMaterno varchar(45)
+Declare @ApellidoPaterno varchar(45)
+Declare @userIdOnDb int
+Declare @LoginOnDb varchar(40)
+--Obtiene el idioma de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
 
-	set @ApellidoPaterno = @LastName
-	set @ApellidoMaterno = @NombreOpcionalExtra
+set @ApellidoPaterno = @LastName
+set @ApellidoMaterno = @NombreOpcionalExtra
 
-	-- validaciones 
-	    if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
-	        begin
-	        select -5 as ResponseCode--,''el usuario no existe''
-	        return(0)
-	        end
+-- validaciones 
+    if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+        begin
+        select -5 as ResponseCode--,''el usuario no existe''
+        return(0)
+        end
 
-	  if exists(select Nombres from ccUsers where Nombres=@Nombres
-	  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
-	    begin
+  if exists(select Nombres from ccUsers where Nombres=@Nombres
+  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+    begin
 
-	        select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
-	      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+        select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
 
-	        select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
-	      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+        select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
 
-	      if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
-	        begin
-	            select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
-	            return(0)
-	        end
-	    end
+      if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+        begin
+            select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+            return(0)
+        end
+    end
 
-	--update and insert into activity log a record for each modified property
+--update and insert into activity log a record for each modified property
 
-	    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
 
-	    Update ccUsers set 
-	    Nombres=@Nombres,
-	    ApellidoPaterno=@ApellidoPaterno,
-	    ApellidoMaterno=@ApellidoMaterno,
-	    Sexo=@Sexo,
-	    canChangeStatus=@canChangeStatus,
-		notificationEmail=@NotificationEmail
-	    where User_id=@UserId
+    Update ccUsers set 
+    Nombres=@Nombres,
+    ApellidoPaterno=@ApellidoPaterno,
+    ApellidoMaterno=@ApellidoMaterno,
+    Sexo=@Sexo,
+    canChangeStatus=@canChangeStatus
+    where User_id=@UserId
 
-	    DECLARE @CCUsersTable TABLE 
-	    (
-	        columnInfo VARCHAR(255),
-	        dataInfo VARCHAR(255),
-	        identifierInfo VARCHAR(255)
-	    )
+    DECLARE @CCUsersTable TABLE 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
 
-	    INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
+    INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
 
-	    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-	    SELECT 
-	        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
-	        getDate(), 
-	        (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
-	        CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
-	        3, 
-	        CUT.identifierInfo,
-	        CASE WHEN CUT.identifierInfo IS NOT NULL THEN
-	            CASE 
-	                WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
-	                ELSE CUT.dataInfo END
-	        ELSE '''' END, 
-	        (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
-	    FROM @CCUsersTable AS CUT;
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+        CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
+        3, 
+        CUT.identifierInfo,
+        CASE WHEN CUT.identifierInfo IS NOT NULL THEN
+            CASE 
+                WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
+                ELSE CUT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+    FROM @CCUsersTable AS CUT;
 
-	    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
+    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
 
-	select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
 '
 EXEC(@sql)
 

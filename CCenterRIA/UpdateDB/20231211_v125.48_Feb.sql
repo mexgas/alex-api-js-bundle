@@ -5582,7 +5582,7 @@ SET NOCOUNT ON;'
         ---------------------------------------- END fix/125.20231211.0.12 -------------------------------------------------
 
 ---------------------------------------- BEGIN fix/125.20231211.0.13 -------------------------------------------------
-    SET @process = 'Alter SP ccsp_GalateaAdminGetPermissions los permisos AllowCellPhoneCalls,AllowLongDistanceCalls AllowLocalCalls se invierte el bit'
+    SET @process = 'Alter SP ccsp_GalateaAdminGetPermissions los permisos AllowCellPhoneCalls,AllowLongDistanceCalls AllowLocalCalls se invierte el bit, valida datos dobles'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaAdminGetPermissions]
     @user_id varchar(255),
     @Type int
@@ -5596,7 +5596,7 @@ SET NOCOUNT ON;'
 
     IF @isRoot = 1
     BEGIN
-        Select 
+        Select DISTINCT
         User_id as AgentId, 
         Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
         1-cast(dialMask & 1 as int) as AllowCellPhoneCalls,
@@ -5624,7 +5624,7 @@ SET NOCOUNT ON;'
     END
     ELSE
     BEGIN
-        Select  
+        Select  DISTINCT
         A.User_id as AgentId, 
         Login as Username, Nombres + '' '' + isNull(apellidoPaterno,'''') + '' '' + isNull(ApellidoMaterno, '''') as FullName, 
         1-cast(dialMask & 1 as int) as AllowCellPhoneCalls,
@@ -5653,8 +5653,7 @@ SET NOCOUNT ON;'
         IDWG in (select IDWG from ccRIAWorkGroupUsers where user_id = @user_id)
     return(0)
     END
-set nocount off
-    '
+set nocount off'
     EXEC(@sql);
 
     SET @process = 'Alter Sp ccsp_GalateaAdminSetPermissions se voltea los valores AllowCellPhoneCalls,AllowLongDistanceCalls,AllowLocalCalls para guardar '

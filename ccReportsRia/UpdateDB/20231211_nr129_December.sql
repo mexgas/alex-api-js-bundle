@@ -6890,22 +6890,7 @@ BEGIN
 
 END'
     EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
-
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
+   
     -------------------------------------- End hotfix/125.20231211.0.17 --------------------------------------
 
 

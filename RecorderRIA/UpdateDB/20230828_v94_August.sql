@@ -2172,6 +2172,8 @@ SELECT
     (
         SELECT 
             CDATE AS "@CDATE",
+            CID As "@CID",
+            CType As "@CType",
             C01 AS "@C01",
             C02 AS "@C02",
             C03 AS "@C03",

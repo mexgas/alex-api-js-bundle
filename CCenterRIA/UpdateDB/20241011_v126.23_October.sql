@@ -4107,6 +4107,486 @@ END
 
 --------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
 
+----------------------------------------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.19-------------------------------------------------------------------------
+
+SET @process = 'K069001, K69003 - ccsp_GalateaCreateUser - SP Edited, Editado para corregir el registro de usuarios (Agentes y Administradores), 
+Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
+SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
+@UserId int,
+@Login varchar(40),
+@Nombres varchar(45),
+@LastName varchar(45),
+@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+@Password varchar(200),
+@Sexo bit,
+@canChangeStatus bit,
+@AreaId int,
+@UserType tinyint,
+@AdminId int,
+@NotificationEmail varchar(255)
+AS
+BEGIN
+
+
+Declare @ApellidoMaterno varchar(45)
+Declare @ApellidoPaterno varchar(45)
+
+--Obtiene el idioma de de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+set @ApellidoPaterno = @LastName
+set @ApellidoMaterno = @NombreOpcionalExtra
+
+-- validaciones 
+    if exists(select Login from ccUsers where Login=@Login)
+    begin
+    select -1 as ResponseCode--,Login en Uso
+    return(0)
+    end
+
+    if exists(select Login from ccUsers_Consulta where Login = @Login)
+    begin
+    select -4 as ResponseCode -- Login en Uso aunque el usuario ya se halla borrado de la base de datos -- quiza falta la validacion cuando el usuario ya se ha borrado pero mediante borrado logico
+    return(0)
+    end
+
+    if exists(select Nombres from ccUsers where Nombres=@Nombres
+    and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+    begin
+    select -2 as ResponseCode--,Nombre completo en Uso-- valida todos los campos de nombre para ver que no existan en la base de datos
+    return(0)
+    end
+
+
+--insert
+IF( select isnull(max(user_id),0) from ccusers) > 32700
+BEGIN
+    set @UserId = null
+    SELECT @UserId = d.rn FROM (SELECT d.rn, ROW_NUMBER() OVER (ORDER BY d.rn) AS recID
+    FROM (SELECT ROW_NUMBER() OVER (ORDER BY user_id) AS rn FROM ccusers) AS d
+    LEFT JOIN ccusers AS s ON s.user_id = d.rn WHERE s.user_id IS NULL ) AS d
+    INNER JOIN ( SELECT  user_id, ROW_NUMBER() OVER (ORDER BY user_id DESC) AS recID
+    FROM ccusers) AS w ON w.recID = d.recID
+
+    if @UserId is null
+    begin
+    select -3 as ResponseCode --Error_when_inserting_user
+    return(0)
+    end
+
+    set identity_insert ccusers on
+        insert into ccUsers(user_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id, Status,TipoLLamadas,Sexo,canChangeStatus,IDArea,notificationEmail)
+        select @UserId, @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end, @NotificationEmail
+    set identity_insert ccusers off
+
+    delete ccMenuUser where id_User = @UserId
+    delete ccRIAUserRole where user_id = @UserId
+
+    exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+    --Insert Agent into ccRIAAgentsPermissions
+    IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
+    BEGIN
+    IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
+    BEGIN 
+            INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory, AllowReopenWAConversation, AllowTransferWAConversation)
+            VALUES (@UserId, 0, 0, 1, 0, 0)
+    END
+    END
+
+END
+ELSE
+BEGIN
+    insert into ccUsers(Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
+        Status,TipoLLamadas,Sexo,canChangeStatus,IDArea,notificationEmail)
+    select @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
+        1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end, @NotificationEmail
+
+    if @@rowcount=1
+    select @UserId=scope_identity()
+    else
+    begin
+    select -2--insert Error
+    return(0)
+    end
+
+    --INSERT INTO ACTIVITY LOG, CREATE AGENT
+    DECLARE @areaName AS VARCHAR(40);
+    DECLARE @userLogin AS VARCHAR(40);
+    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId);
+
+    IF(@AreaId <> 0) BEGIN
+        SET @areaName = (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId);
+    END
+
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+    VALUES (CASE WHEN @AreaID = 0 THEN NULL ELSE @areaName END, getDate(), @userLogin, CASE WHEN @UserType = 1 THEN 22 ELSE 29 END, 3, '''', '''', @Login);
+
+END
+    insert into ccMenuUser(id_User,id_Menu,type) select @UserId,id_Menu,1 from ccRIARoleMenu where Role_id=3
+    insert into ccMenuUser(id_User,id_Menu,type)values(@UserId,40,1)
+    insert into ccRIAUserRole(User_id,Role_id,type)values(@UserId,3,1)
+    --Menu para roles RepotsRia
+    exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
+
+    --Insert Agent into ccRIAAgentsPermissions
+    IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
+    BEGIN
+    IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
+    BEGIN 
+            INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory, AllowReopenWAConversation, AllowTransferWAConversation)
+            VALUES (@UserId, 0, 0, 1, 0, 0)
+    END 
+END
+select 200 as ResponseCode -- indica que se agrego correctamente un nuevo usuario
+END
+'
+EXEC(@sql)
+
+
+SET @process = 'K069002, K069004 - ccsp_GalateaUpdateUser - SP Edited, 
+Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
+SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
+@UserId int,
+@Login varchar(40),
+@Nombres varchar(45),
+@LastName varchar(45),
+@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+@Sexo bit,
+@canChangeStatus bit,
+@AdminId int,
+@AreaId int,
+@NotificationEmail varchar(255)
+as
+
+Declare @ApellidoMaterno varchar(45)
+Declare @ApellidoPaterno varchar(45)
+Declare @userIdOnDb int
+Declare @LoginOnDb varchar(40)
+--Obtiene el idioma de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+set @ApellidoPaterno = @LastName
+set @ApellidoMaterno = @NombreOpcionalExtra
+
+-- validaciones 
+    if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+        begin
+        select -5 as ResponseCode--,''el usuario no existe''
+        return(0)
+        end
+
+  if exists(select Nombres from ccUsers where Nombres=@Nombres
+  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+    begin
+
+        select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+        select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+      if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+        begin
+            select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+            return(0)
+        end
+    end
+
+--update and insert into activity log a record for each modified property
+
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
+
+    Update ccUsers set 
+    Nombres=@Nombres,
+    ApellidoPaterno=@ApellidoPaterno,
+    ApellidoMaterno=@ApellidoMaterno,
+    Sexo=@Sexo,
+        canChangeStatus=@canChangeStatus,
+        notificationEmail=@NotificationEmail
+    where User_id=@UserId
+
+    DECLARE @CCUsersTable TABLE 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    )
+
+    INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
+
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
+    SELECT 
+        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+        getDate(), 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+        CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
+        3, 
+        CUT.identifierInfo,
+        CASE WHEN CUT.identifierInfo IS NOT NULL THEN
+            CASE 
+                WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
+                ELSE CUT.dataInfo END
+        ELSE '''' END, 
+        (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+    FROM @CCUsersTable AS CUT;
+
+    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
+
+select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+'
+EXEC(@sql)
+
+
+
+
+SET @process = 'ccsp_GalateaLoadUsersForManagement - SP Edited, Editado para el envio correcto de datos al front.
+Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
+SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaLoadUsersForManagement]
+ @option SMALLINT,
+ @AreaId SMALLINT,
+ @UserType INT = null,
+ @Username VARCHAR(200)=null,
+ @userId INT = 0
+as
+
+        --Obtiene el idioma de de Centerware
+        Declare @lenguageXion varchar
+        select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espanol, 1 para ingles, 2 para portugues
+
+IF @option = 1 --Agentes/supervisores de un Area
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  ApellidoPaterno as LastName,
+  ApellidoMaterno as OptionalExtraName,
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+      isnull(IDArea, 0) as AreaId,
+      notificationEmail
+  FROM ccusers
+  WHERE isnull(IDArea, 0) = isnull(@AreaId, 0) AND TipoUser_id & 2 = CASE @UserType WHEN 1 THEN 0 ELSE 2 END AND STATUS = 1
+        AND DATEDIFF(dd, LastLoginAttempt, getdate()) < 60
+  ORDER BY LOGIN, Nombres, ApellidoPaterno,Sexo, User_id
+
+  RETURN (0)
+END
+
+IF @option = 2 -- obtiene Agente o supervisor en base a su nombre de usuario
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  ApellidoPaterno as LastName,
+  ApellidoMaterno as OptionalExtraName,
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+      isnull(IDArea, 0) as AreaId,
+      notificationEmail
+  FROM ccusers
+  WHERE Login=@Username
+
+  RETURN (0)
+END
+
+IF @option = 3 -- obtiene Agente o supervisor en base a su ID de usuario
+BEGIN
+  SELECT  TipoUser_id as UserType,
+  User_id as UserId,
+  LOGIN as Username,
+  Nombres as Names,
+  ApellidoPaterno as LastName,
+  ApellidoMaterno as OptionalExtraName,
+  Password as Password,
+  Sexo as IsMan,
+  CanChangeStatus as EnableNotReady,
+      isnull(IDArea, 0) as AreaId,
+      notificationEmail
+  FROM ccusers
+  WHERE user_id=@userId
+
+  RETURN (0)
+END
+
+
+
+
+IF @option = 4 -- supervisores en Area/Sistema
+BEGIN
+        DECLARE @Admins TABLE (UserId smallint, Username varchar(50), Names varchar(50), LastName varchar(50), OptionalExtraName varchar(50), AreaId smallint, primary key(UserId))
+        INSERT INTO @Admins
+        SELECT User_id as UserId,
+        LOGIN as Username,
+        Nombres as Names,
+        ApellidoPaterno as LastName,
+        ApellidoMaterno as OptionalExtraName,
+
+        isnull(IDArea, 0) as AreaId
+        FROM ccusers
+        WHERE TipoUser_id = 2 AND STATUS = 1
+
+
+        IF NOT EXISTS(SELECT * FROM ccUsers_Roles WHERE User_id=@userId and Rol_id=7) BEGIN
+                SELECT UserId, Username, Names, LastName, OptionalExtraName
+                FROM @Admins
+                WHERE AreaId = (SELECT IDArea FROM ccUsers WHERE User_id=@userId)
+                ORDER BY Username, Names, LastName, UserId
+        END
+        ELSE BEGIN
+                SELECT UserId, Username, Names, LastName, OptionalExtraName
+                FROM @Admins
+                ORDER BY Username, Names, LastName, UserId
+        END
+        Return(0)
+END
+
+IF @option = 5 --Usuarios inactivos por mas de 60 dias por area
+BEGIN
+        SELECT [User_id] as UserId,
+        LOGIN as Username
+        FROM CCUSERS WHERE DATEDIFF(dd, LastLoginAttempt, getdate()) >= 60
+        AND @AreaId = IDArea
+        RETURN 0;
+END
+'
+EXEC(@sql)
+----------------------------------------------------------- End Luis Miguel Zamora Nuñez -------------------------------------------------------------------------
+
+  SET @process = 'landus Alter SP InsertLogAdminGalatea @action=2  Correcion log Campañas '
+        SET @sql = 'ALTER procedure [dbo].[InsertLogAdminGalatea]
+@action int 
+,@tableName VARCHAR(255)
+,@columnNameId VARCHAR(255)
+,@valueId VARCHAR(255)
+,@userId int
+,@tableTemp varchar(255)=null
+as
+SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+declare @sql nvarchar(max),@sql2 nvarchar(max)
+DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+
+if @action =1 begin --Antes del cambio
+
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp+''
+        SELECT * INTO ''+@tableNameTmp+'' FROM ''+@tableName+'' WHERE ''+@columnNameId+'' = ''+@valueId
+        --print(@sql)
+        exec(@sql)
+
+end
+else if @action=2 begin
+    DECLARE @columns NVARCHAR(MAX) = '''';
+        DECLARE @conditions NVARCHAR(MAX) = '''';
+        DECLARE @caseStatements NVARCHAR(MAX) = '''';
+        DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
+        DECLARE @counter INT = 0;       
+
+        -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
+        DECLARE @BatchColumns TABLE (
+                name NVARCHAR(128),
+                batch_id INT
+        );
+        -- Insertar en @BatchColumns las columnas de la tabla, dividiéndolas en bloques
+        INSERT INTO @BatchColumns (name, batch_id)
+        SELECT 
+                name,
+                (ROW_NUMBER() OVER (ORDER BY column_id) - 1) / @batchSize AS batch_id
+        FROM 
+                sys.columns
+        WHERE 
+                object_id = OBJECT_ID(@tableName)
+                AND name <> @columnNameId  -- Excluir la columna clave primaria
+                AND name <> ''rowguid'';  -- Excluir la columna clave primaria
+
+        -- Insertar batch_ids únicos en la variable de tipo tabla @BatchIds
+        DECLARE @BatchIds TABLE (
+                batch_id INT PRIMARY KEY
+        );
+
+        INSERT INTO @BatchIds
+        SELECT DISTINCT batch_id FROM @BatchColumns;
+
+        DECLARE @batch_id INT = 0;
+
+        -- Bucle para procesar cada bloque de columnas
+        WHILE EXISTS (SELECT 1 FROM @BatchIds WHERE batch_id = @batch_id)
+        BEGIN
+                -- Construir las expresiones CASE y las condiciones WHERE para este bloque
+                SET @caseStatements = '''';
+                SET @conditions = '''';
+
+                -- Construir el CASE y el WHERE para cada columna en el bloque actual
+                SELECT 
+                        @caseStatements = @caseStatements + 
+                                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                                ''FROM '' + @tableName + '' AS A '' +
+                                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;                   
+
+                -- Construir las condiciones WHERE para el bloque actual
+                SELECT @conditions = @conditions + 
+                                CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+                                ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;
+
+                -- Remover el último UNION ALL sobrante
+                SET @caseStatements = LEFT(@caseStatements, LEN(@caseStatements) - LEN('' UNION ALL ''));
+                
+                -- Construir y ejecutar la consulta para este bloque
+                IF @caseStatements <> ''''
+                BEGIN
+                        SET @sql = ''
+                        INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
+                        '' + @caseStatements + '';
+                        '';
+
+                        --print @sql
+                        -- Ejecutar la consulta dinámica
+                        EXEC sp_executesql @sql;
+                END
+                
+
+                -- Avanzar al siguiente bloque
+                SET @batch_id = @batch_id + 1;
+        END
+
+        -- Consultar el resultado final de cambios
+        set @sql=''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        FROM ''+@tableTemp+'' A 
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
+        
+        --print @sql
+        EXEC sp_executesql @sql;
+
+end
+else if @action =3 begin
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
+        --print(@sql)
+        exec(@sql)
+end
+        '
+        EXEC(@sql);
+
+
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

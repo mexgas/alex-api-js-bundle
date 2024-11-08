@@ -12562,167 +12562,169 @@ EXEC(@sql)
 
 ----------------------------------------------------------- End Hugo Longoria -------------------------------------------------------------------------
 ---------------------------------------- End fix/125.20231211.0.9 fix/125.20231211.0.15 fix/125.20231211.0.16- -------------------------------------------------
-    SET @process = 'Alter ccsp_AvrsSyncronization para cambiar la duration cuando se graba el hold'
+    SET @process = 'Alter ccsp_AvrsSyncronization para cambiar la duration cuando se graba el hold, se agrega para IsVoicemail y borrado de varios registros'
     SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]
-    @action SMALLINT,
-    @maxRecordsToTransfer INT = 10,
-    @id INT = 0
+@action SMALLINT,
+@maxRecordsToTransfer INT = 10,
+@ids varchar(max)= 0
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
 
-    IF @action = 1
-    BEGIN
-        DECLARE @countrId INT;
-        SET @countrId = 1;
+IF @action = 1
+BEGIN
+    DECLARE @countrId INT;
+    SET @countrId = 1;
 
-        SELECT @countrId = valor
-        FROM ccSettings
-        WHERE setting_id = 104;
+    SELECT @countrId = valor
+    FROM ccSettings
+    WHERE setting_id = 104;
 
-                 -- Declarar la variable tipo tabla
-         declare @tempCalls table(
-            cal_id INT,
-            user_id INT,
-            Inbound_id INT,
-            calif_id int,
-            cal_extension INT,
-            cal_inicio DATETIME,
-            phone VARCHAR(50),
-            duration INT,
-            cal_key VARCHAR(50),
-            cal_manual int,
-            cal_puerto INT,
-            dni_id INT,
-            fvalida datetime,
-            cal_whohung int,
-            califSub_id int,
-            cal_tMoh INT,
-            dateEnd DATETIME,
-            callType INT,
-            avrsId INT,
-            prefijo VARCHAR(20),
-            isCallRecord BIT,
-            DNIS VARCHAR(50),
-            IDWG INT,
-            IsVoicemail BIT
-        );
+                -- Declarar la variable tipo tabla
+        declare @tempCalls table(
+        cal_id INT,
+        user_id INT,
+        Inbound_id INT,
+        calif_id int,
+        cal_extension INT,
+        cal_inicio DATETIME,
+        phone VARCHAR(50),
+        duration INT,
+        cal_key VARCHAR(50),
+        cal_manual int,
+        cal_puerto INT,
+        dni_id INT,
+        fvalida datetime,
+        cal_whohung int,
+        califSub_id int,
+        cal_tMoh INT,
+        dateEnd DATETIME,
+        callType INT,
+        avrsId INT,
+        prefijo VARCHAR(20),
+        isCallRecord BIT,
+        DNIS VARCHAR(50),
+        IDWG INT,
+        IsVoicemail BIT
+    );
 
 
-        WITH callsIn AS (
-            SELECT TOP (@maxRecordsToTransfer) 
-                calls.cal_id as CallId,
-                user_id,
-                calls.Inbound_id,
-                calls.calif_id,
-                CAST(cal_extension AS INT) AS cal_extension,
-                cal_inicio,
-                cal_ANI AS phone,
-                ISNULL(cal_tDialog - CASE WHEN ccInbound.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
-                + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
-                cal_key,
-                0 AS cal_manual,
-                cal_puerto,
-                calls.dni_id,
-                fvalida,
-                cal_whohung,
-                ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
-                CASE 
-                    WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
-                    WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
-                    ELSE cal_tMoh - trans.tAntesXfer 
-                END AS cal_tMoh,
-                DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
-                avrs.tipo + 1 AS callType,
-                avrs.id AS avrsId,
-                ccInbound.prefijo,
-                CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
-                ISNULL(dni.dni_numero, '''') AS DNIS,
-                dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-                0 AS IsVoicemail
-            FROM ccCallsIn AS calls WITH (NOLOCK)
-            INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
-            INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
-            LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
-            LEFT JOIN ccInboundExtend inbExt ON inbExt.Inbound_id = calls.Inbound_id
-            LEFT JOIN (
-                SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
-                FROM ccLogTransfers  with(nolock)
-                WHERE tipo = 1 AND modo != 7
-                GROUP BY cal_id, tipo
-            ) trans ON calls.cal_id = trans.cal_id
-            WHERE calls.User_id > 0
-        ),
-        callsOut AS (
-            SELECT TOP (@maxRecordsToTransfer) 
-                calls.cal_id AS CallId,
-                user_id AS UserId,
-                calls.cam_id AS camAcdId,
-                CAST(calls.calif_id AS SMALLINT) AS califId,
-                CAST(cal_extension AS INT) AS extension,
-                cal_inicio,
-                cal_telefono,
-                ISNULL(cal_tDialog - CASE WHEN camps.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
-                + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
-                cal_key,
-                cal_manual,
-                cal_puerto,
-                0 AS dni_id,
-                fvalida,
-                cal_whohung,
-                ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
-                CASE 
-                    WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
-                    WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
-                    ELSE cal_tMoh - trans.tAntesXfer 
-                END AS cal_tMoh,
-                DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
-                avrs.tipo + 1 AS callType,
-                avrs.id AS avrsId,
-                camps.prefijo,
-                CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
-                '''' AS DNIS,
-                dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-                CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail
-            FROM ccoCallsOut AS calls WITH (NOLOCK)
-            INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
-            INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
-            LEFT JOIN (
-                SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
-                FROM ccLogTransfers with(nolock)
-                WHERE tipo = 2
-                GROUP BY cal_id, tipo
-            ) trans ON calls.cal_id = trans.cal_id
-            WHERE calls.User_id > 0 OR calls.statusCall_id = 19
-        )
+    WITH callsIn AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+            calls.cal_id as CallId,
+            user_id,
+            calls.Inbound_id,
+            calls.calif_id,
+            CAST(cal_extension AS INT) AS cal_extension,
+            cal_inicio,
+            cal_ANI AS phone,
+            ISNULL(cal_tDialog - CASE WHEN ccInbound.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+            cal_key,
+            0 AS cal_manual,
+            cal_puerto,
+            calls.dni_id,
+            fvalida,
+            cal_whohung,
+            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+            CASE 
+                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                ELSE cal_tMoh - trans.tAntesXfer 
+            END AS cal_tMoh,
+            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+            avrs.tipo + 1 AS callType,
+            avrs.id AS avrsId,
+            ccInbound.prefijo,
+            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+            ISNULL(dni.dni_numero, '''') AS DNIS,
+            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+            0 AS IsVoicemail
+        FROM ccCallsIn AS calls WITH (NOLOCK)
+        INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
+        LEFT JOIN ccDNIS dni ON dni.dni_id = calls.dni_id
+        LEFT JOIN ccInboundExtend inbExt ON inbExt.Inbound_id = calls.Inbound_id
+        LEFT JOIN (
+            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers  with(nolock)
+            WHERE tipo = 1 AND modo != 7
+            GROUP BY cal_id, tipo
+        ) trans ON calls.cal_id = trans.cal_id
+        WHERE calls.User_id > 0
+    ),
+    callsOut AS (
+        SELECT TOP (@maxRecordsToTransfer) 
+            calls.cal_id AS CallId,
+            user_id AS UserId,
+            calls.cam_id AS camAcdId,
+            CAST(calls.calif_id AS SMALLINT) AS califId,
+            CAST(cal_extension AS INT) AS extension,
+            cal_inicio,
+            cal_telefono,
+            ISNULL(cal_tDialog - CASE WHEN camps.recordHold = 1 THEN 0 ELSE cal_tMoh END, 0) 
+            + CASE WHEN stopRecording = 0 THEN ISNULL(trans.tDespuesXfer, 0) ELSE 0 END AS duration,
+            cal_key,
+            cal_manual,
+            cal_puerto,
+            0 AS dni_id,
+            fvalida,
+            cal_whohung,
+            ISNULL(CAST(califSub_id AS SMALLINT), 0) AS califSub_id,
+            CASE 
+                WHEN trans.tAntesXfer IS NULL THEN cal_tMoh 
+                WHEN cal_tMoh - trans.tAntesXfer < 0 THEN 0 
+                ELSE cal_tMoh - trans.tAntesXfer 
+            END AS cal_tMoh,
+            DATEADD(ss, ISNULL(cal_tDialog, 0), cal_inicio) AS dateEnd,
+            avrs.tipo + 1 AS callType,
+            avrs.id AS avrsId,
+            camps.prefijo,
+            CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
+            '''' AS DNIS,
+            dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
+            CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail
+        FROM ccoCallsOut AS calls WITH (NOLOCK)
+        INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
+        INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
+        LEFT JOIN (
+            SELECT cal_id, tipo, SUM(tAntesXfer) AS tAntesXfer, SUM(tDespuesXfer) AS tDespuesXfer
+            FROM ccLogTransfers with(nolock)
+            WHERE tipo = 2
+            GROUP BY cal_id, tipo
+        ) trans ON calls.cal_id = trans.cal_id
+        WHERE calls.User_id > 0 OR calls.statusCall_id = 19
+    )
 
-                INSERT INTO @tempCalls
+            INSERT INTO @tempCalls
                 
-        SELECT * FROM callsIn
-        UNION 
-        SELECT * FROM callsOut;
+    SELECT * FROM callsIn
+    UNION 
+    SELECT * FROM callsOut;
 
 
-                 -- Revisar si hay registros con IsVoicemail = 1
-        IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
-        BEGIN
-            
-                        update A
-                        set A.duration=B.tDialing
-                        FROM @tempCalls A
-            Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
-            WHERE A.IsVoicemail = 1;
-        END
-        
-        -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
-        SELECT * FROM @tempCalls;
-        
-    END
-    ELSE IF @action = 2
+                -- Revisar si hay registros con IsVoicemail = 1
+    IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
     BEGIN
-        DELETE FROM ccAVRSTransfer
-        WHERE id = @id;
+            
+                    update A
+                    set A.duration=B.tDialing
+                    FROM @tempCalls A
+        Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
+        WHERE A.IsVoicemail = 1;
     END
+        
+    -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
+    SELECT * FROM @tempCalls;
+        
+END
+ELSE IF @action = 2
+BEGIN
+        Delete A
+        from ccAVRSTransfer A
+        inner join dbo.fn_RIASplitDelimited(@ids,'','') t on A.id=t.Value
+    
+END
 END;
 '
         EXEC(@sql);
@@ -13600,6 +13602,141 @@ END
 '
 EXEC(@sql)
 ----------------------------------------------------------- End Luis Miguel Zamora Nuñez -------------------------------------------------------------------------
+        SET @process = 'landus Alter SP InsertLogAdminGalatea @action=2  Correcion log Campañas '
+        SET @sql = 'ALTER procedure [dbo].[InsertLogAdminGalatea]
+@action int 
+,@tableName VARCHAR(255)
+,@columnNameId VARCHAR(255)
+,@valueId VARCHAR(255)
+,@userId int
+,@tableTemp varchar(255)=null
+as
+SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+declare @sql nvarchar(max),@sql2 nvarchar(max)
+DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+
+if @action =1 begin --Antes del cambio
+
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp+''
+        SELECT * INTO ''+@tableNameTmp+'' FROM ''+@tableName+'' WHERE ''+@columnNameId+'' = ''+@valueId
+        --print(@sql)
+        exec(@sql)
+
+end
+else if @action=2 begin
+    DECLARE @columns NVARCHAR(MAX) = '''';
+        DECLARE @conditions NVARCHAR(MAX) = '''';
+        DECLARE @caseStatements NVARCHAR(MAX) = '''';
+        DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
+        DECLARE @counter INT = 0;       
+
+        -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
+        DECLARE @BatchColumns TABLE (
+                name NVARCHAR(128),
+                batch_id INT
+        );
+        -- Insertar en @BatchColumns las columnas de la tabla, dividiéndolas en bloques
+        INSERT INTO @BatchColumns (name, batch_id)
+        SELECT 
+                name,
+                (ROW_NUMBER() OVER (ORDER BY column_id) - 1) / @batchSize AS batch_id
+        FROM 
+                sys.columns
+        WHERE 
+                object_id = OBJECT_ID(@tableName)
+                AND name <> @columnNameId  -- Excluir la columna clave primaria
+                AND name <> ''rowguid'';  -- Excluir la columna clave primaria
+
+        -- Insertar batch_ids únicos en la variable de tipo tabla @BatchIds
+        DECLARE @BatchIds TABLE (
+                batch_id INT PRIMARY KEY
+        );
+
+        INSERT INTO @BatchIds
+        SELECT DISTINCT batch_id FROM @BatchColumns;
+
+        DECLARE @batch_id INT = 0;
+
+        -- Bucle para procesar cada bloque de columnas
+        WHILE EXISTS (SELECT 1 FROM @BatchIds WHERE batch_id = @batch_id)
+        BEGIN
+                -- Construir las expresiones CASE y las condiciones WHERE para este bloque
+                SET @caseStatements = '''';
+                SET @conditions = '''';
+
+                -- Construir el CASE y el WHERE para cada columna en el bloque actual
+                SELECT 
+                        @caseStatements = @caseStatements + 
+                                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                                ''FROM '' + @tableName + '' AS A '' +
+                                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;                   
+
+                -- Construir las condiciones WHERE para el bloque actual
+                SELECT @conditions = @conditions + 
+                                CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+                                ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;
+
+                -- Remover el último UNION ALL sobrante
+                SET @caseStatements = LEFT(@caseStatements, LEN(@caseStatements) - LEN('' UNION ALL ''));
+                
+                -- Construir y ejecutar la consulta para este bloque
+                IF @caseStatements <> ''''
+                BEGIN
+                        SET @sql = ''
+                        INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
+                        '' + @caseStatements + '';
+                        '';
+
+                        --print @sql
+                        -- Ejecutar la consulta dinámica
+                        EXEC sp_executesql @sql;
+                END
+                
+
+                -- Avanzar al siguiente bloque
+                SET @batch_id = @batch_id + 1;
+        END
+
+        -- Consultar el resultado final de cambios
+        set @sql=''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        FROM ''+@tableTemp+'' A 
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
+        
+        --print @sql
+        EXEC sp_executesql @sql;
+
+end
+else if @action =3 begin
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
+        --print(@sql)
+        exec(@sql)
+end
+        '
+        EXEC(@sql);
+
+        SET @process = 'landus Correcion log Campañas '
+        SET @sql = ''
+        EXEC(@sql);
+
+        SET @process = 'landus Correcion log Campañas '
+        SET @sql = ''
+        EXEC(@sql);
+
+        SET @process = 'landus Correcion log Campañas '
+        SET @sql = ''
+        EXEC(@sql);
+
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

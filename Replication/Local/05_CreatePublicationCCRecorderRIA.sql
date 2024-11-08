@@ -2,7 +2,7 @@ set nocount on
 
 declare @Version int, @Version_Actual int
 ---------------- VERSION ----------------
-Set @Version = '9'
+Set @Version = 9
 use [CCRecorderRIA]
 
 select @Version_Actual = par_valor from TREC_PARAMETROS where par_id = 30

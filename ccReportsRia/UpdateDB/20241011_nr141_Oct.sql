@@ -708,7 +708,7 @@ END;'
 
 
     set @process = 'alter SP ccspRepAgentSummary DELETE RepAgentSummary WHERE DATE BETWEEN @from AND @to;'
-    set @sql='CREATE PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
+    set @sql='ALTER PROCEDURE [dbo].[ccspRepAgentSummary] @action AS TINYINT, @from AS DATETIME = NULL, @to AS DATETIME = NULL
 AS
 
 IF @from IS NULL

@@ -13708,11 +13708,18 @@ else if @action=2 begin
                 SET @batch_id = @batch_id + 1;
         END
 
+
         -- Consultar el resultado final de cambios
-        set @sql=''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        set @sql=
+        ''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
         FROM ''+@tableTemp+'' A 
         left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
         
+        
+        if @tableTemp is not null and @tableTemp<>'''' begin
+                set @sql= ''insert into ''+@tableTemp +'' ''+ @sql
+        end
+
         --print @sql
         EXEC sp_executesql @sql;
 
@@ -13721,8 +13728,7 @@ else if @action =3 begin
         set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
         --print(@sql)
         exec(@sql)
-end
-        '
+end'
         EXEC(@sql);
 
         SET @process = 'landus Correcion log Campañas '

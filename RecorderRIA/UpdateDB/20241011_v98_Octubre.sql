@@ -366,6 +366,57 @@ BEGIN
 
 END'
     EXEC(@sql)
+
+
+    SET @process = 'feature/KR179003 Alter fn_RIASplitDelimited'
+    SET @sql = 'ALTER FUNCTION [dbo].[fn_RIASplitDelimited]
+(   
+    @List NVARCHAR(max),
+    @SplitOn NVARCHAR(1)
+)
+RETURNS @RtnValue TABLE (
+    Id INT IDENTITY(1,1),
+    Value NVARCHAR(100)
+)
+AS
+BEGIN
+    DECLARE @Pos INT = 1
+    DECLARE @NextPos INT
+    DECLARE @Fragment NVARCHAR(100)
+
+    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
+        RETURN
+
+    WHILE @Pos > 0
+    BEGIN
+        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
+        
+        IF @NextPos > 0
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
+            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = @NextPos + 1
+        END
+        ELSE
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
+            IF LEN(@Fragment) > 0
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = 0
+        END
+    END
+
+    RETURN
+END
+'
+    EXEC(@sql)
    
 	
 	------------------------------End Jesus Landus

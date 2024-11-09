@@ -13630,7 +13630,9 @@ else if @action=2 begin
         DECLARE @conditions NVARCHAR(MAX) = '''';
         DECLARE @caseStatements NVARCHAR(MAX) = '''';
         DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
-        DECLARE @counter INT = 0;       
+        DECLARE @counter INT = 0;
+        declare @emtpy varchar(2)=''''
+        
 
         -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
         DECLARE @BatchColumns TABLE (
@@ -13669,10 +13671,10 @@ else if @action=2 begin
                 -- Construir el CASE y el WHERE para cada columna en el bloque actual
                 SELECT 
                         @caseStatements = @caseStatements + 
-                                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
-                                ''FROM '' + @tableName + '' AS A '' +
-                                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
-                                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+                        ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                        ''FROM '' + @tableName + '' AS A '' +
+                        ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                        ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
                 FROM 
                         @BatchColumns
                 WHERE 
@@ -13680,8 +13682,8 @@ else if @action=2 begin
 
                 -- Construir las condiciones WHERE para el bloque actual
                 SELECT @conditions = @conditions + 
-                                CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
-                                ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+                CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+                ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
                 FROM 
                         @BatchColumns
                 WHERE 
@@ -13695,14 +13697,13 @@ else if @action=2 begin
                 BEGIN
                         SET @sql = ''
                         INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
-                        '' + @caseStatements + '';
+                        '' + @caseStatements + ''                       
                         '';
 
                         --print @sql
                         -- Ejecutar la consulta dinámica
                         EXEC sp_executesql @sql;
-                END
-                
+                END     
 
                 -- Avanzar al siguiente bloque
                 SET @batch_id = @batch_id + 1;
@@ -13711,17 +13712,19 @@ else if @action=2 begin
 
         -- Consultar el resultado final de cambios
         set @sql=
-        ''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        ''SELECT distinct A.columnInfo,A.dataInfo,isnull(B.Identifiers,@emtpy) as identifierInfo 
         FROM ''+@tableTemp+'' A 
-        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
-        
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName and B.tableName=@tableName
+        ''
         
         if @tableTemp is not null and @tableTemp<>'''' begin
                 set @sql= ''insert into ''+@tableTemp +'' ''+ @sql
         end
-
-        --print @sql
-        EXEC sp_executesql @sql;
+        print @tableName
+        print @sql
+        EXEC sp_executesql @sql
+        ,N''@tableName varchar(255), @emtpy varchar(2)'',
+    @tableName = @tableName,@emtpy=@emtpy
 
 end
 else if @action =3 begin

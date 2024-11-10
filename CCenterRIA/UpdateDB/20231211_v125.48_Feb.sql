@@ -13306,9 +13306,137 @@ END
 '
          EXEC (@Sql)
 
-        -- SET @process = 'feature/KR179003 Alter SP ccsp_AvrsSyncronization'
-        -- SET @sql = ''
-        -- EXEC(@sql);
+        SET @process = 'feature/KR179003 Alter SP InsertLogAdminGalatea'
+        SET @sql = 'ALTER procedure [dbo].[InsertLogAdminGalatea]
+@action int 
+,@tableName VARCHAR(255)
+,@columnNameId VARCHAR(255)
+,@valueId VARCHAR(255)
+,@userId int
+,@tableTemp varchar(255)=null
+as
+SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+declare @sql nvarchar(max),@sql2 nvarchar(max)
+DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+
+if @action =1 begin --Antes del cambio
+
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp+''
+        SELECT * INTO ''+@tableNameTmp+'' FROM ''+@tableName+'' WHERE ''+@columnNameId+'' = ''+@valueId
+        --print(@sql)
+        exec(@sql)
+
+end
+else if @action=2 begin
+    DECLARE @columns NVARCHAR(MAX) = '''';
+        DECLARE @conditions NVARCHAR(MAX) = '''';
+        DECLARE @caseStatements NVARCHAR(MAX) = '''';
+        DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
+        DECLARE @counter INT = 0;
+        declare @emtpy varchar(2)=''''
+        
+
+        -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
+        DECLARE @BatchColumns TABLE (
+                name NVARCHAR(128),
+                batch_id INT
+        );
+        -- Insertar en @BatchColumns las columnas de la tabla, dividiéndolas en bloques
+        INSERT INTO @BatchColumns (name, batch_id)
+        SELECT 
+                name,
+                (ROW_NUMBER() OVER (ORDER BY column_id) - 1) / @batchSize AS batch_id
+        FROM 
+                sys.columns
+        WHERE 
+                object_id = OBJECT_ID(@tableName)
+                AND name <> @columnNameId  -- Excluir la columna clave primaria
+                AND name <> ''rowguid'';  -- Excluir la columna clave primaria
+
+        -- Insertar batch_ids únicos en la variable de tipo tabla @BatchIds
+        DECLARE @BatchIds TABLE (
+                batch_id INT PRIMARY KEY
+        );
+
+        INSERT INTO @BatchIds
+        SELECT DISTINCT batch_id FROM @BatchColumns;
+
+        DECLARE @batch_id INT = 0;
+
+        -- Bucle para procesar cada bloque de columnas
+        WHILE EXISTS (SELECT 1 FROM @BatchIds WHERE batch_id = @batch_id)
+        BEGIN
+                -- Construir las expresiones CASE y las condiciones WHERE para este bloque
+                SET @caseStatements = '''';
+                SET @conditions = '''';
+
+                -- Construir el CASE y el WHERE para cada columna en el bloque actual
+                SELECT 
+                        @caseStatements = @caseStatements + 
+                                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                                ''FROM '' + @tableName + '' AS A '' +
+                                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;                   
+
+                -- Construir las condiciones WHERE para el bloque actual
+                SELECT @conditions = @conditions + 
+                                CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+                                ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+                FROM 
+                        @BatchColumns
+                WHERE 
+                        batch_id = @batch_id;
+
+                -- Remover el último UNION ALL sobrante
+                SET @caseStatements = LEFT(@caseStatements, LEN(@caseStatements) - LEN('' UNION ALL ''));
+                
+                -- Construir y ejecutar la consulta para este bloque
+                IF @caseStatements <> ''''
+                BEGIN
+                        SET @sql = ''
+                        INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
+                        '' + @caseStatements + ''                       
+                        '';
+
+                        --print @sql
+                        -- Ejecutar la consulta dinámica
+                        EXEC sp_executesql @sql;
+                END     
+
+                -- Avanzar al siguiente bloque
+                SET @batch_id = @batch_id + 1;
+        END
+
+
+        -- Consultar el resultado final de cambios
+        set @sql=
+        ''SELECT distinct A.columnInfo,A.dataInfo,isnull(B.Identifiers,@emtpy) as identifierInfo 
+        FROM ''+@tableTemp+'' A 
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName and B.tableName=@tableName
+        ''
+        
+        if @tableTemp is not null and @tableTemp<>'''' begin
+                set @sql= ''insert into ''+@tableTemp +'' ''+ @sql
+        end
+        print @tableName
+        print @sql
+        EXEC sp_executesql @sql
+        ,N''@tableName varchar(255), @emtpy varchar(2)'',
+    @tableName = @tableName,@emtpy=@emtpy
+
+end
+else if @action =3 begin
+        set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
+        --print(@sql)
+        exec(@sql)
+end'
+        EXEC(@sql);
 
 --------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
 

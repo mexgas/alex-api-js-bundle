@@ -13016,9 +13016,156 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
     exec (@sql)
     
 end'
+   EXEC(@sql);
+
+    SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
+    SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
+begin
+    DROP PROCEDURE ccsp_DLRAfterInsertCall;
+end'
+     EXEC(@sql);
+
+     SET @process = 'feature/KR179003 Alter SP ccsp_DLRAfterInsertCall'
+     SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRAfterInsertCall]
+@cam_id smallint,
+@cal_id BIGINT=0,
+@status int=0
+AS
+set nocount on
+
+if @status = 0 begin
+  set @status = 6 --Status 6=Pide Agente
+end
+else if @status=19
+begin
+    update ccoCallsOut set statusCall_id=@status where cal_id =@cal_id;
+    insert into ccAVRSTransfer(cal_id,tipo) values(@cal_id,1)
+    return
+end
+
+insert into ccRIAWorkGroup_Calid (IDWG, cal_id, User_id, timestamp, tipo)
+select idwg, @cal_id, 0 as user_id, getdate() timestamp, 1 as tipo from ccRIACampEspWG wg with(nolock)
+where wg.Tipo=1 and wg.idcampesp=@cam_id
+
+exec ccspSaveDispositionResult @action=1,@callid=@cal_id, @camId=@cam_id,@callType=1,@statusCallId=@status
+
+set nocount off'
+    EXEC(@sql);
+       
+
+        SET @process = 'feature/KR179003 Alter SP ccsp_DLRSaveDialResult'
+        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_DLRSaveDialResult] 
+@callout_id INT, @cam_id SMALLINT, @tipoResDial_id TINYINT, @Telefono VARCHAR(30), @Puerto SMALLINT,
+@tDialing TINYINT= 0, @tBusy SMALLINT= 0, @call_id INT= 0, @answerbit BIT= NULL, @tAnswerBit SMALLINT= 0,
+@canceledNoAgents BIT= 0, @disconnectCause VARCHAR(250)= '''', @cal_key VARCHAR(40)= '''', @call_TS VARCHAR(15)='''',
+@ani varchar(32)=''''
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @tNow AS DATETIME, @RecicleSIC TINYINT;
+    DECLARE @logDial_id INT;
+    DECLARE @tAnswerBitFinal AS DATETIME;
+    DECLARE @tTotal SMALLINT;
+
+    SELECT @RecicleSIC = ISNULL(valor, 0)
+    FROM ccSettings
+    WHERE setting_id = 60;
+
+    SELECT @tTotal = @tDialing + @tAnswerBit;
+
+    SELECT @tNow = GETDATE();
+
+    SELECT @tAnswerBitFinal = DATEADD(ss, -@tAnswerBit, @tNow);
+
+
+-- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+IF @call_id > 0 AND @tipoResDial_id = 1 and @cal_key = ''''
+    BEGIN
+    SELECT @cal_key = cal_key
+    FROM ccoCallsOutSource WITH(NOLOCK)
+    WHERE @callout_id = callout_id;         
+END;
+
+IF @call_id > 0 AND @tipoResDial_id = 1
+BEGIN
+        INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
+               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.
+               fnGetTipoLlamada( @Telefono ), @ani;
+    END;
+         ELSE
+    BEGIN
+        INSERT INTO ccoLogDials( callout_id, cam_id, tipoResDial_id, Telefono, Puerto, tDialing, fecha, answerbit, tbusy,
+        TipoDialingMode, cal_id, tAnswerBit, canceledNoAgents, disconnectCause, cal_key, call_TS, tipoLlamada_id, ani )
+               SELECT @callout_id, @cam_id, @tipoResDial_id, @Telefono, @Puerto, @tTotal, @tNow, @answerbit, @tBusy,
+               ''000000000'', @call_id, @tAnswerBitFinal, @canceledNoAgents, @disconnectCause, @cal_key, @call_TS, dbo.fnGetTipoLlamada(
+               @Telefono ), @ani;
+    END;
+
+    SELECT @logDial_id = SCOPE_IDENTITY();
+
+    IF @RecicleSIC = 1
+    BEGIN
+        UPDATE ccoWorkingTable WITH(ROWLOCK)
+          SET tipoResDial_id = @tipoResDial_id
+        WHERE callout_id = @callout_id;
+    END;
+
+    -- para marcaciones manuales, actualiza puerto de marcacion y costo de la llamada. Solo llamadas contestadas
+IF @call_id > 0 AND @tipoResDial_id = 1
+    BEGIN
+        UPDATE ccoCallsOut WITH(ROWLOCK)
+    SET cal_puerto = @Puerto, cal_manual = CASE WHEN cal_manual = 1 THEN 2 ELSE cal_manual END
+    WHERE cal_id = @call_id AND cal_puerto = 0;
+
+        EXEC ccsp_CstoCalculaCosto @call_id;
+    END;
+        else IF @call_id > 0 AND @tipoResDial_id = 11
+BEGIN
+        UPDATE ccoCallsOut WITH(ROWLOCK)
+    SET cal_puerto = @Puerto
+    WHERE cal_id = @call_id AND cal_puerto = 0;
+
+end
+
+    -- inserta informacion para reportes de workgroup
+    INSERT INTO ccRIAWorkGroup_logDial_id( IDWG, logDial_id, cam_id, TIMESTAMP )
+           SELECT IDWG, @logDial_id, IdCampEsp, GETDATE()
+           FROM ccRIACampEspWG
+WHERE tipo = 1 AND IdCampEsp = @cam_id;
+
+    -- Guarda configuracion de TipoDialingMode
+    UPDATE ccoLogDials WITH(ROWLOCK)
+      SET TipoDialingMode = dbo.fn_getDialingMode( @call_id, 0, @logDial_id, @cam_id )
+    WHERE logDial_id = @logDial_id;
+    SET NOCOUNT OFF;
+END;
+
+    SELECT @logDial_id as LogDialId'
         EXEC(@sql);
 
+        SET @process = 'feature/KR179003 update ccSettings setting_id=236'
+        SET @sql = 'update ccSettings 
+set detalle=''Habilita la grabacion de audio antes de que se conteste la llamada (Early Media). 0-Deshabilitado, 1-Habilitado,2- grabacion early media en buzon''
+,description=''Enable audio recording before the call is answered (Early Media). 0-Disabled, 1-Enabled, 2- recording early media en voicemail''
+where setting_id=236
+'
+        EXEC(@sql);
 
+        SET @process = 'feature/KR179003 Add ccStatusLLamada Buzon'
+        SET @sql = 'if not exists(select * from ccStatusLLamada where statusCall_id=19) begin
+        insert into ccStatusLLamada (statusCall_id,descripcion,inAbandonConfig)
+        values (19,''Buzon'',0)
+end'
+        EXEC(@sql);
+
+        SET @process = 'Alter Funcion fnGetTipoLlamada mejora en el manejo y se valida si no es mexico no compare la lada'
+        SET @Sql = 'ALTER FUNCTION [dbo].[fnGetTipoLlamada](@tel VARCHAR(32))
+RETURNS TINYINT
+AS
+BEGIN
     DECLARE @ladatemp VARCHAR(5), @ldlocal VARCHAR(10), @serie VARCHAR(10), @numeracion SMALLINT, @length TINYINT
     DECLARE @mod VARCHAR(10), @country TINYINT, @lengthStr VARCHAR(10)
     DECLARE @tipoLlamada_id SMALLINT = 0, @tipo TINYINT = 0, @cantidadLL TINYINT
@@ -13164,7 +13311,7 @@ END
         -- EXEC(@sql);
 
 --------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
-        
+
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

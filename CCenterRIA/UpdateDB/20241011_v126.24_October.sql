@@ -1463,7 +1463,7 @@ END
 EXEC(@sql)
 ----------------------------------------------------------- End Luis Miguel Zamora Nuñez -------------------------------------------------------------------------
 
-  SET @process = 'landus Alter SP InsertLogAdminGalatea @action=2  Correcion log Campañas '
+  SET @process = 'feature/KR179003 Alter SP InsertLogAdminGalatea'
         SET @sql = 'ALTER procedure [dbo].[InsertLogAdminGalatea]
 @action int 
 ,@tableName VARCHAR(255)
@@ -1491,7 +1491,9 @@ else if @action=2 begin
         DECLARE @conditions NVARCHAR(MAX) = '''';
         DECLARE @caseStatements NVARCHAR(MAX) = '''';
         DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
-        DECLARE @counter INT = 0;       
+        DECLARE @counter INT = 0;
+        declare @emtpy varchar(2)=''''
+        
 
         -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
         DECLARE @BatchColumns TABLE (
@@ -1556,14 +1558,13 @@ else if @action=2 begin
                 BEGIN
                         SET @sql = ''
                         INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
-                        '' + @caseStatements + '';
+                        '' + @caseStatements + ''                       
                         '';
 
                         --print @sql
                         -- Ejecutar la consulta dinámica
                         EXEC sp_executesql @sql;
-                END
-                
+                END     
 
                 -- Avanzar al siguiente bloque
                 SET @batch_id = @batch_id + 1;
@@ -1572,17 +1573,19 @@ else if @action=2 begin
 
         -- Consultar el resultado final de cambios
         set @sql=
-        ''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        ''SELECT distinct A.columnInfo,A.dataInfo,isnull(B.Identifiers,@emtpy) as identifierInfo 
         FROM ''+@tableTemp+'' A 
-        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
-        
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName and B.tableName=@tableName
+        ''
         
         if @tableTemp is not null and @tableTemp<>'''' begin
                 set @sql= ''insert into ''+@tableTemp +'' ''+ @sql
         end
-
-        --print @sql
-        EXEC sp_executesql @sql;
+        print @tableName
+        print @sql
+        EXEC sp_executesql @sql
+        ,N''@tableName varchar(255), @emtpy varchar(2)'',
+    @tableName = @tableName,@emtpy=@emtpy
 
 end
 else if @action =3 begin
@@ -1591,6 +1594,9 @@ else if @action =3 begin
         exec(@sql)
 end'
         EXEC(@sql);
+
+
+  
 
         SET @process = 'Alter SP ccsp_AvrsSyncronization'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_AvrsSyncronization]

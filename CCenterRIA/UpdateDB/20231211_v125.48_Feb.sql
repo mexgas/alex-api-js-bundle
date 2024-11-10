@@ -12580,7 +12580,7 @@ BEGIN
     FROM ccSettings
     WHERE setting_id = 104;
 
-                -- Declarar la variable tipo tabla
+          -- Declarar la variable tipo tabla
         declare @tempCalls table(
         cal_id INT,
         user_id INT,
@@ -12605,9 +12605,12 @@ BEGIN
         isCallRecord BIT,
         DNIS VARCHAR(50),
         IDWG INT,
-        IsVoicemail BIT
+        IsVoicemail BIT,
+                statusCall_id int
     );
 
+        declare @deleteRow table(id int primary key);
+        declare @relationCallIdUser table(cal_id int, user_id int);
 
     WITH callsIn AS (
         SELECT TOP (@maxRecordsToTransfer) 
@@ -12639,7 +12642,8 @@ BEGIN
             CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
             ISNULL(dni.dni_numero, '''') AS DNIS,
             dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-            0 AS IsVoicemail
+            0 AS IsVoicemail,
+                        calls.statusCall_id 
         FROM ccCallsIn AS calls WITH (NOLOCK)
         INNER JOIN ccInbound ON ccInbound.Inbound_id = calls.Inbound_id
         INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 0
@@ -12651,7 +12655,7 @@ BEGIN
             WHERE tipo = 1 AND modo != 7
             GROUP BY cal_id, tipo
         ) trans ON calls.cal_id = trans.cal_id
-        WHERE calls.User_id > 0
+    --    WHERE calls.User_id > 0
     ),
     callsOut AS (
         SELECT TOP (@maxRecordsToTransfer) 
@@ -12683,7 +12687,8 @@ BEGIN
             CONVERT(BIT, CASE WHEN ISNULL(calls.file_moved, 1) = 2 THEN 0 ELSE 1 END) AS isCallRecord,
             '''' AS DNIS,
             dbo.AsignaIDWS(calls.cal_id, avrs.tipo) AS IDWG,
-            CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail
+            CASE WHEN calls.statusCall_id = 19 THEN 1 ELSE 0 END AS IsVoicemail,
+                        calls.statusCall_id
         FROM ccoCallsOut AS calls WITH (NOLOCK)
         INNER JOIN ccCamps camps ON camps.cam_id = calls.cam_id
         INNER JOIN ccAVRSTransfer avrs ON calls.cal_id = avrs.cal_id AND avrs.tipo = 1
@@ -12693,26 +12698,74 @@ BEGIN
             WHERE tipo = 2
             GROUP BY cal_id, tipo
         ) trans ON calls.cal_id = trans.cal_id
-        WHERE calls.User_id > 0 OR calls.statusCall_id = 19
+      --  WHERE calls.User_id > 0 OR calls.statusCall_id = 19
     )
 
-            INSERT INTO @tempCalls
-                
+    INSERT INTO @tempCalls                
     SELECT * FROM callsIn
     UNION 
     SELECT * FROM callsOut;
 
 
-                -- Revisar si hay registros con IsVoicemail = 1
+    insert into @deleteRow
+    select min(avrsId) id
+    from @tempCalls
+    group by cal_id,callType 
+    having count(*)>1
+    
+    delete from @tempCalls where avrsId in( select id from @deleteRow )
+        delete from ccAVRSTransfer where id in( select id from @deleteRow )
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=0)
+    BEGIN   
+                insert into @relationCallIdUser
+                select A.cal_id,aglog.User_id from @tempCalls A
+                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id and A.callType=0
+                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join ccCallsIn B with(nolock) on A.cal_id=B.cal_id 
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=0
+                
+                delete from @relationCallIdUser
+        END
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and callType=1 and IsVoicemail =0)
+    BEGIN   
+                insert into @relationCallIdUser
+                select A.cal_id,aglog.User_id from @tempCalls A
+                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id and A.callType=1
+                inner join ccLogAgentesDia aglog with(nolock) on aglog.callID=B.cal_id and aglog.Tipo=A.callType and aglog.TipoStatusAge_id=4
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join ccoCallsOut B with(nolock) on A.cal_id=B.cal_id 
+
+                update B set B.User_id=A.User_id
+                from @relationCallIdUser A
+                inner join @tempCalls B on A.cal_id=B.cal_id and B.callType=1
+        END
+
+     -- Revisar si hay registros con IsVoicemail = 1
     IF EXISTS (SELECT 1 FROM @tempCalls WHERE IsVoicemail = 1)
-    BEGIN
-            
-                    update A
-                    set A.duration=B.tDialing
-                    FROM @tempCalls A
-        Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
+    BEGIN            
+                update A
+                set A.duration=B.tDialing
+                FROM @tempCalls A
+                Inner JOIN ccoLogDials B with(nolock) ON A.cal_id=B.cal_id
         WHERE A.IsVoicemail = 1;
     END
+
+        IF EXISTS (SELECT 1 FROM @tempCalls WHERE user_id=0 and IsVoicemail=0)
+    BEGIN
+                delete A from ccAVRSTransfer A
+                inner join @tempCalls t on A.id=t.avrsId 
+                where t.user_id=0 and t.IsVoicemail=0
+        END
         
     -- Si no hay registros con IsVoicemail, simplemente devolver los resultados de la variable tipo tabla
     SELECT * FROM @tempCalls;
@@ -12720,16 +12773,16 @@ BEGIN
 END
 ELSE IF @action = 2
 BEGIN
-        Delete A
-        from ccAVRSTransfer A
-        inner join dbo.fn_RIASplitDelimited(@ids,'','') t on A.id=t.Value
+    Delete A
+    from ccAVRSTransfer A
+    inner join dbo.fn_RIASplitDelimited(@ids,'','') t on A.id=t.Value
     
 END
 END;
 '
         EXEC(@sql);
 
-        SET @process = 'feature/KR179003 Alter SP ccsp_BaseXmngr'
+        SET @process = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr] landus Correcion log Campañas '
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_BaseXmngr]
 @action int,
 @option tinyint = 0,
@@ -12925,7 +12978,7 @@ else if @action = 14 begin
         set @filterCamId=@filterCamId+'')''+char(10)    
 
         set @filterWg=@filterWg+@filterCamId
-        set @cidOut=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+                set @cidOut=''(exists(index-of($CID_OUT, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
     end
 
     SET @filterInboundId= ''''
@@ -12941,7 +12994,7 @@ else if @action = 14 begin
         set @filterInboundId=@filterInboundId+'')''+char(10)    
 
         set @filterWg=@filterWg+''let ''+@CidNameIn+'':=(''+@filterInboundId
-        set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
+                set @cidin=''(exists(index-of($CID_IN, $r/@CID)) and $r/@CType = CTYPE_REMPLACE)''
     end
     
     select @filterWg as VarCamInOut,@cidOut as CidOut,@cidin as CidIn
@@ -12963,9 +13016,8 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
     exec (@sql)
     
 end'
-    EXEC(@sql);
+   EXEC(@sql);
 
-		
     SET @process = 'Drop procedure ccsp_DLRAfterInsertCall'
     SET @sql = 'if exists (select 1 from sys.procedures where name = N''ccsp_DLRAfterInsertCall'')
 begin
@@ -13254,355 +13306,7 @@ END
 '
          EXEC (@Sql)
 
-        -- SET @process = 'feature/KR179003 Alter SP ccsp_AvrsSyncronization'
-        -- SET @sql = ''
-        -- EXEC(@sql);
-
---------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
-
------------------------------------------------------------ Begin Luis Miguel Zamora Nuñez 125.20231211.0.19-------------------------------------------------------------------------
-
-SET @process = 'K069001, K69003 - ccsp_GalateaCreateUser - SP Edited, Editado para corregir el registro de usuarios (Agentes y Administradores), 
-Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
-SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaCreateUser]
-@UserId int,
-@Login varchar(40),
-@Nombres varchar(45),
-@LastName varchar(45),
-@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
-@Password varchar(200),
-@Sexo bit,
-@canChangeStatus bit,
-@AreaId int,
-@UserType tinyint,
-@AdminId int
-as
-
-Declare @ApellidoMaterno varchar(45)
-Declare @ApellidoPaterno varchar(45)
-
---Obtiene el idioma de de Centerware
-Declare @lenguageXion varchar
-select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
-
-set @ApellidoPaterno = @LastName
-set @ApellidoMaterno = @NombreOpcionalExtra
-
--- validaciones 
-    if exists(select Login from ccUsers where Login=@Login)
-    begin
-    select -1 as ResponseCode--,Login en Uso
-    return(0)
-    end
-
-    if exists(select Login from ccUsers_Consulta where Login = @Login)
-    begin
-    select -4 as ResponseCode -- Login en Uso aunque el usuario ya se halla borrado de la base de datos -- quiza falta la validacion cuando el usuario ya se ha borrado pero mediante borrado logico
-    return(0)
-    end
-
-    if exists(select Nombres from ccUsers where Nombres=@Nombres
-    and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
-    begin
-    select -2 as ResponseCode--,Nombre completo en Uso-- valida todos los campos de nombre para ver que no existan en la base de datos
-    return(0)
-    end
-
-
---insert
-IF( select isnull(max(user_id),0) from ccusers) > 32700
-BEGIN
-    set @UserId = null
-    SELECT @UserId = d.rn FROM (SELECT d.rn, ROW_NUMBER() OVER (ORDER BY d.rn) AS recID
-    FROM (SELECT ROW_NUMBER() OVER (ORDER BY user_id) AS rn FROM ccusers) AS d
-    LEFT JOIN ccusers AS s ON s.user_id = d.rn WHERE s.user_id IS NULL ) AS d
-    INNER JOIN ( SELECT  user_id, ROW_NUMBER() OVER (ORDER BY user_id DESC) AS recID
-    FROM ccusers) AS w ON w.recID = d.recID
-
-    if @UserId is null
-    begin
-    select -3 as ResponseCode --Error_when_inserting_user
-    return(0)
-    end
-
-    set identity_insert ccusers on
-    insert into ccUsers(user_id,Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id, Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
-    select @UserId, @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
-    set identity_insert ccusers off
-
-    delete ccMenuUser where id_User = @UserId
-    delete ccRIAUserRole where user_id = @UserId
-
-    exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
-
-    --Insert Agent into ccRIAAgentsPermissions
-    IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
-    BEGIN
-    IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
-    BEGIN 
-        INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
-        VALUES (@UserId, 0, 0, 1)
-    END
-    END
-
-END
-ELSE
-BEGIN
-    insert into ccUsers(Login,Nombres,ApellidoPaterno,ApellidoMaterno,Password,TipoUser_id,
-    Status,TipoLLamadas,Sexo,canChangeStatus,IDArea)
-    select @Login,@Nombres,@ApellidoPaterno,@ApellidoMaterno,@Password,@UserType,
-    1,3,@Sexo,@canChangeStatus, case when @AreaId=0 then null else @AreaId end
-
-    if @@rowcount=1
-    select @UserId=scope_identity()
-    else
-    begin
-    select -2--insert Error
-    return(0)
-    end
-
-    --INSERT INTO ACTIVITY LOG, CREATE AGENT
-    DECLARE @areaName AS VARCHAR(40);
-    DECLARE @userLogin AS VARCHAR(40);
-    SET @userLogin = (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId);
-
-    IF(@AreaId <> 0) BEGIN
-        SET @areaName = (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId);
-    END
-
-    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
-    VALUES (CASE WHEN @AreaID = 0 THEN NULL ELSE @areaName END, getDate(), @userLogin, CASE WHEN @UserType = 1 THEN 22 ELSE 29 END, 3, '''', '''', @Login);
-
-END
-    insert into ccMenuUser(id_User,id_Menu,type) select @UserId,id_Menu,1 from ccRIARoleMenu where Role_id=3
-    insert into ccMenuUser(id_User,id_Menu,type)values(@UserId,40,1)
-    insert into ccRIAUserRole(User_id,Role_id,type)values(@UserId,3,1)
-    --Menu para roles RepotsRia
-    exec ccsp_RIAMenuRoles @Type= 13,@User_id = @UserId
-
-    --Insert Agent into ccRIAAgentsPermissions
-    IF EXISTS (SELECT * FROM ccUsers WHERE User_id = @UserId AND TipoUser_id = 1) 
-    BEGIN
-    IF NOT EXISTS (SELECT * FROM ccRIAAgentsPermissions WHERE AgentId = @UserId)
-    BEGIN 
-        INSERT INTO ccRIAAgentsPermissions(AgentId, AllowUnassign, AllowSpam, AllowPlayRecordsOnCallHistory)
-        VALUES (@UserId, 0, 0, 1)
-    END 
-    END
-select 200 as ResponseCode -- indica que se agrego correctamente un nuevo usuario
-'
-EXEC(@sql)
-
-SET @process = 'K069002, K069004 - ccsp_GalateaUpdateUser - SP Edited, 
-Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
-SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
-@UserId int,
-@Login varchar(40),
-@Nombres varchar(45),
-@LastName varchar(45),
-@NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
-@Sexo bit,
-@canChangeStatus bit,
-@AdminId int,
-@AreaId int
-as
-
-Declare @ApellidoMaterno varchar(45)
-Declare @ApellidoPaterno varchar(45)
-Declare @userIdOnDb int
-Declare @LoginOnDb varchar(40)
---Obtiene el idioma de Centerware
-Declare @lenguageXion varchar
-select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
-
-set @ApellidoPaterno = @LastName
-set @ApellidoMaterno = @NombreOpcionalExtra
-
--- validaciones 
-    if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
-        begin
-        select -5 as ResponseCode--,''el usuario no existe''
-        return(0)
-        end
-
-  if exists(select Nombres from ccUsers where Nombres=@Nombres
-  and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
-    begin
-
-        select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
-      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
-
-        select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
-      and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
-
-      if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
-        begin
-            select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
-            return(0)
-        end
-    end
-
---update and insert into activity log a record for each modified property
-
-    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
-
-    Update ccUsers set 
-    Nombres=@Nombres,
-    ApellidoPaterno=@ApellidoPaterno,
-    ApellidoMaterno=@ApellidoMaterno,
-    Sexo=@Sexo,
-    canChangeStatus=@canChangeStatus
-    where User_id=@UserId
-
-    DECLARE @CCUsersTable TABLE 
-    (
-        columnInfo VARCHAR(255),
-        dataInfo VARCHAR(255),
-        identifierInfo VARCHAR(255)
-    )
-
-    INSERT INTO @CCUsersTable EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId;
-
-    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target) 
-    SELECT 
-        (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
-        getDate(), 
-        (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
-        CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
-        3, 
-        CUT.identifierInfo,
-        CASE WHEN CUT.identifierInfo IS NOT NULL THEN
-            CASE 
-                WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
-                ELSE CUT.dataInfo END
-        ELSE '''' END, 
-        (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
-    FROM @CCUsersTable AS CUT;
-
-    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
-
-select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
-'
-EXEC(@sql)
-
-
-SET @process = 'ccsp_GalateaLoadUsersForManagement - SP Edited, Editado para el envio correcto de datos al front.
-Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
-SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaLoadUsersForManagement]
- @option SMALLINT,
- @AreaId SMALLINT,
- @UserType INT = null,
- @Username VARCHAR(200)=null,
- @userId INT = 0
-as
-
-        --Obtiene el idioma de de Centerware
-        Declare @lenguageXion varchar
-        select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espanol, 1 para ingles, 2 para portugues
-
-IF @option = 1 --Agentes/supervisores de un Area
-BEGIN
-  SELECT  TipoUser_id as UserType,
-  User_id as UserId,
-  LOGIN as Username,
-  Nombres as Names,
-  ApellidoPaterno as LastName,
-  ApellidoMaterno as OptionalExtraName,
-  Password as Password,
-  Sexo as IsMan,
-  CanChangeStatus as EnableNotReady,
-  isnull(IDArea, 0) as AreaId
-  FROM ccusers
-  WHERE isnull(IDArea, 0) = isnull(@AreaId, 0) AND TipoUser_id & 2 = CASE @UserType WHEN 1 THEN 0 ELSE 2 END AND STATUS = 1
-        AND DATEDIFF(dd, LastLoginAttempt, getdate()) < 60
-  ORDER BY LOGIN, Nombres, ApellidoPaterno,Sexo, User_id
-
-  RETURN (0)
-END
-
-IF @option = 2 -- obtiene Agente o supervisor en base a su nombre de usuario
-BEGIN
-  SELECT  TipoUser_id as UserType,
-  User_id as UserId,
-  LOGIN as Username,
-  Nombres as Names,
-  ApellidoPaterno as LastName,
-  ApellidoMaterno as OptionalExtraName,
-  Password as Password,
-  Sexo as IsMan,
-  CanChangeStatus as EnableNotReady,
-  isnull(IDArea, 0) as AreaId
-  FROM ccusers
-  WHERE Login=@Username
-
-  RETURN (0)
-END
-
-IF @option = 3 -- obtiene Agente o supervisor en base a su ID de usuario
-BEGIN
-  SELECT  TipoUser_id as UserType,
-  User_id as UserId,
-  LOGIN as Username,
-  Nombres as Names,
-  ApellidoPaterno as LastName,
-  ApellidoMaterno as OptionalExtraName,
-  Password as Password,
-  Sexo as IsMan,
-  CanChangeStatus as EnableNotReady,
-  isnull(IDArea, 0) as AreaId
-  FROM ccusers
-  WHERE user_id=@userId
-
-  RETURN (0)
-END
-
-
-
-
-IF @option = 4 -- supervisores en Area/Sistema
-BEGIN
-        DECLARE @Admins TABLE (UserId smallint, Username varchar(50), Names varchar(50), LastName varchar(50), OptionalExtraName varchar(50), AreaId smallint, primary key(UserId))
-        INSERT INTO @Admins
-        SELECT User_id as UserId,
-        LOGIN as Username,
-        Nombres as Names,
-        ApellidoPaterno as LastName,
-        ApellidoMaterno as OptionalExtraName,
-
-        isnull(IDArea, 0) as AreaId
-        FROM ccusers
-        WHERE TipoUser_id = 2 AND STATUS = 1
-
-
-        IF NOT EXISTS(SELECT * FROM ccUsers_Roles WHERE User_id=@userId and Rol_id=7) BEGIN
-                SELECT UserId, Username, Names, LastName, OptionalExtraName
-                FROM @Admins
-                WHERE AreaId = (SELECT IDArea FROM ccUsers WHERE User_id=@userId)
-                ORDER BY Username, Names, LastName, UserId
-        END
-        ELSE BEGIN
-                SELECT UserId, Username, Names, LastName, OptionalExtraName
-                FROM @Admins
-                ORDER BY Username, Names, LastName, UserId
-        END
-        Return(0)
-END
-
-IF @option = 5 --Usuarios inactivos por mas de 60 dias por area
-BEGIN
-        SELECT [User_id] as UserId,
-        LOGIN as Username
-        FROM CCUSERS WHERE DATEDIFF(dd, LastLoginAttempt, getdate()) >= 60
-        AND @AreaId = IDArea
-        RETURN 0;
-END
-'
-EXEC(@sql)
------------------------------------------------------------ End Luis Miguel Zamora Nuñez -------------------------------------------------------------------------
-        SET @process = 'landus Alter SP InsertLogAdminGalatea @action=2  Correcion log Campañas '
+        SET @process = 'feature/KR179003 Alter SP InsertLogAdminGalatea'
         SET @sql = 'ALTER procedure [dbo].[InsertLogAdminGalatea]
 @action int 
 ,@tableName VARCHAR(255)
@@ -13630,7 +13334,9 @@ else if @action=2 begin
         DECLARE @conditions NVARCHAR(MAX) = '''';
         DECLARE @caseStatements NVARCHAR(MAX) = '''';
         DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
-        DECLARE @counter INT = 0;       
+        DECLARE @counter INT = 0;
+        declare @emtpy varchar(2)=''''
+        
 
         -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
         DECLARE @BatchColumns TABLE (
@@ -13695,14 +13401,13 @@ else if @action=2 begin
                 BEGIN
                         SET @sql = ''
                         INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
-                        '' + @caseStatements + '';
+                        '' + @caseStatements + ''                       
                         '';
 
                         --print @sql
                         -- Ejecutar la consulta dinámica
                         EXEC sp_executesql @sql;
-                END
-                
+                END     
 
                 -- Avanzar al siguiente bloque
                 SET @batch_id = @batch_id + 1;
@@ -13711,17 +13416,19 @@ else if @action=2 begin
 
         -- Consultar el resultado final de cambios
         set @sql=
-        ''SELECT A.columnInfo,A.dataInfo,isnull(B.Identifiers,'''''''') as identifierInfo 
+        ''SELECT distinct A.columnInfo,A.dataInfo,isnull(B.Identifiers,@emtpy) as identifierInfo 
         FROM ''+@tableTemp+'' A 
-        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName''
-        
+        left join relationTableColumnIdentifiers B on A.columnInfo=B.colunName and B.tableName=@tableName
+        ''
         
         if @tableTemp is not null and @tableTemp<>'''' begin
                 set @sql= ''insert into ''+@tableTemp +'' ''+ @sql
         end
-
-        --print @sql
-        EXEC sp_executesql @sql;
+        print @tableName
+        print @sql
+        EXEC sp_executesql @sql
+        ,N''@tableName varchar(255), @emtpy varchar(2)'',
+    @tableName = @tableName,@emtpy=@emtpy
 
 end
 else if @action =3 begin
@@ -13731,17 +13438,7 @@ else if @action =3 begin
 end'
         EXEC(@sql);
 
-        SET @process = 'landus Correcion log Campañas '
-        SET @sql = ''
-        EXEC(@sql);
-
-        SET @process = 'landus Correcion log Campañas '
-        SET @sql = ''
-        EXEC(@sql);
-
-        SET @process = 'landus Correcion log Campañas '
-        SET @sql = ''
-        EXEC(@sql);
+--------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

@@ -13018,6 +13018,154 @@ else if @action = 15 begin --Saber si hacer busqueda en basex
 end'
         EXEC(@sql);
 
+
+    DECLARE @ladatemp VARCHAR(5), @ldlocal VARCHAR(10), @serie VARCHAR(10), @numeracion SMALLINT, @length TINYINT
+    DECLARE @mod VARCHAR(10), @country TINYINT, @lengthStr VARCHAR(10)
+    DECLARE @tipoLlamada_id SMALLINT = 0, @tipo TINYINT = 0, @cantidadLL TINYINT
+
+    -- Recuperar cÃ³digo de paÃ­s y cÃ³digo de Ã¡rea local de las configuraciones
+    SELECT @country = valor FROM ccsettings WITH (NOLOCK) WHERE setting_id = 104
+    SELECT @ldlocal = valor FROM ccSettings WITH (NOLOCK) WHERE setting_id = 17
+
+        set @length = LEN(@tel)
+    SET @lengthStr = CONVERT(VARCHAR(10), @length)
+
+    -- Tabla para almacenar los tipos de llamadas
+    DECLARE @t_tipos TABLE (
+        tipollamada_id INT NOT NULL,
+        prefijo NVARCHAR(100) NOT NULL,
+        rowid INT NOT NULL
+    )
+
+    -- Si el paÃ­s es igual a 1
+    IF @country = 1
+    BEGIN
+        -- Insertar prefijos especÃ­ficos para el paÃ­s 1 (local)
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = 1
+        AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)  -- Excluir ciertos tipos de llamadas
+        AND CHARINDEX(@lengthStr, longitud) > 0  -- Usamos CHARINDEX para encontrar la longitud
+    END
+    ELSE
+    BEGIN
+        -- Insertar prefijos para paÃ­ses que no son el paÃ­s 1
+        INSERT INTO @t_tipos
+        SELECT tipoLlamada_id, prefijo, ROW_NUMBER() OVER (ORDER BY LEN(prefijo) DESC) AS rowid
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        WHERE country_id = @country
+        AND CHARINDEX(@lengthStr, longitud) > 0  -- Usamos CHARINDEX en lugar de LIKE
+    END
+
+    -- Verificar si existen registros coincidentes
+    SELECT @cantidadLL = COUNT(*) FROM @t_tipos
+
+    IF @cantidadLL > 0
+    BEGIN
+        -- Buscar la mejor coincidencia (para ambos casos de paÃ­s)
+        SELECT TOP 1 @tipo = tipollamada_id
+        FROM @t_tipos t
+        CROSS APPLY dbo.fn_RIASplitDelimited(t.prefijo, ''|'') AS splitPrefijo
+        WHERE @tel LIKE splitPrefijo.value + ''%''
+        ORDER BY LEN(splitPrefijo.value) DESC
+    END
+    ELSE
+    BEGIN
+        -- BÃºsqueda por defecto en cstoTipoLlamada si no hay coincidencias
+        SELECT TOP 1 @tipoLlamada_id = tipoLlamada_id
+        FROM cstoTipoLlamada WITH (INDEX(IX_cstoTipoLlamada), NOLOCK)
+        CROSS APPLY dbo.fn_RIASplitDelimited(cstoTipoLlamada.prefijo, ''|'') AS split
+        WHERE country_id = @country
+        AND longitud = ''0''
+        AND @tel LIKE split.value + ''%''
+        AND (country_id <> 1 OR (country_id = 1 AND tipoLlamada_id NOT IN (8, 9, 10, 11, 12)))
+        ORDER BY LEN(split.value) DESC
+
+        IF @tipoLlamada_id > 0
+        BEGIN
+            SET @tipo = @tipoLlamada_id
+        END
+        ELSE IF @country != 1
+        BEGIN
+            -- Si no es el paÃ­s 1 y no hay coincidencias, regresar @tipo
+            RETURN @tipo
+        END
+        ELSE
+        BEGIN
+            -- LÃ³gica adicional cuando es el paÃ­s 1
+            IF @length = 10 - LEN(@ldlocal)
+            BEGIN
+                -- Ajustar el nÃºmero de telÃ©fono segÃºn la longitud
+                SELECT @tel = CONVERT(VARCHAR(3), @ldlocal) + @tel
+            END
+
+            -- Reestructurar el nÃºmero para verificar prefijos
+            SELECT @tel = RIGHT(@tel, 10)
+            SELECT @ladatemp = LEFT(@tel, 2)
+
+            -- Verificar prefijos de dos dÃ­gitos
+            IF @ladatemp IN (''55'', ''56'', ''33'', ''81'')
+            BEGIN
+                SELECT @serie = SUBSTRING(@tel, 3, 4), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+            ELSE
+            BEGIN
+                -- Verificar prefijos de tres dÃ­gitos                
+                SELECT @ladatemp = LEFT(@tel, 3), 
+                                           @serie = SUBSTRING(@tel, 4, 3), 
+                       @numeracion = RIGHT(@tel, 4)                
+            END
+
+            -- Buscar modalidad en la tabla `Series`
+            SELECT TOP 1 @mod = MODALIDAD 
+            FROM Series WITH (NOLOCK) 
+            WHERE CLD = @ladatemp 
+            AND SERIE = @serie 
+            AND @numeracion BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+            -- Verificar si el nÃºmero es local
+            DECLARE @isLocal BIT = 0
+
+            IF EXISTS (SELECT 1 FROM ccRiaArecode WITH (NOLOCK) WHERE area = @ladatemp)
+               OR @ldlocal = @ladatemp
+            BEGIN
+                SET @isLocal = 1;
+            END
+
+            -- Determinar el tipo de llamada segÃºn la modalidad y si es local
+            IF @mod IN (''FIJO'', ''MPP'')
+            BEGIN
+                -- Llamada fija o mÃ³vil postpago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 1  -- Llamada local
+                            ELSE 2                     -- Llamada de larga distancia
+                        END;
+            END
+            ELSE IF @mod = ''CPP''
+            BEGIN
+                -- Llamada celular prepago
+                SET @tipo = CASE 
+                            WHEN @isLocal = 1 THEN 3  -- Llamada celular local
+                            ELSE 4                    -- Llamada celular de larga distancia
+                        END;
+            END
+        END
+    END
+
+    RETURN @tipo
+END
+'
+         EXEC (@Sql)
+
+        -- SET @process = 'feature/KR179003 Alter SP ccsp_AvrsSyncronization'
+        -- SET @sql = ''
+        -- EXEC(@sql);
+
+--------------------------- End Jesus 125.20231211.0.18 ----------------------------------------------------------------------------------
+        
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

@@ -1539,7 +1539,7 @@ EXEC (@sql);
 
 
 SET @process = 'KR123017 - Auxiliar - Reporte Información General (Especial)'
-SET @sql = 'CREATE OR ALTER PROCEDURE [dbo].[ccspRepAgentGI] 
+SET @sql = 'ALTER PROCEDURE [dbo].[ccspRepAgentGI] 
 @action AS TINYINT ,@from AS DATETIME ,@to AS DATETIME
 AS
 SET ANSI_WARNINGS OFF;

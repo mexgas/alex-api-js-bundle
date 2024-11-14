@@ -2513,75 +2513,112 @@ BEGIN -- exec ccsp_GetAgentAndCampaignRelationship @option=5,@ConversationId=279
     FROM dbo.fn_GetConversationAttachments(@CamType, @ConversationId, @messageIdList);
 END; 
 
-IF @Option = 8-- Obtiene valor si se reabrirá o no la conversación y si será se reabrirá tipo entrada o salida
-BEGIN -- exec ccsp_WhatsAppConversationHistory @option=7, @AgentId=2, @CamType=0, @ConversationId=1366, @CamId=109, @ActualTime=''2024-11-01T18:00:00'', @CamNumber=''15556232075'', @ClientNumber=''525548692056''
-	DECLARE @ConversationWithinInboundWindowTime BIT = 0;
-	DECLARE @ReopenConversationResponse VARCHAR(50);
-	DECLARE @MaxWhatsAllowed INT;
-	DECLARE @AgentName varchar(50);
-	DECLARE @ConvId int
-
+IF @Option = 8 -- Obtiene valor si se reabrirá o no la conversación y si será se reabrirá tipo entrada o salida
+BEGIN -- exec ccsp_WhatsAppConversationHistory @option=8, @AgentId=96, @CamType=0, @ConversationId=164, @CamId=4, @ActualTime=''2024-11-13T17:40:28'', @CamNumber=''15556232075'', @ClientNumber=''525546737337''
     IF NOT EXISTS (SELECT 1 FROM ccRIAAgentsPermissions WHERE AgentId = @AgentId AND AllowReopenWAConversation = 1)
     BEGIN
-        SELECT ''REOPEN_PERMISSION_DISABLED'' AS ReopenConversationResponse,
-									  ''N/A'' AS AgentName;
+        SELECT ''REOPEN_PERMISSION_DISABLED'' AS ReopenConversationResponse;
         RETURN(0);
     END;
 
-	IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 48, FirstMessageDateFromAgent))
+    IF @CamType = 0
+    BEGIN
+        IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent)) 
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM ccmetawhatsAppNumbers WHERE Number = @CamNumber AND Inbound_Id = @CamId)
+            BEGIN
+                SELECT ''CAMPAIGN_NUMBER_CHANGED'' AS ReopenConversationResponse;
+                RETURN(0);
+            END
+
+            SELECT @MaxWhatsAllowed = a.maxWhats FROM ccinbound i INNER JOIN ccriacat_Areas a ON i.IDArea = a.IDArea WHERE i.Inbound_Id = @CamId;
+			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversations WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+
+			IF @ConversationCount >= @MaxWhatsAllowed
+			BEGIN
+				SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+				RETURN(0);
+			END
+        END
+
+    END
+	ELSE 
+    BEGIN
+        SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+        RETURN(0);
+    END
+
+    IF @CamType = 1
+    BEGIN
+		IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent)) 
+        BEGIN
+			IF NOT EXISTS (SELECT 1 FROM ccmetawhatsAppNumbers WHERE Number = @CamNumber AND Inbound_Id = @CamId)
+			BEGIN
+				SELECT ''CAMPAIGN_NUMBER_CHANGED'' AS ReopenConversationResponse;
+				RETURN(0);
+			END
+
+			SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
+			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+
+			IF @ConversationCount >= @MaxWhatsAllowed
+			BEGIN
+				SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+				RETURN(0);
+			END
+		END
+    END
+	ELSE
 	BEGIN
-		SET @ReopenConversationResponse = ''REOPEN_CONVERSATION'';
+		SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+		RETURN(0);
+	END
+END
+
+IF @Option = 9 -- Verificación al reabrir conversación
+BEGIN -- exec ccsp_WhatsAppConversationHistory @option=9, @AgentId=112, @CamType=0, @ConversationId=1, @CamId=3, @ActualTime=''2024-11-04T18:00:00'', @CamNumber=''15550583725'', @ClientNumber=''525548692056''
+    DECLARE @ConversationWithinWindowTime BIT = 0;
+    DECLARE @ReopenConversationButtonResponse VARCHAR(50);
+    DECLARE @AgentName varchar(50);
+    DECLARE @ConvId int;
+
+	IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
+	BEGIN  
+		SET @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION'';
 	END
 	ELSE 
 	BEGIN 
-		SET @ReopenConversationResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE'';
+		SET @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE'';
 	END
 
     IF @CamType = 0
     BEGIN
-		SELECT @ConversationWithinInboundWindowTime = 1 FROM ccWhatsAppConversations WITH (NOLOCK) WHERE InboundId = @CamId AND ConversationId = @ConversationId AND @ActualTime <= DATEADD(HOUR, 24, requestDate);
-		IF @ConversationWithinInboundWindowTime = 1
-        BEGIN
-			IF EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND ConversationId = @ConversationId AND @ActualTime <= DATEADD(HOUR, 24, requestDate))
-			BEGIN
-				IF NOT EXISTS (SELECT 1 FROM ccmetawhatsAppNumbers WHERE Number = @CamNumber AND Inbound_Id = @CamId)
-				BEGIN
-					SELECT''CAMPAIGN_NUMBER_CHANGED'' AS ReopenConversationResponse,
-											  ''N/A'' AS AgentName;
-					RETURN(0);
-				END
-				ELSE IF EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
-				BEGIN
-					SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
-					SELECT @AgentName = u.Nombres FROM ccWhatsAppConversations c
-												  INNER JOIN ccusers u ON c.agentId = u.User_id 
-												  WHERE c.ConversationId = @ConvId;
-					SELECT ''ONGOING_CONVERSATION'' AS ReopenConversationResponse,
-									   @AgentName AS AgentName;
-					RETURN(0);
-				END
-				SELECT @MaxWhatsAllowed = a.maxWhats FROM ccinbound i
-											  		 INNER JOIN ccriacat_Areas a ON i.IDArea = a.IDArea
-											  		 WHERE i.Inbound_Id = @CamId;
-            
-				IF (SELECT COUNT(1) FROM ccwhatsappconversations WHERE agentID = @AgentId AND conversationStatus = 2) >= @MaxWhatsAllowed
-				BEGIN
-					SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse,
-													  ''N/A'' AS AgentName;;
-					RETURN(0);
-				END
-				ELSE
-				BEGIN
-					SELECT @ReopenConversationResponse AS ReopenConversationResponse,
-												 ''N/A'' AS AgentName;
-					RETURN(0);
-				END
-			END
-		END
-		ELSE 
+		IF EXISTS (SELECT 1 FROM ccWhatsAppConversations WHERE InboundId = @CamId AND phoneACD = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
 		BEGIN
-			SET @CamType = 1;
+			SELECT TOP 1 @ConvId = ConversationId FROM ccWhatsAppConversations WHERE InboundId = @CamId  AND phoneACD = @CamNumber  AND clientId = @ClientNumber  AND conversationStatus = 2  AND (agentId = @agentId OR agentId <> @agentId);
+			SELECT @AgentName = u.Nombres FROM ccWhatsAppConversations c
+											INNER JOIN ccusers u ON c.agentId = u.User_id 
+											WHERE c.ConversationId = @ConvId;
+			SELECT ''ONGOING_CONVERSATION'' AS ReopenConversationButtonResponse,
+								@AgentName AS AgentName;
+			RETURN(0);
 		END
+
+        SELECT @MaxWhatsAllowed = a.maxWhats FROM ccinbound i INNER JOIN ccriacat_Areas a ON i.IDArea = a.IDArea WHERE i.Inbound_Id = @CamId;
+		SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversations WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+
+		IF @ConversationCount >= @MaxWhatsAllowed
+		BEGIN
+			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+			RETURN(0);
+		END
+		ELSE
+		BEGIN
+			SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
+										       ''N/A'' AS AgentName;
+			RETURN(0);
+	END
+
     END
     IF @CamType = 1
     BEGIN
@@ -2591,33 +2628,38 @@ BEGIN -- exec ccsp_WhatsAppConversationHistory @option=7, @AgentId=2, @CamType=0
 			SELECT @AgentName = u.Nombres FROM ccWhatsAppConversationsOut c
 										  INNER JOIN ccusers u ON c.agentId = u.User_id 
 									      WHERE c.ConversationId = @ConvId;
-            SELECT ''ONGOING_CONVERSATION'' AS ReopenConversationResponse,
+            SELECT ''ONGOING_CONVERSATION'' AS ReopenConversationButtonResponse,
 							   @AgentName AS AgentName;
 			RETURN(0);
         END
-		SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c
-										  	 INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea
-										  	 WHERE c.cam_id = @CamId;
-        
-        IF (SELECT COUNT(1) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2) >= @MaxWhatsAllowed
-        BEGIN
-            SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse,
-											  ''N/A'' AS AgentName;;
-            RETURN(0);
-        END
+
+		SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
+		SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+
+		IF @ConversationCount >= @MaxWhatsAllowed
+		BEGIN
+			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+			RETURN(0);
+		END
         ELSE
         BEGIN
-            SELECT @ReopenConversationResponse AS ReopenConversationResponse,
+            SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
 									     ''N/A'' AS AgentName;
             RETURN(0);
         END
     END
-END;
-
-IF @Option = 10 -- Obtener id de conversación creada de entrada al reabrir conversación dentro de hitorial de agente
-BEGIN
-	EXEC ccsp_ConversationWASave @action=1, @phoneacd=@CamNumber, @clientid= @ClientNumber, @inboundid=@CamId, @agentId = @agentId
 END 
+
+IF @Option = 10 -- Creación de conversationId de entrada 
+BEGIN
+	EXEC ccsp_ConversationWASave @action=1, @phoneacd=@CamNumber, @clientid= @ClientNumber, @inboundid=@CamId, @agentId = @agentId, @conversationstatus=22
+END 
+
+IF @Option = 11 -- Creación de conversationId de salida
+BEGIN
+	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @conversationstatus=22
+END 
+
 '
 
 EXEC(@sql)

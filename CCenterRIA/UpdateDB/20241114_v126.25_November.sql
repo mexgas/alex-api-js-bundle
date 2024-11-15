@@ -112,6 +112,7 @@ END
 , @listConversationsIds   VARCHAR(MAX) = NULL
 , @IsAgentLoggingOut  BIT = 0
 , @IsTransfered		  BIT = 0
+, @IsReopenedConversation BIT =0
 AS
 BEGIN
 	DECLARE @isEndConversation BIT;
@@ -146,6 +147,10 @@ BEGIN
 			IF NOT EXISTS (SELECT WhatsAppSpamId FROM ccWhatsAppSpam WHERE NumberClient = @clientId and InboundId = @inboundId) 
 				BEGIN
 					SELECT @conversationId = SCOPE_IDENTITY();
+					IF @IsReopenedConversation = 1
+					BEGIN 
+						UPDATE ccwhatsappconversations set assignDate = GETDATE() where conversationid = @conversationId
+					END 
 					SELECT @conversationId AS ConversationId;
 				END
 
@@ -1964,18 +1969,16 @@ BEGIN
 
     IF OBJECT_ID(''tempdb..#TmpCampAgentWg'') IS NOT NULL DROP TABLE #TmpCampAgentWg;
 END
-
-
 DECLARE @PageSize INT = 10;
 DECLARE @TotalConversations INT = 0;
 DECLARE @Offset INT;
 
 IF @Option = 3 -- Obtiene paginado de conversaciones de acuerdo a filtros seleccionados para agente 
-BEGIN
+BEGIN 
     DECLARE @ClientNumberTable TABLE (ClientNumber BIGINT);
     DECLARE @InboundIdTable TABLE (InboundId INT);
     DECLARE @OutboundIdTable TABLE (OutboundId INT);
-
+    
     IF @ClientNumbersLst IS NOT NULL AND @ClientNumbersLst <> ''''
     BEGIN
         INSERT INTO @ClientNumberTable (ClientNumber)
@@ -2000,40 +2003,58 @@ BEGIN
     SELECT 
         @TotalConversations = COUNT(DISTINCT ConversationId)
     FROM (
-        SELECT ConversationId 
-        FROM ccWhatsAppConversations 
-        WHERE AgentId = @agentId 
-		AND conversationDate IS NOT NULL
-        AND requestDate BETWEEN @From AND @To
-        AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
-        AND (@InboundIdsLst IS NULL OR @InboundIdsLst = '''' OR InboundId IN (SELECT InboundId FROM @InboundIdTable))  
-		AND conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
+        SELECT c.ConversationId 
+        FROM ccWhatsAppConversations c
+		LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+        WHERE c.AgentId = @agentId 
+            AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
+            AND c.requestDate BETWEEN @From AND @To
+			AND m.content IS NOT NULL
+            AND (@ClientNumbersLst IS NULL OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            AND (@InboundIdsLst IS NULL OR c.InboundId IN (SELECT InboundId FROM @InboundIdTable))  
+            AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
 
         UNION ALL
 
-        SELECT ConversationId 
-        FROM ccWhatsAppConversationsOut
-        WHERE AgentId = @agentId 
-		AND conversationDate IS NOT NULL   
-        AND requestDate BETWEEN @From AND @To
-        AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
-        AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''' OR camId IN (SELECT OutboundId FROM @OutboundIdTable))
-		AND conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
+        SELECT c.ConversationId 
+        FROM ccWhatsAppConversationsOut c
+		LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+        WHERE c.AgentId = @agentId 
+            AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
+            AND c.requestDate BETWEEN @From AND @To
+			AND m.content IS NOT NULL
+            AND (@ClientNumbersLst IS NULL OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            AND (@OutboundIdsLst IS NULL OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
+            AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
     ) AS AllConversations;
 
-    SET @Offset = ISNULL(@ConversationIndex, 1) - 1; 
+    SET @Offset = (@ConversationIndex - 1); 
 
-    IF @ConversationIndex >= @TotalConversations
+    DECLARE @RemainingConversations INT = @TotalConversations - @Offset;
+    IF @RemainingConversations < @PageSize
+        SET @PageSize = @RemainingConversations;
+
+    IF @Offset >= @TotalConversations
     BEGIN
-        SET @Offset = @TotalConversations - @PageSize; 
-        IF @Offset < 0 SET @Offset = 0; 
+        SELECT TOP 0
+            CAST(0 AS INT) AS ConversationId,
+            CAST(0 AS INT) AS CamId,
+            '''' AS CamNumber,
+            CAST(0 AS SMALLINT) AS Frame,
+            '''' AS ClientNumber,
+            '''' AS MessageContent,
+            '''' AS CamType,
+            CAST(GETDATE() AS DATETIME) AS LastMessageDateTime,
+            @TotalConversations AS ConversationsCount
+        WHERE 1 = 0;
+        RETURN;
     END
 
     ;WITH LatestInboundMessages AS (
         SELECT 
             c.ConversationId,
             c.InboundId AS CampaignId,
-			c.phoneACD as CamNumber,
+            c.phoneACD as CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
@@ -2044,18 +2065,19 @@ BEGIN
         LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
         LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
         WHERE c.AgentId = @agentId 
-			AND c.conversationDate IS NOT NULL
+            AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
-            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
-            AND (@InboundIdsLst IS NULL OR @InboundIdsLst = '''' OR c.InboundId IN (SELECT InboundId FROM @InboundIdTable))
-			AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
+			AND m.content IS NOT NULL
+            AND (@ClientNumbersLst IS NULL OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            AND (@InboundIdsLst IS NULL OR c.InboundId IN (SELECT InboundId FROM @InboundIdTable))
+            AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
     ),
     
     LatestOutboundMessages AS (
         SELECT 
             c.ConversationId,
             c.camId AS CampaignId,
-			c.phoneCamp AS CamNumber,
+            c.phoneCamp AS CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
@@ -2066,18 +2088,19 @@ BEGIN
         LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
         LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
         WHERE c.AgentId = @agentId 
-			AND c.conversationDate IS NOT NULL
+            AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
-            AND (@ClientNumbersLst IS NULL OR @ClientNumbersLst = '''' OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
-            AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''' OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
-			AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
+			AND m.content IS NOT NULL
+            AND (@ClientNumbersLst IS NULL OR c.clientId IN (SELECT ClientNumber FROM @ClientNumberTable))
+            AND (@OutboundIdsLst IS NULL OR c.camId IN (SELECT OutboundId FROM @OutboundIdTable))
+            AND c.conversationStatus IN (4, 7, 10, 11, 12, 13, 14, 16, 17, 18, 19)
     ),
 
     CombinedMessages AS (
         SELECT 
             ConversationId,
             CampaignId,
-			CamNumber,
+            CamNumber,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2091,7 +2114,7 @@ BEGIN
         SELECT 
             ConversationId,
             CampaignId,
-			CamNumber,
+            CamNumber,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2103,17 +2126,16 @@ BEGIN
 
     SELECT conversationId as ConversationId,
            CampaignId as CamId,
-		   CamNumber as CamNumber,
+           CamNumber as CamNumber,
            CAST(GraphicId AS SMALLINT) AS Frame,
            ClientNumber as ClientNumber,
            MessageContent as MessageContent,
            CampType AS CamType,
            LastMessageTimestamp as LastMessageDateTime,
            @TotalConversations AS ConversationsCount
-		   FROM CombinedMessages
-		   where MessageContent is not null  
-		   ORDER BY LastMessageTimestamp DESC
-		   OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY; 
+    FROM CombinedMessages
+    ORDER BY LastMessageTimestamp DESC
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
 
 IF @Option = 4 -- Obtiene paginado de conversaciones de acuerdo a filtros seleccionados para administrador
@@ -2419,7 +2441,6 @@ BEGIN
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
 	
-
 IF @Option = 5 -- Obtiene número máximo de días a buscar por historial cuando se filtra por campañas 
 BEGIN 											
     IF OBJECT_ID(''tempdb..#TmpInboundIdsCampFilter'') IS NOT NULL DROP TABLE #TmpInboundIdsCampFilter;
@@ -2462,82 +2483,65 @@ BEGIN
      SELECT CAST(@FinalMaxValue AS SMALLINT) AS MaxConversationHistory;
 END;
 
-IF @Option = 6 -- obtiene cabecera de varias conversaciones
-BEGIN  --  exec [ccsp_WhatsAppConversationHistory] @option=6, @ConversationIds=''59'', @camtype=0
-	CREATE TABLE #TmpConversationIds (Id INT);
-	INSERT INTO #TmpConversationIds (Id)
-	SELECT CAST(value AS INT) 
-	FROM fn_RIASplitDelimited(@ConversationIds, '','');
-
-	IF @CamType = 0
-	BEGIN 
-		SELECT 
-			cwc.conversationId AS ConversationId, 
-			(CASE WHEN cwc.disposition = 0 THEN ''N/A'' ELSE ctc.Description END) AS Disposition,
-			(CASE WHEN cwc.SubDisposition = 0 THEN ''N/A'' ELSE ctcs.califSubDesc END) AS SubDisposition, 
-			cwc.inboundId AS CamId, 
-			ISNULL(cwc.conversationDate, ''1900-01-01'') AS ConversationDate, 
-			cwc.tConversation AS TConversation,
-			0 AS CampType,
-			ci.descripcion AS CampName,
-			cwc.clientId AS PhoneNumber,
-			cu.User_id AS AgentId,
-			cu.Nombres AS AgentName
-		FROM ccWhatsAppConversations cwc
-		INNER JOIN ccInbound ci ON ci.inbound_id = cwc.inboundId
-		INNER JOIN ccUsers cu ON cu.User_id = cwc.agentId
-		INNER JOIN #TmpConversationIds tci ON tci.Id = cwc.conversationId
-		LEFT JOIN ccTipoCalif ctc ON ctc.calif_id = cwc.disposition
-		LEFT JOIN ccTipoCalifSub ctcs ON ctcs.califSub_id = cwc.subDisposition
-	END
-	ELSE
-	BEGIN
-		SELECT 
-			cwo.conversationId AS ConversationId, 
-			(CASE WHEN cwo.disposition = 0 THEN ''N/A'' ELSE ctco.Description END) AS Disposition, 
-			(CASE WHEN cwo.SubDisposition = 0 THEN ''N/A'' ELSE ctcso.califSubDesc END) AS SubDisposition,
-			cwo.camId AS CamId, 
-			ISNULL(cwo.conversationDate, ''1900-01-01'') AS ConversationDate, 
-			cwo.tConversation AS TConversation,
-			1 AS CampType,
-			cc.cam_descripcion AS CampName,
-			cwo.clientId AS PhoneNumber,
-			cu.User_id AS AgentId,
-			cu.Nombres AS AgentName
-		FROM ccWhatsAppConversationsOut cwo
-		INNER JOIN ccCamps cc ON cc.cam_id = cwo.camId 
-		INNER JOIN ccUsers cu ON cu.User_id = cwo.agentId
-		INNER JOIN #TmpConversationIds tci ON tci.Id = cwo.conversationId
-		LEFT JOIN ccTipoCalifOUT ctco ON ctco.calif_id = cwo.disposition
-		LEFT JOIN ccTipoCalifSubOUT ctcso ON ctcso.califSub_id = cwo.subDisposition
-	END
-END
-
-IF @Option = 7 -- Obtiene archivos adjuntos
-BEGIN -- exec ccsp_GetAgentAndCampaignRelationship @option=5,@ConversationId=279,@CamType=0
-    DECLARE @messageIdList NVARCHAR(MAX);
+IF @Option = 6 -- Obtener cabecera de varias conversaciones
+BEGIN 
+    CREATE TABLE #TmpConversationIds (Id INT);
+    INSERT INTO #TmpConversationIds (Id)
+    SELECT CAST(value AS INT) 
+    FROM fn_RIASplitDelimited(@ConversationIds, '','');
 
     IF @CamType = 0
-    BEGIN
-        SELECT @messageIdList = STRING_AGG(messageId, '','') 
-        FROM ccWAMessagesConversations
-        WHERE conversationId = @ConversationId
-        AND typeMessage IN (/*''text,''*/ ''image'', ''video'', ''audio'', ''file'');
+    BEGIN 
+        SELECT 
+            cwc.conversationId AS ConversationId, 
+            (CASE WHEN cwc.disposition = 0 THEN ''N/A'' ELSE ctc.Description END) AS Disposition,
+            (CASE WHEN cwc.SubDisposition = 0 THEN ''N/A'' ELSE ctcs.califSubDesc END) AS SubDisposition, 
+            cwc.inboundId AS CamId, 
+            ISNULL(cwc.conversationDate, ''1900-01-01'') AS ConversationDate, 
+            cwc.tConversation AS TConversation,
+            0 AS CampType,
+            ci.descripcion AS CampName,
+            cwc.clientId AS PhoneNumber,
+            cu.User_id AS AgentId,
+            cu.Nombres AS AgentName,
+            CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
+            ccc.cam_descripcion AS ReopenWithTemplateOutboundCamName
+        FROM ccWhatsAppConversations cwc
+        INNER JOIN ccInbound ci ON ci.inbound_id = cwc.inboundId
+        INNER JOIN ccUsers cu ON cu.User_id = cwc.agentId
+        INNER JOIN #TmpConversationIds tci ON tci.Id = cwc.conversationId
+        LEFT JOIN ccTipoCalif ctc ON ctc.calif_id = cwc.disposition
+        LEFT JOIN ccTipoCalifSub ctcs ON ctcs.califSub_id = cwc.subDisposition
+        LEFT JOIN ccMetaWhatsAppNumbers mwn ON mwn.Inbound_Id = cwc.inboundId
+        LEFT JOIN cccamps ccc ON ccc.cam_Id = mwn.Cam_Id
     END
     ELSE
     BEGIN
-        SELECT @messageIdList = STRING_AGG(messageId, '','') 
-        FROM ccWAMessagesConversationsOut
-        WHERE conversationId = @ConversationId
-        AND typeMessage IN (/*''text,''*/ ''image'', ''video'', ''audio'', ''file'');
+        SELECT 
+            cwo.conversationId AS ConversationId, 
+            (CASE WHEN cwo.disposition = 0 THEN ''N/A'' ELSE ctco.Description END) AS Disposition, 
+            (CASE WHEN cwo.SubDisposition = 0 THEN ''N/A'' ELSE ctcso.califSubDesc END) AS SubDisposition,
+            cwo.camId AS CamId, 
+            ISNULL(cwo.conversationDate, ''1900-01-01'') AS ConversationDate, 
+            cwo.tConversation AS TConversation,
+            1 AS CampType,
+            cc.cam_descripcion AS CampName,
+            cwo.clientId AS PhoneNumber,
+            cu.User_id AS AgentId,
+            cu.Nombres AS AgentName
+        FROM ccWhatsAppConversationsOut cwo
+        INNER JOIN ccCamps cc ON cc.cam_id = cwo.camId 
+        INNER JOIN ccUsers cu ON cu.User_id = cwo.agentId
+        INNER JOIN #TmpConversationIds tci ON tci.Id = cwo.conversationId
+        LEFT JOIN ccTipoCalifOUT ctco ON ctco.calif_id = cwo.disposition
+        LEFT JOIN ccTipoCalifSubOUT ctcso ON ctcso.califSub_id = cwo.subDisposition
     END
-
-    SELECT * 
-    FROM dbo.fn_GetConversationAttachments(@CamType, @ConversationId, @messageIdList);
-END; 
+END
+    DECLARE @MaxWhatsAllowed INT;
+    DECLARE @ConversationCount INT;
 
 IF @Option = 8 -- Obtiene valor si se reabrirá o no la conversación y si será se reabrirá tipo entrada o salida
-BEGIN -- exec ccsp_WhatsAppConversationHistory @option=8, @AgentId=96, @CamType=0, @ConversationId=164, @CamId=4, @ActualTime=''2024-11-13T17:40:28'', @CamNumber=''15556232075'', @ClientNumber=''525546737337''
+BEGIN
     IF NOT EXISTS (SELECT 1 FROM ccRIAAgentsPermissions WHERE AgentId = @AgentId AND AllowReopenWAConversation = 1)
     BEGIN
         SELECT ''REOPEN_PERMISSION_DISABLED'' AS ReopenConversationResponse;
@@ -2598,12 +2602,14 @@ BEGIN -- exec ccsp_WhatsAppConversationHistory @option=8, @AgentId=96, @CamType=
 	END
 END
 
+	DECLARE @ConvId int;
+
 IF @Option = 9 -- Verificación al reabrir conversación
-BEGIN -- exec ccsp_WhatsAppConversationHistory @option=9, @AgentId=112, @CamType=0, @ConversationId=1, @CamId=3, @ActualTime=''2024-11-04T18:00:00'', @CamNumber=''15550583725'', @ClientNumber=''525548692056''
+BEGIN 
     DECLARE @ConversationWithinWindowTime BIT = 0;
     DECLARE @ReopenConversationButtonResponse VARCHAR(50);
     DECLARE @AgentName varchar(50);
-    DECLARE @ConvId int;
+
 
 	IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
 	BEGIN  
@@ -2632,7 +2638,7 @@ BEGIN -- exec ccsp_WhatsAppConversationHistory @option=9, @AgentId=112, @CamType
 
 		IF @ConversationCount >= @MaxWhatsAllowed
 		BEGIN
-			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
 		ELSE
@@ -2661,7 +2667,7 @@ BEGIN -- exec ccsp_WhatsAppConversationHistory @option=9, @AgentId=112, @CamType
 
 		IF @ConversationCount >= @MaxWhatsAllowed
 		BEGIN
-			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
+			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
         ELSE
@@ -2674,16 +2680,15 @@ BEGIN -- exec ccsp_WhatsAppConversationHistory @option=9, @AgentId=112, @CamType
 END 
 
 IF @Option = 10 -- Creación de conversationId de entrada 
-BEGIN
-	EXEC ccsp_ConversationWASave @action=1, @phoneacd=@CamNumber, @clientid= @ClientNumber, @inboundid=@CamId, @agentId = @agentId, @conversationstatus=22
+BEGIN 
+	EXEC ccsp_ConversationWASave @action=1, @phoneacd=@CamNumber, @clientid= @ClientNumber, @inboundid=@CamId, @agentId = @agentId, @IsReopenedConversation = 1, @conversationstatus=2
+
 END 
 
 IF @Option = 11 -- Creación de conversationId de salida
 BEGIN
-	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @conversationstatus=22
-END 
-
-'
+	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @IsReopenedConversation = 1, @conversationstatus=2
+END'
 
 EXEC(@sql)
 -------------------------------------------  END ISAAC CORTES  -------------------------------------------------------------	
@@ -3426,7 +3431,83 @@ EXEC(@sql)
     '
 		EXEC(@sql)
 
-		------------------------------------------- BEGIN Ivan Martin K066004 y K066015----------------------------------------
+		------------------------------------------- BEGIN David Medina  K066003----------------------------------------
+		SET @process = 'K066003 delete sp ccsp_InboundMultimediaCommon'
+		SET @sql = '
+		IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_InboundMultimediaCommon'')
+		BEGIN
+			DROP PROCEDURE ccsp_InboundMultimediaCommon
+		END'
+		EXEC(@sql)
+
+		SET @process = 'K066003 Se crea SP ccsp_InboundMultimediaCommon para obtener conversación en Multimedia reabierta desde historial de agente'
+		SET @sql = '
+		CREATE PROCEDURE [dbo].[ccsp_InboundMultimediaCommon] 
+                    @Action INT,
+                    @ConversationId INT = NULL
+                    AS
+                    BEGIN
+                    SET NOCOUNT ON;
+
+                        IF @Action = 1 -- Get Inbound WhatsApp conversation by conversation id
+                        BEGIN 
+                            DECLARE @ServiceType VARCHAR(20) = ''whatsapp''
+                            SELECT conversationId AS ConversationID,
+                                   clientId AS ClientId,
+                                   phoneACD AS CampaignPhone,
+                                   agentId AS AgentId,
+                                   @ServiceType AS ServiceType,
+                                   requestDate AS InitialTime
+                            FROM ccWhatsAppConversations
+                            WHERE conversationId = @ConversationId 
+                        END
+                    END
+		'
+		EXEC(@sql)
+
+		SET @process = 'K066003 delete sp ccsp_InboundMultimediaCommon'
+		SET @sql = '
+		IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_InboundMultimediaCommon'')
+		BEGIN
+			DROP PROCEDURE ccsp_InboundMultimediaCommon
+		END'
+		EXEC(@sql)
+
+		SET @process = 'K066003 Se Modifica SP ccsp_WhatsAppOutboundTemplates para que rerese tambien variable StatusMeta'
+		SET @sql = '
+		ALTER PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
+							@Action SMALLINT, 
+							@TemplateName VARCHAR(500) = '''' ,
+							@isMeta int=0,
+							@ConversationId INT = 0
+							AS  
+							SET NOCOUNT ON;  
+							IF @Action = 0  -- Get all template information
+							BEGIN	
+								SELECT TemplateName, LanguageCode, Type, Format, Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
+							END
+							IF @Action = 1  -- Get template body 
+							BEGIN
+								if @isMeta =0 begin
+									SELECT Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
+								end
+								else begin
+									select header, Body,footer, Status as StatusMeta from ccMetaWAOutboundTemplates WHERE TemplateName = @TemplateName 
+								end
+							END
+					
+							IF @Action = 2  -- Get category from ccWhatsAppGlobalIds
+							BEGIN
+								SELECT UPPER(wagi.Category) AS Category
+								FROM ccWhatsAppGlobalIds wagi
+								INNER JOIN ccWhatsAppGlobalIdsRelationship wagir ON wagi.GlobalId = wagir.GlobalId
+								WHERE wagir.ConversationId = @ConversationId AND wagir.ConversationType = 1;
+							END
+
+							SET NOCOUNT OFF 
+		'
+		EXEC(@sql)
+		---------------------------------------------  END DAVID MEDINA------------------------------------------------
 
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

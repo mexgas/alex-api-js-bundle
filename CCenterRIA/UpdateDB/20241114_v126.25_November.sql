@@ -43,7 +43,22 @@ IF @version >= @actualVersion and @versionfix >= @actualVersionFix
 BEGIN
     BEGIN TRAN
     BEGIN TRY
-    	
+
+	------------------------------------------- BEGIN Ivan Martin K066004 y K066004----------------------------------------
+	SET @process = 'K066004 y K066015 Se inserta nuevo status para preasignación de conversaciones'
+	SET @sql = '
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM messageStatus 
+		WHERE name = ''Preassigned''
+	)
+	BEGIN
+		INSERT INTO messageStatus (name, description, isFinished)
+		VALUES (''Preassigned'', ''Preassigned conversation to agent'', 0);
+	END'
+	EXEC(@sql)
+    ------------------------------------------- END Ivan Martin K066004 y K066004----------------------------------------
+
 ------------------------------------------- BEGIN MACL K066012 y K066013----------------------------------------
         
 
@@ -64,7 +79,8 @@ END
 '
         EXEC(@sql);
 
-		SET @process = 'Alter SP ccsp_ConversationWASave action 6 to save @IsTransfered'
+		SET @process = 'Alter SP ccsp_ConversationWASave action 6 to save @IsTransfered
+						Change in action 5 to update the current conversations in queue'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASave] @action             INT
 , @conversationId     INT         = 0
 , @inboundId          SMALLINT    = NULL
@@ -289,15 +305,18 @@ IF EXISTS(SELECT A.conversationId conversationId FROM ccWhatsAppConversations A 
 	END
 END;
 
-	IF @action = 5
-	BEGIN --save onQueue
-		UPDATE ccWhatsAppConversations
-				SET onQueue = 1,
-				conversationStatus = @conversationStatus
-		WHERE conversationId = @conversationId;
-SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
-		UPDATE ccWAOperatingSummary SET OnQueue = (OnQueue + 1) WHERE InboundId = @inboundId
-	END;
+ELSE IF @action = 5
+BEGIN --save onQueue
+	UPDATE ccWhatsAppConversations
+			SET onQueue = 1,
+			conversationStatus = @conversationStatus
+	WHERE conversationId = @conversationId;
+	SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+
+	DECLARE @onQueueConversations INT = (SELECT COUNT(CASE WHEN onQueue = 1 AND finishedBy = 0 AND conversationStatus IN (8,9) THEN 1 END) 
+											FROM ccWhatsAppConversations WHERE InboundId = @inboundId)
+	UPDATE ccWAOperatingSummary SET OnQueue = @onQueueConversations WHERE InboundId = @inboundId
+END;
 
 ELSE IF @action = 6
 BEGIN --save agent, assigdate and tqueue
@@ -491,7 +510,8 @@ ELSE IF @action = 18 BEGIN
 END;'
         EXEC(@sql);
 
-		SET @process = 'Alter SP ccsp_ConversationWASaveOut action 6 to save @IsTransfered'
+		SET @process = 'Alter SP ccsp_ConversationWASaveOut action 6 to save @IsTransfered
+		                Change in action 5 to update the current conversations in queue'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationWASaveOut] @action             INT
 , @conversationId     INT         = 0
 , @camId          SMALLINT    = NULL
@@ -683,14 +703,17 @@ else IF @action = 4 BEGIN --save messages from conversation
 	END
 END;
 
-else IF @action = 5
+ELSE IF @action = 5
 BEGIN --save onQueue
 	UPDATE ccWhatsAppConversationsOut
 			SET onQueue = 1,
 			conversationStatus = @conversationStatus
 	WHERE conversationId = @conversationId;
-	SELECT @camId = camId FROM ccWhatsAppConversationsOut where conversationId=@conversationId;
-	UPDATE ccWAOperatingSummaryOut SET OnQueue = (OnQueue + 1) WHERE camId = @camId
+	DECLARE @campaignId INT = (SELECT camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId);
+	
+	DECLARE @onQueueConversations INT = (SELECT COUNT(CASE WHEN onQueue = 1 AND finishedBy = 0 AND conversationStatus IN (8,9) THEN 1 END) 
+											FROM ccWhatsAppConversationsOut WHERE camId = @campaignId)
+	UPDATE ccWAOperatingSummaryOut SET OnQueue = @onQueueConversations WHERE camId = @campaignId
 END;
 
 else IF @action = 6
@@ -2954,6 +2977,456 @@ BEGIN
 END
 '
 EXEC(@sql)
+
+		------------------------------------------- BEGIN Ivan Martin K066004 y K066004----------------------------------------
+
+		SET @process = 'K066004 y K066015 Added and conversationStatus in (8,9) in the select of the result'
+        SET @sql = '
+        ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformation]
+        @Option SMALLINT,
+        @InboundId SMALLINT = 0,
+        @ConversationId INT = 0,
+        @AgentsAvailables INT = 0,
+        @IncreaseDecreaseAgent BIT = NULL
+
+        AS
+        SET NOCOUNT ON
+
+        IF @Option = 0 BEGIN	-- Reset TABLES
+            TRUNCATE TABLE ccWAAverageConversations;
+            TRUNCATE TABLE ccLastMessageAgentByConversation;
+        END
+
+
+        IF @InboundId IS NULL or  
+        NOT EXISTS (SELECT * FROM ccInbound with(nolock) WHERE Inbound_id = @InboundId AND chat = 5) 
+        BEGIN
+        RETURN (-1)
+        END
+
+            DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
+            
+        IF @Option = 1 -- Generate Averages and Obtain all WhatsApp Campaign Information
+        BEGIN
+            IF EXISTS (SELECT * FROM ccWAAverageConversations with(nolock)
+                        WHERE InboundId = @InboundId
+                        AND (LastUpdate IS NULL
+                        OR ( StatusUpdate = 1 AND  DATEDIFF(ss, LastUpdate, GETDATE()) >= 5)
+                        OR  DATEDIFF(MI, LastUpdate, GETDATE()) >= 5))
+            BEGIN
+                -------------------------- ----------------------- Variable Declaration ---------------------------------------------------
+
+                DECLARE @AverageConversationTime INT = 0;
+                DECLARE @AverageDialogTime INT = 0;
+                DECLARE @AverageWaitingTime INT = 0;
+                DECLARE @MaximumWaitingTime INT = 0;
+                DECLARE @DefaultValue INT = (SELECT CASE 
+                        WHEN defaultServiceLevelParameter IS NULL THEN 2 
+                        WHEN defaultServiceLevelParameter = 0 THEN 2
+                        ELSE defaultServiceLevelParameter END
+                FROM contactMeanIn WHERE inboundId = @InboundId);
+                SET @DefaultValue = @DefaultValue * 60;
+                DECLARE @LessThanDefault INT = 0;
+                DECLARE @ReceivedConversations INT = 0;
+                DECLARE @ServiceLevel SMALLINT = 0;
+
+                --------- Modify Average Conversation, Dialog Time, Queue/Waiting Time, Maximum Waiting Time and Service Level ------------
+
+                SELECT @AverageConversationTime = ROUND(AVG(tConversation), 4),
+                        @AverageDialogTime = ROUND(AVG(tChatting), 4),
+                        @AverageWaitingTime = ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),
+                        @MaximumWaitingTime = MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),
+                        @ReceivedConversations = COUNT(conversationDate),
+                        @LessThanDefault = COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= @DefaultValue THEN 1 ELSE NULL END)
+                FROM ccWhatsAppConversations WHERE inboundId = @InboundId
+                AND requestDate >= @Today
+
+                SET @ServiceLevel = CASE WHEN @ReceivedConversations = 0 THEN 0 ELSE ROUND(((@LessThanDefault*1.0) / @ReceivedConversations) * 100, 2) END
+
+                ----------------------------------------------------- Update table --------------------------------------------------------
+
+                IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId)
+                BEGIN
+                    UPDATE ccWAAverageConversations
+                    SET AverageConversationTime = @AverageConversationTime,
+                        AverageDialogTime = @AverageDialogTime,
+                        AverageWaitingTime = @AverageWaitingTime,
+                        MaximumWaitingTime = @MaximumWaitingTime,
+                        ServiceLevel = @ServiceLevel,
+                        StatusUpdate = 0,
+                        LastUpdate = GETDATE()
+                    WHERE InboundId = @InboundId
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO ccWAAverageConversations (InboundId, AverageConversationTime, AverageDialogTime,
+                                                            AverageWaitingTime, MaximumWaitingTime, ServiceLevel, StatusUpdate, LastUpdate)
+                    VALUES(@InboundId, @AverageConversationTime, @AverageDialogTime, @AverageWaitingTime, @MaximumWaitingTime,
+                            @ServiceLevel, 0 , GETDATE())
+                END
+            END
+            --------------------------------- Results -----------------------------------
+
+            if exists (select * from ccWAOperatingSummary with(nolock) where Inboundid=@InboundId
+            and (OnQueue<0 or Assigned<0)
+            ) begin                                
+                set @Today =convert(date,getdate(),121)
+
+                ;with waOperationSummary as(
+                        select 
+                inboundId
+                --,count(case when finishedBy=1 then 1 end) Attend
+                ,count(case when onQueue=1 and finishedBy=0 and conversationStatus in (8,9) then 1 end) onQueue
+                ,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
+                --,count(*) Request
+                --,count(case when finishedBy=2 then 1 end) EndedBySystem
+                from ccWhatsAppConversations with(nolock)
+                where inboundId=@InboundId
+                and requestDate>=@Today
+                group by inboundId
+                )
+                update A 
+                set A.OnQueue=B.onQueue, A.Assigned=B.Assigned
+                from ccWAOperatingSummary A 
+                inner join waOperationSummary B on A.Inboundid=B.inboundId
+            end
+
+
+            SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
+                ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
+                ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
+                ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+                ISNULL(ServiceLevel, 0) AS ServiceLevel,
+                ISNULL(Attended, 0) AS Attended,
+                ISNULL(Assigned, 0) AS Assigned,
+                ISNULL(OnQueue, 0) AS OnQueue,
+                ISNULL(EndedBySystem, 0) AS EndedBySystem,
+                ISNULL(Available, 0) AS Available,
+                ISNULL(Request, 0) AS Request
+            FROM ccWAAverageConversations conv
+            RIGHT JOIN ccWAOperatingSummary summary ON conv.InboundId = summary.InboundId
+            WHERE conv.inboundId = @InboundId OR summary.InboundId = @InboundId
+        END
+        ELSE IF @Option = 2 -- Set Status Change in any column (Average Conversation Time, Average Dialog Time,
+            -- Average Queue/Waiting Time, and Service Level)
+            BEGIN
+                IF EXISTS (SELECT * FROM ccWAAverageConversations WHERE InboundId = @InboundId)
+                BEGIN
+                    UPDATE ccWAAverageConversations SET StatusUpdate = 1
+                    WHERE InboundId = @InboundId
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO ccWAAverageConversations (InboundId, StatusUpdate)
+                    VALUES(@InboundId, 1)
+                END
+            END
+        ELSE IF @Option = 3 -- Save time from accepted conversation by agent
+            BEGIN
+                IF @ConversationId IS NOT NULL
+                BEGIN
+                    UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+                    --Save Conversation Assigned
+                    SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+                END
+            END
+        ELSE IF @Option = 4 -- Get Disposition Information
+            BEGIN
+                declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+                select @nIdioma = case valor 
+                    when 0 then ''Sin calificación''
+                    when 2 then ''Sem classificação'' 
+                    else ''No disposition'' end
+                from ccsettings where setting_id = 27 -- 0esp
+                SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
+                                ISNULL(disposition.calif_id, 0) AS DispositionId,
+                                COUNT(whatsConv.disposition) AS Total,
+                                ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
+                                COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+                FROM ccWhatsAppConversations whatsConv with(nolock) 
+                LEFT JOIN cctipocalif disposition ON disposition.calif_id = whatsConv.disposition
+                WHERE inboundId = @InboundId AND assignDate >= @Today
+                        and whatsConv.conversationStatus != 2
+                GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
+            END
+        ELSE IF @Option = 5 -- Get Subdisposition Information
+            BEGIN
+                SELECT relation.calif_id AS DispositionId,
+                        subDispositions.califSubDesc AS SubDispositionsName,
+                        COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+                FROM cctipoSubCalifRel relation
+                INNER JOIN ccTipoCalifSub subDispositions ON subDispositions.califSub_id = relation.califSub_id
+                INNER JOIN ccWhatsAppConversations whatsConv with(nolock) ON whatsConv.subDisposition = subDispositions.califSub_id
+                WHERE whatsConv.inboundId = @InboundId AND
+                        whatsConv.assignDate >= @Today AND
+                        relation.tipoSubRel = 1
+                GROUP BY subDispositions.califSubDesc, relation.calif_id
+            END
+        ELSE IF @Option = 6 -- Agents Availables
+            BEGIN
+            IF NOT EXISTS (SELECT InboundId FROM ccWAOperatingSummary WHERE InboundId = @InboundId)
+                BEGIN
+                    INSERT INTO ccWAOperatingSummary (InboundId, Available) VALUES (@InboundId, @AgentsAvailables);
+                END
+            ELSE
+            BEGIN
+                UPDATE ccWAOperatingSummary SET Available = @AgentsAvailables WHERE InboundId = @InboundId
+            END
+        END
+        RETURN(0)
+        '
+		EXEC(@sql)
+		SET @process = 'K066004 y K066015 Same thing as before but for ccsp_WhatsAppInformation. Added and conversationStatus in (8,9)'
+        SET @sql = '
+		ALTER PROCEDURE [dbo].[ccsp_WhatsAppInformationOut]
+		@Option SMALLINT,
+		@camId SMALLINT = 0,
+		@ConversationId INT = 0,
+		@AgentsAvailables INT = 0,
+		@IncreaseDecreaseAgent BIT = NULL,
+		@AdminId int = 0
+
+		AS
+		SET NOCOUNT ON
+		IF @camId>0 and NOT EXISTS (SELECT * FROM ccCamps WHERE cam_Id = @camId AND CampType = 5) BEGIN
+			print (''Camp Is Not WhatsApp'')
+			return(-1);
+		End
+
+		
+			
+		DECLARE @Today SMALLDATETIME = CAST( GETDATE() AS DATE );
+		--set @Today SMALLDATETIME = ''2022-03-24''
+		IF @Option = 0 BEGIN-- Reset TABLES
+			TRUNCATE TABLE ccWAConversationsResult
+			TRUNCATE table ccWAOperatingSummaryOut;
+			TRUNCATE TABLE ccWAAverageConversationsOut;
+			TRUNCATE TABLE ccLastMessageAgentByConversationOut;
+		END    
+		else IF @Option = 1 -- Generate Averages and Obtain all WhatsApp Campaign Information
+		BEGIN
+			IF EXISTS (SELECT * FROM ccWAAverageConversationsOut
+						WHERE CamId = @camId
+						AND (LastUpdate IS NULL
+						OR ( StatusUpdate = 1 AND  DATEDIFF(ss, LastUpdate, GETDATE()) >= 5)
+						OR  DATEDIFF(MI, LastUpdate, GETDATE()) >= 5))
+			BEGIN
+				-------------------------- ----------------------- Variable Declaration ---------------------------------------------------
+
+				DECLARE @AverageConversationTime INT = 0;
+				DECLARE @AverageDialogTime INT = 0;
+				DECLARE @AverageWaitingTime INT = 0;
+				DECLARE @MaximumWaitingTime INT = 0;
+				DECLARE @DefaultValue INT = 2
+				
+
+				SET @DefaultValue = @DefaultValue * 60;
+				DECLARE @LessThanDefault INT = 0;
+				DECLARE @ReceivedConversations INT = 0;
+				DECLARE @ServiceLevel SMALLINT = 0;
+
+				--------- Modify Average Conversation, Dialog Time, Queue/Waiting Time, Maximum Waiting Time and Service Level ------------
+
+				SELECT @AverageConversationTime = ROUND(AVG(tConversation), 4),
+						@AverageDialogTime = ROUND(AVG(tChatting), 4),
+						@AverageWaitingTime = ROUND(AVG(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END), 4),
+						@MaximumWaitingTime = MAX(CASE WHEN tQueue > 0 THEN tQueue ELSE NULL END),
+						@ReceivedConversations = COUNT(conversationDate),
+						@LessThanDefault = COUNT(CASE WHEN DATEDIFF(SECOND, assignDate , FirstMessageAgent) <= @DefaultValue THEN 1 ELSE NULL END)
+				FROM ccWhatsAppConversationsOut with(nolock) WHERE camId = @camId
+				AND requestDate >= @Today
+
+				SET @ServiceLevel = CASE WHEN @ReceivedConversations = 0 THEN 0 ELSE ROUND(((@LessThanDefault*1.0) / @ReceivedConversations) * 100, 2) END
+
+				----------------------------------------------------- Update table --------------------------------------------------------
+
+				IF EXISTS (SELECT * FROM ccWAAverageConversationsOut WHERE camId = @camId)
+				BEGIN
+					UPDATE ccWAAverageConversationsOut
+					SET AverageConversationTime = @AverageConversationTime,
+						AverageDialogTime = @AverageDialogTime,
+						AverageWaitingTime = @AverageWaitingTime,
+						MaximumWaitingTime = @MaximumWaitingTime,
+						ServiceLevel = @ServiceLevel,
+						StatusUpdate = 0,
+						LastUpdate = GETDATE()
+					WHERE CamId = @camId
+				END
+				ELSE
+				BEGIN
+					INSERT INTO ccWAAverageConversationsOut (CamId, AverageConversationTime, AverageDialogTime,
+															AverageWaitingTime, MaximumWaitingTime, ServiceLevel, StatusUpdate, LastUpdate)
+					VALUES(@camId, @AverageConversationTime, @AverageDialogTime, @AverageWaitingTime, @MaximumWaitingTime,
+							@ServiceLevel, 0 , GETDATE())
+				END
+			END
+			--------------------------------- Results -----------------------------------
+
+			if exists (select * from ccWAOperatingSummaryOut with(nolock) where CamId=@camId
+						and (OnQueue<0 or Assigned<0)
+						) begin
+						
+					set @Today =convert(date,getdate(),121)
+
+					;with waOperationSummary as(
+					select 
+					CamId
+					,count(case when finishedBy=1 then 1 end) Attended
+					,count(case when onQueue=1 and finishedBy=0 and conversationStatus in (8,9) then 1 end) onQueue
+					,count(case when finishedBy=0 and agentId>0 then 1 end) Assigned
+					,count(*) Request
+					,count(case when finishedBy=2 then 1 end) EndedBySystem
+					from ccWhatsAppConversationsOut with(nolock)
+					where camId = @camId and requestDate>=@Today
+					group by CamId
+					)
+					update A 
+					set A.Attended=B.Attended, A.Assigned=B.Assigned
+					
+					,A.Request=B.Request,A.EndedBySystem=B.EndedBySystem
+					from ccWAOperatingSummaryOut A 
+					inner join waOperationSummary B on A.CamId=B.CamId
+			end
+
+			SELECT ISNULL(conv.AverageConversationTime, 0) AS AverageConversationTime,
+					ISNULL(AverageDialogTime, 0) AS AverageDialogTime,
+					ISNULL(AverageWaitingTime, 0) AS AverageWaitingTime,
+					ISNULL(MaximumWaitingTime, 0) AS MaximumWaitingTime,
+					ISNULL(ServiceLevel, 0) AS ServiceLevel,
+					ISNULL(Attended, 0) AS Attended,
+					ISNULL(Assigned, 0) AS Assigned,
+					ISNULL(OnQueue, 0) AS OnQueue,
+					ISNULL(EndedBySystem, 0) AS EndedBySystem,
+					ISNULL(Available, 0) AS Available,
+					ISNULL(Request, 0) AS Request
+			FROM ccWAAverageConversationsOut conv
+			RIGHT JOIN ccWAOperatingSummaryOut summary ON conv.CamId = summary.camId
+			WHERE conv.CamId = @camId OR summary.camId = @camId
+		END
+		else IF @Option = 2 -- Set Status Change in any column (Average Conversation Time, Average Dialog Time,
+						-- Average Queue/Waiting Time, and Service Level)
+		BEGIN
+			IF EXISTS (SELECT * FROM ccWAAverageConversationsOut WHERE CamId = @camId)
+				BEGIN
+					UPDATE ccWAAverageConversationsOut SET StatusUpdate = 1
+					WHERE CamId = @camId
+				END
+				ELSE
+				BEGIN
+					INSERT INTO ccWAAverageConversationsOut (CamId, StatusUpdate)
+					VALUES(@camId, 1)
+				END
+		END
+		else IF @Option = 3 -- Save time from accepted conversation by agent
+		BEGIN
+			IF @ConversationId IS NOT NULL
+			BEGIN
+				UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+				--Save Conversation Assigned
+				SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+				UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				
+			END
+		END
+		else IF @Option = 4 -- Get Disposition Information
+		BEGIN
+		declare @nIdioma varchar(22),@nIdiomaSub varchar(22)
+		select @nIdioma = case valor 
+			when 0 then ''Sin calificación'' 
+			when 2 then ''Sem classificação''
+			else ''No disposition'' end
+		from ccsettings where setting_id = 27 -- 0esp
+		SELECT ISNULL(disposition.Description, @nIdioma) AS DispositionName,
+				ISNULL(disposition.calif_id, 0) AS DispositionId,
+				COUNT(whatsConv.disposition) AS Total,
+				ISNULL(disposition.GraphColor, ''1DB4E2'') AS GraphColor,
+				COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+		FROM ccWhatsAppConversationsOut whatsConv with(nolock)
+		LEFT JOIN ccTipoCalifOUT disposition ON disposition.calif_id = whatsConv.disposition
+		WHERE camId = @camId AND assignDate >= @Today
+			and whatsConv.conversationStatus != 2
+		GROUP BY disposition.calif_id, disposition.Description, disposition.GraphColor
+		END
+		else IF @Option = 5 -- Get Subdisposition Information
+		BEGIN
+			SELECT relation.calif_id AS DispositionId,
+					subDispositions.califSubDesc AS SubDispositionsName,
+					COUNT(CASE WHEN whatsConv.subDisposition != 0 THEN 1 END) AS SubDispositionQuantity
+			FROM cctipoSubCalifRel relation
+			INNER JOIN ccTipoCalifSubOUT subDispositions ON subDispositions.califSub_id = relation.califSub_id
+			INNER JOIN ccWhatsAppConversationsOut whatsConv with(nolock) ON whatsConv.subDisposition = subDispositions.califSub_id
+			WHERE whatsConv.camId = @camId AND
+					whatsConv.assignDate >= @Today AND
+					relation.tipoSubRel = 0
+			GROUP BY subDispositions.califSubDesc, relation.calif_id
+		END
+		ELSE IF @Option = 6 -- Agents Availables
+		BEGIN
+			IF NOT EXISTS (SELECT camId FROM ccWAOperatingSummaryOut WHERE camId = @camId)
+				BEGIN
+					INSERT INTO ccWAOperatingSummaryOut (camId, Available) VALUES (@camId, @AgentsAvailables);
+				END
+			ELSE
+				BEGIN
+					UPDATE ccWAOperatingSummaryOut SET Available = @AgentsAvailables WHERE camId = @camId
+				END
+		END
+
+		ELSE IF @Option = 7 -- Whats Conversations Results
+		BEGIN
+			SELECT ISNULL(SentMsg, 0) AS SentMsg,
+					ISNULL(Delivered, 0) AS Delivered,
+					ISNULL(NotDelivered, 0) AS NotDelivered,
+					ISNULL(ReadMsg, 0) AS ReadMsg,
+					ISNULL(NotSupported, 0) AS NotSupported
+			FROM ccWAConversationsResult
+			WHERE camId = @camId
+		END
+
+		ELSE IF @Option = 8 -- whats outbound conversations
+		BEGIN
+			DECLARE @ActualDay DATE = GETDATE()
+
+			SELECT
+				COUNT(CASE WHEN cco.conversationStatus NOT IN (10,11,17,18) THEN 1 ELSE NULL END) Active,
+				COUNT(CASE WHEN conversationStatus = 1 THEN 1 ELSE null END) Queued,
+				COUNT(CASE WHEN conversationStatus = 11 THEN 1 ELSE null END) FinishedAgent,
+				COUNT(CASE WHEN conversationStatus = 10 THEN 1 ELSE null END) FinishedSystem
+			FROM ccWhatsAppConversationsOut cco WITH(NOLOCK)
+			WHERE cco.camId = @camId AND CAST(cco.conversationDate AS DATE) = @ActualDay
+		END
+		IF @Option = 9
+		BEGIN
+			DECLARE @campsIds TABLE(camid smallint)
+			INSERT INTO @campsIds
+			exec ccsp_GalateaAdminCampaigns @Option = 11, @CampType = 1, @AdminId = @AdminId, @IsWhatsAppCampaign=1
+
+
+			SELECT 
+				waco.camid,
+				SUM(CASE WHEN messageStatus = ''sent'' OR messageStatus = ''submitted'' THEN 1 ELSE 0 END) AS SentMsg,
+				SUM(CASE WHEN messageStatus = ''delivered'' THEN 1 ELSE 0 END) AS Delivered,
+				SUM(CASE WHEN messageStatus = ''read'' THEN 1 ELSE 0 END) AS ReadMsg,
+				SUM(CASE WHEN messageStatus = ''rejected'' OR messageStatus = ''failed'' THEN 1 ELSE 0 END) AS [NotDelivered],
+				SUM(CASE WHEN messageStatus = ''N/A'' THEN 1 ELSE 0 END) AS NA
+			FROM 
+				ccWhatsAppConversationsOut waco
+				INNER JOIN @campsIds c on c.camid = waco.camId 
+				INNER JOIN ccWAMessagesConversationsOut wamco
+				ON waco.conversationId = wamco.conversationId
+				WHERE wamco.timeStampMessage > @Today
+				AND wamco.originType <> ''Client''
+			GROUP BY 
+				waco.camid
+			ORDER BY 
+				waco.camid;
+		END
+			
+		SET NOCOUNT OFF
+    '
+		EXEC(@sql)
+
+		------------------------------------------- BEGIN Ivan Martin K066004 y K066015----------------------------------------
 
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

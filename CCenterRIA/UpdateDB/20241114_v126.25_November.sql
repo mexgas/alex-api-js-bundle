@@ -3469,11 +3469,11 @@ EXEC(@sql)
 		'
 		EXEC(@sql)
 
-		SET @process = 'K066003 delete sp ccsp_InboundMultimediaCommon'
+		SET @process = 'K066003 delete sp ccsp_WhatsAppOutboundTemplates'
 		SET @sql = '
-		IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_InboundMultimediaCommon'')
+		IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_WhatsAppOutboundTemplates'')
 		BEGIN
-			DROP PROCEDURE ccsp_InboundMultimediaCommon
+			DROP PROCEDURE ccsp_WhatsAppOutboundTemplates
 		END'
 		EXEC(@sql)
 

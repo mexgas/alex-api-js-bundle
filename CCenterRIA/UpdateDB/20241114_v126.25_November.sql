@@ -3479,7 +3479,7 @@ EXEC(@sql)
 
 		SET @process = 'K066003 Se Modifica SP ccsp_WhatsAppOutboundTemplates para que rerese tambien variable StatusMeta'
 		SET @sql = '
-		ALTER PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
+		CREATE PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
 							@Action SMALLINT, 
 							@TemplateName VARCHAR(500) = '''' ,
 							@isMeta int=0,

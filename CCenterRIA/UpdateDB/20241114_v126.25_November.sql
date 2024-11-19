@@ -2528,15 +2528,19 @@ BEGIN
             cc.cam_descripcion AS CampName,
             cwo.clientId AS PhoneNumber,
             cu.User_id AS AgentId,
-            cu.Nombres AS AgentName
+            cu.Nombres AS AgentName,
+			CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
+            cc.cam_descripcion AS ReopenWithTemplateOutboundCamName
         FROM ccWhatsAppConversationsOut cwo
         INNER JOIN ccCamps cc ON cc.cam_id = cwo.camId 
         INNER JOIN ccUsers cu ON cu.User_id = cwo.agentId
         INNER JOIN #TmpConversationIds tci ON tci.Id = cwo.conversationId
         LEFT JOIN ccTipoCalifOUT ctco ON ctco.calif_id = cwo.disposition
         LEFT JOIN ccTipoCalifSubOUT ctcso ON ctcso.califSub_id = cwo.subDisposition
+		LEFT JOIN ccMetaWhatsAppNumbers mwn ON mwn.cam_Id = cc.cam_Id 
     END
 END
+
     DECLARE @MaxWhatsAllowed INT;
     DECLARE @ConversationCount INT;
 

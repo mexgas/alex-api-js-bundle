@@ -13531,18 +13531,18 @@ EXEC(@sql)
 
 SET @process = 'ccsp_GalateaLoadUsersForManagement - SP Edited, Editado para el envio correcto de datos al front.
 Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
-SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaLoadUsersForManagement]
- @option SMALLINT,
- @AreaId SMALLINT,
- @UserType INT = null,
- @Username VARCHAR(200)=null,
- @userId INT = 0
-as
+SET @sql = 'CREATE PROCEDURE ccsp_GalateaLoadUsersForManagement
+    @option SMALLINT,
+    @AreaId SMALLINT = null,
+    @UserType INT = null,
+    @Username VARCHAR(200) = null,
+    @userId INT = 0,
+    @groupList VARCHAR(MAX) = null
+AS
 
-        --Obtiene el idioma de de Centerware
-        Declare @lenguageXion varchar
-        select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espanol, 1 para ingles, 2 para portugues
+--Obtiene el idioma de de Centerware
+Declare @lenguageXion varchar
+select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para espanol, 1 para ingles, 2 para portugues
 
 IF @option = 1 --Agentes/supervisores de un Area
 BEGIN
@@ -13600,9 +13600,6 @@ BEGIN
   RETURN (0)
 END
 
-
-
-
 IF @option = 4 -- supervisores en Area/Sistema
 BEGIN
         DECLARE @Admins TABLE (UserId smallint, Username varchar(50), Names varchar(50), LastName varchar(50), OptionalExtraName varchar(50), AreaId smallint, primary key(UserId))
@@ -13640,7 +13637,34 @@ BEGIN
         AND @AreaId = IDArea
         RETURN 0;
 END
-'
+
+IF @option = 6 -- Usuarios inactivos por más de 60 días por grupo de trabajo, correccion del ticket TT13248
+BEGIN
+        DECLARE @tempTable TABLE (Id INT)
+
+        INSERT INTO @tempTable
+        SELECT value FROM fn_RIASplitDelimited(@groupList, '','')
+
+        SELECT 
+                CAST(wgu.IDWG AS VARCHAR(10)) AS idwg,
+                STUFF((
+                        SELECT '', '' + CAST(wgu2.User_id AS VARCHAR)
+                        FROM ccUsers u2
+                        INNER JOIN ccRIAWorkGroupUsers wgu2 ON wgu2.User_id = u2.User_id
+                        WHERE u2.TipoUser_id = 1
+                                AND wgu2.IDWG = wgu.IDWG
+                                AND u2.LastLoginAttempt <= DATEADD(DAY, -60, GETDATE())
+                        FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''') AS agents
+        FROM ccUsers u
+        INNER JOIN ccRIAWorkGroupUsers wgu ON wgu.User_id = u.User_id
+        WHERE u.TipoUser_id = 1
+                AND wgu.IDWG IN (SELECT Id FROM @tempTable)
+                AND u.LastLoginAttempt <= DATEADD(DAY, -60, GETDATE())
+        GROUP BY wgu.IDWG
+        ORDER BY wgu.IDWG;
+        RETURN 0;
+
+END'
 EXEC(@sql)
 ----------------------------------------------------------- End Luis Miguel Zamora Nuñez -------------------------------------------------------------------------
         SET @process = 'landus Alter SP InsertLogAdminGalatea @action=2  Correcion log Campañas '

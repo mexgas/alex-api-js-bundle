@@ -13531,7 +13531,7 @@ EXEC(@sql)
 
 SET @process = 'ccsp_GalateaLoadUsersForManagement - SP Edited, Editado para el envio correcto de datos al front.
 Se asigna el LastName a @ApellidoPaterno = @LastName, y NombreOpcionalExtra a  @ApellidoMaterno = @NombreOpcionalExtra'
-SET @sql = 'CREATE PROCEDURE ccsp_GalateaLoadUsersForManagement
+SET @sql = 'ALTER PROCEDURE ccsp_GalateaLoadUsersForManagement
     @option SMALLINT,
     @AreaId SMALLINT = null,
     @UserType INT = null,

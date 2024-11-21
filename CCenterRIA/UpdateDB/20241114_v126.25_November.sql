@@ -2917,6 +2917,7 @@ BEGIN
         ,cmwot.IsPendingQuality
         ,ISNULL(tie.IsEditable, 0) AS IsEditable
         ,cmwot.FilePath
+		,cmwot.CreationDate
         FROM  dbo.ccMetaWAOutboundTemplates cmwot
         LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
         WHERE cmwot.MetaId = @whatsAppTemplateID
@@ -2971,6 +2972,7 @@ BEGIN
         ,ISNULL(cmwot.quality,0) AS Quality
         ,cmwot.IsPendingQuality
         ,cmwot.FilePath
+		,cmwot.CreationDate
         FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
         INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan ON 
         cmwot.MetaId = cmwan.MetaId

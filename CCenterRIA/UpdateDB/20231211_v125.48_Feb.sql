@@ -14,7 +14,6 @@ Required version: 125.48
 IMPORTANT: In order to write the scripts to release in database go to the las part of this one to obtain guide and help to do it
 */
 SET NOCOUNT ON
-
 DECLARE @version INT, @versionFix INT
 DECLARE @actualVersion INT, @actualVersionFix INT
 DECLARE @sql VARCHAR(max)
@@ -13277,7 +13276,7 @@ end'
          SET @process = 'ALTER SP ccsp_ccActivityDataQuery @action 12,13,14 cambio @packageData por filas de 8000 caracetres'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ccActivityDataQuery]
 @action int,@userId int=0,@camId int=0,@dnisId int=0,@WgId int=0,@tipo int =null
-,@camIdOuts varchar(1000)='''''''',@camIdIns varchar(1000)='''''''',@userIds varchar(max)=''''''''
+,@camIdOuts varchar(1000)='''',@camIdIns varchar(1000)='''',@userIds varchar(max)=''''
 AS
 set nocount on
 
@@ -13285,7 +13284,7 @@ declare @valdiate int
 declare @packageData varchar(max)
 DECLARE @blockSize INT = 8000; -- Tamaño del bloque.
 declare @nTipoCallTotal int
-set @packageData =''''''''
+set @packageData =''''
 set @valdiate=0
 set @nTipoCallTotal=0
 
@@ -13316,7 +13315,7 @@ AND A.TipoUser_Id =1 AND C.cam_id =  @camId
 order by A.Login, A.User_id, CA.prioridad, CA.skill, C.cam_id
 end
 else if @action=5 begin 
-SELECT Login, TipoLlamadas, User_id, password, Nombres +'''' ''''+ ApellidoPaterno FROM ccUsers nolock WHERE User_id = @userId
+SELECT Login, TipoLlamadas, User_id, password, Nombres +'' ''+ ApellidoPaterno FROM ccUsers nolock WHERE User_id = @userId
 end
 else if @action=6 begin 
 SELECT Inbound_id, descripcion, cli_id FROM ccInbound nolock WHERE Inbound_id =@camId
@@ -13356,9 +13355,9 @@ where A.IDWG in(select IDWG from WgUser) or A.IDWG=@WgId
 ), dataDiferent as
 (
 select distinct 
-convert(varchar, A.IdCampEsp)+''''-''''+convert(varchar,A.Tipo+1)  
-+''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
-+''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
+convert(varchar, A.IdCampEsp)+''-''+convert(varchar,A.Tipo+1)  
++''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
++''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
 as CampAndType
 from wGCamp A
 left join WgUser B on A.IdCampEsp=B.IdCampEsp and A.Tipo=B.Tipo 
@@ -13366,7 +13365,7 @@ left join ccCampsAgente campAgent on A.IdCampEsp = campAgent.cam_id and A.Tipo=1
 left join ccInboundAgentes inboundAgent on A.IdCampEsp = inboundAgent.inbound_id and A.Tipo=0
 where B.IdCampEsp is null
 )
-select @packageData=CampAndType+'''',''''+@packageData from dataDiferent    
+select @packageData=CampAndType+'',''+@packageData from dataDiferent    
 
 select  @nTipoCallTotal = A.Tipo+1 +@nTipoCallTotal 
 from ccRIAWorkGroupUsers WG
@@ -13400,8 +13399,8 @@ inner join ccUsers C on WGUser.User_id=C.User_id and C.TipoUser_id=1
 ), dataDiferent as(     
 
 select distinct convert(varchar, WG.User_id)
-+''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1))
-+''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))        CampAndType
++''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1))
++''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))        CampAndType
 from ccRIAWorkGroupUsers WG     
 inner join ccUsers C on WG.User_id=C.User_id and C.TipoUser_id=1
 left join ccCampsAgente campAgent on campAgent.user_id=c.User_id
@@ -13409,7 +13408,7 @@ left join ccInboundAgentes inboundAgent on inboundAgent.User_id=c.User_id
 where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from WgUserCamp)
 )
 
-select @packageData=CampAndType+'''',''''+@packageData from dataDiferent 
+select @packageData=CampAndType+'',''+@packageData from dataDiferent 
 
 -- Generar un rango de índices para dividir la cadena en bloques.
 ;WITH BlockIndices AS (
@@ -13425,9 +13424,9 @@ WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
 end
 else if @action = 14 begin --Delete WG
 ; with wgCam as (
-select Value as camId,1 calltype from dbo.fn_RIASplitDelimited(@camIdOuts,'''','''')
+select Value as camId,1 calltype from dbo.fn_RIASplitDelimited(@camIdOuts,'','')
 union
-select Value as camId,0 calltype from dbo.fn_RIASplitDelimited(@camIdIns,'''','''')
+select Value as camId,0 calltype from dbo.fn_RIASplitDelimited(@camIdIns,'','')
 )
 , relationUser as(
 
@@ -13437,13 +13436,13 @@ where WG.User_id=@userId
 )
 , dataDiferent  as
 (       
-select distinct convert(varchar, wgCam.camId)+''''-''''+convert(varchar,wgCam.callType+1)   as CampAndType
+select distinct convert(varchar, wgCam.camId)+''-''+convert(varchar,wgCam.callType+1)   as CampAndType
 from wgCam
 left join relationUser A on wgCam.camId=A.camId and wgCam.calltype=A.Tipo
 where A.camId is null
 )
 
-select @packageData=CampAndType+'''',''''+@packageData from dataDiferent
+select @packageData=CampAndType+'',''+@packageData from dataDiferent
 
 select  @nTipoCallTotal = A.Tipo+1 +@nTipoCallTotal 
 from ccRIAWorkGroupUsers WG
@@ -13466,7 +13465,7 @@ end
 else if @action = 15 begin 
 ; with 
 tempUserIds as(
-        select cast(Value as int) as userId from dbo.fn_RIASplitDelimited(@userIds,'''','''')
+        select cast(Value as int) as userId from dbo.fn_RIASplitDelimited(@userIds,'','')
 ), WgUser AS(
 select distinct
 u.UserId,
@@ -13487,16 +13486,16 @@ where w.IdCampEsp is null
 )
 , dataDiferent as(
 select 
-convert(varchar, A.userId)+''''-''''+
-convert(varchar, A.IdCampEsp)+''''-''''+convert(varchar,A.Tipo+1)  
-+''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
-+''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
+convert(varchar, A.userId)+''-''+
+convert(varchar, A.IdCampEsp)+''-''+convert(varchar,A.Tipo+1)  
++''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
++''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
 as UserIdCampAndType
 from campData A
 left join ccCampsAgente campAgent on A.IdCampEsp = campAgent.cam_id and A.Tipo=1 and A.userId=campAgent.user_id
 left join ccInboundAgentes inboundAgent on A.IdCampEsp = inboundAgent.inbound_id and A.Tipo=0 and A.userId=inboundAgent.user_id
 )
-select @packageData=UserIdCampAndType+'''',''''+@packageData from dataDiferent   
+select @packageData=UserIdCampAndType+'',''+@packageData from dataDiferent   
 
 ;WITH BlockIndices AS (
         SELECT TOP ((LEN(@packageData) + @blockSize - 1) / @blockSize) -- Calcula cuántos bloques son necesarios.

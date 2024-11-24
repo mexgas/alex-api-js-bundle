@@ -2331,6 +2331,28 @@ END
 '
         EXEC(@sql)
 
+	SET @process = 'update menus 12015,12017,12020,13000 '
+    SET @sql = '
+update ccMenus 
+set release=''e9befc66956d7d9fd76131b32eb489783a31ee84a8ad9fde96e1d89b26627cac8fc4fa52f426845fa98a3f91eb0ff8041e6f05eb13fe339c90f00002d2d06235''
+where type=3 and menu_id=12015
+
+
+update ccMenus 
+set release=''accb20a46285ea9856ace61e5e3ffd4582792fe13e066f048a0c3f937dc1daf96bdd2edb9f23d5b4b486f46011c61eb08915ca96b688576ca7a25b2b03170981862172d92a203b6c9051ce2f5670037d''
+where type=3 and menu_id=12017
+
+
+update ccMenus 
+set release=''2605c8244920fb599fb936a4bf94521a7284d5e414815e8ef15fa8f6b0040db16a54ce29b02250a22a8cb87c41c6f3b30e3860a31b59d733442bb174a555b7b2''
+where type=3 and menu_id=12020
+
+update ccMenus 
+set release=''d108a7f110b9d54d296cb729b6e11f92''
+where type=3 and menu_id=13000
+
+'
+    EXEC(@sql)
 
 --------------------------- End Jesus 125.20231211.0.20 ----------------------------------------------------------------------------------
 

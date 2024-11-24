@@ -9755,178 +9755,7 @@ SET NOCOUNT OFF
 EXEC(@sql)   
 
 --------------------------------------------- ulises begin -----------------------------------------------------------------------
-                SET @process = 'Se agrega condicion al while del sp ccsp_RIAGetCampsNvosCB';
-        SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIAGetCampsNvosCB]
-@cam_id integer = 0, @Tipo tinyint = 0, @user_id int = 0,
-@regval int =0, @tcpa int=0
-as
-set nocount on
-
-declare @TipoJobs as int,@isExecOutbound bit
-
-
-set @isExecOutbound= case when @regval=0 then 0 else 1 end
-
--- Actualiza todas las camps
-if @Tipo in (1,2) begin
-
-        declare @id AS INTEGER
-
-        CREATE TABLE #Tcamps(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int)
-        CREATE TABLE #Tcamps2(cam_id int primary key,procesando int,cam_tipojobs int,cam_descripcion varchar(40),cantidad int,status int,dateUpdate datetime)
-
-        create table #temccocallsoutsource (cam_id int,Pend  int)
-
-        create table #temWorkinTable(cam_id int,New int,Cb int,Pro int,Fin int)
-
-        if @cam_id = 0 begin
-        if @user_id > 0 begin
-                insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-                select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
-                from ccCamps cam with(nolock) join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
-                where user_id = @user_id and tipo = 1
-        end
-        else begin
-                insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-                select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
-                from ccCamps cam (nolock) join ccSupervisorCam supcam with(nolock) on tipo=1 and cam.cam_id  =  supcam.cam_id
-        end
-
-        end
-        else begin
-        if @Tipo = 2
-                insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-                select distinct cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam.cam_descripcion,0,0
-                from ccCamps cam with(nolock)
-                join ccSupervisorCam supcam with(nolock) on tipo=1 and cam.cam_id  =  supcam.cam_id
-                where cam.cam_id = @cam_id
-        else
-                if @user_id > 0 begin
-                insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-                select distinct cam.cam_id ,isNull(cam_procesando,0),isNull(cam_tipojobs,0), cam.cam_descripcion,0,0
-                from ccCamps cam with(nolock) join ccSupervisorCam supcam with(nolock) on cam.cam_id  =  supcam.cam_id
-                where user_id = @user_id and tipo = 1
-                end
-                else begin
-                insert into  #Tcamps (cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status)
-                select cam.cam_id ,isNull(cam_procesando,0) as cam_procesando,isNull(cam_tipojobs,0) as cam_tipojobs, cam_descripcion,0,0
-                from ccCamps cam (nolock) join ccSupervisorCam supcam with(nolock) on tipo = 1 and cam.cam_id  =  supcam.cam_id
-                where user_id = @user_id and cam_activo=1
-                end
-        end
-
-
-
-        insert into  #Tcamps2(cam_id,procesando,cam_tipojobs,cam_descripcion,cantidad,status,dateUpdate)
-        select cam_id,max(procesando),max(cam_tipojobs),max(cam_descripcion),0,0,max(dateUpdate) from(
-        select A.*,dateUpdate from #Tcamps A
-        left join ccCampsNvosCB B (nolock) on A.cam_id=B.id
-        where datediff(ss,B.dateUpdate,getdate())> case @tcpa when 1 then 1 else 5 end or B.dateUpdate is null)X
-        group by cam_id
-
-
         
-        if (select count(*) from #Tcamps2)>0 begin
-
-        insert into #temccocallsoutsource(cam_id,Pend)
-        SELECT ccos.cam_id, count(ccos.cam_id) as Pend
-        FROM ccocallsoutsource ccos with(index(IX_ccoCallsOutSource_17),nolock)
-        join #Tcamps2 tcam on ccos.cam_id = tcam.cam_id
-        WHERE cal_status in(0, 7)
-        GROUP BY ccos.cam_id
-
-        insert into #temWorkinTable(cam_id,New,Cb,Pro,Fin)
-        SELECT A.cam_id,
-        count(case cal_status when 0 then 1 else null end) as New,
-        count(case cal_status when 1 then 1 else null end) as Cb,
-        count(case cal_status when 2 then 1 else null end) as Pro,
-        count(case cal_status when 3 then 1 else null end) as Fin
-        FROM ccoworkingtable A with(index(IX_ccoWorkingTable),nolock)
-        join #Tcamps2 B on A.cam_id = B.cam_id
-        GROUP BY A.cam_id       
-
-        
-        if (@regval = 0 and @cam_id >0 and @Tipo =2) or @tcpa = 1 begin
-                update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @cam_id
-        end
-        else begin
-                While exists(select * from #Tcamps2 where status = 0 and cam_id = @cam_id and ( datediff(ss,dateUpdate,getdate())>60 or dateUpdate is null))  Begin
-                set rowcount 1
-                select @id = cam_id,@TipoJobs=cam_tipojobs from #Tcamps2 where status = 0 order by cam_id
-                set rowcount 0
-                EXEC @regval = ccsp_OUTGetNewJobs @id,2,0
-                update #Tcamps2 set status =1,cantidad=@regval  where cam_id = @id
-                end
-        end
-
-        declare @TotalNew table(
-                        cam_id int primary key,
-                        OverallTotalNew int 
-                )
-                
-                
-
-                
-
-        begin Tran updateccCampsNvosCB
-
-                insert into @TotalNew
-                select CampNvosCB.id,isnull(CampNvosCB.OverallTotalNew,CampNvosCB.new)  from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
-                where CampNvosCB.id = tcamp.cam_id
-
-                delete ccCampsNvosCB from ccCampsNvosCB CampNvosCB with(nolock), #Tcamps2 tcamp
-                where CampNvosCB.id = tcamp.cam_id
-
-                INSERT into ccCampsNvosCB 
-                SELECT cams.cam_id, cams.cam_descripcion,
-                isNull(wt.New,0) as new, isNull(wt.Cb,0) as cb,
-                isNull(cs.Pend,0) as pend,
-                isNull(wt.Pro,0) as pro,
-                isNull(cams.procesando,0) cam_procesando,
-                isNull(cams.cam_tipojobs,0) cam_tipojobs,
-                isNull(wt.Fin,0) Fin,
-                isNull(cams.cantidad,0) cantidad,
-                getdate(),
-                isnull(T.OverallTotalNew,0)  as OverallTotalNew
-                FROM #Tcamps2 cams with(nolock)
-                LEFT JOIN #temWorkinTable  wt on cams.cam_id = wt.cam_id
-                LEFT JOIN #temccocallsoutsource cs on cams.cam_id = cs.cam_id
-                LEFT JOIN @TotalNew  T on T.cam_id = cams.cam_id
-
-        COMMIT TRAN updateccCampsNvosCB
-        end
-
-        if @isExecOutbound = 0 begin
-
-        if @Tipo = 2 begin
-                -- devuelve resultado de la taba, solo las camps del usuario
-                SELECT res.id, res.campaña, res.new, res.cb, res.pro, res.pen, cc.cam_procesando as st, res.job, res.Fin, 
-                isnull(prio.prioridad,''12345NNN'') as Prioridad, NextDial,cc.aggressionFactor, OverallTotalNew
-                FROM #Tcamps tcam
-                left join  ccCampsNvosCB res (nolock) on tcam.cam_id  = res.id
-                LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
-                inner join cccamps cc (nolock) on res.id=cc.cam_id
-        end
-        else 
-                SELECT id, campaña, new, cb, pro, pen,cc.cam_procesando as st, job, Fin, isnull(prioridad,''12345NNN'')  as Prioridad, NextDial,
-                cc.aggressionFactor, OverallTotalNew
-                FROM ccCampsNvosCB res (nolock)
-                LEFT JOIN ccCampsPrioridadTel prio (nolock) on res.id = prio.cam_id
-                inner join cccamps cc (nolock) on res.id=cc.cam_id
-                WHERE res.id = @cam_id
-        end
-
-        drop table #Tcamps
-        drop table #Tcamps2
-        drop table #temccocallsoutsource
-        drop table #temWorkinTable
-
-        return(0)
-
-end
-
-set nocount off';
-        EXEC (@sql);
                 --------------------------------------------- ulises End -------------------------------------------------------------------------
                 -----------------------------------------------------BEGIN Carlos Chavez ----------------------------------------------------------------
 
@@ -13804,7 +13633,7 @@ end'
          SET @process = 'ALTER SP ccsp_ccActivityDataQuery @action 12,13,14 cambio @packageData por filas de 8000 caracetres'
         SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ccActivityDataQuery]
 @action int,@userId int=0,@camId int=0,@dnisId int=0,@WgId int=0,@tipo int =null
-,@camIdOuts varchar(1000)='''',@camIdIns varchar(1000)='''',@userIds varchar(max)=''''
+,@camIdOuts varchar(1000)='''''''',@camIdIns varchar(1000)='''''''',@userIds varchar(max)=''''''''
 AS
 set nocount on
 
@@ -13812,7 +13641,7 @@ declare @valdiate int
 declare @packageData varchar(max)
 DECLARE @blockSize INT = 8000; -- Tamaño del bloque.
 declare @nTipoCallTotal int
-set @packageData =''''
+set @packageData =''''''''
 set @valdiate=0
 set @nTipoCallTotal=0
 
@@ -13843,7 +13672,7 @@ AND A.TipoUser_Id =1 AND C.cam_id =  @camId
 order by A.Login, A.User_id, CA.prioridad, CA.skill, C.cam_id
 end
 else if @action=5 begin 
-SELECT Login, TipoLlamadas, User_id, password, Nombres +'' ''+ ApellidoPaterno FROM ccUsers nolock WHERE User_id = @userId
+SELECT Login, TipoLlamadas, User_id, password, Nombres +'''' ''''+ ApellidoPaterno FROM ccUsers nolock WHERE User_id = @userId
 end
 else if @action=6 begin 
 SELECT Inbound_id, descripcion, cli_id FROM ccInbound nolock WHERE Inbound_id =@camId
@@ -13883,9 +13712,9 @@ where A.IDWG in(select IDWG from WgUser) or A.IDWG=@WgId
 ), dataDiferent as
 (
 select distinct 
-convert(varchar, A.IdCampEsp)+''-''+convert(varchar,A.Tipo+1)  
-+''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
-+''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
+convert(varchar, A.IdCampEsp)+''''-''''+convert(varchar,A.Tipo+1)  
++''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
++''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
 as CampAndType
 from wGCamp A
 left join WgUser B on A.IdCampEsp=B.IdCampEsp and A.Tipo=B.Tipo 
@@ -13893,7 +13722,7 @@ left join ccCampsAgente campAgent on A.IdCampEsp = campAgent.cam_id and A.Tipo=1
 left join ccInboundAgentes inboundAgent on A.IdCampEsp = inboundAgent.inbound_id and A.Tipo=0
 where B.IdCampEsp is null
 )
-select @packageData=CampAndType+'',''+@packageData from dataDiferent    
+select @packageData=CampAndType+'''',''''+@packageData from dataDiferent    
 
 select  @nTipoCallTotal = A.Tipo+1 +@nTipoCallTotal 
 from ccRIAWorkGroupUsers WG
@@ -13927,8 +13756,8 @@ inner join ccUsers C on WGUser.User_id=C.User_id and C.TipoUser_id=1
 ), dataDiferent as(     
 
 select distinct convert(varchar, WG.User_id)
-+''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1))
-+''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))        CampAndType
++''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1))
++''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))        CampAndType
 from ccRIAWorkGroupUsers WG     
 inner join ccUsers C on WG.User_id=C.User_id and C.TipoUser_id=1
 left join ccCampsAgente campAgent on campAgent.user_id=c.User_id
@@ -13936,7 +13765,7 @@ left join ccInboundAgentes inboundAgent on inboundAgent.User_id=c.User_id
 where Wg.IDWG=@WgId and Wg.User_id not in(select User_id from WgUserCamp)
 )
 
-select @packageData=CampAndType+'',''+@packageData from dataDiferent 
+select @packageData=CampAndType+'''',''''+@packageData from dataDiferent 
 
 -- Generar un rango de índices para dividir la cadena en bloques.
 ;WITH BlockIndices AS (
@@ -13952,9 +13781,9 @@ WHERE StartIndex <= LEN(@packageData); -- Asegúrate de no exceder la longitud.
 end
 else if @action = 14 begin --Delete WG
 ; with wgCam as (
-select Value as camId,1 calltype from dbo.fn_RIASplitDelimited(@camIdOuts,'','')
+select Value as camId,1 calltype from dbo.fn_RIASplitDelimited(@camIdOuts,'''','''')
 union
-select Value as camId,0 calltype from dbo.fn_RIASplitDelimited(@camIdIns,'','')
+select Value as camId,0 calltype from dbo.fn_RIASplitDelimited(@camIdIns,'''','''')
 )
 , relationUser as(
 
@@ -13964,13 +13793,13 @@ where WG.User_id=@userId
 )
 , dataDiferent  as
 (       
-select distinct convert(varchar, wgCam.camId)+''-''+convert(varchar,wgCam.callType+1)   as CampAndType
+select distinct convert(varchar, wgCam.camId)+''''-''''+convert(varchar,wgCam.callType+1)   as CampAndType
 from wgCam
 left join relationUser A on wgCam.camId=A.camId and wgCam.calltype=A.Tipo
 where A.camId is null
 )
 
-select @packageData=CampAndType+'',''+@packageData from dataDiferent
+select @packageData=CampAndType+'''',''''+@packageData from dataDiferent
 
 select  @nTipoCallTotal = A.Tipo+1 +@nTipoCallTotal 
 from ccRIAWorkGroupUsers WG
@@ -13993,7 +13822,7 @@ end
 else if @action = 15 begin 
 ; with 
 tempUserIds as(
-        select cast(Value as int) as userId from dbo.fn_RIASplitDelimited(@userIds,'','')
+        select cast(Value as int) as userId from dbo.fn_RIASplitDelimited(@userIds,'''','''')
 ), WgUser AS(
 select distinct
 u.UserId,
@@ -14014,16 +13843,16 @@ where w.IdCampEsp is null
 )
 , dataDiferent as(
 select 
-convert(varchar, A.userId)+''-''+
-convert(varchar, A.IdCampEsp)+''-''+convert(varchar,A.Tipo+1)  
-+''-''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
-+''-''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
+convert(varchar, A.userId)+''''-''''+
+convert(varchar, A.IdCampEsp)+''''-''''+convert(varchar,A.Tipo+1)  
++''''-''''+convert(varchar,COALESCE (campAgent.prioridad ,inboundAgent.prioridad,1)) 
++''''-''''+convert(varchar,COALESCE (campAgent.skill ,inboundAgent.skill,1))
 as UserIdCampAndType
 from campData A
 left join ccCampsAgente campAgent on A.IdCampEsp = campAgent.cam_id and A.Tipo=1 and A.userId=campAgent.user_id
 left join ccInboundAgentes inboundAgent on A.IdCampEsp = inboundAgent.inbound_id and A.Tipo=0 and A.userId=inboundAgent.user_id
 )
-select @packageData=UserIdCampAndType+'',''+@packageData from dataDiferent   
+select @packageData=UserIdCampAndType+'''',''''+@packageData from dataDiferent   
 
 ;WITH BlockIndices AS (
         SELECT TOP ((LEN(@packageData) + @blockSize - 1) / @blockSize) -- Calcula cuántos bloques son necesarios.
@@ -14202,6 +14031,56 @@ return(0)
 end
 
 set nocount off'
+        EXEC(@sql)
+
+        set @process = 'Alter Sp fn_RIASplitDelimited mejora performance'
+        set @sql = 'ALTER FUNCTION [dbo].[fn_RIASplitDelimited]
+(   
+    @List NVARCHAR(max),
+    @SplitOn NVARCHAR(3)
+)
+RETURNS @RtnValue TABLE (
+    Id INT IDENTITY(1,1),
+    Value NVARCHAR(255)
+)
+AS
+BEGIN
+    DECLARE @Pos INT = 1
+    DECLARE @NextPos INT
+    DECLARE @Fragment NVARCHAR(255)
+
+    IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
+        RETURN
+
+    WHILE @Pos > 0
+    BEGIN
+        SET @NextPos = CHARINDEX(@SplitOn, @List, @Pos)
+        
+        IF @NextPos > 0
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, @NextPos - @Pos)
+            IF LEN(@Fragment) > 0  -- Solo insertar si el fragmento tiene longitud
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = @NextPos + 1
+        END
+        ELSE
+        BEGIN
+            SET @Fragment = SUBSTRING(@List, @Pos, LEN(@List) - @Pos + 1)
+            IF LEN(@Fragment) > 0
+            BEGIN
+                INSERT INTO @RtnValue (Value)
+                VALUES (LTRIM(RTRIM(@Fragment)))
+            END
+            SET @Pos = 0
+        END
+    END
+
+    RETURN
+END
+'
         EXEC(@sql)
 
         set @process = ''

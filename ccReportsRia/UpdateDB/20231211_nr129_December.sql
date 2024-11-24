@@ -261,707 +261,44 @@ END'
 AS
 BEGIN
     SET NOCOUNT ON;
-   if not exists (select * from sys.indexes where name = N''MSmerge_index_cccallsreject'' and object_id = OBJECT_ID(N''cccallsreject'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cccallsreject''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cccallsreject] on [dbo].[cccallsreject](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccChannelTransfer'' and object_id = OBJECT_ID(N''ccChannelTransfer'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccChannelTransfer''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccChannelTransfer] on [dbo].[ccChannelTransfer](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cclogagentesnotready'' and object_id = OBJECT_ID(N''cclogagentesnotready'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cclogagentesnotready''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cclogagentesnotready] on [dbo].[cclogagentesnotready](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccloglogin'' and object_id = OBJECT_ID(N''ccloglogin'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccloglogin''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccloglogin] on [dbo].[ccloglogin](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccLogtransfers'' and object_id = OBJECT_ID(N''ccLogtransfers'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccLogtransfers''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccLogtransfers] on [dbo].[ccLogtransfers](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccCalifCamp'' and object_id = OBJECT_ID(N''ccCalifCamp'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccCalifCamp''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccCalifCamp] on [dbo].[ccCalifCamp](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccPosicion'' and object_id = OBJECT_ID(N''ccPosicion'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccPosicion''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccPosicion] on [dbo].[ccPosicion](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIACampEspWG'' and object_id = OBJECT_ID(N''ccRIACampEspWG'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIACampEspWG''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIACampEspWG] on [dbo].[ccRIACampEspWG](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIACampEspWGConsulta'' and object_id = OBJECT_ID(N''ccRIACampEspWGConsulta'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIACampEspWGConsulta''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIACampEspWGConsulta] on [dbo].[ccRIACampEspWGConsulta](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIACampsGraph'' and object_id = OBJECT_ID(N''ccRIACampsGraph'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIACampsGraph''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIACampsGraph] on [dbo].[ccRIACampsGraph](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIAGraphics'' and object_id = OBJECT_ID(N''ccRIAGraphics'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIAGraphics''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIAGraphics] on [dbo].[ccRIAGraphics](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIAInboundGraph'' and object_id = OBJECT_ID(N''ccRIAInboundGraph'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIAInboundGraph''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIAInboundGraph] on [dbo].[ccRIAInboundGraph](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIAWorkGroupUsersConsulta'' and object_id = OBJECT_ID(N''ccRIAWorkGroupUsersConsulta'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIAWorkGroupUsersConsulta''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIAWorkGroupUsersConsulta] on [dbo].[ccRIAWorkGroupUsersConsulta](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_GRABACION'' and object_id = OBJECT_ID(N''RIA_GRABACION'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_GRABACION''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_GRABACION] on [dbo].[RIA_GRABACION](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_GRABACIONCONSULTA'' and object_id = OBJECT_ID(N''RIA_GRABACIONCONSULTA'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_GRABACIONCONSULTA''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_GRABACIONCONSULTA] on [dbo].[RIA_GRABACIONCONSULTA](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_CONCEPTOS'' and object_id = OBJECT_ID(N''RIA_CONCEPTOS'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_CONCEPTOS''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_CONCEPTOS] on [dbo].[RIA_CONCEPTOS](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_FORMACALIF'' and object_id = OBJECT_ID(N''RIA_FORMACALIF'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_FORMACALIF''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_FORMACALIF] on [dbo].[RIA_FORMACALIF](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_FORMACALIF_CHAT'' and object_id = OBJECT_ID(N''RIA_FORMACALIF_CHAT'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_FORMACALIF_CHAT''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_FORMACALIF_CHAT] on [dbo].[RIA_FORMACALIF_CHAT](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_RESULTADOSFORMA_CHAT'' and object_id = OBJECT_ID(N''RIA_RESULTADOSFORMA_CHAT'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_RESULTADOSFORMA_CHAT''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX MSmerge_index_RIA_RESULTADOSFORMA_CHAT on [dbo].[RIA_RESULTADOSFORMA_CHAT](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccoCallbacks'' and object_id = OBJECT_ID(N''ccoCallbacks'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccoCallbacks''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccoCallbacks] on [dbo].[ccoCallbacks](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccCallsIn'' and object_id = OBJECT_ID(N''ccCallsIn'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccCallsIn''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccCallsIn] on [dbo].[ccCallsIn](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_DataCallIn'' and object_id = OBJECT_ID(N''DataCallIn'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''DataCallIn''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_DataCallIn] on [dbo].[DataCallIn](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccoCallsOut'' and object_id = OBJECT_ID(N''ccoCallsOut'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccoCallsOut''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccoCallsOut] on [dbo].[ccoCallsOut](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccoCallsOutSource'' and object_id = OBJECT_ID(N''ccoCallsOutSource'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccoCallsOutSource''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccoCallsOutSource] on [dbo].[ccoCallsOutSource](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccoCallsPreviewData'' and object_id = OBJECT_ID(N''ccoCallsPreviewData'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccoCallsPreviewData''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccoCallsPreviewData] on [dbo].[ccoCallsPreviewData](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccCallCost_RIA'' and object_id = OBJECT_ID(N''ccCallCost_RIA'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccCallCost_RIA''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccCallCost_RIA] on [dbo].[ccCallCost_RIA](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccdnis'' and object_id = OBJECT_ID(N''ccdnis'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccdnis''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccdnis] on [dbo].[ccdnis](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccEstadosAni'' and object_id = OBJECT_ID(N''ccEstadosAni'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccEstadosAni''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccEstadosAni] on [dbo].[ccEstadosAni](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccodialers'' and object_id = OBJECT_ID(N''ccodialers'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccodialers''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccodialers] on [dbo].[ccodialers](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIARegistryLists'' and object_id = OBJECT_ID(N''ccRIARegistryLists'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIARegistryLists''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIARegistryLists] on [dbo].[ccRIARegistryLists](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccstatusllamada'' and object_id = OBJECT_ID(N''ccstatusllamada'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccstatusllamada''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccstatusllamada] on [dbo].[ccstatusllamada](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctiponotready'' and object_id = OBJECT_ID(N''cctiponotready'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctiponotready''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctiponotready] on [dbo].[cctiponotready](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctipoResultadodial'' and object_id = OBJECT_ID(N''cctipoResultadodial'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctipoResultadodial''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctipoResultadodial] on [dbo].[cctipoResultadodial](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccTypeProcessPreview'' and object_id = OBJECT_ID(N''ccTypeProcessPreview'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccTypeProcessPreview''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccTypeProcessPreview] on [dbo].[ccTypeProcessPreview](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cstoprovedor'' and object_id = OBJECT_ID(N''cstoprovedor'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cstoprovedor''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cstoprovedor] on [dbo].[cstoprovedor](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cstotarifa'' and object_id = OBJECT_ID(N''cstotarifa'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cstotarifa''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cstotarifa] on [dbo].[cstotarifa](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cstotipollamada'' and object_id = OBJECT_ID(N''cstotipollamada'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cstotipollamada''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cstotipollamada] on [dbo].[cstotipollamada](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccRIAWorkGroup_Calid'' and object_id = OBJECT_ID(N''ccRIAWorkGroup_Calid'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccRIAWorkGroup_Calid''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccRIAWorkGroup_Calid] on [dbo].[ccRIAWorkGroup_Calid](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriachats'' and object_id = OBJECT_ID(N''ccriachats'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriachats''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriachats] on [dbo].[ccriachats](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriachatstatus'' and object_id = OBJECT_ID(N''ccriachatstatus'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriachatstatus''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriachatstatus] on [dbo].[ccriachatstatus](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_conversation'' and object_id = OBJECT_ID(N''conversation'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''conversation''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_conversation] on [dbo].[conversation](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
 
 
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
 
-if not exists (select * from sys.indexes where name = N''MSmerge_index_message'' and object_id = OBJECT_ID(N''message'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''message''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_message] on [dbo].[message](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_messageUnAssigned'' and object_id = OBJECT_ID(N''messageUnAssigned'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''messageUnAssigned''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_messageUnAssigned] on [dbo].[messageUnAssigned](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
+insert into @tIndexMerge(tableName,status)
+SELECT Art.name tableName,0 [status] FROM dbo.sysmergepublications P
+inner join dbo.sysmergearticles Art on Art.pubid=P.pubid
 
+set @column=''rowguid''
 
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccWAMessagesConversations'' and object_id = OBJECT_ID(N''ccWAMessagesConversations'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccWAMessagesConversations''))
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''MSmerge_index_'' + @tableName
+    set @sql=''if not exists(SELECT 1 FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.is_hypothetical = 0 -- Excluir índices hipotéticos
+    and i.name = @tableName
+    and c.name=@column
+)
+and not exists (select * from sys.indexes where name = @indexName and object_id = OBJECT_ID(@tableName)) 
+and exists (select * from sys.columns where name = @column and Object_ID = Object_ID(@tableName))
 begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccWAMessagesConversations] on [dbo].[ccWAMessagesConversations](
+CREATE UNIQUE NONCLUSTERED INDEX [''+@indexName+''] on [dbo].[''+@tableName+''](
     [rowguid] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccWhatsAppConversations'' and object_id = OBJECT_ID(N''ccWhatsAppConversations'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccWhatsAppConversations''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccWhatsAppConversations] on [dbo].[ccWhatsAppConversations](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ''
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    --print @sql
+    update @tIndexMerge set status=1 where @id=id
 end
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccWhatsAppConversationsRelationship'' and object_id = OBJECT_ID(N''ccWhatsAppConversationsRelationship'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccWhatsAppConversationsRelationship''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccWhatsAppConversationsRelationship] on [dbo].[ccWhatsAppConversationsRelationship](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccWhatsAppSpam'' and object_id = OBJECT_ID(N''ccWhatsAppSpam'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccWhatsAppSpam''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccWhatsAppSpam] on [dbo].[ccWhatsAppSpam](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_contactMeanIn'' and object_id = OBJECT_ID(N''contactMeanIn'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''contactMeanIn''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_contactMeanIn] on [dbo].[contactMeanIn](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ivrcallsin'' and object_id = OBJECT_ID(N''ivrcallsin'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ivrcallsin''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ivrcallsin] on [dbo].[ivrcallsin](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ivrstructure'' and object_id = OBJECT_ID(N''ivrstructure'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ivrstructure''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ivrstructure] on [dbo].[ivrstructure](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccLogAgentesDia'' and object_id = OBJECT_ID(N''ccLogAgentesDia'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccLogAgentesDia''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccLogAgentesDia] on [dbo].[ccLogAgentesDia](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccLogAgentesDia_Dialog'' and object_id = OBJECT_ID(N''ccLogAgentesDia_Dialog'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccLogAgentesDia_Dialog''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccLogAgentesDia_Dialog] on [dbo].[ccLogAgentesDia_Dialog](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccoLogDials'' and object_id = OBJECT_ID(N''ccoLogDials'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccoLogDials''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccoLogDials] on [dbo].[ccoLogDials](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccMenus'' and object_id = OBJECT_ID(N''ccMenus'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccMenus''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccMenus] on [dbo].[ccMenus](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccMenuUser'' and object_id = OBJECT_ID(N''ccMenuUser'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccMenuUser''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccMenuUser] on [dbo].[ccMenuUser](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccCampsMovs'' and object_id = OBJECT_ID(N''ccCampsMovs'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccCampsMovs''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccCampsMovs] on [dbo].[ccCampsMovs](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctipocalifsub'' and object_id = OBJECT_ID(N''cctipocalifsub'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctipocalifsub''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctipocalifsub] on [dbo].[cctipocalifsub](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctipocalifsubout'' and object_id = OBJECT_ID(N''cctipocalifsubout'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctipocalifsubout''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctipocalifsubout] on [dbo].[cctipocalifsubout](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctiposubcalifrel'' and object_id = OBJECT_ID(N''cctiposubcalifrel'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctiposubcalifrel''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctiposubcalifrel] on [dbo].[cctiposubcalifrel](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_telefonosConferencia'' and object_id = OBJECT_ID(N''telefonosConferencia'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''telefonosConferencia''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_telefonosConferencia] on [dbo].[telefonosConferencia](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_telefonosTransferencia'' and object_id = OBJECT_ID(N''telefonosTransferencia'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''telefonosTransferencia''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_telefonosTransferencia] on [dbo].[telefonosTransferencia](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RegProcessPreviewRecord'' and object_id = OBJECT_ID(N''RegProcessPreviewRecord'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RegProcessPreviewRecord''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RegProcessPreviewRecord] on [dbo].[RegProcessPreviewRecord](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccBaseXDB'' and object_id = OBJECT_ID(N''ccBaseXDB'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccBaseXDB''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccBaseXDB] on [dbo].[ccBaseXDB](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cccamps'' and object_id = OBJECT_ID(N''cccamps'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cccamps''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cccamps] on [dbo].[cccamps](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccinbound'' and object_id = OBJECT_ID(N''ccinbound'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccinbound''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccinbound] on [dbo].[ccinbound](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriacat_workgroup'' and object_id = OBJECT_ID(N''ccriacat_workgroup'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriacat_workgroup''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriacat_workgroup] on [dbo].[ccriacat_workgroup](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriaworkgroupusers'' and object_id = OBJECT_ID(N''ccriaworkgroupusers'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriaworkgroupusers''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriaworkgroupusers] on [dbo].[ccriaworkgroupusers](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctipocalif'' and object_id = OBJECT_ID(N''cctipocalif'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctipocalif''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctipocalif] on [dbo].[cctipocalif](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_cctipocalifout'' and object_id = OBJECT_ID(N''cctipocalifout'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''cctipocalifout''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_cctipocalifout] on [dbo].[cctipocalifout](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccUsers'' and object_id = OBJECT_ID(N''ccUsers'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccUsers''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccUsers] on [dbo].[ccUsers](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccUsers_Consulta'' and object_id = OBJECT_ID(N''ccUsers_Consulta'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccUsers_Consulta''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccUsers_Consulta] on [dbo].[ccUsers_Consulta](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccCampsAgente'' and object_id = OBJECT_ID(N''ccCampsAgente'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccCampsAgente''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccCampsAgente] on [dbo].[ccCampsAgente](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccinboundagentes'' and object_id = OBJECT_ID(N''ccinboundagentes'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccinboundagentes''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccinboundagentes] on [dbo].[ccinboundagentes](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriaareaworkgroup'' and object_id = OBJECT_ID(N''ccriaareaworkgroup'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriaareaworkgroup''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriaareaworkgroup] on [dbo].[ccriaareaworkgroup](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccriacat_areas'' and object_id = OBJECT_ID(N''ccriacat_areas'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccriacat_areas''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccriacat_areas] on [dbo].[ccriacat_areas](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ccsupervisorcam'' and object_id = OBJECT_ID(N''ccsupervisorcam'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ccsupervisorcam''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ccsupervisorcam] on [dbo].[ccsupervisorcam](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_FORMATOS'' and object_id = OBJECT_ID(N''RIA_FORMATOS'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_FORMATOS''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_FORMATOS] on [dbo].[RIA_FORMATOS](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_PREGUNTAS'' and object_id = OBJECT_ID(N''RIA_PREGUNTAS'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_PREGUNTAS''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_PREGUNTAS] on [dbo].[RIA_PREGUNTAS](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_RESPUESTAS'' and object_id = OBJECT_ID(N''RIA_RESPUESTAS'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_RESPUESTAS''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_RESPUESTAS] on [dbo].[RIA_RESPUESTAS](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RIA_RESULTADOSFORMA'' and object_id = OBJECT_ID(N''RIA_RESULTADOSFORMA'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RIA_RESULTADOSFORMA''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RIA_RESULTADOSFORMA] on [dbo].[RIA_RESULTADOSFORMA](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RiaMarkHold'' and object_id = OBJECT_ID(N''RiaMarkHold'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RiaMarkHold''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RiaMarkHold ] on [dbo].[RiaMarkHold](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_relationQuestionAnswer'' and object_id = OBJECT_ID(N''relationQuestionAnswer'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''relationQuestionAnswer''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_relationQuestionAnswer ] on [dbo].[relationQuestionAnswer](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_relationSurveyQuestion'' and object_id = OBJECT_ID(N''relationSurveyQuestion'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''relationSurveyQuestion''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_relationSurveyQuestion ] on [dbo].[relationSurveyQuestion](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_Survey'' and object_id = OBJECT_ID(N''Survey'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''Survey''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_Survey ] on [dbo].[Survey](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_SurveyAnswer'' and object_id = OBJECT_ID(N''SurveyAnswer'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''SurveyAnswer''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_SurveyAnswer ] on [dbo].[SurveyAnswer](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_SurveyQuestion'' and object_id = OBJECT_ID(N''SurveyQuestion'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''SurveyQuestion''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_SurveyQuestion ] on [dbo].[SurveyQuestion](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_ivroptions'' and object_id = OBJECT_ID(N''ivroptions'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''ivroptions''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_ivroptions] on [dbo].[ivroptions](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_RiaMarkHold'' and object_id = OBJECT_ID(N''RiaMarkHold'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''RiaMarkHold''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_RiaMarkHold ] on [dbo].[RiaMarkHold](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_relationQuestionAnswer'' and object_id = OBJECT_ID(N''relationQuestionAnswer'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''relationQuestionAnswer''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_relationQuestionAnswer ] on [dbo].[relationQuestionAnswer](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_relationSurveyQuestion'' and object_id = OBJECT_ID(N''relationSurveyQuestion'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''relationSurveyQuestion''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_relationSurveyQuestion ] on [dbo].[relationSurveyQuestion](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_Survey'' and object_id = OBJECT_ID(N''Survey'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''Survey''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_Survey ] on [dbo].[Survey](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_SurveyAnswer'' and object_id = OBJECT_ID(N''SurveyAnswer'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''SurveyAnswer''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_SurveyAnswer ] on [dbo].[SurveyAnswer](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-if not exists (select * from sys.indexes where name = N''MSmerge_index_SurveyQuestion'' and object_id = OBJECT_ID(N''SurveyQuestion'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''SurveyQuestion''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_SurveyQuestion ] on [dbo].[SurveyQuestion](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
-
-if not exists (select * from sys.indexes where name = N''MSmerge_index_messageStatus'' and object_id = OBJECT_ID(N''messageStatus'')) 
-and exists (select * from sys.columns where name = N''rowguid'' and Object_ID = Object_ID(N''messageStatus''))
-begin
-CREATE UNIQUE NONCLUSTERED INDEX [MSmerge_index_messageStatus] on [dbo].[messageStatus](
-    [rowguid] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end
-
 
 
 /****************************INDICES PARA REPORTES *******************************/
@@ -1138,38 +475,59 @@ ON [dbo].[tmpTimesOutboundData] ([cal_manual])
 INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
 end
 
-
-if not exists (select * from sys.indexes where name = N''IX_RepOutAnswAndXferCalls_1'' and object_id = OBJECT_ID(N''RepOutAnswAndXferCalls''))
+if not exists (select * from sys.indexes where name = N''IX_RiaMarkHold_1'' and object_id = OBJECT_ID(N''RiaMarkHold''))
 begin
-   CREATE NONCLUSTERED INDEX IX_RepOutAnswAndXferCalls_1
-ON [dbo].[RepOutAnswAndXferCalls] ([date])
+create index IX_RiaMarkHold_1 on RiaMarkHold (
+    call_id,tipo_llamada
+)
 end
+/**************************** INDICES Reportes *******************************/
 
-if not exists (select * from sys.indexes where name = N''IX_RepMKTTiemposTotales_1'' and object_id = OBJECT_ID(N''RepMKTTiemposTotales''))
+
+
+set @column=''date''
+delete from @tIndexMerge
+
+insert into @tIndexMerge(tableName,status)
+SELECT     
+    t.TABLE_NAME,0
+FROM 
+    INFORMATION_SCHEMA.COLUMNS c
+INNER JOIN 
+    INFORMATION_SCHEMA.TABLES t 
+    ON c.TABLE_NAME = t.TABLE_NAME AND c.TABLE_SCHEMA = t.TABLE_SCHEMA
+WHERE 
+    t.TABLE_NAME LIKE ''Rep%''   -- Las tablas que comienzan con ''Rep''
+    AND c.COLUMN_NAME = ''date'' -- Que contienen una columna llamada ''date''
+    AND t.TABLE_TYPE = ''BASE TABLE'' -- Solo tablas (no vistas)
+ORDER BY 
+    t.TABLE_SCHEMA, t.TABLE_NAME;
+
+
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''IX_''+ @tableName+''_date'' 
+    set @sql=''if not exists(SELECT 1 FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.is_hypothetical = 0 -- Excluir índices hipotéticos
+    and i.name = @tableName
+    and c.name=@column
+)
+and not exists (select * from sys.indexes where name = @indexName and object_id = OBJECT_ID(@tableName)) 
+and exists (select * from sys.columns where name = @column and Object_ID = Object_ID(@tableName))
 begin
-CREATE NONCLUSTERED INDEX IX_RepMKTTiemposTotales_1
-ON [dbo].[RepMKTTiemposTotales] ([date])
+CREATE NONCLUSTERED INDEX ''+@indexName+''
+ON [dbo].[''+@tableName+''] ([date])
 end
-
-if not exists (select * from sys.indexes where name = N''IX_RepOutDialDetail_3'' and object_id = OBJECT_ID(N''RepOutDialDetail''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepOutDialDetail_3
-ON [dbo].[RepOutDialDetail] ([date])
-INCLUDE ([callKey],[telephone],[dialResultId])
-end
-
-if not exists (select * from sys.indexes where name = N''IX_RepInSubDispositions_1'' and object_id = OBJECT_ID(N''RepInSubDispositions''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepInSubDispositions_1
-ON [dbo].[RepInSubDispositions] ([date])
-INCLUDE ([userId],[inboundId],[subDispositionId],[areaId])
-end
-
-if not exists (select * from sys.indexes where name = N''IX_RepInCallsDetail_2'' and object_id = OBJECT_ID(N''RepInCallsDetail''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepInCallsDetail_2
-ON [dbo].[RepInCallsDetail] ([date])
-INCLUDE ([callStatusId],[dispositionId],[userId],[queueTime])
+    ''
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    print @sql
+    update @tIndexMerge set status=1 where @id=id
 end
     
 if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
@@ -1177,28 +535,7 @@ begin
 CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
 ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
 INCLUDE ([userId],[status],[statusTime])
-end
-
-if not exists (select * from sys.indexes where name = N''IX_RepOutManagementBase_1'' and object_id = OBJECT_ID(N''RepOutManagementBase''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepOutManagementBase_1
-ON [dbo].[RepOutManagementBase] ([date])
-end
-    
-if not exists (select * from sys.indexes where name = N''IX_RepOutSubDispositions_1'' and object_id = OBJECT_ID(N''RepOutSubDispositions''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepOutSubDispositions_1
-ON [dbo].[RepOutSubDispositions] ([date])
-INCLUDE ([campaignId],[subDispositionId],[userId],[areaId])
-end
-
-    
-if not exists (select * from sys.indexes where name = N''IX_RepAgentGI_1'' and object_id = OBJECT_ID(N''RepAgentGI''))
-begin
-CREATE NONCLUSTERED INDEX IX_RepAgentGI_1
-ON [dbo].[RepAgentGI] ([date])
-INCLUDE ([userId],[user],[login],[tdialogin],[tnotesin],[tdialogout],[tnotesout],[tnotav],[tlog])
-end
+end 
 
 end'
     EXEC(@sql)
@@ -1467,7 +804,7 @@ AS (
         ,IdCampEsp AS camId
         ,Tipo AS camType
         ,callId
-    FROM ccLogAgentesDia
+    FROM ccLogAgentesDia with(nolock,index(IX_ccLogAgentesDia_6))
     WHERE DATEADD(ss, - tStatus, fecha) BETWEEN @from AND @to   
     )
 , cteLogAgentesDia as (
@@ -6357,7 +5694,8 @@ EXEC(@sql)
         if @to is null	
             select @to = getdate()
 
-        delete RepCallXfer with(rowlock)	where [date] between @from and @to
+        delete RepCallXfer where [date] between @from and @to
+
         insert RepCallXfer 
         select convert(varchar(10),fechafin,121) [date], 
         clt.cal_id callid, 
@@ -6418,7 +5756,7 @@ EXEC(@sql)
                 end),''systemTranslated_Indefinite'') as TipoTel, 
         (case tipo when 1 then ci.User_id else co.User_id end) User_ID, 
         isnull(callerAni, '''')  as callerni
-        from cclogtransfers clt 
+        from cclogtransfers clt with(nolock,index(IX_ccLogTransfers_3)) 
         left join ccocallsout co (nolock) on co.cal_id=clt.cal_id and tipo=2 
         left join cccallsin ci (nolock) on ci.cal_id=clt.cal_id and tipo=1 
         left join cccamps camp on camp.cam_id =co.cam_id 
@@ -7205,13 +6543,13 @@ end'
 )
 RETURNS @RtnValue TABLE (
     Id INT IDENTITY(1,1),
-    Value NVARCHAR(100)
+    Value NVARCHAR(255)
 )
 AS
 BEGIN
     DECLARE @Pos INT = 1
     DECLARE @NextPos INT
-    DECLARE @Fragment NVARCHAR(100)
+    DECLARE @Fragment NVARCHAR(255)
 
     IF LEN(@List) = 0  -- Verificar si la lista está vacía y salir
         RETURN
@@ -7243,20 +6581,318 @@ BEGIN
     END
 
     RETURN
-END
+END'
+    EXEC(@sql)
+
+    set @process = ' drop index IX_RepOutDialDetail_3,IX_RepInSubDispositions_1,IX_RepInCallsDetail_2,IX_RepOutSubDispositions_1,IX_RepAgentGI_1'
+    set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDialDetail_3'' and object_id = OBJECT_ID(N''RepOutDialDetail''))
+begin
+    drop index IX_RepOutDialDetail_3 on RepOutDialDetail
+end
+
+if exists (select * from sys.indexes where name = N''IX_RepInSubDispositions_1'' and object_id = OBJECT_ID(N''RepInSubDispositions''))
+begin
+    drop index IX_RepInSubDispositions_1 on RepInSubDispositions
+end
+if exists (select * from sys.indexes where name = N''IX_RepInCallsDetail_2'' and object_id = OBJECT_ID(N''RepInCallsDetail''))
+begin
+    drop index IX_RepInCallsDetail_2 on RepInCallsDetail
+end
+if exists (select * from sys.indexes where name = N''IX_RepOutSubDispositions_1'' and object_id = OBJECT_ID(N''RepOutSubDispositions''))
+begin
+    drop index IX_RepOutSubDispositions_1 on RepOutSubDispositions
+end
+
+if exists (select * from sys.indexes where name = N''IX_RepAgentGI_1'' and object_id = OBJECT_ID(N''RepAgentGI''))
+begin
+    drop index IX_RepAgentGI_1 on RepAgentGI
+end
 '
     EXEC(@sql)
 
-    set @process = ''
-    set @sql=''
+    set @process = 'alter SP ccspTmpTimesccLogtransfers with(nolock,index(IX_ccLogTransfers_3)) '
+    set @sql='ALTER PROCEDURE [dbo].[ccspTmpTimesccLogtransfers] @from AS SMALLDATETIME, @to AS SMALLDATETIME
+AS
+SET NOCOUNT ON
+
+IF OBJECT_ID(N''tempdb..#tempccLogtransfers'', N''U'') IS NOT NULL
+    DROP TABLE #tempccLogtransfers
+IF OBJECT_ID(N''tempdb..#tempccLogtransfers2'', N''U'') IS NOT NULL
+    DROP TABLE #tempccLogtransfers2
+
+IF NOT EXISTS (
+        SELECT *
+        FROM sys.tables
+        WHERE name = ''TmpTimesccLogtransfers''
+        )
+BEGIN
+    CREATE TABLE TmpTimesccLogtransfers (
+    dateIni DATETIME NOT NULL, dateEnd DATETIME NOT NULL, callId INT NOT NULL, tipo TINYINT NULL, modo TINYINT NULL
+    , destino VARCHAR(100) NOT NULL, tAntesXfer INT, tDespuesXfer INT   
+    , timegroup DATETIME NOT NULL
+    ,timegroup_next DATETIME NOT NULL
+    )
+END
+ELSE
+BEGIN
+    TRUNCATE TABLE TmpTimesccLogtransfers
+        --drop table TmpTimesccLogtransfers
+END
+
+CREATE TABLE #tempccLogtransfers (
+    dateIni DATETIME NOT NULL, dateEnd DATETIME NOT NULL, callId INT NOT NULL, tipo TINYINT NULL, modo TINYINT NULL
+    , destino VARCHAR(100) NOT NULL, tAntesXfer INT, tDespuesXfer INT
+    ,dateStarBeforetTransf DATETIME NOT NULL    
+    , timegroup DATETIME NOT NULL
+    ,timegroup_next DATETIME NOT NULL
+    )
+    ;
+
+with logtransfer as(
+
+SELECT DATEADD(ss, - tAntesXfer - tDespuesXfer, fechaFin)as  dateIni, fechaFin  as dateEnd
+    , cal_id callId, tipo, modo, destino, tAntesXfer, tDespuesXfer
+    , dbo.GetTimeGroup(DATEADD(ss, - tAntesXfer - tDespuesXfer, fechaFin), 0) AS timegroup
+    , dbo.GetTimeGroup(fechaFin, 1) AS timegroup_next
+FROM ccLogtransfers with(nolock,index(IX_ccLogTransfers_3))
+WHERE fechaFin BETWEEN @from        AND @to
+
+)
+
+INSERT INTO #tempccLogtransfers
+select dateIni,dateEnd,callId, tipo, modo, destino, tAntesXfer, tDespuesXfer
+,dateadd(ss,tAntesXfer,dateIni) as dateStarBeforetTransf
+,timegroup,timegroup_next
+from logtransfer
+
+select * into #tempccLogtransfers2 from #tempccLogtransfers where datediff(mi,timegroup,timegroup_next)>15
+delete #tempccLogtransfers where datediff(mi,timegroup,timegroup_next) > 15
+
+insert into TmpTimesccLogtransfers
+select dateIni,dateEnd,callId
+    ,tipo, modo, destino
+    ,dbo.TimeInterval(th.start, th.stop, dateIni, dateStarBeforetTransf) AS tAntesXfer
+    ,dbo.TimeInterval(th.start, th.stop, dateStarBeforetTransf, dateEnd) AS tDespuesXfer    
+,th.start as timegroup,th.stop as timegroup_next
+    from #tempccLogtransfers2 t
+    inner join TmpTimesInterval th on (t.timegroup > th.Start and t.timegroup < th.stop) OR th.Start between t.timegroup and t.timegroup_next
+    where  datediff(ss,th.start,timegroup_next)>0
+union all
+select dateIni,dateEnd,callId   ,tipo, modo, destino,
+tAntesXfer,tDespuesXfer,timegroup,timegroup_next
+from #tempccLogtransfers
+
+IF OBJECT_ID(N''tempdb..#tempccLogtransfers'', N''U'') IS NOT NULL
+    DROP TABLE #tempccLogtransfers
+IF OBJECT_ID(N''tempdb..#tempccLogtransfers2'', N''U'') IS NOT NULL
+    DROP TABLE #tempccLogtransfers2
+'
     EXEC(@sql)
 
-    set @process = ''
-    set @sql=''
-    EXEC(@sql)
+    set @process = 'alter sp ccsptmpTimesHoldIn with(NOLOCK,index(IX_ccCallsIn_9))'
+    set @sql='ALTER PROCEDURE [dbo].[ccsptmpTimesHoldIn] @from AS SMALLDATETIME
+    ,@to AS SMALLDATETIME
+AS
+SET NOCOUNT ON
 
-    set @process = ''
-    set @sql=''
+IF OBJECT_ID(N''tempdb..#hold'', N''U'') IS NOT NULL
+    DROP TABLE #hold
+
+IF OBJECT_ID(N''tempdb..tempccHoldSession'', N''U'') IS NOT NULL
+    DROP TABLE #tempccHoldSession
+
+IF OBJECT_ID(N''tempdb..#holdMayores2'', N''U'') IS NOT NULL
+    DROP TABLE #holdMayores2
+
+IF NOT EXISTS (
+        SELECT *
+        FROM sys.tables
+        WHERE name = ''tmpTimesHoldIn''
+        )
+BEGIN
+    CREATE TABLE tmpTimesHoldIn (
+        inbound_id INT NOT NULL
+        ,userId INT NOT NULL
+        ,tiempohold INT NOT NULL
+        ,timegroup DATETIME
+        ,timegroup_next DATETIME
+        )
+END
+ELSE
+BEGIN
+    TRUNCATE TABLE tmpTimesHoldIn
+        --drop table tmpTimesHoldIn
+END
+
+CREATE TABLE #hold (
+    Fila INT
+    ,[userId] INT NOT NULL
+    ,[dateStart] [datetime] NOT NULL
+    ,[dateEnd] [datetime] NOT NULL
+    ,call_id INT NOT NULL
+    ,inbound_id INT NOT NULL
+    ,marca INT NOT NULL
+    ,Tipo_marca INT NOT NULL
+    ,Tipo_llamada INT NOT NULL
+    ,[timegroup] [datetime] NOT NULL
+    ,[timegroup_next] [datetime] NOT NULL
+    ,[time_dialog] [datetime] NOT NULL
+    ,[time_notes] [datetime] NOT NULL
+    ,[time_hold] [datetime] NOT NULL
+    )
+
+CREATE TABLE #tempccHoldSession (
+    [fila] INT NOT NULL
+    ,[call_id] [int] NOT NULL
+    ,[userId] INT NOT NULL
+    ,[inbound_id] [int] NOT NULL
+    ,[hold] [datetime] NOT NULL
+    ,[unhold] [datetime] NULL
+    ,[Tipo_marca] [int] NOT NULL
+    ,[timegroup] [datetime] NOT NULL
+    ,[timegroup_next] [datetime] NOT NULL PRIMARY KEY (
+        fila
+        ,call_id
+        )
+    )
+
+CREATE TABLE #holdMayores2 (
+    call_id INT NOT NULL
+    ,[userId] INT NOT NULL
+    ,inbound_id INT NOT NULL
+    ,hold [datetime] NOT NULL
+    ,[unhold] [datetime] NOT NULL
+    ,Tipo_marca INT NOT NULL
+    ,tiempoHold INT NOT NULL
+    ,[timegroup] [datetime] NOT NULL
+    ,[timegroup_next] [datetime] NOT NULL
+    );
+
+WITH timeHold
+AS (
+    SELECT User_id AS userId
+        ,cal_Inicio AS [dateStart]
+        ,dateadd(ss, cal_tXfer + cal_tRing + cal_tDialog + cal_tNotas, cal_Inicio) AS [dateEnd]
+        ,cal_id AS cal_id
+        ,inbound_id AS inbound_id
+        ,isnull(h.marca, 0) AS Marca
+        ,CASE WHEN (h.tipo_marca > 0) THEN h.tipo_marca ELSE 0 END AS Tipo_marca
+        ,isnull(tipo_llamada, 0) AS Tipo_llamada
+        ,dbo.GetTimeGroup(cal_Inicio, 0) AS timegroup
+        ,dbo.GetTimeGroup(dateadd(ss, cal_tXfer + cal_tRing + cal_tDialog + cal_tNotas, cal_Inicio), 1) AS timegroup_next
+        ,DATEADD(ss, isnull(cal_twait + cal_txfer + cal_tring, 0), cal_inicio) AS time_dialog
+        ,DATEADD(ss, isnull(cal_twait + cal_txfer + cal_tring + cal_tdialog, 0), cal_inicio) AS time_notes
+        ,DATEADD(ss, isnull(cal_twait + cal_txfer + cal_tring + marca, 0), cal_Inicio) AS time_hold
+    FROM cccallsin i with(NOLOCK,index(IX_ccCallsIn_9))
+    LEFT JOIN RiaMarkHold h(NOLOCK) ON i.cal_id = h.call_id AND h.tipo_llamada = 1
+    WHERE cal_Inicio BETWEEN @from
+            AND @to
+    )
+INSERT INTO #hold
+SELECT ROW_NUMBER() OVER (
+        PARTITION BY cal_id ORDER BY time_hold
+            ,tipo_marca
+        ) Fila
+    ,*
+FROM timeHold a
+WHERE time_hold >= @from
+    AND time_hold <= @to
+
+INSERT INTO #tempccHoldSession
+SELECT A.Fila
+    ,A.call_id
+    ,a.userId
+    ,a.inbound_id
+    ,A.time_hold hold
+    ,isnull(S.time_hold, a.time_notes) unhold
+    ,a.Tipo_marca Tipo_marca
+    ,a.timegroup timegroup
+    ,a.timegroup_next timegroup_next
+FROM #hold A
+LEFT JOIN #hold S
+    ON A.Fila = S.Fila - 1
+        AND A.call_id = S.call_id
+        AND A.tipo_marca = 1
+        AND S.tipo_marca = 0
+WHERE A.tipo_llamada = 1
+ORDER BY hold
+
+SELECT ths.call_id
+    ,ths.userId
+    ,ths.inbound_id
+    ,ths.hold
+    ,ths.unhold
+    ,ths.Tipo_marca
+    ,[dbo].TimeInterval(th.[start], th.[stop], ths.hold, ths.unhold) AS tiempohold
+    ,ths.timegroup
+    ,ths.timegroup_next
+INTO #tiempoHold
+FROM #tempccHoldSession ths
+INNER JOIN TmpTimesInterval th
+    ON (
+            ths.timegroup > th.Start
+            AND ths.timegroup < th.stop
+            )
+        OR th.Start BETWEEN ths.timegroup
+            AND ths.timegroup_next
+WHERE [dbo].TimeInterval(th.[start], th.[stop], ths.hold, ths.unhold) > 0
+    AND Tipo_marca = 1
+    AND th.Start BETWEEN @from
+        AND @to
+
+INSERT INTO #holdMayores2
+SELECT *
+FROM #tiempoHold
+WHERE datediff(mi, timegroup, timegroup_next) > 15
+
+DELETE #tiempoHold
+WHERE datediff(mi, timegroup, timegroup_next) > 15
+
+INSERT INTO #tiempoHold
+SELECT call_id
+    ,userId AS userId
+    ,inbound_id AS inbound_id
+    ,hold
+    ,unhold
+    ,Tipo_marca
+    ,[dbo].TimeInterval(th.[start], th.[stop], hold, unhold) AS tiempohold
+    ,th.[start] AS timegroup
+    ,th.[stop] AS timegroup_next
+FROM #holdMayores2 t
+INNER JOIN TmpTimesInterval th
+    ON (
+            t.timegroup > th.Start
+            AND t.timegroup < th.stop
+            )
+        OR th.Start BETWEEN t.timegroup
+            AND t.timegroup_next
+WHERE [dbo].TimeInterval(th.[start], th.[stop], hold, unhold) > 0
+    AND th.Start BETWEEN @from
+        AND @to
+
+INSERT INTO tmpTimesHoldIn
+SELECT inbound_id
+    ,userId
+    ,sum(tiempohold) AS tiempohold
+    ,timegroup
+    ,timegroup_next
+FROM #tiempoHold
+WHERE tiempoHold > 0
+    AND Tipo_marca = 1
+GROUP BY userId
+    ,inbound_id
+    ,timegroup
+    ,timegroup_next
+
+IF OBJECT_ID(N''tempdb..#hold'', N''U'') IS NOT NULL
+    DROP TABLE #hold
+
+IF OBJECT_ID(N''tempdb..tempccHoldSession'', N''U'') IS NOT NULL
+    DROP TABLE #tempccHoldSession
+
+IF OBJECT_ID(N''tempdb..#holdMayores2'', N''U'') IS NOT NULL
+    DROP TABLE #holdMayores2
+'
     EXEC(@sql)
 
     set @process = ''

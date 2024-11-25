@@ -887,7 +887,309 @@ END'
    
     -------------------------------------- End hotfix/125.20231211.0.17 --------------------------------------
 
+-------------------------------------- Begin hotfix/125.20231211.0.20 --------------------------------------
+    set @process = 'alter SP ccSpCreateIndexReport'
+    set @sql='ALTER PROCEDURE [dbo].[ccSpCreateIndexReport]  
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+declare @tIndexMerge table(id int identity,tableName varchar(255),status bit)
+declare @sql nvarchar(max),@tableName varchar(255),@id int
+declare @column varchar(255),@indexName varchar(255)
+
+insert into @tIndexMerge(tableName,status)
+SELECT Art.name tableName,0 [status] FROM dbo.sysmergepublications P
+inner join dbo.sysmergearticles Art on Art.pubid=P.pubid
+
+set @column=''rowguid''
+
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''MSmerge_index_'' + @tableName
+    set @sql=''if not exists(SELECT 1 FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.is_hypothetical = 0 -- Excluir índices hipotéticos
+    and i.name = @tableName
+    and c.name=@column
+)
+and not exists (select * from sys.indexes where name = @indexName and object_id = OBJECT_ID(@tableName)) 
+and exists (select * from sys.columns where name = @column and Object_ID = Object_ID(@tableName))
+begin
+CREATE UNIQUE NONCLUSTERED INDEX [''+@indexName+''] on [dbo].[''+@tableName+''](
+    [rowguid] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+end
+    ''
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    --print @sql
+    update @tIndexMerge set status=1 where @id=id
+end
+
+
+/****************************INDICES PARA REPORTES *******************************/
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_4'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_4
+ON [dbo].[ccLogAgentesDia] ([User_id],[fecha])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_6'' and object_id = OBJECT_ID(N''ccLogAgentesDia''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_6
+ON [dbo].[ccLogAgentesDia] ([fecha])
+INCLUDE ([User_id],[TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesNotReady_5'' and object_id = OBJECT_ID(N''cclogagentesnotready''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogAgentesNotReady_5
+ON [dbo].[cclogagentesnotready] ([fecha])
+INCLUDE ([User_id],[TipoNotReady_id],[tStatus])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogLogin_6'' and object_id = OBJECT_ID(N''ccloglogin''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogLogin_6
+ON [dbo].[ccloglogin] ([fecha])
+INCLUDE ([User_id],[Extension],[TipoMov])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogTransfers_3'' and object_id = OBJECT_ID(N''ccLogtransfers''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccLogTransfers_3
+ON [dbo].[ccLogtransfers] ([fechaFin])
+INCLUDE ([cal_id],[tipo],[modo],[destino],[tAntesXfer],[tDespuesXfer])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut13'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut13
+ON [dbo].[ccoCallsOut] ([cal_Inicio])
+INCLUDE ([cal_id],[cal_telefono],[cal_puerto],[cam_id],[User_id],[statusCall_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[cal_manual],[cal_tMoh],[cal_whoHung],[cal_twait])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOut_14'' and object_id = OBJECT_ID(N''ccoCallsOut''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccoCallsOut_14
+ON [dbo].[ccoCallsOut] ([cal_Inicio],[cal_manual])
+INCLUDE ([cal_id],[callout_id],[cal_telefono],[cam_id],[User_id],[calif_id],[cal_tDialog],[cal_tNotas],[cal_tXfer],[cal_tRing],[califSub_id])
+end 
+
+
+    
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_11'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_11
+ON [dbo].[RIA_GRABACION] ([tipo_llamada],[cal_id])
+INCLUDE ([grab_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_RIA_GRABACION_10'' and object_id = OBJECT_ID(N''RIA_GRABACION''))
+begin
+CREATE NONCLUSTERED INDEX IX_RIA_GRABACION_10
+ON [dbo].[RIA_GRABACION] ([tipo_llamada])
+INCLUDE ([cal_id])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccLogAgentesDia_Dialog'' and object_id = OBJECT_ID(N''ccLogAgentesDia_Dialog''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccLogAgentesDia_Dialog
+ON [dbo].[ccLogAgentesDia_Dialog] ([fecha_Dialog])
+INCLUDE ([User_id],[fecha_Calc_ms])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccoCallsOutSource_1'' and object_id = OBJECT_ID(N''ccoCallsOutSource''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoCallsOutSource_1
+ON [dbo].[ccoCallsOutSource] ([cal_fechaDial],[Region])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_6'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_6
+ON [dbo].[ccoLogDials] ([fecha])
+INCLUDE ([cam_id],[tipoResDial_id],[Telefono],[cal_id],[disconnectCause],[answerbit],[tipoLlamada_id])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_7'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_7
+ON [dbo].[ccoLogDials] ([cal_id])
+INCLUDE ([tipoResDial_id])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_ccoLogDials_8'' and object_id = OBJECT_ID(N''ccoLogDials''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccoLogDials_8
+ON [dbo].[ccoLogDials] ([fecha],[cal_id])
+INCLUDE ([tipoResDial_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_7'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+   CREATE NONCLUSTERED INDEX IX_ccCallsIn_7
+ON [dbo].[ccCallsIn] ([Inbound_id],[cal_Inicio])
+INCLUDE ([cal_id],[dni_id],[cal_ANI],[User_id],[statusCall_id],[calif_id],[cal_que],[cal_tDialog],[cal_tNotas],[cal_tWait],[cal_tXfer],[cal_tRing],[cal_Xfer],[cal_tMoh],[cal_whoHung],[califSub_id])
+
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_8'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_8
+ON [dbo].[ccCallsIn] ([IVR_id])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_ccCallsIn_9'' and object_id = OBJECT_ID(N''ccCallsIn''))
+begin
+CREATE NONCLUSTERED INDEX IX_ccCallsIn_9
+ON [dbo].[ccCallsIn] ([cal_Inicio])
+INCLUDE ([cal_id])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpSessionTimeGroup_1'' and object_id = OBJECT_ID(N''tmpSessionTimeGroup''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpSessionTimeGroup_1
+ON [dbo].[tmpSessionTimeGroup] ([user_id])
+INCLUDE ([timegroup],[tlog])
+end
+
+   
+if not exists (select * from sys.indexes where name = N''IX_tmpccLogAgentesDia_2'' and object_id = OBJECT_ID(N''tmpccLogAgentesDia''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpccLogAgentesDia_2
+ON [dbo].[tmpccLogAgentesDia] ([userId],[timeGroup])
+INCLUDE ([TipoStatusAge_id],[tStatus])
+end
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_1'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_1
+ON [dbo].[tmpTimesInboundData] ([statusCall_id])
+INCLUDE ([timegroup],[Inbound_id],[nabnd],[tque],[txfer],[tring])
+end
+
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesInboundData_2'' and object_id = OBJECT_ID(N''tmpTimesInboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesInboundData_2
+ON [dbo].[tmpTimesInboundData] ([cal_id])
+INCLUDE ([Inbound_id],[User_id])
+end
+
+
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_1'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_1
+ON [dbo].[tmpTimesOutboundData] ([timegroup],[cal_id])
+INCLUDE ([User_id])
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_tmpTimesOutboundData_2'' and object_id = OBJECT_ID(N''tmpTimesOutboundData''))
+begin
+CREATE NONCLUSTERED INDEX IX_tmpTimesOutboundData_2
+ON [dbo].[tmpTimesOutboundData] ([cal_manual])
+INCLUDE ([timegroup],[User_id],[nabnd_xfer],[nabnd_ring],[tdialog],[tnotes],[cal_id])
+end
+/**************************** INDICES Reportes *******************************/
+
+
+
+set @column=''date''
+delete from @tIndexMerge
+
+insert into @tIndexMerge(tableName,status)
+SELECT     
+    t.TABLE_NAME,0
+FROM 
+    INFORMATION_SCHEMA.COLUMNS c
+INNER JOIN 
+    INFORMATION_SCHEMA.TABLES t 
+    ON c.TABLE_NAME = t.TABLE_NAME AND c.TABLE_SCHEMA = t.TABLE_SCHEMA
+WHERE 
+    t.TABLE_NAME LIKE ''Rep%''   -- Las tablas que comienzan con ''Rep''
+    AND c.COLUMN_NAME = ''date'' -- Que contienen una columna llamada ''date''
+    AND t.TABLE_TYPE = ''BASE TABLE'' -- Solo tablas (no vistas)
+ORDER BY 
+    t.TABLE_SCHEMA, t.TABLE_NAME;
+
+
+while exists(select 1 from @tIndexMerge where status=0) begin
+    select top 1 @tableName=tableName,@id=id from @tIndexMerge where status=0 
+    set @indexName=N''IX_''+ @tableName+''_date'' 
+    set @sql=''if not exists(SELECT 1 FROM sys.indexes i
+INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.is_hypothetical = 0 -- Excluir índices hipotéticos
+    and i.name = @tableName
+    and c.name=@column
+)
+and not exists (select * from sys.indexes where name = @indexName and object_id = OBJECT_ID(@tableName)) 
+and exists (select * from sys.columns where name = @column and Object_ID = Object_ID(@tableName))
+begin
+CREATE NONCLUSTERED INDEX ''+@indexName+''
+ON [dbo].[''+@tableName+''] ([date])
+end
+    ''
+    EXEC sp_executesql @sql, 
+    N''@tableName varchar(255),@column varchar(255),@indexName varchar(255)'', 
+    @tableName = @tableName, 
+    @indexName = @indexName,
+    @column = @column;
+    print @sql
+    update @tIndexMerge set status=1 where @id=id
+end
+    
+if not exists (select * from sys.indexes where name = N''IX_RepAgentNotReadyDet_2'' and object_id = OBJECT_ID(N''RepAgentNotReadyDet''))
+begin
+CREATE NONCLUSTERED INDEX IX_RepAgentNotReadyDet_2
+ON [dbo].[RepAgentNotReadyDet] ([tiponotreadyId],[startDate])
+INCLUDE ([userId],[status],[statusTime])
+end
+
+ 
+
+end'
+    EXEC(@sql)
+
+    set @process = 'drop index IX_RepOutDialDetail_3,IX_RepInSubDispositions_1,IX_RepInCallsDetail_2,IX_RepOutSubDispositions_1,IX_RepAgentGI_1'
+    set @sql='if exists (select * from sys.indexes where name = N''IX_RepOutDialDetail_3'' and object_id = OBJECT_ID(N''RepOutDialDetail''))
+begin
+    drop index IX_RepOutDialDetail_3 on RepOutDialDetail
+end
+
+if exists (select * from sys.indexes where name = N''IX_RepInSubDispositions_1'' and object_id = OBJECT_ID(N''RepInSubDispositions''))
+begin
+    drop index IX_RepInSubDispositions_1 on RepInSubDispositions
+end
+if exists (select * from sys.indexes where name = N''IX_RepInCallsDetail_2'' and object_id = OBJECT_ID(N''RepInCallsDetail''))
+begin
+    drop index IX_RepInCallsDetail_2 on RepInCallsDetail
+end
+if exists (select * from sys.indexes where name = N''IX_RepOutSubDispositions_1'' and object_id = OBJECT_ID(N''RepOutSubDispositions''))
+begin
+    drop index IX_RepOutSubDispositions_1 on RepOutSubDispositions
+end
+
+if exists (select * from sys.indexes where name = N''IX_RepAgentGI_1'' and object_id = OBJECT_ID(N''RepAgentGI''))
+begin
+    drop index IX_RepAgentGI_1 on RepAgentGI
+end'
+    EXEC(@sql)
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

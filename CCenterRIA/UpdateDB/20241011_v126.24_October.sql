@@ -2285,11 +2285,11 @@ set nocount off'
         set @sql = 'ALTER FUNCTION [dbo].[fn_RIASplitDelimited]
 (   
     @List NVARCHAR(max),
-    @SplitOn NVARCHAR(3)
+    @SplitOn NVARCHAR(20)
 )
 RETURNS @RtnValue TABLE (
     Id INT IDENTITY(1,1),
-    Value NVARCHAR(255)
+    Value NVARCHAR(MAX)
 )
 AS
 BEGIN

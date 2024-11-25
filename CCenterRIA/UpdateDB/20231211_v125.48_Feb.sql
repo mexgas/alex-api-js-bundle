@@ -13117,20 +13117,20 @@ BEGIN
         INSERT INTO @tempTable
         SELECT value FROM fn_RIASplitDelimited(@groupList, '','')
 
+
         SELECT 
-                CAST(wgu.IDWG AS VARCHAR(10)) AS idwg,
-                STUFF((
-                        SELECT '', '' + CAST(wgu2.User_id AS VARCHAR)
-                        FROM ccUsers u2
-                        INNER JOIN ccRIAWorkGroupUsers wgu2 ON wgu2.User_id = u2.User_id
-                        WHERE u2.TipoUser_id = 1
-                                AND wgu2.IDWG = wgu.IDWG
-                                AND u2.LastLoginAttempt <= DATEADD(DAY, -60, GETDATE())
-                        FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''') AS agents
+        CAST(wgu.IDWG AS VARCHAR(10)) AS idwg,
+        STUFF((
+                SELECT '', '' + CAST(wgu2.User_id AS VARCHAR)
+                FROM ccUsers u2
+                INNER JOIN ccRIAWorkGroupUsers wgu2 ON wgu2.User_id = u2.User_id
+                WHERE wgu2.IDWG = wgu.IDWG
+                        AND u2.LastLoginAttempt <= DATEADD(DAY, -60, GETDATE())
+                FOR XML PATH(''''), TYPE).value(''.'', ''NVARCHAR(MAX)''), 1, 2, '''') AS agents
         FROM ccUsers u
         INNER JOIN ccRIAWorkGroupUsers wgu ON wgu.User_id = u.User_id
-        WHERE u.TipoUser_id = 1
-                AND wgu.IDWG IN (SELECT Id FROM @tempTable)
+        WHERE 
+               wgu.IDWG IN (SELECT Id FROM @tempTable)
                 AND u.LastLoginAttempt <= DATEADD(DAY, -60, GETDATE())
         GROUP BY wgu.IDWG
         ORDER BY wgu.IDWG;

@@ -2520,18 +2520,33 @@ BEGIN
     BEGIN 
         SELECT 
             cwc.conversationId AS ConversationId, 
-            (CASE WHEN cwc.disposition = 0 THEN ''N/A'' ELSE ctc.Description END) AS Disposition,
-            (CASE WHEN cwc.SubDisposition = 0 THEN ''N/A'' ELSE ctcs.califSubDesc END) AS SubDisposition, 
-            cwc.inboundId AS CamId, 
-            ISNULL(cwc.conversationDate, ''1900-01-01'') AS ConversationDate, 
-            ISNULL(cwc.tConversation, 0) AS TConversation,
-            0 AS CampType,
-            ci.descripcion AS CampName,
-            cwc.clientId AS PhoneNumber,
-            ISNULL(cu.User_id, 0) AS AgentId,
-			(CASE WHEN cu.User_id IS NULL THEN '''' ELSE cu.Nombres END) AS AgentName,
-            CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
-            ccc.cam_descripcion AS ReopenWithTemplateOutboundCamName
+			(CASE WHEN cwc.disposition = 0 THEN ''N/A'' ELSE ctc.Description END) AS Disposition,
+			(CASE WHEN cwc.SubDisposition = 0 THEN ''N/A'' ELSE ctcs.califSubDesc END) AS SubDisposition, 
+			cwc.inboundId AS CamId, 
+			ISNULL(cwc.conversationDate, ''1900-01-01'') AS ConversationDate,
+			(CASE 
+				WHEN (cwc.conversationStatus = 8 AND ISNULL(cwc.onQueue, 1) = 1)
+					OR cwc.conversationStatus IN (1, 2, 3, 5, 7, 8, 9, 21)
+					OR cwc.tConversation IS NULL THEN 0
+				ELSE cwc.tConversation
+			END) AS TConversation,
+			0 AS CampType,
+			ci.descripcion AS CampName,
+			cwc.clientId AS PhoneNumber,
+			(CASE 
+				WHEN (cwc.conversationStatus = 8 AND ISNULL(cwc.onQueue, 1) = 1) 
+					OR cwc.conversationStatus IN (10, 17) 
+					OR cu.User_id IS NULL THEN CONVERT(SMALLINT, 0)
+				ELSE cu.User_id
+			END) AS AgentId,
+			(CASE 
+				WHEN (cwc.conversationStatus = 8 AND ISNULL(cwc.onQueue, 1) = 1) 
+					OR cwc.conversationStatus IN (10, 17) 
+					OR cu.User_id IS NULL THEN ''''
+				ELSE cu.Nombres
+			END) AS AgentName,
+			CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
+			ccc.cam_descripcion AS ReopenWithTemplateOutboundCamName
         FROM ccWhatsAppConversations cwc
         INNER JOIN ccInbound ci ON ci.inbound_id = cwc.inboundId
         LEFT JOIN ccUsers cu ON cu.User_id = cwc.agentId
@@ -2549,12 +2564,27 @@ BEGIN
             (CASE WHEN cwo.SubDisposition = 0 THEN ''N/A'' ELSE ctcso.califSubDesc END) AS SubDisposition,
             cwo.camId AS CamId, 
             ISNULL(cwo.conversationDate, ''1900-01-01'') AS ConversationDate, 
-            ISNULL(cwo.tConversation, 0) AS TConversation,
+            (CASE 
+				WHEN (cwo.conversationStatus = 8 AND ISNULL(cwo.onQueue, 1) = 1)
+					OR cwo.conversationStatus IN (1, 2, 3, 5, 7, 8, 9, 21)
+					OR cwo.tConversation IS NULL THEN 0
+				ELSE cwo.tConversation
+			END) AS TConversation,
             1 AS CampType,
             cc.cam_descripcion AS CampName,
             cwo.clientId AS PhoneNumber,
-            ISNULL(cu.User_id, 0) AS AgentId,
-			(CASE WHEN cu.User_id IS NULL THEN '''' ELSE cu.Nombres END) AS AgentName,
+            (CASE 
+				WHEN (cwo.conversationStatus = 8 AND ISNULL(cwo.onQueue, 1) = 1) 
+					OR cwo.conversationStatus IN (10, 17) 
+					OR cu.User_id IS NULL THEN CONVERT(SMALLINT, 0)
+				ELSE cu.User_id
+			END) AS AgentId,
+			(CASE 
+				WHEN (cwo.conversationStatus = 8 AND ISNULL(cwo.onQueue, 1) = 1) 
+					OR cwo.conversationStatus IN (10, 17) 
+					OR cu.User_id IS NULL THEN ''''
+				ELSE cu.Nombres
+			END) AS AgentName,
 			CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
             cc.cam_descripcion AS ReopenWithTemplateOutboundCamName
         FROM ccWhatsAppConversationsOut cwo

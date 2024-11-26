@@ -1912,7 +1912,7 @@ BEGIN
     DECLARE @AgentLogins VARCHAR(MAX) = '''';
     DECLARE @AgentNames VARCHAR(MAX) = '''';
     DECLARE @AgentStatusList VARCHAR(MAX) = '''';
-
+	DECLARE @CampType SMALLINT = 0;
     IF OBJECT_ID(''tempdb..#TmpCampAgentWg'') IS NOT NULL DROP TABLE #TmpCampAgentWg;
     CREATE TABLE #TmpCampAgentWg (Id INT);
 
@@ -1928,6 +1928,7 @@ BEGIN
         INSERT INTO #TmpCampAgentWg (Id)
         SELECT CAST(value AS INT)
         FROM fn_RIASplitDelimited(@OutboundIdsLst, '','');
+		SET @CampType = 1;
     END
 
     IF @ClientNumbersLst IS NOT NULL AND @ClientNumbersLst <> ''''
@@ -1955,7 +1956,8 @@ BEGIN
         @AgentIds = ISNULL(@AgentIds + CASE WHEN @AgentIds = '''' THEN '''' ELSE '','' END + CAST(u.User_id AS VARCHAR), ''''),
         @AgentLogins = ISNULL(@AgentLogins + CASE WHEN @AgentLogins = '''' THEN '''' ELSE '','' END + u.Login, ''''),
         @AgentNames = ISNULL(@AgentNames + CASE WHEN @AgentNames = '''' THEN '''' ELSE '','' END + u.Nombres + '' '' + u.ApellidoPaterno + '' '' + ISNULL(u.ApellidoMaterno, ''''), ''''),
-        @AgentStatusList = ISNULL(@AgentStatusList + CASE WHEN @AgentStatusList = '''' THEN '''' ELSE '','' END + ISNULL(ts.descripcion, ''Unknown''), '''')
+        @AgentStatusList = ISNULL(@AgentStatusList + CASE WHEN @AgentStatusList = '''' THEN '''' ELSE '','' END + 
+						   ISNULL(CASE WHEN ts.descripcion = ''Disponible'' THEN ''Ready'' ELSE ts.descripcion END, ''Unknown''), '''')
     FROM ccUsers u
     INNER JOIN ccRIAWorkGroupUsers wgu ON u.User_id = wgu.User_id
     INNER JOIN ccRIACampEspWG wg ON wg.IDWG = wgu.IDWG
@@ -1963,6 +1965,7 @@ BEGIN
     LEFT JOIN ccTipoStatusAgente ts ON ls.currentStatus = ts.TipoStatusAge_id
     WHERE wg.IdCampEsp IN (SELECT Id FROM #TmpCampAgentWg)
       AND u.TipoUser_id = 1 
+	  AND wg.Tipo = @CampType
     GROUP BY u.User_id, u.Login, u.Nombres, u.ApellidoPaterno, u.ApellidoMaterno, ts.descripcion;
 
     SELECT @AgentIds AS AgentIdsList, @AgentLogins AS AgentLoginsList, @AgentNames AS AgentNamesList, @AgentStatusList AS AgentStatusList;
@@ -2223,18 +2226,40 @@ BEGIN
     -- Calculate total conversations based on filters for Inbound, Outbound, or Client-only cases
 
     -- Case 1: Inbound Conversations
-    IF @InboundIdsLst IS NOT NULL 
-    BEGIN
-        SELECT  
-            @TotalConversations = COUNT(DISTINCT c.ConversationId)
-        FROM ccWhatsAppConversations c
-        INNER JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
-        WHERE c.InboundId IN (SELECT InboundId FROM #InboundIdTable)
-            AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
-            AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
-            AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
-            OR (@IncludeQueued = 1 AND c.onQueue = 1))
-    END
+	IF @InboundIdsLst IS NOT NULL 
+	BEGIN
+		WITH ConversationsWithMessages AS (
+			-- Retrieve all conversations with messages
+			SELECT DISTINCT c.ConversationId
+			FROM ccWhatsAppConversations c
+			INNER JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+			WHERE c.InboundId IN (SELECT InboundId FROM #InboundIdTable)
+				AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
+				AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
+				AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
+				OR (@IncludeQueued = 1 AND c.onQueue = 1))
+		),
+		LinkedConversations AS (
+			-- Include conversations linked to ones with messages
+			SELECT DISTINCT r.conversationIdAfter AS ConversationId
+			FROM ccWhatsAppConversationsRelationship r
+			INNER JOIN ConversationsWithMessages cm ON r.conversationIdBefore = cm.ConversationId
+		)
+		SELECT 
+			@TotalConversations = COUNT(DISTINCT c.ConversationId)
+		FROM ccWhatsAppConversations c
+		WHERE c.ConversationId IN (
+			-- Combine conversations with messages and linked conversations
+			SELECT ConversationId FROM ConversationsWithMessages
+			UNION
+			SELECT ConversationId FROM LinkedConversations
+		)
+		AND c.InboundId IN (SELECT InboundId FROM #InboundIdTable)
+		AND (ISNULL(@ClientNumbersLst, '''') = '''' OR c.clientId IN (SELECT ClientNumber FROM #ClientNumberTable))
+		AND (ISNULL(@AgentsIdsLst, '''') = '''' OR c.AgentId IN (SELECT AgentId FROM #AgentIdTable))
+		AND ((ISNULL(@StatusLst, '''') = '''' OR c.conversationStatus IN (SELECT StatusId FROM #StatusIdTable)) 
+		OR (@IncludeQueued = 1 AND c.onQueue = 1));
+	END
 
     -- Case 2: Outbound Conversations
     ELSE IF @OutboundIdsLst IS NOT NULL
@@ -2279,6 +2304,7 @@ BEGIN
         -- Sum the inbound and outbound counts
         SET @TotalConversations = @InboundConversations + @OutboundConversations;
     END
+
     -- Paginate results based on @ConversationIndex
     SET @Offset = ISNULL(@ConversationIndex, 1) - 1;
 
@@ -2307,7 +2333,7 @@ BEGIN
             COALESCE(CONVERT(VARCHAR, m.TimeStampMessage, 120), '''') AS LastMessageTimestamp,
             COALESCE(u.Login, '''') AS AgentLogin,
             CASE 
-                WHEN c.onQueue = 1 THEN ''queued''
+                WHEN c.onQueue = 1 AND c.conversationStatus = 8 THEN ''queued''
                 WHEN c.conversationStatus IN (1, 2, 3, 5, 7, 8, 9) THEN ''active''
                 WHEN c.conversationStatus = 21 THEN ''pre-assigned''
                 ELSE ''finished''
@@ -2315,7 +2341,7 @@ BEGIN
             ''Inbound'' AS CampType,
             ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
         FROM ccWhatsAppConversations c
-        INNER JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+        LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
         LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
         LEFT JOIN ccUsers u ON u.User_id = c.AgentId
         WHERE 
@@ -2337,7 +2363,7 @@ BEGIN
 			COALESCE(CONVERT(VARCHAR, m.TimeStampMessage, 120), '''') AS LastMessageTimestamp,
 			COALESCE(u.Login, '''') AS AgentLogin,
 			CASE 
-				WHEN c.onQueue = 1 THEN ''queued''
+				WHEN c.onQueue = 1 AND c.conversationStatus = 8 THEN ''queued''
 				WHEN c.conversationStatus IN (1, 2, 3, 5, 7, 8, 9) THEN ''active''
 				WHEN c.conversationStatus = 21 THEN ''pre-assigned''
 				ELSE ''finished''
@@ -2368,7 +2394,7 @@ BEGIN
             COALESCE(CONVERT(VARCHAR, m.TimeStampMessage, 120), '''') AS LastMessageTimestamp,
             COALESCE(u.Login, '''') AS AgentLogin,
             CASE 
-                WHEN whatsIn.onQueue = 1 THEN ''queued''
+                WHEN whatsIn.onQueue = 1 AND whatsIn.conversationStatus = 8 THEN ''queued''
                 WHEN whatsIn.conversationStatus IN (1, 2, 3, 5, 7, 8, 9) THEN ''active''
                 WHEN whatsIn.conversationStatus = 21 THEN ''pre-assigned''
                 ELSE ''finished''
@@ -2398,7 +2424,7 @@ BEGIN
             COALESCE(CONVERT(VARCHAR, m.TimeStampMessage, 120), '''') AS LastMessageTimestamp,
             COALESCE(u.Login, '''') AS AgentLogin,
             CASE 
-                WHEN whatOut.onQueue = 1 THEN ''queued''
+                WHEN whatOut.onQueue = 1 AND whatOut.conversationStatus = 8 THEN ''queued''
                 WHEN whatOut.conversationStatus IN (1, 2, 3, 5, 7, 8, 9) THEN ''active''
                 WHEN whatOut.conversationStatus = 21 THEN ''pre-assigned''
                 ELSE ''finished''
@@ -2437,7 +2463,7 @@ BEGIN
         UNION ALL
         SELECT * FROM ClientOnlyMessages WHERE rn = 1
     ) AS CombinedMessages
-    ORDER BY LastMessageTimestamp DESC
+    ORDER BY ConversationId DESC
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END;
 	
@@ -2498,17 +2524,17 @@ BEGIN
             (CASE WHEN cwc.SubDisposition = 0 THEN ''N/A'' ELSE ctcs.califSubDesc END) AS SubDisposition, 
             cwc.inboundId AS CamId, 
             ISNULL(cwc.conversationDate, ''1900-01-01'') AS ConversationDate, 
-            cwc.tConversation AS TConversation,
+            ISNULL(cwc.tConversation, 0) AS TConversation,
             0 AS CampType,
             ci.descripcion AS CampName,
             cwc.clientId AS PhoneNumber,
-            cu.User_id AS AgentId,
-            cu.Nombres AS AgentName,
+            ISNULL(cu.User_id, 0) AS AgentId,
+			(CASE WHEN cu.User_id IS NULL THEN '''' ELSE cu.Nombres END) AS AgentName,
             CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
             ccc.cam_descripcion AS ReopenWithTemplateOutboundCamName
         FROM ccWhatsAppConversations cwc
         INNER JOIN ccInbound ci ON ci.inbound_id = cwc.inboundId
-        INNER JOIN ccUsers cu ON cu.User_id = cwc.agentId
+        LEFT JOIN ccUsers cu ON cu.User_id = cwc.agentId
         INNER JOIN #TmpConversationIds tci ON tci.Id = cwc.conversationId
         LEFT JOIN ccTipoCalif ctc ON ctc.calif_id = cwc.disposition
         LEFT JOIN ccTipoCalifSub ctcs ON ctcs.califSub_id = cwc.subDisposition
@@ -2523,17 +2549,17 @@ BEGIN
             (CASE WHEN cwo.SubDisposition = 0 THEN ''N/A'' ELSE ctcso.califSubDesc END) AS SubDisposition,
             cwo.camId AS CamId, 
             ISNULL(cwo.conversationDate, ''1900-01-01'') AS ConversationDate, 
-            cwo.tConversation AS TConversation,
+            ISNULL(cwo.tConversation, 0) AS TConversation,
             1 AS CampType,
             cc.cam_descripcion AS CampName,
             cwo.clientId AS PhoneNumber,
-            cu.User_id AS AgentId,
-            cu.Nombres AS AgentName,
+            ISNULL(cu.User_id, 0) AS AgentId,
+			(CASE WHEN cu.User_id IS NULL THEN '''' ELSE cu.Nombres END) AS AgentName,
 			CAST(mwn.Cam_Id AS SMALLINT) AS ReopenWithTemplateOutboundCamId,
             cc.cam_descripcion AS ReopenWithTemplateOutboundCamName
         FROM ccWhatsAppConversationsOut cwo
         INNER JOIN ccCamps cc ON cc.cam_id = cwo.camId 
-        INNER JOIN ccUsers cu ON cu.User_id = cwo.agentId
+        LEFT JOIN ccUsers cu ON cu.User_id = cwo.agentId
         INNER JOIN #TmpConversationIds tci ON tci.Id = cwo.conversationId
         LEFT JOIN ccTipoCalifOUT ctco ON ctco.calif_id = cwo.disposition
         LEFT JOIN ccTipoCalifSubOUT ctcso ON ctcso.califSub_id = cwo.subDisposition
@@ -2691,8 +2717,9 @@ END
 
 IF @Option = 11 -- Creación de conversationId de salida
 BEGIN
-	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @conversationstatus=2
-END'
+	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @IsReopenedConversation = 1, @conversationstatus=2
+END
+'
 
 EXEC(@sql)
 -------------------------------------------  END ISAAC CORTES  -------------------------------------------------------------	

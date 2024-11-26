@@ -2771,7 +2771,7 @@ EXEC(@sql)
 
 SET @process = 'create sp ccspOutboundWhatsApp'
 SET @sql = '
-ALTER procedure [dbo].[ccspOutboundWhatsApp]
+CREATE procedure [dbo].[ccspOutboundWhatsApp]
 @action int,
 @camId int = null,
 @campType int = null,

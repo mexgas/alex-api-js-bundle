@@ -13975,40 +13975,6 @@ AS
 
 --------------------------- End Jesus 125.20231211.0.20 ----------------------------------------------------------------------------------
         
---------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------
-
-set @process = 'ALTER FUNCTION [dbo].[hashList] --Agregada validación de @calKey para Lista Negra TT13136'
-set @sql = '
-ALTER FUNCTION [dbo].[hashList] (@calKey varchar(255)) 
-RETURNS bigint AS
-BEGIN
-declare @codigo varchar(max)
-declare @hash bigint
-if @calKey is null or @calKey='''' 
-return @hash
-
-
-set @codigo=''''
-set @hash=0
-declare @i int,@len int
-select @i=1,@len=len(@calKey)
-while @i<=@len begin
-        select @codigo=@codigo+convert(varchar(max), ASCII(SUBSTRING(@calKey,@i,1)))
-        
-        if @i%5=0 begin
-                set @hash=@hash+cast(@codigo as bigint)
-                set @codigo=''''
-        end     
-        set @i=@i+1
-end
-if @codigo<>''''
-set @hash=@hash+cast(@codigo as bigint)
-return @hash % 99999999999973
-END
-'
-EXEC(@sql)
-
---------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

@@ -2748,7 +2748,7 @@ END
 
 IF @Option = 11 -- Creación de conversationId de salida
 BEGIN
-	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @IsReopenedConversation = 1, @conversationstatus=2
+	EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @conversationstatus=2
 END
 '
 

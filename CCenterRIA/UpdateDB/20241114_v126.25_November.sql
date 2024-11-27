@@ -2859,6 +2859,253 @@ else if @action=2 begin
 end
 '
 EXEC(@sql)
+
+SET @process = 'delete function fn_GetMessagesByConversationOrMessageId'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''fn_GetMessagesByConversationOrMessageId'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+BEGIN
+	DROP FUNCTION fn_GetMessagesByConversationOrMessageId;
+END
+'
+EXEC(@sql)
+
+
+SET @process = 'create function fn_GetMessagesByConversationOrMessageId'
+SET @sql = '
+CREATE FUNCTION [dbo].[fn_GetMessagesByConversationOrMessageId]
+(
+    @CampType INT,                           -- Parameter to select the table (0 = Inbound, 1 = Outbound)
+    @conversationId INT = NULL,              -- Optional parameter for filtering by conversationId
+    @messageIdList NVARCHAR(MAX) = NULL      -- Optional parameter for filtering by a list of messageIds
+)
+RETURNS @Messages TABLE
+(
+    MessageId VARCHAR(150),	
+    Status VARCHAR(50),
+    Origin VARCHAR(50),	
+    OriginType INT,
+    Timestamp DATETIME,
+    Content	VARCHAR(MAX),
+    Type VARCHAR(20),
+    Caption	VARCHAR(MAX),
+    Url	VARCHAR(MAX),
+    FileSize VARCHAR(20),
+    FileName VARCHAR(MAX),
+    Address	VARCHAR(MAX),
+    Lat	VARCHAR(MAX),
+    Long VARCHAR(MAX),
+    Name VARCHAR(MAX),	
+    LocationURL VARCHAR(MAX)
+)
+AS
+BEGIN
+
+
+    DECLARE @tmpMessageConversations TABLE(
+            [messageId] VARCHAR(150) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [conversationId] INT NOT NULL,
+            [timeStampMessage] DATETIME NOT NULL,
+            [originType] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [price] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+            [messageIdUi] INT NULL,
+            [currency] VARCHAR(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [typeMessage] VARCHAR(25) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [content] NVARCHAR(MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [clientNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [vonageNum] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+            [timeStampMessageUTC] DATETIME NULL,
+            [messageStatus] VARCHAR(15) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
+        );
+    DECLARE @baseFilePath VARCHAR(MAX)
+    SELECT @baseFilePath = valor FROM ccSettings WHERE setting_id = 230
+
+    IF (@CampType = 0)
+    BEGIN
+        INSERT INTO @tmpMessageConversations (messageId, conversationId, timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus)
+        SELECT messageId, conversationId, timeStampMessageUTC AS timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus
+        FROM ccWAMessagesConversations
+        WHERE 
+        (@messageIdList IS NULL OR messageId IN (SELECT value FROM dbo.fn_RIASplitDelimited(@messageIdList, '','')))
+        AND
+        (@conversationId IS NULL OR conversationId = @conversationId)
+    END
+    IF (@CampType = 1)
+    BEGIN
+        INSERT INTO @tmpMessageConversations (messageId, conversationId, timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus)
+        SELECT messageId, conversationId, timeStampMessageUTC AS timeStampMessage, originType, price, messageIdUi, currency, typeMessage, content, clientNum, vonageNum, timeStampMessageUTC, messageStatus
+        FROM ccWAMessagesConversationsOut
+        WHERE
+        (@messageIdList IS NULL OR messageId IN (SELECT value FROM dbo.fn_RIASplitDelimited(@messageIdList, '','')))
+        AND
+        (@conversationId IS NULL OR conversationId = @conversationId)
+    END
+
+    INSERT INTO @Messages
+    SELECT
+        messageId AS MessageId,
+        messageStatus AS Status,
+        originType AS Origin,
+        CASE 
+            WHEN originType =''Client'' THEN 3
+            WHEN originType =''Agent'' THEN 2
+            WHEN originType =''Admin'' THEN 1
+            ELSE 0 
+        END AS OriginType,
+        timeStampMessage AS [Timestamp],
+        CASE 
+            WHEN typeMessage IN (''text'', ''template'') THEN content
+            ELSE '''' 
+        END AS Content,
+        typeMessage AS Type,
+        CASE
+            WHEN originType = ''Client''
+            THEN
+                CASE
+                    WHEN typeMessage = ''file'' 
+					THEN 
+						CASE 
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+						END
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN 
+                        CASE 
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+							THEN content
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) -- cuando no tiene caption
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                        END
+                    ELSE ''''
+                END
+            WHEN originType = ''Agent''
+            THEN
+                CASE
+                    WHEN typeMessage = ''file''
+                    THEN
+                        CASE 
+                            WHEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) <> (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+                            THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                            ELSE ''''
+                        END
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE 
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+							THEN ''''
+							WHEN NOT EXISTS (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) -- cuando no tiene caption
+							THEN ''''
+							ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2)
+                        END
+                    ELSE ''''
+                END
+        END AS Caption,
+        CASE 
+            WHEN originType = ''Client'' THEN
+                CASE
+                    WHEN 
+                        (typeMessage = ''text'' 
+                        OR typeMessage = ''location''
+                        OR (typeMessage = ''file'' 
+                            AND 
+                            (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) = '''' )
+                        )
+                    THEN ''''
+                    WHEN typeMessage = ''file''
+                    THEN (SELECT SUBSTRING(value, 5, LEN(value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2)
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4) -- soporte con mensajes de vonage
+                            THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + CASE WHEN typeMessage = ''video'' THEN ''.mp4'' WHEN typeMessage = ''image'' THEN ''.jpg'' END)
+                            ELSE (SELECT SUBSTRING(value, 5, LEN(value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE Id = 2)
+                        END
+                    WHEN typeMessage = ''audio''
+                    THEN
+                        CASE
+                            WHEN content = ''''
+                            THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + ''.mp3'')
+                            ELSE content
+                        END
+                END
+            WHEN originType = ''Agent'' THEN
+                CASE
+                    WHEN typeMessage IN (''text'', ''location'', ''template'') THEN ''''
+                    WHEN typeMessage  = ''file'' THEN (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
+                    WHEN typeMessage IN (''image'', ''video'')
+                    THEN
+                        CASE
+                            WHEN NOT EXISTS(SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4)
+                            THEN content
+                            ELSE (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
+                        END
+                    WHEN typeMessage = ''audio'' THEN content
+                END
+        END AS [Url],
+        CASE 
+            WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)
+            WHEN typeMessage IN (''image'', ''video'')
+            THEN
+                CASE
+                    WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2) = 0 -- soporte con mensajes de vonage
+                    THEN ''''
+                    ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)
+                END
+            ELSE '''' 
+        END AS [FileSize],
+        CASE 
+            WHEN typeMessage = ''file'' THEN (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+            WHEN typeMessage IN (''image'', ''video'')
+            THEN
+                CASE
+                    WHEN (SELECT COUNT(value) FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2) = 0 -- soporte con mensajes de vonage
+                    THEN ''''
+                    ELSE (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2)
+                END
+            ELSE '''' 
+        END AS [FileName],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 1),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Address],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Lat],
+        CASE
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Long],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN  (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 4),'':'') WHERE id=2) 
+            ELSE '''' 
+        END AS [Name],
+        CASE 
+            WHEN 
+                typeMessage = ''location''
+            THEN 
+                (''https://www.google.com/maps/search/'' + 
+                (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2),'':'') WHERE id=2) + '','' +
+                (SELECT value FROM dbo.fn_RIASplitDelimited((SELECT value FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 3),'':'') WHERE id=2)) 
+            ELSE '''' 
+        END AS [LocationURL]
+    FROM @tmpMessageConversations
+    ORDER BY Timestamp ASC
+
+    RETURN;
+END
+'
+EXEC(@sql)
+
 -------------------------------------------  END ISAAC CORTES  -------------------------------------------------------------	
 ------------------------------------------- BEGIN FRIDA ---------------------------------------------------------------------
 SET @process = 'CW-8864 add column CreationDate to ccMetaWAOutboundTemplates '

@@ -503,6 +503,13 @@ values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallPriorityOrder a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id where a.callout_id = b.callout_id'''', 0, 1)
 
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete A
+from ccoCallPriorityOrder A
+left join ccoCallsOutSource B on A.callout_id=B.callout_id
+where B.callout_id is null
+'''', 0, 1)
+
 
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0
     begin

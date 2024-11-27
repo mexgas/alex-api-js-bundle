@@ -1965,7 +1965,11 @@ BEGIN
     LEFT JOIN ccTipoStatusAgente ts ON ls.currentStatus = ts.TipoStatusAge_id
     WHERE wg.IdCampEsp IN (SELECT Id FROM #TmpCampAgentWg)
       AND u.TipoUser_id = 1 
-	  AND wg.Tipo = @CampType
+	  AND wg.Tipo = (CASE 
+						WHEN ((@InboundIdsLst IS NULL OR @InboundIdsLst = '''') AND (@OutboundIdsLst IS NULL OR @OutboundIdsLst = '''') AND (ISNULL(@ClientNumbersLst, '''') <> ''''))
+						THEN wg.Tipo
+						ELSE @CampType
+					END)
     GROUP BY u.User_id, u.Login, u.Nombres, u.ApellidoPaterno, u.ApellidoMaterno, ts.descripcion;
 
     SELECT @AgentIds AS AgentIdsList, @AgentLogins AS AgentLoginsList, @AgentNames AS AgentNamesList, @AgentStatusList AS AgentStatusList;

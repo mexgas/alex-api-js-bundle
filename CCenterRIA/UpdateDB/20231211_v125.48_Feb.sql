@@ -13974,9 +13974,8 @@ AS
         EXEC(@sql)
 
 --------------------------- End Jesus 125.20231211.0.20 ----------------------------------------------------------------------------------
-        
---------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------
 
+--------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------
 set @process = 'ALTER FUNCTION [dbo].[hashList] --Agregada validación de @calKey para Lista Negra TT13136'
 set @sql = '
 ALTER FUNCTION [dbo].[hashList] (@calKey varchar(255)) 
@@ -13986,8 +13985,6 @@ declare @codigo varchar(max)
 declare @hash bigint
 if @calKey is null or @calKey='''' 
 return @hash
-
-
 set @codigo=''''
 set @hash=0
 declare @i int,@len int
@@ -14007,8 +14004,8 @@ return @hash % 99999999999973
 END
 '
 EXEC(@sql)
-
 --------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------
+        
 
 --------------------------- Begin Landus 125.20231211.0.20 ----------------------------------------------------------------------------------------------
 SET @process = 'Landus Alter Sp ccsp_AplicaListaNegra se cambia IX_ccoCallsOutSource_4 por IX_ccoCallsOutSource_12'

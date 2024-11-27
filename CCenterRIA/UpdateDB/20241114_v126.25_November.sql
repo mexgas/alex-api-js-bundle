@@ -2602,7 +2602,7 @@ END
     DECLARE @ConversationCount INT;
 
 IF @Option = 8 -- Obtiene valor si se reabrirá o no la conversación y si será se reabrirá tipo entrada o salida
-BEGIN
+BEGIN 
     IF NOT EXISTS (SELECT 1 FROM ccRIAAgentsPermissions WHERE AgentId = @AgentId AND AllowReopenWAConversation = 1)
     BEGIN
         SELECT ''REOPEN_PERMISSION_DISABLED'' AS ReopenConversationResponse;
@@ -2620,47 +2620,50 @@ BEGIN
             END
 
             SELECT @MaxWhatsAllowed = a.maxWhats FROM ccinbound i INNER JOIN ccriacat_Areas a ON i.IDArea = a.IDArea WHERE i.Inbound_Id = @CamId;
-			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversations WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversations WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(HOUR, -48, GETDATE());
 
 			IF @ConversationCount >= @MaxWhatsAllowed
 			BEGIN
 				SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
 				RETURN(0);
 			END
+			SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+			RETURN(0);
         END
-
-    END
-	ELSE 
-    BEGIN
-        SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
-        RETURN(0);
+		ELSE 
+		BEGIN
+			SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+			RETURN(0);
+		END
     END
 
     IF @CamType = 1
     BEGIN
 		IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent)) 
         BEGIN
-			IF NOT EXISTS (SELECT 1 FROM ccmetawhatsAppNumbers WHERE Number = @CamNumber AND Inbound_Id = @CamId)
+			IF NOT EXISTS (SELECT 1 FROM ccmetawhatsAppNumbers WHERE Number = @CamNumber AND Cam_Id = @CamId)  
 			BEGIN
 				SELECT ''CAMPAIGN_NUMBER_CHANGED'' AS ReopenConversationResponse;
 				RETURN(0);
 			END
 
 			SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
-			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
+			SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(HOUR, -48, GETDATE());
 
 			IF @ConversationCount >= @MaxWhatsAllowed
 			BEGIN
 				SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationResponse;
 				RETURN(0);
 			END
+			SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+			RETURN(0);
+		END
+		ELSE 
+		BEGIN
+			SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
+			RETURN(0);
 		END
     END
-	ELSE
-	BEGIN
-		SELECT ''ENABLE_REOPEN_BUTTON'' AS ReopenConversationResponse;
-		RETURN(0);
-	END
 END
 
 	DECLARE @ConvId int;

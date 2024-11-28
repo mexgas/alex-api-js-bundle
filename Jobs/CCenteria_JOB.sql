@@ -388,11 +388,20 @@ create table #ccoCallsOutSourceIds(
 callout_id int not null primary key
 )
 
-insert into #ccoCallsOutSourceIds (callout_id)
-select distinct A.callout_id
-from ccoCallsOutSource A
-inner join ccoLogDials b on A.callout_id = b.callout_id
-where b.fecha < dateadd(dd, -@days, getdate())
+INSERT INTO #ccoCallsOutSourceIds (callout_id)
+SELECT distinct callout_id
+from ccoCallsOutSource
+where cal_fechaDial < @date
+and callout_id not in (select callout_id from ccoLogDials where fecha < @date)
+
+-- Lo que no se marco y que puede estar en ccoCallsOutSource
+INSERT INTO #ccoCallsOutSourceIds (callout_id)
+SELECT callout_id
+FROM ccoCallsOutSource
+WHERE cal_fechaDial < @date
+AND callout_id NOT IN (
+    SELECT callout_id FROM #ccoCallsOutSourceIds
+);
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''truncate table ccBorrardasReciclaje'''', 0, 0)

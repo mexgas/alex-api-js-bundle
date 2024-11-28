@@ -495,7 +495,7 @@ group by b.callout_id
 )
 delete B from logDialsMax A
 inner join #ccoCallsOutSourceIds B on A.callout_id=B.callout_id
-where @date>A.fecha'''', 0, 1)
+where A.fecha>@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1)

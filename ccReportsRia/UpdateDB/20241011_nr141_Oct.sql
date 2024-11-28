@@ -1190,6 +1190,95 @@ begin
     drop index IX_RepAgentGI_1 on RepAgentGI
 end'
     EXEC(@sql)
+
+
+-------------------------------------- BEGIN ISAAC hotfix/125.20231211.0.20 --------------------------------------
+SET @process = 'Delete view RepViewSummary'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.views WHERE name = N''RepViewSummary'')
+BEGIN
+    DROP VIEW RepViewSummary;
+END'
+EXEC(@sql)
+
+SET @process = 'Create view RepViewSummary'
+SET @sql = '
+CREATE VIEW RepViewSummary AS
+select 
+[date]
+,[login]
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,0 callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,0 avgCallTengaged
+,twrapup
+,userId
+,0 TypeNotReady
+,'''' descripcion
+,''_Time'' descripcion_time
+,0 [time]
+,0 transferStatus
+,0 ringingTime
+,0 unknownStatus
+,0 otherStatus
+,0 failureStatus
+,0 chatTengaged
+,0 undefinedTime
+,0 dialingStatus
+--,null TipoReadyAuxiliarId
+--,'' auxiliarRedy_descripcion
+--,'' descripcion_auxiliarRedyTime_time
+--,0 auxiliarRedyTime
+from RepAgentSummary_VersionAmatech
+union
+select date
+,login
+,[user]
+,sessionTime
+,loginMktTime
+,logoutMktTime
+,callTengaged
+,ndTime
+,NCallsOut
+,NCallsIn
+,NCallsCorta
+,NAtend
+,NNoCalif
+,Available
+,avgCallTengaged
+,twrapup
+,userId
+,TypeNotReady
+,descripcion
+,descripcion_time
+,time
+,transferStatus
+,ringingTime
+,unknownStatus
+,otherStatus
+,failureStatus
+,chatTengaged
+,undefinedTime
+,dialingStatus
+--,TipoReadyAuxiliarId
+--,auxiliarRedy_descripcion
+--,descripcion_auxiliarRedyTime_time
+--,auxiliarRedyTime
+from RepAgentSummary
+'
+EXEC(@sql)
+-------------------------------------- END ISAAC hotfix/125.20231211.0.20 --------------------------------------
+
+
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

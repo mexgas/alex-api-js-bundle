@@ -388,11 +388,20 @@ create table #ccoCallsOutSourceIds(
 callout_id int not null primary key
 )
 
-insert into #ccoCallsOutSourceIds (callout_id)
-select distinct A.callout_id
-from ccoCallsOutSource A
-inner join ccoLogDials b on A.callout_id = b.callout_id
-where b.fecha < dateadd(dd, -@days, getdate())
+INSERT INTO #ccoCallsOutSourceIds (callout_id)
+SELECT distinct callout_id
+from ccoCallsOutSource
+where cal_fechaDial < @date
+and callout_id not in (select callout_id from ccoLogDials where fecha < @date)
+
+-- Lo que no se marco y que puede estar en ccoCallsOutSource
+INSERT INTO #ccoCallsOutSourceIds (callout_id)
+SELECT callout_id
+FROM ccoCallsOutSource
+WHERE cal_fechaDial < @date
+AND callout_id NOT IN (
+    SELECT callout_id FROM #ccoCallsOutSourceIds
+);
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''truncate table ccBorrardasReciclaje'''', 0, 0)
@@ -503,13 +512,20 @@ group by b.callout_id
 )
 delete B from logDialsMax A
 inner join #ccoCallsOutSourceIds B on A.callout_id=B.callout_id
-where @date>A.fecha'''', 0, 1)
+where A.fecha>@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallsOutSource a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id and cal_fechaDial<@date'''', 0, 1)
 
 insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
 values (''''delete a from ccoCallPriorityOrder a inner join #ccoCallsOutSourceIds b on a.callout_id = b.callout_id where a.callout_id = b.callout_id'''', 0, 1)
+
+insert into #sqlCmdDeleteOldRecords (sqlCmd, [status], isReplicated)
+values (''''delete A
+from ccoCallPriorityOrder A
+left join ccoCallsOutSource B on A.callout_id=B.callout_id
+where B.callout_id is null
+'''', 0, 1)
 
 
 while (select count(*) from #sqlCmdDeleteOldRecords where [status] = 0 ) > 0

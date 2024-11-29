@@ -5163,6 +5163,8 @@ SELECT a1.cam_id
 	,isnull(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent
 	,ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations
 	,isnull(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo
+	,ISNULL(RecordIvr,0) as RecordIvr
+	,isnull(CamCanceled,0) as CamCanceled
 FROM ccCamps a1
 INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
 INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)

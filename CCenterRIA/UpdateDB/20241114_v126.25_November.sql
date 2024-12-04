@@ -2061,16 +2061,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.InboundId AS CampaignId,
+			ci.descripcion AS CamName,
             c.phoneACD as CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Inbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn    
         FROM ccWhatsAppConversations c
         LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
         LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccinbound ci ON ci.inbound_id = c.inboundid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2084,16 +2086,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.camId AS CampaignId,
+			ca.cam_descripcion AS CamName,
             c.phoneCamp AS CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Outbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn  
         FROM ccWhatsAppConversationsOut c
         LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
         LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccCamps ca ON ca.cam_Id = c.camid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2108,6 +2112,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2122,6 +2127,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2134,6 +2140,7 @@ BEGIN
     SELECT conversationId as ConversationId,
            CampaignId as CamId,
            CamNumber as CamNumber,
+		   CamName as CamName,
            CAST(GraphicId AS SMALLINT) AS Frame,
            ClientNumber as ClientNumber,
            MessageContent as MessageContent,

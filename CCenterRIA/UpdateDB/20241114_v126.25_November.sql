@@ -3560,7 +3560,7 @@ EXEC(@sql)
                 BEGIN
                     -- Se valida si el conversation date es null para poder actualizarlo
 					DECLARE @IsTransfered BIT, @conversationDate DATETIME;
-					SELECT @IsTransfered = IsTransfered ,  @conversationDate = conversationDate FROM ccWhatsAppConversations WHERE conversationId = @ConversationId; 
+					SELECT @IsTransfered = IsTransfered ,  @conversationDate = conversationDate FROM ccWhatsAppConversations with(nolock) WHERE conversationId = @ConversationId; 
 					IF(@IsTransfered = 0 OR @conversationDate IS NULL)
 					BEGIN
 						UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
@@ -3762,7 +3762,7 @@ EXEC(@sql)
 			BEGIN
 				-- Se valida si el conversation date es null para poder actualizarlo
 				DECLARE @IsTransfered BIT, @conversationDate DATETIME;
-				SELECT @IsTransfered = IsTransfered, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId; 
+				SELECT @IsTransfered = IsTransfered, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut with(nolock)  WHERE conversationId = @ConversationId; 
 				IF(@IsTransfered = 0 OR @conversationDate IS NULL)
 				BEGIN
 					UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;

@@ -3558,9 +3558,15 @@ EXEC(@sql)
             BEGIN
                 IF @ConversationId IS NOT NULL
                 BEGIN
-                    UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-                    --Save Conversation Assigned
-                    SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+                    -- Se valida si el conversation date es null para poder actualizarlo
+					DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+					SELECT @IsTransfered = IsTransfered ,  @conversationDate = conversationDate FROM ccWhatsAppConversations WHERE conversationId = @ConversationId; 
+					IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+					BEGIN
+						UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+						--Save Conversation Assigned
+						SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+					END
                 END
             END
         ELSE IF @Option = 4 -- Get Disposition Information
@@ -3754,10 +3760,16 @@ EXEC(@sql)
 		BEGIN
 			IF @ConversationId IS NOT NULL
 			BEGIN
-				UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-				--Save Conversation Assigned
-				SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
-				UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				-- Se valida si el conversation date es null para poder actualizarlo
+				DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+				SELECT @IsTransfered = IsTransfered, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId; 
+				IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+				BEGIN
+					UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+					--Save Conversation Assigned
+					SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+					UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				END
 				
 			END
 		END

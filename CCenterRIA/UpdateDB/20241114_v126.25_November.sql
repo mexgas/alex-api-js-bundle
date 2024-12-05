@@ -6018,9 +6018,111 @@ SET NOCOUNT OFF'
 EXEC(@sql);
 
 
-SET @process = 'Alter SP '
-SET @sql = ''
-EXEC(@sql);
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsImportStatus'')
+begin
+	DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus;
+end'
+EXEC(@sql)
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - CREATE PROCEDURE ccsp_GalateaGetRecordsImportStatus, 
+se modifica el @action=1, se quita la condición "and loadType = 0" en la línea 6060 '
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+		-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+		@action tinyint, 
+		@loadID int = NULL, 
+		@userID smallint = NULL
+
+		AS
+		declare @today datetime
+		select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+		SET nocount ON
+		if @action not IN (1,2,3)
+		raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+		if @action=1 -- Detalle general de carga de registros
+		BEGIN
+		if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+		 BEGIN
+		  raiserror(''ERROR. invalid user id'', 18, 1)
+		  return(0)
+		 END
+
+		if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate	
+				FROM ccRIALoading riaLoad
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today
+				ORDER BY riaLoad.loadDate DESC
+			END
+		else
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate
+		
+				FROM ccRIALoading riaLoad
+				JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today AND
+				superCam.user_id = @userID
+				AND superCam.tipo = 1
+				ORDER BY riaLoad.loadDate DESC
+			END
+
+		return(0)
+		END
+
+		if @action=2 -- Detalle específico de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid template ID'', 18, 1)
+		  return(0)
+		 END
+		  SELECT 
+		  crl.regsLoaded
+		  ,crl.alreadyLoaded
+		  ,crl.regsBlocked
+		  ,crl.regsNotLoaded
+		  ,crl.telsLoaded
+		  ,crl.telsBlocked
+		  ,crl.telsNotLoaded
+		  ,ISNULL(regsNotLoadedCp,0) as regsNotLoadedCp
+		  ,ISNULL(telsNotLoadedCp,0) as telsNotLoadedCp
+		  ,ISNULL(recordsNotLoadedPort,0) as recordsNotLoadedPort
+		  ,ISNULL(phonesNotLoadedPort, 0) as phonesNotLoadedPort
+		  ,ISNULL(LoadBySegment, CAST(0 AS BIT)) as IsSegmentLoad
+		  ,cc.CampType
+		  FROM dbo.ccRIALoading AS crl
+		  JOIN dbo.ccCamps AS cc
+		  ON cc.cam_id = crl.cam_id
+		  WHERE crl.load_id = @loadID
+		  
+
+		END
+
+		if @action=3 -- Porcentaje de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid load ID'', 18, 1)
+		  return(0)
+		 END
+
+		  SELECT state, pctg
+		  FROM ccRIALoading
+		  WHERE load_id  = @loadID
+
+		END
+		SET nocount off'
+EXEC(@sql)
+
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
 
 
 	

@@ -823,6 +823,569 @@ SET @sql = ''
 EXEC(@sql);
 
 
+-------------------------------------------  BEGIN ISAAC CORTES  -------------------------------------------------------------	
+
+SET @process = 'Delete SP ccsp_ConversationOutWASave'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_ConversationOutWASave'')
+BEGIN
+	DROP PROCEDURE ccsp_ConversationOutWASave
+END
+'
+EXEC(@sql);
+
+SET @process = 'CREATE SP ccsp_ConversationOutWASave'
+SET @sql = '
+CREATE PROCEDURE ccsp_ConversationOutWASave
+@action             INT
+, @conversationId     INT         = 0
+, @campId             INT         = NULL        
+, @phoneCamp          VARCHAR(50) = NULL
+, @clientId           VARCHAR(25) = NULL
+, @conversationStatus SMALLINT    = 0
+, @tChatting          FLOAT       = 0
+, @tWrapUp            SMALLINT    = 0
+, @finishedBy         TINYINT     = 0
+, @onQueue            BIT         = NULL
+, @tQueue             SMALLINT    = 0
+, @tTimeout           INT         = 0
+, @disposition        SMALLINT    = 0
+, @subDisposition     SMALLINT    = 0
+, @agentId            INT         = 0
+
+AS
+BEGIN
+SET NOCOUNT ON;
+                        
+declare @conversationIdTemporal     INT;
+declare @metaId int
+
+IF @action = 1 BEGIN --new Conversation
+select @phoneCamp= number from ccWhatsAppNumbers where camp_id= @campId
+                            
+if @phoneCamp is null or @phoneCamp='''' begin
+    select @phoneCamp= number from ccMetawhatsAppNumbers where Cam_Id= @campId
+    
+end
+if @phoneCamp is null or @phoneCamp='''' begin
+    select 0 as [ConversationId],0 as [MessageId]
+    return(0)
+end
+
+DECLARE @dateNow DATETIME;
+SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+
+declare @existsConversationOut bit
+declare @existsConversation bit
+set @existsConversationOut =0
+set @existsConversation =0
+
+    
+    
+if not exists (select * from ccWhatsAppConversationsOut with(nolock) where
+phoneCamp = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate <= @dateNow) 
+begin       
+    set @existsConversationOut=0
+end 
+else begin
+    set @existsConversationOut=1
+    UPDATE ccWhatsAppConversationsOut
+    SET finishedBy = 2 ,conversationStatus=17
+    WHERE finishedBy = 0  AND requestDate <= @dateNow
+    and phoneCamp = @phoneCamp and clientId = @clientId
+end
+    
+if not exists (select * from ccWhatsAppConversations with(nolock) where
+phoneACD = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate <= @dateNow) 
+begin       
+    set @existsConversation=0
+end 
+else begin
+    set @existsConversation=1
+    UPDATE ccWhatsAppConversations
+    SET finishedBy = 2 ,conversationStatus=17
+    WHERE finishedBy = 0  AND requestDate <= @dateNow
+    and phoneACD = @phoneCamp and clientId = @clientId
+end
+    
+if not exists (select 1 from ccWhatsAppConversationsOut with(nolock) 
+    where phoneCamp = @phoneCamp and clientId = @clientId 
+    and finishedBy = 0 and requestDate > @dateNow) 
+begin
+    set @existsConversationOut=0
+end
+else begin
+    set @existsConversationOut=1
+end
+    
+if not exists (select 1 from ccWhatsAppConversations with(nolock) 
+    where phoneACD = @phoneCamp and clientId = @clientId 
+    and finishedBy = 0 and requestDate > @dateNow) 
+begin
+    set @existsConversation=0
+end
+else begin
+    set @existsConversation=1
+end
+    
+if @existsConversationOut=0
+begin
+    if @existsConversation = 0
+    begin
+        INSERT INTO [ccWhatsAppConversationsOut]
+        ([camId] , [phoneCamp], clientId, conversationStatus, tChatting
+        , tWrapUp, finishedBy, onQueue, tQueue, requestDate
+        , tTimeout, disposition, subDisposition, agentId)
+        VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
+        @onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
+                        
+        SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
+        SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
+    end
+    else begin
+        select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username 
+        ,B.conversationId as conversationIdExists
+        FROM ccInbound A INNER JOIN ccWhatsAppConversations B WITH(NOLOCK)
+        ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
+        INNER JOIN ccUsers C ON B.agentId = C.User_id;
+    end  
+end
+else begin
+    select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, C.Login Username
+    ,B.conversationId as conversationIdExists
+    FROM ccCamps A INNER JOIN ccWhatsAppConversationsOut B WITH(NOLOCK)
+    ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
+    INNER JOIN ccUsers C ON B.agentId = C.User_id;
+end  
+END 
+ELSE IF @action = 2 -- Get Outbound Templates
+BEGIN
+    
+    DECLARE @AsociatedNumber VARCHAR(30) 
+	SELECT @AsociatedNumber= number from ccWhatsAppNumbers WHERE @campId = camp_id
+	if @AsociatedNumber is not null begin
+		SELECT cast(TemplateId as bigint),Category,TemplateName,LanguageCode,Status,AsociatedNumber
+		,[Type],[Format],Body, 0 IsMeta
+		FROM ccWhatsAppOutboundTemplates WHERE AsociatedNumber = @AsociatedNumber AND Status = 1;
+	end
+	else begin
+		SELECT @MetaId= MetaId from ccMetawhatsAppNumbers WHERE Cam_Id= @campId
+		SELECT 
+		cast(Id as bigint) as TemplateId,Category,TemplateName,LanguageCode as LanguageCode
+		,A.StatusCW [Status],B.Number as AsociatedNumber, 1 IsMeta
+		,''BODY'' [Type],''TEXT'' [Format],body as Body
+		,header,footer
+		FROM ccMetaWAOutboundTemplates  A 
+		inner join ccMetawhatsAppNumbers B on A.MetaId=B.MetaId
+		WHERE A.MetaId = @MetaId AND A.StatusCW = 1
+		and A.body NOT LIKE ''%{{%'' 		AND A.body NOT LIKE ''%[[%''
+		AND ISNULL(A.header, '''') NOT LIKE ''%{{%'' AND ISNULL(A.header, '''') NOT LIKE ''%[[%'' -- quitar plantillas donde el header tiene variables
+		AND ISNULL(A.buttons, '''') NOT LIKE ''%{{%'' AND ISNULL(A.buttons, '''') NOT LIKE ''%[%'' -- quitar plantillas donde el buttons tiene variables de url
+		and A.[Status]=''APPROVED''
+		;
+	end
+    
+END
+END'
+EXEC(@sql);
+
+SET @process = 'Delete SP ccspOutboundWhatsApp'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspOutboundWhatsApp'')
+BEGIN
+	DROP PROCEDURE ccspOutboundWhatsApp
+END
+'
+EXEC(@sql);
+
+SET @process = 'Create SP ccspOutboundWhatsApp'
+SET @sql = '
+CREATE procedure ccspOutboundWhatsApp
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+	select 
+		distinct 
+		cast(c. cam_id as int) as CamId,
+		cam_descripcion as [Name],
+		1 AS CampType,
+		cam_procesando as [Start],
+		Number as PhoneNumber, 
+		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+		Token
+	from ccCamps c with(nolock)
+	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+	WHERE CampType=5 AND c.IDArea IS NOT NULL
+	UNION
+	SELECT -- load acd
+		DISTINCT 
+		CAST(ci.Inbound_id AS INT) AS CamId,
+		ci.descripcion AS [Name],
+		0 AS CampType,
+		CAST(ci.Status AS BIT) AS [Start],
+		cmw.Number AS PhoneNumber,
+		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+		cmw.Token AS Token
+	FROM ccInbound ci WITH(NOLOCK)
+	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+END
+ELSE IF @campType IS NOT NULL
+BEGIN
+	IF @campType = 0
+	BEGIN
+		SELECT -- load acd
+			DISTINCT 
+			CAST(ci.Inbound_id AS INT) AS CamId,
+			ci.descripcion AS [Name],
+			0 AS CampType,
+			CAST(ci.Status AS BIT) AS [Start],
+			cmw.Number AS PhoneNumber,
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+			cmw.Token AS Token
+		FROM ccInbound ci WITH(NOLOCK)
+		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+	END
+	ELSE
+	BEGIN
+		select 
+			distinct 
+			cast(c. cam_id as int) as CamId,
+			cam_descripcion as [Name],
+			1 AS CampType,
+			cam_procesando as [Start],
+			Number as PhoneNumber, 
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+			Token
+		from ccCamps c with(nolock)
+		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+	END
+END
+
+end
+else if @action=2 begin -- cargar valores del template para envio manual
+	SELECT TOP 1
+		A.id AS Id
+	   ,A.LanguageCode AS LanguageCode
+	   ,B.Number AS Number
+	   ,ISNULL(A.header, '''') AS Header
+	   ,ISNULL(A.body, '''') AS Body
+	   ,ISNULL(A.footer, '''') AS Footer
+	   ,ISNULL(A.buttons, '''') AS Buttons
+	   ,ISNULL(A.headerLink, '''') AS HeaderLink
+	FROM ccMetaWAOutboundTemplates A
+	INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
+	WHERE A.TemplateName = @templateName
+	AND B.Cam_Id = @camId
+
+end
+'
+EXEC(@sql);
+
+SET @process = 'Delete SP ccsp_MetaWAOutboundTemplates'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures where name= N''ccsp_MetaWAOutboundTemplates'')
+BEGIN
+	DROP PROCEDURE ccsp_MetaWAOutboundTemplates
+END
+'
+EXEC(@sql);
+
+SET @process = 'Create SP ccsp_MetaWAOutboundTemplates'
+SET @sql = '
+CREATE PROCEDURE ccsp_MetaWAOutboundTemplates
+@action TINYINT = NULL,
+@whatsAppTemplateID BIGINT = 0,
+@id varchar(200) = NULL,
+@Category varchar(50) = NULL,
+@TemplateName varchar(512) = NULL,
+@AllowCategoryChange tinyint = NULL,
+@LanguageCode varchar(10)= NULL,
+@Status varchar(200)= NULL, 
+@header nvarchar(max)= null,
+@body nvarchar(max) = null,
+@footer nvarchar(max) = null,
+@buttons nvarchar(max) = null,
+@metaStatus varchar(30) = NULL,
+@FilePath varchar(1024) = null,
+@HistoryLog varchar(max) = null,
+@campId SMALLINT = NULL,
+@UserId	SMALLINT = 0,
+@MetaId INT = 0,
+@CreationDate DATETIME = NULL
+AS
+BEGIN
+    IF(@action = 1) -- get template by id
+    BEGIN
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,cmwot.FilePath
+        ,cmwot.Status AS Status
+        FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+        WHERE cmwot.Id = @whatsAppTemplateID
+    END
+    ELSE IF(@action = 2)
+    BEGIN
+        SELECT cmwan.MetaId AS Id, cmwan.Number FROM dbo.ccMetaWhatsAppNumbers AS cmwan
+        Left JOIN dbo.ccMetaWhatsAppConfigurations AS cmwac
+        ON cmwan.MetaId = cmwac.Id
+        WHERE cmwan.Status = 1
+    END
+    ELSE IF(@action = 3)
+    BEGIN
+        UPDATE ccMetaWAOutboundTemplates SET StatusCW = 0 WHERE Id = @whatsAppTemplateID
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 4) --create
+    BEGIN
+        insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW,CreationDate)
+                            values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1,@CreationDate)
+    END
+    ELSE IF(@action = 5) -- Get Template Config By Id
+    BEGIN
+        SELECT n.WAAccountId, n.Token, c.Url as [Url], t.TemplateName 
+        FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on c.Id = 2
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF(@action = 6) -- update status to delete
+    BEGIN
+        DECLARE @newStatus bit = 1;
+        IF(@metaStatus = ''DELETED'')
+        BEGIN
+            SET @newStatus = 0
+        END
+        UPDATE ccMetaWAOutboundTemplates SET 
+        [Status] = @metaStatus, 
+        StatusCW = @newStatus,
+        RemovalDate = ISNULL(RemovalDate, GETDATE())
+        WHERE Id = @whatsAppTemplateID
+        AND [StatusCW] = 1;
+        SELECT @@ROWCOUNT;
+        RETURN 0;
+    END
+    ELSE IF(@action = 7) -- Get template campaigns associated
+    BEGIN
+        SELECT ISNULL(n.Cam_Id,0) as Cam_Id, ISNULL(n.Inbound_Id,0) AS Inbound_Id FROM ccMetaWAOutboundTemplates t
+        INNER JOIN ccMetaWhatsAppNumbers n on t.MetaId = n.MetaId
+        left JOIN ccMetaWhatsAppConfigurations c on n.MetaId = c.Id
+        WHERE t.Id = @whatsAppTemplateID
+        RETURN 0;
+    END
+    ELSE IF (@action = 8) -- update template
+    BEGIN
+        DECLARE @tableHistoryLog TABLE (Id INT, Value VARCHAR(MAX))
+        DECLARE @areaName VARCHAR(50),
+                @login VARCHAR(50)
+
+        SELECT
+            @areaName = ca.AreaName,
+            @login = cu.Login
+        FROM ccUsers cu
+        INNER JOIN ccRIACat_Areas ca with(nolock) ON cu.IDArea = ca.IDArea
+        WHERE cu.User_id = @UserId
+
+        INSERT INTO @tableHistoryLog 
+        SELECT tb.Id, tb.Value
+        FROM dbo.fn_RIASplitDelimited(@HistoryLog, '',,'') tb
+
+
+        -- insert into activity log table and update template data
+        IF (@header IS NULL OR LEN(@header) = 0) AND (SELECT LEN(ISNULL(header,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when header is null or '''' and before update header contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_HEADER'',''COMMON_NONE_O'',@TemplateName)
+        END
+        IF (@footer IS NULL OR LEN(@footer) = 0) AND (SELECT LEN(ISNULL(footer,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when footer is null or '''' and before update footer contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_FOOTER'',''COMMON_NONE_O'',@TemplateName)
+        END
+        IF (@buttons IS NULL OR LEN(@buttons) = 0) AND (SELECT LEN(ISNULL(buttons,'''')) FROM ccMetaWAOutboundTemplates WHERE Id = @Id) > 0 -- when buttons is null or '''' and before update buttons contains data
+        BEGIN
+            INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+            VALUES (@areaName, GETDATE(), @login, 122, 20, ''T&EDIT_TEMPLATE_BUTTONS'',''COMMON_NONE_O'',@TemplateName)
+        END
+        
+        EXEC InsertLogAdminGalatea @action=1, @tableName=''ccMetaWAOutboundTemplates'', @columnNameId=''Id'', @valueId= @Id, @userId= 1
+        Create table #ccMetaWAOutboundTemplates 
+        (
+            columnInfo VARCHAR(MAX),
+            dataInfo VARCHAR(MAX),
+            identifierInfo VARCHAR(MAX)
+        )
+
+        UPDATE ccMetaWAOutboundTemplates
+        SET Category = @Category,
+            header = @header,
+            body = @body,
+            footer = @footer,
+            buttons = @buttons,
+            FilePath = @FilePath,
+			Status = ''PENDING'' -- actualizar el status a pending 
+        WHERE Id = @Id
+
+        EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
+
+        INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+        SELECT
+            @areaName,
+            GETDATE(),
+            @login,
+            122,
+            20,
+            cc.identifierInfo,
+            tb1.Value,
+            @TemplateName
+        FROM #ccMetaWAOutboundTemplates cc
+        INNER JOIN  @tableHistoryLog  tb1 ON cc.columnInfo = (CASE 
+                                                                WHEN tb1.Id = 1 THEN ''Category''
+                                                                WHEN tb1.Id = 2 THEN ''header'' 
+                                                                WHEN tb1.Id = 3 THEN ''body'' 
+                                                                WHEN tb1.Id = 4 THEN ''footer''
+                                                                WHEN tb1.Id > 4 THEN ''buttons''
+                                                                END)
+    END
+    else IF(@action = 9) -- get templates by phone number
+    BEGIN
+        ;WITH tb1 as(
+            SELECT
+                gal.Target AS TemplateName,
+                MAX(gal.ActivityDate) AS Date
+            FROM ccGalateaActivityLog gal 
+            WHERE gal.OperationId = 122 
+            AND gal.ModuleId = 20 
+            AND CAST(gal.ActivityDate AS DATE) >= DATEADD(DD,-30, CAST(GETDATE() AS DATE))
+            GROUP BY gal.Target, CAST(gal.ActivityDate AS DATE)
+        )
+        ,TemplateIsEditable AS (
+            SELECT
+                tb1.TemplateName,
+                CASE WHEN COUNT(*) >= 10 THEN 2 WHEN MAX(tb1.Date) >= DATEADD(HOUR, -24, GETDATE()) THEN 1 ELSE 0 END AS IsEditable
+            FROM tb1
+            GROUP BY tb1.TemplateName
+        )
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,ISNULL(tie.IsEditable, 0) AS IsEditable
+        ,cmwot.FilePath
+		,cmwot.CreationDate
+        FROM  dbo.ccMetaWAOutboundTemplates cmwot
+        LEFT JOIN TemplateIsEditable tie ON tie.TemplateName = CAST(cmwot.TemplateName AS VARCHAR(MAX))
+        WHERE cmwot.MetaId = @whatsAppTemplateID
+        AND cmwot.StatusCW = 1
+    END
+    ELSE IF(@action = 10) -- Check if an other load is executing for the campaign
+    BEGIN
+        SELECT CASE WHEN COUNT(crl.load_id) > 0 THEN CONVERT(BIT , 1) ELSE CONVERT(BIT, 0) END AS IsProcessExecuting FROM dbo.ccRIALoading AS crl
+        WHERE crl.cam_id = @campId AND crl.state IN (0,2) AND crl.loadType = 3;
+    END
+    ELSE IF(@action = 11) --Check if the campaign was eliminated or desasigned
+    BEGIN
+        DECLARE @campaignIsEliminateDesasigned BIT = 0;
+        DECLARE @idAreaNull SMALLINT = 0;
+
+        SELECT  @idAreaNull = cc.IDArea FROM dbo.ccCamps AS cc WHERE cc.cam_id = @campId
+
+        IF(@idAreaNull IS NULL)
+        BEGIN
+            SET @campaignIsEliminateDesasigned = 1; --La campaña fue eliminada
+        END
+
+        IF NOT EXISTS(SELECT TOP 1 crcew.IdCampEsp FROM dbo.ccRIACampEspWG AS crcew INNER JOIN dbo.ccRIAWorkGroupUsers AS crwgu
+        ON crwgu.IDWG = crcew.IDWG
+        WHERE crwgu.User_id = @UserId AND crcew.Tipo = 1 AND crcew.IdCampEsp = @campId)
+        BEGIN 
+            SET @campaignIsEliminateDesasigned = 1; --La campaña fue desasignada del grupo de trabajo
+        END
+
+        SELECT @campaignIsEliminateDesasigned;
+    END
+    ELSE IF(@action = 12) --Get new numbers loaded in  ccWhatsAppOutSource 
+    BEGIN
+        SELECT cwt.Callkey FROM dbo.ccoWAWorkingTable AS cwt WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
+        UNION
+        SELECT cwaos.CallKey FROM dbo.ccWhatsAppOutSource AS cwaos 
+        WHERE cwaos.camId = @campId AND cwaos.Status = 0
+    END
+    IF(@action = 13) -- Get templates by campaign number assigned
+    BEGIN
+        SELECT 
+        cmwot.Id 
+        ,cmwot.TemplateName AS Name
+        ,cmwot.Status AS Status
+        ,Category AS Category
+        ,ISNULL(cmwot.notes, '''' ) AS Notes
+        ,cmwot.header AS Header
+        ,Body
+        ,cmwot.footer AS Footer
+        ,cmwot.buttons AS Buttons
+        ,cmwot.LanguageCode
+        ,ISNULL(cmwot.quality,0) AS Quality
+        ,cmwot.IsPendingQuality
+        ,cmwot.FilePath
+		,cmwot.CreationDate
+        FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
+        INNER JOIN dbo.ccMetaWhatsAppNumbers AS cmwan ON 
+        cmwot.MetaId = cmwan.MetaId
+        WHERE cmwot.StatusCW = 1 AND cmwan.Cam_Id = @campId AND cmwot.Status = ''APPROVED''
+    END
+    ELSE IF (@action = 14) -- check if campaing exists
+    BEGIN
+        IF EXISTS(SELECT 1 FROM dbo.ccMetaWAOutboundTemplates cmwot WHERE cmwot.Id = @whatsAppTemplateID)
+            SELECT 1
+        ELSE
+            SELECT 0
+    END
+END
+'
+EXEC(@sql);
+
+------------------------------------------- END ISAAC CORTES -----------------------------------------------------------------
+
+
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

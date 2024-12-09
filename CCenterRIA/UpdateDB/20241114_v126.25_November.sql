@@ -2061,16 +2061,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.InboundId AS CampaignId,
+			ci.descripcion AS CamName,
             c.phoneACD as CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Inbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn    
         FROM ccWhatsAppConversations c
         LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
         LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccinbound ci ON ci.inbound_id = c.inboundid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2084,16 +2086,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.camId AS CampaignId,
+			ca.cam_descripcion AS CamName,
             c.phoneCamp AS CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Outbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn  
         FROM ccWhatsAppConversationsOut c
         LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
         LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccCamps ca ON ca.cam_Id = c.camid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2108,6 +2112,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2122,6 +2127,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2134,6 +2140,7 @@ BEGIN
     SELECT conversationId as ConversationId,
            CampaignId as CamId,
            CamNumber as CamNumber,
+		   CamName as CamName,
            CAST(GraphicId AS SMALLINT) AS Frame,
            ClientNumber as ClientNumber,
            MessageContent as MessageContent,
@@ -3551,9 +3558,15 @@ EXEC(@sql)
             BEGIN
                 IF @ConversationId IS NOT NULL
                 BEGIN
-                    UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-                    --Save Conversation Assigned
-                    SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+                    -- Se valida si el conversation date es null para poder actualizarlo
+					DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+					SELECT @IsTransfered = IsTransfered ,  @conversationDate = conversationDate FROM ccWhatsAppConversations with(nolock) WHERE conversationId = @ConversationId; 
+					IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+					BEGIN
+						UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+						--Save Conversation Assigned
+						SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+					END
                 END
             END
         ELSE IF @Option = 4 -- Get Disposition Information
@@ -3747,10 +3760,16 @@ EXEC(@sql)
 		BEGIN
 			IF @ConversationId IS NOT NULL
 			BEGIN
-				UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-				--Save Conversation Assigned
-				SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
-				UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				-- Se valida si el conversation date es null para poder actualizarlo
+				DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+				SELECT @IsTransfered = IsTransfered, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut with(nolock)  WHERE conversationId = @ConversationId; 
+				IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+				BEGIN
+					UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+					--Save Conversation Assigned
+					SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+					UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				END
 				
 			END
 		END
@@ -5655,6 +5674,8 @@ SELECT a1.cam_id
 	,isnull(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent
 	,ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations
 	,isnull(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo
+	,ISNULL(RecordIvr,0) as RecordIvr
+	,isnull(CamCanceled,0) as CamCanceled
 FROM ccCamps a1
 INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
 INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
@@ -5997,9 +6018,111 @@ SET NOCOUNT OFF'
 EXEC(@sql);
 
 
-SET @process = 'Alter SP '
-SET @sql = ''
-EXEC(@sql);
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsImportStatus'')
+begin
+	DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus;
+end'
+EXEC(@sql)
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - CREATE PROCEDURE ccsp_GalateaGetRecordsImportStatus, 
+se modifica el @action=1, se quita la condición "and loadType = 0" en la línea 6060 '
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+		-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+		@action tinyint, 
+		@loadID int = NULL, 
+		@userID smallint = NULL
+
+		AS
+		declare @today datetime
+		select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+		SET nocount ON
+		if @action not IN (1,2,3)
+		raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+		if @action=1 -- Detalle general de carga de registros
+		BEGIN
+		if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+		 BEGIN
+		  raiserror(''ERROR. invalid user id'', 18, 1)
+		  return(0)
+		 END
+
+		if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate	
+				FROM ccRIALoading riaLoad
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today
+				ORDER BY riaLoad.loadDate DESC
+			END
+		else
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate
+		
+				FROM ccRIALoading riaLoad
+				JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today AND
+				superCam.user_id = @userID
+				AND superCam.tipo = 1
+				ORDER BY riaLoad.loadDate DESC
+			END
+
+		return(0)
+		END
+
+		if @action=2 -- Detalle específico de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid template ID'', 18, 1)
+		  return(0)
+		 END
+		  SELECT 
+		  crl.regsLoaded
+		  ,crl.alreadyLoaded
+		  ,crl.regsBlocked
+		  ,crl.regsNotLoaded
+		  ,crl.telsLoaded
+		  ,crl.telsBlocked
+		  ,crl.telsNotLoaded
+		  ,ISNULL(regsNotLoadedCp,0) as regsNotLoadedCp
+		  ,ISNULL(telsNotLoadedCp,0) as telsNotLoadedCp
+		  ,ISNULL(recordsNotLoadedPort,0) as recordsNotLoadedPort
+		  ,ISNULL(phonesNotLoadedPort, 0) as phonesNotLoadedPort
+		  ,ISNULL(LoadBySegment, CAST(0 AS BIT)) as IsSegmentLoad
+		  ,cc.CampType
+		  FROM dbo.ccRIALoading AS crl
+		  JOIN dbo.ccCamps AS cc
+		  ON cc.cam_id = crl.cam_id
+		  WHERE crl.load_id = @loadID
+		  
+
+		END
+
+		if @action=3 -- Porcentaje de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid load ID'', 18, 1)
+		  return(0)
+		 END
+
+		  SELECT state, pctg
+		  FROM ccRIALoading
+		  WHERE load_id  = @loadID
+
+		END
+		SET nocount off'
+EXEC(@sql)
+
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
 
 
 	

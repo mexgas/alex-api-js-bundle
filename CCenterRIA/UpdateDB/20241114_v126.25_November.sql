@@ -3047,6 +3047,7 @@ BEGIN
                             THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + ''.mp3'')
                             ELSE content
                         END
+					ELSE ''''
                 END
             WHEN originType = ''Agent'' THEN
                 CASE

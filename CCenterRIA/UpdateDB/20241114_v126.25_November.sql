@@ -6123,6 +6123,1217 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
 		SET nocount off'
 EXEC(@sql)
 
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
+Creación de la tabla ccWhatsOringCountry'
+SET @sql = 'if not exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
+CREATE TABLE [dbo].[ccWhatsOringCountry](
+	[CodeCountry] [varchar](10) NOT NULL,
+	[country] [varchar](255) NOT NULL,	
+	[TagTranslate] [varchar](100) NOT NULL,
+	[length] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[length] DESC,
+	[CodeCountry] ASC
+	
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+end
+else begin
+	truncate table [ccWhatsOringCountry]
+end'
+EXEC(@sql)
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp -
+Inserción de los datos para los prefijos globales'
+SET @sql = 'if not exists(select * from ccWhatsOringCountry) begin
+	insert into ccWhatsOringCountry values(''1264'',''Anguilla'',''systemTranslated_Anguilla'',4)
+	insert into ccWhatsOringCountry values(''1268'',''Antigua'',''systemTranslated_Antigua'',4)
+	insert into ccWhatsOringCountry values(''1242'',''Bahamas'',''systemTranslated_Bahamas'',4)
+	insert into ccWhatsOringCountry values(''1246'',''Barbados'',''systemTranslated_Barbados'',4)
+	insert into ccWhatsOringCountry values(''1411'',''Bermuda'',''systemTranslated_Bermuda'',4)
+	insert into ccWhatsOringCountry values(''1284'',''British Virgin Islands'',''systemTranslated_BritishVirginIslands'',4)
+	insert into ccWhatsOringCountry values(''1345'',''Cayman Islands'',''systemTranslated_CaymanIslands'',4)
+	insert into ccWhatsOringCountry values(''1809'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1829'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1849'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1473'',''Grenada'',''systemTranslated_Grenada'',4)
+	insert into ccWhatsOringCountry values(''1671'',''Guam'',''systemTranslated_Guam'',4)
+	insert into ccWhatsOringCountry values(''1876'',''Jamaica'',''systemTranslated_Jamaica'',4)
+	insert into ccWhatsOringCountry values(''1664'',''Montserrat'',''systemTranslated_Montserrat'',4)
+	insert into ccWhatsOringCountry values(''1787'',''Puerto Rico'',''systemTranslated_PuertoRico'',4)
+	insert into ccWhatsOringCountry values(''1939'',''Puerto Rico'',''systemTranslated_PuertoRico'',4)
+	insert into ccWhatsOringCountry values(''1869'',''St. Kitts/Nevis'',''systemTranslated_StKitts_Nevis'',4)
+	insert into ccWhatsOringCountry values(''1758'',''St. Lucia'',''systemTranslated_St.Lucia'',4)
+	insert into ccWhatsOringCountry values(''1868'',''Trinidad & Tobago'',''systemTranslated_TrinidadTobago'',4)
+	insert into ccWhatsOringCountry values(''1649'',''Turks & Caicos'',''systemTranslated_TurksCaicos'',4)
+	insert into ccWhatsOringCountry values(''1340'',''US Virgin Islands'',''systemTranslated_USVirginIslands'',4)
+	insert into ccWhatsOringCountry values(''7'',''Russia'',''systemTranslated_Russia'',1)
+	insert into ccWhatsOringCountry values(''20'',''Egypt'',''systemTranslated_Egypt'',2)
+	insert into ccWhatsOringCountry values(''27'',''South Africa'',''systemTranslated_SouthAfrica'',2)
+	insert into ccWhatsOringCountry values(''30'',''Greece'',''systemTranslated_Greece'',2)
+	insert into ccWhatsOringCountry values(''31'',''Netherlands'',''systemTranslated_Netherlands'',2)
+	insert into ccWhatsOringCountry values(''32'',''Belgium'',''systemTranslated_Belgium'',2)
+	insert into ccWhatsOringCountry values(''33'',''France'',''systemTranslated_France'',2)
+	insert into ccWhatsOringCountry values(''34'',''Spain'',''systemTranslated_Spain'',2)
+	insert into ccWhatsOringCountry values(''36'',''Hungary'',''systemTranslated_Hungary'',2)
+	insert into ccWhatsOringCountry values(''39'',''Italy'',''systemTranslated_Italy'',2)
+	insert into ccWhatsOringCountry values(''40'',''Romania'',''systemTranslated_Romania'',2)
+	insert into ccWhatsOringCountry values(''41'',''Switzerland'',''systemTranslated_Switzerland'',2)
+	insert into ccWhatsOringCountry values(''43'',''Austria'',''systemTranslated_Austria'',2)
+	insert into ccWhatsOringCountry values(''44'',''United Kingdom'',''systemTranslated_UnitedKingdom'',2)
+	insert into ccWhatsOringCountry values(''45'',''Denmark'',''systemTranslated_Denmark'',2)
+	insert into ccWhatsOringCountry values(''46'',''Sweden'',''systemTranslated_Sweden'',2)
+	insert into ccWhatsOringCountry values(''47'',''Norway'',''systemTranslated_Norway'',2)
+	insert into ccWhatsOringCountry values(''48'',''Poland'',''systemTranslated_Poland'',2)
+	insert into ccWhatsOringCountry values(''49'',''Germany'',''systemTranslated_Germany'',2)
+	insert into ccWhatsOringCountry values(''51'',''Peru'',''systemTranslated_Peru'',2)
+	insert into ccWhatsOringCountry values(''52'',''Mexico'',''systemTranslated_Mexico'',2)
+	insert into ccWhatsOringCountry values(''53'',''Cuba'',''systemTranslated_Cuba'',2)
+	insert into ccWhatsOringCountry values(''54'',''Argentina'',''systemTranslated_Argentina'',2)
+	insert into ccWhatsOringCountry values(''55'',''Brazil'',''systemTranslated_Brazil'',2)
+	insert into ccWhatsOringCountry values(''56'',''Chile'',''systemTranslated_Chile'',2)
+	insert into ccWhatsOringCountry values(''57'',''Colombia'',''systemTranslated_Colombia'',2)
+	insert into ccWhatsOringCountry values(''58'',''Venezuela'',''systemTranslated_Venezuela'',2)
+	insert into ccWhatsOringCountry values(''60'',''Malaysia'',''systemTranslated_Malaysia'',2)
+	insert into ccWhatsOringCountry values(''61'',''Australia'',''systemTranslated_Australia'',2)
+	insert into ccWhatsOringCountry values(''63'',''Philippines'',''systemTranslated_Philippines'',2)
+	insert into ccWhatsOringCountry values(''64'',''New Zealand'',''systemTranslated_NewZealand'',2)
+	insert into ccWhatsOringCountry values(''65'',''Singapore'',''systemTranslated_Singapore'',2)
+	insert into ccWhatsOringCountry values(''66'',''Thailand'',''systemTranslated_Thailand'',2)
+	insert into ccWhatsOringCountry values(''81'',''Japan'',''systemTranslated_Japan'',2)
+	insert into ccWhatsOringCountry values(''82'',''Korea (South)'',''systemTranslated_KoreaSouth'',2)
+	insert into ccWhatsOringCountry values(''84'',''Vietnam'',''systemTranslated_Vietnam'',2)
+	insert into ccWhatsOringCountry values(''86'',''China'',''systemTranslated_China'',2)
+	insert into ccWhatsOringCountry values(''90'',''Turkey'',''systemTranslated_Turkey'',2)
+	insert into ccWhatsOringCountry values(''91'',''India'',''systemTranslated_India'',2)
+	insert into ccWhatsOringCountry values(''92'',''Pakistan'',''systemTranslated_Pakistan'',2)
+	insert into ccWhatsOringCountry values(''93'',''Afghanistan'',''systemTranslated_Afghanistan'',2)
+	insert into ccWhatsOringCountry values(''94'',''Sri Lanka'',''systemTranslated_SriLanka'',2)
+	insert into ccWhatsOringCountry values(''98'',''Iran'',''systemTranslated_Iran'',2)
+	insert into ccWhatsOringCountry values(''212'',''Morocco'',''systemTranslated_Morocco'',3)
+	insert into ccWhatsOringCountry values(''213'',''Algeria'',''systemTranslated_Algeria'',3)
+	insert into ccWhatsOringCountry values(''216868'',''Tunisia'',''systemTranslated_Tunisia'',6)
+	insert into ccWhatsOringCountry values(''218'',''Libya'',''systemTranslated_Libya'',3)
+	insert into ccWhatsOringCountry values(''220'',''Gambia'',''systemTranslated_Gambia'',3)
+	insert into ccWhatsOringCountry values(''221'',''Senegal'',''systemTranslated_Senegal'',3)
+	insert into ccWhatsOringCountry values(''222'',''Mauritania'',''systemTranslated_Mauritania'',3)
+	insert into ccWhatsOringCountry values(''224'',''Guinea'',''systemTranslated_Guinea'',3)
+	insert into ccWhatsOringCountry values(''225'',''Ivory Coast'',''systemTranslated_IvoryCoast'',3)
+	insert into ccWhatsOringCountry values(''226'',''Burkina Faso'',''systemTranslated_BurkinaFaso'',3)
+	insert into ccWhatsOringCountry values(''227'',''Niger'',''systemTranslated_Niger'',3)
+	insert into ccWhatsOringCountry values(''229'',''Benin'',''systemTranslated_Benin'',3)
+	insert into ccWhatsOringCountry values(''231'',''Liberia'',''systemTranslated_Liberia'',3)
+	insert into ccWhatsOringCountry values(''232'',''Sierra Leone'',''systemTranslated_SierraLeone'',3)
+	insert into ccWhatsOringCountry values(''233'',''Ghana'',''systemTranslated_Ghana'',3)
+	insert into ccWhatsOringCountry values(''234'',''Nigeria'',''systemTranslated_Nigeria'',3)
+	insert into ccWhatsOringCountry values(''235'',''Chad'',''systemTranslated_Chad'',3)
+	insert into ccWhatsOringCountry values(''236'',''Central African Republic'',''systemTranslated_CentralAfricanRepublic'',3)
+	insert into ccWhatsOringCountry values(''237'',''Cameroon'',''systemTranslated_Cameroon'',3)
+	insert into ccWhatsOringCountry values(''238'',''Cape Verde'',''systemTranslated_CapeVerdeIslands'',3)
+	insert into ccWhatsOringCountry values(''242'',''Congo'',''systemTranslated_Congo'',3)
+	insert into ccWhatsOringCountry values(''243'',''Congo, Dem. Rep. of'',''systemTranslated_CongoDemRepof'',3)
+	insert into ccWhatsOringCountry values(''244'',''Angola'',''systemTranslated_Angola'',3)
+	insert into ccWhatsOringCountry values(''246'',''Diego Garcia'',''systemTranslated_DiegoGarcia'',3)
+	insert into ccWhatsOringCountry values(''247'',''Ascension'',''systemTranslated_Ascension'',3)
+	insert into ccWhatsOringCountry values(''249758'',''Sudan'',''systemTranslated_Sudan'',6)
+	insert into ccWhatsOringCountry values(''250'',''Rwandese Republic'',''systemTranslated_RwandeseRepublic'',3)
+	insert into ccWhatsOringCountry values(''251'',''Ethiopia'',''systemTranslated_Ethiopia'',3)
+	insert into ccWhatsOringCountry values(''253'',''Djibouti'',''systemTranslated_Djibouti'',3)
+	insert into ccWhatsOringCountry values(''254'',''Kenya'',''systemTranslated_Kenya'',3)
+	insert into ccWhatsOringCountry values(''255'',''Tanzania'',''systemTranslated_Tanzania'',3)
+	insert into ccWhatsOringCountry values(''256649'',''Uganda'',''systemTranslated_Uganda'',6)
+	insert into ccWhatsOringCountry values(''257'',''Burundi'',''systemTranslated_Burundi'',3)
+	insert into ccWhatsOringCountry values(''258'',''Mozambique'',''systemTranslated_Mozambique'',3)
+	insert into ccWhatsOringCountry values(''260'',''Zambia'',''systemTranslated_Zambia'',3)
+	insert into ccWhatsOringCountry values(''261'',''Madagascar'',''systemTranslated_Madagascar'',3)
+	insert into ccWhatsOringCountry values(''263'',''Zimbabwe'',''systemTranslated_Zimbabwe'',3)
+	insert into ccWhatsOringCountry values(''265'',''Malawi'',''systemTranslated_Malawi'',3)
+	insert into ccWhatsOringCountry values(''267'',''Botswana'',''systemTranslated_Botswana'',3)
+	insert into ccWhatsOringCountry values(''268'',''Swaziland'',''systemTranslated_Swaziland'',3)
+	insert into ccWhatsOringCountry values(''269'',''Comoros'',''systemTranslated_Comoros'',3)
+	insert into ccWhatsOringCountry values(''291'',''Eritrea'',''systemTranslated_Eritrea'',3)
+	insert into ccWhatsOringCountry values(''297'',''Aruba'',''systemTranslated_Aruba'',3)
+	insert into ccWhatsOringCountry values(''299'',''Greenland'',''systemTranslated_Greenland'',3)
+	insert into ccWhatsOringCountry values(''350'',''Gibraltar'',''systemTranslated_Gibraltar'',3)
+	insert into ccWhatsOringCountry values(''351'',''Portugal'',''systemTranslated_Portugal'',3)
+	insert into ccWhatsOringCountry values(''352'',''Luxembourg'',''systemTranslated_Luxembourg'',3)
+	insert into ccWhatsOringCountry values(''353'',''Ireland'',''systemTranslated_Ireland'',3)
+	insert into ccWhatsOringCountry values(''354'',''Iceland'',''systemTranslated_Iceland'',3)
+	insert into ccWhatsOringCountry values(''355'',''Albania'',''systemTranslated_Albania'',3)
+	insert into ccWhatsOringCountry values(''356'',''Malta'',''systemTranslated_Malta'',3)
+	insert into ccWhatsOringCountry values(''357'',''Cyprus'',''systemTranslated_Cyprus'',3)
+	insert into ccWhatsOringCountry values(''358'',''Finland'',''systemTranslated_Finland'',3)
+	insert into ccWhatsOringCountry values(''359'',''Bulgaria'',''systemTranslated_Bulgaria'',3)
+	insert into ccWhatsOringCountry values(''370'',''Lithuania'',''systemTranslated_Lithuania'',3)
+	insert into ccWhatsOringCountry values(''371'',''Latvia'',''systemTranslated_Latvia'',3)
+	insert into ccWhatsOringCountry values(''372'',''Estonia'',''systemTranslated_Estonia'',3)
+	insert into ccWhatsOringCountry values(''373'',''Moldova'',''systemTranslated_Moldova'',3)
+	insert into ccWhatsOringCountry values(''374'',''Armenia'',''systemTranslated_Armenia'',3)
+	insert into ccWhatsOringCountry values(''375'',''Belarus'',''systemTranslated_Belarus'',3)
+	insert into ccWhatsOringCountry values(''377'',''Monaco'',''systemTranslated_Monaco'',3)
+	insert into ccWhatsOringCountry values(''378'',''San Marino'',''systemTranslated_SanMarino'',3)
+	insert into ccWhatsOringCountry values(''379'',''Vatican City'',''systemTranslated_VaticanCity'',3)
+	insert into ccWhatsOringCountry values(''380'',''Ukraine'',''systemTranslated_Ukrainea'',3)
+	insert into ccWhatsOringCountry values(''381'',''Serbia/Montenegro'',''systemTranslated_Serbia_Montenegro'',3)
+	insert into ccWhatsOringCountry values(''385'',''Croatia'',''systemTranslated_Croatia'',3)
+	insert into ccWhatsOringCountry values(''386'',''Slovenia'',''systemTranslated_Slovenia'',3)
+	insert into ccWhatsOringCountry values(''387'',''Bosnia/Herzegovina'',''systemTranslated_Bosnia_Herzegovina'',3)
+	insert into ccWhatsOringCountry values(''389'',''Macedonia'',''systemTranslated_Macedonia'',3)
+	insert into ccWhatsOringCountry values(''420'',''Czech Republic'',''systemTranslated_CzechRepublic'',3)
+	insert into ccWhatsOringCountry values(''421'',''Slovak Republic'',''systemTranslated_SlovakRepublic'',3)
+	insert into ccWhatsOringCountry values(''423'',''Liechtenstein'',''systemTranslated_Liechtenstein'',3)
+	insert into ccWhatsOringCountry values(''500'',''Falkland Islands'',''systemTranslated_FalklandIslands'',3)
+	insert into ccWhatsOringCountry values(''501'',''Belize'',''systemTranslated_Belize'',3)
+	insert into ccWhatsOringCountry values(''502'',''Guatemala'',''systemTranslated_Guatemala'',3)
+	insert into ccWhatsOringCountry values(''503'',''El Salvador'',''systemTranslated_ElSalvador'',3)
+	insert into ccWhatsOringCountry values(''504'',''Honduras'',''systemTranslated_Honduras'',3)
+	insert into ccWhatsOringCountry values(''505'',''Nicaragua'',''systemTranslated_Nicaragua'',3)
+	insert into ccWhatsOringCountry values(''506'',''Costa Rica'',''systemTranslated_CostaRica'',3)
+	insert into ccWhatsOringCountry values(''507'',''Panama'',''systemTranslated_Panama'',3)
+	insert into ccWhatsOringCountry values(''509'',''Haiti'',''systemTranslated_Haiti'',3)
+	insert into ccWhatsOringCountry values(''590'',''Guadeloupe'',''systemTranslated_Guadeloupe'',3)
+	insert into ccWhatsOringCountry values(''591'',''Bolivia'',''systemTranslated_Bolivia'',3)
+	insert into ccWhatsOringCountry values(''592'',''Guyana'',''systemTranslated_Guyana'',3)
+	insert into ccWhatsOringCountry values(''593'',''Ecuador'',''systemTranslated_Ecuador'',3)
+	insert into ccWhatsOringCountry values(''594'',''French Guiana'',''systemTranslated_FrenchGuiana'',3)
+	insert into ccWhatsOringCountry values(''595'',''Paraguay'',''systemTranslated_Paraguay'',3)
+	insert into ccWhatsOringCountry values(''596'',''Martinique'',''systemTranslated_Martinique'',3)
+	insert into ccWhatsOringCountry values(''597'',''Suriname'',''systemTranslated_Suriname'',3)
+	insert into ccWhatsOringCountry values(''598'',''Uruguay'',''systemTranslated_Uruguay'',3)
+	insert into ccWhatsOringCountry values(''599'',''Netherlands Antilles'',''systemTranslated_NetherlandsAntilles'',3)
+	insert into ccWhatsOringCountry values(''670'',''East Timor'',''systemTranslated_EastTimor'',3)
+	insert into ccWhatsOringCountry values(''672'',''Australian External Territories'',''systemTranslated_AustralianExternalTerritories'',3)
+	insert into ccWhatsOringCountry values(''673'',''Brunei Darussalam'',''systemTranslated_BruneiDarussalam'',3)
+	insert into ccWhatsOringCountry values(''674'',''Nauru'',''systemTranslated_Nauru'',3)
+	insert into ccWhatsOringCountry values(''675'',''Papua New Guinea'',''systemTranslated_PapuaNewGuinea'',3)
+	insert into ccWhatsOringCountry values(''677'',''Solomon Islands'',''systemTranslated_SolomonIslands'',3)
+	insert into ccWhatsOringCountry values(''679'',''Fiji Islands'',''systemTranslated_FijiIslands'',3)
+	insert into ccWhatsOringCountry values(''680'',''Palau'',''systemTranslated_Palau'',3)
+	insert into ccWhatsOringCountry values(''682'',''Cook Islands'',''systemTranslated_CookIslands'',3)
+	insert into ccWhatsOringCountry values(''685'',''Western Samoa'',''systemTranslated_WesternSamoa'',3)
+	insert into ccWhatsOringCountry values(''687'',''New Caledonia'',''systemTranslated_NewCaledonia'',3)
+	insert into ccWhatsOringCountry values(''689'',''French Polynesia'',''systemTranslated_FrenchPolynesia'',3)
+	insert into ccWhatsOringCountry values(''691'',''Micronesia'',''systemTranslated_Micronesia'',3)
+	insert into ccWhatsOringCountry values(''692'',''Marshall Islands'',''systemTranslated_MarshallIslands'',3)
+	insert into ccWhatsOringCountry values(''850'',''Korea (North)'',''systemTranslated_KoreaNorth'',3)
+	insert into ccWhatsOringCountry values(''852'',''Hong Kong'',''systemTranslated_HongKong'',3)
+	insert into ccWhatsOringCountry values(''853'',''Macao'',''systemTranslated_Macao'',3)
+	insert into ccWhatsOringCountry values(''855'',''Cambodia'',''systemTranslated_Cambodia'',3)
+	insert into ccWhatsOringCountry values(''856'',''Laos'',''systemTranslated_Laos'',3)
+	insert into ccWhatsOringCountry values(''880'',''Bangladesh'',''systemTranslated_Bangladesh'',3)
+	insert into ccWhatsOringCountry values(''886'',''Taiwan'',''systemTranslated_Taiwan'',3)
+	insert into ccWhatsOringCountry values(''960'',''Maldives'',''systemTranslated_Maldives'',3)
+	insert into ccWhatsOringCountry values(''961'',''Lebanon'',''systemTranslated_Lebanon'',3)
+	insert into ccWhatsOringCountry values(''962'',''Jordan'',''systemTranslated_Jordan'',3)
+	insert into ccWhatsOringCountry values(''963'',''Syria'',''systemTranslated_Syria'',3)
+	insert into ccWhatsOringCountry values(''964'',''Iraq'',''systemTranslated_Iraq'',3)
+	insert into ccWhatsOringCountry values(''965'',''Kuwait'',''systemTranslated_Kuwait'',3)
+	insert into ccWhatsOringCountry values(''966'',''Saudi Arabia'',''systemTranslated_SaudiArabia'',3)
+	insert into ccWhatsOringCountry values(''967'',''Yemen'',''systemTranslated_Yemen'',3)
+	insert into ccWhatsOringCountry values(''968'',''Oman'',''systemTranslated_Oman'',3)
+	insert into ccWhatsOringCountry values(''971'',''United Arab Emirates'',''systemTranslated_UnitedArabEmirates'',3)
+	insert into ccWhatsOringCountry values(''972'',''Israel'',''systemTranslated_Israel'',3)
+	insert into ccWhatsOringCountry values(''973'',''Bahrain'',''systemTranslated_Bahrain'',3)
+	insert into ccWhatsOringCountry values(''974'',''Qatar'',''systemTranslated_Qatar'',3)
+	insert into ccWhatsOringCountry values(''975'',''Bhutan'',''systemTranslated_Bhutan'',3)
+	insert into ccWhatsOringCountry values(''976'',''Mongolia'',''systemTranslated_Mongolia'',3)
+	insert into ccWhatsOringCountry values(''977'',''Nepal'',''systemTranslated_Nepal'',3)
+	insert into ccWhatsOringCountry values(''992'',''Tajikistan'',''systemTranslated_Tajikistan'',3)
+	insert into ccWhatsOringCountry values(''993'',''Turkmenistan'',''systemTranslated_Turkmenistan'',3)
+	insert into ccWhatsOringCountry values(''994'',''Azerbaijan'',''systemTranslated_Azerbaijan'',3)
+	insert into ccWhatsOringCountry values(''995'',''Georgia'',''systemTranslated_Georgia'',3)
+	insert into ccWhatsOringCountry values(''998'',''Uzbekistan'',''systemTranslated_Uzbekistan'',3)
+	insert into ccWhatsOringCountry values(''5399'',''Guantanamo Bay'',''systemTranslated_GuantanamoBay'',4)
+	insert into ccWhatsOringCountry values(''1'',''USA'',''systemTranslated_USA'',1)
+end'
+EXEC(@sql)
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp
+- delete function Verifica2'
+	SET @sql = ' IF EXISTS (SELECT * FROM   sys.objects WHERE  object_id = OBJECT_ID(N''[dbo].[Verifica2]'')
+						AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+		BEGIN
+			DROP FUNCTION [dbo].[Verifica2];
+		END';
+	EXEC(@sql);
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
+Modificación de la función Verifica2, para validar el prefijo en números internacionales'
+SET @sql = 'CREATE FUNCTION [dbo].[Verifica2] (@tel VARCHAR(32), @pais TINYINT = 0, @cldLocal VARCHAR(7) = '''', @isForSMS bit = 0, @isForWhatsapp BIT = 0)
+RETURNS VARCHAR(32)
+AS
+BEGIN
+	DECLARE @ld VARCHAR(7)
+	DECLARE @lon TINYINT
+	DECLARE @result TINYINT
+	DECLARE @mod VARCHAR(10)
+	DECLARE @tipo VARCHAR(10)
+	DECLARE @Cadena VARCHAR(32)
+	DECLARE @isLocal BIT
+	declare @serie varchar(10)
+	declare @codeCountry varchar(10)
+
+	IF (@pais = 0 AND @cldLocal = '''')
+	BEGIN
+		SELECT @pais = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 104
+
+		SELECT @cldLocal = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 17
+	END
+
+	SELECT @tel = dbo.limpia(@tel)
+	
+
+	IF @pais = 1
+	BEGIN --Empieza Mexico
+		SELECT @lon = len(@tel), @mod = ''''
+
+		IF @lon < 10
+		BEGIN
+			RETURN ''E_'' + @tel
+		END
+
+		if @isForWhatsapp=1 and @lon>10 begin
+			select @codeCountry=dbo.limpia(valor) from ccSettings2 with(nolock) where setting_id=273
+			if @codeCountry <> LEFT(@tel,len(@codeCountry)) begin
+				declare @isNumberValidate bit
+				select @isNumberValidate =dbo.ValidateWhatsAppNumber(@tel)
+				if @isNumberValidate=0 begin
+					RETURN ''E_'' + @tel
+				end
+				RETURN @tel
+			end
+		end
+
+
+
+		SELECT @tel = right(@tel, 10)
+
+		
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 10
+		BEGIN
+			IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 3)
+					and serie=SUBSTRING(@tel,4,3)
+					)
+				SELECT @ld = left(@tel, 3),@serie=SUBSTRING(@tel,4,3)
+			ELSE IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 2)
+					and serie=SUBSTRING(@tel,3,4)
+					)
+				SELECT @ld = left(@tel, 2),@serie=SUBSTRING(@tel,3,4)
+			ELSE
+				RETURN ''E_'' + @tel
+
+			SELECT TOP 1 @mod = modalidad, @tipo = [TIPO DE RED]
+			FROM series NOLOCK
+			WHERE cld = @ld AND serie = @serie AND right(@tel, 4) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+			IF @mod NOT IN (''FIJO'', ''MPP'', ''CPP'')
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+
+			IF (@isForSMS = 1 OR @isForWhatsapp = 1 )AND @tipo <> ''MOVIL''
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+
+			DECLARE @specialDialPlan TINYINT
+
+			SELECT @specialDialPlan = valor
+			FROM ccsettings WITH (NOLOCK)
+			WHERE setting_id = 195
+
+			IF @specialDialPlan = 2
+			BEGIN --Number 10 digits
+				RETURN @tel
+			END
+
+			SET @isLocal = 0
+
+			IF EXISTS (
+					SELECT *
+					FROM ccRiaArecode
+					WHERE area = @ld
+					)
+			BEGIN
+				SET @isLocal = 1
+			END
+			ELSE IF @cldLocal = @ld
+			BEGIN
+				SET @isLocal = 1
+			END
+
+			IF @specialDialPlan = 1
+			BEGIN
+				--Number local 10 digit
+				--Number LD 12 digit
+				--Number Cell 13 digit
+				SELECT @tel = CASE WHEN @mod IN (''FIJO'', ''MPP'') THEN CASE WHEN @isLocal = 1 THEN @tel ELSE ''01'' + @tel END WHEN @mod = ''CPP'' THEN --Local y LD
+								CASE WHEN @isLocal = 1 THEN ''044'' + @tel ELSE ''045'' + @tel END END --Celular
+			END
+			ELSE
+			BEGIN
+				--Number local 7 o 8 digit
+				--Number LD 12 digit
+				--Number Cell 13 digit
+				SELECT @tel = CASE WHEN @mod IN (''FIJO'', ''MPP'') THEN CASE WHEN @isLocal = 1 THEN right(@tel, 10 - len(@ld)) ELSE ''01'' + @tel END WHEN @mod = ''CPP'' THEN --Local y LD
+								CASE WHEN @isLocal = 1 THEN ''044'' + @tel ELSE ''045'' + @tel END END --Celular
+			END
+		END
+		ELSE IF @lon > 0
+		BEGIN
+			SET @tel = ''E_'' + @tel
+		END
+
+		RETURN @tel
+	END --Termina Mexico
+			--------------------------- Empieza Argentina ---------------------------
+	ELSE IF @pais = 2
+	BEGIN
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		IF @lon IN (6, 7, 8) AND left(@tel, 2) <> ''15''
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		IF @lon IN (8, 9, 10) AND left(@tel, 2) = ''15''
+		BEGIN
+			SET @tel = @cldLocal + substring(@tel, 3, @lon - 2)
+		END
+
+		--Buscamos el 15
+		IF @lon = 13
+		BEGIN
+			DECLARE @index AS INT
+
+			SELECT @index = charindex(''15'', @tel)
+
+			--El unico caso en el que la lada tiene un 15 es con lada 3715
+			IF @index < 2
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				IF substring(@tel, @index - 2, 4) = ''3715''
+				BEGIN
+					SELECT @ld = ''3715''
+
+					SET @tel = @ld + right(@tel, 6)
+				END
+				ELSE
+				BEGIN
+					SELECT @ld = substring(@tel, 2, @index - 2)
+
+					SET @tel = @ld + right(@tel, 13 - (@index + 1))
+				END
+			END
+		END
+
+		SELECT @tel = right(@tel, 10)
+
+		IF len(@tel) = 10
+		BEGIN			
+
+			BEGIN
+				-- Buscamos la lada, empezando por 4 digitos hasta 2, si la lada no existe se regresa error
+				DECLARE @contLD AS INT
+				DECLARE @cont AS INT
+
+				SET @contLD = 4
+
+				BuscaLada:
+
+				IF isnull(@ld, '''') = '''' AND @contLD >= 2
+				BEGIN
+					SELECT @ld = cld
+					FROM seriesArg
+					WHERE cld = left(@tel, @contLD)
+
+					IF isnull(@ld, '''') = ''''
+					BEGIN
+						SET @contLD = @contLD - 1
+
+						GOTO BuscaLada
+					END
+				END
+				ELSE
+				BEGIN
+					IF isnull(@ld, '''') = ''''
+					BEGIN
+						SELECT @tel = ''E_'' + @tel
+					END
+				END
+			END
+
+			-- Buscamos la serie, dependiendo de la longitud de la lada, se busca la serie hasta que encuentra una que existe
+			BEGIN
+				IF len(@ld) = 2
+				BEGIN
+					SET @cont = 5
+
+					buscaSerie2:
+
+					IF isnull(@serie, '''') = '''' AND @cont >= 4
+					BEGIN
+						SELECT @serie = serie
+						FROM seriesArg
+						WHERE cld = @ld AND serie = substring(@tel, 3, @cont)
+
+						IF isnull(@serie, '''') = ''''
+						BEGIN
+							SET @cont = @cont - 1
+
+							GOTO buscaSerie2
+						END
+					END
+				END
+				ELSE
+				BEGIN
+					IF len(@ld) = 3
+					BEGIN
+						SET @cont = 4
+
+						buscaSerie3:
+
+						IF isnull(@serie, '''') = '''' AND @cont >= 3
+						BEGIN
+							SELECT @serie = serie
+							FROM seriesArg
+							WHERE cld = @ld AND serie = substring(@tel, 4, @cont)
+
+							IF isnull(@serie, '''') = ''''
+							BEGIN
+								SET @cont = @cont - 1
+
+								GOTO buscaSerie3
+							END
+						END
+					END
+					ELSE
+					BEGIN
+						IF len(@ld) = 4
+						BEGIN
+							SET @cont = 3
+
+							buscaSerie4:
+
+							IF isnull(@serie, '''') = '''' AND @cont >= 2
+							BEGIN
+								SELECT @serie = serie
+								FROM seriesArg
+								WHERE cld = @ld AND serie = substring(@tel, 5, @cont)
+
+								IF isnull(@serie, '''') = ''''
+								BEGIN
+									SET @cont = @cont - 1
+
+									GOTO buscaSerie4
+								END
+							END
+						END
+					END
+				END
+			END
+
+			SELECT @mod = modalidad
+			FROM seriesArg
+			WHERE cld = @ld AND serie = @serie AND right(@tel, 10 - len(@ld) - len(@serie)) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+			-- Si la serie es nula, existe una posibilidad de que la lada este mal, asi que se quita un numero de la lada y se vuelve a buscar la serie			
+			IF isNull(@serie, '''') = '''' AND @contLD > 1
+			BEGIN
+				SET @contLD = len(@ld) - 1
+				SET @ld = NULL
+
+				GOTO BuscaLada
+			END
+
+			SELECT @tel = CASE WHEN @mod IN (''BASICA'', ''MPP'') THEN CASE WHEN @ld = @cldLocal THEN right(@tel, 10 - len(@ld)) ELSE ''0'' + @tel END WHEN @mod = ''CPP'' THEN CASE WHEN @ld = @cldLocal THEN ''15'' + right(@tel, 10 - len(@ld)) ELSE ''0'' + @ld + ''15'' + right(@tel, 10 - len(@ld)) END ELSE ''E_'' + @tel END
+		END
+		ELSE
+		BEGIN
+			IF len(@tel) > 0
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+			END
+		END
+
+		RETURN @tel
+	END ------------------ Termina Argentina ------------------
+	ELSE IF @pais = 3
+	BEGIN --Empieza Colombia
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		IF len(@tel) NOT IN (7, 8, 10, 11)
+		BEGIN
+			RETURN ''E_'' + @tel
+		END
+
+		IF len(@tel) = 7
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = left(@tel, 4) AND @cldLocal = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 8
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 2, 4) AND left(@tel, 1) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 10
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 5, 3) AND (left(@tel, 3) + ''-'' + substring(@tel, 4, 1)) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 11
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 6, 3) AND (substring(@tel, 2, 3) + ''-'' + substring(@tel, 5, 1)) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Colombia
+
+	-- Empieza Chile
+	IF @pais = 5
+	BEGIN
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		IF len(@tel) = 6 AND len(@cldLocal) = 2
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesChi
+					WHERE cld = @cldLocal AND left(@tel, 3) = serie AND right(@tel, 3) BETWEEN numeracioninicial AND numeracionFinal
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 7
+		BEGIN
+			IF @cldLocal IN (2, 41, 44, 32)
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE serie = left(@tel, 4)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					IF left(@tel, 3) = ''200'' AND EXISTS (
+							SELECT serie
+							FROM serieschi
+							WHERE serie = left(@tel, 3)
+							)
+					BEGIN
+						RETURN @tel
+					END
+				END
+			END
+		END
+
+		IF len(@tel) = 8
+		BEGIN
+			IF left(@tel, 1) = ''2''
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE serie = substring(@tel, 2, 4)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					IF EXISTS (
+							SELECT serie
+							FROM serieschi
+							WHERE serie = substring(@tel, 2, 5)
+							)
+					BEGIN
+						RETURN @tel
+					END
+					ELSE
+					BEGIN
+						RETURN ''E_'' + @tel
+					END
+				END
+			END
+			ELSE
+			BEGIN
+				RETURN @tel
+			END
+		END
+
+		IF len(@tel) = 10
+		BEGIN
+			IF left(@tel, 2) = ''09''
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE cld = substring(@tel, 3, 1) AND serie = substring(@tel, 5, 3)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+		END
+	END
+
+	--Termina Chile
+	IF @pais = 6
+	BEGIN --Empieza Venezuela
+		SELECT @lon = len(@tel)
+
+		IF @lon = 7
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		SELECT @tel = right(@tel, 10)
+
+		IF len(@tel) = 10
+		BEGIN
+			SELECT @ld = left(@tel, 3)
+
+			SELECT @mod = tipo
+			FROM seriesVen
+			WHERE left(@tel, 3) = LD
+
+			IF @mod = ''CPP''
+			BEGIN
+				IF EXISTS (
+						SELECT *
+						FROM seriesVen
+						WHERE LD = @ld
+						)
+				BEGIN
+					IF @ld = @cldLocal
+					BEGIN
+						SELECT @tel = right(@tel, 7)
+					END
+					ELSE
+					BEGIN
+						SELECT @tel = ''0'' + @tel
+					END
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = ''E_'' + @tel
+				END
+			END
+			ELSE
+			BEGIN
+				IF @mod = ''FIJO''
+				BEGIN
+					IF EXISTS (
+							SELECT serie
+							FROM seriesVen
+							WHERE serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) AND right(@tel, 4) BETWEEN [Inicio] AND [Fin]
+							)
+					BEGIN
+						IF @ld = @cldLocal
+						BEGIN
+							SELECT @tel = right(@tel, 7)
+						END
+						ELSE
+						BEGIN
+							SELECT @tel = ''0'' + @tel
+						END
+					END
+					ELSE
+					BEGIN
+						SELECT @tel = ''E_'' + @tel
+					END
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = ''E_'' + @tel
+				END
+			END
+		END
+		ELSE
+		BEGIN
+			IF len(@tel) > 0
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+			END
+		END
+
+		RETURN @tel
+	END --Termina Venezuela
+
+	IF @pais = 7
+	BEGIN -- Empieza UK
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN -- regresa error por longitud
+			RETURN @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		--numeros no geograficos
+		IF (left(@tel, 2) IN (''03'', ''07'', ''09'') AND @lon <> 11) OR (left(@tel, 3) IN (''055'', ''056'', ''070'') AND @lon <> 11)
+		BEGIN
+			RETURN ''E_'' + @tel --error por longitud con lada correcta
+		END
+		ELSE
+		BEGIN
+			IF left(@tel, 7) IN (''0845464'') OR left(@tel, 5) = ''07624'' OR left(@tel, 4) IN (''0500'', ''0800'') OR left(@tel, 3) IN (''055'', ''056'', ''070'', ''76'') OR left(@tel, 2) IN (''03'', ''07'', ''08'', ''09'')
+			BEGIN
+				RETURN @tel;--longitud correcta y numero no geografico
+			END
+		END
+
+		--numeros geograficos (revisar a mano porque son pocas claves LD). *El cero no es parte de la clave LD
+		IF (left(@tel, 7) IN (''0159575'', ''0159576'')) OR (left(@tel, 5) IN (''02820'', ''02821'', ''02825'', ''02827'', ''02828'', ''02829'', ''02830'', ''02837'', ''02838'', ''02840'', ''02841'', ''02842'', ''02843'', ''02844'', ''02866'', ''02867'', ''02868'', ''02870'', ''02871'', ''02877'', ''02879'', ''02880'', ''02881'', ''02882'', ''02885'', ''02886'', ''02887'', ''02889'', ''02890'', ''02891'', ''02892'', ''02893'', ''02894'', ''02895'', ''02897'') AND @lon = 11) OR --claves 2xxx tienen formato 4-6
+			(left(@tel, 4) IN (''0113'', ''0114'', ''0115'', ''0116'', ''0117'', ''0118'', ''0121'', ''0131'', ''0141'', ''0151'', ''0161'', ''0238'', ''0239'') AND @lon = 11) OR --3-digit area codes have 7-digit subscribers.
+			(left(@tel, 3) IN (''020'', ''024'', ''029'') AND @lon = 11)
+		BEGIN --2-digit area codes have 8-digit subscribers.
+			RETURN @tel;
+		END
+
+		--numeros geograficos con 01 (los que faltan por verificar tienen longitud variable)
+		IF left(@tel, 2) = ''01''
+		BEGIN
+			SELECT @ld = count(cld)
+			FROM seriesuk
+			WHERE cld = substring(@tel, 2, 4) --mayor numero de ladas (va primero por ser mas probable)
+
+			IF @ld > 0
+			BEGIN
+				RETURN @tel;
+			END
+			ELSE
+			BEGIN
+				SELECT @ld = count(cld)
+				FROM seriesuk
+				WHERE cld = substring(@tel, 2, 5) --ladas restantes
+
+				IF @ld > 0
+				BEGIN
+					RETURN @tel;
+				END
+			END
+		END --si no encontro ni error ni coincidencia entonces esta mal
+
+		RETURN ''E_'' + @tel
+	END --Termina UK
+
+	IF @pais = 8
+	BEGIN --Empieza Arabia Saudita
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 7
+		BEGIN
+			SET @tel = ''0'' + @cldLocal + @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 9
+		BEGIN
+			IF EXISTS (
+					SELECT regiones
+					FROM seriesSA
+					WHERE right(@tel, 4) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 3, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 4 AND left(@tel, 2) = cld
+					)
+			BEGIN
+				IF (substring(@tel, 2, 1) = @cldLocal)
+				BEGIN
+					RETURN right(@tel, 7)
+				END
+				ELSE
+				BEGIN
+					RETURN @tel
+				END
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF @lon = 10
+		BEGIN
+			IF EXISTS (
+					SELECT regiones
+					FROM seriesSA
+					WHERE right(@tel, 4) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 4, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 4 AND left(@tel, 3) = cld
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF @lon = 11
+		BEGIN
+			IF EXISTS (
+					SELECT regiones, *
+					FROM seriesSA
+					WHERE right(@tel, 6) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 3, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 6 AND left(@tel, 2) = cld
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Arabia Saudita
+
+	IF @pais = 9
+	BEGIN --Empieza Australia
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF EXISTS (
+					SELECT Regiones
+					FROM SeriesAU
+					WHERE convert(INT, LD) = convert(INT, substring(@tel, 1, 2)) AND convert(INT, AreaCode) = convert(INT, substring(@tel, 3, 2)) AND convert(INT, substring(@tel, 5, 6)) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+		ELSE
+		BEGIN
+			RETURN @tel
+		END
+	END --Termina Australia
+
+	IF @pais = 10
+	BEGIN -- Inicia Brasil
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF @lon IN (8, 9)
+			BEGIN --numero local
+				IF EXISTS (
+						SELECT Regiones
+						FROM seriesBR
+						WHERE convert(INT, AreaCode) = convert(INT, @cldLocal) AND convert(INT, @tel) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+
+			IF @lon IN (10, 11)
+			BEGIN --numero nacional
+				IF EXISTS (
+						SELECT Regiones
+						FROM seriesBR
+						WHERE convert(INT, AreaCode) = convert(INT, left(@tel, 2)) AND convert(INT, right(@tel, @lon - 2)) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+		END
+		ELSE
+		BEGIN
+			RETURN @tel
+		END
+	END -- Termina Brasil
+
+	IF @pais = 11
+	BEGIN -- Inicia Guatemala
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF EXISTS (
+					SELECT zonaGeografica
+					FROM seriesGT(NOLOCK)
+					WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+					)
+				RETURN @tel
+			ELSE
+				RETURN ''E_'' + @tel
+		END
+		ELSE
+			RETURN @tel
+	END -- Termina Guatemala
+
+	IF @pais = 12
+	BEGIN -- Inicia Costa Rica
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 8
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesCR(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF len(@tel) = 10
+			BEGIN
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesCR(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 3) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+			ELSE IF charindex(substring(@tel, 1, 2), ''00,08'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina Costa Rica
+
+	IF @pais = 13
+	BEGIN -- Inicia Salvador
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 8
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesSV(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina Salvador
+
+	IF @pais = 14
+	BEGIN -- Inicia Spain
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 9
+				IF EXISTS (
+						SELECT provincia
+						FROM seriesEsp(NOLOCK)
+						WHERE indicativo = substring(@tel, 1, 1) AND right(@tel, 8) BETWEEN numInicial AND numFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina España
+
+	IF @pais = 15
+	BEGIN --Inicia Peru
+		SELECT @tel = dbo.Completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF @lon BETWEEN 6 AND 7
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		SELECT @tel = right(@tel, 9)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF @lon = 9
+			BEGIN
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesPE(NOLOCK)
+						WHERE left(@tel, 1) = 9 OR substring(@tel, 2, 1) = 1 AND areaNumeracion = 1 AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal OR substring(@tel, 2, 1) <> 1 AND left(@tel, 2) = areaNumeracion AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Peru
+
+	IF @pais = 16
+	BEGIN --Panama
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 7
+			BEGIN -- Local
+				IF (substring(@tel, 1, 1) != ''6'')
+				BEGIN
+					IF EXISTS (
+							SELECT zonaGeografica
+							FROM seriesPa(NOLOCK)
+							WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+							)
+						RETURN @tel
+					ELSE
+						RETURN ''E_'' + @tel
+				END
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+
+			IF len(@tel) = 8
+			BEGIN --Celular
+				IF (substring(@tel, 1, 1) = ''6'')
+				BEGIN
+					IF EXISTS (
+							SELECT zonaGeografica
+							FROM seriesPa(NOLOCK)
+							WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+							)
+						RETURN @tel
+					ELSE
+						RETURN ''E_'' + @tel
+				END
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+			ELSE
+			BEGIN
+				IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+					RETURN ''E_'' + @tel
+				ELSE
+					RETURN @tel
+			END
+		END
+	END
+
+	RETURN @tel
+END'
+EXEC(@sql)
+
 --------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
 
 

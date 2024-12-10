@@ -3137,6 +3137,14 @@ if not exists (select * from sys.columns where name = N''CreationDate'' and Obje
 '
 EXEC(@sql)
 
+
+SET @process = 'Ad column ccMetaWAOutboundTemplates.headerLink'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''headerLink'' and Object_ID = Object_ID(N''ccMetaWAOutboundTemplates''))
+begin
+    ALTER TABLE ccMetaWAOutboundTemplates ADD headerLink NVARCHAR(MAX);
+end'
+	EXEC(@sql)
+
 SET @process = 'CW-8864 drop sp ccsp_MetaWAOutboundTemplates '
 SET @sql = '
 if exists (select * from sys.procedures where name = N''ccsp_MetaWAOutboundTemplates'')
@@ -6179,7 +6187,7 @@ PRIMARY KEY CLUSTERED
 	[length] DESC,
 	[CodeCountry] ASC
 	
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 end
 else begin
@@ -7409,12 +7417,7 @@ EXEC(@sql)
 --------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
 
 --------------------------------------------------------------------- BEGIN Jesus Gallardo Fix/plantillas ------------------------------------------
-	SET @process = 'Ad column ccMetaWAOutboundTemplates.headerLink'
-	SET @sql = 'if not exists (select * from sys.columns where name = N''headerLink'' and Object_ID = Object_ID(N''ccMetaWAOutboundTemplates''))
-begin
-    ALTER TABLE ccMetaWAOutboundTemplates ADD headerLink NVARCHAR(MAX);
-end'
-	EXEC(@sql)
+	
 
 	SET @process = 'Add index ccSettings2 PK_ccSettings2'
 	SET @sql = 'IF NOT EXISTS (

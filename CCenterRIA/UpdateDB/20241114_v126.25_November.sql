@@ -2716,14 +2716,25 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
+
+		IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
+		BEGIN
+			IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -48, GETDATE()))
+			BEGIN
+				SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+								   ''N/A'' AS AgentName;
+				RETURN(0);
+			END
+		END
+
 		ELSE
 		BEGIN
 			SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
 										       ''N/A'' AS AgentName;
 			RETURN(0);
-	END
-
+		END
     END
+
     IF @CamType = 1
     BEGIN
         IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
@@ -2737,6 +2748,13 @@ BEGIN
 			RETURN(0);
         END
 
+		IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -23, GETDATE()) AND finishedBy <> 0)
+		BEGIN
+			SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+			''N/A'' AS AgentName;
+			RETURN(0);
+		END
+
 		SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
 		SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
 
@@ -2745,6 +2763,7 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
+
         ELSE
         BEGIN
             SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
@@ -2768,9 +2787,13 @@ END
 
 EXEC(@sql)
 
-
-
-
+SET @process = 'KR134006-7 se agregan operaciones, modulos e identificadores para el historial de actividad'
+	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 273)
+	BEGIN
+		insert into ccSettings2(setting_id, valor,descripcion,Status,Tipo, detalle, description, bLoadSettings, validate)
+		values (273,''+52'',''Codigo de área'',1,''GRL'',''Codigo del país desde donde se realizan las llamadas'',''Area code'',0,''.*'')
+	END'
+    exec(@sql)
 
 
 SET @process = 'delete function fn_GetMessagesByConversationOrMessageId'

@@ -2737,6 +2737,13 @@ BEGIN
 			RETURN(0);
         END
 
+		IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -23, GETDATE()) AND finishedBy <> 0)
+		BEGIN
+			SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+			''N/A'' AS AgentName;
+			RETURN(0);
+		END
+
 		SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
 		SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
 

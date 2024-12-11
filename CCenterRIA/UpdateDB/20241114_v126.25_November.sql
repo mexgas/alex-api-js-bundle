@@ -2768,117 +2768,10 @@ END
 
 EXEC(@sql)
 
-SET @process = 'delete sp ccspOutboundWhatsApp'
-SET @sql = '
-IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspOutboundWhatsApp'')
-BEGIN
-	DROP PROCEDURE ccspOutboundWhatsApp
-END'
-EXEC(@sql)
 
 
-SET @process = 'create sp ccspOutboundWhatsApp'
-SET @sql = '
-CREATE procedure [dbo].[ccspOutboundWhatsApp]
-@action int,
-@camId int = null,
-@campType int = null,
-@templateName varchar(512)=null
-as
-if @action=1 begin
-declare @Url as varchar(50)
-set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
 
-IF @camId IS NULL AND @campType IS NULL
-BEGIN
-	select 
-		distinct 
-		cast(c. cam_id as int) as CamId,
-		cam_descripcion as [Name],
-		1 AS CampType,
-		cam_procesando as [Start],
-		Number as PhoneNumber, 
-		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
-		Token,
-		CAST(c.IDArea AS int) as AreaId
-	from ccCamps c with(nolock)
-	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
-	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
-	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
-	WHERE CampType=5 AND c.IDArea IS NOT NULL
-	UNION
-	SELECT -- load acd
-		DISTINCT 
-		CAST(ci.Inbound_id AS INT) AS CamId,
-		ci.descripcion AS [Name],
-		0 AS CampType,
-		CAST(ci.Status AS BIT) AS [Start],
-		cmw.Number AS PhoneNumber,
-		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
-		cmw.Token AS Token,
-		CAST(ci.IDArea AS int) as AreaId
-	FROM ccInbound ci WITH(NOLOCK)
-	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
-	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
-	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
-END
-ELSE IF @campType IS NOT NULL
-BEGIN
-	IF @campType = 0
-	BEGIN
-		SELECT -- load acd
-			DISTINCT 
-			CAST(ci.Inbound_id AS INT) AS CamId,
-			ci.descripcion AS [Name],
-			0 AS CampType,
-			CAST(ci.Status AS BIT) AS [Start],
-			cmw.Number AS PhoneNumber,
-			REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
-			cmw.Token AS Token,
-			CAST(ci.IDArea AS int) as AreaId
-		FROM ccInbound ci WITH(NOLOCK)
-		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
-		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
-		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
-	END
-	ELSE
-	BEGIN
-		select 
-			distinct 
-			cast(c. cam_id as int) as CamId,
-			cam_descripcion as [Name],
-			1 AS CampType,
-			cam_procesando as [Start],
-			Number as PhoneNumber, 
-			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
-			Token,
-			CAST(c.IDArea AS int) as AreaId
-		from ccCamps c with(nolock)
-		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
-		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
-		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
-		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
-	END
-END
 
-end
-else if @action=2 begin
-	SELECT TOP 1
-		A.id AS Id
-	   ,A.LanguageCode AS LanguageCode
-	   ,B.Number AS Number
-	   ,ISNULL(A.header, '''') AS Header
-	   ,ISNULL(A.body, '''') AS Body
-	   ,ISNULL(A.footer, '''') AS Footer
-	   ,ISNULL(A.buttons, '''') AS Buttons
-	FROM ccMetaWAOutboundTemplates A
-	INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
-	WHERE A.TemplateName = @templateName
-	AND B.Cam_Id = @camId
-
-end
-'
-EXEC(@sql)
 
 SET @process = 'delete function fn_GetMessagesByConversationOrMessageId'
 SET @sql = '
@@ -2998,7 +2891,7 @@ BEGIN
                         END
                     ELSE ''''
                 END
-            WHEN originType = ''Agent''
+            WHEN (originType = ''Agent'' OR originType = ''Admin'')
             THEN
                 CASE
                     WHEN typeMessage = ''file''
@@ -3049,7 +2942,7 @@ BEGIN
                         END
 					ELSE ''''
                 END
-            WHEN originType = ''Agent'' THEN
+            WHEN (originType = ''Agent'' OR originType = ''Admin'') THEN
                 CASE
                     WHEN typeMessage IN (''text'', ''location'', ''template'') THEN ''''
                     WHEN typeMessage  = ''file'' THEN (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
@@ -3139,7 +3032,7 @@ if not exists (select * from sys.columns where name = N''CreationDate'' and Obje
 EXEC(@sql)
 
 
-SET @process = 'Ad column ccMetaWAOutboundTemplates.headerLink'
+SET @process = 'Add column ccMetaWAOutboundTemplates.headerLink'
 	SET @sql = 'if not exists (select * from sys.columns where name = N''headerLink'' and Object_ID = Object_ID(N''ccMetaWAOutboundTemplates''))
 begin
     ALTER TABLE ccMetaWAOutboundTemplates ADD headerLink NVARCHAR(MAX);
@@ -3394,7 +3287,7 @@ BEGIN
     ELSE IF(@action = 12) --Get new numbers loaded in  ccWhatsAppOutSource 
     BEGIN
         SELECT cwt.Callkey FROM dbo.ccoWAWorkingTable AS cwt with(nolock)
-		WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
+        WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
         UNION
         SELECT cwaos.CallKey FROM dbo.ccWhatsAppOutSource AS cwaos with(nolock,index(IX_WASource_1))
         WHERE cwaos.camId = @campId AND cwaos.Status = 0
@@ -6174,7 +6067,6 @@ CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
 EXEC(@sql)
 
 
-
 SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
 Creación de la tabla ccWhatsOringCountry'
 SET @sql = 'if not exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
@@ -7418,50 +7310,9 @@ EXEC(@sql)
 --------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
 
 --------------------------------------------------------------------- BEGIN Jesus Gallardo Fix/plantillas ------------------------------------------
-	
 
-	SET @process = 'Add index ccSettings2 PK_ccSettings2'
-	SET @sql = 'IF NOT EXISTS (
-    SELECT 1
-    FROM sys.key_constraints
-    WHERE [name] = ''PK_ccSettings2'' AND [parent_object_id] = OBJECT_ID(''ccSettings2'')
-)
-BEGIN
-    ALTER TABLE [dbo].[ccSettings2] ADD CONSTRAINT [PK_ccSettings2] PRIMARY KEY CLUSTERED 
-    (
-        [setting_id] ASC
-    )
-    WITH (
-        PAD_INDEX = OFF, 
-        STATISTICS_NORECOMPUTE = OFF, 
-        SORT_IN_TEMPDB = OFF, 
-        IGNORE_DUP_KEY = OFF, 
-        ALLOW_ROW_LOCKS = ON, 
-        ALLOW_PAGE_LOCKS = ON
-    ) ON [PRIMARY];
-END'
-	EXEC(@sql)
-
-	SET @process = 'Add ccSettings2 282'
-	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSettings2 WHERE setting_id = 282)
-BEGIN
-    INSERT INTO ccSettings2 
-    VALUES (
-        282,
-        '''', 
-        ''Ruta para contenido multimedia de plantillas Meta para plantillas de Meta'',
-        1, 
-        ''XXX'', 
-        ''En caso de hosteado es necesario poner la ruta https://devkolob33.nuxiba.com/GalateaAdminWS/ '', 
-        ''Content path for Meta template media'',
-        0, 
-        ''.*''
-    );
-END'
-	EXEC(@sql)
-
-	SET @process = 'Alter SP ccsp_ConversationOutWASave correcion @action = 1'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
+SET @process = 'CREATE SP ccsp_ConversationOutWASave'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
 @action             INT
 , @conversationId     INT         = 0
 , @campId             INT         = NULL        
@@ -7543,7 +7394,7 @@ VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp
 SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
 SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
 		 
-END 
+END
 ELSE IF @action = 2 -- Get Outbound Templates
 BEGIN
     
@@ -7565,23 +7416,174 @@ BEGIN
 		inner join ccMetawhatsAppNumbers B on A.MetaId=B.MetaId
 		WHERE A.MetaId = @MetaId AND A.StatusCW = 1
 		and A.body NOT LIKE ''%{{%'' 		AND A.body NOT LIKE ''%[[%''
+		AND ISNULL(A.header, '''') NOT LIKE ''%{{%'' AND ISNULL(A.header, '''') NOT LIKE ''%[[%'' -- quitar plantillas donde el header tiene variables
+		AND ISNULL(A.buttons, '''') NOT LIKE ''%{{%'' AND ISNULL(A.buttons, '''') NOT LIKE ''%[%'' -- quitar plantillas donde el buttons tiene variables de url
 		and A.[Status]=''APPROVED''
 		;
 	end
     
 END
+END'
+EXEC(@sql);
+
+
+SET @process = 'delete sp ccspOutboundWhatsApp'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspOutboundWhatsApp'')
+BEGIN
+	DROP PROCEDURE ccspOutboundWhatsApp
+END'
+EXEC(@sql)
+
+
+SET @process = 'create sp ccspOutboundWhatsApp'
+SET @sql = '
+CREATE procedure [dbo].[ccspOutboundWhatsApp]
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+	select 
+		distinct 
+		cast(c. cam_id as int) as CamId,
+		cam_descripcion as [Name],
+		1 AS CampType,
+		cam_procesando as [Start],
+		Number as PhoneNumber, 
+		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+		Token,
+		CAST(c.IDArea AS int) as AreaId
+	from ccCamps c with(nolock)
+	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+	WHERE CampType=5 AND c.IDArea IS NOT NULL
+	UNION
+	SELECT -- load acd
+		DISTINCT 
+		CAST(ci.Inbound_id AS INT) AS CamId,
+		ci.descripcion AS [Name],
+		0 AS CampType,
+		CAST(ci.Status AS BIT) AS [Start],
+		cmw.Number AS PhoneNumber,
+		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+		cmw.Token AS Token,
+		CAST(ci.IDArea AS int) as AreaId
+	FROM ccInbound ci WITH(NOLOCK)
+	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
 END
+ELSE IF @campType IS NOT NULL
+BEGIN
+	IF @campType = 0
+	BEGIN
+		SELECT -- load acd
+			DISTINCT 
+			CAST(ci.Inbound_id AS INT) AS CamId,
+			ci.descripcion AS [Name],
+			0 AS CampType,
+			CAST(ci.Status AS BIT) AS [Start],
+			cmw.Number AS PhoneNumber,
+			REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+			cmw.Token AS Token,
+			CAST(ci.IDArea AS int) as AreaId
+		FROM ccInbound ci WITH(NOLOCK)
+		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+	END
+	ELSE
+	BEGIN
+		select 
+			distinct 
+			cast(c. cam_id as int) as CamId,
+			cam_descripcion as [Name],
+			1 AS CampType,
+			cam_procesando as [Start],
+			Number as PhoneNumber, 
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+			Token,
+			CAST(c.IDArea AS int) as AreaId
+		from ccCamps c with(nolock)
+		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+	END
+END
+
+end
+else if @action=2 begin -- cargar valores del template para envio manual
+	SELECT TOP 1
+		A.id AS Id
+	   ,A.LanguageCode AS LanguageCode
+	   ,B.Number AS Number
+	   ,ISNULL(A.header, '''') AS Header
+	   ,ISNULL(A.body, '''') AS Body
+	   ,ISNULL(A.footer, '''') AS Footer
+	   ,ISNULL(A.buttons, '''') AS Buttons
+	   ,ISNULL(A.headerLink, '''') AS HeaderLink
+	FROM ccMetaWAOutboundTemplates A
+	INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
+	WHERE A.TemplateName = @templateName
+	AND B.Cam_Id = @camId
+
+end
 '
+EXEC(@sql);
+
+
+
+	SET @process = 'Add index ccSettings2 PK_ccSettings2'
+	SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.key_constraints
+    WHERE [name] = ''PK_ccSettings2'' AND [parent_object_id] = OBJECT_ID(''ccSettings2'')
+)
+BEGIN
+    ALTER TABLE [dbo].[ccSettings2] ADD CONSTRAINT [PK_ccSettings2] PRIMARY KEY CLUSTERED 
+    (
+        [setting_id] ASC
+    )
+    WITH (
+        PAD_INDEX = OFF, 
+        STATISTICS_NORECOMPUTE = OFF, 
+        SORT_IN_TEMPDB = OFF, 
+        IGNORE_DUP_KEY = OFF, 
+        ALLOW_ROW_LOCKS = ON, 
+        ALLOW_PAGE_LOCKS = ON
+    ) ON [PRIMARY];
+END'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
+	SET @process = 'Add ccSettings2 282'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSettings2 WHERE setting_id = 282)
+BEGIN
+    INSERT INTO ccSettings2 
+    VALUES (
+        282,
+        '''', 
+        ''Ruta para contenido multimedia de plantillas Meta para plantillas de Meta'',
+        1, 
+        ''XXX'', 
+        ''En caso de hosteado es necesario poner la ruta https://devkolob33.nuxiba.com/GalateaAdminWS/ '', 
+        ''Content path for Meta template media'',
+        0, 
+        ''.*''
+    );
+END'
 	EXEC(@sql)
 
-	SET @process = ''
-	SET @sql = ''
-	EXEC(@sql)
---------------------------------------------------------------------- END Jesus Gallardo Fix/plantillas ------------------------------------------
+
+
 
 
 	

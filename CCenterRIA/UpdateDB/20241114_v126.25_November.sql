@@ -2787,9 +2787,13 @@ END
 
 EXEC(@sql)
 
-
-
-
+SET @process = 'KR134006-7 se agregan operaciones, modulos e identificadores para el historial de actividad'
+	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 273)
+	BEGIN
+		insert into ccSettings2(setting_id, valor,descripcion,Status,Tipo, detalle, description, bLoadSettings, validate)
+		values (273,''+52'',''Codigo de área'',1,''GRL'',''Codigo del país desde donde se realizan las llamadas'',''Area code'',0,''.*'')
+	END'
+    exec(@sql)
 
 
 SET @process = 'delete function fn_GetMessagesByConversationOrMessageId'

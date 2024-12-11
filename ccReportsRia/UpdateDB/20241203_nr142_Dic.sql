@@ -132,13 +132,20 @@ begin
 end'
     EXEC(@sql)
 
+	set @process = 'Alter SP DROP INDEX IX_RepMKTAgentes_date ON dbo.RepMKTAgentes'
+    set @sql='if exists (select * from sys.indexes where name = N''IX_RepMKTAgentes_date'' and object_id = OBJECT_ID(N''RepMKTAgentes''))
+begin
+   DROP INDEX IX_RepMKTAgentes ON dbo.RepMKTAgentes;
+end'
+    EXEC(@sql)
+
     set @process = 'Alter SP ALTER TABLE RepMKTAgentes ALTER COLUMN date DATETIME;'
     set @sql='IF Not EXISTS (
-SELECT 1
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = ''RepMKTAgentes'' -- Nombre de la tabla
-    AND COLUMN_NAME = ''date'' -- Nombre de la columna
-    AND DATA_TYPE = ''datetime'' -- Tipo de dato esperado
+SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE 
+    TABLE_NAME = ''RepMKTAgentes''
+    AND COLUMN_NAME = ''date''
+	AND DATA_TYPE = ''varchar''
 )
 BEGIN
     ALTER TABLE RepMKTAgentes ALTER COLUMN date DATETIME;

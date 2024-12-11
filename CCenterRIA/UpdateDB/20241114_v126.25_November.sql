@@ -3185,7 +3185,9 @@ BEGIN
             body = @body,
             footer = @footer,
             buttons = @buttons,
-            FilePath = @FilePath
+            FilePath = @FilePath,
+			Status = ''PENDING'',
+			headerLink = @headerLink
         WHERE Id = @Id
 
         EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';

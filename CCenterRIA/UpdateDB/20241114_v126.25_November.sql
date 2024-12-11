@@ -2716,14 +2716,25 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
+
+		IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
+		BEGIN
+			IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -48, GETDATE()))
+			BEGIN
+				SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+								   ''N/A'' AS AgentName;
+				RETURN(0);
+			END
+		END
+
 		ELSE
 		BEGIN
 			SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
 										       ''N/A'' AS AgentName;
 			RETURN(0);
-	END
-
+		END
     END
+
     IF @CamType = 1
     BEGIN
         IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
@@ -2752,6 +2763,7 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
+
         ELSE
         BEGIN
             SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,

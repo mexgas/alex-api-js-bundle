@@ -7610,7 +7610,7 @@ END'
 SET @process = 'Se agrega columna MessageContent en tabla ccWhatsAppOutSource para agregar mensajes al momento de realizar una carga de envios masivos'
 SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''MessageContent'' AND Object_ID = Object_ID(N''ccWhatsAppOutSource''))
 BEGIN
-    alter table ccWhatsAppOutSource add MessageContent varchar(max)
+    alter table ccWhatsAppOutSource add MessageContent varchar(max) NOT NULL DEFAULT '';
 END'
 EXEC(@sql);
 

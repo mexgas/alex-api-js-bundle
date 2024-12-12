@@ -59,6 +59,21 @@ BEGIN
 	EXEC(@sql)
     ------------------------------------------- END Ivan Martin K066004 y K066004----------------------------------------
 
+SET @process = 'Se agregan indices a tabla ccowhatslogdials'
+SET @sql = '
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.indexes i
+		INNER JOIN sys.objects o ON i.object_id = o.object_id
+		WHERE o.name = ''ccoWhatsLogDials''
+		AND i.name = ''IX_TimeSpam_PhoneClient_PhoneWa'' 
+	)
+	BEGIN
+		CREATE NONCLUSTERED INDEX IX_TimeSpam_PhoneClient_PhoneWa
+		ON ccoWhatsLogDials (TimeSpam, PhoneClient, PhoneWa);
+	END'
+EXEC(@sql)
+
 ------------------------------------------- BEGIN MACL K066012 y K066013----------------------------------------
         
 
@@ -2684,6 +2699,8 @@ BEGIN
     DECLARE @ConversationWithinWindowTime BIT = 0;
     DECLARE @ReopenConversationButtonResponse VARCHAR(50);
     DECLARE @AgentName varchar(50);
+	DECLARE @TimeThreshold DATETIME;
+	SET @TimeThreshold = DATEADD(hour, -23, GETDATE());
 
 
 	IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
@@ -2719,7 +2736,7 @@ BEGIN
 
 		IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
 		BEGIN
-			IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WHERE TimeSpam >= DATEADD(hour, -23, GETDATE()) AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+			IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
 			BEGIN
 				SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
 								   ''N/A'' AS AgentName;
@@ -2748,7 +2765,7 @@ BEGIN
 			RETURN(0);
         END
 
-		IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WHERE TimeSpam >= DATEADD(hour, -23, GETDATE()) AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+		IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
 		BEGIN
 			SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
 			''N/A'' AS AgentName;

@@ -2719,7 +2719,7 @@ BEGIN
 
 		IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
 		BEGIN
-			IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -48, GETDATE()))
+			IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WHERE TimeSpam >= DATEADD(hour, -23, GETDATE()) AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
 			BEGIN
 				SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
 								   ''N/A'' AS AgentName;
@@ -2748,7 +2748,7 @@ BEGIN
 			RETURN(0);
         END
 
-		IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 20 AND requestDate >= DATEADD(hour, -23, GETDATE()) AND finishedBy <> 0)
+		IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WHERE TimeSpam >= DATEADD(hour, -23, GETDATE()) AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
 		BEGIN
 			SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
 			''N/A'' AS AgentName;

@@ -7607,6 +7607,82 @@ BEGIN
 END'
 	EXEC(@sql)
 
+SET @process = 'Se agrega columna MessageContent en tabla ccWhatsAppOutSource para agregar mensajes al momento de realizar una carga de envios masivos'
+SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''MessageContent'' AND Object_ID = Object_ID(N''ccWhatsAppOutSource''))
+BEGIN
+    alter table ccWhatsAppOutSource add MessageContent varchar(max) NOT NULL DEFAULT '';
+END'
+EXEC(@sql);
+
+SET @process = 'Se elimina SP ccsp_createMessageAndGlobalId'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_createMessageAndGlobalId'')
+begin
+	DROP PROCEDURE ccsp_createMessageAndGlobalId;
+end'
+EXEC(@sql)
+
+SET @process = 'Cambio en como obtiene variable @TemplateContent para insertarse en la tabla de ccwamessageConversationOut,
+				ahora se saca de ccWhatsAppOutSource'
+
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_createMessageAndGlobalId] 
+@Type INT,
+@Messages VARCHAR(MAX)
+    
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @Type = 1
+	BEGIN
+		DECLARE @SplitResults TABLE (Id INT, Value NVARCHAR(255))
+		INSERT INTO @SplitResults
+		SELECT Id, Value FROM dbo.fn_RIASplitDelimited(@Messages, '','')
+
+		DECLARE @CamId VARCHAR(7)
+		DECLARE @PhoneClient VARCHAR(15)
+		DECLARE @PhoneWa VARCHAR(15)
+		DECLARE @MetaId VARCHAR(150)
+		DECLARE @TimeStamp varchar (50)
+		DECLARE @TimeStampUTC varchar (50)
+		DECLARE @TemplateCategory varchar(50);
+		DECLARE @TemplateContent varchar(1000);
+		DECLARE @ConvId int
+	
+		DECLARE @CurrentId INT = 1
+		DECLARE @RowCount INT
+
+		SELECT @RowCount = COUNT(*) FROM @SplitResults 
+
+		WHILE @CurrentId <= @RowCount
+		BEGIN
+
+			SELECT @MetaId = Value FROM @SplitResults WHERE Id = @CurrentId 
+
+			SELECT  @TemplateCategory = Category, @TemplateContent = waos.MessageContent,
+				@CamId = wld.CamId, @PhoneClient = PhoneClient, @PhoneWa = PhoneWa, @TimeStamp = TimeSpam,
+				@TimeStampUTC = CONVERT(varchar(23), DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam), 121) 
+				FROM ccoWhatsLogDials wld
+				JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
+				JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id 
+
+				JOIN ccTimeZones tz ON tz.tz_id = waos.TimeZone
+				WHERE wld.MetaId = @MetaId;
+
+			EXEC ccsp_ConversationWASaveOut @action = 1, @camId = @CamId, @phoneCam = @PhoneWa, @clientId = @PhoneClient, @conversationStatus = 20, @ConvId = @ConvId OUTPUT;
+
+			EXEC ccsp_ConversationWASaveOut @action = 4, @messageId = @MetaId, @messageIdUi = 0, @clientNum = @PhoneClient, @vonageNum = @PhoneWa, @typeMessage = ''template'', 
+			@content = @TemplateContent, @conversationId = @ConvId,  @timeStampMessage = @TimeStamp, @timeStampMessageUTC = @TimeStampUTC, @originType = ''Admin''
+
+			update ccoWhatsLogDials set conversationId = @convId where MetaId = @MetaId
+
+			EXEC ccsp_WhatsAppGlobalIds  @ConversationType =1, @ConversationId = @ConvId, @MessageId = @MetaId, @AssociatedNumber= @PhoneWa, @ClientNumber= @PhoneClient, @TemplateCategory = @TemplateCategory
+
+			SET @CurrentId = @CurrentId + 1
+		END  
+	END
+END'
+EXEC(@sql)
+
 
 
 

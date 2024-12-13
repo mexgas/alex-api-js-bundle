@@ -2744,12 +2744,8 @@ BEGIN
 			END
 		END
 
-		ELSE
-		BEGIN
-			SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
-										       ''N/A'' AS AgentName;
-			RETURN(0);
-		END
+		SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse, ''N/A'' AS AgentName;
+		RETURN(0);
     END
 
     IF @CamType = 1
@@ -2781,12 +2777,8 @@ BEGIN
 			RETURN(0);
 		END
 
-        ELSE
-        BEGIN
-            SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
-									     ''N/A'' AS AgentName;
-            RETURN(0);
-        END
+        SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse, ''N/A'' AS AgentName;
+        RETURN(0);
     END
 END 
 

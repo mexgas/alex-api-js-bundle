@@ -59,6 +59,21 @@ BEGIN
 	EXEC(@sql)
     ------------------------------------------- END Ivan Martin K066004 y K066004----------------------------------------
 
+SET @process = 'Se agregan indices a tabla ccowhatslogdials'
+SET @sql = '
+	IF NOT EXISTS (
+		SELECT 1 
+		FROM sys.indexes i
+		INNER JOIN sys.objects o ON i.object_id = o.object_id
+		WHERE o.name = ''ccoWhatsLogDials''
+		AND i.name = ''IX_TimeSpam_PhoneClient_PhoneWa'' 
+	)
+	BEGIN
+		CREATE NONCLUSTERED INDEX IX_TimeSpam_PhoneClient_PhoneWa
+		ON ccoWhatsLogDials (TimeSpam, PhoneClient, PhoneWa);
+	END'
+EXEC(@sql)
+
 ------------------------------------------- BEGIN MACL K066012 y K066013----------------------------------------
         
 
@@ -2061,16 +2076,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.InboundId AS CampaignId,
+			ci.descripcion AS CamName,
             c.phoneACD as CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Inbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn    
         FROM ccWhatsAppConversations c
         LEFT JOIN ccRIAInboundGraph g ON g.inbound_id = c.InboundId
         LEFT JOIN ccWAMessagesConversations m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccinbound ci ON ci.inbound_id = c.inboundid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2084,16 +2101,18 @@ BEGIN
         SELECT 
             c.ConversationId,
             c.camId AS CampaignId,
+			ca.cam_descripcion AS CamName,
             c.phoneCamp AS CamNumber,
             g.graphic_id AS GraphicId,
             c.clientId AS ClientNumber,
             m.content AS MessageContent,
             m.TimeStampMessage AS LastMessageTimestamp,
             ''Outbound'' AS CampType,
-            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn
+            ROW_NUMBER() OVER (PARTITION BY c.ConversationId ORDER BY m.TimeStampMessage DESC) AS rn  
         FROM ccWhatsAppConversationsOut c
         LEFT JOIN ccRIACampsGraph g ON g.cam_id = c.camId
         LEFT JOIN ccWAMessagesConversationsOut m ON m.conversationId = c.ConversationId
+		LEFT JOIN ccCamps ca ON ca.cam_Id = c.camid
         WHERE c.AgentId = @agentId 
             AND (c.conversationDate IS NOT NULL OR c.FirstMessageAgent IS NOT NULL)
             AND c.requestDate BETWEEN @From AND @To
@@ -2108,6 +2127,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2122,6 +2142,7 @@ BEGIN
             ConversationId,
             CampaignId,
             CamNumber,
+			CamName,
             GraphicId,
             ClientNumber,
             MessageContent,
@@ -2134,6 +2155,7 @@ BEGIN
     SELECT conversationId as ConversationId,
            CampaignId as CamId,
            CamNumber as CamNumber,
+		   CamName as CamName,
            CAST(GraphicId AS SMALLINT) AS Frame,
            ClientNumber as ClientNumber,
            MessageContent as MessageContent,
@@ -2677,6 +2699,8 @@ BEGIN
     DECLARE @ConversationWithinWindowTime BIT = 0;
     DECLARE @ReopenConversationButtonResponse VARCHAR(50);
     DECLARE @AgentName varchar(50);
+	DECLARE @TimeThreshold DATETIME;
+	SET @TimeThreshold = DATEADD(hour, -23, GETDATE());
 
 
 	IF EXISTS (SELECT 1 FROM ccWhatsAppGlobalIds WHERE AssociatedNumber = @CamNumber AND ClientNumber = @ClientNumber AND @ActualTime <= DATEADD(HOUR, 24, FirstMessageDateFromAgent))
@@ -2709,14 +2733,21 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
-		ELSE
-		BEGIN
-			SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
-										       ''N/A'' AS AgentName;
-			RETURN(0);
-	END
 
+		IF @ReopenConversationButtonResponse = ''REOPEN_CONVERSATION_WITH_TEMPLATE''
+		BEGIN
+			IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+			BEGIN
+				SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+								   ''N/A'' AS AgentName;
+				RETURN(0);
+			END
+		END
+
+		SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse, ''N/A'' AS AgentName;
+		RETURN(0);
     END
+
     IF @CamType = 1
     BEGIN
         IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WHERE camId = @CamId AND phoneCamp = @CamNumber AND clientId = @ClientNumber AND conversationStatus = 2 AND (agentId = @agentId OR agentId <> @agentId))
@@ -2730,6 +2761,13 @@ BEGIN
 			RETURN(0);
         END
 
+		IF EXISTS (SELECT 1 FROM ccoWhatsLogDials WITH (NOLOCK, INDEX(IX_TimeSpam_PhoneClient_PhoneWa)) WHERE TimeSpam >= @TimeThreshold AND PhoneWa = @CamNumber AND PhoneClient = @ClientNumber AND answered = 0)
+		BEGIN
+			SELECT ''CONVERSATION_SENT_IN_BULK_IN_COURSE'' AS ReopenConversationButtonResponse,
+			''N/A'' AS AgentName;
+			RETURN(0);
+		END
+
 		SELECT @MaxWhatsAllowed = a.maxWhatsOut FROM cccamps c INNER JOIN ccriacat_Areas a ON c.IDArea = a.IDArea WHERE c.cam_id = @CamId;
 		SELECT @ConversationCount = COUNT(*) FROM ccwhatsappconversationsOut WHERE agentID = @AgentId AND conversationStatus = 2 AND requestDate >= DATEADD(hour, -48, GETDATE());
 
@@ -2738,12 +2776,9 @@ BEGIN
 			SELECT ''MAX_LIMIT_CONVERSATION_ALLOWED'' AS ReopenConversationButtonResponse;
 			RETURN(0);
 		END
-        ELSE
-        BEGIN
-            SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse,
-									     ''N/A'' AS AgentName;
-            RETURN(0);
-        END
+
+        SELECT @ReopenConversationButtonResponse AS ReopenConversationButtonResponse, ''N/A'' AS AgentName;
+        RETURN(0);
     END
 END 
 
@@ -2761,108 +2796,14 @@ END
 
 EXEC(@sql)
 
-SET @process = 'delete sp ccspOutboundWhatsApp'
-SET @sql = '
-IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspOutboundWhatsApp'')
-BEGIN
-	DROP PROCEDURE ccspOutboundWhatsApp
-END'
-EXEC(@sql)
-
-
-SET @process = 'create sp ccspOutboundWhatsApp'
-SET @sql = '
-CREATE procedure [dbo].[ccspOutboundWhatsApp]
-@action int,
-@camId int = null,
-@campType int = null,
-@templateName varchar(512)=null
-as
-if @action=1 begin
-declare @Url as varchar(50)
-set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
-
-IF @camId IS NULL AND @campType IS NULL
-BEGIN
-	select 
-		distinct 
-		cast(c. cam_id as int) as CamId,
-		cam_descripcion as [Name],
-		1 AS CampType,
-		cam_procesando as [Start],
-		Number as PhoneNumber, 
-		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
-		Token,
-		CAST(c.IDArea AS int) as AreaId
-	from ccCamps c with(nolock)
-	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
-	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
-	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
-	WHERE CampType=5 AND c.IDArea IS NOT NULL
-	UNION
-	SELECT -- load acd
-		DISTINCT 
-		CAST(ci.Inbound_id AS INT) AS CamId,
-		ci.descripcion AS [Name],
-		0 AS CampType,
-		CAST(ci.Status AS BIT) AS [Start],
-		cmw.Number AS PhoneNumber,
-		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
-		cmw.Token AS Token,
-		CAST(ci.IDArea AS int) as AreaId
-	FROM ccInbound ci WITH(NOLOCK)
-	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
-	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
-	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
-END
-ELSE IF @campType IS NOT NULL
-BEGIN
-	IF @campType = 0
+SET @process = 'KR134006-7 se agregan operaciones, modulos e identificadores para el historial de actividad'
+	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 273)
 	BEGIN
-		SELECT -- load acd
-			DISTINCT 
-			CAST(ci.Inbound_id AS INT) AS CamId,
-			ci.descripcion AS [Name],
-			0 AS CampType,
-			CAST(ci.Status AS BIT) AS [Start],
-			cmw.Number AS PhoneNumber,
-			REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
-			cmw.Token AS Token,
-			CAST(ci.IDArea AS int) as AreaId
-		FROM ccInbound ci WITH(NOLOCK)
-		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
-		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
-		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
-	END
-	ELSE
-	BEGIN
-		select 
-			distinct 
-			cast(c. cam_id as int) as CamId,
-			cam_descripcion as [Name],
-			1 AS CampType,
-			cam_procesando as [Start],
-			Number as PhoneNumber, 
-			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
-			Token,
-			CAST(c.IDArea AS int) as AreaId
-		from ccCamps c with(nolock)
-		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
-		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
-		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
-		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
-	END
-END
+		insert into ccSettings2(setting_id, valor,descripcion,Status,Tipo, detalle, description, bLoadSettings, validate)
+		values (273,''+52'',''Codigo de área'',1,''GRL'',''Codigo del país desde donde se realizan las llamadas'',''Area code'',0,''.*'')
+	END'
+    exec(@sql)
 
-end
-else if @action=2 begin
-	select top 1 A.id,A.LanguageCode,B.Number from ccMetaWAOutboundTemplates A
-	inner join ccMetawhatsAppNumbers B on B.MetaId=A.MetaId
-	where A.TemplateName=@templateName and B.Cam_Id=@camId
-
-end
-'
-EXEC(@sql)
 
 SET @process = 'delete function fn_GetMessagesByConversationOrMessageId'
 SET @sql = '
@@ -2875,8 +2816,7 @@ EXEC(@sql)
 
 
 SET @process = 'create function fn_GetMessagesByConversationOrMessageId'
-SET @sql = '
-CREATE FUNCTION [dbo].[fn_GetMessagesByConversationOrMessageId]
+SET @sql = 'CREATE FUNCTION [dbo].[fn_GetMessagesByConversationOrMessageId]
 (
     @CampType INT,                           -- Parameter to select the table (0 = Inbound, 1 = Outbound)
     @conversationId INT = NULL,              -- Optional parameter for filtering by conversationId
@@ -2889,7 +2829,7 @@ RETURNS @Messages TABLE
     Origin VARCHAR(50),	
     OriginType INT,
     Timestamp DATETIME,
-    Content	VARCHAR(MAX),
+    Content	NVARCHAR(MAX),
     Type VARCHAR(20),
     Caption	VARCHAR(MAX),
     Url	VARCHAR(MAX),
@@ -2983,7 +2923,7 @@ BEGIN
                         END
                     ELSE ''''
                 END
-            WHEN originType = ''Agent''
+            WHEN (originType = ''Agent'' OR originType = ''Admin'')
             THEN
                 CASE
                     WHEN typeMessage = ''file''
@@ -3032,8 +2972,9 @@ BEGIN
                             THEN (@baseFilePath + CHAR(92) + CASE WHEN @CampType = 0 THEN ''INBOUND'' ELSE ''OUTBOUND'' END + CHAR(92) + CAST(conversationId/1000 AS VARCHAR(30)) + char(92) + CAST(conversationId AS VARCHAR(20)) + CHAR(92) + typeMessage + CHAR(92) + messageId + ''.mp3'')
                             ELSE content
                         END
+					ELSE ''''
                 END
-            WHEN originType = ''Agent'' THEN
+            WHEN (originType = ''Agent'' OR originType = ''Admin'') THEN
                 CASE
                     WHEN typeMessage IN (''text'', ''location'', ''template'') THEN ''''
                     WHEN typeMessage  = ''file'' THEN (SELECT SUBSTRING(Value, 5, LEN(Value)) FROM dbo.fn_RIASplitDelimited(content,''|'') WHERE id = 2)
@@ -3110,6 +3051,7 @@ END
 '
 EXEC(@sql)
 
+
 -------------------------------------------  END ISAAC CORTES  -------------------------------------------------------------	
 ------------------------------------------- BEGIN FRIDA ---------------------------------------------------------------------
 SET @process = 'CW-8864 add column CreationDate to ccMetaWAOutboundTemplates '
@@ -3120,6 +3062,14 @@ if not exists (select * from sys.columns where name = N''CreationDate'' and Obje
     end
 '
 EXEC(@sql)
+
+
+SET @process = 'Add column ccMetaWAOutboundTemplates.headerLink'
+	SET @sql = 'if not exists (select * from sys.columns where name = N''headerLink'' and Object_ID = Object_ID(N''ccMetaWAOutboundTemplates''))
+begin
+    ALTER TABLE ccMetaWAOutboundTemplates ADD headerLink NVARCHAR(MAX);
+end'
+	EXEC(@sql)
 
 SET @process = 'CW-8864 drop sp ccsp_MetaWAOutboundTemplates '
 SET @sql = '
@@ -3132,7 +3082,7 @@ EXEC(@sql)
 
 SET @process = 'CW-8864 create sp ccsp_MetaWAOutboundTemplates '
 SET @sql = '
-CREATE PROCEDURE ccsp_MetaWAOutboundTemplates
+CREATE PROCEDURE [dbo].[ccsp_MetaWAOutboundTemplates]
 @action TINYINT = NULL,
 @whatsAppTemplateID BIGINT = 0,
 @id varchar(200) = NULL,
@@ -3151,7 +3101,8 @@ CREATE PROCEDURE ccsp_MetaWAOutboundTemplates
 @campId SMALLINT = NULL,
 @UserId	SMALLINT = 0,
 @MetaId INT = 0,
-@CreationDate DATETIME = NULL
+@CreationDate DATETIME = NULL,
+@headerLink nvarchar(max)= null
 AS
 BEGIN
     IF(@action = 1) -- get template by id
@@ -3171,6 +3122,7 @@ BEGIN
         ,cmwot.IsPendingQuality
         ,cmwot.FilePath
         ,cmwot.Status AS Status
+		,cmwot.headerLink AS HeaderLink
         FROM  dbo.ccMetaWAOutboundTemplates AS cmwot
         WHERE cmwot.Id = @whatsAppTemplateID
     END
@@ -3189,8 +3141,8 @@ BEGIN
     END
     ELSE IF(@action = 4) --create
     BEGIN
-        insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW,CreationDate)
-                            values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1,@CreationDate)
+        insert into ccMetaWAOutboundTemplates (Id, Category,TemplateName,AllowCategoryChange,LanguageCode,Status,header,body,footer,buttons,FilePath,MetaId,StatusCW,CreationDate,headerLink)
+        values (@Id, @Category,@TemplateName,@AllowCategoryChange,@LanguageCode,@Status,@header,@body,@footer,@buttons,@FilePath,@MetaId,1,@CreationDate,@headerLink)
     END
     ELSE IF(@action = 5) -- Get Template Config By Id
     BEGIN
@@ -3274,7 +3226,9 @@ BEGIN
             body = @body,
             footer = @footer,
             buttons = @buttons,
-            FilePath = @FilePath
+            FilePath = @FilePath,
+			Status = ''PENDING'',
+			headerLink = @headerLink
         WHERE Id = @Id
 
         EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccMetaWAOutboundTemplates'', @columnNameId = ''Id'', @valueId = @Id, @userId = 1,  @tableTemp=''#ccMetaWAOutboundTemplates'';
@@ -3366,9 +3320,10 @@ BEGIN
     END
     ELSE IF(@action = 12) --Get new numbers loaded in  ccWhatsAppOutSource 
     BEGIN
-        SELECT cwt.Callkey FROM dbo.ccoWAWorkingTable AS cwt WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
+        SELECT cwt.Callkey FROM dbo.ccoWAWorkingTable AS cwt with(nolock)
+        WHERE cwt.CamId = @campId AND cwt.WaStatus = 0
         UNION
-        SELECT cwaos.CallKey FROM dbo.ccWhatsAppOutSource AS cwaos 
+        SELECT cwaos.CallKey FROM dbo.ccWhatsAppOutSource AS cwaos with(nolock,index(IX_WASource_1))
         WHERE cwaos.camId = @campId AND cwaos.Status = 0
     END
     IF(@action = 13) -- Get templates by campaign number assigned
@@ -3551,9 +3506,15 @@ EXEC(@sql)
             BEGIN
                 IF @ConversationId IS NOT NULL
                 BEGIN
-                    UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-                    --Save Conversation Assigned
-                    SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+                    -- Se valida si el conversation date es null para poder actualizarlo
+					DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+					SELECT @IsTransfered = IsTransfered ,  @conversationDate = conversationDate FROM ccWhatsAppConversations with(nolock) WHERE conversationId = @ConversationId; 
+					IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+					BEGIN
+						UPDATE ccWhatsAppConversations SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+						--Save Conversation Assigned
+						SELECT @inboundId = inboundId FROM ccWhatsAppConversations with(nolock) where conversationId=@conversationId;
+					END
                 END
             END
         ELSE IF @Option = 4 -- Get Disposition Information
@@ -3747,10 +3708,16 @@ EXEC(@sql)
 		BEGIN
 			IF @ConversationId IS NOT NULL
 			BEGIN
-				UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
-				--Save Conversation Assigned
-				SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
-				UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				-- Se valida si el conversation date es null para poder actualizarlo
+				DECLARE @IsTransfered BIT, @conversationDate DATETIME;
+				SELECT @IsTransfered = IsTransfered, @conversationDate = conversationDate FROM ccWhatsAppConversationsOut with(nolock)  WHERE conversationId = @ConversationId; 
+				IF(@IsTransfered = 0 OR @conversationDate IS NULL)
+				BEGIN
+					UPDATE ccWhatsAppConversationsOut SET conversationDate = GETDATE() WHERE conversationId = @ConversationId;
+					--Save Conversation Assigned
+					SELECT @camId = camId FROM ccWhatsAppConversationsOut with(nolock) where conversationId=@conversationId;
+					UPDATE ccWAOperatingSummaryOut SET Assigned = (Assigned + 1) WHERE camId = @camId
+				END
 				
 			END
 		END
@@ -4108,7 +4075,7 @@ BEGIN
         prefijo VARCHAR(20),
         isCallRecord BIT,
         DNIS VARCHAR(50),
-        IDWG INT,
+        IDWG VARCHAR(1000),
         IsVoicemail BIT
     );
 
@@ -5158,7 +5125,9 @@ EXEC(@sql);
 SET @process = 'Alter SP ccsp_GalateaGetInboundConfiguration isnull(AE.SurveyCamId,0)	 [SurveyCamId],'
 SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_GalateaGetInboundConfiguration]
 @command int,
-@inboundId int
+@inboundId int,
+@AdminId int = 0,
+@AreaId SMALLINT = 0
 AS
 BEGIN
 
@@ -5269,6 +5238,34 @@ begin
 	left join ccRIAInboundGraph ig on ig.Inbound_id=i.Inbound_id
 	where i.Inbound_id =@inboundId
 end
+IF @command = 5
+BEGIN
+	IF EXISTS(
+				SELECT TOP 1 1 FROM ccUsers_Roles ur
+				INNER JOIN ccRoles_Permissions rp ON ur.Rol_id = rp.Rol_Id
+				WHERE ur.[User_id] = @AdminId AND rp.Permissions_Id = 10041
+			)
+	BEGIN
+		SELECT i.Inbound_id AS InboundId, i.descripcion as [Description], ''ACD'' as [Type], i.IDArea as AreaId
+		FROM ccInbound i INNER JOIN ccRIACampEspWG wgc on i.Inbound_id = wgc.IdCampEsp AND wgc.Tipo = 0
+		WHERE [Status] = 1 AND CHAT = 0
+	END
+	ELSE BEGIN
+		DECLARE @InboundAreaID SMALLINT
+		IF(@AreaId > 0)
+		BEGIN
+			SET @InboundAreaID =  @AreaId
+		END
+		ELSE BEGIN
+			SELECT @InboundAreaID = IDArea FROM ccInbound WHERE Inbound_id = @inboundId
+		END
+
+		SELECT i.Inbound_id AS InboundId, i.descripcion as [Description], ''ACD'' as [Type], i.IDArea as AreaId
+		FROM ccInbound i INNER JOIN ccRIAAreaWorkGroup awg on i.IDArea = awg.IDArea
+		INNER JOIN ccRIACampEspWG wgc on awg.IDWG = wgc.IDWG AND i.Inbound_id = wgc.IdCampEsp AND wgc.Tipo = 0
+		WHERE i.IDArea = @InboundAreaID AND i.[Status] = 1 AND i.CHAT = 0
+	END
+END
 
 RETURN(0)
 
@@ -5655,6 +5652,8 @@ SELECT a1.cam_id
 	,isnull(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent
 	,ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations
 	,isnull(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo
+	,ISNULL(RecordIvr,0) as RecordIvr
+	,isnull(CamCanceled,0) as CamCanceled
 FROM ccCamps a1
 INNER JOIN ccRIACampsGraph a2 ON (a1.cam_id = a2.cam_id)
 INNER JOIN ccRIAGraphics a3 ON (a2.graphic_id = a3.graphic_id)
@@ -5997,9 +5996,1704 @@ SET NOCOUNT OFF'
 EXEC(@sql);
 
 
-SET @process = 'Alter SP '
-SET @sql = ''
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsImportStatus'')
+begin
+	DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus;
+end'
+EXEC(@sql)
+
+SET @process = 'CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES - CREATE PROCEDURE ccsp_GalateaGetRecordsImportStatus, 
+se modifica el @action=1, se quita la condición "and loadType = 0" en la línea 6060 '
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+		-- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+		@action tinyint, 
+		@loadID int = NULL, 
+		@userID smallint = NULL
+
+		AS
+		declare @today datetime
+		select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+		SET nocount ON
+		if @action not IN (1,2,3)
+		raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+		if @action=1 -- Detalle general de carga de registros
+		BEGIN
+		if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+		 BEGIN
+		  raiserror(''ERROR. invalid user id'', 18, 1)
+		  return(0)
+		 END
+
+		if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate	
+				FROM ccRIALoading riaLoad
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today
+				ORDER BY riaLoad.loadDate DESC
+			END
+		else
+			BEGIN
+				SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate
+		
+				FROM ccRIALoading riaLoad
+				JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+				JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+				WHERE 
+				loadDate>=@today AND
+				superCam.user_id = @userID
+				AND superCam.tipo = 1
+				ORDER BY riaLoad.loadDate DESC
+			END
+
+		return(0)
+		END
+
+		if @action=2 -- Detalle específico de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid template ID'', 18, 1)
+		  return(0)
+		 END
+		  SELECT 
+		  crl.regsLoaded
+		  ,crl.alreadyLoaded
+		  ,crl.regsBlocked
+		  ,crl.regsNotLoaded
+		  ,crl.telsLoaded
+		  ,crl.telsBlocked
+		  ,crl.telsNotLoaded
+		  ,ISNULL(regsNotLoadedCp,0) as regsNotLoadedCp
+		  ,ISNULL(telsNotLoadedCp,0) as telsNotLoadedCp
+		  ,ISNULL(recordsNotLoadedPort,0) as recordsNotLoadedPort
+		  ,ISNULL(phonesNotLoadedPort, 0) as phonesNotLoadedPort
+		  ,ISNULL(LoadBySegment, CAST(0 AS BIT)) as IsSegmentLoad
+		  ,cc.CampType
+		  FROM dbo.ccRIALoading AS crl
+		  JOIN dbo.ccCamps AS cc
+		  ON cc.cam_id = crl.cam_id
+		  WHERE crl.load_id = @loadID
+		  
+
+		END
+
+		if @action=3 -- Porcentaje de carga de registros
+		BEGIN
+		if not exists(SELECT load_id FROM ccRIALoading)
+		 BEGIN
+		  raiserror(''ERROR. invalid load ID'', 18, 1)
+		  return(0)
+		 END
+
+		  SELECT state, pctg
+		  FROM ccRIALoading
+		  WHERE load_id  = @loadID
+
+		END
+		SET nocount off'
+EXEC(@sql)
+
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
+Creación de la tabla ccWhatsOringCountry'
+SET @sql = 'if not exists(select * from sys.tables where name =''ccWhatsOringCountry'') begin
+CREATE TABLE [dbo].[ccWhatsOringCountry](
+	[CodeCountry] [varchar](10) NOT NULL,
+	[country] [varchar](255) NOT NULL,	
+	[TagTranslate] [varchar](100) NOT NULL,
+	[length] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[length] DESC,
+	[CodeCountry] ASC
+	
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+end
+else begin
+	truncate table [ccWhatsOringCountry]
+end'
+EXEC(@sql)
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp -
+Inserción de los datos para los prefijos globales'
+SET @sql = 'if not exists(select * from ccWhatsOringCountry) begin
+	insert into ccWhatsOringCountry values(''1264'',''Anguilla'',''systemTranslated_Anguilla'',4)
+	insert into ccWhatsOringCountry values(''1268'',''Antigua'',''systemTranslated_Antigua'',4)
+	insert into ccWhatsOringCountry values(''1242'',''Bahamas'',''systemTranslated_Bahamas'',4)
+	insert into ccWhatsOringCountry values(''1246'',''Barbados'',''systemTranslated_Barbados'',4)
+	insert into ccWhatsOringCountry values(''1411'',''Bermuda'',''systemTranslated_Bermuda'',4)
+	insert into ccWhatsOringCountry values(''1284'',''British Virgin Islands'',''systemTranslated_BritishVirginIslands'',4)
+	insert into ccWhatsOringCountry values(''1345'',''Cayman Islands'',''systemTranslated_CaymanIslands'',4)
+	insert into ccWhatsOringCountry values(''1809'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1829'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1849'',''Dominican Republic'',''systemTranslated_DominicanRepublic'',4)
+	insert into ccWhatsOringCountry values(''1473'',''Grenada'',''systemTranslated_Grenada'',4)
+	insert into ccWhatsOringCountry values(''1671'',''Guam'',''systemTranslated_Guam'',4)
+	insert into ccWhatsOringCountry values(''1876'',''Jamaica'',''systemTranslated_Jamaica'',4)
+	insert into ccWhatsOringCountry values(''1664'',''Montserrat'',''systemTranslated_Montserrat'',4)
+	insert into ccWhatsOringCountry values(''1787'',''Puerto Rico'',''systemTranslated_PuertoRico'',4)
+	insert into ccWhatsOringCountry values(''1939'',''Puerto Rico'',''systemTranslated_PuertoRico'',4)
+	insert into ccWhatsOringCountry values(''1869'',''St. Kitts/Nevis'',''systemTranslated_StKitts_Nevis'',4)
+	insert into ccWhatsOringCountry values(''1758'',''St. Lucia'',''systemTranslated_St.Lucia'',4)
+	insert into ccWhatsOringCountry values(''1868'',''Trinidad & Tobago'',''systemTranslated_TrinidadTobago'',4)
+	insert into ccWhatsOringCountry values(''1649'',''Turks & Caicos'',''systemTranslated_TurksCaicos'',4)
+	insert into ccWhatsOringCountry values(''1340'',''US Virgin Islands'',''systemTranslated_USVirginIslands'',4)
+	insert into ccWhatsOringCountry values(''7'',''Russia'',''systemTranslated_Russia'',1)
+	insert into ccWhatsOringCountry values(''20'',''Egypt'',''systemTranslated_Egypt'',2)
+	insert into ccWhatsOringCountry values(''27'',''South Africa'',''systemTranslated_SouthAfrica'',2)
+	insert into ccWhatsOringCountry values(''30'',''Greece'',''systemTranslated_Greece'',2)
+	insert into ccWhatsOringCountry values(''31'',''Netherlands'',''systemTranslated_Netherlands'',2)
+	insert into ccWhatsOringCountry values(''32'',''Belgium'',''systemTranslated_Belgium'',2)
+	insert into ccWhatsOringCountry values(''33'',''France'',''systemTranslated_France'',2)
+	insert into ccWhatsOringCountry values(''34'',''Spain'',''systemTranslated_Spain'',2)
+	insert into ccWhatsOringCountry values(''36'',''Hungary'',''systemTranslated_Hungary'',2)
+	insert into ccWhatsOringCountry values(''39'',''Italy'',''systemTranslated_Italy'',2)
+	insert into ccWhatsOringCountry values(''40'',''Romania'',''systemTranslated_Romania'',2)
+	insert into ccWhatsOringCountry values(''41'',''Switzerland'',''systemTranslated_Switzerland'',2)
+	insert into ccWhatsOringCountry values(''43'',''Austria'',''systemTranslated_Austria'',2)
+	insert into ccWhatsOringCountry values(''44'',''United Kingdom'',''systemTranslated_UnitedKingdom'',2)
+	insert into ccWhatsOringCountry values(''45'',''Denmark'',''systemTranslated_Denmark'',2)
+	insert into ccWhatsOringCountry values(''46'',''Sweden'',''systemTranslated_Sweden'',2)
+	insert into ccWhatsOringCountry values(''47'',''Norway'',''systemTranslated_Norway'',2)
+	insert into ccWhatsOringCountry values(''48'',''Poland'',''systemTranslated_Poland'',2)
+	insert into ccWhatsOringCountry values(''49'',''Germany'',''systemTranslated_Germany'',2)
+	insert into ccWhatsOringCountry values(''51'',''Peru'',''systemTranslated_Peru'',2)
+	insert into ccWhatsOringCountry values(''52'',''Mexico'',''systemTranslated_Mexico'',2)
+	insert into ccWhatsOringCountry values(''53'',''Cuba'',''systemTranslated_Cuba'',2)
+	insert into ccWhatsOringCountry values(''54'',''Argentina'',''systemTranslated_Argentina'',2)
+	insert into ccWhatsOringCountry values(''55'',''Brazil'',''systemTranslated_Brazil'',2)
+	insert into ccWhatsOringCountry values(''56'',''Chile'',''systemTranslated_Chile'',2)
+	insert into ccWhatsOringCountry values(''57'',''Colombia'',''systemTranslated_Colombia'',2)
+	insert into ccWhatsOringCountry values(''58'',''Venezuela'',''systemTranslated_Venezuela'',2)
+	insert into ccWhatsOringCountry values(''60'',''Malaysia'',''systemTranslated_Malaysia'',2)
+	insert into ccWhatsOringCountry values(''61'',''Australia'',''systemTranslated_Australia'',2)
+	insert into ccWhatsOringCountry values(''63'',''Philippines'',''systemTranslated_Philippines'',2)
+	insert into ccWhatsOringCountry values(''64'',''New Zealand'',''systemTranslated_NewZealand'',2)
+	insert into ccWhatsOringCountry values(''65'',''Singapore'',''systemTranslated_Singapore'',2)
+	insert into ccWhatsOringCountry values(''66'',''Thailand'',''systemTranslated_Thailand'',2)
+	insert into ccWhatsOringCountry values(''81'',''Japan'',''systemTranslated_Japan'',2)
+	insert into ccWhatsOringCountry values(''82'',''Korea (South)'',''systemTranslated_KoreaSouth'',2)
+	insert into ccWhatsOringCountry values(''84'',''Vietnam'',''systemTranslated_Vietnam'',2)
+	insert into ccWhatsOringCountry values(''86'',''China'',''systemTranslated_China'',2)
+	insert into ccWhatsOringCountry values(''90'',''Turkey'',''systemTranslated_Turkey'',2)
+	insert into ccWhatsOringCountry values(''91'',''India'',''systemTranslated_India'',2)
+	insert into ccWhatsOringCountry values(''92'',''Pakistan'',''systemTranslated_Pakistan'',2)
+	insert into ccWhatsOringCountry values(''93'',''Afghanistan'',''systemTranslated_Afghanistan'',2)
+	insert into ccWhatsOringCountry values(''94'',''Sri Lanka'',''systemTranslated_SriLanka'',2)
+	insert into ccWhatsOringCountry values(''98'',''Iran'',''systemTranslated_Iran'',2)
+	insert into ccWhatsOringCountry values(''212'',''Morocco'',''systemTranslated_Morocco'',3)
+	insert into ccWhatsOringCountry values(''213'',''Algeria'',''systemTranslated_Algeria'',3)
+	insert into ccWhatsOringCountry values(''216868'',''Tunisia'',''systemTranslated_Tunisia'',6)
+	insert into ccWhatsOringCountry values(''218'',''Libya'',''systemTranslated_Libya'',3)
+	insert into ccWhatsOringCountry values(''220'',''Gambia'',''systemTranslated_Gambia'',3)
+	insert into ccWhatsOringCountry values(''221'',''Senegal'',''systemTranslated_Senegal'',3)
+	insert into ccWhatsOringCountry values(''222'',''Mauritania'',''systemTranslated_Mauritania'',3)
+	insert into ccWhatsOringCountry values(''224'',''Guinea'',''systemTranslated_Guinea'',3)
+	insert into ccWhatsOringCountry values(''225'',''Ivory Coast'',''systemTranslated_IvoryCoast'',3)
+	insert into ccWhatsOringCountry values(''226'',''Burkina Faso'',''systemTranslated_BurkinaFaso'',3)
+	insert into ccWhatsOringCountry values(''227'',''Niger'',''systemTranslated_Niger'',3)
+	insert into ccWhatsOringCountry values(''229'',''Benin'',''systemTranslated_Benin'',3)
+	insert into ccWhatsOringCountry values(''231'',''Liberia'',''systemTranslated_Liberia'',3)
+	insert into ccWhatsOringCountry values(''232'',''Sierra Leone'',''systemTranslated_SierraLeone'',3)
+	insert into ccWhatsOringCountry values(''233'',''Ghana'',''systemTranslated_Ghana'',3)
+	insert into ccWhatsOringCountry values(''234'',''Nigeria'',''systemTranslated_Nigeria'',3)
+	insert into ccWhatsOringCountry values(''235'',''Chad'',''systemTranslated_Chad'',3)
+	insert into ccWhatsOringCountry values(''236'',''Central African Republic'',''systemTranslated_CentralAfricanRepublic'',3)
+	insert into ccWhatsOringCountry values(''237'',''Cameroon'',''systemTranslated_Cameroon'',3)
+	insert into ccWhatsOringCountry values(''238'',''Cape Verde'',''systemTranslated_CapeVerdeIslands'',3)
+	insert into ccWhatsOringCountry values(''242'',''Congo'',''systemTranslated_Congo'',3)
+	insert into ccWhatsOringCountry values(''243'',''Congo, Dem. Rep. of'',''systemTranslated_CongoDemRepof'',3)
+	insert into ccWhatsOringCountry values(''244'',''Angola'',''systemTranslated_Angola'',3)
+	insert into ccWhatsOringCountry values(''246'',''Diego Garcia'',''systemTranslated_DiegoGarcia'',3)
+	insert into ccWhatsOringCountry values(''247'',''Ascension'',''systemTranslated_Ascension'',3)
+	insert into ccWhatsOringCountry values(''249758'',''Sudan'',''systemTranslated_Sudan'',6)
+	insert into ccWhatsOringCountry values(''250'',''Rwandese Republic'',''systemTranslated_RwandeseRepublic'',3)
+	insert into ccWhatsOringCountry values(''251'',''Ethiopia'',''systemTranslated_Ethiopia'',3)
+	insert into ccWhatsOringCountry values(''253'',''Djibouti'',''systemTranslated_Djibouti'',3)
+	insert into ccWhatsOringCountry values(''254'',''Kenya'',''systemTranslated_Kenya'',3)
+	insert into ccWhatsOringCountry values(''255'',''Tanzania'',''systemTranslated_Tanzania'',3)
+	insert into ccWhatsOringCountry values(''256649'',''Uganda'',''systemTranslated_Uganda'',6)
+	insert into ccWhatsOringCountry values(''257'',''Burundi'',''systemTranslated_Burundi'',3)
+	insert into ccWhatsOringCountry values(''258'',''Mozambique'',''systemTranslated_Mozambique'',3)
+	insert into ccWhatsOringCountry values(''260'',''Zambia'',''systemTranslated_Zambia'',3)
+	insert into ccWhatsOringCountry values(''261'',''Madagascar'',''systemTranslated_Madagascar'',3)
+	insert into ccWhatsOringCountry values(''263'',''Zimbabwe'',''systemTranslated_Zimbabwe'',3)
+	insert into ccWhatsOringCountry values(''265'',''Malawi'',''systemTranslated_Malawi'',3)
+	insert into ccWhatsOringCountry values(''267'',''Botswana'',''systemTranslated_Botswana'',3)
+	insert into ccWhatsOringCountry values(''268'',''Swaziland'',''systemTranslated_Swaziland'',3)
+	insert into ccWhatsOringCountry values(''269'',''Comoros'',''systemTranslated_Comoros'',3)
+	insert into ccWhatsOringCountry values(''291'',''Eritrea'',''systemTranslated_Eritrea'',3)
+	insert into ccWhatsOringCountry values(''297'',''Aruba'',''systemTranslated_Aruba'',3)
+	insert into ccWhatsOringCountry values(''299'',''Greenland'',''systemTranslated_Greenland'',3)
+	insert into ccWhatsOringCountry values(''350'',''Gibraltar'',''systemTranslated_Gibraltar'',3)
+	insert into ccWhatsOringCountry values(''351'',''Portugal'',''systemTranslated_Portugal'',3)
+	insert into ccWhatsOringCountry values(''352'',''Luxembourg'',''systemTranslated_Luxembourg'',3)
+	insert into ccWhatsOringCountry values(''353'',''Ireland'',''systemTranslated_Ireland'',3)
+	insert into ccWhatsOringCountry values(''354'',''Iceland'',''systemTranslated_Iceland'',3)
+	insert into ccWhatsOringCountry values(''355'',''Albania'',''systemTranslated_Albania'',3)
+	insert into ccWhatsOringCountry values(''356'',''Malta'',''systemTranslated_Malta'',3)
+	insert into ccWhatsOringCountry values(''357'',''Cyprus'',''systemTranslated_Cyprus'',3)
+	insert into ccWhatsOringCountry values(''358'',''Finland'',''systemTranslated_Finland'',3)
+	insert into ccWhatsOringCountry values(''359'',''Bulgaria'',''systemTranslated_Bulgaria'',3)
+	insert into ccWhatsOringCountry values(''370'',''Lithuania'',''systemTranslated_Lithuania'',3)
+	insert into ccWhatsOringCountry values(''371'',''Latvia'',''systemTranslated_Latvia'',3)
+	insert into ccWhatsOringCountry values(''372'',''Estonia'',''systemTranslated_Estonia'',3)
+	insert into ccWhatsOringCountry values(''373'',''Moldova'',''systemTranslated_Moldova'',3)
+	insert into ccWhatsOringCountry values(''374'',''Armenia'',''systemTranslated_Armenia'',3)
+	insert into ccWhatsOringCountry values(''375'',''Belarus'',''systemTranslated_Belarus'',3)
+	insert into ccWhatsOringCountry values(''377'',''Monaco'',''systemTranslated_Monaco'',3)
+	insert into ccWhatsOringCountry values(''378'',''San Marino'',''systemTranslated_SanMarino'',3)
+	insert into ccWhatsOringCountry values(''379'',''Vatican City'',''systemTranslated_VaticanCity'',3)
+	insert into ccWhatsOringCountry values(''380'',''Ukraine'',''systemTranslated_Ukrainea'',3)
+	insert into ccWhatsOringCountry values(''381'',''Serbia/Montenegro'',''systemTranslated_Serbia_Montenegro'',3)
+	insert into ccWhatsOringCountry values(''385'',''Croatia'',''systemTranslated_Croatia'',3)
+	insert into ccWhatsOringCountry values(''386'',''Slovenia'',''systemTranslated_Slovenia'',3)
+	insert into ccWhatsOringCountry values(''387'',''Bosnia/Herzegovina'',''systemTranslated_Bosnia_Herzegovina'',3)
+	insert into ccWhatsOringCountry values(''389'',''Macedonia'',''systemTranslated_Macedonia'',3)
+	insert into ccWhatsOringCountry values(''420'',''Czech Republic'',''systemTranslated_CzechRepublic'',3)
+	insert into ccWhatsOringCountry values(''421'',''Slovak Republic'',''systemTranslated_SlovakRepublic'',3)
+	insert into ccWhatsOringCountry values(''423'',''Liechtenstein'',''systemTranslated_Liechtenstein'',3)
+	insert into ccWhatsOringCountry values(''500'',''Falkland Islands'',''systemTranslated_FalklandIslands'',3)
+	insert into ccWhatsOringCountry values(''501'',''Belize'',''systemTranslated_Belize'',3)
+	insert into ccWhatsOringCountry values(''502'',''Guatemala'',''systemTranslated_Guatemala'',3)
+	insert into ccWhatsOringCountry values(''503'',''El Salvador'',''systemTranslated_ElSalvador'',3)
+	insert into ccWhatsOringCountry values(''504'',''Honduras'',''systemTranslated_Honduras'',3)
+	insert into ccWhatsOringCountry values(''505'',''Nicaragua'',''systemTranslated_Nicaragua'',3)
+	insert into ccWhatsOringCountry values(''506'',''Costa Rica'',''systemTranslated_CostaRica'',3)
+	insert into ccWhatsOringCountry values(''507'',''Panama'',''systemTranslated_Panama'',3)
+	insert into ccWhatsOringCountry values(''509'',''Haiti'',''systemTranslated_Haiti'',3)
+	insert into ccWhatsOringCountry values(''590'',''Guadeloupe'',''systemTranslated_Guadeloupe'',3)
+	insert into ccWhatsOringCountry values(''591'',''Bolivia'',''systemTranslated_Bolivia'',3)
+	insert into ccWhatsOringCountry values(''592'',''Guyana'',''systemTranslated_Guyana'',3)
+	insert into ccWhatsOringCountry values(''593'',''Ecuador'',''systemTranslated_Ecuador'',3)
+	insert into ccWhatsOringCountry values(''594'',''French Guiana'',''systemTranslated_FrenchGuiana'',3)
+	insert into ccWhatsOringCountry values(''595'',''Paraguay'',''systemTranslated_Paraguay'',3)
+	insert into ccWhatsOringCountry values(''596'',''Martinique'',''systemTranslated_Martinique'',3)
+	insert into ccWhatsOringCountry values(''597'',''Suriname'',''systemTranslated_Suriname'',3)
+	insert into ccWhatsOringCountry values(''598'',''Uruguay'',''systemTranslated_Uruguay'',3)
+	insert into ccWhatsOringCountry values(''599'',''Netherlands Antilles'',''systemTranslated_NetherlandsAntilles'',3)
+	insert into ccWhatsOringCountry values(''670'',''East Timor'',''systemTranslated_EastTimor'',3)
+	insert into ccWhatsOringCountry values(''672'',''Australian External Territories'',''systemTranslated_AustralianExternalTerritories'',3)
+	insert into ccWhatsOringCountry values(''673'',''Brunei Darussalam'',''systemTranslated_BruneiDarussalam'',3)
+	insert into ccWhatsOringCountry values(''674'',''Nauru'',''systemTranslated_Nauru'',3)
+	insert into ccWhatsOringCountry values(''675'',''Papua New Guinea'',''systemTranslated_PapuaNewGuinea'',3)
+	insert into ccWhatsOringCountry values(''677'',''Solomon Islands'',''systemTranslated_SolomonIslands'',3)
+	insert into ccWhatsOringCountry values(''679'',''Fiji Islands'',''systemTranslated_FijiIslands'',3)
+	insert into ccWhatsOringCountry values(''680'',''Palau'',''systemTranslated_Palau'',3)
+	insert into ccWhatsOringCountry values(''682'',''Cook Islands'',''systemTranslated_CookIslands'',3)
+	insert into ccWhatsOringCountry values(''685'',''Western Samoa'',''systemTranslated_WesternSamoa'',3)
+	insert into ccWhatsOringCountry values(''687'',''New Caledonia'',''systemTranslated_NewCaledonia'',3)
+	insert into ccWhatsOringCountry values(''689'',''French Polynesia'',''systemTranslated_FrenchPolynesia'',3)
+	insert into ccWhatsOringCountry values(''691'',''Micronesia'',''systemTranslated_Micronesia'',3)
+	insert into ccWhatsOringCountry values(''692'',''Marshall Islands'',''systemTranslated_MarshallIslands'',3)
+	insert into ccWhatsOringCountry values(''850'',''Korea (North)'',''systemTranslated_KoreaNorth'',3)
+	insert into ccWhatsOringCountry values(''852'',''Hong Kong'',''systemTranslated_HongKong'',3)
+	insert into ccWhatsOringCountry values(''853'',''Macao'',''systemTranslated_Macao'',3)
+	insert into ccWhatsOringCountry values(''855'',''Cambodia'',''systemTranslated_Cambodia'',3)
+	insert into ccWhatsOringCountry values(''856'',''Laos'',''systemTranslated_Laos'',3)
+	insert into ccWhatsOringCountry values(''880'',''Bangladesh'',''systemTranslated_Bangladesh'',3)
+	insert into ccWhatsOringCountry values(''886'',''Taiwan'',''systemTranslated_Taiwan'',3)
+	insert into ccWhatsOringCountry values(''960'',''Maldives'',''systemTranslated_Maldives'',3)
+	insert into ccWhatsOringCountry values(''961'',''Lebanon'',''systemTranslated_Lebanon'',3)
+	insert into ccWhatsOringCountry values(''962'',''Jordan'',''systemTranslated_Jordan'',3)
+	insert into ccWhatsOringCountry values(''963'',''Syria'',''systemTranslated_Syria'',3)
+	insert into ccWhatsOringCountry values(''964'',''Iraq'',''systemTranslated_Iraq'',3)
+	insert into ccWhatsOringCountry values(''965'',''Kuwait'',''systemTranslated_Kuwait'',3)
+	insert into ccWhatsOringCountry values(''966'',''Saudi Arabia'',''systemTranslated_SaudiArabia'',3)
+	insert into ccWhatsOringCountry values(''967'',''Yemen'',''systemTranslated_Yemen'',3)
+	insert into ccWhatsOringCountry values(''968'',''Oman'',''systemTranslated_Oman'',3)
+	insert into ccWhatsOringCountry values(''971'',''United Arab Emirates'',''systemTranslated_UnitedArabEmirates'',3)
+	insert into ccWhatsOringCountry values(''972'',''Israel'',''systemTranslated_Israel'',3)
+	insert into ccWhatsOringCountry values(''973'',''Bahrain'',''systemTranslated_Bahrain'',3)
+	insert into ccWhatsOringCountry values(''974'',''Qatar'',''systemTranslated_Qatar'',3)
+	insert into ccWhatsOringCountry values(''975'',''Bhutan'',''systemTranslated_Bhutan'',3)
+	insert into ccWhatsOringCountry values(''976'',''Mongolia'',''systemTranslated_Mongolia'',3)
+	insert into ccWhatsOringCountry values(''977'',''Nepal'',''systemTranslated_Nepal'',3)
+	insert into ccWhatsOringCountry values(''992'',''Tajikistan'',''systemTranslated_Tajikistan'',3)
+	insert into ccWhatsOringCountry values(''993'',''Turkmenistan'',''systemTranslated_Turkmenistan'',3)
+	insert into ccWhatsOringCountry values(''994'',''Azerbaijan'',''systemTranslated_Azerbaijan'',3)
+	insert into ccWhatsOringCountry values(''995'',''Georgia'',''systemTranslated_Georgia'',3)
+	insert into ccWhatsOringCountry values(''998'',''Uzbekistan'',''systemTranslated_Uzbekistan'',3)
+	insert into ccWhatsOringCountry values(''5399'',''Guantanamo Bay'',''systemTranslated_GuantanamoBay'',4)
+	insert into ccWhatsOringCountry values(''1'',''USA'',''systemTranslated_USA'',1)
+end'
+EXEC(@sql)
+
+SET @process = 'delete function ValidateWhatsAppNumber'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''ValidateWhatsAppNumber'') AND type IN (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+BEGIN
+	DROP FUNCTION ValidateWhatsAppNumber;
+END
+'
+EXEC(@sql)
+
+SET @process = 'CREATE FUNCTION ValidateWhatsAppNumber'
+SET @sql = 'CREATE FUNCTION ValidateWhatsAppNumber (@PhoneNumber VARCHAR(40))
+RETURNS BIT
+AS
+BEGIN    
+    IF LEFT(@PhoneNumber, 1) = ''+''
+    BEGIN
+        SET @PhoneNumber = SUBSTRING(@PhoneNumber, 2, LEN(@PhoneNumber) - 1);
+    END
+	declare @CodeCountry varchar(10)	
+
+	if exists(select 1 from ccWhatsOringCountry with(nolock)
+	where left(@PhoneNumber,[length])=CodeCountry
+	)
+	return 1
+
+	return 0
+END;
+'
+EXEC(@sql)
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp
+- delete function Verifica2'
+	SET @sql = ' IF EXISTS (SELECT * FROM   sys.objects WHERE  object_id = OBJECT_ID(N''[dbo].[Verifica2]'')
+						AND type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+		BEGIN
+			DROP FUNCTION [dbo].[Verifica2];
+		END';
+	EXEC(@sql);
+
+SET @process = 'Cambio para permitir números internacionales en la carga de whatsapp - 
+Modificación de la función Verifica2, para validar el prefijo en números internacionales'
+SET @sql = 'CREATE FUNCTION [dbo].[Verifica2] (@tel VARCHAR(32), @pais TINYINT = 0, @cldLocal VARCHAR(7) = '''', @isForSMS bit = 0, @isForWhatsapp BIT = 0)
+RETURNS VARCHAR(32)
+AS
+BEGIN
+	DECLARE @ld VARCHAR(7)
+	DECLARE @lon TINYINT
+	DECLARE @result TINYINT
+	DECLARE @mod VARCHAR(10)
+	DECLARE @tipo VARCHAR(10)
+	DECLARE @Cadena VARCHAR(32)
+	DECLARE @isLocal BIT
+	declare @serie varchar(10)
+	declare @codeCountry varchar(10)
+
+	IF (@pais = 0 AND @cldLocal = '''')
+	BEGIN
+		SELECT @pais = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 104
+
+		SELECT @cldLocal = valor
+		FROM ccSettings WITH (NOLOCK)
+		WHERE setting_id = 17
+	END
+
+	SELECT @tel = dbo.limpia(@tel)
+	
+
+	IF @pais = 1
+	BEGIN --Empieza Mexico
+		SELECT @lon = len(@tel), @mod = ''''
+
+		IF @lon < 10
+		BEGIN
+			RETURN ''E_'' + @tel
+		END
+
+		if @isForWhatsapp=1 and @lon>10 begin
+			select @codeCountry=dbo.limpia(valor) from ccSettings2 with(nolock) where setting_id=273
+			if @codeCountry <> LEFT(@tel,len(@codeCountry)) begin
+				declare @isNumberValidate bit
+				select @isNumberValidate =dbo.ValidateWhatsAppNumber(@tel)
+				if @isNumberValidate=0 begin
+					RETURN ''E_'' + @tel
+				end
+				RETURN @tel
+			end
+		end
+
+
+
+		SELECT @tel = right(@tel, 10)
+
+		
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 10
+		BEGIN
+			IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 3)
+					and serie=SUBSTRING(@tel,4,3)
+					)
+				SELECT @ld = left(@tel, 3),@serie=SUBSTRING(@tel,4,3)
+			ELSE IF EXISTS (
+					SELECT TOP 1 cld
+					FROM series NOLOCK
+					WHERE cld = left(@tel, 2)
+					and serie=SUBSTRING(@tel,3,4)
+					)
+				SELECT @ld = left(@tel, 2),@serie=SUBSTRING(@tel,3,4)
+			ELSE
+				RETURN ''E_'' + @tel
+
+			SELECT TOP 1 @mod = modalidad, @tipo = [TIPO DE RED]
+			FROM series NOLOCK
+			WHERE cld = @ld AND serie = @serie AND right(@tel, 4) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+			IF @mod NOT IN (''FIJO'', ''MPP'', ''CPP'')
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+
+			IF (@isForSMS = 1 OR @isForWhatsapp = 1 )AND @tipo <> ''MOVIL''
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+
+			DECLARE @specialDialPlan TINYINT
+
+			SELECT @specialDialPlan = valor
+			FROM ccsettings WITH (NOLOCK)
+			WHERE setting_id = 195
+
+			IF @specialDialPlan = 2
+			BEGIN --Number 10 digits
+				RETURN @tel
+			END
+
+			SET @isLocal = 0
+
+			IF EXISTS (
+					SELECT *
+					FROM ccRiaArecode
+					WHERE area = @ld
+					)
+			BEGIN
+				SET @isLocal = 1
+			END
+			ELSE IF @cldLocal = @ld
+			BEGIN
+				SET @isLocal = 1
+			END
+
+			IF @specialDialPlan = 1
+			BEGIN
+				--Number local 10 digit
+				--Number LD 12 digit
+				--Number Cell 13 digit
+				SELECT @tel = CASE WHEN @mod IN (''FIJO'', ''MPP'') THEN CASE WHEN @isLocal = 1 THEN @tel ELSE ''01'' + @tel END WHEN @mod = ''CPP'' THEN --Local y LD
+								CASE WHEN @isLocal = 1 THEN ''044'' + @tel ELSE ''045'' + @tel END END --Celular
+			END
+			ELSE
+			BEGIN
+				--Number local 7 o 8 digit
+				--Number LD 12 digit
+				--Number Cell 13 digit
+				SELECT @tel = CASE WHEN @mod IN (''FIJO'', ''MPP'') THEN CASE WHEN @isLocal = 1 THEN right(@tel, 10 - len(@ld)) ELSE ''01'' + @tel END WHEN @mod = ''CPP'' THEN --Local y LD
+								CASE WHEN @isLocal = 1 THEN ''044'' + @tel ELSE ''045'' + @tel END END --Celular
+			END
+		END
+		ELSE IF @lon > 0
+		BEGIN
+			SET @tel = ''E_'' + @tel
+		END
+
+		RETURN @tel
+	END --Termina Mexico
+			--------------------------- Empieza Argentina ---------------------------
+	ELSE IF @pais = 2
+	BEGIN
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		IF @lon IN (6, 7, 8) AND left(@tel, 2) <> ''15''
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		IF @lon IN (8, 9, 10) AND left(@tel, 2) = ''15''
+		BEGIN
+			SET @tel = @cldLocal + substring(@tel, 3, @lon - 2)
+		END
+
+		--Buscamos el 15
+		IF @lon = 13
+		BEGIN
+			DECLARE @index AS INT
+
+			SELECT @index = charindex(''15'', @tel)
+
+			--El unico caso en el que la lada tiene un 15 es con lada 3715
+			IF @index < 2
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				IF substring(@tel, @index - 2, 4) = ''3715''
+				BEGIN
+					SELECT @ld = ''3715''
+
+					SET @tel = @ld + right(@tel, 6)
+				END
+				ELSE
+				BEGIN
+					SELECT @ld = substring(@tel, 2, @index - 2)
+
+					SET @tel = @ld + right(@tel, 13 - (@index + 1))
+				END
+			END
+		END
+
+		SELECT @tel = right(@tel, 10)
+
+		IF len(@tel) = 10
+		BEGIN			
+
+			BEGIN
+				-- Buscamos la lada, empezando por 4 digitos hasta 2, si la lada no existe se regresa error
+				DECLARE @contLD AS INT
+				DECLARE @cont AS INT
+
+				SET @contLD = 4
+
+				BuscaLada:
+
+				IF isnull(@ld, '''') = '''' AND @contLD >= 2
+				BEGIN
+					SELECT @ld = cld
+					FROM seriesArg
+					WHERE cld = left(@tel, @contLD)
+
+					IF isnull(@ld, '''') = ''''
+					BEGIN
+						SET @contLD = @contLD - 1
+
+						GOTO BuscaLada
+					END
+				END
+				ELSE
+				BEGIN
+					IF isnull(@ld, '''') = ''''
+					BEGIN
+						SELECT @tel = ''E_'' + @tel
+					END
+				END
+			END
+
+			-- Buscamos la serie, dependiendo de la longitud de la lada, se busca la serie hasta que encuentra una que existe
+			BEGIN
+				IF len(@ld) = 2
+				BEGIN
+					SET @cont = 5
+
+					buscaSerie2:
+
+					IF isnull(@serie, '''') = '''' AND @cont >= 4
+					BEGIN
+						SELECT @serie = serie
+						FROM seriesArg
+						WHERE cld = @ld AND serie = substring(@tel, 3, @cont)
+
+						IF isnull(@serie, '''') = ''''
+						BEGIN
+							SET @cont = @cont - 1
+
+							GOTO buscaSerie2
+						END
+					END
+				END
+				ELSE
+				BEGIN
+					IF len(@ld) = 3
+					BEGIN
+						SET @cont = 4
+
+						buscaSerie3:
+
+						IF isnull(@serie, '''') = '''' AND @cont >= 3
+						BEGIN
+							SELECT @serie = serie
+							FROM seriesArg
+							WHERE cld = @ld AND serie = substring(@tel, 4, @cont)
+
+							IF isnull(@serie, '''') = ''''
+							BEGIN
+								SET @cont = @cont - 1
+
+								GOTO buscaSerie3
+							END
+						END
+					END
+					ELSE
+					BEGIN
+						IF len(@ld) = 4
+						BEGIN
+							SET @cont = 3
+
+							buscaSerie4:
+
+							IF isnull(@serie, '''') = '''' AND @cont >= 2
+							BEGIN
+								SELECT @serie = serie
+								FROM seriesArg
+								WHERE cld = @ld AND serie = substring(@tel, 5, @cont)
+
+								IF isnull(@serie, '''') = ''''
+								BEGIN
+									SET @cont = @cont - 1
+
+									GOTO buscaSerie4
+								END
+							END
+						END
+					END
+				END
+			END
+
+			SELECT @mod = modalidad
+			FROM seriesArg
+			WHERE cld = @ld AND serie = @serie AND right(@tel, 10 - len(@ld) - len(@serie)) BETWEEN [NUMERACION INICIAL] AND [NUMERACION FINAL]
+
+			-- Si la serie es nula, existe una posibilidad de que la lada este mal, asi que se quita un numero de la lada y se vuelve a buscar la serie			
+			IF isNull(@serie, '''') = '''' AND @contLD > 1
+			BEGIN
+				SET @contLD = len(@ld) - 1
+				SET @ld = NULL
+
+				GOTO BuscaLada
+			END
+
+			SELECT @tel = CASE WHEN @mod IN (''BASICA'', ''MPP'') THEN CASE WHEN @ld = @cldLocal THEN right(@tel, 10 - len(@ld)) ELSE ''0'' + @tel END WHEN @mod = ''CPP'' THEN CASE WHEN @ld = @cldLocal THEN ''15'' + right(@tel, 10 - len(@ld)) ELSE ''0'' + @ld + ''15'' + right(@tel, 10 - len(@ld)) END ELSE ''E_'' + @tel END
+		END
+		ELSE
+		BEGIN
+			IF len(@tel) > 0
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+			END
+		END
+
+		RETURN @tel
+	END ------------------ Termina Argentina ------------------
+	ELSE IF @pais = 3
+	BEGIN --Empieza Colombia
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		IF len(@tel) NOT IN (7, 8, 10, 11)
+		BEGIN
+			RETURN ''E_'' + @tel
+		END
+
+		IF len(@tel) = 7
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = left(@tel, 4) AND @cldLocal = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 8
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 2, 4) AND left(@tel, 1) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 10
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 5, 3) AND (left(@tel, 3) + ''-'' + substring(@tel, 4, 1)) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 11
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesCol
+					WHERE serie = substring(@tel, 6, 3) AND (substring(@tel, 2, 3) + ''-'' + substring(@tel, 5, 1)) = region AND (right(@tel, 3) BETWEEN numeracionInicial AND numeracionFinal)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Colombia
+
+	-- Empieza Chile
+	IF @pais = 5
+	BEGIN
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN
+			RETURN @tel
+		END
+
+		IF len(@tel) = 6 AND len(@cldLocal) = 2
+		BEGIN
+			IF EXISTS (
+					SELECT serie
+					FROM seriesChi
+					WHERE cld = @cldLocal AND left(@tel, 3) = serie AND right(@tel, 3) BETWEEN numeracioninicial AND numeracionFinal
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF len(@tel) = 7
+		BEGIN
+			IF @cldLocal IN (2, 41, 44, 32)
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE serie = left(@tel, 4)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					IF left(@tel, 3) = ''200'' AND EXISTS (
+							SELECT serie
+							FROM serieschi
+							WHERE serie = left(@tel, 3)
+							)
+					BEGIN
+						RETURN @tel
+					END
+				END
+			END
+		END
+
+		IF len(@tel) = 8
+		BEGIN
+			IF left(@tel, 1) = ''2''
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE serie = substring(@tel, 2, 4)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					IF EXISTS (
+							SELECT serie
+							FROM serieschi
+							WHERE serie = substring(@tel, 2, 5)
+							)
+					BEGIN
+						RETURN @tel
+					END
+					ELSE
+					BEGIN
+						RETURN ''E_'' + @tel
+					END
+				END
+			END
+			ELSE
+			BEGIN
+				RETURN @tel
+			END
+		END
+
+		IF len(@tel) = 10
+		BEGIN
+			IF left(@tel, 2) = ''09''
+			BEGIN
+				IF EXISTS (
+						SELECT serie
+						FROM serieschi
+						WHERE cld = substring(@tel, 3, 1) AND serie = substring(@tel, 5, 3)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+		END
+	END
+
+	--Termina Chile
+	IF @pais = 6
+	BEGIN --Empieza Venezuela
+		SELECT @lon = len(@tel)
+
+		IF @lon = 7
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		SELECT @tel = right(@tel, 10)
+
+		IF len(@tel) = 10
+		BEGIN
+			SELECT @ld = left(@tel, 3)
+
+			SELECT @mod = tipo
+			FROM seriesVen
+			WHERE left(@tel, 3) = LD
+
+			IF @mod = ''CPP''
+			BEGIN
+				IF EXISTS (
+						SELECT *
+						FROM seriesVen
+						WHERE LD = @ld
+						)
+				BEGIN
+					IF @ld = @cldLocal
+					BEGIN
+						SELECT @tel = right(@tel, 7)
+					END
+					ELSE
+					BEGIN
+						SELECT @tel = ''0'' + @tel
+					END
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = ''E_'' + @tel
+				END
+			END
+			ELSE
+			BEGIN
+				IF @mod = ''FIJO''
+				BEGIN
+					IF EXISTS (
+							SELECT serie
+							FROM seriesVen
+							WHERE serie = substring(@tel, len(@ld) + 1, 6 - len(@ld)) AND right(@tel, 4) BETWEEN [Inicio] AND [Fin]
+							)
+					BEGIN
+						IF @ld = @cldLocal
+						BEGIN
+							SELECT @tel = right(@tel, 7)
+						END
+						ELSE
+						BEGIN
+							SELECT @tel = ''0'' + @tel
+						END
+					END
+					ELSE
+					BEGIN
+						SELECT @tel = ''E_'' + @tel
+					END
+				END
+				ELSE
+				BEGIN
+					SELECT @tel = ''E_'' + @tel
+				END
+			END
+		END
+		ELSE
+		BEGIN
+			IF len(@tel) > 0
+			BEGIN
+				SELECT @tel = ''E_'' + @tel
+			END
+		END
+
+		RETURN @tel
+	END --Termina Venezuela
+
+	IF @pais = 7
+	BEGIN -- Empieza UK
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) = ''E''
+		BEGIN -- regresa error por longitud
+			RETURN @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		--numeros no geograficos
+		IF (left(@tel, 2) IN (''03'', ''07'', ''09'') AND @lon <> 11) OR (left(@tel, 3) IN (''055'', ''056'', ''070'') AND @lon <> 11)
+		BEGIN
+			RETURN ''E_'' + @tel --error por longitud con lada correcta
+		END
+		ELSE
+		BEGIN
+			IF left(@tel, 7) IN (''0845464'') OR left(@tel, 5) = ''07624'' OR left(@tel, 4) IN (''0500'', ''0800'') OR left(@tel, 3) IN (''055'', ''056'', ''070'', ''76'') OR left(@tel, 2) IN (''03'', ''07'', ''08'', ''09'')
+			BEGIN
+				RETURN @tel;--longitud correcta y numero no geografico
+			END
+		END
+
+		--numeros geograficos (revisar a mano porque son pocas claves LD). *El cero no es parte de la clave LD
+		IF (left(@tel, 7) IN (''0159575'', ''0159576'')) OR (left(@tel, 5) IN (''02820'', ''02821'', ''02825'', ''02827'', ''02828'', ''02829'', ''02830'', ''02837'', ''02838'', ''02840'', ''02841'', ''02842'', ''02843'', ''02844'', ''02866'', ''02867'', ''02868'', ''02870'', ''02871'', ''02877'', ''02879'', ''02880'', ''02881'', ''02882'', ''02885'', ''02886'', ''02887'', ''02889'', ''02890'', ''02891'', ''02892'', ''02893'', ''02894'', ''02895'', ''02897'') AND @lon = 11) OR --claves 2xxx tienen formato 4-6
+			(left(@tel, 4) IN (''0113'', ''0114'', ''0115'', ''0116'', ''0117'', ''0118'', ''0121'', ''0131'', ''0141'', ''0151'', ''0161'', ''0238'', ''0239'') AND @lon = 11) OR --3-digit area codes have 7-digit subscribers.
+			(left(@tel, 3) IN (''020'', ''024'', ''029'') AND @lon = 11)
+		BEGIN --2-digit area codes have 8-digit subscribers.
+			RETURN @tel;
+		END
+
+		--numeros geograficos con 01 (los que faltan por verificar tienen longitud variable)
+		IF left(@tel, 2) = ''01''
+		BEGIN
+			SELECT @ld = count(cld)
+			FROM seriesuk
+			WHERE cld = substring(@tel, 2, 4) --mayor numero de ladas (va primero por ser mas probable)
+
+			IF @ld > 0
+			BEGIN
+				RETURN @tel;
+			END
+			ELSE
+			BEGIN
+				SELECT @ld = count(cld)
+				FROM seriesuk
+				WHERE cld = substring(@tel, 2, 5) --ladas restantes
+
+				IF @ld > 0
+				BEGIN
+					RETURN @tel;
+				END
+			END
+		END --si no encontro ni error ni coincidencia entonces esta mal
+
+		RETURN ''E_'' + @tel
+	END --Termina UK
+
+	IF @pais = 8
+	BEGIN --Empieza Arabia Saudita
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 7
+		BEGIN
+			SET @tel = ''0'' + @cldLocal + @tel
+		END
+
+		SELECT @lon = len(@tel)
+
+		IF @lon = 9
+		BEGIN
+			IF EXISTS (
+					SELECT regiones
+					FROM seriesSA
+					WHERE right(@tel, 4) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 3, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 4 AND left(@tel, 2) = cld
+					)
+			BEGIN
+				IF (substring(@tel, 2, 1) = @cldLocal)
+				BEGIN
+					RETURN right(@tel, 7)
+				END
+				ELSE
+				BEGIN
+					RETURN @tel
+				END
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF @lon = 10
+		BEGIN
+			IF EXISTS (
+					SELECT regiones
+					FROM seriesSA
+					WHERE right(@tel, 4) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 4, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 4 AND left(@tel, 3) = cld
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+
+		IF @lon = 11
+		BEGIN
+			IF EXISTS (
+					SELECT regiones, *
+					FROM seriesSA
+					WHERE right(@tel, 6) BETWEEN [numeracion inicial] AND [numeracion final] AND substring(@tel, 3, 3) BETWEEN [serie inicio] AND [serie fin] AND len([numeracion inicial]) = 6 AND left(@tel, 2) = cld
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Arabia Saudita
+
+	IF @pais = 9
+	BEGIN --Empieza Australia
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF EXISTS (
+					SELECT Regiones
+					FROM SeriesAU
+					WHERE convert(INT, LD) = convert(INT, substring(@tel, 1, 2)) AND convert(INT, AreaCode) = convert(INT, substring(@tel, 3, 2)) AND convert(INT, substring(@tel, 5, 6)) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+					)
+			BEGIN
+				RETURN @tel
+			END
+			ELSE
+			BEGIN
+				RETURN ''E_'' + @tel
+			END
+		END
+		ELSE
+		BEGIN
+			RETURN @tel
+		END
+	END --Termina Australia
+
+	IF @pais = 10
+	BEGIN -- Inicia Brasil
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF @lon IN (8, 9)
+			BEGIN --numero local
+				IF EXISTS (
+						SELECT Regiones
+						FROM seriesBR
+						WHERE convert(INT, AreaCode) = convert(INT, @cldLocal) AND convert(INT, @tel) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+
+			IF @lon IN (10, 11)
+			BEGIN --numero nacional
+				IF EXISTS (
+						SELECT Regiones
+						FROM seriesBR
+						WHERE convert(INT, AreaCode) = convert(INT, left(@tel, 2)) AND convert(INT, right(@tel, @lon - 2)) BETWEEN convert(INT, SerieInicio) AND convert(INT, SerieFin)
+						)
+				BEGIN
+					RETURN @tel
+				END
+				ELSE
+				BEGIN
+					RETURN ''E_'' + @tel
+				END
+			END
+		END
+		ELSE
+		BEGIN
+			RETURN @tel
+		END
+	END -- Termina Brasil
+
+	IF @pais = 11
+	BEGIN -- Inicia Guatemala
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF EXISTS (
+					SELECT zonaGeografica
+					FROM seriesGT(NOLOCK)
+					WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+					)
+				RETURN @tel
+			ELSE
+				RETURN ''E_'' + @tel
+		END
+		ELSE
+			RETURN @tel
+	END -- Termina Guatemala
+
+	IF @pais = 12
+	BEGIN -- Inicia Costa Rica
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 8
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesCR(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF len(@tel) = 10
+			BEGIN
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesCR(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 3) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+			ELSE IF charindex(substring(@tel, 1, 2), ''00,08'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina Costa Rica
+
+	IF @pais = 13
+	BEGIN -- Inicia Salvador
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 8
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesSV(NOLOCK)
+						WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina Salvador
+
+	IF @pais = 14
+	BEGIN -- Inicia Spain
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 9
+				IF EXISTS (
+						SELECT provincia
+						FROM seriesEsp(NOLOCK)
+						WHERE indicativo = substring(@tel, 1, 1) AND right(@tel, 8) BETWEEN numInicial AND numFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			ELSE IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+				RETURN ''E_'' + @tel
+			ELSE
+				RETURN @tel
+		END
+	END -- Termina España
+
+	IF @pais = 15
+	BEGIN --Inicia Peru
+		SELECT @tel = dbo.Completa(@tel, @pais, @cldLocal)
+
+		SELECT @lon = len(@tel)
+
+		IF @lon BETWEEN 6 AND 7
+		BEGIN
+			SET @tel = @cldLocal + @tel
+		END
+
+		SELECT @tel = right(@tel, 9)
+
+		SELECT @lon = len(@tel)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF @lon = 9
+			BEGIN
+				IF EXISTS (
+						SELECT zonaGeografica
+						FROM seriesPE(NOLOCK)
+						WHERE left(@tel, 1) = 9 OR substring(@tel, 2, 1) = 1 AND areaNumeracion = 1 AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal OR substring(@tel, 2, 1) <> 1 AND left(@tel, 2) = areaNumeracion AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+						)
+					RETURN @tel
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+		END
+	END --Termina Peru
+
+	IF @pais = 16
+	BEGIN --Panama
+		SELECT @tel = dbo.completa(@tel, @pais, @cldLocal)
+
+		IF left(@tel, 1) <> ''E''
+		BEGIN
+			IF len(@tel) = 7
+			BEGIN -- Local
+				IF (substring(@tel, 1, 1) != ''6'')
+				BEGIN
+					IF EXISTS (
+							SELECT zonaGeografica
+							FROM seriesPa(NOLOCK)
+							WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+							)
+						RETURN @tel
+					ELSE
+						RETURN ''E_'' + @tel
+				END
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+
+			IF len(@tel) = 8
+			BEGIN --Celular
+				IF (substring(@tel, 1, 1) = ''6'')
+				BEGIN
+					IF EXISTS (
+							SELECT zonaGeografica
+							FROM seriesPa(NOLOCK)
+							WHERE indicativoDestino = substring(@tel, 1, 1) AND right(@tel, 7) BETWEEN rangoInicio AND rangoFinal
+							)
+						RETURN @tel
+					ELSE
+						RETURN ''E_'' + @tel
+				END
+				ELSE
+					RETURN ''E_'' + @tel
+			END
+			ELSE
+			BEGIN
+				IF charindex(substring(@tel, 1, 2), ''00'') <= 0
+					RETURN ''E_'' + @tel
+				ELSE
+					RETURN @tel
+			END
+		END
+	END
+
+	RETURN @tel
+END'
+EXEC(@sql)
+
+--------------------------------------------------------------------- BEGIN MARCO GARCÍA CAMBIO PARA LA CONSULTA DE LA CARGA RECIENTES ------------------------------------------
+
+--------------------------------------------------------------------- BEGIN Jesus Gallardo Fix/plantillas ------------------------------------------
+
+SET @process = 'CREATE SP ccsp_ConversationOutWASave'
+SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_ConversationOutWASave] 
+@action             INT
+, @conversationId     INT         = 0
+, @campId             INT         = NULL        
+, @phoneCamp          VARCHAR(50) = NULL
+, @clientId           VARCHAR(25) = NULL
+, @conversationStatus SMALLINT    = 0
+, @tChatting          FLOAT       = 0
+, @tWrapUp            SMALLINT    = 0
+, @finishedBy         TINYINT     = 0
+, @onQueue            BIT         = NULL
+, @tQueue             SMALLINT    = 0
+, @tTimeout           INT         = 0
+, @disposition        SMALLINT    = 0
+, @subDisposition     SMALLINT    = 0
+, @agentId            INT         = 0
+
+AS
+BEGIN
+SET NOCOUNT ON;
+                        
+declare @conversationIdTemporal     INT;
+declare @metaId int
+
+IF @action = 1 BEGIN --new Conversation
+SELECT @phoneCamp = 
+    ISNULL(
+        (SELECT TOP 1 number FROM ccWhatsAppNumbers WHERE camp_id = @campId),
+        (SELECT TOP 1 number FROM ccMetawhatsAppNumbers WHERE Cam_Id = @campId)
+    );
+
+IF @phoneCamp IS NULL OR @phoneCamp = '''' BEGIN
+    SELECT 0 AS [ConversationId], 0 AS [MessageId];
+    RETURN(0);
+END;
+
+DECLARE @dateNow DATETIME;
+SET @dateNow = DATEADD(HOUR, -23, GETDATE());
+
+
+declare @existsConversationOut bit
+declare @existsConversation bit
+set @existsConversationOut =0
+set @existsConversation =0
+
+UPDATE ccWhatsAppConversationsOut
+SET finishedBy = 2, conversationStatus = 17
+WHERE finishedBy = 0 AND requestDate <= @dateNow
+AND phoneCamp = @phoneCamp AND clientId = @clientId;
+
+IF EXISTS (SELECT * FROM ccWhatsAppConversationsOut WITH(NOLOCK) 
+               WHERE phoneCamp = @phoneCamp AND clientId = @clientId AND finishedBy = 0 AND requestDate>= @dateNow) 
+BEGIN       
+    select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, isnull(C.Login,''N/A'') Username
+    ,B.conversationId as conversationIdExists
+    FROM ccCamps A 
+	INNER JOIN ccWhatsAppConversationsOut B WITH(NOLOCK) ON B.clientId = @clientId AND B.finishedBy = 0 and B.camId=A.cam_id
+    LEFT JOIN ccUsers C ON B.agentId = C.User_id;
+	RETURN(0);
+END 
+    
+if exists (select 1 from ccWhatsAppConversations with(nolock) where
+phoneACD = @phoneCamp and clientId = @clientId and finishedBy=0 AND requestDate >= @dateNow) 
+begin       
+    select A.descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, isnull(C.Login,''N/A'') Username
+    ,B.conversationId as conversationIdExists
+    FROM ccInbound A 
+	INNER JOIN ccWhatsAppConversations B WITH(NOLOCK) ON B.clientId = @clientId AND B.finishedBy = 0 and B.inboundId=A.Inbound_id
+    LEFT JOIN ccUsers C ON B.agentId = C.User_id;
+	return(0);
+end 
+    
+ INSERT INTO [ccWhatsAppConversationsOut]
+([camId] , [phoneCamp], clientId, conversationStatus, tChatting
+, tWrapUp, finishedBy, onQueue, tQueue, requestDate
+, tTimeout, disposition, subDisposition, agentId)
+VALUES(@campId, @phoneCamp, @clientId, @conversationStatus, @tChatting, @tWrapUp, @finishedBy, 
+@onQueue, @tQueue, GETDATE(), @tTimeout, @disposition, @subDisposition, @agentId);
+                        
+SELECT @conversationIdTemporal = SCOPE_IDENTITY();    
+SELECT @conversationIdTemporal AS [ConversationId],0 as [MessageId]
+		 
+END
+ELSE IF @action = 2 -- Get Outbound Templates
+BEGIN
+    
+    DECLARE @AsociatedNumber VARCHAR(30) 
+	SELECT @AsociatedNumber= number from ccWhatsAppNumbers WHERE @campId = camp_id
+	if @AsociatedNumber is not null begin
+		SELECT cast(TemplateId as bigint),Category,TemplateName,LanguageCode,Status,AsociatedNumber
+		,[Type],[Format],Body, 0 IsMeta
+		FROM ccWhatsAppOutboundTemplates WHERE AsociatedNumber = @AsociatedNumber AND Status = 1;
+	end
+	else begin
+		SELECT @MetaId= MetaId from ccMetawhatsAppNumbers WHERE Cam_Id= @campId
+		SELECT 
+		cast(Id as bigint) as TemplateId,Category,TemplateName,LanguageCode as LanguageCode
+		,A.StatusCW [Status],B.Number as AsociatedNumber, 1 IsMeta
+		,''BODY'' [Type],''TEXT'' [Format],body as Body
+		,header,footer
+		FROM ccMetaWAOutboundTemplates  A 
+		inner join ccMetawhatsAppNumbers B on A.MetaId=B.MetaId
+		WHERE A.MetaId = @MetaId AND A.StatusCW = 1
+		and A.body NOT LIKE ''%{{%'' 		AND A.body NOT LIKE ''%[[%''
+		AND ISNULL(A.header, '''') NOT LIKE ''%{{%'' AND ISNULL(A.header, '''') NOT LIKE ''%[[%'' -- quitar plantillas donde el header tiene variables
+		AND ISNULL(A.buttons, '''') NOT LIKE ''%{{%'' AND ISNULL(A.buttons, '''') NOT LIKE ''%[%'' -- quitar plantillas donde el buttons tiene variables de url
+		and A.[Status]=''APPROVED''
+		;
+	end
+    
+END
+END'
 EXEC(@sql);
+
+
+SET @process = 'delete sp ccspOutboundWhatsApp'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures where name= N''ccspOutboundWhatsApp'')
+BEGIN
+	DROP PROCEDURE ccspOutboundWhatsApp
+END'
+EXEC(@sql)
+
+
+SET @process = 'create sp ccspOutboundWhatsApp'
+SET @sql = '
+CREATE procedure [dbo].[ccspOutboundWhatsApp]
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+	select 
+		distinct 
+		cast(c. cam_id as int) as CamId,
+		cam_descripcion as [Name],
+		1 AS CampType,
+		cam_procesando as [Start],
+		Number as PhoneNumber, 
+		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+		Token,
+		CAST(c.IDArea AS int) as AreaId
+	from ccCamps c with(nolock)
+	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+	WHERE CampType=5 AND c.IDArea IS NOT NULL
+	UNION
+	SELECT -- load acd
+		DISTINCT 
+		CAST(ci.Inbound_id AS INT) AS CamId,
+		ci.descripcion AS [Name],
+		0 AS CampType,
+		CAST(ci.Status AS BIT) AS [Start],
+		cmw.Number AS PhoneNumber,
+		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+		cmw.Token AS Token,
+		CAST(ci.IDArea AS int) as AreaId
+	FROM ccInbound ci WITH(NOLOCK)
+	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+END
+ELSE IF @campType IS NOT NULL
+BEGIN
+	IF @campType = 0
+	BEGIN
+		SELECT -- load acd
+			DISTINCT 
+			CAST(ci.Inbound_id AS INT) AS CamId,
+			ci.descripcion AS [Name],
+			0 AS CampType,
+			CAST(ci.Status AS BIT) AS [Start],
+			cmw.Number AS PhoneNumber,
+			REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+			cmw.Token AS Token,
+			CAST(ci.IDArea AS int) as AreaId
+		FROM ccInbound ci WITH(NOLOCK)
+		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+	END
+	ELSE
+	BEGIN
+		select 
+			distinct 
+			cast(c. cam_id as int) as CamId,
+			cam_descripcion as [Name],
+			1 AS CampType,
+			cam_procesando as [Start],
+			Number as PhoneNumber, 
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+			Token,
+			CAST(c.IDArea AS int) as AreaId
+		from ccCamps c with(nolock)
+		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+	END
+END
+
+end
+else if @action=2 begin -- cargar valores del template para envio manual
+	SELECT TOP 1
+		A.id AS Id
+	   ,A.LanguageCode AS LanguageCode
+	   ,B.Number AS Number
+	   ,ISNULL(A.header, '''') AS Header
+	   ,ISNULL(A.body, '''') AS Body
+	   ,ISNULL(A.footer, '''') AS Footer
+	   ,ISNULL(A.buttons, '''') AS Buttons
+	   ,ISNULL(A.headerLink, '''') AS HeaderLink
+	FROM ccMetaWAOutboundTemplates A
+	INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
+	WHERE A.TemplateName = @templateName
+	AND B.Cam_Id = @camId
+
+end
+'
+EXEC(@sql);
+
+
+
+	SET @process = 'Add index ccSettings2 PK_ccSettings2'
+	SET @sql = 'IF NOT EXISTS (
+    SELECT 1
+    FROM sys.key_constraints
+    WHERE [name] = ''PK_ccSettings2'' AND [parent_object_id] = OBJECT_ID(''ccSettings2'')
+)
+BEGIN
+    ALTER TABLE [dbo].[ccSettings2] ADD CONSTRAINT [PK_ccSettings2] PRIMARY KEY CLUSTERED 
+    (
+        [setting_id] ASC
+    )
+    WITH (
+        PAD_INDEX = OFF, 
+        STATISTICS_NORECOMPUTE = OFF, 
+        SORT_IN_TEMPDB = OFF, 
+        IGNORE_DUP_KEY = OFF, 
+        ALLOW_ROW_LOCKS = ON, 
+        ALLOW_PAGE_LOCKS = ON
+    ) ON [PRIMARY];
+END'
+	EXEC(@sql)
+
+	SET @process = 'Add ccSettings2 282'
+	SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccSettings2 WHERE setting_id = 282)
+BEGIN
+    INSERT INTO ccSettings2 
+    VALUES (
+        282,
+        '''', 
+        ''Ruta para contenido multimedia de plantillas Meta para plantillas de Meta'',
+        1, 
+        ''XXX'', 
+        ''En caso de hosteado es necesario poner la ruta https://devkolob33.nuxiba.com/GalateaAdminWS/ '', 
+        ''Content path for Meta template media'',
+        0, 
+        ''.*''
+    );
+END'
+	EXEC(@sql)
+
+SET @process = 'Se agrega columna MessageContent en tabla ccWhatsAppOutSource para agregar mensajes al momento de realizar una carga de envios masivos'
+SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N''MessageContent'' AND Object_ID = Object_ID(N''ccWhatsAppOutSource''))
+BEGIN
+    alter table ccWhatsAppOutSource add MessageContent varchar(max) NOT NULL DEFAULT '''';
+END'
+EXEC(@sql);
+
+SET @process = 'Se elimina SP ccsp_createMessageAndGlobalId'
+SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_createMessageAndGlobalId'')
+begin
+	DROP PROCEDURE ccsp_createMessageAndGlobalId;
+end'
+EXEC(@sql)
+
+SET @process = 'Cambio en como obtiene variable @TemplateContent para insertarse en la tabla de ccwamessageConversationOut,
+				ahora se saca de ccWhatsAppOutSource'
+
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_createMessageAndGlobalId] 
+@Type INT,
+@Messages VARCHAR(MAX)
+    
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF @Type = 1
+	BEGIN
+		DECLARE @SplitResults TABLE (Id INT, Value NVARCHAR(255))
+		INSERT INTO @SplitResults
+		SELECT Id, Value FROM dbo.fn_RIASplitDelimited(@Messages, '','')
+
+		DECLARE @CamId VARCHAR(7)
+		DECLARE @PhoneClient VARCHAR(15)
+		DECLARE @PhoneWa VARCHAR(15)
+		DECLARE @MetaId VARCHAR(150)
+		DECLARE @TimeStamp varchar (50)
+		DECLARE @TimeStampUTC varchar (50)
+		DECLARE @TemplateCategory varchar(50);
+		DECLARE @TemplateContent varchar(1000);
+		DECLARE @ConvId int
+	
+		DECLARE @CurrentId INT = 1
+		DECLARE @RowCount INT
+
+		SELECT @RowCount = COUNT(*) FROM @SplitResults 
+
+		WHILE @CurrentId <= @RowCount
+		BEGIN
+
+			SELECT @MetaId = Value FROM @SplitResults WHERE Id = @CurrentId 
+
+			SELECT  @TemplateCategory = Category, @TemplateContent = waos.MessageContent,
+				@CamId = wld.CamId, @PhoneClient = PhoneClient, @PhoneWa = PhoneWa, @TimeStamp = TimeSpam,
+				@TimeStampUTC = CONVERT(varchar(23), DATEADD(HOUR, -tz.tz_offset, wld.TimeSpam), 121) 
+				FROM ccoWhatsLogDials wld
+				JOIN ccWhatsAppOutSource waos ON wld.WaOutId = waos.WAOut_Id
+				JOIN ccMetaWAOutboundTemplates mwat ON waos.TemplateId = mwat.Id 
+
+				JOIN ccTimeZones tz ON tz.tz_id = waos.TimeZone
+				WHERE wld.MetaId = @MetaId;
+
+			EXEC ccsp_ConversationWASaveOut @action = 1, @camId = @CamId, @phoneCam = @PhoneWa, @clientId = @PhoneClient, @conversationStatus = 20, @ConvId = @ConvId OUTPUT;
+
+			EXEC ccsp_ConversationWASaveOut @action = 4, @messageId = @MetaId, @messageIdUi = 0, @clientNum = @PhoneClient, @vonageNum = @PhoneWa, @typeMessage = ''template'', 
+			@content = @TemplateContent, @conversationId = @ConvId,  @timeStampMessage = @TimeStamp, @timeStampMessageUTC = @TimeStampUTC, @originType = ''Admin''
+
+			update ccoWhatsLogDials set conversationId = @convId where MetaId = @MetaId
+
+			EXEC ccsp_WhatsAppGlobalIds  @ConversationType =1, @ConversationId = @ConvId, @MessageId = @MetaId, @AssociatedNumber= @PhoneWa, @ClientNumber= @PhoneClient, @TemplateCategory = @TemplateCategory
+
+			SET @CurrentId = @CurrentId + 1
+		END  
+	END
+END'
+EXEC(@sql)
+
+
+
 
 
 	

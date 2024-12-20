@@ -161,6 +161,21 @@ begin
 )
 end'
     EXEC(@sql)
+	
+----------------------------------------------------------------Ulises Begin ---------------------------------------------------------------------	
+	set @process = 'Se modifica el nombre de la columna inbounid en la tabla RepEmailAgente'
+    set @sql='IF NOT EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = ''RepEmailAgente''
+      AND COLUMN_NAME = ''inboundId''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailAgente.inbounid'', ''inboundId'', ''COLUMN'';
+END'
+    EXEC(@sql)
+
+---------------------------------------------------------------Ulises End ------------------------------------------------------------------------
 
     set @process = 'Alter SP '
     set @sql=''

@@ -14732,7 +14732,41 @@ end
 EXEC(@sql);
 --------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.22 ----------------------------------------------------------------------------------------------
  
+--------------------------- Begin LRSV KR154000 ----------------------------------------------------------------------------------
 
+SET @process = 'KR154000 se crea permiso 10041'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10041)
+BEGIN
+	insert into ccPermissions values (10041, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se crea permiso 10042'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
+BEGIN
+	insert into ccPermissions values (10042, ''Marcar en orden ascendente/descendente'', ''RolesPermissionDialingOrder'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10041 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10041)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10041)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10042 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10042)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10042)
+END'
+EXEC(@sql);
+
+--------------------------- END LRSV KR154000 ----------------------------------------------------------------------------------
 
 SET @process = ' '
 SET @sql = ''

@@ -108,7 +108,7 @@ SET NOCOUNT OFF
     '
 	EXEC(@sql)
 
-    SET @process = 'Se cambia @Action 2 de como se obtiene la informaaciÛn del cuerpo de las plantillas'
+    SET @process = 'Se cambia @Action 2 de como se obtiene la informaaci√≥n del cuerpo de las plantillas'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_WAOUTGetLogDials]
 	@Action				INT,
@@ -123,7 +123,7 @@ SET NOCOUNT OFF
 		DECLARE @LastMetaId VARCHAR(1000);
 		DECLARE @Answered BIT;
 
-		IF @Action = 1 -- Verifica para el ˙ltimo registro guardado en ccowhatslogdials si han pasado menos de 24 horas desde su envio 
+		IF @Action = 1 -- Verifica para el √∫ltimo registro guardado en ccowhatslogdials si han pasado menos de 24 horas desde su envio 
 		BEGIN
 			DECLARE @InitialTime DATETIME;       
 			DECLARE @LastConversationId BIGINT; 
@@ -283,7 +283,7 @@ SET NOCOUNT OFF
 		END 
 	END
 
-	IF @Option = 1 -- Obtiene filtros de campaÒas para admin
+	IF @Option = 1 -- Obtiene filtros de campa√±as para admin
 	BEGIN
 		DECLARE @campsIn VARCHAR(MAX) = ''''
 		DECLARE @InboundNames VARCHAR(MAX) = ''''
@@ -996,7 +996,7 @@ SET NOCOUNT OFF
 		OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 	END;
 	
-	IF @Option = 5 -- Obtiene n˙mero m·ximo de dÌas a buscar por historial cuando se filtra por campaÒas 
+	IF @Option = 5 -- Obtiene n√∫mero m√°ximo de d√≠as a buscar por historial cuando se filtra por campa√±as 
 	BEGIN 											
 		IF OBJECT_ID(''tempdb..#TmpInboundIdsCampFilter'') IS NOT NULL DROP TABLE #TmpInboundIdsCampFilter;
 
@@ -1130,7 +1130,7 @@ SET NOCOUNT OFF
 		DECLARE @MaxWhatsAllowed INT;
 		DECLARE @ConversationCount INT;
 
-	IF @Option = 8 -- Obtiene valor si se reabrir· o no la conversaciÛn y si ser· se reabrir· tipo entrada o salida
+	IF @Option = 8 -- Obtiene valor si se reabrir√° o no la conversaci√≥n y si ser√° se reabrir√° tipo entrada o salida
 	BEGIN 
 		IF NOT EXISTS (SELECT 1 FROM ccRIAAgentsPermissions WHERE AgentId = @AgentId AND AllowReopenWAConversation = 1)
 		BEGIN
@@ -1197,7 +1197,7 @@ SET NOCOUNT OFF
 
 		DECLARE @ConvId int;
 
-	IF @Option = 9 -- VerificaciÛn al reabrir conversaciÛn
+	IF @Option = 9 -- Verificaci√≥n al reabrir conversaci√≥n
 	BEGIN 
 		DECLARE @ConversationWithinWindowTime BIT = 0;
 		DECLARE @ReopenConversationButtonResponse VARCHAR(50);
@@ -1285,13 +1285,13 @@ SET NOCOUNT OFF
 		END
 	END 
 
-	IF @Option = 10 -- CreaciÛn de conversationId de entrada 
+	IF @Option = 10 -- Creaci√≥n de conversationId de entrada 
 	BEGIN 
 		EXEC ccsp_ConversationWASave @action=1, @phoneacd=@CamNumber, @clientid= @ClientNumber, @inboundid=@CamId, @agentId = @agentId, @IsReopenedConversation = 1, @conversationstatus=2
 
 	END 
 
-	IF @Option = 11 -- CreaciÛn de conversationId de salida
+	IF @Option = 11 -- Creaci√≥n de conversationId de salida
 	BEGIN
 		EXEC ccsp_ConversationOutWASave @action=1, @phoneCamp=@CamNumber, @clientid= @ClientNumber, @campId=@CamId, @agentId = @agentId, @conversationstatus=2
 	END'
@@ -1306,7 +1306,7 @@ SET NOCOUNT OFF
     '
 	EXEC(@sql)
 
-    SET @process = 'ActualizaciÛn de campos cuando se hace envio masivo'
+    SET @process = 'Actualizaci√≥n de campos cuando se hace envio masivo'
 	SET @sql = '
 	CREATE PROCEDURE [dbo].[ccsp_WhatsAppGlobalIds]  
         @ConversationType TINYINT = -1,
@@ -1320,12 +1320,12 @@ SET NOCOUNT OFF
 
 			IF @ConversationType = 0 AND NOT EXISTS(SELECT 1 FROM ccWhatsAppConversations WHERE conversationId = @ConversationId)
 			BEGIN
-				RAISERROR(''ERROR. No existe una conversaciÛn de entrada con el id especificado'', 18, 1);
+				RAISERROR(''ERROR. No existe una conversaci√≥n de entrada con el id especificado'', 18, 1);
 				RETURN(0);
 			END;
 			ELSE IF @ConversationType = 1 AND NOT EXISTS(SELECT * FROM ccWhatsAppConversationsOut WHERE conversationId = @ConversationId)
 			BEGIN
-				RAISERROR(''ERROR. No existe una conversaciÛn de salida con el id especificado'', 18, 1);
+				RAISERROR(''ERROR. No existe una conversaci√≥n de salida con el id especificado'', 18, 1);
 				RETURN(0);
 			END;
 			ELSE

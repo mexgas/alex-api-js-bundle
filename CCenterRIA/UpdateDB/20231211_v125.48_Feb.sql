@@ -14768,6 +14768,284 @@ EXEC(@sql);
 
 --------------------------- END LRSV KR154000 ----------------------------------------------------------------------------------
 
+
+--------------------------- Begin Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+SET @process = 'Create table ccMenuRol'
+SET @sql = 'IF OBJECT_ID(''ccMenuRol'', ''U'') IS NOT NULL
+BEGIN
+    PRINT ''La tabla ccMenuRol ya existe.''
+END
+ELSE
+BEGIN
+    CREATE TABLE ccMenuRol (
+        Rol_id INT,
+        menu_id SMALLINT,
+        "type" TINYINT,
+        CONSTRAINT fk_rol FOREIGN KEY (Rol_id) REFERENCES ccRoles(Rol_id),
+        CONSTRAINT fk_menu FOREIGN KEY (menu_id, "type") REFERENCES ccMenus(menu_id, "type")
+    );
+    PRINT ''La tabla ccMenuRol ha sido creada exitosamente.''
+END;'
+EXEC(@sql);
+
+SET @process = 'Insert default data to ccMenuRol manually'
+SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenuRol)
+BEGIN
+    INSERT INTO ccMenuRol (Rol_id, menu_id, type)
+    SELECT Rol_id, menu_id, type
+    FROM (
+        -- Subconsulta para obtener los menu_id y type para el Rol root
+        SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
+        FROM ccMenus m
+        WHERE m.parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND m.type = 3
+        AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030) -- Excluir estos menu_id
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Supervisor
+        SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (3130, 3), (3131, 3), (3132, 3), (3133, 3), (3134, 3),
+            (3135, 3), (3136, 3), (10000, 3), (10010, 3), (10020, 3),
+            (10030, 3), (10040, 3), (11000, 3), (11010, 3), (11020, 3),
+            (11030, 3), (11040, 3), (12000, 3), (12010, 3), (12020, 3),
+            (14000, 3), (14010, 3), (14020, 3), (6000, 3), (6010, 3),
+            (6020, 3), (6030, 3), (6040, 3), (6050, 3)
+        ) AS Supervisor(menu_id, type)
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Analista de Calidad
+        SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
+            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
+            (8082, 3), (8084, 3)
+        ) AS Calidad(menu_id, type)
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Monitor
+        SELECT menu_id, type, 9 AS Rol_id  -- Monitor
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
+            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
+            (8082, 3), (8084, 3)
+        ) AS Monitor(menu_id, type)
+    ) AS merged;
+
+    PRINT ''Datos insertados en la tabla ccMenuRol.''
+END
+ELSE
+BEGIN
+    PRINT ''La tabla ccMenuRol ya contiene datos.''
+END;
+'
+EXEC(@sql);
+
+set @process = 'Delete ccsp_GalateaMenuReporte'
+    set @sql='
+        if exists (select * from sys.procedures where name = N''ccsp_GalateaMenuReporte'')
+    begin
+        DROP PROCEDURE ccsp_GalateaMenuReporte;
+    end'
+    EXEC(@sql)
+
+SET @process = 'Creation of ccsp_GalateaMenuReporte'
+SET @sql = 'USE [CCenterRIA]
+GO
+/****** Object:  StoredProcedure [dbo].[ccsp_GalateaMenuReporte]    Script Date: 12/19/2024 4:10:37 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
+    @action SMALLINT,
+    @Rol_id VARCHAR(MAX) = NULL,
+	@id_User VARCHAR(MAX) = NULL,	
+	@menu_id VARCHAR(MAX) = NULL,
+	@ids_list VARCHAR(MAX) = NULL,
+	@IsAdminsIds BIT = NULL,
+	@RowsAffected INT = @@ROWCOUNT
+AS
+
+BEGIN
+    IF @action = 1
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@Rol_id, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @id_User) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+
+	IF @action = 2
+	--Manda la información faltante para que el Front sepa todos los menus
+	BEGIN
+		SET NOCOUNT ON;
+		SELECT CAST(menu_id as int) as MenuID, menu_descrip as MenuDesc, CAST(parent as int) as Parent
+		FROM ccMenus 
+	    WHERE parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND type = 3
+        AND menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030)
+	END;
+
+	IF @action = 3
+	--Guarda información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds  = 0
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuRol(menu_id, Rol_id, type)
+			SELECT DISTINCT t2.Value AS menu_id, t1.Value AS Rol_id, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuRol
+			WHERE ccMenuRol.Rol_id = t1.Value
+			AND ccMenuRol.menu_id = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuUser(id_Menu, id_User, type)
+			SELECT DISTINCT t2.Value AS id_Menu, t1.Value AS id_User, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuUser
+			WHERE ccMenuUser.id_User = t1.Value
+			AND ccMenuUser.id_Menu = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+
+
+IF @action = 4
+	--Elimina información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuRol
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuRol.Rol_id = t1.Value
+				AND ccMenuRol.menu_id = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuUser
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuUser.id_User = t1.Value
+				AND ccMenuUser.id_Menu = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+	IF @action = 5
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@ids_list, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @ids_list) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+END;
+'
+EXEC(@sql);
+--------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+
 SET @process = ' '
 SET @sql = ''
 EXEC(@sql);

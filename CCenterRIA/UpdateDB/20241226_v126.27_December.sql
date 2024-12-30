@@ -1432,6 +1432,8 @@ begin
   DROP PROCEDURE ccsp_GalateaUpdateUser;
 end'
 
+EXEC(@sql);
+
 SET @process = 'K069003-CW-8946 - ccsp_GalateaUpdateUser - SP Edited, 
 Se modifica para solucionar relacion entre InsertLogAdminGalatea y el Historial de Actividad'
 SET @sql = '
@@ -1542,6 +1544,8 @@ if exists (select * from sys.procedures where name = N''InsertLogAdminGalatea'')
 begin
   DROP PROCEDURE InsertLogAdminGalatea;
 end'
+
+EXEC(@sql);
 
 SET @process = 'K069003-CW-8946 - InsertLogAdminGalatea - SP Edited, 
 Se modifica para solucionar problema del Historial de Actividad al Editar Usuario'

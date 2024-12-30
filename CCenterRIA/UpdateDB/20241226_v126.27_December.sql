@@ -1425,10 +1425,17 @@ SET NOCOUNT OFF
 
 --------------------------- Begin Luis Miguel Zamora Nuñez 126.20241226.0.0 ----------------------------------------------------------------------------------------------
 
+SET @process = 'K069003-CW-8946 - DROP PROCEDURE ccsp_GalateaUpdateUser'
+SET @sql = '
+if exists (select * from sys.procedures where name = N''ccsp_GalateaUpdateUser'')
+begin
+  DROP PROCEDURE ccsp_GalateaUpdateUser;
+end'
+
 SET @process = 'K069003-CW-8946 - ccsp_GalateaUpdateUser - SP Edited, 
 Se modifica para solucionar relacion entre InsertLogAdminGalatea y el Historial de Actividad'
 SET @sql = '
-ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
+CREATE PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
         @UserId int,
         @Login varchar(40),
         @Nombres varchar(45),
@@ -1529,10 +1536,17 @@ ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
 '
 EXEC(@sql);
 
+SET @process = 'K069003-CW-8946 - DROP PROCEDURE InsertLogAdminGalatea'
+SET @sql = '
+if exists (select * from sys.procedures where name = N''InsertLogAdminGalatea'')
+begin
+  DROP PROCEDURE InsertLogAdminGalatea;
+end'
+
 SET @process = 'K069003-CW-8946 - InsertLogAdminGalatea - SP Edited, 
 Se modifica para solucionar problema del Historial de Actividad al Editar Usuario'
 SET @sql = '
-ALTER procedure [dbo].[InsertLogAdminGalatea]
+CREATE PROCEDURE [dbo].[InsertLogAdminGalatea]
     @action int 
     ,@tableName VARCHAR(255)
     ,@columnNameId VARCHAR(255)

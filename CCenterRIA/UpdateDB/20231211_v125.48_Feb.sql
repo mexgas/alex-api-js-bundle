@@ -14886,14 +14886,7 @@ set @process = 'Delete ccsp_GalateaMenuReporte'
     EXEC(@sql)
 
 SET @process = 'Creation of ccsp_GalateaMenuReporte'
-SET @sql = 'USE [CCenterRIA]
-GO
-/****** Object:  StoredProcedure [dbo].[ccsp_GalateaMenuReporte]    Script Date: 12/19/2024 4:10:37 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+SET @sql = '
 
 CREATE PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
     @action SMALLINT,

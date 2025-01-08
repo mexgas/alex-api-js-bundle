@@ -93,7 +93,8 @@ BEGIN
         ---------------------------------------------------- END DEV2-380 Hugo Longoria --------------------------------------------------------------
 
         set @process = 'Alter SP ccsp_OUTGetNewJobs se modifica la linea exec @iZonas=ccsp_OUTcheckTimeZone @cam_id=@campid,@isReturnSelect=0'
-        set @sql = 'ALTER procedure [dbo].[ccsp_OUTGetNewJobs]
+        set @sql = '
+ALTER PROCEDURE ccsp_OUTGetNewJobs
 @CAMPID int,
 @test int=0,
 @nAgentsLogin int=1,
@@ -212,7 +213,7 @@ left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
 left join ccUsers us (nolock) on us.User_id=w.user_id
 left join ccCampsExtend ce on ce.cam_id=W.cam_id
 WHERE W.cal_status=1 -- CallBacks
-and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+and W.cal_fechaDial<getdate() -- Los vencidos hasta Ahora
 and W.cam_id='' + cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
 and (
         ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
@@ -256,7 +257,7 @@ left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
 left join ccUsers us (nolock) on us.User_id=w.user_id
 left join ccCampsExtend ce on ce.cam_id=W.cam_id
 WHERE W.cal_status=0 -- Nuevas
-and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+and W.cal_fechaDial<getdate()-- Los vencidos hasta Ahora
 and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
 and (
         ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
@@ -315,8 +316,8 @@ FROM ccoWorkingTable W left join ccRIARegistryLists R with (index (IX_ccRIARegis
 left join ccocallsoutsource cs (nolock) on cs.callout_id=W.callout_id
 left join ccUsers us (nolock) on us.User_id=w.user_id
 left join ccCampsExtend ce on ce.cam_id=W.cam_id
-WHERE W.cal_status= 2 -- Procesando
-and W.cal_fechaDial<dateadd(mi, 5, getdate())-- Los vencidos hasta Ahora
+WHERE W.cal_status= 1 -- Procesando
+and W.cal_fechaDial< getdate()-- Los vencidos hasta Ahora
 and W.cam_id=''+ cast(isnull(@CAMPID,''0'') as varchar(7)) + ''
 and (
         ( (W.izonahoraria''+case @bIsDaylight when 1 then ''_verano'' else '''' end+'' & '' + cast(isnull(@iZonas,0) as varchar(20))+ '')>0
@@ -357,7 +358,7 @@ SELECT @regval=count(*) FROM #NEW_JOBS where len(cal_telefono)>0
 end
 
 set @sql=@sql+nchar(13)+ ''DROP table #NEW_JOBS''
---print (@sql)
+-- print (@sql)
 exec(@sql)
 
 return(0)
@@ -14004,8 +14005,7 @@ return @hash % 99999999999973
 END
 '
 EXEC(@sql)
---------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------
-        
+--------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------       
 
 --------------------------- Begin Landus 125.20231211.0.20 ----------------------------------------------------------------------------------------------
 SET @process = 'Landus Alter Sp ccsp_AplicaListaNegra se cambia IX_ccoCallsOutSource_4 por IX_ccoCallsOutSource_12'
@@ -14498,6 +14498,855 @@ SET @sql = 'IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = ''IX_ccoLogDials_5
 EXEC(@sql);
 
 --------------------------- End Landus 125.20231211.0.20 ----------------------------------------------------------------------------------------------
+
+--------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.22 ----------------------------------------------------------------------------------------------
+
+SET @process = 'K069003-CW-8946 - ccsp_GalateaUpdateUser - SP Edited, 
+Se modifica para solucionar relacion entre InsertLogAdminGalatea y el Historial de Actividad'
+SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
+        @UserId int,
+        @Login varchar(40),
+        @Nombres varchar(45),
+        @LastName varchar(45),
+        @NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+        @Sexo bit,
+        @canChangeStatus bit,
+        @AdminId int,
+        @AreaId int
+        as
+
+        Declare @ApellidoMaterno varchar(45)
+        Declare @ApellidoPaterno varchar(45)
+        Declare @userIdOnDb int
+        Declare @LoginOnDb varchar(40)
+        --Obtiene el idioma de Centerware
+        Declare @lenguageXion varchar
+        select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+        set @ApellidoPaterno = @LastName
+        set @ApellidoMaterno = @NombreOpcionalExtra
+
+        -- validaciones 
+            if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+                begin
+                select -5 as ResponseCode--,''el usuario no existe''
+                return(0)
+                end
+
+          if exists(select Nombres from ccUsers where Nombres=@Nombres
+          and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+            begin
+
+                select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+              and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+                select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+              and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+              if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+                begin
+                    select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+                    return(0)
+                end
+            end
+
+                --update and insert into activity log a record for each modified property
+
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
+
+    Update ccUsers set 
+    Nombres=@Nombres,
+    ApellidoPaterno=@ApellidoPaterno,
+    ApellidoMaterno=@ApellidoMaterno,
+    Sexo=@Sexo,
+    canChangeStatus=@canChangeStatus
+    where User_id=@UserId
+
+        CREATE TABLE #CCUsersTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    );
+
+    EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId, @tableTemp=''#CCUsersTable'';
+
+        DELETE FROM #CCUsersTable WHERE identifierInfo IS NULL OR identifierInfo = '''';
+
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+        SELECT 
+                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+                GETDATE(), 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
+                3, 
+                ISNULL(CUT.identifierInfo, ''''),  -- Asegura que sea '''' si es NULL
+                CASE 
+                        WHEN CUT.identifierInfo IS NOT NULL THEN
+                                CASE 
+                                        WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
+                                        ELSE CUT.dataInfo 
+                                END
+                        ELSE '''' 
+                END, 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+        FROM #CCUsersTable AS CUT
+        WHERE (CUT.identifierInfo IS NOT NULL AND CUT.identifierInfo <> ''''); -- Filtra las filas sin identifierInfo
+
+
+    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
+
+        IF OBJECT_ID(N''tempdb..#CCUsersTable'') IS NOT NULL DROP TABLE #CCUsersTable
+
+        select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+'
+EXEC(@sql);
+
+SET @process = 'K069003-CW-8946 - InsertLogAdminGalatea - SP Edited, 
+Se modifica para solucionar problema del Historial de Actividad al Editar Usuario'
+SET @sql = '
+ALTER procedure [dbo].[InsertLogAdminGalatea]
+    @action int 
+    ,@tableName VARCHAR(255)
+    ,@columnNameId VARCHAR(255)
+    ,@valueId VARCHAR(255)
+    ,@userId int
+    ,@tableTemp varchar(255)=null
+AS
+SET NOCOUNT ON;
+
+declare @sql nvarchar(max), @sql2 nvarchar(max)
+DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+
+if @action =1 begin --Antes del cambio
+    set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp+'' 
+    SELECT * INTO ''+@tableNameTmp+'' FROM ''+@tableName+'' WHERE ''+@columnNameId+'' = ''+@valueId
+    -- Ejecutar el SQL para crear la tabla temporal
+    exec(@sql)
+end
+else if @action=2 begin
+    DECLARE @columns NVARCHAR(MAX) = '''';
+    DECLARE @conditions NVARCHAR(MAX) = '''';
+    DECLARE @caseStatements NVARCHAR(MAX) = '''';
+    DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
+    DECLARE @counter INT = 0;
+    declare @emtpy varchar(2)=''''
+
+    -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
+    DECLARE @BatchColumns TABLE (
+            name NVARCHAR(128),
+            batch_id INT
+    );
+
+    -- Insertar en @BatchColumns las columnas de la tabla, dividiéndolas en bloques
+    INSERT INTO @BatchColumns (name, batch_id)
+    SELECT 
+            name,
+            (ROW_NUMBER() OVER (ORDER BY column_id) - 1) / @batchSize AS batch_id
+    FROM 
+            sys.columns
+    WHERE 
+            object_id = OBJECT_ID(@tableName)
+            AND name <> @columnNameId  -- Excluir la columna clave primaria
+            AND name <> ''rowguid'';  -- Excluir la columna GUID si existe
+
+    -- Insertar batch_ids únicos en la variable de tipo tabla @BatchIds
+    DECLARE @BatchIds TABLE (
+            batch_id INT PRIMARY KEY
+    );
+
+    INSERT INTO @BatchIds
+    SELECT DISTINCT batch_id FROM @BatchColumns;
+
+    DECLARE @batch_id INT = 0;
+
+    -- Bucle para procesar cada bloque de columnas
+    WHILE EXISTS (SELECT 1 FROM @BatchIds WHERE batch_id = @batch_id)
+    BEGIN
+        -- Construir las expresiones CASE y las condiciones WHERE para este bloque
+        SET @caseStatements = '''';
+        SET @conditions = '''';
+
+        -- Construir el CASE y el WHERE para cada columna en el bloque actual
+        SELECT 
+                @caseStatements = @caseStatements + 
+                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                ''FROM '' + @tableName + '' AS A '' +
+                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+        FROM 
+                @BatchColumns
+        WHERE 
+                batch_id = @batch_id;                   
+
+        -- Construir las condiciones WHERE para el bloque actual
+        SELECT @conditions = @conditions + 
+        CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+        ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+        FROM 
+                @BatchColumns
+        WHERE 
+                batch_id = @batch_id;
+
+        -- Remover el último UNION ALL sobrante
+        SET @caseStatements = LEFT(@caseStatements, LEN(@caseStatements) - LEN('' UNION ALL ''));
+        
+        -- Construir y ejecutar la consulta para este bloque
+        IF @caseStatements <> ''''
+        BEGIN
+            SET @sql = ''
+            INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
+            '' + @caseStatements + ''                       
+            '';
+            -- Ejecutar la consulta dinámica
+            EXEC sp_executesql @sql;
+        END     
+
+        -- Avanzar al siguiente bloque
+        SET @batch_id = @batch_id + 1;
+    END
+
+    -- Consultar el resultado final de cambios
+    set @sql= 
+    ''SELECT distinct A.columnInfo, A.dataInfo, ISNULL(B.Identifiers, @emtpy) as identifierInfo 
+    FROM ''+@tableTemp+'' A 
+    LEFT JOIN relationTableColumnIdentifiers B 
+        ON A.columnInfo = B.colunName 
+        AND B.tableName = @tableName'';
+
+    -- Si la tabla temporal existe, insertar los resultados allí
+    if @tableTemp is not null and @tableTemp <> '''' begin
+        set @sql = ''INSERT INTO '' + @tableTemp + '' '' + @sql
+    end
+
+    -- Ejecutar la consulta de inserción
+    EXEC sp_executesql @sql, N''@tableName VARCHAR(255), @emtpy VARCHAR(2)'', @tableName = @tableName, @emtpy = @emtpy;
+
+end
+else if @action =3 begin
+    set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
+    -- Ejecutar la eliminación de la tabla temporal
+    exec(@sql)
+end
+'
+EXEC(@sql);
+--------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.22 ----------------------------------------------------------------------------------------------
+ 
+--------------------------- Begin LRSV KR154000 ----------------------------------------------------------------------------------
+
+SET @process = 'KR154000 se crea permiso 10041'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10041)
+BEGIN
+	insert into ccPermissions values (10041, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se crea permiso 10042'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
+BEGIN
+	insert into ccPermissions values (10042, ''Marcar en orden ascendente/descendente'', ''RolesPermissionDialingOrder'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10041 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10041)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10041)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10042 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10042)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10042)
+END'
+EXEC(@sql);
+
+--------------------------- END LRSV KR154000 ----------------------------------------------------------------------------------
+
+
+--------------------------- Begin Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+SET @process = 'Create table ccMenuRol'
+SET @sql = 'IF OBJECT_ID(''ccMenuRol'', ''U'') IS NOT NULL
+BEGIN
+    PRINT ''La tabla ccMenuRol ya existe.''
+END
+ELSE
+BEGIN
+    CREATE TABLE ccMenuRol (
+        Rol_id INT,
+        menu_id SMALLINT,
+        "type" TINYINT,
+        CONSTRAINT fk_rol FOREIGN KEY (Rol_id) REFERENCES ccRoles(Rol_id),
+        CONSTRAINT fk_menu FOREIGN KEY (menu_id, "type") REFERENCES ccMenus(menu_id, "type")
+    );
+    PRINT ''La tabla ccMenuRol ha sido creada exitosamente.''
+END;'
+EXEC(@sql);
+
+SET @process = 'Insert default data to ccMenuRol manually'
+SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenuRol)
+BEGIN
+    INSERT INTO ccMenuRol (Rol_id, menu_id, type)
+    SELECT Rol_id, menu_id, type
+    FROM (
+        -- Subconsulta para obtener los menu_id y type para el Rol root
+        SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
+        FROM ccMenus m
+        WHERE m.parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND m.type = 3
+        AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030) -- Excluir estos menu_id
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Supervisor
+        SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (3130, 3), (3131, 3), (3132, 3), (3133, 3), (3134, 3),
+            (3135, 3), (3136, 3), (10000, 3), (10010, 3), (10020, 3),
+            (10030, 3), (10040, 3), (11000, 3), (11010, 3), (11020, 3),
+            (11030, 3), (11040, 3), (12000, 3), (12010, 3), (12020, 3),
+            (14000, 3), (14010, 3), (14020, 3), (6000, 3), (6010, 3),
+            (6020, 3), (6030, 3), (6040, 3), (6050, 3)
+        ) AS Supervisor(menu_id, type)
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Analista de Calidad
+        SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
+            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
+            (8082, 3), (8084, 3)
+        ) AS Calidad(menu_id, type)
+
+        UNION ALL
+
+        -- Valores específicos para el Rol Monitor
+        SELECT menu_id, type, 9 AS Rol_id  -- Monitor
+        FROM (VALUES 
+            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
+            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
+            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
+            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
+            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
+            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
+            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
+            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
+            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
+            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
+            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
+            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
+            (8082, 3), (8084, 3)
+        ) AS Monitor(menu_id, type)
+    ) AS merged;
+
+    PRINT ''Datos insertados en la tabla ccMenuRol.''
+END
+ELSE
+BEGIN
+    PRINT ''La tabla ccMenuRol ya contiene datos.''
+END;
+'
+EXEC(@sql);
+
+set @process = 'Delete ccsp_GalateaMenuReporte'
+    set @sql='
+        if exists (select * from sys.procedures where name = N''ccsp_GalateaMenuReporte'')
+    begin
+        DROP PROCEDURE ccsp_GalateaMenuReporte;
+    end'
+    EXEC(@sql)
+
+SET @process = 'Creation of ccsp_GalateaMenuReporte'
+SET @sql = '
+
+CREATE PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
+    @action SMALLINT,
+    @Rol_id VARCHAR(MAX) = NULL,
+	@id_User VARCHAR(MAX) = NULL,	
+	@menu_id VARCHAR(MAX) = NULL,
+	@ids_list VARCHAR(MAX) = NULL,
+	@IsAdminsIds BIT = NULL,
+	@RowsAffected INT = @@ROWCOUNT
+AS
+
+BEGIN
+    IF @action = 1
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@Rol_id, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @id_User) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+
+	IF @action = 2
+	--Manda la información faltante para que el Front sepa todos los menus
+	BEGIN
+		SET NOCOUNT ON;
+		SELECT CAST(menu_id as int) as MenuID, menu_descrip as MenuDesc, CAST(parent as int) as Parent
+		FROM ccMenus 
+	    WHERE parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND type = 3
+        AND menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030)
+	END;
+
+	IF @action = 3
+	--Guarda información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds  = 0
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuRol(menu_id, Rol_id, type)
+			SELECT DISTINCT t2.Value AS menu_id, t1.Value AS Rol_id, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuRol
+			WHERE ccMenuRol.Rol_id = t1.Value
+			AND ccMenuRol.menu_id = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuUser(id_Menu, id_User, type)
+			SELECT DISTINCT t2.Value AS id_Menu, t1.Value AS id_User, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuUser
+			WHERE ccMenuUser.id_User = t1.Value
+			AND ccMenuUser.id_Menu = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+
+
+IF @action = 4
+	--Elimina información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuRol
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuRol.Rol_id = t1.Value
+				AND ccMenuRol.menu_id = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuUser
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuUser.id_User = t1.Value
+				AND ccMenuUser.id_Menu = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+	IF @action = 5
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@ids_list, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @ids_list) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+END;
+'
+EXEC(@sql);
+--------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+
+--------------------------- BEGIN IC 125.20231211.0.22 ----------------------------------------------------------------------------------
+
+SET @process = 'TT12493-Outbound-No se respetan tiempo de remarcacion.'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_OUTUpdateDialJobCommon'')
+BEGIN
+    DROP PROCEDURE ccsp_OUTUpdateDialJobCommon;
+END
+'
+EXEC(@sql);
+
+SET @process = 'TT12493-Outbound-No se respetan tiempo de remarcacion.'
+SET @sql = '
+CREATE PROCEDURE ccsp_OUTUpdateDialJobCommon
+@action int,
+@callout_id     INT,
+@cam_id INT=0,
+@prioridadLlamada CHAR(8) OUTPUT,
+@Telefono VARCHAR(15)='''' OUTPUT
+
+AS
+SET NOCOUNT ON
+if @action=1 begin
+	DECLARE @ExistePriorityOrder TINYINT
+	SELECT 
+        @prioridadLlamada = priorityCall,
+        @ExistePriorityOrder = CASE WHEN callout_id IS NOT NULL THEN 1 ELSE 0 END
+    FROM ccoCallPriorityOrder WITH (NOLOCK)
+    WHERE callout_id = @callout_id
+
+    IF @ExistePriorityOrder IS NULL
+    BEGIN
+        SELECT @prioridadLlamada = Prioridad
+        FROM ccCampsPrioridadTel WITH (NOLOCK)
+        WHERE cam_id = @cam_id
+
+        INSERT INTO ccoCallPriorityOrder 
+        VALUES (@callout_id, @prioridadLlamada)
+    END
+end
+if @action=2 begin
+	-- Cambiar la prioridad
+    SET @prioridadLlamada = dbo.ChangePriorityCall(@prioridadLlamada)
+
+    -- Actualizar la prioridad
+    UPDATE ccoCallPriorityOrder WITH (rowlock)
+    SET priorityCall = @prioridadLlamada
+    WHERE callout_id = @callout_id
+
+    -- Seleccionar el pr�ximo tel�fono
+    DECLARE @sSQL NVARCHAR(MAX)
+    SET @sSQL = ''SELECT @outA = RTRIM(LEFT(LTRIM(cal_telefono'' 
+        + CASE SUBSTRING(@prioridadLlamada, 1, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 1, 1) END
+        + ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 2, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 2, 1) END
+        + ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 3, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 3, 1) END
+        + ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 4, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 4, 1) END
+        + ''+''''         ''''+cal_telefono'' + CASE SUBSTRING(@prioridadLlamada, 5, 1) WHEN 1 THEN '''' ELSE SUBSTRING(@prioridadLlamada, 5, 1) END
+        + ''+''''         ''''),13)) FROM ccoCallsOutSource WITH (NOLOCK) WHERE callout_id=''
+        + CAST(@callout_id AS VARCHAR(15))
+
+    EXEC sp_executesql @sSQL, N''@outA VARCHAR(15) OUTPUT'', @outA = @Telefono OUTPUT
+end
+SET NOCOUNT OFF
+'
+EXEC(@sql);
+
+SET @process = 'TT12493-Outbound-No se respetan tiempo de remarcacion.'
+SET @sql = '
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_OUTUpdateDialJob'')
+BEGIN
+    DROP PROCEDURE ccsp_OUTUpdateDialJob;
+END
+'
+EXEC(@sql);
+
+SET @process = 'TT12493-Outbound-No se respetan tiempo de remarcacion.'
+SET @sql = '
+CREATE PROCEDURE [dbo].[ccsp_OUTUpdateDialJob]
+@callout_id     INT,
+@CallResultDial TINYINT,
+@isTCPA         BIT     = 0
+AS
+BEGIN
+
+	SET NOCOUNT ON
+
+	/*1:Contesto | 2:Ocupada | 3:No contestada | 4:Fax/Modem | 5:No Dial Tone | 7:Colgado durante transferencia
+	++8:short call | ++9:Otro | 8:Other | 10:NoService | 11:Machine	*/
+
+	DECLARE @nOcupado TINYINT, @nNoContesta TINYINT, @nFax TINYINT, @nContestadora TINYINT
+	DECLARE @nShortCall TINYINT, @nOtro TINYINT, @cam_NoInt_ocupado TINYINT, @cam_NoInt_graba TINYINT
+	DECLARE @cam_ocupado SMALLINT, @cam_inter_ocupado SMALLINT, @cam_nocontesto SMALLINT
+	DECLARE @cam_graba SMALLINT, @cam_inter_graba SMALLINT, @cam_inter_nocontesto SMALLINT
+	DECLARE @cam_fax SMALLINT, @cam_inter_fax SMALLINT
+	DECLARE @DateNextDial DATETIME, @DateNewDial DATETIME, @cam_id SMALLINT
+	DECLARE @ExisteWT TINYINT, @cam_NoInt_fax TINYINT, @cam_NoInt_nocontesto TINYINT, @cal_status TINYINT
+	DECLARE @sSQL NVARCHAR(MAX), @Telefono VARCHAR(15), @prioridadLlamada CHAR(8)
+	DECLARE @ExistePriorityOrder TINYINT
+			 
+	SELECT @cam_id = cam_id,
+		@nOcupado = ISNULL(nOcupado, 0),
+		@nNoContesta = ISNULL(nNoContesta, 0),
+		@nFax = ISNULL(nFax, 0),
+		@nContestadora = ISNULL(nContestadora, 0),
+		@nShortCall = ISNULL(nShortCall, 0),
+		@nOtro = ISNULL(nOtro, 0),
+		@DateNextDial = cal_fechaDial
+	FROM ccoWorkingTable with(nolock)
+	WHERE callout_id = @callout_id
+
+	SELECT @ExisteWT = CASE WHEN @cam_id IS NOT NULL THEN 1 ELSE 0 END
+	SELECT @cal_status = CASE WHEN @isTCPA = 1 THEN 0 ELSE 1 END--si esta en modo TCPA no gene|rar callbacks
+
+	IF @CallResultDial = 20 BEGIN-- CONTACTADO
+		EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial = 1 BEGIN-- CONTESTO
+		IF @isTCPA = 1 BEGIN
+			UPDATE ccoWorkingTable with(rowlock) SET cal_status = @cal_status WHERE callout_id = @callout_id
+		END
+		ELSE 
+		BEGIN
+			IF (SELECT campType FROM ccCamps WHERE cam_id = @cam_id) = 6
+				RETURN(0)
+			IF (SELECT abandonCallback FROM ccCamps WHERE cam_id = @cam_id) = 1
+				BEGIN
+					EXEC ccsp_OUTCancelDialJOB @callout_id,1,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+			END
+			ELSE BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+			END
+		END
+		RETURN(0)
+	END
+	IF @CallResultDial IN(2, 12) BEGIN -- OCUPADO
+		SELECT @cam_ocupado = cam_ocupado,
+		@cam_inter_ocupado = cam_inter_ocupado,
+		@cam_NoInt_ocupado = cam_NoInt_ocupado,
+		@nOcupado = @nOcupado + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_ocupado = 1 
+		BEGIN -- Opcion Ocupado HABILITADA
+			IF @nOcupado > @cam_NoInt_ocupado OR @nShortCall > 4 
+			BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id,0,@nOcupado,@nNoContesta,@nFax,@nContestadora,@nShortCall,@nOtro,@ExisteWT
+				RETURN(0)
+			END
+	
+			exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1	ELSE nNoContesta END
+			WHERE callout_id = @callout_id
+
+			exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_ocupado, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			IF @DateNewDial > @DateNextDial 
+			BEGIN	-- Nueva fecha de Call BACk
+				UPDATE ccoWorkingTable with(rowlock) SET nOcupado = @nOcupado, cal_fechaDial = @DateNewDial, cal_status = @cal_status
+				WHERE callout_id = @callout_id			
+				RETURN(0)
+			END
+
+			-- Mantiene la fecha de Call BACK
+			UPDATE ccoWorkingTable with(rowlock) SET nOcupado = @nOcupado, cal_status = @cal_status, cal_telefono = @Telefono
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- ELSE: Opcion Ocupado DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial IN(3, 5, 8) BEGIN-- NO CONTESTA
+		--select NO Contesta
+		SELECT @cam_nocontesto = cam_nocontesto,
+		@cam_inter_nocontesto = cam_inter_nocontesto,
+		@cam_NoInt_nocontesto = cam_NoInt_nocontesto,
+		@nNoContesta = @nNoContesta + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_nocontesto = 1 
+		BEGIN-- Opcion NoContesta HABILITADA
+			IF @nNoContesta > @cam_NoInt_nocontesto OR @nShortCall > 4 
+			BEGIN --select No Contesta Habilitada
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+		
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource with(rowlock) SET nNoContesta = CASE WHEN nNoContesta < 255 THEN ISNULL(nNoContesta, 0) + 1
+			ELSE nNoContesta END
+			WHERE callout_id = @callout_id
+
+			exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_nocontesto, GETDATE())
+
+			UPDATE ccoWorkingTable with(rowlock) SET nNoContesta = @nNoContesta, cal_status = @cal_status, cal_telefono = @Telefono,
+			cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial	END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion NoContesta DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial = 4 
+	BEGIN-- Fax/Modem
+		SELECT @cam_fax = cam_fax,
+		@cam_inter_fax = cam_inter_fax,
+		@cam_NoInt_fax = cam_NoInt_fax,
+		@nFax = @nFax + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_fax = 1 
+		BEGIN-- Opcion Fax/Modem HABILITADA
+			IF @nFax > @cam_NoInt_fax OR @nShortCall > 4 
+			BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource with(rowlock) SET nFax = CASE WHEN nFax < 255 THEN ISNULL(nFax, 0) + 1 ELSE nFax END
+			WHERE callout_id = @callout_id
+
+			exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_fax, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			UPDATE ccoWorkingTable with(rowlock) SET nFax = @nFax, cal_status = @cal_status, cal_telefono = @Telefono,
+			cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial	THEN @DateNewDial ELSE cal_fechaDial END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion Fax/Modem DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial = 11 
+	BEGIN-- Maquina Contestadora
+		SELECT @cam_graba = cam_graba,
+		@cam_inter_graba = cam_inter_graba,
+		@cam_NoInt_graba = cam_NoInt_graba,
+		@nContestadora = @nContestadora + 1
+		FROM ccCamps
+		WHERE cam_id = @cam_id
+
+		IF @cam_graba = 1 BEGIN-- Opcion Maquina Contestadora HABILITADA
+			IF @nContestadora > @cam_NoInt_graba OR @nShortCall > 4 
+			BEGIN
+				EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+				RETURN(0)
+			END
+
+			exec ccsp_OUTUpdateDialJobCommon @action=1,@callout_id=@callout_id,@cam_id= @cam_id, @prioridadLlamada =@prioridadLlamada OUTPUT
+
+			-- Change priority and obtain the next telephone
+			UPDATE ccoCallsOutSource with(rowlock) SET nContestadora = CASE WHEN nContestadora < 255 THEN ISNULL(nContestadora, 0) + 1 ELSE nContestadora END
+			WHERE callout_id = @callout_id
+
+			exec ccsp_OUTUpdateDialJobCommon @action=2,@callout_id=@callout_id, @prioridadLlamada =@prioridadLlamada,@Telefono =@Telefono OUTPUT
+
+			SELECT @DateNewDial = DATEADD(mi, @cam_inter_graba, GETDATE())
+
+			-- Programacion de CALLBACK, si esta en TCPA se pasa a nuevos
+			UPDATE ccoWorkingTable with(rowlock) SET nContestadora = @nContestadora, cal_status = @cal_status, cal_telefono = @Telefono,
+			cal_fechaDial = CASE WHEN @DateNewDial > @DateNextDial THEN @DateNewDial ELSE cal_fechaDial END
+			WHERE callout_id = @callout_id
+			RETURN(0)
+		END
+
+		-- Opcion Maquina Contestadora DESHABILITADA
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial IN(10, 90) 
+	BEGIN--No Dial Tone, otros, NoService
+		EXEC ccsp_OUTCancelDialJOB @callout_id, 0, @nOcupado, @nNoContesta, @nFax, @nContestadora, @nShortCall, @nOtro, @ExisteWT
+		RETURN(0)
+	END
+	IF @CallResultDial > 13 AND @CallResultDial <> 51   BEGIN--Dial Result not register
+		EXEC ccsp_OUTUpdateDialJob @callout_id = @callout_id, @CallResultDial = 8, @isTCPA = @isTCPA
+	END
+
+	RETURN(0)
+	SET NOCOUNT OFF
+END
+'
+EXEC(@sql);
+--------------------------- END IC 125.20231211.0.22 ------------------------------------------------------------------------------------
 
 SET @process = ' '
 SET @sql = ''

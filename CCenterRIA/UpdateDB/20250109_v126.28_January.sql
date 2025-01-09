@@ -178,6 +178,15 @@ BEGIN
 	END
 	END'
 	EXEC(@sql)
+	SET @process = 'K072001 Add setting'
+	SET @sql = '
+	if not exists(select * from ccSettings2 where setting_id=280 )
+	begin
+	insert into  ccSettings2 (setting_id,	valor,	descripcion	,Status,	Tipo,	detalle	,description, bLoadSettings) values
+	(280,	''3'',	''Reintentos de validación automática de telefonía (default: 3, min: 1)'',	1,	''AGT'',	''Reintentos de validación automática de telefonía (default: 3, min: 1)'',
+	''Retries for automatic telephony validation (default: 3, min: 1)'',1	)
+	end'
+	EXEC(@sql)
     -------------------------------------------- END DM -----------------------------------------
 	
 

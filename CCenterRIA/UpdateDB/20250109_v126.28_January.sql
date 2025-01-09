@@ -115,7 +115,7 @@ BEGIN
 	WHERE finishedBy = 0 AND requestDate <= @dateNow
 	AND phoneCamp = @phoneCamp AND clientId = @clientId;
 
-	IF EXISTS (SELECT * FROM ccWhatsAppConversationsOut WITH(NOLOCK) 
+	IF EXISTS (SELECT 1 FROM ccWhatsAppConversationsOut WITH(NOLOCK) 
 				   WHERE phoneCamp = @phoneCamp AND clientId = @clientId AND finishedBy = 0 AND requestDate>= @dateNow) 
 	BEGIN       
 		select A.cam_descripcion CamDescription, B.requestDate RequestDate, B.agentId UserId, isnull(C.Login,''N/A'') Username

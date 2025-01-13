@@ -6984,7 +6984,7 @@ from RepAgentSummary
 '
 EXEC(@sql)
 -------------------------------------- END ISAAC hotfix/125.20231211.0.20 --------------------------------------
- ----------------------------------------------------- Hector Chavez KR170000 -----------------------------------------------------------------
+----------------------------------------------------- Hector Chavez KR170000 -----------------------------------------------------------------
     set @process = 'KR1170000 Create table RepAgentTimeShift'
     set @sql = ' IF NOT EXIST (SELECT * FROM sys.tables WHERE name = ''RepAgentTimeShift'' )
                  BEGIN
@@ -7052,376 +7052,398 @@ EXEC(@sql)
                '
     EXEC(@sql);
 
-    @process('Create index for the table RepAgentTimeShift')
-    @sql('CREATE INDEX IX_RepAgentTimeShift ON RepAgentTimeShift(date,userId)')
+    @process = 'KR170000 Create index for the table RepAgentTimeShift'
+    @sql = ' IF NOT EXIST(SELECT * FROM sys.indexes where name = ''IX_RepAgentTimeShift'')
+             BEGIN
+                CREATE INDEX IX_RepAgentTimeShift ON RepAgentTimeShift(date,userId)
+             END
+        '
     EXEC(@sql);
 
-    @process('KR170000 Create SP for RepAgentTimeShift')
-    @sql('
-    USE [CCReportsRIA]
-    GO
-    /****** Object:  StoredProcedure [dbo].[ccspRepAgentTimeShift]    Script Date: 13/1/2025 08:38:01 ******/
-    SET ANSI_NULLS ON
-    GO
-    SET QUOTED_IDENTIFIER ON
-    GO
-    CREATE PROCEDURE [dbo].[ccspRepAgentTimeShift]
-    @action AS TINYINT ,@from AS DATETIME ,@to AS DATETIME AS
+    @process = 'KR170000 Create SP for RepAgentTimeShift'
+    @sql = ' IF NOT EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND OBJECT_ID = OBJECT_ID('dbo.ccspRepAgentTimeShift'))
+    BEGIN
+        USE [CCReportsRIA]
+        GO
+        /****** Object:  StoredProcedure [dbo].[ccspRepAgentTimeShift]    Script Date: 13/1/2025 08:38:01 ******/
+        SET ANSI_NULLS ON
+        GO
+        SET QUOTED_IDENTIFIER ON
+        GO
+        CREATE PROCEDURE [dbo].[ccspRepAgentTimeShift]
+        @action AS TINYINT ,@from AS DATETIME ,@to AS DATETIME AS
 
-    IF @from IS NULL
-    	SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()));
+        IF @from IS NULL
+        	SELECT @from = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE()));
 
-    IF @to IS NULL
-    	SELECT @to = GETDATE();
+        IF @to IS NULL
+        	SELECT @to = GETDATE();
 
-    IF @action = 1
-	BEGIN
-		DELETE	FROM RepAgentTimeShift WHERE [date] >= @from AND [date] <= @to
+        IF @action = 1
+	    BEGIN
+	    	DELETE	FROM RepAgentTimeShift WHERE [date] >= @from AND [date] <= @to
 
-		DECLARE @now DATETIME
-		SET @now=GETDATE()
-		;WITH sessionAgt AS(
-			SELECT user_id,
-				extension
-				,MIN(login) AS login
-				,MAX(logout) AS logout
-				,SUM(tlog) AS tlog
-				,dbo.getdaygroup(timeGroup) AS timeGroupDay
-			from tmpSessionTimeGroup
-			GROUP BY 
-			dbo.getdaygroup(timeGroup)
-			,user_id,extension
-		), callIn AS (
-			SELECT User_id AS userId
-			,SUM(tdialog) AS tdialogIn
-			,SUM(tnotes) AS tnotes
-			,SUM(cal_tMoh) AS cal_tMoh
-			,dbo.getdaygroup(timeGroup) AS timeGroupDay
-			,SUM(ntotal) AS ntotal
-			FROM tmpTimesInboundData
-			GROUP BY 
-			dbo.getdaygroup(timeGroup),User_id
-		),campsOut AS(
-			SELECT cam_id, progDial FROM cccamps WHERE CampType IN (0,5) AND progDial =0
-		),callOut AS (
-			SELECT 
-			t.User_id AS userId
-			,SUM(t.tdialog) AS tdialogOut
-			,SUM(t.tnotes) AS tnotes
-			,SUM(t.cal_tMoh) AS cal_tMoh
-			,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.tdialog ELSE 0 END) AS tMdialogOut
-			,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.tnotes ELSE 0 END) AS tMnotes
-			,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.cal_tMoh ELSE 0 END) AS Mcal_tMoh
-			,dbo.getdaygroup(timeGroup) AS timeGroupDay
-			,SUM(t.ntotal) AS ntotal
-			,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.ntotal ELSE 0 END) AS isManual
-			FROM tmpTimesOutboundData t
-			INNER JOIN campsOut o ON t.cam_id=o.cam_id
-			GROUP BY 
-			dbo.getdaygroup(timeGroup)
-			,t.User_id
-		),whatsAppIn AS(
-			SELECT agentId AS userId
-			,dbo.getdaygroup(conversationDate) AS timeGroupDay
-			,SUM(1) AS nWAIn
-			,SUM(tWrapUp) AS tNotes
-			FROM ccWhatsAppConversations
-			WHERE conversationDate BETWEEN @from AND @to
-			GROUP BY 
-			agentId,
-			dbo.getdaygroup(conversationDate)
-		),whatsAppOut AS(
-			SELECT agentId AS userId
-			,dbo.getdaygroup(conversationDate) timeGroupDay
-			,sum(1) AS nWAOut
-			,sum(tWrapUp) AS tNotes
-			FROM ccWhatsAppConversationsout
-			WHERE conversationDate BETWEEN @from AND @to
-			GROUP BY 
-			agentId
-			,dbo.getdaygroup(conversationDate)
-		),logAgt AS (
-			SELECT  userId AS userId
-			,dbo.getdaygroup(timeGroup) AS timeGroupDay
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 2 THEN tStatus ELSE 0 END)) AS tNotReady
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 3 THEN tStatus ELSE 0 END)) AS tReady
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id IN (11, 25, 26, 27) THEN tStatus ELSE 0 END)) AS tProb
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id NOT IN (2, 3, 11, 25, 26, 27, 21, 34, 6, 5, 0,4,7,9) THEN tStatus ELSE 0 END)) AS tOther
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 21 THEN tStatus ELSE 0 END)) AS tManualcall
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 34 and camType=0 and camId>0 THEN tStatus ELSE 0 END)) AS tWAIn
-			,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 34 and camType=1 and camId>0 THEN tStatus ELSE 0 END)) AS tWAOut
-			FROM tmpccLogAgentesDia
-			GROUP BY dbo.getdaygroup(timeGroup),userId
-		),notReadyDay as(
-			SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(r.DATE) AS daygroup
-			,descripcion_time,descripcion,tiponotreadyId
-			FROM RepAgentNotReady r with(nolock)
-			WHERE r.DATE BETWEEN @from AND @to
-			GROUP BY dbo.getdaygroup(r.DATE), r.userId,descripcion,descripcion_time,tiponotreadyId
-		),logTransferRecivied AS(
-			SELECT agt.User_id
-			,transfer.destino
-			,SUM(tDespuesXfer) AS TimeInTransfer
-			,dbo.getdaygroup(timeGroup) AS timeGroupDay
-			,SUM (1) AS ntotal
-			FROM TmpTimesccLogtransfers transfer
-			INNER JOIN sessionAgt agt ON agt.Extension=transfer.destino AND agt.timeGroupDay= dbo.getdaygroup(transfer.timeGroup)
-			WHERE modo=1 AND tipo IN (1,2)
-			GROUP BY dbo.getdaygroup(timeGroup),
-			destino,
-			agt.User_id
-		),logTransferDoneIN AS(
-			select 
-				cin.User_id
-				,SUM(tDespuesXfer) AS time
-				,dbo.getdaygroup(transfer.timeGroup) AS timeGroupDay
-				,SUM (ntotal) ntotal 
-			FROM TmpTimesccLogtransfers transfer
-			LEFT JOIN tmpTimesInboundData cin ON transfer.callId =cin.cal_id  AND transfer.timegroup=cin.timegroup 
-			WHERE tipo=1 AND modo=1
-			GROUP BY dbo.getdaygroup(transfer.timeGroup),cin.User_id
-		),logTransferDoneOut AS(
-			SELECT 
-				out.User_id,
-				SUM(tDespuesXfer) AS time,
-				dbo.getdaygroup(transfer.timeGroup) AS timeGroupDay,
-				SUM (ntotal) AS ntotal 
-			FROM TmpTimesccLogtransfers transfer
-			LEFT JOIN tmpTimesOutboundData out ON transfer.callId =out.cal_id AND transfer.timegroup=out.timegroup 
-			WHERE tipo=2 AND modo=1
-			GROUP BY 
-			dbo.getdaygroup(transfer.timeGroup),
-			out.User_id
-		),timeWorkTime AS(
-			SELECT A.user_id
-			,DATEDIFF(ss,MIN(A.Login),MAX(A.Logout)) AS tWorkTime 
-			,MIN(A.Login) AS [Login]
-			,MAX(A.Logout) AS [Logout]
-			,A.timeGroupDay
-			AS timeGroupDay
-			FROM sessionAgt A 
-			GROUP BY 
-			A.timeGroupDay,
-			A.user_id
-		),Totales AS (
-			SELECT A.user_id AS userId
-			,A.timeGroupDay
-			,SUM(ISNULL(callIn.tdialogIn,0)+ISNULL(callOut.tdialogOut,0)+ISNULL(logAgt.tWAIn,0)+ISNULL(logAgt.tWAOut,0) + ISNULL(logTransferRecivied.TimeInTransfer,0))
-			AS tDialog
-			,SUM(ISNULL(callOut.tMdialogOut,0)) AS tMdialogOut
-			,SUM(ISNULL(callOut.tdialogOut-callOut.tMdialogOut,0)) AS tPredictivo
-			,SUM(ISNULL(callIn.tnotes,0)+ISNULL(callOut.tnotes,0) + ISNULL(whatsAppIn.tNotes,0)+ ISNULL(whatsAppOut.tNotes,0)) AS tNotes
-			,SUM(ISNULL(callIn.cal_tMoh,0)+ISNULL(callOut.cal_tMoh,0)) AS tHold
-			,SUM(ISNULL(A.tlog,0)) AS tRealTime
-			,SUM(ISNULL(timeWorkTime.tWorkTime,0)) AS tWorkTime
-			,SUM(ISNULL(A.tlog,0) - ISNULL(logAgt.tNotReady,0)) AS tOccupation
-			,SUM(ISNULL(callIn.nTotal,0) + ISNULL(callOut.nTotal,0) + ISNULL(logTransferRecivied.ntotal,0) + ISNULL(whatsAppIn.nWAIn,0)+ ISNULL(whatsAppOut.nWAOut,0)) AS nTotal
-			,SUM(ISNULL(callOut.isManual,0)) AS nManual
-			,SUM(ISNULL(callOut.ntotal-callOut.isManual,0)) AS nPredictivo
-			,SUM(ISNULL(callIn.ntotal,0)) AS nIn
-			,SUM(ISNULL(whatsAppIn.nWAIn,0)) AS nWAIn
-			,SUM(ISNULL(whatsAppOut.nWAOut,0)) AS nWAOut
-			,SUM(ISNULL(logTransferRecivied.ntotal,0)) AS nTransferRecivied
-			,SUM(ISNULL(logTransferDoneIN.ntotal,0)+ISNULL(logTransferDoneOut.ntotal,0)) AS nTransferDone
-			FROM sessionAgt A 
-			LEFT JOIN callIn ON callIn.userId=A.user_id AND callIn.timeGroupDay=A.timeGroupDay
-			LEFT JOIN callOut ON callOut.userId=A.user_id AND callOut.timeGroupDay=A.timeGroupDay
-			LEFT JOIN logTransferRecivied ON logTransferRecivied.User_id=A.user_id AND logTransferRecivied.timeGroupDay=A.timeGroupDay
-			LEFT JOIN logTransferDoneIN ON logTransferDoneIN.User_id=A.user_id AND logTransferDoneIN.timeGroupDay=A.timeGroupDay
-			LEFT JOIN logTransferDoneOut ON logTransferDoneOut.User_id=A.user_id AND logTransferDoneOut.timeGroupDay=A.timeGroupDay
-			LEFT JOIN timeWorkTime ON timeWorkTime.user_Id=A.user_id AND timeWorkTime.timeGroupDay=A.timeGroupDay
-			LEFT JOIN logAgt ON logAgt.userId=A.user_id AND logAgt.timeGroupDay=A.timeGroupDay
-			LEFT JOIN whatsAppIn ON whatsAppIn.userId=A.user_id AND whatsAppIn.timeGroupDay=A.timeGroupDay
-			LEFT JOIN whatsAppOut ON whatsAppOut.userId=A.user_id AND whatsAppOut.timeGroupDay=A.timeGroupDay
-			GROUP BY A.timeGroupDay
-			,A.user_id
-		)
+	    	DECLARE @now DATETIME
+	    	SET @now=GETDATE()
+	    	;WITH sessionAgt AS(
+	    		SELECT user_id,
+	    			extension
+	    			,MIN(login) AS login
+	    			,MAX(logout) AS logout
+	    			,SUM(tlog) AS tlog
+	    			,dbo.getdaygroup(timeGroup) AS timeGroupDay
+	    		from tmpSessionTimeGroup
+	    		GROUP BY 
+	    		dbo.getdaygroup(timeGroup)
+	    		,user_id,extension
+	    	), callIn AS (
+	    		SELECT User_id AS userId
+	    		,SUM(tdialog) AS tdialogIn
+	    		,SUM(tnotes) AS tnotes
+	    		,SUM(cal_tMoh) AS cal_tMoh
+	    		,dbo.getdaygroup(timeGroup) AS timeGroupDay
+	    		,SUM(ntotal) AS ntotal
+	    		FROM tmpTimesInboundData
+	    		GROUP BY 
+	    		dbo.getdaygroup(timeGroup),User_id
+	    	),campsOut AS(
+	    		SELECT cam_id, progDial FROM cccamps WHERE CampType IN (0,5) AND progDial =0
+	    	),callOut AS (
+	    		SELECT 
+	    		t.User_id AS userId
+	    		,SUM(t.tdialog) AS tdialogOut
+	    		,SUM(t.tnotes) AS tnotes
+	    		,SUM(t.cal_tMoh) AS cal_tMoh
+	    		,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.tdialog ELSE 0 END) AS tMdialogOut
+	    		,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.tnotes ELSE 0 END) AS tMnotes
+	    		,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.cal_tMoh ELSE 0 END) AS Mcal_tMoh
+	    		,dbo.getdaygroup(timeGroup) AS timeGroupDay
+	    		,SUM(t.ntotal) AS ntotal
+	    		,SUM(CASE WHEN t.cal_manual IN (1,2) THEN t.ntotal ELSE 0 END) AS isManual
+	    		FROM tmpTimesOutboundData t
+	    		INNER JOIN campsOut o ON t.cam_id=o.cam_id
+	    		GROUP BY 
+	    		dbo.getdaygroup(timeGroup)
+	    		,t.User_id
+	    	),whatsAppIn AS(
+	    		SELECT agentId AS userId
+	    		,dbo.getdaygroup(conversationDate) AS timeGroupDay
+	    		,SUM(1) AS nWAIn
+	    		,SUM(tWrapUp) AS tNotes
+	    		FROM ccWhatsAppConversations
+	    		WHERE conversationDate BETWEEN @from AND @to
+	    		GROUP BY 
+	    		agentId,
+	    		dbo.getdaygroup(conversationDate)
+	    	),whatsAppOut AS(
+	    		SELECT agentId AS userId
+	    		,dbo.getdaygroup(conversationDate) timeGroupDay
+	    		,sum(1) AS nWAOut
+	    		,sum(tWrapUp) AS tNotes
+	    		FROM ccWhatsAppConversationsout
+	    		WHERE conversationDate BETWEEN @from AND @to
+	    		GROUP BY 
+	    		agentId
+	    		,dbo.getdaygroup(conversationDate)
+	    	),logAgt AS (
+	    		SELECT  userId AS userId
+	    		,dbo.getdaygroup(timeGroup) AS timeGroupDay
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 2 THEN tStatus ELSE 0 END)) AS tNotReady
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 3 THEN tStatus ELSE 0 END)) AS tReady
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id IN (11, 25, 26, 27) THEN tStatus ELSE 0 END)) AS tProb
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id NOT IN (2, 3, 11, 25, 26, 27, 21, 34, 6, 5, 0,4,7,9) THEN tStatus ELSE 0 END)) AS tOther
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 21 THEN tStatus ELSE 0 END)) AS tManualcall
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 34 and camType=0 and camId>0 THEN tStatus ELSE 0 END)) AS tWAIn
+	    		,CONVERT(INT,SUM(CASE WHEN tipostatusage_id = 34 and camType=1 and camId>0 THEN tStatus ELSE 0 END)) AS tWAOut
+	    		FROM tmpccLogAgentesDia
+	    		GROUP BY dbo.getdaygroup(timeGroup),userId
+	    	),notReadyDay as(
+	    		SELECT r.userId, SUM(r.timeSeconds) AS timeSeconds, dbo.getdaygroup(r.DATE) AS daygroup
+	    		,descripcion_time,descripcion,tiponotreadyId
+	    		FROM RepAgentNotReady r with(nolock)
+	    		WHERE r.DATE BETWEEN @from AND @to
+	    		GROUP BY dbo.getdaygroup(r.DATE), r.userId,descripcion,descripcion_time,tiponotreadyId
+	    	),logTransferRecivied AS(
+	    		SELECT agt.User_id
+	    		,transfer.destino
+	    		,SUM(tDespuesXfer) AS TimeInTransfer
+	    		,dbo.getdaygroup(timeGroup) AS timeGroupDay
+	    		,SUM (1) AS ntotal
+	    		FROM TmpTimesccLogtransfers transfer
+	    		INNER JOIN sessionAgt agt ON agt.Extension=transfer.destino AND agt.timeGroupDay= dbo.getdaygroup(transfer.timeGroup)
+	    		WHERE modo=1 AND tipo IN (1,2)
+	    		GROUP BY dbo.getdaygroup(timeGroup),
+	    		destino,
+	    		agt.User_id
+	    	),logTransferDoneIN AS(
+	    		select 
+	    			cin.User_id
+	    			,SUM(tDespuesXfer) AS time
+	    			,dbo.getdaygroup(transfer.timeGroup) AS timeGroupDay
+	    			,SUM (ntotal) ntotal 
+	    		FROM TmpTimesccLogtransfers transfer
+	    		LEFT JOIN tmpTimesInboundData cin ON transfer.callId =cin.cal_id  AND transfer.timegroup=cin.timegroup 
+	    		WHERE tipo=1 AND modo=1
+	    		GROUP BY dbo.getdaygroup(transfer.timeGroup),cin.User_id
+	    	),logTransferDoneOut AS(
+	    		SELECT 
+	    			out.User_id,
+	    			SUM(tDespuesXfer) AS time,
+	    			dbo.getdaygroup(transfer.timeGroup) AS timeGroupDay,
+	    			SUM (ntotal) AS ntotal 
+	    		FROM TmpTimesccLogtransfers transfer
+	    		LEFT JOIN tmpTimesOutboundData out ON transfer.callId =out.cal_id AND transfer.timegroup=out.timegroup 
+	    		WHERE tipo=2 AND modo=1
+	    		GROUP BY 
+	    		dbo.getdaygroup(transfer.timeGroup),
+	    		out.User_id
+	    	),timeWorkTime AS(
+	    		SELECT A.user_id
+	    		,DATEDIFF(ss,MIN(A.Login),MAX(A.Logout)) AS tWorkTime 
+	    		,MIN(A.Login) AS [Login]
+	    		,MAX(A.Logout) AS [Logout]
+	    		,A.timeGroupDay
+	    		AS timeGroupDay
+	    		FROM sessionAgt A 
+	    		GROUP BY 
+	    		A.timeGroupDay,
+	    		A.user_id
+	    	),Totales AS (
+	    		SELECT A.user_id AS userId
+	    		,A.timeGroupDay
+	    		,SUM(ISNULL(callIn.tdialogIn,0)+ISNULL(callOut.tdialogOut,0)+ISNULL(logAgt.tWAIn,0)+ISNULL(logAgt.tWAOut,0) + ISNULL(logTransferRecivied.TimeInTransfer,0))
+	    		AS tDialog
+	    		,SUM(ISNULL(callOut.tMdialogOut,0)) AS tMdialogOut
+	    		,SUM(ISNULL(callOut.tdialogOut-callOut.tMdialogOut,0)) AS tPredictivo
+	    		,SUM(ISNULL(callIn.tnotes,0)+ISNULL(callOut.tnotes,0) + ISNULL(whatsAppIn.tNotes,0)+ ISNULL(whatsAppOut.tNotes,0)) AS tNotes
+	    		,SUM(ISNULL(callIn.cal_tMoh,0)+ISNULL(callOut.cal_tMoh,0)) AS tHold
+	    		,SUM(ISNULL(A.tlog,0)) AS tRealTime
+	    		,SUM(ISNULL(timeWorkTime.tWorkTime,0)) AS tWorkTime
+	    		,SUM(ISNULL(A.tlog,0) - ISNULL(logAgt.tNotReady,0)) AS tOccupation
+	    		,SUM(ISNULL(callIn.nTotal,0) + ISNULL(callOut.nTotal,0) + ISNULL(logTransferRecivied.ntotal,0) + ISNULL(whatsAppIn.nWAIn,0)+ ISNULL(whatsAppOut.nWAOut,0)) AS nTotal
+	    		,SUM(ISNULL(callOut.isManual,0)) AS nManual
+	    		,SUM(ISNULL(callOut.ntotal-callOut.isManual,0)) AS nPredictivo
+	    		,SUM(ISNULL(callIn.ntotal,0)) AS nIn
+	    		,SUM(ISNULL(whatsAppIn.nWAIn,0)) AS nWAIn
+	    		,SUM(ISNULL(whatsAppOut.nWAOut,0)) AS nWAOut
+	    		,SUM(ISNULL(logTransferRecivied.ntotal,0)) AS nTransferRecivied
+	    		,SUM(ISNULL(logTransferDoneIN.ntotal,0)+ISNULL(logTransferDoneOut.ntotal,0)) AS nTransferDone
+	    		FROM sessionAgt A 
+	    		LEFT JOIN callIn ON callIn.userId=A.user_id AND callIn.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN callOut ON callOut.userId=A.user_id AND callOut.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN logTransferRecivied ON logTransferRecivied.User_id=A.user_id AND logTransferRecivied.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN logTransferDoneIN ON logTransferDoneIN.User_id=A.user_id AND logTransferDoneIN.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN logTransferDoneOut ON logTransferDoneOut.User_id=A.user_id AND logTransferDoneOut.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN timeWorkTime ON timeWorkTime.user_Id=A.user_id AND timeWorkTime.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN logAgt ON logAgt.userId=A.user_id AND logAgt.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN whatsAppIn ON whatsAppIn.userId=A.user_id AND whatsAppIn.timeGroupDay=A.timeGroupDay
+	    		LEFT JOIN whatsAppOut ON whatsAppOut.userId=A.user_id AND whatsAppOut.timeGroupDay=A.timeGroupDay
+	    		GROUP BY A.timeGroupDay
+	    		,A.user_id
+	    	)
 
-		INSERT INTO RepAgentTimeShift
-		SELECT  
-		A.user_id AS userId
-		,u.Login AS userName
-		,u.Nombres+'' ''+u.ApellidoPaterno+'' ''+u.ApellidoMaterno AS fullName
-		,A.timeGroupDay AS [date]
-		,timeWorkTime.login
-		,timeWorkTime.logout
-		,CASE WHEN DATEDIFF(dd,u.fCreate,@now)<31 THEN ''systemTranslated_Nuevo'' ELSE ''systemTranslated_Experimentado'' END AS statusAgente
-		,area.AreaName AS areaName
-		,t.tDialog AS tDialogo
-		,ISNULL(callOut.tMdialogOut,0) AS tManualAgent
-		,t.tPredictivo AS tPredictivo
-		,ISNULL(callIn.tdialogIn,0) AS tIn
-		,ISNULL(logAgt.tWAIn,0) AS tWAIn
-		,ISNULL(logAgt.tWAOut,0) AS tWAOut
-		,ISNULL(logTransferRecivied.TimeInTransfer,0) AS tTransferRecivied
-		,ISNULL(logAgt.tReady,0) AS tWaiting
-		,ISNULL(logAgt.tManualcall,0) AS tDialing
-		,t.tNotes AS tNotes
-		,t.tHold AS tHold
-		,ISNULL(logAgt.tNotReady,0) AS tGlobalNotReady
-		, notReady.descripcion as descripcion
-        , notReady.descripcion_time as descripcion_time
-        , notReady.timeSeconds as time
-		,ISNULL(logAgt.tProb,0) AS tProblem
-		,ISNULL(logAgt.tOther,0) AS tOthers
-		,CAST(
-		CASE 
-				WHEN t.tDialog > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(t.tDialog, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pDialog
-		 ,CAST(CASE 
-				WHEN callOut.tMdialogOut > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(callOut.tMdialogOut, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pManual
-		 ,CAST(CASE 
-				WHEN t.tPredictivo > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(t.tPredictivo, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pPredictivo
-		 ,CAST(CASE 
-				WHEN callIn.tdialogIn > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(callIn.tdialogIn, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pIn
-		,CAST(CASE 
-				WHEN logAgt.tWAIn > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tWAIn, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pWAIn
-		,CAST(CASE 
-				WHEN logAgt.tWAOut > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tWAOut, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 as pWAOut
-		,CAST(CASE 
-				WHEN logTransferRecivied.TimeInTransfer > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logTransferRecivied.TimeInTransfer, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pTransferRecivied
-		 ,CAST(CASE 
-				WHEN logAgt.tReady > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tReady, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pWaiting
-		,CAST(CASE 
-				WHEN logAgt.tManualcall > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tManualcall, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pDialing
-		  ,CAST(CASE 
-				WHEN t.tNotes > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(t.tNotes, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pNotes
-		 ,CAST(CASE 
-				WHEN t.tHold > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(t.tHold, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pHold
-		,CAST(CASE 
-				WHEN logAgt.tNotReady > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tNotReady, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2)) AS pGlobalNotReady
-        ,notReady.descripcion+''_Percentage'' as descripcion_percentage
-		,CAST(CASE 
-				WHEN notReady.timeSeconds > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(notReady.timeSeconds, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2)) AS [percentage]
-		,CAST(CASE 
-				WHEN logAgt.tProb > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tProb, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2)) AS pProblem
-		,CAST(CASE 
-				WHEN logAgt.tOther > 0 AND t.tRealTime > 0 THEN 
-					CAST(dbo.fPorcentaje(logAgt.tOther, t.tRealTime) AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2)) AS pOther
-		 ,CAST(CASE 
-				WHEN t.tRealTime > 0 AND t.tWorkTime > 0 THEN 
-					CAST(
-					dbo.fPorcentaje(t.tRealTime, t.tWorkTime) 
-					AS DECIMAL(18, 2))
-				ELSE 
-					0
-			END AS DECIMAL(18, 2))
-		 AS pRealTime
-		,t.nTotal AS nTotalAgente
-		,t.nManual AS nManual
-		,t.nPredictivo AS nPredictivo
-		,t.nIn AS nIn
-		,t.nWAIn AS nWAIn
-		,t.nWAOut AS nWAOut
-		,t.nTransferRecivied AS nTransferRecivied
-		,t.nTransferDone AS nTransferDone
-		,t.tRealTime AS tRealTime
-		,t.tOccupation AS tOccupation
-		,t.tWorkTime AS tWorkTime
-		,datepart(yyyy, A.timeGroupDay) AS [year]
-		,datepart(mm, A.timeGroupDay) AS [mount]
-		,datepart(dd, A.timeGroupDay) AS [day]
-		,datepart(HH, A.timeGroupDay) AS [hour]
-		,datepart(mi, A.timeGroupDay) AS [minutes]
-		FROM sessionAgt A 
-		LEFT JOIN ccUserView u ON u.User_id=A.user_id 
-		LEFT JOIN timeWorkTime ON timeWorkTime.user_Id=A.user_id and timeWorkTime.timeGroupDay=A.timeGroupDay
-		LEFT JOIN ccriacat_areas area ON area.IDArea=u.IDArea
-		LEFT JOIN callIn ON callIn.userId=A.user_id AND callIn.timeGroupDay=A.timeGroupDay
-		LEFT JOIN callOut ON callOut.userId=A.user_id AND callOut.timeGroupDay=A.timeGroupDay
-		LEFT JOIN logTransferRecivied ON logTransferRecivied.User_id=A.user_id AND logTransferRecivied.timeGroupDay=A.timeGroupDay
-		LEFT JOIN logAgt ON logAgt.userId=A.user_id AND logAgt.timeGroupDay=A.timeGroupDay
-		LEFT JOIN Totales t ON A.user_id=t.userId AND a.timeGroupDay=t.timeGroupDay
-		LEFT join notReadyDay notReady on notReady.userId=A.user_id and notReady.daygroup=A.timeGroupDay
-		order by A.timeGroupDay,A.user_id
-    END;
-    ')
+	    	INSERT INTO RepAgentTimeShift
+	    	SELECT  
+	    	A.user_id AS userId
+	    	,u.Login AS userName
+	    	,u.Nombres+'' ''+u.ApellidoPaterno+'' ''+u.ApellidoMaterno AS fullName
+	    	,A.timeGroupDay AS [date]
+	    	,timeWorkTime.login
+	    	,timeWorkTime.logout
+	    	,CASE WHEN DATEDIFF(dd,u.fCreate,@now)<31 THEN ''systemTranslated_Nuevo'' ELSE ''systemTranslated_Experimentado'' END AS statusAgente
+	    	,area.AreaName AS areaName
+	    	,t.tDialog AS tDialogo
+	    	,ISNULL(callOut.tMdialogOut,0) AS tManualAgent
+	    	,t.tPredictivo AS tPredictivo
+	    	,ISNULL(callIn.tdialogIn,0) AS tIn
+	    	,ISNULL(logAgt.tWAIn,0) AS tWAIn
+	    	,ISNULL(logAgt.tWAOut,0) AS tWAOut
+	    	,ISNULL(logTransferRecivied.TimeInTransfer,0) AS tTransferRecivied
+	    	,ISNULL(logAgt.tReady,0) AS tWaiting
+	    	,ISNULL(logAgt.tManualcall,0) AS tDialing
+	    	,t.tNotes AS tNotes
+	    	,t.tHold AS tHold
+	    	,ISNULL(logAgt.tNotReady,0) AS tGlobalNotReady
+	    	, notReady.descripcion as descripcion
+            , notReady.descripcion_time as descripcion_time
+            , notReady.timeSeconds as time
+	    	,ISNULL(logAgt.tProb,0) AS tProblem
+	    	,ISNULL(logAgt.tOther,0) AS tOthers
+	    	,CAST(
+	    	CASE 
+	    			WHEN t.tDialog > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(t.tDialog, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pDialog
+	    	 ,CAST(CASE 
+	    			WHEN callOut.tMdialogOut > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(callOut.tMdialogOut, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pManual
+	    	 ,CAST(CASE 
+	    			WHEN t.tPredictivo > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(t.tPredictivo, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pPredictivo
+	    	 ,CAST(CASE 
+	    			WHEN callIn.tdialogIn > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(callIn.tdialogIn, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pIn
+	    	,CAST(CASE 
+	    			WHEN logAgt.tWAIn > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tWAIn, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pWAIn
+	    	,CAST(CASE 
+	    			WHEN logAgt.tWAOut > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tWAOut, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 as pWAOut
+	    	,CAST(CASE 
+	    			WHEN logTransferRecivied.TimeInTransfer > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logTransferRecivied.TimeInTransfer, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pTransferRecivied
+	    	 ,CAST(CASE 
+	    			WHEN logAgt.tReady > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tReady, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pWaiting
+	    	,CAST(CASE 
+	    			WHEN logAgt.tManualcall > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tManualcall, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pDialing
+	    	  ,CAST(CASE 
+	    			WHEN t.tNotes > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(t.tNotes, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pNotes
+	    	 ,CAST(CASE 
+	    			WHEN t.tHold > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(t.tHold, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pHold
+	    	,CAST(CASE 
+	    			WHEN logAgt.tNotReady > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tNotReady, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2)) AS pGlobalNotReady
+            ,notReady.descripcion+''_Percentage'' as descripcion_percentage
+	    	,CAST(CASE 
+	    			WHEN notReady.timeSeconds > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(notReady.timeSeconds, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2)) AS [percentage]
+	    	,CAST(CASE 
+	    			WHEN logAgt.tProb > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tProb, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2)) AS pProblem
+	    	,CAST(CASE 
+	    			WHEN logAgt.tOther > 0 AND t.tRealTime > 0 THEN 
+	    				CAST(dbo.fPorcentaje(logAgt.tOther, t.tRealTime) AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2)) AS pOther
+	    	 ,CAST(CASE 
+	    			WHEN t.tRealTime > 0 AND t.tWorkTime > 0 THEN 
+	    				CAST(
+	    				dbo.fPorcentaje(t.tRealTime, t.tWorkTime) 
+	    				AS DECIMAL(18, 2))
+	    			ELSE 
+	    				0
+	    		END AS DECIMAL(18, 2))
+	    	 AS pRealTime
+	    	,t.nTotal AS nTotalAgente
+	    	,t.nManual AS nManual
+	    	,t.nPredictivo AS nPredictivo
+	    	,t.nIn AS nIn
+	    	,t.nWAIn AS nWAIn
+	    	,t.nWAOut AS nWAOut
+	    	,t.nTransferRecivied AS nTransferRecivied
+	    	,t.nTransferDone AS nTransferDone
+	    	,t.tRealTime AS tRealTime
+	    	,t.tOccupation AS tOccupation
+	    	,t.tWorkTime AS tWorkTime
+	    	,datepart(yyyy, A.timeGroupDay) AS [year]
+	    	,datepart(mm, A.timeGroupDay) AS [mount]
+	    	,datepart(dd, A.timeGroupDay) AS [day]
+	    	,datepart(HH, A.timeGroupDay) AS [hour]
+	    	,datepart(mi, A.timeGroupDay) AS [minutes]
+	    	FROM sessionAgt A 
+	    	LEFT JOIN ccUserView u ON u.User_id=A.user_id 
+	    	LEFT JOIN timeWorkTime ON timeWorkTime.user_Id=A.user_id and timeWorkTime.timeGroupDay=A.timeGroupDay
+	    	LEFT JOIN ccriacat_areas area ON area.IDArea=u.IDArea
+	    	LEFT JOIN callIn ON callIn.userId=A.user_id AND callIn.timeGroupDay=A.timeGroupDay
+	    	LEFT JOIN callOut ON callOut.userId=A.user_id AND callOut.timeGroupDay=A.timeGroupDay
+	    	LEFT JOIN logTransferRecivied ON logTransferRecivied.User_id=A.user_id AND logTransferRecivied.timeGroupDay=A.timeGroupDay
+	    	LEFT JOIN logAgt ON logAgt.userId=A.user_id AND logAgt.timeGroupDay=A.timeGroupDay
+	    	LEFT JOIN Totales t ON A.user_id=t.userId AND a.timeGroupDay=t.timeGroupDay
+	    	LEFT join notReadyDay notReady on notReady.userId=A.user_id and notReady.daygroup=A.timeGroupDay
+	    	order by A.timeGroupDay,A.user_id
+        END;
+    END
+    '
     EXEC(@sql);
 
-    @process('KR170000 Attach date filter for RepAgentTimeShift report')
-    @sql('INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(2110,N''date'')')
+    @process = 'KR170000 Attach date filter for RepAgentTimeShift report'
+    @sql = ' IF NOT EXIST(SELECT * FROM ReportsFiltersMenus where idReport = 2110)
+             BEGIN
+               INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(2110,N''date'')
+             END
+            '
     EXEC(@sql);
 
-    @process('KR170000 Attach filter by for RepAgentTimeShift report')
-    @sql('INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(2110,N''filterby'')')
+    @process = 'KR170000 Attach filter by for RepAgentTimeShift report'
+    @sql = ' IF NOT EXIST(SELECT * FROM ReportsFiltersMenus WHERE idReport = 2110)
+              BEGIN
+                INSERT INTO ReportsFiltersMenus(idReport,filterMenuName) VALUES(2110,N''filterby'')
+              END
+           '
     EXEC(@sql);
 
-    @process('KR170000 Attach user filter for RepAgentTimeShift report')
-    @sql('INSERT INTO ReportsFilters values(''Shift Time'',''users'',2110)')
+    @process = 'KR170000 Attach user filter for RepAgentTimeShift report'
+    @sql = 'IF NOT EXIST(SELECT * FROM ReportsFilters WHERE id=2110)
+            BEGIN
+             INSERT INTO ReportsFilters(reportName,filterName,id) values(''Shift Time'',''users'',2110)
+            END
+           '
     EXEC(@sql);
 
-    @process('KR170000 Pivot the fields for the RepAgentTimeShift report')
-    @sql('INSERT INTO PivotReports(id,columns,complementColumns,pivotFunction,isGroupPivot) 
-          VALUES(2110,''descripcion_time|descripcion_percentage'',''userId|userName|fullName|date|loginTime|logoutTime|statusAgente|areaName|tDialogo|tManualAgent|tPredictivo|tIn|tWAIn|tWAOut|tTransferRecivied|tWaiting|tDialing|tNotes|tHold|tGlobalNotReady|tProblem|tOthers|pDialog|pManual|pPredictivo|pIn|pWAIn|pWAOut|pTransferRecivied|pWaiting|pDialing|pNotes|pHold|pGlobalNotReady|pOther|pRealTime|nTotalAgente|nManual|nPredictivo|nIn|nWAIn|nWAOut|nTransferRecivied|nTransferDone|tRealTime|tOccupation|tWorkTime|year|month|day|hour|minutes'',max,1)')
+    @process = 'KR170000 Pivot the fields for the RepAgentTimeShift report'
+    @sql = 'IF NOT EXIST(SELECT * FROM PivotReports WHERE id=2110)
+            BEGIN
+                INSERT INTO PivotReports(id,columns,complementColumns,pivotFunction,isGroupPivot) 
+                VALUES(2110,''descripcion_time|descripcion_percentage'',''userId|userName|fullName|date|loginTime|logoutTime|statusAgente|areaName|tDialogo|tManualAgent|tPredictivo|tIn|tWAIn|tWAOut|tTransferRecivied|tWaiting|tDialing|tNotes|tHold|tGlobalNotReady|tProblem|tOthers|pDialog|pManual|pPredictivo|pIn|pWAIn|pWAOut|pTransferRecivied|pWaiting|pDialing|pNotes|pHold|pGlobalNotReady|pOther|pRealTime|nTotalAgente|nManual|nPredictivo|nIn|nWAIn|nWAOut|nTransferRecivied|nTransferDone|tRealTime|tOccupation|tWorkTime|year|month|day|hour|minutes'',max,1)
+            END
+           '
     EXEC(@sql);
     ----------------------------------------------------------------------------------------------------------------------------------------------
 

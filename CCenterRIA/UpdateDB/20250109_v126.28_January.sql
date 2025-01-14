@@ -595,7 +595,25 @@ END
 	ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;';
 	EXEC(@sql);
 	--------------------------------------- END Marco García -----------------------------------------------------------
+    --------------------------------------------- Begin Ivan ----------------------------------------
 
+    SET @process = 'Insert new setting 283 Mostrar alerta de error en agente al cancelar transferencias de llamada'
+	SET @sql = '
+    IF NOT EXISTS (SELECT * FROM ccSettings2 WHERE setting_id = 283) BEGIN
+        INSERT INTO ccSettings2 (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
+        VALUES (
+        @settingId, 
+        ''0'',
+        ''Mostrar alerta de error en agente al cancelar transferencias de llamada cuando el contacto cuelga (deshabilitado: 0, habilitado: 1)'', 
+        1, 
+        ''AGT'', 
+        ''Mostrar alerta de error en agente al cancelar transferencias de llamada cuando el contacto cuelga (deshabilitado: 0, habilitado: 1)'', 
+        ''Display error message for agent when cancelling call transfers after contacts hang up (disabled: 0, enabled: 1)'', 
+        0, 
+        ''Not used in Kolob'');
+    END'
+	EXEC(@sql)
+    --------------------------------------------- END Ivan ----------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

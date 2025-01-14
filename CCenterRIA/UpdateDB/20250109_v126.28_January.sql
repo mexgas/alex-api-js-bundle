@@ -602,7 +602,7 @@ END
     IF NOT EXISTS (SELECT * FROM ccSettings2 WHERE setting_id = 283) BEGIN
         INSERT INTO ccSettings2 (setting_id, valor, descripcion, Status, Tipo, detalle, description, bLoadSettings, validate)
         VALUES (
-        @settingId, 
+        283, 
         ''0'',
         ''Mostrar alerta de error en agente al cancelar transferencias de llamada cuando el contacto cuelga (deshabilitado: 0, habilitado: 1)'', 
         1, 

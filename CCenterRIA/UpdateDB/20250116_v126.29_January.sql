@@ -225,7 +225,7 @@ END
 SET NOCOUNT OFF'
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
+	SET @process = 'Listas negras internacional ccsp_InsertDNCList se manda @cleanType para la opcion de limpia o verifica'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_InsertDNCList]
 @telephone as varchar(30)=null,
 @ln_id as integer,
@@ -583,7 +583,7 @@ IF OBJECT_ID(N''tempdb..#helpTempCall]'') IS NOT NULL drop table #helpTempCall
 IF @dropTmpPhone IS NOT NULL EXEC (@dropTmpPhone);'
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
+	SET @process = 'Listas negras internacional ccsp_InsertDNCListSms se quita de las tablas sms'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_InsertDNCListSms]
 @telephone as varchar(30),
 @ln_id as integer,
@@ -908,11 +908,14 @@ IF OBJECT_ID(N''tempdb..#helpTempSms]'') IS NOT NULL drop table #helpTempSms
 '
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
-	SET @sql = ''
+	SET @process = 'Listas negras internacional DROP PROCEDURE ccsp_InsertDNCListWhatsApp'
+	SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_InsertDNCListWhatsApp'')
+begin
+    DROP PROCEDURE ccsp_InsertDNCListWhatsApp;
+end'
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
+	SET @process = 'Listas negras internacional ccsp_InsertDNCListWhatsApp se quita tablas de whatsApp'
 	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_InsertDNCListWhatsApp]
 @telephone as varchar(30),
 @ln_id as integer,
@@ -1112,7 +1115,7 @@ IF OBJECT_ID(N''tempdb..#helpTempWhatsApp]'') IS NOT NULL drop table #helpTempWh
 '
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
+	SET @process = 'Listas negras internacional ccsp_RIADNCList se agrega @cleanType para limpiar y verificar'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_RIADNCList] 
 @phoneNumber AS VARCHAR(30) = NULL, 
 @idDNCList AS INTEGER, 
@@ -1168,11 +1171,11 @@ BEGIN -- Reemplaza Lista Negra
 END '
 	EXEC(@sql)
 
-	SET @process = 'Listas negras internacional ccsp_GalateaAdminUploadBLst se agrega valiar whatsApp'
+	SET @process = 'Listas negras internacional ccsp_WhatsAppLoader se agrega valiar whatsApp'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppLoader]
-	-- Add the parameters for the stored procedure here
-	@action TINYINT =NULL,
-	@tableTemp VARCHAR(255) = NULL
+-- Add the parameters for the stored procedure here
+@action TINYINT =NULL,
+@tableTemp VARCHAR(255) = NULL
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from

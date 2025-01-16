@@ -1262,14 +1262,14 @@ END
 	SET @process = 'Se elimina SP ccsp_WAOUTResetJobs'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WAOUTResetJobs'')
     BEGIN
-        DROP PROCEDURE ccsp_WAOUTResetJobs;
+        DROP PROCEDURE dbo.ccsp_WAOUTResetJobs;
     END
     '
 	EXEC(@sql)
 
     SET @process = 'Update ccsp_WAOUTResetJobs se cambia el status en los where para los registros que se van a actualizar'
 	SET @sql = '
-					CREATE PROCEDURE ccsp_WAOUTResetJobs
+					CREATE PROCEDURE dbo.ccsp_WAOUTResetJobs
                     @camid AS INT= 0
                     AS
                     BEGIN
@@ -1330,14 +1330,14 @@ END
 	SET @process = 'Se elimina SP ccspOutboundWhatsApp'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspOutboundWhatsApp'')
     BEGIN
-        DROP PROCEDURE ccspOutboundWhatsApp;
+        DROP PROCEDURE dbo.ccspOutboundWhatsApp;
     END
     '
 	EXEC(@sql)
 
     SET @process = 'Update ccspOutboundWhatsApp - se agrega action 3 '
 	SET @sql = '
-	CREATE procedure ccspOutboundWhatsApp
+	CREATE procedure dbo.ccspOutboundWhatsApp
 @action int,
 @camId int = null,
 @campType int = null,

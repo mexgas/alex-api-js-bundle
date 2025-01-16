@@ -1269,7 +1269,7 @@ END
 
     SET @process = 'Update ccsp_WAOUTResetJobs se cambia el status en los where para los registros que se van a actualizar'
 	SET @sql = '
-					ALTER PROCEDURE ccsp_WAOUTResetJobs
+					CREATE PROCEDURE ccsp_WAOUTResetJobs
                     @camid AS INT= 0
                     AS
                     BEGIN
@@ -1337,7 +1337,7 @@ END
 
     SET @process = 'Update ccspOutboundWhatsApp - se agrega action 3 '
 	SET @sql = '
-	ALTER procedure ccspOutboundWhatsApp
+	CREATE procedure ccspOutboundWhatsApp
 @action int,
 @camId int = null,
 @campType int = null,

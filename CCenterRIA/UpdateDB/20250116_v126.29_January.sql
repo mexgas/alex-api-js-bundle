@@ -1255,6 +1255,197 @@ END
 
 	------------------------------------------- BEGIN End ----------------------------------------
 
+
+
+	------------------------------------------- BEGIN Gaby ----------------------------------------
+
+	SET @process = 'Se elimina SP ccsp_WAOUTResetJobs'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WAOUTResetJobs'')
+    BEGIN
+        DROP PROCEDURE dbo.ccsp_WAOUTResetJobs;
+    END
+    '
+	EXEC(@sql)
+
+    SET @process = 'Update ccsp_WAOUTResetJobs se cambia el status en los where para los registros que se van a actualizar'
+	SET @sql = '
+					CREATE PROCEDURE dbo.ccsp_WAOUTResetJobs
+                    @camid AS INT= 0
+                    AS
+                    BEGIN
+
+                      CREATE TABLE #TempccoLogDials ( 
+                        waout_id INT, PRIMARY KEY (waout_id)
+                      );
+                      DECLARE @today DATETIME;
+
+                      SELECT @today = CONVERT(DATETIME, CONVERT(VARCHAR(11), GETDATE(), 121), 121);
+                      
+                      IF @camid = 0
+                      BEGIN
+                        INSERT INTO #TempccoLogDials
+                             SELECT WaOutId
+                             FROM ccoWhatsLogDials AS ld WITH(NOLOCK)
+                             WHERE TimeSpam >= @today
+                             GROUP BY WaOutId;
+                      END;
+                         ELSE
+                        IF @camid > 0
+                        BEGIN
+                          INSERT INTO #TempccoLogDials
+                               SELECT WaOutId
+                               FROM ccoWhatsLogDials AS ld WITH(NOLOCK)
+                               WHERE CamId = @camid AND 
+                                 TimeSpam >= @today
+                               GROUP BY WaOutId;
+                        END;
+
+                      IF @camid = 0
+                      BEGIN
+                        -- NUEVAS - Nunca se han marcado
+                        UPDATE ccoWAWorkingTable 
+                          SET WaStatus = 0
+                        WHERE WaStatus = 2;
+                      END;
+                         ELSE
+                      BEGIN  
+                        -- NUEVAS - Nunca se han marcado
+                        UPDATE ccoWAWorkingTable WITH(ROWLOCK)
+                          SET WaStatus = 0
+                        WHERE WaStatus = 2 AND 
+                            CamId = @camid;
+                      END;
+
+                      UPDATE c
+                      SET c.cam_procesando = 0
+                      FROM ccCamps c
+                      WHERE c.cam_id = @camid
+                      
+
+                      DROP TABLE #TempccoLogDials;
+                    END;'
+	EXEC(@sql)
+
+
+	SET @process = 'Se elimina SP ccspOutboundWhatsApp'
+	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccspOutboundWhatsApp'')
+    BEGIN
+        DROP PROCEDURE dbo.ccspOutboundWhatsApp;
+    END
+    '
+	EXEC(@sql)
+
+    SET @process = 'Update ccspOutboundWhatsApp - se agrega action 3 '
+	SET @sql = '
+	CREATE procedure dbo.ccspOutboundWhatsApp
+@action int,
+@camId int = null,
+@campType int = null,
+@templateName varchar(512)=null,
+@waMsgIds varchar(max)=null
+as
+if @action=1 begin
+declare @Url as varchar(50)
+set @Url = (select Url from ccMetaWhatsAppConfigurations where Id=1)
+
+IF @camId IS NULL AND @campType IS NULL
+BEGIN
+	select 
+		distinct 
+		cast(c. cam_id as int) as CamId,
+		cam_descripcion as [Name],
+		1 AS CampType,
+		cam_procesando as [Start],
+		Number as PhoneNumber, 
+		REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+		Token,
+		CAST(c.IDArea AS int) as AreaId
+	from ccCamps c with(nolock)
+	left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+	left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+	left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+	WHERE CampType=5 AND c.IDArea IS NOT NULL
+	UNION
+	SELECT -- load acd
+		DISTINCT 
+		CAST(ci.Inbound_id AS INT) AS CamId,
+		ci.descripcion AS [Name],
+		0 AS CampType,
+		CAST(ci.Status AS BIT) AS [Start],
+		cmw.Number AS PhoneNumber,
+		REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+		cmw.Token AS Token,
+		CAST(ci.IDArea AS int) as AreaId
+	FROM ccInbound ci WITH(NOLOCK)
+	LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+	LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+	WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL
+END
+ELSE IF @campType IS NOT NULL
+BEGIN
+	IF @campType = 0
+	BEGIN
+		SELECT -- load acd
+			DISTINCT 
+			CAST(ci.Inbound_id AS INT) AS CamId,
+			ci.descripcion AS [Name],
+			0 AS CampType,
+			CAST(ci.Status AS BIT) AS [Start],
+			cmw.Number AS PhoneNumber,
+			REPLACE(@Url, ''phoneId'', cmw.PhoneNumberId) AS Url,
+			cmw.Token AS Token,
+			CAST(ci.IDArea AS int) as AreaId
+		FROM ccInbound ci WITH(NOLOCK)
+		LEFT JOIN ccInboundHorarios cih ON cih.Inbound_id = ci.Inbound_id
+		LEFT JOIN ccMetaWhatsAppNumbers cmw ON cmw.Inbound_Id = ci.Inbound_id
+		WHERE ci.chat = 5  AND ci.IDArea IS NOT NULL AND (@camId IS NULL or @camId=0 OR ci.Inbound_id = @camId)
+	END
+	ELSE
+	BEGIN
+		select 
+			distinct 
+			cast(c. cam_id as int) as CamId,
+			cam_descripcion as [Name],
+			1 AS CampType,
+			cam_procesando as [Start],
+			Number as PhoneNumber, 
+			REPLACE(@Url, ''phoneId'', PhoneNumberId) as Url, 
+			Token,
+			CAST(c.IDArea AS int) as AreaId
+		from ccCamps c with(nolock)
+		left join ccCampsNvosCB w with(nolock) on c.cam_id = w.id
+		left join  ccCampsHorarios s ON s.cam_id = c.cam_id
+		left join ccMetaWhatsAppNumbers wn on wn.cam_id = c.cam_id
+		WHERE CampType=5 AND c.IDArea IS NOT NULL AND(@camId IS NULL or @camId=0 OR c.cam_id = @camId)
+	END
+END
+
+end
+else if @action=2 begin -- cargar valores del template para envio manual
+	SELECT TOP 1
+		A.id AS Id
+	   ,A.LanguageCode AS LanguageCode
+	   ,B.Number AS Number
+	   ,ISNULL(A.header, '''') AS Header
+	   ,ISNULL(A.body, '''') AS Body
+	   ,ISNULL(A.footer, '''') AS Footer
+	   ,ISNULL(A.buttons, '''') AS Buttons
+	   ,ISNULL(A.headerLink, '''') AS HeaderLink
+	FROM ccMetaWAOutboundTemplates A
+	INNER JOIN ccMetawhatsAppNumbers B ON B.MetaId = A.MetaId
+	WHERE A.TemplateName = @templateName
+	AND B.Cam_Id = @camId
+
+end
+else if @action=3 begin 
+declare @sql varchar(max)
+	set @sql=''delete from ccoWAWorkingTable with(rowlock) where WAOut_id in(''+@waMsgIds+'')''
+	exec (@sql)
+end'
+	EXEC(@sql)
+
+    -------------------------------------------- END Gaby -----------------------------------------
+
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

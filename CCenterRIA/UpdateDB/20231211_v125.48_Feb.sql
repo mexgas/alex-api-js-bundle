@@ -15005,9 +15005,6 @@ SET @sql = ''
 EXEC(@sql);
 
 
-
-
-
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
         EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)

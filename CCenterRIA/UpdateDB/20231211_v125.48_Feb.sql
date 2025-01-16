@@ -14004,236 +14004,7 @@ return @hash % 99999999999973
 END
 '
 EXEC(@sql)
---------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------
-        
---------------------------- Begin Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
-SET @process = 'Create table ccMenuRol'
-SET @sql = 'IF OBJECT_ID(''ccMenuRol'', ''U'') IS NOT NULL
-BEGIN
-    PRINT ''La tabla ccMenuRol ya existe.''
-END
-ELSE
-BEGIN
-    CREATE TABLE ccMenuRol (
-        Rol_id INT,
-        menu_id SMALLINT,
-        "type" TINYINT,
-        CONSTRAINT fk_rol FOREIGN KEY (Rol_id) REFERENCES ccRoles(Rol_id),
-        CONSTRAINT fk_menu FOREIGN KEY (menu_id, "type") REFERENCES ccMenus(menu_id, "type")
-    );
-    PRINT ''La tabla ccMenuRol ha sido creada exitosamente.''
-END;'
-EXEC(@sql);
-
-SET @process = 'Insert default data to ccMenuRol manually'
-SET @sql = 'IF Exists(select * from ccRoles where Rol_id=1) and  NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=1) begin
-	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
-	SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
-    FROM ccMenus m
-    WHERE m.parent IN (
-        2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
-        6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
-    )
-    AND m.type = 3
-    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
-end
-
-
-IF Exists(select * from ccRoles where rol_id=6) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=6) begin
-	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
-	SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
-        FROM ccMenus m
-    WHERE m.parent IN (
-        2000, 3000, 4000, 3130, 10000, 11000, 12000, 
-        6000
-    )
-    AND m.type = 3
-    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
-end
-
-IF Exists(select * from ccRoles where rol_id=8) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=8) begin
-	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
-	SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
-    FROM ccMenus m
-    WHERE m.parent IN (
-        2000, 3000, 4000, 8050
-    )
-    AND m.type = 3
-    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
-end
-
-IF Exists(select * from ccRoles where rol_id=9) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=9) begin
-	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
-	SELECT menu_id, type, 9 AS Rol_id  -- Monitor
-    FROM ccMenus m
-    WHERE m.parent IN (
-        2000, 3000, 4000, 8050
-    )
-    AND m.type = 3
-    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
-end
-'
-EXEC(@sql);
-
-set @process = 'Delete ccsp_GalateaMenuReporte'
-    set @sql='
-        if exists (select * from sys.procedures where name = N''ccsp_GalateaMenuReporte'')
-    begin
-        DROP PROCEDURE ccsp_GalateaMenuReporte;
-    end'
-    EXEC(@sql)
-
-SET @process = 'Creation of ccsp_GalateaMenuReporte'
-SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
-    @action SMALLINT,
-    @Rol_id VARCHAR(MAX) = NULL,
-	@id_User VARCHAR(MAX) = NULL,	
-	@menu_id VARCHAR(MAX) = NULL,
-	@ids_list VARCHAR(MAX) = NULL,
-	@IsAdminsIds BIT = NULL,
-	@RowsAffected INT = @@ROWCOUNT
-AS
-
-BEGIN
-    IF @action = 1
-	--Busca el id rol y regresa todos los menu id que tenga relacionados
-    BEGIN
-		IF @IsAdminsIds = 0
-		BEGIN
-			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
-			FROM ccMenuRol
-			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@Rol_id, '','')))
-		END
-		ELSE
-		BEGIN
-			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
-			FROM ccMenuUser 
-			WHERE (id_User = @id_User) and type = 3 and id_Menu not in (1000, 1010);
-		END
-	END;
-
-	IF @action = 2
-	--Manda la información faltante para que el Front sepa todos los menus
-	BEGIN
-		SET NOCOUNT ON;
-		SELECT CAST(menu_id as int) as MenuID, menu_descrip as MenuDesc, CAST(parent as int) as Parent
-		FROM ccMenus 
-	    WHERE parent IN (
-            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
-            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
-        )
-        AND type = 3
-        AND menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030)
-	END;
-
-	IF @action = 3
-	--Guarda información ya sea en la tabla ccMenuUser o ccMenuRol
-	BEGIN
-		IF @IsAdminsIds  = 0
-		BEGIN
-			SET NOCOUNT ON;
-			INSERT INTO ccMenuRol(menu_id, Rol_id, type)
-			SELECT DISTINCT t2.Value AS menu_id, t1.Value AS Rol_id, 3 as type
-			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
-			CROSS JOIN 
-			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
-			WHERE NOT EXISTS 
-			(SELECT 1 FROM ccMenuRol
-			WHERE ccMenuRol.Rol_id = t1.Value
-			AND ccMenuRol.menu_id = t2.Value);
-
-			-- Determinar el resultado directamente con @@ROWCOUNT
-			SELECT CASE 
-				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
-				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
-				ELSE -2 -- Múltiples ids, pero sin cambios
-			END AS Result;
-		END
-		ELSE
-		BEGIN
-			SET NOCOUNT ON;
-			INSERT INTO ccMenuUser(id_Menu, id_User, type)
-			SELECT DISTINCT t2.Value AS id_Menu, t1.Value AS id_User, 3 as type
-			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
-			CROSS JOIN 
-			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
-			WHERE NOT EXISTS 
-			(SELECT 1 FROM ccMenuUser
-			WHERE ccMenuUser.id_User = t1.Value
-			AND ccMenuUser.id_Menu = t2.Value);
-
-			-- Determinar el resultado directamente con @@ROWCOUNT
-			SELECT CASE 
-				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
-				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
-				ELSE -2 -- Múltiples ids, pero sin cambios
-			END AS Result;
-		END
-	END;
-
-
-IF @action = 4
-	--Elimina información ya sea en la tabla ccMenuUser o ccMenuRol
-	BEGIN
-		IF @IsAdminsIds = 0
-		BEGIN
-			SET NOCOUNT ON;
-			DELETE FROM ccMenuRol
-			WHERE EXISTS (
-				SELECT 1
-				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
-				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
-				WHERE ccMenuRol.Rol_id = t1.Value
-				AND ccMenuRol.menu_id = t2.Value
-			);
-
-			-- Determinar el resultado directamente con @@ROWCOUNT
-			SELECT CASE 
-				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
-				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
-				ELSE -2 -- Múltiples ids, pero sin cambios
-			END AS Result;
-		END
-		ELSE
-		BEGIN
-			SET NOCOUNT ON;
-			DELETE FROM ccMenuUser
-			WHERE EXISTS (
-				SELECT 1
-				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
-				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
-				WHERE ccMenuUser.id_User = t1.Value
-				AND ccMenuUser.id_Menu = t2.Value
-			);
-
-			-- Determinar el resultado directamente con @@ROWCOUNT
-			SELECT CASE 
-				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
-				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
-				ELSE -2 -- Múltiples ids, pero sin cambios
-			END AS Result;
-		END
-	END;
-	IF @action = 5
-	--Busca el id rol y regresa todos los menu id que tenga relacionados
-    BEGIN
-		IF @IsAdminsIds = 0
-		BEGIN
-			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
-			FROM ccMenuRol
-			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@ids_list, '','')))
-		END
-		ELSE
-		BEGIN
-			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
-			FROM ccMenuUser 
-			WHERE (id_User = @ids_list) and type = 3 and id_Menu not in (1000, 1010);
-		END
-	END;
-END;
-'
-EXEC(@sql);
---------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+--------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.20 ----------------------------------------------------------------------------------------------       
 
 --------------------------- Begin Landus 125.20231211.0.20 ----------------------------------------------------------------------------------------------
 SET @process = 'Landus Alter Sp ccsp_AplicaListaNegra se cambia IX_ccoCallsOutSource_4 por IX_ccoCallsOutSource_12'
@@ -14727,12 +14498,511 @@ EXEC(@sql);
 
 --------------------------- End Landus 125.20231211.0.20 ----------------------------------------------------------------------------------------------
 
+--------------------------- Begin Luis Miguel Zamora Nuñez 125.20231211.0.22 ----------------------------------------------------------------------------------------------
+
+SET @process = 'K069003-CW-8946 - ccsp_GalateaUpdateUser - SP Edited, 
+Se modifica para solucionar relacion entre InsertLogAdminGalatea y el Historial de Actividad'
+SET @sql = '
+ALTER PROCEDURE [dbo].[ccsp_GalateaUpdateUser]
+        @UserId int,
+        @Login varchar(40),
+        @Nombres varchar(45),
+        @LastName varchar(45),
+        @NombreOpcionalExtra varchar(45),-- para español es el ap materno, para ingles es un segundo nombre y para portugues es el nombre del padre ya que en portugal  va primero el nombre de la madre
+        @Sexo bit,
+        @canChangeStatus bit,
+        @AdminId int,
+        @AreaId int
+        as
+
+        Declare @ApellidoMaterno varchar(45)
+        Declare @ApellidoPaterno varchar(45)
+        Declare @userIdOnDb int
+        Declare @LoginOnDb varchar(40)
+        --Obtiene el idioma de Centerware
+        Declare @lenguageXion varchar
+        select @lenguageXion= valor from ccsettings where setting_id=27 --  0 para español, 1 para ingles, 2 para portugues
+
+        set @ApellidoPaterno = @LastName
+        set @ApellidoMaterno = @NombreOpcionalExtra
+
+        -- validaciones 
+            if not exists(select Login from ccUsers where Login=@Login and User_id=@UserId)
+                begin
+                select -5 as ResponseCode--,''el usuario no existe''
+                return(0)
+                end
+
+          if exists(select Nombres from ccUsers where Nombres=@Nombres
+          and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno)
+            begin
+
+                select @userIdOnDb =User_id from ccUsers where Nombres=@Nombres
+              and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+                select @LoginOnDb =User_id from ccUsers where Nombres=@Nombres
+              and ApellidoPaterno=@ApellidoPaterno and ApellidoMaterno=@ApellidoMaterno
+
+              if @UserId <> @userIdOnDb and @Login <> @LoginOnDb
+                begin
+                    select -2 as ResponseCode--,''Nombre completo en Uso''-- valida todos los campos de nombre para ver que no existan en la base de datos
+                    return(0)
+                end
+            end
+
+                --update and insert into activity log a record for each modified property
+
+    EXEC InsertLogAdminGalatea @action=1, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId=@UserId, @userId= @userId
+
+    Update ccUsers set 
+    Nombres=@Nombres,
+    ApellidoPaterno=@ApellidoPaterno,
+    ApellidoMaterno=@ApellidoMaterno,
+    Sexo=@Sexo,
+    canChangeStatus=@canChangeStatus
+    where User_id=@UserId
+
+        CREATE TABLE #CCUsersTable 
+    (
+        columnInfo VARCHAR(255),
+        dataInfo VARCHAR(255),
+        identifierInfo VARCHAR(255)
+    );
+
+    EXEC InsertLogAdminGalatea @action=2, @tableName = ''ccUsers'', @columnNameId = ''User_id'', @valueId = @UserId, @userId = @userId, @tableTemp=''#CCUsersTable'';
+
+        DELETE FROM #CCUsersTable WHERE identifierInfo IS NULL OR identifierInfo = '''';
+
+    INSERT INTO ccGalateaActivityLog (Area, ActivityDate, Login, OperationId, ModuleId, Identifier, Value, Target)
+        SELECT 
+                (SELECT [AreaName] FROM ccRIACat_Areas WHERE IDArea = @AreaId),
+                GETDATE(), 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @AdminId), 
+                CASE WHEN (SELECT [TipoUser_id] FROM ccUsers WHERE User_id = @UserId) = 1 THEN 25 ELSE 32 END, 
+                3, 
+                ISNULL(CUT.identifierInfo, ''''),  -- Asegura que sea '''' si es NULL
+                CASE 
+                        WHEN CUT.identifierInfo IS NOT NULL THEN
+                                CASE 
+                                        WHEN CUT.identifierInfo = ''T&EDIT_GENDER_USER'' THEN CONCAT(CUT.identifierInfo, CASE WHEN CUT.dataInfo = 1 THEN ''_M'' ELSE ''_F'' END)
+                                        ELSE CUT.dataInfo 
+                                END
+                        ELSE '''' 
+                END, 
+                (SELECT [Login] FROM ccUsers WHERE User_id = @UserId)
+        FROM #CCUsersTable AS CUT
+        WHERE (CUT.identifierInfo IS NOT NULL AND CUT.identifierInfo <> ''''); -- Filtra las filas sin identifierInfo
+
+
+    EXEC InsertLogAdminGalatea @action=3, @tableName=''ccUsers'', @columnNameId=''User_id'', @valueId = @UserId, @userId = @userId
+
+        IF OBJECT_ID(N''tempdb..#CCUsersTable'') IS NOT NULL DROP TABLE #CCUsersTable
+
+        select 200 as ResponseCode -- indica que se actualizo correctamente el usuario
+'
+EXEC(@sql);
+
+SET @process = 'K069003-CW-8946 - InsertLogAdminGalatea - SP Edited, 
+Se modifica para solucionar problema del Historial de Actividad al Editar Usuario'
+SET @sql = '
+ALTER procedure [dbo].[InsertLogAdminGalatea]
+    @action int 
+    ,@tableName VARCHAR(255)
+    ,@columnNameId VARCHAR(255)
+    ,@valueId VARCHAR(255)
+    ,@userId int
+    ,@tableTemp varchar(255)=null
+AS
+SET NOCOUNT ON;
+
+declare @sql nvarchar(max), @sql2 nvarchar(max)
+DECLARE @tableNameTmp VARCHAR(255) = ''##''+@tableName+''_''+convert(varchar(10),@userId)
+
+if @action =1 begin --Antes del cambio
+    set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp+'' 
+    SELECT * INTO ''+@tableNameTmp+'' FROM ''+@tableName+'' WHERE ''+@columnNameId+'' = ''+@valueId
+    -- Ejecutar el SQL para crear la tabla temporal
+    exec(@sql)
+end
+else if @action=2 begin
+    DECLARE @columns NVARCHAR(MAX) = '''';
+    DECLARE @conditions NVARCHAR(MAX) = '''';
+    DECLARE @caseStatements NVARCHAR(MAX) = '''';
+    DECLARE @batchSize INT = 10; -- Tamaño del bloque de columnas
+    DECLARE @counter INT = 0;
+    declare @emtpy varchar(2)=''''
+
+    -- Declarar una variable de tipo tabla para almacenar los IDs de cada bloque
+    DECLARE @BatchColumns TABLE (
+            name NVARCHAR(128),
+            batch_id INT
+    );
+
+    -- Insertar en @BatchColumns las columnas de la tabla, dividiéndolas en bloques
+    INSERT INTO @BatchColumns (name, batch_id)
+    SELECT 
+            name,
+            (ROW_NUMBER() OVER (ORDER BY column_id) - 1) / @batchSize AS batch_id
+    FROM 
+            sys.columns
+    WHERE 
+            object_id = OBJECT_ID(@tableName)
+            AND name <> @columnNameId  -- Excluir la columna clave primaria
+            AND name <> ''rowguid'';  -- Excluir la columna GUID si existe
+
+    -- Insertar batch_ids únicos en la variable de tipo tabla @BatchIds
+    DECLARE @BatchIds TABLE (
+            batch_id INT PRIMARY KEY
+    );
+
+    INSERT INTO @BatchIds
+    SELECT DISTINCT batch_id FROM @BatchColumns;
+
+    DECLARE @batch_id INT = 0;
+
+    -- Bucle para procesar cada bloque de columnas
+    WHILE EXISTS (SELECT 1 FROM @BatchIds WHERE batch_id = @batch_id)
+    BEGIN
+        -- Construir las expresiones CASE y las condiciones WHERE para este bloque
+        SET @caseStatements = '''';
+        SET @conditions = '''';
+
+        -- Construir el CASE y el WHERE para cada columna en el bloque actual
+        SELECT 
+                @caseStatements = @caseStatements + 
+                ''SELECT '''''' + name + '''''' AS columnInfo, CONVERT(VARCHAR(300), A.'' + QUOTENAME(name) + '') AS dataInfo '' +
+                ''FROM '' + @tableName + '' AS A '' +
+                ''FULL OUTER JOIN '' + @tableNameTmp + '' AS B ON A.'' + QUOTENAME(@columnNameId) + '' = B.'' + QUOTENAME(@columnNameId) + '' '' +
+                ''WHERE A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name) + '' UNION ALL ''
+        FROM 
+                @BatchColumns
+        WHERE 
+                batch_id = @batch_id;                   
+
+        -- Construir las condiciones WHERE para el bloque actual
+        SELECT @conditions = @conditions + 
+        CASE WHEN @conditions = '''' THEN '''' ELSE '' OR '' END +
+        ''A.'' + QUOTENAME(name) + '' <> B.'' + QUOTENAME(name)
+        FROM 
+                @BatchColumns
+        WHERE 
+                batch_id = @batch_id;
+
+        -- Remover el último UNION ALL sobrante
+        SET @caseStatements = LEFT(@caseStatements, LEN(@caseStatements) - LEN('' UNION ALL ''));
+        
+        -- Construir y ejecutar la consulta para este bloque
+        IF @caseStatements <> ''''
+        BEGIN
+            SET @sql = ''
+            INSERT INTO ''+@tableTemp+'' (columnInfo, dataInfo)
+            '' + @caseStatements + ''                       
+            '';
+            -- Ejecutar la consulta dinámica
+            EXEC sp_executesql @sql;
+        END     
+
+        -- Avanzar al siguiente bloque
+        SET @batch_id = @batch_id + 1;
+    END
+
+    -- Consultar el resultado final de cambios
+    set @sql= 
+    ''SELECT distinct A.columnInfo, A.dataInfo, ISNULL(B.Identifiers, @emtpy) as identifierInfo 
+    FROM ''+@tableTemp+'' A 
+    LEFT JOIN relationTableColumnIdentifiers B 
+        ON A.columnInfo = B.colunName 
+        AND B.tableName = @tableName'';
+
+    -- Si la tabla temporal existe, insertar los resultados allí
+    if @tableTemp is not null and @tableTemp <> '''' begin
+        set @sql = ''INSERT INTO '' + @tableTemp + '' '' + @sql
+    end
+
+    -- Ejecutar la consulta de inserción
+    EXEC sp_executesql @sql, N''@tableName VARCHAR(255), @emtpy VARCHAR(2)'', @tableName = @tableName, @emtpy = @emtpy;
+
+end
+else if @action =3 begin
+    set @sql=''IF OBJECT_ID(N''''tempdb..''+@tableNameTmp+'''''') IS NOT NULL DROP TABLE ''+@tableNameTmp
+    -- Ejecutar la eliminación de la tabla temporal
+    exec(@sql)
+end
+'
+EXEC(@sql);
+--------------------------- End Luis Miguel Zamora Nuñez 125.20231211.0.22 ----------------------------------------------------------------------------------------------
+ 
+--------------------------- Begin LRSV KR154000 ----------------------------------------------------------------------------------
+
+SET @process = 'KR154000 se crea permiso 10041'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10041)
+BEGIN
+	insert into ccPermissions values (10041, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se crea permiso 10042'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
+BEGIN
+	insert into ccPermissions values (10042, ''Marcar en orden ascendente/descendente'', ''RolesPermissionDialingOrder'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10041 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10041)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10041)
+END'
+EXEC(@sql);
+
+SET @process = 'KR154000 se asigna permiso 10042 a root'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10042)
+BEGIN
+	insert into ccRoles_Permissions values (1, 10042)
+END'
+EXEC(@sql);
+
+--------------------------- END LRSV KR154000 ----------------------------------------------------------------------------------
+
+
+--------------------------- Begin Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+SET @process = 'Create table ccMenuRol'
+SET @sql = 'IF OBJECT_ID(''ccMenuRol'', ''U'') IS NOT NULL
+BEGIN
+    PRINT ''La tabla ccMenuRol ya existe.''
+END
+ELSE
+BEGIN
+    CREATE TABLE ccMenuRol (
+        Rol_id INT,
+        menu_id SMALLINT,
+        "type" TINYINT,
+        CONSTRAINT fk_rol FOREIGN KEY (Rol_id) REFERENCES ccRoles(Rol_id),
+        CONSTRAINT fk_menu FOREIGN KEY (menu_id, "type") REFERENCES ccMenus(menu_id, "type")
+    );
+    PRINT ''La tabla ccMenuRol ha sido creada exitosamente.''
+END;'
+EXEC(@sql);
+
+SET @process = 'Insert default data to ccMenuRol manually'
+SET @sql = 'IF Exists(select * from ccRoles where Rol_id=1) and  NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=1) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+        6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
+
+
+IF Exists(select * from ccRoles where rol_id=6) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=6) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
+        FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 4000, 3130, 10000, 11000, 12000, 
+        6000
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
+
+IF Exists(select * from ccRoles where rol_id=8) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=8) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 4000, 8050
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
+
+IF Exists(select * from ccRoles where rol_id=9) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=9) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 9 AS Rol_id  -- Monitor
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 4000, 8050
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
+'
+EXEC(@sql);
+
+set @process = 'Delete ccsp_GalateaMenuReporte'
+    set @sql='
+        if exists (select * from sys.procedures where name = N''ccsp_GalateaMenuReporte'')
+    begin
+        DROP PROCEDURE ccsp_GalateaMenuReporte;
+    end'
+    EXEC(@sql)
+
+SET @process = 'Creation of ccsp_GalateaMenuReporte'
+SET @sql = '
+
+CREATE PROCEDURE [dbo].[ccsp_GalateaMenuReporte]
+    @action SMALLINT,
+    @Rol_id VARCHAR(MAX) = NULL,
+	@id_User VARCHAR(MAX) = NULL,	
+	@menu_id VARCHAR(MAX) = NULL,
+	@ids_list VARCHAR(MAX) = NULL,
+	@IsAdminsIds BIT = NULL,
+	@RowsAffected INT = @@ROWCOUNT
+AS
+
+BEGIN
+    IF @action = 1
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@Rol_id, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @id_User) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+
+	IF @action = 2
+	--Manda la información faltante para que el Front sepa todos los menus
+	BEGIN
+		SET NOCOUNT ON;
+		SELECT CAST(menu_id as int) as MenuID, menu_descrip as MenuDesc, CAST(parent as int) as Parent
+		FROM ccMenus 
+	    WHERE parent IN (
+            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+        )
+        AND type = 3
+        AND menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030)
+	END;
+
+	IF @action = 3
+	--Guarda información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds  = 0
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuRol(menu_id, Rol_id, type)
+			SELECT DISTINCT t2.Value AS menu_id, t1.Value AS Rol_id, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuRol
+			WHERE ccMenuRol.Rol_id = t1.Value
+			AND ccMenuRol.menu_id = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			INSERT INTO ccMenuUser(id_Menu, id_User, type)
+			SELECT DISTINCT t2.Value AS id_Menu, t1.Value AS id_User, 3 as type
+			FROM (SELECT Value FROM dbo.fn_RIASplitDelimited(@ids_list, '','')) t1
+			CROSS JOIN 
+			(SELECT Value FROM dbo.fn_RIASplitDelimited(@menu_id, '','')) t2
+			WHERE NOT EXISTS 
+			(SELECT 1 FROM ccMenuUser
+			WHERE ccMenuUser.id_User = t1.Value
+			AND ccMenuUser.id_Menu = t2.Value);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se insertaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+
+
+IF @action = 4
+	--Elimina información ya sea en la tabla ccMenuUser o ccMenuRol
+	BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuRol
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuRol.Rol_id = t1.Value
+				AND ccMenuRol.menu_id = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+		ELSE
+		BEGIN
+			SET NOCOUNT ON;
+			DELETE FROM ccMenuUser
+			WHERE EXISTS (
+				SELECT 1
+				FROM dbo.fn_RIASplitDelimited(@ids_list, '','') t1
+				CROSS JOIN dbo.fn_RIASplitDelimited(@menu_id, '','') t2
+				WHERE ccMenuUser.id_User = t1.Value
+				AND ccMenuUser.id_Menu = t2.Value
+			);
+
+			-- Determinar el resultado directamente con @@ROWCOUNT
+			SELECT CASE 
+				WHEN @@ROWCOUNT > 0 THEN 1 -- Se eliminaron filas
+				WHEN (LEN(@ids_list) - LEN(REPLACE(@ids_list, '','', ''''))) = 0 THEN -1 -- Solo un id en la lista, pero sin cambios
+				ELSE -2 -- Múltiples ids, pero sin cambios
+			END AS Result;
+		END
+	END;
+	IF @action = 5
+	--Busca el id rol y regresa todos los menu id que tenga relacionados
+    BEGIN
+		IF @IsAdminsIds = 0
+		BEGIN
+			SELECT distinct CAST(menu_id as int) as MenuID --0 as RolID, 0 as type
+			FROM ccMenuRol
+			WHERE (Rol_id IN(Select Value from dbo.fn_RIASplitDelimited(@ids_list, '','')))
+		END
+		ELSE
+		BEGIN
+			SELECT DISTINCT CAST(id_Menu AS INT) as MenuID
+			FROM ccMenuUser 
+			WHERE (id_User = @ids_list) and type = 3 and id_Menu not in (1000, 1010);
+		END
+	END;
+END;
+'
+EXEC(@sql);
+--------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
+
 SET @process = ' '
 SET @sql = ''
 EXEC(@sql);
-
-
-
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

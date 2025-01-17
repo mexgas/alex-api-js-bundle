@@ -14734,11 +14734,11 @@ EXEC(@sql);
  
 --------------------------- Begin LRSV KR154000 ----------------------------------------------------------------------------------
 
-SET @process = 'KR154000 se crea permiso 10041'
+SET @process = 'KR154000 se crea permiso 10043'
 SET @sql = '
-IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10041)
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10043)
 BEGIN
-	insert into ccPermissions values (10041, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+	insert into ccPermissions values (10043, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
 END'
 EXEC(@sql);
 
@@ -14750,11 +14750,11 @@ BEGIN
 END'
 EXEC(@sql);
 
-SET @process = 'KR154000 se asigna permiso 10041 a root'
+SET @process = 'KR154000 se asigna permiso 10043 a root'
 SET @sql = '
-IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10041)
+IF NOT EXISTS (select 1 from ccRoles_Permissions where Rol_Id = 1 AND Permissions_Id = 10043)
 BEGIN
-	insert into ccRoles_Permissions values (1, 10041)
+	insert into ccRoles_Permissions values (1, 10043)
 END'
 EXEC(@sql);
 

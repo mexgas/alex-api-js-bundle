@@ -14999,7 +14999,111 @@ END;
 '
 EXEC(@sql);
 --------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
---------------------------- Begin Daniel Hernandez 126.20231211.0.23 ----------------------------------------------------------------------------------
+--------------------------- Begin Frida Orta 126.20231211.0.23-------------------------------------------------------------------------------------------
+	set @process = 'K072000-Validacion-Tel add setting 280'
+    set @sql='
+	if not exists(select * from ccSettings2 where setting_id=280 )
+	begin
+	insert into  ccSettings2 (setting_id,	valor,	descripcion	,Status,	Tipo,	detalle	,description, bLoadSettings) values
+	(280,	''3'',	''Reintentos de validación automática de telefonía (default: 3, min: 1)'',	1,	''AGT'',	''Reintentos de validación automática de telefonía (default: 3, min: 1)'',
+	''Retries for automatic telephony validation (default: 3, min: 1)'',1	)
+	end
+       '
+    EXEC(@sql)
+
+	set @process = 'K072000-Validacion-Tel delete VIEW_SETTINGS'
+    set @sql='
+	if exists (select * FROM sys.views where name = N''VIEW_SETTINGS'')
+    begin
+        drop view VIEW_SETTINGS
+    end
+       '
+    EXEC(@sql)
+
+	set @process = 'K072000-Validacion-Tel'
+    set @sql='
+	 CREATE VIEW VIEW_SETTINGS
+        AS
+        SELECT setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate FROM ccSettings 
+        UNION
+        SELECT setting_id,valor,descripcion,Status,Tipo,detalle,description,bLoadSettings,validate FROM ccSettings2
+       '
+    EXEC(@sql)
+
+	set @process = 'K072000-Validacion-Tel DROP PROCEDURE ccsp_GalateaAdminSettings'
+    set @sql='
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings''
+    begin
+        DROP PROCEDURE ccsp_GalateaAdminSettings
+    end
+       '
+    EXEC(@sql)
+
+	set @process = 'K072000-Validacion-Tel CREATE PROCEDURE ccsp_GalateaAdminSettings'
+    set @sql='
+	CREATE PROCEDURE ccsp_GalateaAdminSettings
+	AS
+	BEGIN
+		CREATE TABLE #Settings (setting_id SMALLINT , valor varchar(300), ip_host tinyint)
+
+		INSERT INTO #Settings 
+		EXEC  ccsp_RIAADMLoadSettings @ip_admin =''''
+
+		INSERT INTO #Settings (setting_id,valor) 
+		SELECT setting_id, valor 
+		FROM ccSettings
+		WHERE setting_id in(160, 199, 53, 63, 64)
+ 
+		SELECT distinct setting_id, valor from #Settings ORDER BY setting_id 
+
+		DROP TABLE #Settings;
+	END
+
+       '
+    EXEC(@sql)
+
+	set @process = 'K072000-Validacion-Tel DROP PROCEDURE ccsp_RIAADMLoadSettings'
+    set @sql='
+	if exists (select * from sys.procedures where name = N''ccsp_RIAADMLoadSettings''
+    begin
+        DROP PROCEDURE ccsp_RIAADMLoadSettings
+    end
+       '
+    EXEC(@sql)
+	set @process = 'K072000-Validacion-Tel CREATE PROCEDURE ccsp_RIAADMLoadSettings'
+    set @sql='
+	CREATE PROCEDURE ccsp_RIAADMLoadSettings
+	@setting_id as tinyint = 0,
+	@type as tinyint = null,
+	@ip_admin as varchar(15)=''''
+	AS
+
+	declare @bremlog as tinyint
+	set nocount on
+	if @type is null
+	 begin
+		select @bremlog = case when ip = @ip_admin then 1 else 0 end from ccriaremotelog where ip = @ip_admin
+		IF @setting_id=0
+ 			select setting_id, valor, isnull(@bremlog,0) ip_host from dbo.VIEW_SETTINGS AS vs where Status=''1'' and bLoadSettings = 1 order by setting_id
+		ELSE
+			select setting_id, valor, isnull(@bremlog,0) ip_host from dbo.VIEW_SETTINGS AS vs where Status=''1'' and setting_id  = @setting_id
+		return(0)
+	 end
+
+	if @type=1 -- Settings de paises
+	 begin
+		select CtyCode, minPhoneLength, maxPhoneLength, CtyID from ccRIACat_Country
+		where CtyID in (select valor from ccSettings where setting_id=104)
+		return(0)
+	 end
+
+	set nocount off
+       '
+    EXEC(@sql)
+
+--------------------------- End Frida Orta 126.20231211.0.23-------------------------------------------------------------------------------------------
+
+----------------- Begin Daniel Hernandez 126.20231211.0.23 ----------------------------------------------------------------------------------
 
 SET @process = 'Verify if exists ccsp_AgentGetEspecialidadesActivas'
 SET @sql='
@@ -15128,7 +15232,9 @@ SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
     END';
 EXEC(@sql);
 
----------------------------------------------------------------------
+-------------------------END Daniel Hernandez 126.20231211.0.23--------------------------------------------
+
+
 
 SET @process = ' '
 SET @sql = ''

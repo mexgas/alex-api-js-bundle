@@ -15032,7 +15032,7 @@ EXEC(@sql);
 
 	set @process = 'K072000-Validacion-Tel DROP PROCEDURE ccsp_GalateaAdminSettings'
     set @sql='
-	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings''
+	if exists (select * from sys.procedures where name = N''ccsp_GalateaAdminSettings'')
     begin
         DROP PROCEDURE ccsp_GalateaAdminSettings
     end

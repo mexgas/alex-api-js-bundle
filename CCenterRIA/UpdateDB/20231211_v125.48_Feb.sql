@@ -15000,128 +15000,134 @@ END;
 EXEC(@sql);
 --------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
 --------------------------- Begin Daniel Hernandez 126.20231211.0.23 ----------------------------------------------------------------------------------
-SET @process = 'Verify if exists ccsp_AgentGetEspecialidadesActivas to alter to add frame'
-SET @sql = 'IF EXISTS
 
+SET @process = 'Verify if exists ccsp_AgentGetEspecialidadesActivas'
+SET @sql='
+IF EXISTS
 (SELECT * FROM sys.sql_modules WHERE OBJECT_NAME(OBJECT_ID)= ''ccsp_AgentGetEspecialidadesActivas'')
 BEGIN
-	EXEC(''ALTER PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
+    DROP PROCEDURE ccsp_AgentGetEspecialidadesActivas
+END'
+EXEC(@sql);
+
+SET @process = 'CREATE SP ccsp_AgentGetEspecialidadesActivas'
+SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentGetEspecialidadesActivas]
     @userID INT,
     @current INT = 0
-		AS
-		BEGIN
-			SET NOCOUNT ON;
-			SET DATEFIRST 1; -- Asegura que el primer día de la semana sea lunes
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+        SET DATEFIRST 1; -- Asegura que el primer día de la semana sea lunes
 
-			DECLARE @fecha DATETIME = GETDATE();
-			DECLARE @dia SMALLINT = DATEPART(dw, @fecha);
-			DECLARE @hora SMALLINT = DATEPART(HOUR, @fecha);
-			DECLARE @minuto SMALLINT = DATEPART(MINUTE, @fecha);
-			DECLARE @value INT = (SELECT valor FROM ccSettings WHERE setting_id = 191);
+        DECLARE @fecha DATETIME = GETDATE();
+        DECLARE @dia SMALLINT = DATEPART(dw, @fecha);
+        DECLARE @hora SMALLINT = DATEPART(HOUR, @fecha);
+        DECLARE @minuto SMALLINT = DATEPART(MINUTE, @fecha);
+        DECLARE @value INT = (SELECT valor FROM ccSettings WHERE setting_id = 191);
 
-			IF @value = 0
-			BEGIN
-				-- Consulta cuando @value es 0
-				SELECT -8 AS inbound_id, ''''Survey'''' AS name, 1 AS frame
-				UNION
-				SELECT -1 AS inbound_id, ''''IVR'''' AS name, 1 AS frame
-				UNION
-				SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
-				FROM ccInbound inb
-				LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
-				WHERE inb.inbound_id IN (
-					SELECT inbound_id
-					FROM ccInboundHorarios
-					WHERE horario_id IN (
-						SELECT horario_id
-						FROM ccHorarios
-						WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
-						  AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
-						  AND (
-							  (Lunes = 1 AND @dia = 2) OR
-							  (Martes = 1 AND @dia = 3) OR
-							  (Miercoles = 1 AND @dia = 4) OR
-							  (Jueves = 1 AND @dia = 5) OR
-							  (Viernes = 1 AND @dia = 6) OR
-							  (Sabado = 1 AND @dia = 7) OR
-							  (Domingo = 1 AND @dia = 1)
-						  )
-					)
-				)
-				AND inb.inbound_id <> @current
-				AND status <> 0
-				ORDER BY 1;
-			END
-			ELSE IF @value = 1
-			BEGIN
-				IF @current <> 0
-				BEGIN
-					-- Consulta cuando @value es 1 y @current no es 0
-					SELECT -1 AS inbound_id, ''''IVR'''' AS name, 1 AS frame
-					UNION
-					SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
-					FROM ccInbound inb
-					LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
-					WHERE inb.inbound_id IN (
-						SELECT inbound_id
-						FROM ccInboundHorarios
-						WHERE horario_id IN (
-							SELECT horario_id
-							FROM ccHorarios
-							WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
-							  AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
-							  AND (
-								  (Lunes = 1 AND @dia = 2) OR
-								  (Martes = 1 AND @dia = 3) OR
-								  (Miercoles = 1 AND @dia = 4) OR
-								  (Jueves = 1 AND @dia = 5) OR
-								  (Viernes = 1 AND @dia = 6) OR
-								  (Sabado = 1 AND @dia = 7) OR
-								  (Domingo = 1 AND @dia = 1)
-							  )
-						)
-					)
-					AND inb.inbound_id <> @current
-					AND status <> 0
-					AND IDArea IN (SELECT cu.IDArea FROM ccUsers cu WHERE cu.User_id = @current)
-					ORDER BY 2;
-				END
-				ELSE
-				BEGIN
-					-- Consulta cuando @value es 1 y @current es 0
-					SELECT -1 AS inbound_id, ''''IVR'''' AS name, 1 AS frame
-					UNION
-					SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
-					FROM ccInbound inb
-					LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
-					WHERE inb.inbound_id IN (
-						SELECT inbound_id
-						FROM ccInboundHorarios
-						WHERE horario_id IN (
-							SELECT horario_id
-							FROM ccHorarios
-							WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
-							  AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
-							  AND (
-								  (Lunes = 1 AND @dia = 2) OR
-								  (Martes = 1 AND @dia = 3) OR
-								  (Miercoles = 1 AND @dia = 4) OR
-								  (Jueves = 1 AND @dia = 5) OR
-								  (Viernes = 1 AND @dia = 6) OR
-								  (Sabado = 1 AND @dia = 7) OR
-								  (Domingo = 1 AND @dia = 1)
-							  )
-						)
-					)
-					AND inb.inbound_id <> @current
-					AND status <> 0
-					AND IDArea IN (SELECT IDArea FROM ccUsers WHERE User_id = @userID)
-					ORDER BY 2;
-				END
-			END
-		END'');
-END;'
+        IF @value = 0
+        BEGIN
+            -- Consulta cuando @value es 0
+            SELECT -8 AS inbound_id, ''Survey'' AS name, 1 AS frame
+            UNION
+            SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+            UNION
+            SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+            FROM ccInbound inb
+            LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+            WHERE inb.inbound_id IN (
+                SELECT inbound_id
+                FROM ccInboundHorarios
+                WHERE horario_id IN (
+                    SELECT horario_id
+                    FROM ccHorarios
+                    WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                      AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                      AND (
+                          (Lunes = 1 AND @dia = 2) OR
+                          (Martes = 1 AND @dia = 3) OR
+                          (Miercoles = 1 AND @dia = 4) OR
+                          (Jueves = 1 AND @dia = 5) OR
+                          (Viernes = 1 AND @dia = 6) OR
+                          (Sabado = 1 AND @dia = 7) OR
+                          (Domingo = 1 AND @dia = 1)
+                      )
+                )
+            )
+            AND inb.inbound_id <> @current
+            AND status <> 0
+            ORDER BY 1;
+        END
+        ELSE IF @value = 1
+        BEGIN
+            IF @current <> 0
+            BEGIN
+                -- Consulta cuando @value es 1 y @current no es 0
+                SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+                UNION
+                SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+                FROM ccInbound inb
+                LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+                WHERE inb.inbound_id IN (
+                    SELECT inbound_id
+                    FROM ccInboundHorarios
+                    WHERE horario_id IN (
+                        SELECT horario_id
+                        FROM ccHorarios
+                        WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                          AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                          AND (
+                              (Lunes = 1 AND @dia = 2) OR
+                              (Martes = 1 AND @dia = 3) OR
+                              (Miercoles = 1 AND @dia = 4) OR
+                              (Jueves = 1 AND @dia = 5) OR
+                              (Viernes = 1 AND @dia = 6) OR
+                              (Sabado = 1 AND @dia = 7) OR
+                              (Domingo = 1 AND @dia = 1)
+                          )
+                    )
+                )
+                AND inb.inbound_id <> @current
+                AND status <> 0
+                AND IDArea IN (SELECT cu.IDArea FROM ccUsers cu WHERE cu.User_id = @current)
+                ORDER BY 2;
+            END
+            ELSE
+            BEGIN
+                -- Consulta cuando @value es 1 y @current es 0
+                SELECT -1 AS inbound_id, ''IVR'' AS name, 1 AS frame
+                UNION
+                SELECT inb.inbound_id AS inbound_id, descripcion AS name, graphic.graphic_id AS frame
+                FROM ccInbound inb
+                LEFT JOIN ccRIAInboundGraph graphic ON inb.Inbound_id = graphic.Inbound_id
+                WHERE inb.inbound_id IN (
+                    SELECT inbound_id
+                    FROM ccInboundHorarios
+                    WHERE horario_id IN (
+                        SELECT horario_id
+                        FROM ccHorarios
+                        WHERE (@hora > HoraInicio OR (@hora = HoraInicio AND @minuto >= MinInicio))
+                          AND (@hora < HoraFin OR (@hora = HoraFin AND @minuto <= MinFin))
+                          AND (
+                              (Lunes = 1 AND @dia = 2) OR
+                              (Martes = 1 AND @dia = 3) OR
+                              (Miercoles = 1 AND @dia = 4) OR
+                              (Jueves = 1 AND @dia = 5) OR
+                              (Viernes = 1 AND @dia = 6) OR
+                              (Sabado = 1 AND @dia = 7) OR
+                              (Domingo = 1 AND @dia = 1)
+                          )
+                    )
+                )
+                AND inb.inbound_id <> @current
+                AND status <> 0
+                AND IDArea IN (SELECT IDArea FROM ccUsers WHERE User_id = @userID)
+                ORDER BY 2;
+            END
+        END
+    END';
 EXEC(@sql);
+
 ---------------------------------------------------------------------
 
 SET @process = ' '

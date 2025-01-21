@@ -15064,7 +15064,7 @@ EXEC(@sql);
 
 	set @process = 'K072000-Validacion-Tel DROP PROCEDURE ccsp_RIAADMLoadSettings'
     set @sql='
-	if exists (select * from sys.procedures where name = N''ccsp_RIAADMLoadSettings''
+	if exists (select * from sys.procedures where name = N''ccsp_RIAADMLoadSettings'')
     begin
         DROP PROCEDURE ccsp_RIAADMLoadSettings
     end

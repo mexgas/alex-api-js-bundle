@@ -2250,7 +2250,7 @@ END'
 	EXEC(@sql)
 
     SET @process = 'Se agrega que regrese la categoría del template en envios manuales'
-	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
 					@Action SMALLINT, 
 					@TemplateName VARCHAR(500) = '''' ,
 					@isMeta int=0,

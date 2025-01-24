@@ -6986,6 +6986,25 @@ from RepAgentSummary
 EXEC(@sql)
 -------------------------------------- END ISAAC hotfix/125.20231211.0.20 --------------------------------------
 
+---------------------------------------BEGIN Jesus Gallardo hotfix/125.20231211.0.22---------------------------------------------------------
+    set @process = 'CW-9070 Rename Column RepEmailDetail.inboundId'
+    set @sql='IF EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID(''RepEmailDetail'')
+      AND name = ''inbounid''
+)
+BEGIN
+    EXEC sp_rename ''RepEmailDetail.inbounid'', ''inboundId'', ''COLUMN'';
+END
+'
+    EXEC(@sql)
+
+    set @process = ''
+    set @sql=''
+    EXEC(@sql)
+
+---------------------------------------END Jesus Gallardo hotfix/125.20231211.0.22---------------------------------------------------------
 
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version
 

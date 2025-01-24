@@ -2250,35 +2250,45 @@ END'
 	EXEC(@sql)
 
     SET @process = 'Se agrega que regrese la categoría del template en envios manuales'
-	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
-					@Action SMALLINT, 
-					@TemplateName VARCHAR(500) = '''' ,
-					@isMeta int=0,
-					@ConversationId INT = 0
-					AS  
-					SET NOCOUNT ON;  
-					IF @Action = 0  -- Get all template information
-					BEGIN	
-						SELECT TemplateName, LanguageCode, Type, Format, Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
-					END
-					IF @Action = 1  -- Get template body 
-					BEGIN
-						if @isMeta =0 begin
-							SELECT Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
-						end
-						else begin
-							select header, Body,footer, Status as StatusMeta, Category as Category from ccMetaWAOutboundTemplates WHERE TemplateName = @TemplateName 
-						end
-					END
-			
-					IF @Action = 2  -- Get category from ccWhatsAppGlobalIds
-					BEGIN
-						SELECT UPPER(wagi.Category) AS Category
-						FROM ccWhatsAppGlobalIds wagi
-						INNER JOIN ccWhatsAppGlobalIdsRelationship wagir ON wagi.GlobalId = wagir.GlobalId
-						WHERE wagir.ConversationId = @ConversationId AND wagir.ConversationType = 1;
-					END
-					SET NOCOUNT OFF '
+	SET @sql = 'CREATE PROCEDURE ccsp_WhatsAppOutboundTemplates
+				@Action SMALLINT, 
+				@TemplateName VARCHAR(500) = '''',
+				@isMeta int=0,
+				@ConversationId INT = 0
+				AS  
+				SET NOCOUNT ON;  
+				IF @Action = 0  -- Get all template information
+				BEGIN	
+					SELECT TemplateName, LanguageCode, Type, Format, Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
+				END
+				IF @Action = 1  -- Get template body 
+				BEGIN
+					if @isMeta =0 begin
+						SELECT Body FROM ccWhatsAppOutboundTemplates WHERE TemplateName = @TemplateName
+					end
+					else begin
+						SELECT
+							header AS Header
+						   ,body AS Body
+						   ,footer AS Footer
+						   ,Status AS StatusMeta
+						   ,buttons AS Buttons
+						   ,headerLink AS HeaderLink
+						   ,Category as Category
+						FROM ccMetaWAOutboundTemplates
+						WHERE TemplateName = @TemplateName 
+					end
+				END
+					
+				IF @Action = 2  -- Get category from ccWhatsAppGlobalIds
+				BEGIN
+					SELECT UPPER(wagi.Category) AS Category
+					FROM ccWhatsAppGlobalIds wagi
+					INNER JOIN ccWhatsAppGlobalIdsRelationship wagir ON wagi.GlobalId = wagir.GlobalId
+					WHERE wagir.ConversationId = @ConversationId AND wagir.ConversationType = 1;
+				END
+
+				SET NOCOUNT OFF '
 	EXEC(@sql)
 	------------------------------------------- BEGIN Gaby ----------------------------------------
 

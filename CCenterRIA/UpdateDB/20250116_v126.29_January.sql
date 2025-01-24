@@ -2241,7 +2241,7 @@ END'
 	------------------------------------------- BEGIN DMM ----------------------------------------
 
 	-------------------------------------------  END DMM -----------------------------------------
-		SET @process = 'Se elimina SP ccsp_WhatsAppOutboundTemplates'
+	SET @process = 'Se elimina SP ccsp_WhatsAppOutboundTemplates'
 	SET @sql = 'IF EXISTS (SELECT * FROM sys.procedures WHERE name = N''ccsp_WhatsAppOutboundTemplates'')
     BEGIN
         DROP PROCEDURE dbo.ccsp_WhatsAppOutboundTemplates;
@@ -2252,7 +2252,7 @@ END'
     SET @process = 'Se agrega que regrese la categoría del template en envios manuales'
 	SET @sql = 'ALTER PROCEDURE [dbo].[ccsp_WhatsAppOutboundTemplates]
 					@Action SMALLINT, 
-					@TemplateName VARCHAR(500) = '' ,
+					@TemplateName VARCHAR(500) = '''' ,
 					@isMeta int=0,
 					@ConversationId INT = 0
 					AS  

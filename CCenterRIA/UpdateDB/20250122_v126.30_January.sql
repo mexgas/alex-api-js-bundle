@@ -417,7 +417,7 @@ from ''+ @tmpTableName+''
 where left(phoneNumber,1)= ''''E''''
 delete from ''+ @tmpTableName+'' where left(phoneNumber,1)= ''''E''''
 ''
-    print @sqlcmd
+    
     set @params=''@ln_id int, @phoneEmpty nvarchar(1),@motivo nvarchar(100),@keyTranslate nvarchar(100)''
     EXEC sp_executesql @sqlcmd,@params,
     @ln_id=@ln_id
@@ -429,7 +429,7 @@ set @sqlcmd=''delete A
 FROM '' + @tmpTableName + '' A
 left join cclistanegra B with(nolock,index(IX_ccListaNegra_1)) on A.phoneNumber=B.telefono AND (A.calKey = B.calKey OR (A.calKey IS NULL and B.calKey IS NULL ))
 where B.telefono is not null''
---print(@sqlcmd)
+
 EXEC (@sqlcmd);   
 
 SET @sqlcmd = ''INSERT INTO cclistanegra(telefono,idtipolista,HashKey, calKey)
@@ -440,7 +440,7 @@ INSERT INTO cchistoriallistanegra (telefono, idtipomov, idtipolista)
 SELECT phoneNumber as telefono, 7 as idtipomov, @ln_id as idtipolista 
 FROM '' + @tmpTableName + '' A '';
 
-print ''xxx''
+
 EXEC sp_executesql @sqlcmd, N''@ln_id int'', @ln_id;
 
 IF OBJECT_ID(N''tempdb..#mycamps'') IS NOT NULL drop table #mycamps

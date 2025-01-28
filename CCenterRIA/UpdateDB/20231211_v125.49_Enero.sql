@@ -58,7 +58,7 @@ BEGIN
 
         ----------------------------------------------------- Hector Chavez KR170000 -----------------------------------------------------------------
         SET @process = 'KR170000 insert ShiftTime into ccMenus with id=2110'
-        SET @sql = 'IF NOT EXIST ( SELECT * FROM ccMenus WHERE menu_id = 2110)
+        SET @sql = 'IF NOT EXISTS ( SELECT * FROM ccMenus WHERE menu_id = 2110)
                     BEGIN
                         INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
                         VALUES (2110,''Usuarios de jornada|Shift Time'',2000,''B'',2,3,'''',''59e49d1a69b47480dbea6022fcbb02d186f63530500b9861f99ff8de26f86450'');

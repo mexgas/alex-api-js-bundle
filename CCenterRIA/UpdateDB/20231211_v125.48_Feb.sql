@@ -8607,7 +8607,7 @@ UPDATE ccInbound
 SET 
     descripcion = ISNULL(@descripcion, descripcion), 
     STATUS = ISNULL(@status, STATUS), 
-    tNotas = ISNULL(CASE WHEN @chat <> 5  OR @chat IS NULL THEN @tNotas ELSE 10 END, tNotas),
+    tNotas = ISNULL(@tNotas, tNotas),
     tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall), 
     nMaxQue = ISNULL(@nMaxQue, nMaxQue), 
     tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait), 

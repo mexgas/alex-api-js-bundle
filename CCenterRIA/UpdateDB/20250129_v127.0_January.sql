@@ -256,6 +256,14 @@ BEGIN
         INSERT INTO ccGalateaModOpRelation VALUES (24,129)
 	END'
     EXEC(@sql)
+
+    SET @process = 'Se agrega setting para registrar el número de agentes contratados'
+	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 281)
+	BEGIN
+		insert into ccSettings2(setting_id, valor,descripcion,Status,Tipo, detalle, description, bLoadSettings, validate)
+		values (281,''0'',''Numero de agentes virtuales'',1,''ADM'',''Numero de agentes virtuales'',''Number of virtual agents'',1,NULL)
+	END'
+    EXEC(@sql)
 ------------------------- END Carlos Eduardo Muñoz Carbajal --------------------------------------------
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

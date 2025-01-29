@@ -15000,6 +15000,63 @@ END;
 EXEC(@sql);
 --------------------------- End Ricardo Nuñez Alanis 126.20231211.0.22 ----------------------------------------------------------------------------------
 
+set @process = 'DROP FUNCTION Limpia2'
+set @sql = 'IF EXISTS (SELECT 1 FROM sys.objects 
+               WHERE Name = ''Limpia2'' 
+                 AND Type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+    BEGIN
+        DROP FUNCTION dbo.Limpia2
+    END'
+EXEC(@sql)
+
+
+SET @process = 'CREATE FUNCTION [dbo].[Limpia2]'
+SET @sql = 'CREATE FUNCTION [dbo].[Limpia2](@Phone varchar(32))
+RETURNS varchar(32) AS  
+BEGIN
+DECLARE @limpiada NVARCHAR(MAX) = ''''
+
+DECLARE @index INT = 1
+DECLARE @longitud INT = LEN(@Phone)
+
+WHILE @index <= @longitud
+BEGIN
+    DECLARE @caracter NVARCHAR(1) = SUBSTRING(@Phone, @index, 1)
+    
+    IF PATINDEX(''%[0-9]%'', @caracter) > 0 OR (@caracter = ''+'' AND @index = 1) -- Mantener solo números y el símbolo de más al inicio
+    BEGIN
+        SET @limpiada = @limpiada + @caracter
+    END
+
+    SET @index = @index + 1
+END
+
+declare @codeCountry varchar(10), @codeCountryLen int
+set @codeCountry= (select valor from ccSettings2 where setting_id = 272)
+set @codeCountry=REPLACE(@codeCountry,''+'','''')
+set @codeCountryLen=len(@codeCountry)
+
+
+
+
+IF LEFT(@limpiada,1)<>''+'' begin
+        IF LEFT(@limpiada, len(@codeCountry)) = @codeCountry  begin
+                return ''N_''+ substring(@limpiada,@codeCountryLen,len(@limpiada)-@codeCountryLen)
+        end
+        return ''N_''+@limpiada
+end
+set @limpiada=replace(@limpiada,''+'','''')
+
+IF LEFT(@limpiada, len(@codeCountry)) = @codeCountry  begin
+        return ''N_''+ substring(@limpiada,@codeCountryLen,len(@limpiada)-@codeCountryLen)
+end
+return ''I_''+@limpiada
+
+
+
+end'
+EXEC(@sql);
+
 SET @process = ' '
 SET @sql = ''
 EXEC(@sql);

@@ -58,7 +58,9 @@ BEGIN
                 concurrentSessionsLimit INT,
                 idCampaign SMALLINT NULL,
                 mediaType TINYINT NULL,
-                campType TINYINT NULL
+                campType TINYINT NULL,
+                location VARCHAR(50),
+				quantumAgentId VARCHAR(50)
             );
 		END'
 	EXEC(@sql)

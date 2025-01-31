@@ -1134,10 +1134,7 @@ BEGIN
     END'
     EXEC(@sql)
 	SET @process = 'DEV2-825 create sp ccsp_RIALoadCamps'
-    SET @sql = '
-    IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = N''ccsp_RIALoadCamps'')
-    BEGIN
-        
+    SET @sql = '        
 CREATE PROCEDURE ccsp_RIALoadCamps @option SMALLINT, @AreaId SMALLINT = NULL, @Sup SMALLINT = NULL, @WGID SMALLINT = NULL
 AS
 SET NOCOUNT ON

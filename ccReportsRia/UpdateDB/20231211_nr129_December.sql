@@ -4142,10 +4142,10 @@ with jobNotStart as(
 select distinct A.[name] from msdb.dbo.sysjobs A
     inner join PublicationLowLoad B on A.[name] like ''%''+B.namePublication+''%''
     where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
-union all
-select distinct A.[name] from msdb.dbo.sysjobs A
-    inner join PublicationHighLoad B on A.[name] like ''%''+B.namePublication+''%''
-    where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
+-- union all
+-- select distinct A.[name] from msdb.dbo.sysjobs A
+--     inner join PublicationHighLoad B on A.[name] like ''%''+B.namePublication+''%''
+--     where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
 )
 
 insert into #replications

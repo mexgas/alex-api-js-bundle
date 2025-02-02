@@ -1201,7 +1201,6 @@ IF OBJECT_ID(N''tempdb..#outboundData2'', N''U'') IS NOT NULL
    
     set @process = 'DEV1-459 alter SP ccspRepOutAnswCalls se quita with index '
     set @sql='ALTER PROCEDURE [dbo].[ccspRepOutAnswCalls]
-
 @action as tinyint,
 @from AS datetime = null,
 @to AS datetime = null
@@ -1219,37 +1218,42 @@ begin
     delete RepOutAnswCalls with(rowlock)
     where [date] between @from and @to
 
-    ;with  wgCalId as(
-        select min(IDWG) as IDWG,cal_id
-        from ccRIAWorkGroup_Calid where [timestamp] between @from and @to
-        group by cal_id 
-    ),
+    ;with   
     co as(
     select
     convert(date,cal_inicio,121) [date],
-    co.cam_id campaignId, isnull(min(d.IDWG),1) idwg, count(*) total, 
+    co.cam_id campaignId, count(*) total, 
     COUNT(CASE WHEN(statusCall_id = 16)THEN co.cal_id ELSE NULL END) nasig_tl,
     COUNT(CASE WHEN(statuscall_id = 15)THEN co.cal_id ELSE NULL END) nasig_nc,
     COUNT(CASE WHEN(statuscall_id = 13)THEN co.cal_id ELSE NULL END) nAnswered,
     COUNT(CASE WHEN(statuscall_id = 11)THEN co.cal_id ELSE NULL END) nassigned,
     COUNT(CASE WHEN(statuscall_id in (6,4))THEN co.cal_id ELSE NULL END) nabdn_sis
-    from ccocallsout co 
-    left join wgCalId d on (d.cal_id = co.cal_id)
+    from ccocallsout co with(nolock,index(IX_ccoCallsOut13))    
     where cal_inicio between @from and @to 
     group by convert(date,cal_inicio,121),co.cam_id
+    ) 
+    ,wgCalId as(
+    
+        select campaignId,isnull(min(wg.IDWG),1) IDWG
+        from co o 
+        left join ccRIACampEspWG wg on o.campaignId =wg.IdCampEsp and wg.Tipo=1
+        group by campaignId
     )
+    
+
     insert RepOutAnswCalls
     select 
-    [date], campaignId, ca.cam_descripcion campaign, 
-    abnd.IDWG workgroupId, e.WGName workgroup, isnull(f.IDArea,0) areaId, g.AreaName area, total,
+    [date], abnd.campaignId, ca.cam_descripcion campaign, 
+    wg.IDWG workgroupId, e.WGName workgroup, isnull(f.IDArea,0) areaId, g.AreaName area, total,
     cast(((nasig_tl*100.0)/total) as decimal(5,2)) asig_tl,
     cast(((nasig_nc*100.0)/total) as decimal(5,2)) asig_nc,
     cast(((nAnswered*100.0)/total) as decimal(5,2)) Answered,
     cast(((nassigned*100.0)/total) as decimal(5,2)) assigned,
     cast(((nabdn_sis*100.0)/total) as decimal(5,2)) abdn_sis
-    from co abnd
+    from co abnd    
     left join cccamps ca on ca.cam_id=abnd.campaignId 
-    left join ccRIACat_WorkGroup as e on e.idwg = abnd.idwg
+    left join wgCalId wg on abnd.campaignId=wg.campaignId
+    left join ccRIACat_WorkGroup as e on e.idwg = wg.idwg
     left join ccRIAAreaWorkGroup as f on f.idwg = e.idwg
     left join ccRIACat_Areas as g on g.idarea = f.idarea
                             
@@ -4138,10 +4142,10 @@ with jobNotStart as(
 select distinct A.[name] from msdb.dbo.sysjobs A
     inner join PublicationLowLoad B on A.[name] like ''%''+B.namePublication+''%''
     where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
-union all
-select distinct A.[name] from msdb.dbo.sysjobs A
-    inner join PublicationHighLoad B on A.[name] like ''%''+B.namePublication+''%''
-    where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
+-- union all
+-- select distinct A.[name] from msdb.dbo.sysjobs A
+--     inner join PublicationHighLoad B on A.[name] like ''%''+B.namePublication+''%''
+--     where A.[name] like ''%CCReportsRIA- 0%'' and A.[name] like ''%CCenterRIA%''
 )
 
 insert into #replications
@@ -6999,6 +7003,71 @@ BEGIN
 END
 '
     EXEC(@sql)
+
+    set @process = 'ALTER SP ccspRepOutDials Correcion obtener WG'
+    set @Sql='ALTER PROCEDURE [dbo].[ccspRepOutDials]
+@action as tinyint,
+@from as datetime = null,
+@to as datetime = null
+AS
+
+if @from is null
+    select @from = convert(datetime,convert(varchar(11),getdate()))
+if @to is null 
+    select @to = getdate()
+
+if @action = 1 
+begin
+    declare @total decimal(10,2)
+        
+        
+
+    select @total = count(*) from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and cal_id is not null
+        
+    delete from RepOutDials where date >= @from AND date < @to
+        
+        
+    ;with tmpRepOutDials as(
+    select  DATEADD(HOUR, DATEDIFF(HOUR, 0, fecha), 0) as fecha ,cal_id
+    ,a.tipoResDial_id, descripcion,cam_id
+    from ccologdials as a WITH(NOLOCK, INDEX(IX_ccoLogDials_8))
+    inner join ccTipoResultadoDial as b (NOLOCK) on (a.tipoResDial_id = b.tipoResDial_id)
+    where fecha >= @from and fecha < @to        
+    and a.cal_id is not null
+    )
+
+    
+    insert into RepOutDials
+
+    select fecha as [date]      
+    ,a.cam_id as campaignId, c.cam_descripcion as campaign
+    , isnull(min(d.idwg),1) as workgroupId, isnull(min(wgname),'''') as workgroup, isnull(min(c.idarea),1) as areaId, isnull(min(areaname),'''') as area
+        
+    ,a.tipoResDial_id, descripcion,
+    descripcion + ''_Count'' as descripcion_count,
+    count(*) as count,
+    descripcion + ''_Avg'' as descripcion_avg,
+    convert(decimal(10,2), (count(*)/@total)*100.00) as avg,
+    datepart(yyyy,fecha) AS [year],
+    datepart(mm,fecha) as [month],
+    datepart(dd,fecha) as [day],
+    datepart(hh,fecha) as [hour],
+    0 as [minutes]
+    from  tmpRepOutDials as a
+    left join ccCamps as c (NOLOCK) on (a.cam_id = c.cam_id)
+    left join ccRIACampEspWG as d (NOLOCK) on a.cam_id = d.IdCampEsp and d.tipo = 1 
+    left join ccRIACat_WorkGroup as e (NOLOCK) on (d.idwg = e.idwg)
+    left join ccRIAAreaWorkGroup as f (NOLOCK) on (e.idwg = f.idwg)
+    left join ccRIACat_Areas as g (NOLOCK) on (c.idarea = g.idarea)     
+    group by fecha ,        
+    a.cam_id, c.cam_descripcion, a.tipoResDial_id, descripcion  
+    
+end'
+    
+    EXEC(@Sql)
 
     set @process = ''
     set @sql=''

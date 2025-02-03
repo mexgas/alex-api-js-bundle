@@ -15419,20 +15419,28 @@ end
         EXEC(@sql);
 
 SET @process = 'update  ccPermissions set Permissions_Id=10043 where Permissions_Id =10041'
-SET @sql = 'ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
-ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
+SET @sql = 'if exists(select 1 from ccPermissions where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva'')
+and exists(select 1 from ccPermissions where Permissions_Id =10043 and Description=''Habilitar/deshabilitar marcación progresiva'') begin
+	delete from ccRoles_Permissions where Permissions_Id =10041
+	delete from ccPermissions where Permissions_Id =10041
+end
 
-update ccPermissions 
-set Permissions_Id=10043
-where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva''
+else begin
 
-update ccRoles_Permissions
-set Permissions_Id=10043
-where Permissions_Id=10041
+	ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
 
-ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
-ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;
-'
+	update ccPermissions 
+	set Permissions_Id=10043
+	where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva''
+
+	update ccRoles_Permissions
+	set Permissions_Id=10043
+	where Permissions_Id=10041
+
+	ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;
+end'
 EXEC(@sql);
 
 

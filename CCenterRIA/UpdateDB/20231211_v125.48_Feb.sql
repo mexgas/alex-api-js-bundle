@@ -14743,6 +14743,14 @@ BEGIN
 END'
 EXEC(@sql);
 
+SET @process = 'KR154000 se crea permiso 10043'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10043)
+BEGIN
+        insert into ccPermissions values (10043, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
 SET @process = 'KR154000 se crea permiso 10042'
 SET @sql = '
 IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
@@ -15410,8 +15418,21 @@ end
 ';
         EXEC(@sql);
 
-SET @process = ' '
-SET @sql = ''
+SET @process = 'update  ccPermissions set Permissions_Id=10043 where Permissions_Id =10041'
+SET @sql = 'ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
+ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
+
+update ccPermissions 
+set Permissions_Id=10043
+where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva''
+
+update ccRoles_Permissions
+set Permissions_Id=10043
+where Permissions_Id=10041
+
+ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
+ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;
+'
 EXEC(@sql);
 
 

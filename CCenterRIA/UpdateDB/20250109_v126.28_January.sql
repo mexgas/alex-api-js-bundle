@@ -510,6 +510,92 @@ END
 	EXEC(@sql)
 
 	--------------------------------------------- END Isaac ----------------------------------------
+    -----------------------------------------------BEGIN Marco Garcia ----------------------------------
+    SET @process = 'MAGV Organizar el listado de permisos correctamente'
+    SET @sql = 'DECLARE @process VARCHAR(MAX), @sql    VARCHAR(MAX);
+
+    ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
+    ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
+
+    DECLARE @ccPermissionsTmp TABLE 
+    (
+        Permissions_Id int,
+        DESCRIPTION varchar(250)
+    );
+
+    INSERT INTO @ccPermissionsTmp
+    VALUES
+    ( 10001, ''Iniciar y detener campañas|Start and stop Campaign''),
+    ( 10002, ''Carga de base de datos|Data Import''), 
+    ( 10003, ''CenterScript|CenterScript''), 
+    ( 10004, ''Roles''), 
+    ( 10005, ''Eliminar nuevos registros|Delete new records''), 
+    ( 10006, ''Devolucion de llamada|CallBacks''), 
+    ( 10007, ''Areas|Areas''), 
+    ( 10008, ''Gestionar de areas''), 
+    ( 10009, ''Gestionar tipos de no disponible''), 
+    ( 10010, ''Gestionar permisos de agente''), 
+    ( 10011, ''Gestionar campañas''), 
+    ( 10012, ''Gestionar asignacion de puertos''), 
+    ( 10013, ''Gestion de Campañas eliminar,agregar, etc''), 
+    ( 10014, ''Gestionar horarios''), 
+    ( 10015, ''Gestionar chat con agentes''), 
+    ( 10016, ''Gestionar monitoreo de llamada''), 
+    ( 10017, ''Solo monitoreo''), 
+    ( 10018, ''Gestionar formatos de evaluacion''), 
+    ( 10019, ''Gestionar historial de actividad''), 
+    ( 10020, ''Gestionar inicio automatico''), 
+    ( 10021, ''Gestionar calificaciones''), 
+    ( 10022, ''Gestionar factor de marcacion fijo''), 
+    ( 10023, ''Gestionar lista de ANI local''), 
+    ( 10024, ''Gestionar numeros DNIS''), 
+    ( 10025, ''Gestionar listas negras''), 
+    ( 10026, ''Acceder a reporteador''), 
+    ( 10027, ''Acceder a buscador''), 
+    ( 10028, ''Gestionar Asociacion de campaña''), 
+    ( 10029, ''Gestionar Mensajes Automaticos''), 
+    ( 10030, ''Gestionar administradores conectados''), 
+    ( 10031, ''Gestionar Numeros de Transferencia''), 
+    ( 10032, ''Gestionar configuracion de callback''), 
+    ( 10033, ''Reciclar registros''), 
+    ( 10034, ''Monitorear áreas y asignar/desasignar usuarios''), 
+    ( 10035, ''Acceder a buscador (sin descarga de archivos)''), 
+    ( 10036, ''Gestionar Segmentos''), 
+    ( 10037, ''Cargar registros SMS por segmento''), 
+    ( 10038, ''Validaciones SMS Masivo''), 
+    ( 10039, ''Plantillas SMS Masivo''), 
+    ( 10040, ''Gestionar plantillas de Meta''), 
+    ( 10041, ''Configurar desvío de llamadas entre campañas de diferentes áreas''),
+    ( 10042, ''Marcar en orden ascendente/descendente''),
+    ( 10043, ''Habilitar/deshabilitar marcación progresiva'');
+
+    SELECT
+        OldPermissionId = cp.Permissions_Id,
+        NewPermissionId = cpt.Permissions_Id,
+        Description = cpt.Description
+    INTO #Mapping
+    FROM ccPermissions cp
+    INNER JOIN @ccPermissionsTmp cpt -- O la tabla que contiene los valores correctos
+    ON cp.Description = cpt.Description; -- Coincidir por descripción u otro campo confiable
+
+    UPDATE cp SET cp.Permissions_Id = cpt.NewPermissionId 
+    FROM dbo.ccPermissions AS cp 
+    INNER JOIN #Mapping AS cpt
+    ON cpt.DESCRIPTION = cp.Description
+
+    UPDATE  crp SET crp.Permissions_Id = cpt.NewPermissionId
+    FROM dbo.ccRoles_Permissions AS crp
+    INNER JOIN #Mapping AS cpt
+    ON crp.Permissions_Id = cpt.OldPermissionId
+
+    DROP TABLE #Mapping
+
+    -- Habilitar nuevamente las restricciones de FK
+    ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
+    ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;';
+    EXEC(@sql);
+    --------------------------------------- END Marco García -----------------------------------------------------------
+    
 	
     --------------------------------------------- Begin Ivan ----------------------------------------
 

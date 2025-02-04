@@ -1889,6 +1889,7 @@ BEGIN
 	IF @Type<>1 BEGIN
 		SET @sql = @sql + '' AND cam_bNew=2''
 	END
+    EXEC (@sql)
 END
     '
     EXEC(@sql);

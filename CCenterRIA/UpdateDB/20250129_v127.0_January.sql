@@ -1856,6 +1856,45 @@ end'
 
  ---------------------------------------------------- END CW-8987 Hugo Longoria --------------------------------------------------------------
 
+---------------------------------------------------- BEGIN Isaac -------------------------------------------------------------
+    SET @process = 'Drop procedure ccspCCserverLoadCamp'
+    SET @sql = 'IF EXISTS (SELECT * FROM sysobjects WHERE name=''ccspCCserverLoadCamp'')
+		BEGIN
+			DROP PROCEDURE dbo.ccspCCserverLoadCamp
+		END'
+    EXEC(@sql);
+
+    SET @process = 'Create procedure ccspCCserverLoadCamp'
+    SET @sql = '
+CREATE PROCEDURE ccspCCserverLoadCamp
+@Type as smallint
+AS
+BEGIN
+	DECLARE @sql NVARCHAR(max)
+
+	SET @sql = ''SELECT
+					c.cam_id
+				   ,ISNULL(g.graphic_id, 1) graphic_id
+				   ,c.cam_descripcion
+				   ,c.cam_tnotas
+				   ,c.cam_maxqueue
+				   ,c.cam_procesando
+				   ,c.CampType
+				   ,ISNULL(v.concurrentSessionsLimit, 0) AS AgtVirtual
+				FROM ccCamps c (NOLOCK)
+				LEFT JOIN ccRIACampsGraph g (NOLOCK) ON g.cam_id = c.cam_id
+				LEFT JOIN ccVirtualAgent v (NOLOCK) ON v.idCampaign = c.cam_id
+				WHERE cam_activo = 1''
+
+	IF @Type<>1 BEGIN
+		SET @sql = @sql + '' AND cam_bNew=2''
+	END
+END
+    '
+    EXEC(@sql);
+---------------------------------------------------- END Isaac --------------------------------------------------------------
+ 
+
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

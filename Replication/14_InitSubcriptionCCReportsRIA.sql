@@ -206,7 +206,7 @@ select @dateNow, DATEDIFF(ss,@dateNow,getdate())
 
 if not exists(select * from migration where status in(0,1)) begin
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcess'''', @enabled = 1 --Enable
-	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationHighLoad'''', @enabled = 1 --Enable
+	--exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationHighLoad'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessPublicationLowLoad'''', @enabled = 1 --Enable
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterProcessYesterday'''', @enabled = 0 --Enable
 	exec msdb..sp_update_job @job_name = ''''ReportsMasterSubProcess'''', @enabled = 1 --Enable

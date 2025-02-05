@@ -8608,7 +8608,7 @@ UPDATE ccInbound
 SET 
     descripcion = ISNULL(@descripcion, descripcion), 
     STATUS = ISNULL(@status, STATUS), 
-    tNotas = ISNULL(CASE WHEN @chat <> 5  OR @chat IS NULL THEN @tNotas ELSE 10 END, tNotas),
+    tNotas = ISNULL(@tNotas, tNotas),
     tMaxWaitCall = ISNULL(@tMaxWaitCall, tMaxWaitCall), 
     nMaxQue = ISNULL(@nMaxQue, nMaxQue), 
     tel_maxwait = ISNULL(@tel_maxwait, tel_maxwait), 
@@ -14743,6 +14743,14 @@ BEGIN
 END'
 EXEC(@sql);
 
+SET @process = 'KR154000 se crea permiso 10043'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10043)
+BEGIN
+        insert into ccPermissions values (10043, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
 SET @process = 'KR154000 se crea permiso 10042'
 SET @sql = '
 IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
@@ -14790,91 +14798,52 @@ END;'
 EXEC(@sql);
 
 SET @process = 'Insert default data to ccMenuRol manually'
-SET @sql = 'IF NOT EXISTS (SELECT 1 FROM ccMenuRol)
-BEGIN
-    INSERT INTO ccMenuRol (Rol_id, menu_id, type)
-    SELECT Rol_id, menu_id, type
-    FROM (
-        -- Subconsulta para obtener los menu_id y type para el Rol root
-        SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
+SET @sql = 'IF Exists(select * from ccRoles where Rol_id=1) and  NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=1) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT m.menu_id, m.type, 1 AS Rol_id  -- Root
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
+        6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
+
+
+IF Exists(select * from ccRoles where rol_id=6) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=6) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
         FROM ccMenus m
-        WHERE m.parent IN (
-            2000, 3000, 3140, 4000, 3130, 10000, 11000, 12000, 
-            6000, 8000, 8050, 8060, 8080, 7000, 13000, 14000
-        )
-        AND m.type = 3
-        AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030) -- Excluir estos menu_id
+    WHERE m.parent IN (
+        2000, 3000, 4000, 3130, 10000, 11000, 12000, 
+        6000
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
 
-        UNION ALL
+IF Exists(select * from ccRoles where rol_id=8) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=8) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 4000, 8050
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
 
-        -- Valores específicos para el Rol Supervisor
-        SELECT menu_id, type, 6 AS Rol_id  -- Supervisor
-        FROM (VALUES 
-            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
-            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
-            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
-            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
-            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
-            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
-            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
-            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
-            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
-            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
-            (3130, 3), (3131, 3), (3132, 3), (3133, 3), (3134, 3),
-            (3135, 3), (3136, 3), (10000, 3), (10010, 3), (10020, 3),
-            (10030, 3), (10040, 3), (11000, 3), (11010, 3), (11020, 3),
-            (11030, 3), (11040, 3), (12000, 3), (12010, 3), (12020, 3),
-            (14000, 3), (14010, 3), (14020, 3), (6000, 3), (6010, 3),
-            (6020, 3), (6030, 3), (6040, 3), (6050, 3)
-        ) AS Supervisor(menu_id, type)
-
-        UNION ALL
-
-        -- Valores específicos para el Rol Analista de Calidad
-        SELECT menu_id, type, 8 AS Rol_id  -- Analista de Calidad
-        FROM (VALUES 
-            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
-            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
-            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
-            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
-            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
-            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
-            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
-            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
-            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
-            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
-            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
-            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
-            (8082, 3), (8084, 3)
-        ) AS Calidad(menu_id, type)
-
-        UNION ALL
-
-        -- Valores específicos para el Rol Monitor
-        SELECT menu_id, type, 9 AS Rol_id  -- Monitor
-        FROM (VALUES 
-            (2000, 3), (2010, 3), (2020, 3), (2030, 3), (2040, 3),
-            (2050, 3), (2060, 3), (2070, 3), (2080, 3), (2090, 3),
-            (2100, 3), (3000, 3), (3010, 3), (3020, 3), (3030, 3),
-            (3040, 3), (3060, 3), (3070, 3), (3080, 3), (3100, 3),
-            (3110, 3), (3120, 3), (3140, 3), (3141, 3), (3142, 3),
-            (3230, 3), (4000, 3), (4010, 3), (4020, 3), (4030, 3),
-            (4040, 3), (4050, 3), (4060, 3), (4070, 3), (4090, 3),
-            (4100, 3), (4110, 3), (4120, 3), (4130, 3), (4140, 3),
-            (4150, 3), (4160, 3), (4170, 3), (4180, 3), (4190, 3),
-            (4220, 3), (4230, 3), (4240, 3), (4250, 3), (4260, 3),
-            (8050, 3), (8060, 3), (8061, 3), (8062, 3), (8063, 3),
-            (8064, 3), (8071, 3), (8072, 3), (8080, 3), (8081, 3),
-            (8082, 3), (8084, 3)
-        ) AS Monitor(menu_id, type)
-    ) AS merged;
-
-    PRINT ''Datos insertados en la tabla ccMenuRol.''
-END
-ELSE
-BEGIN
-    PRINT ''La tabla ccMenuRol ya contiene datos.''
-END;
+IF Exists(select * from ccRoles where rol_id=9) and NOT EXISTS (SELECT 1 FROM ccMenuRol where Rol_id=9) begin
+	INSERT INTO ccMenuRol (menu_id, type, Rol_id)
+	SELECT menu_id, type, 9 AS Rol_id  -- Monitor
+    FROM ccMenus m
+    WHERE m.parent IN (
+        2000, 3000, 4000, 8050
+    )
+    AND m.type = 3
+    AND m.menu_id NOT IN (2130, 12015, 12017, 8083, 7230, 13030, 1010) -- Excluir estos menu_id
+end
 '
 EXEC(@sql);
 
@@ -15348,12 +15317,131 @@ END
 EXEC(@sql);
 --------------------------- END IC 125.20231211.0.22 ------------------------------------------------------------------------------------
 
-SET @process = ' '
-SET @sql = ''
+set @process = 'DROP FUNCTION Limpia2'
+set @sql = 'IF EXISTS (SELECT 1 FROM sys.objects 
+               WHERE Name = ''Limpia2'' 
+                 AND Type IN ( N''FN'', N''IF'', N''TF'', N''FS'', N''FT'' ))
+    BEGIN
+        DROP FUNCTION dbo.Limpia2
+    END'
+EXEC(@sql)
+
+
+SET @process = 'CREATE FUNCTION [dbo].[Limpia2]'
+SET @sql = 'CREATE FUNCTION [dbo].[Limpia2](@Phone varchar(32))
+RETURNS varchar(32) AS  
+BEGIN
+DECLARE @limpiada NVARCHAR(MAX) = ''''
+
+DECLARE @index INT = 1
+DECLARE @longitud INT = LEN(@Phone)
+
+WHILE @index <= @longitud
+BEGIN
+    DECLARE @caracter NVARCHAR(1) = SUBSTRING(@Phone, @index, 1)
+    
+    IF PATINDEX(''%[0-9]%'', @caracter) > 0 OR (@caracter = ''+'' AND @index = 1) -- Mantener solo números y el símbolo de más al inicio
+    BEGIN
+        SET @limpiada = @limpiada + @caracter
+    END
+
+    SET @index = @index + 1
+END
+
+declare @codeCountry varchar(10), @codeCountryLen int
+set @codeCountry= (select valor from ccSettings2 where setting_id = 272)
+set @codeCountry=REPLACE(@codeCountry,''+'','''')
+set @codeCountryLen=len(@codeCountry)
+
+
+
+
+IF LEFT(@limpiada,1)<>''+'' begin
+        IF LEFT(@limpiada, len(@codeCountry)) = @codeCountry  begin
+                return ''N_''+ substring(@limpiada,@codeCountryLen,len(@limpiada)-@codeCountryLen)
+        end
+        return ''N_''+@limpiada
+end
+set @limpiada=replace(@limpiada,''+'','''')
+
+IF LEFT(@limpiada, len(@codeCountry)) = @codeCountry  begin
+        return ''N_''+ substring(@limpiada,@codeCountryLen,len(@limpiada)-@codeCountryLen)
+end
+return ''I_''+@limpiada
+
+
+
+end'
 EXEC(@sql);
 
+SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccCamps_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))
+begin      
+        drop trigger [tg_ccCamps_IA]    
+end';
+        EXEC(@sql);
 
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOutSource_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOutSource_IA'' and parent_id = OBJECT_ID(N''ccoCallsOutSource''))
+begin 
+        drop trigger [tg_ccoCallsOutSource_IA]    
+end';
+        EXEC(@sql);
 
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOut_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOut_IA'' and parent_id = OBJECT_ID(N''ccoCallsOut''))
+begin      
+        drop trigger [tg_ccoCallsOut_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoLogDials_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoLogDials_IA'' and parent_id = OBJECT_ID(N''ccoLogDials''))
+begin 
+        drop trigger [tg_ccoLogDials_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccUsersTmp_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccUsersTmp_IA'' and parent_id = OBJECT_ID(N''ccUsers''))
+begin 
+        drop trigger [tg_ccUsersTmp_IA]    
+end
+';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccRIALoading_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccRIALoading_IA'' and parent_id = OBJECT_ID(N''ccRIALoading''))
+begin 
+        drop trigger [tg_ccRIALoading_IA]    
+end
+';
+        EXEC(@sql);
+
+SET @process = 'update  ccPermissions set Permissions_Id=10043 where Permissions_Id =10041'
+SET @sql = 'if exists(select 1 from ccPermissions where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva'')
+and exists(select 1 from ccPermissions where Permissions_Id =10043 and Description=''Habilitar/deshabilitar marcación progresiva'') begin
+	delete from ccRoles_Permissions where Permissions_Id =10041
+	delete from ccPermissions where Permissions_Id =10041
+end
+
+else begin
+
+	ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
+
+	update ccPermissions 
+	set Permissions_Id=10043
+	where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva''
+
+	update ccRoles_Permissions
+	set Permissions_Id=10043
+	where Permissions_Id=10041
+
+	ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;
+end'
+EXEC(@sql);
 
 
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */

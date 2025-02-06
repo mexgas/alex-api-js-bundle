@@ -14743,6 +14743,14 @@ BEGIN
 END'
 EXEC(@sql);
 
+SET @process = 'KR154000 se crea permiso 10043'
+SET @sql = '
+IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10043)
+BEGIN
+        insert into ccPermissions values (10043, ''Habilitar/deshabilitar marcación progresiva'', ''RolesPermissionProgressiveDialing'', 0, 0, 0, ''N/A'', 1)
+END'
+EXEC(@sql);
+
 SET @process = 'KR154000 se crea permiso 10042'
 SET @sql = '
 IF NOT EXISTS (select 1 from ccPermissions where Permissions_Id = 10042)
@@ -15366,8 +15374,73 @@ return ''I_''+@limpiada
 end'
 EXEC(@sql);
 
-SET @process = ' '
-SET @sql = ''
+SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccCamps_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccCamps_IA'' and parent_id = OBJECT_ID(N''ccCamps''))
+begin      
+        drop trigger [tg_ccCamps_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOutSource_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOutSource_IA'' and parent_id = OBJECT_ID(N''ccoCallsOutSource''))
+begin 
+        drop trigger [tg_ccoCallsOutSource_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoCallsOut_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoCallsOut_IA'' and parent_id = OBJECT_ID(N''ccoCallsOut''))
+begin      
+        drop trigger [tg_ccoCallsOut_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccoLogDials_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccoLogDials_IA'' and parent_id = OBJECT_ID(N''ccoLogDials''))
+begin 
+        drop trigger [tg_ccoLogDials_IA]    
+end';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccUsersTmp_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccUsersTmp_IA'' and parent_id = OBJECT_ID(N''ccUsers''))
+begin 
+        drop trigger [tg_ccUsersTmp_IA]    
+end
+';
+        EXEC(@sql);
+
+        SET @process = 'K038009-Servicio IA Service replicación de Drop TRIGGER tg_ccRIALoading_IA'
+        SET @sql = 'if exists (select * from sys.triggers where name = N''tg_ccRIALoading_IA'' and parent_id = OBJECT_ID(N''ccRIALoading''))
+begin 
+        drop trigger [tg_ccRIALoading_IA]    
+end
+';
+        EXEC(@sql);
+
+SET @process = 'update  ccPermissions set Permissions_Id=10043 where Permissions_Id =10041'
+SET @sql = 'if exists(select 1 from ccPermissions where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva'')
+and exists(select 1 from ccPermissions where Permissions_Id =10043 and Description=''Habilitar/deshabilitar marcación progresiva'') begin
+	delete from ccRoles_Permissions where Permissions_Id =10041
+	delete from ccPermissions where Permissions_Id =10041
+end
+
+else begin
+
+	ALTER TABLE ccRoles_Permissions NOCHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions NOCHECK CONSTRAINT ALL;
+
+	update ccPermissions 
+	set Permissions_Id=10043
+	where Permissions_Id =10041 and Description=''Habilitar/deshabilitar marcación progresiva''
+
+	update ccRoles_Permissions
+	set Permissions_Id=10043
+	where Permissions_Id=10041
+
+	ALTER TABLE ccRoles_Permissions CHECK CONSTRAINT ALL;
+	ALTER TABLE dbo.ccPermissions CHECK CONSTRAINT ALL;
+end'
 EXEC(@sql);
 
 

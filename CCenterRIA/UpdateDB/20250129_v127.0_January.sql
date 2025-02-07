@@ -2426,12 +2426,12 @@ if @action= 0 begin
                 FROM ccCamps cc (NOLOCK) 
                 LEFT JOIN ccCampsExtend ex (NOLOCK) ON ex.cam_id = cc.cam_id
                 LEFT JOIN ccVirtualAgent cva ON cva.idCampaign = cc.cam_id AND cva.campType = 1
-                WHERE CampType not in (5,7)''
+                WHERE cc.CampType not in (5,7)''
     if @nType=2 
-        set @sql=@sql+'' AND cam_bNew = 2 ''
+        set @sql=@sql+'' AND cc.cam_bNew = 2 ''
     else if @nType=3
-        set @sql=@sql+'' AND cam_bNew in (1,2) ''
-    set @sql=@sql+'' ORDER BY cam_descripcion''
+        set @sql=@sql+'' AND cc.am_bNew in (1,2) ''
+    set @sql=@sql+'' ORDER BY cc.cam_descripcion''
     --print(@sql)
     exec (@sql)
 end

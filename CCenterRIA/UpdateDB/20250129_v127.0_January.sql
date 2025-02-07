@@ -2422,6 +2422,8 @@ if @action= 0 begin
                 ,ISNULL(cc.CampType, 0) AS CampType
                 ,ISNULL(cc.CamCanceled, 4) AS CamCanceled
                 ,ISNULL(ex.SimultaneousRecs, 0) AS SimultaneousRecs
+                ,ISNULL(cva.idAgent, 0) AS IdAgent
+				,ISNULL(cva.nameAgent, '''''''') AS AgentName
                 ,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
                 FROM ccCamps cc (NOLOCK) 
                 LEFT JOIN ccCampsExtend ex (NOLOCK) ON ex.cam_id = cc.cam_id

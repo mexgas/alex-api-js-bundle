@@ -61,7 +61,13 @@ BEGIN
 			ALTER TABLE ccWhatsOringCountry
 			ADD CountryAbbreviation VARCHAR(2) NULL;
 
-			UPDATE ccWhatsOringCountry
+			
+		END'
+        EXEC(@sql)
+
+		SET @process = 'Facturacion - Se modifica campo de CountryAbbreviation'
+		SET @sql = '		
+		UPDATE ccWhatsOringCountry
 			SET CountryAbbreviation = CASE
 				WHEN country = ''USA'' THEN ''US''
 				WHEN country = ''Bahamas'' THEN ''BS''
@@ -260,8 +266,8 @@ BEGIN
 				WHEN country = ''Georgia'' THEN ''GE''
 				WHEN country = ''Uzbekistan'' THEN ''UZ''
 			END
-		END'
-        EXEC(@sql)
+		'
+		EXEC(@sql)
 
 		SET @process = 'Facturacion - Validación de sp ccsp_WAOUTGetNewJobs'
         SET @sql = '

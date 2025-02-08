@@ -266,6 +266,7 @@ BEGIN
 				WHEN country = ''Georgia'' THEN ''GE''
 				WHEN country = ''Uzbekistan'' THEN ''UZ''
 			END
+			where CountryAbbreviation is null
 		'
 		EXEC(@sql)
 

@@ -326,6 +326,20 @@ BEGIN
 	END'
     EXEC(@sql)
 
+    SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaModOpRelation WHERE ModuleId = 24 AND OperationId = 130)
+	BEGIN
+        INSERT INTO ccGalateaModOpRelation VALUES (24,130)
+	END'
+    EXEC(@sql)
+
+    SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaModOpRelation WHERE ModuleId = 24 AND OperationId = 131)
+	BEGIN
+        INSERT INTO ccGalateaModOpRelation VALUES (24,131)
+	END'
+    EXEC(@sql)
+
     SET @process = 'Se agrega setting para registrar el número de agentes contratados'
 	SET @sql= 'IF NOT EXISTS (select * from ccSettings2 where setting_id = 281)
 	BEGIN

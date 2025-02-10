@@ -53,7 +53,14 @@ BEGIN
 '
         EXEC(@sql)
 
-        SET @process = 'Facturacion - Columna CountryAbbreviation en ccWhatsOringCountry'
+		set @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+		set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+		EXEC(@sql)
+ 
+		SET @process = 'Facturacion - Columna CountryAbbreviation en ccWhatsOringCountry'
         SET @sql = '
 		
 		IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccWhatsOringCountry'' AND COLUMN_NAME = ''CountryAbbreviation'')
@@ -269,6 +276,15 @@ BEGIN
 			where CountryAbbreviation is null
 		'
 		EXEC(@sql)
+ 
+		set @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+		set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+				begin
+				ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+				end'
+		EXEC(@sql)
+
+        
 
 		SET @process = 'Facturacion - Validación de sp ccsp_WAOUTGetNewJobs'
         SET @sql = '

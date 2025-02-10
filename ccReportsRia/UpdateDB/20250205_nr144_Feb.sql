@@ -74,9 +74,9 @@ BEGIN
 
     set @process = 'Facturación - Validación sp ccsp_GalateaWhastappBilling'
     set @sql='
-    if exists (select * from sys.procedures where name = N''ccsp_WAOUTGetNewJobs'')
+    if exists (select * from sys.procedures where name = N''ccsp_GalateaWhastappBilling'')
     begin
-        DROP PROCEDURE ccsp_WAOUTGetNewJobs
+        DROP PROCEDURE ccsp_GalateaWhastappBilling
     end'
     EXEC(@sql)
 

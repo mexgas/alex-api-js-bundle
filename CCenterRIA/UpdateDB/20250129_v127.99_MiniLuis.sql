@@ -2503,6 +2503,8 @@ if @action= 0 begin
                 ,ISNULL(cc.CampType, 0) AS CampType
                 ,ISNULL(cc.CamCanceled, 4) AS CamCanceled
                 ,ISNULL(ex.SimultaneousRecs, 0) AS SimultaneousRecs
+                ,ISNULL(cva.idAgent, 0) AS IdAgentVirtual
+				,ISNULL(cva.nameAgent, '''''''') AS NameAgentVirtual
                 ,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
                 FROM ccCamps cc (NOLOCK) 
                 LEFT JOIN ccCampsExtend ex (NOLOCK) ON ex.cam_id = cc.cam_id
@@ -2712,6 +2714,8 @@ BEGIN
 				   ,c.cam_maxqueue
 				   ,c.cam_procesando
 				   ,c.CampType
+                   ,ISNULL(v.idAgent, 0) AS IdAgentVirtual
+				   ,ISNULL(v.nameAgent, '''''''') AS NameAgentVirtual
 				   ,ISNULL(v.concurrentSessionsLimit, 0) AS AgtVirtual
 				FROM ccCamps c (NOLOCK)
 				LEFT JOIN ccRIACampsGraph g (NOLOCK) ON g.cam_id = c.cam_id

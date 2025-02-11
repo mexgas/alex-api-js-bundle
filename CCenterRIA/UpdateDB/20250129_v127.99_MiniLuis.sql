@@ -2715,7 +2715,7 @@ BEGIN
 				   ,c.cam_procesando
 				   ,c.CampType
                    ,ISNULL(v.idAgent, 0) AS IdAgentVirtual
-				   ,ISNULL(v.nameAgent, '''''''') AS NameAgentVirtual
+				   ,ISNULL(v.nameAgent, '''') AS NameAgentVirtual
 				   ,ISNULL(v.concurrentSessionsLimit, 0) AS AgtVirtual
 				FROM ccCamps c (NOLOCK)
 				LEFT JOIN ccRIACampsGraph g (NOLOCK) ON g.cam_id = c.cam_id

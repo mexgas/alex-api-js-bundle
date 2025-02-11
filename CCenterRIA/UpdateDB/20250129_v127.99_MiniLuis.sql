@@ -22,7 +22,7 @@ Importante:la variable @version puede tener 2 valores dependiendo la necesidad q
 set @version = 118  y  ccsp_getVersion ''BD'' se utilizara para cambiar de 117 a 118 en caso de que se tenga la version 119 y se vaya a agragar un fix
 sera necesario poner solo el fix es decir @version = 01 y ccsp_getVersion ''BDF'' se tendra que tener cuidado con las versiones ya que */
 SET @version = 127 --**********actualizar a 124 sin fix
-SET @versionfix = 0
+SET @versionfix = 1
 /* Actual version (use your own script to do it)*/
 EXEC @actualVersion = ccsp_getVersion 'BD'
 EXEC @actualVersionFix = ccsp_getVersion 'BDF'
@@ -39,7 +39,7 @@ BEGIN
     SET @actualVersionFix = 0
     select @version,@actualVersion,@versioMajer
 END
-IF @version >= @actualVersion and @versionfix >= @actualVersionFix 
+IF @version >= @actualVersion and @versionfix >= 1
 BEGIN
     BEGIN TRAN
     BEGIN TRY
@@ -173,8 +173,15 @@ BEGIN
             SELECT * FROM #deletedVirtualAgents
         END
 
-        ELSE IF @action = 4 -- Assignment or deassignment of campaign
+        ELSE IF @action = 4 -- Change of campaign
         BEGIN
+			DECLARE @PreviousAgentData AS TABLE(
+				idAgent INT,
+				nameAgent VARCHAR(255),
+				idCampaign SMALLINT,
+				camptype TINYINT
+			);
+
             IF NOT EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idAgent != @idVirtualAgent AND idCampaign = @campaignId AND mediaType = @mediaType AND campType = @campType) OR
             (@campaignId = 0)
             BEGIN
@@ -182,12 +189,43 @@ BEGIN
                                         mediaType = @mediaType, 
                                         campType = @campType,
                                         latestUpdateDateAgent = GETDATE()
+									  OUTPUT deleted.idAgent, deleted.nameAgent, deleted.idCampaign, deleted.campType INTO @PreviousAgentData
                 WHERE idAgent = @idVirtualAgent
 
-                SELECT @@ROWCOUNT
+				IF @campaignId != 0
+					BEGIN
+						SELECT 
+							va.idAgent,
+							va.nameAgent,
+							CAST(va.idCampaign as int) idCampaign,
+							CASE 
+								WHEN @campType = 0 THEN i.descripcion
+								ELSE cout.cam_descripcion 
+							END AS campaignName
+						FROM ccVirtualAgent va
+						LEFT JOIN ccInbound i ON va.idCampaign = i.Inbound_id AND @campType = 0
+						LEFT JOIN ccCamps cout ON va.idCampaign = cout.cam_id AND @campType = 1
+						WHERE va.idAgent = @idVirtualAgent;
+					END
+
+				ELSE
+					BEGIN
+						SELECT 
+							pvd.idAgent,
+							pvd.nameAgent,
+							CAST(0 as int) idCampaign,
+							CASE 
+								WHEN pvd.camptype = 0 THEN i.descripcion
+								ELSE cout.cam_descripcion 
+							END AS campaignName
+						FROM @PreviousAgentData pvd
+						LEFT JOIN ccInbound i ON pvd.idCampaign = i.Inbound_id AND pvd.camptype = 0
+						LEFT JOIN ccCamps cout ON pvd.idCampaign = cout.cam_id AND pvd.camptype = 1
+					END
             END
-                
-                SELECT 0
+
+            ELSE
+				SELECT -1 as idAgent,-1 as idCampaign, '''' AS descripcion
         END
 
         ELSE IF @action = 5 -- Status change
@@ -201,6 +239,19 @@ BEGIN
 
             SELECT * FROM #updatedVirtualAgents
         END
+
+		ELSE IF @action = 6 --Check if there''s enabled related agent to camp 
+		BEGIN
+			DECLARE @result bit = 0;
+
+			IF EXISTS (SELECT 1 FROM ccVirtualAgent WHERE idCampaign = @campaignId)
+			BEGIN
+				SELECT @result = statusAgent from ccVirtualAgent where idCampaign = @campaignId
+			END
+
+			select @result
+			
+		END
     END'
     EXEC(@sql)
 
@@ -217,7 +268,7 @@ BEGIN
 	SET @sql = '
     IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 127)
 	BEGIN
-        INSERT INTO ccGalateaOperations VALUES(127,''Eliminar agente'',''Delete agent'',''Excluir agente'');
+        INSERT INTO ccGalateaOperations VALUES(127,''Eliminar modelo'',''Delete model'',''Excluir modelo'');
 	END'
     EXEC (@sql)
 
@@ -225,7 +276,7 @@ BEGIN
 	SET @sql = '
     IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 128)
 	BEGIN
-        INSERT INTO ccGalateaOperations VALUES(128,''Deshabilitar agente'',''Disable agent'',''Desativar agente'');
+        INSERT INTO ccGalateaOperations VALUES(128,''Deshabilitar modelo'',''Disable model'',''Desativar modelo'');
 	END'
     EXEC(@sql)
 
@@ -233,7 +284,23 @@ BEGIN
 	SET @sql = '
     IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 129)
 	BEGIN
-        INSERT INTO ccGalateaOperations VALUES (129,''Habilitar agente'',''Enable agent'',''Ativar agente'');
+        INSERT INTO ccGalateaOperations VALUES (129,''Habilitar modelo'',''Enable model'',''Ativar modelo'');
+	END'
+    EXEC(@sql)
+
+    SET @process = 'Insertion of Operation for assign campaign to virtual agent'
+	SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 130)
+	BEGIN
+        INSERT INTO ccGalateaOperations VALUES (130,''Asignar modelo'',''Assign model'',''Atribuir modelo'');
+	END'
+    EXEC(@sql)
+
+	SET @process = 'Insertion of Operation for unassign campaign to virtual agent'
+	SET @sql = '
+    IF NOT EXISTS (SELECT 1 FROM ccGalateaOperations WHERE OperationId = 131)
+	BEGIN
+        INSERT INTO ccGalateaOperations VALUES (131,''Desasignar modelo'',''Unassign model'',''Cancelar atribuição de modelo'');
 	END'
     EXEC(@sql)
 
@@ -256,6 +323,20 @@ BEGIN
 	IF NOT EXISTS (SELECT 1 FROM ccGalateaModOpRelation WHERE ModuleId = 24 AND OperationId = 129)
 	BEGIN
         INSERT INTO ccGalateaModOpRelation VALUES (24,129)
+	END'
+    EXEC(@sql)
+
+    SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaModOpRelation WHERE ModuleId = 24 AND OperationId = 130)
+	BEGIN
+        INSERT INTO ccGalateaModOpRelation VALUES (24,130)
+	END'
+    EXEC(@sql)
+
+    SET @sql = '
+	IF NOT EXISTS (SELECT 1 FROM ccGalateaModOpRelation WHERE ModuleId = 24 AND OperationId = 131)
+	BEGIN
+        INSERT INTO ccGalateaModOpRelation VALUES (24,131)
 	END'
     EXEC(@sql)
 
@@ -2654,7 +2735,7 @@ END
 
     /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
     EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)
-    EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
+    -- EXEC ccsp_getVersion 'BDF', @versionFix --- Update last number (FIX)
     COMMIT TRAN
     END TRY
     BEGIN CATCH

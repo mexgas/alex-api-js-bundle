@@ -107,6 +107,7 @@ BEGIN
     set @process = 'Facturación - Creación sp ccsp_GalateaWhastappBilling'
     set @sql='
     CREATE PROCEDURE [dbo].[ccsp_GalateaWhastappBilling]
+
     @DateFrom DATETIME = NULL,
     @DateTo DATETIME = NULL,
     @CompanyName VARCHAR(MAX) = NULL

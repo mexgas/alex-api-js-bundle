@@ -7053,7 +7053,7 @@ EXEC(@sql)
     EXEC(@sql);
 
     SET @process = 'KR170000 Create index for the table RepAgentTimeShift'
-    SET @sql = ' IF NOT EXISTS(SELECT * FROM sys.indexes where name = ''IX_RepAgentTimeShift'')
+    SET @sql = ' IF NOT EXISTS(SELECT * FROM sys.indexes where name = N''IX_RepAgentTimeShift'' AND object_id = OBJECT_ID(N''RepAgentTimeShift''))
              BEGIN
                 CREATE INDEX IX_RepAgentTimeShift ON RepAgentTimeShift(date,userId)
              END

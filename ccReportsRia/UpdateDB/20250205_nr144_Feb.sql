@@ -82,104 +82,116 @@ BEGIN
 
     set @process = 'Facturación - Creación sp ccsp_GalateaWhastappBilling'
     set @sql='
-    CREATE PROCEDURE [dbo].[ccsp_GalateaWhastappBilling]
-        @DateFrom DATETIME = NULL,
-        @DateTo DATETIME = NULL,
-        @CompanyName VARCHAR(MAX) = NULL
-    AS
+    CREATE PROCEDURE [dbo].[ccsp_GalateaWhastappBilling] -- ccsp_GalateaWhastappBilling '1900-01-01 00:00:00', '9999-12-31 23:59:59', 'prueba'
+    @DateFrom DATETIME = NULL,
+    @DateTo DATETIME = NULL,
+    @CompanyName VARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+	declare @ip varchar(16) = ''
+	declare @ipSettings varchar(50) = ''
+
+	select @ipSettings = valor from ccSettings where setting_id = 31
+
+
+	select @ip = value from dbo.fn_RIASplitDelimited(@ipSettings, '|') where Id = 2
+
+    -- Si DateFrom y DateTo son NULL, establecer rango para el día anterior
+    IF @DateFrom IS NULL AND @DateTo IS NULL
     BEGIN
-        SET NOCOUNT ON;
+        SET @DateFrom = DATEADD(DAY, -1, CAST(GETDATE() AS DATETIME)); -- Inicio del día anterior
+        SET @DateTo = DATEADD(SECOND, -1, DATEADD(DAY, 0, CAST(GETDATE() AS DATETIME))); -- Fin del día anterior
+    END
+    ELSE
+    BEGIN
+        -- Ajustar DateFrom y DateTo al inicio y final del día respectivamente
+        SET @DateFrom = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateFrom, 120) + ' 00:00:00'), '1900-01-01 00:00:00');
+        SET @DateTo = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateTo, 120) + ' 23:59:59'), '9999-12-31 23:59:59');
+    END
 
-        -- Si DateFrom y DateTo son NULL, establecer rango para el día anterior
-        IF @DateFrom IS NULL AND @DateTo IS NULL
-        BEGIN
-            SET @DateFrom = DATEADD(DAY, -1, CAST(GETDATE() AS DATETIME)); -- Inicio del día anterior
-            SET @DateTo = DATEADD(SECOND, -1, DATEADD(DAY, 0, CAST(GETDATE() AS DATETIME))); -- Fin del día anterior
-        END
-        ELSE
-        BEGIN
-            -- Ajustar DateFrom y DateTo al inicio y final del día respectivamente
-            SET @DateFrom = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateFrom, 120) + '' 00:00:00''), ''1900-01-01 00:00:00'');
-            SET @DateTo = ISNULL(CONVERT(DATETIME, CONVERT(VARCHAR(10), @DateTo, 120) + '' 23:59:59''), ''9999-12-31 23:59:59'');
-        END
+    IF OBJECT_ID('tempdb..#Temp_Facturacion') IS NOT NULL DROP TABLE #Temp_Facturacion
 
-        IF OBJECT_ID(''tempdb..#Temp_Facturacion'') IS NOT NULL DROP TABLE #Temp_Facturacion
+    -- Crear la tabla temporal con valores predeterminados
+    SELECT 
+        @CompanyName AS Account, -- Insertar el parámetro en la columna
+        ISNULL(@ip, '') AS IPAddress,
+        'WhatsApp' AS Service,
+		ISNULL(CAST(IsBilled AS VARCHAR), '0') AS Billed, --rodrigo
+        CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN 'inbound' ELSE 'outbound' END AS Type,
+        ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), '') AS OriginCountry, -- Abreviatura del país
+        ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), '') AS OriginCountryCode, -- Código de país
+        ISNULL(AssociatedNumber, '') AS OriginNumber,
+        ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), '') AS TargetCountry,       -- Abreviatura del país
+        ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), '') AS TargetCountryCode,       -- Código de país
+        ISNULL(ClientNumber, '') AS TargetNumber,
+        CAST(CAST(FirstMessageDateFromAgent AS DATE)AS VARCHAR(MAX)) AS ConversationDate, -- Mostrar solo la fecha
+        FORMAT(FirstMessageDateFromAgent, 'HH:mm:ss') AS ConversationTime, -- Hora completa en formato HH:MM:SS
+        ISNULL(NULL, '') AS CReserved01,
+        ISNULL(NULL, '') AS CReserved02,
+        ISNULL(NULL, '') AS CReserved03,
+        ISNULL(NULL, '') AS CReserved04,
+		ISNULL(NULL, '') AS CReserved05,
+        ISNULL(NULL, '') AS CReserved06,
+        ISNULL(NULL, '') AS CReserved07,
+        ISNULL(GlobalId, NULL) AS BillingIDWhatsApp,
+        ISNULL(wa.Category, '') AS TemplateCategory,
+        ISNULL(mt.TemplateName, '') AS TemplateName, -- Relacionar con ccMetaWAOutboundTemplates
+        CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN 'Wa In' ELSE 'Wa Out' END AS PaymentCodeWA, -- Nueva columna
+        ISNULL(NULL, '') AS WAReserved01,
+        ISNULL(NULL, '') AS WAReserved02,
+        ISNULL(NULL, '') AS WAReserved03,
+        ISNULL(NULL, '') AS WAReserved04,
+        ISNULL(NULL, '') AS WAReserved05,
+        ISNULL(NULL, '') AS WAReserved06,
+        ISNULL(NULL, '') AS ConversationIDSMS,
+        ISNULL(NULL, '') AS NumberType,
+        ISNULL(NULL, '') AS MessageCharacters,
+        ISNULL(NULL, '') AS TargetCarrier,
+        ISNULL(NULL, '') AS SMSReserved01,
+        ISNULL(NULL, '') AS SMSReserved02,
+        ISNULL(NULL, '') AS SMSReserved03,
+        ISNULL(NULL, '') AS SMSReserved04,
+        ISNULL(NULL, '') AS SMSReserved05,
+        ISNULL(NULL, '') AS SMSReserved06,
+        ISNULL(NULL, '') AS VirtualAgentID,
+        ISNULL(NULL, '') AS ConversationID,
+        ISNULL(NULL, '') AS Channel,
+        ISNULL(NULL, '') AS ConversationDuration,
+        ISNULL(NULL, '') AS NumberOfTokens,
+        ISNULL(NULL, '') AS Seconds,
+        ISNULL(NULL, '') AS Minutes,
+        ISNULL(NULL, '') AS VAReserved01,
+        ISNULL(NULL, '') AS VAReserved02,
+        ISNULL(NULL, '') AS VAReserved03,
+        ISNULL(NULL, '') AS ConversationIDEmail,
+        ISNULL(NULL, '') AS FromAddress,
+        ISNULL(NULL, '') AS ToAddress,
+        ISNULL(NULL, '') AS EmailSize,
+        ISNULL(NULL, '') AS PaymentCodeEmail,
+        ISNULL(NULL, '') AS EReserved01,
+        ISNULL(NULL, '') AS EReserved02,
+        ISNULL(NULL, '') AS EReserved03,
+        ISNULL(NULL, '') AS EReserved04,
+        ISNULL(NULL, '') AS EReserved05
+    INTO #Temp_Facturacion
+    FROM ccWhatsAppGlobalIds wa--select * from ccMetaWAOutboundTemplates
+    LEFT JOIN ccoWhatsLogDials a ON a.ConversationId = wa.FirstMessageConversationIdFromAgent
+    LEFT JOIN ccMetaWAOutboundTemplates mt ON mt.Id = a.TemplateId -- Obtener TemplateName
+    WHERE 
+        FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
 
-        -- Crear la tabla temporal con valores predeterminados
-        SELECT 
-            @CompanyName AS ClientAccount, -- Insertar el parámetro en la columna
-            ISNULL((SELECT valor FROM ccSettings WHERE setting_id = 7), '''') AS ClientIP,
-            ''WhatsApp'' AS Provider,
-            ISNULL(CAST(IsBilled AS VARCHAR), ''0'') AS IsBilled,
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''inbound'' ELSE ''outbound'' END AS Direction,
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 1), '''') AS CountryFrom, -- Abreviatura del país
-            ISNULL(dbo.GetCountryDetailWhatsApp(AssociatedNumber, 0), '''') AS CountryCodeFrom, -- Código de país
-            ISNULL(AssociatedNumber, '''') AS ClientNumberFrom,
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 1), '''') AS CountryTo,       -- Abreviatura del país
-            ISNULL(dbo.GetCountryDetailWhatsApp(ClientNumber, 0), '''') AS CountryCodeTo,       -- Código de país
-            ISNULL(ClientNumber, '''') AS ClientNumberTo,
-            CAST(CAST(FirstMessageDateFromAgent AS DATE)AS VARCHAR(MAX)) AS ConversationDate, -- Mostrar solo la fecha
-            FORMAT(FirstMessageDateFromAgent, ''HH:mm:ss'') AS ConversationTime, -- Hora completa en formato HH:MM:SS
-            ISNULL(NULL, '''') AS CReserved01,
-            ISNULL(NULL, '''') AS CReserved02,
-            ISNULL(NULL, '''') AS CReserved03,
-            ISNULL(NULL, '''') AS CReserved04,
-            ISNULL(GlobalId, NULL) AS GlobalId,
-            ISNULL(wa.Category, '''') AS TemplateType,
-            ISNULL(mt.TemplateName, '''') AS TemplateName, -- Relacionar con ccMetaWAOutboundTemplates
-            CASE WHEN FirstMessageConversationTypeFromAgent = 0 THEN ''Wa In'' ELSE ''Wa Out'' END AS PaymentCodeWA, -- Nueva columna
-            ISNULL(NULL, '''') AS WAReserved01,
-            ISNULL(NULL, '''') AS WAReserved02,
-            ISNULL(NULL, '''') AS WAReserved03,
-            ISNULL(NULL, '''') AS WAReserved04,
-            ISNULL(NULL, '''') AS WAReserved05,
-            ISNULL(NULL, '''') AS WAReserved06,
-            ISNULL(NULL, '''') AS WAReserved07,
-            ISNULL(NULL, 0) AS SMSConversationID,
-            ISNULL(NULL, '''') AS NumberType,
-            ISNULL(NULL, 0) AS MessageLength,
-            ISNULL(NULL, '''') AS TelephoneCompany,
-            ISNULL(NULL, '''') AS SMSReserved01,
-            ISNULL(NULL, '''') AS SMSReserved02,
-            ISNULL(NULL, '''') AS SMSReserved03,
-            ISNULL(NULL, '''') AS SMSReserved04,
-            ISNULL(NULL, '''') AS SMSReserved05,
-            ISNULL(NULL, '''') AS SMSReserved06,
-            ISNULL(NULL,0) AS VirtualAgentID,
-            ISNULL(NULL, 0) AS CWConversationID,
-            ISNULL(NULL, '''') AS InteractionType,
-            ISNULL(NULL, '''') AS InteractionTime,
-            ISNULL(NULL, 0) AS TokenQuantity,
-            ISNULL(NULL, '''') AS VAReserved01,
-            ISNULL(NULL, '''') AS VAReserved02,
-            ISNULL(NULL, '''') AS VAReserved03,
-            ISNULL(NULL, '''') AS VAReserved04,
-            ISNULL(NULL, '''') AS VAReserved05,
-            ISNULL(NULL, 0) AS EmailConversationID,
-            ISNULL(NULL, '''') AS SenderDirection,
-            ISNULL(NULL, '''') AS RecipientDirection,
-            ISNULL(NULL, '''') AS ShippingSize,
-            ISNULL(NULL, '''') AS EReserved01,
-            ISNULL(NULL, '''') AS EReserved02,
-            ISNULL(NULL, '''') AS EReserved03,
-            ISNULL(NULL, '''') AS EReserved04,
-            ISNULL(NULL, '''') AS EReserved05,
-            ISNULL(NULL, '''') AS EReserved06
-        INTO #Temp_Facturacion
-        FROM ccWhatsAppGlobalIds wa
-        INNER JOIN ccoWhatsLogDials a ON a.ConversationId = wa.FirstMessageConversationIdFromAgent
-        INNER JOIN ccMetaWAOutboundTemplates mt ON mt.Id = a.TemplateId -- Obtener TemplateName
-        WHERE 
-            FirstMessageDateFromAgent BETWEEN @DateFrom AND @DateTo;
+    -- Mostrar los resultados ordenados por ConversationDate
+    SELECT * 
+    FROM #Temp_Facturacion
+    ORDER BY ConversationDate ASC;
 
-        -- Mostrar los resultados ordenados por ConversationDate
-        SELECT * 
-        FROM #Temp_Facturacion
-        ORDER BY ConversationDate ASC;
+    -- Limpiar la tabla temporal
+    IF OBJECT_ID('tempdb..#Temp_Facturacion') IS NOT NULL DROP TABLE #Temp_Facturacion
+END;
 
-        -- Limpiar la tabla temporal
-        IF OBJECT_ID(''tempdb..#Temp_Facturacion'') IS NOT NULL DROP TABLE #Temp_Facturacion
-    END;'
+'
     EXEC(@sql)
    
    -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------

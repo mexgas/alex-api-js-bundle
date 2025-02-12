@@ -398,6 +398,13 @@ BEGIN
         EXEC(@sql)
 
         -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------
+
+         SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials'
+        SET @sql = 'delete from ccMenuRol where menu_id in(11000,11010,11020,11030,11040)
+delete from ccMenuUser where id_Menu in(11000,11010,11020,11030,11040)
+delete from ccMenus where menu_id in(11000,11010,11020,11030,11040)
+'
+        EXEC(@sql)
 	
         /* End script release */        /* Upgrade database version (first and the last number of setting 77) */
         EXEC ccsp_getVersion 'BD', @version --- Update first number (Version)

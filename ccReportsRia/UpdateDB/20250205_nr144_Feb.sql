@@ -326,6 +326,32 @@ SET @process = 'KR1170000 Create table RepAgentTimeShift'
 	    END
     '
     EXEC(@sql)
+
+	SET @process = 'DISABLE TRIGGER MSmerge_tr_altertable'
+		set @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			DISABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+		EXEC(@sql)
+
+	SET @process = 'Alter table for CampType KR170000'
+        SET @sql = 'IF NOT EXISTS ( SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''ccCamps'' AND COLUMN_NAME = ''CampType'')
+		BEGIN
+			ALTER TABLE ccCamps
+			ADD CampType int NULL;
+
+			
+		END'
+        EXEC(@sql)
+
+	SET @process = 'ENABLE TRIGGER MSmerge_tr_altertable'
+	SET @sql='if exists(select * from sys.triggers where name = N''MSmerge_tr_altertable'')
+			begin
+			ENABLE TRIGGER MSmerge_tr_altertable ON DATABASE
+			end'
+	EXEC(@sql)
+
+
     SET @process = 'KR170000 Create SP for RepAgentTimeShift'
     SET @sql = '      
         CREATE PROCEDURE [dbo].[ccspRepAgentTimeShift]

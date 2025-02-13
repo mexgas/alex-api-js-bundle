@@ -252,6 +252,16 @@ BEGIN
 			select @result
 			
 		END
+		ELSE IF (@action = 7) --- Get virtual agents by campaign id and camptype
+        BEGIN
+                SELECT 
+                cva.idAgent
+                , ISNULL(cva.quantumAgentId,'''') AS QuantumAgentId
+                , ISNULL(cva.location,'''') AS Location
+                , ISNULL('''','''')  AS ProjectId
+                FROM dbo.ccVirtualAgent AS cva
+                WHERE cva.idCampaign = @campaignId AND cva.campType = @campType;
+        END
     END'
     EXEC(@sql)
 
@@ -2925,6 +2935,450 @@ IF @action = 9 begin
     EXEC(@sql);
 ---------------------------------------------------- END Frida --------------------------------------------------------------
 
+---------------------- Begin Marco Garcia -------------------------------------------------------------------
+ SET @process = 'Se agregan nuevas columnas a la tabla ccoCallsOutSource para campañas AI'
+	SET @sql= '
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_NAME = ''ccoCallsOutSource'' AND COLUMN_NAME = ''data_api_quantum'')
+    BEGIN
+        ALTER TABLE dbo.ccoCallsOutSource ADD data_api_quantum VARCHAR(MAX) DEFAULT('''')
+    END
+	 IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_NAME = ''ccoCallsOutSource'' AND COLUMN_NAME = ''data_overflow_variables_quantum'')
+    BEGIN
+        ALTER TABLE dbo.ccoCallsOutSource ADD data_overflow_variables_quantum VARCHAR(MAX) DEFAULT('''')
+    END'
+	EXEC(@sql);
+
+
+	SET @process = 'Se agregan nuevas columna a la tabla ccocallsout para campañas AI'
+	SET @sql= '
+    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+               WHERE TABLE_NAME = ''ccocallsout'' AND COLUMN_NAME = ''virtualAgentId'')
+    BEGIN
+        ALTER TABLE dbo.ccocallsout ADD virtualAgentId int DEFAULT(0)
+    END'
+	EXEC(@sql);
+
+	SET @process = 'Se elimina sp ccsp_DLRGetDialInfo en caso de existir'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRGetDialInfo'')
+			begin
+				DROP PROCEDURE ccsp_DLRGetDialInfo;
+			end'
+    EXEC(@sql)
+
+	SET @process = 'Se crea el sp ccsp_DLRGetDialInfo, se agrega la columna data_api_quantum, para poder consultarla al 
+	obtener los datos de la llamada'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRGetDialInfo]
+	@callout_id int,
+	@cam_id smallint=0,
+	@iPortNumber smallint = 0
+	AS
+	set nocount on
+	declare @message_name as varchar(8000), @messageDNCL_name as varchar(max), @messageDNCLConfirm_name as varchar(max)    
+	declare @prefix as varchar(15)
+	declare @prefixCalKey as varchar(30)
+	declare @tNoContesta as tinyint
+	declare @ani as varchar(32)
+	declare @iTipoDial tinyint, @detectAnswerMachine as smallint, @detectVoiceMail as tinyint, @rotativeAlgo tinyint
+	declare @cam_tnotas as smallint, @keepDial as bit, @lista_id smallint
+	declare @ivr_script smallint, @surveycamid int
+	declare @call_record_cam as tinyint
+	declare @pais as tinyint 
+	declare @sipHdrFormat varchar(255)
+	declare @PrefixRec varchar(40)
+	declare @recordHold bit, @recordIvr bit
+
+	set @prefix =''''
+	set @tNoContesta = 25
+	set @ani=''''
+	set @iTipoDial = 0
+	set @detectAnswerMachine = 0
+	set @detectVoiceMail =1
+	set @cam_tnotas = 30
+	set @keepDial = 0
+
+	select @pais = valor from ccsettings where setting_id = 104
+	select @PrefixRec=ISNULL(prefijo,'''') from ccCamps nolock where cam_id = @cam_id
+
+	-- Mensajes
+	select @message_name=msg_mostrar, @messageDNCL_name=msg_mostrar_dnc, @messageDNCLConfirm_name = msg_mostrar_dnc_confirm
+	from dbo.fn_ccCamps_SelMessage(@cam_id)
+
+	-- Prefijo por puerto
+	select @prefix = prefix from cstoProvedor nolock where provedor_id = (select provedor_id from ccodialers nolock where puerto = @iPortNumber )
+	-- Prefijo por campa?a
+	if @prefix =''''
+		select @prefix = dialPrefix from ccCamps nolock where cam_id = @cam_id
+	-- Prefijo general, si es que esta habilitado
+	if @prefix ='''' and ((select cast(valor as int) from ccsettings nolock where setting_id =102) & 1 = 1)
+		select @prefix = valor from ccsettings nolock where setting_id =101
+
+	select @iPortNumber = 0, @surveycamid = 0, @ivr_script = 0
+
+	-- Propiedades de campa?a
+	select @sipHdrFormat=isnull(sipHdrFormat,''''),@tNoContesta=cam_tNoContesta, @ani=ani, @iTipoDial=iTipoDial, @detectAnswerMachine=detectAnswerMachine,
+	@detectVoiceMail=detectVoiceMail, @cam_tnotas=cam_tnotas, @keepDial=keepDial,@lista_id =id_anilist,
+	@call_record_cam = isnull(call_record,1), @surveycamid = isnull(surveycamid,0), @rotativeAlgo=isnull(rotativeAlgo,0), @recordHold=ISNULL(recordHold,0)
+	,@PrefixRec=ISNULL(prefijo,''''), @recordIvr=ISNULL(recordIvr,0)
+	from ccCamps C (nolock) where C.cam_id=@cam_id
+
+	if @surveycamid > 0
+		select @ivr_script = isnull(ivrscript,0) from cccamps nolock where cam_id = @surveycamid
+
+	--Custom MOH Files
+	DECLARE @MohFiles VARCHAR(8000), @sipheader varchar(500)
+	SELECT @MohFiles = COALESCE(@MohFiles + '','', '''') + V.msgfile 
+	FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
+
+	--Agrega prefijo Marcacion con directo
+	declare @mainPrefix varchar(1), @phones varchar(max)
+	set @prefixCalKey=''''
+	select @mainPrefix = valor from ccSettings where setting_id=202
+	declare @tmpccoCallsOutSource table(callout_id int primary key,dialPrefix   varchar(30) null
+	,cal_Key    varchar(40)
+	,cal_telefono   varchar(30),cal_telefono2   varchar(30),cal_telefono3   varchar(30),cal_telefono4   varchar(30),cal_telefono5   varchar(30)
+	,Dato1  varchar(255),Dato2  varchar(255),Dato3  varchar(255),Dato4  varchar(255),Dato5  varchar(255)
+	,recyclePhone   SMALLINT
+	,recycleType BIT
+    ,data_api_quantum VARCHAR(MAX)
+	)
+	insert into @tmpccoCallsOutSource
+	select callout_id,dialPrefix,cal_Key,
+	cal_telefono,cal_telefono2,cal_telefono3,cal_telefono4,cal_telefono5,
+	Dato1,Dato2,Dato3,Dato4,Dato5,
+	recyclePhone,recycleType, data_api_quantum
+	FROM ccoCallsOutSource NOLOCK WHERE callout_id=@callout_id 
+
+
+	SELECT @prefixCalKey=CASE WHEN @mainPrefix=''1'' THEN isnull(dialPrefix,'''') ELSE '''' END,
+		@phones=cal_telefono+'';''+cal_telefono2+'';''+cal_telefono3+'';''+cal_telefono4+'';''+cal_telefono5
+	FROM @tmpccoCallsOutSource
+
+	if @iPortNumber >= 0 
+	begin
+		declare @Anis table(id int, pid varchar(2), phone varchar(32), ani varchar(32))
+
+		insert @Anis
+		exec ccsp_DLRGetRotativeANI @callout_id=@callout_id,@phones=@phones,@aniList=@lista_id,@algo=@rotativeAlgo
+
+		SELECT @sipheader = dbo.fn_getSIPHeaderCfg(@callout_id,@sipHdrFormat)
+    
+		SELECT c.callout_id, ''cal_key''=c.cal_key+''~''+rtrim(dato1)+''~''+rtrim(dato2)+''~''+rtrim(dato3)+''~''+rtrim(dato4)+''~''+rtrim(dato5)
+		, ISNULL(cpt.Prioridad,''12345NNN'') dial_tels
+		, CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 1) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE C.cal_telefono  END cal_telefono
+		, CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 2) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono2 END cal_telefono2
+		, CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 3) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono3 END cal_telefono3
+		, CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 4) AND ISNULL(recycleType, 1) = 0) THEN '''' ELSE c.cal_telefono4 END cal_telefono4
+		, CASE WHEN (NOT(ISNULL(recyclePhone, 0) = 5) AND ISNULL(recycleType, 1) = 0) THEN '''' Else c.cal_telefono5 END cal_telefono5
+		, isnull(@message_name, '''') as message_name
+		, @tNoContesta as tNoContesta, @prefix+@prefixCalKey as sDialPrefix    
+		, case when anis.p1 <> '''' then anis.p1 else @ani end ani
+		, case when anis.p2 <> '''' then anis.p2 else @ani end ani2
+		, case when anis.p3 <> '''' then anis.p3 else @ani end ani3
+		, case when anis.p4 <> '''' then anis.p4 else @ani end ani4
+		, case when anis.p5 <> '''' then anis.p5 else @ani end ani5
+		, @iTipoDial iTipoDial, @detectAnswerMachine detectAnswerMachine, @detectVoiceMail detectVoiceMail
+		, @cam_tnotas cam_tnotas, @keepDial keepDial
+		, isnull(@messageDNCL_name, '''') as messageDNCL_name
+		,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono) as call_record
+		,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono2) as call_record2
+		,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono3) as call_record3
+		,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono4) as call_record4
+		,dbo.EnableCallRecord(@call_record_cam,@pais,c.cal_telefono5) as call_record5
+		, isnull(@messageDNCLConfirm_name, '''') as messageDNCLConfirm_name
+		, isnull(@MohFiles,'''') as mohFiles
+		,@ivr_script ivrScript
+		,@sipheader data
+		,@PrefixRec as Prefijo,
+		dbo.GetCarrierByTel(C.cal_telefono) carrier1, 
+		dbo.GetCarrierByTel(cal_telefono2) carrier2, 
+		dbo.GetCarrierByTel(cal_telefono3) carrier3, 
+		dbo.GetCarrierByTel(cal_telefono4) carrier4, 
+		dbo.GetCarrierByTel(cal_telefono5) carrier5,
+		@recordHold as recordHold,
+		@recordIvr as recordIvr,
+		isnull(C.data_api_quantum, '''') AS data_api_quantum
+		FROM @tmpccoCallsOutSource C
+		left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
+		left join ccCampsPrioridadTel cpt on cpt.cam_id = @cam_id
+		left join (SELECT * FROM (SELECT pid,ani FROM @Anis)a PIVOT(MAX(ani) FOR pid IN(p1,p2,p3,p4,p5)) AS pt) anis on 0=0
+		WHERE C.callout_id = @callout_id
+		return
+	end 
+	set nocount off'
+	EXEC(@sql)
+
+	SET @process = 'Se elimina sp ccsp_AgentUpdateCallTimes en caso de existir'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_AgentUpdateCallTimes'')
+			begin
+				DROP PROCEDURE ccsp_AgentUpdateCallTimes;
+			end'
+    EXEC(@sql)
+	SET @process = 'Se crea el sp ccsp_AgentUpdateCallTimes, 
+	Se agrega cal_twait = ISNULL(@cal_twait, cal_twait), para actualzar ese tiempo'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_AgentUpdateCallTimes]
+	@IDCall int,
+	@cal_tXfer float,
+	@cal_tDialog float,
+	@cal_tNotas float,
+	@TipoCall tinyint,
+	@cal_tRing float=0,
+	@mtmoh smallint = 0,
+	@isChatCall bit = 0,
+	@isErroManualCall bit =0,
+	@isTransferEngine bit =0,
+	@cal_twait float = null
+	AS
+	set nocount on
+	if @IDCall<=0 
+		return(0)
+
+	declare @tMinAVRS smallint
+	declare @cal_manual int
+	declare @minimoDialogo tinyint 
+	select @minimoDialogo = valor from ccSettings where setting_id = 13
+
+	set @cal_manual=0
+
+	if @TipoCall=1 begin--INBOUND
+	  if @cal_tDialog < @minimoDialogo and @isTransferEngine =1 begin
+		--el status 18 es para llamada cortada con transferencia en Reminder
+		exec ccsp_RIAUpdateCallBack_Abandon @cal_id = @IDCall, @nStatus = 18
+	  end
+	  Update ccCallsIN with(rowlock) Set cal_tXfer=@cal_tXfer, 
+		cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+	  cal_tNotas=@cal_tNotas, 
+	  cal_tRing=@cal_tRing, cal_colgada=0, statusCall_id=13, 
+	  cal_tMoh= case when @mtmoh>0 then  @mtmoh else cal_tMoh end
+	  Where cal_id= @IDCall
+
+	  exec ccspSaveDispositionResult @action=2, @callid=@IDCall,@callType=0,@statusCallId=13
+
+
+	  --Actualizar tiempo total de llamada
+	  exec ccsp_EngineLogTransfers 2, @IDCall, @TipoCall, 2, null, @cal_tXfer, @cal_tDialog
+
+	  -- Elimina callback generado por abandono
+  
+	  if @isTransferEngine = 0  begin
+	  Declare @ANI_x varchar(19)
+	  select @ANI_x=cal_ani from cccallsin with(index(PK_ccCallsIn), nolock) where cal_id=@IDCall
+
+	  DELETE ccoWorkingTable with(rowlock ) WHERE callout_id in (select callout_id from ccRIAUpdateCallBack_Abandon with(index(PK_ccRIAUpdateCallBack_Abandon), nolock) where cal_ani=@ANI_x)
+	  DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE cal_ANI=@ANI_x
+	  end
+	end
+	else if @TipoCall=2 begin--OUTBOUND 
+		declare @calloutId int
+		Update ccoCallsOUT with(rowlock) Set cal_tXfer=case when @cal_tXfer > 0 then @cal_tXfer else cal_tXfer end, 
+		cal_tRing=case when @cal_tRing > 0 then @cal_tRing else cal_tRing end, 
+		cal_tDialog=case when @cal_tDialog > 0 and @cal_tDialog > cal_tDialog then @cal_tDialog else cal_tDialog end, 
+    
+		cal_tNotas=case when @cal_tNotas > 0 then @cal_tNotas else cal_tNotas end, 
+		cal_tMoh=case when @mtmoh > 0 then @mtmoh else cal_tMoh end,
+    
+		cal_manual=case when @isChatCall=1 then 3 else cal_manual end,
+		cal_colgada=0, statusCall_id=case when @isErroManualCall=0 then 13 else statusCall_id end,
+		totalCall_Time=case when totalCall_Time is null then @cal_tDialog else totalCall_Time end 
+		,@calloutId=callout_id,
+		cal_twait = ISNULL(@cal_twait, cal_twait)
+		Where cal_id=@IDCall
+
+		exec ccspSaveDispositionResult @action=2, @callid=@IDCall,@callType=1,@statusCallId=13
+		
+		DELETE ccRIAUpdateCallBack_Abandon with(rowlock) WHERE callout_id=@calloutId
+
+		-- calcula el costo de la llamada
+		exec ccsp_CstoCalculaCosto @IDCall
+	  select @cal_manual=cal_manual from ccoCallsOUT with(nolock) Where cal_id=@IDCall
+
+	 end
+
+	select @tMinAVRS=isnull(valor,5) from ccSettings where setting_id=65
+
+	if @cal_tDialog >= @tMinAVRS and @cal_manual<>1
+	  and not exists(select * from ccAVRSTransfer where cal_id=@IDCall and tipo=@TipoCall - 1) 
+	  begin 
+			insert ccAVRSTransfer (cal_id, tipo) values (@IDCall, @TipoCall - 1)
+	end
+
+	return(0)
+	set nocount off'
+	EXEC(@sql);
+
+	SET @process = 'Se elimina sp ccsp_DLRInsertCall en caso de existir'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_DLRInsertCall'')
+			begin
+				DROP PROCEDURE ccsp_DLRInsertCall;
+			end'
+    EXEC(@sql)
+	SET @process = 'Se crea el sp ccsp_DLRInsertCall, 
+	Se modifica, para que si @virtualAgentId, es diferente de cero inserte el id, en caso contrario solo inserta el user_id'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_DLRInsertCall]
+		@callout_id int,
+		@cam_id smallint,
+		@cal_Key varchar(20),
+		@cal_Telefono varchar(14),
+		@Puerto smallint,
+		@logDial_id int=0,
+		@virtualagentId SMALLINT = 0
+		AS
+		BEGIN
+
+		--INSERT CCOCALLSOUT ( CALLOUT_ID, CAM_ID, CAL_KEY, CAL_TELEFONO, CAL_PUERTO, CAL_INICIO, STATUSCALL_ID ) --STATUS 6=PIDE AGENTE
+		--  VALUES ( @CALLOUT_ID, @CAM_ID, @CAL_KEY, @CAL_TELEFONO, @PUERTO, GETDATE(), 6 )
+
+		--SELECT CAST(SCOPE_IDENTITY() AS INT) AS CAL_ID
+
+		DECLARE @SQL NVARCHAR(MAX);
+		DECLARE @Params NVARCHAR(MAX);
+    
+		-- Construimos la consulta base
+		SET @SQL = N''
+		INSERT INTO ccoCallsOUT ( callout_id, cam_id, cal_Key, cal_telefono, cal_puerto, cal_Inicio, statusCall_id'';
+
+		-- Agregamos la columna user_id si @user_id es diferente de 0
+		IF @virtualagentId <> 0
+			SET @SQL = @SQL + N'', virtualAgentId'';
+
+		-- Cerramos la lista de columnas y agregamos los valores
+		SET @SQL = @SQL + N'' ) VALUES ( @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto, GETDATE(), 6'';
+
+		-- Agregamos el valor de user_id si @user_id es diferente de 0
+		IF @virtualagentId <> 0
+			SET @SQL = @SQL + N'', @virtualagentId'';
+
+		-- Cerramos el query
+		SET @SQL = @SQL + N'' ); SELECT CAST(SCOPE_IDENTITY() AS INT) AS cal_id;'';
+
+		-- Definimos los parámetros correctamente
+		IF @virtualagentId <> 0
+		BEGIN
+			SET @Params = N''@callout_id INT, @cam_id SMALLINT, @cal_Key VARCHAR(20), @cal_Telefono VARCHAR(14), 
+							@Puerto SMALLINT, @virtualagentId SMALLINT'';
+
+			-- Ejecutamos la consulta con virtualAgentId
+			EXEC sp_executesql @SQL, @Params, 
+							   @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto, @virtualagentId;
+		END
+		ELSE
+		BEGIN
+			SET @Params = N''@callout_id INT, @cam_id SMALLINT, @cal_Key VARCHAR(20), @cal_Telefono VARCHAR(14), 
+							@Puerto SMALLINT'';
+
+			-- Ejecutamos la consulta dinámica
+			EXEC sp_executesql @SQL, @Params, 
+							   @callout_id, @cam_id, @cal_Key, @cal_Telefono, @Puerto;
+		END
+
+	END'
+	EXEC(@sql)
+
+	SET @process = 'Se elimina sp ccsp_GalateaGetRecordsImportStatus en caso de existir'
+    SET @sql = 'if exists (select * from sys.procedures where name = N''ccsp_GalateaGetRecordsImportStatus'')
+			begin
+				DROP PROCEDURE ccsp_GalateaGetRecordsImportStatus;
+			end'
+    EXEC(@sql)
+	SET @process = 'Se crea el sp ccsp_GalateaGetRecordsImportStatus, 
+	se agrega description en   SELECT state, pctg, description
+          FROM ccRIALoading
+          WHERE load_id  = @loadID'
+	SET @sql = 'CREATE PROCEDURE [dbo].[ccsp_GalateaGetRecordsImportStatus]
+        -- @Type = 1:Detalle general de carga de registros | 2:Detalle específico de carga de registros | 3:Porcentaje de carga de registros
+        @action tinyint, 
+        @loadID int = NULL, 
+        @userID smallint = NULL
+
+        AS
+        declare @today datetime
+        select @today =convert(datetime, convert(varchar(11),getdate(),121),121)
+        SET nocount ON
+        if @action not IN (1,2,3)
+        raiserror(''ERROR. No se ingreso parametro de entrada'', 18, 1)
+
+        if @action=1 -- Detalle general de carga de registros
+        BEGIN
+        if not exists(SELECT User_id FROM ccUsers WHERE TipoUser_id IN(2,6) AND Status>0 AND User_id=@userID)
+         BEGIN
+          raiserror(''ERROR. invalid user id'', 18, 1)
+          return(0)
+         END
+
+        if exists (select * from ccUsers_Roles where User_id = @userID and Rol_id = (select Rol_id from ccRoles where Level = 7))
+            BEGIN
+                SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate 
+                FROM ccRIALoading riaLoad
+                JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+                WHERE 
+                loadDate>=@today
+                ORDER BY riaLoad.loadDate DESC
+            END
+        else
+            BEGIN
+                SELECT DISTINCT load_id, cccamps.cam_descripcion as camName, pctg, regsLoaded+alreadyLoaded as regsLoaded, regsNotLoaded+regsBlocked+isnull(regsNotLoadedCp,0)+ISNULL(recordsNotLoadedPort,0) as regsNotLoaded, state, loadDate
+        
+                FROM ccRIALoading riaLoad
+                JOIN ccSupervisorCam superCam ON riaLoad.cam_id = superCam.cam_id
+                JOIN ccCamps cccamps ON riaLoad.cam_id = cccamps.cam_id
+                WHERE 
+                loadDate>=@today AND
+                superCam.user_id = @userID
+                AND superCam.tipo = 1
+                ORDER BY riaLoad.loadDate DESC
+            END
+
+        return(0)
+        END
+
+        if @action=2 -- Detalle específico de carga de registros
+        BEGIN
+        if not exists(SELECT load_id FROM ccRIALoading)
+         BEGIN
+          raiserror(''ERROR. invalid template ID'', 18, 1)
+          return(0)
+         END
+          SELECT 
+          crl.regsLoaded
+          ,crl.alreadyLoaded
+          ,crl.regsBlocked
+          ,crl.regsNotLoaded
+          ,crl.telsLoaded
+          ,crl.telsBlocked
+          ,crl.telsNotLoaded
+          ,ISNULL(regsNotLoadedCp,0) as regsNotLoadedCp
+          ,ISNULL(telsNotLoadedCp,0) as telsNotLoadedCp
+          ,ISNULL(recordsNotLoadedPort,0) as recordsNotLoadedPort
+          ,ISNULL(phonesNotLoadedPort, 0) as phonesNotLoadedPort
+          ,ISNULL(LoadBySegment, CAST(0 AS BIT)) as IsSegmentLoad
+          ,cc.CampType
+          FROM dbo.ccRIALoading AS crl
+          JOIN dbo.ccCamps AS cc
+          ON cc.cam_id = crl.cam_id
+          WHERE crl.load_id = @loadID
+          
+
+        END
+
+        if @action=3 -- Porcentaje de carga de registros
+        BEGIN
+        if not exists(SELECT load_id FROM ccRIALoading)
+         BEGIN
+          raiserror(''ERROR. invalid load ID'', 18, 1)
+          return(0)
+         END
+
+          SELECT state, pctg, description
+          FROM ccRIALoading
+          WHERE load_id  = @loadID
+
+        END
+        SET nocount off'
+		EXEC(@sql)
+
+
+---------------------------------End Marco García
 
 
  

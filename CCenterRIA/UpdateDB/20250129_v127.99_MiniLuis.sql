@@ -252,6 +252,18 @@ BEGIN
 			select @result
 			
 		END
+
+        ELSE IF (@action = 8) --- Reload virtual agent association
+		BEGIN
+			SELECT 
+                cva.idAgent AS IdAgentVirtual
+                ,cva.nameAgent AS NameAgentVirtual
+                ,ISNULL(cva.concurrentSessionsLimit, 0) AS NumberSessions
+                ,cva.idCampaign AS IdCampaign
+            FROM ccVirtualAgent cva
+            LEFT JOIN ccCamps cc ON cva.idCampaign = cc.cam_id AND cva.campType = 1
+            WHERE cva.idAgent = (CASE WHEN @idVirtualAgent = 0 THEN cva.idAgent ELSE @idVirtualAgent END)
+		END
     END'
     EXEC(@sql)
 

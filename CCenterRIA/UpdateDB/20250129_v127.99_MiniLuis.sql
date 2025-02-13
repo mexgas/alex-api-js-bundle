@@ -2925,6 +2925,194 @@ IF @action = 9 begin
     EXEC(@sql);
 ---------------------------------------------------- END Frida --------------------------------------------------------------
 
+---------------------------------------------------- BEGIN MACL --------------------------------------------------------------
+ SET @process = 'Se agrega columna internationalRecords a tabla ccRIALogPhones'
+    SET @sql = 'IF NOT EXISTS(SELECT 1 FROM sys.columns 
+          WHERE Name = N''internationalRecords''
+          AND Object_ID = Object_ID(N''ccRIALogPhones''))
+BEGIN
+    ALTER TABLE ccRIALogPhones ADD internationalRecords BIT
+END'
+    EXEC(@sql);
+
+ SET @process = 'Alter ccsp_RIALogPhones para obtener la informacion conforme a los internationalRecords'
+    SET @sql = 'ALTER procedure [dbo].[ccsp_RIALogPhones]
+		@load_id int,
+		@Type smallint,
+		@GenCSV bit = 1, -- 0:100 / 1:todos
+		@isKolob bit = 0,
+		@PageIndex      INT = 0,
+		@PageSize       INT = 0,
+		@option SMALLINT = NULL
+		as
+		set nocount ON
+
+
+		declare @CaseType varchar(2000), @sql nvarchar(MAX), @nType char(5), @MovType SMALLINT, @language int, @LoadBySegment varchar(1)
+		SELECT @language = cs.valor FROM dbo.ccSettings AS cs WHERE cs.setting_id = 27;
+		declare @PageStart int,@PageEnd int
+		SELECT @LoadBySegment = CAST(ISNULL(LoadBySegment,''0'') as varchar) from ccRIALoading where load_id = @load_id
+		IF(@option = 0)
+		BEGIN
+			select CAST(@LoadBySegment as bit) as LoadBySegment
+			return 0;
+		END
+
+		select @CaseType = '''', @nType = right(''0000''+cast(@Type as varchar(5)), 5)
+		
+		if @nType like ''%____1%'' --Record Not Loaded
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov in (0,8) 
+			''
+
+		if @nType like ''%___1_%''--Number Not Loaded
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')<>'''''''' and crlp.tipoMov in(-1,0,8) 
+			''
+
+		if @nType like ''%__1__%''--Record Blocked
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov IN (1)
+			''
+
+		if @nType like ''%_1___%''--Number blocked
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')<>'''''''' and crlp.tipoMov IN (1,4) 
+			''
+
+		if @nType like ''%1____%''--Record Updated
+			select @CaseType = @CaseType + '' or isnull(telefono,'''''''')='''''''' and crlp.tipoMov = 2 ''
+
+		if @CaseType = '''' and @nType <> 0
+			return(0)
+
+		if @nType like ''%____1%''
+			select @CaseType = @CaseType + ''  or telefono<>'''''''' and crlp.tipoMov = 0''
+
+		select @PageStart=@PageSize*(@PageIndex-1),@PageEnd=@PageSize*@PageIndex
+
+		IF(@option = 1)
+		BEGIN	
+			SET @sql = ''SELECT count(*) AS listSize FROM (
+		select crlp.load_id
+		from ccRIALogPhones AS crlp 
+		where crlp.load_id = @load_id and ('' 
+		+ ISNULL(STUFF(@CaseType,CHARINDEX(''or'',@CaseType),LEN(''or''),''''),'''') +'')) tmp '' +
+		case @GenCSV when 0 then ''WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd'' else '''' end
+					--EXEC(@sql);
+
+				Exec sp_executesql @sql
+						 , N''@PageStart int,@PageEnd int,@language int,@load_id int''
+						 , @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id
+					RETURN (0);
+				END
+				ELSE 
+				BEGIN
+						IF(@isKolob = 1)
+						BEGIN
+
+						declare @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200), @typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+						@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @typeUpdatedRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200), @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max);
+
+
+						select @typeDescriptionPhoneBlocked=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-num''
+						select @typeDescriptionPhoneUpdated=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-num''
+						select @typeIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-incorrect-records''
+						select @typeBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-blocked-records''
+						select @typeDescriptionPhoneNotLoaded=translate from tableLangueDbLoader where languageId=@language and tag=''type-not-loaded-num''
+
+						select @typeDescriptionPhoneBlackList=translate from tableLangueDbLoader where languageId=@language and tag=''description-dnc-list''
+						select @descriptionIncorrectRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-incorrect-records''
+						select @descriptionBlockedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''description-blocked-records''
+						select @typeUpdatedRecords=translate from tableLangueDbLoader where languageId=@language and tag=''type-updated-records''
+						select @descriptionInternationalPortNotFound=TRANSLATE from tableLangueDbLoader where languageId=@language and tag=''type-camp-no-international-port''
+
+
+						select @column=translate from tableLangueDbLoader where languageId=@language and tag=''column-file-field''
+
+						select @headerPhone=header_phone,@headerPhone2=header_phone2,@headerPhone3=header_phone3,@headerPhone4=header_phone4 
+						,@headerPhone5=header_phone5
+						from fileHeadersPhoneLoad where load_id=@load_id
+			
+							set @CaseType=case when @CaseType <> '''' then '' and ('' + substring(@CaseType, 5, len(@CaseType)) + '')'' else '''' END
+							SET @sql = '';with result as(
+							SELECT * FROM (select  
+							ROW_NUMBER() OVER(ORDER BY crlp.cal_key ASC) AS RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							CASE
+								WHEN ISNULL(crlp.telefono, '''''''') = '''''''' THEN ''''''''
+								WHEN crlp.internationalRecords = 0 THEN ''''N-'''' + 
+									CASE WHEN crlp.telefono LIKE ''''E_'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
+								ELSE ''''I-'''' + 
+									CASE WHEN crlp.telefono LIKE ''''E_'''' THEN SUBSTRING(crlp.telefono, 3, LEN(crlp.telefono) - 2) ELSE crlp.telefono END
+							END AS phone,
+							CASE
+								WHEN crlp.tipoMov in (1,4)  THEN @typeDescriptionPhoneBlocked  
+								WHEN crlp.tipoMov = 2 THEN @typeUpdatedRecords	
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @typeIncorrectRecords
+								WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @typeBlockedRecords
+								WHEN crlp.tipoMov in(-1,0) THEN @typeDescriptionPhoneNotLoaded
+								WHEN crlp.tipoMov in(8) THEN @descriptionInternationalPortNotFound
+								WHEN crlp.keyTranslate is not null THEN isnull(tlan.translate,crlp2.descTipoMov)
+							ELSE 
+								crlp2.descTipoMov  
+							END AS Tipo,
+							case when CHARINDEX('''':'''',crlp.motivo)=0 then 0 else
+								convert(int,substring(crlp.motivo ,CHARINDEX('''':'''',crlp.motivo)-1 ,1))
+							end
+							 AS ColumnFile, 
+							CASE  WHEN crlp.tipoMov = 2 THEN ''''N/A'''' 
+									WHEN crlp.tipoMov in (1,4) THEN @typeDescriptionPhoneBlackList							  
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-incorrect-records'''') THEN @descriptionIncorrectRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-blocked-records'''') THEN @descriptionBlockedRecords
+									WHEN crlp.motivo in (select translate from tableLangueDbLoader where tag=''''type-camp-no-international-port'''') THEN  @descriptionInternationalPortNotFound
+									WHEN crlp.keyTranslate is not null THEN tlan.translate 
+							ELSE crlp.motivo END AS motivo,
+							CAST('' + @LoadBySegment + '' as BIT) AS LoadBySegment
+							from ccRIALogPhones AS crlp 
+							INNER JOIN dbo.ccRIACATLogPhones AS  crlp2 ON crlp.tipoMov = crlp2.tipoMov
+							left join tableLangueDbLoader tlan on tlan.tag=crlp.keyTranslate and tlan.languageId=@language
+							where crlp.load_id = @load_id '' 				
+							+ @CaseType +'') tmp '' +
+							case @GenCSV when 0 then '' WHERE tmp.RowNum > @PageStart AND tmp.RowNum <= @PageEnd '' else '''' end +'' 
+							) 
+							select  crlp.RowNum,
+							crlp.load_id,
+							crlp.cal_key, 
+							crlp.phone,
+							crlp.Tipo,
+							case when crlp.ColumnFile=1 then @headerPhone
+							when crlp.ColumnFile=2 then @headerPhone2
+							when crlp.ColumnFile=3 then @headerPhone3
+							when crlp.ColumnFile=4 then @headerPhone4
+							when crlp.ColumnFile=5 then @headerPhone5
+							else '''''''' end ColumnFile,
+							crlp.motivo
+							from result crlp ''
+			END
+			ELSE
+			BEGIN
+				set @sql = ''select '' + case @GenCSV when 0 then ''top 100 '' else '''' end 
+				+ ''load_id, cal_key, telefono, tipoMov, motivo from ccRIALogPhones AS crlp where load_id = @load_id '' 
+				+ @CaseType
+			END  
+			--PRINT(@sql);
+
+
+			Exec sp_executesql @sql, N''@PageStart int,@PageEnd int,@language int,@load_id int, @column VARCHAR(100), @typeDescriptionPhoneNotLoaded VARCHAR(200), @typeDescriptionPhoneBlocked VARCHAR(200),
+			@typeDescriptionPhoneUpdated VARCHAR(200), @typeDescriptionPhoneBlackList VARCHAR(200),
+			@typeBlockedRecords VARCHAR(200), @typeIncorrectRecords VARCHAR(200), @descriptionBlockedRecords VARCHAR(200), @descriptionIncorrectRecords VARCHAR(200),  @descriptionInternationalPortNotFound VARCHAR(200)
+			, @headerPhone VARCHAR(max), @headerPhone2 VARCHAR(max), @headerPhone3 VARCHAR(max), @headerPhone4 VARCHAR(max), @headerPhone5 VARCHAR(max), @typeUpdatedRecords varchar(200)''
+			, @PageStart=@PageStart,@PageEnd=@PageEnd,@language=@language,@load_id=@load_id,@column=@column,@typeDescriptionPhoneNotLoaded=@typeDescriptionPhoneNotLoaded
+			,@typeDescriptionPhoneBlocked=@typeDescriptionPhoneBlocked,@typeDescriptionPhoneUpdated=@typeDescriptionPhoneUpdated,@typeDescriptionPhoneBlackList=@typeDescriptionPhoneBlackList
+			,@typeBlockedRecords=@typeBlockedRecords,@typeIncorrectRecords=@typeIncorrectRecords,@descriptionBlockedRecords=@descriptionBlockedRecords,@descriptionIncorrectRecords=@descriptionIncorrectRecords,
+			 @descriptionInternationalPortNotFound= @descriptionInternationalPortNotFound 
+			,@headerPhone=@headerPhone,@headerPhone2=@headerPhone2,@headerPhone3=@headerPhone3,@headerPhone4=@headerPhone4,@headerPhone5=@headerPhone5,@typeUpdatedRecords=@typeUpdatedRecords
+	
+		return(0)
+		END
+		set nocount OFF'
+    EXEC(@sql);
+
+---------------------------------------------------- END MACL --------------------------------------------------------------
+
 
 
  

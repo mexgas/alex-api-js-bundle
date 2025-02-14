@@ -511,7 +511,7 @@ BEGIN
         ,AssignConversationSameAgent bit
         ,maxLimitQueueConversations SMALLINT
         ,MaxDaysPerWAConvo SMALLINT
-        ,RecordIvr BIT, 
+        ,RecordIvr BIT
         ,CamCanceled INT
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI BIT

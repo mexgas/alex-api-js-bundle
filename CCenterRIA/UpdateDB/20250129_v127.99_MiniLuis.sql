@@ -2189,7 +2189,7 @@ SET NOCOUNT OFF
 			return 0 -- no grabar
 		end
 
-		declare @callRecordOri bit
+		declare @callRecordOri tinyint
 
 		set @callRecordOri=@call_record_cam
 
@@ -2381,8 +2381,7 @@ END'
 			insert into DataCallIn (CallId, Data, Description) 
 			select @cal_id,value,''Dato ''+cast(id as varchar(max)) from dbo.[fn_RIASplitDelimited](@CALLDATA,''~'')
 		  END
-
-		  Select @cal_id as IDCall'
+        Select @cal_id as IDCall, @dni_id as IDdnis'		
 	EXEC(@sql);
 
 	SET @process = 'Drop procedure getPrefixByAcdId'
@@ -2396,7 +2395,7 @@ END'
     SET @sql = 'CREATE procedure [dbo].[getPrefixByAcdId] 
 @inboundId int,@phone varchar(50) = ''''
 as
-declare @prefijo varchar(40),@recordHold bit,@call_record as tinyint
+declare @prefijo varchar(40),@recordHold tinyint,@call_record as tinyint
 declare @countryId as tinyint 
 
 select @countryId = valor from ccsettings with(nolock) where setting_id = 104

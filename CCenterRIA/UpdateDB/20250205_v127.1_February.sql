@@ -417,7 +417,7 @@ BEGIN
    		 EXEC(@sql);
 
 		 SET @process = 'KR170000 Adding admin relationship report'
-		 SET = ' IF NOT EXIST(SELECT * FROM ccMenuUser WHERE id_Menu=2110)
+		 SET @sql= ' IF NOT EXISTS(SELECT * FROM ccMenuUser WHERE id_Menu=2110)
 		 		 BEGIN
 				 	INSERT INTO ccMenuUser (id_User, id_Menu,type) VALUES (1,2110,3)
 				 END

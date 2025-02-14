@@ -421,7 +421,7 @@ BEGIN
     END'
     EXEC(@sql)
 
-    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado'
+    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado ccsp_GalateaGetOutboundConfiguration'
 	SET @sql= '
     CREATE PROCEDURE [dbo].[ccsp_GalateaGetOutboundConfiguration]
     @adminID INT
@@ -873,7 +873,7 @@ BEGIN
     '
     EXEC(@sql)
 
-    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado'
+    SET @process = 'Se agregan nuevas configuraciones al procedimiento de guardado ccsp_RIAConfCamp'
 	SET @sql= '
     CREATE PROCEDURE [dbo].[ccsp_RIAConfCamp]
         @User_id SMALLINT,

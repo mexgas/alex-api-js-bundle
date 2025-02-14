@@ -397,6 +397,14 @@ BEGIN
 				return(0)'
         EXEC(@sql)
 
+		SET @process = 'Facturacion - Registro de codeCountry 1'
+        SET @sql = '
+		if not exists (select 1 from ccWhatsOringCountry where CodeCountry = 1)
+		begin
+			insert into ccWhatsOringCountry values (1, ''USA'', ''systemTranslated_USA'', 1, ''US'')
+		end'
+        EXEC(@sql)
+
         -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------
 		------------------------------------------- Begin Hector Chavez   --------------------------------------
 		 SET @process = 'KR170000 Generate ID menu'

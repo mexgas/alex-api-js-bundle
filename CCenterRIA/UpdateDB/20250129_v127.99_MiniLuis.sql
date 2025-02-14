@@ -511,6 +511,8 @@ BEGIN
         ,AssignConversationSameAgent bit
         ,maxLimitQueueConversations SMALLINT
         ,MaxDaysPerWAConvo SMALLINT
+        ,RecordIvr BIT, 
+        ,CamCanceled INT
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI BIT
         ,ImmediateSurveyAI BIT
@@ -612,6 +614,8 @@ BEGIN
         ,AssignConversationSameAgent AssignConversationSameAgent
         ,maxLimitQueueConversations MaxLimitQueueConversations
         ,MaxDaysPerWAConvo DaysVisualConversationWhatsApp
+        ,RecordIvr
+        ,ISNULL(CamCanceled, 0) CamCanceled
         -- Outbound AI Campaign Special Settings
         ,RescheduledSurveyAI
         ,ImmediateSurveyAI
@@ -1047,6 +1051,8 @@ BEGIN
             ISNULL(campsExtention.AssignConversationSameAgent, 0) AssignConversationSameAgent,
             ISNULL(contact.maxLimitQueueConversations, 99) maxLimitQueueConversations,
             ISNULL(contact.MaxDaysPerWAConvo, 5) MaxDaysPerWAConvo,
+            ISNULL(RecordIvr, 0) AS RecordIvr,
+            ISNULL(CamCanceled, 0) AS CamCanceled,
             -- Outbound AI Campaign Special Settings
             ISNULL(campsExtention.RescheduledSurveyAI, 0) RescheduledSurveyAI,
             ISNULL(campsExtention.ImmediateSurveyAI, 0) ImmediateSurveyAI,

@@ -1790,7 +1790,7 @@ SET NOCOUNT OFF
 								GROUP BY camId
 								)
 							INSERT INTO @campDataTotal
-							SELECT A.camId, B.cam_descripcion AS campName, A.Total, C.AreaName AS Area, ISNULL(va.concurrentSessionsLimit,0)
+							SELECT A.camId, B.cam_descripcion AS campName, A.Total, C.AreaName AS Area, ISNULL(va.concurrentSessionsLimit,0) as NumberOfVirtualAgents 
 							FROM campDataTotal A
 							INNER JOIN ccCamps B ON A.camId = B.cam_id
 							INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea
@@ -1807,7 +1807,7 @@ SET NOCOUNT OFF
 								GROUP BY camId
 								)
 							INSERT INTO @campDataTotal
-							SELECT A.camId, B.descripcion AS campName, A.Total, C.AreaName AS Area, 0
+							SELECT A.camId, B.descripcion AS campName, A.Total, C.AreaName AS Area, 0 as NumberOfVirtualAgents 
 							FROM campDataTotal A
 							INNER JOIN ccInbound B ON A.camId = B.Inbound_id
 							INNER JOIN ccRIACat_Areas C ON C.IDArea = B.IDArea

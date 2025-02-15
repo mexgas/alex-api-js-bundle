@@ -1259,7 +1259,7 @@ END
 
 IF @option = 2 -- Campa?as de un Area
 BEGIN
-    SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG, CASE WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 ELSE ISNULL(a1.CampType, 0) END as mode
+    SELECT DISTINCT a1.cam_id, cam_descripcion, frame, cam_procesando, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) relationsWG, CASE WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 then 10 ELSE ISNULL(a1.CampType, 0) END as mode
     FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id
@@ -1360,7 +1360,7 @@ BEGIN
     (SELECT DISTINCT a1.cam_id as CamID, cam_descripcion as CamDescription, frame as Frame, isnull(IDArea, 0) IDArea, dbo.fn_CampEspWG(a1.cam_id, 3) as RelationsWG,
 	1 CamType, 
     ISNULL((select  count(IdCampEsp) from ccRIACampEspWG where tipo = 1 and IdCampEsp = a1.cam_id and IDWG = @WGID group by IdCampEsp),0) IsAssignedToCurrentWG,
-    CAST(CASE WHEN a1.progDial = 3 THEN 6 WHEN a1.CampType = 4 THEN 4 WHEN a1.CampType = 5 THEN 5 WHEN a1.CampType=7 THEN 7 WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 THEN 9  ELSE 0 END as [tinyint]) [MediaType]
+    CAST(CASE WHEN a1.progDial = 3 THEN 6 WHEN a1.CampType = 4 THEN 4 WHEN a1.CampType = 5 THEN 5 WHEN a1.CampType=7 THEN 7 WHEN a1.ivrScript <> 0 AND a1.callsBySurvey <> 0 THEN 8 WHEN a1.CampType = 9 THEN 10  ELSE 0 END as [tinyint]) [MediaType]
 	FROM ccCamps a1
     JOIN ccRIACampsGraph a2 ON a1.cam_id = a2.cam_id
     JOIN ccRIAGraphics a3 ON a2.graphic_id = a3.graphic_id

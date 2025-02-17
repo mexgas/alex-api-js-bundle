@@ -729,6 +729,13 @@ SET @process = 'KR1170000 Create table RepAgentTimeShift'
                        ''max'', 1);
             END';
     EXEC(@sql);
+
+	SET @process = 'KR170000 Translate Report'
+    SET @sql = 'IF NOT EXISTS(select * from TranslatedReports where id = 2110)
+            BEGIN
+                INSERT INTO TranslatedReports VALUES (2110, ''statusAgente'')
+            END';
+    EXEC(@sql);
    -------------------------------------------  END Hector Chavez    -------------------------------------------
 	
 	IF @actualVersion = @version - 1 EXEC ccsp_getVersion 'BD', @version

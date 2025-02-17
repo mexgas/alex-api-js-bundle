@@ -397,18 +397,32 @@ BEGIN
 				return(0)'
         EXEC(@sql)
 
+		SET @process = 'Facturacion - Registro de codeCountry 1'
+        SET @sql = '
+		if not exists (select 1 from ccWhatsOringCountry where CodeCountry = 1)
+		begin
+			insert into ccWhatsOringCountry values (1, ''USA'', ''systemTranslated_USA'', 1, ''US'')
+		end'
+        EXEC(@sql)
+
         -------------------------------------------  END Ricardo Nunez LRSV  ----------------------------------------
 		------------------------------------------- Begin Hector Chavez   --------------------------------------
 		 SET @process = 'KR170000 Generate ID menu'
    		 SET @sql = ' IF NOT EXISTS(SELECT * FROM ccMenus where menu_id = 2110)
              			BEGIN
               				INSERT INTO ccMenus (menu_id,menu_descrip,parent,Nivel,ordengral,type,HelpSWF,release)
-                       		 VALUES (2110,''Usuarios de jornada|Shift Time'',2000,''B'',2,3,'''',''59e49d1a69b47480dbea6022fcbb02d186f63530500b9861f99ff8de26f86450'');
+                       		 VALUES (2110,''Tiempos de jornada|Shift Time'',2000,''B'',2,3,'''',''59e49d1a69b47480dbea6022fcbb02d186f63530500b9861f99ff8de26f86450'');
              			END
             		'
    		 EXEC(@sql);
-		
 
+		 SET @process = 'KR170000 Adding admin relationship report'
+		 SET @sql= ' IF NOT EXISTS(SELECT * FROM ccMenuUser WHERE id_Menu=2110)
+		 		 BEGIN
+				 	INSERT INTO ccMenuUser (id_User, id_Menu,type) VALUES (1,2110,3)
+				 END
+		 	   '
+		EXEC(@sql)
 		------------------------------------------- End Hector Chavez   --------------------------------------
          SET @process = 'Facturacion - Columna TemplateId en ccoWhatsLogDials'
         SET @sql = 'delete from ccMenuRol where menu_id in(11000,11010,11020,11030,11040)

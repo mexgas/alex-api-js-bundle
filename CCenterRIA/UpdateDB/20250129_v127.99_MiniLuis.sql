@@ -3287,9 +3287,10 @@ END'
 	FROM ccCampsMsgs VE (nolock) join ccMsgfiles V (nolock) ON VE.Msg_id = V.Msg_id WHERE cam_id = @cam_id and TYPE = 15 ORDER BY orden
 
 	--Agrega prefijo Marcacion con directo
-	declare @mainPrefix varchar(1), @phones varchar(max)
+	declare @mainPrefix varchar(1), @phones varchar(max), @apikeyQuantum VARCHAR(50);
 	set @prefixCalKey=''''
 	select @mainPrefix = valor from ccSettings where setting_id=202
+	select @apikeyQuantum = ISNULL(valor, '''') from dbo.ccSettings2 where setting_id=284
 	declare @tmpccoCallsOutSource table(callout_id int primary key,dialPrefix   varchar(30) null
 	,cal_Key    varchar(40)
 	,cal_telefono   varchar(30),cal_telefono2   varchar(30),cal_telefono3   varchar(30),cal_telefono4   varchar(30),cal_telefono5   varchar(30)
@@ -3353,7 +3354,8 @@ END'
 		dbo.GetCarrierByTel(cal_telefono5) carrier5,
 		@recordHold as recordHold,
 		@recordIvr as recordIvr,
-		isnull(C.data_api_quantum, '''') AS data_api_quantum
+		isnull(C.data_api_quantum, '''') AS data_api_quantum,
+		@apikeyQuantum AS key_api_quantum
 		FROM @tmpccoCallsOutSource C
 		left join ccoCallPriorityOrder cpo on cpo.callout_id = c.callout_id
 		left join ccCampsPrioridadTel cpt on cpt.cam_id = @cam_id
